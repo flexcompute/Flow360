@@ -16,5 +16,8 @@ __all__ = [
     "TreeSearch",
 ]
 
+# Note: FaceGroup is available but not exported here to avoid circular imports.
+# Import it directly when needed: from flow360.component.geometry import FaceGroup
+
 
 

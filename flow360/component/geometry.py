@@ -18,7 +18,13 @@ from flow360.cloud.flow360_requests import (
 )
 from flow360.cloud.heartbeat import post_upload_heartbeat
 from flow360.cloud.rest_api import RestApi
-from flow360.component.geometry_tree import GeometryTree, NodeCollection, TreeNode, TreeSearch, NodeType
+from flow360.component.geometry_tree import (
+    GeometryTree,
+    NodeCollection,
+    NodeType,
+    TreeNode,
+    TreeSearch,
+)
 from flow360.component.interfaces import GeometryInterface
 from flow360.component.resource_base import (
     AssetMetaBaseModelV2,
@@ -225,6 +231,82 @@ class GeometryDraft(ResourceDraft):
         return Geometry.from_cloud(info.id)
 
 
+class FaceGroup:
+    """
+    Represents a face group that can be incrementally built by adding nodes.
+    
+    This class is returned by Geometry.create_face_group() and provides
+    an .add() method to add more TreeNode instances to the group.
+    
+    FaceGroup instances are maintained by the parent Geometry object.
+    """
+
+    def __init__(self, geometry: "Geometry", name: str):
+        """
+        Initialize a FaceGroup.
+        
+        Parameters
+        ----------
+        geometry : Geometry
+            The parent Geometry object that maintains this group
+        name : str
+            The name of this face group
+        """
+        self._geometry = geometry
+        self._name = name
+        self._faces: List[TreeNode] = []
+
+    @property
+    def name(self) -> str:
+        """Get the name of this face group"""
+        return self._name
+
+    @property
+    def faces(self) -> List[TreeNode]:
+        """Get the list of face nodes in this group"""
+        return self._faces
+
+    @property
+    def face_count(self) -> int:
+        """Get the number of faces in this group"""
+        return len(self._faces)
+
+    def add(
+        self, selection: Union[TreeNode, List[TreeNode], NodeCollection, TreeSearch]
+    ) -> "FaceGroup":
+        """
+        Add more nodes to this face group.
+        
+        This method delegates to the parent Geometry object to handle the addition.
+        
+        Parameters
+        ----------
+        selection : Union[TreeNode, List[TreeNode], NodeCollection, TreeSearch]
+            Nodes to add to this group. Can be:
+            - TreeSearch instance - will be executed internally
+            - NodeCollection - nodes will be extracted
+            - Single TreeNode - will be wrapped in a list
+            - List of TreeNode instances
+            
+        Returns
+        -------
+        FaceGroup
+            Returns self for method chaining
+            
+        Examples
+        --------
+        >>> wing_group = geometry.create_face_group(name="wing", selection=...)
+        >>> wing_group.add(geometry.tree_root.search(type=NodeType.FRMFeature, name="flap"))
+        >>> wing_group.add(another_node)
+        """
+        # Delegate to Geometry to handle the addition
+        self._geometry._add_to_face_group(self, selection)
+        return self
+
+    def __repr__(self):
+        return f"FaceGroup(name='{self._name}', faces={self.face_count})"
+
+
 class Geometry(AssetBase):
     """
     Geometry component for workbench (simulation V2)
@@ -240,8 +322,8 @@ class Geometry(AssetBase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._tree: Optional[GeometryTree] = None
-        self._face_to_group_name: Dict[str, str] = {}  # face_uuid -> group_name
-        self._group_name_to_faces: Dict[str, List[TreeNode]] = {}  # group_name -> list of faces
+        self._face_groups: Dict[str, FaceGroup] = {}  # group_name -> FaceGroup instance
+        self._face_uuid_to_face_group: Dict[str, FaceGroup] = {}  # face_uuid -> FaceGroup instance
 
     @property
     def face_group_tag(self):
@@ -632,12 +714,14 @@ class Geometry(AssetBase):
 
     def create_face_group(
         self, name: str, selection: Union[TreeNode, List[TreeNode], NodeCollection, TreeSearch]
-    ) -> List[str]:
+    ) -> FaceGroup:
         """
         Create a face group based on explicit selection of tree nodes
 
         This method groups all faces under the selected nodes in the Geometry hierarchy tree.
         If any faces already belong to another group, they will be reassigned to the new group.
+        
+        Returns a FaceGroup object that can be used to incrementally add more nodes.
 
         Parameters
         ----------
@@ -654,82 +738,142 @@ class Geometry(AssetBase):
 
         Returns
         -------
-        List[str]
-            List of face UUIDs in the created group
+        FaceGroup
+            A FaceGroup object that can be used to add more nodes via .add() method
 
         Examples
         --------
         >>> from flow360.component.geometry_tree import NodeType
         >>> 
         >>> # Using TreeSearch (recommended - captures intent declaratively)
-        >>> geometry.create_face_group(
+        >>> wing_group = geometry.create_face_group(
         ...     name="wing",
         ...     selection=geometry.tree_root.search(type=NodeType.FRMFeature, name="*wing*")
         ... )
         >>> 
         >>> # Using children() chaining (fluent navigation with exact matching)
-        >>> geometry.create_face_group(
+        >>> body_group = geometry.create_face_group(
         ...     name="body",
         ...     selection=geometry.tree_root.children().children().children(
         ...         type=NodeType.FRMFeatureBasedEntity
         ...     ).children().children(type=NodeType.FRMFeature, name="body_main")
         ... )
         >>> 
-        >>> # Using a single TreeNode directly
-        >>> wing_nodes = geometry.tree_root.search(type=NodeType.FRMFeature, name="wing").execute()
-        >>> geometry.create_face_group(name="single_wing", selection=wing_nodes[0])
-        >>> 
-        >>> # Using a list of TreeNodes
-        >>> all_wing_nodes = geometry.tree_root.search(type=NodeType.FRMFeature, name="*wing*").execute()
-        >>> geometry.create_face_group(name="all_wings", selection=all_wing_nodes)
+        >>> # Incrementally add more nodes to the group
+        >>> body_group.add(
+        ...     geometry.tree_root.children().children().children(
+        ...         type=NodeType.FRMFeatureBasedEntity
+        ...     ).children().children(type=NodeType.FRMFeature, name="body_cut")
+        ... )
         """
         if self._tree is None:
             raise Flow360ValueError(
                 "Geometry tree not loaded. Call load_geometry_tree() first with path to tree.json"
             )
 
+        # Get or create FaceGroup
+        if name not in self._face_groups:
+            face_group = FaceGroup(self, name)
+            self._face_groups[name] = face_group
+            log.info(f"Created face group '{name}'")
+        else:
+            face_group = self._face_groups[name]
+            log.info(f"Using existing face group '{name}'")
+
+        # Add faces to the group
+        self._add_to_face_group(face_group, selection)
+        
+        return face_group
+
+    def _add_to_face_group(
+        self, face_group: FaceGroup, selection: Union[TreeNode, List[TreeNode], NodeCollection, TreeSearch]
+    ) -> None:
+        """
+        Internal method to add faces to a face group.
+        
+        This method handles the core logic of:
+        - Converting selection to a list of nodes
+        - Extracting all faces from selected nodes
+        - Removing faces from their previous groups
+        - Adding faces to the target group
+        - Updating the face-to-group mapping
+        - Automatically removing any face groups that become empty
+        
+        Parameters
+        ----------
+        face_group : FaceGroup
+            The face group to add faces to
+        selection : Union[TreeNode, List[TreeNode], NodeCollection, TreeSearch]
+            The selection to add (TreeSearch, NodeCollection, TreeNode, or list of TreeNodes)
+        
+        Notes
+        -----
+        If moving faces causes any group to become empty (0 faces), that group will be
+        automatically removed from the Geometry's face group registry.
+        """
         # Handle different selection types
         if isinstance(selection, TreeSearch):
-            # Execute TreeSearch to get nodes
             selected_nodes = selection.execute()
         elif isinstance(selection, NodeCollection):
-            # Extract nodes from NodeCollection
             selected_nodes = selection.nodes
         elif isinstance(selection, TreeNode):
-            # Wrap single node in a list
             selected_nodes = [selection]
         else:
-            # Already a list of nodes
             selected_nodes = selection
 
         # Collect faces from selected nodes
-        group_faces = []
+        new_faces = []
         new_face_uuids = set()
         
         for node in selected_nodes:
             faces = node.get_all_faces()
             for face in faces:
                 if face.uuid:
-                    group_faces.append(face)
+                    new_faces.append(face)
                     new_face_uuids.add(face.uuid)
 
         # Remove these faces from their previous groups
-        for group_name, faces in list(self._group_name_to_faces.items()):
-            if group_name != name:
-                self._group_name_to_faces[group_name] = [
-                    f for f in faces if f.uuid not in new_face_uuids
-                ]
+        groups_to_check = set()
+        for uuid in new_face_uuids:
+            if uuid in self._face_uuid_to_face_group:
+                old_group = self._face_uuid_to_face_group[uuid]
+                if old_group != face_group:
+                    # Remove from old group
+                    old_group._faces = [f for f in old_group._faces if f.uuid != uuid]
+                    groups_to_check.add(old_group)
+
+        # Clean up empty face groups
+        for group in groups_to_check:
+            if len(group._faces) == 0:
+                # Remove the empty group from the registry
+                if group.name in self._face_groups:
+                    del self._face_groups[group.name]
+                    log.info(f"Removed empty face group '{group.name}'")
 
         # Update face-to-group mapping
         for uuid in new_face_uuids:
-            self._face_to_group_name[uuid] = name
+            self._face_uuid_to_face_group[uuid] = face_group
 
-        # Store the group
-        self._group_name_to_faces[name] = group_faces
+        # Add to this group (avoiding duplicates)
+        existing_uuids = {f.uuid for f in face_group._faces if f.uuid}
+        
+        added_count = 0
+        for face in new_faces:
+            if face.uuid not in existing_uuids:
+                face_group._faces.append(face)
+                existing_uuids.add(face.uuid)
+                added_count += 1
 
-        face_uuids = [face.uuid for face in group_faces if face.uuid]
-        log.info(f"Created face group '{name}' with {len(face_uuids)} faces")
-        return face_uuids
+        log.info(
+            f"Added {added_count} faces to group '{face_group.name}' "
+            f"(total: {len(face_group._faces)} faces)"
+        )
+
+    def face_grouping_configuration(self) -> Dict[str, str]:
+        face_uuid_to_face_group_name = {}
+        for face_uuid, face_group in self._face_uuid_to_face_group.items():
+            face_uuid_to_face_group_name[face_uuid] = face_group.name
+        return face_uuid_to_face_group_name
 
     def print_face_grouping_stats(self) -> None:
         """
@@ -754,11 +898,11 @@ class Geometry(AssetBase):
             )
         
         total_faces = len(self._tree.all_faces)
-        faces_in_groups = sum(len(faces) for faces in self._group_name_to_faces.values())
+        faces_in_groups = sum(group.face_count for group in self._face_groups.values())
 
         print(f"\n=== Face Grouping Statistics ===")
         print(f"Total faces: {total_faces}")
-        print(f"\nFace groups ({len(self._group_name_to_faces)}):")
-        for group_name, faces in self._group_name_to_faces.items():
-            print(f"  - {group_name}: {len(faces)} faces")
+        print(f"\nFace groups ({len(self._face_groups)}):")
+        for group_name, group in self._face_groups.items():
+            print(f"  - {group_name}: {group.face_count} faces")
         print("="*33)
