@@ -4,13 +4,12 @@ import pydantic as pd
 import pytest
 
 import flow360.component.simulation.units as u
-from flow360.component.simulation.meshing_param.params import (
-    SnappySurfaceMeshingDefaults,
-    SnappySurfaceMeshingParams,
-)
-from flow360.component.simulation.meshing_param.surface_mesh_refinements import (
+
+from flow360.component.simulation.meshing_param.snappy import (
     SnappyRegionRefinement,
     SnappySurfaceEdgeRefinement,
+    SnappySurfaceMeshingDefaults,
+    SnappySurfaceMeshingParams,
 )
 from flow360.component.simulation.meshing_param.volume_params import UniformRefinement
 from flow360.component.simulation.primitives import Box, Cylinder, Surface

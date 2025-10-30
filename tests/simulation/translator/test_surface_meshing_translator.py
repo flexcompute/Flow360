@@ -22,25 +22,24 @@ from flow360.component.simulation.meshing_param.face_params import (
     GeometryRefinement,
     SurfaceRefinement,
 )
-from flow360.component.simulation.meshing_param.meshing_specs import (
-    VolumeMeshingDefaults,
-    SnappyCastellatedMeshControls,
-    SnappyQualityMetrics,
-    SnappySmoothControls,
-    SnappySnapControls,
-    SnappySurfaceMeshingDefaults,
-)
+from flow360.component.simulation.meshing_param.meshing_specs import VolumeMeshingDefaults
 from flow360.component.simulation.meshing_param.params import (
     VolumeMeshingParams,
     MeshingDefaults,
     MeshingParams,
     ModularMeshingWorkflow,
-    SnappySurfaceMeshingParams,
+
 )
-from flow360.component.simulation.meshing_param.surface_mesh_refinements import (
+from flow360.component.simulation.meshing_param.snappy import (
     SnappyBodyRefinement,
     SnappyRegionRefinement,
     SnappySurfaceEdgeRefinement,
+    SnappySurfaceMeshingParams,
+    SnappyCastellatedMeshControls,
+    SnappyQualityMetrics,
+    SnappySmoothControls,
+    SnappySnapControls,
+    SnappySurfaceMeshingDefaults,
 )
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
@@ -54,7 +53,6 @@ from flow360.component.simulation.primitives import (
     Cylinder,
     Edge,
     SeedpointZone,
-    SnappyBody,
     Surface,
 )
 from flow360.component.simulation.simulation_params import SimulationParams

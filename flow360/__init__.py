@@ -28,23 +28,13 @@ from flow360.component.simulation.meshing_param.meshing_specs import (
     VolumeMeshingDefaults,
     MeshingDefaults,
     OctreeSpacing,
-    SnappyCastellatedMeshControls,
-    SnappyQualityMetrics,
-    SnappySmoothControls,
-    SnappySnapControls,
-    SnappySurfaceMeshingDefaults,
 )
 from flow360.component.simulation.meshing_param.params import (
     VolumeMeshingParams,
     MeshingParams,
-    ModularMeshingWorkflow,
-    SnappySurfaceMeshingParams,
+    ModularMeshingWorkflow
 )
-from flow360.component.simulation.meshing_param.surface_mesh_refinements import (
-    SnappyBodyRefinement,
-    SnappyRegionRefinement,
-    SnappySurfaceEdgeRefinement,
-)
+
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     AxisymmetricRefinement,
@@ -165,8 +155,7 @@ from flow360.component.simulation.primitives import (
     Cylinder,
     ImportedSurface,
     ReferenceGeometry,
-    SeedpointZone,
-    SnappyBody,
+    SeedpointZone
 )
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import (
@@ -331,18 +320,9 @@ __all__ = [
     "math",
     "solution",
     "report",
+    "snappy",
     "ModularMeshingWorkflow",
-    "SnappySurfaceMeshingDefaults",
-    "SnappySnapControls",
-    "SnappyCastellatedMeshControls",
-    "SnappyQualityMetrics",
-    "SnappySmoothControls",
-    "SnappyBodyRefinement",
-    "SnappyRegionRefinement",
-    "SnappySurfaceEdgeRefinement",
-    "SnappyBody",
     "SeedpointZone",
-    "SnappySurfaceMeshingParams",
     "VolumeMeshingParams",
     "VolumeMeshingDefaults",
     "get_user_variable",

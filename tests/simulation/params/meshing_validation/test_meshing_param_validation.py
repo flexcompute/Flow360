@@ -5,16 +5,16 @@ from flow360 import u
 from flow360.component.simulation.meshing_param.meshing_specs import (
     VolumeMeshingDefaults,
     OctreeSpacing,
-    SnappySurfaceMeshingDefaults,
 )
 from flow360.component.simulation.meshing_param.params import (
     VolumeMeshingParams,
     MeshingParams,
     ModularMeshingWorkflow,
-    SnappySurfaceMeshingParams,
 )
-from flow360.component.simulation.meshing_param.surface_mesh_refinements import (
+from flow360.component.simulation.meshing_param.snappy import (
     SnappyBodyRefinement,
+    SnappySurfaceMeshingParams,
+    SnappySurfaceMeshingDefaults,
 )
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,

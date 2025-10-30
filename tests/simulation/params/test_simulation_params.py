@@ -17,11 +17,11 @@ from flow360.component.simulation.meshing_param.params import (
     MeshingDefaults,
     MeshingParams,
     ModularMeshingWorkflow,
-    SnappySurfaceMeshingDefaults,
-    SnappySurfaceMeshingParams,
 )
-from flow360.component.simulation.meshing_param.surface_mesh_refinements import (
+from flow360.component.simulation.meshing_param.snappy import (
     SnappySurfaceEdgeRefinement,
+    SnappySurfaceMeshingDefaults,
+    SnappySurfaceMeshingParams
 )
 from flow360.component.simulation.meshing_param.volume_params import UniformRefinement
 from flow360.component.simulation.migration.extra_operating_condition import (

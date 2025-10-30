@@ -10,8 +10,8 @@ from flow360.component.simulation.meshing_param.params import (
     VolumeMeshingParams,
     MeshingParams,
     ModularMeshingWorkflow,
-    SnappySurfaceMeshingParams,
 )
+from flow360.component.simulation.meshing_param.snappy.snappy_params import SnappySurfaceMeshingParams
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     AxisymmetricRefinement,

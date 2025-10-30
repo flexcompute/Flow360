@@ -12,13 +12,13 @@ from flow360.component.simulation.meshing_param.meshing_specs import OctreeSpaci
 from flow360.component.simulation.meshing_param.params import (
     MeshingParams,
     ModularMeshingWorkflow,
-    SnappySurfaceMeshingParams,
 )
-from flow360.component.simulation.meshing_param.surface_mesh_refinements import (
+from flow360.component.simulation.meshing_param.snappy.snappy_mesh_refinements import (
     SnappyBodyRefinement,
     SnappyRegionRefinement,
     SnappySurfaceEdgeRefinement,
 )
+from flow360.component.simulation.meshing_param.snappy.snappy_params import SnappySurfaceMeshingParams
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     UniformRefinement,
