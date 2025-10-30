@@ -4,7 +4,7 @@ Primitive type definitions for simulation entities.
 
 import re
 from abc import ABCMeta
-from typing import Annotated, List, Literal, Optional, Tuple, Union, final
+from typing import Annotated, ClassVar, List, Literal, Optional, Tuple, Union, final
 
 import numpy as np
 import pydantic as pd
@@ -143,9 +143,7 @@ class GeometryBodyGroup(EntityBase):
     :class:`GeometryBodyGroup` represents a collection of bodies that are grouped for transformation.
     """
 
-    private_attribute_registry_bucket_name: Literal["GeometryBodyGroupEntityType"] = (
-        "GeometryBodyGroupEntityType"
-    )
+    entity_bucket: ClassVar[str] = "GeometryBodyGroupEntityType"
     private_attribute_tag_key: str = pd.Field(
         description="The tag/attribute string used to group bodies.",
     )
@@ -172,7 +170,7 @@ class _VolumeEntityBase(EntityBase, metaclass=ABCMeta):
     """All volumetric entities should inherit from this class."""
 
     ### Warning: Please do not change this as it affects registry bucketing.
-    private_attribute_registry_bucket_name: Literal["VolumetricEntityType"] = "VolumetricEntityType"
+    entity_bucket: ClassVar[str] = "VolumetricEntityType"
     private_attribute_zone_boundary_names: UniqueStringList = pd.Field(
         UniqueStringList(),
         frozen=True,
@@ -215,7 +213,7 @@ class _VolumeEntityBase(EntityBase, metaclass=ABCMeta):
 
 class _SurfaceEntityBase(EntityBase, metaclass=ABCMeta):
     ### Warning: Please do not change this as it affects registry bucketing.
-    private_attribute_registry_bucket_name: Literal["SurfaceEntityType"] = "SurfaceEntityType"
+    entity_bucket: ClassVar[str] = "SurfaceEntityType"
     private_attribute_full_name: Optional[str] = pd.Field(None, frozen=True)
 
     def _update_entity_info_with_metadata(self, volume_mesh_meta_data: dict) -> None:
@@ -237,7 +235,7 @@ class _SurfaceEntityBase(EntityBase, metaclass=ABCMeta):
 
 class _EdgeEntityBase(EntityBase, metaclass=ABCMeta):
     ### Warning: Please do not change this as it affects registry bucketing.
-    private_attribute_registry_bucket_name: Literal["EdgeEntityType"] = "EdgeEntityType"
+    entity_bucket: ClassVar[str] = "EdgeEntityType"
 
 
 @final
@@ -247,9 +245,7 @@ class Edge(_EdgeEntityBase):
     """
 
     ### Warning: Please do not change this as it affects registry bucketing.
-    private_attribute_registry_bucket_name: Literal["EdgeEntityType"] = pd.Field(
-        "EdgeEntityType", frozen=True
-    )
+    entity_bucket: ClassVar[str] = "EdgeEntityType"
     private_attribute_entity_type_name: Literal["Edge"] = pd.Field("Edge", frozen=True)
     private_attribute_tag_key: Optional[str] = pd.Field(
         None,
@@ -561,7 +557,7 @@ class Surface(_SurfaceEntityBase):
         # pylint: disable=too-many-arguments, too-many-return-statements
         self,
         at_least_one_body_transformed: bool,
-        farfield_method: Optional[Literal["auto", "quasi-3d", "user-defined"]],
+        farfield_method: Optional[Literal["auto", "quasi-3d", "quasi-3d-periodic", "user-defined"]],
         global_bounding_box: Optional[BoundingBoxType],
         planar_face_tolerance: Optional[float],
         half_model_symmetry_plane_center_y: Optional[float],
@@ -592,7 +588,7 @@ class Surface(_SurfaceEntityBase):
                 return False
             return self._overlaps(half_model_symmetry_plane_center_y, length_tolerance)
 
-        if farfield_method == "quasi-3d":
+        if farfield_method in ("quasi-3d", "quasi-3d-periodic"):
             if quasi_3d_symmetry_planes_center_y is None:
                 # Legacy schema.
                 return False
@@ -692,15 +688,13 @@ class GhostCircularPlane(_SurfaceEntityBase):
         return positive_half or negative_half
 
 
-class SurfacePair(Flow360BaseModel):
+class SurfacePairBase(Flow360BaseModel):
     """
-    Represents a pair of surfaces.
-
-    Attributes:
-        pair (Tuple[Surface, Surface]): A tuple containing two Surface objects representing the pair.
+    Base class for surface pair objects.
+    Subclasses must define a `pair` attribute with the appropriate surface type.
     """
 
-    pair: Tuple[Surface, Surface]
+    pair: Tuple[_SurfaceEntityBase, _SurfaceEntityBase]
 
     @pd.field_validator("pair", mode="after")
     @classmethod
@@ -723,7 +717,7 @@ class SurfacePair(Flow360BaseModel):
         return hash(tuple(sorted([self.pair[0].name, self.pair[1].name])))
 
     def __eq__(self, other):
-        if isinstance(other, SurfacePair):
+        if isinstance(other, self.__class__):
             return tuple(sorted([self.pair[0].name, self.pair[1].name])) == tuple(
                 sorted([other.pair[0].name, other.pair[1].name])
             )
@@ -731,6 +725,28 @@ class SurfacePair(Flow360BaseModel):
 
     def __str__(self):
         return ",".join(sorted([self.pair[0].name, self.pair[1].name]))
+
+
+class SurfacePair(SurfacePairBase):
+    """
+    Represents a pair of surfaces.
+
+    Attributes:
+        pair (Tuple[Surface, Surface]): A tuple containing two Surface objects representing the pair.
+    """
+
+    pair: Tuple[Surface, Surface]
+
+
+class GhostSurfacePair(SurfacePairBase):
+    """
+    Represents a pair of ghost surfaces.
+
+    Attributes:
+        pair (Tuple[GhostSurface, GhostSurface]): A tuple containing two GhostSurface objects representing the pair.
+    """
+
+    pair: Tuple[GhostSurface, GhostSurface]
 
 
 @final

@@ -2,21 +2,21 @@
 
 from __future__ import annotations
 
-import copy
 import hashlib
 import json
+from functools import lru_cache
 from itertools import chain
-from typing import Any, List, Literal, Set, get_origin
+from typing import Any, List, Literal, get_args, get_origin
 
 import pydantic as pd
 import rich
+import unyt as u
 import yaml
 from pydantic import ConfigDict
 from pydantic._internal._decorators import Decorator, FieldValidatorDecoratorInfo
 from pydantic_core import InitErrorDetails
-from unyt.unit_registry import UnitRegistry
 
-from flow360.component.simulation.conversion import need_conversion, unit_converter
+from flow360.component.simulation.conversion import need_conversion
 from flow360.component.simulation.validation import validation_context
 from flow360.error_messages import do_not_modify_file_manually_msg
 from flow360.exceptions import Flow360FileError
@@ -32,7 +32,7 @@ DISCRIMINATOR_NAMES = [
 ]
 
 
-def _preprocess_nested_list(value, required_by, params, exclude, registry_lookup):
+def _preprocess_nested_list(value, required_by, params, exclude, flow360_unit_system):
     new_list = []
     for i, item in enumerate(value):
         # Extend the 'required_by' path with the current index.
@@ -40,7 +40,7 @@ def _preprocess_nested_list(value, required_by, params, exclude, registry_lookup
         if isinstance(item, list):
             # Recursively process nested lists.
             new_list.append(
-                _preprocess_nested_list(item, new_required_by, params, exclude, registry_lookup)
+                _preprocess_nested_list(item, new_required_by, params, exclude, flow360_unit_system)
             )
         elif isinstance(item, Flow360BaseModel):
             # Process Flow360BaseModel instances.
@@ -49,7 +49,7 @@ def _preprocess_nested_list(value, required_by, params, exclude, registry_lookup
                     params=params,
                     required_by=new_required_by,
                     exclude=exclude,
-                    registry_lookup=registry_lookup,
+                    flow360_unit_system=flow360_unit_system,
                 )
             )
         else:
@@ -95,18 +95,6 @@ class Conflicts(pd.BaseModel):
     field2: str
 
 
-class RegistryLookup:  # pylint:disable=too-few-public-methods
-    """
-    Helper object to cache the conversion unit system registry
-    """
-
-    __slots__ = ["converted_fields", "registry"]
-
-    def __init__(self):
-        self.converted_fields: Set[str] = set()
-        self.registry: UnitRegistry = None
-
-
 class Flow360BaseModel(pd.BaseModel):
     """Base pydantic (V2) model that all Flow360 components inherit from.
     Defines configuration for handling data structures
@@ -117,7 +105,22 @@ class Flow360BaseModel(pd.BaseModel):
 
     def __init__(self, filename: str = None, **kwargs):
         model_dict = self._handle_file(filename=filename, **kwargs)
-        super().__init__(**model_dict)
+        try:
+            super().__init__(**model_dict)
+        except pd.ValidationError as e:
+            validation_errors = e.errors()
+            for i, error in enumerate(validation_errors):
+                ctx = error.get("ctx")
+                if not isinstance(ctx, dict) or ctx.get("relevant_for") is None:
+                    loc_tuple = tuple(error.get("loc", ()))
+                    rf = self.__class__._infer_relevant_for_cached(tuple(loc_tuple))
+                    if rf is not None:
+                        new_ctx = {} if not isinstance(ctx, dict) else dict(ctx)
+                        new_ctx["relevant_for"] = list(rf)
+                        validation_errors[i]["ctx"] = new_ctx
+            raise pd.ValidationError.from_exception_data(
+                title=self.__class__.__name__, line_errors=validation_errors
+            )
 
     @classmethod
     def _handle_dict(cls, **kwargs):
@@ -143,7 +146,7 @@ class Flow360BaseModel(pd.BaseModel):
     @classmethod
     def __pydantic_init_subclass__(cls, **kwargs) -> None:
         """Things that are done to each of the models."""
-        need_to_rebuild = cls._handle_wrap_validators()
+        need_to_rebuild = cls._handle_conditional_validators()
         if need_to_rebuild is True:
             cls.model_rebuild(force=True)
         super().__pydantic_init_subclass__(**kwargs)  # Correct use of super
@@ -251,15 +254,12 @@ class Flow360BaseModel(pd.BaseModel):
         return None
 
     @classmethod
-    def _handle_wrap_validators(cls):
+    def _handle_conditional_validators(cls):
         """
-        Applies `wrap` and `before` validators to selected fields while excluding discriminator fields.
+        Applies `before` validators to selected fields while excluding discriminator fields.
 
         **Purpose**:
-        - `wrap` validators cannot be applied to discriminator fields (e.g., `Literal` types like 'type'),
-        as they cause Pydantic conflicts during validation.
-        - This method manually assigns validators only to non-discriminator fields to avoid errors and
-        ensure correct validation flow.
+        - Dynamically determines if a field is optional depending on the current validation context.
 
         **How it works**:
         - Iterates over model fields, excluding discriminator fields.
@@ -268,7 +268,6 @@ class Flow360BaseModel(pd.BaseModel):
         """
 
         validators = [
-            ("wrap", "populate_ctx_to_error_messages"),
             ("before", "validate_conditionally_required_field"),
         ]
         fields_to_validate = []
@@ -325,30 +324,96 @@ class Flow360BaseModel(pd.BaseModel):
 
         return value
 
-    @pd.field_validator("*", mode="wrap")
     @classmethod
-    def populate_ctx_to_error_messages(cls, values, handler, info) -> Any:
+    @lru_cache(maxsize=4096)
+    def _infer_relevant_for_cached(cls, loc: tuple) -> tuple | None:
+        """Infer relevant_for along the loc path starting at this model class.
+
+        Returns a tuple of strings or None if not found.
         """
-        this validator populates ctx messages of fields tagged with "relevant_for" context
-        it will populate to all child messages
-        """
-        try:
-            return handler(values)
-        except pd.ValidationError as e:
-            validation_errors = e.errors()
-            relevant_for = cls._get_field_context(info, "relevant_for")
-            if relevant_for is not None:
-                for i, error in enumerate(validation_errors):
-                    ctx = error.get("ctx", {})
-                    if ctx.get("relevant_for") is None:
-                        # Enforce the relevant_for to be a list for consistency
-                        ctx["relevant_for"] = (
-                            relevant_for if isinstance(relevant_for, list) else [relevant_for]
-                        )
-                    validation_errors[i]["ctx"] = ctx
-            raise pd.ValidationError.from_exception_data(
-                title=cls.__class__.__name__, line_errors=validation_errors
-            )
+        model: type = cls
+        last_relevant = None
+        for seg in loc:
+            if not (isinstance(model, type) and issubclass(model, Flow360BaseModel)):
+                break
+            fields = getattr(model, "model_fields", None)
+            if (
+                not isinstance(seg, str)
+                or not fields
+                or seg not in fields  # pylint: disable=unsupported-membership-test
+            ):
+                break
+            field_info = fields[seg]  # pylint: disable=unsubscriptable-object
+            extra = getattr(field_info, "json_schema_extra", None)
+            if isinstance(extra, dict):
+                rf = extra.get("relevant_for")
+                if rf is not None:
+                    last_relevant = rf
+
+            next_model = cls._first_model_type_from(field_info)
+            if next_model is None:
+                break
+            model = next_model
+
+        if last_relevant is None:
+            return None
+        if isinstance(last_relevant, list):
+            return tuple(last_relevant)
+        return (last_relevant,)
+
+    @staticmethod
+    def _first_model_type_from(field_info) -> type | None:
+        """Extract first Flow360BaseModel subclass from a field's annotation."""
+        annotation = getattr(field_info, "annotation", None)
+        return Flow360BaseModel._extract_model_type(annotation)
+
+    @staticmethod
+    def _extract_model_type(tp) -> type | None:
+        # pylint: disable=too-many-branches, too-many-return-statements
+        if tp is None:
+            return None
+        if isinstance(tp, type):
+            try:
+                if issubclass(tp, Flow360BaseModel):
+                    return tp
+            except TypeError:
+                return None
+            return None
+        origin = get_origin(tp)
+        if origin is None:
+            return None
+        # typing.Annotated
+        if str(origin) == "typing.Annotated":
+            args = get_args(tp)
+            if args:
+                return Flow360BaseModel._extract_model_type(args[0])
+            return None
+        # Optional/Union
+        if origin is Literal:
+            return None
+        if str(origin) == "typing.Union":
+            for arg in get_args(tp):
+                mt = Flow360BaseModel._extract_model_type(arg)
+                if mt is not None:
+                    return mt
+            return None
+        # Containers: List[T], Dict[K,V], Tuple[...] (take first value-like arg)
+        args = get_args(tp)
+        if not args:
+            return None
+        # For Dict[K,V], prefer V; else iterate args
+        dict_types = (dict,)
+        from typing import Dict as TypingDict  # pylint: disable=import-outside-toplevel
+
+        if origin in (*dict_types, TypingDict) and len(args) == 2:
+            start_index = 1
+        else:
+            start_index = 0
+        for arg in args[start_index:]:
+            mt = Flow360BaseModel._extract_model_type(arg)
+            if mt is not None:
+                return mt
+        return None
 
     # Note: to_solver architecture will be reworked in favor of splitting the models between
     # the user-side and solver-side models (see models.py and models_avl.py for reference
@@ -575,10 +640,9 @@ class Flow360BaseModel(pd.BaseModel):
     def _nondimensionalization(
         self,
         *,
-        params,
         exclude: List[str] = None,
         required_by: List[str] = None,
-        registry_lookup: RegistryLookup = None,
+        flow360_unit_system: u.UnitSystem = None,
     ) -> dict:
         solver_values = {}
         self_dict = self.__dict__
@@ -592,28 +656,10 @@ class Flow360BaseModel(pd.BaseModel):
         additional_fields = {}
 
         for property_name, value in chain(self_dict.items(), additional_fields.items()):
-            loc_name = property_name
-            field = self.__class__.model_fields.get(property_name)
-            if field is not None and field.alias is not None:
-                loc_name = field.alias
             if need_conversion(value) and property_name not in exclude:
-                dimension = value.units.dimensions
-                if dimension not in registry_lookup.converted_fields:
-                    flow360_conv_system = unit_converter(
-                        value.units.dimensions,
-                        params=params,
-                        required_by=[*required_by, loc_name],
-                    )
-                    # Calling unit_converter is always additive on the global conversion system
-                    # so we can only keep track of the most recent registry and use it
-                    registry_lookup.registry = (
-                        flow360_conv_system.registry  # pylint:disable=no-member
-                    )
-                    registry_lookup.converted_fields.add(dimension)
-                value.units.registry = registry_lookup.registry
-                solver_values[property_name] = value.in_base(unit_system="flow360_v2")
+                solver_values[property_name] = value.in_base(flow360_unit_system)
             else:
-                solver_values[property_name] = copy.copy(value)
+                solver_values[property_name] = value
 
         return solver_values
 
@@ -623,7 +669,7 @@ class Flow360BaseModel(pd.BaseModel):
         params=None,
         exclude: List[str] = None,
         required_by: List[str] = None,
-        registry_lookup: RegistryLookup = None,
+        flow360_unit_system: u.UnitSystem = None,
     ) -> Flow360BaseModel:
         """
         Loops through all fields, for Flow360BaseModel runs .preprocess() recursively. For dimensioned value performs
@@ -644,18 +690,13 @@ class Flow360BaseModel(pd.BaseModel):
         required_by: List[str] (optional)
             Path to property which requires conversion.
 
-        registry_lookup: RegistryLookup (optional)
-            Lookup object that allows us to quickly perform conversions by
-            reducing redundant calls to the conversion system getter
+
 
         Returns
         -------
         caller class
             returns caller class with units all in flow360 base unit system
         """
-
-        if registry_lookup is None:
-            registry_lookup = RegistryLookup()
 
         if exclude is None:
             exclude = []
@@ -664,10 +705,9 @@ class Flow360BaseModel(pd.BaseModel):
             required_by = []
 
         solver_values = self._nondimensionalization(
-            params=params,
             exclude=exclude,
             required_by=required_by,
-            registry_lookup=registry_lookup,
+            flow360_unit_system=flow360_unit_system,
         )
         for property_name, value in self.__dict__.items():
             if property_name in exclude:
@@ -681,12 +721,12 @@ class Flow360BaseModel(pd.BaseModel):
                     params=params,
                     required_by=[*required_by, loc_name],
                     exclude=exclude,
-                    registry_lookup=registry_lookup,
+                    flow360_unit_system=flow360_unit_system,
                 )
             elif isinstance(value, list):
                 # Use the helper to handle nested lists.
                 solver_values[property_name] = _preprocess_nested_list(
-                    value, [loc_name], params, exclude, registry_lookup
+                    value, [loc_name], params, exclude, flow360_unit_system
                 )
 
         return self.__class__(**solver_values)

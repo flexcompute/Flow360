@@ -1,5 +1,5 @@
 {
-    "version": "25.7.5b0",
+    "version": "25.7.6b0",
     "unit_system": {
         "name": "SI"
     },
@@ -34,7 +34,6 @@
                 "entities": {
                     "stored_entities": [
                         {
-                            "private_attribute_registry_bucket_name": "EdgeEntityType",
                             "private_attribute_entity_type_name": "Edge",
                             "private_attribute_id": "body0001_edge0036",
                             "name": "body0001_edge0036",
@@ -59,7 +58,6 @@
                 "entities": {
                     "stored_entities": [
                         {
-                            "private_attribute_registry_bucket_name": "EdgeEntityType",
                             "private_attribute_entity_type_name": "Edge",
                             "private_attribute_id": "body0001_edge0025",
                             "name": "body0001_edge0025",
@@ -69,7 +67,6 @@
                             ]
                         },
                         {
-                            "private_attribute_registry_bucket_name": "EdgeEntityType",
                             "private_attribute_entity_type_name": "Edge",
                             "private_attribute_id": "body0001_edge0029",
                             "name": "body0001_edge0029",
@@ -79,7 +76,6 @@
                             ]
                         },
                         {
-                            "private_attribute_registry_bucket_name": "EdgeEntityType",
                             "private_attribute_entity_type_name": "Edge",
                             "private_attribute_id": "body0001_edge0030",
                             "name": "body0001_edge0030",
@@ -100,7 +96,6 @@
                 "entities": {
                     "stored_entities": [
                         {
-                            "private_attribute_registry_bucket_name": "EdgeEntityType",
                             "private_attribute_entity_type_name": "Edge",
                             "private_attribute_id": "body0001_edge0001",
                             "name": "body0001_edge0001",
@@ -110,7 +105,6 @@
                             ]
                         },
                         {
-                            "private_attribute_registry_bucket_name": "EdgeEntityType",
                             "private_attribute_entity_type_name": "Edge",
                             "private_attribute_id": "body0001_edge0003",
                             "name": "body0001_edge0003",
@@ -120,7 +114,6 @@
                             ]
                         },
                         {
-                            "private_attribute_registry_bucket_name": "EdgeEntityType",
                             "private_attribute_entity_type_name": "Edge",
                             "private_attribute_id": "body0001_edge0004",
                             "name": "body0001_edge0004",
@@ -130,7 +123,6 @@
                             ]
                         },
                         {
-                            "private_attribute_registry_bucket_name": "EdgeEntityType",
                             "private_attribute_entity_type_name": "Edge",
                             "private_attribute_id": "body0001_edge0005",
                             "name": "body0001_edge0005",
@@ -140,7 +132,6 @@
                             ]
                         },
                         {
-                            "private_attribute_registry_bucket_name": "EdgeEntityType",
                             "private_attribute_entity_type_name": "Edge",
                             "private_attribute_id": "body0001_edge0006",
                             "name": "body0001_edge0006",
@@ -150,7 +141,6 @@
                             ]
                         },
                         {
-                            "private_attribute_registry_bucket_name": "EdgeEntityType",
                             "private_attribute_entity_type_name": "Edge",
                             "private_attribute_id": "body0001_edge0008",
                             "name": "body0001_edge0008",
@@ -160,7 +150,6 @@
                             ]
                         },
                         {
-                            "private_attribute_registry_bucket_name": "EdgeEntityType",
                             "private_attribute_entity_type_name": "Edge",
                             "private_attribute_id": "body0001_edge0016",
                             "name": "body0001_edge0016",
@@ -170,7 +159,6 @@
                             ]
                         },
                         {
-                            "private_attribute_registry_bucket_name": "EdgeEntityType",
                             "private_attribute_entity_type_name": "Edge",
                             "private_attribute_id": "body0001_edge0020",
                             "name": "body0001_edge0020",
@@ -180,7 +168,6 @@
                             ]
                         },
                         {
-                            "private_attribute_registry_bucket_name": "EdgeEntityType",
                             "private_attribute_entity_type_name": "Edge",
                             "private_attribute_id": "body0001_edge0022",
                             "name": "body0001_edge0022",
@@ -190,7 +177,6 @@
                             ]
                         },
                         {
-                            "private_attribute_registry_bucket_name": "EdgeEntityType",
                             "private_attribute_entity_type_name": "Edge",
                             "private_attribute_id": "body0001_edge0024",
                             "name": "body0001_edge0024",
@@ -200,7 +186,6 @@
                             ]
                         },
                         {
-                            "private_attribute_registry_bucket_name": "EdgeEntityType",
                             "private_attribute_entity_type_name": "Edge",
                             "private_attribute_id": "body0001_edge0031",
                             "name": "body0001_edge0031",
@@ -210,7 +195,6 @@
                             ]
                         },
                         {
-                            "private_attribute_registry_bucket_name": "EdgeEntityType",
                             "private_attribute_entity_type_name": "Edge",
                             "private_attribute_id": "body0001_edge0032",
                             "name": "body0001_edge0032",
@@ -220,7 +204,6 @@
                             ]
                         },
                         {
-                            "private_attribute_registry_bucket_name": "EdgeEntityType",
                             "private_attribute_entity_type_name": "Edge",
                             "private_attribute_id": "body0001_edge0034",
                             "name": "body0001_edge0034",
@@ -230,7 +213,6 @@
                             ]
                         },
                         {
-                            "private_attribute_registry_bucket_name": "EdgeEntityType",
                             "private_attribute_entity_type_name": "Edge",
                             "private_attribute_id": "body0001_edge0035",
                             "name": "body0001_edge0035",
@@ -240,7 +222,6 @@
                             ]
                         },
                         {
-                            "private_attribute_registry_bucket_name": "EdgeEntityType",
                             "private_attribute_entity_type_name": "Edge",
                             "private_attribute_id": "body0001_edge0036",
                             "name": "body0001_edge0036",
@@ -250,7 +231,6 @@
                             ]
                         },
                         {
-                            "private_attribute_registry_bucket_name": "EdgeEntityType",
                             "private_attribute_entity_type_name": "Edge",
                             "private_attribute_id": "body0001_edge0037",
                             "name": "body0001_edge0037",
@@ -260,7 +240,6 @@
                             ]
                         },
                         {
-                            "private_attribute_registry_bucket_name": "EdgeEntityType",
                             "private_attribute_entity_type_name": "Edge",
                             "private_attribute_id": "body0001_edge0039",
                             "name": "body0001_edge0039",
@@ -270,7 +249,6 @@
                             ]
                         },
                         {
-                            "private_attribute_registry_bucket_name": "EdgeEntityType",
                             "private_attribute_entity_type_name": "Edge",
                             "private_attribute_id": "body0001_edge0040",
                             "name": "body0001_edge0040",
@@ -280,7 +258,6 @@
                             ]
                         },
                         {
-                            "private_attribute_registry_bucket_name": "EdgeEntityType",
                             "private_attribute_entity_type_name": "Edge",
                             "private_attribute_id": "body0001_edge0045",
                             "name": "body0001_edge0045",
@@ -290,7 +267,6 @@
                             ]
                         },
                         {
-                            "private_attribute_registry_bucket_name": "EdgeEntityType",
                             "private_attribute_entity_type_name": "Edge",
                             "private_attribute_id": "body0001_edge0046",
                             "name": "body0001_edge0046",
@@ -546,7 +522,6 @@
             "entities": {
                 "stored_entities": [
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body0001_face0001",
                         "name": "body0001_face0001",
@@ -560,7 +535,6 @@
                         "private_attributes": null
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body0001_face0002",
                         "name": "body0001_face0002",
@@ -574,7 +548,6 @@
                         "private_attributes": null
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body0001_face0003",
                         "name": "body0001_face0003",
@@ -588,7 +561,6 @@
                         "private_attributes": null
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body0001_face0004",
                         "name": "body0001_face0004",
@@ -602,7 +574,6 @@
                         "private_attributes": null
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body0001_face0005",
                         "name": "body0001_face0005",
@@ -616,7 +587,6 @@
                         "private_attributes": null
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body0001_face0006",
                         "name": "body0001_face0006",
@@ -630,7 +600,6 @@
                         "private_attributes": null
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body0001_face0007",
                         "name": "body0001_face0007",
@@ -644,7 +613,6 @@
                         "private_attributes": null
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body0001_face0009",
                         "name": "body0001_face0009",
@@ -658,7 +626,6 @@
                         "private_attributes": null
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body0001_face0010",
                         "name": "body0001_face0010",
@@ -672,7 +639,6 @@
                         "private_attributes": null
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body0001_face0011",
                         "name": "body0001_face0011",
@@ -686,7 +652,6 @@
                         "private_attributes": null
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body0001_face0012",
                         "name": "body0001_face0012",
@@ -700,7 +665,6 @@
                         "private_attributes": null
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body0001_face0013",
                         "name": "body0001_face0013",
@@ -714,7 +678,6 @@
                         "private_attributes": null
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body0001_face0014",
                         "name": "body0001_face0014",
@@ -728,7 +691,6 @@
                         "private_attributes": null
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body0001_face0015",
                         "name": "body0001_face0015",
@@ -742,7 +704,6 @@
                         "private_attributes": null
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body0001_face0016",
                         "name": "body0001_face0016",
@@ -756,7 +717,6 @@
                         "private_attributes": null
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body0001_face0017",
                         "name": "body0001_face0017",
@@ -770,7 +730,6 @@
                         "private_attributes": null
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body0001_face0018",
                         "name": "body0001_face0018",
@@ -806,7 +765,6 @@
             "entities": {
                 "stored_entities": [
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "GhostSphere",
                         "private_attribute_id": null,
                         "name": "farfield",
@@ -825,7 +783,6 @@
             "entities": {
                 "stored_entities": [
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "GhostCircularPlane",
                         "private_attribute_id": "symmetric",
                         "name": "symmetric",
@@ -877,7 +834,6 @@
             "entities": {
                 "stored_entities": [
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body0001_face0001",
                         "name": "body0001_face0001",
@@ -891,7 +847,6 @@
                         "private_attributes": null
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body0001_face0002",
                         "name": "body0001_face0002",
@@ -905,7 +860,6 @@
                         "private_attributes": null
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body0001_face0003",
                         "name": "body0001_face0003",
@@ -919,7 +873,6 @@
                         "private_attributes": null
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body0001_face0004",
                         "name": "body0001_face0004",
@@ -933,7 +886,6 @@
                         "private_attributes": null
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body0001_face0005",
                         "name": "body0001_face0005",
@@ -947,7 +899,6 @@
                         "private_attributes": null
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body0001_face0006",
                         "name": "body0001_face0006",
@@ -961,7 +912,6 @@
                         "private_attributes": null
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body0001_face0007",
                         "name": "body0001_face0007",
@@ -975,7 +925,6 @@
                         "private_attributes": null
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body0001_face0009",
                         "name": "body0001_face0009",
@@ -989,7 +938,6 @@
                         "private_attributes": null
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body0001_face0010",
                         "name": "body0001_face0010",
@@ -1003,7 +951,6 @@
                         "private_attributes": null
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body0001_face0011",
                         "name": "body0001_face0011",
@@ -1017,7 +964,6 @@
                         "private_attributes": null
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body0001_face0012",
                         "name": "body0001_face0012",
@@ -1031,7 +977,6 @@
                         "private_attributes": null
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body0001_face0013",
                         "name": "body0001_face0013",
@@ -1045,7 +990,6 @@
                         "private_attributes": null
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body0001_face0014",
                         "name": "body0001_face0014",
@@ -1059,7 +1003,6 @@
                         "private_attributes": null
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body0001_face0015",
                         "name": "body0001_face0015",
@@ -1073,7 +1016,6 @@
                         "private_attributes": null
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body0001_face0016",
                         "name": "body0001_face0016",
@@ -1087,7 +1029,6 @@
                         "private_attributes": null
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body0001_face0017",
                         "name": "body0001_face0017",
@@ -1101,7 +1042,6 @@
                         "private_attributes": null
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body0001_face0018",
                         "name": "body0001_face0018",
@@ -1129,7 +1069,6 @@
             "draft_entities": [],
             "ghost_entities": [
                 {
-                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
                     "private_attribute_entity_type_name": "GhostSphere",
                     "private_attribute_id": "farfield",
                     "name": "farfield",
@@ -1142,7 +1081,6 @@
                     "max_radius": 69.25872059913517
                 },
                 {
-                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
                     "private_attribute_entity_type_name": "GhostCircularPlane",
                     "private_attribute_id": "symmetric-1",
                     "name": "symmetric-1",
@@ -1160,7 +1098,6 @@
                     ]
                 },
                 {
-                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
                     "private_attribute_entity_type_name": "GhostCircularPlane",
                     "private_attribute_id": "symmetric-2",
                     "name": "symmetric-2",
@@ -1178,7 +1115,6 @@
                     ]
                 },
                 {
-                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
                     "private_attribute_entity_type_name": "GhostCircularPlane",
                     "private_attribute_id": "symmetric",
                     "name": "symmetric",
@@ -1207,7 +1143,6 @@
             "grouped_bodies": [
                 [
                     {
-                        "private_attribute_registry_bucket_name": "GeometryBodyGroupEntityType",
                         "private_attribute_entity_type_name": "GeometryBodyGroup",
                         "private_attribute_id": "body00001",
                         "name": "body00001",
@@ -1255,7 +1190,6 @@
                 ],
                 [
                     {
-                        "private_attribute_registry_bucket_name": "GeometryBodyGroupEntityType",
                         "private_attribute_entity_type_name": "GeometryBodyGroup",
                         "private_attribute_id": "test_geometry.abc",
                         "name": "test_geometry.abc",
@@ -1329,7 +1263,6 @@
             "grouped_faces": [
                 [
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body00001",
                         "name": "body00001",
@@ -1362,7 +1295,6 @@
                 ],
                 [
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body00001_face00001",
                         "name": "body00001_face00001",
@@ -1376,7 +1308,6 @@
                         "private_attributes": null
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body00001_face00002",
                         "name": "body00001_face00002",
@@ -1390,7 +1321,6 @@
                         "private_attributes": null
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body00001_face00003",
                         "name": "body00001_face00003",
@@ -1404,7 +1334,6 @@
                         "private_attributes": null
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body00001_face00004",
                         "name": "body00001_face00004",
@@ -1418,7 +1347,6 @@
                         "private_attributes": null
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body00001_face00005",
                         "name": "body00001_face00005",
@@ -1432,7 +1360,6 @@
                         "private_attributes": null
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body00001_face00006",
                         "name": "body00001_face00006",
@@ -1446,7 +1373,6 @@
                         "private_attributes": null
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body00001_face00007",
                         "name": "body00001_face00007",
@@ -1460,7 +1386,6 @@
                         "private_attributes": null
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body00001_face00008",
                         "name": "body00001_face00008",
@@ -1474,7 +1399,6 @@
                         "private_attributes": null
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body00001_face00009",
                         "name": "body00001_face00009",
@@ -1488,7 +1412,6 @@
                         "private_attributes": null
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body00001_face00010",
                         "name": "body00001_face00010",
@@ -1502,7 +1425,6 @@
                         "private_attributes": null
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body00001_face00011",
                         "name": "body00001_face00011",
@@ -1516,7 +1438,6 @@
                         "private_attributes": null
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body00001_face00012",
                         "name": "body00001_face00012",
@@ -1530,7 +1451,6 @@
                         "private_attributes": null
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body00001_face00013",
                         "name": "body00001_face00013",
@@ -1544,7 +1464,6 @@
                         "private_attributes": null
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body00001_face00014",
                         "name": "body00001_face00014",
@@ -1558,7 +1477,6 @@
                         "private_attributes": null
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body00001_face00015",
                         "name": "body00001_face00015",
@@ -1572,7 +1490,6 @@
                         "private_attributes": null
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body00001_face00016",
                         "name": "body00001_face00016",
@@ -1586,7 +1503,6 @@
                         "private_attributes": null
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body00001_face00017",
                         "name": "body00001_face00017",
@@ -1600,7 +1516,6 @@
                         "private_attributes": null
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body00001_face00018",
                         "name": "body00001_face00018",
@@ -1670,7 +1585,6 @@
             "grouped_edges": [
                 [
                     {
-                        "private_attribute_registry_bucket_name": "EdgeEntityType",
                         "private_attribute_entity_type_name": "Edge",
                         "private_attribute_id": "body00001_edge00001",
                         "name": "body00001_edge00001",
@@ -1680,7 +1594,6 @@
                         ]
                     },
                     {
-                        "private_attribute_registry_bucket_name": "EdgeEntityType",
                         "private_attribute_entity_type_name": "Edge",
                         "private_attribute_id": "body00001_edge00002",
                         "name": "body00001_edge00002",
@@ -1690,7 +1603,6 @@
                         ]
                     },
                     {
-                        "private_attribute_registry_bucket_name": "EdgeEntityType",
                         "private_attribute_entity_type_name": "Edge",
                         "private_attribute_id": "body00001_edge00003",
                         "name": "body00001_edge00003",
@@ -1700,7 +1612,6 @@
                         ]
                     },
                     {
-                        "private_attribute_registry_bucket_name": "EdgeEntityType",
                         "private_attribute_entity_type_name": "Edge",
                         "private_attribute_id": "body00001_edge00004",
                         "name": "body00001_edge00004",
@@ -1710,7 +1621,6 @@
                         ]
                     },
                     {
-                        "private_attribute_registry_bucket_name": "EdgeEntityType",
                         "private_attribute_entity_type_name": "Edge",
                         "private_attribute_id": "body00001_edge00005",
                         "name": "body00001_edge00005",
@@ -1720,7 +1630,6 @@
                         ]
                     },
                     {
-                        "private_attribute_registry_bucket_name": "EdgeEntityType",
                         "private_attribute_entity_type_name": "Edge",
                         "private_attribute_id": "body00001_edge00006",
                         "name": "body00001_edge00006",
@@ -1730,7 +1639,6 @@
                         ]
                     },
                     {
-                        "private_attribute_registry_bucket_name": "EdgeEntityType",
                         "private_attribute_entity_type_name": "Edge",
                         "private_attribute_id": "body00001_edge00007",
                         "name": "body00001_edge00007",
@@ -1740,7 +1648,6 @@
                         ]
                     },
                     {
-                        "private_attribute_registry_bucket_name": "EdgeEntityType",
                         "private_attribute_entity_type_name": "Edge",
                         "private_attribute_id": "body00001_edge00008",
                         "name": "body00001_edge00008",
@@ -1750,7 +1657,6 @@
                         ]
                     },
                     {
-                        "private_attribute_registry_bucket_name": "EdgeEntityType",
                         "private_attribute_entity_type_name": "Edge",
                         "private_attribute_id": "body00001_edge00009",
                         "name": "body00001_edge00009",
@@ -1760,7 +1666,6 @@
                         ]
                     },
                     {
-                        "private_attribute_registry_bucket_name": "EdgeEntityType",
                         "private_attribute_entity_type_name": "Edge",
                         "private_attribute_id": "body00001_edge00010",
                         "name": "body00001_edge00010",
@@ -1770,7 +1675,6 @@
                         ]
                     },
                     {
-                        "private_attribute_registry_bucket_name": "EdgeEntityType",
                         "private_attribute_entity_type_name": "Edge",
                         "private_attribute_id": "body00001_edge00011",
                         "name": "body00001_edge00011",
@@ -1780,7 +1684,6 @@
                         ]
                     },
                     {
-                        "private_attribute_registry_bucket_name": "EdgeEntityType",
                         "private_attribute_entity_type_name": "Edge",
                         "private_attribute_id": "body00001_edge00012",
                         "name": "body00001_edge00012",
@@ -1790,7 +1693,6 @@
                         ]
                     },
                     {
-                        "private_attribute_registry_bucket_name": "EdgeEntityType",
                         "private_attribute_entity_type_name": "Edge",
                         "private_attribute_id": "body00001_edge00013",
                         "name": "body00001_edge00013",
@@ -1800,7 +1702,6 @@
                         ]
                     },
                     {
-                        "private_attribute_registry_bucket_name": "EdgeEntityType",
                         "private_attribute_entity_type_name": "Edge",
                         "private_attribute_id": "body00001_edge00014",
                         "name": "body00001_edge00014",
@@ -1810,7 +1711,6 @@
                         ]
                     },
                     {
-                        "private_attribute_registry_bucket_name": "EdgeEntityType",
                         "private_attribute_entity_type_name": "Edge",
                         "private_attribute_id": "body00001_edge00015",
                         "name": "body00001_edge00015",
@@ -1820,7 +1720,6 @@
                         ]
                     },
                     {
-                        "private_attribute_registry_bucket_name": "EdgeEntityType",
                         "private_attribute_entity_type_name": "Edge",
                         "private_attribute_id": "body00001_edge00016",
                         "name": "body00001_edge00016",
@@ -1830,7 +1729,6 @@
                         ]
                     },
                     {
-                        "private_attribute_registry_bucket_name": "EdgeEntityType",
                         "private_attribute_entity_type_name": "Edge",
                         "private_attribute_id": "body00001_edge00017",
                         "name": "body00001_edge00017",
@@ -1840,7 +1738,6 @@
                         ]
                     },
                     {
-                        "private_attribute_registry_bucket_name": "EdgeEntityType",
                         "private_attribute_entity_type_name": "Edge",
                         "private_attribute_id": "body00001_edge00018",
                         "name": "body00001_edge00018",
@@ -1850,7 +1747,6 @@
                         ]
                     },
                     {
-                        "private_attribute_registry_bucket_name": "EdgeEntityType",
                         "private_attribute_entity_type_name": "Edge",
                         "private_attribute_id": "body00001_edge00019",
                         "name": "body00001_edge00019",
@@ -1860,7 +1756,6 @@
                         ]
                     },
                     {
-                        "private_attribute_registry_bucket_name": "EdgeEntityType",
                         "private_attribute_entity_type_name": "Edge",
                         "private_attribute_id": "body00001_edge00020",
                         "name": "body00001_edge00020",
@@ -1870,7 +1765,6 @@
                         ]
                     },
                     {
-                        "private_attribute_registry_bucket_name": "EdgeEntityType",
                         "private_attribute_entity_type_name": "Edge",
                         "private_attribute_id": "body00001_edge00021",
                         "name": "body00001_edge00021",
@@ -1880,7 +1774,6 @@
                         ]
                     },
                     {
-                        "private_attribute_registry_bucket_name": "EdgeEntityType",
                         "private_attribute_entity_type_name": "Edge",
                         "private_attribute_id": "body00001_edge00022",
                         "name": "body00001_edge00022",
@@ -1890,7 +1783,6 @@
                         ]
                     },
                     {
-                        "private_attribute_registry_bucket_name": "EdgeEntityType",
                         "private_attribute_entity_type_name": "Edge",
                         "private_attribute_id": "body00001_edge00023",
                         "name": "body00001_edge00023",
@@ -1900,7 +1792,6 @@
                         ]
                     },
                     {
-                        "private_attribute_registry_bucket_name": "EdgeEntityType",
                         "private_attribute_entity_type_name": "Edge",
                         "private_attribute_id": "body00001_edge00024",
                         "name": "body00001_edge00024",
@@ -1910,7 +1801,6 @@
                         ]
                     },
                     {
-                        "private_attribute_registry_bucket_name": "EdgeEntityType",
                         "private_attribute_entity_type_name": "Edge",
                         "private_attribute_id": "body00001_edge00025",
                         "name": "body00001_edge00025",
@@ -1920,7 +1810,6 @@
                         ]
                     },
                     {
-                        "private_attribute_registry_bucket_name": "EdgeEntityType",
                         "private_attribute_entity_type_name": "Edge",
                         "private_attribute_id": "body00001_edge00027",
                         "name": "body00001_edge00027",
@@ -1930,7 +1819,6 @@
                         ]
                     },
                     {
-                        "private_attribute_registry_bucket_name": "EdgeEntityType",
                         "private_attribute_entity_type_name": "Edge",
                         "private_attribute_id": "body00001_edge00028",
                         "name": "body00001_edge00028",
@@ -1940,7 +1828,6 @@
                         ]
                     },
                     {
-                        "private_attribute_registry_bucket_name": "EdgeEntityType",
                         "private_attribute_entity_type_name": "Edge",
                         "private_attribute_id": "body00001_edge00029",
                         "name": "body00001_edge00029",
@@ -1950,7 +1837,6 @@
                         ]
                     },
                     {
-                        "private_attribute_registry_bucket_name": "EdgeEntityType",
                         "private_attribute_entity_type_name": "Edge",
                         "private_attribute_id": "body00001_edge00030",
                         "name": "body00001_edge00030",
@@ -1960,7 +1846,6 @@
                         ]
                     },
                     {
-                        "private_attribute_registry_bucket_name": "EdgeEntityType",
                         "private_attribute_entity_type_name": "Edge",
                         "private_attribute_id": "body00001_edge00031",
                         "name": "body00001_edge00031",
@@ -1970,7 +1855,6 @@
                         ]
                     },
                     {
-                        "private_attribute_registry_bucket_name": "EdgeEntityType",
                         "private_attribute_entity_type_name": "Edge",
                         "private_attribute_id": "body00001_edge00032",
                         "name": "body00001_edge00032",
@@ -1980,7 +1864,6 @@
                         ]
                     },
                     {
-                        "private_attribute_registry_bucket_name": "EdgeEntityType",
                         "private_attribute_entity_type_name": "Edge",
                         "private_attribute_id": "body00001_edge00033",
                         "name": "body00001_edge00033",
@@ -1990,7 +1873,6 @@
                         ]
                     },
                     {
-                        "private_attribute_registry_bucket_name": "EdgeEntityType",
                         "private_attribute_entity_type_name": "Edge",
                         "private_attribute_id": "body00001_edge00034",
                         "name": "body00001_edge00034",
@@ -2000,7 +1882,6 @@
                         ]
                     },
                     {
-                        "private_attribute_registry_bucket_name": "EdgeEntityType",
                         "private_attribute_entity_type_name": "Edge",
                         "private_attribute_id": "body00001_edge00035",
                         "name": "body00001_edge00035",
@@ -2010,7 +1891,6 @@
                         ]
                     },
                     {
-                        "private_attribute_registry_bucket_name": "EdgeEntityType",
                         "private_attribute_entity_type_name": "Edge",
                         "private_attribute_id": "body00001_edge00036",
                         "name": "body00001_edge00036",
@@ -2020,7 +1900,6 @@
                         ]
                     },
                     {
-                        "private_attribute_registry_bucket_name": "EdgeEntityType",
                         "private_attribute_entity_type_name": "Edge",
                         "private_attribute_id": "body00001_edge00037",
                         "name": "body00001_edge00037",
@@ -2030,7 +1909,6 @@
                         ]
                     },
                     {
-                        "private_attribute_registry_bucket_name": "EdgeEntityType",
                         "private_attribute_entity_type_name": "Edge",
                         "private_attribute_id": "body00001_edge00038",
                         "name": "body00001_edge00038",
@@ -2040,7 +1918,6 @@
                         ]
                     },
                     {
-                        "private_attribute_registry_bucket_name": "EdgeEntityType",
                         "private_attribute_entity_type_name": "Edge",
                         "private_attribute_id": "body00001_edge00039",
                         "name": "body00001_edge00039",
@@ -2050,7 +1927,6 @@
                         ]
                     },
                     {
-                        "private_attribute_registry_bucket_name": "EdgeEntityType",
                         "private_attribute_entity_type_name": "Edge",
                         "private_attribute_id": "body00001_edge00040",
                         "name": "body00001_edge00040",
@@ -2060,7 +1936,6 @@
                         ]
                     },
                     {
-                        "private_attribute_registry_bucket_name": "EdgeEntityType",
                         "private_attribute_entity_type_name": "Edge",
                         "private_attribute_id": "body00001_edge00041",
                         "name": "body00001_edge00041",
@@ -2070,7 +1945,6 @@
                         ]
                     },
                     {
-                        "private_attribute_registry_bucket_name": "EdgeEntityType",
                         "private_attribute_entity_type_name": "Edge",
                         "private_attribute_id": "body00001_edge00042",
                         "name": "body00001_edge00042",
@@ -2080,7 +1954,6 @@
                         ]
                     },
                     {
-                        "private_attribute_registry_bucket_name": "EdgeEntityType",
                         "private_attribute_entity_type_name": "Edge",
                         "private_attribute_id": "body00001_edge00043",
                         "name": "body00001_edge00043",
@@ -2090,7 +1963,6 @@
                         ]
                     },
                     {
-                        "private_attribute_registry_bucket_name": "EdgeEntityType",
                         "private_attribute_entity_type_name": "Edge",
                         "private_attribute_id": "body00001_edge00044",
                         "name": "body00001_edge00044",
@@ -2100,7 +1972,6 @@
                         ]
                     },
                     {
-                        "private_attribute_registry_bucket_name": "EdgeEntityType",
                         "private_attribute_entity_type_name": "Edge",
                         "private_attribute_id": "body00001_edge00045",
                         "name": "body00001_edge00045",
@@ -2110,7 +1981,6 @@
                         ]
                     },
                     {
-                        "private_attribute_registry_bucket_name": "EdgeEntityType",
                         "private_attribute_entity_type_name": "Edge",
                         "private_attribute_id": "body00001_edge00046",
                         "name": "body00001_edge00046",
@@ -2120,7 +1990,6 @@
                         ]
                     },
                     {
-                        "private_attribute_registry_bucket_name": "EdgeEntityType",
                         "private_attribute_entity_type_name": "Edge",
                         "private_attribute_id": "body00001_edge00047",
                         "name": "body00001_edge00047",
@@ -2130,7 +1999,6 @@
                         ]
                     },
                     {
-                        "private_attribute_registry_bucket_name": "EdgeEntityType",
                         "private_attribute_entity_type_name": "Edge",
                         "private_attribute_id": "body00001_edge00048",
                         "name": "body00001_edge00048",
