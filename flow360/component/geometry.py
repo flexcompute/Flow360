@@ -18,7 +18,7 @@ from flow360.cloud.flow360_requests import (
 )
 from flow360.cloud.heartbeat import post_upload_heartbeat
 from flow360.cloud.rest_api import RestApi
-from flow360.component.geometry_tree import GeometryTree, NodeCollection, TreeNode, TreeSearch
+from flow360.component.geometry_tree import GeometryTree, NodeCollection, TreeNode, TreeSearch, NodeType
 from flow360.component.interfaces import GeometryInterface
 from flow360.component.resource_base import (
     AssetMetaBaseModelV2,
@@ -240,8 +240,8 @@ class Geometry(AssetBase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._tree: Optional[GeometryTree] = None
-        self._face_to_group: Dict[str, str] = {}  # face_uuid -> group_name
-        self._face_groups: Dict[str, List[TreeNode]] = {}  # group_name -> list of faces
+        self._face_to_group_name: Dict[str, str] = {}  # face_uuid -> group_name
+        self._group_name_to_faces: Dict[str, List[TreeNode]] = {}  # group_name -> list of faces
 
     @property
     def face_group_tag(self):
@@ -618,9 +618,17 @@ class Geometry(AssetBase):
 
         log.info(f"Loaded Geometry tree with {len(self._tree.all_faces)} faces")
 
-        #body_nodes = self.tree_root.search(type = NodeType.RiBrepModel)
+        body_nodes = self.tree_root.search(type = NodeType.RiBrepModel).execute()
+        print("abc: All body nodes:")
+        for body_node in body_nodes:
+            print(body_node)
+            self.create_face_group(
+                name = body_node.name,
+                selection = body_node,
+            )
 
-
+        print("abc: After the default face grouping by body is finished: ")
+        self.print_face_grouping_stats()
 
     def create_face_group(
         self, name: str, selection: Union[TreeNode, List[TreeNode], NodeCollection, TreeSearch]
@@ -706,39 +714,22 @@ class Geometry(AssetBase):
                     new_face_uuids.add(face.uuid)
 
         # Remove these faces from their previous groups
-        for group_name, faces in list(self._face_groups.items()):
+        for group_name, faces in list(self._group_name_to_faces.items()):
             if group_name != name:
-                self._face_groups[group_name] = [
+                self._group_name_to_faces[group_name] = [
                     f for f in faces if f.uuid not in new_face_uuids
                 ]
 
         # Update face-to-group mapping
         for uuid in new_face_uuids:
-            self._face_to_group[uuid] = name
+            self._face_to_group_name[uuid] = name
 
         # Store the group
-        self._face_groups[name] = group_faces
+        self._group_name_to_faces[name] = group_faces
 
         face_uuids = [face.uuid for face in group_faces if face.uuid]
         log.info(f"Created face group '{name}' with {len(face_uuids)} faces")
         return face_uuids
-
-    @property
-    def face_groups(self) -> Dict[str, int]:
-        """
-        Get dictionary of face groups and their face counts
-
-        Returns
-        -------
-        Dict[str, int]
-            Dictionary mapping group names to number of faces in each group
-
-        Examples
-        --------
-        >>> geometry.face_groups
-        {'wing': 45, 'fuselage': 32, 'tail': 18}
-        """
-        return {name: len(faces) for name, faces in self._face_groups.items()}
 
     def print_face_grouping_stats(self) -> None:
         """
@@ -763,12 +754,11 @@ class Geometry(AssetBase):
             )
         
         total_faces = len(self._tree.all_faces)
-        faces_in_groups = sum(len(faces) for faces in self._face_groups.values())
+        faces_in_groups = sum(len(faces) for faces in self._group_name_to_faces.values())
 
         print(f"\n=== Face Grouping Statistics ===")
         print(f"Total faces: {total_faces}")
-        print(f"Faces in groups: {faces_in_groups}")
-        print(f"\nFace groups ({len(self._face_groups)}):")
-        for group_name, faces in self._face_groups.items():
+        print(f"\nFace groups ({len(self._group_name_to_faces)}):")
+        for group_name, faces in self._group_name_to_faces.items():
             print(f"  - {group_name}: {len(faces)} faces")
-        print("=" * 33)
+        print("="*33)
