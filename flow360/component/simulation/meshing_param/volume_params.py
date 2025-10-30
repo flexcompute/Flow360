@@ -494,7 +494,7 @@ class MeshSliceOutput(Flow360BaseModel):
     ====
     """
 
-    name: Optional[str] = pd.Field(
+    name: str = pd.Field(
         "Mesh slice output", description="Name of the `MeshSliceOutput`."
     )
     entities: EntityList[Slice] = pd.Field(
