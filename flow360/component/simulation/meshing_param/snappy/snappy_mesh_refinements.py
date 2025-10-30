@@ -44,7 +44,7 @@ class SnappyEntityRefinement(Flow360BaseModel, metaclass=ABCMeta):
         return self
 
 
-class SnappyBodyRefinement(SnappyEntityRefinement):
+class BodyRefinement(SnappyEntityRefinement):
     """
     Refinement for snappyHexMesh body (searchableSurfaceWithGaps).
 
@@ -59,7 +59,7 @@ class SnappyBodyRefinement(SnappyEntityRefinement):
     entities: EntityList[SnappyBody] = pd.Field(alias="bodies")
 
 
-class SnappyRegionRefinement(SnappyEntityRefinement):
+class RegionRefinement(SnappyEntityRefinement):
     """
     Refinement for the body region in snappyHexMesh.
 
@@ -78,7 +78,7 @@ class SnappyRegionRefinement(SnappyEntityRefinement):
     entities: EntityList[Surface] = pd.Field(alias="regions")
 
 
-class SnappySurfaceEdgeRefinement(Flow360BaseModel):
+class SurfaceEdgeRefinement(Flow360BaseModel):
     """
     Edge refinement for bodies and regions in snappyHexMesh.
 
@@ -172,7 +172,7 @@ class SnappySurfaceEdgeRefinement(Flow360BaseModel):
 
 SnappySurfaceRefinementTypes = Annotated[
     Union[
-        SnappyBodyRefinement, SnappySurfaceEdgeRefinement, SnappyRegionRefinement, UniformRefinement
+        BodyRefinement, SurfaceEdgeRefinement, RegionRefinement, UniformRefinement
     ],
     pd.Field(discriminator="refinement_type"),
 ]

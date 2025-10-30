@@ -220,12 +220,12 @@ def get_param_with_list_of_lengths():
     with SI_unit_system:
         params = SimulationParams(
             meshing=ModularMeshingWorkflow(
-                surface_meshing=snappy.SnappySurfaceMeshingParams(
-                    defaults=snappy.SnappySurfaceMeshingDefaults(
+                surface_meshing=snappy.SurfaceMeshingParams(
+                    defaults=snappy.SurfaceMeshingDefaults(
                         min_spacing=10 * u.mm, max_spacing=2 * u.m, gap_resolution=0.01 * u.m
                     ),
                     refinements=[
-                        snappy.SnappySurfaceEdgeRefinement(
+                        snappy.SurfaceEdgeRefinement(
                             spacing=[1e-3, 8] * u.m,
                             distances=[0.4 * u.mm, 2 * u.m],
                             regions=[Surface(name="test")],

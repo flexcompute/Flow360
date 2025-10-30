@@ -332,7 +332,7 @@ class VolumeMeshingParams(Flow360BaseModel):
 
 
 SurfaceMeshingParams = Annotated[
-    Union[snappy.SnappySurfaceMeshingParams], pd.Field(discriminator="type_name")
+    Union[snappy.SurfaceMeshingParams], pd.Field(discriminator="type_name")
 ]
 
 
@@ -411,7 +411,7 @@ class ModularMeshingWorkflow(Flow360BaseModel):
 
     @pd.model_validator(mode="after")
     def _check_snappy_zones(self) -> Self:
-        if isinstance(self.surface_meshing, snappy.SnappySurfaceMeshingParams):
+        if isinstance(self.surface_meshing, snappy.SurfaceMeshingParams):
             if self.automated_farfield_method != "auto" and not sum(
                 isinstance(volume_zone, SeedpointZone) for volume_zone in self.zones
             ):

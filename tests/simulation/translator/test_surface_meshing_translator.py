@@ -560,8 +560,8 @@ def rotor_surface_mesh():
 def snappy_all_defaults():
     test_geometry = TempGeometry("tester.stl", True)
     with SI_unit_system:
-        surf_meshing_params = snappy.SnappySurfaceMeshingParams(
-            defaults=snappy.SnappySurfaceMeshingDefaults(
+        surf_meshing_params = snappy.SurfaceMeshingParams(
+            defaults=snappy.SurfaceMeshingDefaults(
                 min_spacing=3 * u.mm, max_spacing=4 * u.mm, gap_resolution=1 * u.mm
             )
         )
@@ -581,13 +581,13 @@ def snappy_all_defaults():
 def snappy_basic_refinements():
     test_geometry = TempGeometry("tester.stl", True)
     with SI_unit_system:
-        surf_meshing_params = snappy.SnappySurfaceMeshingParams(
-            defaults=snappy.SnappySurfaceMeshingDefaults(
+        surf_meshing_params = snappy.SurfaceMeshingParams(
+            defaults=snappy.SurfaceMeshingDefaults(
                 min_spacing=3 * u.mm, max_spacing=4 * u.mm, gap_resolution=1 * u.mm
             ),
             base_spacing=3.5 * u.mm,
             refinements=[
-                snappy.SnappyBodyRefinement(
+                snappy.BodyRefinement(
                     gap_resolution=2 * u.mm,
                     min_spacing=5 * u.mm,
                     max_spacing=10 * u.mm,
@@ -596,14 +596,14 @@ def snappy_basic_refinements():
                         test_geometry.snappy_bodies["body3"],
                     ],
                 ),
-                snappy.SnappyBodyRefinement(
+                snappy.BodyRefinement(
                     gap_resolution=0.5 * u.mm,
                     min_spacing=1 * u.mm,
                     max_spacing=2 * u.mm,
                     bodies=[test_geometry.snappy_bodies["body2"]],
                     proximity_spacing=0.2 * u.mm,
                 ),
-                snappy.SnappyRegionRefinement(
+                snappy.RegionRefinement(
                     min_spacing=20 * u.mm,
                     max_spacing=40 * u.mm,
                     proximity_spacing=3 * u.mm,
@@ -612,20 +612,20 @@ def snappy_basic_refinements():
                         test_geometry["body1::patch1"],
                     ],
                 ),
-                snappy.SnappySurfaceEdgeRefinement(
+                snappy.SurfaceEdgeRefinement(
                     spacing=4 * u.mm,
                     min_elem=3,
                     included_angle=120 * u.deg,
                     bodies=test_geometry.snappy_bodies["body1"],
                 ),
-                snappy.SnappySurfaceEdgeRefinement(
+                snappy.SurfaceEdgeRefinement(
                     spacing=[4 * u.mm],
                     distances=[5 * u.mm],
                     min_elem=3,
                     included_angle=120 * u.deg,
                     regions=[test_geometry.snappy_bodies["body0"]["patch0"]],
                 ),
-                snappy.SnappySurfaceEdgeRefinement(
+                snappy.SurfaceEdgeRefinement(
                     spacing=[3 * u.mm, 5e-3 * u.m],
                     distances=[1 * u.mm, 3e-3 * u.m],
                     min_len=6 * u.mm,
@@ -659,7 +659,7 @@ def snappy_basic_refinements():
                     ],
                 ),
             ],
-            smooth_controls=snappy.SnappySmoothControls(),
+            smooth_controls=snappy.SmoothControls(),
         )
 
         param = SimulationParams(
@@ -677,13 +677,13 @@ def snappy_basic_refinements():
 def snappy_coupled_refinements():
     test_geometry = TempGeometry("tester.stl", True)
     with SI_unit_system:
-        surf_meshing_params = snappy.SnappySurfaceMeshingParams(
-            defaults=snappy.SnappySurfaceMeshingDefaults(
+        surf_meshing_params = snappy.SurfaceMeshingParams(
+            defaults=snappy.SurfaceMeshingDefaults(
                 min_spacing=3 * u.mm, max_spacing=4 * u.mm, gap_resolution=1 * u.mm
             ),
             base_spacing=5 * u.mm,
             refinements=[],
-            smooth_controls=snappy.SnappySmoothControls(),
+            smooth_controls=snappy.SmoothControls(),
         )
         vol_meshing_params = VolumeMeshingParams(
             defaults=VolumeMeshingDefaults(
@@ -736,13 +736,13 @@ def snappy_coupled_refinements():
 def snappy_refinements_multiple_regions():
     test_geometry = TempGeometry("tester.stl", True)
     with SI_unit_system:
-        surf_meshing_params = snappy.SnappySurfaceMeshingParams(
-            defaults=snappy.SnappySurfaceMeshingDefaults(
+        surf_meshing_params = snappy.SurfaceMeshingParams(
+            defaults=snappy.SurfaceMeshingDefaults(
                 min_spacing=2.999999992 * u.mm, max_spacing=4 * u.mm, gap_resolution=1 * u.mm
             ),
             base_spacing=3 * u.mm,
             refinements=[
-                snappy.SnappyRegionRefinement(
+                snappy.RegionRefinement(
                     min_spacing=20 * u.mm,
                     max_spacing=40 * u.mm,
                     proximity_spacing=3 * u.mm,
@@ -752,10 +752,10 @@ def snappy_refinements_multiple_regions():
                         test_geometry["body1::patch2"],
                     ],
                 ),
-                snappy.SnappyRegionRefinement(
+                snappy.RegionRefinement(
                     min_spacing=10 * u.mm, max_spacing=40 * u.mm, regions=test_geometry["body0::*"]
                 ),
-                snappy.SnappyRegionRefinement(
+                snappy.RegionRefinement(
                     min_spacing=5 * u.mm,
                     max_spacing=40 * u.mm,
                     regions=[
@@ -763,7 +763,7 @@ def snappy_refinements_multiple_regions():
                         test_geometry["body3::patch0"],
                     ],
                 ),
-                snappy.SnappySurfaceEdgeRefinement(
+                snappy.SurfaceEdgeRefinement(
                     spacing=4 * u.mm,
                     min_elem=3,
                     included_angle=120 * u.deg,
@@ -771,7 +771,7 @@ def snappy_refinements_multiple_regions():
                     retain_on_smoothing=False,
                 ),
             ],
-            smooth_controls=snappy.SnappySmoothControls(),
+            smooth_controls=snappy.SmoothControls(),
         )
 
         param = SimulationParams(
@@ -789,32 +789,32 @@ def snappy_refinements_multiple_regions():
 def snappy_refinements_no_regions():
     test_geometry = TempGeometry("tester_no_naming.stl", True)
     with SI_unit_system:
-        surf_meshing_params = snappy.SnappySurfaceMeshingParams(
-            defaults=snappy.SnappySurfaceMeshingDefaults(
+        surf_meshing_params = snappy.SurfaceMeshingParams(
+            defaults=snappy.SurfaceMeshingDefaults(
                 min_spacing=3 * u.mm, max_spacing=4 * u.mm, gap_resolution=1 * u.mm
             ),
             refinements=[
-                snappy.SnappyBodyRefinement(
+                snappy.BodyRefinement(
                     gap_resolution=2 * u.mm,
                     min_spacing=5 * u.mm,
                     max_spacing=10 * u.mm,
                     bodies=[test_geometry.snappy_bodies["body01_face001"]],
                 ),
-                snappy.SnappyBodyRefinement(
+                snappy.BodyRefinement(
                     gap_resolution=0.5 * u.mm,
                     min_spacing=1 * u.mm,
                     max_spacing=2 * u.mm,
                     bodies=[test_geometry.snappy_bodies["body01_face002"]],
                     proximity_spacing=0.2 * u.mm,
                 ),
-                snappy.SnappySurfaceEdgeRefinement(
+                snappy.SurfaceEdgeRefinement(
                     spacing=4 * u.mm,
                     min_elem=3,
                     included_angle=120 * u.deg,
                     bodies=[test_geometry.snappy_bodies["body01_face003"]],
                 ),
             ],
-            smooth_controls=snappy.SnappySmoothControls(),
+            smooth_controls=snappy.SmoothControls(),
         )
 
         param = SimulationParams(
@@ -833,11 +833,11 @@ def snappy_refinements_no_regions():
 def snappy_settings():
     test_geometry = TempGeometry("tester.stl", True)
     with SI_unit_system:
-        surf_meshing_params = snappy.SnappySurfaceMeshingParams(
-            defaults=snappy.SnappySurfaceMeshingDefaults(
+        surf_meshing_params = snappy.SurfaceMeshingParams(
+            defaults=snappy.SurfaceMeshingDefaults(
                 min_spacing=3 * u.mm, max_spacing=4 * u.mm, gap_resolution=1 * u.mm
             ),
-            quality_metrics=snappy.SnappyQualityMetrics(
+            quality_metrics=snappy.QualityMetrics(
                 max_non_ortho=55 * u.deg,
                 max_boundary_skewness=30 * u.deg,
                 max_internal_skewness=70 * u.deg,
@@ -854,7 +854,7 @@ def snappy_settings():
                 error_reduction=0.4,
                 min_vol_collapse_ratio=0.5,
             ),
-            snap_controls=snappy.SnappySnapControls(
+            snap_controls=snappy.SnapControls(
                 n_smooth_patch=5,
                 tolerance=4,
                 n_solve_iter=20,
@@ -863,10 +863,10 @@ def snappy_settings():
                 multi_region_feature_snap=False,
                 strict_region_snap=True,
             ),
-            castellated_mesh_controls=snappy.SnappyCastellatedMeshControls(
+            castellated_mesh_controls=snappy.CastellatedMeshControls(
                 resolve_feature_angle=10 * u.deg, n_cells_between_levels=3, min_refinement_cells=50
             ),
-            smooth_controls=snappy.SnappySmoothControls(lambda_factor=0.3, mu_factor=0.31, iterations=5),
+            smooth_controls=snappy.SmoothControls(lambda_factor=0.3, mu_factor=0.31, iterations=5),
         )
 
         param = SimulationParams(
@@ -888,11 +888,11 @@ def snappy_settings():
 def snappy_settings_off_position():
     test_geometry = TempGeometry("tester.stl", True)
     with SI_unit_system:
-        surf_meshing_params = snappy.SnappySurfaceMeshingParams(
-            defaults=snappy.SnappySurfaceMeshingDefaults(
+        surf_meshing_params = snappy.SurfaceMeshingParams(
+            defaults=snappy.SurfaceMeshingDefaults(
                 min_spacing=3 * u.mm, max_spacing=4 * u.mm, gap_resolution=1 * u.mm
             ),
-            quality_metrics=snappy.SnappyQualityMetrics(
+            quality_metrics=snappy.QualityMetrics(
                 max_non_ortho=None,
                 max_boundary_skewness=None,
                 max_internal_skewness=None,
@@ -909,7 +909,7 @@ def snappy_settings_off_position():
                 error_reduction=None,
                 min_vol_collapse_ratio=None,
             ),
-            snap_controls=snappy.SnappySnapControls(
+            snap_controls=snappy.SnapControls(
                 n_smooth_patch=5,
                 tolerance=4,
                 n_solve_iter=20,
@@ -918,10 +918,10 @@ def snappy_settings_off_position():
                 multi_region_feature_snap=False,
                 strict_region_snap=True,
             ),
-            castellated_mesh_controls=snappy.SnappyCastellatedMeshControls(
+            castellated_mesh_controls=snappy.CastellatedMeshControls(
                 resolve_feature_angle=10 * u.deg, n_cells_between_levels=3, min_refinement_cells=50
             ),
-            smooth_controls=snappy.SnappySmoothControls(
+            smooth_controls=snappy.SmoothControls(
                 lambda_factor=None, mu_factor=None, iterations=None
             ),
         )

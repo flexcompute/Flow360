@@ -10,7 +10,7 @@ from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.unit_system import AngleType, AreaType, LengthType
 
 
-class SnappySurfaceMeshingDefaults(Flow360BaseModel):
+class SurfaceMeshingDefaults(Flow360BaseModel):
     """
     Default/global settings for snappyHexMesh surface meshing parameters.
     To be used with class:`ModularMeshingWorkflow`.
@@ -29,7 +29,7 @@ class SnappySurfaceMeshingDefaults(Flow360BaseModel):
         return self
 
 
-class SnappyQualityMetrics(Flow360BaseModel):
+class QualityMetrics(Flow360BaseModel):
     """
     Mesh quality control parameters for snappyHexMesh meshing process.
 
@@ -146,7 +146,7 @@ class SnappyQualityMetrics(Flow360BaseModel):
         return value
 
 
-class SnappyCastellatedMeshControls(Flow360BaseModel):
+class CastellatedMeshControls(Flow360BaseModel):
     """
     snappyHexMesh castellation controls.
 
@@ -184,7 +184,7 @@ class SnappyCastellatedMeshControls(Flow360BaseModel):
         return value
 
 
-class SnappySnapControls(Flow360BaseModel):
+class SnapControls(Flow360BaseModel):
     """
     snappyHexMesh snap controls.
 
@@ -228,7 +228,7 @@ class SnappySnapControls(Flow360BaseModel):
     strict_region_snap: bool = pd.Field(False)
 
 
-class SnappySmoothControls(Flow360BaseModel):
+class SmoothControls(Flow360BaseModel):
     """
     snappyHexMesh smoothing controls.
 

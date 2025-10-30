@@ -13,12 +13,9 @@ from flow360.component.simulation.meshing_param.params import (
     MeshingParams,
     ModularMeshingWorkflow,
 )
-from flow360.component.simulation.meshing_param.snappy.snappy_mesh_refinements import (
-    SnappyBodyRefinement,
-    SnappyRegionRefinement,
-    SnappySurfaceEdgeRefinement,
-)
-from flow360.component.simulation.meshing_param.snappy.snappy_params import SnappySurfaceMeshingParams
+
+from flow360.component.simulation.meshing_param import snappy
+
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     UniformRefinement,
@@ -93,7 +90,7 @@ def remove_numerical_noise_from_spacing(spacing, spacing_system: OctreeSpacing):
 
 
 def apply_SnappyBodyRefinement(
-    refinement: SnappyBodyRefinement, translated, spacing_system: OctreeSpacing
+    refinement: snappy.BodyRefinement, translated, spacing_system: OctreeSpacing
 ):
     """
     Translate SnappyBodyRefinement to bodies.
@@ -141,7 +138,7 @@ def get_applicable_regions_dict(refinement_regions):
 
 
 def apply_SnappySurfaceEdgeRefinement(
-    refinement: SnappySurfaceEdgeRefinement, translated, defaults, spacing_system: OctreeSpacing
+    refinement: snappy.SurfaceEdgeRefinement, translated, defaults, spacing_system: OctreeSpacing
 ):
     """
     Translate SnappySurfaceEdgeRefinement to bodies and regions.
@@ -187,7 +184,7 @@ def apply_SnappySurfaceEdgeRefinement(
 
 
 def apply_SnappyRegionRefinement(
-    refinement: SnappyRegionRefinement, translated, spacing_system: OctreeSpacing
+    refinement: snappy.RegionRefinement, translated, spacing_system: OctreeSpacing
 ):
     """
     Translate SnappyRegionRefinement to applicable regions.
@@ -319,13 +316,13 @@ def snappy_mesher_json(input_params: SimulationParams):
     for refinement in (
         surface_meshing_params.refinements if surface_meshing_params.refinements is not None else []
     ):
-        if isinstance(refinement, SnappyBodyRefinement):
+        if isinstance(refinement, snappy.BodyRefinement):
             apply_SnappyBodyRefinement(refinement, translated, spacing_system)
-        elif isinstance(refinement, SnappySurfaceEdgeRefinement):
+        elif isinstance(refinement, snappy.SurfaceEdgeRefinement):
             apply_SnappySurfaceEdgeRefinement(
                 refinement, translated, surface_meshing_params.defaults, spacing_system
             )
-        elif isinstance(refinement, SnappyRegionRefinement):
+        elif isinstance(refinement, snappy.RegionRefinement):
             apply_SnappyRegionRefinement(refinement, translated, spacing_system)
         elif isinstance(refinement, UniformRefinement):
             apply_UniformRefinement_w_snappy(refinement, translated, spacing_system)
@@ -634,7 +631,7 @@ def get_surface_meshing_json(input_params: SimulationParams, mesh_units):
     ensure_meshing_is_specified(input_params)
     if not input_params.private_attribute_asset_cache.use_geometry_AI:
         if isinstance(input_params.meshing, ModularMeshingWorkflow) and isinstance(
-            input_params.meshing.surface_meshing, SnappySurfaceMeshingParams
+            input_params.meshing.surface_meshing, snappy.SurfaceMeshingParams
         ):
             return snappy_mesher_json(input_params)
         if isinstance(input_params.meshing, MeshingParams):

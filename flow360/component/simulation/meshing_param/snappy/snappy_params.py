@@ -6,15 +6,15 @@ import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.meshing_param.meshing_specs import OctreeSpacing
 from flow360.component.simulation.meshing_param.snappy.snappy_specs import (
-    SnappyCastellatedMeshControls,
-    SnappyQualityMetrics,
-    SnappySmoothControls,
-    SnappySnapControls,
-    SnappySurfaceMeshingDefaults,
+    CastellatedMeshControls,
+    QualityMetrics,
+    SmoothControls,
+    SnapControls,
+    SurfaceMeshingDefaults,
 )
 from flow360.component.simulation.meshing_param.snappy.snappy_mesh_refinements import (
-    SnappyBodyRefinement,
-    SnappySurfaceEdgeRefinement,
+    BodyRefinement,
+    SurfaceEdgeRefinement,
     SnappyEntityRefinement,
     SnappySurfaceRefinementTypes
 )
@@ -29,7 +29,7 @@ from flow360.component.simulation.validation.validation_context import get_valid
 from flow360.log import log
 
 
-class SnappySurfaceMeshingParams(Flow360BaseModel):
+class SurfaceMeshingParams(Flow360BaseModel):
     """
     Parameters for snappyHexMesh surface meshing.
     """
@@ -37,13 +37,13 @@ class SnappySurfaceMeshingParams(Flow360BaseModel):
     type_name: Literal["SnappySurfaceMeshingParams"] = pd.Field(
         "SnappySurfaceMeshingParams", frozen=True
     )
-    defaults: SnappySurfaceMeshingDefaults = pd.Field()
-    quality_metrics: SnappyQualityMetrics = pd.Field(SnappyQualityMetrics())
-    snap_controls: SnappySnapControls = pd.Field(SnappySnapControls())
-    castellated_mesh_controls: SnappyCastellatedMeshControls = pd.Field(
-        SnappyCastellatedMeshControls()
+    defaults: SurfaceMeshingDefaults = pd.Field()
+    quality_metrics: QualityMetrics = pd.Field(QualityMetrics())
+    snap_controls: SnapControls = pd.Field(SnapControls())
+    castellated_mesh_controls: CastellatedMeshControls = pd.Field(
+        CastellatedMeshControls()
     )
-    smooth_controls: Optional[SnappySmoothControls] = pd.Field(None)
+    smooth_controls: Optional[SmoothControls] = pd.Field(None)
     refinements: Optional[List[SnappySurfaceRefinementTypes]] = pd.Field(None)
     base_spacing: Optional[OctreeSpacing] = pd.Field(None)
 
@@ -54,7 +54,7 @@ class SnappySurfaceMeshingParams(Flow360BaseModel):
         if self.refinements is None:
             return self
         for refinement in self.refinements:
-            if isinstance(refinement, SnappyBodyRefinement):
+            if isinstance(refinement, BodyRefinement):
                 if refinement.min_spacing is None and refinement.max_spacing is None:
                     continue
                 if refinement.min_spacing is None and self.defaults.min_spacing.to(
@@ -123,7 +123,7 @@ class SnappySurfaceMeshingParams(Flow360BaseModel):
                         check_spacing(refinement.max_spacing, type(refinement).__name__)
                     if refinement.proximity_spacing is not None:
                         check_spacing(refinement.proximity_spacing, type(refinement).__name__)
-                if isinstance(refinement, SnappySurfaceEdgeRefinement):
+                if isinstance(refinement, SurfaceEdgeRefinement):
                     if refinement.distances is not None:
                         for spacing in refinement.spacing:
                             check_spacing(spacing, type(refinement).__name__)

@@ -451,8 +451,8 @@ def get_test_param_w_seedpoints():
     with SI_unit_system:
         param = SimulationParams(
             meshing=ModularMeshingWorkflow(
-                surface_meshing=snappy.SnappySurfaceMeshingParams(
-                    defaults=snappy.SnappySurfaceMeshingDefaults(
+                surface_meshing=snappy.SurfaceMeshingParams(
+                    defaults=snappy.SurfaceMeshingDefaults(
                         min_spacing=1, max_spacing=2, gap_resolution=1
                     )
                 ),
@@ -679,8 +679,8 @@ def test_user_defined_farfield(get_test_param, get_surface_mesh):
         )
         params_modular = SimulationParams(
             meshing=ModularMeshingWorkflow(
-                surface_meshing=snappy.SnappySurfaceMeshingParams(
-                    defaults=snappy.SnappySurfaceMeshingDefaults(
+                surface_meshing=snappy.SurfaceMeshingParams(
+                    defaults=snappy.SurfaceMeshingDefaults(
                         min_spacing=1, max_spacing=2, gap_resolution=1
                     )
                 ),

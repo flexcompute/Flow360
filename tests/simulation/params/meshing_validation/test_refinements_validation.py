@@ -15,14 +15,14 @@ from flow360.component.simulation.unit_system import SI_unit_system
 def test_snappy_refinements_validators():
     message = "Minimum spacing must be lower than maximum spacing."
     with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
-        snappy.SnappyRegionRefinement(
+        snappy.RegionRefinement(
             min_spacing=4.3 * u.mm, max_spacing=2.1 * u.mm, regions=[Surface(name="test")]
         )
 
     message = "UniformRefinement for snappy accepts only Boxes with axes aligned with the global coordinate system (angle_of_rotation=0)."
     with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)) as err:
-        snappy.SnappySurfaceMeshingParams(
-            defaults=snappy.SnappySurfaceMeshingDefaults(
+        snappy.SurfaceMeshingParams(
+            defaults=snappy.SurfaceMeshingDefaults(
                 min_spacing=3 * u.mm, max_spacing=10 * u.mm, gap_resolution=0.1 * u.mm
             ),
             refinements=[
@@ -42,8 +42,8 @@ def test_snappy_refinements_validators():
             ],
         )
 
-    snappy.SnappySurfaceMeshingParams(
-        defaults=snappy.SnappySurfaceMeshingDefaults(
+    snappy.SurfaceMeshingParams(
+        defaults=snappy.SurfaceMeshingDefaults(
             min_spacing=3 * u.mm, max_spacing=10 * u.mm, gap_resolution=0.1 * u.mm
         ),
         refinements=[
@@ -65,8 +65,8 @@ def test_snappy_refinements_validators():
 
     message = "UniformRefinement for snappy accepts only full cylinders (where inner_radius = 0)."
     with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
-        snappy.SnappySurfaceMeshingParams(
-            defaults=snappy.SnappySurfaceMeshingDefaults(
+        snappy.SurfaceMeshingParams(
+            defaults=snappy.SurfaceMeshingDefaults(
                 min_spacing=3 * u.mm, max_spacing=10 * u.mm, gap_resolution=0.1 * u.mm
             ),
             refinements=[
@@ -90,40 +90,40 @@ def test_snappy_refinements_validators():
 
 def test_snappy_edge_refinement_valdators():
     with pytest.raises(ValueError):
-        snappy.SnappySurfaceEdgeRefinement(
+        snappy.SurfaceEdgeRefinement(
             spacing=2 * u.mm, distances=[5 * u.mm], regions=[Surface(name="test")]
         )
 
     with pytest.raises(ValueError):
-        snappy.SnappySurfaceEdgeRefinement(
+        snappy.SurfaceEdgeRefinement(
             spacing=[2 * u.mm, 3 * u.mm], distances=[5 * u.mm], regions=[Surface(name="test")]
         )
 
     with pytest.raises(ValueError):
-        snappy.SnappySurfaceEdgeRefinement(
+        snappy.SurfaceEdgeRefinement(
             spacing=2 * u.mm, distances=5 * u.mm, regions=[Surface(name="test")]
         )
 
     with pytest.raises(ValueError):
-        snappy.SnappySurfaceEdgeRefinement(spacing=[2 * u.mm], regions=[Surface(name="test")])
+        snappy.SurfaceEdgeRefinement(spacing=[2 * u.mm], regions=[Surface(name="test")])
 
-    snappy.SnappySurfaceEdgeRefinement(
+    snappy.SurfaceEdgeRefinement(
         spacing=[2 * u.mm], distances=[5 * u.mm], regions=[Surface(name="test")]
     )
 
-    snappy.SnappySurfaceEdgeRefinement(regions=[Surface(name="test")])
+    snappy.SurfaceEdgeRefinement(regions=[Surface(name="test")])
 
-    snappy.SnappySurfaceEdgeRefinement(spacing=2 * u.mm, regions=[Surface(name="test")])
+    snappy.SurfaceEdgeRefinement(spacing=2 * u.mm, regions=[Surface(name="test")])
 
-    snappy.SnappySurfaceMeshingParams(
-        defaults=snappy.SnappySurfaceMeshingDefaults(
+    snappy.SurfaceMeshingParams(
+        defaults=snappy.SurfaceMeshingDefaults(
             min_spacing=3 * u.mm, max_spacing=6 * u.mm, gap_resolution=0.1 * u.mm
         ),
         refinements=[
-            snappy.SnappySurfaceEdgeRefinement(
+            snappy.SurfaceEdgeRefinement(
                 spacing=[2 * u.mm], distances=[5 * u.mm], regions=[Surface(name="test")]
             ),
-            snappy.SnappySurfaceEdgeRefinement(spacing=2 * u.mm, regions=[Surface(name="test")]),
-            snappy.SnappySurfaceEdgeRefinement(regions=[Surface(name="test")]),
+            snappy.SurfaceEdgeRefinement(spacing=2 * u.mm, regions=[Surface(name="test")]),
+            snappy.SurfaceEdgeRefinement(regions=[Surface(name="test")]),
         ],
     )

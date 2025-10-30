@@ -572,8 +572,8 @@ def test_reuse_of_same_cylinder():
 def test_require_mesh_zones():
     with SI_unit_system:
         ModularMeshingWorkflow(
-            surface_meshing=snappy.SnappySurfaceMeshingParams(
-                defaults=snappy.SnappySurfaceMeshingDefaults(
+            surface_meshing=snappy.SurfaceMeshingParams(
+                defaults=snappy.SurfaceMeshingDefaults(
                     min_spacing=1 * u.mm, max_spacing=5 * u.mm, gap_resolution=0.001 * u.mm
                 ),
             ),
@@ -582,8 +582,8 @@ def test_require_mesh_zones():
 
     with SI_unit_system:
         ModularMeshingWorkflow(
-            surface_meshing=snappy.SnappySurfaceMeshingParams(
-                defaults=snappy.SnappySurfaceMeshingDefaults(
+            surface_meshing=snappy.SurfaceMeshingParams(
+                defaults=snappy.SurfaceMeshingDefaults(
                     min_spacing=1 * u.mm, max_spacing=5 * u.mm, gap_resolution=0.01 * u.mm
                 ),
             ),
@@ -593,8 +593,8 @@ def test_require_mesh_zones():
     with pytest.raises(ValueError):
         with SI_unit_system:
             ModularMeshingWorkflow(
-                surface_meshing=snappy.SnappySurfaceMeshingParams(
-                    defaults=snappy.SnappySurfaceMeshingDefaults(
+                surface_meshing=snappy.SurfaceMeshingParams(
+                    defaults=snappy.SurfaceMeshingDefaults(
                         min_spacing=1 * u.mm, max_spacing=5 * u.mm, gap_resolution=0.01 * u.mm
                     )
                 ),
@@ -604,24 +604,24 @@ def test_require_mesh_zones():
 
 def test_bad_refinements():
     with pytest.raises(ValueError):
-        surface_meshing = snappy.SnappySurfaceMeshingParams(
-            defaults=snappy.SnappySurfaceMeshingDefaults(
+        surface_meshing = snappy.SurfaceMeshingParams(
+            defaults=snappy.SurfaceMeshingDefaults(
                 min_spacing=1 * u.mm, max_spacing=5 * u.mm, gap_resolution=0.01 * u.mm
             ),
             refinements=[
-                snappy.SnappyBodyRefinement(
+                snappy.BodyRefinement(
                     min_spacing=6 * u.mm, bodies=[SnappyBody(name="bbb", surfaces=[])]
                 )
             ],
         )
 
     with pytest.raises(ValueError):
-        surface_meshing = snappy.SnappySurfaceMeshingParams(
-            defaults=snappy.SnappySurfaceMeshingDefaults(
+        surface_meshing = snappy.SurfaceMeshingParams(
+            defaults=snappy.SurfaceMeshingDefaults(
                 min_spacing=1 * u.mm, max_spacing=5 * u.mm, gap_resolution=0.01 * u.mm
             ),
             refinements=[
-                snappy.SnappyBodyRefinement(
+                snappy.BodyRefinement(
                     max_spacing=0.5 * u.mm, bodies=[SnappyBody(name="bbb", surfaces=[])]
                 )
             ],
@@ -701,8 +701,8 @@ def test_octree_spacing():
 
 
 def test_set_default_base_spacing():
-    surface_meshing = snappy.SnappySurfaceMeshingParams(
-        defaults=snappy.SnappySurfaceMeshingDefaults(
+    surface_meshing = snappy.SurfaceMeshingParams(
+        defaults=snappy.SurfaceMeshingDefaults(
             min_spacing=1 * u.mm, max_spacing=2 * u.mm, gap_resolution=1 * u.mm
         )
     )
@@ -710,8 +710,8 @@ def test_set_default_base_spacing():
     assert surface_meshing.base_spacing is None
 
     with ValidationContext(SURFACE_MESH, beta_mesher_context):
-        surface_meshing = snappy.SnappySurfaceMeshingParams(
-            defaults=snappy.SnappySurfaceMeshingDefaults(
+        surface_meshing = snappy.SurfaceMeshingParams(
+            defaults=snappy.SurfaceMeshingDefaults(
                 min_spacing=1 * u.mm, max_spacing=2 * u.mm, gap_resolution=1 * u.mm
             )
         )
@@ -722,8 +722,8 @@ def test_set_default_base_spacing():
 
 
 def test_set_spacing_with_value():
-    surface_meshing = snappy.SnappySurfaceMeshingParams(
-        defaults=snappy.SnappySurfaceMeshingDefaults(
+    surface_meshing = snappy.SurfaceMeshingParams(
+        defaults=snappy.SurfaceMeshingDefaults(
             min_spacing=1 * u.mm, max_spacing=2 * u.mm, gap_resolution=1 * u.mm
         ),
         base_spacing=3 * u.mm,
@@ -732,8 +732,8 @@ def test_set_spacing_with_value():
     assert surface_meshing.base_spacing.base_spacing == 3 * u.mm
 
     with pytest.raises(pd.ValidationError):
-        surface_meshing = snappy.SnappySurfaceMeshingParams(
-            defaults=snappy.SnappySurfaceMeshingDefaults(
+        surface_meshing = snappy.SurfaceMeshingParams(
+            defaults=snappy.SurfaceMeshingDefaults(
                 min_spacing=1 * u.mm, max_spacing=2 * u.mm, gap_resolution=1 * u.mm
             ),
             base_spacing=-3 * u.mm,
