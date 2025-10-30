@@ -16,6 +16,7 @@ from flow360.component.simulation.models.surface_models import Wall
 from flow360.component.simulation.outputs.output_entities import Point
 from flow360.component.simulation.primitives import Surface
 from flow360.component.simulation.services import ValidationCalledBy, validate_model
+from flow360.component.simulation.services_utils import strip_selector_matches_inplace
 from flow360.component.volume_mesh import VolumeMeshMetaV2, VolumeMeshV2
 
 
@@ -282,3 +283,124 @@ def test_validate_model_shares_entity_instances_across_lists():
     entity_in_model = validated.models[0].entities.stored_entities[0]
     entity_in_output = validated.outputs[0].entities.stored_entities[0]
     assert entity_in_model is entity_in_output
+
+
+def test_strip_selector_matches_preserves_semantics_end_to_end():
+    """
+    simulation.json -> expand -> mock submit (strip) -> read back -> compare stored_entities
+    Ensures stripping selector-matched entities before upload does not change semantics.
+
+    Derivation notes (for future readers):
+    - We inject a mixed EntityList (handpicked + selector with overlap) into outputs[0].entities.
+    - Baseline: validate_model expands selectors and materializes entities.
+    - Mock submit: strip_selector_matches_inplace removes selector matches from stored_entities.
+    - Read back: validate_model expands selectors again → final entities must equal baseline.
+    """
+    # Use a large, real geometry with many faces
+    params = _load_json("../data/geo-fcbe1113-a70b-43b9-a4f3-bbeb122d64fb/simulation.json")
+
+    # Set face grouping tag so selector operates on faceId groups
+    pei = params["private_attribute_asset_cache"]["project_entity_info"]
+    pei["face_group_tag"] = "faceId"
+    # Remove obsolete/unknown meshing defaults to avoid validation noise in Case-level
+    params.get("meshing", {}).get("defaults", {}).pop("geometry_tolerance", None)
+
+    # Build mixed EntityList with overlap under outputs[0].entities
+    outputs = params.get("outputs") or []
+    assert outputs, "Test fixture lacks outputs"
+    entities = outputs[0].get("entities") or {}
+    entities["stored_entities"] = [
+        {
+            "private_attribute_entity_type_name": "Surface",
+            "name": "body00001_face00001",
+            "private_attribute_id": "body00001_face00001",
+        },
+        {
+            "private_attribute_entity_type_name": "Surface",
+            "name": "body00001_face00014",
+            "private_attribute_id": "body00001_face00014",
+        },
+    ]
+    entities["selectors"] = [
+        {
+            "target_class": "Surface",
+            "name": "some_overlap",
+            "children": [
+                {
+                    "attribute": "name",
+                    "operator": "any_of",
+                    "value": ["body00001_face00001", "body00001_face00002"],
+                }
+            ],
+        }
+    ]
+    outputs[0]["entities"] = entities
+    params["outputs"] = outputs
+
+    # Ensure models contain a DefaultWall that matches all to satisfy BC validation
+    all_boundaries_selector = {
+        "target_class": "Surface",
+        "name": "all_boundaries",
+        "children": [{"attribute": "name", "operator": "matches", "value": "*"}],
+    }
+    params.setdefault("models", []).append(
+        {
+            "type": "Wall",
+            "name": "DefaultWall",
+            "entities": {"selectors": [all_boundaries_selector]},
+        }
+    )
+
+    # Baseline expansion + materialization
+    validated, errors, _ = validate_model(
+        params_as_dict=params,
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="Case",
+    )
+    assert not errors, f"Unexpected validation errors: {errors}"
+
+    baseline_entities = validated.outputs[0].entities.stored_entities  # type: ignore[index]
+    baseline_names = sorted(
+        [f"{e.private_attribute_entity_type_name}:{e.name}" for e in baseline_entities]
+    )
+
+    # Mock submit (strip selector-matched)
+    upload_dict = strip_selector_matches_inplace(
+        validated.model_dump(mode="json", exclude_none=True)
+    )
+
+    # Assert what remains in the upload_dict after stripping selector matches
+    upload_entities = (
+        upload_dict.get("outputs", [])[0].get("entities", {}).get("stored_entities", [])
+    )
+    upload_names = sorted(
+        [f"{d.get('private_attribute_entity_type_name')}:{d.get('name')}" for d in upload_entities]
+    )
+    expected_remaining = ["Surface:body00001_face00014"]
+    assert upload_names == expected_remaining, (
+        "Unexpected remaining stored_entities in upload_dict after stripping\n"
+        + f"Remaining: {upload_names}\n"
+        + f"Expected : {expected_remaining}\n"
+    )
+
+    # Read back and expand again
+    validated2, errors2, _ = validate_model(
+        params_as_dict=upload_dict,
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="Case",
+    )
+    assert not errors2, f"Unexpected validation errors on read back: {errors2}"
+    post_entities = validated2.outputs[0].entities.stored_entities  # type: ignore[index]
+    post_names = sorted([f"{e.private_attribute_entity_type_name}:{e.name}" for e in post_entities])
+
+    # Show both sides for easy visual inspection
+    assert baseline_names == post_names, (
+        "Entity list mismatch at outputs[0].entities\n"
+        + f"Baseline: {baseline_names}\n"
+        + f"Post    : {post_names}\n"
+    )
+
+    # Sanity: intended overlap surfaced in baseline
+    baseline_only = [s.split(":", 1)[1] for s in baseline_names]
+    assert "body00001_face00001" in baseline_only and "body00001_face00002" in baseline_only
+    assert "body00001_face00014" in baseline_only
