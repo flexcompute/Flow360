@@ -1,7 +1,7 @@
 """Reinements for surface meshing"""
 
 from abc import ABCMeta
-from typing import List, Literal, Optional, Union, Annotated
+from typing import Annotated, List, Literal, Optional, Union
 
 import pydantic as pd
 from typing_extensions import Self
@@ -9,10 +9,10 @@ from typing_extensions import Self
 import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
+from flow360.component.simulation.meshing_param.volume_params import UniformRefinement
 from flow360.component.simulation.primitives import SnappyBody, Surface
 from flow360.component.simulation.unit_system import AngleType, LengthType
 from flow360.log import log
-from flow360.component.simulation.meshing_param.volume_params import UniformRefinement
 
 
 class SnappyEntityRefinement(Flow360BaseModel, metaclass=ABCMeta):
@@ -171,8 +171,6 @@ class SurfaceEdgeRefinement(Flow360BaseModel):
 
 
 SnappySurfaceRefinementTypes = Annotated[
-    Union[
-        BodyRefinement, SurfaceEdgeRefinement, RegionRefinement, UniformRefinement
-    ],
+    Union[BodyRefinement, SurfaceEdgeRefinement, RegionRefinement, UniformRefinement],
     pd.Field(discriminator="refinement_type"),
 ]

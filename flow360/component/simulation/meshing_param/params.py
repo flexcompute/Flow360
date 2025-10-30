@@ -5,9 +5,9 @@ from typing import Annotated, List, Literal, Optional, Union
 import pydantic as pd
 from typing_extensions import Self
 
-import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.updater import DEFAULT_PLANAR_FACE_TOLERANCE
+from flow360.component.simulation.meshing_param import snappy
 from flow360.component.simulation.meshing_param.edge_params import SurfaceEdgeRefinement
 from flow360.component.simulation.meshing_param.face_params import (
     BoundaryLayer,
@@ -15,14 +15,10 @@ from flow360.component.simulation.meshing_param.face_params import (
     PassiveSpacing,
     SurfaceRefinement,
 )
-
-from flow360.component.simulation.meshing_param import snappy
-
 from flow360.component.simulation.meshing_param.meshing_specs import (
+    MeshingDefaults,
     VolumeMeshingDefaults,
-    MeshingDefaults
 )
-
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     AxisymmetricRefinement,
@@ -32,10 +28,7 @@ from flow360.component.simulation.meshing_param.volume_params import (
     UniformRefinement,
     UserDefinedFarfield,
 )
-from flow360.component.simulation.primitives import (
-    CustomVolume,
-    SeedpointZone,
-)
+from flow360.component.simulation.primitives import CustomVolume, SeedpointZone
 from flow360.component.simulation.validation.validation_context import (
     SURFACE_MESH,
     VOLUME_MESH,

@@ -13,14 +13,12 @@ from flow360.component.simulation.entity_info import (
 )
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
 from flow360.component.simulation.framework.param_utils import AssetCache
+from flow360.component.simulation.meshing_param import snappy
 from flow360.component.simulation.meshing_param.params import (
     MeshingDefaults,
     MeshingParams,
     ModularMeshingWorkflow,
 )
-
-from flow360.component.simulation.meshing_param import snappy
-
 from flow360.component.simulation.meshing_param.volume_params import UniformRefinement
 from flow360.component.simulation.migration.extra_operating_condition import (
     operating_condition_from_mach_muref,

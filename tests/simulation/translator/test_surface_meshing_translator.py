@@ -11,6 +11,7 @@ from flow360.component.simulation.entity_info import GeometryEntityInfo
 from flow360.component.simulation.entity_operation import Transformation
 from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.framework.updater_utils import compare_values
+from flow360.component.simulation.meshing_param import snappy
 from flow360.component.simulation.meshing_param.edge_params import (
     AngleBasedRefinement,
     AspectRatioBasedRefinement,
@@ -22,15 +23,15 @@ from flow360.component.simulation.meshing_param.face_params import (
     GeometryRefinement,
     SurfaceRefinement,
 )
-from flow360.component.simulation.meshing_param.meshing_specs import VolumeMeshingDefaults
+from flow360.component.simulation.meshing_param.meshing_specs import (
+    VolumeMeshingDefaults,
+)
 from flow360.component.simulation.meshing_param.params import (
-    VolumeMeshingParams,
     MeshingDefaults,
     MeshingParams,
     ModularMeshingWorkflow,
+    VolumeMeshingParams,
 )
-from flow360.component.simulation.meshing_param import snappy
-
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     UniformRefinement,

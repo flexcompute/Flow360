@@ -11,6 +11,7 @@ from flow360.component.simulation import migration, services
 from flow360.component.simulation import units as u
 from flow360.component.simulation.entity_operation import Transformation
 from flow360.component.simulation.folder import Folder
+from flow360.component.simulation.meshing_param import snappy
 from flow360.component.simulation.meshing_param.edge_params import (
     AngleBasedRefinement,
     AspectRatioBasedRefinement,
@@ -25,17 +26,15 @@ from flow360.component.simulation.meshing_param.face_params import (
     SurfaceRefinement,
 )
 from flow360.component.simulation.meshing_param.meshing_specs import (
-    VolumeMeshingDefaults,
     MeshingDefaults,
     OctreeSpacing,
+    VolumeMeshingDefaults,
 )
 from flow360.component.simulation.meshing_param.params import (
-    VolumeMeshingParams,
     MeshingParams,
-    ModularMeshingWorkflow
+    ModularMeshingWorkflow,
+    VolumeMeshingParams,
 )
-from flow360.component.simulation.meshing_param import snappy
-
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     AxisymmetricRefinement,
@@ -156,7 +155,7 @@ from flow360.component.simulation.primitives import (
     Cylinder,
     ImportedSurface,
     ReferenceGeometry,
-    SeedpointZone
+    SeedpointZone,
 )
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import (

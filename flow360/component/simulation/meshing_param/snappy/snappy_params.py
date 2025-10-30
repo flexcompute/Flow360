@@ -1,3 +1,5 @@
+"""surface meshing parameters to use with snappyHexMesh"""
+
 from typing import List, Literal, Optional
 
 import pydantic as pd
@@ -5,6 +7,12 @@ import pydantic as pd
 import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.meshing_param.meshing_specs import OctreeSpacing
+from flow360.component.simulation.meshing_param.snappy.snappy_mesh_refinements import (
+    BodyRefinement,
+    SnappyEntityRefinement,
+    SnappySurfaceRefinementTypes,
+    SurfaceEdgeRefinement,
+)
 from flow360.component.simulation.meshing_param.snappy.snappy_specs import (
     CastellatedMeshControls,
     QualityMetrics,
@@ -12,20 +20,12 @@ from flow360.component.simulation.meshing_param.snappy.snappy_specs import (
     SnapControls,
     SurfaceMeshingDefaults,
 )
-from flow360.component.simulation.meshing_param.snappy.snappy_mesh_refinements import (
-    BodyRefinement,
-    SurfaceEdgeRefinement,
-    SnappyEntityRefinement,
-    SnappySurfaceRefinementTypes
-)
 from flow360.component.simulation.meshing_param.volume_params import UniformRefinement
-from flow360.component.simulation.primitives import (
-    Box,
-    Cylinder,
-)
+from flow360.component.simulation.primitives import Box, Cylinder
 from flow360.component.simulation.unit_system import LengthType
-from flow360.component.simulation.validation.validation_context import get_validation_info
-
+from flow360.component.simulation.validation.validation_context import (
+    get_validation_info,
+)
 from flow360.log import log
 
 
@@ -40,9 +40,7 @@ class SurfaceMeshingParams(Flow360BaseModel):
     defaults: SurfaceMeshingDefaults = pd.Field()
     quality_metrics: QualityMetrics = pd.Field(QualityMetrics())
     snap_controls: SnapControls = pd.Field(SnapControls())
-    castellated_mesh_controls: CastellatedMeshControls = pd.Field(
-        CastellatedMeshControls()
-    )
+    castellated_mesh_controls: CastellatedMeshControls = pd.Field(CastellatedMeshControls())
     smooth_controls: Optional[SmoothControls] = pd.Field(None)
     refinements: Optional[List[SnappySurfaceRefinementTypes]] = pd.Field(None)
     base_spacing: Optional[OctreeSpacing] = pd.Field(None)

@@ -6,6 +6,7 @@ from typing import List
 from unyt import unyt_array
 
 from flow360.component.simulation.entity_info import GeometryEntityInfo
+from flow360.component.simulation.meshing_param import snappy
 from flow360.component.simulation.meshing_param.edge_params import SurfaceEdgeRefinement
 from flow360.component.simulation.meshing_param.face_params import SurfaceRefinement
 from flow360.component.simulation.meshing_param.meshing_specs import OctreeSpacing
@@ -13,9 +14,6 @@ from flow360.component.simulation.meshing_param.params import (
     MeshingParams,
     ModularMeshingWorkflow,
 )
-
-from flow360.component.simulation.meshing_param import snappy
-
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     UniformRefinement,

@@ -2,22 +2,20 @@ import pytest
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.param_utils import AssetCache
+from flow360.component.simulation.meshing_param import snappy
 from flow360.component.simulation.meshing_param.face_params import (
     BoundaryLayer,
     PassiveSpacing,
 )
 from flow360.component.simulation.meshing_param.meshing_specs import (
-    VolumeMeshingDefaults,
     MeshingDefaults,
+    VolumeMeshingDefaults,
 )
 from flow360.component.simulation.meshing_param.params import (
-    VolumeMeshingParams,
     MeshingParams,
     ModularMeshingWorkflow,
+    VolumeMeshingParams,
 )
-
-from flow360.component.simulation.meshing_param import snappy
-
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     AxisymmetricRefinement,

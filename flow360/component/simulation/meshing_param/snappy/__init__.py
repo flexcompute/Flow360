@@ -1,5 +1,13 @@
 """snappy namespace"""
 
+from flow360.component.simulation.meshing_param.snappy.snappy_mesh_refinements import (
+    BodyRefinement,
+    RegionRefinement,
+    SurfaceEdgeRefinement,
+)
+from flow360.component.simulation.meshing_param.snappy.snappy_params import (
+    SurfaceMeshingParams,
+)
 from flow360.component.simulation.meshing_param.snappy.snappy_specs import (
     CastellatedMeshControls,
     QualityMetrics,
@@ -7,14 +15,6 @@ from flow360.component.simulation.meshing_param.snappy.snappy_specs import (
     SnapControls,
     SurfaceMeshingDefaults,
 )
-
-from flow360.component.simulation.meshing_param.snappy.snappy_mesh_refinements import (
-    BodyRefinement,
-    RegionRefinement,
-    SurfaceEdgeRefinement
-)
-
-from flow360.component.simulation.meshing_param.snappy.snappy_params import SurfaceMeshingParams
 
 __all__ = [
     "SurfaceMeshingParams",
@@ -25,5 +25,5 @@ __all__ = [
     "SurfaceMeshingDefaults",
     "BodyRefinement",
     "RegionRefinement",
-    "SurfaceEdgeRefinement"
+    "SurfaceEdgeRefinement",
 ]

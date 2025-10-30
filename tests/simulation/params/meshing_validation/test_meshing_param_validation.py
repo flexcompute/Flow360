@@ -2,18 +2,16 @@ import pydantic as pd
 import pytest
 
 from flow360 import u
+from flow360.component.simulation.meshing_param import snappy
 from flow360.component.simulation.meshing_param.meshing_specs import (
-    VolumeMeshingDefaults,
     OctreeSpacing,
+    VolumeMeshingDefaults,
 )
 from flow360.component.simulation.meshing_param.params import (
-    VolumeMeshingParams,
     MeshingParams,
     ModularMeshingWorkflow,
+    VolumeMeshingParams,
 )
-
-from flow360.component.simulation.meshing_param import snappy
-
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     AxisymmetricRefinement,

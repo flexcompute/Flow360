@@ -5,12 +5,11 @@ from typing import Optional
 
 import numpy as np
 import pydantic as pd
-from typing_extensions import Self
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.updater import DEFAULT_PLANAR_FACE_TOLERANCE
-from flow360.component.simulation.unit_system import AngleType, AreaType, LengthType
+from flow360.component.simulation.unit_system import AngleType, LengthType
 from flow360.component.simulation.validation.validation_context import (
     SURFACE_MESH,
     VOLUME_MESH,
@@ -201,6 +200,7 @@ class VolumeMeshingDefaults(Flow360BaseModel):
         " no. of layers to grow the boundary layer elements to isotropic size if not specified."
         " This is only supported by the beta mesher and can not be overridden per face.",
     )
+
 
 class OctreeSpacing(Flow360BaseModel):
     """

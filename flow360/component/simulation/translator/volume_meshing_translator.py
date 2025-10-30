@@ -2,18 +2,16 @@
 
 from typing import Union
 
+from flow360.component.simulation.meshing_param import snappy
 from flow360.component.simulation.meshing_param.face_params import (
     BoundaryLayer,
     PassiveSpacing,
 )
 from flow360.component.simulation.meshing_param.params import (
-    VolumeMeshingParams,
     MeshingParams,
     ModularMeshingWorkflow,
+    VolumeMeshingParams,
 )
-
-from flow360.component.simulation.meshing_param import snappy
-
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     AxisymmetricRefinement,

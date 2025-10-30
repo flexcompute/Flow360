@@ -4,9 +4,7 @@ import pydantic as pd
 import pytest
 
 import flow360.component.simulation.units as u
-
 from flow360.component.simulation.meshing_param import snappy
-
 from flow360.component.simulation.meshing_param.volume_params import UniformRefinement
 from flow360.component.simulation.primitives import Box, Cylinder, Surface
 from flow360.component.simulation.unit_system import SI_unit_system
