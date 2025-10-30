@@ -15,10 +15,8 @@ from flow360.component.simulation.meshing_param.params import (
     MeshingParams,
     ModularMeshingWorkflow,
 )
-from flow360.component.simulation.meshing_param.snappy import (
-    SnappySurfaceMeshingParams,
-    SnappySurfaceMeshingDefaults,
-)
+
+from flow360.component.simulation.meshing_param import snappy
 
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
@@ -453,8 +451,8 @@ def get_test_param_w_seedpoints():
     with SI_unit_system:
         param = SimulationParams(
             meshing=ModularMeshingWorkflow(
-                surface_meshing=SnappySurfaceMeshingParams(
-                    defaults=SnappySurfaceMeshingDefaults(
+                surface_meshing=snappy.SnappySurfaceMeshingParams(
+                    defaults=snappy.SnappySurfaceMeshingDefaults(
                         min_spacing=1, max_spacing=2, gap_resolution=1
                     )
                 ),
@@ -681,8 +679,8 @@ def test_user_defined_farfield(get_test_param, get_surface_mesh):
         )
         params_modular = SimulationParams(
             meshing=ModularMeshingWorkflow(
-                surface_meshing=SnappySurfaceMeshingParams(
-                    defaults=SnappySurfaceMeshingDefaults(
+                surface_meshing=snappy.SnappySurfaceMeshingParams(
+                    defaults=snappy.SnappySurfaceMeshingDefaults(
                         min_spacing=1, max_spacing=2, gap_resolution=1
                     )
                 ),

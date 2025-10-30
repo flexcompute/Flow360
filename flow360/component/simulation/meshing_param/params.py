@@ -15,11 +15,14 @@ from flow360.component.simulation.meshing_param.face_params import (
     PassiveSpacing,
     SurfaceRefinement,
 )
+
+from flow360.component.simulation.meshing_param import snappy
+
 from flow360.component.simulation.meshing_param.meshing_specs import (
     VolumeMeshingDefaults,
     MeshingDefaults
 )
-from flow360.component.simulation.meshing_param.snappy.snappy_params import SnappySurfaceMeshingParams
+
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     AxisymmetricRefinement,
@@ -329,7 +332,7 @@ class VolumeMeshingParams(Flow360BaseModel):
 
 
 SurfaceMeshingParams = Annotated[
-    Union[SnappySurfaceMeshingParams], pd.Field(discriminator="type_name")
+    Union[snappy.SnappySurfaceMeshingParams], pd.Field(discriminator="type_name")
 ]
 
 
@@ -408,7 +411,7 @@ class ModularMeshingWorkflow(Flow360BaseModel):
 
     @pd.model_validator(mode="after")
     def _check_snappy_zones(self) -> Self:
-        if isinstance(self.surface_meshing, SnappySurfaceMeshingParams):
+        if isinstance(self.surface_meshing, snappy.SnappySurfaceMeshingParams):
             if self.automated_farfield_method != "auto" and not sum(
                 isinstance(volume_zone, SeedpointZone) for volume_zone in self.zones
             ):

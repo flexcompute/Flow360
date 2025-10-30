@@ -18,11 +18,9 @@ from flow360.component.simulation.meshing_param.params import (
     MeshingParams,
     ModularMeshingWorkflow,
 )
-from flow360.component.simulation.meshing_param.snappy import (
-    SnappySurfaceEdgeRefinement,
-    SnappySurfaceMeshingDefaults,
-    SnappySurfaceMeshingParams
-)
+
+from flow360.component.simulation.meshing_param import snappy
+
 from flow360.component.simulation.meshing_param.volume_params import UniformRefinement
 from flow360.component.simulation.migration.extra_operating_condition import (
     operating_condition_from_mach_muref,
@@ -222,12 +220,12 @@ def get_param_with_list_of_lengths():
     with SI_unit_system:
         params = SimulationParams(
             meshing=ModularMeshingWorkflow(
-                surface_meshing=SnappySurfaceMeshingParams(
-                    defaults=SnappySurfaceMeshingDefaults(
+                surface_meshing=snappy.SnappySurfaceMeshingParams(
+                    defaults=snappy.SnappySurfaceMeshingDefaults(
                         min_spacing=10 * u.mm, max_spacing=2 * u.m, gap_resolution=0.01 * u.m
                     ),
                     refinements=[
-                        SnappySurfaceEdgeRefinement(
+                        snappy.SnappySurfaceEdgeRefinement(
                             spacing=[1e-3, 8] * u.m,
                             distances=[0.4 * u.mm, 2 * u.m],
                             regions=[Surface(name="test")],
