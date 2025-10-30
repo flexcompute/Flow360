@@ -125,30 +125,30 @@ class MovingStatistic(Flow360BaseModel):
     10 steps, with the initial 100 steps skipped.
 
     >>> fl.MovingStatistic(
-    ...     moving_window=10,
+    ...     moving_window_size=10,
     ...     method="std",
-    ...     initial_skipping_steps=100,
+    ...     start_step=100,
     ... )
 
     ====
     """
 
-    moving_window: pd.PositiveInt = pd.Field(
+    moving_window_size: pd.PositiveInt = pd.Field(
         10,
-        description="The number of pseudo/time steps to compute moving statistics. "
-        "For steady simulation, the moving_window should be a multiple of 10.",
+        description="The number of pseudo/physical steps to compute moving statistics. "
+        "For steady simulation, the moving_window_size should be a multiple of 10.",
     )
     method: Literal["mean", "min", "max", "std", "deviation"] = pd.Field(
         "mean", description="The type of moving statistics used to monitor the output."
     )
-    initial_skipping_steps: pd.NonNegativeInt = pd.Field(
+    start_step: pd.NonNegativeInt = pd.Field(
         0,
-        description="The number of steps to skip before computing the moving statistics. "
-        "For steady simulation, the moving_window should be a multiple of 10.",
+        description="The number of pseudo/physical steps to skip before computing the moving statistics. "
+        "For steady simulation, the moving_window_size should be a multiple of 10.",
     )
     type_name: Literal["MovingStatistic"] = pd.Field("MovingStatistic", frozen=True)
 
-    @pd.field_validator("moving_window", "initial_skipping_steps", mode="after")
+    @pd.field_validator("moving_window_size", "start_step", mode="after")
     @classmethod
     def _check_moving_window_for_steady_simulation(cls, value):
         validation_info = get_validation_info()
@@ -635,6 +635,19 @@ class SurfaceIntegralOutput(_OutputBase):
     def ensure_surface_existence(cls, value):
         """Ensure all boundaries will be present after mesher"""
         return check_deleted_surface_in_entity_list(value)
+
+    @pd.field_validator("entities", mode="after")
+    @classmethod
+    def allow_only_simulation_surfaces_or_imported_surfaces(cls, value):
+        """Support only simulation surfaces or imported surfaces in each SurfaceIntegralOutput"""
+        has_imported = isinstance(value.stored_entities[0], ImportedSurface)
+        for entity in value.stored_entities[1:]:
+            if has_imported != isinstance(entity, ImportedSurface):
+                raise ValueError(
+                    "Imported and simulation surfaces cannot be used together in the same SurfaceIntegralOutput."
+                    " Please assign them to separate outputs."
+                )
+        return value
 
 
 class ProbeOutput(_OutputBase):

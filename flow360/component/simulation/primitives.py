@@ -557,7 +557,7 @@ class Surface(_SurfaceEntityBase):
         # pylint: disable=too-many-arguments, too-many-return-statements
         self,
         at_least_one_body_transformed: bool,
-        farfield_method: Optional[Literal["auto", "quasi-3d", "user-defined"]],
+        farfield_method: Optional[Literal["auto", "quasi-3d", "quasi-3d-periodic", "user-defined"]],
         global_bounding_box: Optional[BoundingBoxType],
         planar_face_tolerance: Optional[float],
         half_model_symmetry_plane_center_y: Optional[float],
@@ -588,7 +588,7 @@ class Surface(_SurfaceEntityBase):
                 return False
             return self._overlaps(half_model_symmetry_plane_center_y, length_tolerance)
 
-        if farfield_method == "quasi-3d":
+        if farfield_method in ("quasi-3d", "quasi-3d-periodic"):
             if quasi_3d_symmetry_planes_center_y is None:
                 # Legacy schema.
                 return False
@@ -688,15 +688,13 @@ class GhostCircularPlane(_SurfaceEntityBase):
         return positive_half or negative_half
 
 
-class SurfacePair(Flow360BaseModel):
+class SurfacePairBase(Flow360BaseModel):
     """
-    Represents a pair of surfaces.
-
-    Attributes:
-        pair (Tuple[Surface, Surface]): A tuple containing two Surface objects representing the pair.
+    Base class for surface pair objects.
+    Subclasses must define a `pair` attribute with the appropriate surface type.
     """
 
-    pair: Tuple[Surface, Surface]
+    pair: Tuple[_SurfaceEntityBase, _SurfaceEntityBase]
 
     @pd.field_validator("pair", mode="after")
     @classmethod
@@ -719,7 +717,7 @@ class SurfacePair(Flow360BaseModel):
         return hash(tuple(sorted([self.pair[0].name, self.pair[1].name])))
 
     def __eq__(self, other):
-        if isinstance(other, SurfacePair):
+        if isinstance(other, self.__class__):
             return tuple(sorted([self.pair[0].name, self.pair[1].name])) == tuple(
                 sorted([other.pair[0].name, other.pair[1].name])
             )
@@ -727,6 +725,28 @@ class SurfacePair(Flow360BaseModel):
 
     def __str__(self):
         return ",".join(sorted([self.pair[0].name, self.pair[1].name]))
+
+
+class SurfacePair(SurfacePairBase):
+    """
+    Represents a pair of surfaces.
+
+    Attributes:
+        pair (Tuple[Surface, Surface]): A tuple containing two Surface objects representing the pair.
+    """
+
+    pair: Tuple[Surface, Surface]
+
+
+class GhostSurfacePair(SurfacePairBase):
+    """
+    Represents a pair of ghost surfaces.
+
+    Attributes:
+        pair (Tuple[GhostSurface, GhostSurface]): A tuple containing two GhostSurface objects representing the pair.
+    """
+
+    pair: Tuple[GhostSurface, GhostSurface]
 
 
 @final

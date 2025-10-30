@@ -385,8 +385,16 @@ def translate_setting_and_apply_to_all_entities(
             if pass_translated_setting_to_entity_injection:
                 entity_injection_kwargs["translated_setting"] = translated_setting
 
+            if entity_type_to_include is not None and lump_list_of_entities:
+                if not isinstance(list_of_entities[0].stored_entities[0], entity_type_to_include):
+                    return output
+
             for entity in list_of_entities:
-                if entity_type_to_include is None or isinstance(entity, entity_type_to_include):
+                if (
+                    entity_type_to_include is None
+                    or lump_list_of_entities
+                    or isinstance(entity, entity_type_to_include)
+                ):
                     if not to_list:
                         # Generate a $name:{$value} dict
                         if custom_output_dict_entries:
