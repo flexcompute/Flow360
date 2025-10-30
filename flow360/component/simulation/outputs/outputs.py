@@ -697,12 +697,13 @@ class ForceOutput(_OutputBase):
     Example
     -------
 
-    Define :class:`ForceOutput` to output total CL and CD on multiple wing surfaces.
+    Define :class:`ForceOutput` to output total CL and CD on multiple wing surfaces and a BET disk.
 
     >>> wall = fl.Wall(name = 'wing', surfaces=[volume_mesh['1'], volume_mesh["wing2"]])
+    >>> bet_disk = fl.BETDisk(...)
     >>> fl.ForceOutput(
-    ...     name="force_output_wings",
-    ...     models=[wall],
+    ...     name="force_output",
+    ...     models=[wall, bet_disk],
     ...     output_fields=["CL", "CD"]
     ... )
 
@@ -748,7 +749,7 @@ class ForceOutput(_OutputBase):
                 or validation_info.physics_model_dict is None
                 or validation_info.physics_model_dict.get(model) is None
             ):
-                raise ValueError("The model does not exist in the models list.")
+                raise ValueError("The model does not exist in simulation params' models list.")
             physics_model_dict = validation_info.physics_model_dict[model]
             model = pd.TypeAdapter(ForceOutputModelType).validate_python(physics_model_dict)
             return model
@@ -758,6 +759,19 @@ class ForceOutput(_OutputBase):
         for model in value:
             processed_models.append(preprocess_single_model(model, validation_info))
         return processed_models
+
+    @pd.field_validator("models", mode="after")
+    @classmethod
+    def _check_duplicate_models(cls, value):
+        """Ensure no duplicate models are specified."""
+        model_ids = []
+        for model in value:
+            model_id = model if isinstance(model, str) else model.private_attribute_id
+            if model_id not in model_ids:
+                model_ids.append(model_id)
+                continue
+            raise ValueError("Duplicate models are not allowed in the same `ForceOutput`.")
+        return value
 
     @pd.field_validator("models", mode="after")
     @classmethod
