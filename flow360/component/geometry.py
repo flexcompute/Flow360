@@ -366,11 +366,12 @@ class Geometry(AssetBase):
             # pylint: disable=no-member
             return LengthType.validate(simulation_dict["meshing"]["defaults"]["geometry_accuracy"])
 
-        self.default_settings["geometry_accuracy"] = (
-            self._entity_info.default_geometry_accuracy
-            if self._entity_info.default_geometry_accuracy
-            else _get_default_geometry_accuracy(simulation_dict=simulation_dict)
-        )
+        if self._entity_info is not None:
+            self.default_settings["geometry_accuracy"] = (
+                self._entity_info.default_geometry_accuracy
+                if self._entity_info.default_geometry_accuracy
+                else _get_default_geometry_accuracy(simulation_dict=simulation_dict)
+            )
 
     @classmethod
     # pylint: disable=redefined-builtin
@@ -415,7 +416,7 @@ class Geometry(AssetBase):
 
     @classmethod
     def from_local_storage(
-        cls, geometry_id: str = None, local_storage_path="", meta_data: GeometryMeta = None
+        cls, geometry_id: str = None, local_storage_path="", meta_data: GeometryMeta = None, allow_missing_entity_info = False 
     ) -> Geometry:
         """
         Parameters
@@ -433,7 +434,7 @@ class Geometry(AssetBase):
         """
 
         return super()._from_local_storage(
-            asset_id=geometry_id, local_storage_path=local_storage_path, meta_data=meta_data
+            asset_id=geometry_id, local_storage_path=local_storage_path, meta_data=meta_data, allow_missing_entity_info = allow_missing_entity_info
         )
 
     def _show_available_entity_groups(
