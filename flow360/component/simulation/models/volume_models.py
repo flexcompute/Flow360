@@ -1238,6 +1238,10 @@ class Rotation(Flow360BaseModel):
     def _ensure_entities_have_sufficient_attributes(cls, value: EntityList):
         """Ensure entities have sufficient attributes."""
 
+        if not get_validation_info():
+            # stored_entities is not expanded yet.
+            return value
+
         for entity in value.stored_entities:
             if entity.axis is None:
                 raise ValueError(
@@ -1337,6 +1341,10 @@ class PorousMedium(Flow360BaseModel):
     @classmethod
     def _ensure_entities_have_sufficient_attributes(cls, value: EntityList):
         """Ensure entities have sufficient attributes."""
+
+        if not get_validation_info():
+            # stored_entities is not expanded yet.
+            return value
 
         for entity in value.stored_entities:
             if entity.axes is None:

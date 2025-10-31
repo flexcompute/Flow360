@@ -67,13 +67,17 @@ def _check_duplicate_entities_in_models(params):
     if not params.models:
         return params
 
+    if not get_validation_info():
+        # Validation deferred since the entities are not deduplicated yet
+        return params
+
     models = params.models
     usage = EntityUsageMap()
 
     for model in models:
         if hasattr(model, "entities"):
             # pylint: disable = protected-access
-            expanded_entities = model.entities._get_expanded_entities(create_hard_copy=False)
+            expanded_entities = model.entities.stored_entities
             for entity in expanded_entities:
                 usage.add_entity_usage(entity, model.type)
 
@@ -396,7 +400,7 @@ def _check_complete_boundary_condition_and_unknown_surface(
         entities = []
         # pylint: disable=protected-access
         if hasattr(model, "entities"):
-            entities = model.entities._get_expanded_entities(create_hard_copy=False)
+            entities = model.entities.stored_entities
         elif hasattr(model, "entity_pairs"):  # Periodic BC
             entities = [
                 pair for surface_pair in model.entity_pairs.items for pair in surface_pair.pair

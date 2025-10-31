@@ -3,6 +3,12 @@
 from collections import deque
 from typing import Any
 
+from flow360.component.simulation.entity_info import get_entity_database_for_selectors
+from flow360.component.simulation.framework.entity_materializer import (
+    _stable_entity_key_from_dict,
+)
+from flow360.component.simulation.framework.entity_selector import _process_selectors
+
 
 def has_any_entity_selectors(params_as_dict: dict) -> bool:
     """Return True if there is at least one EntitySelector to expand in params_as_dict.
@@ -54,3 +60,69 @@ def has_any_entity_selectors(params_as_dict: dict) -> bool:
                     queue.append(item)
 
     return False
+
+
+def strip_selector_matches_inplace(params_as_dict: dict) -> dict:
+    """
+    Remove entities matched by selectors from each EntityList node's stored_entities, in place.
+
+    Rationale:
+    - Keep user hand-picked entities distinguishable for the UI by stripping items that are
+      implied by EntitySelector expansion.
+    - Do not modify schema; operate at dict level without mutating model structure.
+
+    Behavior:
+    - For every dict node that has a non-empty `selectors` list, compute the set of additions
+      implied by those selectors over the current entity database, and remove those additions
+      from the node's `stored_entities` list.
+    - Nodes without `selectors` are left untouched.
+
+    Returns the same dict object for chaining.
+    """
+    if not isinstance(params_as_dict, dict):
+        return params_as_dict
+
+    if not has_any_entity_selectors(params_as_dict):
+        return params_as_dict
+
+    entity_database = get_entity_database_for_selectors(params_as_dict)
+    selector_cache: dict = {}
+
+    def _matched_keyset_for_selectors(selectors_value: list) -> set:
+        additions_by_class, _ = _process_selectors(entity_database, selectors_value, selector_cache)
+        keys: set = set()
+        for items in additions_by_class.values():
+            for d in items:
+                if isinstance(d, dict):
+                    keys.add(_stable_entity_key_from_dict(d))
+        return keys
+
+    def _visit_dict(node: dict) -> None:
+        selectors_value = node.get("selectors")
+        if isinstance(selectors_value, list) and len(selectors_value) > 0:
+            matched_keys = _matched_keyset_for_selectors(selectors_value)
+            se = node.get("stored_entities")
+            if isinstance(se, list) and len(se) > 0:
+                node["stored_entities"] = [
+                    item
+                    for item in se
+                    if not (
+                        isinstance(item, dict)
+                        and _stable_entity_key_from_dict(item) in matched_keys
+                    )
+                ]
+        for v in node.values():
+            if isinstance(v, (dict, list)):
+                _visit(v)
+
+    def _visit(node):
+        if isinstance(node, dict):
+            _visit_dict(node)
+            return
+        if isinstance(node, list):
+            for it in node:
+                if isinstance(it, (dict, list)):
+                    _visit(it)
+
+    _visit(params_as_dict)
+    return params_as_dict
