@@ -25,7 +25,7 @@ from flow360.component.simulation.entity_info import GeometryEntityInfo
 from flow360.component.simulation.models.surface_models import BoundaryBase
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.v1.flow360_params import Flow360Params
-from flow360.exceptions import Flow360ValueError
+from flow360.exceptions import Flow360TypeError, Flow360ValueError
 from flow360.log import log
 
 # pylint: disable=consider-using-with
@@ -753,3 +753,16 @@ class PerEntityResultCSVModel(ResultCSVModel):
             filter_physical_steps_only=filter_physical_steps_only, include_time=include_time
         )
         self._filtered_sum()
+
+
+class LocalResultCSVModel(ResultCSVModel):
+    """
+    CSV Model with no remote file that cannot be downloaded used for locally working with csv data
+    """
+
+    remote_file_name: Optional[str] = None
+
+    def download(
+        self, to_file: str = None, to_folder: str = ".", overwrite: bool = False, **kwargs
+    ):
+        raise Flow360TypeError("Cannot download csv from LocalResultCSVModel")

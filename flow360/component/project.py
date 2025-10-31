@@ -1466,9 +1466,9 @@ class Project(pd.BaseModel):
                 use_geometry_AI=use_geometry_AI,
                 start_from=start_from,
             )
-        except RuntimeError as exception:
+        except RuntimeError:
             if raise_on_error:
-                raise ValueError("Submission terminated due to validation error.") from exception
+                raise ValueError("Submission terminated due to error.") from None
             return None
 
         self._project_webapi.patch(
