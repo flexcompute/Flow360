@@ -191,7 +191,6 @@ def get_test_param():
                                 ],
                             )
                         ],
-                        element_type="mixed",
                     ),
                     UserDefinedFarfield(domain_type="half_body_negative_y"),
                     RotationVolume(

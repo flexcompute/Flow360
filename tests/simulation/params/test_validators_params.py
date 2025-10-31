@@ -1876,7 +1876,6 @@ def test_beta_mesher_only_features():
                                 boundaries=[Surface(name="face1"), Surface(name="face2")],
                             )
                         ],
-                        element_type="mixed",
                     ),
                     AutomatedFarfield(),
                 ],
@@ -1912,7 +1911,6 @@ def test_beta_mesher_only_features():
                                 boundaries=[Surface(name="face1"), Surface(name="face2")],
                             )
                         ],
-                        element_type="mixed",
                     ),
                     UserDefinedFarfield(),
                 ],
@@ -1956,7 +1954,6 @@ def test_beta_mesher_only_features():
                                     boundaries=[Surface(name="face3"), Surface(name="face4")],
                                 ),
                             ],
-                            element_type="mixed",
                         ),
                         UserDefinedFarfield(),
                     ],
@@ -1984,7 +1981,6 @@ def test_beta_mesher_only_features():
                                     boundaries=[Surface(name="face1"), Surface(name="face1")],
                                 )
                             ],
-                            element_type="mixed",
                         ),
                         UserDefinedFarfield(),
                     ],
@@ -2009,7 +2005,6 @@ def test_beta_mesher_only_features():
                                 boundaries=[Surface(name="face1"), Surface(name="face2")],
                             )
                         ],
-                        element_type="mixed",
                     ),
                     UserDefinedFarfield(),
                 ],
