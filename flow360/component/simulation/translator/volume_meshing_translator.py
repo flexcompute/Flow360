@@ -284,6 +284,8 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
 
             if zone.domain_type is not None:
                 translated["farfield"]["domainType"] = zone.domain_type
+
+            translated["farfield"]["relativeSize"] = zone.relative_size
             break
 
     if "farfield" not in translated:
