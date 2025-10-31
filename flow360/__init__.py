@@ -140,7 +140,6 @@ from flow360.component.simulation.outputs.outputs import (
 from flow360.component.simulation.primitives import (
     AxisymmetricBody,
     Box,
-    CustomVolume,
     Cylinder,
     ImportedSurface,
     ReferenceGeometry,
@@ -181,7 +180,6 @@ __all__ = [
     "GeometryRefinement",
     "Env",
     "Case",
-    "CustomVolume",
     "AngleBasedRefinement",
     "AspectRatioBasedRefinement",
     "ProjectAnisoSpacing",
