@@ -31,6 +31,7 @@ from flow360.component.simulation.meshing_param.params import (
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     AxisymmetricRefinement,
+    MeshSliceOutput,
     RotationCylinder,
     RotationVolume,
     StructuredBoxRefinement,
@@ -188,6 +189,7 @@ __all__ = [
     "Accounts",
     "Project",
     "u",
+    "MeshSliceOutput",
     "SimulationParams",
     "SI_unit_system",
     "imperial_unit_system",

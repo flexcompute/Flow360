@@ -16,12 +16,14 @@ from flow360.component.simulation.meshing_param.params import (
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     AxisymmetricRefinement,
+    MeshSliceOutput,
     RotationCylinder,
     RotationVolume,
     StructuredBoxRefinement,
     UniformRefinement,
     UserDefinedFarfield,
 )
+from flow360.component.simulation.outputs.outputs import Slice
 from flow360.component.simulation.primitives import (
     AxisymmetricBody,
     Box,
@@ -239,6 +241,23 @@ def get_test_param():
                         spacing_axial=40 * u.cm,
                         spacing_radial=0.4,
                         spacing_circumferential=20 * u.cm,
+                    ),
+                ],
+                outputs=[
+                    MeshSliceOutput(
+                        name="slice_output",
+                        entities=[
+                            Slice(
+                                name=f"test_slice_y_normal",
+                                origin=(0.1, 0.2, 0.3),
+                                normal=(0, 1, 0),
+                            ),
+                            Slice(
+                                name=f"test_slice_z_normal",
+                                origin=(0.6, 0.1, 0.4),
+                                normal=(0, 0, 1),
+                            ),
+                        ],
                     ),
                 ],
             ),
