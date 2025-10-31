@@ -8,6 +8,7 @@ import pydantic as pd
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
+from flow360.component.simulation.framework.entity_selector import EntityDictDatabase
 from flow360.component.simulation.outputs.output_entities import (
     Point,
     PointArray,
@@ -586,12 +587,118 @@ def parse_entity_info_model(data) -> EntityInfoUnion:
     return pd.TypeAdapter(EntityInfoUnion).validate_python(data)
 
 
-def get_entity_info_type_from_str(entity_type: str) -> type[EntityInfoModel]:
-    """Get EntityInfo type from the asset type from the project tree"""
-    entity_info_type = None
-    if entity_type == "Geometry":
-        entity_info_type = GeometryEntityInfo
-    if entity_type == "VolumeMesh":
-        entity_info_type = VolumeMeshEntityInfo
+def _get_grouped_entities_from_geometry(entity_info: dict, entity_type_name: str) -> list:
+    """
+    Extract entities based on current grouping tag for GeometryEntityInfo.
 
-    return entity_info_type
+    Mimics the logic from GeometryEntityInfo._get_list_of_entities.
+    """
+    if entity_type_name == "face":
+        attribute_names = entity_info.get("face_attribute_names", [])
+        grouped_list = entity_info.get("grouped_faces", [])
+        group_tag = entity_info.get("face_group_tag")
+    elif entity_type_name == "edge":
+        attribute_names = entity_info.get("edge_attribute_names", [])
+        grouped_list = entity_info.get("grouped_edges", [])
+        group_tag = entity_info.get("edge_group_tag")
+    elif entity_type_name == "body":
+        attribute_names = entity_info.get("body_attribute_names", [])
+        grouped_list = entity_info.get("grouped_bodies", [])
+        group_tag = entity_info.get("body_group_tag")
+    else:
+        return []
+
+    # If no grouping tag is set, use the default (first non-ID tag)
+    if group_tag is None:
+        if not attribute_names:
+            return []
+        # Get first non-ID tag (mimics _get_default_grouping_tag logic)
+        id_tag = f"{entity_type_name}Id"
+        for tag in attribute_names:
+            if tag != id_tag:
+                group_tag = tag
+                break
+        if group_tag is None:
+            group_tag = id_tag
+
+    # Find the index of the grouping tag in attribute_names
+    if group_tag in attribute_names:
+        index = attribute_names.index(group_tag)
+        if index < len(grouped_list):
+            return grouped_list[index]
+
+    return []
+
+
+def _extract_geometry_entities(entity_info: dict) -> tuple[list, list, list]:
+    """Extract entities from GeometryEntityInfo."""
+    surfaces = _get_grouped_entities_from_geometry(entity_info, "face")
+
+    edges = []
+    if entity_info.get("edge_ids"):
+        edges = _get_grouped_entities_from_geometry(entity_info, "edge")
+
+    geometry_body_groups = []
+    if entity_info.get("body_attribute_names"):
+        geometry_body_groups = _get_grouped_entities_from_geometry(entity_info, "body")
+
+    return surfaces, edges, geometry_body_groups
+
+
+def _extract_volume_mesh_entities(entity_info: dict) -> tuple[list, list]:
+    """Extract entities from VolumeMeshEntityInfo."""
+    surfaces = entity_info.get("boundaries", [])
+    generic_volumes = entity_info.get("zones", [])
+    return surfaces, generic_volumes
+
+
+def _extract_surface_mesh_entities(entity_info: dict) -> list:
+    """Extract entities from SurfaceMeshEntityInfo."""
+    return entity_info.get("boundaries", [])
+
+
+def get_entity_database_for_selectors(params_as_dict: dict) -> EntityDictDatabase:
+    """
+    Go through the simulation json and retrieve the entity database for entity selectors.
+
+    This function extracts all entities from private_attribute_asset_cache and converts them
+    to dictionary format for use in entity selection operations. For GeometryEntityInfo, it
+    respects the current grouping tags (face_group_tag, edge_group_tag, body_group_tag).
+
+    Parameters:
+        params_as_dict: Simulation parameters as dictionary containing private_attribute_asset_cache
+
+    Returns:
+        EntityDictDatabase: Database containing all available entities as dictionaries
+    """
+    # Extract and validate asset cache
+    asset_cache = params_as_dict.get("private_attribute_asset_cache")
+    if asset_cache is None:
+        raise ValueError("[Internal] private_attribute_asset_cache not found in params_as_dict.")
+
+    entity_info = asset_cache.get("project_entity_info")
+    if entity_info is None:
+        raise ValueError("[Internal] project_entity_info not found in asset cache.")
+
+    # Initialize empty lists
+    surfaces = []
+    edges = []
+    generic_volumes = []
+    geometry_body_groups = []
+
+    # Process based on entity info type
+    entity_info_type = entity_info.get("type_name")
+
+    if entity_info_type == "GeometryEntityInfo":
+        surfaces, edges, geometry_body_groups = _extract_geometry_entities(entity_info)
+    elif entity_info_type == "VolumeMeshEntityInfo":
+        surfaces, generic_volumes = _extract_volume_mesh_entities(entity_info)
+    elif entity_info_type == "SurfaceMeshEntityInfo":
+        surfaces = _extract_surface_mesh_entities(entity_info)
+
+    return EntityDictDatabase(
+        surfaces=surfaces,
+        edges=edges,
+        generic_volumes=generic_volumes,
+        geometry_body_groups=geometry_body_groups,
+    )
