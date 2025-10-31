@@ -317,12 +317,18 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
             ["meshing", "volume_zones"],
         )
         if not volume_zones:
-            return set()
+            return {}
 
-        custom_volume_names = set()
+        # Return a mapping: { custom_volume_name: enforce_tetrahedra_boolean }
+        custom_volume_info = {}
         for zone in volume_zones:
             if zone.get("type") != "CustomZones":
                 continue
+            # Determine whether this CustomZones requires tetrahedra-only elements
+            # Default to mixed (False) if not specified
+            element_type = zone.get("element_type")
+            enforce_tetrahedra = element_type == "tetrahedra"
+
             # Extract CustomVolume names from CustomZones.entities.stored_entities
             entities_obj = zone.get("entities", {})
             stored_entities = entities_obj.get("stored_entities", [])
@@ -331,8 +337,8 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
                     isinstance(entity, dict)
                     and entity.get("private_attribute_entity_type_name") == "CustomVolume"
                 ):
-                    custom_volume_names.add(entity["name"])
-        return custom_volume_names
+                    custom_volume_info[entity["name"]] = enforce_tetrahedra
+        return custom_volume_info
 
     def __init__(self, param_as_dict: dict, referenced_expressions: list):
         self.farfield_method = self._get_farfield_method_(param_as_dict=param_as_dict)

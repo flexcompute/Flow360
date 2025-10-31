@@ -354,10 +354,10 @@ class Solid(PDEModelBase):
 
     name: Optional[str] = pd.Field(None, description="Name of the `Solid` model.")
     type: Literal["Solid"] = pd.Field("Solid", frozen=True)
-    entities: EntityList[GenericVolume] = pd.Field(
+    entities: EntityListWithCustomVolume[GenericVolume, CustomVolume] = pd.Field(
         alias="volumes",
-        description="The list of :class:`GenericVolume` "
-        + "entities on which the heat transfer equation is solved.",
+        description="The list of :class:`GenericVolume` or :class:`CustomVolume`"
+        + "entities on which the heat transfer equation is solved. The assigned volumes must have only tetrahedral elements.",
     )
 
     material: SolidMaterialTypes = pd.Field(description="The material property of solid.")
@@ -375,6 +375,39 @@ class Solid(PDEModelBase):
     initial_condition: Optional[HeatEquationInitialCondition] = pd.Field(
         None, description="The initial condition of the heat equation solver."
     )
+
+    @pd.field_validator("entities", mode="after")
+    @classmethod
+    def ensure_custom_volume_has_tets_only(cls, v):
+        """
+        Check if the CustomVolume object was meshed with the flag enforceTetrahedralElements
+        set to 'True'
+        """
+        validation_info = get_validation_info()
+        if validation_info is None:
+            return v
+
+        # `v` is an EntityListWithCustomVolume; iterate through stored entities
+        for entity in getattr(v, "stored_entities", []):
+            if not isinstance(entity, CustomVolume):
+                continue
+
+            # Mapping defined in validation context: { name: enforce_tetrahedra_boolean }
+            enforce_map = getattr(validation_info, "to_be_generated_custom_volumes", {})
+            if not isinstance(enforce_map, dict):
+                # Backward compatibility: if it's a set, we cannot assert tetrahedra, skip
+                continue
+
+            enforce_tetra = enforce_map.get(entity.name)
+            # If present and explicitly False, raise error
+            if enforce_tetra is False:
+                raise ValueError(
+                    "CustomVolume '"
+                    + entity.name
+                    + "' must be meshed with tetrahedra-only elements."
+                )
+
+        return v
 
 
 # pylint: disable=duplicate-code
