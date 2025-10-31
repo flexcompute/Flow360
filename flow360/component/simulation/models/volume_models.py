@@ -354,11 +354,9 @@ class Solid(PDEModelBase):
 
     name: Optional[str] = pd.Field(None, description="Name of the `Solid` model.")
     type: Literal["Solid"] = pd.Field("Solid", frozen=True)
-    entities: EntityListWithCustomVolume[GenericVolume, CustomVolume] = pd.Field(
+    entities: EntityList[GenericVolume] = pd.Field(
         alias="volumes",
-        description="The list of :class:`GenericVolume` or :class:`CustomVolume` "
-        + "entities on which the heat transfer equation is solved. "
-        "The assigned volumes must have only tetrahedral elements.",
+        description="The list of :class:`GenericVolume` entities on which the heat transfer equation is solved.",
     )
 
     material: SolidMaterialTypes = pd.Field(description="The material property of solid.")
