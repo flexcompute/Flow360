@@ -31,6 +31,7 @@ from flow360.component.simulation.meshing_param.params import (
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     AxisymmetricRefinement,
+    CustomZones,
     RotationCylinder,
     RotationVolume,
     StructuredBoxRefinement,
@@ -140,6 +141,7 @@ from flow360.component.simulation.outputs.outputs import (
 from flow360.component.simulation.primitives import (
     AxisymmetricBody,
     Box,
+    CustomVolume,
     Cylinder,
     ImportedSurface,
     ReferenceGeometry,
@@ -198,6 +200,7 @@ __all__ = [
     "SurfaceRefinement",
     "AutomatedFarfield",
     "AxisymmetricRefinement",
+    "CustomZones",
     "StructuredBoxRefinement",
     "RotationCylinder",
     "RotationVolume",
@@ -205,6 +208,7 @@ __all__ = [
     "SurfaceEdgeRefinement",
     "HeightBasedRefinement",
     "ReferenceGeometry",
+    "CustomVolume",
     "Cylinder",
     "AxisymmetricBody",
     "AerospaceCondition",

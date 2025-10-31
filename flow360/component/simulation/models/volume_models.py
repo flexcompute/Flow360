@@ -381,33 +381,9 @@ class Solid(PDEModelBase):
     @classmethod
     def ensure_custom_volume_has_tets_only(cls, v):
         """
-        Check if the CustomVolume object was meshed with the flag enforceTetrahedralElements
-        set to 'True'
+        Reserved for future: enforce tetrahedra-only elements for CustomVolume.
+        Currently a no-op until element_type is introduced in a separate PR.
         """
-        validation_info = get_validation_info()
-        if validation_info is None:
-            return v
-
-        # `v` is an EntityListWithCustomVolume; iterate through stored entities
-        for entity in getattr(v, "stored_entities", []):
-            if not isinstance(entity, CustomVolume):
-                continue
-
-            # Mapping defined in validation context: { name: enforce_tetrahedra_boolean }
-            enforce_map = getattr(validation_info, "to_be_generated_custom_volumes", {})
-            if not isinstance(enforce_map, dict):
-                # Backward compatibility: if it's a set, we cannot assert tetrahedra, skip
-                continue
-
-            enforce_tetra = enforce_map.get(entity.name)
-            # If present and explicitly False, raise error
-            if enforce_tetra is False:
-                raise ValueError(
-                    "CustomVolume '"
-                    + entity.name
-                    + "' must be meshed with tetrahedra-only elements."
-                )
-
         return v
 
 
