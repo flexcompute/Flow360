@@ -52,6 +52,7 @@ from flow360.component.simulation.models.validation.validation_bet_disk import (
     _check_bet_disk_sectional_radius_and_polars,
 )
 from flow360.component.simulation.primitives import (
+    AxisymmetricBody,
     Box,
     CustomVolume,
     Cylinder,
@@ -111,9 +112,10 @@ class AngleExpression(SingleAttributeModel):
         # locate t_seconds and convert it to (t*flow360_time_to_seconds)
         params = kwargs.get("params")
         one_sec_to_flow360_time = params.convert_unit(
-            value=1 * u.s, target_system="flow360"  # pylint:disable=no-member
+            value=1 * u.s,  # pylint:disable=no-member
+            target_system="flow360",
         )
-        flow360_time_to_seconds_expression = f"({1.0/one_sec_to_flow360_time.value} * t)"
+        flow360_time_to_seconds_expression = f"({1.0 / one_sec_to_flow360_time.value} * t)"
         self.value = re.sub(r"\bt_seconds\b", flow360_time_to_seconds_expression, self.value)
 
         return super().preprocess(**kwargs)
@@ -562,7 +564,10 @@ class BETSingleInputFileBaseModel(Flow360BaseModel, metaclass=ABCMeta):
 
         file_content = get_file_content(input_data["file_path"])
 
-        return {"file_path": os.path.basename(input_data["file_path"]), "content": file_content}
+        return {
+            "file_path": os.path.basename(input_data["file_path"]),
+            "content": file_content,
+        }
 
 
 class AuxiliaryPolarFile(BETSingleInputFileBaseModel):
@@ -1200,10 +1205,12 @@ class Rotation(Flow360BaseModel):
 
     name: Optional[str] = pd.Field("Rotation", description="Name of the `Rotation` model.")
     type: Literal["Rotation"] = pd.Field("Rotation", frozen=True)
-    entities: EntityListWithCustomVolume[GenericVolume, Cylinder, CustomVolume] = pd.Field(
+    entities: EntityListWithCustomVolume[
+        GenericVolume, Cylinder, AxisymmetricBody, CustomVolume
+    ] = pd.Field(
         alias="volumes",
         description="The entity list for the `Rotation` model. "
-        + "The entity should be :class:`Cylinder` or :class:`GenericVolume` type.",
+        + "The entity should be :class:`Cylinder` or :class:`AxisymmetricBody` or :class:`GenericVolume` type.",
     )
 
     # TODO: Add test for each of the spec specification.
@@ -1211,10 +1218,12 @@ class Rotation(Flow360BaseModel):
         discriminator="type_name",
         description="The angular velocity or rotation angle as a function of time.",
     )
-    parent_volume: Optional[Union[GenericVolume, Cylinder, CustomVolume]] = pd.Field(
-        None,
-        description="The parent rotating entity in a nested rotation case."
-        + "The entity should be :class:`Cylinder` or :class:`GenericVolume` type.",
+    parent_volume: Optional[Union[GenericVolume, Cylinder, AxisymmetricBody, CustomVolume]] = (
+        pd.Field(
+            None,
+            description="The parent rotating entity in a nested rotation case."
+            + "The entity should be :class:`Cylinder` or :class:`AxisymmetricBody` or :class:`GenericVolume` type.",
+        )
     )
     rotating_reference_frame_model: Optional[bool] = pd.Field(
         None,
