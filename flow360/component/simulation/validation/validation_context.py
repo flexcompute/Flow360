@@ -123,6 +123,7 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
 
     __slots__ = [
         "farfield_method",
+        "farfield_domain_type",
         "is_beta_mesher",
         "use_geometry_AI",
         "using_liquid_as_material",
@@ -154,6 +155,22 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
                     return zone["method"]
                 if zone["type"] == "UserDefinedFarfield":
                     return "user-defined"
+        return None
+
+    @classmethod
+    def _get_farfield_domain_type_(cls, param_as_dict: dict):
+        try:
+            if param_as_dict["meshing"]:
+                volume_zones = param_as_dict["meshing"]["volume_zones"]
+            else:
+                return None
+        except KeyError:
+            return None
+        if not volume_zones:
+            return None
+        for zone in volume_zones:
+            if zone.get("type") in ("AutomatedFarfield", "UserDefinedFarfield"):
+                return zone.get("domain_type")
         return None
 
     @classmethod
@@ -322,6 +339,7 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
 
     def __init__(self, param_as_dict: dict, referenced_expressions: list):
         self.farfield_method = self._get_farfield_method_(param_as_dict=param_as_dict)
+        self.farfield_domain_type = self._get_farfield_domain_type_(param_as_dict=param_as_dict)
         self.is_beta_mesher = self._get_is_beta_mesher_(param_as_dict=param_as_dict)
         self.use_geometry_AI = self._get_use_geometry_AI_(  # pylint:disable=invalid-name
             param_as_dict=param_as_dict

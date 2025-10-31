@@ -151,6 +151,13 @@ def check_user_defined_farfield_symmetry_existence(stored_entities):
             raise ValueError(
                 "Symmetry plane of user defined farfield will only be generated when both GAI and beta mesher are used."
             )
+        if validation_info.farfield_domain_type not in (
+            "half_body_positive_y",
+            "half_body_negative_y",
+        ):
+            raise ValueError(
+                "Symmetry plane of user defined farfield is only supported for half body domains."
+            )
     return stored_entities
 
 
