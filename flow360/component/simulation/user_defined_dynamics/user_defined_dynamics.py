@@ -144,7 +144,7 @@ class UserDefinedDynamic(Flow360BaseModel):
 
     @pd.field_validator("output_target", mode="after")
     @classmethod
-    def _ensure_custom_volume_is_listed_under_volume_zones(
+    def _ensure_custom_volume_is_valid(
         cls, value: Optional[Union[Cylinder, GenericVolume, Surface, CustomVolume]]
     ):
         """Ensure parent volume is a custom volume."""
@@ -155,6 +155,6 @@ class UserDefinedDynamic(Flow360BaseModel):
             return value
         if value.name not in validation_info.to_be_generated_custom_volumes:
             raise ValueError(
-                f"Parent CustomVolume {value.name} is not listed under meshing->volume_zones."
+                f"Parent CustomVolume {value.name} is not listed under meshing->volume_zones->CustomZones."
             )
         return value
