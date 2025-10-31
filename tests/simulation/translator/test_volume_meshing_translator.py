@@ -16,7 +16,7 @@ from flow360.component.simulation.meshing_param.params import (
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     AxisymmetricRefinement,
-    RotationCylinder,
+    CustomZones,
     RotationVolume,
     StructuredBoxRefinement,
     UniformRefinement,
@@ -180,12 +180,18 @@ def get_test_param():
                     ),
                 ],
                 volume_zones=[
-                    CustomVolume(
-                        name="custom_volume-1",
-                        boundaries=[
-                            Surface(name="interface1"),
-                            Surface(name="interface2"),
+                    CustomZones(
+                        name="custom_zones",
+                        entities=[
+                            CustomVolume(
+                                name="custom_volume-1",
+                                boundaries=[
+                                    Surface(name="interface1"),
+                                    Surface(name="interface2"),
+                                ],
+                            )
                         ],
+                        element_type="mixed",
                     ),
                     UserDefinedFarfield(domain_type="half_body_negative_y"),
                     RotationVolume(
@@ -296,3 +302,20 @@ def test_param_to_json_legacy_mesher(get_test_param, get_surface_mesh):
     with open(ref_path, "r") as fh:
         ref_dict = json.load(fh)
     assert sorted(translated.items()) == sorted(ref_dict.items())
+
+
+def test_custom_zones_tetrahedra(get_test_param, get_surface_mesh):
+    """Ensure CustomZones with element_type='tetrahedra' translates enforceTetrahedralElements=true."""
+    params = get_test_param
+
+    # Switch the CustomZones element_type to tetrahedra
+    for zone in params.meshing.volume_zones:
+        if isinstance(zone, CustomZones):
+            with model_attribute_unlock(zone, "element_type"):
+                zone.element_type = "tetrahedra"
+            break
+
+    translated = get_volume_meshing_json(params, get_surface_mesh.mesh_unit)
+    assert "zones" in translated and len(translated["zones"]) > 0
+    # All custom zones should enforce tetrahedra when element_type='tetrahedra'
+    assert all(z.get("enforceTetrahedralElements") is True for z in translated["zones"])  # type: ignore

@@ -1251,8 +1251,9 @@ class Rotation(Flow360BaseModel):
 
     @pd.field_validator("parent_volume", mode="after")
     @classmethod
-    def _ensure_custom_volume_is_listed_under_volume_zones(
-        cls, value: Optional[Union[GenericVolume, Cylinder, CustomVolume]]
+    def _ensure_custom_volume_is_valid(
+        cls,
+        value: Optional[Union[GenericVolume, Cylinder, CustomVolume]],
     ):
         """Ensure parent volume is a custom volume."""
         if value is None:
@@ -1262,7 +1263,7 @@ class Rotation(Flow360BaseModel):
             return value
         if value.name not in validation_info.to_be_generated_custom_volumes:
             raise ValueError(
-                f"Parent CustomVolume {value.name} is not listed under meshing->volume_zones."
+                f"Parent CustomVolume {value.name} is not listed under meshing->volume_zones->CustomZones."
             )
         return value
 
