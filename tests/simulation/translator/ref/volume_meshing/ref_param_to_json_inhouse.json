@@ -178,8 +178,7 @@
             "patches": [
                 "interface1",
                 "interface2"
-            ],
-            "enforceTetrahedralElements": false
+            ]
         }
     ]
 }

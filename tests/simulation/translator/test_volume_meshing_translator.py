@@ -305,17 +305,8 @@ def test_param_to_json_legacy_mesher(get_test_param, get_surface_mesh):
 
 
 def test_custom_zones_tetrahedra(get_test_param, get_surface_mesh):
-    """Ensure CustomZones with element_type='tetrahedra' translates enforceTetrahedralElements=true."""
+    """Base branch: No enforceTetrahedralElements emitted; ensure translator does not include it."""
     params = get_test_param
-
-    # Switch the CustomZones element_type to tetrahedra
-    for zone in params.meshing.volume_zones:
-        if isinstance(zone, CustomZones):
-            with model_attribute_unlock(zone, "element_type"):
-                zone.element_type = "tetrahedra"
-            break
-
     translated = get_volume_meshing_json(params, get_surface_mesh.mesh_unit)
     assert "zones" in translated and len(translated["zones"]) > 0
-    # All custom zones should enforce tetrahedra when element_type='tetrahedra'
-    assert all(z.get("enforceTetrahedralElements") is True for z in translated["zones"])  # type: ignore
+    assert all("enforceTetrahedralElements" not in z for z in translated["zones"])  # type: ignore

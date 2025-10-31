@@ -211,8 +211,7 @@ def _get_custom_volumes(volume_zones: list):
     custom_volumes = []
     for zone in volume_zones:
         if isinstance(zone, CustomZones):
-            # Extract CustomVolume from CustomZones
-            enforce_tetrahedral = getattr(zone, "element_type", None) == "tetrahedra"
+            # Extract CustomVolume from CustomZones (base branch: no tetrahedra enforcement output)
             for custom_volume in zone.entities.stored_entities:
                 custom_volumes.append(
                     {
@@ -220,7 +219,6 @@ def _get_custom_volumes(volume_zones: list):
                         "patches": sorted(
                             [surface.name for surface in custom_volume.boundaries.stored_entities]
                         ),
-                        "enforceTetrahedralElements": enforce_tetrahedral,
                     }
                 )
     if custom_volumes:
