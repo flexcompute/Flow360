@@ -296,7 +296,7 @@ class FaceGroup:
         Examples
         --------
         >>> wing_group = geometry.create_face_group(name="wing", selection=...)
-        >>> wing_group.add(geometry.tree_root.search(type=NodeType.FRMFeature, name="flap"))
+        >>> wing_group.add(geometry.search(type=NodeType.FRMFeature, name="flap"))
         >>> wing_group.add(another_node)
         """
         # Delegate to Geometry to handle the addition
@@ -749,20 +749,20 @@ class Geometry(AssetBase):
         >>> # Using TreeSearch (recommended - captures intent declaratively)
         >>> wing_group = geometry.create_face_group(
         ...     name="wing",
-        ...     selection=geometry.tree_root.search(type=NodeType.FRMFeature, name="*wing*")
+        ...     selection=geometry.search(type=NodeType.FRMFeature, name="*wing*")
         ... )
         >>> 
         >>> # Using children() chaining (fluent navigation with exact matching)
         >>> body_group = geometry.create_face_group(
         ...     name="body",
-        ...     selection=geometry.tree_root.children().children().children(
+        ...     selection=geometry.children().children().children(
         ...         type=NodeType.FRMFeatureBasedEntity
         ...     ).children().children(type=NodeType.FRMFeature, name="body_main")
         ... )
         >>> 
         >>> # Incrementally add more nodes to the group
         >>> body_group.add(
-        ...     geometry.tree_root.children().children().children(
+        ...     geometry.children().children().children(
         ...         type=NodeType.FRMFeatureBasedEntity
         ...     ).children().children(type=NodeType.FRMFeature, name="body_cut")
         ... )
@@ -907,3 +907,95 @@ class Geometry(AssetBase):
         for group_name, group in self._face_groups.items():
             print(f"  - {group_name}: {group.face_count} faces")
         print("="*33)
+
+    def search(
+        self,
+        type: Optional[NodeType] = None,
+        name: Optional[str] = None,
+        colorRGB: Optional[str] = None,
+        material: Optional[str] = None,
+        attributes: Optional[Dict[str, str]] = None,
+    ) -> TreeSearch:
+        """
+        Search the geometry tree for nodes matching the criteria.
+        
+        This is a convenience method that delegates to tree_root.search().
+        It performs a recursive search through the entire geometry tree using
+        wildcard pattern matching for name and material fields.
+        
+        Parameters
+        ----------
+        type : Optional[NodeType]
+            Node type to filter by (exact match, e.g., NodeType.FRMFeature)
+        name : Optional[str]
+            Name pattern to match (supports wildcards like "*wing*")
+        colorRGB : Optional[str]
+            RGB color string to match (exact match)
+        material : Optional[str]
+            Material pattern to match (supports wildcards)
+        attributes : Optional[Dict[str, str]]
+            Dictionary of attribute key-value pairs to match (exact matches)
+            
+        Returns
+        -------
+        TreeSearch
+            A TreeSearch object that can be executed via .execute() or passed
+            directly to create_face_group()
+            
+        Examples
+        --------
+        >>> # Search for all wing features
+        >>> wing_nodes = geometry.search(type=NodeType.FRMFeature, name="*wing*")
+        >>> wing_group = geometry.create_face_group(name="wing", selection=wing_nodes)
+        """
+        return self.tree_root.search(
+            type=type, name=name, colorRGB=colorRGB, material=material, attributes=attributes
+        )
+
+    def children(
+        self,
+        type: Optional[NodeType] = None,
+        name: Optional[str] = None,
+        colorRGB: Optional[str] = None,
+        material: Optional[str] = None,
+        attributes: Optional[Dict[str, str]] = None,
+    ) -> NodeCollection:
+        """
+        Get the direct children of the root node, optionally filtered by exact criteria.
+        
+        This is a convenience method that delegates to tree_root.children().
+        It filters only the direct children using exact matching (no wildcards).
+        Returns a NodeCollection that supports further chaining via .children() calls.
+        
+        For pattern matching and recursive search, use .search() instead.
+        
+        Parameters
+        ----------
+        type : Optional[NodeType]
+            Node type to filter by (exact match, e.g., NodeType.FRMFeature)
+        name : Optional[str]
+            Exact name to match (no wildcards)
+        colorRGB : Optional[str]
+            Exact RGB color string to match
+        material : Optional[str]
+            Exact material name to match (no wildcards)
+        attributes : Optional[Dict[str, str]]
+            Dictionary of attribute key-value pairs to match (exact matches)
+            
+        Returns
+        -------
+        NodeCollection
+            Collection of direct child nodes matching the criteria, supports chaining
+            
+        Examples
+        --------
+        >>> # Navigate tree structure with certainty
+        >>> body_nodes = geometry.children().children().children(
+        ...     type=NodeType.FRMFeatureBasedEntity
+        ... ).children().children(type=NodeType.FRMFeature, name="body_main")
+        >>> 
+        >>> body_group = geometry.create_face_group(name="body", selection=body_nodes)
+        """
+        return self.tree_root.children(
+            type=type, name=name, colorRGB=colorRGB, material=material, attributes=attributes
+        )
