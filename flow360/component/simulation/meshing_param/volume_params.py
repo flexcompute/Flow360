@@ -470,4 +470,6 @@ class UserDefinedFarfield(_FarfieldBase):
 
         Warning: This should only be used when using GAI and beta mesher.
         """
+        if self.domain_type not in ("half_body_positive_y", "half_body_negative_y"):
+            raise ValueError("Symmetry plane is only supported for half body domains.")
         return GhostSurface(name="symmetric")
