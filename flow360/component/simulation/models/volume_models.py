@@ -375,15 +375,6 @@ class Solid(PDEModelBase):
         None, description="The initial condition of the heat equation solver."
     )
 
-    @pd.field_validator("entities", mode="after")
-    @classmethod
-    def ensure_custom_volume_has_tets_only(cls, v):
-        """
-        Reserved for future: enforce tetrahedra-only elements for CustomVolume.
-        Currently a no-op until element_type is introduced in a separate PR.
-        """
-        return v
-
 
 # pylint: disable=duplicate-code
 class ForcePerArea(Flow360BaseModel):
