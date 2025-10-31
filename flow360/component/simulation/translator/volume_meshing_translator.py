@@ -212,7 +212,7 @@ def _get_custom_volumes(volume_zones: list):
     for zone in volume_zones:
         if isinstance(zone, CustomZones):
             # Extract CustomVolume from CustomZones
-            enforce_tetrahedral = zone.element_type == "tetrahedra"
+            enforce_tetrahedral = getattr(zone, "element_type", None) == "tetrahedra"
             for custom_volume in zone.entities.stored_entities:
                 custom_volumes.append(
                     {
