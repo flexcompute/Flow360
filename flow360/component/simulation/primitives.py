@@ -680,6 +680,10 @@ class GhostCircularPlane(_SurfaceEntityBase):
             # This likely means the user try to use mesher on old cloud resources.
             # We cannot validate if symmetric exists so will let it pass. Pipeline will error out anyway.
             return True
+
+        if validation_info.will_generate_forced_symmetry_plane():
+            return True
+
         y_min, y_max, tolerance, _ = self._get_existence_dependency(validation_info)
 
         positive_half = abs(y_min) < tolerance < y_max

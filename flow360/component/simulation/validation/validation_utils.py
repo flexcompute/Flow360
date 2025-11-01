@@ -132,6 +132,7 @@ def check_user_defined_farfield_symmetry_existence(stored_entities):
 
     That:
     1. GAI and beta mesher is used.
+    2. Domain type is half_body_positive_y or half_body_negative_y
     """
     validation_info = get_validation_info()
 
@@ -150,6 +151,13 @@ def check_user_defined_farfield_symmetry_existence(stored_entities):
         if not validation_info.use_geometry_AI or not validation_info.is_beta_mesher:
             raise ValueError(
                 "Symmetry plane of user defined farfield will only be generated when both GAI and beta mesher are used."
+            )
+        if validation_info.farfield_domain_type not in (
+            "half_body_positive_y",
+            "half_body_negative_y",
+        ):
+            raise ValueError(
+                "Symmetry plane of user defined farfield is only supported for half body domains."
             )
     return stored_entities
 

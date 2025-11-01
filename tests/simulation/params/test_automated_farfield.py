@@ -31,7 +31,7 @@ from flow360.component.simulation.outputs.outputs import (
     SurfaceOutput,
     UserDefinedField,
 )
-from flow360.component.simulation.primitives import Surface
+from flow360.component.simulation.primitives import GhostSurface, Surface
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import SI_unit_system
 from flow360.component.surface_mesh_v2 import SurfaceMeshMetaV2, SurfaceMeshV2
@@ -226,7 +226,7 @@ def test_symmetric_existence(surface_mesh):
 
 
 def test_user_defined_farfield_symmetry_plane(surface_mesh):
-    farfield = UserDefinedFarfield()
+    farfield = UserDefinedFarfield(domain_type="half_body_positive_y")
 
     with SI_unit_system:
         params = SimulationParams(
@@ -244,14 +244,43 @@ def test_user_defined_farfield_symmetry_plane(surface_mesh):
             ],
         )
     errors = _run_validation(params, surface_mesh, use_beta_mesher=True, use_geometry_AI=False)
-    assert errors[0]["loc"] == ("models", 1, "entities", "stored_entities")
+    assert errors[0]["loc"][0] == "meshing"
+    assert errors[0]["loc"][-1] == "domain_type"
     assert (
         errors[0]["msg"]
-        == "Value error, Symmetry plane of user defined farfield will only be generated when both GAI and beta mesher are used."
+        == "Value error, `domain_type` is only supported when using both GAI surface mesher and beta volume mesher."
     )
+    params.meshing.defaults.geometry_accuracy = 1 * u.mm
     params.meshing.defaults.geometry_accuracy = 1 * u.mm
     errors = _run_validation(params, surface_mesh, use_beta_mesher=True, use_geometry_AI=True)
     assert errors is None
+
+
+def test_user_defined_farfield_symmetry_plane_requires_half_domain(surface_mesh):
+    farfield = UserDefinedFarfield(domain_type="full_body")
+
+    with SI_unit_system:
+        params = SimulationParams(
+            operating_condition=AerospaceCondition(velocity_magnitude=1),
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=0.001,
+                    boundary_layer_growth_rate=1.1,
+                    geometry_accuracy=1 * u.mm,
+                ),
+                volume_zones=[farfield],
+            ),
+            models=[
+                Wall(surfaces=surface_mesh["*"]),
+                SymmetryPlane(surfaces=GhostSurface(name="symmetric")),
+            ],
+        )
+    errors = _run_validation(params, surface_mesh, use_beta_mesher=True, use_geometry_AI=True)
+    assert errors[0]["loc"] == ("models", 1, "entities", "stored_entities")
+    assert (
+        errors[0]["msg"]
+        == "Value error, Symmetry plane of user defined farfield is only supported for half body domains."
+    )
 
 
 def test_rotated_symmetric_existence():
