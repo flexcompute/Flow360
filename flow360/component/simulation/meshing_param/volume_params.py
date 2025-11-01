@@ -13,6 +13,7 @@ from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.primitives import (
     AxisymmetricBody,
     Box,
+    CustomVolume,
     Cylinder,
     GenericVolume,
     GhostSurface,
@@ -473,3 +474,23 @@ class UserDefinedFarfield(_FarfieldBase):
         if self.domain_type not in ("half_body_positive_y", "half_body_negative_y"):
             raise ValueError("Symmetry plane is only supported for half body domains.")
         return GhostSurface(name="symmetric")
+
+
+class CustomZones(Flow360BaseModel):
+    """
+    :class:`CustomZones` class for creating volume zones from custom volumes.
+    Names of the generated volume zones will be the names of the custom volumes.
+
+    Example
+    -------
+
+      >>> fl.CustomZones(name="Custom zones", entities=[custom_volume1, custom_volume2], )
+
+    ====
+    """
+
+    type: Literal["CustomZones"] = pd.Field("CustomZones", frozen=True)
+    name: str = pd.Field("Custom zones", description="Name of the `CustomZones` meshing setting.")
+    entities: EntityList[CustomVolume] = pd.Field(
+        description="The custom volume zones to be generated."
+    )
