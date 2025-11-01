@@ -32,6 +32,49 @@ from flow360.component.simulation.operating_condition.operating_condition import
 )
 from flow360.component.simulation.unit_system import u
 
+# pylint:disable=invalid-name
+_CD = "CD"
+_CL = "CL"
+_CFx = "CFx"
+_CFy = "CFy"
+_CFz = "CFz"
+_CMx = "CMx"
+_CMy = "CMy"
+_CMz = "CMz"
+_CD_PRESSURE = "CDPressure"
+_CL_PRESSURE = "CLPressure"
+_CFx_PRESSURE = "CFxPressure"
+_CFy_PRESSURE = "CFyPressure"
+_CFz_PRESSURE = "CFzPressure"
+_CMx_PRESSURE = "CMxPressure"
+_CMy_PRESSURE = "CMyPressure"
+_CMz_PRESSURE = "CMzPressure"
+_CD_SKIN_FRICTION = "CDSkinFriction"
+_CL_SKIN_FRICTION = "CLSkinFriction"
+_CFx_SKIN_FRICTION = "CFxSkinFriction"
+_CFy_SKIN_FRICTION = "CFySkinFriction"
+_CFz_SKIN_FRICTION = "CFzSkinFriction"
+_CMx_SKIN_FRICTION = "CMxSkinFriction"
+_CMy_SKIN_FRICTION = "CMySkinFriction"
+_CMz_SKIN_FRICTION = "CMzSkinFriction"
+_CL_VISCOUS = "CLViscous"
+_CD_VISCOUS = "CDViscous"
+_CFx_VISCOUS = "CFxViscous"
+_CFy_VISCOUS = "CFyViscous"
+_CFz_VISCOUS = "CFzViscous"
+_CMx_VISCOUS = "CMxViscous"
+_CMy_VISCOUS = "CMyViscous"
+_CMz_VISCOUS = "CMzViscous"
+_HEAT_TRANSFER = "HeatTransfer"
+_HEAT_FLUX = "HeatFlux"
+_X = "X"
+_Y = "Y"
+_CUMULATIVE_CD_CURVE = "Cumulative_CD_Curve"
+_CD_PER_STRIP = "CD_per_strip"
+_CFx_PER_SPAN = "CFx_per_span"
+_CFz_PER_SPAN = "CFz_per_span"
+_CMy_PER_SPAN = "CMy_per_span"
+
 # Coefficient of pressure
 # Coefficient of total pressure
 # Gradient of primitive solution
@@ -211,30 +254,30 @@ InvalidOutputFieldsForLiquid = Literal[
 ]
 
 ForceOutputCoefficientNames = Literal[
-    "CD",
-    "CL",
-    "CFx",
-    "CFy",
-    "CFz",
-    "CMx",
-    "CMy",
-    "CMz",
-    "CDPressure",
-    "CLPressure",
-    "CFxPressure",
-    "CFyPressure",
-    "CFzPressure",
-    "CMxPressure",
-    "CMyPressure",
-    "CMzPressure",
-    "CDSkinFriction",
-    "CLSkinFriction",
-    "CFxSkinFriction",
-    "CFySkinFriction",
-    "CFzSkinFriction",
-    "CMxSkinFriction",
-    "CMySkinFriction",
-    "CMzSkinFriction",
+    _CL,
+    _CD,
+    _CFx,
+    _CFy,
+    _CFz,
+    _CMx,
+    _CMy,
+    _CMz,
+    _CL_PRESSURE,
+    _CD_PRESSURE,
+    _CFx_PRESSURE,
+    _CFy_PRESSURE,
+    _CFz_PRESSURE,
+    _CMx_PRESSURE,
+    _CMy_PRESSURE,
+    _CMz_PRESSURE,
+    _CL_SKIN_FRICTION,
+    _CD_SKIN_FRICTION,
+    _CFx_SKIN_FRICTION,
+    _CFy_SKIN_FRICTION,
+    _CFz_SKIN_FRICTION,
+    _CMx_SKIN_FRICTION,
+    _CMy_SKIN_FRICTION,
+    _CMz_SKIN_FRICTION,
 ]
 # pylint: disable=no-member
 _FIELD_UNIT_MAPPING = {
