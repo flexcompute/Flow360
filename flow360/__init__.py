@@ -118,6 +118,7 @@ from flow360.component.simulation.outputs.output_entities import (
 )
 from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
+    ForceOutput,
     IsosurfaceOutput,
     MovingStatistic,
     Observer,
@@ -318,4 +319,5 @@ __all__ = [
     "MovingStatistic",
     "ImportedSurface",
     "RunControl",
+    "ForceOutput",
 ]

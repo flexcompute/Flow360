@@ -14,7 +14,15 @@ from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList, generate_uuid
 from flow360.component.simulation.framework.expressions import StringExpression
 from flow360.component.simulation.framework.unique_list import UniqueItemList
-from flow360.component.simulation.models.surface_models import EntityListAllowingGhost
+from flow360.component.simulation.models.surface_models import (
+    EntityListAllowingGhost,
+    Wall,
+)
+from flow360.component.simulation.models.volume_models import (
+    ActuatorDisk,
+    BETDisk,
+    PorousMedium,
+)
 from flow360.component.simulation.outputs.output_entities import (
     Isosurface,
     Point,
@@ -25,6 +33,7 @@ from flow360.component.simulation.outputs.output_entities import (
 from flow360.component.simulation.outputs.output_fields import (
     AllFieldNames,
     CommonFieldNames,
+    ForceOutputCoefficientNames,
     InvalidOutputFieldsForLiquid,
     SliceFieldNames,
     SurfaceFieldNames,
@@ -54,6 +63,11 @@ from flow360.component.simulation.validation.validation_context import (
 from flow360.component.simulation.validation.validation_utils import (
     check_deleted_surface_in_entity_list,
 )
+
+ForceOutputModelType = Annotated[
+    Union[Wall, BETDisk, ActuatorDisk, PorousMedium],
+    pd.Field(discriminator="type"),
+]
 
 
 class UserDefinedField(Flow360BaseModel):
@@ -648,6 +662,107 @@ class SurfaceIntegralOutput(_OutputBase):
                     " Please assign them to separate outputs."
                 )
         return value
+
+
+class ForceOutput(_OutputBase):
+    """
+    :class:`ForceOutput` class for setting total force output of specific surfaces.
+
+    Example
+    -------
+
+    Define :class:`ForceOutput` to output total CL and CD on multiple wing surfaces and a BET disk.
+
+    >>> wall = fl.Wall(name = 'wing', surfaces=[volume_mesh['1'], volume_mesh["wing2"]])
+    >>> bet_disk = fl.BETDisk(...)
+    >>> fl.ForceOutput(
+    ...     name="force_output",
+    ...     models=[wall, bet_disk],
+    ...     output_fields=["CL", "CD"]
+    ... )
+
+    ====
+    """
+
+    name: str = pd.Field("Force output", description="Name of the force output.")
+    output_fields: UniqueItemList[ForceOutputCoefficientNames] = pd.Field(
+        description="List of force coefficients. Including CL, CD, CFx, CFy, CFz, CMx, CMy, CMz. "
+        "For surface forces, their SkinFriction/Pressure is also supported, such as CLSkinFriction and CLPressure."
+    )
+    models: List[Union[ForceOutputModelType, str]] = pd.Field(
+        description="List of surface/volume models whose force contribution will be calculated.",
+    )
+    moving_statistic: Optional[MovingStatistic] = pd.Field(
+        None, description="The moving statistics used to monitor the output."
+    )
+    output_type: Literal["ForceOutput"] = pd.Field("ForceOutput", frozen=True)
+
+    @pd.field_serializer("models")
+    def serialize_models(self, value, info: pd.FieldSerializationInfo):
+        """Serialize only the model's id of the related object."""
+        if isinstance(info.context, dict) and info.context.get("columnar_data_processor"):
+            return value
+        model_ids = []
+        for model in value:
+            if isinstance(model, get_args(get_args(ForceOutputModelType)[0])):
+                model_ids.append(model.private_attribute_id)
+                continue
+            model_ids.append(model)
+        return model_ids
+
+    @pd.field_validator("models", mode="before")
+    @classmethod
+    def _preprocess_models_with_id(cls, value):
+        """Deserialize string-format models as model objects."""
+
+        def preprocess_single_model(model, validation_info):
+            if not isinstance(model, str):
+                return model
+            if (
+                validation_info is None
+                or validation_info.physics_model_dict is None
+                or validation_info.physics_model_dict.get(model) is None
+            ):
+                raise ValueError("The model does not exist in simulation params' models list.")
+            physics_model_dict = validation_info.physics_model_dict[model]
+            model = pd.TypeAdapter(ForceOutputModelType).validate_python(physics_model_dict)
+            return model
+
+        processed_models = []
+        validation_info = get_validation_info()
+        for model in value:
+            processed_models.append(preprocess_single_model(model, validation_info))
+        return processed_models
+
+    @pd.field_validator("models", mode="after")
+    @classmethod
+    def _check_duplicate_models(cls, value):
+        """Ensure no duplicate models are specified."""
+        model_ids = []
+        for model in value:
+            model_id = model if isinstance(model, str) else model.private_attribute_id
+            if model_id not in model_ids:
+                model_ids.append(model_id)
+                continue
+            raise ValueError("Duplicate models are not allowed in the same `ForceOutput`.")
+        return value
+
+    @pd.field_validator("models", mode="after")
+    @classmethod
+    def _check_output_fields_with_volume_models_specified(cls, value, info: pd.ValidationInfo):
+        """Ensure the output field exists when volume models are specified."""
+        if all(isinstance(model, Wall) for model in value):
+            return value
+        output_fields = info.data.get("output_fields", None)
+        if all(
+            field in ["CL", "CD", "CFx", "CFy", "CFz", "CMx", "CMy", "CMz"]
+            for field in output_fields.items
+        ):
+            return value
+        raise ValueError(
+            "When ActuatorDisk/BETDisk/PorousMedium is specified, "
+            "only CL, CD, CFx, CFy, CFz, CMx, CMy, CMz can be set as output_fields."
+        )
 
 
 class ProbeOutput(_OutputBase):
@@ -1263,6 +1378,7 @@ OutputTypes = Annotated[
         AeroAcousticOutput,
         StreamlineOutput,
         TimeAverageStreamlineOutput,
+        ForceOutput,
     ],
     pd.Field(discriminator="output_type"),
 ]
@@ -1278,6 +1394,6 @@ TimeAverageOutputTypes = (
 )
 
 MonitorOutputType = Annotated[
-    Union[SurfaceIntegralOutput, ProbeOutput, SurfaceProbeOutput],
+    Union[ForceOutput, SurfaceIntegralOutput, ProbeOutput, SurfaceProbeOutput],
     pd.Field(discriminator="output_type"),
 ]
