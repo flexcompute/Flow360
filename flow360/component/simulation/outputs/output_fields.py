@@ -74,6 +74,7 @@ _CD_PER_STRIP = "CD_per_strip"
 _CFx_PER_SPAN = "CFx_per_span"
 _CFz_PER_SPAN = "CFz_per_span"
 _CMy_PER_SPAN = "CMy_per_span"
+# pylint:enable=invalid-name
 
 # Coefficient of pressure
 # Coefficient of total pressure
