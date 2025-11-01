@@ -367,6 +367,16 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
             param_as_dict=param_as_dict
         )
 
+    def will_generate_forced_symmetry_plane(self) -> bool:
+        """
+        Check if the forced symmetry plane will be generated.
+        """
+        return (
+            self.use_geometry_AI
+            and self.is_beta_mesher
+            and self.farfield_domain_type in ("half_body_positive_y", "half_body_negative_y")
+        )
+
 
 class ValidationContext:
     """
