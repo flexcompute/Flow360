@@ -16,6 +16,7 @@ from flow360.component.simulation.meshing_param.params import (
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     AxisymmetricRefinement,
+    CustomZones,
     MeshSliceOutput,
     RotationCylinder,
     RotationVolume,
@@ -182,11 +183,16 @@ def get_test_param():
                     ),
                 ],
                 volume_zones=[
-                    CustomVolume(
-                        name="custom_volume-1",
-                        boundaries=[
-                            Surface(name="interface1"),
-                            Surface(name="interface2"),
+                    CustomZones(
+                        name="custom_zones",
+                        entities=[
+                            CustomVolume(
+                                name="custom_volume-1",
+                                boundaries=[
+                                    Surface(name="interface1"),
+                                    Surface(name="interface2"),
+                                ],
+                            )
                         ],
                     ),
                     UserDefinedFarfield(domain_type="half_body_negative_y"),
@@ -315,3 +321,11 @@ def test_param_to_json_legacy_mesher(get_test_param, get_surface_mesh):
     with open(ref_path, "r") as fh:
         ref_dict = json.load(fh)
     assert sorted(translated.items()) == sorted(ref_dict.items())
+
+
+def test_custom_zones_tetrahedra(get_test_param, get_surface_mesh):
+    """Base branch: No enforceTetrahedralElements emitted; ensure translator does not include it."""
+    params = get_test_param
+    translated = get_volume_meshing_json(params, get_surface_mesh.mesh_unit)
+    assert "zones" in translated and len(translated["zones"]) > 0
+    assert all("enforceTetrahedralElements" not in z for z in translated["zones"])  # type: ignore

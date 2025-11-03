@@ -18,6 +18,7 @@ from flow360.component.simulation.meshing_param.face_params import (
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     AxisymmetricRefinement,
+    CustomZones,
     MeshSliceOutput,
     RotationCylinder,
     RotationVolume,
@@ -25,7 +26,6 @@ from flow360.component.simulation.meshing_param.volume_params import (
     UniformRefinement,
     UserDefinedFarfield,
 )
-from flow360.component.simulation.primitives import CustomVolume
 from flow360.component.simulation.unit_system import AngleType, LengthType
 from flow360.component.simulation.validation.validation_context import (
     SURFACE_MESH,
@@ -56,7 +56,7 @@ VolumeZonesTypes = Annotated[
         RotationCylinder,
         AutomatedFarfield,
         UserDefinedFarfield,
-        CustomVolume,
+        CustomZones,
     ],
     pd.Field(discriminator="type"),
 ]
@@ -329,15 +329,18 @@ class MeshingParams(Flow360BaseModel):
 
         if v is None:
             return v
+
         to_be_generated_volume_zone_names = set()
         for volume_zone in v:
-            if not isinstance(volume_zone, CustomVolume):
+            if not isinstance(volume_zone, CustomZones):
                 continue
-            if volume_zone.name in to_be_generated_volume_zone_names:
-                raise ValueError(
-                    f"Multiple CustomVolume with the same name `{volume_zone.name}` are not allowed."
-                )
-            to_be_generated_volume_zone_names.add(volume_zone.name)
+            # Extract CustomVolume from CustomZones
+            for custom_volume in volume_zone.entities.stored_entities:
+                if custom_volume.name in to_be_generated_volume_zone_names:
+                    raise ValueError(
+                        f"Multiple CustomVolume with the same name `{custom_volume.name}` are not allowed."
+                    )
+                to_be_generated_volume_zone_names.add(custom_volume.name)
 
         return v
 

@@ -14,6 +14,7 @@ from flow360.component.simulation.outputs.output_entities import Slice
 from flow360.component.simulation.primitives import (
     AxisymmetricBody,
     Box,
+    CustomVolume,
     Cylinder,
     GenericVolume,
     GhostSurface,
@@ -500,3 +501,23 @@ class MeshSliceOutput(Flow360BaseModel):
         description="List of output :class:`~flow360.Slice` entities.",
     )
     output_type: Literal["MeshSliceOutput"] = pd.Field("MeshSliceOutput", frozen=True)
+
+
+class CustomZones(Flow360BaseModel):
+    """
+    :class:`CustomZones` class for creating volume zones from custom volumes.
+    Names of the generated volume zones will be the names of the custom volumes.
+
+    Example
+    -------
+
+      >>> fl.CustomZones(name="Custom zones", entities=[custom_volume1, custom_volume2], )
+
+    ====
+    """
+
+    type: Literal["CustomZones"] = pd.Field("CustomZones", frozen=True)
+    name: str = pd.Field("Custom zones", description="Name of the `CustomZones` meshing setting.")
+    entities: EntityList[CustomVolume] = pd.Field(
+        description="The custom volume zones to be generated."
+    )
