@@ -704,7 +704,7 @@ class ForceOutput(_OutputBase):
         description="List of force coefficients. Including CL, CD, CFx, CFy, CFz, CMx, CMy, CMz. "
         "For surface forces, their SkinFriction/Pressure is also supported, such as CLSkinFriction and CLPressure."
     )
-    models: List[Union[ForceOutputModelType, str]] = pd.Field(
+    models: List[ForceOutputModelType] = pd.Field(
         description="List of surface/volume models whose force contribution will be calculated.",
     )
     moving_statistic: Optional[MovingStatistic] = pd.Field(
@@ -755,7 +755,7 @@ class ForceOutput(_OutputBase):
         """Ensure no duplicate models are specified."""
         model_ids = []
         for model in value:
-            model_id = model if isinstance(model, str) else model.private_attribute_id
+            model_id = model.private_attribute_id
             if model_id not in model_ids:
                 model_ids.append(model_id)
                 continue
