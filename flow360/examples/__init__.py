@@ -10,6 +10,7 @@ from .drivaer import DrivAer
 from .evtol import EVTOL
 from .isolated_propeller import IsolatedPropeller
 from .monitors import MonitorsAndSlices
+from .oblique_channel import ObliqueChannel
 from .om6wing import OM6wing
 from .quadcopter import Quadcopter
 from .rotating_spheres import RotatingSpheres
@@ -23,7 +24,6 @@ from .tutorial_dynamic_derivatives import TutorialDynamicDerivatives
 from .tutorial_periodic_BC import TutorialPeriodicBC
 from .tutorial_RANS_xv15 import TutorialRANSXv15
 from .tutorial_UDD_forces_moments import TutorialUDDForcesMoments
-from .oblique_channel import ObliqueChannel
 
 __all__ = [
     "ActuatorDisk",

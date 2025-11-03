@@ -4,9 +4,8 @@ from flow360.examples import ObliqueChannel
 ObliqueChannel.get_files()
 
 project = fl.Project.from_volume_mesh(
-    ObliqueChannel.mesh_filename, 
-    name="Cartesian channel mesh", 
-    solver_version="release-25.7.3")
+    ObliqueChannel.mesh_filename, name="Cartesian channel mesh", solver_version="release-25.7.3"
+)
 
 volume_mesh = project.volume_mesh
 
@@ -37,9 +36,7 @@ with fl.SI_unit_system:
                 total_temperature=op.thermal_state.temperature * 1.018,
                 velocity_direction=(1.0, 0.0, 0.0),
                 spec=fl.MassFlowRate(
-                    value=op.velocity_magnitude
-                    * op.thermal_state.density
-                    * (0.2 * fl.u.m**2)
+                    value=op.velocity_magnitude * op.thermal_state.density * (0.2 * fl.u.m**2)
                 ),
             ),
             fl.Outflow(
