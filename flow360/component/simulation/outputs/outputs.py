@@ -1062,6 +1062,16 @@ class AeroAcousticOutput(Flow360BaseModel):
         description="Enable writing of aeroacoustic results on a per-surface basis, "
         + "in addition to results for all wall surfaces combined.",
     )
+    frequency: int = pd.Field(
+        default=1,
+        ge=1,
+        description="Frequency (in number of physical time steps) at which aeroacoustics is evaluated. ",
+    )
+    frequency_offset: int = pd.Field(
+        default=0,
+        ge=0,
+        description="Offset (in number of physical time steps) at which aeroacoustics evaluation is started.",
+    )
     output_type: Literal["AeroAcousticOutput"] = pd.Field("AeroAcousticOutput", frozen=True)
     private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
 

@@ -634,6 +634,8 @@ def translate_acoustic_output(output_params: list):
                     for item in output.permeable_surfaces.stored_entities
                     if item.full_name != BOUNDARY_FULL_NAME_WHEN_NOT_FOUND
                 ]
+            aeroacoustic_output["animationFrequency"] = output.frequency
+            aeroacoustic_output["animationFrequencyOffset"] = output.frequency_offset
             return aeroacoustic_output
     return None
 
