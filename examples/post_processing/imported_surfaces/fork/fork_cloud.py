@@ -16,7 +16,7 @@ if __name__ == "__main__":
     #case = project.run_case(params, "Run_imported_surface_output")
 
     project = fl.Project.from_cloud("prj-59dd9622-fc8e-4324-bdc8-0e285b7acc05")
-    parent_case = fl.Case(id="case-1cfa38d7-ad69-4c0b-93ff-aa54f2304415")
+    parent_case = fl.Case(id="case-5d380c9f-022f-4a26-beab-a493eed79949")
     params = parent_case.params
 
     project.run_case(params=params, fork_from=parent_case, name="fork via pythonUI")
