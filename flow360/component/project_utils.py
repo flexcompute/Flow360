@@ -36,6 +36,7 @@ from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.user_code.core.types import save_user_variables
 from flow360.component.simulation.utils import model_attribute_unlock
+from flow360.component.surface_mesh_v2 import SurfaceMeshV2
 from flow360.component.utils import parse_datetime
 from flow360.exceptions import Flow360ConfigurationError, Flow360ValueError
 from flow360.log import log
@@ -584,5 +585,60 @@ def upload_imported_surfaces_to_draft(params, draft, parent_case):
     for file_path_to_import in current_draft_surface_file_paths_to_import:
         file_basename = os.path.basename(file_path_to_import)
         if file_basename not in parent_existing_imported_file_basenames:
-            deduplicated_surface_file_paths_to_import.append(file_path_to_import)
-    draft.upload_imported_surfaces(deduplicated_surface_file_paths_to_import)
+            deduplicated_surface_file_paths_to_import.append(
+                {"path": file_path_to_import, "basename": file_basename}
+            )
+
+    if not deduplicated_surface_file_paths_to_import:
+        _normalize_imported_surface_entities(params)
+        return
+
+    response = draft.post(
+        json={
+            "filenames": [entry["basename"] for entry in deduplicated_surface_file_paths_to_import]
+        },
+        method="imported-surfaces",
+    )
+
+    basename_to_surface_mesh_ids: dict[str, list[str]] = {}
+    for entry, resp in zip(deduplicated_surface_file_paths_to_import, response):
+        surface_mesh_id = resp.get("surfaceMeshId")
+        _upload_surface_mesh_resource(
+            surface_mesh_id=surface_mesh_id,
+            local_file_path=entry["path"],
+        )
+        basename_to_surface_mesh_ids.setdefault(entry["basename"], []).append(surface_mesh_id)
+
+    _normalize_imported_surface_entities(params, basename_to_surface_mesh_ids)
+
+
+def _upload_surface_mesh_resource(surface_mesh_id: str, local_file_path: str):
+    if not surface_mesh_id:
+        raise Flow360ConfigurationError("Surface mesh metadata missing for imported surface upload.")
+    surface_mesh = SurfaceMeshV2(surface_mesh_id)
+    remote_file_name = surface_mesh.info.file_name
+    surface_mesh._webapi._upload_file(remote_file_name=remote_file_name, file_name=local_file_path)
+    surface_mesh._webapi._complete_upload()
+
+
+def _normalize_imported_surface_entities(
+    params: SimulationParams, basename_to_surface_mesh_ids: dict[str, list[str]] | None = None
+):
+    if params is None or params.outputs is None:
+        return
+
+    basename_to_iter = {}
+    if basename_to_surface_mesh_ids:
+        basename_to_iter = {
+            basename: iter(mesh_ids) for basename, mesh_ids in basename_to_surface_mesh_ids.items()
+        }
+
+    for output in params.outputs:
+        if isinstance(output, (SurfaceOutput, SurfaceIntegralOutput)):
+            for surface in output.entities.stored_entities:
+                if isinstance(surface, ImportedSurface):
+                    file_basename = os.path.basename(surface.file_name)
+                    surface.file_name = file_basename
+                    iterator = basename_to_iter.get(file_basename)
+                    if iterator is not None:
+                        surface.surface_mesh_id = next(iterator, surface.surface_mesh_id)

@@ -633,6 +633,7 @@ class ImportedSurface(EntityBase):
         "ImportedSurface", frozen=True
     )
     file_name: str
+    surface_mesh_id: Optional[str] = None
 
 
 class GhostSurface(_SurfaceEntityBase):
