@@ -138,6 +138,7 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         "quasi_3d_symmetry_planes_center_y",
         "at_least_one_body_transformed",
         "to_be_generated_custom_volumes",
+        "root_asset_type",
     ]
 
     @classmethod
@@ -246,6 +247,31 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
             param_as_dict, ["meshing", "defaults", "planar_face_tolerance"]
         )
         return planar_face_tolerance
+
+    @classmethod
+    def _get_root_asset_type(cls, param_as_dict: dict):
+        """
+        Returns root asset type based on project_entity_info.type_name
+        geometry -> GeometryEntityInfo
+        surface_mesh -> SurfaceMeshEntityInfo
+        volume_mesh -> VolumeMeshEntityInfo
+        """
+        try:
+            pei = param_as_dict["private_attribute_asset_cache"]["project_entity_info"]
+        except KeyError:
+            return None
+        if pei is None:
+            return None
+        type_name = (
+            pei.get("type_name") if isinstance(pei, dict) else getattr(pei, "type_name", None)
+        )
+        if type_name == "GeometryEntityInfo":
+            return "geometry"
+        if type_name == "SurfaceMeshEntityInfo":
+            return "surface_mesh"
+        if type_name == "VolumeMeshEntityInfo":
+            return "volume_mesh"
+        return None
 
     @classmethod
     def _get_output_dict(cls, param_as_dict: dict):
@@ -380,6 +406,7 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         self.to_be_generated_custom_volumes = self._get_to_be_generated_custom_volumes(
             param_as_dict=param_as_dict
         )
+        self.root_asset_type = self._get_root_asset_type(param_as_dict=param_as_dict)
 
     def will_generate_forced_symmetry_plane(self) -> bool:
         """

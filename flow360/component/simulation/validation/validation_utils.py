@@ -190,6 +190,92 @@ def check_symmetric_boundary_existence(stored_entities):
     return stored_entities
 
 
+def _ghost_surface_names(stored_entities) -> list[str]:
+    """Collect names of ghost-type boundaries in the list."""
+    names = []
+    for item in stored_entities:
+        entity_type = getattr(item, "private_attribute_entity_type_name", None)
+        if isinstance(entity_type, str) and entity_type.startswith("Ghost"):
+            names.append(getattr(item, "name", ""))
+    return names
+
+
+def check_ghost_surface_usage_policy_for_face_refinements(stored_entities, *, feature_name: str):
+    """
+    Enforce GhostSurface usage policy for face-based refinements (SurfaceRefinement, PassiveSpacing).
+
+    Rules provided by product spec:
+    - If starting from Geometry, SurfaceRefinement and PassiveSpacing both can use GhostSurface, if:
+        - Automated farfield: if using beta mesher.
+        - User-defined farfield: if using GAI and beta mesher.
+    - If starting from Surface mesh:
+        - Automated farfield: allow GhostSurface for PassiveSpacing only.
+        - User-defined farfield: do not allow any GhostSurface.
+    """
+    validation_info = get_validation_info()
+    if validation_info is None:
+        return stored_entities
+
+    if not stored_entities:
+        return stored_entities
+
+    ghost_names = _ghost_surface_names(stored_entities)
+    if not ghost_names:
+        return stored_entities
+
+    root_asset_type = getattr(validation_info, "root_asset_type", None)
+    farfield_method = validation_info.farfield_method
+    use_beta = validation_info.is_beta_mesher
+    use_gai = validation_info.use_geometry_AI
+
+    # Default error messages
+    def _err(msg):
+        raise ValueError(msg)
+
+    names_str = ", ".join(sorted(set(ghost_names)))
+
+    if root_asset_type == "geometry":
+        if farfield_method == "user-defined":
+            if not (use_beta and use_gai):
+                _err(
+                    (
+                        f"Face refinements on '{names_str}' require both Geometry AI and the beta mesher "
+                        "when using user-defined farfield."
+                    )
+                )
+        else:
+            # automated variants (auto / quasi-3d / quasi-3d-periodic)
+            if not use_beta:
+                _err(
+                    (
+                        f"Face refinements on '{names_str}' for automated farfield "
+                        "requires beta mesher."
+                    )
+                )
+        return stored_entities
+
+    if root_asset_type == "surface_mesh":
+        if farfield_method == "user-defined":
+            _err(
+                (
+                    f"Boundary '{names_str}' is not allowed when starting from an uploaded surface mesh "
+                    "with user-defined farfield."
+                )
+            )
+        # automated variants
+        if feature_name == "SurfaceRefinement":
+            _err(
+                (
+                    f"Boundary '{names_str}' is not allowed for SurfaceRefinement when starting from an "
+                    "uploaded surface mesh with automated farfield."
+                )
+            )
+        return stored_entities
+
+    # Other asset type: proceed without additional restriction
+    return stored_entities
+
+
 class EntityUsageMap:  # pylint:disable=too-few-public-methods
     """
     A customized dict to store the entity name and its usage.

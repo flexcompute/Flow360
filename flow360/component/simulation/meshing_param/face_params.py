@@ -19,6 +19,7 @@ from flow360.component.simulation.validation.validation_context import (
 )
 from flow360.component.simulation.validation.validation_utils import (
     check_deleted_surface_in_entity_list,
+    check_ghost_surface_usage_policy_for_face_refinements,
 )
 
 
@@ -51,6 +52,9 @@ class SurfaceRefinement(Flow360BaseModel):
     @classmethod
     def ensure_surface_existence(cls, value):
         """Ensure all boundaries will be present after mesher"""
+        check_ghost_surface_usage_policy_for_face_refinements(
+            value.stored_entities, feature_name="SurfaceRefinement"
+        )
         return check_deleted_surface_in_entity_list(value)
 
 
@@ -138,6 +142,9 @@ class PassiveSpacing(Flow360BaseModel):
     @classmethod
     def ensure_surface_existence(cls, value):
         """Ensure all boundaries will be present after mesher"""
+        check_ghost_surface_usage_policy_for_face_refinements(
+            value.stored_entities, feature_name="PassiveSpacing"
+        )
         return check_deleted_surface_in_entity_list(value)
 
 

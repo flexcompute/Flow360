@@ -76,35 +76,54 @@ def _run_validation(params, surface_mesh_obj, use_beta_mesher=True, use_geometry
 
 
 def test_automated_farfield_surface_usage():
-    # Test use of GhostSurface in meshing
-    with pytest.raises(
-        ValueError,
-        match=re.escape("Can not find any valid entity of type ['Surface'] from the input."),
-    ):
-        with SI_unit_system:
-            my_farfield = AutomatedFarfield(name="my_farfield")
-            _ = SimulationParams(
-                meshing=MeshingParams(
-                    volume_zones=[
-                        my_farfield,
-                    ],
-                    refinements=[
-                        SurfaceRefinement(
-                            name="does not work",
-                            entities=[my_farfield.farfield],
-                            max_edge_length=1e-4,
-                        )
-                    ],
-                ),
-            )
+    # Test use of GhostSurface in meshing via ValidationContext (Surface mesh + automated farfield):
+    import pydantic as pd
 
-    # Test use of GhostSurface in boundary conditions
-    with pytest.raises(
-        ValueError,
-        match=re.escape("Can not find any valid entity of type ['Surface'] from the input."),
-    ):
-        with SI_unit_system:
-            my_farfield = AutomatedFarfield(name="my_farfield")
+    from flow360.component.simulation.validation.validation_context import (
+        VOLUME_MESH,
+        ParamsValidationInfo,
+        ValidationContext,
+    )
+
+    with SI_unit_system:
+        my_farfield = AutomatedFarfield(name="my_farfield")
+        param_dict = {
+            "meshing": {
+                "volume_zones": [
+                    {"type": "AutomatedFarfield", "method": "auto"},
+                ]
+            },
+            "private_attribute_asset_cache": {
+                "use_inhouse_mesher": True,
+                "use_geometry_AI": True,
+                "project_entity_info": {"type_name": "SurfaceMeshEntityInfo"},
+            },
+        }
+        info = ParamsValidationInfo(param_as_dict=param_dict, referenced_expressions=[])
+        with ValidationContext(levels=VOLUME_MESH, info=info):
+            with pytest.raises(pd.ValidationError):
+                _ = SimulationParams(
+                    meshing=MeshingParams(
+                        volume_zones=[
+                            my_farfield,
+                        ],
+                        refinements=[
+                            SurfaceRefinement(
+                                name="does not work",
+                                entities=[my_farfield.farfield],
+                                max_edge_length=1e-4,
+                            )
+                        ],
+                    ),
+                )
+
+    # Boundary condition (Wall) does not accept GhostSurface by type; keep original type-level error
+    with SI_unit_system:
+        my_farfield = AutomatedFarfield(name="my_farfield")
+        with pytest.raises(
+            ValueError,
+            match=re.escape("Can not find any valid entity of type ['Surface'] from the input."),
+        ):
             _ = SimulationParams(
                 meshing=MeshingParams(
                     volume_zones=[
@@ -118,7 +137,7 @@ def test_automated_farfield_surface_usage():
                         )
                     ],
                 ),
-                models=[Wall(name="wall", surface=my_farfield.farfield)],
+                models=[Wall(name="wall", surfaces=[my_farfield.farfield])],
             )
 
     with SI_unit_system:
