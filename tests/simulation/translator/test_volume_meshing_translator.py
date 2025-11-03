@@ -309,3 +309,31 @@ def test_custom_zones_tetrahedra(get_test_param, get_surface_mesh):
     translated = get_volume_meshing_json(params, get_surface_mesh.mesh_unit)
     assert "zones" in translated and len(translated["zones"]) > 0
     assert all("enforceTetrahedralElements" not in z for z in translated["zones"])  # type: ignore
+
+
+def test_passive_spacing_with_ghost_symmetry_in_faces(get_surface_mesh):
+    # PassiveSpacing using a GhostSurface (UserDefinedFarfield.symmetry_plane)
+    with SI_unit_system:
+        far = UserDefinedFarfield(domain_type="half_body_positive_y")
+        params = SimulationParams(
+            meshing=MeshingParams(
+                refinement_factor=1.0,
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-6 * u.m,
+                    boundary_layer_growth_rate=1.2,
+                ),
+                volume_zones=[far],
+                refinements=[
+                    PassiveSpacing(entities=[far.symmetry_plane], type="projected"),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(
+                use_inhouse_mesher=True,
+                use_geometry_AI=True,
+            ),
+        )
+
+    translated = get_volume_meshing_json(params, get_surface_mesh.mesh_unit)
+    assert "faces" in translated
+    assert "symmetric" in translated["faces"]
+    assert translated["faces"]["symmetric"]["type"] == "projectAnisoSpacing"

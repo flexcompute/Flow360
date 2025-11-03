@@ -7,7 +7,12 @@ import pydantic as pd
 import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
-from flow360.component.simulation.primitives import Surface
+from flow360.component.simulation.models.surface_models import EntityListAllowingGhost
+from flow360.component.simulation.primitives import (
+    GhostCircularPlane,
+    GhostSurface,
+    Surface,
+)
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.validation.validation_context import (
     get_validation_info,
@@ -34,7 +39,9 @@ class SurfaceRefinement(Flow360BaseModel):
 
     name: Optional[str] = pd.Field("Surface refinement")
     refinement_type: Literal["SurfaceRefinement"] = pd.Field("SurfaceRefinement", frozen=True)
-    entities: EntityList[Surface] = pd.Field(alias="faces")
+    entities: EntityListAllowingGhost[Surface, GhostSurface, GhostCircularPlane] = pd.Field(
+        alias="faces"
+    )
     # pylint: disable=no-member
     max_edge_length: LengthType.Positive = pd.Field(
         description="Maximum edge length of surface cells."
@@ -123,7 +130,9 @@ class PassiveSpacing(Flow360BaseModel):
         """
     )
     refinement_type: Literal["PassiveSpacing"] = pd.Field("PassiveSpacing", frozen=True)
-    entities: EntityList[Surface] = pd.Field(alias="faces")
+    entities: EntityListAllowingGhost[Surface, GhostSurface, GhostCircularPlane] = pd.Field(
+        alias="faces"
+    )
 
     @pd.field_validator("entities", mode="after")
     @classmethod
