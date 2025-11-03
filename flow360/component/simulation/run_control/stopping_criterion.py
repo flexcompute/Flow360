@@ -70,9 +70,7 @@ class StoppingCriterion(Flow360BaseModel):
         description="The field to be monitored. This field must be "
         "present in the `output_fields` of `monitor_output`."
     )
-    monitor_output: Union[MonitorOutputType, str] = pd.Field(
-        description="The output to be monitored."
-    )
+    monitor_output: MonitorOutputType = pd.Field(description="The output to be monitored.")
     tolerance: ValueOrExpression[Union[UnytQuantity, float]] = pd.Field(
         description="The tolerance threshold of this criterion."
     )
@@ -146,8 +144,6 @@ class StoppingCriterion(Flow360BaseModel):
     @classmethod
     def _check_field_exists_in_monitor_output(cls, v, info: pd.ValidationInfo):
         """Ensure the monitor field exist in the monitor output."""
-        if isinstance(v, str):
-            return v
         monitor_field = info.data.get("monitor_field", None)
         if monitor_field not in v.output_fields.items:
             raise ValueError("The monitor field does not exist in the monitor output.")
