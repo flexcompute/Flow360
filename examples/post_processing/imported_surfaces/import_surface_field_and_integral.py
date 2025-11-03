@@ -1,8 +1,12 @@
 import flow360 as fl
+from flow360.examples import ObliqueChannel
 
-mesh_file = "cartesian_2d_mesh.oblique.cgns"
+ObliqueChannel.get_files()
 
-project = fl.Project.from_volume_mesh(mesh_file, name="Cartesian_mesh.cgns", solver_version="release-25.7.3")
+project = fl.Project.from_volume_mesh(
+    ObliqueChannel.mesh_filename, 
+    name="Cartesian channel mesh", 
+    solver_version="release-25.7.3")
 
 volume_mesh = project.volume_mesh
 
@@ -64,10 +68,10 @@ with fl.SI_unit_system:
                 ],
                 surfaces=[
                     fl.ImportedSurface(
-                        name="normal", file_name="rectangle_normal.cgns"
+                        name="normal", file_name=ObliqueChannel.extra["rectangle_normal"]
                     ),
                     fl.ImportedSurface(
-                        name="oblique", file_name="rectangle_oblique.cgns"
+                        name="oblique", file_name=ObliqueChannel.extra["rectangle_oblique"]
                     ),
                 ],
             ),
@@ -76,10 +80,10 @@ with fl.SI_unit_system:
                 output_fields=[massFlowRate],
                 surfaces=[
                     fl.ImportedSurface(
-                        name="normal", file_name="rectangle_normal.cgns"
+                        name="normal", file_name=ObliqueChannel.extra["rectangle_normal"]
                     ),
                     fl.ImportedSurface(
-                        name="oblique", file_name="rectangle_oblique.cgns"
+                        name="oblique", file_name=ObliqueChannel.extra["rectangle_oblique"]
                     ),
                 ],
             ),
