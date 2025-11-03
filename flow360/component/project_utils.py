@@ -480,3 +480,10 @@ def upload_imported_surfaces_to_draft(params, draft, parent_case):
         if file_basename not in parent_existing_imported_file_basenames:
             deduplicated_surface_file_paths_to_import.append(file_path_to_import)
     draft.upload_imported_surfaces(deduplicated_surface_file_paths_to_import)
+
+    if params is not None and params.outputs is not None:
+        for output in params.outputs:
+            if isinstance(output, (SurfaceOutput, SurfaceIntegralOutput)):
+                for surface in output.entities.stored_entities:
+                    if isinstance(surface, ImportedSurface):
+                        surface.file_name = os.path.basename(surface.file_name)
