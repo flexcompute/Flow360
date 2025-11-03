@@ -145,7 +145,7 @@ def test_automated_farfield_surface_usage():
         _ = SimulationParams(
             models=[
                 SlipWall(name="slipwall", entities=my_farfield.farfield),
-                SymmetryPlane(name="symm_plane", entities=my_farfield.symmetry_planes),
+                SymmetryPlane(name="symm_plane", entities=my_farfield.symmetry_plane),
             ],
         )
 
@@ -166,7 +166,7 @@ def test_automated_farfield_surface_usage():
                 SurfaceIntegralOutput(
                     name="prb 110",
                     entities=[
-                        my_farfield.symmetry_planes,
+                        my_farfield.symmetry_plane,
                         Surface(name="surface2"),
                     ],
                     output_fields=["Cpt_user_defined"],
@@ -225,7 +225,7 @@ def test_symmetric_existence(surface_mesh):
         "The following boundaries do not have a boundary condition: symmetric." in errors[0]["msg"]
     )
 
-    params.models.append(SymmetryPlane(surfaces=[farfield.symmetry_planes]))
+    params.models.append(SymmetryPlane(surfaces=[farfield.symmetry_plane]))
     errors = _run_validation(params, surface_mesh)
     assert errors is None
 
@@ -379,7 +379,7 @@ def test_rotated_symmetric_existence():
                             and item.name != "body00001_face00001"
                         ]
                     ),
-                    SlipWall(surfaces=[farfield.symmetry_planes]),
+                    SlipWall(surfaces=[farfield.symmetry_plane]),
                 ],
             )
 
@@ -391,7 +391,7 @@ def test_rotated_symmetric_existence():
             root_item_type="Geometry",
             validation_level="All",
         )
-        print("# * 3: Deleted boundary")
+
         # * 3: Deleted boundary
         with SI_unit_system:
             params = SimulationParams(
@@ -412,7 +412,7 @@ def test_rotated_symmetric_existence():
                             item for item in geometry["*"] if item.name != "body00001_face00005"
                         ]
                     ),
-                    SlipWall(surfaces=[farfield.symmetry_planes]),
+                    SlipWall(surfaces=[farfield.symmetry_plane]),
                 ],
             )
 

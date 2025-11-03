@@ -421,6 +421,17 @@ class AutomatedFarfield(_FarfieldBase):
         return GhostSurface(name="farfield")
 
     @property
+    def symmetry_plane(self) -> GhostSurface:
+        """
+        Returns the symmetry plane boundary surface.
+        """
+        if self.method == "auto":
+            return GhostSurface(name="symmetric")
+        raise ValueError(
+            "Unavailable for quasi-3d farfield methods. Please use `symmetry_planes` property instead."
+        )
+
+    @property
     def symmetry_planes(self):
         """Returns the symmetry plane boundary surface(s)."""
         # Make sure the naming is the same here and what the geometry/surface mesh pipeline generates.
@@ -472,7 +483,10 @@ class UserDefinedFarfield(_FarfieldBase):
         Warning: This should only be used when using GAI and beta mesher.
         """
         if self.domain_type not in ("half_body_positive_y", "half_body_negative_y"):
-            raise ValueError("Symmetry plane is only supported for half body domains.")
+            raise ValueError(
+                "Symmetry plane of user defined farfield is only supported when domain_type "
+                "is `half_body_positive_y` or `half_body_negative_y`."
+            )
         return GhostSurface(name="symmetric")
 
 
