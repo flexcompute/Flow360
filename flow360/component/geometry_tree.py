@@ -331,6 +331,63 @@ class NodeCollection:
         
         return NodeCollection(all_children)
     
+    def search(
+        self,
+        type: Optional[NodeType] = None,
+        name: Optional[str] = None,
+        colorRGB: Optional[str] = None,
+        material: Optional[str] = None,
+        attributes: Optional[Dict[str, str]] = None,
+    ) -> "CollectionTreeSearch":
+        """
+        Create a deferred search operation across all nodes in the collection.
+        
+        This method searches the subtrees of all nodes in this collection for nodes
+        matching the given criteria. It returns a CollectionTreeSearch instance that
+        captures the search criteria but does not execute until needed.
+        
+        Supports wildcard matching for name and material using '*' character.
+        All criteria are ANDed together.
+        
+        Parameters
+        ----------
+        type : Optional[NodeType]
+            Node type to match (e.g., NodeType.FRMFeature)
+        name : Optional[str]
+            Name pattern to match. Supports wildcards:
+            - "*wing*" matches any name containing "wing"
+            - "wing*" matches any name starting with "wing"
+            - "*wing" matches any name ending with "wing"
+            - "wing" matches exact name "wing"
+        colorRGB : Optional[str]
+            RGB color string to match (e.g., "255,0,0" for red)
+        material : Optional[str]
+            Material name to match. Supports wildcard matching like name parameter.
+        attributes : Optional[Dict[str, str]]
+            Dictionary of attribute key-value pairs to match
+            
+        Returns
+        -------
+        CollectionTreeSearch
+            A search instance that can be executed later to get matching nodes
+            
+        Examples
+        --------
+        >>> # Search for FRMFeature nodes across multiple nodes
+        >>> results = collection.search(type=NodeType.FRMFeature, name="Boss-Extrude3")
+        >>>
+        >>> # Pass to create_face_group or add methods
+        >>> wing.add(results)
+        """
+        return CollectionTreeSearch(
+            nodes=self._nodes,
+            type=type,
+            name=name,
+            colorRGB=colorRGB,
+            material=material,
+            attributes=attributes,
+        )
+    
     def __len__(self) -> int:
         """Return the number of nodes in this collection"""
         return len(self._nodes)
@@ -455,6 +512,101 @@ class TreeSearch:
             criteria.append(f"attributes={self.attributes}")
         criteria_str = ", ".join(criteria)
         return f"TreeSearch({criteria_str})"
+
+
+class CollectionTreeSearch:
+    """
+    Represents a deferred tree search operation across multiple nodes.
+    
+    This class is similar to TreeSearch but operates on a collection of nodes
+    instead of a single node. It captures search criteria and executes the search
+    across all nodes when requested.
+    """
+
+    def __init__(
+        self,
+        nodes: List[TreeNode],
+        type: Optional[NodeType] = None,
+        name: Optional[str] = None,
+        colorRGB: Optional[str] = None,
+        material: Optional[str] = None,
+        attributes: Optional[Dict[str, str]] = None,
+    ):
+        """
+        Initialize a CollectionTreeSearch with search criteria.
+
+        Parameters
+        ----------
+        nodes : List[TreeNode]
+            The nodes from which to start the search (searches their subtrees)
+        type : Optional[NodeType]
+            Node type to match (e.g., NodeType.FRMFeature)
+        name : Optional[str]
+            Name pattern to match. Supports wildcards (e.g., "*wing*")
+        colorRGB : Optional[str]
+            RGB color string to match (e.g., "255,0,0")
+        material : Optional[str]
+            Material name to match. Supports wildcards.
+        attributes : Optional[Dict[str, str]]
+            Dictionary of attribute key-value pairs to match
+        """
+        self.nodes = nodes
+        self.type = type
+        self.name = name
+        self.colorRGB = colorRGB
+        self.material = material
+        self.attributes = attributes
+
+    def execute(self) -> List[TreeNode]:
+        """
+        Execute the search across all nodes and return matching nodes.
+        
+        Searches the subtree of each node in the collection and combines
+        all matching results, avoiding duplicates.
+
+        Returns
+        -------
+        List[TreeNode]
+            List of unique nodes matching the search criteria across all subtrees
+        """
+        all_matches = []
+        seen_ids = set()
+        
+        for node in self.nodes:
+            # Create a TreeSearch for this node
+            tree_search = TreeSearch(
+                node=node,
+                type=self.type,
+                name=self.name,
+                colorRGB=self.colorRGB,
+                material=self.material,
+                attributes=self.attributes,
+            )
+            
+            # Execute and collect matches, avoiding duplicates
+            matches = tree_search.execute()
+            for match in matches:
+                node_id = id(match)
+                if node_id not in seen_ids:
+                    seen_ids.add(node_id)
+                    all_matches.append(match)
+        
+        return all_matches
+
+    def __repr__(self):
+        criteria = []
+        if self.type is not None:
+            criteria.append(f"type={self.type.value}")
+        if self.name is not None:
+            criteria.append(f"name='{self.name}'")
+        if self.colorRGB is not None:
+            criteria.append(f"colorRGB='{self.colorRGB}'")
+        if self.material is not None:
+            criteria.append(f"material='{self.material}'")
+        if self.attributes is not None:
+            criteria.append(f"attributes={self.attributes}")
+        criteria_str = ", ".join(criteria)
+        return f"CollectionTreeSearch({len(self.nodes)} nodes, {criteria_str})"
 
 
 class GeometryTree:

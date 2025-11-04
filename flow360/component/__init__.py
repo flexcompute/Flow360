@@ -1,6 +1,7 @@
 """Flow360 Component Module"""
 
 from flow360.component.geometry_tree import (
+    CollectionTreeSearch,
     GeometryTree,
     NodeCollection,
     NodeType,
@@ -9,6 +10,7 @@ from flow360.component.geometry_tree import (
 )
 
 __all__ = [
+    "CollectionTreeSearch",
     "GeometryTree",
     "NodeCollection",
     "NodeType",

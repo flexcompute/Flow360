@@ -19,6 +19,7 @@ from flow360.cloud.flow360_requests import (
 from flow360.cloud.heartbeat import post_upload_heartbeat
 from flow360.cloud.rest_api import RestApi
 from flow360.component.geometry_tree import (
+    CollectionTreeSearch,
     GeometryTree,
     NodeCollection,
     NodeType,
@@ -272,7 +273,7 @@ class FaceGroup:
         return len(self._faces)
 
     def add(
-        self, selection: Union[TreeNode, List[TreeNode], NodeCollection, TreeSearch]
+        self, selection: Union[TreeNode, List[TreeNode], NodeCollection, TreeSearch, CollectionTreeSearch]
     ) -> "FaceGroup":
         """
         Add more nodes to this face group.
@@ -281,9 +282,10 @@ class FaceGroup:
         
         Parameters
         ----------
-        selection : Union[TreeNode, List[TreeNode], NodeCollection, TreeSearch]
+        selection : Union[TreeNode, List[TreeNode], NodeCollection, TreeSearch, CollectionTreeSearch]
             Nodes to add to this group. Can be:
             - TreeSearch instance - will be executed internally
+            - CollectionTreeSearch instance - will be executed internally
             - NodeCollection - nodes will be extracted
             - Single TreeNode - will be wrapped in a list
             - List of TreeNode instances
@@ -714,7 +716,7 @@ class Geometry(AssetBase):
         self.print_face_grouping_stats()
 
     def create_face_group(
-        self, name: str, selection: Union[TreeNode, List[TreeNode], NodeCollection, TreeSearch]
+        self, name: str, selection: Union[TreeNode, List[TreeNode], NodeCollection, TreeSearch, CollectionTreeSearch]
     ) -> FaceGroup:
         """
         Create a face group based on explicit selection of tree nodes
@@ -728,9 +730,10 @@ class Geometry(AssetBase):
         ----------
         name : str
             Name of the face group
-        selection : Union[TreeNode, List[TreeNode], NodeCollection, TreeSearch]
+        selection : Union[TreeNode, List[TreeNode], NodeCollection, TreeSearch, CollectionTreeSearch]
             Can be one of:
             - TreeSearch instance (returned from tree_root.search()) - will be executed internally
+            - CollectionTreeSearch instance (returned from NodeCollection.search()) - will be executed internally
             - NodeCollection (returned from tree_root.children()) - nodes will be extracted
             - Single TreeNode - all faces under this node will be included
             - List of TreeNode instances - all faces under these nodes will be included
@@ -787,7 +790,7 @@ class Geometry(AssetBase):
         return face_group
 
     def _add_to_face_group(
-        self, face_group: FaceGroup, selection: Union[TreeNode, List[TreeNode], NodeCollection, TreeSearch]
+        self, face_group: FaceGroup, selection: Union[TreeNode, List[TreeNode], NodeCollection, TreeSearch, CollectionTreeSearch]
     ) -> None:
         """
         Internal method to add faces to a face group.
@@ -804,8 +807,8 @@ class Geometry(AssetBase):
         ----------
         face_group : FaceGroup
             The face group to add faces to
-        selection : Union[TreeNode, List[TreeNode], NodeCollection, TreeSearch]
-            The selection to add (TreeSearch, NodeCollection, TreeNode, or list of TreeNodes)
+        selection : Union[TreeNode, List[TreeNode], NodeCollection, TreeSearch, CollectionTreeSearch]
+            The selection to add (TreeSearch, CollectionTreeSearch, NodeCollection, TreeNode, or list of TreeNodes)
         
         Notes
         -----
@@ -813,7 +816,7 @@ class Geometry(AssetBase):
         automatically removed from the Geometry's face group registry.
         """
         # Handle different selection types
-        if isinstance(selection, TreeSearch):
+        if isinstance(selection, (TreeSearch, CollectionTreeSearch)):
             selected_nodes = selection.execute()
         elif isinstance(selection, NodeCollection):
             selected_nodes = selection.nodes
