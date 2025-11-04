@@ -492,6 +492,74 @@ def test_subscript_access():
     assert model.scalar.evaluate() == 10
 
 
+def test_subscript_on_binary_expression_codegen_cpp():
+    from flow360.component.simulation.blueprint.core.generator import expr_to_code
+    from flow360.component.simulation.blueprint.core.parser import expr_to_model
+    from flow360.component.simulation.blueprint.core.types import TargetSyntax
+    from flow360.component.simulation.user_code.core.context import default_context
+
+    # Ensure codegen supports subscript on a BinOp value, e.g., (a * b)[0]
+    expression_str = "(solution.pressure * solution.node_area_vector)[0]"
+    expr_model = expr_to_model(expression_str, default_context)
+    code = expr_to_code(expr_model, TargetSyntax.CPP)
+
+    # In C++ we prefer pushing the subscript into the vector operand:
+    # ((solution.pressure * solution.node_area_vector[0]))
+    assert code == "((solution.pressure * solution.node_area_vector[0]))"
+
+
+def test_subscript_on_binary_expression_velocity_cpp():
+    from flow360.component.simulation.blueprint.core.generator import expr_to_code
+    from flow360.component.simulation.blueprint.core.parser import expr_to_model
+    from flow360.component.simulation.blueprint.core.types import TargetSyntax
+    from flow360.component.simulation.user_code.core.context import default_context
+
+    expression_str = "(solution.pressure * solution.velocity)[1]"
+    expr_model = expr_to_model(expression_str, default_context)
+    code = expr_to_code(expr_model, TargetSyntax.CPP)
+
+    assert code == "((solution.pressure * solution.velocity[1]))"
+
+
+def test_subscript_on_binary_expression_constant_left_cpp():
+    from flow360.component.simulation.blueprint.core.generator import expr_to_code
+    from flow360.component.simulation.blueprint.core.parser import expr_to_model
+    from flow360.component.simulation.blueprint.core.types import TargetSyntax
+    from flow360.component.simulation.user_code.core.context import default_context
+
+    expression_str = "(2.0 * solution.node_area_vector)[2]"
+    expr_model = expr_to_model(expression_str, default_context)
+    code = expr_to_code(expr_model, TargetSyntax.CPP)
+
+    assert code == "((2.0 * solution.node_area_vector[2]))"
+
+
+def test_subscript_on_binary_expression_dynamic_index_cpp():
+    from flow360.component.simulation.blueprint.core.generator import expr_to_code
+    from flow360.component.simulation.blueprint.core.parser import expr_to_model
+    from flow360.component.simulation.blueprint.core.types import TargetSyntax
+    from flow360.component.simulation.user_code.core.context import default_context
+
+    expression_str = "(solution.pressure * solution.node_area_vector)[control.physicalStep]"
+    expr_model = expr_to_model(expression_str, default_context)
+    code = expr_to_code(expr_model, TargetSyntax.CPP)
+
+    assert code == "((solution.pressure * solution.node_area_vector[control.physicalStep]))"
+
+
+def test_subscript_on_binary_expression_with_left_parens_cpp():
+    from flow360.component.simulation.blueprint.core.generator import expr_to_code
+    from flow360.component.simulation.blueprint.core.parser import expr_to_model
+    from flow360.component.simulation.blueprint.core.types import TargetSyntax
+    from flow360.component.simulation.user_code.core.context import default_context
+
+    expression_str = "((solution.pressure + 1) * solution.node_area_vector)[2]"
+    expr_model = expr_to_model(expression_str, default_context)
+    code = expr_to_code(expr_model, TargetSyntax.CPP)
+
+    assert code == "(((solution.pressure + 1) * solution.node_area_vector[2]))"
+
+
 def test_error_message():
     class TestModel(Flow360BaseModel):
         field: ValueOrExpression[VelocityType] = pd.Field()

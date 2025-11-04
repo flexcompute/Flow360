@@ -1,3 +1,6 @@
+import json
+import os
+
 import pytest
 
 import flow360.component.simulation.units as u
@@ -5,6 +8,7 @@ from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.meshing_param.face_params import (
     BoundaryLayer,
     PassiveSpacing,
+    SurfaceRefinement,
 )
 from flow360.component.simulation.meshing_param.params import (
     MeshingDefaults,
@@ -13,7 +17,7 @@ from flow360.component.simulation.meshing_param.params import (
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     AxisymmetricRefinement,
-    RotationCylinder,
+    CustomZones,
     RotationVolume,
     StructuredBoxRefinement,
     UniformRefinement,
@@ -24,6 +28,7 @@ from flow360.component.simulation.primitives import (
     Box,
     CustomVolume,
     Cylinder,
+    GhostCircularPlane,
     Surface,
 )
 from flow360.component.simulation.simulation_params import SimulationParams
@@ -31,6 +36,7 @@ from flow360.component.simulation.translator.volume_meshing_translator import (
     get_volume_meshing_json,
 )
 from flow360.component.simulation.unit_system import LengthType, SI_unit_system
+from flow360.component.simulation.utils import model_attribute_unlock
 from tests.simulation.conftest import AssetBase
 
 
@@ -176,11 +182,16 @@ def get_test_param():
                     ),
                 ],
                 volume_zones=[
-                    CustomVolume(
-                        name="custom_volume-1",
-                        boundaries=[
-                            Surface(name="interface1"),
-                            Surface(name="interface2"),
+                    CustomZones(
+                        name="custom_zones",
+                        entities=[
+                            CustomVolume(
+                                name="custom_volume-1",
+                                boundaries=[
+                                    Surface(name="interface1"),
+                                    Surface(name="interface2"),
+                                ],
+                            )
                         ],
                     ),
                     UserDefinedFarfield(domain_type="half_body_negative_y"),
@@ -245,169 +256,14 @@ def get_test_param():
 
 def test_param_to_json(get_test_param, get_surface_mesh):
     translated = get_volume_meshing_json(get_test_param, get_surface_mesh.mesh_unit)
-
-    ref_dict = {
-        "refinementFactor": 1.45,
-        "farfield": {"type": "user-defined", "domainType": "half_body_negative_y"},
-        "volume": {
-            "firstLayerThickness": 1.35e-06,
-            "growthRate": 1.04,
-            "gapTreatmentStrength": 0.0,
-            "planarFaceTolerance": 1e-6,
-            "numBoundaryLayers": -1,
-        },
-        "faces": {
-            "boundary1": {
-                "firstLayerThickness": 0.5,
-                "type": "aniso",
-                "growthRate": 1.3,
-            },
-            "passive1": {"type": "projectAnisoSpacing"},
-            "passive2": {"type": "none"},
-        },
-        "refinement": [
-            {
-                "type": "cylinder",
-                "radius": 1.1,
-                "length": 2.0,
-                "axis": [0.0, 1.0, 0.0],
-                "center": [0.7, -1.0, 0.0],
-                "spacing": 0.075,
-            },
-            {
-                "type": "box",
-                "size": [4.0, 5.0, 6.0],
-                "center": [0.0, 1.0, 2.0],
-                "axisOfRotation": [0.0, 0.0, 1.0],
-                "angleOfRotation": 45.0,
-                "spacing": 0.075,
-            },
-        ],
-        "rotorDisks": [
-            {
-                "name": "enclosed",
-                "innerRadius": 0,
-                "outerRadius": 1.1,
-                "thickness": 0.15,
-                "axisThrust": [0.0, 1.0, 0.0],
-                "center": [0.7, -1.0, 0.0],
-                "spacingAxial": 0.2,
-                "spacingRadial": 0.2,
-                "spacingCircumferential": 0.2,
-            }
-        ],
-        "slidingInterfaces": [  # comes from documentation page
-            {
-                "name": "inner",
-                "type": "Cylinder",
-                "innerRadius": 0,
-                "outerRadius": 0.75,
-                "thickness": 0.5,
-                "axisOfRotation": [0.0, 0.0, 1.0],
-                "center": [0.0, 0.0, 0.0],
-                "spacingAxial": 0.2,
-                "spacingRadial": 0.2,
-                "spacingCircumferential": 0.2,
-                "enclosedObjects": [
-                    "hub",
-                    "blade1",
-                    "blade2",
-                    "blade3",
-                    "slidingInterface-cone",
-                ],
-            },
-            {
-                "name": "mid",
-                "type": "Cylinder",
-                "innerRadius": 0,
-                "outerRadius": 2.0,
-                "thickness": 2.0,
-                "axisOfRotation": [0.0, 1.0, 0.0],
-                "center": [0.0, 0.0, 0.0],
-                "spacingAxial": 0.2,
-                "spacingRadial": 0.2,
-                "spacingCircumferential": 0.2,
-                "enclosedObjects": ["slidingInterface-inner"],
-            },
-            {
-                "name": "2",
-                "type": "Cylinder",
-                "innerRadius": 0,
-                "outerRadius": 2.0,
-                "thickness": 2.0,
-                "axisOfRotation": [0.0, 1.0, 0.0],
-                "center": [0.0, 5.0, 0.0],
-                "spacingAxial": 0.2,
-                "spacingRadial": 0.2,
-                "spacingCircumferential": 0.2,
-                "enclosedObjects": ["rotorDisk-enclosed", "structuredBox-porousRegion"],
-            },
-            {
-                "name": "3",
-                "type": "Cylinder",
-                "innerRadius": 1.5,
-                "outerRadius": 2.0,
-                "thickness": 2.0,
-                "axisOfRotation": [0.0, 1.0, 0.0],
-                "center": [0.0, -5.0, 0.0],
-                "spacingAxial": 0.2,
-                "spacingRadial": 0.2,
-                "spacingCircumferential": 0.2,
-                "enclosedObjects": [],
-            },
-            {
-                "name": "outer",
-                "type": "Cylinder",
-                "innerRadius": 0.0,
-                "outerRadius": 8.0,
-                "thickness": 6.0,
-                "axisOfRotation": [1.0, 0.0, 0.0],
-                "center": [0.0, 0.0, 0.0],
-                "spacingAxial": 0.4,
-                "spacingRadial": 0.4,
-                "spacingCircumferential": 0.4,
-                "enclosedObjects": [
-                    "slidingInterface-mid",
-                    "rotorDisk-enclosed",
-                    "slidingInterface-2",
-                    "slidingInterface-3",
-                ],
-            },
-            {
-                "type": "Axisymmetric",
-                "name": "cone",
-                "axisOfRotation": [0.7071067811865476, 0.0, 0.7071067811865476],
-                "center": [0.0, 0.0, 0.0],
-                "profileCurve": [[-1.0, 0.0], [-1.0, 1.0], [1.0, 2.0], [1.0, 0.0]],
-                "spacingAxial": 0.4,
-                "spacingCircumferential": 0.2,
-                "spacingRadial": 0.4,
-                "enclosedObjects": [],
-            },
-        ],
-        "structuredRegions": [
-            {
-                "name": "porousRegion",
-                "type": "box",
-                "lengthAxis1": 1.0,
-                "lengthAxis2": 2.0,
-                "lengthNormal": 1.0,
-                "axis1": [0.7071067811865476, 0.7071067811865476, 0.0],
-                "axis2": [-0.7071067811865476, 0.7071067811865476, 0.0],
-                "center": [0.0, 1.0, 1.0],
-                "spacingAxis1": 0.075,
-                "spacingAxis2": 0.1,
-                "spacingNormal": 0.15,
-            }
-        ],
-        "zones": [
-            {
-                "name": "custom_volume-1",
-                "patches": ["interface1", "interface2"],
-            }
-        ],
-    }
-
+    ref_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "ref",
+        "volume_meshing",
+        "ref_param_to_json_inhouse.json",
+    )
+    with open(ref_path, "r") as fh:
+        ref_dict = json.load(fh)
     assert sorted(translated.items()) == sorted(ref_dict.items())
 
 
@@ -431,3 +287,226 @@ def test_user_defined_farfield(get_test_param, get_surface_mesh):
         "faces": {},
     }
     assert sorted(translated.items()) == sorted(reference.items())
+
+
+def test_param_to_json_legacy_mesher(get_test_param, get_surface_mesh):
+    # Flip to legacy mesher
+    with model_attribute_unlock(get_test_param.private_attribute_asset_cache, "use_inhouse_mesher"):
+        get_test_param.private_attribute_asset_cache.use_inhouse_mesher = False
+    translated = get_volume_meshing_json(get_test_param, get_surface_mesh.mesh_unit)
+    ref_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "ref",
+        "volume_meshing",
+        "ref_param_to_json_legacy.json",
+    )
+    with open(ref_path, "r") as fh:
+        ref_dict = json.load(fh)
+    assert sorted(translated.items()) == sorted(ref_dict.items())
+
+
+def test_custom_zones_tetrahedra(get_test_param, get_surface_mesh):
+    """Base branch: No enforceTetrahedralElements emitted; ensure translator does not include it."""
+    params = get_test_param
+    translated = get_volume_meshing_json(params, get_surface_mesh.mesh_unit)
+    assert "zones" in translated and len(translated["zones"]) > 0
+    assert all("enforceTetrahedralElements" not in z for z in translated["zones"])  # type: ignore
+
+
+def test_passive_spacing_with_ghost_symmetry_in_faces(get_surface_mesh):
+    # PassiveSpacing using a GhostSurface (UserDefinedFarfield.symmetry_plane)
+    with SI_unit_system:
+        far = UserDefinedFarfield(domain_type="half_body_positive_y")
+        params = SimulationParams(
+            meshing=MeshingParams(
+                refinement_factor=1.0,
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-6 * u.m,
+                    boundary_layer_growth_rate=1.2,
+                ),
+                volume_zones=[far],
+                refinements=[
+                    PassiveSpacing(entities=[far.symmetry_plane], type="projected"),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(
+                use_inhouse_mesher=True,
+                use_geometry_AI=True,
+            ),
+        )
+
+    translated = get_volume_meshing_json(params, get_surface_mesh.mesh_unit)
+    assert "faces" in translated
+    assert "symmetric" in translated["faces"]
+    assert translated["faces"]["symmetric"]["type"] == "projectAnisoSpacing"
+
+
+@pytest.mark.parametrize(
+    "use_gai,use_beta",
+    [
+        (True, False),
+        (False, True),
+        (False, False),
+    ],
+)
+def test_user_defined_farfield_ghost_symmetry_requires_gai_and_beta(
+    use_gai, use_beta, get_surface_mesh
+):
+    # Using GhostCircularPlane("symmetric") must require both GAI and beta mesher for user-defined farfield
+    import pydantic as pd
+
+    from flow360.component.simulation.validation.validation_context import (
+        VOLUME_MESH,
+        ParamsValidationInfo,
+        ValidationContext,
+    )
+
+    with SI_unit_system:
+        # Build minimal param dict for validation info
+        param_dict = {
+            "meshing": {
+                "volume_zones": [
+                    {"type": "UserDefinedFarfield", "domain_type": "half_body_positive_y"}
+                ]
+            },
+            "private_attribute_asset_cache": {
+                "use_inhouse_mesher": use_beta,
+                "use_geometry_AI": use_gai,
+            },
+        }
+        info = ParamsValidationInfo(param_as_dict=param_dict, referenced_expressions=[])
+        with ValidationContext(levels=VOLUME_MESH, info=info):
+            with pytest.raises(
+                pd.ValidationError,
+                match="only be generated when both GAI and beta mesher are used",
+            ):
+                PassiveSpacing(entities=[GhostCircularPlane(name="symmetric")], type="projected")
+
+
+def test_user_defined_farfield_ghost_symmetry_passes_with_gai_and_beta(get_surface_mesh):
+    # Positive case: both flags enabled and half-body domain -> validator should pass
+    from flow360.component.simulation.validation.validation_context import (
+        VOLUME_MESH,
+        ParamsValidationInfo,
+        ValidationContext,
+    )
+
+    with SI_unit_system:
+        param_dict = {
+            "meshing": {
+                "volume_zones": [
+                    {"type": "UserDefinedFarfield", "domain_type": "half_body_positive_y"}
+                ]
+            },
+            "private_attribute_asset_cache": {
+                "use_inhouse_mesher": True,
+                "use_geometry_AI": True,
+            },
+        }
+        info = ParamsValidationInfo(param_as_dict=param_dict, referenced_expressions=[])
+        with ValidationContext(levels=VOLUME_MESH, info=info):
+            PassiveSpacing(entities=[GhostCircularPlane(name="symmetric")], type="projected")
+
+
+def test_geometry_auto_farfield_requires_beta_for_ghost_in_face_refinements():
+    # Geometry + automated farfield: both PassiveSpacing and SurfaceRefinement require beta mesher
+    import pydantic as pd
+
+    from flow360.component.simulation.validation.validation_context import (
+        VOLUME_MESH,
+        ParamsValidationInfo,
+        ValidationContext,
+    )
+
+    with SI_unit_system:
+        # no beta -> should fail
+        param_dict = {
+            "meshing": {"volume_zones": [{"type": "AutomatedFarfield", "method": "auto"}]},
+            "private_attribute_asset_cache": {
+                "use_inhouse_mesher": False,
+                "use_geometry_AI": True,
+                "project_entity_info": {"type_name": "GeometryEntityInfo"},
+            },
+        }
+        info = ParamsValidationInfo(param_as_dict=param_dict, referenced_expressions=[])
+        with ValidationContext(levels=VOLUME_MESH, info=info):
+            with pytest.raises(pd.ValidationError, match="requires beta mesher"):
+                SurfaceRefinement(
+                    entities=[GhostCircularPlane(name="symmetric")], max_edge_length=0.1
+                )
+            with pytest.raises(pd.ValidationError, match="requires beta mesher"):
+                PassiveSpacing(entities=[GhostCircularPlane(name="symmetric")], type="projected")
+
+    with SI_unit_system:
+        # beta -> should pass
+        param_dict = {
+            "meshing": {"volume_zones": [{"type": "AutomatedFarfield", "method": "auto"}]},
+            "private_attribute_asset_cache": {
+                "use_inhouse_mesher": True,
+                "use_geometry_AI": False,
+                "project_entity_info": {"type_name": "GeometryEntityInfo"},
+            },
+        }
+        info = ParamsValidationInfo(param_as_dict=param_dict, referenced_expressions=[])
+        with ValidationContext(levels=VOLUME_MESH, info=info):
+            SurfaceRefinement(entities=[GhostCircularPlane(name="symmetric")], max_edge_length=0.1)
+            PassiveSpacing(entities=[GhostCircularPlane(name="symmetric")], type="projected")
+
+
+def test_surface_mesh_auto_farfield_only_passive_spacing_allows_ghost():
+    # Surface mesh + automated farfield: allow ghost for PassiveSpacing only; SR should fail
+    import pydantic as pd
+
+    from flow360.component.simulation.validation.validation_context import (
+        VOLUME_MESH,
+        ParamsValidationInfo,
+        ValidationContext,
+    )
+
+    with SI_unit_system:
+        param_dict = {
+            "meshing": {"volume_zones": [{"type": "AutomatedFarfield", "method": "auto"}]},
+            "private_attribute_asset_cache": {
+                "use_inhouse_mesher": True,
+                "use_geometry_AI": True,
+                "project_entity_info": {"type_name": "SurfaceMeshEntityInfo"},
+            },
+        }
+        info = ParamsValidationInfo(param_as_dict=param_dict, referenced_expressions=[])
+        with ValidationContext(levels=VOLUME_MESH, info=info):
+            # SurfaceRefinement should reject ghost
+            with pytest.raises(pd.ValidationError, match="not allowed for SurfaceRefinement"):
+                SurfaceRefinement(
+                    entities=[GhostCircularPlane(name="symmetric")], max_edge_length=0.1
+                )
+            # PassiveSpacing should accept ghost
+            PassiveSpacing(entities=[GhostCircularPlane(name="symmetric")], type="projected")
+
+
+def test_surface_mesh_user_defined_farfield_disallow_any_ghost():
+    # Surface mesh + user-defined farfield: disallow ghost in both SR and PS
+    import pydantic as pd
+
+    from flow360.component.simulation.validation.validation_context import (
+        VOLUME_MESH,
+        ParamsValidationInfo,
+        ValidationContext,
+    )
+
+    with SI_unit_system:
+        param_dict = {
+            "meshing": {"volume_zones": [{"type": "UserDefinedFarfield"}]},
+            "private_attribute_asset_cache": {
+                "use_inhouse_mesher": True,
+                "use_geometry_AI": True,
+                "project_entity_info": {"type_name": "SurfaceMeshEntityInfo"},
+            },
+        }
+        info = ParamsValidationInfo(param_as_dict=param_dict, referenced_expressions=[])
+        with ValidationContext(levels=VOLUME_MESH, info=info):
+            with pytest.raises(pd.ValidationError):
+                SurfaceRefinement(
+                    entities=[GhostCircularPlane(name="symmetric")], max_edge_length=0.1
+                )
+            with pytest.raises(pd.ValidationError):
+                PassiveSpacing(entities=[GhostCircularPlane(name="symmetric")], type="projected")
