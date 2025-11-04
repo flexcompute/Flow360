@@ -1126,6 +1126,8 @@ def aeroacoustic_output_config():
             "observers": [[0.2, 0.02, 0.03], [0.0001, 0.02, 0.03]],
             "writePerSurfaceOutput": True,
             "patchType": "solid",
+            "animationFrequency": 1,
+            "animationFrequencyOffset": 0,
         },
     )
 
@@ -1155,6 +1157,8 @@ def aeroacoustic_output_permeable_config():
             "patchType": "permeable",
             "permeableSurfaces": ["zoneA/interface-A-B", "zoneA/interface-A-C"],
             "writePerSurfaceOutput": False,
+            "animationFrequency": 1,
+            "animationFrequencyOffset": 0,
         },
     )
 
