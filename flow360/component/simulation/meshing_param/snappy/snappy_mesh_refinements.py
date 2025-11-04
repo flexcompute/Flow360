@@ -1,7 +1,7 @@
 """Reinements for surface meshing"""
 
 from abc import ABCMeta
-from typing import List, Literal, Optional, Union
+from typing import Annotated, List, Literal, Optional, Union
 
 import pydantic as pd
 from typing_extensions import Self
@@ -9,6 +9,7 @@ from typing_extensions import Self
 import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
+from flow360.component.simulation.meshing_param.volume_params import UniformRefinement
 from flow360.component.simulation.primitives import SnappyBody, Surface
 from flow360.component.simulation.unit_system import AngleType, LengthType
 from flow360.log import log
@@ -43,7 +44,7 @@ class SnappyEntityRefinement(Flow360BaseModel, metaclass=ABCMeta):
         return self
 
 
-class SnappyBodyRefinement(SnappyEntityRefinement):
+class BodyRefinement(SnappyEntityRefinement):
     """
     Refinement for snappyHexMesh body (searchableSurfaceWithGaps).
 
@@ -58,7 +59,7 @@ class SnappyBodyRefinement(SnappyEntityRefinement):
     entities: EntityList[SnappyBody] = pd.Field(alias="bodies")
 
 
-class SnappyRegionRefinement(SnappyEntityRefinement):
+class RegionRefinement(SnappyEntityRefinement):
     """
     Refinement for the body region in snappyHexMesh.
 
@@ -77,7 +78,7 @@ class SnappyRegionRefinement(SnappyEntityRefinement):
     entities: EntityList[Surface] = pd.Field(alias="regions")
 
 
-class SnappySurfaceEdgeRefinement(Flow360BaseModel):
+class SurfaceEdgeRefinement(Flow360BaseModel):
     """
     Edge refinement for bodies and regions in snappyHexMesh.
 
@@ -167,3 +168,9 @@ class SnappySurfaceEdgeRefinement(Flow360BaseModel):
         if self.bodies is None and self.regions is None:
             raise ValueError("At least one body or region must be specified.")
         return self
+
+
+SnappySurfaceRefinementTypes = Annotated[
+    Union[BodyRefinement, SurfaceEdgeRefinement, RegionRefinement, UniformRefinement],
+    pd.Field(discriminator="refinement_type"),
+]

@@ -186,7 +186,7 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
             )
             beta_mesher_triggers.append(
                 param_as_dict.get("meshing", {}).get("volume_meshing", {}).get("type_name", "")
-                == "BetaVolumeMeshingParams"
+                == "VolumeMeshingParams"
             )
         return any(beta_mesher_triggers)
 

@@ -2,15 +2,15 @@
 
 from typing import Union
 
+from flow360.component.simulation.meshing_param import snappy
 from flow360.component.simulation.meshing_param.face_params import (
     BoundaryLayer,
     PassiveSpacing,
 )
 from flow360.component.simulation.meshing_param.params import (
-    BetaVolumeMeshingParams,
     MeshingParams,
     ModularMeshingWorkflow,
-    SnappySurfaceMeshingParams,
+    VolumeMeshingParams,
 )
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
@@ -264,7 +264,7 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
     ensure_meshing_is_specified(input_params)
 
     if isinstance(input_params.meshing, ModularMeshingWorkflow) and isinstance(
-        input_params.meshing.volume_meshing, BetaVolumeMeshingParams
+        input_params.meshing.volume_meshing, VolumeMeshingParams
     ):
         volume_zones = input_params.meshing.zones
         refinements = input_params.meshing.volume_meshing.refinements
@@ -436,7 +436,7 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
 
     ##::  Step 7: Get custom seedpoint zones
     if isinstance(input_params.meshing, ModularMeshingWorkflow) and isinstance(
-        input_params.meshing.surface_meshing, SnappySurfaceMeshingParams
+        input_params.meshing.surface_meshing, snappy.SurfaceMeshingParams
     ):
         seedpoint_zones = _get_seedpoint_zones(volume_zones)
         if seedpoint_zones:

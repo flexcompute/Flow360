@@ -2,19 +2,15 @@ import pydantic as pd
 import pytest
 
 from flow360 import u
+from flow360.component.simulation.meshing_param import snappy
 from flow360.component.simulation.meshing_param.meshing_specs import (
-    BetaVolumeMeshingDefaults,
     OctreeSpacing,
-    SnappySurfaceMeshingDefaults,
+    VolumeMeshingDefaults,
 )
 from flow360.component.simulation.meshing_param.params import (
-    BetaVolumeMeshingParams,
     MeshingParams,
     ModularMeshingWorkflow,
-    SnappySurfaceMeshingParams,
-)
-from flow360.component.simulation.meshing_param.surface_mesh_refinements import (
-    SnappyBodyRefinement,
+    VolumeMeshingParams,
 )
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
@@ -377,7 +373,7 @@ def test_reuse_of_same_cylinder():
             )
             SimulationParams(
                 meshing=ModularMeshingWorkflow(
-                    volume_meshing=BetaVolumeMeshingParams(
+                    volume_meshing=VolumeMeshingParams(
                         refinements=[
                             AxisymmetricRefinement(
                                 entities=[cylinder],
@@ -386,7 +382,7 @@ def test_reuse_of_same_cylinder():
                                 spacing_circumferential=0.3,
                             )
                         ],
-                        defaults=BetaVolumeMeshingDefaults(boundary_layer_first_layer_thickness=1),
+                        defaults=VolumeMeshingDefaults(boundary_layer_first_layer_thickness=1),
                     ),
                     zones=[
                         RotationVolume(
@@ -444,14 +440,14 @@ def test_reuse_of_same_cylinder():
         )
         SimulationParams(
             meshing=ModularMeshingWorkflow(
-                volume_meshing=BetaVolumeMeshingParams(
+                volume_meshing=VolumeMeshingParams(
                     refinements=[
                         UniformRefinement(
                             entities=[cylinder],
                             spacing=0.1,
                         )
                     ],
-                    defaults=BetaVolumeMeshingDefaults(boundary_layer_first_layer_thickness=1),
+                    defaults=VolumeMeshingDefaults(boundary_layer_first_layer_thickness=1),
                 ),
                 zones=[
                     RotationVolume(
@@ -508,7 +504,7 @@ def test_reuse_of_same_cylinder():
             )
             SimulationParams(
                 meshing=ModularMeshingWorkflow(
-                    volume_meshing=BetaVolumeMeshingParams(
+                    volume_meshing=VolumeMeshingParams(
                         refinements=[
                             UniformRefinement(entities=[cylinder], spacing=0.1),
                             AxisymmetricRefinement(
@@ -518,7 +514,7 @@ def test_reuse_of_same_cylinder():
                                 spacing_circumferential=0.1,
                             ),
                         ],
-                        defaults=BetaVolumeMeshingDefaults(boundary_layer_first_layer_thickness=1),
+                        defaults=VolumeMeshingDefaults(boundary_layer_first_layer_thickness=1),
                     ),
                     zones=[AutomatedFarfield()],
                 )
@@ -559,12 +555,12 @@ def test_reuse_of_same_cylinder():
             )
             SimulationParams(
                 meshing=ModularMeshingWorkflow(
-                    volume_meshing=BetaVolumeMeshingParams(
+                    volume_meshing=VolumeMeshingParams(
                         refinements=[
                             UniformRefinement(entities=[cylinder], spacing=0.1),
                             UniformRefinement(entities=[cylinder], spacing=0.2),
                         ],
-                        defaults=BetaVolumeMeshingDefaults(boundary_layer_first_layer_thickness=1),
+                        defaults=VolumeMeshingDefaults(boundary_layer_first_layer_thickness=1),
                     ),
                     zones=[AutomatedFarfield()],
                 )
@@ -574,8 +570,8 @@ def test_reuse_of_same_cylinder():
 def test_require_mesh_zones():
     with SI_unit_system:
         ModularMeshingWorkflow(
-            surface_meshing=SnappySurfaceMeshingParams(
-                defaults=SnappySurfaceMeshingDefaults(
+            surface_meshing=snappy.SurfaceMeshingParams(
+                defaults=snappy.SurfaceMeshingDefaults(
                     min_spacing=1 * u.mm, max_spacing=5 * u.mm, gap_resolution=0.001 * u.mm
                 ),
             ),
@@ -584,8 +580,8 @@ def test_require_mesh_zones():
 
     with SI_unit_system:
         ModularMeshingWorkflow(
-            surface_meshing=SnappySurfaceMeshingParams(
-                defaults=SnappySurfaceMeshingDefaults(
+            surface_meshing=snappy.SurfaceMeshingParams(
+                defaults=snappy.SurfaceMeshingDefaults(
                     min_spacing=1 * u.mm, max_spacing=5 * u.mm, gap_resolution=0.01 * u.mm
                 ),
             ),
@@ -595,8 +591,8 @@ def test_require_mesh_zones():
     with pytest.raises(ValueError):
         with SI_unit_system:
             ModularMeshingWorkflow(
-                surface_meshing=SnappySurfaceMeshingParams(
-                    defaults=SnappySurfaceMeshingDefaults(
+                surface_meshing=snappy.SurfaceMeshingParams(
+                    defaults=snappy.SurfaceMeshingDefaults(
                         min_spacing=1 * u.mm, max_spacing=5 * u.mm, gap_resolution=0.01 * u.mm
                     )
                 ),
@@ -606,24 +602,24 @@ def test_require_mesh_zones():
 
 def test_bad_refinements():
     with pytest.raises(ValueError):
-        surface_meshing = SnappySurfaceMeshingParams(
-            defaults=SnappySurfaceMeshingDefaults(
+        surface_meshing = snappy.SurfaceMeshingParams(
+            defaults=snappy.SurfaceMeshingDefaults(
                 min_spacing=1 * u.mm, max_spacing=5 * u.mm, gap_resolution=0.01 * u.mm
             ),
             refinements=[
-                SnappyBodyRefinement(
+                snappy.BodyRefinement(
                     min_spacing=6 * u.mm, bodies=[SnappyBody(name="bbb", surfaces=[])]
                 )
             ],
         )
 
     with pytest.raises(ValueError):
-        surface_meshing = SnappySurfaceMeshingParams(
-            defaults=SnappySurfaceMeshingDefaults(
+        surface_meshing = snappy.SurfaceMeshingParams(
+            defaults=snappy.SurfaceMeshingDefaults(
                 min_spacing=1 * u.mm, max_spacing=5 * u.mm, gap_resolution=0.01 * u.mm
             ),
             refinements=[
-                SnappyBodyRefinement(
+                snappy.BodyRefinement(
                     max_spacing=0.5 * u.mm, bodies=[SnappyBody(name="bbb", surfaces=[])]
                 )
             ],
@@ -703,8 +699,8 @@ def test_octree_spacing():
 
 
 def test_set_default_base_spacing():
-    surface_meshing = SnappySurfaceMeshingParams(
-        defaults=SnappySurfaceMeshingDefaults(
+    surface_meshing = snappy.SurfaceMeshingParams(
+        defaults=snappy.SurfaceMeshingDefaults(
             min_spacing=1 * u.mm, max_spacing=2 * u.mm, gap_resolution=1 * u.mm
         )
     )
@@ -712,8 +708,8 @@ def test_set_default_base_spacing():
     assert surface_meshing.base_spacing is None
 
     with ValidationContext(SURFACE_MESH, beta_mesher_context):
-        surface_meshing = SnappySurfaceMeshingParams(
-            defaults=SnappySurfaceMeshingDefaults(
+        surface_meshing = snappy.SurfaceMeshingParams(
+            defaults=snappy.SurfaceMeshingDefaults(
                 min_spacing=1 * u.mm, max_spacing=2 * u.mm, gap_resolution=1 * u.mm
             )
         )
@@ -724,8 +720,8 @@ def test_set_default_base_spacing():
 
 
 def test_set_spacing_with_value():
-    surface_meshing = SnappySurfaceMeshingParams(
-        defaults=SnappySurfaceMeshingDefaults(
+    surface_meshing = snappy.SurfaceMeshingParams(
+        defaults=snappy.SurfaceMeshingDefaults(
             min_spacing=1 * u.mm, max_spacing=2 * u.mm, gap_resolution=1 * u.mm
         ),
         base_spacing=3 * u.mm,
@@ -734,8 +730,8 @@ def test_set_spacing_with_value():
     assert surface_meshing.base_spacing.base_spacing == 3 * u.mm
 
     with pytest.raises(pd.ValidationError):
-        surface_meshing = SnappySurfaceMeshingParams(
-            defaults=SnappySurfaceMeshingDefaults(
+        surface_meshing = snappy.SurfaceMeshingParams(
+            defaults=snappy.SurfaceMeshingDefaults(
                 min_spacing=1 * u.mm, max_spacing=2 * u.mm, gap_resolution=1 * u.mm
             ),
             base_spacing=-3 * u.mm,
