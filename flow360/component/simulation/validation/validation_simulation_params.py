@@ -363,7 +363,7 @@ def _check_complete_boundary_condition_and_unknown_surface(
                 if item.name != "symmetric"
             ]
         elif farfield_method == "user-defined":
-            if validation_info.use_geometry_AI and validation_info.is_beta_mesher:
+            if validation_info.will_generate_forced_symmetry_plane():
                 asset_boundary_entities += [
                     item
                     for item in params.private_attribute_asset_cache.project_entity_info.ghost_entities
