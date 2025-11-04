@@ -760,7 +760,6 @@ class CustomVolume(_VolumeEntityBase):
     private_attribute_entity_type_name: Literal["CustomVolume"] = pd.Field(
         "CustomVolume", frozen=True
     )
-    type: Literal["CustomVolume"] = pd.Field("CustomVolume", frozen=True)
     boundaries: EntityList[Surface] = pd.Field(
         description="The surfaces that define the boundaries of the custom volume."
     )
@@ -805,7 +804,7 @@ def check_custom_volume_creation(value):
             continue
         if volume.name not in validation_info.to_be_generated_custom_volumes:
             raise ValueError(
-                f"CustomVolume {volume.name} is not listed under meshing->volume_zones."
+                f"CustomVolume {volume.name} is not listed under meshing->volume_zones->CustomZones."
             )
     return value
 

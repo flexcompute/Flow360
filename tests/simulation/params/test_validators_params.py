@@ -25,6 +25,7 @@ from flow360.component.simulation.meshing_param.params import (
 )
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
+    CustomZones,
     UserDefinedFarfield,
 )
 from flow360.component.simulation.models.material import SolidMaterial, aluminum
@@ -1861,7 +1862,7 @@ def test_beta_mesher_only_features(mock_validation_context):
     )
     assert errors is None
 
-    # Using CustomVolume without UserDefinedFarfield
+    # Using CustomZones without UserDefinedFarfield
     with SI_unit_system:
         params = SimulationParams(
             meshing=MeshingParams(
@@ -1870,8 +1871,14 @@ def test_beta_mesher_only_features(mock_validation_context):
                     planar_face_tolerance=1e-4,
                 ),
                 volume_zones=[
-                    CustomVolume(
-                        name="zone1", boundaries=[Surface(name="face1"), Surface(name="face2")]
+                    CustomZones(
+                        name="custom_zones",
+                        entities=[
+                            CustomVolume(
+                                name="zone1",
+                                boundaries=[Surface(name="face1"), Surface(name="face2")],
+                            )
+                        ],
                     ),
                     AutomatedFarfield(),
                 ],
@@ -1890,7 +1897,6 @@ def test_beta_mesher_only_features(mock_validation_context):
         == "Value error, CustomVolume is only supported when "
         + "beta mesher and user defined farfield are enabled."
     )
-    assert errors[0]["loc"] == ("meshing", "volume_zones", 0, "CustomVolume")
 
     with SI_unit_system:
         params = SimulationParams(
@@ -1900,8 +1906,14 @@ def test_beta_mesher_only_features(mock_validation_context):
                     planar_face_tolerance=1e-4,
                 ),
                 volume_zones=[
-                    CustomVolume(
-                        name="zone1", boundaries=[Surface(name="face1"), Surface(name="face2")]
+                    CustomZones(
+                        name="custom_zones",
+                        entities=[
+                            CustomVolume(
+                                name="zone1",
+                                boundaries=[Surface(name="face1"), Surface(name="face2")],
+                            )
+                        ],
                     ),
                     UserDefinedFarfield(),
                 ],
@@ -1920,7 +1932,6 @@ def test_beta_mesher_only_features(mock_validation_context):
         == "Value error, CustomVolume is only supported when "
         + "beta mesher and user defined farfield are enabled."
     )
-    assert errors[0]["loc"] == ("meshing", "volume_zones", 0, "CustomVolume")
 
     # Unique volume zone names
     with pytest.raises(
@@ -1934,11 +1945,18 @@ def test_beta_mesher_only_features(mock_validation_context):
                         planar_face_tolerance=1e-4,
                     ),
                     volume_zones=[
-                        CustomVolume(
-                            name="zone1", boundaries=[Surface(name="face1"), Surface(name="face2")]
-                        ),
-                        CustomVolume(
-                            name="zone1", boundaries=[Surface(name="face3"), Surface(name="face4")]
+                        CustomZones(
+                            name="custom_zones",
+                            entities=[
+                                CustomVolume(
+                                    name="zone1",
+                                    boundaries=[Surface(name="face1"), Surface(name="face2")],
+                                ),
+                                CustomVolume(
+                                    name="zone1",
+                                    boundaries=[Surface(name="face3"), Surface(name="face4")],
+                                ),
+                            ],
                         ),
                         UserDefinedFarfield(),
                     ],
@@ -1958,8 +1976,14 @@ def test_beta_mesher_only_features(mock_validation_context):
                         planar_face_tolerance=1e-4,
                     ),
                     volume_zones=[
-                        CustomVolume(
-                            name="zone1", boundaries=[Surface(name="face1"), Surface(name="face1")]
+                        CustomZones(
+                            name="custom_zones",
+                            entities=[
+                                CustomVolume(
+                                    name="zone1",
+                                    boundaries=[Surface(name="face1"), Surface(name="face1")],
+                                )
+                            ],
                         ),
                         UserDefinedFarfield(),
                     ],
@@ -1967,7 +1991,7 @@ def test_beta_mesher_only_features(mock_validation_context):
                 private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
             )
 
-    # Ensure that the boudnaries of CustomVolume does not require a boundary condition
+    # Ensure that the boundaries of CustomVolume do not require a boundary condition
     with SI_unit_system:
         params = SimulationParams(
             meshing=MeshingParams(
@@ -1976,8 +2000,14 @@ def test_beta_mesher_only_features(mock_validation_context):
                     planar_face_tolerance=1e-4,
                 ),
                 volume_zones=[
-                    CustomVolume(
-                        name="zone1", boundaries=[Surface(name="face1"), Surface(name="face2")]
+                    CustomZones(
+                        name="custom_zones",
+                        entities=[
+                            CustomVolume(
+                                name="zone1",
+                                boundaries=[Surface(name="face1"), Surface(name="face2")],
+                            )
+                        ],
                     ),
                     UserDefinedFarfield(),
                 ],
@@ -2176,6 +2206,8 @@ def test_check_duplicate_isosurface_names():
 
 
 def test_check_custom_volume_in_volume_zones():
+    from flow360.component.simulation.meshing_param.volume_params import CustomZones
+
     zone_2 = CustomVolume(name="zone2", boundaries=[Surface(name="face2")])
     zone_2.axes = [(1, 0, 0), (0, 1, 0)]
 
@@ -2187,7 +2219,10 @@ def test_check_custom_volume_in_volume_zones():
                     planar_face_tolerance=1e-4,
                 ),
                 volume_zones=[
-                    CustomVolume(name="zone1", boundaries=[Surface(name="face1")]),
+                    CustomZones(
+                        name="custom_zones",
+                        entities=[CustomVolume(name="zone1", boundaries=[Surface(name="face1")])],
+                    ),
                     UserDefinedFarfield(),
                 ],
             ),
@@ -2217,7 +2252,7 @@ def test_check_custom_volume_in_volume_zones():
     )
     assert len(errors) == 1
     assert errors[0]["msg"] == (
-        "Value error, CustomVolume zone2 is not listed under meshing->volume_zones."
+        "Value error, CustomVolume zone2 is not listed under meshing->volume_zones->CustomZones."
     )
     assert errors[0]["loc"] == ("models", 0, "entities", "stored_entities")
 

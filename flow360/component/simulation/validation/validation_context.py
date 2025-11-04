@@ -318,7 +318,21 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         )
         if not volume_zones:
             return set()
-        return {zone["name"] for zone in volume_zones if zone["type"] == "CustomVolume"}
+
+        # Return the set of CustomVolume names to be generated (no element type info in this PR)
+        custom_volume_names = set()
+        for zone in volume_zones:
+            if zone.get("type") != "CustomZones":
+                continue
+            entities_obj = zone.get("entities", {})
+            stored_entities = entities_obj.get("stored_entities", [])
+            for entity in stored_entities:
+                if (
+                    isinstance(entity, dict)
+                    and entity.get("private_attribute_entity_type_name") == "CustomVolume"
+                ):
+                    custom_volume_names.add(entity["name"])
+        return custom_volume_names
 
     def __init__(self, param_as_dict: dict, referenced_expressions: list):
         self.farfield_method = self._get_farfield_method_(param_as_dict=param_as_dict)
