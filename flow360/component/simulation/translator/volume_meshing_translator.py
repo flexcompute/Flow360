@@ -19,7 +19,6 @@ from flow360.component.simulation.meshing_param.volume_params import (
 from flow360.component.simulation.primitives import (
     AxisymmetricBody,
     Box,
-    CustomVolume,
     Cylinder,
     Surface,
 )
@@ -206,17 +205,22 @@ def rotation_volume_entity_injector(
 
 def _get_custom_volumes(volume_zones: list):
     """Get translated custom volumes from volume zones."""
+    # pylint: disable=import-outside-toplevel
+    from flow360.component.simulation.meshing_param.volume_params import CustomZones
+
     custom_volumes = []
     for zone in volume_zones:
-        if isinstance(zone, CustomVolume):
-            custom_volumes.append(
-                {
-                    "name": zone.name,
-                    "patches": sorted(
-                        [surface.name for surface in zone.boundaries.stored_entities]
-                    ),
-                }
-            )
+        if isinstance(zone, CustomZones):
+            # Extract CustomVolume from CustomZones (base branch: no tetrahedra enforcement output)
+            for custom_volume in zone.entities.stored_entities:
+                custom_volumes.append(
+                    {
+                        "name": custom_volume.name,
+                        "patches": sorted(
+                            [surface.name for surface in custom_volume.boundaries.stored_entities]
+                        ),
+                    }
+                )
     if custom_volumes:
         # Sort custom volumes by name
         custom_volumes.sort(key=lambda x: x["name"])
