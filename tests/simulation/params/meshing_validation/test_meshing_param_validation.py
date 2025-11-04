@@ -492,5 +492,4 @@ def test_enclosed_entities_none_does_not_raise():
             spacing_axial=20,
             spacing_radial=0.2,
             spacing_circumferential=20,
-            enclosed_entities=None,
         )
