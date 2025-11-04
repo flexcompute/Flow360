@@ -478,14 +478,22 @@ def validate_model(  # pylint: disable=too-many-locals
             updated_param_as_dict
         )
 
+        project_length_unit_dict = updated_param_as_dict.get(
+            "private_attribute_asset_cache", {}
+        ).get("project_length_unit", None)
+        parse_model_info = ParamsValidationInfo(
+            {"private_attribute_asset_cache": {"project_length_unit": project_length_unit_dict}},
+            [],
+        )
+        with ValidationContext(levels=validation_levels_to_use, info=parse_model_info):
+            # Multi-constructor model support
+            updated_param_as_dict = parse_model_dict(updated_param_as_dict, globals())
+
         additional_info = ParamsValidationInfo(
             param_as_dict=updated_param_as_dict,
             referenced_expressions=referenced_expressions,
         )
-
         with ValidationContext(levels=validation_levels_to_use, info=additional_info):
-            # Multi-constructor model support
-            updated_param_as_dict = parse_model_dict(updated_param_as_dict, globals())
             validated_param = SimulationParams(file_content=updated_param_as_dict)
     except pd.ValidationError as err:
         validation_errors = err.errors()
