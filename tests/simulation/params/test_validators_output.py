@@ -833,24 +833,23 @@ def test_force_output_with_model_id():
     _, errors, _ = validate_model(
         params_as_dict=data, validated_by=ValidationCalledBy.LOCAL, root_item_type="VolumeMesh"
     )
-    print(errors)
     expected_errors = [
         {
             "type": "value_error",
-            "loc": ("outputs", 6, "models"),
+            "loc": ("outputs", 3, "models"),
             "msg": "Value error, Duplicate models are not allowed in the same `ForceOutput`.",
             "ctx": {"relevant_for": ["Case"]},
         },
         {
             "type": "value_error",
-            "loc": ("outputs", 7, "models"),
+            "loc": ("outputs", 4, "models"),
             "msg": "Value error, When ActuatorDisk/BETDisk/PorousMedium is specified, "
             "only CL, CD, CFx, CFy, CFz, CMx, CMy, CMz can be set as output_fields.",
             "ctx": {"relevant_for": ["Case"]},
         },
         {
             "type": "value_error",
-            "loc": ("outputs", 8, "models"),
+            "loc": ("outputs", 5, "models"),
             "msg": "Value error, The model does not exist in simulation params' models list.",
             "ctx": {"relevant_for": ["Case"]},
         },
