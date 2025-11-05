@@ -7,6 +7,7 @@ from flow360.component.simulation.meshing_param.params import MeshingParams
 from flow360.component.simulation.meshing_param.volume_params import (
     CustomZones,
     RotationVolume,
+    UserDefinedFarfield,
 )
 from flow360.component.simulation.primitives import (
     AxisymmetricBody,
@@ -26,7 +27,10 @@ def test_custom_volume_added_to_draft_entities():
         custom_volume = CustomVolume(name="cv1", boundaries=[Surface(name="face1")])
         params = SimulationParams(
             meshing=MeshingParams(
-                volume_zones=[CustomZones(name="custom_zones", entities=[custom_volume])]
+                volume_zones=[
+                    CustomZones(name="custom_zones", entities=[custom_volume]),
+                    UserDefinedFarfield(name="ff"),
+                ]
             )
         )
     entity_info = _get_basic_entity_info()
@@ -48,7 +52,17 @@ def test_axisymmetric_body_added_to_draft_entities():
             ],
         )
         params = SimulationParams(
-            meshing=MeshingParams(volume_zones=[RotationVolume(entities=axis_body)])
+            meshing=MeshingParams(
+                volume_zones=[
+                    RotationVolume(
+                        entities=axis_body,
+                        spacing_axial=0.1 * u.m,
+                        spacing_radial=0.1 * u.m,
+                        spacing_circumferential=0.1 * u.m,
+                    ),
+                    UserDefinedFarfield(name="ff"),
+                ]
+            )
         )
     entity_info = _get_basic_entity_info()
     updated = _set_up_params_non_persistent_entity_info(entity_info, params)
