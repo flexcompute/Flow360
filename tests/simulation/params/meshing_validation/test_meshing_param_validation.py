@@ -28,6 +28,12 @@ from flow360.component.simulation.primitives import (
     SnappyBody,
     Surface,
 )
+from flow360.component.simulation.primitives import (
+    AxisymmetricBody,
+    Box,
+    Cylinder,
+    Surface,
+)
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import CGS_unit_system, SI_unit_system
 from flow360.component.simulation.validation.validation_context import (
