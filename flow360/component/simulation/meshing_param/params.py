@@ -22,6 +22,7 @@ from flow360.component.simulation.meshing_param.meshing_specs import (
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     AxisymmetricRefinement,
+    CustomZones,
     RotationCylinder,
     RotationVolume,
     StructuredBoxRefinement,
@@ -57,8 +58,8 @@ VolumeZonesTypes = Annotated[
         RotationCylinder,
         AutomatedFarfield,
         UserDefinedFarfield,
-        CustomVolume,
         SeedpointZone,
+        CustomZones,
     ],
     pd.Field(discriminator="type"),
 ]
@@ -190,15 +191,18 @@ class MeshingParams(Flow360BaseModel):
 
         if v is None:
             return v
+
         to_be_generated_volume_zone_names = set()
         for volume_zone in v:
-            if not isinstance(volume_zone, CustomVolume):
+            if not isinstance(volume_zone, CustomZones):
                 continue
-            if volume_zone.name in to_be_generated_volume_zone_names:
-                raise ValueError(
-                    f"Multiple CustomVolume with the same name `{volume_zone.name}` are not allowed."
-                )
-            to_be_generated_volume_zone_names.add(volume_zone.name)
+            # Extract CustomVolume from CustomZones
+            for custom_volume in volume_zone.entities.stored_entities:
+                if custom_volume.name in to_be_generated_volume_zone_names:
+                    raise ValueError(
+                        f"Multiple CustomVolume with the same name `{custom_volume.name}` are not allowed."
+                    )
+                to_be_generated_volume_zone_names.add(custom_volume.name)
 
         return v
 
@@ -276,12 +280,14 @@ class MeshingParams(Flow360BaseModel):
         return self
 
     @property
-    def automated_farfield_method(self):
-        """Returns the automated farfield method used."""
+    def farfield_method(self):
+        """Returns the  farfield method used."""
         if self.volume_zones:
             for zone in self.volume_zones:  # pylint: disable=not-an-iterable
                 if isinstance(zone, AutomatedFarfield):
                     return zone.method
+                if isinstance(zone, UserDefinedFarfield):
+                    return "user-defined"
         return None
 
 

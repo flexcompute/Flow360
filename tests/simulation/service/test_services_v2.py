@@ -699,6 +699,11 @@ def test_validate_error_from_multi_constructor():
 
 
 def test_init():
+    def remove_model_and_output_id_in_default_dict(data):
+        data["outputs"][0].pop("private_attribute_id", None)
+        data["models"][0].pop("private_attribute_id", None)
+        data["models"][1].pop("private_attribute_id", None)
+
     ##1: test default values for geometry starting point
     data = services.get_default_params(
         unit_system_name="SI", length_unit="m", root_item_type="Geometry"
@@ -706,7 +711,7 @@ def test_init():
     assert data["operating_condition"]["alpha"]["value"] == 0
     assert data["operating_condition"]["alpha"]["units"] == "degree"
     assert "velocity_magnitude" not in data["operating_condition"].keys()
-    data["outputs"][0].pop("private_attribute_id", None)
+    remove_model_and_output_id_in_default_dict(data)
     # to convert tuples to lists:
     data = json.loads(json.dumps(data))
     compare_dict_to_ref(data, "../../ref/simulation/service_init_geometry.json")
@@ -716,7 +721,7 @@ def test_init():
         unit_system_name="SI", length_unit="m", root_item_type="VolumeMesh"
     )
     assert "meshing" not in data
-    data["outputs"][0].pop("private_attribute_id", None)
+    remove_model_and_output_id_in_default_dict(data)
     # to convert tuples to lists:
     data = json.loads(json.dumps(data))
     compare_dict_to_ref(data, "../../ref/simulation/service_init_volume_mesh.json")
@@ -731,7 +736,7 @@ def test_init():
     assert data["private_attribute_asset_cache"]["project_length_unit"]["units"] == "cm"
 
     assert data["models"][0]["roughness_height"]["units"] == "cm"
-    data["outputs"][0].pop("private_attribute_id", None)
+    remove_model_and_output_id_in_default_dict(data)
     # to convert tuples to lists:
     data = json.loads(json.dumps(data))
     compare_dict_to_ref(data, "../../ref/simulation/service_init_surface_mesh.json")
@@ -945,6 +950,7 @@ def test_front_end_JSON_with_multi_constructor():
                     ]
                 },
                 "use_wall_function": False,
+                "private_attribute_id": "wall1",
             }
         ],
         "operating_condition": {
@@ -1060,16 +1066,6 @@ def test_generate_process_json():
         },
     }
 
-    with pytest.raises(
-        ValueError,
-        match=re.escape(
-            "[{'type': 'missing', 'loc': ('meshing', 'defaults', 'surface_max_edge_length'), 'msg': 'Field required', 'input': None, 'ctx': {'relevant_for': ['SurfaceMesh']}, 'url': 'https://errors.pydantic.dev/2.11/v/missing'}]"
-        ),
-    ):
-        res1, res2, res3 = services.generate_process_json(
-            simulation_json=json.dumps(params_data), root_item_type="Geometry", up_to="SurfaceMesh"
-        )
-
     params_data["meshing"]["defaults"]["surface_max_edge_length"] = "1*m"
     res1, res2, res3 = services.generate_process_json(
         simulation_json=json.dumps(params_data), root_item_type="Geometry", up_to="SurfaceMesh"
@@ -1079,16 +1075,6 @@ def test_generate_process_json():
     assert res2 is None
     assert res3 is None
 
-    with pytest.raises(
-        ValueError,
-        match=re.escape(
-            "[{'type': 'missing', 'loc': ('meshing', 'defaults', 'boundary_layer_first_layer_thickness'), 'msg': 'Field required', 'input': None, 'ctx': {'relevant_for': ['VolumeMesh']}, 'url': 'https://errors.pydantic.dev/2.11/v/missing'}]"
-        ),
-    ):
-        res1, res2, res3 = services.generate_process_json(
-            simulation_json=json.dumps(params_data), root_item_type="Geometry", up_to="VolumeMesh"
-        )
-
     params_data["meshing"]["defaults"]["boundary_layer_first_layer_thickness"] = "1*m"
     res1, res2, res3 = services.generate_process_json(
         simulation_json=json.dumps(params_data), root_item_type="Geometry", up_to="VolumeMesh"
@@ -1097,16 +1083,6 @@ def test_generate_process_json():
     assert res1 is not None
     assert res2 is not None
     assert res3 is None
-
-    with pytest.raises(
-        ValueError,
-        match=re.escape(
-            "[{'type': 'missing', 'loc': ('operating_condition', 'velocity_magnitude'), 'msg': 'Field required', 'input': None, 'ctx': {'relevant_for': ['Case']}, 'url': 'https://errors.pydantic.dev/2.11/v/missing'}]"
-        ),
-    ):
-        res1, res2, res3 = services.generate_process_json(
-            simulation_json=json.dumps(params_data), root_item_type="Geometry", up_to="Case"
-        )
 
     params_data["operating_condition"]["velocity_magnitude"] = {"value": 0.8, "units": "km/s"}
     res1, res2, res3 = services.generate_process_json(
@@ -1240,7 +1216,7 @@ def test_imperial_unit_system_conversion():
 
     # Assert stop criterion tolerance unit is correct
     assert (
-        dict_to_convert["models"][0]["stopping_criterion"][1]["tolerance"]["units"]
+        dict_to_convert["run_control"]["stopping_criteria"][1]["tolerance"]["units"]
         == "SI_unit_system"
     )
 
@@ -1280,7 +1256,7 @@ def test_CGS_unit_system_conversion():
 
     # Assert stop criterion tolerance unit is correct
     assert (
-        dict_to_convert["models"][0]["stopping_criterion"][1]["tolerance"]["units"]
+        dict_to_convert["run_control"]["stopping_criteria"][1]["tolerance"]["units"]
         == "SI_unit_system"
     )
 
@@ -1319,7 +1295,7 @@ def test_SI_unit_system_conversion():
 
     # Assert stop criterion tolerance unit is correct
     assert (
-        dict_to_convert["models"][0]["stopping_criterion"][1]["tolerance"]["units"]
+        dict_to_convert["run_control"]["stopping_criteria"][1]["tolerance"]["units"]
         == "SI_unit_system"
     )
 

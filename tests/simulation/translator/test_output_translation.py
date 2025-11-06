@@ -16,8 +16,6 @@ from flow360.component.simulation.outputs.output_entities import (
 )
 from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
-    ImportedSurfaceIntegralOutput,
-    ImportedSurfaceOutput,
     Isosurface,
     IsosurfaceOutput,
     Observer,
@@ -29,7 +27,6 @@ from flow360.component.simulation.outputs.outputs import (
     SurfaceOutput,
     SurfaceProbeOutput,
     SurfaceSliceOutput,
-    TimeAverageImportedSurfaceOutput,
     TimeAverageIsosurfaceOutput,
     TimeAverageProbeOutput,
     TimeAverageSurfaceOutput,
@@ -1496,7 +1493,7 @@ def test_streamline_output(streamline_output_config):
 def imported_surface_output_config(vel_in_km_per_hr):
     return (
         [
-            ImportedSurfaceOutput(
+            SurfaceOutput(
                 output_fields=[
                     vel_in_km_per_hr,
                 ],
@@ -1529,7 +1526,7 @@ def imported_surface_output_config(vel_in_km_per_hr):
 def time_average_imported_surface_output_config(vel_in_km_per_hr):
     return (
         [
-            TimeAverageImportedSurfaceOutput(
+            TimeAverageSurfaceOutput(
                 output_fields=[
                     vel_in_km_per_hr,
                 ],
@@ -1565,7 +1562,7 @@ def time_average_imported_surface_output_config(vel_in_km_per_hr):
 def imported_surface_integral_output_config(vel_in_km_per_hr):
     return (
         [
-            ImportedSurfaceIntegralOutput(
+            SurfaceIntegralOutput(
                 name="MassFlowRateImportedSurface",
                 output_fields=[UserVariable(name="MassFluxProjected", value=vel_in_km_per_hr)],
                 surfaces=[

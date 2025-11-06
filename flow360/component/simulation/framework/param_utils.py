@@ -9,10 +9,7 @@ from flow360.component.simulation.entity_info import (
     SurfaceMeshEntityInfo,
     VolumeMeshEntityInfo,
 )
-from flow360.component.simulation.framework.base_model import (
-    Flow360BaseModel,
-    RegistryLookup,
-)
+from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityBase, EntityList
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
 from flow360.component.simulation.framework.unique_list import UniqueStringList
@@ -69,14 +66,14 @@ class AssetCache(Flow360BaseModel):
         params=None,
         exclude: List[str] = None,
         required_by: List[str] = None,
-        registry_lookup: RegistryLookup = None,
+        flow360_unit_system=None,
     ) -> Flow360BaseModel:
         exclude_asset_cache = exclude + ["variable_context"]
         return super().preprocess(
             params=params,
             exclude=exclude_asset_cache,
             required_by=required_by,
-            registry_lookup=registry_lookup,
+            flow360_unit_system=flow360_unit_system,
         )
 
 

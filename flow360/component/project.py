@@ -48,7 +48,12 @@ from flow360.component.utils import (
     wrapstring,
 )
 from flow360.component.volume_mesh import VolumeMeshV2
-from flow360.exceptions import Flow360FileError, Flow360ValueError, Flow360WebError
+from flow360.exceptions import (
+    Flow360ConfigError,
+    Flow360FileError,
+    Flow360ValueError,
+    Flow360WebError,
+)
 from flow360.log import log
 from flow360.plugins.report.report import get_default_report_summary_template
 from flow360.version import __solver_version__
@@ -1442,7 +1447,7 @@ class Project(pd.BaseModel):
         params.pre_submit_summary()
 
         draft.update_simulation_params(params)
-        upload_imported_surfaces_to_draft(params, draft)
+        upload_imported_surfaces_to_draft(params, draft, fork_from)
 
         if draft_only:
             # pylint: disable=import-outside-toplevel
@@ -1461,9 +1466,9 @@ class Project(pd.BaseModel):
                 use_geometry_AI=use_geometry_AI,
                 start_from=start_from,
             )
-        except RuntimeError as exception:
+        except RuntimeError:
             if raise_on_error:
-                raise ValueError("Submission terminated due to validation error.") from exception
+                raise ValueError("Submission terminated due to error.") from None
             return None
 
         self._project_webapi.patch(
@@ -1476,7 +1481,11 @@ class Project(pd.BaseModel):
 
         destination_obj = target.from_cloud(destination_id)
 
-        log.info(f"Successfully submitted: {destination_obj.short_description()}")
+        # Remove when converting Case to V2
+        kwargs = {}
+        if isinstance(destination_obj, Case):
+            kwargs = {"project_id": destination_obj.project_id}
+        log.info(f"Successfully submitted: {destination_obj.short_description(**kwargs)}")
 
         if not run_async:
             destination_obj.wait()
@@ -1687,6 +1696,12 @@ class Project(pd.BaseModel):
         Case | Draft
             The case asset or the draft if `draft_only` is True.
         """
+
+        if interpolate_to_mesh is not None and fork_from is None:
+            raise Flow360ConfigError(
+                "Interpolation to mesh is only supported when forking from a case."
+            )
+
         self._check_initialized()
         case_or_draft = self._run(
             params=params,

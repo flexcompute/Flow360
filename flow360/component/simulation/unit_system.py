@@ -101,9 +101,14 @@ unit_system_manager = UnitSystemManager()
 def _encode_ndarray(x, enforce_vector=False):
     """
     encoder for ndarray
+
+    For scalar values (ndim==0), convert to float.
+    For arrays (ndim>0), preserve as tuple/list even if size==1,
+    since Array types should remain as collections.
     """
     if x.size == 1 and not enforce_vector:
         return float(x)
+    # This is an array (e.g., LengthType.Array), preserve as collection
     return tuple(x.tolist())
 
 
@@ -140,14 +145,17 @@ def _check_if_input_has_delta_unit(quant):
     """
     Parse the input unit and see if it can be considered a delta unit. This only handles temperatures now.
     """
+    unit_str = str(quant.units)
     is_input_delta_unit = (
-        str(quant.units) == str(u.Unit("delta_degC"))  # delta unit
-        or str(quant.units) == str(u.Unit("delta_degF"))  # delta unit
-        or str(quant.units) == "K"  # absolute temperature so it can be considered delta
-        or str(quant.units) == "R"  # absolute temperature so it can be considered delta
+        unit_str == str(u.Unit("delta_degC"))  # delta unit
+        or unit_str == str(u.Unit("delta_degF"))  # delta unit
+        or unit_str == "K"  # absolute temperature so it can be considered delta
+        or unit_str == "R"  # absolute temperature so it can be considered delta
         # Flow360 temperature scaled by absolute temperature, making it also absolute temperature
-        or str(quant.units) == "flow360_delta_temperature_unit"
-        or str(quant.units) == "flow360_temperature_unit"
+        or unit_str == "flow360_delta_temperature_unit"
+        or unit_str == "flow360_temperature_unit"
+        # Check for units like "356.483333333333*K" (scaled K) which can occur during unit conversion
+        or (unit_str.endswith("*K") or unit_str.endswith("*R"))
     )
     return is_input_delta_unit
 

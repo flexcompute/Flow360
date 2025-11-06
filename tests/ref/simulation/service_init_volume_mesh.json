@@ -165,6 +165,7 @@
                 "p": "p"
             },
             "type": "Fluid",
+            "private_attribute_id": "__default_fluid",
             "navier_stokes_solver": {
                 "absolute_tolerance": 1e-10,
                 "relative_tolerance": 0.0,
@@ -250,7 +251,6 @@
             "entities": {
                 "stored_entities": [
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "name": "*",
                         "private_attribute_sub_components": []

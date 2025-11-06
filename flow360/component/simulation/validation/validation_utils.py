@@ -106,7 +106,9 @@ def check_deleted_surface_pair(value):
 
     # - Check if the surfaces are deleted.
     for surface in value.pair:
-        if surface._will_be_deleted_by_mesher(  # pylint:disable=protected-access
+        if isinstance(
+            surface, Surface
+        ) and surface._will_be_deleted_by_mesher(  # pylint:disable=protected-access
             at_least_one_body_transformed=validation_info.at_least_one_body_transformed,
             farfield_method=validation_info.farfield_method,
             global_bounding_box=validation_info.global_bounding_box,
@@ -122,8 +124,46 @@ def check_deleted_surface_pair(value):
     return value
 
 
+def check_user_defined_farfield_symmetry_existence(stored_entities):
+    """
+    Ensure that when:
+    1. UserDefinedFarfield is used
+    2. GhostSurface(name="symmetric") is assigned
+
+    That:
+    1. GAI and beta mesher is used.
+    2. Domain type is half_body_positive_y or half_body_negative_y
+    """
+    validation_info = get_validation_info()
+
+    if validation_info is None:
+        return stored_entities
+
+    if validation_info.farfield_method != "user-defined":
+        return stored_entities
+
+    for item in stored_entities:
+        if (
+            item.private_attribute_entity_type_name != "GhostCircularPlane"
+            or item.name != "symmetric"
+        ):
+            continue
+        if not validation_info.use_geometry_AI or not validation_info.is_beta_mesher:
+            raise ValueError(
+                "Symmetry plane of user defined farfield will only be generated when both GAI and beta mesher are used."
+            )
+        if validation_info.farfield_domain_type not in (
+            "half_body_positive_y",
+            "half_body_negative_y",
+        ):
+            raise ValueError(
+                "Symmetry plane of user defined farfield is only supported for half body domains."
+            )
+    return stored_entities
+
+
 def check_symmetric_boundary_existence(stored_entities):
-    """Check according to the criteria if the symmetric plane exists."""
+    """For automated farfield, check according to the criteria if the symmetric plane exists."""
     validation_info = get_validation_info()
 
     if validation_info is None:
@@ -147,6 +187,92 @@ def check_symmetric_boundary_existence(stored_entities):
 
             raise ValueError(error_msg)
 
+    return stored_entities
+
+
+def _ghost_surface_names(stored_entities) -> list[str]:
+    """Collect names of ghost-type boundaries in the list."""
+    names = []
+    for item in stored_entities:
+        entity_type = getattr(item, "private_attribute_entity_type_name", None)
+        if isinstance(entity_type, str) and entity_type.startswith("Ghost"):
+            names.append(getattr(item, "name", ""))
+    return names
+
+
+def check_ghost_surface_usage_policy_for_face_refinements(stored_entities, *, feature_name: str):
+    """
+    Enforce GhostSurface usage policy for face-based refinements (SurfaceRefinement, PassiveSpacing).
+
+    Rules provided by product spec:
+    - If starting from Geometry, SurfaceRefinement and PassiveSpacing both can use GhostSurface, if:
+        - Automated farfield: if using beta mesher.
+        - User-defined farfield: if using GAI and beta mesher.
+    - If starting from Surface mesh:
+        - Automated farfield: allow GhostSurface for PassiveSpacing only.
+        - User-defined farfield: do not allow any GhostSurface.
+    """
+    validation_info = get_validation_info()
+    if validation_info is None:
+        return stored_entities
+
+    if not stored_entities:
+        return stored_entities
+
+    ghost_names = _ghost_surface_names(stored_entities)
+    if not ghost_names:
+        return stored_entities
+
+    root_asset_type = getattr(validation_info, "root_asset_type", None)
+    farfield_method = validation_info.farfield_method
+    use_beta = validation_info.is_beta_mesher
+    use_gai = validation_info.use_geometry_AI
+
+    # Default error messages
+    def _err(msg):
+        raise ValueError(msg)
+
+    names_str = ", ".join(sorted(set(ghost_names)))
+
+    if root_asset_type == "geometry":
+        if farfield_method == "user-defined":
+            if not (use_beta and use_gai):
+                _err(
+                    (
+                        f"Face refinements on '{names_str}' require both Geometry AI and the beta mesher "
+                        "when using user-defined farfield."
+                    )
+                )
+        else:
+            # automated variants (auto / quasi-3d / quasi-3d-periodic)
+            if not use_beta:
+                _err(
+                    (
+                        f"Face refinements on '{names_str}' for automated farfield "
+                        "requires beta mesher."
+                    )
+                )
+        return stored_entities
+
+    if root_asset_type == "surface_mesh":
+        if farfield_method == "user-defined":
+            _err(
+                (
+                    f"Boundary '{names_str}' is not allowed when starting from an uploaded surface mesh "
+                    "with user-defined farfield."
+                )
+            )
+        # automated variants
+        if feature_name == "SurfaceRefinement":
+            _err(
+                (
+                    f"Boundary '{names_str}' is not allowed for SurfaceRefinement when starting from an "
+                    "uploaded surface mesh with automated farfield."
+                )
+            )
+        return stored_entities
+
+    # Other asset type: proceed without additional restriction
     return stored_entities
 
 
