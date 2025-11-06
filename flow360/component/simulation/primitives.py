@@ -65,7 +65,7 @@ def _check_axis_is_orthogonal(axis_pair: Tuple[Axis, Axis]) -> Tuple[Axis, Axis]
         raise ValueError(f"The two axes are not orthogonal, dot product is {dot_product}.")
     axis_2 -= dot_product * axis_1
     axis_2 /= np.linalg.norm(axis_2)
-    return axis_pair
+    return (tuple(axis_1), tuple(axis_2))
 
 
 OrthogonalAxes = Annotated[Tuple[Axis, Axis], pd.AfterValidator(_check_axis_is_orthogonal)]
@@ -373,7 +373,6 @@ class Box(MultiConstructorBaseModel, _VolumeEntityBase):
             size=size,
             axis_of_rotation=tuple(axis),
             angle_of_rotation=angle * u.rad,
-            # private_attribute_input_cache = BoxCache(axes=axes),
         )
 
     @pd.model_validator(mode="after")
@@ -394,9 +393,6 @@ class Box(MultiConstructorBaseModel, _VolumeEntityBase):
 
             # pylint: disable=assigning-non-slot
             self.private_attribute_input_cache.axes = np.transpose(rotation_matrix[:, :2]).tolist()
-            print(self.name)
-            print(self.private_attribute_input_cache.axes)
-            print(id(self.private_attribute_input_cache.axes))
 
         return self
 

@@ -766,10 +766,6 @@ def test_box_multi_constructor():
             (0.258, -0.945, -0.198),
         ),
     )
-    # print(box6.axis_of_rotation)
-    # print(box6.angle_of_rotation)
-    print(box6.private_attribute_input_cache.axes)
-    print(id(box6.private_attribute_input_cache.axes))
 
     box7 = Box.from_principal_axes(
         name="box7",
@@ -780,8 +776,6 @@ def test_box_multi_constructor():
             (0.257788, -0.944993, -0.198309),
         ),
     )
-    # print(box7.axis_of_rotation)
-    # print(box7.angle_of_rotation)
     assert compare_boxes(box6, box7)
 
 
