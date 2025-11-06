@@ -1364,7 +1364,8 @@ def test_custom_volume_translation():
                             CustomVolume(name="zone1", boundaries=[Surface(name="face1")]),
                             zone_2,
                         ],
-                    )
+                    ),
+                    UserDefinedFarfield(),
                 ],
             ),
             operating_condition=AerospaceCondition(velocity_magnitude=10),

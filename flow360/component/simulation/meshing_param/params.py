@@ -29,14 +29,13 @@ from flow360.component.simulation.meshing_param.volume_params import (
     UniformRefinement,
     UserDefinedFarfield,
 )
-from flow360.component.simulation.primitives import CustomVolume, SeedpointZone
+from flow360.component.simulation.primitives import SeedpointZone
 from flow360.component.simulation.validation.validation_context import (
     SURFACE_MESH,
     VOLUME_MESH,
     ContextField,
 )
 from flow360.component.simulation.validation.validation_utils import EntityUsageMap
-from flow360.log import log
 
 RefinementTypes = Annotated[
     Union[
@@ -159,28 +158,14 @@ class MeshingParams(Flow360BaseModel):
             # User did not put anything in volume_zones so may not want to use volume meshing
             return v
 
-        total_automated_farfield = sum(
-            isinstance(volume_zone, AutomatedFarfield) for volume_zone in v
+        total_farfield = sum(
+            isinstance(volume_zone, (AutomatedFarfield, UserDefinedFarfield)) for volume_zone in v
         )
-        total_user_defined_farfield = sum(
-            isinstance(volume_zone, UserDefinedFarfield) for volume_zone in v
-        )
-        total_custom_volume = sum(isinstance(volume_zone, CustomVolume) for volume_zone in v)
-
-        if total_custom_volume:
-            total_user_defined_farfield = 0
-            log.warning(
-                "When using CustomVolume or SeedpointZone the UserDefinedFarfield will be ignored."
-            )
-
-        if total_automated_farfield > 1:
-            raise ValueError("Only one AutomatedFarfield zone is allowed in `volume_zones`.")
-
-        if total_user_defined_farfield > 1:
-            raise ValueError("Only one UserDefinedFarfield zone is allowed in `volume_zones`.")
-
-        if (total_automated_farfield + total_user_defined_farfield + total_custom_volume) == 0:
+        if total_farfield == 0:
             raise ValueError("Farfield zone is required in `volume_zones`.")
+
+        if total_farfield > 1:
+            raise ValueError("Only one farfield zone is allowed in `volume_zones`.")
 
         return v
 
@@ -286,8 +271,7 @@ class MeshingParams(Flow360BaseModel):
             for zone in self.volume_zones:  # pylint: disable=not-an-iterable
                 if isinstance(zone, AutomatedFarfield):
                     return zone.method
-                if isinstance(zone, UserDefinedFarfield):
-                    return "user-defined"
+            return "user-defined"
         return None
 
 
@@ -357,12 +341,12 @@ class ModularMeshingWorkflow(Flow360BaseModel):
         total_user_defined_farfield = sum(
             isinstance(volume_zone, UserDefinedFarfield) for volume_zone in v
         )
-        total_custom_volume = sum(isinstance(volume_zone, CustomVolume) for volume_zone in v)
+        total_custom_zones = sum(isinstance(volume_zone, CustomZones) for volume_zone in v)
         total_seedpoint_zone = sum(isinstance(volume_zone, SeedpointZone) for volume_zone in v)
 
-        if (total_custom_volume or total_seedpoint_zone) and total_user_defined_farfield:
+        if (total_custom_zones or total_seedpoint_zone) and total_user_defined_farfield:
             raise ValueError(
-                "When using CustomVolume or SeedpointZone the UserDefinedFarfield will be ignored."
+                "When using :class:`CustomZones` or SeedpointZone the UserDefinedFarfield will be ignored."
             )
 
         if total_automated_farfield > 1:
@@ -377,12 +361,12 @@ class ModularMeshingWorkflow(Flow360BaseModel):
         if (
             total_user_defined_farfield
             + total_automated_farfield
-            + total_custom_volume
+            + total_custom_zones
             + total_seedpoint_zone
         ) == 0:
             raise ValueError("At least one zone defining the farfield is required.")
 
-        if total_automated_farfield and (total_seedpoint_zone or total_custom_volume):
+        if total_automated_farfield and (total_seedpoint_zone or total_custom_zones):
             raise ValueError(
                 "SeedpointZone and CustomVolume cannot be used with AutomatedFarfield."
             )
@@ -398,34 +382,42 @@ class ModularMeshingWorkflow(Flow360BaseModel):
             return v
         to_be_generated_volume_zone_names = set()
         for volume_zone in v:
-            if not isinstance(volume_zone, (CustomVolume, SeedpointZone)):
-                continue
-            if volume_zone.name in to_be_generated_volume_zone_names:
-                raise ValueError(
-                    f"Multiple CustomVolume or SeedpointZone with the same name `{volume_zone.name}` are not allowed."
-                )
-            to_be_generated_volume_zone_names.add(volume_zone.name)
+            if isinstance(volume_zone, CustomZones):
+                for custom_volume in volume_zone.entities.stored_entities:
+                    if custom_volume.name in to_be_generated_volume_zone_names:
+                        raise ValueError(
+                            f"Multiple CustomVolume with the same name `{custom_volume.name}` are not allowed."
+                        )
+                    to_be_generated_volume_zone_names.add(custom_volume.name)
+
+            if isinstance(volume_zone, SeedpointZone):
+                if volume_zone.name in to_be_generated_volume_zone_names:
+                    raise ValueError(
+                        f"Multiple CustomVolume or SeedpointZone with the same name `{volume_zone.name}` "
+                        + "are not allowed."
+                    )
+                to_be_generated_volume_zone_names.add(volume_zone.name)
 
         return v
 
     @pd.model_validator(mode="after")
     def _check_snappy_zones(self) -> Self:
         if isinstance(self.surface_meshing, snappy.SurfaceMeshingParams):
-            if self.automated_farfield_method != "auto" and not sum(
+            if self.farfield_method != "auto" and not sum(
                 isinstance(volume_zone, SeedpointZone) for volume_zone in self.zones
             ):
                 raise ValueError(
                     "snappyHexMeshing requires at least one SeedpointZone when not using AutomatedFarfield."
                 )
             for zone in self.zones:  # pylint: disable=not-an-iterable
-                if isinstance(zone, CustomVolume):
+                if isinstance(zone, CustomZones):
                     raise ValueError(
-                        "Volume zones with snappyHexMeshing are defined using SeedpointZones, not CustomVolumes."
+                        "Volume zones with snappyHexMeshing are defined using SeedpointZone, not CustomZones."
                     )
         else:
             for zone in self.zones:  # pylint: disable=not-an-iterable
                 if isinstance(zone, SeedpointZone):
-                    raise ValueError("Seedpoint zones are applicable only with snappyHexMeshing.")
+                    raise ValueError("SeedpointZone is applicable only with snappyHexMeshing.")
 
         return self
 
@@ -507,9 +499,11 @@ class ModularMeshingWorkflow(Flow360BaseModel):
         return self
 
     @property
-    def automated_farfield_method(self):
-        """Returns the automated farfield method used."""
-        for zone in self.zones:  # pylint: disable=not-an-iterable
-            if isinstance(zone, AutomatedFarfield):
-                return zone.method
+    def farfield_method(self):
+        """Returns the  farfield method used."""
+        if self.zones:
+            for zone in self.zones:  # pylint: disable=not-an-iterable
+                if isinstance(zone, AutomatedFarfield):
+                    return zone.method
+            return "user-defined"
         return None

@@ -23,13 +23,13 @@ from flow360.component.simulation.framework.param_utils import (
     register_entity_list,
 )
 from flow360.component.simulation.framework.updater import updater
-from flow360.component.simulation.meshing_param.params import (
-    MeshingParams,
-    ModularMeshingWorkflow,
-)
 from flow360.component.simulation.framework.updater_utils import (
     Flow360Version,
     recursive_remove_key,
+)
+from flow360.component.simulation.meshing_param.params import (
+    MeshingParams,
+    ModularMeshingWorkflow,
 )
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,

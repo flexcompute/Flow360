@@ -4,7 +4,7 @@
         "name": "SI"
     },
     "meshing": {
-        "type": "MeshingParams",
+        "type_name": "MeshingParams",
         "refinement_factor": 1.0,
         "gap_treatment_strength": 0.0,
         "defaults": {
@@ -145,7 +145,6 @@
             "entities": {
                 "stored_entities": [
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "name": "*",
                         "private_attribute_sub_components": []
@@ -171,7 +170,6 @@
             "entities": {
                 "stored_entities": [
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "GhostSurface",
                         "name": "farfield"
                     }
@@ -293,7 +291,6 @@
             "entities": {
                 "stored_entities": [
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "name": "*",
                         "private_attribute_sub_components": []
@@ -315,7 +312,6 @@
             "draft_entities": [],
             "ghost_entities": [
                 {
-                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
                     "private_attribute_entity_type_name": "GhostSphere",
                     "private_attribute_id": "farfield",
                     "name": "farfield",
@@ -328,7 +324,6 @@
                     "max_radius": 7684678.07
                 },
                 {
-                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
                     "private_attribute_entity_type_name": "GhostCircularPlane",
                     "private_attribute_id": "symmetric-1",
                     "name": "symmetric-1",
@@ -346,7 +341,6 @@
                     ]
                 },
                 {
-                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
                     "private_attribute_entity_type_name": "GhostCircularPlane",
                     "private_attribute_id": "symmetric-2",
                     "name": "symmetric-2",
@@ -364,7 +358,6 @@
                     ]
                 },
                 {
-                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
                     "private_attribute_entity_type_name": "GhostCircularPlane",
                     "private_attribute_id": "symmetric",
                     "name": "symmetric",
@@ -393,7 +386,6 @@
             "grouped_bodies": [
                 [
                     {
-                        "private_attribute_registry_bucket_name": "GeometryBodyGroupEntityType",
                         "private_attribute_entity_type_name": "GeometryBodyGroup",
                         "private_attribute_id": "f1_no_rad_frame.stl",
                         "name": "f1_no_rad_frame.stl",
@@ -441,7 +433,6 @@
                 ],
                 [
                     {
-                        "private_attribute_registry_bucket_name": "GeometryBodyGroupEntityType",
                         "private_attribute_entity_type_name": "GeometryBodyGroup",
                         "private_attribute_id": "f1_no_rad_frame.stl",
                         "name": "f1_no_rad_frame.stl",
@@ -593,7 +584,6 @@
             "grouped_faces": [
                 [
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "f1_no_rad_frame.stl",
                         "name": "f1_no_rad_frame.stl",
@@ -718,7 +708,6 @@
                 ],
                 [
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "rr-wh-brake-disc-lhs",
                         "name": "rr-wh-brake-disc-lhs",
@@ -746,7 +735,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "fr-int-winglet-lhs",
                         "name": "fr-int-winglet-lhs",
@@ -774,7 +762,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "fr-int-brake-duct-lhs",
                         "name": "fr-int-brake-duct-lhs",
@@ -802,7 +789,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "fr-int-caketin-lhs",
                         "name": "fr-int-caketin-lhs",
@@ -830,7 +816,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "fr-int-winglet-rhs",
                         "name": "fr-int-winglet-rhs",
@@ -858,7 +843,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "fr-int-brake-duct-rhs",
                         "name": "fr-int-brake-duct-rhs",
@@ -886,7 +870,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "fr-int-caketin-rhs",
                         "name": "fr-int-caketin-rhs",
@@ -914,7 +897,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "rr-wh-brake-disc-rhs",
                         "name": "rr-wh-brake-disc-rhs",
@@ -942,7 +924,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "rr-wh-rim-rhs",
                         "name": "rr-wh-rim-rhs",
@@ -970,7 +951,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "rr-wh-tyre-rhs",
                         "name": "rr-wh-tyre-rhs",
@@ -998,7 +978,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "rr-wh-cover-OB-rhs",
                         "name": "rr-wh-cover-OB-rhs",
@@ -1026,7 +1005,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "rr-susp-prod-lhs",
                         "name": "rr-susp-prod-lhs",
@@ -1054,7 +1032,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "rr-susp-trod-lhs",
                         "name": "rr-susp-trod-lhs",
@@ -1082,7 +1059,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "rr-susp-prod-rhs",
                         "name": "rr-susp-prod-rhs",
@@ -1110,7 +1086,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "rr-susp-trod-rhs",
                         "name": "rr-susp-trod-rhs",
@@ -1138,7 +1113,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "rr-susp-lwb-rhs",
                         "name": "rr-susp-lwb-rhs",
@@ -1166,7 +1140,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "rr-susp-twb-rhs",
                         "name": "rr-susp-twb-rhs",
@@ -1194,7 +1167,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "rr-wh-rim-lhs",
                         "name": "rr-wh-rim-lhs",
@@ -1222,7 +1194,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "rr-wh-cover-OB-lhs",
                         "name": "rr-wh-cover-OB-lhs",
@@ -1250,7 +1221,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "rr-wh-tyre-lhs",
                         "name": "rr-wh-tyre-lhs",
@@ -1278,7 +1248,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "rr-susp-twb-lhs",
                         "name": "rr-susp-twb-lhs",
@@ -1306,7 +1275,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "rr-susp-lwb-lhs",
                         "name": "rr-susp-lwb-lhs",
@@ -1334,7 +1302,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "velocity-outlet-fr-int-duct-lhs-in",
                         "name": "velocity-outlet-fr-int-duct-lhs-in",
@@ -1362,7 +1329,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "velocity-outlet-rr-int-duct-lhs-in",
                         "name": "velocity-outlet-rr-int-duct-lhs-in",
@@ -1390,7 +1356,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "velocity-inlet-rr-int-duct-lhs-out",
                         "name": "velocity-inlet-rr-int-duct-lhs-out",
@@ -1418,7 +1383,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "velocity-outlet-rr-int-duct-rhs-in",
                         "name": "velocity-outlet-rr-int-duct-rhs-in",
@@ -1446,7 +1410,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "velocity-inlet-rr-int-duct-rhs-out",
                         "name": "velocity-inlet-rr-int-duct-rhs-out",
@@ -1474,7 +1437,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "velocity-inlet-fr-int-duct-lhs-out",
                         "name": "velocity-inlet-fr-int-duct-lhs-out",
@@ -1502,7 +1464,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "velocity-outlet-fr-int-duct-rhs-in",
                         "name": "velocity-outlet-fr-int-duct-rhs-in",
@@ -1530,7 +1491,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "velocity-inlet-fr-int-duct-rhs-out",
                         "name": "velocity-inlet-fr-int-duct-rhs-out",
@@ -1558,7 +1518,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "rr-int-vanes-lhs",
                         "name": "rr-int-vanes-lhs",
@@ -1586,7 +1545,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "rr-int-caketin-lhs",
                         "name": "rr-int-caketin-lhs",
@@ -1614,7 +1572,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "rr-int-brake-duct-lhs",
                         "name": "rr-int-brake-duct-lhs",
@@ -1642,7 +1599,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "rr-int-vanes-rhs",
                         "name": "rr-int-vanes-rhs",
@@ -1670,7 +1626,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "rr-int-caketin-rhs",
                         "name": "rr-int-caketin-rhs",
@@ -1698,7 +1653,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "rr-int-brake-duct-rhs",
                         "name": "rr-int-brake-duct-rhs",
@@ -1726,7 +1680,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "fr-susp-trod-lhs",
                         "name": "fr-susp-trod-lhs",
@@ -1754,7 +1707,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "fr-wh-brake-disc-lhs",
                         "name": "fr-wh-brake-disc-lhs",
@@ -1782,7 +1734,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "fr-wh-rim-lhs",
                         "name": "fr-wh-rim-lhs",
@@ -1810,7 +1761,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "fr-susp-prod-lhs",
                         "name": "fr-susp-prod-lhs",
@@ -1838,7 +1788,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "fr-wh-tyre-lhs",
                         "name": "fr-wh-tyre-lhs",
@@ -1866,7 +1815,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "fr-wh-cover-OB-lhs",
                         "name": "fr-wh-cover-OB-lhs",
@@ -1894,7 +1842,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "fr-susp-twb-lhs",
                         "name": "fr-susp-twb-lhs",
@@ -1922,7 +1869,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "fr-susp-lwb-lhs",
                         "name": "fr-susp-lwb-lhs",
@@ -1950,7 +1896,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "fr-wh-brake-disc-rhs",
                         "name": "fr-wh-brake-disc-rhs",
@@ -1978,7 +1923,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "fr-wh-rim-rhs",
                         "name": "fr-wh-rim-rhs",
@@ -2006,7 +1950,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "fr-wh-tyre-rhs",
                         "name": "fr-wh-tyre-rhs",
@@ -2034,7 +1977,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "fr-wh-cover-OB-rhs",
                         "name": "fr-wh-cover-OB-rhs",
@@ -2062,7 +2004,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "fr-susp-twb-rhs",
                         "name": "fr-susp-twb-rhs",
@@ -2090,7 +2031,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "fr-susp-lwb-rhs",
                         "name": "fr-susp-lwb-rhs",
@@ -2118,7 +2058,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "fr-susp-trod-rhs",
                         "name": "fr-susp-trod-rhs",
@@ -2146,7 +2085,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "fr-susp-prod-rhs",
                         "name": "fr-susp-prod-rhs",
@@ -2174,7 +2112,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body-front-af",
                         "name": "body-front-af",
@@ -2202,7 +2139,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body-mirror",
                         "name": "body-mirror",
@@ -2230,7 +2166,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body-rear-crash-bar",
                         "name": "body-rear-crash-bar",
@@ -2258,7 +2193,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body-nose",
                         "name": "body-nose",
@@ -2286,7 +2220,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body-pit",
                         "name": "body-pit",
@@ -2314,7 +2247,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body-misc",
                         "name": "body-misc",
@@ -2342,7 +2274,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body-aero-camera",
                         "name": "body-aero-camera",
@@ -2370,7 +2301,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body",
                         "name": "body",
@@ -2398,7 +2328,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body-camera",
                         "name": "body-camera",
@@ -2426,7 +2355,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body-inner-nlyr",
                         "name": "body-inner-nlyr",
@@ -2454,7 +2382,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body-steering-wheel",
                         "name": "body-steering-wheel",
@@ -2482,7 +2409,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body-helmet",
                         "name": "body-helmet",
@@ -2510,7 +2436,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "diffuser",
                         "name": "diffuser",
@@ -2538,7 +2463,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "eb-exhaust",
                         "name": "eb-exhaust",
@@ -2566,7 +2490,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "velocity-inlet-exhaust-out",
                         "name": "velocity-inlet-exhaust-out",
@@ -2594,7 +2517,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "velocity-outlet-engine-intake-in",
                         "name": "velocity-outlet-engine-intake-in",
@@ -2622,7 +2544,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "eb-engine",
                         "name": "eb-engine",
@@ -2650,7 +2571,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "fw-ep",
                         "name": "fw-ep",
@@ -2678,7 +2598,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "fw-fine",
                         "name": "fw-fine",
@@ -2706,7 +2625,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "fw-brackets",
                         "name": "fw-brackets",
@@ -2734,7 +2652,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "fw-flap-2",
                         "name": "fw-flap-2",
@@ -2762,7 +2679,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "fw-flap-1",
                         "name": "fw-flap-1",
@@ -2790,7 +2706,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "fw-mp",
                         "name": "fw-mp",
@@ -2818,7 +2733,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "toint-rad-main-lhs-up",
                         "name": "toint-rad-main-lhs-up",
@@ -2846,7 +2760,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body-main-rad-duct",
                         "name": "body-main-rad-duct",
@@ -2874,7 +2787,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "toint-rad-main-rhs-up",
                         "name": "toint-rad-main-rhs-up",
@@ -2902,7 +2814,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "toint-rad-main-rhs-down",
                         "name": "toint-rad-main-rhs-down",
@@ -2930,7 +2841,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "toint-rad-main-lhs-down",
                         "name": "toint-rad-main-lhs-down",
@@ -2958,7 +2868,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "rw-ep",
                         "name": "rw-ep",
@@ -2986,7 +2895,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "rw-mp",
                         "name": "rw-mp",
@@ -3014,7 +2922,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "rw-pillar",
                         "name": "rw-pillar",
@@ -3042,7 +2949,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "rw-flap",
                         "name": "rw-flap",
@@ -3070,7 +2976,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "rw-gf",
                         "name": "rw-gf",
@@ -3098,7 +3003,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "uf-strakes",
                         "name": "uf-strakes",
@@ -3126,7 +3030,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "uf",
                         "name": "uf",
@@ -3154,7 +3057,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "tunnel::ground",
                         "name": "tunnel::ground",
@@ -3182,7 +3084,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "tunnel::inlet",
                         "name": "tunnel::inlet",
@@ -3210,7 +3111,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "tunnel::outlet",
                         "name": "tunnel::outlet",
@@ -3238,7 +3138,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "tunnel::sides",
                         "name": "tunnel::sides",
@@ -3266,7 +3165,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "tunnel::top",
                         "name": "tunnel::top",
@@ -3294,7 +3192,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "fr-wh-plinth-lhs",
                         "name": "fr-wh-plinth-lhs",
@@ -3322,7 +3219,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "fr-wh-plinth-rhs",
                         "name": "fr-wh-plinth-rhs",
@@ -3350,7 +3246,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "rr-wh-plinth-lhs",
                         "name": "rr-wh-plinth-lhs",
@@ -3378,7 +3273,6 @@
                         }
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "rr-wh-plinth-rhs",
                         "name": "rr-wh-plinth-rhs",

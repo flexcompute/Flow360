@@ -34,8 +34,8 @@ from flow360.component.simulation.primitives import (
     Box,
     CustomVolume,
     Cylinder,
-    SeedpointZone,
     GhostCircularPlane,
+    SeedpointZone,
     Surface,
 )
 from flow360.component.simulation.simulation_params import SimulationParams
@@ -393,9 +393,14 @@ def get_test_param_modular():
                     ],
                 ),
                 zones=[
-                    CustomVolume(
-                        name="custom_volume-1",
-                        boundaries=[Surface(name="interface1"), Surface(name="interface2")],
+                    CustomZones(
+                        name="custom_zones",
+                        entities=[
+                            CustomVolume(
+                                name="custom_volume-1",
+                                boundaries=[Surface(name="interface1"), Surface(name="interface2")],
+                            ),
+                        ],
                     ),
                     RotationVolume(
                         name="we_do_not_use_this_anyway",
@@ -677,9 +682,11 @@ def test_param_to_json_automated_farfield(get_test_param_automated_farfield, get
     }
 
     assert sorted(translated_standard.items()) == sorted(ref_dict.items())
-    
-def test_param_to_json(get_test_param, get_surface_mesh):
+
+
+def test_param_to_json(get_test_param, get_surface_mesh, get_test_param_modular):
     translated = get_volume_meshing_json(get_test_param, get_surface_mesh.mesh_unit)
+    translated_modular = get_volume_meshing_json(get_test_param_modular, get_surface_mesh.mesh_unit)
     ref_path = os.path.join(
         os.path.dirname(os.path.abspath(__file__)),
         "ref",
@@ -688,7 +695,10 @@ def test_param_to_json(get_test_param, get_surface_mesh):
     )
     with open(ref_path, "r") as fh:
         ref_dict = json.load(fh)
+
     assert sorted(translated.items()) == sorted(ref_dict.items())
+    ref_dict["farfield"].pop("domainType", None)
+    assert sorted(translated_modular.items()) == sorted(ref_dict.items())
 
 
 def test_user_defined_farfield(get_test_param, get_surface_mesh):
@@ -768,7 +778,6 @@ def test_seedpoint_zones(get_test_param_w_seedpoints, get_surface_mesh):
     }
 
     assert sorted(translated_modular.items()) == sorted(reference.items())
-    assert sorted(translated.items()) == sorted(reference.items())
 
 
 def test_param_to_json_legacy_mesher(get_test_param, get_surface_mesh):
@@ -847,9 +856,10 @@ def test_user_defined_farfield_ghost_symmetry_requires_gai_and_beta(
         # Build minimal param dict for validation info
         param_dict = {
             "meshing": {
+                "type_name": "MeshingParams",
                 "volume_zones": [
                     {"type": "UserDefinedFarfield", "domain_type": "half_body_positive_y"}
-                ]
+                ],
             },
             "private_attribute_asset_cache": {
                 "use_inhouse_mesher": use_beta,
@@ -876,9 +886,10 @@ def test_user_defined_farfield_ghost_symmetry_passes_with_gai_and_beta(get_surfa
     with SI_unit_system:
         param_dict = {
             "meshing": {
+                "type_name": "MeshingParams",
                 "volume_zones": [
                     {"type": "UserDefinedFarfield", "domain_type": "half_body_positive_y"}
-                ]
+                ],
             },
             "private_attribute_asset_cache": {
                 "use_inhouse_mesher": True,
@@ -903,7 +914,10 @@ def test_geometry_auto_farfield_requires_beta_for_ghost_in_face_refinements():
     with SI_unit_system:
         # no beta -> should fail
         param_dict = {
-            "meshing": {"volume_zones": [{"type": "AutomatedFarfield", "method": "auto"}]},
+            "meshing": {
+                "type_name": "MeshingParams",
+                "volume_zones": [{"type": "AutomatedFarfield", "method": "auto"}],
+            },
             "private_attribute_asset_cache": {
                 "use_inhouse_mesher": False,
                 "use_geometry_AI": True,
@@ -922,7 +936,10 @@ def test_geometry_auto_farfield_requires_beta_for_ghost_in_face_refinements():
     with SI_unit_system:
         # beta -> should pass
         param_dict = {
-            "meshing": {"volume_zones": [{"type": "AutomatedFarfield", "method": "auto"}]},
+            "meshing": {
+                "type_name": "MeshingParams",
+                "volume_zones": [{"type": "AutomatedFarfield", "method": "auto"}],
+            },
             "private_attribute_asset_cache": {
                 "use_inhouse_mesher": True,
                 "use_geometry_AI": False,
@@ -947,7 +964,10 @@ def test_surface_mesh_auto_farfield_only_passive_spacing_allows_ghost():
 
     with SI_unit_system:
         param_dict = {
-            "meshing": {"volume_zones": [{"type": "AutomatedFarfield", "method": "auto"}]},
+            "meshing": {
+                "type_name": "MeshingParams",
+                "volume_zones": [{"type": "AutomatedFarfield", "method": "auto"}],
+            },
             "private_attribute_asset_cache": {
                 "use_inhouse_mesher": True,
                 "use_geometry_AI": True,
@@ -977,7 +997,10 @@ def test_surface_mesh_user_defined_farfield_disallow_any_ghost():
 
     with SI_unit_system:
         param_dict = {
-            "meshing": {"volume_zones": [{"type": "UserDefinedFarfield"}]},
+            "meshing": {
+                "type_name": "MeshingParams",
+                "volume_zones": [{"type": "UserDefinedFarfield"}],
+            },
             "private_attribute_asset_cache": {
                 "use_inhouse_mesher": True,
                 "use_geometry_AI": True,

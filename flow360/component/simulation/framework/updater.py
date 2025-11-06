@@ -367,6 +367,7 @@ def _to_25_7_2(params_as_dict):
 
     return params_as_dict
 
+
 def _to_25_7_6(params_as_dict):
     """Remove legacy entity bucket field from all entity dicts."""
     return remove_entity_bucket_field(params_as_dict=params_as_dict)

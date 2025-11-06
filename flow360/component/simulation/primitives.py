@@ -808,6 +808,8 @@ class SeedpointZone(_VolumeEntityBase):
 
 
 VolumeEntityTypes = Union[GenericVolume, Cylinder, Box, str]
+
+
 class SurfacePair(SurfacePairBase):
     """
     Represents a pair of surfaces.

@@ -31,6 +31,7 @@ from flow360.component.simulation.translator.utils import (
     preprocess_input,
     translate_setting_and_apply_to_all_entities,
 )
+from flow360.component.simulation.unit_system import LengthType
 from flow360.exceptions import Flow360TranslationError
 from flow360.log import log
 
@@ -77,13 +78,14 @@ def SurfaceRefinement_to_faces(obj: SurfaceRefinement, global_max_edge_length):
     }
 
 
-def remove_numerical_noise_from_spacing(spacing, spacing_system: OctreeSpacing):
+def remove_numerical_noise_from_spacing(spacing: LengthType, spacing_system: OctreeSpacing):
     """
     If the spacing is in the proximity of 1e-8 to one of the octree series spacing casts that spacing onto the series.
     """
+    unit_in = spacing.units
     direct = spacing_system.to_level(spacing)[1]
     if direct:
-        return spacing_system[spacing_system.to_level(spacing)[0]]
+        return spacing_system[spacing_system.to_level(spacing)[0]].to(unit_in)
     return spacing
 
 

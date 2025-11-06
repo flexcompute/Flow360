@@ -16,6 +16,7 @@ from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     AxisymmetricRefinement,
     AxisymmetricRefinementBase,
+    CustomZones,
     RotationCylinder,
     RotationVolume,
     StructuredBoxRefinement,
@@ -213,8 +214,6 @@ def rotation_volume_entity_injector(
 
 def _get_custom_volumes(volume_zones: list):
     """Get translated custom volumes from volume zones."""
-    # pylint: disable=import-outside-toplevel
-    from flow360.component.simulation.meshing_param.volume_params import CustomZones
 
     custom_volumes = []
     for zone in volume_zones:
@@ -317,16 +316,13 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
 
     ##::  Step 2:  Get farfield
     for zone in volume_zones:
-        if isinstance(zone, (UserDefinedFarfield, CustomVolume, SeedpointZone)):
+        if isinstance(zone, (UserDefinedFarfield, CustomZones, SeedpointZone)):
             translated["farfield"] = {"type": "user-defined"}
-            if zone.domain_type is not None:
+            if hasattr(zone, "domain_type") and zone.domain_type is not None:
                 translated["farfield"]["domainType"] = zone.domain_type
-            break
 
         if isinstance(zone, AutomatedFarfield):
-            translated["farfield"] = {
-                "planarFaceTolerance": planar_tolerance
-            }
+            translated["farfield"] = {"planarFaceTolerance": planar_tolerance}
             if zone.method == "quasi-3d-periodic":
                 translated["farfield"]["type"] = "quasi-3d"
                 translated["farfield"]["periodic"] = {"type": "translational"}

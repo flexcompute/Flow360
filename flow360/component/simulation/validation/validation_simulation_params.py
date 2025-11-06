@@ -28,7 +28,7 @@ from flow360.component.simulation.outputs.outputs import (
     TimeAverageSurfaceOutput,
     VolumeOutput,
 )
-from flow360.component.simulation.primitives import CustomVolume, SeedpointZone
+from flow360.component.simulation.primitives import SeedpointZone
 from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
 from flow360.component.simulation.utils import is_exact_instance
 from flow360.component.simulation.validation.validation_context import (

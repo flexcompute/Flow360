@@ -28,12 +28,6 @@ from flow360.component.simulation.primitives import (
     SnappyBody,
     Surface,
 )
-from flow360.component.simulation.primitives import (
-    AxisymmetricBody,
-    Box,
-    Cylinder,
-    Surface,
-)
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import CGS_unit_system, SI_unit_system
 from flow360.component.simulation.validation.validation_context import (
@@ -745,7 +739,8 @@ def test_set_spacing_with_value():
             ),
             base_spacing=-3 * u.mm,
         )
-        
+
+
 def test_quasi_3d_periodic_only_in_legacy_mesher():
     # raises when legacy mesher is off
     with pytest.raises(

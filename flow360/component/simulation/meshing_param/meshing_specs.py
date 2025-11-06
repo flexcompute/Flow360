@@ -125,6 +125,12 @@ class MeshingDefaults(Flow360BaseModel):
         + "This can be overridden with class: ~flow360.GeometryRefinement",
     )
 
+    sealing_size: LengthType.NonNegative = pd.Field(
+        0.0 * u.m,
+        description="Threshold size below which all geometry gaps are automatically closed. "
+        + "This can be overridden with class: ~flow360.GeometryRefinement",
+    )
+
     @pd.field_validator("number_of_boundary_layers", mode="after")
     @classmethod
     def invalid_number_of_boundary_layers(cls, value):
@@ -158,6 +164,7 @@ class MeshingDefaults(Flow360BaseModel):
         "surface_max_aspect_ratio",
         "surface_max_adaptation_iterations",
         "preserve_thin_geometry",
+        "sealing_size",
         mode="after",
     )
     @classmethod
