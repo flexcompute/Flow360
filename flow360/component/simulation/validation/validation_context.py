@@ -159,7 +159,7 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
             for zone in volume_zones:
                 if zone["type"] == "AutomatedFarfield":
                     return zone["method"]
-                if zone["type"] in ["UserDefinedFarfield", "CustomVolume", "SeedpointZone"]:
+                if zone["type"] in ["UserDefinedFarfield", "CustomZones", "SeedpointZone"]:
                     farfield_method = "user-defined"
         return farfield_method
 
