@@ -149,6 +149,24 @@ def _check_unsteadiness_to_use_aero_acoustics(params):
     return params
 
 
+def _check_aero_acoustics_observer_time_step_size(params):
+
+    if not params.outputs:
+        return params
+
+    for output_index, output in enumerate(params.outputs):
+        if isinstance(output, AeroAcousticOutput):
+            if output.observer_time_step_size is None:
+                output.observer_time_step_size = params.time_stepping.step_size
+            elif output.observer_time_step_size < params.time_stepping.step_size:
+                raise ValueError(
+                    f"In `outputs`[{output_index}] {output.output_type}: "
+                    f"`observer_time_size` ({output.observer_time_step_size}) is smaller than "
+                    f"the time step size of CFD ({params.time_stepping.step_size})."
+                )
+    return params
+
+
 def _check_unique_surface_volume_probe_names(params):
 
     if not params.outputs:

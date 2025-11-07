@@ -84,6 +84,7 @@ from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics im
 )
 from flow360.component.simulation.utils import model_attribute_unlock
 from flow360.component.simulation.validation.validation_output import (
+    _check_aero_acoustics_observer_time_step_size,
     _check_output_fields,
     _check_output_fields_valid_given_turbulence_model,
     _check_unique_surface_volume_probe_entity_names,
@@ -504,6 +505,11 @@ class SimulationParams(_ParamModelBase):
     def check_unsteadiness_to_use_aero_acoustics(self):
         """Only allow Aero acoustics when using unsteady simulation"""
         return _check_unsteadiness_to_use_aero_acoustics(self)
+
+    @pd.model_validator(mode="after")
+    def check_aero_acoustics_observer_time_step_size(self):
+        """Validate that observer time step size is smaller than CFD time step size"""
+        return _check_aero_acoustics_observer_time_step_size(self)
 
     @pd.model_validator(mode="after")
     def check_unique_surface_volume_probe_names(self):

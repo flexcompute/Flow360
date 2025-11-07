@@ -92,6 +92,30 @@ def test_unsteadiness_to_use_aero_acoustics():
             )
 
 
+def test_aero_acoustics_observer_time_step_size():
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "In `outputs`[0] AeroAcousticOutput: "
+            "`observer_time_size` (0.05 s) is smaller than the time step size of CFD (0.1 s)."
+        ),
+    ):
+        with SI_unit_system:
+            SimulationParams(
+                outputs=[
+                    AeroAcousticOutput(
+                        name="test",
+                        observers=[
+                            fl.Observer(position=[0.2, 0.02, 0.03] * u.mm, group_name="0"),
+                            fl.Observer(position=[0.0001, 0.02, 0.03] * u.mm, group_name="1"),
+                        ],
+                        observer_time_step_size=0.05,
+                    ),
+                ],
+                time_stepping=Unsteady(steps=1, step_size=0.1),
+            )
+
+
 def test_turbulence_enabled_output_fields():
     with pytest.raises(
         ValueError,
