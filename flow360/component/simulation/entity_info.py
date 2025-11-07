@@ -18,6 +18,7 @@ from flow360.component.simulation.outputs.output_entities import (
     Slice,
 )
 from flow360.component.simulation.primitives import (
+    AxisymmetricBody,
     Box,
     CustomVolume,
     Cylinder,
@@ -35,7 +36,16 @@ from flow360.component.utils import GeometryFiles
 from flow360.log import log
 
 DraftEntityTypes = Annotated[
-    Union[Box, Cylinder, Point, PointArray, PointArray2D, Slice, CustomVolume],
+    Union[
+        AxisymmetricBody,
+        Box,
+        Cylinder,
+        Point,
+        PointArray,
+        PointArray2D,
+        Slice,
+        CustomVolume,
+    ],
     pd.Field(discriminator="private_attribute_entity_type_name"),
 ]
 

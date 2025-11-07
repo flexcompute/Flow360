@@ -68,9 +68,11 @@ def _get_generated_boundary_names(surface_name: str, volume_mesh_meta: dict[str,
 def _check_axis_is_orthogonal(axis_pair: Tuple[Axis, Axis]) -> Tuple[Axis, Axis]:
     axis_1, axis_2 = np.array(axis_pair[0]), np.array(axis_pair[1])
     dot_product = np.dot(axis_1, axis_2)
-    if not np.isclose(dot_product, 0):
+    if not np.isclose(dot_product, 0, atol=1e-3):
         raise ValueError(f"The two axes are not orthogonal, dot product is {dot_product}.")
-    return axis_pair
+    axis_2 -= dot_product * axis_1
+    axis_2 /= np.linalg.norm(axis_2)
+    return (tuple(axis_1), tuple(axis_2))
 
 
 OrthogonalAxes = Annotated[Tuple[Axis, Axis], pd.AfterValidator(_check_axis_is_orthogonal)]
@@ -372,13 +374,13 @@ class Box(MultiConstructorBaseModel, _VolumeEntityBase):
         rotation_matrix = np.transpose(np.asarray([x_axis, y_axis, z_axis], dtype=np.float64))
 
         # Calculate the rotation axis n
-        eig_rotation = eig(rotation_matrix)
-        axis = np.real(eig_rotation[1][:, np.where(np.isclose(eig_rotation[0], 1))])
+        eigvals, eigvecs = eig(rotation_matrix)
+        axis = np.real(eigvecs[:, np.where(np.isreal(eigvals))])
         if axis.shape[2] > 1:  # in case of 0 rotation angle
             axis = axis[:, :, 0]
         axis = np.ndarray.flatten(axis)
 
-        angle = np.sum(abs(np.angle(eig_rotation[0]))) / 2
+        angle = np.sum(abs(np.angle(eigvals))) / 2
 
         # Find correct angle
         matrix_test = rotation_matrix_from_axis_and_angle(axis, angle)
