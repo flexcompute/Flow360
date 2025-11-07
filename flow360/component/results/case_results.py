@@ -12,7 +12,6 @@ from typing import Callable, Dict, List, Optional
 import numpy as np
 import pydantic as pd
 
-from flow360.cloud.s3_utils import CloudFileNotFoundError
 from flow360.component.results.base_results import (
     _PHYSICAL_STEP,
     _PSEUDO_STEP,
@@ -584,6 +583,8 @@ class OptionallyDownloadableResultCSVModel(ResultCSVModel):
         CloudFileNotFoundError
             If the cloud file for the results is not found.
         """
+        # pylint: disable=import-outside-toplevel
+        from botocore.exceptions import ClientError as CloudFileNotFoundError
 
         try:
             super().download(
