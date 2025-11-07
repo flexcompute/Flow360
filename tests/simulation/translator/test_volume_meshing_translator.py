@@ -5,8 +5,8 @@ import pytest
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.param_utils import AssetCache
-from flow360.component.simulation.meshing_param import snappy
 from flow360.component.simulation.framework.updater_utils import compare_values
+from flow360.component.simulation.meshing_param import snappy
 from flow360.component.simulation.meshing_param.face_params import (
     BoundaryLayer,
     PassiveSpacing,
