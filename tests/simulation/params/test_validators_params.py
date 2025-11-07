@@ -92,7 +92,7 @@ from flow360.component.simulation.primitives import (
     GhostCircularPlane,
     GhostSphere,
     GhostSurface,
-    GhostSurfacePair,
+    GhostCircularPlane,
     Surface,
     SurfacePrivateAttributes,
 )
@@ -2255,7 +2255,7 @@ def test_check_custom_volume_in_volume_zones():
 
 
 def test_ghost_surface_pair_requires_quasi_3d_periodic_farfield():
-    # Create two dummy ghost surfaces
+    # Create two dummy ghost surfaces (Python workflow)
     periodic_1 = GhostSurface(name="periodic_1")
     periodic_2 = GhostSurface(name="periodic_2")
 
@@ -2266,5 +2266,19 @@ def test_ghost_surface_pair_requires_quasi_3d_periodic_farfield():
         Periodic(surface_pairs=(periodic_1, periodic_2), spec=Translational())
 
     # Case 2: Farfield method IS "quasi-3d-periodic" → should pass
+    with SI_unit_system, ValidationContext(CASE, quasi_3d_periodic_farfield_context):
+        Periodic(surface_pairs=(periodic_1, periodic_2), spec=Translational())
+
+    # Create two dummy ghost circular plane (Web UI workflow)
+    periodic_1 = GhostCircularPlane(name="periodic_1")
+    periodic_2 = GhostCircularPlane(name="periodic_2")
+
+    # Case 3: Farfield method NOT "quasi-3d-periodic" → should raise ValueError
+    with SI_unit_system, ValidationContext(CASE, quasi_3d_farfield_context), pytest.raises(
+        ValueError, match="Farfield type must be 'quasi-3d-periodic' when using GhostSurfacePair."
+    ):
+        Periodic(surface_pairs=(periodic_1, periodic_2), spec=Translational())
+
+    # Case 4: Farfield method IS "quasi-3d-periodic" → should pass
     with SI_unit_system, ValidationContext(CASE, quasi_3d_periodic_farfield_context):
         Periodic(surface_pairs=(periodic_1, periodic_2), spec=Translational())
