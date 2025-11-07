@@ -1,0 +1,883 @@
+{
+    "version": "25.7.6b0b0",
+    "unit_system": {
+        "name": "CGS"
+    },
+    "meshing": {
+        "refinement_factor": 1,
+        "gap_treatment_strength": 0,
+        "defaults": {
+            "surface_edge_growth_rate": 1.2,
+            "boundary_layer_growth_rate": 1.2,
+            "planar_face_tolerance": 0.000001,
+            "curvature_resolution_angle": {
+                "value": 12,
+                "units": "degree"
+            },
+            "sealing_size": {
+                "value": 0,
+                "units": "cm"
+            }
+        },
+        "volume_zones": [
+            {
+                "type": "AutomatedFarfield",
+                "name": "Farfield",
+                "method": "auto",
+                "relative_size": 50,
+                "_id": "cb213934-7483-4db6-b4fb-b5fbc8154255"
+            }
+        ]
+    },
+    "reference_geometry": {
+        "moment_center": {
+            "value": [
+                0,
+                0,
+                0
+            ],
+            "units": "cm"
+        },
+        "moment_length": {
+            "value": [
+                99.99999999999999,
+                99.99999999999999,
+                99.99999999999999
+            ],
+            "units": "cm"
+        },
+        "area": {
+            "type_name": "number",
+            "value": 1,
+            "units": "m**2"
+        }
+    },
+    "operating_condition": {
+        "type_name": "AerospaceCondition",
+        "private_attribute_constructor": "default",
+        "alpha": {
+            "value": 0,
+            "units": "degree"
+        },
+        "beta": {
+            "value": 0,
+            "units": "degree"
+        },
+        "thermal_state": {
+            "type_name": "ThermalState",
+            "private_attribute_constructor": "default",
+            "density": {
+                "value": 0.0012250000000000002,
+                "units": "g/cm**3"
+            },
+            "temperature": {
+                "value": 288.15,
+                "units": "K"
+            }
+        },
+        "velocity_magnitude": {
+            "type_name": "number",
+            "value": 0,
+            "units": "m/s"
+        },
+        "private_attribute_input_cache": {
+            "alpha": {
+                "value": 0,
+                "units": "degree"
+            },
+            "beta": {
+                "value": 0,
+                "units": "degree"
+            },
+            "thermal_state": {
+                "type_name": "ThermalState",
+                "private_attribute_constructor": "default",
+                "density": {
+                    "value": 0.0012250000000000002,
+                    "units": "g/cm**3"
+                },
+                "temperature": {
+                    "value": 288.15,
+                    "units": "K"
+                },
+                "private_attribute_input_cache": {
+                    "altitude": {
+                        "value": 0,
+                        "units": "cm"
+                    },
+                    "temperature_offset": {
+                        "value": 0,
+                        "units": "K"
+                    }
+                }
+            },
+            "temperature": {
+                "value": 288.15,
+                "units": "K"
+            }
+        }
+    },
+    "models": [
+        {
+            "_id": "293817e6-a29c-454f-a9eb-d98f4f4ef83a",
+            "material": {
+                "type": "air",
+                "name": "air",
+                "dynamic_viscosity": {
+                    "reference_viscosity": {
+                        "value": 0.0001716,
+                        "units": "dyn*s/cm**2"
+                    },
+                    "reference_temperature": {
+                        "value": 273.15,
+                        "units": "K"
+                    },
+                    "effective_temperature": {
+                        "value": 110.39999999999998,
+                        "units": "K"
+                    }
+                }
+            },
+            "initial_condition": {
+                "type_name": "NavierStokesInitialCondition",
+                "rho": "rho",
+                "u": "u",
+                "v": "v",
+                "w": "w",
+                "p": "p"
+            },
+            "private_attribute_id": "__default_fluid",
+            "type": "Fluid",
+            "navier_stokes_solver": {
+                "absolute_tolerance": 1e-10,
+                "relative_tolerance": 0,
+                "order_of_accuracy": 2,
+                "equation_evaluation_frequency": 1,
+                "linear_solver": {
+                    "max_iterations": 30
+                },
+                "CFL_multiplier": 1,
+                "kappa_MUSCL": -1,
+                "numerical_dissipation_factor": 1,
+                "limit_velocity": false,
+                "limit_pressure_density": false,
+                "type_name": "Compressible",
+                "low_mach_preconditioner": false,
+                "update_jacobian_frequency": 4,
+                "max_force_jac_update_physical_steps": 0
+            },
+            "turbulence_model_solver": {
+                "absolute_tolerance": 1e-8,
+                "relative_tolerance": 0,
+                "order_of_accuracy": 2,
+                "equation_evaluation_frequency": 4,
+                "linear_solver": {
+                    "max_iterations": 20
+                },
+                "CFL_multiplier": 2,
+                "type_name": "SpalartAllmaras",
+                "reconstruction_gradient_limiter": 0.5,
+                "quadratic_constitutive_relation": false,
+                "modeling_constants": {
+                    "type_name": "SpalartAllmarasConsts",
+                    "C_DES": 0.72,
+                    "C_d": 8,
+                    "C_cb1": 0.1355,
+                    "C_cb2": 0.622,
+                    "C_sigma": 0.6666666666666666,
+                    "C_v1": 7.1,
+                    "C_vonKarman": 0.41,
+                    "C_w2": 0.3,
+                    "C_w4": 0.21,
+                    "C_w5": 1.5,
+                    "C_t3": 1.2,
+                    "C_t4": 0.5,
+                    "C_min_rd": 10
+                },
+                "update_jacobian_frequency": 4,
+                "max_force_jac_update_physical_steps": 0,
+                "rotation_correction": false,
+                "low_reynolds_correction": false
+            },
+            "transition_model_solver": {
+                "type_name": "None"
+            }
+        },
+        {
+            "_id": "b1a9b353-a556-443a-b65b-337fe01c4df8",
+            "type": "Wall",
+            "entities": {
+                "stored_entities": [
+                    {
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "downstream",
+                        "name": "downstream",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": null,
+                        "private_attribute_color": null,
+                        "private_attributes": null,
+                        "_id": "downstream"
+                    },
+                    {
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "exhaust",
+                        "name": "exhaust",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": null,
+                        "private_attribute_color": null,
+                        "private_attributes": null,
+                        "_id": "exhaust"
+                    },
+                    {
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "fuselage",
+                        "name": "fuselage",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": null,
+                        "private_attribute_color": null,
+                        "private_attributes": null,
+                        "_id": "fuselage"
+                    },
+                    {
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "horizontal tail",
+                        "name": "horizontal tail",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": null,
+                        "private_attribute_color": null,
+                        "private_attributes": null,
+                        "_id": "horizontal tail"
+                    },
+                    {
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "intake",
+                        "name": "intake",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": null,
+                        "private_attribute_color": null,
+                        "private_attributes": null,
+                        "_id": "intake"
+                    },
+                    {
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "intake ramp",
+                        "name": "intake ramp",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": null,
+                        "private_attribute_color": null,
+                        "private_attributes": null,
+                        "_id": "intake ramp"
+                    },
+                    {
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "lower",
+                        "name": "lower",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": null,
+                        "private_attribute_color": null,
+                        "private_attributes": null,
+                        "_id": "lower"
+                    },
+                    {
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "side",
+                        "name": "side",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": null,
+                        "private_attribute_color": null,
+                        "private_attributes": null,
+                        "_id": "side"
+                    },
+                    {
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "strake",
+                        "name": "strake",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": null,
+                        "private_attribute_color": null,
+                        "private_attributes": null,
+                        "_id": "strake"
+                    },
+                    {
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "symmetry",
+                        "name": "symmetry",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": null,
+                        "private_attribute_color": null,
+                        "private_attributes": null,
+                        "_id": "symmetry"
+                    },
+                    {
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "upper",
+                        "name": "upper",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": null,
+                        "private_attribute_color": null,
+                        "private_attributes": null,
+                        "_id": "upper"
+                    },
+                    {
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "upstream",
+                        "name": "upstream",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": null,
+                        "private_attribute_color": null,
+                        "private_attributes": null,
+                        "_id": "upstream"
+                    },
+                    {
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "vertical tail",
+                        "name": "vertical tail",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": null,
+                        "private_attribute_color": null,
+                        "private_attributes": null,
+                        "_id": "vertical tail"
+                    },
+                    {
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "wing",
+                        "name": "wing",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": null,
+                        "private_attribute_color": null,
+                        "private_attributes": null,
+                        "_id": "wing"
+                    }
+                ]
+            },
+            "private_attribute_id": "404d9692-d56d-4ae1-a26f-17777cf0ec58",
+            "name": "Wall",
+            "use_wall_function": false,
+            "heat_spec": {
+                "value": {
+                    "value": 0,
+                    "units": "g/s**3"
+                },
+                "type_name": "HeatFlux"
+            },
+            "roughness_height": {
+                "value": 0,
+                "units": "cm"
+            }
+        },
+        {
+            "_id": "cc986870-8e7c-4392-a627-e21a713ff350",
+            "type": "Freestream",
+            "entities": {
+                "stored_entities": [
+                    {
+                        "private_attribute_entity_type_name": "GhostSphere",
+                        "name": "farfield",
+                        "_id": "8ae37a4b-6970-5d88-aef5-43a1abcc845e"
+                    }
+                ]
+            },
+            "private_attribute_id": "90959eed-164d-4773-afb7-5d42cacd221f",
+            "name": "Freestream"
+        }
+    ],
+    "time_stepping": {
+        "type_name": "Steady",
+        "max_steps": 2000,
+        "CFL": {
+            "type": "adaptive",
+            "min": 0.1,
+            "max": 10000,
+            "max_relative_change": 1,
+            "convergence_limiting_factor": 0.25
+        }
+    },
+    "outputs": [
+        {
+            "output_fields": {
+                "items": [
+                    "Cp",
+                    "yPlus",
+                    "Cf",
+                    "CfVec"
+                ]
+            },
+            "private_attribute_id": "39f2b21a-44dc-46a4-8bfb-59bfb845197c",
+            "frequency": -1,
+            "frequency_offset": 0,
+            "output_format": "paraview",
+            "name": "Surface output",
+            "entities": {
+                "stored_entities": [
+                    {
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "downstream",
+                        "name": "downstream",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": null,
+                        "private_attribute_color": null,
+                        "private_attributes": null,
+                        "_id": "downstream"
+                    },
+                    {
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "exhaust",
+                        "name": "exhaust",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": null,
+                        "private_attribute_color": null,
+                        "private_attributes": null,
+                        "_id": "exhaust"
+                    },
+                    {
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "fuselage",
+                        "name": "fuselage",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": null,
+                        "private_attribute_color": null,
+                        "private_attributes": null,
+                        "_id": "fuselage"
+                    },
+                    {
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "horizontal tail",
+                        "name": "horizontal tail",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": null,
+                        "private_attribute_color": null,
+                        "private_attributes": null,
+                        "_id": "horizontal tail"
+                    },
+                    {
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "intake",
+                        "name": "intake",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": null,
+                        "private_attribute_color": null,
+                        "private_attributes": null,
+                        "_id": "intake"
+                    },
+                    {
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "intake ramp",
+                        "name": "intake ramp",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": null,
+                        "private_attribute_color": null,
+                        "private_attributes": null,
+                        "_id": "intake ramp"
+                    },
+                    {
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "lower",
+                        "name": "lower",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": null,
+                        "private_attribute_color": null,
+                        "private_attributes": null,
+                        "_id": "lower"
+                    },
+                    {
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "side",
+                        "name": "side",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": null,
+                        "private_attribute_color": null,
+                        "private_attributes": null,
+                        "_id": "side"
+                    },
+                    {
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "strake",
+                        "name": "strake",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": null,
+                        "private_attribute_color": null,
+                        "private_attributes": null,
+                        "_id": "strake"
+                    },
+                    {
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "symmetry",
+                        "name": "symmetry",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": null,
+                        "private_attribute_color": null,
+                        "private_attributes": null,
+                        "_id": "symmetry"
+                    },
+                    {
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "upper",
+                        "name": "upper",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": null,
+                        "private_attribute_color": null,
+                        "private_attributes": null,
+                        "_id": "upper"
+                    },
+                    {
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "upstream",
+                        "name": "upstream",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": null,
+                        "private_attribute_color": null,
+                        "private_attributes": null,
+                        "_id": "upstream"
+                    },
+                    {
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "vertical tail",
+                        "name": "vertical tail",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": null,
+                        "private_attribute_color": null,
+                        "private_attributes": null,
+                        "_id": "vertical tail"
+                    },
+                    {
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "wing",
+                        "name": "wing",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": null,
+                        "private_attribute_color": null,
+                        "private_attributes": null,
+                        "_id": "wing"
+                    }
+                ]
+            },
+            "write_single_file": false,
+            "output_type": "SurfaceOutput",
+            "_id": "39f2b21a-44dc-46a4-8bfb-59bfb845197c"
+        }
+    ],
+    "private_attribute_asset_cache": {
+        "project_length_unit": {
+            "units": "m",
+            "value": 1
+        },
+        "project_entity_info": {
+            "ghost_entities": [
+                {
+                    "private_attribute_entity_type_name": "GhostSphere",
+                    "private_attribute_id": "farfield",
+                    "name": "farfield",
+                    "private_attribute_full_name": null,
+                    "center": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "max_radius": 6350.076675415039
+                },
+                {
+                    "private_attribute_entity_type_name": "GhostCircularPlane",
+                    "private_attribute_id": "symmetric",
+                    "name": "symmetric",
+                    "private_attribute_full_name": null,
+                    "center": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "max_radius": 6350.076675415039,
+                    "normal_axis": [
+                        0,
+                        1,
+                        0
+                    ]
+                }
+            ],
+            "type_name": "SurfaceMeshEntityInfo",
+            "boundaries": [
+                {
+                    "private_attribute_entity_type_name": "Surface",
+                    "private_attribute_id": "downstream",
+                    "name": "downstream",
+                    "private_attribute_full_name": null,
+                    "private_attribute_is_interface": null,
+                    "private_attribute_tag_key": null,
+                    "private_attribute_color": null,
+                    "private_attributes": null
+                },
+                {
+                    "private_attribute_entity_type_name": "Surface",
+                    "private_attribute_id": "exhaust",
+                    "name": "exhaust",
+                    "private_attribute_full_name": null,
+                    "private_attribute_is_interface": null,
+                    "private_attribute_tag_key": null,
+                    "private_attribute_color": null,
+                    "private_attributes": null
+                },
+                {
+                    "private_attribute_entity_type_name": "Surface",
+                    "private_attribute_id": "fuselage",
+                    "name": "fuselage",
+                    "private_attribute_full_name": null,
+                    "private_attribute_is_interface": null,
+                    "private_attribute_tag_key": null,
+                    "private_attribute_color": null,
+                    "private_attributes": null
+                },
+                {
+                    "private_attribute_entity_type_name": "Surface",
+                    "private_attribute_id": "horizontal tail",
+                    "name": "horizontal tail",
+                    "private_attribute_full_name": null,
+                    "private_attribute_is_interface": null,
+                    "private_attribute_tag_key": null,
+                    "private_attribute_color": null,
+                    "private_attributes": null
+                },
+                {
+                    "private_attribute_entity_type_name": "Surface",
+                    "private_attribute_id": "intake",
+                    "name": "intake",
+                    "private_attribute_full_name": null,
+                    "private_attribute_is_interface": null,
+                    "private_attribute_tag_key": null,
+                    "private_attribute_color": null,
+                    "private_attributes": null
+                },
+                {
+                    "private_attribute_entity_type_name": "Surface",
+                    "private_attribute_id": "intake ramp",
+                    "name": "intake ramp",
+                    "private_attribute_full_name": null,
+                    "private_attribute_is_interface": null,
+                    "private_attribute_tag_key": null,
+                    "private_attribute_color": null,
+                    "private_attributes": null
+                },
+                {
+                    "private_attribute_entity_type_name": "Surface",
+                    "private_attribute_id": "lower",
+                    "name": "lower",
+                    "private_attribute_full_name": null,
+                    "private_attribute_is_interface": null,
+                    "private_attribute_tag_key": null,
+                    "private_attribute_color": null,
+                    "private_attributes": null
+                },
+                {
+                    "private_attribute_entity_type_name": "Surface",
+                    "private_attribute_id": "side",
+                    "name": "side",
+                    "private_attribute_full_name": null,
+                    "private_attribute_is_interface": null,
+                    "private_attribute_tag_key": null,
+                    "private_attribute_color": null,
+                    "private_attributes": null
+                },
+                {
+                    "private_attribute_entity_type_name": "Surface",
+                    "private_attribute_id": "strake",
+                    "name": "strake",
+                    "private_attribute_full_name": null,
+                    "private_attribute_is_interface": null,
+                    "private_attribute_tag_key": null,
+                    "private_attribute_color": null,
+                    "private_attributes": null
+                },
+                {
+                    "private_attribute_entity_type_name": "Surface",
+                    "private_attribute_id": "symmetry",
+                    "name": "symmetry",
+                    "private_attribute_full_name": null,
+                    "private_attribute_is_interface": null,
+                    "private_attribute_tag_key": null,
+                    "private_attribute_color": null,
+                    "private_attributes": null
+                },
+                {
+                    "private_attribute_entity_type_name": "Surface",
+                    "private_attribute_id": "upper",
+                    "name": "upper",
+                    "private_attribute_full_name": null,
+                    "private_attribute_is_interface": null,
+                    "private_attribute_tag_key": null,
+                    "private_attribute_color": null,
+                    "private_attributes": null
+                },
+                {
+                    "private_attribute_entity_type_name": "Surface",
+                    "private_attribute_id": "upstream",
+                    "name": "upstream",
+                    "private_attribute_full_name": null,
+                    "private_attribute_is_interface": null,
+                    "private_attribute_tag_key": null,
+                    "private_attribute_color": null,
+                    "private_attributes": null
+                },
+                {
+                    "private_attribute_entity_type_name": "Surface",
+                    "private_attribute_id": "vertical tail",
+                    "name": "vertical tail",
+                    "private_attribute_full_name": null,
+                    "private_attribute_is_interface": null,
+                    "private_attribute_tag_key": null,
+                    "private_attribute_color": null,
+                    "private_attributes": null
+                },
+                {
+                    "private_attribute_entity_type_name": "Surface",
+                    "private_attribute_id": "wing",
+                    "name": "wing",
+                    "private_attribute_full_name": null,
+                    "private_attribute_is_interface": null,
+                    "private_attribute_tag_key": null,
+                    "private_attribute_color": null,
+                    "private_attributes": null
+                }
+            ],
+            "global_bounding_box": [
+                [
+                    -63.50076675415039,
+                    -8.020821837817493e-7,
+                    -63.50076675415039
+                ],
+                [
+                    63.50076675415039,
+                    63.50076675415039,
+                    63.50076675415039
+                ]
+            ],
+            "draft_entities": [
+                {
+                    "private_attribute_id": "48ff9fab-afbd-4957-b5d3-3c52e7ab2fae",
+                    "name": "Axisymmetric volume1",
+                    "private_attribute_registry_bucket_name": "VolumetricEntityType",
+                    "private_attribute_entity_type_name": "AxisymmetricBody",
+                    "axis": [
+                        0,
+                        0,
+                        1
+                    ],
+                    "center": {
+                        "value": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "units": "m"
+                    },
+                    "profile_curve": {
+                        "value": [
+                            [
+                                0,
+                                0
+                            ],
+                            [
+                                0,
+                                1
+                            ],
+                            [
+                                1,
+                                0
+                            ]
+                        ],
+                        "units": "m"
+                    }
+                }
+            ]
+        },
+        "use_inhouse_mesher": true,
+        "variable_context": [
+            {
+                "name": "velocity_with_units",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.velocity",
+                    "output_units": "SI_unit_system"
+                },
+                "post_processing": true
+            },
+            {
+                "name": "velocity_magnitude_with_units",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "math.magnitude(solution.velocity)",
+                    "output_units": "SI_unit_system"
+                },
+                "post_processing": true
+            },
+            {
+                "name": "pressure_with_units",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.pressure",
+                    "output_units": "SI_unit_system"
+                },
+                "post_processing": true
+            },
+            {
+                "name": "wall_shear_stress_magnitude_with_units",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.wall_shear_stress_magnitude",
+                    "output_units": "SI_unit_system"
+                },
+                "post_processing": true
+            },
+            {
+                "name": "velocity_ref",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "100*u.m/u.s"
+                },
+                "post_processing": false
+            },
+            {
+                "name": "rho",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "1.225*u.kg/u.m**3"
+                },
+                "post_processing": false
+            },
+            {
+                "name": "q_inf",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "0.5*rho*velocity_ref**2"
+                },
+                "post_processing": false
+            }
+        ]
+    },
+    "user_defined_dynamics": null
+}
