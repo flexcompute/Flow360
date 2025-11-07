@@ -747,13 +747,14 @@ class GhostSurfacePair(SurfacePairBase):
     Represents a pair of ghost surfaces.
 
     Attributes:
-        pair (Tuple[GhostSurfaceType, GhostSurfaceType]): 
+        pair (Tuple[GhostSurfaceType, GhostSurfaceType]):
             A tuple containing two GhostSurfaceType objects representing the pair.
             GhostSurface is for Python API, GhostCircularPlane is for Web UI.
     """
+
     GhostSurfaceType = Annotated[
         Union[GhostSurface, GhostCircularPlane],
-        pd.Field(discriminator="private_attribute_entity_type_name")
+        pd.Field(discriminator="private_attribute_entity_type_name"),
     ]
 
     pair: Tuple[GhostSurfaceType, GhostSurfaceType]

@@ -92,7 +92,6 @@ from flow360.component.simulation.primitives import (
     GhostCircularPlane,
     GhostSphere,
     GhostSurface,
-    GhostCircularPlane,
     Surface,
     SurfacePrivateAttributes,
 )
