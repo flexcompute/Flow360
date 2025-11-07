@@ -752,7 +752,7 @@ class GhostSurfacePair(SurfacePairBase):
             GhostSurface is for Python API, GhostCircularPlane is for Web UI.
     """
 
-    GhostSurfaceType = Annotated[
+    GhostSurfaceType: ClassVar[type] = Annotated[
         Union[GhostSurface, GhostCircularPlane],
         pd.Field(discriminator="private_attribute_entity_type_name"),
     ]
