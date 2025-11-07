@@ -942,39 +942,6 @@ def snappy_settings_off_position():
     return param
 
 
-def deep_sort_lists(obj):
-    """
-    Recursively sort all lists in a JSON-like object to ensure consistent ordering.
-
-    Args:
-        obj: Any JSON-like object (dict, list, str, int, float, bool, None)
-
-    Returns:
-        A new object with all lists sorted
-    """
-    if isinstance(obj, dict):
-        return {k: deep_sort_lists(v) for k, v in sorted(obj.items())}
-    elif isinstance(obj, list):
-        # Sort the list and recursively sort its elements
-        sorted_items = [deep_sort_lists(item) for item in obj]
-
-        # Create a stable sorting key that works for complex nested structures
-        def sort_key(item):
-            if isinstance(item, dict):
-                # For dictionaries, create a canonical string representation
-                return json.dumps(item, sort_keys=True, separators=(",", ":"))
-            elif isinstance(item, list):
-                # For lists, create a canonical string representation
-                return json.dumps(item, sort_keys=True, separators=(",", ":"))
-            else:
-                # For primitives, use string representation
-                return str(item)
-
-        return sorted(sorted_items, key=sort_key)
-    else:
-        return obj
-
-
 def _translate_and_compare(param, mesh_unit, ref_json_file: str, atol=1e-15):
     param, err = validate_params_with_context(param, "Geometry", "SurfaceMesh")
     print(err)
@@ -986,7 +953,9 @@ def _translate_and_compare(param, mesh_unit, ref_json_file: str, atol=1e-15):
     ) as fh:
         ref_dict = json.load(fh)
 
-    ref_dict, translated = deep_sort_lists(ref_dict), deep_sort_lists(translated)
+    # It is important that the list in the configs are sorted beforehand 
+    # as the hash values for reuse resource rely on that 
+
     # check if everything is seriazable
     json.dumps(translated)
     assert compare_values(ref_dict, translated, atol=atol)

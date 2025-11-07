@@ -312,6 +312,14 @@ def snappy_mesher_json(input_params: SimulationParams):
         ]
     }
 
+    # sort the lists
+
+    translated["geometry"]["bodies"].sort(key=lambda x: x["bodyName"])
+
+    for body in translated["geometry"]["bodies"]:
+        if body["regions"]:
+            body["regions"].sort(key=lambda x: x["patchName"])
+
     # apply refinements
     for refinement in (
         surface_meshing_params.refinements if surface_meshing_params.refinements is not None else []
