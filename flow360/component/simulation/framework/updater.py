@@ -15,6 +15,7 @@ from flow360.component.simulation.framework.entity_base import generate_uuid
 from flow360.component.simulation.framework.updater_functions import (
     fix_ghost_sphere_schema,
     populate_entity_id_with_name,
+    remove_entity_bucket_field,
     update_symmetry_ghost_entity_name_to_symmetric,
 )
 from flow360.component.simulation.framework.updater_utils import (
@@ -367,6 +368,11 @@ def _to_25_7_2(params_as_dict):
     return params_as_dict
 
 
+def _to_25_7_6(params_as_dict):
+    """Remove legacy entity bucket field from all entity dicts."""
+    return remove_entity_bucket_field(params_as_dict=params_as_dict)
+
+
 VERSION_MILESTONES = [
     (Flow360Version("24.11.1"), _to_24_11_1),
     (Flow360Version("24.11.7"), _to_24_11_7),
@@ -380,6 +386,7 @@ VERSION_MILESTONES = [
     (Flow360Version("25.6.5"), _to_25_6_5),
     (Flow360Version("25.6.6"), _to_25_6_6),
     (Flow360Version("25.7.2"), _to_25_7_2),
+    (Flow360Version("25.7.6"), _to_25_7_6),
 ]  # A list of the Python API version tuple with there corresponding updaters.
 
 

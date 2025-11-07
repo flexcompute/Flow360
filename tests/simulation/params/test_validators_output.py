@@ -20,12 +20,13 @@ from flow360.component.simulation.outputs.outputs import (
     IsosurfaceOutput,
     MovingStatistic,
     ProbeOutput,
+    SurfaceIntegralOutput,
     SurfaceOutput,
     SurfaceProbeOutput,
     TimeAverageSurfaceOutput,
     VolumeOutput,
 )
-from flow360.component.simulation.primitives import Surface
+from flow360.component.simulation.primitives import ImportedSurface, Surface
 from flow360.component.simulation.services import (
     ValidationCalledBy,
     clear_context,
@@ -261,7 +262,7 @@ def test_moving_statitic_validator():
                     name="point_legacy2",
                     output_fields=["Mach", monitored_variable],
                     probe_points=Point(name="Point1", location=(-0.026642, 0.56614, 0) * u.m),
-                    moving_statistic=MovingStatistic(method="std", moving_window=15),
+                    moving_statistic=MovingStatistic(method="std", moving_window_size=15),
                 )
             ],
             private_attribute_asset_cache=asset_cache,
@@ -292,7 +293,7 @@ def test_moving_statitic_validator():
                     name="point_legacy2",
                     output_fields=["Mach", monitored_variable],
                     probe_points=Point(name="Point1", location=(-0.026642, 0.56614, 0) * u.m),
-                    moving_statistic=MovingStatistic(method="std", moving_window=20),
+                    moving_statistic=MovingStatistic(method="std", moving_window_size=20),
                 )
             ],
             private_attribute_asset_cache=asset_cache,
@@ -446,6 +447,40 @@ def test_duplicate_probe_entity_names():
                         probe_points=[Point(name="point_1", location=[1, 2, 3] * u.m)],
                         output_fields=["velocity_y"],
                         target_surfaces=[Surface(name="fluid/body")],
+                    ),
+                ],
+            )
+
+
+def test_surface_integral_entity_types():
+    uv_surface1 = UserVariable(
+        name="uv_surface1", value=math.dot(solution.velocity, solution.CfVec)
+    )
+    surface = Surface(name="fluid/body")
+    imported_surface = ImportedSurface(name="imported", file_name="imported.stl")
+    with imperial_unit_system:
+        SimulationParams(
+            outputs=[
+                SurfaceIntegralOutput(entities=surface, output_fields=[uv_surface1]),
+                SurfaceIntegralOutput(
+                    entities=imported_surface,
+                    output_fields=[uv_surface1],
+                ),
+            ],
+        )
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "Imported and simulation surfaces cannot be used together in the same SurfaceIntegralOutput."
+            " Please assign them to separate outputs."
+        ),
+    ):
+        with imperial_unit_system:
+            SimulationParams(
+                outputs=[
+                    SurfaceIntegralOutput(
+                        entities=[surface, imported_surface], output_fields=[uv_surface1]
                     ),
                 ],
             )

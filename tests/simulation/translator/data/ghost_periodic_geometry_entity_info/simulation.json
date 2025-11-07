@@ -1,0 +1,879 @@
+{
+	"version": "25.7.6",
+	"unit_system": {
+		"name": "SI"
+	},
+	"meshing": {
+		"refinement_factor": 1,
+		"gap_treatment_strength": 0,
+		"defaults": {
+			"surface_edge_growth_rate": 1.2,
+			"boundary_layer_growth_rate": 1.2,
+			"boundary_layer_first_layer_thickness": {
+				"value": 0.000001,
+				"units": "m"
+			},
+			"planar_face_tolerance": 0.000001,
+			"surface_max_edge_length": {
+				"value": 0.1,
+				"units": "m"
+			},
+			"surface_max_aspect_ratio": 10,
+			"surface_max_adaptation_iterations": 50,
+			"curvature_resolution_angle": {
+				"value": 12,
+				"units": "degree"
+			},
+			"preserve_thin_geometry": false,
+			"sealing_size": {
+				"value": 0,
+				"units": "m"
+			}
+		},
+		"refinements": [],
+		"volume_zones": [
+			{
+				"type": "AutomatedFarfield",
+				"name": "Automated Farfield",
+				"method": "quasi-3d-periodic",
+				"relative_size": 50
+			}
+		]
+	},
+	"reference_geometry": {
+		"moment_center": {
+			"value": [
+				0,
+				0,
+				0
+			],
+			"units": "m"
+		},
+		"moment_length": {
+			"value": [
+				1,
+				1,
+				1
+			],
+			"units": "m"
+		},
+		"area": {
+			"type_name": "number",
+			"value": 1,
+			"units": "m**2"
+		}
+	},
+	"operating_condition": {
+		"type_name": "AerospaceCondition",
+		"private_attribute_constructor": "default",
+		"private_attribute_input_cache": {
+			"alpha": {
+				"value": 0,
+				"units": "degree"
+			},
+			"beta": {
+				"value": 0,
+				"units": "degree"
+			},
+			"thermal_state": {
+				"type_name": "ThermalState",
+				"private_attribute_constructor": "default",
+				"private_attribute_input_cache": {},
+				"temperature": {
+					"value": 288.15,
+					"units": "K"
+				},
+				"density": {
+					"value": 1.225,
+					"units": "kg/m**3"
+				},
+				"material": {
+					"type": "air",
+					"name": "air",
+					"dynamic_viscosity": {
+						"reference_viscosity": {
+							"value": 0.00001716,
+							"units": "Pa*s"
+						},
+						"reference_temperature": {
+							"value": 273.15,
+							"units": "K"
+						},
+						"effective_temperature": {
+							"value": 110.4,
+							"units": "K"
+						}
+					}
+				}
+			}
+		},
+		"alpha": {
+			"value": 0,
+			"units": "degree"
+		},
+		"beta": {
+			"value": 0,
+			"units": "degree"
+		},
+		"velocity_magnitude": {
+			"type_name": "number",
+			"value": 10,
+			"units": "m/s"
+		},
+		"thermal_state": {
+			"type_name": "ThermalState",
+			"private_attribute_constructor": "default",
+			"private_attribute_input_cache": {},
+			"temperature": {
+				"value": 288.15,
+				"units": "K"
+			},
+			"density": {
+				"value": 1.225,
+				"units": "kg/m**3"
+			},
+			"material": {
+				"type": "air",
+				"name": "air",
+				"dynamic_viscosity": {
+					"reference_viscosity": {
+						"value": 0.00001716,
+						"units": "Pa*s"
+					},
+					"reference_temperature": {
+						"value": 273.15,
+						"units": "K"
+					},
+					"effective_temperature": {
+						"value": 110.4,
+						"units": "K"
+					}
+				}
+			}
+		}
+	},
+	"models": [
+		{
+			"type": "Wall",
+			"entities": {
+				"stored_entities": [
+					{
+						"private_attribute_entity_type_name": "Surface",
+						"private_attribute_id": "body00001",
+						"name": "body00001",
+						"private_attribute_tag_key": "groupByBodyId",
+						"private_attribute_sub_components": [
+							"body00001_face00001",
+							"body00001_face00002",
+							"body00001_face00003",
+							"body00001_face00004",
+							"body00001_face00005"
+						],
+						"private_attributes": {
+							"type_name": "SurfacePrivateAttributes",
+							"bounding_box": [
+								[
+									-1.0000000000037947e-7,
+									-1.0000000005556586e-7,
+									-0.06001739390812527
+								],
+								[
+									1.0000001000000007,
+									0.5000001000000002,
+									0.06001739390812529
+								]
+							]
+						}
+					}
+				]
+			},
+			"private_attribute_id": "4879952c-ba04-455f-9567-a36b5c272fb0",
+			"name": "Wall",
+			"use_wall_function": false,
+			"heat_spec": {
+				"value": {
+					"value": 0,
+					"units": "W/m**2"
+				},
+				"type_name": "HeatFlux"
+			},
+			"roughness_height": {
+				"value": 0,
+				"units": "m"
+			}
+		},
+		{
+			"type": "Freestream",
+			"entities": {
+				"stored_entities": [
+					{
+						"private_attribute_entity_type_name": "GhostSphere",
+						"private_attribute_id": "farfield",
+						"name": "farfield",
+						"center": [
+							0,
+							0,
+							0
+						],
+						"max_radius": 50.00001000000004
+					}
+				]
+			},
+			"private_attribute_id": "353348e2-ce14-4015-a2dd-c90b49cf8435",
+			"name": "Freestream"
+		},
+		{
+			"name": "Periodic",
+			"type": "Periodic",
+			"entity_pairs": {
+				"items": [
+					{
+						"pair": [
+							{
+								"private_attribute_entity_type_name": "GhostSurface",
+								"name": "symmetric-1"
+							},
+							{
+								"private_attribute_entity_type_name": "GhostSurface",
+								"name": "symmetric-2"
+							}
+						]
+					}
+				]
+			},
+			"spec": {
+				"type_name": "Translational"
+			},
+			"private_attribute_id": "92e45eb8-155b-4706-af5f-b0feae59166f"
+		},
+		{
+			"material": {
+				"type": "air",
+				"name": "air",
+				"dynamic_viscosity": {
+					"reference_viscosity": {
+						"value": 0.00001716,
+						"units": "Pa*s"
+					},
+					"reference_temperature": {
+						"value": 273.15,
+						"units": "K"
+					},
+					"effective_temperature": {
+						"value": 110.4,
+						"units": "K"
+					}
+				}
+			},
+			"initial_condition": {
+				"type_name": "NavierStokesInitialCondition",
+				"rho": "rho",
+				"u": "u",
+				"v": "v",
+				"w": "w",
+				"p": "p"
+			},
+			"private_attribute_id": "__default_fluid",
+			"type": "Fluid",
+			"navier_stokes_solver": {
+				"absolute_tolerance": 1e-10,
+				"relative_tolerance": 0,
+				"order_of_accuracy": 2,
+				"equation_evaluation_frequency": 1,
+				"linear_solver": {
+					"max_iterations": 30
+				},
+				"CFL_multiplier": 1,
+				"kappa_MUSCL": -1,
+				"numerical_dissipation_factor": 1,
+				"limit_velocity": false,
+				"limit_pressure_density": false,
+				"type_name": "Compressible",
+				"low_mach_preconditioner": false,
+				"update_jacobian_frequency": 4,
+				"max_force_jac_update_physical_steps": 0
+			},
+			"turbulence_model_solver": {
+				"absolute_tolerance": 1e-8,
+				"relative_tolerance": 0,
+				"order_of_accuracy": 2,
+				"equation_evaluation_frequency": 4,
+				"linear_solver": {
+					"max_iterations": 20
+				},
+				"CFL_multiplier": 2,
+				"type_name": "SpalartAllmaras",
+				"reconstruction_gradient_limiter": 0.5,
+				"quadratic_constitutive_relation": false,
+				"modeling_constants": {
+					"type_name": "SpalartAllmarasConsts",
+					"C_DES": 0.72,
+					"C_d": 8,
+					"C_cb1": 0.1355,
+					"C_cb2": 0.622,
+					"C_sigma": 0.6666666666666666,
+					"C_v1": 7.1,
+					"C_vonKarman": 0.41,
+					"C_w2": 0.3,
+					"C_w4": 0.21,
+					"C_w5": 1.5,
+					"C_t3": 1.2,
+					"C_t4": 0.5,
+					"C_min_rd": 10
+				},
+				"update_jacobian_frequency": 4,
+				"max_force_jac_update_physical_steps": 0,
+				"rotation_correction": false,
+				"low_reynolds_correction": false
+			},
+			"transition_model_solver": {
+				"type_name": "None"
+			}
+		}
+	],
+	"time_stepping": {
+		"type_name": "Steady",
+		"max_steps": 1000,
+		"CFL": {
+			"type": "adaptive",
+			"min": 0.1,
+			"max": 10000,
+			"max_relative_change": 1,
+			"convergence_limiting_factor": 0.25
+		}
+	},
+	"user_defined_fields": [],
+	"outputs": [
+		{
+			"output_fields": {
+				"items": [
+					"Cp",
+					"Cf",
+					"yPlus",
+					"CfVec"
+				]
+			},
+			"private_attribute_id": "c8f744a0-804f-4b38-98e2-0ef5d8330f6d",
+			"frequency": -1,
+			"frequency_offset": 0,
+			"output_format": "paraview",
+			"name": "Surface output",
+			"entities": {
+				"stored_entities": [
+					{
+						"private_attribute_entity_type_name": "Surface",
+						"private_attribute_id": "body00001",
+						"name": "body00001",
+						"private_attribute_tag_key": "groupByBodyId",
+						"private_attribute_sub_components": [
+							"body00001_face00001",
+							"body00001_face00002",
+							"body00001_face00003",
+							"body00001_face00004",
+							"body00001_face00005"
+						],
+						"private_attributes": {
+							"type_name": "SurfacePrivateAttributes",
+							"bounding_box": [
+								[
+									-1.0000000000037947e-7,
+									-1.0000000005556586e-7,
+									-0.06001739390812527
+								],
+								[
+									1.0000001000000007,
+									0.5000001000000002,
+									0.06001739390812529
+								]
+							]
+						}
+					}
+				]
+			},
+			"write_single_file": false,
+			"output_type": "SurfaceOutput"
+		}
+	],
+	"private_attribute_asset_cache": {
+		"project_length_unit": {
+			"value": 1,
+			"units": "m"
+		},
+		"project_entity_info": {
+			"draft_entities": [],
+			"ghost_entities": [
+				{
+					"private_attribute_entity_type_name": "GhostSphere",
+					"private_attribute_id": "farfield",
+					"name": "farfield",
+					"center": [
+						0,
+						0,
+						0
+					],
+					"max_radius": 50.00001000000004
+				},
+				{
+					"private_attribute_entity_type_name": "GhostCircularPlane",
+					"private_attribute_id": "symmetric-1",
+					"name": "symmetric-1",
+					"center": [
+						0.5000000000000003,
+						-1.0000000005556586e-7,
+						1.0408340855860843e-17
+					],
+					"max_radius": 50.00001000000004,
+					"normal_axis": [
+						0,
+						-1,
+						0
+					]
+				},
+				{
+					"private_attribute_entity_type_name": "GhostCircularPlane",
+					"private_attribute_id": "symmetric-2",
+					"name": "symmetric-2",
+					"center": [
+						0.5000000000000003,
+						0.5000001000000002,
+						1.0408340855860843e-17
+					],
+					"max_radius": 50.00001000000004,
+					"normal_axis": [
+						0,
+						1,
+						0
+					]
+				},
+				{
+					"private_attribute_entity_type_name": "GhostCircularPlane",
+					"private_attribute_id": "symmetric",
+					"name": "symmetric",
+					"center": [
+						0.5000000000000003,
+						0,
+						1.0408340855860843e-17
+					],
+					"max_radius": 50.00001000000004,
+					"normal_axis": [
+						0,
+						1,
+						0
+					]
+				}
+			],
+			"type_name": "GeometryEntityInfo",
+			"body_ids": [
+				"body00001"
+			],
+			"body_attribute_names": [
+				"bodyId",
+				"groupByFile"
+			],
+			"grouped_bodies": [
+				[
+					{
+						"private_attribute_entity_type_name": "GeometryBodyGroup",
+						"private_attribute_id": "body00001",
+						"name": "body00001",
+						"private_attribute_tag_key": "bodyId",
+						"private_attribute_sub_components": [
+							"body00001"
+						],
+						"transformation": {
+							"type_name": "BodyGroupTransformation",
+							"origin": {
+								"value": [
+									0,
+									0,
+									0
+								],
+								"units": "m"
+							},
+							"axis_of_rotation": [
+								1,
+								0,
+								0
+							],
+							"angle_of_rotation": {
+								"value": 0,
+								"units": "degree"
+							},
+							"scale": [
+								1,
+								1,
+								1
+							],
+							"translation": {
+								"value": [
+									0,
+									0,
+									0
+								],
+								"units": "m"
+							}
+						},
+						"mesh_exterior": true
+					}
+				],
+				[
+					{
+						"private_attribute_entity_type_name": "GeometryBodyGroup",
+						"private_attribute_id": "airfoil.csm",
+						"name": "airfoil.csm",
+						"private_attribute_tag_key": "groupByFile",
+						"private_attribute_sub_components": [
+							"body00001"
+						],
+						"transformation": {
+							"type_name": "BodyGroupTransformation",
+							"origin": {
+								"value": [
+									0,
+									0,
+									0
+								],
+								"units": "m"
+							},
+							"axis_of_rotation": [
+								1,
+								0,
+								0
+							],
+							"angle_of_rotation": {
+								"value": 0,
+								"units": "degree"
+							},
+							"scale": [
+								1,
+								1,
+								1
+							],
+							"translation": {
+								"value": [
+									0,
+									0,
+									0
+								],
+								"units": "m"
+							}
+						},
+						"mesh_exterior": true
+					}
+				]
+			],
+			"face_ids": [
+				"body00001_face00001",
+				"body00001_face00002",
+				"body00001_face00003",
+				"body00001_face00004",
+				"body00001_face00005"
+			],
+			"face_attribute_names": [
+				"builtinName",
+				"groupByBodyId",
+				"faceId"
+			],
+			"grouped_faces": [
+				[
+					{
+						"private_attribute_entity_type_name": "Surface",
+						"private_attribute_id": "No Name",
+						"name": "No Name",
+						"private_attribute_tag_key": "builtinName",
+						"private_attribute_sub_components": [
+							"body00001_face00001",
+							"body00001_face00002",
+							"body00001_face00003",
+							"body00001_face00004",
+							"body00001_face00005"
+						],
+						"private_attributes": {
+							"type_name": "SurfacePrivateAttributes",
+							"bounding_box": [
+								[
+									-1.0000000000037947e-7,
+									-1.0000000005556586e-7,
+									-0.06001739390812527
+								],
+								[
+									1.0000001000000007,
+									0.5000001000000002,
+									0.06001739390812529
+								]
+							]
+						}
+					}
+				],
+				[
+					{
+						"private_attribute_entity_type_name": "Surface",
+						"private_attribute_id": "body00001",
+						"name": "body00001",
+						"private_attribute_tag_key": "groupByBodyId",
+						"private_attribute_sub_components": [
+							"body00001_face00001",
+							"body00001_face00002",
+							"body00001_face00003",
+							"body00001_face00004",
+							"body00001_face00005"
+						],
+						"private_attributes": {
+							"type_name": "SurfacePrivateAttributes",
+							"bounding_box": [
+								[
+									-1.0000000000037947e-7,
+									-1.0000000005556586e-7,
+									-0.06001739390812527
+								],
+								[
+									1.0000001000000007,
+									0.5000001000000002,
+									0.06001739390812529
+								]
+							]
+						}
+					}
+				],
+				[
+					{
+						"private_attribute_entity_type_name": "Surface",
+						"private_attribute_id": "body00001_face00001",
+						"name": "body00001_face00001",
+						"private_attribute_tag_key": "faceId",
+						"private_attribute_sub_components": [
+							"body00001_face00001"
+						],
+						"private_attributes": {
+							"type_name": "SurfacePrivateAttributes",
+							"bounding_box": [
+								[
+									-1.0000000000037947e-7,
+									-1.0000000005556336e-7,
+									-1.0000000068218e-7
+								],
+								[
+									1.0000001000000003,
+									0.5000001000000002,
+									0.06001739390812529
+								]
+							]
+						}
+					},
+					{
+						"private_attribute_entity_type_name": "Surface",
+						"private_attribute_id": "body00001_face00002",
+						"name": "body00001_face00002",
+						"private_attribute_tag_key": "faceId",
+						"private_attribute_sub_components": [
+							"body00001_face00002"
+						],
+						"private_attributes": {
+							"type_name": "SurfacePrivateAttributes",
+							"bounding_box": [
+								[
+									-1.000000000000542e-7,
+									-1.0000000005556586e-7,
+									-0.060017393908125265
+								],
+								[
+									1.0000001000000007,
+									0.5000001000000001,
+									9.999999999956631e-8
+								]
+							]
+						}
+					},
+					{
+						"private_attribute_entity_type_name": "Surface",
+						"private_attribute_id": "body00001_face00003",
+						"name": "body00001_face00003",
+						"private_attribute_tag_key": "faceId",
+						"private_attribute_sub_components": [
+							"body00001_face00003"
+						],
+						"private_attributes": {
+							"type_name": "SurfacePrivateAttributes",
+							"bounding_box": [
+								[
+									0.9999999,
+									-1.0000000005554973e-7,
+									-0.001260099999999961
+								],
+								[
+									1.0000001,
+									0.5000000999999998,
+									0.0012600999999999606
+								]
+							]
+						}
+					},
+					{
+						"private_attribute_entity_type_name": "Surface",
+						"private_attribute_id": "body00001_face00004",
+						"name": "body00001_face00004",
+						"private_attribute_tag_key": "faceId",
+						"private_attribute_sub_components": [
+							"body00001_face00004"
+						],
+						"private_attributes": {
+							"type_name": "SurfacePrivateAttributes",
+							"bounding_box": [
+								[
+									-1e-7,
+									-1.00000000003675e-7,
+									-0.06001739390812527
+								],
+								[
+									1.0000001,
+									1.00000000003675e-7,
+									0.06001739390812529
+								]
+							]
+						}
+					},
+					{
+						"private_attribute_entity_type_name": "Surface",
+						"private_attribute_id": "body00001_face00005",
+						"name": "body00001_face00005",
+						"private_attribute_tag_key": "faceId",
+						"private_attribute_sub_components": [
+							"body00001_face00005"
+						],
+						"private_attributes": {
+							"type_name": "SurfacePrivateAttributes",
+							"bounding_box": [
+								[
+									-1e-7,
+									0.4999998999999997,
+									-0.06001739390812527
+								],
+								[
+									1.0000001,
+									0.5000001000000002,
+									0.06001739390812529
+								]
+							]
+						}
+					}
+				]
+			],
+			"edge_ids": [
+				"body00001_edge00001",
+				"body00001_edge00002",
+				"body00001_edge00003",
+				"body00001_edge00004",
+				"body00001_edge00005",
+				"body00001_edge00006",
+				"body00001_edge00007",
+				"body00001_edge00008",
+				"body00001_edge00009"
+			],
+			"edge_attribute_names": [
+				"edgeId"
+			],
+			"grouped_edges": [
+				[
+					{
+						"private_attribute_entity_type_name": "Edge",
+						"private_attribute_id": "body00001_edge00001",
+						"name": "body00001_edge00001",
+						"private_attribute_tag_key": "edgeId",
+						"private_attribute_sub_components": [
+							"body00001_edge00001"
+						]
+					},
+					{
+						"private_attribute_entity_type_name": "Edge",
+						"private_attribute_id": "body00001_edge00002",
+						"name": "body00001_edge00002",
+						"private_attribute_tag_key": "edgeId",
+						"private_attribute_sub_components": [
+							"body00001_edge00002"
+						]
+					},
+					{
+						"private_attribute_entity_type_name": "Edge",
+						"private_attribute_id": "body00001_edge00003",
+						"name": "body00001_edge00003",
+						"private_attribute_tag_key": "edgeId",
+						"private_attribute_sub_components": [
+							"body00001_edge00003"
+						]
+					},
+					{
+						"private_attribute_entity_type_name": "Edge",
+						"private_attribute_id": "body00001_edge00004",
+						"name": "body00001_edge00004",
+						"private_attribute_tag_key": "edgeId",
+						"private_attribute_sub_components": [
+							"body00001_edge00004"
+						]
+					},
+					{
+						"private_attribute_entity_type_name": "Edge",
+						"private_attribute_id": "body00001_edge00005",
+						"name": "body00001_edge00005",
+						"private_attribute_tag_key": "edgeId",
+						"private_attribute_sub_components": [
+							"body00001_edge00005"
+						]
+					},
+					{
+						"private_attribute_entity_type_name": "Edge",
+						"private_attribute_id": "body00001_edge00006",
+						"name": "body00001_edge00006",
+						"private_attribute_tag_key": "edgeId",
+						"private_attribute_sub_components": [
+							"body00001_edge00006"
+						]
+					},
+					{
+						"private_attribute_entity_type_name": "Edge",
+						"private_attribute_id": "body00001_edge00007",
+						"name": "body00001_edge00007",
+						"private_attribute_tag_key": "edgeId",
+						"private_attribute_sub_components": [
+							"body00001_edge00007"
+						]
+					},
+					{
+						"private_attribute_entity_type_name": "Edge",
+						"private_attribute_id": "body00001_edge00008",
+						"name": "body00001_edge00008",
+						"private_attribute_tag_key": "edgeId",
+						"private_attribute_sub_components": [
+							"body00001_edge00008"
+						]
+					},
+					{
+						"private_attribute_entity_type_name": "Edge",
+						"private_attribute_id": "body00001_edge00009",
+						"name": "body00001_edge00009",
+						"private_attribute_tag_key": "edgeId",
+						"private_attribute_sub_components": [
+							"body00001_edge00009"
+						]
+					}
+				]
+			],
+			"body_group_tag": "groupByFile",
+			"face_group_tag": "groupByBodyId",
+			"edge_group_tag": "edgeId",
+			"global_bounding_box": [
+				[
+					-1.0000000000037947e-7,
+					-1.0000000005556586e-7,
+					-0.06001739390812527
+				],
+				[
+					1.0000001000000007,
+					0.5000001000000002,
+					0.06001739390812529
+				]
+			]
+		},
+		"use_inhouse_mesher": false,
+		"use_geometry_AI": false
+	}
+}

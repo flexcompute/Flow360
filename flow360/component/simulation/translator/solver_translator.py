@@ -2,6 +2,7 @@
 
 # pylint: disable=too-many-lines
 import hashlib
+import json
 from typing import Type, Union, get_args
 
 import unyt as u
@@ -88,6 +89,7 @@ from flow360.component.simulation.primitives import (
     GhostCircularPlane,
     GhostSphere,
     GhostSurface,
+    GhostSurfacePair,
     ImportedSurface,
     Surface,
     SurfacePair,
@@ -600,7 +602,11 @@ def translate_monitor_output(
         entity_injection_func=injection_function,
         lump_list_of_entities=True,
         use_instance_name_as_key=True,
-        entity_type_to_exclude=ImportedSurface,
+        entity_type_to_include=(
+            (Surface, GhostSurface, GhostSphere, GhostCircularPlane)
+            if monitor_type is SurfaceIntegralOutput
+            else None
+        ),
     )
     return translated_output
 
@@ -1145,7 +1151,7 @@ def heat_transfer_volume_zone_translator(model: Solid):
 def boundary_entity_info_serializer(entity, translated_setting, solid_zone_boundaries):
     """Boundary entity info serializer"""
     output = {}
-    if isinstance(entity, SurfacePair):
+    if isinstance(entity, (SurfacePair, GhostSurfacePair)):
         key1 = _get_key_name(entity.pair[0])
         key2 = _get_key_name(entity.pair[1])
         if BOUNDARY_FULL_NAME_WHEN_NOT_FOUND in (key1, key2):
@@ -1447,12 +1453,9 @@ def check_moving_statistic_existence(params: SimulationParams):
 
 def check_stopping_criterion_existence(params: SimulationParams):
     """Check if stopping criterion exists in the Fluid model"""
-    if not params.models:
+    if not params.run_control:
         return False
-    for model in params.models:
-        if isinstance(model, Fluid):
-            return bool(model.stopping_criterion)
-    return False
+    return bool(params.run_control.stopping_criteria)
 
 
 def calculate_monitor_semaphore_hash(params: SimulationParams):
@@ -1464,13 +1467,10 @@ def calculate_monitor_semaphore_hash(params: SimulationParams):
                 continue
             if output.moving_statistic is None:
                 continue
-            json_string_list.append(output.private_attribute_id)
-    if params.models:
-        for model in params.models:
-            if isinstance(model, Fluid) and model.stopping_criterion is not None:
-                json_string_list.extend(
-                    [criterion.model_dump_json() for criterion in model.stopping_criterion]
-                )
+            json_string_list.append(json.dumps(dump_dict(output.moving_statistic)))
+    if params.run_control and params.run_control.stopping_criteria:
+        for criterion in params.run_control.stopping_criteria:
+            json_string_list.append(json.dumps(dump_dict(criterion)))
     combined_string = "".join(sorted(json_string_list))
     hasher = hashlib.sha256()
     hasher.update(combined_string.encode("utf-8"))
@@ -1523,9 +1523,9 @@ def get_solver_json(
             else -1
         ),
         "muRef": (
-            op.thermal_state.dynamic_viscosity.v.item()
+            op.thermal_state.dynamic_viscosity.in_base(input_params.flow360_unit_system).v.item()
             if not isinstance(op, LiquidOperatingCondition)
-            else op.material.dynamic_viscosity.v.item()
+            else op.material.dynamic_viscosity.in_base(input_params.flow360_unit_system).v.item()
         ),
     }
     if (
@@ -1564,7 +1564,6 @@ def get_solver_json(
     dump_dict(input_params.time_stepping)
 
     ##:: Step 6: Get solver settings and initial condition
-    translated["runControl"] = {}
     for model in input_params.models:
         if isinstance(model, Fluid):
             if isinstance(op, LiquidOperatingCondition):
@@ -1652,7 +1651,6 @@ def get_solver_json(
                                 "axes": [list(axes[0]), list(axes[1])],
                             }
                         )
-            translated["runControl"]["shouldCheckStopCriterion"] = bool(model.stopping_criterion)
 
             translated["initialCondition"] = get_navier_stokes_initial_condition(
                 model.initial_condition
@@ -1796,13 +1794,6 @@ def get_solver_json(
     ##:: Step 4: Get outputs (has to be run after the boundaries are translated)
 
     translated = translate_output(input_params, translated)
-    translated["runControl"]["externalProcessMonitorOutput"] = check_moving_statistic_existence(
-        input_params
-    ) or check_stopping_criterion_existence(input_params)
-    if translated["runControl"]["externalProcessMonitorOutput"]:
-        translated["runControl"]["monitorProcessorHash"] = calculate_monitor_semaphore_hash(
-            input_params
-        )
 
     ##:: Step 5: Get user defined fields and auto-generated fields for dimensioned output
     translated["userDefinedFields"] = []
@@ -1858,6 +1849,19 @@ def get_solver_json(
             translated["userDefinedDynamics"].append(udd_dict_translated)
 
         translated["userDefinedDynamics"].sort(key=lambda udd: udd["dynamicsName"])
+
+    ##:: Step 11: Get run control settings
+    translated["runControl"] = {}
+    translated["runControl"]["shouldCheckStopCriterion"] = check_stopping_criterion_existence(
+        input_params
+    )
+    translated["runControl"]["externalProcessMonitorOutput"] = check_moving_statistic_existence(
+        input_params
+    ) or check_stopping_criterion_existence(input_params)
+    if translated["runControl"]["externalProcessMonitorOutput"]:
+        translated["runControl"]["monitorProcessorHash"] = calculate_monitor_semaphore_hash(
+            input_params
+        )
 
     translated["usingLiquidAsMaterial"] = isinstance(
         input_params.operating_condition, LiquidOperatingCondition

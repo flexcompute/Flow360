@@ -138,14 +138,17 @@ def _check_if_input_has_delta_unit(quant):
     """
     Parse the input unit and see if it can be considered a delta unit. This only handles temperatures now.
     """
+    unit_str = str(quant.units)
     is_input_delta_unit = (
-        str(quant.units) == str(u.Unit("delta_degC"))  # delta unit
-        or str(quant.units) == str(u.Unit("delta_degF"))  # delta unit
-        or str(quant.units) == "K"  # absolute temperature so it can be considered delta
-        or str(quant.units) == "R"  # absolute temperature so it can be considered delta
+        unit_str == str(u.Unit("delta_degC"))  # delta unit
+        or unit_str == str(u.Unit("delta_degF"))  # delta unit
+        or unit_str == "K"  # absolute temperature so it can be considered delta
+        or unit_str == "R"  # absolute temperature so it can be considered delta
         # Flow360 temperature scaled by absolute temperature, making it also absolute temperature
-        or str(quant.units) == "flow360_delta_temperature_unit"
-        or str(quant.units) == "flow360_temperature_unit"
+        or unit_str == "flow360_delta_temperature_unit"
+        or unit_str == "flow360_temperature_unit"
+        # Check for units like "356.483333333333*K" (scaled K) which can occur during unit conversion
+        or (unit_str.endswith("*K") or unit_str.endswith("*R"))
     )
     return is_input_delta_unit
 

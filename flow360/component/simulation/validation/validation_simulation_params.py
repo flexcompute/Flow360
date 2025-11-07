@@ -4,6 +4,7 @@ validation for SimulationParams
 
 from typing import Type, Union, get_args
 
+from flow360.component.simulation.meshing_param.volume_params import CustomZones
 from flow360.component.simulation.models.solver_numerics import NoneSolver
 from flow360.component.simulation.models.surface_models import (
     Inflow,
@@ -23,7 +24,6 @@ from flow360.component.simulation.outputs.outputs import (
     TimeAverageSurfaceOutput,
     VolumeOutput,
 )
-from flow360.component.simulation.primitives import CustomVolume
 from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
 from flow360.component.simulation.utils import is_exact_instance
 from flow360.component.simulation.validation.validation_context import (
@@ -356,14 +356,14 @@ def _check_complete_boundary_condition_and_unknown_surface(
                 for item in params.private_attribute_asset_cache.project_entity_info.ghost_entities
                 if item.name not in ("symmetric-1", "symmetric-2") and item.exists(validation_info)
             ]
-        elif farfield_method == "quasi-3d":
+        elif farfield_method in ("quasi-3d", "quasi-3d-periodic"):
             asset_boundary_entities += [
                 item
                 for item in params.private_attribute_asset_cache.project_entity_info.ghost_entities
                 if item.name != "symmetric"
             ]
         elif farfield_method == "user-defined":
-            if validation_info.use_geometry_AI and validation_info.is_beta_mesher:
+            if validation_info.will_generate_forced_symmetry_plane():
                 asset_boundary_entities += [
                     item
                     for item in params.private_attribute_asset_cache.project_entity_info.ghost_entities
@@ -373,8 +373,11 @@ def _check_complete_boundary_condition_and_unknown_surface(
     potential_zone_zone_interfaces = set()
     if validation_info.farfield_method == "user-defined":
         for zones in params.meshing.volume_zones:
-            if isinstance(zones, CustomVolume):
-                for boundary in zones.boundaries.stored_entities:
+            # Support new CustomZones container
+            if not isinstance(zones, CustomZones):
+                continue
+            for custom_volume in zones.entities.stored_entities:
+                for boundary in custom_volume.boundaries.stored_entities:
                     potential_zone_zone_interfaces.add(boundary.name)
 
     if asset_boundary_entities is None or asset_boundary_entities == []:

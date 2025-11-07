@@ -31,6 +31,7 @@ from flow360.component.simulation.meshing_param.params import (
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     AxisymmetricRefinement,
+    CustomZones,
     RotationCylinder,
     RotationVolume,
     StructuredBoxRefinement,
@@ -99,7 +100,6 @@ from flow360.component.simulation.models.volume_models import (
     PorousMedium,
     Rotation,
     Solid,
-    StopCriterion,
     XFOILFile,
     XROTORFile,
 )
@@ -146,6 +146,10 @@ from flow360.component.simulation.primitives import (
     ImportedSurface,
     ReferenceGeometry,
 )
+from flow360.component.simulation.run_control.run_control import RunControl
+from flow360.component.simulation.run_control.stopping_criterion import (
+    StoppingCriterion,
+)
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import (
     AdaptiveCFL,
@@ -178,7 +182,6 @@ __all__ = [
     "GeometryRefinement",
     "Env",
     "Case",
-    "CustomVolume",
     "AngleBasedRefinement",
     "AspectRatioBasedRefinement",
     "ProjectAnisoSpacing",
@@ -197,6 +200,7 @@ __all__ = [
     "SurfaceRefinement",
     "AutomatedFarfield",
     "AxisymmetricRefinement",
+    "CustomZones",
     "StructuredBoxRefinement",
     "RotationCylinder",
     "RotationVolume",
@@ -204,6 +208,7 @@ __all__ = [
     "SurfaceEdgeRefinement",
     "HeightBasedRefinement",
     "ReferenceGeometry",
+    "CustomVolume",
     "Cylinder",
     "AxisymmetricBody",
     "AerospaceCondition",
@@ -309,7 +314,8 @@ __all__ = [
     "get_user_variable",
     "show_user_variables",
     "remove_user_variable",
-    "StopCriterion",
+    "StoppingCriterion",
     "MovingStatistic",
     "ImportedSurface",
+    "RunControl",
 ]
