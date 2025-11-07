@@ -24,6 +24,7 @@ from flow360.component.simulation.meshing_param.volume_params import (
     StructuredBoxRefinement,
     UniformRefinement,
     UserDefinedFarfield,
+    WindTunnelFarfield
 )
 from flow360.component.simulation.unit_system import AngleType, LengthType
 from flow360.component.simulation.validation.validation_context import (
@@ -56,6 +57,7 @@ VolumeZonesTypes = Annotated[
         AutomatedFarfield,
         UserDefinedFarfield,
         CustomZones,
+        WindTunnelFarfield
     ],
     pd.Field(discriminator="type"),
 ]

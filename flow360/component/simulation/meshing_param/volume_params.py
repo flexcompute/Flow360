@@ -490,10 +490,11 @@ class UserDefinedFarfield(_FarfieldBase):
         return GhostSurface(name="symmetric")
 
 
-class StaticFloor():
-    friction_patch_x_min: LengthType
-    friction_patch_x_max: LengthType
-    friction_patch_width: LengthType.Positive
+class StaticFloor(Flow360BaseModel):
+    # add name.
+    friction_patch_x_min: LengthType = pd.Field(description="Minimum x of friction patch.")
+    friction_patch_x_max: LengthType = pd.Field(description="Maximum x of friction patch.")
+    friction_patch_width: LengthType.Positive = pd.Field(description="Width of friction patch.")
 
 class FullyMovingFloor():
     pass
