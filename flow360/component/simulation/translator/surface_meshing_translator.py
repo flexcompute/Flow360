@@ -270,7 +270,7 @@ def apply_UniformRefinement_w_snappy(
         translated["geometry"]["refinementVolumes"].append(volume_body)
 
 
-# pylint: disable=too-many-branches,too-many-statements
+# pylint: disable=too-many-branches,too-many-statements,too-many-locals
 def snappy_mesher_json(input_params: SimulationParams):
     """
     Get config JSON for snappyHexMesh surface meshing.

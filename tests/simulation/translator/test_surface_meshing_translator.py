@@ -953,8 +953,8 @@ def _translate_and_compare(param, mesh_unit, ref_json_file: str, atol=1e-15):
     ) as fh:
         ref_dict = json.load(fh)
 
-    # It is important that the list in the configs are sorted beforehand 
-    # as the hash values for reuse resource rely on that 
+    # It is important that the list in the configs are sorted beforehand
+    # as the hash values for reuse resource rely on that
 
     # check if everything is seriazable
     json.dumps(translated)
