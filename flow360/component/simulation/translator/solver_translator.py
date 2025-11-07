@@ -618,7 +618,7 @@ def merge_monitor_output(probe_output: dict, integral_output: dict):
     return probe_output
 
 
-def translate_acoustic_output(output_params: list):
+def translate_acoustic_output(output_params: list, time_step_size: float):
     """Translate acoustic output settings."""
     aeroacoustic_output = {}
     for output in output_params:
@@ -634,8 +634,13 @@ def translate_acoustic_output(output_params: list):
                     for item in output.permeable_surfaces.stored_entities
                     if item.full_name != BOUNDARY_FULL_NAME_WHEN_NOT_FOUND
                 ]
-            aeroacoustic_output["animationFrequency"] = output.frequency
-            aeroacoustic_output["animationFrequencyOffset"] = output.frequency_offset
+            aeroacoustic_output["observerTimeStepSize"] = time_step_size
+            if output.observer_time_step_size is not None:
+                aeroacoustic_output["observerTimeStepSize"] = (
+                    output.observer_time_step_size.v.item()
+                )
+            aeroacoustic_output["startTime"] = output.aeroacoustic_solver_start_time.v.item()
+            aeroacoustic_output["newRun"] = output.force_clean_start
             return aeroacoustic_output
     return None
 
@@ -966,7 +971,9 @@ def translate_output(input_params: SimulationParams, translated: dict):
 
     ##:: Step7: Get translated["aeroacousticOutput"]
     if has_instance_in_list(outputs, AeroAcousticOutput):
-        translated["aeroacousticOutput"] = translate_acoustic_output(outputs)
+        translated["aeroacousticOutput"] = translate_acoustic_output(
+            outputs, translated["timeStepping"]["timeStepSize"]
+        )
 
     ##:: Step8: Get translated["streamlineOutput"]
     if has_instance_in_list(outputs, StreamlineOutput):

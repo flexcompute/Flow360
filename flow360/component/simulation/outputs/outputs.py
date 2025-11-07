@@ -10,6 +10,7 @@ from typing import Annotated, List, Literal, Optional, Union, get_args
 
 import pydantic as pd
 
+import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import (
     Flow360BaseModel,
     RegistryLookup,
@@ -41,7 +42,7 @@ from flow360.component.simulation.primitives import (
     ImportedSurface,
     Surface,
 )
-from flow360.component.simulation.unit_system import LengthType
+from flow360.component.simulation.unit_system import LengthType, TimeType
 from flow360.component.simulation.user_code.core.types import (
     Expression,
     UserVariable,
@@ -1062,16 +1063,20 @@ class AeroAcousticOutput(Flow360BaseModel):
         description="Enable writing of aeroacoustic results on a per-surface basis, "
         + "in addition to results for all wall surfaces combined.",
     )
-    frequency: int = pd.Field(
-        default=1,
-        ge=1,
-        description="Frequency (in number of physical time steps) at which aeroacoustics is evaluated. ",
+    observer_time_step_size: Optional[TimeType.Positive] = pd.Field(
+        None,
+        description="Time step size for aeroacoustic output. "
+        + "Defaults to time step size of the CFD simulation.",
     )
-    frequency_offset: int = pd.Field(
-        default=0,
-        ge=0,
-        description="Offset (in number of physical time steps) at which aeroacoustics evaluation is started.",
+    aeroacoustic_solver_start_time: TimeType.NonNegative = pd.Field(
+        0 * u.s,
+        description="Time to start the aeroacoustic solver. "
+        + "Signals emitted after this start time at the source surfaces are included in the output.",
     )
+    force_clean_start: bool = pd.Field(
+        False, description="Force a clean start when an aeroacoustic case is forked."
+    )
+
     output_type: Literal["AeroAcousticOutput"] = pd.Field("AeroAcousticOutput", frozen=True)
     private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
 
