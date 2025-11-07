@@ -1533,26 +1533,25 @@ def get_stop_criterion_settings(criterion: StoppingCriterion, params: Simulation
     def get_criterion_monitored_file_info(monitor_output, monitor_field):
         monitor_output_name = monitor_output.name.replace("/", "_")
         monitored_column = None
-        monitored_csv_filename = None
+        monitored_dataset_name = None
         if isinstance(monitor_output, (ProbeOutput, SurfaceProbeOutput)):
             point = monitor_output.entities.stored_entities[0]
             monitored_column = f"{monitor_output.name}_{point.name}_{str(monitor_field)}"
-            monitored_csv_filename = f"monitor_{monitor_output_name}"
+            monitored_dataset_name = f"monitor_{monitor_output_name}"
         if isinstance(monitor_output, SurfaceIntegralOutput):
             monitored_column = f"{str(monitor_field)}_integral"
             monitor_output_processed = [monitor_output.copy()]
             process_user_variables_for_integral(monitor_output_processed)
             monitor_field = monitor_output_processed[0].output_fields.items[0]
-            monitored_csv_filename = f"monitor_{monitor_output_name}"
+            monitored_dataset_name = f"monitor_{monitor_output_name}"
         if isinstance(monitor_output, ForceOutput):
             monitored_column = f"total{monitor_field}"
-            monitored_csv_filename = f"force_output_{monitor_output_name}"
+            monitored_dataset_name = f"force_output_{monitor_output_name}"
 
         if monitor_output.moving_statistic is not None:
             monitored_column += f"_{monitor_output.moving_statistic.method}"
-            monitored_csv_filename += "_moving_statistic"
-        monitored_csv_filename += "_v2.csv"
-        return monitored_csv_filename, monitored_column
+            monitored_dataset_name += "_moving_statistic"
+        return monitored_dataset_name, monitored_column
 
     def get_criterion_tolerance_info(criterion_tolerance, monitor_field, params):
         flow360_unit_system = params.flow360_unit_system
@@ -1581,7 +1580,7 @@ def get_stop_criterion_settings(criterion: StoppingCriterion, params: Simulation
 
         return criterion_tolerance_nondim, coeff_source_to_flow360, offset_source_to_flow360
 
-    criterion_csv_filename, criterion_column = get_criterion_monitored_file_info(
+    criterion_dataset_name, criterion_column = get_criterion_monitored_file_info(
         monitor_output=criterion.monitor_output, monitor_field=criterion.monitor_field
     )
     criterion_tolerance_nondim, coeff_source_to_flow360, offset_source_to_flow360 = (
@@ -1594,7 +1593,7 @@ def get_stop_criterion_settings(criterion: StoppingCriterion, params: Simulation
 
     return {
         "monitoredColumn": criterion_column,
-        "monitoredFileName": criterion_csv_filename,
+        "monitoredDatasetName": criterion_dataset_name,
         "tolerance": criterion_tolerance_nondim,
         "toleranceWindowSize": criterion.tolerance_window_size,
         "sourceToFlow360Coefficient": coeff_source_to_flow360,
