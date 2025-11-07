@@ -3,7 +3,7 @@ Meshing settings that applies to volumes.
 """
 
 from abc import ABCMeta
-from typing import Literal, Optional
+from typing import Literal, Optional, Union
 
 import pydantic as pd
 from typing_extensions import deprecated
@@ -488,6 +488,77 @@ class UserDefinedFarfield(_FarfieldBase):
                 "is `half_body_positive_y` or `half_body_negative_y`."
             )
         return GhostSurface(name="symmetric")
+
+
+class StaticFloor():
+    friction_patch_x_min: LengthType
+    friction_patch_x_max: LengthType
+    friction_patch_width: LengthType.Positive
+
+class FullyMovingFloor():
+    pass
+
+class CentralBelt():
+    central_belt_x_min: LengthType
+    central_belt_x_max: LengthType
+    central_belt_width: LengthType.Positive
+
+class WheelBelts(CentralBelt):
+    front_wheel_belt_x_min: LengthType
+    front_wheel_belt_x_max: LengthType
+    front_wheel_belt_x_inner: LengthType.Positive
+    front_wheel_belt_x_outer: LengthType.Positive
+    rear_wheel_belt_x_min: LengthType
+    rear_wheel_belt_x_max: LengthType
+    rear_wheel_belt_x_inner: LengthType.Positive
+    rear_wheel_belt_x_outer: LengthType.Positive
+
+
+class WindTunnelFarfield(_FarfieldBase):
+    '''
+    Settings for analytic wind tunnel farfield generation.
+    The user only needs to provide tunnel dimensions and floor type and dimensions.
+
+    Example
+    -------
+        >>> fl.WindTunnelFarfield(TODO)
+    '''
+    type: Literal["WindTunnelFarfield"] = pd.Field("WindTunnelFarfield", frozen=True)
+    name: Optional[str] = pd.Field("Wind Tunnel Farfield")
+
+    # Tunnel parameters    
+    width: LengthType.Positive = pd.Field(description="Width of the wind tunnel.")
+    height: LengthType.Positive = pd.Field(description="Height of the wind tunnel.")
+    inlet_x_position: LengthType = pd.Field(description="X-position of the inlet.")
+    outlet_x_position: LengthType = pd.Field(description="X-position of the outlet.")
+    floor_position: LengthType = pd.Field(description="Position of the floor.")
+    # # TODO: don't we only support +Z so far?
+    # up_direction: Literal["+Z", "-Z", "+Y", "-Y"] = pd.Field(
+    #     description="Upward direction of the wind tunnel."
+    # )
+    # symmetry_volume_to_include: Optional[Literal["+Z", "-Z", "+Y", "-Y"]] = pd.Field(
+    #     description="When set, this triggers mesher to only include the given side of the model to generate a half model mesh."
+    # )
+
+    floor_type: Union[
+        StaticFloor,
+        FullyMovingFloor,
+        CentralBelt,
+        WheelBelts,
+    ] = pd.Field(description="Floor type of the wind tunnel.")
+
+    # def inlet(self) -> Surface:
+    #     # TODO: return the x=x_inlet plane?
+    #     ...
+    
+    # def outlet(self) -> Surface:
+    #     ...
+    
+    # def symmetry_plane(self) -> Surface:
+    #     ...
+    
+    # def floor(self) -> Surface:
+    #     ...
 
 
 class CustomZones(Flow360BaseModel):
