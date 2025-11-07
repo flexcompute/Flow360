@@ -89,7 +89,7 @@
         "stoppingCriteria": [
             {
                 "monitoredColumn": "point_legacy1_Point1_Helicity_mean",
-                "monitoredFileName": "monitor_point_legacy1_moving_statistic_v2.csv",
+                "monitoredDatasetName": "monitor_point_legacy1_moving_statistic",
                 "sourceToFlow360Coefficient": 6.9594121562924376e-06,
                 "sourceToFlow360Offset": 0.0,
                 "tolerance": 0.0001298626308364169,
