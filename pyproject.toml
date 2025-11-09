@@ -5,7 +5,7 @@ description = "Flow360 Python Client"
 authors = ["Flexcompute <support@flexcompute.com>"]
 
 [tool.poetry.dependencies]
-python = ">=3.9,<3.13"
+python = ">=3.9,<3.14"
 pydantic = ">=2.8,<2.12"
 pytest = "^7.1.2"
 click = "^8.1.3"
