@@ -160,7 +160,7 @@ jobs:
             --head main \
             --title "Scheduled sync: main → develop" \
             --body "$PR_BODY" \
-            --label "skip-changelog")
+            --label "auto-develop-branch-sync")
           echo "pr_url=$PR_URL" >> "$GITHUB_OUTPUT"
           echo "Created PR: $PR_URL"
         env:

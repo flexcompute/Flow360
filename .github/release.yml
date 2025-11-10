@@ -1,5 +1,6 @@
 changelog:
   exclude:
     labels:
-      - skip-changelog
+      - auto-develop-branch-sync
+      - auto-hotfix
 
