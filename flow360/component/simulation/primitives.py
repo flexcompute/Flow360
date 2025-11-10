@@ -9,7 +9,6 @@ from typing import Annotated, ClassVar, List, Literal, Optional, Tuple, Union, f
 import numpy as np
 import pydantic as pd
 from pydantic import PositiveFloat
-from scipy.linalg import eig
 from typing_extensions import Self
 
 import flow360.component.simulation.units as u
@@ -367,6 +366,9 @@ class Box(MultiConstructorBaseModel, _VolumeEntityBase):
         """
         Construct box from principal axes
         """
+
+        from scipy.linalg import eig  # pylint: disable=import-outside-toplevel
+
         # validate
         x_axis, y_axis = np.array(axes[0]), np.array(axes[1])
         z_axis = np.cross(x_axis, y_axis)

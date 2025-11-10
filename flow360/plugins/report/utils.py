@@ -16,12 +16,8 @@ from abc import ABCMeta, abstractmethod
 from numbers import Number
 from typing import Annotated, Any, ClassVar, List, Literal, Optional, Tuple, Union
 
-import matplotlib.pyplot as plt
-import numexpr as ne
 import numpy as np
 import pydantic as pd
-from matplotlib.ticker import LogFormatterSciNotation
-from PIL import Image
 
 # this plugin is optional, thus pylatex is not required: TODO add handling of installation of pylatex
 # pylint: disable=import-error
@@ -693,6 +689,9 @@ class Expression(GenericOperation):
         Evaluates the given expression on the provided dataframe, using the specified variables.
         The result is added as a new column in the dataframe.
         """
+
+        import numexpr as ne  # pylint: disable=import-outside-toplevel
+
         expr_variables = cls.get_variables(expr)
         missing_vars = expr_variables - set(df.columns)
         found_variables = set()
@@ -1122,6 +1121,12 @@ def generate_colorbar_from_image(
         the color distribution. A twin axis is used solely for log-scale labeling.
     """
 
+    import matplotlib.pyplot as plt  # pylint: disable=import-outside-toplevel
+    from matplotlib.ticker import (  # pylint: disable=import-outside-toplevel
+        LogFormatterSciNotation,
+    )
+    from PIL import Image  # pylint: disable=import-outside-toplevel
+
     img = Image.open(image_filename)
     original_width, _ = img.size
     new_size = (original_width, height_px)
@@ -1194,6 +1199,9 @@ def downsample_image_to_relative_width(input_path, output_path, relative_width=1
     dpi : int
         Desired DPI (pixels per inch).
     """
+
+    from PIL import Image  # pylint: disable=import-outside-toplevel
+
     a4_width_in_mm = 297.0  # A4 width in mm in landscape orientation
     mm_per_inch = 25.4
 
