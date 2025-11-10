@@ -149,7 +149,9 @@ class TotalPressure(Flow360BaseModel):
 
     type_name: Literal["TotalPressure"] = pd.Field("TotalPressure", frozen=True)
     # pylint: disable=no-member
-    value: PressureType.Positive = pd.Field(description="The total pressure value.")
+    value: Union[StringExpression, PressureType.Positive] = pd.Field(
+        description="The total pressure value."
+    )
 
 
 class Pressure(SingleAttributeModel):
@@ -590,7 +592,7 @@ class Inflow(BoundaryBaseWithTurbulenceQuantities):
     name: Optional[str] = pd.Field("Inflow", description="Name of the `Inflow` boundary condition.")
     type: Literal["Inflow"] = pd.Field("Inflow", frozen=True)
     # pylint: disable=no-member
-    total_temperature: AbsoluteTemperatureType = pd.Field(
+    total_temperature: Union[StringExpression, AbsoluteTemperatureType] = pd.Field(
         description="Specify the total temperature at the `Inflow` boundary."
     )
     spec: Union[TotalPressure, MassFlowRate, Supersonic] = pd.Field(
