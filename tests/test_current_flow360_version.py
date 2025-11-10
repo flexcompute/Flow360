@@ -2,4 +2,4 @@ from flow360.version import __version__
 
 
 def test_version():
-    assert __version__ == "25.7.6"
+    assert __version__ == "25.7.6b0"

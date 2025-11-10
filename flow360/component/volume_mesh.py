@@ -71,13 +71,6 @@ from .v1.flow360_params import Flow360MeshParams, Flow360Params, _GenericBoundar
 from .v1.params_base import params_generic_validator
 from .validator import Validator
 
-try:
-    import h5py
-
-    _H5PY_AVAILABLE = True
-except ImportError:
-    _H5PY_AVAILABLE = False
-
 
 def get_datatype(dataset):
     """
@@ -142,6 +135,8 @@ def get_boundaries_from_file(cgns_file: str, solver_version: str = None):
     :param solver_version:
     :return:
     """
+    import h5py  # pylint: disable=import-outside-toplevel
+
     names = []
     with h5py.File(cgns_file, "r") as h5_file:
         base = h5_file["Base"]

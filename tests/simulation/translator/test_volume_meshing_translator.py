@@ -5,6 +5,7 @@ import pytest
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.param_utils import AssetCache
+from flow360.component.simulation.framework.updater_utils import compare_values
 from flow360.component.simulation.meshing_param.face_params import (
     BoundaryLayer,
     PassiveSpacing,
@@ -264,7 +265,7 @@ def test_param_to_json(get_test_param, get_surface_mesh):
     )
     with open(ref_path, "r") as fh:
         ref_dict = json.load(fh)
-    assert sorted(translated.items()) == sorted(ref_dict.items())
+    assert compare_values(translated, ref_dict)
 
 
 def test_user_defined_farfield(get_test_param, get_surface_mesh):
@@ -302,7 +303,7 @@ def test_param_to_json_legacy_mesher(get_test_param, get_surface_mesh):
     )
     with open(ref_path, "r") as fh:
         ref_dict = json.load(fh)
-    assert sorted(translated.items()) == sorted(ref_dict.items())
+    assert compare_values(translated, ref_dict)
 
 
 def test_custom_zones_tetrahedra(get_test_param, get_surface_mesh):
