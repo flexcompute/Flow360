@@ -576,11 +576,12 @@ def _check_duplicate_actuator_disk_cylinder_names(models):
             if not isinstance(model, ActuatorDisk):
                 continue
 
-            for entity in model.entities.stored_entities:
+            for entity_index, entity in enumerate(model.entities.stored_entities):
                 if entity.name in actuator_disk_names:
                     raise ValueError(
-                        f"The ActuatorDisk cylinder name `{entity.name}` has already been used."
-                        " Please use unique Cylinder names among all ActuatorDisk instances."
+                        f"The ActuatorDisk cylinder name `{entity.name}` at index {entity_index}"
+                        f" in model `{model.name}` has already been used."
+                        " Please use unique Cylinder entity names among all ActuatorDisk instances."
                     )
                 actuator_disk_names.add(entity.name)
 

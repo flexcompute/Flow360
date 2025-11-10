@@ -100,8 +100,9 @@ def test_actuator_disk_duplicate_cylinder_names():
         with pytest.raises(
             ValueError,
             match=re.escape(
-                f"The ActuatorDisk cylinder name `my_cylinder-1` has already been used."
-                " Please use unique Cylinder names among all ActuatorDisk instances."
+                f"The ActuatorDisk cylinder name `my_cylinder-1` at index 1 in model `Actuator disk` "
+                "has already been used. Please use unique Cylinder entity names among all "
+                "ActuatorDisk instances."
             ),
         ):
             ad_duplicate = ActuatorDisk(volumes=[my_cylinder_1, my_cylinder_1], force_per_area=fpa)
