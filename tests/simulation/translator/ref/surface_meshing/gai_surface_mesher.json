@@ -171,11 +171,6 @@
                 "geometry_accuracy": {
                     "value": 0.05,
                     "units": "1.0*m"
-                },
-                "preserve_thin_geometry": false,
-                "sealing_size": {
-                    "value": 0.0,
-                    "units": "1.0*m"
                 }
             }
         ],

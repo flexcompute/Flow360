@@ -84,13 +84,13 @@ class GeometryRefinement(Flow360BaseModel):
     )
 
     preserve_thin_geometry: Optional[bool] = pd.Field(
-        False,
+        None,
         description="Flag to specify whether thin geometry features with thickness roughly equal "
         + "to geometry_accuracy should be resolved accurately during the surface meshing process.",
     )
 
-    sealing_size: LengthType.NonNegative = pd.Field(
-        0.0 * u.m,
+    sealing_size: Optional[LengthType.NonNegative] = pd.Field(
+        None,
         description="Threshold size below which all geometry gaps are automatically closed.",
     )
 
