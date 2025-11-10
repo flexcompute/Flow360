@@ -159,9 +159,18 @@ jobs:
             --base develop \
             --head main \
             --title "Scheduled sync: main → develop" \
-            --body "$PR_BODY")
+            --body "$PR_BODY" \
+            --label "skip-changelog")
           echo "pr_url=$PR_URL" >> "$GITHUB_OUTPUT"
           echo "Created PR: $PR_URL"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Enable auto-merge with merge commit
+        if: steps.up.outputs.up_to_date == 'false' && (steps.merge.outputs.conflicted == 'true' || steps.push.outputs.exit_code != '0')
+        continue-on-error: true
+        run: |
+          gh pr merge ${{ steps.pr.outputs.pr_url }} --merge --auto
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
