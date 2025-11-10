@@ -11,7 +11,11 @@ import unyt
 from pylatex import Document
 
 from flow360.cloud.rest_api import RestApi
-from flow360.cloud.s3_utils import S3TransferType, get_local_filename_and_create_folders
+from flow360.cloud.s3_utils import (
+    CloudFileNotFoundError,
+    S3TransferType,
+    get_local_filename_and_create_folders,
+)
 from flow360.plugins.report import report_doc
 
 here = os.path.dirname(os.path.abspath(__file__))
@@ -108,8 +112,6 @@ def s3_download_override(monkeypatch):
         log_error=True,
         **kwargs,
     ):
-        from botocore.exceptions import ClientError as CloudFileNotFoundError
-
         full_remote_path = os.path.join(here, "data", resource_id, remote_file_name)
         print(f"DEBUG: looking for {remote_file_name=} at {full_remote_path=}")
         if not os.path.exists(full_remote_path):

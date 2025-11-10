@@ -5,6 +5,7 @@ from math import cos, inf, pi, sin, sqrt
 from typing import Literal
 
 import numpy as np
+from scipy.interpolate import interp1d
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.unit_system import AngleType, LengthType
@@ -60,9 +61,6 @@ def parse_in_xfoil_polar(polar_file_content: str):
     ----------
     return: alpha_list, mach_list, cl_list, cd_list
     """
-
-    from scipy.interpolate import interp1d  # pylint: disable=import-outside-toplevel
-
     cl_alphas = []
     cl_values = {}
     cd_values = {}

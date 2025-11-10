@@ -2,10 +2,10 @@ import json
 import os
 
 import pytest
-from botocore.exceptions import ClientError as CloudFileNotFoundError
 
 from flow360.cloud import http_util
 from flow360.cloud.http_util import http
+from flow360.cloud.s3_utils import CloudFileNotFoundError
 from flow360.environment import Env
 
 here = os.path.dirname(os.path.abspath(__file__))

@@ -9,7 +9,12 @@ from abc import ABCMeta, abstractmethod
 from datetime import datetime
 from enum import Enum
 
+import boto3
+from boto3.s3.transfer import TransferConfig
+from botocore.config import Config as BotocoreConfig
+
 # pylint: disable=unused-import
+from botocore.exceptions import ClientError as CloudFileNotFoundError
 from pydantic.v1 import BaseModel, Field
 
 from ..environment import Env
@@ -38,14 +43,9 @@ class ProgressCallbackInterface(metaclass=ABCMeta):
         pass
 
 
-def _get_dynamic_upload_config(file_size):
+def _get_dynamic_upload_config(file_size) -> TransferConfig:
     # pylint: disable=invalid-name
     # Constant definition: https://docs.aws.amazon.com/AmazonS3/latest/userguide/qfacts.html
-
-    from boto3.s3.transfer import (  # pylint: disable=import-outside-toplevel
-        TransferConfig,
-    )
-
     MIN_CHUNK_SIZE = 5 * 1024 * 1024
     MAX_PART_COUNT = 100000
 
@@ -143,10 +143,6 @@ class _S3STSToken(BaseModel):
         Get s3 client.
         :return:
         """
-        # pylint: disable=import-outside-toplevel
-        from boto3 import client
-        from botocore.config import Config as BotocoreConfig
-
         # pylint: disable=no-member
         kwargs = {
             "region_name": self.user_credential.region,
@@ -159,7 +155,7 @@ class _S3STSToken(BaseModel):
         if Env.current.s3_endpoint_url is not None:
             kwargs["endpoint_url"] = Env.current.s3_endpoint_url
 
-        return client("s3", **kwargs)
+        return boto3.client("s3", **kwargs)
 
     def is_expired(self):
         """
@@ -339,7 +335,7 @@ class S3TransferType(Enum):
                     Config=_get_dynamic_upload_config(os.path.getsize(file_name)),
                 )
 
-    # pylint: disable=too-many-arguments, too-many-locals
+    # pylint: disable=too-many-arguments
     def download_file(
         self,
         resource_id: str,
@@ -361,8 +357,6 @@ class S3TransferType(Enum):
         :param progress_callback: provide custom callback for progress
         :return:
         """
-        # pylint: disable=import-outside-toplevel
-        from botocore.exceptions import ClientError as CloudFileNotFoundError
 
         to_file = get_local_filename_and_create_folders(remote_file_name, to_file, to_folder)
         if os.path.exists(to_file) and not overwrite:

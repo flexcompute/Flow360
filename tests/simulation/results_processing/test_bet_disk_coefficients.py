@@ -6,7 +6,6 @@ import numpy as np
 import flow360 as fl
 from flow360.component.results.case_results import BETForcesResultCSVModel
 from flow360.component.simulation.framework.param_utils import AssetCache
-from flow360.component.simulation.models.volume_models import BETDisk
 from flow360.component.simulation.services import ValidationCalledBy, validate_model
 
 from .test_helpers import compute_freestream_direction, compute_lift_direction
