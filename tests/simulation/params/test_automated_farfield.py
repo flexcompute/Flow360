@@ -13,7 +13,10 @@ from flow360.component.simulation.meshing_param.params import (
     MeshingDefaults,
     MeshingParams,
 )
-from flow360.component.simulation.meshing_param.volume_params import AutomatedFarfield
+from flow360.component.simulation.meshing_param.volume_params import (
+    AutomatedFarfield,
+    UserDefinedFarfield,
+)
 from flow360.component.simulation.models.surface_models import (
     Freestream,
     SlipWall,
@@ -28,7 +31,7 @@ from flow360.component.simulation.outputs.outputs import (
     SurfaceOutput,
     UserDefinedField,
 )
-from flow360.component.simulation.primitives import Surface
+from flow360.component.simulation.primitives import GhostSurface, Surface
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import SI_unit_system
 from flow360.component.surface_mesh_v2 import SurfaceMeshMetaV2, SurfaceMeshV2
@@ -39,36 +42,88 @@ def change_test_dir(request, monkeypatch):
     monkeypatch.chdir(request.fspath.dirname)
 
 
-def test_automated_farfield_surface_usage():
-    # Test use of GhostSurface in meshing
-    with pytest.raises(
-        ValueError,
-        match=re.escape("Can not find any valid entity of type ['Surface'] from the input."),
-    ):
-        with SI_unit_system:
-            my_farfield = AutomatedFarfield(name="my_farfield")
-            _ = SimulationParams(
-                meshing=MeshingParams(
-                    volume_zones=[
-                        my_farfield,
-                    ],
-                    refinements=[
-                        SurfaceRefinement(
-                            name="does not work",
-                            entities=[my_farfield.farfield],
-                            max_edge_length=1e-4,
-                        )
-                    ],
-                ),
+@pytest.fixture()
+def surface_mesh():
+    sm = SurfaceMeshV2.from_local_storage(
+        local_storage_path="data/surface_mesh",
+        meta_data=SurfaceMeshMetaV2(
+            **local_metadata_builder(
+                id="aaa",
+                name="aaa",
+                cloud_path_prefix="aaa",
             )
+        ),
+    )
+    return sm
 
-    # Test use of GhostSurface in boundary conditions
-    with pytest.raises(
-        ValueError,
-        match=re.escape("Can not find any valid entity of type ['Surface'] from the input."),
-    ):
-        with SI_unit_system:
-            my_farfield = AutomatedFarfield(name="my_farfield")
+
+def _run_validation(params, surface_mesh_obj, use_beta_mesher=True, use_geometry_AI=False):
+    params = set_up_params_for_uploading(
+        params=params,
+        root_asset=surface_mesh_obj,
+        length_unit=1 * u.m,
+        use_beta_mesher=use_beta_mesher,
+        use_geometry_AI=use_geometry_AI,
+    )
+
+    _, errors, _ = services.validate_model(
+        params_as_dict=params.model_dump(exclude_none=True),
+        validated_by=services.ValidationCalledBy.LOCAL,
+        root_item_type="SurfaceMesh",
+        validation_level="All",
+    )
+    return errors
+
+
+def test_automated_farfield_surface_usage():
+    # Test use of GhostSurface in meshing via ValidationContext (Surface mesh + automated farfield):
+    import pydantic as pd
+
+    from flow360.component.simulation.validation.validation_context import (
+        VOLUME_MESH,
+        ParamsValidationInfo,
+        ValidationContext,
+    )
+
+    with SI_unit_system:
+        my_farfield = AutomatedFarfield(name="my_farfield")
+        param_dict = {
+            "meshing": {
+                "volume_zones": [
+                    {"type": "AutomatedFarfield", "method": "auto"},
+                ]
+            },
+            "private_attribute_asset_cache": {
+                "use_inhouse_mesher": True,
+                "use_geometry_AI": True,
+                "project_entity_info": {"type_name": "SurfaceMeshEntityInfo"},
+            },
+        }
+        info = ParamsValidationInfo(param_as_dict=param_dict, referenced_expressions=[])
+        with ValidationContext(levels=VOLUME_MESH, info=info):
+            with pytest.raises(pd.ValidationError):
+                _ = SimulationParams(
+                    meshing=MeshingParams(
+                        volume_zones=[
+                            my_farfield,
+                        ],
+                        refinements=[
+                            SurfaceRefinement(
+                                name="does not work",
+                                entities=[my_farfield.farfield],
+                                max_edge_length=1e-4,
+                            )
+                        ],
+                    ),
+                )
+
+    # Boundary condition (Wall) does not accept GhostSurface by type; keep original type-level error
+    with SI_unit_system:
+        my_farfield = AutomatedFarfield(name="my_farfield")
+        with pytest.raises(
+            ValueError,
+            match=re.escape("Can not find any valid entity of type ['Surface'] from the input."),
+        ):
             _ = SimulationParams(
                 meshing=MeshingParams(
                     volume_zones=[
@@ -82,7 +137,7 @@ def test_automated_farfield_surface_usage():
                         )
                     ],
                 ),
-                models=[Wall(name="wall", surface=my_farfield.farfield)],
+                models=[Wall(name="wall", surfaces=[my_farfield.farfield])],
             )
 
     with SI_unit_system:
@@ -90,7 +145,7 @@ def test_automated_farfield_surface_usage():
         _ = SimulationParams(
             models=[
                 SlipWall(name="slipwall", entities=my_farfield.farfield),
-                SymmetryPlane(name="symm_plane", entities=my_farfield.symmetry_planes),
+                SymmetryPlane(name="symm_plane", entities=my_farfield.symmetry_plane),
             ],
         )
 
@@ -111,7 +166,7 @@ def test_automated_farfield_surface_usage():
                 SurfaceIntegralOutput(
                     name="prb 110",
                     entities=[
-                        my_farfield.symmetry_planes,
+                        my_farfield.symmetry_plane,
                         Surface(name="surface2"),
                     ],
                     output_fields=["Cpt_user_defined"],
@@ -144,35 +199,8 @@ def test_automated_farfield_import_export():
     assert isinstance(meshing.volume_zones[0], AutomatedFarfield)
 
 
-def test_symmetric_existence():
-    def _run_validation(params):
-        params = set_up_params_for_uploading(
-            params=params,
-            root_asset=sm,
-            length_unit=1 * u.m,
-            use_beta_mesher=True,
-            use_geometry_AI=False,
-        )
+def test_symmetric_existence(surface_mesh):
 
-        _, errors, _ = services.validate_model(
-            params_as_dict=params.model_dump(exclude_none=True),
-            validated_by=services.ValidationCalledBy.LOCAL,
-            root_item_type="SurfaceMesh",
-            validation_level="All",
-        )
-
-        return errors
-
-    sm = SurfaceMeshV2.from_local_storage(
-        local_storage_path="data/surface_mesh",
-        meta_data=SurfaceMeshMetaV2(
-            **local_metadata_builder(
-                id="aaa",
-                name="aaa",
-                cloud_path_prefix="aaa",
-            )
-        ),
-    )
     farfield = AutomatedFarfield()
     with SI_unit_system:
         params = SimulationParams(
@@ -185,25 +213,25 @@ def test_symmetric_existence():
                 volume_zones=[farfield],
             ),
             models=[
-                Wall(surfaces=sm["*"]),
+                Wall(surfaces=surface_mesh["*"]),
                 Freestream(surfaces=[farfield.farfield]),
             ],
         )
 
     # Valid Symmetric but did not use it
-    errors = _run_validation(params)
+    errors = _run_validation(params, surface_mesh)
     assert len(errors) == 1
     assert (
         "The following boundaries do not have a boundary condition: symmetric." in errors[0]["msg"]
     )
 
-    params.models.append(SymmetryPlane(surfaces=[farfield.symmetry_planes]))
-    errors = _run_validation(params)
+    params.models.append(SymmetryPlane(surfaces=[farfield.symmetry_plane]))
+    errors = _run_validation(params, surface_mesh)
     assert errors is None
 
     # Invalid Symmetric
     params.meshing.defaults.planar_face_tolerance = 1e-100
-    errors = _run_validation(params)
+    errors = _run_validation(params, surface_mesh)
     assert len(errors) == 1
     assert (
         "`symmetric` boundary will not be generated: model spans: [-4.1e-05, 1.2e+03], tolerance = 1e-100 x 2.5e+03 = 2.5e-97."
@@ -212,8 +240,66 @@ def test_symmetric_existence():
 
     # Invalid Symmetric but did not use it
     params.models.pop()
-    errors = _run_validation(params)
+    errors = _run_validation(params, surface_mesh)
     assert errors is None
+
+
+def test_user_defined_farfield_symmetry_plane(surface_mesh):
+    farfield = UserDefinedFarfield(domain_type="half_body_positive_y")
+
+    with SI_unit_system:
+        params = SimulationParams(
+            operating_condition=AerospaceCondition(velocity_magnitude=1),
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=0.001,
+                    boundary_layer_growth_rate=1.1,
+                ),
+                volume_zones=[farfield],
+            ),
+            models=[
+                Wall(surfaces=surface_mesh["*"]),
+                SymmetryPlane(surfaces=farfield.symmetry_plane),
+            ],
+        )
+    errors = _run_validation(params, surface_mesh, use_beta_mesher=True, use_geometry_AI=False)
+    assert errors[0]["loc"][0] == "meshing"
+    assert errors[0]["loc"][-1] == "domain_type"
+    assert (
+        errors[0]["msg"]
+        == "Value error, `domain_type` is only supported when using both GAI surface mesher and beta volume mesher."
+    )
+    params.meshing.defaults.geometry_accuracy = 1 * u.mm
+    params.meshing.defaults.geometry_accuracy = 1 * u.mm
+    errors = _run_validation(params, surface_mesh, use_beta_mesher=True, use_geometry_AI=True)
+    assert errors is None
+
+
+def test_user_defined_farfield_symmetry_plane_requires_half_domain(surface_mesh):
+    farfield = UserDefinedFarfield(domain_type="full_body")
+
+    with SI_unit_system:
+        params = SimulationParams(
+            operating_condition=AerospaceCondition(velocity_magnitude=1),
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=0.001,
+                    boundary_layer_growth_rate=1.1,
+                    geometry_accuracy=1 * u.mm,
+                ),
+                volume_zones=[farfield],
+            ),
+            models=[
+                Wall(surfaces=surface_mesh["*"]),
+                SymmetryPlane(surfaces=GhostSurface(name="symmetric")),
+            ],
+        )
+    errors = _run_validation(params, surface_mesh, use_beta_mesher=True, use_geometry_AI=True)
+    assert errors[0]["loc"] == ("models", 1, "entities", "stored_entities")
+    assert (
+        errors[0]["msg"]
+        == "Value error, Symmetry plane of user defined farfield is only supported for half body domains."
+    )
 
 
 def test_rotated_symmetric_existence():
@@ -293,7 +379,7 @@ def test_rotated_symmetric_existence():
                             and item.name != "body00001_face00001"
                         ]
                     ),
-                    SlipWall(surfaces=[farfield.symmetry_planes]),
+                    SlipWall(surfaces=[farfield.symmetry_plane]),
                 ],
             )
 
@@ -305,7 +391,7 @@ def test_rotated_symmetric_existence():
             root_item_type="Geometry",
             validation_level="All",
         )
-        print("# * 3: Deleted boundary")
+
         # * 3: Deleted boundary
         with SI_unit_system:
             params = SimulationParams(
@@ -326,7 +412,7 @@ def test_rotated_symmetric_existence():
                             item for item in geometry["*"] if item.name != "body00001_face00005"
                         ]
                     ),
-                    SlipWall(surfaces=[farfield.symmetry_planes]),
+                    SlipWall(surfaces=[farfield.symmetry_plane]),
                 ],
             )
 

@@ -56,7 +56,7 @@
     },
     "monitorOutput": {
         "monitors": {
-            "MassFluxIntegral": {
+            "MassFluxIntegral1": {
                 "animationFrequency": 1,
                 "animationFrequencyOffset": 0,
                 "computeTimeAverages": false,
@@ -65,6 +65,18 @@
                 ],
                 "surfaces": [
                     "VOLUME/LEFT"
+                ],
+                "type": "surfaceIntegral"
+            },
+            "MassFluxIntegral2": {
+                "animationFrequency": 1,
+                "animationFrequencyOffset": 0,
+                "computeTimeAverages": false,
+                "outputFields": [
+                    "MassFluxProjected_integral"
+                ],
+                "surfaces": [
+                    "VOLUME/RIGHT"
                 ],
                 "type": "surfaceIntegral"
             }
@@ -337,6 +349,24 @@
         ],
         "outputFormat": "paraview",
         "startAverageIntegrationStep": -1
+    },
+    "importedSurfaceIntegralOutput": {
+        "animationFrequency": -1,
+        "animationFrequencyOffset": 0,
+        "surfaces": {
+            "imported1": {
+                "meshFile": "imported1.stl",
+                "outputFields": [
+                    "MassFluxProjected_integral"
+                ]
+            },
+            "imported2": {
+                "meshFile": "imported2.stl",
+                "outputFields": [
+                    "MassFluxProjected_integral"
+                ]
+            }
+        }
     },
     "runControl": {
         "shouldCheckStopCriterion": false,

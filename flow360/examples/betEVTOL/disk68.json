@@ -4,7 +4,6 @@
   "entities": {
     "stored_entities": [
       {
-        "private_attribute_registry_bucket_name": "VolumetricEntityType",
         "private_attribute_entity_type_name": "Cylinder",
         "private_attribute_id": "4fccfc08-e3b9-4059-b33f-7a937aba4f76",
         "name": "BET 6",
@@ -39,7 +38,6 @@
         }
       },
       {
-        "private_attribute_registry_bucket_name": "VolumetricEntityType",
         "private_attribute_entity_type_name": "Cylinder",
         "private_attribute_id": "3bb63067-9f4f-437b-825f-a163ddfb633e",
         "name": "BET 8",

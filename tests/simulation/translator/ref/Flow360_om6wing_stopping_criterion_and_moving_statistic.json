@@ -46,12 +46,13 @@
                 "animationFrequency": 1,
                 "animationFrequencyOffset": 0,
                 "computeTimeAverages": false,
-		"monitorLocations" : {"Point1" : [
+                "monitorLocations": {
+                    "Point1": [
                         -0.033058692145427476,
                         0.7024941059684825,
                         0.0
                     ]
-	        },
+                },
                 "outputFields": [
                     "Helicity"
                 ],
@@ -84,23 +85,7 @@
     "runControl": {
         "shouldCheckStopCriterion": true,
         "externalProcessMonitorOutput": true,
-        "stopCriterion": [
-            {
-                "monitorField": {
-                    "name": "Helicity",
-                    "typeName": "UserVariable"
-                },
-                "monitorOutput": "11111",
-                "name": "Criterion_Helicity",
-                "tolerance": {
-                    "typeName": "number",
-                    "units": "m/s**2",
-                    "value": 18.66
-                },
-                "typeName": "StopCriterion"
-            }
-        ],
-        "monitorProcessorHash": "8ef791f02ebfdac5738ea98d3328b6530b3188e3600f0fd80197247115576a9b"
+        "monitorProcessorHash": "4581ab2e4847a22e8e1af690f2f4d57da76110b57c3ba528eabe7b2ad93e4927"
     },
     "sliceOutput": {
         "animationFrequency": -1,

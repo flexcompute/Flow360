@@ -191,23 +191,7 @@
             },
             "transition_model_solver": {
                 "type_name": "None"
-            },
-            "stopping_criterion": [
-                {
-                    "name": "Criterion_Helicity",
-                    "monitor_field": {
-                        "name": "Helicity",
-                        "type_name": "UserVariable"
-                    },
-                    "monitor_output": "11111",
-                    "tolerance": {
-                        "type_name": "number",
-                        "value": 18.66,
-                        "units": "SI_unit_system"
-                    },
-                    "type_name": "StopCriterion"
-                }
-            ]
+            }
         },
         {
             "type": "Wall",
@@ -387,7 +371,7 @@
                     {
                         "private_attribute_registry_bucket_name": "PointEntityType",
                         "private_attribute_entity_type_name": "Point",
-                        "private_attribute_id": "a4f88112-f7a0-45aa-b53d-c660d130a1c4",
+                        "private_attribute_id": "Point1",
                         "name": "Point1",
                         "location": {
                             "value": [
@@ -399,6 +383,12 @@
                         }
                     }
                 ]
+            },
+            "moving_statistic": {
+                "moving_window_size": 200,
+                "method": "mean",
+                "start_step": 0,
+                "type_name": "MovingStatistic"
             },
             "output_type": "ProbeOutput"
         }
@@ -415,5 +405,24 @@
                 }
             }
         ]
+    },
+    "run_control": {
+        "stopping_criteria": [
+            {
+                "name": "Criterion_Helicity",
+                "monitor_field": {
+                    "name": "Helicity",
+                    "type_name": "UserVariable"
+                },
+                "monitor_output": "11111",
+                "tolerance": {
+                    "type_name": "number",
+                    "value": 18.66,
+                    "units": "SI_unit_system"
+                },
+                "type_name": "StoppingCriterion"
+            }
+        ],
+        "type_name": "RunControl"
     }
 }

@@ -15,6 +15,9 @@ jobs:
     needs: code-style
     name: test ${{ matrix.python-version }} - ${{ matrix.platform }}
     runs-on: ${{ matrix.platform }}
+    defaults:
+      run:
+        shell: bash
     strategy:
       matrix:
         python-version: ['3.9', '3.10', '3.11', '3.12']
@@ -31,21 +34,20 @@ jobs:
         echo "TEMP=${{ github.workspace }}/temp" >> $GITHUB_ENV
         echo "TMP=${{ github.workspace }}/temp" >> $GITHUB_ENV
 
-    - name: Install poetry
-      run: |
-        pipx install poetry
-        # create local virtual environment 
-        poetry config --local virtualenvs.in-project true
-
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
-        cache: 'poetry'
+
+    - name: Install Poetry
+      uses: snok/install-poetry@v1
+      with:
+        version: 1.8.4 # Accommodating Python 3.9 to 3.13
+        virtualenvs-in-project: true
+        virtualenvs-create: true
 
     - name: Install dependencies
-      run: |
-        poetry install
+      run: poetry install
 
     - name: Run simulation_params tests
       run: poetry run pytest -rA tests/simulation -vv

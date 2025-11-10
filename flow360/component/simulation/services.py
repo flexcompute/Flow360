@@ -777,14 +777,15 @@ def generate_process_json(
 
     params_as_dict = json.loads(simulation_json)
     mesh_unit = _get_mesh_unit(params_as_dict)
-    validation_level = _determine_validation_level(up_to, root_item_type)
 
     # Note: There should not be any validation error for params_as_dict. Here is just a deserilization of the JSON
     params, errors, _ = validate_model(
         params_as_dict=params_as_dict,
         validated_by=ValidationCalledBy.SERVICE,  # This is called only by web service currently.
         root_item_type=root_item_type,
-        validation_level=validation_level,
+        # Skip context-aware validation for faster performance.
+        # Context-aware validation was already performed locally or a priori by backend.
+        validation_level=None,
     )
 
     if errors is not None:
@@ -825,14 +826,28 @@ def _convert_unit_in_dict(
         return supported_units_by_front_end[dimension_str][unit_system]
 
     def get_converted_value(original_value, old_unit, new_unit):
-        if isinstance(original_value, Collection):
-            new_value = []
-            for value in original_value:
-                value = (value * old_unit).to(new_unit).value
-                new_value.append(float(value))
-        else:
-            new_value = float((original_value * old_unit).to(new_unit).value)
-        return new_value
+        def convert_single_value(val):
+            """Convert a single scalar value with units."""
+            converted = (val * old_unit).to(new_unit).value
+            # Handle numpy scalars and arrays
+            try:
+                return float(converted)
+            except (TypeError, ValueError):
+                # If it's a numpy array or other non-scalar, try to convert to list
+                try:
+                    return converted.tolist() if hasattr(converted, "tolist") else list(converted)
+                except (TypeError, AttributeError):
+                    return converted
+
+        def convert_nested_collection(val):
+            """Recursively convert nested collections."""
+            if isinstance(val, Collection) and not isinstance(val, str):
+                if hasattr(val, "__iter__"):
+                    return [convert_nested_collection(item) for item in val]
+                return convert_single_value(val)
+            return convert_single_value(val)
+
+        return convert_nested_collection(original_value)
 
     old_unit = u.Unit(data["units"])
     new_unit_str = get_new_unit_as_string(

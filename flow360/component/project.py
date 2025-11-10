@@ -1447,7 +1447,7 @@ class Project(pd.BaseModel):
         params.pre_submit_summary()
 
         draft.update_simulation_params(params)
-        upload_imported_surfaces_to_draft(params, draft)
+        upload_imported_surfaces_to_draft(params, draft, fork_from)
 
         if draft_only:
             # pylint: disable=import-outside-toplevel
@@ -1481,7 +1481,11 @@ class Project(pd.BaseModel):
 
         destination_obj = target.from_cloud(destination_id)
 
-        log.info(f"Successfully submitted: {destination_obj.short_description()}")
+        # Remove when converting Case to V2
+        kwargs = {}
+        if isinstance(destination_obj, Case):
+            kwargs = {"project_id": destination_obj.project_id}
+        log.info(f"Successfully submitted: {destination_obj.short_description(**kwargs)}")
 
         if not run_async:
             destination_obj.wait()

@@ -203,7 +203,8 @@
                     }
                 ]
             },
-            "use_wall_function": false
+            "use_wall_function": false,
+            "private_attribute_id": "wall1"
         },
         {
             "material": {
@@ -263,7 +264,8 @@
                 "type_name": "SpalartAllmaras",
                 "update_jacobian_frequency": 4
             },
-            "type": "Fluid"
+            "type": "Fluid",
+            "private_attribute_id":"__default_fluid"
         }
     ],
     "operating_condition": {

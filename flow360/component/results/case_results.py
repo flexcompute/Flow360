@@ -20,6 +20,42 @@ from flow360.component.results.base_results import (
     ResultCSVModel,
     ResultTarGZModel,
 )
+from flow360.component.results.results_utils import (
+    _CD,
+    _CD_PER_STRIP,
+    _CD_PRESSURE,
+    _CD_SKIN_FRICTION,
+    _CL,
+    _CL_PRESSURE,
+    _CL_SKIN_FRICTION,
+    _CUMULATIVE_CD_CURVE,
+    _HEAT_FLUX,
+    _X,
+    _Y,
+    DiskCoefficientsComputation,
+    PorousMediumCoefficientsComputation,
+    _CFx,
+    _CFx_PER_SPAN,
+    _CFx_PRESSURE,
+    _CFx_SKIN_FRICTION,
+    _CFy,
+    _CFy_PRESSURE,
+    _CFy_SKIN_FRICTION,
+    _CFz,
+    _CFz_PER_SPAN,
+    _CFz_PRESSURE,
+    _CFz_SKIN_FRICTION,
+    _CMx,
+    _CMx_PRESSURE,
+    _CMx_SKIN_FRICTION,
+    _CMy,
+    _CMy_PER_SPAN,
+    _CMy_PRESSURE,
+    _CMy_SKIN_FRICTION,
+    _CMz,
+    _CMz_PRESSURE,
+    _CMz_SKIN_FRICTION,
+)
 from flow360.component.simulation.conversion import unit_converter as unit_converter_v2
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import (
@@ -33,49 +69,6 @@ from flow360.component.v1.conversions import unit_converter as unit_converter_v1
 from flow360.component.v1.flow360_params import Flow360Params
 from flow360.exceptions import Flow360ValueError
 from flow360.log import log
-
-# pylint:disable=invalid-name
-_CL = "CL"
-_CD = "CD"
-_CFx = "CFx"
-_CFy = "CFy"
-_CFz = "CFz"
-_CMx = "CMx"
-_CMy = "CMy"
-_CMz = "CMz"
-_CL_PRESSURE = "CLPressure"
-_CD_PRESSURE = "CDPressure"
-_CFx_PRESSURE = "CFxPressure"
-_CFy_PRESSURE = "CFyPressure"
-_CFz_PRESSURE = "CFzPressure"
-_CMx_PRESSURE = "CMxPressure"
-_CMy_PRESSURE = "CMyPressure"
-_CMz_PRESSURE = "CMzPressure"
-_CL_SKIN_FRICTION = "CLSkinFriction"
-_CD_SKIN_FRICTION = "CDSkinFriction"
-_CFx_SKIN_FRICTION = "CFxSkinFriction"
-_CFy_SKIN_FRICTION = "CFySkinFriction"
-_CFz_SKIN_FRICTION = "CFzSkinFriction"
-_CMx_SKIN_FRICTION = "CMxSkinFriction"
-_CMy_SKIN_FRICTION = "CMySkinFriction"
-_CMz_SKIN_FRICTION = "CMzSkinFriction"
-_CL_VISCOUS = "CLViscous"
-_CD_VISCOUS = "CDViscous"
-_CFx_VISCOUS = "CFxViscous"
-_CFy_VISCOUS = "CFyViscous"
-_CFz_VISCOUS = "CFzViscous"
-_CMx_VISCOUS = "CMxViscous"
-_CMy_VISCOUS = "CMyViscous"
-_CMz_VISCOUS = "CMzViscous"
-_HEAT_TRANSFER = "HeatTransfer"
-_HEAT_FLUX = "HeatFlux"
-_X = "X"
-_Y = "Y"
-_CUMULATIVE_CD_CURVE = "Cumulative_CD_Curve"
-_CD_PER_STRIP = "CD_per_strip"
-_CFx_PER_SPAN = "CFx_per_span"
-_CFz_PER_SPAN = "CFz_per_span"
-_CMy_PER_SPAN = "CMy_per_span"
 
 
 class CaseDownloadable(Enum):
@@ -103,6 +96,7 @@ class CaseDownloadable(Enum):
     BET_FORCES = "bet_forces_v2.csv"
     BET_FORCES_RADIAL_DISTRIBUTION = "bet_forces_radial_distribution_v2.csv"
     ACTUATOR_DISKS = "actuatorDisk_output_v2.csv"
+    POROUS_MEDIA = "porous_media_output_v2.csv"
     LEGACY_FORCE_DISTRIBUTION = "postprocess/forceDistribution.csv"
     Y_SLICING_FORCE_DISTRIBUTION = "Y_slicing_forceDistribution.csv"
     X_SLICING_FORCE_DISTRIBUTION = "X_slicing_forceDistribution.csv"
@@ -596,7 +590,7 @@ class OptionallyDownloadableResultCSVModel(ResultCSVModel):
                 log.warning(self._err_msg)
             else:
                 log.error(
-                    "A problem occured when trying to download results:" f"{self.remote_file_name}"
+                    "A problem occurred when trying to download results:" f"{self.remote_file_name}"
                 )
                 raise err
 
@@ -652,6 +646,61 @@ class ActuatorDiskResultCSVModel(OptionallyDownloadableResultCSVModel):
                 self.values["PowerUnits"] = disk.power.units
                 self.values["ForceUnits"] = disk.force.units
                 self.values["MomentUnits"] = disk.moment.units
+
+    def compute_coefficients(self, params: SimulationParams) -> ActuatorDiskCoefficientsCSVModel:
+        """
+        Compute disk coefficients from actuator disk forces and moments.
+
+        Parameters
+        ----------
+        params : SimulationParams
+            Simulation parameters
+
+        Returns
+        -------
+        ActuatorDiskCoefficientsCSVModel
+            Model containing computed coefficients
+        """
+        return DiskCoefficientsComputation.compute_coefficients_static(
+            params=params,
+            values=self.as_dict(),
+            disk_model_type="ActuatorDisk",
+            iterate_step_values_func=self._iterate_step_values,
+            coefficients_model_class=ActuatorDiskCoefficientsCSVModel,
+        )
+
+    @staticmethod
+    def _iterate_step_values(disk_name, disk_ctx, env, values):
+        # pylint:disable=too-many-locals, protected-access
+        force_mag_series = values.get(f"{disk_name}_Force", [])
+        moment_mag_series = values.get(f"{disk_name}_Moment", [])
+        for force_mag, moment_mag in zip(force_mag_series, moment_mag_series):
+            axis = disk_ctx["axis"]
+            center = disk_ctx["center"]
+
+            force_vec = force_mag * axis
+            r_vec = center - env["moment_center_global"]
+            moment_global = moment_mag * axis + np.cross(r_vec, force_vec)
+
+            dp_area = env["dynamic_pressure"] * env["area"]
+            denom_force = dp_area
+            denom_moment = dp_area * env["moment_length_vec"]
+
+            # pylint:disable=invalid-name
+            CF_vec = force_vec / denom_force
+            CM_vec = np.divide(
+                moment_global, denom_moment, out=np.zeros(3), where=denom_moment != 0
+            )
+
+            CD_val = float(np.dot(force_vec, env["drag_dir"]) / denom_force)
+            CL_val = float(np.dot(force_vec, env["lift_dir"]) / denom_force)
+            yield CF_vec, CM_vec, CL_val, CD_val
+
+
+class ActuatorDiskCoefficientsCSVModel(ResultCSVModel):
+    """CSV model for actuator disk coefficients output."""
+
+    remote_file_name: str = pd.Field("actuator_disk_coefficients_v2.csv", frozen=True)
 
 
 class _BETDiskResults(_DimensionedCSVResultModel):
@@ -765,6 +814,132 @@ class BETForcesResultCSVModel(OptionallyDownloadableResultCSVModel):
 
                 self.values["ForceUnits"] = bet.force_x.units
                 self.values["MomentUnits"] = bet.moment_x.units
+
+    def compute_coefficients(self, params: SimulationParams) -> BETDiskCoefficientsCSVModel:
+        """
+        Compute disk coefficients from BET disk forces and moments.
+
+        Parameters
+        ----------
+        params : SimulationParams
+            Simulation parameters
+
+        Returns
+        -------
+        BETDiskCoefficientsCSVModel
+            Model containing computed coefficients
+        """
+        return DiskCoefficientsComputation.compute_coefficients_static(
+            params=params,
+            values=self.as_dict(),
+            disk_model_type="BETDisk",
+            iterate_step_values_func=self._iterate_step_values,
+            coefficients_model_class=BETDiskCoefficientsCSVModel,
+        )
+
+    @staticmethod
+    def _iterate_step_values(disk_name, disk_ctx, env, values):
+        # pylint:disable=protected-access, too-many-locals
+        fx_series = values.get(f"{disk_name}_Force_x", [])
+        fy_series = values.get(f"{disk_name}_Force_y", [])
+        fz_series = values.get(f"{disk_name}_Force_z", [])
+        mx_series = values.get(f"{disk_name}_Moment_x", [])
+        my_series = values.get(f"{disk_name}_Moment_y", [])
+        mz_series = values.get(f"{disk_name}_Moment_z", [])
+
+        for fx, fy, fz, mx, my, mz in zip(
+            fx_series, fy_series, fz_series, mx_series, my_series, mz_series
+        ):
+
+            center = disk_ctx["center"]
+            force_vec = np.array([fx, fy, fz], dtype=float)
+            moment_vec = np.array([mx, my, mz], dtype=float)
+            r_vec = center - env["moment_center_global"]
+            moment_global = moment_vec + np.cross(r_vec, force_vec)
+
+            dp_area = env["dynamic_pressure"] * env["area"]
+            denom_force = dp_area
+            denom_moment = dp_area * env["moment_length_vec"]
+
+            # pylint:disable=invalid-name
+            CF_vec = force_vec / denom_force
+            CM_vec = np.divide(
+                moment_global, denom_moment, out=np.zeros(3), where=denom_moment != 0
+            )
+
+            CD_val = float(np.dot(force_vec, env["drag_dir"]) / denom_force)
+            CL_val = float(np.dot(force_vec, env["lift_dir"]) / denom_force)
+            yield CF_vec, CM_vec, CL_val, CD_val
+
+
+class BETDiskCoefficientsCSVModel(ResultCSVModel):
+    """CSV model for BET disk coefficients output."""
+
+    remote_file_name: str = pd.Field("bet_disk_coefficients_v2.csv", frozen=True)
+
+
+class PorousMediumResultCSVModel(OptionallyDownloadableResultCSVModel):
+    """Model for handling porous medium CSV results."""
+
+    remote_file_name: str = pd.Field(CaseDownloadable.POROUS_MEDIA.value, frozen=True)
+    _err_msg = "Case does not have any porous media zones."
+
+    def compute_coefficients(self, params: SimulationParams) -> PorousMediumCoefficientsCSVModel:
+        """
+        Compute porous medium coefficients from forces and moments.
+
+        Parameters
+        ----------
+        params : SimulationParams
+            Simulation parameters
+
+        Returns
+        -------
+        PorousMediumCoefficientsCSVModel
+            Model containing computed coefficients
+        """
+        return PorousMediumCoefficientsComputation.compute_coefficients_static(
+            params=params,
+            values=self.as_dict(),
+            iterate_step_values_func=self._iterate_step_values,
+            coefficients_model_class=PorousMediumCoefficientsCSVModel,
+        )
+
+    @staticmethod
+    def _iterate_step_values(zone_name, _, env, values):
+        # pylint:disable=protected-access, too-many-locals
+        fx_series = values.get(f"{zone_name}_Force_x", [])
+        fy_series = values.get(f"{zone_name}_Force_y", [])
+        fz_series = values.get(f"{zone_name}_Force_z", [])
+        mx_series = values.get(f"{zone_name}_Moment_x", [])
+        my_series = values.get(f"{zone_name}_Moment_y", [])
+        mz_series = values.get(f"{zone_name}_Moment_z", [])
+
+        for fx, fy, fz, mx, my, mz in zip(
+            fx_series, fy_series, fz_series, mx_series, my_series, mz_series
+        ):
+
+            force_vec = np.array([fx, fy, fz], dtype=float)
+            moment_vec = np.array([mx, my, mz], dtype=float)
+            # Note: moment is already relative to global moment center from solver
+
+            dp_area = env["dynamic_pressure"] * env["area"]
+            denom_force = dp_area
+            denom_moment = dp_area * env["moment_length_vec"]
+
+            # pylint:disable=invalid-name
+            CF_vec = force_vec / denom_force
+            CM_vec = np.divide(moment_vec, denom_moment, out=np.zeros(3), where=denom_moment != 0)
+
+            CD_val = float(np.dot(force_vec, env["drag_dir"]) / denom_force)
+            CL_val = float(np.dot(force_vec, env["lift_dir"]) / denom_force)
+            yield CF_vec, CM_vec, CL_val, CD_val
+
+
+class PorousMediumCoefficientsCSVModel(ResultCSVModel):
+    """CSV model for porous medium coefficients output."""
+
+    remote_file_name: str = pd.Field("porous_medium_coefficients_v2.csv", frozen=True)
 
 
 class BETForcesRadialDistributionResultCSVModel(OptionallyDownloadableResultCSVModel):

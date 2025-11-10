@@ -19,7 +19,6 @@ from flow360.component.simulation.meshing_param.volume_params import (
 from flow360.component.simulation.primitives import (
     AxisymmetricBody,
     Box,
-    CustomVolume,
     Cylinder,
     Surface,
 )
@@ -174,42 +173,54 @@ def rotor_disks_entity_injector(entity: Cylinder):
     }
 
 
-def rotation_volume_entity_injector(entity: Union[Cylinder, AxisymmetricBody]):
+def rotation_volume_entity_injector(
+    entity: Union[Cylinder, AxisymmetricBody], use_inhouse_mesher: bool
+):
     """Injector for Cylinder entity in RotationCylinder."""
     if isinstance(entity, Cylinder):
-        return {
+        data = {
             "name": entity.name,
-            "type": "Cylinder",
             "innerRadius": 0 if entity.inner_radius is None else entity.inner_radius.value.item(),
             "outerRadius": entity.outer_radius.value.item(),
             "thickness": entity.height.value.item(),
             "axisOfRotation": list(entity.axis),
             "center": list(entity.center.value),
         }
+        if use_inhouse_mesher:
+            data["type"] = "Cylinder"
+        return data
+
     if isinstance(entity, AxisymmetricBody):
-        return {
+        data = {
             "name": entity.name,
-            "type": "Axisymmetric",
             "profileCurve": [list(profile_point.value) for profile_point in entity.profile_curve],
             "axisOfRotation": list(entity.axis),
             "center": list(entity.center.value),
         }
+        if use_inhouse_mesher:
+            data["type"] = "Axisymmetric"
+        return data
     return {}
 
 
 def _get_custom_volumes(volume_zones: list):
     """Get translated custom volumes from volume zones."""
+    # pylint: disable=import-outside-toplevel
+    from flow360.component.simulation.meshing_param.volume_params import CustomZones
+
     custom_volumes = []
     for zone in volume_zones:
-        if isinstance(zone, CustomVolume):
-            custom_volumes.append(
-                {
-                    "name": zone.name,
-                    "patches": sorted(
-                        [surface.name for surface in zone.boundaries.stored_entities]
-                    ),
-                }
-            )
+        if isinstance(zone, CustomZones):
+            # Extract CustomVolume from CustomZones (base branch: no tetrahedra enforcement output)
+            for custom_volume in zone.entities.stored_entities:
+                custom_volumes.append(
+                    {
+                        "name": custom_volume.name,
+                        "patches": sorted(
+                            [surface.name for surface in custom_volume.boundaries.stored_entities]
+                        ),
+                    }
+                )
     if custom_volumes:
         # Sort custom volumes by name
         custom_volumes.sort(key=lambda x: x["name"])
@@ -261,13 +272,22 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
     for zone in input_params.meshing.volume_zones:
         if isinstance(zone, UserDefinedFarfield):
             translated["farfield"] = {"type": "user-defined"}
+            if zone.domain_type is not None:
+                translated["farfield"]["domainType"] = zone.domain_type
             break
 
         if isinstance(zone, AutomatedFarfield):
             translated["farfield"] = {
-                "type": zone.method,
-                "planarFaceTolerance": meshing_params.defaults.planar_face_tolerance,
+                "planarFaceTolerance": meshing_params.defaults.planar_face_tolerance
             }
+            if zone.method == "quasi-3d-periodic":
+                translated["farfield"]["type"] = "quasi-3d"
+                translated["farfield"]["periodic"] = {"type": "translational"}
+            else:
+                translated["farfield"]["type"] = zone.method
+
+            if zone.domain_type is not None:
+                translated["farfield"]["domainType"] = zone.domain_type
             break
 
     if "farfield" not in translated:
@@ -369,6 +389,7 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
         to_list=True,
         entity_injection_func=rotation_volume_entity_injector,
         translation_func_rotor_disk_names=rotor_disk_names,
+        entity_injection_use_inhouse_mesher=input_params.private_attribute_asset_cache.use_inhouse_mesher,
     )
     sliding_interfaces_cylinders = translate_setting_and_apply_to_all_entities(
         meshing_params.volume_zones,
@@ -377,6 +398,7 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
         to_list=True,
         entity_injection_func=rotation_volume_entity_injector,
         translation_func_rotor_disk_names=rotor_disk_names,
+        entity_injection_use_inhouse_mesher=input_params.private_attribute_asset_cache.use_inhouse_mesher,
     )
 
     if sliding_interfaces or sliding_interfaces_cylinders:
