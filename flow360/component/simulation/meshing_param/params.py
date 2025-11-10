@@ -174,7 +174,7 @@ class MeshingDefaults(Flow360BaseModel):
         + "This can be overridden with class: ~flow360.GeometryRefinement",
     )
 
-    remove_nonmanifold_faces: bool = pd.Field(
+    remove_non_manifold_faces: bool = pd.Field(
         False,
         description="Flag to remove non-manifold and interior faces.",
     )
@@ -213,7 +213,7 @@ class MeshingDefaults(Flow360BaseModel):
         "surface_max_adaptation_iterations",
         "preserve_thin_geometry",
         "sealing_size",
-        "remove_nonmanifold_faces",
+        "remove_non_manifold_faces",
         mode="after",
     )
     @classmethod

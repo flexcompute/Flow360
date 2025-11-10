@@ -21,7 +21,7 @@
                 "value": 0.0,
                 "units": "1.0*m"
             },
-            "remove_nonmanifold_faces": false
+            "remove_non_manifold_faces": false
         },
         "refinements": [
             {

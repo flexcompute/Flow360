@@ -169,7 +169,7 @@ GAI_SETTING_WHITELIST = {
             "surface_max_aspect_ratio": None,
             "surface_max_adaptation_iterations": None,
             "sealing_size": None,
-            "remove_nonmanifold_faces": None,
+            "remove_non_manifold_faces": None,
         },
         "refinements": _get_surface_refinements,
         "volume_zones": _get_volume_zones,
