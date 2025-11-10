@@ -302,7 +302,7 @@ class MeshingParams(Flow360BaseModel):
             return v
 
         total_farfield = sum(
-            isinstance(volume_zone, (AutomatedFarfield, UserDefinedFarfield)) for volume_zone in v
+            isinstance(volume_zone, (AutomatedFarfield, WindTunnelFarfield, UserDefinedFarfield)) for volume_zone in v
         )
         if total_farfield == 0:
             raise ValueError("Farfield zone is required in `volume_zones`.")

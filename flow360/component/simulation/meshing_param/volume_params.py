@@ -491,20 +491,25 @@ class UserDefinedFarfield(_FarfieldBase):
 
 
 class StaticFloor(Flow360BaseModel):
-    # add name.
+    type: Literal["StaticFloor"] = pd.Field(description="Static floor with friction patch.", frozen=True)
     friction_patch_x_min: LengthType = pd.Field(description="Minimum x of friction patch.")
     friction_patch_x_max: LengthType = pd.Field(description="Maximum x of friction patch.")
     friction_patch_width: LengthType.Positive = pd.Field(description="Width of friction patch.")
 
-class FullyMovingFloor():
-    pass
+class FullyMovingFloor(Flow360BaseModel):
+    type: Literal["FullyMovingFloor"] = pd.Field(description="Fully moving floor.")
 
-class CentralBelt():
+class CentralBelt(Flow360BaseModel):
+    type: Literal["CentralBelt"] = pd.Field(description="Floor with central belt.")
     central_belt_x_min: LengthType
     central_belt_x_max: LengthType
     central_belt_width: LengthType.Positive
 
-class WheelBelts(CentralBelt):
+class WheelBelts(Flow360BaseModel):
+    type: Literal["WheelBelts"] = pd.Field(description="Floor with central belt and four wheel belts.")
+    central_belt_x_min: LengthType
+    central_belt_x_max: LengthType
+    central_belt_width: LengthType.Positive
     front_wheel_belt_x_min: LengthType
     front_wheel_belt_x_max: LengthType
     front_wheel_belt_x_inner: LengthType.Positive
