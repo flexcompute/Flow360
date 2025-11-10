@@ -701,10 +701,13 @@ def test_corner_cases_for_entity_registry_thoroughness(my_cylinder1, my_volume_m
 
 def compare_boxes(box1, box2):
     return (
-        np.isclose(np.linalg.norm(np.cross(box1.axis_of_rotation, box2.axis_of_rotation)), 0)
+        np.isclose(
+            np.linalg.norm(np.cross(box1.axis_of_rotation, box2.axis_of_rotation)), 0, atol=1e-5
+        )
         and np.isclose(
             np.mod(box1.angle_of_rotation.value, 2 * np.pi),
             np.mod(box2.angle_of_rotation.value, 2 * np.pi),
+            atol=1e-4,
         )
         and np.all(np.isclose(box1.center.value, box2.center.value))
         and np.all(np.isclose(box1.size.value, box2.size.value))
@@ -712,7 +715,8 @@ def compare_boxes(box1, box2):
             np.isclose(
                 np.asarray(box1.private_attribute_input_cache.axes, dtype=float),
                 np.asarray(box2.private_attribute_input_cache.axes, dtype=float),
-            )
+                atol=1e-3,
+            ),
         )
     )
 
@@ -752,6 +756,27 @@ def test_box_multi_constructor():
         name="box5", center=(0, 0, 0) * u.m, size=(1, 1, 1) * u.m, axes=((1, 0, 0), (0, 1, 0))
     )
     assert np.isclose(box5.angle_of_rotation.value, 0)
+
+    box6 = Box.from_principal_axes(
+        name="box6",
+        center=(0, 0, 0) * u.m,
+        size=(1, 1, 1) * u.m,
+        axes=(
+            (0.565, -0.019, 0.825),
+            (0.258, -0.945, -0.198),
+        ),
+    )
+
+    box7 = Box.from_principal_axes(
+        name="box7",
+        center=(0, 0, 0) * u.m,
+        size=(1, 1, 1) * u.m,
+        axes=(
+            (0.564999958187871847307527, -0.018999846726114406421873, 0.825000032164884796159215),
+            (0.257788, -0.944993, -0.198309),
+        ),
+    )
+    assert compare_boxes(box6, box7)
 
 
 def test_entity_registry_find_by_id():
