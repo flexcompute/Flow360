@@ -1281,10 +1281,7 @@ class ValueOrExpression(Expression, Generic[T]):
                 if value.type_name == "expression":
                     if value.expression is None:
                         raise ValueError("No expression found in the input")
-                    # Validate via Pydantic so that Expression validators and AfterValidator both run
-                    return pd.TypeAdapter(expr_type).validate_python(
-                        {"expression": value.expression, "output_units": value.output_units}
-                    )
+                    return expr_type(expression=value.expression, output_units=value.output_units)
 
             @deprecation_reminder("25.8.0")
             def _handle_legacy_unyt_values(value):

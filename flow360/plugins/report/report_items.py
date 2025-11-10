@@ -10,9 +10,13 @@ from abc import ABCMeta, abstractmethod
 from collections.abc import Iterable
 from typing import Annotated, List, Literal, Optional, Tuple, Union
 
+import matplotlib.image as mpimg
+import matplotlib.pyplot as plt
 import numpy as np
 import pydantic as pd
 import unyt
+from matplotlib.ticker import FuncFormatter
+from pandas import DataFrame
 from pydantic import (
     BaseModel,
     Field,
@@ -351,13 +355,11 @@ class Table(ReportItem):
 
         return (headers, rows)
 
-    def to_dataframe(self, context: ReportContext):
+    def to_dataframe(self, context: ReportContext) -> DataFrame:
         """
         Convert calculated data into a Pandas DataFrame for unit-testing
         or external usage.
         """
-        from pandas import DataFrame  # pylint: disable=import-outside-toplevel
-
         headers, rows = self.calculate_table_data(context)
         df = DataFrame(rows, columns=headers)
         return df
@@ -787,7 +789,6 @@ class PlotModel(BaseModel):
 
         return locations, labels
 
-    # pylint: disable=too-many-locals
     def get_plot(self):
         """
         Generates a matplotlib plot based on the provided x and y data.
@@ -820,13 +821,6 @@ class PlotModel(BaseModel):
         >>> fig = plot_model.get_plot()
         >>> fig.show()
         """
-
-        import matplotlib.image as mpimg  # pylint: disable=import-outside-toplevel
-        import matplotlib.pyplot as plt  # pylint: disable=import-outside-toplevel
-        from matplotlib.ticker import (  # pylint: disable=import-outside-toplevel
-            FuncFormatter,
-        )
-
         figsize = 8
         fig, ax = plt.subplots(figsize=(figsize, figsize / FIG_ASPECT_RATIO))
         num_series = len(self.y_data)
@@ -1309,9 +1303,6 @@ class BaseChart2D(Chart, metaclass=ABCMeta):
         )
 
     def _get_figures(self, cases, context: ReportContext):
-
-        import matplotlib.pyplot as plt  # pylint: disable=import-outside-toplevel
-
         file_names = []
         case_by_case, data_storage = context.case_by_case, context.data_storage
         cbc_str = "_cbc_" if case_by_case else "_"
