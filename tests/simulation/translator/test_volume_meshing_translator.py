@@ -15,7 +15,6 @@ from flow360.component.simulation.meshing_param.params import (
     MeshingParams,
 )
 from flow360.component.simulation.meshing_param.volume_params import (
-    AutomatedFarfield,
     AxisymmetricRefinement,
     CustomZones,
     RotationVolume,
@@ -31,12 +30,14 @@ from flow360.component.simulation.primitives import (
     GhostCircularPlane,
     Surface,
 )
+from flow360.component.simulation.services import ValidationCalledBy, validate_model
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.translator.volume_meshing_translator import (
     get_volume_meshing_json,
 )
 from flow360.component.simulation.unit_system import LengthType, SI_unit_system
 from flow360.component.simulation.utils import model_attribute_unlock
+from flow360.component.simulation.validation.validation_context import VOLUME_MESH
 from tests.simulation.conftest import AssetBase
 
 
@@ -75,187 +76,225 @@ def get_surface_mesh():
 
 @pytest.fixture()
 def get_test_param():
-    with SI_unit_system:
-        base_cylinder = Cylinder(
-            name="cylinder_1",
-            outer_radius=1.1,
-            height=2 * u.m,
-            axis=(0, 1, 0),
-            center=(0.7, -1.0, 0),
-        )
-        rotor_disk_cylinder = Cylinder(
-            name="enclosed",
-            outer_radius=1.1,
-            height=0.15 * u.m,
-            axis=(0, 1, 0),
-            center=(0.7, -1.0, 0),
-        )
-        inner_cylinder = Cylinder(
-            name="inner",
-            outer_radius=0.75,
-            height=0.5,
-            axis=(0, 0, 1),
-            center=(0, 0, 0),
-        )
-        mid_cylinder = Cylinder(
-            name="mid",
-            outer_radius=2,
-            height=2,
-            axis=(0, 1, 0),
-            center=(0, 0, 0),
-        )
-        cylinder_2 = Cylinder(
-            name="2",
-            outer_radius=2,
-            height=2,
-            axis=(0, 1, 0),
-            center=(0, 5, 0),
-        )
-        cylinder_3 = Cylinder(
-            name="3",
-            inner_radius=1.5,
-            outer_radius=2,
-            height=2,
-            axis=(0, 1, 0),
-            center=(0, -5, 0),
-        )
-        cylinder_outer = Cylinder(
-            name="outer",
-            inner_radius=0,
-            outer_radius=8,
-            height=6,
-            axis=(1, 0, 0),
-            center=(0, 0, 0),
-        )
-        cone_frustum = AxisymmetricBody(
-            name="cone",
-            axis=(1, 0, 1),
-            center=(0, 0, 0),
-            profile_curve=[(-1, 0), (-1, 1), (1, 2), (1, 0)],
-        )
+    def _make(beta_mesher: bool = True):
+        with SI_unit_system:
+            base_cylinder = Cylinder(
+                name="cylinder_1",
+                outer_radius=1.1,
+                height=2 * u.m,
+                axis=(0, 1, 0),
+                center=(0.7, -1.0, 0),
+            )
+            rotor_disk_cylinder = Cylinder(
+                name="enclosed",
+                outer_radius=1.1,
+                height=0.15 * u.m,
+                axis=(0, 1, 0),
+                center=(0.7, -1.0, 0),
+            )
+            inner_cylinder = Cylinder(
+                name="inner",
+                outer_radius=0.75,
+                height=0.5,
+                axis=(0, 0, 1),
+                center=(0, 0, 0),
+            )
+            mid_cylinder = Cylinder(
+                name="mid",
+                outer_radius=2,
+                height=2,
+                axis=(0, 1, 0),
+                center=(0, 0, 0),
+            )
+            cylinder_2 = Cylinder(
+                name="2",
+                outer_radius=2,
+                height=2,
+                axis=(0, 1, 0),
+                center=(0, 5, 0),
+            )
+            cylinder_3 = Cylinder(
+                name="3",
+                inner_radius=1.5,
+                outer_radius=2,
+                height=2,
+                axis=(0, 1, 0),
+                center=(0, -5, 0),
+            )
+            cylinder_outer = Cylinder(
+                name="outer",
+                inner_radius=0,
+                outer_radius=8,
+                height=6,
+                axis=(1, 0, 0),
+                center=(0, 0, 0),
+            )
+            cone_frustum = AxisymmetricBody(
+                name="cone",
+                axis=(1, 0, 1),
+                center=(0, 0, 0),
+                profile_curve=[(-1, 0), (-1, 1), (1, 2), (1, 0)],
+            )
+            cone_frustum_mm_curve = AxisymmetricBody(
+                name="cone_mm_curve",
+                axis=(1, 0, 1),
+                center=(0, 1, 0) * u.cm,
+                profile_curve=[(-1, 0) * u.mm, (-1, 1) * u.mm, (1, 2) * u.mm, (1, 0) * u.mm],
+            )
 
-        porous_medium = Box.from_principal_axes(
-            name="porousRegion",
-            center=(0, 1, 1),
-            size=(1, 2, 1),
-            axes=((2, 2, 0), (-2, 2, 0)),
-        )
+            porous_medium = Box.from_principal_axes(
+                name="porousRegion",
+                center=(0, 1, 1),
+                size=(1, 2, 1),
+                axes=((2, 2, 0), (-2, 2, 0)),
+            )
 
-        param = SimulationParams(
-            meshing=MeshingParams(
-                refinement_factor=1.45,
-                defaults=MeshingDefaults(
-                    boundary_layer_first_layer_thickness=1.35e-06 * u.m,
-                    boundary_layer_growth_rate=1 + 0.04,
+            # Build refinements
+            refinements = [
+                UniformRefinement(
+                    entities=[
+                        base_cylinder,
+                        Box.from_principal_axes(
+                            name="MyBox",
+                            center=(0, 1, 2),
+                            size=(4, 5, 6),
+                            axes=((2, 2, 0), (-2, 2, 0)),
+                        ),
+                    ],
+                    spacing=7.5 * u.cm,
                 ),
-                refinements=[
-                    UniformRefinement(
-                        entities=[
-                            base_cylinder,
-                            Box.from_principal_axes(
-                                name="MyBox",
-                                center=(0, 1, 2),
-                                size=(4, 5, 6),
-                                axes=((2, 2, 0), (-2, 2, 0)),
-                            ),
-                        ],
-                        spacing=7.5 * u.cm,
-                    ),
-                    AxisymmetricRefinement(
-                        entities=[rotor_disk_cylinder],
-                        spacing_axial=20 * u.cm,
-                        spacing_radial=0.2,
-                        spacing_circumferential=20 * u.cm,
-                    ),
+                AxisymmetricRefinement(
+                    entities=[rotor_disk_cylinder],
+                    spacing_axial=20 * u.cm,
+                    spacing_radial=0.2,
+                    spacing_circumferential=20 * u.cm,
+                ),
+                PassiveSpacing(entities=[Surface(name="passive1")], type="projected"),
+                PassiveSpacing(entities=[Surface(name="passive2")], type="unchanged"),
+                BoundaryLayer(
+                    entities=[Surface(name="boundary1")],
+                    first_layer_thickness=0.5 * u.m,
+                    growth_rate=(1.3 if beta_mesher else None),
+                ),
+            ]
+            if beta_mesher:
+                refinements.append(
                     StructuredBoxRefinement(
                         entities=[porous_medium],
                         spacing_axis1=7.5 * u.cm,
                         spacing_axis2=10 * u.cm,
                         spacing_normal=15 * u.cm,
-                    ),
-                    PassiveSpacing(entities=[Surface(name="passive1")], type="projected"),
-                    PassiveSpacing(entities=[Surface(name="passive2")], type="unchanged"),
-                    BoundaryLayer(
-                        entities=[Surface(name="boundary1")],
-                        first_layer_thickness=0.5 * u.m,
-                        growth_rate=1.3,
-                    ),
-                ],
-                volume_zones=[
+                    )
+                )
+
+            # Build volume_zones
+            volume_zones = []
+            if beta_mesher:
+                volume_zones.append(
                     CustomZones(
                         name="custom_zones",
                         entities=[
                             CustomVolume(
                                 name="custom_volume-1",
-                                boundaries=[
-                                    Surface(name="interface1"),
-                                    Surface(name="interface2"),
-                                ],
+                                boundaries=[Surface(name="interface1"), Surface(name="interface2")],
                             )
                         ],
-                    ),
-                    UserDefinedFarfield(domain_type="half_body_negative_y"),
-                    RotationVolume(
-                        name="we_do_not_use_this_anyway",
-                        entities=inner_cylinder,
-                        spacing_axial=20 * u.cm,
-                        spacing_radial=0.2,
-                        spacing_circumferential=20 * u.cm,
-                        enclosed_entities=[
-                            Surface(name="hub"),
-                            Surface(name="blade1"),
-                            Surface(name="blade2"),
-                            Surface(name="blade3"),
-                            cone_frustum,
-                        ],
-                    ),
-                    RotationVolume(
-                        entities=mid_cylinder,
-                        spacing_axial=20 * u.cm,
-                        spacing_radial=0.2,
-                        spacing_circumferential=20 * u.cm,
-                        enclosed_entities=[inner_cylinder],
-                    ),
-                    RotationVolume(
-                        entities=cylinder_2,
-                        spacing_axial=20 * u.cm,
-                        spacing_radial=0.2,
-                        spacing_circumferential=20 * u.cm,
-                        enclosed_entities=[rotor_disk_cylinder, porous_medium],
-                    ),
-                    RotationVolume(
-                        entities=cylinder_3,
-                        spacing_axial=20 * u.cm,
-                        spacing_radial=0.2,
-                        spacing_circumferential=20 * u.cm,
-                    ),
-                    RotationVolume(
-                        entities=cylinder_outer,
-                        spacing_axial=40 * u.cm,
-                        spacing_radial=0.4,
-                        spacing_circumferential=40 * u.cm,
-                        enclosed_entities=[
-                            mid_cylinder,
-                            rotor_disk_cylinder,
-                            cylinder_2,
-                            cylinder_3,
-                        ],
-                    ),
+                    )
+                )
+            volume_zones.append(
+                UserDefinedFarfield(domain_type=("half_body_negative_y" if beta_mesher else None))
+            )
+            volume_zones.append(
+                RotationVolume(
+                    name="we_do_not_use_this_anyway",
+                    entities=inner_cylinder,
+                    spacing_axial=20 * u.cm,
+                    spacing_radial=0.2,
+                    spacing_circumferential=20 * u.cm,
+                    enclosed_entities=[
+                        Surface(name="hub"),
+                        Surface(name="blade1"),
+                        Surface(name="blade2"),
+                        Surface(name="blade3"),
+                        *([cone_frustum] if beta_mesher else []),
+                    ],
+                )
+            )
+            volume_zones.append(
+                RotationVolume(
+                    entities=mid_cylinder,
+                    spacing_axial=20 * u.cm,
+                    spacing_radial=0.2,
+                    spacing_circumferential=20 * u.cm,
+                    enclosed_entities=[inner_cylinder],
+                )
+            )
+            volume_zones.append(
+                RotationVolume(
+                    entities=cylinder_2,
+                    spacing_axial=20 * u.cm,
+                    spacing_radial=0.2,
+                    spacing_circumferential=20 * u.cm,
+                    enclosed_entities=[
+                        rotor_disk_cylinder,
+                        *([porous_medium] if beta_mesher else []),
+                    ],
+                )
+            )
+            volume_zones.append(
+                RotationVolume(
+                    entities=cylinder_3,
+                    spacing_axial=20 * u.cm,
+                    spacing_radial=0.2,
+                    spacing_circumferential=20 * u.cm,
+                )
+            )
+            volume_zones.append(
+                RotationVolume(
+                    entities=cylinder_outer,
+                    spacing_axial=40 * u.cm,
+                    spacing_radial=0.4,
+                    spacing_circumferential=40 * u.cm,
+                    enclosed_entities=[mid_cylinder, rotor_disk_cylinder, cylinder_2, cylinder_3],
+                )
+            )
+            if beta_mesher:
+                volume_zones.append(
                     RotationVolume(
                         entities=cone_frustum,
                         spacing_axial=40 * u.cm,
                         spacing_radial=0.4,
                         spacing_circumferential=20 * u.cm,
+                    )
+                )
+                volume_zones.append(
+                    RotationVolume(
+                        entities=cone_frustum_mm_curve,
+                        spacing_axial=40 * u.mm,
+                        spacing_radial=0.4,
+                        spacing_circumferential=20 * u.mm,
+                    )
+                )
+
+            param = SimulationParams(
+                meshing=MeshingParams(
+                    refinement_factor=1.45,
+                    defaults=MeshingDefaults(
+                        boundary_layer_first_layer_thickness=1.35e-06 * u.m,
+                        boundary_layer_growth_rate=1 + 0.04,
                     ),
-                ],
-            ),
-            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
-        )
-    return param
+                    refinements=refinements,
+                    volume_zones=volume_zones,
+                ),
+                private_attribute_asset_cache=AssetCache(use_inhouse_mesher=beta_mesher),
+            )
+            return param
+
+    return _make
 
 
 def test_param_to_json(get_test_param, get_surface_mesh):
-    translated = get_volume_meshing_json(get_test_param, get_surface_mesh.mesh_unit)
+    translated = get_volume_meshing_json(get_test_param(), get_surface_mesh.mesh_unit)
     ref_path = os.path.join(
         os.path.dirname(os.path.abspath(__file__)),
         "ref",
@@ -290,10 +329,17 @@ def test_user_defined_farfield(get_test_param, get_surface_mesh):
 
 
 def test_param_to_json_legacy_mesher(get_test_param, get_surface_mesh):
-    # Flip to legacy mesher
-    with model_attribute_unlock(get_test_param.private_attribute_asset_cache, "use_inhouse_mesher"):
-        get_test_param.private_attribute_asset_cache.use_inhouse_mesher = False
-    translated = get_volume_meshing_json(get_test_param, get_surface_mesh.mesh_unit)
+    # Build params using legacy mesher (non-beta)
+    params = get_test_param(beta_mesher=False)
+    # Ensure no illegal features used:
+    params, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="Geometry",
+        validation_level=VOLUME_MESH,
+    )
+    assert errors is None
+    translated = get_volume_meshing_json(params, get_surface_mesh.mesh_unit)
     ref_path = os.path.join(
         os.path.dirname(os.path.abspath(__file__)),
         "ref",
@@ -307,7 +353,7 @@ def test_param_to_json_legacy_mesher(get_test_param, get_surface_mesh):
 
 def test_custom_zones_tetrahedra(get_test_param, get_surface_mesh):
     """Base branch: No enforceTetrahedralElements emitted; ensure translator does not include it."""
-    params = get_test_param
+    params = get_test_param()
     translated = get_volume_meshing_json(params, get_surface_mesh.mesh_unit)
     assert "zones" in translated and len(translated["zones"]) > 0
     assert all("enforceTetrahedralElements" not in z for z in translated["zones"])  # type: ignore
