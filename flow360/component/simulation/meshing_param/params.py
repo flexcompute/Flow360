@@ -24,7 +24,7 @@ from flow360.component.simulation.meshing_param.volume_params import (
     StructuredBoxRefinement,
     UniformRefinement,
     UserDefinedFarfield,
-    WindTunnelFarfield
+    WindTunnelFarfield,
 )
 from flow360.component.simulation.unit_system import AngleType, LengthType
 from flow360.component.simulation.validation.validation_context import (
@@ -57,7 +57,7 @@ VolumeZonesTypes = Annotated[
         AutomatedFarfield,
         UserDefinedFarfield,
         CustomZones,
-        WindTunnelFarfield
+        WindTunnelFarfield,
     ],
     pd.Field(discriminator="type"),
 ]
@@ -302,7 +302,8 @@ class MeshingParams(Flow360BaseModel):
             return v
 
         total_farfield = sum(
-            isinstance(volume_zone, (AutomatedFarfield, WindTunnelFarfield, UserDefinedFarfield)) for volume_zone in v
+            isinstance(volume_zone, (AutomatedFarfield, WindTunnelFarfield, UserDefinedFarfield))
+            for volume_zone in v
         )
         if total_farfield == 0:
             raise ValueError("Farfield zone is required in `volume_zones`.")
