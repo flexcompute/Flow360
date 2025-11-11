@@ -10,7 +10,7 @@ from flow360.component.utils import _naming_pattern_handler
 from flow360.exceptions import Flow360ValueError
 
 
-class DoubleIndexableList(list):
+class StringIndexableList(list):
     """
     An extension of a list that allows accessing elements inside it through a string key.
     """
@@ -259,12 +259,13 @@ class EntityRegistry(Flow360BaseModel):
 
 class SnappyBodyRegistry(EntityRegistry):
     """
-    Extension of Entityregistry to be used with SnappyBody, allows double indexing.
+    Extension of :class:`EntityRegistry` to be used with :class:`SnappyBody`, allows double indexing
+    for accessing the boundaries under certain :class:`SnappyBody`.
     """
 
     def find_by_naming_pattern(
         self, pattern: str, enforce_output_as_list: bool = True, error_when_no_match: bool = False
-    ) -> list[EntityBase]:
+    ) -> StringIndexableList[EntityBase]:
         """
         Finds all registered entities whose names match a given pattern.
 
@@ -274,7 +275,7 @@ class SnappyBodyRegistry(EntityRegistry):
         Returns:
             List[EntityBase]: A list of entities whose names match the pattern.
         """
-        matched_entities = DoubleIndexableList()
+        matched_entities = StringIndexableList()
         regex = _naming_pattern_handler(pattern=pattern)
         # pylint: disable=no-member
         for entity_list in self.internal_registry.values():
