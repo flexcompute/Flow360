@@ -51,6 +51,9 @@ def _preprocess_nested_list(value, required_by, params, exclude, flow360_unit_sy
                     flow360_unit_system=flow360_unit_system,
                 )
             )
+        elif need_conversion(item):
+            # Convert nested dimensioned values to base unit system
+            new_list.append(item.in_base(flow360_unit_system))
         else:
             # Return item unchanged if it doesn't need processing.
             new_list.append(item)
