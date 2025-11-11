@@ -1,0 +1,6 @@
+changelog:
+  exclude:
+    labels:
+      - auto-develop-branch-sync
+      - auto-hotfix
+
