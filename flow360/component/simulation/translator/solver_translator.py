@@ -1648,6 +1648,11 @@ def get_solver_json(
                 model.initial_condition
             )
 
+            if model.relative_interpolation_tolerance is not None:
+                translated["geometry"][
+                    "relativeInterpolationTolerance"
+                ] = model.relative_interpolation_tolerance
+
     ##:: Step 7: Get BET and AD lists
     if has_instance_in_list(input_params.models, BETDisk):
         translated["BETDisks"] = translate_setting_and_apply_to_all_entities(
