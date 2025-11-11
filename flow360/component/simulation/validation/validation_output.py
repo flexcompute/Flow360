@@ -12,6 +12,7 @@ from flow360.component.simulation.outputs.outputs import (
     SurfaceProbeOutput,
 )
 from flow360.component.simulation.time_stepping.time_stepping import Steady
+from flow360.component.simulation.user_code.core.types import Expression
 
 
 def _check_output_fields(params):
@@ -156,9 +157,12 @@ def _check_aero_acoustics_observer_time_step_size(params):
 
     for output_index, output in enumerate(params.outputs):
         if isinstance(output, AeroAcousticOutput):
-            if output.observer_time_step_size is None:
-                output.observer_time_step_size = params.time_stepping.step_size
-            elif output.observer_time_step_size < params.time_stepping.step_size:
+            time_step_size = params.time_stepping.step_size
+            if isinstance(params.time_stepping.step_size, Expression):
+                time_step_size = params.time_stepping.step_size.evaluate(
+                    raise_on_non_evaluable=True, force_evaluate=True
+                )
+            if output.observer_time_step_size and output.observer_time_step_size < time_step_size:
                 raise ValueError(
                     f"In `outputs`[{output_index}] {output.output_type}: "
                     f"`observer_time_size` ({output.observer_time_step_size}) is smaller than "
