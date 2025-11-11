@@ -4,7 +4,6 @@ from typing import Literal, Optional
 
 import pydantic as pd
 
-import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.models.surface_models import EntityListAllowingGhost
@@ -84,13 +83,13 @@ class GeometryRefinement(Flow360BaseModel):
     )
 
     preserve_thin_geometry: Optional[bool] = pd.Field(
-        False,
+        None,
         description="Flag to specify whether thin geometry features with thickness roughly equal "
         + "to geometry_accuracy should be resolved accurately during the surface meshing process.",
     )
 
-    sealing_size: LengthType.NonNegative = pd.Field(
-        0.0 * u.m,
+    sealing_size: Optional[LengthType.NonNegative] = pd.Field(
+        None,
         description="Threshold size below which all geometry gaps are automatically closed.",
     )
 

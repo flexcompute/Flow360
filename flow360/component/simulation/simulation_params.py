@@ -97,6 +97,7 @@ from flow360.component.simulation.validation.validation_simulation_params import
     _check_complete_boundary_condition_and_unknown_surface,
     _check_consistency_hybrid_model_volume_output,
     _check_consistency_wall_function_and_surface_output,
+    _check_duplicate_actuator_disk_cylinder_names,
     _check_duplicate_entities_in_models,
     _check_duplicate_isosurface_names,
     _check_duplicate_surface_usage,
@@ -433,6 +434,12 @@ class SimulationParams(_ParamModelBase):
     def check_valid_models_for_liquid(cls, models):
         """Ensure that all the boundary conditions used are valid."""
         return _check_valid_models_for_liquid(models)
+
+    @pd.field_validator("models", mode="after")
+    @classmethod
+    def check_duplicate_actuator_disk_cylinder_names(cls, models):
+        """Ensure that all the cylinder names used in ActuatorDisks are unique."""
+        return _check_duplicate_actuator_disk_cylinder_names(models)
 
     @pd.field_validator("user_defined_dynamics", "user_defined_fields", mode="after")
     @classmethod
