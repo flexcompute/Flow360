@@ -5,9 +5,11 @@ import pytest
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.param_utils import AssetCache
+from flow360.component.simulation.framework.updater_utils import compare_values
 from flow360.component.simulation.meshing_param.face_params import (
     BoundaryLayer,
     PassiveSpacing,
+    SurfaceRefinement,
 )
 from flow360.component.simulation.meshing_param.params import (
     MeshingDefaults,
@@ -30,6 +32,7 @@ from flow360.component.simulation.primitives import (
     Box,
     CustomVolume,
     Cylinder,
+    GhostCircularPlane,
     Surface,
 )
 from flow360.component.simulation.simulation_params import SimulationParams
@@ -282,7 +285,7 @@ def test_param_to_json(get_test_param, get_surface_mesh):
     )
     with open(ref_path, "r") as fh:
         ref_dict = json.load(fh)
-    assert sorted(translated.items()) == sorted(ref_dict.items())
+    assert compare_values(translated, ref_dict)
 
 
 def test_user_defined_farfield(get_test_param, get_surface_mesh):
@@ -320,7 +323,7 @@ def test_param_to_json_legacy_mesher(get_test_param, get_surface_mesh):
     )
     with open(ref_path, "r") as fh:
         ref_dict = json.load(fh)
-    assert sorted(translated.items()) == sorted(ref_dict.items())
+    assert compare_values(translated, ref_dict)
 
 
 def test_custom_zones_tetrahedra(get_test_param, get_surface_mesh):
@@ -329,3 +332,202 @@ def test_custom_zones_tetrahedra(get_test_param, get_surface_mesh):
     translated = get_volume_meshing_json(params, get_surface_mesh.mesh_unit)
     assert "zones" in translated and len(translated["zones"]) > 0
     assert all("enforceTetrahedralElements" not in z for z in translated["zones"])  # type: ignore
+
+
+def test_passive_spacing_with_ghost_symmetry_in_faces(get_surface_mesh):
+    # PassiveSpacing using a GhostSurface (UserDefinedFarfield.symmetry_plane)
+    with SI_unit_system:
+        far = UserDefinedFarfield(domain_type="half_body_positive_y")
+        params = SimulationParams(
+            meshing=MeshingParams(
+                refinement_factor=1.0,
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-6 * u.m,
+                    boundary_layer_growth_rate=1.2,
+                ),
+                volume_zones=[far],
+                refinements=[
+                    PassiveSpacing(entities=[far.symmetry_plane], type="projected"),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(
+                use_inhouse_mesher=True,
+                use_geometry_AI=True,
+            ),
+        )
+
+    translated = get_volume_meshing_json(params, get_surface_mesh.mesh_unit)
+    assert "faces" in translated
+    assert "symmetric" in translated["faces"]
+    assert translated["faces"]["symmetric"]["type"] == "projectAnisoSpacing"
+
+
+@pytest.mark.parametrize(
+    "use_gai,use_beta",
+    [
+        (True, False),
+        (False, True),
+        (False, False),
+    ],
+)
+def test_user_defined_farfield_ghost_symmetry_requires_gai_and_beta(
+    use_gai, use_beta, get_surface_mesh
+):
+    # Using GhostCircularPlane("symmetric") must require both GAI and beta mesher for user-defined farfield
+    import pydantic as pd
+
+    from flow360.component.simulation.validation.validation_context import (
+        VOLUME_MESH,
+        ParamsValidationInfo,
+        ValidationContext,
+    )
+
+    with SI_unit_system:
+        # Build minimal param dict for validation info
+        param_dict = {
+            "meshing": {
+                "volume_zones": [
+                    {"type": "UserDefinedFarfield", "domain_type": "half_body_positive_y"}
+                ]
+            },
+            "private_attribute_asset_cache": {
+                "use_inhouse_mesher": use_beta,
+                "use_geometry_AI": use_gai,
+            },
+        }
+        info = ParamsValidationInfo(param_as_dict=param_dict, referenced_expressions=[])
+        with ValidationContext(levels=VOLUME_MESH, info=info):
+            with pytest.raises(
+                pd.ValidationError,
+                match="only be generated when both GAI and beta mesher are used",
+            ):
+                PassiveSpacing(entities=[GhostCircularPlane(name="symmetric")], type="projected")
+
+
+def test_user_defined_farfield_ghost_symmetry_passes_with_gai_and_beta(get_surface_mesh):
+    # Positive case: both flags enabled and half-body domain -> validator should pass
+    from flow360.component.simulation.validation.validation_context import (
+        VOLUME_MESH,
+        ParamsValidationInfo,
+        ValidationContext,
+    )
+
+    with SI_unit_system:
+        param_dict = {
+            "meshing": {
+                "volume_zones": [
+                    {"type": "UserDefinedFarfield", "domain_type": "half_body_positive_y"}
+                ]
+            },
+            "private_attribute_asset_cache": {
+                "use_inhouse_mesher": True,
+                "use_geometry_AI": True,
+            },
+        }
+        info = ParamsValidationInfo(param_as_dict=param_dict, referenced_expressions=[])
+        with ValidationContext(levels=VOLUME_MESH, info=info):
+            PassiveSpacing(entities=[GhostCircularPlane(name="symmetric")], type="projected")
+
+
+def test_geometry_auto_farfield_requires_beta_for_ghost_in_face_refinements():
+    # Geometry + automated farfield: both PassiveSpacing and SurfaceRefinement require beta mesher
+    import pydantic as pd
+
+    from flow360.component.simulation.validation.validation_context import (
+        VOLUME_MESH,
+        ParamsValidationInfo,
+        ValidationContext,
+    )
+
+    with SI_unit_system:
+        # no beta -> should fail
+        param_dict = {
+            "meshing": {"volume_zones": [{"type": "AutomatedFarfield", "method": "auto"}]},
+            "private_attribute_asset_cache": {
+                "use_inhouse_mesher": False,
+                "use_geometry_AI": True,
+                "project_entity_info": {"type_name": "GeometryEntityInfo"},
+            },
+        }
+        info = ParamsValidationInfo(param_as_dict=param_dict, referenced_expressions=[])
+        with ValidationContext(levels=VOLUME_MESH, info=info):
+            with pytest.raises(pd.ValidationError, match="requires beta mesher"):
+                SurfaceRefinement(
+                    entities=[GhostCircularPlane(name="symmetric")], max_edge_length=0.1
+                )
+            with pytest.raises(pd.ValidationError, match="requires beta mesher"):
+                PassiveSpacing(entities=[GhostCircularPlane(name="symmetric")], type="projected")
+
+    with SI_unit_system:
+        # beta -> should pass
+        param_dict = {
+            "meshing": {"volume_zones": [{"type": "AutomatedFarfield", "method": "auto"}]},
+            "private_attribute_asset_cache": {
+                "use_inhouse_mesher": True,
+                "use_geometry_AI": False,
+                "project_entity_info": {"type_name": "GeometryEntityInfo"},
+            },
+        }
+        info = ParamsValidationInfo(param_as_dict=param_dict, referenced_expressions=[])
+        with ValidationContext(levels=VOLUME_MESH, info=info):
+            SurfaceRefinement(entities=[GhostCircularPlane(name="symmetric")], max_edge_length=0.1)
+            PassiveSpacing(entities=[GhostCircularPlane(name="symmetric")], type="projected")
+
+
+def test_surface_mesh_auto_farfield_only_passive_spacing_allows_ghost():
+    # Surface mesh + automated farfield: allow ghost for PassiveSpacing only; SR should fail
+    import pydantic as pd
+
+    from flow360.component.simulation.validation.validation_context import (
+        VOLUME_MESH,
+        ParamsValidationInfo,
+        ValidationContext,
+    )
+
+    with SI_unit_system:
+        param_dict = {
+            "meshing": {"volume_zones": [{"type": "AutomatedFarfield", "method": "auto"}]},
+            "private_attribute_asset_cache": {
+                "use_inhouse_mesher": True,
+                "use_geometry_AI": True,
+                "project_entity_info": {"type_name": "SurfaceMeshEntityInfo"},
+            },
+        }
+        info = ParamsValidationInfo(param_as_dict=param_dict, referenced_expressions=[])
+        with ValidationContext(levels=VOLUME_MESH, info=info):
+            # SurfaceRefinement should reject ghost
+            with pytest.raises(pd.ValidationError, match="not allowed for SurfaceRefinement"):
+                SurfaceRefinement(
+                    entities=[GhostCircularPlane(name="symmetric")], max_edge_length=0.1
+                )
+            # PassiveSpacing should accept ghost
+            PassiveSpacing(entities=[GhostCircularPlane(name="symmetric")], type="projected")
+
+
+def test_surface_mesh_user_defined_farfield_disallow_any_ghost():
+    # Surface mesh + user-defined farfield: disallow ghost in both SR and PS
+    import pydantic as pd
+
+    from flow360.component.simulation.validation.validation_context import (
+        VOLUME_MESH,
+        ParamsValidationInfo,
+        ValidationContext,
+    )
+
+    with SI_unit_system:
+        param_dict = {
+            "meshing": {"volume_zones": [{"type": "UserDefinedFarfield"}]},
+            "private_attribute_asset_cache": {
+                "use_inhouse_mesher": True,
+                "use_geometry_AI": True,
+                "project_entity_info": {"type_name": "SurfaceMeshEntityInfo"},
+            },
+        }
+        info = ParamsValidationInfo(param_as_dict=param_dict, referenced_expressions=[])
+        with ValidationContext(levels=VOLUME_MESH, info=info):
+            with pytest.raises(pd.ValidationError):
+                SurfaceRefinement(
+                    entities=[GhostCircularPlane(name="symmetric")], max_edge_length=0.1
+                )
+            with pytest.raises(pd.ValidationError):
+                PassiveSpacing(entities=[GhostCircularPlane(name="symmetric")], type="projected")

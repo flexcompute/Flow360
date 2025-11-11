@@ -9,7 +9,6 @@ from typing import Annotated, ClassVar, List, Literal, Optional, Tuple, Union, f
 import numpy as np
 import pydantic as pd
 from pydantic import PositiveFloat
-from scipy.linalg import eig
 from typing_extensions import Self
 
 import flow360.component.simulation.units as u
@@ -61,9 +60,11 @@ def _get_boundary_full_name(surface_name: str, volume_mesh_meta: dict[str, dict]
 def _check_axis_is_orthogonal(axis_pair: Tuple[Axis, Axis]) -> Tuple[Axis, Axis]:
     axis_1, axis_2 = np.array(axis_pair[0]), np.array(axis_pair[1])
     dot_product = np.dot(axis_1, axis_2)
-    if not np.isclose(dot_product, 0):
+    if not np.isclose(dot_product, 0, atol=1e-3):
         raise ValueError(f"The two axes are not orthogonal, dot product is {dot_product}.")
-    return axis_pair
+    axis_2 -= dot_product * axis_1
+    axis_2 /= np.linalg.norm(axis_2)
+    return (tuple(axis_1), tuple(axis_2))
 
 
 OrthogonalAxes = Annotated[Tuple[Axis, Axis], pd.AfterValidator(_check_axis_is_orthogonal)]
@@ -345,6 +346,9 @@ class Box(MultiConstructorBaseModel, _VolumeEntityBase):
         """
         Construct box from principal axes
         """
+
+        from scipy.linalg import eig  # pylint: disable=import-outside-toplevel
+
         # validate
         x_axis, y_axis = np.array(axes[0]), np.array(axes[1])
         z_axis = np.cross(x_axis, y_axis)
@@ -352,13 +356,13 @@ class Box(MultiConstructorBaseModel, _VolumeEntityBase):
         rotation_matrix = np.transpose(np.asarray([x_axis, y_axis, z_axis], dtype=np.float64))
 
         # Calculate the rotation axis n
-        eig_rotation = eig(rotation_matrix)
-        axis = np.real(eig_rotation[1][:, np.where(np.isclose(eig_rotation[0], 1))])
+        eigvals, eigvecs = eig(rotation_matrix)
+        axis = np.real(eigvecs[:, np.where(np.isreal(eigvals))])
         if axis.shape[2] > 1:  # in case of 0 rotation angle
             axis = axis[:, :, 0]
         axis = np.ndarray.flatten(axis)
 
-        angle = np.sum(abs(np.angle(eig_rotation[0]))) / 2
+        angle = np.sum(abs(np.angle(eigvals))) / 2
 
         # Find correct angle
         matrix_test = rotation_matrix_from_axis_and_angle(axis, angle)
@@ -680,6 +684,10 @@ class GhostCircularPlane(_SurfaceEntityBase):
             # This likely means the user try to use mesher on old cloud resources.
             # We cannot validate if symmetric exists so will let it pass. Pipeline will error out anyway.
             return True
+
+        if validation_info.will_generate_forced_symmetry_plane():
+            return True
+
         y_min, y_max, tolerance, _ = self._get_existence_dependency(validation_info)
 
         positive_half = abs(y_min) < tolerance < y_max
@@ -743,10 +751,17 @@ class GhostSurfacePair(SurfacePairBase):
     Represents a pair of ghost surfaces.
 
     Attributes:
-        pair (Tuple[GhostSurface, GhostSurface]): A tuple containing two GhostSurface objects representing the pair.
+        pair (Tuple[GhostSurfaceType, GhostSurfaceType]):
+            A tuple containing two GhostSurfaceType objects representing the pair.
+            GhostSurface is for Python API, GhostCircularPlane is for Web UI.
     """
 
-    pair: Tuple[GhostSurface, GhostSurface]
+    GhostSurfaceType: ClassVar[type] = Annotated[
+        Union[GhostSurface, GhostCircularPlane],
+        pd.Field(discriminator="private_attribute_entity_type_name"),
+    ]
+
+    pair: Tuple[GhostSurfaceType, GhostSurfaceType]
 
 
 @final
