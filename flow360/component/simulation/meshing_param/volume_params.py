@@ -20,6 +20,7 @@ from flow360.component.simulation.primitives import (
     Surface,
 )
 from flow360.component.simulation.unit_system import LengthType
+import flow360.component.simulation.units as u
 from flow360.component.simulation.validation.validation_context import (
     get_validation_info,
 )
@@ -492,52 +493,65 @@ class UserDefinedFarfield(_FarfieldBase):
 
 class StaticFloor(Flow360BaseModel):
     type: Literal["StaticFloor"] = pd.Field(description="Static floor with friction patch.", frozen=True)
-    friction_patch_x_min: LengthType = pd.Field(description="Minimum x of friction patch.")
-    friction_patch_x_max: LengthType = pd.Field(description="Maximum x of friction patch.")
-    friction_patch_width: LengthType.Positive = pd.Field(description="Width of friction patch.")
+    friction_patch_x_min: LengthType = pd.Field(default=-3*u.m, description="Minimum x of friction patch.")
+    friction_patch_x_max: LengthType = pd.Field(default=6*u.m, description="Maximum x of friction patch.")
+    friction_patch_width: LengthType.Positive = pd.Field(default=2*u.m, description="Width of friction patch.")
 
 class FullyMovingFloor(Flow360BaseModel):
     type: Literal["FullyMovingFloor"] = pd.Field(description="Fully moving floor.")
 
 class CentralBelt(Flow360BaseModel):
     type: Literal["CentralBelt"] = pd.Field(description="Floor with central belt.")
-    central_belt_x_min: LengthType
-    central_belt_x_max: LengthType
-    central_belt_width: LengthType.Positive
+    central_belt_x_min: LengthType = pd.Field(default=-2*u.m, description="Minimum x of central belt.")
+    central_belt_x_max: LengthType = pd.Field(default=2*u.m, description="Maximum x of central belt.")
+    central_belt_width: LengthType.Positive = pd.Field(default=1.2*u.m, description="Width of central belt.")
 
 class WheelBelts(Flow360BaseModel):
     type: Literal["WheelBelts"] = pd.Field(description="Floor with central belt and four wheel belts.")
-    central_belt_x_min: LengthType
-    central_belt_x_max: LengthType
-    central_belt_width: LengthType.Positive
+    central_belt_x_min: LengthType = pd.Field(default=-2*u.m, description="Minimum x of central belt.")
+    central_belt_x_max: LengthType = pd.Field(default=2*u.m, description="Maximum x of central belt.")
+    central_belt_width: LengthType.Positive = pd.Field(default=1.2*u.m, description="Width of central belt.")
+    # No defaults for the below; user must specify
     front_wheel_belt_x_min: LengthType
     front_wheel_belt_x_max: LengthType
-    front_wheel_belt_x_inner: LengthType.Positive
-    front_wheel_belt_x_outer: LengthType.Positive
+    front_wheel_belt_inner: LengthType.Positive
+    front_wheel_belt_outer: LengthType.Positive
     rear_wheel_belt_x_min: LengthType
     rear_wheel_belt_x_max: LengthType
-    rear_wheel_belt_x_inner: LengthType.Positive
-    rear_wheel_belt_x_outer: LengthType.Positive
+    rear_wheel_belt_inner: LengthType.Positive
+    rear_wheel_belt_outer: LengthType.Positive
 
 
 class WindTunnelFarfield(_FarfieldBase):
     '''
     Settings for analytic wind tunnel farfield generation.
-    The user only needs to provide tunnel dimensions and floor type and dimensions.
+    The user only needs to provide tunnel dimensions and floor type and dimensions, rather than a geometry.
 
     Example
     -------
-        >>> fl.WindTunnelFarfield(TODO)
+        >>> fl.WindTunnelFarfield(
+            width = 10 * fl.u.m,
+            height = 10 * fl.u.m,
+            inlet_x_position = -5 * fl.u.m,
+            outlet_x_position = 15 * fl.u.m,
+            floor_position = 0 * fl.u.m,
+            floor_type = fl.CentralBelt(
+                type = "CentralBelt",
+                central_belt_x_min = -1 * fl.u.m,
+                central_belt_x_max = 6 * fl.u.m,
+                central_belt_width = 1.2 * fl.u.m
+            )
+        )
     '''
     type: Literal["WindTunnelFarfield"] = pd.Field("WindTunnelFarfield", frozen=True)
     name: Optional[str] = pd.Field("Wind Tunnel Farfield")
 
-    # Tunnel parameters    
-    width: LengthType.Positive = pd.Field(description="Width of the wind tunnel.")
-    height: LengthType.Positive = pd.Field(description="Height of the wind tunnel.")
-    inlet_x_position: LengthType = pd.Field(description="X-position of the inlet.")
-    outlet_x_position: LengthType = pd.Field(description="X-position of the outlet.")
-    floor_position: LengthType = pd.Field(description="Position of the floor.")
+    # Tunnel parameters
+    width: LengthType.Positive = pd.Field(default=10*u.m, description="Width of the wind tunnel.")
+    height: LengthType.Positive = pd.Field(default=10*u.m, description="Height of the wind tunnel.")
+    inlet_x_position: LengthType = pd.Field(default=-20*u.m, description="X-position of the inlet.")
+    outlet_x_position: LengthType = pd.Field(default=40*u.m, description="X-position of the outlet.")
+    floor_position: LengthType = pd.Field(default=0*u.m, description="Position of the floor.")
     # # TODO: don't we only support +Z so far?
     # up_direction: Literal["+Z", "-Z", "+Y", "-Y"] = pd.Field(
     #     description="Upward direction of the wind tunnel."
@@ -551,20 +565,19 @@ class WindTunnelFarfield(_FarfieldBase):
         FullyMovingFloor,
         CentralBelt,
         WheelBelts,
-    ] = pd.Field(description="Floor type of the wind tunnel.")
+    ] = pd.Field(default=StaticFloor, description="Floor type of the wind tunnel.")
 
-    # def inlet(self) -> Surface:
-    #     # TODO: return the x=x_inlet plane?
-    #     ...
+    def inlet(self) -> GhostSurface:
+        return GhostSurface(name="wind_tunnel_inlet")
     
-    # def outlet(self) -> Surface:
-    #     ...
+    def outlet(self) -> GhostSurface:
+        return GhostSurface(name="wind_tunnel_outlet")
     
-    # def symmetry_plane(self) -> Surface:
-    #     ...
+    def symmetry_plane(self) -> GhostSurface:
+        return GhostSurface(name="symmetric")
     
-    # def floor(self) -> Surface:
-    #     ...
+    def floor(self) -> GhostSurface:
+        return GhostSurface(name="wind_tunnel_floor")
 
 
 class CustomZones(Flow360BaseModel):

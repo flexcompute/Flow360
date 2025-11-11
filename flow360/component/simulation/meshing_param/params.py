@@ -296,7 +296,7 @@ class MeshingParams(Flow360BaseModel):
 
     @pd.field_validator("volume_zones", mode="after")
     @classmethod
-    def _check_volume_zones_has_farfied(cls, v):
+    def _check_volume_zones_has_farfield(cls, v):
         if v is None:
             # User did not put anything in volume_zones so may not want to use volume meshing
             return v
@@ -409,11 +409,13 @@ class MeshingParams(Flow360BaseModel):
 
     @property
     def farfield_method(self):
-        """Returns the  farfield method used."""
+        """Returns the farfield method used."""
         if self.volume_zones:
             for zone in self.volume_zones:  # pylint: disable=not-an-iterable
                 if isinstance(zone, AutomatedFarfield):
                     return zone.method
+                if isinstance(zone, WindTunnelFarfield):
+                    return "wind-tunnel"
                 if isinstance(zone, UserDefinedFarfield):
                     return "user-defined"
         return None
