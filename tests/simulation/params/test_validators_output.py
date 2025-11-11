@@ -129,6 +129,57 @@ def test_turbulence_enabled_output_fields():
             )
 
 
+def test_transition_model_enabled_output_fields():
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "In `outputs`[0] IsosurfaceOutput:, solutionTransition is not a valid output field when transition model is not used."
+        ),
+    ):
+        with imperial_unit_system:
+            SimulationParams(
+                models=[Fluid(transition_model_solver=NoneSolver())],
+                outputs=[
+                    IsosurfaceOutput(
+                        name="iso",
+                        entities=[Isosurface(name="tmp", field="mut", iso_value=1)],
+                        output_fields=["solutionTransition"],
+                    )
+                ],
+            )
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "In `outputs`[0] SurfaceProbeOutput:, residualTransition is not a valid output field when transition model is not used."
+        ),
+    ):
+        with imperial_unit_system:
+            SimulationParams(
+                models=[Fluid(transition_model_solver=NoneSolver())],
+                outputs=[
+                    SurfaceProbeOutput(
+                        name="probe_output",
+                        probe_points=[Point(name="point_1", location=[1, 2, 3] * u.m)],
+                        output_fields=["residualTransition"],
+                        target_surfaces=[Surface(name="fluid/body")],
+                    )
+                ],
+            )
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "In `outputs`[0] VolumeOutput:, linearResidualTransition is not a valid output field when transition model is not used."
+        ),
+    ):
+        with imperial_unit_system:
+            SimulationParams(
+                models=[Fluid(transition_model_solver=NoneSolver())],
+                outputs=[VolumeOutput(output_fields=["linearResidualTransition"])],
+            )
+
+
 def test_surface_user_variables_in_output_fields():
     uv_surface1 = UserVariable(
         name="uv_surface1", value=math.dot(solution.velocity, solution.CfVec)
