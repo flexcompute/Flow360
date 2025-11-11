@@ -232,6 +232,102 @@ class GeometryDraft(ResourceDraft):
         return Geometry.from_cloud(info.id)
 
 
+class FaceSelection:
+    """
+    Represents a selection of faces that can be used in boolean operations.
+    
+    This class supports subtraction operations to create complex face selections,
+    such as "all geometry faces minus wing faces minus tail faces".
+    """
+    
+    def __init__(self, geometry: "Geometry", include_all: bool = False, 
+                 face_groups_to_subtract: Optional[List["FaceGroup"]] = None):
+        """
+        Initialize a FaceSelection.
+        
+        Parameters
+        ----------
+        geometry : Geometry
+            The parent Geometry object
+        include_all : bool
+            If True, starts with all faces in the geometry
+        face_groups_to_subtract : Optional[List[FaceGroup]]
+            List of face groups whose faces should be subtracted
+        """
+        self._geometry = geometry
+        self._include_all = include_all
+        self._face_groups_to_subtract = face_groups_to_subtract or []
+    
+    def __sub__(self, other: "FaceGroup") -> "FaceSelection":
+        """
+        Subtract a face group from this selection.
+        
+        Parameters
+        ----------
+        other : FaceGroup
+            The face group to subtract
+            
+        Returns
+        -------
+        FaceSelection
+            A new FaceSelection with the subtraction applied
+        """
+        if not isinstance(other, FaceGroup):
+            raise Flow360ValueError(
+                f"Can only subtract FaceGroup from FaceSelection, got {type(other)}"
+            )
+        
+        # Create a new FaceSelection with the additional subtraction
+        new_subtractions = self._face_groups_to_subtract + [other]
+        return FaceSelection(
+            self._geometry,
+            include_all=self._include_all,
+            face_groups_to_subtract=new_subtractions
+        )
+    
+    def get_selected_faces(self) -> List[TreeNode]:
+        """
+        Execute the selection and return the list of face nodes.
+        
+        Returns
+        -------
+        List[TreeNode]
+            List of face nodes after applying all operations
+        """
+        if self._geometry._tree is None:
+            raise Flow360ValueError(
+                "Geometry tree not loaded. Call load_geometry_tree() first"
+            )
+        
+        if self._include_all:
+            # Start with all faces
+            all_faces = self._geometry._tree.all_faces
+            selected_face_uuids = {face.uuid for face in all_faces if face.uuid}
+        else:
+            # Start with empty set
+            selected_face_uuids = set()
+        
+        # Subtract face groups
+        for face_group in self._face_groups_to_subtract:
+            face_uuids_to_remove = {face.uuid for face in face_group.faces if face.uuid}
+            selected_face_uuids -= face_uuids_to_remove
+        
+        # Convert UUIDs back to face nodes
+        uuid_to_face = self._geometry._tree.uuid_to_face
+        result_faces = [uuid_to_face[uuid] for uuid in selected_face_uuids if uuid in uuid_to_face]
+        
+        return result_faces
+    
+    def __repr__(self):
+        parts = []
+        if self._include_all:
+            parts.append("All geometry")
+        if self._face_groups_to_subtract:
+            subtracted = ", ".join([fg.name for fg in self._face_groups_to_subtract])
+            parts.append(f"minus [{subtracted}]")
+        return f"FaceSelection({' '.join(parts)})"
+
+
 class FaceGroup:
     """
     Represents a face group that can be incrementally built by adding nodes.
@@ -273,7 +369,7 @@ class FaceGroup:
         return len(self._faces)
 
     def add(
-        self, selection: Union[TreeNode, List[TreeNode], NodeCollection, TreeSearch, CollectionTreeSearch]
+        self, selection: Union[TreeNode, List[TreeNode], NodeCollection, TreeSearch, CollectionTreeSearch, FaceSelection]
     ) -> "FaceGroup":
         """
         Add more nodes to this face group.
@@ -282,8 +378,9 @@ class FaceGroup:
         
         Parameters
         ----------
-        selection : Union[TreeNode, List[TreeNode], NodeCollection, TreeSearch, CollectionTreeSearch]
+        selection : Union[TreeNode, List[TreeNode], NodeCollection, TreeSearch, CollectionTreeSearch, FaceSelection]
             Nodes to add to this group. Can be:
+            - FaceSelection instance - computed faces will be added
             - TreeSearch instance - will be executed internally
             - CollectionTreeSearch instance - will be executed internally
             - NodeCollection - nodes will be extracted
@@ -661,6 +758,37 @@ class Geometry(AssetBase):
     def __setitem__(self, key: str, value: Any):
         raise NotImplementedError("Assigning/setting entities is not supported.")
 
+    def __sub__(self, other: FaceGroup) -> FaceSelection:
+        """
+        Subtract a face group from the geometry to create a face selection.
+        
+        This allows intuitive syntax like:
+            geometry - wing_group - tail_group
+        
+        Parameters
+        ----------
+        other : FaceGroup
+            The face group to subtract from all geometry faces
+            
+        Returns
+        -------
+        FaceSelection
+            A FaceSelection representing all faces minus the specified group
+            
+        Examples
+        --------
+        >>> fuselage = geometry.create_face_group(
+        ...     name="fuselage",
+        ...     selection=geometry - wing - tail
+        ... )
+        """
+        if not isinstance(other, FaceGroup):
+            raise Flow360ValueError(
+                f"Can only subtract FaceGroup from Geometry, got {type(other)}"
+            )
+        
+        return FaceSelection(self, include_all=True, face_groups_to_subtract=[other])
+
     # ========== Tree-based face grouping methods ==========
 
     @property
@@ -716,7 +844,7 @@ class Geometry(AssetBase):
         self.print_face_grouping_stats()
 
     def create_face_group(
-        self, name: str, selection: Union[TreeNode, List[TreeNode], NodeCollection, TreeSearch, CollectionTreeSearch]
+        self, name: str, selection: Union[TreeNode, List[TreeNode], NodeCollection, TreeSearch, CollectionTreeSearch, FaceSelection]
     ) -> FaceGroup:
         """
         Create a face group based on explicit selection of tree nodes
@@ -730,8 +858,9 @@ class Geometry(AssetBase):
         ----------
         name : str
             Name of the face group
-        selection : Union[TreeNode, List[TreeNode], NodeCollection, TreeSearch, CollectionTreeSearch]
+        selection : Union[TreeNode, List[TreeNode], NodeCollection, TreeSearch, CollectionTreeSearch, FaceSelection]
             Can be one of:
+            - FaceSelection instance (returned from geometry - face_group operations)
             - TreeSearch instance (returned from tree_root.search()) - will be executed internally
             - CollectionTreeSearch instance (returned from NodeCollection.search()) - will be executed internally
             - NodeCollection (returned from tree_root.children()) - nodes will be extracted
@@ -753,6 +882,12 @@ class Geometry(AssetBase):
         >>> wing_group = geometry.create_face_group(
         ...     name="wing",
         ...     selection=geometry.search(type=NodeType.FRMFeature, name="*wing*")
+        ... )
+        >>> 
+        >>> # Using subtraction (boolean operations)
+        >>> fuselage_group = geometry.create_face_group(
+        ...     name="fuselage",
+        ...     selection=geometry - wing_group - tail_group
         ... )
         >>> 
         >>> # Using children() chaining (fluent navigation with exact matching)
@@ -790,7 +925,7 @@ class Geometry(AssetBase):
         return face_group
 
     def _add_to_face_group(
-        self, face_group: FaceGroup, selection: Union[TreeNode, List[TreeNode], NodeCollection, TreeSearch, CollectionTreeSearch]
+        self, face_group: FaceGroup, selection: Union[TreeNode, List[TreeNode], NodeCollection, TreeSearch, CollectionTreeSearch, FaceSelection]
     ) -> None:
         """
         Internal method to add faces to a face group.
@@ -807,8 +942,8 @@ class Geometry(AssetBase):
         ----------
         face_group : FaceGroup
             The face group to add faces to
-        selection : Union[TreeNode, List[TreeNode], NodeCollection, TreeSearch, CollectionTreeSearch]
-            The selection to add (TreeSearch, CollectionTreeSearch, NodeCollection, TreeNode, or list of TreeNodes)
+        selection : Union[TreeNode, List[TreeNode], NodeCollection, TreeSearch, CollectionTreeSearch, FaceSelection]
+            The selection to add (TreeSearch, CollectionTreeSearch, NodeCollection, TreeNode, list of TreeNodes, or FaceSelection)
         
         Notes
         -----
@@ -816,25 +951,58 @@ class Geometry(AssetBase):
         automatically removed from the Geometry's face group registry.
         """
         # Handle different selection types
-        if isinstance(selection, (TreeSearch, CollectionTreeSearch)):
+        if isinstance(selection, FaceSelection):
+            # FaceSelection: get the computed face list
+            new_faces = selection.get_selected_faces()
+            new_face_uuids = {face.uuid for face in new_faces if face.uuid}
+        elif isinstance(selection, (TreeSearch, CollectionTreeSearch)):
             selected_nodes = selection.execute()
+            # Collect faces from selected nodes
+            new_faces = []
+            new_face_uuids = set()
+            
+            for node in selected_nodes:
+                faces = node.get_all_faces()
+                for face in faces:
+                    if face.uuid:
+                        new_faces.append(face)
+                        new_face_uuids.add(face.uuid)
         elif isinstance(selection, NodeCollection):
             selected_nodes = selection.nodes
+            # Collect faces from selected nodes
+            new_faces = []
+            new_face_uuids = set()
+            
+            for node in selected_nodes:
+                faces = node.get_all_faces()
+                for face in faces:
+                    if face.uuid:
+                        new_faces.append(face)
+                        new_face_uuids.add(face.uuid)
         elif isinstance(selection, TreeNode):
             selected_nodes = [selection]
+            # Collect faces from selected nodes
+            new_faces = []
+            new_face_uuids = set()
+            
+            for node in selected_nodes:
+                faces = node.get_all_faces()
+                for face in faces:
+                    if face.uuid:
+                        new_faces.append(face)
+                        new_face_uuids.add(face.uuid)
         else:
             selected_nodes = selection
-
-        # Collect faces from selected nodes
-        new_faces = []
-        new_face_uuids = set()
-        
-        for node in selected_nodes:
-            faces = node.get_all_faces()
-            for face in faces:
-                if face.uuid:
-                    new_faces.append(face)
-                    new_face_uuids.add(face.uuid)
+            # Collect faces from selected nodes
+            new_faces = []
+            new_face_uuids = set()
+            
+            for node in selected_nodes:
+                faces = node.get_all_faces()
+                for face in faces:
+                    if face.uuid:
+                        new_faces.append(face)
+                        new_face_uuids.add(face.uuid)
 
         # Remove these faces from their previous groups
         groups_to_check = set()
