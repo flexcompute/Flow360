@@ -1,3 +1,5 @@
+import json
+import os
 import re
 
 import pytest
@@ -41,6 +43,7 @@ from flow360.component.simulation.unit_system import (
 from flow360.component.simulation.user_code.core.types import UserVariable
 from flow360.component.simulation.user_code.functions import math
 from flow360.component.simulation.user_code.variables import solution
+from flow360.component.volume_mesh import VolumeMeshV2
 
 
 @pytest.fixture()
@@ -535,3 +538,66 @@ def test_surface_integral_entity_types():
                     ),
                 ],
             )
+
+
+def test_output_frequency_settings_in_steady_simulation():
+    volume_mesh = VolumeMeshV2.from_local_storage(
+        mesh_id=None,
+        local_storage_path=os.path.join(
+            os.path.dirname(__file__), "..", "data", "vm_entity_provider"
+        ),
+    )
+    with open(
+        os.path.join(
+            os.path.dirname(__file__), "..", "data", "vm_entity_provider", "simulation.json"
+        ),
+        "r",
+    ) as fh:
+        asset_cache_data = json.load(fh).pop("private_attribute_asset_cache")
+    asset_cache = AssetCache.model_validate(asset_cache_data)
+    with imperial_unit_system:
+        params = SimulationParams(
+            models=[Wall(name="wall", entities=volume_mesh["*"])],
+            time_stepping=Steady(),
+            outputs=[
+                VolumeOutput(
+                    output_fields=["Mach", "Cp"],
+                    frequency=2,
+                ),
+                SurfaceOutput(
+                    output_fields=["Cp"],
+                    entities=volume_mesh["*"],
+                    frequency_offset=10,
+                ),
+            ],
+            private_attribute_asset_cache=asset_cache,
+        )
+
+    params_as_dict = params.model_dump(exclude_none=True, mode="json")
+    params, errors, _ = validate_model(
+        params_as_dict=params_as_dict,
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="VolumeMesh",
+        validation_level="All",
+    )
+
+    expected_errors = [
+        {
+            "loc": ("outputs", 0, "frequency"),
+            "type": "value_error",
+            "msg": "Value error, Output frequency cannot be specified in a steady simulation.",
+            "ctx": {"relevant_for": ["Case"]},
+        },
+        {
+            "loc": ("outputs", 1, "frequency_offset"),
+            "type": "value_error",
+            "msg": "Value error, Output frequency_offset cannot be specified in a steady simulation.",
+            "ctx": {"relevant_for": ["Case"]},
+        },
+    ]
+    assert len(errors) == len(expected_errors)
+    for err, exp_err in zip(errors, expected_errors):
+        assert err["loc"] == exp_err["loc"]
+        assert err["type"] == exp_err["type"]
+        assert err["ctx"]["relevant_for"] == exp_err["ctx"]["relevant_for"]
+        assert err["msg"] == exp_err["msg"]
