@@ -130,6 +130,7 @@ class AssetBase(metaclass=ABCMeta):
         cls,
         simulation_dict: dict,
         asset_obj: AssetBase,
+        allow_missing_entity_info: Boolean,
     ):
         # pylint: disable=protected-access
         simulation_dict, forward_compatibility_mode = SimulationParams._update_param_dict(
@@ -142,9 +143,13 @@ class AssetBase(metaclass=ABCMeta):
         asset_cache = simulation_dict["private_attribute_asset_cache"]
 
         if "project_entity_info" not in asset_cache:
-            raise KeyError(
-                "[Internal] Could not find project_entity_info in the asset's simulation settings."
-            )
+            if allow_missing_entity_info:
+                return asset_obj
+            else:
+                raise KeyError(
+                    "[Internal] Could not find project_entity_info in the asset's simulation settings."
+                )
+
         entity_info_dict = asset_cache["project_entity_info"]
         entity_info_dict = SimulationParams._sanitize_params_dict(entity_info_dict)
         # pylint: disable=protected-access
@@ -302,7 +307,7 @@ class AssetBase(metaclass=ABCMeta):
 
     @classmethod
     def _from_local_storage(
-        cls, asset_id: str = None, local_storage_path="", meta_data: AssetMetaBaseModelV2 = None
+        cls, asset_id: str = None, local_storage_path="", meta_data: AssetMetaBaseModelV2 = None, allow_missing_entity_info = False
     ):
         """
         Create asset from local storage
@@ -316,7 +321,12 @@ class AssetBase(metaclass=ABCMeta):
         with open(os.path.join(local_storage_path, "simulation.json"), encoding="utf-8") as f:
             params_dict = json.load(f)
 
-        asset_obj = cls._from_supplied_entity_info(params_dict, cls(asset_id))
+        asset_obj = cls(asset_id)
+        asset_obj = cls._from_supplied_entity_info(
+            simulation_dict=params_dict, 
+            asset_obj = cls(asset_id), 
+            allow_missing_entity_info = allow_missing_entity_info
+        )
         asset_obj.get_dynamic_default_settings(params_dict)
 
         # pylint: disable=protected-access
