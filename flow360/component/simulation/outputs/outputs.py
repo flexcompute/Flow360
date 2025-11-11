@@ -49,6 +49,7 @@ from flow360.component.simulation.user_code.core.types import (
 from flow360.component.simulation.validation.validation_context import (
     ALL,
     CASE,
+    TimeSteppingType,
     get_validation_info,
     get_validation_levels,
 )
@@ -191,6 +192,21 @@ class _AnimationSettings(_OutputBase):
         description="Offset (in number of physical time steps) at which output animation is started."
         + " 0 is at beginning of simulation.",
     )
+
+    @pd.model_validator(mode="before")
+    @classmethod
+    def disable_frequecy_settings_in_steady_simulation(cls, values):
+        """Disable frequency settings in a steady simulation"""
+        validation_info = get_validation_info()
+        if validation_info is None or validation_info.time_stepping != TimeSteppingType.STEADY:
+            return values
+        for field_name in ["frequency", "frequency_offset"]:
+            # pylint: disable=unsubscriptable-object
+            if (field_name in values) and values[field_name] != cls.model_fields[
+                field_name
+            ].default:
+                raise ValueError(f"Output {field_name} cannot be specified in a steady simulation.")
+        return values
 
 
 class _AnimationAndFileFormatSettings(_AnimationSettings):

@@ -1647,7 +1647,6 @@ def test_validate_liquid_operating_condition():
             ],
             outputs=[
                 VolumeOutput(
-                    frequency=1,
                     output_format="both",
                     output_fields=["four"],
                 ),
@@ -1863,7 +1862,6 @@ def test_redefined_user_defined_fields():
             ),
             outputs=[
                 VolumeOutput(
-                    frequency=1,
                     output_format="both",
                     output_fields=["pressure"],
                 ),
