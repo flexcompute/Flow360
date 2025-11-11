@@ -335,17 +335,15 @@ def test_output_frequecy_settings_in_steady_simulation():
         validation_level="All",
     )
 
-    print("jaja", errors)
-
     expected_errors = [
         {
-            "loc": ("outputs", 0, "VolumeOutput"),
+            "loc": ("outputs", 0, "frequency"),
             "type": "value_error",
             "msg": "Value error, Output frequency cannot be specified in a steady simulation.",
             "ctx": {"relevant_for": ["Case"]},
         },
         {
-            "loc": ("outputs", 1, "SurfaceOutput"),
+            "loc": ("outputs", 1, "frequency_offset"),
             "type": "value_error",
             "msg": "Value error, Output frequency_offset cannot be specified in a steady simulation.",
             "ctx": {"relevant_for": ["Case"]},

@@ -193,20 +193,19 @@ class _AnimationSettings(_OutputBase):
         + " 0 is at beginning of simulation.",
     )
 
-    @pd.model_validator(mode="before")
+    @pd.field_validator("frequency", "frequency_offset")
     @classmethod
-    def disable_frequecy_settings_in_steady_simulation(cls, values):
+    def disable_frequecy_settings_in_steady_simulation(cls, value, info: pd.ValidationInfo):
         """Disable frequency settings in a steady simulation"""
         validation_info = get_validation_info()
         if validation_info is None or validation_info.time_stepping != TimeSteppingType.STEADY:
-            return values
-        for field_name in ["frequency", "frequency_offset"]:
-            # pylint: disable=unsubscriptable-object
-            if (field_name in values) and values[field_name] != cls.model_fields[
-                field_name
-            ].default:
-                raise ValueError(f"Output {field_name} cannot be specified in a steady simulation.")
-        return values
+            return value
+        # pylint: disable=unsubscriptable-object
+        if value != cls.model_fields[info.field_name].default:
+            raise ValueError(
+                f"Output {info.field_name} cannot be specified in a steady simulation."
+            )
+        return value
 
 
 class _AnimationAndFileFormatSettings(_AnimationSettings):
