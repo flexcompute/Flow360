@@ -16,6 +16,7 @@ from flow360.component.simulation.meshing_param.params import (
     MeshingParams,
 )
 from flow360.component.simulation.meshing_param.volume_params import (
+    AutomatedFarfield,
     AxisymmetricRefinement,
     CustomZones,
     RotationVolume,
@@ -557,3 +558,7 @@ def test_surface_mesh_user_defined_farfield_disallow_any_ghost():
                 )
             with pytest.raises(pd.ValidationError):
                 PassiveSpacing(entities=[GhostCircularPlane(name="symmetric")], type="projected")
+
+
+def test_just_import_automated_farfield():
+    print(AutomatedFarfield)
