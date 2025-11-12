@@ -265,7 +265,7 @@ class RotationVolume(AxisymmetricRefinementBase):
         The current prefix is 'rotatingBlock-' with 14 characters.
         """
         validation_info = get_validation_info()
-        if validation_info is None:
+        if validation_info is None or values is None:
             return values
         if validation_info.is_beta_mesher:
             return values

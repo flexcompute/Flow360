@@ -1,11 +1,11 @@
 [tool.poetry]
 name = "flow360"
-version = "v25.7.6"
+version = "v25.8.0b4"
 description = "Flow360 Python Client"
 authors = ["Flexcompute <support@flexcompute.com>"]
 
 [tool.poetry.dependencies]
-python = ">=3.9,<3.13"
+python = ">=3.9,<3.14"
 pydantic = ">=2.8,<2.12"
 pytest = "^7.1.2"
 click = "^8.1.3"

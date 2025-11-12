@@ -15,6 +15,7 @@ from flow360.component.simulation.outputs.output_entities import (
     Slice,
 )
 from flow360.component.simulation.primitives import (
+    AxisymmetricBody,
     Box,
     CustomVolume,
     Cylinder,
@@ -31,12 +32,16 @@ from flow360.component.utils import GeometryFiles
 from flow360.log import log
 
 DraftEntityTypes = Annotated[
-    Union[Box, Cylinder, Point, PointArray, PointArray2D, Slice, CustomVolume],
-    pd.Field(discriminator="private_attribute_entity_type_name"),
-]
-
-GhostSurfaceTypes = Annotated[
-    Union[GhostSphere, GhostCircularPlane],
+    Union[
+        AxisymmetricBody,
+        Box,
+        Cylinder,
+        Point,
+        PointArray,
+        PointArray2D,
+        Slice,
+        CustomVolume,
+    ],
     pd.Field(discriminator="private_attribute_entity_type_name"),
 ]
 
@@ -46,7 +51,12 @@ class EntityInfoModel(Flow360BaseModel, metaclass=ABCMeta):
 
     # entities that appear in simulation JSON but did not appear in EntityInfo)
     draft_entities: List[DraftEntityTypes] = pd.Field([])
-    ghost_entities: List[GhostSurfaceTypes] = pd.Field([])
+    ghost_entities: List[
+        Annotated[
+            Union[GhostSphere, GhostCircularPlane],
+            pd.Field(discriminator="private_attribute_entity_type_name"),
+        ]
+    ] = pd.Field([])
 
     @abstractmethod
     def get_boundaries(self, attribute_name: str = None) -> list[Surface]:

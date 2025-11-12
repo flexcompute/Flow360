@@ -475,3 +475,21 @@ def test_enforced_half_model_only_in_beta_mesher():
     ):
         with ValidationContext(VOLUME_MESH, non_gai_context):
             AutomatedFarfield(domain_type="full_body")
+
+
+def test_enclosed_entities_none_does_not_raise():
+    with CGS_unit_system:
+        cylinder = Cylinder(
+            name="cylinder",
+            outer_radius=1,
+            height=12,
+            axis=(0, 1, 0),
+            center=(0, 5, 0),
+        )
+        # Should not raise even when enclosed_entities is explicitly None
+        _ = RotationVolume(
+            entities=[cylinder],
+            spacing_axial=20,
+            spacing_radial=0.2,
+            spacing_circumferential=20,
+        )
