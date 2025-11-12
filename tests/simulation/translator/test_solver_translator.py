@@ -996,14 +996,24 @@ def test_param_with_user_variables():
                     ],
                 ),
                 SurfaceIntegralOutput(
-                    name="MassFluxIntegral",
+                    name="MassFluxIntegralImported1",
+                    output_fields=[surface_integral_variable],
+                    entities=ImportedSurface(name="imported1", file_name="imported1.stl"),
+                ),
+                SurfaceIntegralOutput(
+                    name="MassFluxIntegral1",
                     output_fields=[surface_integral_variable],
                     entities=Surface(name="VOLUME/LEFT"),
                 ),
                 SurfaceIntegralOutput(
-                    name="MassFluxIntegralImported",
+                    name="MassFluxIntegralImported2",
                     output_fields=[surface_integral_variable],
-                    entities=ImportedSurface(name="imported", file_name="imported.stl"),
+                    entities=ImportedSurface(name="imported2", file_name="imported2.stl"),
+                ),
+                SurfaceIntegralOutput(
+                    name="MassFluxIntegral2",
+                    output_fields=[surface_integral_variable],
+                    entities=Surface(name="VOLUME/RIGHT"),
                 ),
                 SurfaceOutput(
                     name="surface_output",

@@ -13,7 +13,12 @@ from flow360.component.simulation.models.surface_models import (
     SurfaceModelTypes,
     Wall,
 )
-from flow360.component.simulation.models.volume_models import Fluid, Rotation, Solid
+from flow360.component.simulation.models.volume_models import (
+    ActuatorDisk,
+    Fluid,
+    Rotation,
+    Solid,
+)
 from flow360.component.simulation.outputs.outputs import (
     IsosurfaceOutput,
     ProbeOutput,
@@ -363,7 +368,7 @@ def _check_complete_boundary_condition_and_unknown_surface(
                 if item.name != "symmetric"
             ]
         elif farfield_method == "user-defined":
-            if validation_info.use_geometry_AI and validation_info.is_beta_mesher:
+            if validation_info.will_generate_forced_symmetry_plane():
                 asset_boundary_entities += [
                     item
                     for item in params.private_attribute_asset_cache.project_entity_info.ghost_entities
@@ -569,3 +574,27 @@ def _check_duplicate_surface_usage(outputs):
     _check_surface_usage(outputs, TimeAverageSurfaceOutput)
 
     return outputs
+
+
+def _check_duplicate_actuator_disk_cylinder_names(models):
+    if not models:
+        return models
+
+    def _check_actuator_disk_names(models):
+        actuator_disk_names = set()
+        for model in models:
+            if not isinstance(model, ActuatorDisk):
+                continue
+
+            for entity_index, entity in enumerate(model.entities.stored_entities):
+                if entity.name in actuator_disk_names:
+                    raise ValueError(
+                        f"The ActuatorDisk cylinder name `{entity.name}` at index {entity_index}"
+                        f" in model `{model.name}` has already been used."
+                        " Please use unique Cylinder entity names among all ActuatorDisk instances."
+                    )
+                actuator_disk_names.add(entity.name)
+
+    _check_actuator_disk_names(models)
+
+    return models

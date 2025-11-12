@@ -123,6 +123,7 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
 
     __slots__ = [
         "farfield_method",
+        "farfield_domain_type",
         "is_beta_mesher",
         "use_geometry_AI",
         "using_liquid_as_material",
@@ -137,6 +138,7 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         "quasi_3d_symmetry_planes_center_y",
         "at_least_one_body_transformed",
         "to_be_generated_custom_volumes",
+        "root_asset_type",
     ]
 
     @classmethod
@@ -154,6 +156,22 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
                     return zone["method"]
                 if zone["type"] == "UserDefinedFarfield":
                     return "user-defined"
+        return None
+
+    @classmethod
+    def _get_farfield_domain_type_(cls, param_as_dict: dict):
+        try:
+            if param_as_dict["meshing"]:
+                volume_zones = param_as_dict["meshing"]["volume_zones"]
+            else:
+                return None
+        except KeyError:
+            return None
+        if not volume_zones:
+            return None
+        for zone in volume_zones:
+            if zone.get("type") in ("AutomatedFarfield", "UserDefinedFarfield"):
+                return zone.get("domain_type")
         return None
 
     @classmethod
@@ -229,6 +247,31 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
             param_as_dict, ["meshing", "defaults", "planar_face_tolerance"]
         )
         return planar_face_tolerance
+
+    @classmethod
+    def _get_root_asset_type(cls, param_as_dict: dict):
+        """
+        Returns root asset type based on project_entity_info.type_name
+        geometry -> GeometryEntityInfo
+        surface_mesh -> SurfaceMeshEntityInfo
+        volume_mesh -> VolumeMeshEntityInfo
+        """
+        try:
+            pei = param_as_dict["private_attribute_asset_cache"]["project_entity_info"]
+        except KeyError:
+            return None
+        if pei is None:
+            return None
+        type_name = (
+            pei.get("type_name") if isinstance(pei, dict) else getattr(pei, "type_name", None)
+        )
+        if type_name == "GeometryEntityInfo":
+            return "geometry"
+        if type_name == "SurfaceMeshEntityInfo":
+            return "surface_mesh"
+        if type_name == "VolumeMeshEntityInfo":
+            return "volume_mesh"
+        return None
 
     @classmethod
     def _get_output_dict(cls, param_as_dict: dict):
@@ -339,6 +382,7 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
 
     def __init__(self, param_as_dict: dict, referenced_expressions: list):
         self.farfield_method = self._get_farfield_method_(param_as_dict=param_as_dict)
+        self.farfield_domain_type = self._get_farfield_domain_type_(param_as_dict=param_as_dict)
         self.is_beta_mesher = self._get_is_beta_mesher_(param_as_dict=param_as_dict)
         self.use_geometry_AI = self._get_use_geometry_AI_(  # pylint:disable=invalid-name
             param_as_dict=param_as_dict
@@ -364,6 +408,17 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         )
         self.to_be_generated_custom_volumes = self._get_to_be_generated_custom_volumes(
             param_as_dict=param_as_dict
+        )
+        self.root_asset_type = self._get_root_asset_type(param_as_dict=param_as_dict)
+
+    def will_generate_forced_symmetry_plane(self) -> bool:
+        """
+        Check if the forced symmetry plane will be generated.
+        """
+        return (
+            self.use_geometry_AI
+            and self.is_beta_mesher
+            and self.farfield_domain_type in ("half_body_positive_y", "half_body_negative_y")
         )
 
 
