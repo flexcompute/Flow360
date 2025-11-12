@@ -620,6 +620,8 @@ class WindTunnelFarfield(_FarfieldBase):
     def floor(self) -> GhostSurface:
         """Returns the floor boundary surface."""
         return GhostSurface(name="wind_tunnel_floor")
+
+
 class MeshSliceOutput(Flow360BaseModel):
     """
     :class:`MeshSliceOutput` class for mesh slice output settings.
