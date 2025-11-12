@@ -125,3 +125,27 @@ def test_snappy_edge_refinement_valdators():
             snappy.SurfaceEdgeRefinement(regions=[Surface(name="test")]),
         ],
     )
+
+
+def test_snappy_edge_refinement_increasing_values_validator():
+    message = "Spacings and distances must be increasing arrays."
+    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+        snappy.SurfaceEdgeRefinement(
+            spacing=[2 * u.mm, 1 * u.mm],
+            distances=[5 * u.mm, 6 * u.mm],
+            regions=[Surface(name="test")],
+        )
+
+    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+        snappy.SurfaceEdgeRefinement(
+            spacing=[2 * u.mm, 3 * u.mm],
+            distances=[5 * u.mm, 4 * u.mm],
+            regions=[Surface(name="test")],
+        )
+
+    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+        snappy.SurfaceEdgeRefinement(
+            spacing=[2 * u.mm, 1 * u.mm],
+            distances=[5 * u.mm, 4 * u.mm],
+            regions=[Surface(name="test")],
+        )

@@ -96,7 +96,7 @@ class SurfaceEdgeRefinement(Flow360BaseModel):
     )
     bodies: Optional[EntityList[SnappyBody]] = pd.Field(None)
     regions: Optional[EntityList[Surface]] = pd.Field(None)
-    retain_on_smoothing: Optional[bool] = pd.Field(
+    retain_on_smoothing: bool = pd.Field(
         True, description="Maintain the edge when smoothing is applied."
     )
 
