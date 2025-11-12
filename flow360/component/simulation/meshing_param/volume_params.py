@@ -639,3 +639,9 @@ class CustomZones(Flow360BaseModel):
     entities: EntityList[CustomVolume] = pd.Field(
         description="The custom volume zones to be generated."
     )
+    element_type: Literal["mixed", "tetrahedra"] = pd.Field(
+        default="mixed",
+        description="The element type to be used for the generated volume zones."
+        + " - mixed: Mesher will automatically choose the element types used."
+        + " - tetrahedra: Only tetrahedra element type will be used for the generated volume zones.",
+    )
