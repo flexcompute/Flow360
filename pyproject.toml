@@ -1,10 +1,6 @@
 [tool.poetry]
 name = "flow360"
-<<<<<<< HEAD
 version = "v25.8.0b4"
-=======
-version = "v25.7.7"
->>>>>>> 72c81eec ([FXC-4006][FXC-4053][25.7] Add validation for transition model output fields and output frequency settings (#1587))
 description = "Flow360 Python Client"
 authors = ["Flexcompute <support@flexcompute.com>"]
 
