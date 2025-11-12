@@ -369,7 +369,20 @@ def _to_25_7_2(params_as_dict):
 
 
 def _to_25_7_6(params_as_dict):
-    """Remove legacy entity bucket field from all entity dicts."""
+    """
+    - Rename deprecated RotationCylinder discriminator to RotationVolume in meshing.volume_zones
+    - Remove legacy entity bucket field from all entity dicts
+    """
+    # 1) Update RotationCylinder -> RotationVolume
+    meshing = params_as_dict.get("meshing")
+    if isinstance(meshing, dict):
+        volume_zones = meshing.get("volume_zones")
+        if isinstance(volume_zones, list):
+            for volume_zone in volume_zones:
+                if isinstance(volume_zone, dict) and volume_zone.get("type") == "RotationCylinder":
+                    volume_zone["type"] = "RotationVolume"
+
+    # 2) Cleanup legacy entity bucket fields
     return remove_entity_bucket_field(params_as_dict=params_as_dict)
 
 
@@ -386,7 +399,7 @@ VERSION_MILESTONES = [
     (Flow360Version("25.6.5"), _to_25_6_5),
     (Flow360Version("25.6.6"), _to_25_6_6),
     (Flow360Version("25.7.2"), _to_25_7_2),
-    (Flow360Version("25.8.0b4"), _to_25_7_6),
+    (Flow360Version("25.7.6"), _to_25_7_6),
 ]  # A list of the Python API version tuple with there corresponding updaters.
 
 
