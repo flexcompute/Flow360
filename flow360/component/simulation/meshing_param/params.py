@@ -19,6 +19,7 @@ from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     AxisymmetricRefinement,
     CustomZones,
+    MeshSliceOutput,
     RotationCylinder,
     RotationVolume,
     StructuredBoxRefinement,
@@ -298,6 +299,12 @@ class MeshingParams(Flow360BaseModel):
     # Will add more to the Union
     volume_zones: Optional[List[VolumeZonesTypes]] = pd.Field(
         default=None, description="Creation of new volume zones."
+    )
+
+    # Meshing outputs (for now, volume mesh slices)
+    outputs: List[MeshSliceOutput] = pd.Field(
+        default=[],
+        description="Mesh output settings.",
     )
 
     @pd.field_validator("volume_zones", mode="after")

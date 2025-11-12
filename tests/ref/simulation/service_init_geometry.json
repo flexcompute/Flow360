@@ -23,6 +23,7 @@
             },
             "remove_non_manifold_faces": false
         },
+        "outputs": [],
         "refinements": [],
         "volume_zones": [
             {
