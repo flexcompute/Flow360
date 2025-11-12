@@ -237,3 +237,10 @@ def _set_boundary_full_name_with_zone_name(
                 continue
             with model_attribute_unlock(surface, "private_attribute_full_name"):
                 surface.private_attribute_full_name = f"{give_zone_name}/{surface.name}"
+
+
+def serialize_model_obj_to_id(model_obj: Flow360BaseModel) -> str:
+    """Serialize a model object to its id."""
+    if hasattr(model_obj, "private_attribute_id"):
+        return model_obj.private_attribute_id
+    raise ValueError(f"The model object {model_obj} cannot be serialized to id.")
