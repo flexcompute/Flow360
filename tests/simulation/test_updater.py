@@ -845,3 +845,35 @@ def test_updater_to_25_7_6_remove_entity_bucket_field():
 
     # Non-entity dict remains unchanged
     assert params_new["misc"]["private_attribute_registry_bucket_name"] == "keep_me"
+
+
+def test_updater_to_25_7_6_rename_rotation_cylinder():
+    # Minimal input containing a RotationCylinder in meshing.volume_zones
+    params_as_dict = {
+        "meshing": {
+            "volume_zones": [
+                {
+                    "type": "RotationCylinder",
+                    "name": "rot_zone",
+                    "entities": {
+                        "stored_entities": [
+                            {
+                                "private_attribute_entity_type_name": "Cylinder",
+                                "name": "c1",
+                            }
+                        ]
+                    },
+                    "spacing_axial": {"value": 1.0, "units": "m"},
+                    "spacing_radial": {"value": 1.0, "units": "m"},
+                    "spacing_circumferential": {"value": 1.0, "units": "m"},
+                }
+            ]
+        },
+        "unit_system": {"name": "SI"},
+        "version": "25.7.2",
+    }
+
+    params_new = updater(version_from="25.7.2", version_to="25.7.6", params_as_dict=params_as_dict)
+
+    assert params_new["version"] == "25.7.6"
+    assert params_new["meshing"]["volume_zones"][0]["type"] == "RotationVolume"
