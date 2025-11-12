@@ -17,6 +17,18 @@
         "passive1": {"type": "projectAnisoSpacing"},
         "passive2": {"type": "none"}
     },
+    "meshSliceOutput": {
+        "slices": {
+            "test_slice_y_normal": {
+                "sliceOrigin": [0.1, 0.2, 0.3],
+                "sliceNormal": [0.0, 1.0, 0.0]
+            },
+            "test_slice_z_normal": {
+                "sliceOrigin": [0.6, 0.1, 0.4],
+                "sliceNormal": [0.0, 0.0, 1.0]
+            }
+        }
+    },
     "refinement": [
         {
             "type": "cylinder",
