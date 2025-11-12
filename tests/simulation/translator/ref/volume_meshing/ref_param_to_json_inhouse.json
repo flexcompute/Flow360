@@ -159,6 +159,26 @@
             "spacingCircumferential": 0.2,
             "spacingRadial": 0.4,
             "enclosedObjects": []
+        },
+        {
+            "type": "Axisymmetric",
+            "name": "cone_mm_curve",
+            "axisOfRotation": [
+                0.7071067811865476,
+                0.0,
+                0.7071067811865476
+            ],
+            "center": [0.0, 0.01, 0.0],
+            "profileCurve": [
+                [-1.0e-3, 0.0],
+                [-1.0e-3, 1.0e-3],
+                [1.0e-3, 2.0e-3],
+                [1.0e-3, 0.0]
+            ],
+            "spacingAxial": 0.04,
+            "spacingCircumferential": 0.02,
+            "spacingRadial": 0.4,
+            "enclosedObjects": []
         }
     ],
     "structuredRegions": [
