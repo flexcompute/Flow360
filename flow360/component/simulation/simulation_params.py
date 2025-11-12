@@ -85,6 +85,7 @@ from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics im
 from flow360.component.simulation.utils import model_attribute_unlock
 from flow360.component.simulation.validation.validation_output import (
     _check_output_fields,
+    _check_output_fields_valid_given_transition_model,
     _check_output_fields_valid_given_turbulence_model,
     _check_unique_surface_volume_probe_entity_names,
     _check_unique_surface_volume_probe_names,
@@ -545,6 +546,11 @@ class SimulationParams(_ParamModelBase):
     def check_output_fields_valid_given_turbulence_model(params):
         """Check output fields are valid given the turbulence model"""
         return _check_output_fields_valid_given_turbulence_model(params)
+
+    @pd.model_validator(mode="after")
+    def check_output_fields_valid_given_transition_model(params):
+        """Check output fields are valid given the transition model"""
+        return _check_output_fields_valid_given_transition_model(params)
 
     @pd.model_validator(mode="after")
     def check_and_add_rotating_reference_frame_model_flag_in_volumezones(params):
