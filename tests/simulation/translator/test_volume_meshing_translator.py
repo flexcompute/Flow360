@@ -22,6 +22,7 @@ from flow360.component.simulation.meshing_param.volume_params import (
     StructuredBoxRefinement,
     UniformRefinement,
     UserDefinedFarfield,
+    AutomatedFarfield,
 )
 from flow360.component.simulation.primitives import (
     AxisymmetricBody,
