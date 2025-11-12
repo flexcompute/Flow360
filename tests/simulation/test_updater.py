@@ -825,7 +825,7 @@ def test_updater_to_25_7_6_remove_entity_bucket_field():
 
     params_new = updater(
         version_from="25.7.4",
-        version_to="25.7.6b0",
+        version_to="25.8.0b4",
         params_as_dict=params_as_dict,
     )
 

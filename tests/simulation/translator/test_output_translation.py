@@ -1119,12 +1119,16 @@ def aeroacoustic_output_config():
                     Observer(position=[0.0001, 0.02, 0.03] * u.m, group_name="0"),
                 ],
                 write_per_surface_output=True,
+                observer_time_step_size=0.1 * u.s,
             ),
         ],
         {
             "observers": [[0.2, 0.02, 0.03], [0.0001, 0.02, 0.03]],
             "writePerSurfaceOutput": True,
             "patchType": "solid",
+            "observerTimeStepSize": 34.02940058082128,
+            "startTime": 0.0,
+            "newRun": False,
         },
     )
 
@@ -1154,6 +1158,8 @@ def aeroacoustic_output_permeable_config():
             "patchType": "permeable",
             "permeableSurfaces": ["zoneA/interface-A-B", "zoneA/interface-A-C"],
             "writePerSurfaceOutput": False,
+            "startTime": 0.0,
+            "newRun": False,
         },
     )
 

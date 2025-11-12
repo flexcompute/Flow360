@@ -49,18 +49,18 @@ DraftEntityTypes = Annotated[
     pd.Field(discriminator="private_attribute_entity_type_name"),
 ]
 
-GhostSurfaceTypes = Annotated[
-    Union[GhostSphere, GhostCircularPlane],
-    pd.Field(discriminator="private_attribute_entity_type_name"),
-]
-
 
 class EntityInfoModel(Flow360BaseModel, metaclass=ABCMeta):
     """Base model for asset entity info JSON"""
 
     # entities that appear in simulation JSON but did not appear in EntityInfo)
     draft_entities: List[DraftEntityTypes] = pd.Field([])
-    ghost_entities: List[GhostSurfaceTypes] = pd.Field([])
+    ghost_entities: List[
+        Annotated[
+            Union[GhostSphere, GhostCircularPlane],
+            pd.Field(discriminator="private_attribute_entity_type_name"),
+        ]
+    ] = pd.Field([])
 
     @abstractmethod
     def get_boundaries(self, attribute_name: str = None) -> list[Surface]:

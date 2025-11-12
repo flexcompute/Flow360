@@ -395,8 +395,8 @@ VERSION_MILESTONES = [
     (Flow360Version("25.6.5"), _to_25_6_5),
     (Flow360Version("25.6.6"), _to_25_6_6),
     (Flow360Version("25.7.2"), _to_25_7_2),
-    (Flow360Version("25.7.6b0"), _to_25_7_6),
-    (Flow360Version("25.8.0"), _to_25_8_0),
+    (Flow360Version("25.7.6"), _to_25_7_6),
+    (Flow360Version("25.8.0b4"), _to_25_8_0),
 ]  # A list of the Python API version tuple with there corresponding updaters.
 
 
