@@ -94,8 +94,7 @@ class SurfaceEdgeRefinement(Flow360BaseModel):
         150 * u.deg,
         description="If the angle between two elements is less than this value, the edge is extracted as a feature.",
     )
-    bodies: Optional[EntityList[SnappyBody]] = pd.Field(None)
-    regions: Optional[EntityList[Surface]] = pd.Field(None)
+    entities: EntityList[SnappyBody, Surface] = pd.Field(None)
     retain_on_smoothing: bool = pd.Field(
         True, description="Maintain the edge when smoothing is applied."
     )
@@ -138,12 +137,6 @@ class SurfaceEdgeRefinement(Flow360BaseModel):
         if isinstance(value, List):
             return u.unyt.unyt_array(value)
         return value
-
-    @pd.model_validator(mode="after")
-    def _check_entity_lists(self) -> Self:
-        if self.bodies is None and self.regions is None:
-            raise ValueError("At least one body or region must be specified.")
-        return self
 
 
 SnappySurfaceRefinementTypes = Annotated[

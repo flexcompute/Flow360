@@ -226,7 +226,7 @@ def get_param_with_list_of_lengths():
                         snappy.SurfaceEdgeRefinement(
                             spacing=[1e-3, 8] * u.m,
                             distances=[0.4 * u.mm, 2 * u.m],
-                            regions=[Surface(name="test")],
+                            entities=[Surface(name="test")],
                         )
                     ],
                 ),

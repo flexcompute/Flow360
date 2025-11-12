@@ -23,6 +23,7 @@ from flow360.component.simulation.primitives import (
     Box,
     Cylinder,
     SeedpointZone,
+    SnappyBody,
     Surface,
 )
 from flow360.component.simulation.simulation_params import SimulationParams
@@ -121,6 +122,8 @@ def get_applicable_regions_dict(refinement_regions):
     applicable_regions = {}
     if refinement_regions:
         for entity in refinement_regions.stored_entities:
+            if not isinstance(entity, Surface):
+                continue
             split = entity.name.split("::")
             body = split[0]
             if len(split) == 2:
@@ -167,11 +170,15 @@ def apply_SnappySurfaceEdgeRefinement(
             refinement.spacing, spacing_system
         ).value.item()
     applicable_bodies = (
-        [entity.name for entity in refinement.bodies.stored_entities]
-        if refinement.bodies is not None
+        [
+            entity.name
+            for entity in refinement.entities.stored_entities
+            if isinstance(entity, SnappyBody)
+        ]
+        if refinement.entities is not None
         else []
     )
-    applicable_regions = get_applicable_regions_dict(refinement_regions=refinement.regions)
+    applicable_regions = get_applicable_regions_dict(refinement_regions=refinement.entities)
     for body in translated["geometry"]["bodies"]:
         if body["bodyName"] in applicable_bodies or (
             body["bodyName"] in applicable_regions and applicable_regions[body["bodyName"]] is None
@@ -189,9 +196,7 @@ def apply_SnappyRegionRefinement(
     """
     Translate SnappyRegionRefinement to applicable regions.
     """
-    applicable_regions = applicable_regions = get_applicable_regions_dict(
-        refinement_regions=refinement.entities
-    )
+    applicable_regions = get_applicable_regions_dict(refinement_regions=refinement.entities)
     for body in translated["geometry"]["bodies"]:
         if body["bodyName"] in applicable_regions:
             for region in body.get("regions", []):
