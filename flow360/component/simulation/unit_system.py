@@ -123,6 +123,7 @@ def _dimensioned_type_serializer(x):
 def _dimensioned_vector_type_serializer(x):
     """
     encoder for dimensioned type (unyt_quantity, unyt_array, DimensionedType)
+    enforces the output to be an array even if the value has one element
     """
     # adding .expr helps to avoid degF/C becoming serialized as °F/C
     return {"value": _encode_ndarray(x.value, True), "units": str(x.units.expr)}

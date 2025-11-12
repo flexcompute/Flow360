@@ -1,3 +1,5 @@
+import re
+
 import pydantic as pd
 import pytest
 
@@ -15,6 +17,7 @@ from flow360.component.simulation.meshing_param.params import (
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     AxisymmetricRefinement,
+    CustomZones,
     RotationVolume,
     StructuredBoxRefinement,
     UniformRefinement,
@@ -23,6 +26,7 @@ from flow360.component.simulation.meshing_param.volume_params import (
 from flow360.component.simulation.primitives import (
     AxisymmetricBody,
     Box,
+    CustomVolume,
     Cylinder,
     SeedpointZone,
     SnappyBody,
@@ -591,7 +595,13 @@ def test_require_mesh_zones():
             zones=[SeedpointZone(name="fluid", point_in_mesh=(0, 0, 0) * u.mm)],
         )
 
-    with pytest.raises(ValueError):
+    message = (
+        "snappyHexMeshing requires at least one `SeedpointZone` when not using `AutomatedFarfield`."
+    )
+    with pytest.raises(
+        ValueError,
+        match=re.escape(message),
+    ):
         with SI_unit_system:
             ModularMeshingWorkflow(
                 surface_meshing=snappy.SurfaceMeshingParams(
@@ -604,8 +614,12 @@ def test_require_mesh_zones():
 
 
 def test_bad_refinements():
-    with pytest.raises(ValueError):
-        surface_meshing = snappy.SurfaceMeshingParams(
+    message = "Default maximum spacing (5.0 mm) is lower than refinement minimum spacing (6.0 mm) and maximum spacing is not provided for BodyRefinement."
+    with pytest.raises(
+        ValueError,
+        match=re.escape(message),
+    ):
+        snappy.SurfaceMeshingParams(
             defaults=snappy.SurfaceMeshingDefaults(
                 min_spacing=1 * u.mm, max_spacing=5 * u.mm, gap_resolution=0.01 * u.mm
             ),
@@ -616,8 +630,12 @@ def test_bad_refinements():
             ],
         )
 
-    with pytest.raises(ValueError):
-        surface_meshing = snappy.SurfaceMeshingParams(
+    message = "Default minimum spacing (1.0 mm) is higher than refinement maximum spacing (0.5 mm) and minimum spacing is not provided for BodyRefinement."
+    with pytest.raises(
+        ValueError,
+        match=re.escape(message),
+    ):
+        snappy.SurfaceMeshingParams(
             defaults=snappy.SurfaceMeshingDefaults(
                 min_spacing=1 * u.mm, max_spacing=5 * u.mm, gap_resolution=0.01 * u.mm
             ),
@@ -788,4 +806,166 @@ def test_enclosed_entities_none_does_not_raise():
             spacing_axial=20,
             spacing_radial=0.2,
             spacing_circumferential=20,
+        )
+
+
+def test_snappy_quality_metrics_validation():
+    message = "Value must be less than or equal to 180 degrees."
+    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+        snappy.QualityMetrics(max_non_ortho=190 * u.deg)
+
+    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+        snappy.QualityMetrics(max_concave=190 * u.deg)
+
+    snappy.QualityMetrics(max_non_ortho=90 * u.deg, max_concave=90 * u.deg)
+
+    message = "Maximum skewness must be positive (your value: -2.0 degree). To disable enter None or -1*u.deg."
+    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+        snappy.QualityMetrics(max_boundary_skewness=-2 * u.deg)
+
+    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+        snappy.QualityMetrics(max_internal_skewness=-2 * u.deg)
+
+    snappy.QualityMetrics(max_boundary_skewness=-1 * u.deg, max_internal_skewness=-1 * u.deg)
+
+
+def test_modular_workflow_zones_validation():
+    message = "At least one zone defining the farfield is required."
+    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+        ModularMeshingWorkflow(
+            surface_meshing=snappy.SurfaceMeshingParams(
+                defaults=snappy.SurfaceMeshingDefaults(
+                    min_spacing=1 * u.mm, max_spacing=2 * u.mm, gap_resolution=1 * u.mm
+                )
+            ),
+            volume_meshing=VolumeMeshingParams(
+                defaults=VolumeMeshingDefaults(boundary_layer_first_layer_thickness=1 * u.mm)
+            ),
+            zones=[],
+        )
+
+    message = (
+        "When using `CustomZones` or `SeedpointZone` the `UserDefinedFarfield` will be ignored."
+    )
+    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+        ModularMeshingWorkflow(
+            surface_meshing=snappy.SurfaceMeshingParams(
+                defaults=snappy.SurfaceMeshingDefaults(
+                    min_spacing=1 * u.mm, max_spacing=2 * u.mm, gap_resolution=1 * u.mm
+                )
+            ),
+            volume_meshing=VolumeMeshingParams(
+                defaults=VolumeMeshingDefaults(boundary_layer_first_layer_thickness=1 * u.mm)
+            ),
+            zones=[
+                SeedpointZone(name="fluid", point_in_mesh=(0, 0, 0) * u.mm),
+                UserDefinedFarfield(),
+            ],
+        )
+
+    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+        ModularMeshingWorkflow(
+            surface_meshing=snappy.SurfaceMeshingParams(
+                defaults=snappy.SurfaceMeshingDefaults(
+                    min_spacing=1 * u.mm, max_spacing=2 * u.mm, gap_resolution=1 * u.mm
+                )
+            ),
+            volume_meshing=VolumeMeshingParams(
+                defaults=VolumeMeshingDefaults(boundary_layer_first_layer_thickness=1 * u.mm)
+            ),
+            zones=[
+                CustomZones(
+                    name="custom_zones",
+                    entities=[
+                        CustomVolume(
+                            name="zone1",
+                            boundaries=[Surface(name="face1"), Surface(name="face2")],
+                        )
+                    ],
+                ),
+                UserDefinedFarfield(),
+            ],
+        )
+
+    message = "Only one `AutomatedFarfield` zone is allowed in `zones`."
+    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+        ModularMeshingWorkflow(
+            surface_meshing=snappy.SurfaceMeshingParams(
+                defaults=snappy.SurfaceMeshingDefaults(
+                    min_spacing=1 * u.mm, max_spacing=2 * u.mm, gap_resolution=1 * u.mm
+                )
+            ),
+            volume_meshing=VolumeMeshingParams(
+                defaults=VolumeMeshingDefaults(boundary_layer_first_layer_thickness=1 * u.mm)
+            ),
+            zones=[AutomatedFarfield(), AutomatedFarfield()],
+        )
+
+    message = "Only one `UserDefinedFarfield` zone is allowed in `zones`."
+    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+        ModularMeshingWorkflow(
+            surface_meshing=snappy.SurfaceMeshingParams(
+                defaults=snappy.SurfaceMeshingDefaults(
+                    min_spacing=1 * u.mm, max_spacing=2 * u.mm, gap_resolution=1 * u.mm
+                )
+            ),
+            volume_meshing=VolumeMeshingParams(
+                defaults=VolumeMeshingDefaults(boundary_layer_first_layer_thickness=1 * u.mm)
+            ),
+            zones=[UserDefinedFarfield(), UserDefinedFarfield()],
+        )
+
+    message = "Cannot use `AutomatedFarfield` and `UserDefinedFarfield` simultaneously."
+    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+        ModularMeshingWorkflow(
+            surface_meshing=snappy.SurfaceMeshingParams(
+                defaults=snappy.SurfaceMeshingDefaults(
+                    min_spacing=1 * u.mm, max_spacing=2 * u.mm, gap_resolution=1 * u.mm
+                )
+            ),
+            volume_meshing=VolumeMeshingParams(
+                defaults=VolumeMeshingDefaults(boundary_layer_first_layer_thickness=1 * u.mm)
+            ),
+            zones=[AutomatedFarfield(), UserDefinedFarfield()],
+        )
+
+    message = "`SeedpointZone` and `CustomVolume` cannot be used with `AutomatedFarfield`."
+    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+        ModularMeshingWorkflow(
+            surface_meshing=snappy.SurfaceMeshingParams(
+                defaults=snappy.SurfaceMeshingDefaults(
+                    min_spacing=1 * u.mm, max_spacing=2 * u.mm, gap_resolution=1 * u.mm
+                )
+            ),
+            volume_meshing=VolumeMeshingParams(
+                defaults=VolumeMeshingDefaults(boundary_layer_first_layer_thickness=1 * u.mm)
+            ),
+            zones=[
+                AutomatedFarfield(),
+                SeedpointZone(name="fluid", point_in_mesh=(0, 0, 0) * u.mm),
+            ],
+        )
+
+    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+        ModularMeshingWorkflow(
+            surface_meshing=snappy.SurfaceMeshingParams(
+                defaults=snappy.SurfaceMeshingDefaults(
+                    min_spacing=1 * u.mm, max_spacing=2 * u.mm, gap_resolution=1 * u.mm
+                )
+            ),
+            volume_meshing=VolumeMeshingParams(
+                defaults=VolumeMeshingDefaults(boundary_layer_first_layer_thickness=1 * u.mm)
+            ),
+            zones=[
+                AutomatedFarfield(),
+                CustomZones(
+                    name="custom_zones",
+                    entities=[
+                        CustomVolume(
+                            name="zone1",
+                            boundaries=[Surface(name="face1"), Surface(name="face2")],
+                        )
+                    ],
+                ),
+            ],
         )

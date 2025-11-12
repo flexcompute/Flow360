@@ -762,9 +762,7 @@ class SnappyBody(EntityBase):
     keywords with a body::region naming scheme.
     """
 
-    private_attribute_registry_bucket_name: Literal["SurfaceGroupedEntityType"] = pd.Field(
-        "SurfaceGroupedEntityType", frozen=True
-    )
+    entity_bucket: ClassVar[str] = "SurfaceGroupedEntityType"
     private_attribute_entity_type_name: Literal["SnappyBody"] = pd.Field("SnappyBody", frozen=True)
     private_attribute_id: str = pd.Field(
         default_factory=generate_uuid,

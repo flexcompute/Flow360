@@ -143,25 +143,34 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
 
     @classmethod
     def _get_farfield_method_(cls, param_as_dict: dict):
-        volume_zones = None
-        try:
-            if param_as_dict["meshing"]:
-                if param_as_dict["meshing"]["type_name"] == "MeshingParams":
-                    volume_zones = param_as_dict["meshing"]["volume_zones"]
-                else:
-                    volume_zones = param_as_dict["meshing"]["zones"]
-        except KeyError:
-            # No farfield/meshing info.
+        meshing = param_as_dict.get("meshing")
+        modular = False
+        if meshing is None:
+            # No meshing info.
             return None
 
-        farfield_method = None
+        if meshing["type_name"] == "MeshingParams":
+            volume_zones = meshing.get("volume_zones")
+        else:
+            volume_zones = meshing.get("zones")
+            modular = True
         if volume_zones:
             for zone in volume_zones:
                 if zone["type"] == "AutomatedFarfield":
                     return zone["method"]
-                if zone["type"] in ["UserDefinedFarfield", "CustomZones", "SeedpointZone"]:
-                    farfield_method = "user-defined"
-        return farfield_method
+                if zone["type"] == "UserDefinedFarfield":
+                    return "user-defined"
+                if (
+                    zone["type"]
+                    in [
+                        "CustomZones",
+                        "SeedpointZone",
+                    ]
+                    and modular
+                ):
+                    return "user-defined"
+
+        return None
 
     @classmethod
     def _get_farfield_domain_type_(cls, param_as_dict: dict):

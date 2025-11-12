@@ -18,7 +18,7 @@ def test_snappy_refinements_validators():
         )
 
     message = "UniformRefinement for snappy accepts only Boxes with axes aligned with the global coordinate system (angle_of_rotation=0)."
-    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)) as err:
+    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
         snappy.SurfaceMeshingParams(
             defaults=snappy.SurfaceMeshingDefaults(
                 min_spacing=3 * u.mm, max_spacing=10 * u.mm, gap_resolution=0.1 * u.mm
@@ -61,6 +61,27 @@ def test_snappy_refinements_validators():
         ],
     )
 
+    snappy.SurfaceMeshingParams(
+        defaults=snappy.SurfaceMeshingDefaults(
+            min_spacing=3 * u.mm, max_spacing=10 * u.mm, gap_resolution=0.1 * u.mm
+        ),
+        refinements=[
+            UniformRefinement(
+                name="unif",
+                spacing=6 * u.mm,
+                entities=[
+                    Box(
+                        center=[2, 3, 4] * u.m,
+                        size=[5, 6, 7] * u.m,
+                        axis_of_rotation=[1, 3, 4],
+                        angle_of_rotation=360 * u.deg,
+                        name="box",
+                    )
+                ],
+            )
+        ],
+    )
+
     message = "UniformRefinement for snappy accepts only full cylinders (where inner_radius = 0)."
     with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
         snappy.SurfaceMeshingParams(
@@ -87,22 +108,32 @@ def test_snappy_refinements_validators():
 
 
 def test_snappy_edge_refinement_valdators():
-    with pytest.raises(ValueError):
+    message = "When using a distance spacing specification both spacing (2.0 mm) and distances ([5] mm) fields must be arrays and the same length."
+    with pytest.raises(
+        ValueError,
+        match=re.escape(message),
+    ):
         snappy.SurfaceEdgeRefinement(
             spacing=2 * u.mm, distances=[5 * u.mm], entities=[Surface(name="test")]
         )
 
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        pd.ValidationError,
+    ):
         snappy.SurfaceEdgeRefinement(
             spacing=[2 * u.mm, 3 * u.mm], distances=[5 * u.mm], entities=[Surface(name="test")]
         )
 
-    with pytest.raises(ValueError):
+    with pytest.raises(pd.ValidationError):
         snappy.SurfaceEdgeRefinement(
             spacing=2 * u.mm, distances=5 * u.mm, entities=[Surface(name="test")]
         )
 
-    with pytest.raises(ValueError):
+    message = "When using a distance spacing specification both spacing ([2] mm) and distances (None) fields must be arrays and the same length."
+    with pytest.raises(
+        ValueError,
+        match=re.escape(message),
+    ):
         snappy.SurfaceEdgeRefinement(spacing=[2 * u.mm], entities=[Surface(name="test")])
 
     snappy.SurfaceEdgeRefinement(

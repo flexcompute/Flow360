@@ -63,14 +63,6 @@ VolumeZonesTypes = Annotated[
     pd.Field(discriminator="type"),
 ]
 
-SurfaceRefinementTypes = Annotated[
-    Union[
-        SurfaceEdgeRefinement,
-        SurfaceRefinement,
-    ],
-    pd.Field(discriminator="refinement_type"),
-]
-
 VolumeRefinementTypes = Annotated[
     Union[
         UniformRefinement,
@@ -333,7 +325,7 @@ class ModularMeshingWorkflow(Flow360BaseModel):
 
     @pd.field_validator("zones", mode="after")
     @classmethod
-    def _check_volume_zones_has_farfied(cls, v):
+    def _check_volume_zones_has_farfield(cls, v):
 
         total_automated_farfield = sum(
             isinstance(volume_zone, AutomatedFarfield) for volume_zone in v
@@ -346,17 +338,19 @@ class ModularMeshingWorkflow(Flow360BaseModel):
 
         if (total_custom_zones or total_seedpoint_zone) and total_user_defined_farfield:
             raise ValueError(
-                "When using :class:`CustomZones` or SeedpointZone the UserDefinedFarfield will be ignored."
+                "When using `CustomZones` or `SeedpointZone` the `UserDefinedFarfield` will be ignored."
             )
 
         if total_automated_farfield > 1:
-            raise ValueError("Only one AutomatedFarfield zone is allowed in `volume_zones`.")
+            raise ValueError("Only one `AutomatedFarfield` zone is allowed in `zones`.")
 
         if total_user_defined_farfield > 1:
-            raise ValueError("Only one UserDefinedFarfield zone is allowed in `volume_zones`.")
+            raise ValueError("Only one `UserDefinedFarfield` zone is allowed in `zones`.")
 
         if total_automated_farfield + total_user_defined_farfield > 1:
-            raise ValueError("Cannot use AutomatedFarfield and UserDefinedFarfield simultaneously.")
+            raise ValueError(
+                "Cannot use `AutomatedFarfield` and `UserDefinedFarfield` simultaneously."
+            )
 
         if (
             total_user_defined_farfield
@@ -368,7 +362,7 @@ class ModularMeshingWorkflow(Flow360BaseModel):
 
         if total_automated_farfield and (total_seedpoint_zone or total_custom_zones):
             raise ValueError(
-                "SeedpointZone and CustomVolume cannot be used with AutomatedFarfield."
+                "`SeedpointZone` and `CustomVolume` cannot be used with `AutomatedFarfield`."
             )
 
         return v
@@ -386,14 +380,14 @@ class ModularMeshingWorkflow(Flow360BaseModel):
                 for custom_volume in volume_zone.entities.stored_entities:
                     if custom_volume.name in to_be_generated_volume_zone_names:
                         raise ValueError(
-                            f"Multiple CustomVolume with the same name `{custom_volume.name}` are not allowed."
+                            f"Multiple `CustomVolume` with the same name `{custom_volume.name}` are not allowed."
                         )
                     to_be_generated_volume_zone_names.add(custom_volume.name)
 
             if isinstance(volume_zone, SeedpointZone):
                 if volume_zone.name in to_be_generated_volume_zone_names:
                     raise ValueError(
-                        f"Multiple CustomVolume or SeedpointZone with the same name `{volume_zone.name}` "
+                        f"Multiple `CustomVolume` or `SeedpointZone` with the same name `{volume_zone.name}` "
                         + "are not allowed."
                     )
                 to_be_generated_volume_zone_names.add(volume_zone.name)
@@ -407,17 +401,17 @@ class ModularMeshingWorkflow(Flow360BaseModel):
                 isinstance(volume_zone, SeedpointZone) for volume_zone in self.zones
             ):
                 raise ValueError(
-                    "snappyHexMeshing requires at least one SeedpointZone when not using AutomatedFarfield."
+                    "snappyHexMeshing requires at least one `SeedpointZone` when not using `AutomatedFarfield`."
                 )
             for zone in self.zones:  # pylint: disable=not-an-iterable
                 if isinstance(zone, CustomZones):
                     raise ValueError(
-                        "Volume zones with snappyHexMeshing are defined using SeedpointZone, not CustomZones."
+                        "Volume zones with snappyHexMeshing are defined using `SeedpointZone`, not `CustomZones`."
                     )
         else:
             for zone in self.zones:  # pylint: disable=not-an-iterable
                 if isinstance(zone, SeedpointZone):
-                    raise ValueError("SeedpointZone is applicable only with snappyHexMeshing.")
+                    raise ValueError("`SeedpointZone` is applicable only with snappyHexMeshing.")
 
         return self
 
@@ -448,7 +442,7 @@ class ModularMeshingWorkflow(Flow360BaseModel):
         usage = EntityUsageMap()
 
         for volume_zone in self.zones if self.zones is not None else []:
-            if isinstance(volume_zone, (RotationVolume, RotationCylinder)):
+            if isinstance(volume_zone, RotationVolume):
                 # pylint: disable=protected-access
                 _ = [
                     usage.add_entity_usage(item, volume_zone.type)

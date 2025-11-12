@@ -77,8 +77,9 @@ class MeshingDefaults(Flow360BaseModel):
         " This is only supported by the beta mesher and can not be overridden per face.",
     )
 
-    planar_face_tolerance: Optional[pd.NonNegativeFloat] = pd.Field(
+    planar_face_tolerance: pd.NonNegativeFloat = pd.Field(
         DEFAULT_PLANAR_FACE_TOLERANCE,
+        strict=True,
         description="Tolerance used for detecting planar faces in the input surface mesh / geometry"
         " that need to be remeshed, such as symmetry planes."
         " This tolerance is non-dimensional, and represents a distance"
@@ -94,20 +95,20 @@ class MeshingDefaults(Flow360BaseModel):
         context=SURFACE_MESH,
     )
 
-    surface_max_aspect_ratio: Optional[pd.PositiveFloat] = ConditionalField(
+    surface_max_aspect_ratio: pd.PositiveFloat = ConditionalField(
         10.0,
         description="Maximum aspect ratio for surface cells for the GAI surface mesher."
         " This cannot be overridden per face",
         context=SURFACE_MESH,
     )
 
-    surface_max_adaptation_iterations: Optional[pd.NonNegativeInt] = ConditionalField(
+    surface_max_adaptation_iterations: pd.NonNegativeInt = ConditionalField(
         50,
         description="Maximum adaptation iterations for the GAI surface mesher.",
         context=SURFACE_MESH,
     )
 
-    curvature_resolution_angle: Optional[AngleType.Positive] = ContextField(
+    curvature_resolution_angle: AngleType.Positive = ContextField(
         12 * u.deg,
         description=(
             "Default maximum angular deviation in degrees. This value will restrict:"
@@ -118,7 +119,7 @@ class MeshingDefaults(Flow360BaseModel):
         context=SURFACE_MESH,
     )
 
-    preserve_thin_geometry: Optional[bool] = pd.Field(
+    preserve_thin_geometry: bool = pd.Field(
         False,
         description="Flag to specify whether thin geometry features with thickness roughly equal "
         + "to geometry_accuracy should be resolved accurately during the surface meshing process."
@@ -129,6 +130,11 @@ class MeshingDefaults(Flow360BaseModel):
         0.0 * u.m,
         description="Threshold size below which all geometry gaps are automatically closed. "
         + "This can be overridden with class: ~flow360.GeometryRefinement",
+    )
+
+    remove_non_manifold_faces: bool = pd.Field(
+        False,
+        description="Flag to remove non-manifold and interior faces.",
     )
 
     @pd.field_validator("number_of_boundary_layers", mode="after")
@@ -165,11 +171,12 @@ class MeshingDefaults(Flow360BaseModel):
         "surface_max_adaptation_iterations",
         "preserve_thin_geometry",
         "sealing_size",
+        "remove_non_manifold_faces",
         mode="after",
     )
     @classmethod
     def invalid_geometry_ai_features(cls, value, info):
-        """Ensure surface max aspect ratio is not specified when GAI is not used"""
+        """Ensure GAI features are not specified when GAI is not used"""
         validation_info = get_validation_info()
 
         if validation_info is None:

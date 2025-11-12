@@ -51,7 +51,7 @@ class UniformRefinement(Flow360BaseModel):
     )
     # pylint: disable=no-member
     spacing: LengthType.Positive = pd.Field(description="The required refinement spacing.")
-    project_to_surface: Optional[bool] = pd.Field(True)
+    project_to_surface: bool = pd.Field(True)
 
 
 class StructuredBoxRefinement(Flow360BaseModel):
@@ -473,7 +473,6 @@ class UserDefinedFarfield(_FarfieldBase):
     ====
     """
 
-    # pylint: disable=no-member
     type: Literal["UserDefinedFarfield"] = pd.Field("UserDefinedFarfield", frozen=True)
     name: Optional[str] = pd.Field(None)
 

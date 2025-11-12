@@ -1219,7 +1219,10 @@ class Rotation(Flow360BaseModel):
         description="The angular velocity or rotation angle as a function of time.",
     )
     parent_volume: Optional[
-        Union[GenericVolume, Cylinder, CustomVolume, SeedpointZone, AxisymmetricBody]
+        Annotated[
+            Union[GenericVolume, Cylinder, CustomVolume, SeedpointZone, AxisymmetricBody],
+            pd.Field(discriminator="private_attribute_entity_type_name"),
+        ]
     ] = pd.Field(
         None,
         description="The parent rotating entity in a nested rotation case."

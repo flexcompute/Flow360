@@ -924,9 +924,7 @@ def snappy_settings_off_position():
             castellated_mesh_controls=snappy.CastellatedMeshControls(
                 resolve_feature_angle=10 * u.deg, n_cells_between_levels=3, min_refinement_cells=50
             ),
-            smooth_controls=snappy.SmoothControls(
-                lambda_factor=None, mu_factor=None, iterations=None
-            ),
+            smooth_controls=snappy.SmoothControls(iterations=None),
         )
 
         param = SimulationParams(

@@ -10,10 +10,7 @@ from flow360.component.simulation.meshing_param import snappy
 from flow360.component.simulation.meshing_param.edge_params import SurfaceEdgeRefinement
 from flow360.component.simulation.meshing_param.face_params import SurfaceRefinement
 from flow360.component.simulation.meshing_param.meshing_specs import OctreeSpacing
-from flow360.component.simulation.meshing_param.params import (
-    MeshingParams,
-    ModularMeshingWorkflow,
-)
+from flow360.component.simulation.meshing_param.params import MeshingParams
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     UniformRefinement,
@@ -31,6 +28,7 @@ from flow360.component.simulation.translator.utils import (
     ensure_meshing_is_specified,
     preprocess_input,
     translate_setting_and_apply_to_all_entities,
+    using_snappy,
 )
 from flow360.component.simulation.unit_system import LengthType
 from flow360.exceptions import Flow360TranslationError
@@ -656,9 +654,7 @@ def get_surface_meshing_json(input_params: SimulationParams, mesh_units):
     """
     ensure_meshing_is_specified(input_params)
     if not input_params.private_attribute_asset_cache.use_geometry_AI:
-        if isinstance(input_params.meshing, ModularMeshingWorkflow) and isinstance(
-            input_params.meshing.surface_meshing, snappy.SurfaceMeshingParams
-        ):
+        if using_snappy(input_params):
             return snappy_mesher_json(input_params)
         if isinstance(input_params.meshing, MeshingParams):
             return legacy_mesher_json(input_params)

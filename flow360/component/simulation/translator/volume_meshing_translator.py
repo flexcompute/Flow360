@@ -2,7 +2,6 @@
 
 from typing import Union
 
-from flow360.component.simulation.meshing_param import snappy
 from flow360.component.simulation.meshing_param.face_params import (
     BoundaryLayer,
     PassiveSpacing,
@@ -36,6 +35,7 @@ from flow360.component.simulation.translator.utils import (
     get_global_setting_from_first_instance,
     preprocess_input,
     translate_setting_and_apply_to_all_entities,
+    using_snappy,
 )
 from flow360.component.simulation.utils import is_exact_instance
 from flow360.exceptions import Flow360TranslationError
@@ -241,9 +241,7 @@ def _get_seedpoint_zones(volume_zones: list):
     """
     seedpoint_zones = []
     for zone in volume_zones:
-        if isinstance(zone, SeedpointZone) or (
-            isinstance(zone, UserDefinedFarfield) and hasattr(zone, "point_in_mesh")
-        ):
+        if isinstance(zone, SeedpointZone):
             seedpoint_zones.append(
                 {
                     "name": zone.name,
@@ -453,9 +451,7 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
         translated["zones"] = custom_volumes
 
     ##::  Step 7: Get custom seedpoint zones
-    if isinstance(input_params.meshing, ModularMeshingWorkflow) and isinstance(
-        input_params.meshing.surface_meshing, snappy.SurfaceMeshingParams
-    ):
+    if using_snappy(input_params):
         seedpoint_zones = _get_seedpoint_zones(volume_zones)
         if seedpoint_zones:
             translated["zones"] = seedpoint_zones

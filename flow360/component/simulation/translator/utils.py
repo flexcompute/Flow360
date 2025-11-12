@@ -13,6 +13,8 @@ import unyt as u
 from flow360.component.simulation.framework.base_model import snake_to_camel
 from flow360.component.simulation.framework.entity_base import EntityBase, EntityList
 from flow360.component.simulation.framework.unique_list import UniqueItemList
+from flow360.component.simulation.meshing_param import snappy
+from flow360.component.simulation.meshing_param.params import ModularMeshingWorkflow
 from flow360.component.simulation.primitives import (
     BOUNDARY_FULL_NAME_WHEN_NOT_FOUND,
     _SurfaceEntityBase,
@@ -459,3 +461,10 @@ def ensure_meshing_is_specified(input_params: SimulationParams):
             None,
             ["meshing"],
         )
+
+
+def using_snappy(input_params: SimulationParams):
+    """Checks if snappy is being used"""
+    return isinstance(input_params.meshing, ModularMeshingWorkflow) and isinstance(
+        input_params.meshing.surface_meshing, snappy.SurfaceMeshingParams
+    )

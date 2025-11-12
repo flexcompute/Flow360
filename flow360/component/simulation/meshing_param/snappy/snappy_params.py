@@ -59,15 +59,17 @@ class SurfaceMeshingParams(Flow360BaseModel):
                     "m"
                 ) > refinement.max_spacing.to("m"):
                     raise ValueError(
-                        "Default minimum spacing is higher that refinement maximum spacing"
-                        + "and minimum spacing is not provided."
+                        f"Default minimum spacing ({self.defaults.min_spacing}) is higher than "
+                        + f"refinement maximum spacing ({refinement.max_spacing}) "
+                        + "and minimum spacing is not provided for BodyRefinement."
                     )
                 if refinement.max_spacing is None and self.defaults.max_spacing.to(
                     "m"
                 ) < refinement.min_spacing.to("m"):
                     raise ValueError(
-                        "Default maximum spacing is lower that refinement minimum spacing"
-                        + "and maximum spacing is not provided."
+                        f"Default maximum spacing ({self.defaults.max_spacing}) is lower than "
+                        + f"refinement minimum spacing ({refinement.min_spacing}) "
+                        + "and maximum spacing is not provided for BodyRefinement."
                     )
         return self
 
@@ -79,7 +81,10 @@ class SurfaceMeshingParams(Flow360BaseModel):
         for refinement in self.refinements:
             if isinstance(refinement, UniformRefinement):
                 for entity in refinement.entities.stored_entities:
-                    if isinstance(entity, Box) and entity.angle_of_rotation.to("deg") != 0 * u.deg:
+                    if (
+                        isinstance(entity, Box)
+                        and entity.angle_of_rotation.to("deg") % (360 * u.deg) != 0 * u.deg
+                    ):
                         raise ValueError(
                             "UniformRefinement for snappy accepts only Boxes with axes aligned"
                             + " with the global coordinate system (angle_of_rotation=0)."
@@ -103,8 +108,8 @@ class SurfaceMeshingParams(Flow360BaseModel):
             spacing_unit = spacing.units
             if not close:
                 closest_spacing = self.base_spacing[lvl]
-                msg = f"The spacing of {spacing:.4g} spcified in {location} will be cast to the first lower refinement"
-                msg += f" in the octree series which is {closest_spacing.to(spacing_unit):.4g}."
+                msg = f"The spacing of {spacing:.4g} specified in {location} will be cast to the first lower refinement"
+                msg += f" in the octree series ({closest_spacing.to(spacing_unit):.4g})."
                 log.warning(msg)
 
         # pylint: disable=no-member

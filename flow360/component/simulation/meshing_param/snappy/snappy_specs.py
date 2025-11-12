@@ -25,7 +25,7 @@ class SurfaceMeshingDefaults(Flow360BaseModel):
     def _check_spacing_order(self) -> Self:
         if self.min_spacing and self.max_spacing:
             if self.min_spacing > self.max_spacing:
-                raise ValueError("Minimum spacing must be lower than maximum spacing.")
+                raise ValueError("Minimum spacing must be lower than or equal to maximum spacing.")
         return self
 
 
@@ -83,7 +83,6 @@ class QualityMetrics(Flow360BaseModel):
     )
     n_smooth_scale: Optional[pd.NonNegativeInt] = pd.Field(
         default=4,
-        ge=0,
         description="Number of smoothing iterations. Used in combination with error_reduction.",
     )
     error_reduction: Optional[float] = pd.Field(
@@ -106,7 +105,7 @@ class QualityMetrics(Flow360BaseModel):
         if value is None:
             return 180 * u.deg
         if value > 180 * u.deg:
-            raise ValueError("Value must be less that 180 degrees.")
+            raise ValueError("Value must be less than or equal to 180 degrees.")
         return value
 
     @pd.field_validator("max_boundary_skewness", "max_internal_skewness", mode="after")
@@ -144,18 +143,18 @@ class CastellatedMeshControls(Flow360BaseModel):
     """
 
     # pylint: disable=no-member
-    resolve_feature_angle: Optional[AngleType.Positive] = pd.Field(
+    resolve_feature_angle: AngleType.Positive = pd.Field(
         default=25 * u.deg,
         description="This parameter controls the local curvature refinement. "
         "The higher the value, the less features it captures. "
         "Applies maximum level of refinement to cells that can see intersections whose angle exceeds this value.",
     )
-    n_cells_between_levels: Optional[pd.NonNegativeInt] = pd.Field(
+    n_cells_between_levels: pd.NonNegativeInt = pd.Field(
         1,
         description="This parameter controls the transition between cell refinement levels. "
         "Number of buffer layers of cells between different levels of refinement.",
     )
-    min_refinement_cells: Optional[pd.NonNegativeInt] = pd.Field(
+    min_refinement_cells: pd.NonNegativeInt = pd.Field(
         10,
         description="The refinement along the surfaces may spend many iterations on refinement of only few cells. "
         "Whenever the number of cells to be refined is less than or equal to this value, the refinement will stop. "
@@ -222,11 +221,12 @@ class SmoothControls(Flow360BaseModel):
     """
 
     # pylint: disable=no-member
-    lambda_factor: Optional[pd.NonNegativeFloat] = pd.Field(
-        0.7, description="Controls the strength of smoothing in a single iteration."
+    lambda_factor: pd.NonNegativeFloat = pd.Field(
+        0.7, le=1, description="Controls the strength of smoothing in a single iteration."
     )
-    mu_factor: Optional[pd.NonNegativeFloat] = pd.Field(
+    mu_factor: pd.NonNegativeFloat = pd.Field(
         0.71,
+        le=1,
         description="Controls the strength of geometry inflation during a single iteration. "
         "It is reccomended to set mu to be a little higher than lambda.",
     )
