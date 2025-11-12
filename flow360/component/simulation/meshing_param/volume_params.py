@@ -491,6 +491,7 @@ class UserDefinedFarfield(_FarfieldBase):
         return GhostSurface(name="symmetric")
 
 
+# pylint: disable=no-member
 class StaticFloor(Flow360BaseModel):
     """Class for static wind tunnel floor with friction patch."""
 
@@ -514,6 +515,7 @@ class FullyMovingFloor(Flow360BaseModel):
     type: Literal["FullyMovingFloor"] = pd.Field(description="Fully moving floor.")
 
 
+# pylint: disable=no-member
 class CentralBelt(Flow360BaseModel):
     """Class for wind tunnel floor with one central belt."""
 
@@ -529,6 +531,7 @@ class CentralBelt(Flow360BaseModel):
     )
 
 
+# pylint: disable=no-member
 class WheelBelts(Flow360BaseModel):
     """Class for wind tunnel floor with one central belt and four wheel belts."""
 
@@ -555,6 +558,7 @@ class WheelBelts(Flow360BaseModel):
     rear_wheel_belt_outer: LengthType.Positive
 
 
+# pylint: disable=no-member
 class WindTunnelFarfield(_FarfieldBase):
     """
     Settings for analytic wind tunnel farfield generation.
