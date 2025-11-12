@@ -14,6 +14,7 @@ import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList, generate_uuid
 from flow360.component.simulation.framework.expressions import StringExpression
+from flow360.component.simulation.framework.param_utils import serialize_model_obj_to_id
 from flow360.component.simulation.framework.unique_list import UniqueItemList
 from flow360.component.simulation.models.surface_models import (
     EntityListAllowingGhost,
@@ -655,7 +656,7 @@ class SurfaceIntegralOutput(_OutputBase):
         description="List of output variables, only the :class:`UserDefinedField` is allowed."
     )
     moving_statistic: Optional[MovingStatistic] = pd.Field(
-        None, description="The moving statistics used to monitor the output."
+        None, description="When specified, report moving statistics of the fields instead."
     )
     output_type: Literal["SurfaceIntegralOutput"] = pd.Field("SurfaceIntegralOutput", frozen=True)
 
@@ -708,7 +709,7 @@ class ForceOutput(_OutputBase):
         description="List of surface/volume models whose force contribution will be calculated.",
     )
     moving_statistic: Optional[MovingStatistic] = pd.Field(
-        None, description="The moving statistics used to monitor the output."
+        None, description="When specified, report moving statistics of the fields instead."
     )
     output_type: Literal["ForceOutput"] = pd.Field("ForceOutput", frozen=True)
 
@@ -719,10 +720,7 @@ class ForceOutput(_OutputBase):
             return value
         model_ids = []
         for model in value:
-            if isinstance(model, get_args(get_args(ForceOutputModelType)[0])):
-                model_ids.append(model.private_attribute_id)
-                continue
-            model_ids.append(model)
+            model_ids.append(serialize_model_obj_to_id(model_obj=model))
         return model_ids
 
     @pd.field_validator("models", mode="before")
@@ -837,7 +835,7 @@ class ProbeOutput(_OutputBase):
         " and :class:`UserDefinedField`."
     )
     moving_statistic: Optional[MovingStatistic] = pd.Field(
-        None, description="The moving statistics used to monitor the output."
+        None, description="When specified, report moving statistics of the fields instead."
     )
     output_type: Literal["ProbeOutput"] = pd.Field("ProbeOutput", frozen=True)
 
@@ -904,7 +902,7 @@ class SurfaceProbeOutput(_OutputBase):
         " :ref:`variables specific to SurfaceOutput<SurfaceSpecificVariablesV2>` and :class:`UserDefinedField`."
     )
     moving_statistic: Optional[MovingStatistic] = pd.Field(
-        None, description="The moving statistics used to monitor the output."
+        None, description="When specified, report moving statistics of the fields instead."
     )
     output_type: Literal["SurfaceProbeOutput"] = pd.Field("SurfaceProbeOutput", frozen=True)
 
