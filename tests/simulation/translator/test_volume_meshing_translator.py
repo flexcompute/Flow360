@@ -561,4 +561,43 @@ def test_surface_mesh_user_defined_farfield_disallow_any_ghost():
 
 
 def test_just_import_automated_farfield():
-    print(AutomatedFarfield)
+    print(">>>>", AutomatedFarfield)
+
+def test_farfield_relative_size():
+    # Debug for CI NameError: AutomatedFarfield
+    import sys
+
+    with SI_unit_system:
+        # Robust fallback: ensure AutomatedFarfield is available even if the module-level import was skipped/stripped
+        try:
+            print(
+                "[debug] Using AutomatedFarfield from globals, module:",
+                getattr(_AutomatedFarfield, "__module__", None),
+            )
+        except NameError:
+            from flow360.component.simulation.meshing_param.volume_params import (
+                AutomatedFarfield as _AutomatedFarfield,
+            )
+
+            print(
+                "[debug] Fallback-imported AutomatedFarfield, module:",
+                getattr(_AutomatedFarfield, "__module__", None),
+            )
+        param = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-3, boundary_layer_growth_rate=1.25
+                ),
+                volume_zones=[_AutomatedFarfield(method="quasi-3d", relative_size=100.0)],
+            )
+        )
+    translated = get_volume_meshing_json(param, u.m)
+    ref_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "ref",
+        "volume_meshing",
+        "ref_param_to_json_legacy_farfield_relative_size.json",
+    )
+    with open(ref_path, "r") as fh:
+        ref_dict = json.load(fh)
+    assert compare_values(translated, ref_dict)
