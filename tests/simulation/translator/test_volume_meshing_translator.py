@@ -5,6 +5,7 @@ import pytest
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.param_utils import AssetCache
+from flow360.component.simulation.framework.updater_utils import compare_values
 from flow360.component.simulation.meshing_param.face_params import (
     BoundaryLayer,
     PassiveSpacing,
@@ -15,6 +16,7 @@ from flow360.component.simulation.meshing_param.params import (
     MeshingParams,
 )
 from flow360.component.simulation.meshing_param.volume_params import (
+    AutomatedFarfield,
     AxisymmetricRefinement,
     CustomZones,
     RotationVolume,
@@ -556,3 +558,25 @@ def test_surface_mesh_user_defined_farfield_disallow_any_ghost():
                 )
             with pytest.raises(pd.ValidationError):
                 PassiveSpacing(entities=[GhostCircularPlane(name="symmetric")], type="projected")
+
+
+def test_farfield_relative_size():
+    with SI_unit_system:
+        param = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-3, boundary_layer_growth_rate=1.25
+                ),
+                volume_zones=[AutomatedFarfield(method="quasi-3d", relative_size=100.0)],
+            )
+        )
+    translated = get_volume_meshing_json(param, u.m)
+    ref_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "ref",
+        "volume_meshing",
+        "ref_param_to_json_legacy_farfield_relative_size.json",
+    )
+    with open(ref_path, "r") as fh:
+        ref_dict = json.load(fh)
+    assert compare_values(translated, ref_dict)
