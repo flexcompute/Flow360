@@ -16,13 +16,17 @@ from flow360.component.simulation.meshing_param.params import (
     MeshingParams,
 )
 from flow360.component.simulation.meshing_param.volume_params import (
+    AutomatedFarfield,
     AxisymmetricRefinement,
     CustomZones,
+    MeshSliceOutput,
+    RotationCylinder,
     RotationVolume,
     StructuredBoxRefinement,
     UniformRefinement,
     UserDefinedFarfield,
 )
+from flow360.component.simulation.outputs.outputs import Slice
 from flow360.component.simulation.primitives import (
     AxisymmetricBody,
     Box,
@@ -286,6 +290,23 @@ def get_test_param():
                     ),
                     refinements=refinements,
                     volume_zones=volume_zones,
+                    outputs=[
+                        MeshSliceOutput(
+                            name="slice_output",
+                            entities=[
+                                Slice(
+                                    name=f"test_slice_y_normal",
+                                    origin=(0.1, 0.2, 0.3),
+                                    normal=(0, 1, 0),
+                                ),
+                                Slice(
+                                    name=f"test_slice_z_normal",
+                                    origin=(0.6, 0.1, 0.4),
+                                    normal=(0, 0, 1),
+                                ),
+                            ],
+                        ),
+                    ],
                 ),
                 private_attribute_asset_cache=AssetCache(use_inhouse_mesher=beta_mesher),
             )
@@ -557,3 +578,25 @@ def test_surface_mesh_user_defined_farfield_disallow_any_ghost():
                 )
             with pytest.raises(pd.ValidationError):
                 PassiveSpacing(entities=[GhostCircularPlane(name="symmetric")], type="projected")
+
+
+def test_farfield_relative_size():
+    with SI_unit_system:
+        param = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-3, boundary_layer_growth_rate=1.25
+                ),
+                volume_zones=[AutomatedFarfield(method="quasi-3d", relative_size=100.0)],
+            )
+        )
+    translated = get_volume_meshing_json(param, u.m)
+    ref_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "ref",
+        "volume_meshing",
+        "ref_param_to_json_legacy_farfield_relative_size.json",
+    )
+    with open(ref_path, "r") as fh:
+        ref_dict = json.load(fh)
+    assert compare_values(translated, ref_dict)
