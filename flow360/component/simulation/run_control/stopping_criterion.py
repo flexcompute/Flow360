@@ -1,11 +1,12 @@
 """Module for setting up the stopping criterion of simulation."""
 
-from typing import List, Literal, Optional, Union, get_args
+from typing import List, Literal, Optional, Union
 
 import pydantic as pd
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
+from flow360.component.simulation.framework.param_utils import serialize_model_obj_to_id
 from flow360.component.simulation.outputs.output_entities import Point
 from flow360.component.simulation.outputs.output_fields import _FIELD_IS_SCALAR_MAPPING
 from flow360.component.simulation.outputs.outputs import (
@@ -102,9 +103,7 @@ class StoppingCriterion(Flow360BaseModel):
     @pd.field_serializer("monitor_output")
     def serialize_monitor_output(self, v):
         """Serialize only the output's id of the related object."""
-        if isinstance(v, get_args(get_args(MonitorOutputType)[0])):
-            return v.private_attribute_id
-        return v
+        return serialize_model_obj_to_id(model_obj=v)
 
     @pd.field_validator("monitor_field", mode="after")
     @classmethod
