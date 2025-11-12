@@ -4,6 +4,7 @@ validation for SimulationParams
 
 from typing import Type, Union, get_args
 
+from flow360.component.simulation.meshing_param.volume_params import CustomZones
 from flow360.component.simulation.models.solver_numerics import NoneSolver
 from flow360.component.simulation.models.surface_models import (
     Inflow,
@@ -12,7 +13,12 @@ from flow360.component.simulation.models.surface_models import (
     SurfaceModelTypes,
     Wall,
 )
-from flow360.component.simulation.models.volume_models import Fluid, Rotation, Solid
+from flow360.component.simulation.models.volume_models import (
+    ActuatorDisk,
+    Fluid,
+    Rotation,
+    Solid,
+)
 from flow360.component.simulation.outputs.outputs import (
     IsosurfaceOutput,
     ProbeOutput,
@@ -23,7 +29,6 @@ from flow360.component.simulation.outputs.outputs import (
     TimeAverageSurfaceOutput,
     VolumeOutput,
 )
-from flow360.component.simulation.primitives import CustomVolume
 from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
 from flow360.component.simulation.utils import is_exact_instance
 from flow360.component.simulation.validation.validation_context import (
@@ -363,7 +368,7 @@ def _check_complete_boundary_condition_and_unknown_surface(
                 if item.name != "symmetric"
             ]
         elif farfield_method == "user-defined":
-            if validation_info.use_geometry_AI and validation_info.is_beta_mesher:
+            if validation_info.will_generate_forced_symmetry_plane():
                 asset_boundary_entities += [
                     item
                     for item in params.private_attribute_asset_cache.project_entity_info.ghost_entities
@@ -373,8 +378,11 @@ def _check_complete_boundary_condition_and_unknown_surface(
     potential_zone_zone_interfaces = set()
     if validation_info.farfield_method == "user-defined":
         for zones in params.meshing.volume_zones:
-            if isinstance(zones, CustomVolume):
-                for boundary in zones.boundaries.stored_entities:
+            # Support new CustomZones container
+            if not isinstance(zones, CustomZones):
+                continue
+            for custom_volume in zones.entities.stored_entities:
+                for boundary in custom_volume.boundaries.stored_entities:
                     potential_zone_zone_interfaces.add(boundary.name)
 
     if asset_boundary_entities is None or asset_boundary_entities == []:
@@ -566,3 +574,27 @@ def _check_duplicate_surface_usage(outputs):
     _check_surface_usage(outputs, TimeAverageSurfaceOutput)
 
     return outputs
+
+
+def _check_duplicate_actuator_disk_cylinder_names(models):
+    if not models:
+        return models
+
+    def _check_actuator_disk_names(models):
+        actuator_disk_names = set()
+        for model in models:
+            if not isinstance(model, ActuatorDisk):
+                continue
+
+            for entity_index, entity in enumerate(model.entities.stored_entities):
+                if entity.name in actuator_disk_names:
+                    raise ValueError(
+                        f"The ActuatorDisk cylinder name `{entity.name}` at index {entity_index}"
+                        f" in model `{model.name}` has already been used."
+                        " Please use unique Cylinder entity names among all ActuatorDisk instances."
+                    )
+                actuator_disk_names.add(entity.name)
+
+    _check_actuator_disk_names(models)
+
+    return models

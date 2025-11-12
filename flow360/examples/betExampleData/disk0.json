@@ -1047,7 +1047,6 @@
                 "private_attribute_entity_type_name": "Cylinder",
                 "private_attribute_full_name": null,
                 "private_attribute_id": "c96d268f-90da-4060-a206-f1813fdba821",
-                "private_attribute_registry_bucket_name": "VolumetricEntityType",
                 "private_attribute_zone_boundary_names": {
                     "items": []
                 }

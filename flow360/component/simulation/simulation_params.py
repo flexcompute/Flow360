@@ -84,6 +84,7 @@ from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics im
 )
 from flow360.component.simulation.utils import model_attribute_unlock
 from flow360.component.simulation.validation.validation_output import (
+    _check_aero_acoustics_observer_time_step_size,
     _check_output_fields,
     _check_output_fields_valid_given_turbulence_model,
     _check_unique_surface_volume_probe_entity_names,
@@ -96,6 +97,7 @@ from flow360.component.simulation.validation.validation_simulation_params import
     _check_complete_boundary_condition_and_unknown_surface,
     _check_consistency_hybrid_model_volume_output,
     _check_consistency_wall_function_and_surface_output,
+    _check_duplicate_actuator_disk_cylinder_names,
     _check_duplicate_entities_in_models,
     _check_duplicate_isosurface_names,
     _check_duplicate_surface_usage,
@@ -433,6 +435,12 @@ class SimulationParams(_ParamModelBase):
         """Ensure that all the boundary conditions used are valid."""
         return _check_valid_models_for_liquid(models)
 
+    @pd.field_validator("models", mode="after")
+    @classmethod
+    def check_duplicate_actuator_disk_cylinder_names(cls, models):
+        """Ensure that all the cylinder names used in ActuatorDisks are unique."""
+        return _check_duplicate_actuator_disk_cylinder_names(models)
+
     @pd.field_validator("user_defined_dynamics", "user_defined_fields", mode="after")
     @classmethod
     def _disable_expression_for_liquid(cls, value, info: pd.ValidationInfo):
@@ -504,6 +512,11 @@ class SimulationParams(_ParamModelBase):
     def check_unsteadiness_to_use_aero_acoustics(self):
         """Only allow Aero acoustics when using unsteady simulation"""
         return _check_unsteadiness_to_use_aero_acoustics(self)
+
+    @pd.model_validator(mode="after")
+    def check_aero_acoustics_observer_time_step_size(self):
+        """Validate that observer time step size is smaller than CFD time step size"""
+        return _check_aero_acoustics_observer_time_step_size(self)
 
     @pd.model_validator(mode="after")
     def check_unique_surface_volume_probe_names(self):
