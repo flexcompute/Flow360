@@ -5,6 +5,7 @@ import numpy as np
 
 import flow360 as fl
 from flow360.component.results.case_results import BETForcesResultCSVModel
+from flow360.component.results.results_utils import _build_coeff_env
 from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.models.volume_models import BETDisk
 from flow360.component.simulation.services import ValidationCalledBy, validate_model
@@ -172,11 +173,22 @@ def test_bet_disk_real_case_coefficients():
         params_json = f.read()
 
     params_as_dict = json.loads(params_json)
-    params, errors, warnings = validate_model(
+    params, errors, _ = validate_model(
         params_as_dict=params_as_dict,
         validated_by=ValidationCalledBy.LOCAL,
         root_item_type=None,
     )
+
+    mach_ref = params.operating_condition.mach
+
+    coeff_env = _build_coeff_env(params)
+    print(coeff_env)
+    assert coeff_env["dynamic_pressure"] == 0.5 * mach_ref * mach_ref
+    assert coeff_env["area"] == (params.reference_geometry.area / (1.0 * fl.u.cm**2)).value
+    assert np.allclose(coeff_env["moment_length_vec"], [140, 140, 140])
+    assert np.allclose(coeff_env["moment_center_global"], [0, 0, 0])
+    assert np.allclose(coeff_env["lift_dir"], [-0.25881905, 0.0, 0.96592583])
+    assert np.allclose(coeff_env["drag_dir"], [0.96592583, -0.0, 0.25881905])
 
     assert errors is None, f"Validation errors: {errors}"
     assert params is not None

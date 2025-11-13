@@ -15,6 +15,7 @@ from flow360.component.results.base_results import (
 )
 from flow360.component.simulation.models.volume_models import BETDisk
 from flow360.component.simulation.simulation_params import SimulationParams
+from flow360.component.simulation.user_code.core.types import Expression
 from flow360.exceptions import Flow360ValueError
 from flow360.log import log
 
@@ -75,21 +76,28 @@ def _vector_to_np3(vec):
         raise Flow360ValueError(f"Invalid vector: {vec}") from exc
 
 
-def _get_reference_geometry(params: SimulationParams):
+def _get_reference_geometry_in_flow360_unit(params: SimulationParams):
     # pylint:disable=import-outside-toplevel, no-member, protected-access
     from flow360.component.simulation.primitives import ReferenceGeometry
 
-    # Fill defaults using preprocessed params
     reference_geometry_filled = ReferenceGeometry.fill_defaults(params.reference_geometry, params)
 
-    reference_geometry_filled_flow360: ReferenceGeometry = reference_geometry_filled.preprocess(
-        params=params
-    )
+    evaluated_area = None
+    if isinstance(reference_geometry_filled.area, Expression):
+        evaluated_area = reference_geometry_filled.area.evaluate(
+            raise_on_non_evaluable=True, force_evaluate=True
+        )
+    else:
+        evaluated_area = reference_geometry_filled.area
+    # Fill defaults using preprocessed params
+
     # Extract dimensionless area (in Flow360 units)
-    area_flow360 = float(reference_geometry_filled_flow360.area.value)
+    area_flow360 = float(evaluated_area.in_base(params.flow360_unit_system).value)
 
     # Extract dimensionless moment_length
-    moment_length_flow360 = reference_geometry_filled_flow360.moment_length
+    moment_length_flow360 = reference_geometry_filled.moment_length.in_base(
+        params.flow360_unit_system
+    )
 
     # Convert to numpy array properly - handle both arrays and scalars
     try:
@@ -109,7 +117,7 @@ def _get_reference_geometry(params: SimulationParams):
         moment_length_vec_flow360 = np.array([scalar_val, scalar_val, scalar_val], dtype=float)
 
     # Extract dimensionless moment_center
-    moment_center = reference_geometry_filled_flow360.moment_center
+    moment_center = reference_geometry_filled.moment_center.in_base(params.flow360_unit_system)
     moment_center_flow360 = np.array(
         [moment_center[0], moment_center[1], moment_center[2]],
         dtype=float,
@@ -154,21 +162,19 @@ def _get_lift_drag_direction(params: SimulationParams):
 
 def _get_dynamic_pressure_in_flow360_unit(params: SimulationParams):
     # pylint:disable=protected-access
-    oc = params.operating_condition
-    using_liquid_op = oc.type_name == "LiquidOperatingCondition"
 
-    if using_liquid_op:
-        v_ref = params._liquid_reference_velocity
-    else:
-        v_ref = params.base_velocity
+    v_ref = params.reference_velocity
 
     Mach_ref = params.convert_unit(value=v_ref, target_system="flow360").value
     return 0.5 * Mach_ref * Mach_ref
 
 
 def _build_coeff_env(params) -> Dict[str, Any]:
+    """
+    Get data for computing aerodynamic coefficients in flow360 unit.
+    """
     # pylint:disable=protected-access
-    area, moment_length_vec, moment_center_global = _get_reference_geometry(params)
+    area, moment_length_vec, moment_center_global = _get_reference_geometry_in_flow360_unit(params)
     dynamic_pressure = _get_dynamic_pressure_in_flow360_unit(params)
     lift_dir, drag_dir = _get_lift_drag_direction(params)
     return {
