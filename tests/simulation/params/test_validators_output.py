@@ -99,7 +99,7 @@ def test_turbulence_enabled_output_fields():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "In `outputs`[0] IsosurfaceOutput:, kOmega is not a valid output field when using turbulence model: None."
+            "In `outputs`[0] IsosurfaceOutput: kOmega is not a valid output field when using turbulence model: None."
         ),
     ):
         with imperial_unit_system:
@@ -117,7 +117,7 @@ def test_turbulence_enabled_output_fields():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "In `outputs`[0] IsosurfaceOutput:, nuHat is not a valid iso field when using turbulence model: kOmegaSST."
+            "In `outputs`[0] IsosurfaceOutput: nuHat is not a valid iso field when using turbulence model: kOmegaSST."
         ),
     ):
         with imperial_unit_system:
@@ -135,7 +135,7 @@ def test_turbulence_enabled_output_fields():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "In `outputs`[0] VolumeOutput:, kOmega is not a valid output field when using turbulence model: SpalartAllmaras."
+            "In `outputs`[0] VolumeOutput: kOmega is not a valid output field when using turbulence model: SpalartAllmaras."
         ),
     ):
         with imperial_unit_system:
@@ -149,7 +149,7 @@ def test_transition_model_enabled_output_fields():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "In `outputs`[0] IsosurfaceOutput:, solutionTransition is not a valid output field when transition model is not used."
+            "In `outputs`[0] IsosurfaceOutput: solutionTransition is not a valid output field when transition model is not used."
         ),
     ):
         with imperial_unit_system:
@@ -167,7 +167,7 @@ def test_transition_model_enabled_output_fields():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "In `outputs`[0] SurfaceProbeOutput:, residualTransition is not a valid output field when transition model is not used."
+            "In `outputs`[0] SurfaceProbeOutput: residualTransition is not a valid output field when transition model is not used."
         ),
     ):
         with imperial_unit_system:
@@ -186,7 +186,7 @@ def test_transition_model_enabled_output_fields():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "In `outputs`[0] VolumeOutput:, linearResidualTransition is not a valid output field when transition model is not used."
+            "In `outputs`[0] VolumeOutput: linearResidualTransition is not a valid output field when transition model is not used."
         ),
     ):
         with imperial_unit_system:
