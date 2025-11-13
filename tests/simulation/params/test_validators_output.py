@@ -1,3 +1,5 @@
+import json
+import os
 import re
 
 import pytest
@@ -41,6 +43,7 @@ from flow360.component.simulation.unit_system import (
 from flow360.component.simulation.user_code.core.types import UserVariable
 from flow360.component.simulation.user_code.functions import math
 from flow360.component.simulation.user_code.variables import solution
+from flow360.component.volume_mesh import VolumeMeshV2
 
 
 @pytest.fixture()
@@ -92,11 +95,35 @@ def test_unsteadiness_to_use_aero_acoustics():
             )
 
 
+def test_aero_acoustics_observer_time_step_size():
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "In `outputs`[0] AeroAcousticOutput: "
+            "`observer_time_size` (0.05 s) is smaller than the time step size of CFD (0.1 s)."
+        ),
+    ):
+        with SI_unit_system:
+            SimulationParams(
+                outputs=[
+                    AeroAcousticOutput(
+                        name="test",
+                        observers=[
+                            fl.Observer(position=[0.2, 0.02, 0.03] * u.mm, group_name="0"),
+                            fl.Observer(position=[0.0001, 0.02, 0.03] * u.mm, group_name="1"),
+                        ],
+                        observer_time_step_size=0.05,
+                    ),
+                ],
+                time_stepping=Unsteady(steps=1, step_size=0.1),
+            )
+
+
 def test_turbulence_enabled_output_fields():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "In `outputs`[0] IsosurfaceOutput:, kOmega is not a valid output field when using turbulence model: None."
+            "In `outputs`[0] IsosurfaceOutput: kOmega is not a valid output field when using turbulence model: None."
         ),
     ):
         with imperial_unit_system:
@@ -114,7 +141,7 @@ def test_turbulence_enabled_output_fields():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "In `outputs`[0] IsosurfaceOutput:, nuHat is not a valid iso field when using turbulence model: kOmegaSST."
+            "In `outputs`[0] IsosurfaceOutput: nuHat is not a valid iso field when using turbulence model: kOmegaSST."
         ),
     ):
         with imperial_unit_system:
@@ -132,13 +159,64 @@ def test_turbulence_enabled_output_fields():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "In `outputs`[0] VolumeOutput:, kOmega is not a valid output field when using turbulence model: SpalartAllmaras."
+            "In `outputs`[0] VolumeOutput: kOmega is not a valid output field when using turbulence model: SpalartAllmaras."
         ),
     ):
         with imperial_unit_system:
             SimulationParams(
                 models=[Fluid(turbulence_model_solver=SpalartAllmaras())],
                 outputs=[VolumeOutput(output_fields=["kOmega"])],
+            )
+
+
+def test_transition_model_enabled_output_fields():
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "In `outputs`[0] IsosurfaceOutput: solutionTransition is not a valid output field when transition model is not used."
+        ),
+    ):
+        with imperial_unit_system:
+            SimulationParams(
+                models=[Fluid(transition_model_solver=NoneSolver())],
+                outputs=[
+                    IsosurfaceOutput(
+                        name="iso",
+                        entities=[Isosurface(name="tmp", field="mut", iso_value=1)],
+                        output_fields=["solutionTransition"],
+                    )
+                ],
+            )
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "In `outputs`[0] SurfaceProbeOutput: residualTransition is not a valid output field when transition model is not used."
+        ),
+    ):
+        with imperial_unit_system:
+            SimulationParams(
+                models=[Fluid(transition_model_solver=NoneSolver())],
+                outputs=[
+                    SurfaceProbeOutput(
+                        name="probe_output",
+                        probe_points=[Point(name="point_1", location=[1, 2, 3] * u.m)],
+                        output_fields=["residualTransition"],
+                        target_surfaces=[Surface(name="fluid/body")],
+                    )
+                ],
+            )
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "In `outputs`[0] VolumeOutput: linearResidualTransition is not a valid output field when transition model is not used."
+        ),
+    ):
+        with imperial_unit_system:
+            SimulationParams(
+                models=[Fluid(transition_model_solver=NoneSolver())],
+                outputs=[VolumeOutput(output_fields=["linearResidualTransition"])],
             )
 
 
@@ -484,3 +562,66 @@ def test_surface_integral_entity_types():
                     ),
                 ],
             )
+
+
+def test_output_frequency_settings_in_steady_simulation():
+    volume_mesh = VolumeMeshV2.from_local_storage(
+        mesh_id=None,
+        local_storage_path=os.path.join(
+            os.path.dirname(__file__), "..", "data", "vm_entity_provider"
+        ),
+    )
+    with open(
+        os.path.join(
+            os.path.dirname(__file__), "..", "data", "vm_entity_provider", "simulation.json"
+        ),
+        "r",
+    ) as fh:
+        asset_cache_data = json.load(fh).pop("private_attribute_asset_cache")
+    asset_cache = AssetCache.model_validate(asset_cache_data)
+    with imperial_unit_system:
+        params = SimulationParams(
+            models=[Wall(name="wall", entities=volume_mesh["*"])],
+            time_stepping=Steady(),
+            outputs=[
+                VolumeOutput(
+                    output_fields=["Mach", "Cp"],
+                    frequency=2,
+                ),
+                SurfaceOutput(
+                    output_fields=["Cp"],
+                    entities=volume_mesh["*"],
+                    frequency_offset=10,
+                ),
+            ],
+            private_attribute_asset_cache=asset_cache,
+        )
+
+    params_as_dict = params.model_dump(exclude_none=True, mode="json")
+    params, errors, _ = validate_model(
+        params_as_dict=params_as_dict,
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="VolumeMesh",
+        validation_level="All",
+    )
+
+    expected_errors = [
+        {
+            "loc": ("outputs", 0, "frequency"),
+            "type": "value_error",
+            "msg": "Value error, Output frequency cannot be specified in a steady simulation.",
+            "ctx": {"relevant_for": ["Case"]},
+        },
+        {
+            "loc": ("outputs", 1, "frequency_offset"),
+            "type": "value_error",
+            "msg": "Value error, Output frequency_offset cannot be specified in a steady simulation.",
+            "ctx": {"relevant_for": ["Case"]},
+        },
+    ]
+    assert len(errors) == len(expected_errors)
+    for err, exp_err in zip(errors, expected_errors):
+        assert err["loc"] == exp_err["loc"]
+        assert err["type"] == exp_err["type"]
+        assert err["ctx"]["relevant_for"] == exp_err["ctx"]["relevant_for"]
+        assert err["msg"] == exp_err["msg"]

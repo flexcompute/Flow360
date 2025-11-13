@@ -84,7 +84,9 @@ from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics im
 )
 from flow360.component.simulation.utils import model_attribute_unlock
 from flow360.component.simulation.validation.validation_output import (
+    _check_aero_acoustics_observer_time_step_size,
     _check_output_fields,
+    _check_output_fields_valid_given_transition_model,
     _check_output_fields_valid_given_turbulence_model,
     _check_unique_surface_volume_probe_entity_names,
     _check_unique_surface_volume_probe_names,
@@ -96,6 +98,7 @@ from flow360.component.simulation.validation.validation_simulation_params import
     _check_complete_boundary_condition_and_unknown_surface,
     _check_consistency_hybrid_model_volume_output,
     _check_consistency_wall_function_and_surface_output,
+    _check_duplicate_actuator_disk_cylinder_names,
     _check_duplicate_entities_in_models,
     _check_duplicate_isosurface_names,
     _check_duplicate_surface_usage,
@@ -433,6 +436,12 @@ class SimulationParams(_ParamModelBase):
         """Ensure that all the boundary conditions used are valid."""
         return _check_valid_models_for_liquid(models)
 
+    @pd.field_validator("models", mode="after")
+    @classmethod
+    def check_duplicate_actuator_disk_cylinder_names(cls, models):
+        """Ensure that all the cylinder names used in ActuatorDisks are unique."""
+        return _check_duplicate_actuator_disk_cylinder_names(models)
+
     @pd.field_validator("user_defined_dynamics", "user_defined_fields", mode="after")
     @classmethod
     def _disable_expression_for_liquid(cls, value, info: pd.ValidationInfo):
@@ -506,6 +515,11 @@ class SimulationParams(_ParamModelBase):
         return _check_unsteadiness_to_use_aero_acoustics(self)
 
     @pd.model_validator(mode="after")
+    def check_aero_acoustics_observer_time_step_size(self):
+        """Validate that observer time step size is smaller than CFD time step size"""
+        return _check_aero_acoustics_observer_time_step_size(self)
+
+    @pd.model_validator(mode="after")
     def check_unique_surface_volume_probe_names(self):
         """Only allow unique probe names"""
         return _check_unique_surface_volume_probe_names(self)
@@ -545,6 +559,11 @@ class SimulationParams(_ParamModelBase):
     def check_output_fields_valid_given_turbulence_model(params):
         """Check output fields are valid given the turbulence model"""
         return _check_output_fields_valid_given_turbulence_model(params)
+
+    @pd.model_validator(mode="after")
+    def check_output_fields_valid_given_transition_model(params):
+        """Check output fields are valid given the transition model"""
+        return _check_output_fields_valid_given_transition_model(params)
 
     @pd.model_validator(mode="after")
     def check_and_add_rotating_reference_frame_model_flag_in_volumezones(params):
@@ -629,9 +648,9 @@ class SimulationParams(_ParamModelBase):
         return self.operating_condition.thermal_state.speed_of_sound.to("m/s")
 
     @property
-    def _liquid_reference_velocity(self) -> VelocityType:
+    def reference_velocity(self) -> VelocityType:
         """
-        This function returns the reference velocity for liquid operating condition.
+        This function returns the **reference velocity**.
         Note that the reference velocity is **NOT** the non-dimensionalization velocity scale
 
         For dimensionalization of Flow360 output (converting FROM flow360 unit)
@@ -642,8 +661,10 @@ class SimulationParams(_ParamModelBase):
         # pylint:disable=no-member
         if self.operating_condition.reference_velocity_magnitude is not None:
             reference_velocity = (self.operating_condition.reference_velocity_magnitude).to("m/s")
-        else:
+        elif self.operating_condition.type_name == "LiquidOperatingCondition":
             reference_velocity = self.base_velocity.to("m/s") * LIQUID_IMAGINARY_FREESTREAM_MACH
+        else:
+            reference_velocity = self.operating_condition.velocity_magnitude.to("m/s")
         return reference_velocity
 
     @property
