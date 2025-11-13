@@ -588,7 +588,7 @@ class WindTunnelFarfield(_FarfieldBase):
     # Tunnel parameters
     width: LengthType.Positive = pd.Field(default=10 * u.m, description="Width of the wind tunnel.")
     height: LengthType.Positive = pd.Field(
-        default=10 * u.m, description="Height of the wind tunnel."
+        default=6 * u.m, description="Height of the wind tunnel."
     )
     inlet_x_position: LengthType = pd.Field(
         default=-20 * u.m, description="X-position of the inlet."
@@ -604,6 +604,8 @@ class WindTunnelFarfield(_FarfieldBase):
         CentralBelt,
         WheelBelts,
     ] = pd.Field(default=StaticFloor, description="Floor type of the wind tunnel.")
+
+    # up direction not yet supported; assume +Z
 
     def inlet(self) -> GhostSurface:
         """Returns the inlet boundary surface."""
