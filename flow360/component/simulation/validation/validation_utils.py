@@ -66,7 +66,7 @@ def _validator_append_instance_name(func):
     return wrapper
 
 
-def customized_model_validator_error(
+def customize_model_validator_error(
     model_instance,
     loc: Tuple[Union[str, int], ...],
     message: str,

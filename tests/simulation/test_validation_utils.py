@@ -1,7 +1,7 @@
 """
-Unit tests for validation_utils.py customized_model_validator_error function
+Unit tests for validation_utils.py customize_model_validator_error function
 
-This test suite validates the behavior of customized_model_validator_error with nested
+This test suite validates the behavior of customize_model_validator_error with nested
 Pydantic models, focusing on three-layer model structures and multiple error scenarios.
 
 Key Findings (documented through tests):
@@ -18,11 +18,13 @@ Test Organization:
 3. Test Cases: Organized by complexity and validation scenarios
 """
 
+from typing import Optional
+
 import pytest
 from pydantic import BaseModel, ValidationError, model_validator
 
 from flow360.component.simulation.validation.validation_utils import (
-    customized_model_validator_error,
+    customize_model_validator_error,
 )
 
 # ============================================================================
@@ -92,7 +94,7 @@ def simple_model():
         @model_validator(mode="after")
         def validate_name(self):
             if self.name == "invalid":
-                raise customized_model_validator_error(
+                raise customize_model_validator_error(
                     self,
                     loc=("name",),
                     message="name cannot be 'invalid'",
@@ -115,7 +117,7 @@ def list_model():
         def validate_outputs(self):
             for i, output in enumerate(self.outputs):
                 if output.get("type") == "invalid":
-                    raise customized_model_validator_error(
+                    raise customize_model_validator_error(
                         self,
                         loc=("outputs", i, "type"),
                         message=f"output type 'invalid' at index {i}",
@@ -136,7 +138,7 @@ def two_layer_models():
         @model_validator(mode="after")
         def validate_nested(self):
             if self.nested_value < 0:
-                raise customized_model_validator_error(
+                raise customize_model_validator_error(
                     self,
                     loc=("nested_value",),
                     message="nested_value must be non-negative",
@@ -151,7 +153,7 @@ def two_layer_models():
         @model_validator(mode="after")
         def validate_config_name(self):
             if self.config_name == "forbidden":
-                raise customized_model_validator_error(
+                raise customize_model_validator_error(
                     self,
                     loc=("config_name",),
                     message="config_name cannot be 'forbidden'",
@@ -175,7 +177,7 @@ def three_layer_models():
         @model_validator(mode="after")
         def validate_threshold(self):
             if self.threshold <= 0:
-                raise customized_model_validator_error(
+                raise customize_model_validator_error(
                     self,
                     loc=("threshold",),
                     message="Inner: threshold must be positive",
@@ -190,7 +192,7 @@ def three_layer_models():
         @model_validator(mode="after")
         def validate_config_id(self):
             if self.config_id < 0:
-                raise customized_model_validator_error(
+                raise customize_model_validator_error(
                     self,
                     loc=("config_id",),
                     message="Middle: config_id must be non-negative",
@@ -215,14 +217,14 @@ def three_layer_item_models():
         @model_validator(mode="after")
         def validate_item(self):
             if self.value < 0:
-                raise customized_model_validator_error(
+                raise customize_model_validator_error(
                     self,
                     loc=("value",),
                     message=f"Item '{self.name}' has negative value",
                     input_value=self.value,
                 )
             if self.value > 1000:
-                raise customized_model_validator_error(
+                raise customize_model_validator_error(
                     self,
                     loc=("value",),
                     message=f"Item '{self.name}' exceeds maximum",
@@ -237,7 +239,7 @@ def three_layer_item_models():
         @model_validator(mode="after")
         def validate_section(self):
             if not self.items:
-                raise customized_model_validator_error(
+                raise customize_model_validator_error(
                     self,
                     loc=("items",),
                     message=f"Section '{self.section_name}' must have items",
@@ -248,7 +250,7 @@ def three_layer_item_models():
         @model_validator(mode="after")
         def validate_section_name(self):
             if self.section_name == "empty":
-                raise customized_model_validator_error(
+                raise customize_model_validator_error(
                     self,
                     loc=("section_name",),
                     message="Section name cannot be empty",
@@ -263,7 +265,7 @@ def three_layer_item_models():
         @model_validator(mode="after")
         def validate_configuration(self):
             if not self.sections:
-                raise customized_model_validator_error(
+                raise customize_model_validator_error(
                     self,
                     loc=("sections",),
                     message="Configuration must have sections",
@@ -286,7 +288,7 @@ def three_layer_parameter_models():
         @model_validator(mode="after")
         def validate_parameter(self):
             if self.min_value >= self.max_value:
-                raise customized_model_validator_error(
+                raise customize_model_validator_error(
                     self,
                     loc=("min_value",),
                     message=f"'{self.param_name}' min must be < max",
@@ -302,7 +304,7 @@ def three_layer_parameter_models():
         @model_validator(mode="after")
         def validate_group(self):
             if self.enabled and not self.parameters:
-                raise customized_model_validator_error(
+                raise customize_model_validator_error(
                     self,
                     loc=("parameters",),
                     message=f"Enabled '{self.group_name}' needs parameters",
@@ -412,7 +414,7 @@ def test_pydantic_auto_prepending(two_layer_models):
         @model_validator(mode="after")
         def validate_value(self):
             if self.nested_value == 0:
-                raise customized_model_validator_error(
+                raise customize_model_validator_error(
                     self,
                     loc=("nested_value",),
                     message="value cannot be zero",
@@ -482,7 +484,7 @@ def test_multiple_nested_levels():
         @model_validator(mode="after")
         def validate_value(self):
             if self.value == 999:
-                raise customized_model_validator_error(
+                raise customize_model_validator_error(
                     self,
                     loc=("value",),
                     message="value cannot be 999",
@@ -526,7 +528,7 @@ def test_without_input_value_parameter():
         @model_validator(mode="after")
         def validate_field1(self):
             if self.field1 == "error":
-                raise customized_model_validator_error(
+                raise customize_model_validator_error(
                     self,
                     loc=("field1",),
                     message="field1 cannot be 'error'",
@@ -550,12 +552,12 @@ def test_validation_error_with_none_input_value():
     """Test handling when input_value is explicitly None"""
 
     class NoneInputModel(BaseModel):
-        field: str | None = None
+        field: Optional[str] = None
 
         @model_validator(mode="after")
         def validate_field(self):
             if self.field is None:
-                raise customized_model_validator_error(
+                raise customize_model_validator_error(
                     self,
                     loc=("field",),
                     message="field cannot be None",
@@ -589,7 +591,7 @@ def test_custom_error_message_with_special_chars():
         @model_validator(mode="after")
         def validate_field(self):
             if self.field == "trigger":
-                raise customized_model_validator_error(
+                raise customize_model_validator_error(
                     self,
                     loc=("field",),
                     message=custom_message,
@@ -611,7 +613,7 @@ def test_complex_location_tuple():
 
         @model_validator(mode="after")
         def validate_data(self):
-            raise customized_model_validator_error(
+            raise customize_model_validator_error(
                 self,
                 loc=("data", "level1", 0, "level2", 5, "field"),
                 message="complex location test",
@@ -1008,7 +1010,7 @@ def test_three_layer_cascade_validation_order():
         @model_validator(mode="after")
         def validate_l3(self):
             if self.l3_value == "error_l3":
-                raise customized_model_validator_error(
+                raise customize_model_validator_error(
                     self,
                     loc=("l3_value",),
                     message="Level 3 validation failed",
@@ -1023,7 +1025,7 @@ def test_three_layer_cascade_validation_order():
         @model_validator(mode="after")
         def validate_l2(self):
             if self.l2_value == "error_l2":
-                raise customized_model_validator_error(
+                raise customize_model_validator_error(
                     self,
                     loc=("l2_value",),
                     message="Level 2 validation failed",
@@ -1038,7 +1040,7 @@ def test_three_layer_cascade_validation_order():
         @model_validator(mode="after")
         def validate_l1(self):
             if self.l1_value == "error_l1":
-                raise customized_model_validator_error(
+                raise customize_model_validator_error(
                     self,
                     loc=("l1_value",),
                     message="Level 1 validation failed",
@@ -1175,21 +1177,21 @@ def test_complex_three_layer_multiple_error_scenarios():
         def validate_metric(self):
             # Multiple validation rules in innermost layer
             if self.min_val >= self.max_val:
-                raise customized_model_validator_error(
+                raise customize_model_validator_error(
                     self,
                     loc=("min_val",),
                     message=f"Metric '{self.name}': min must be < max",
                     input_value=self.min_val,
                 )
             if self.min_val < 0:
-                raise customized_model_validator_error(
+                raise customize_model_validator_error(
                     self,
                     loc=("min_val",),
                     message=f"Metric '{self.name}': min cannot be negative",
                     input_value=self.min_val,
                 )
             if self.max_val > 1000:
-                raise customized_model_validator_error(
+                raise customize_model_validator_error(
                     self,
                     loc=("max_val",),
                     message=f"Metric '{self.name}': max exceeds limit",
@@ -1205,14 +1207,14 @@ def test_complex_three_layer_multiple_error_scenarios():
         @model_validator(mode="after")
         def validate_group(self):
             if self.is_active and len(self.metrics) == 0:
-                raise customized_model_validator_error(
+                raise customize_model_validator_error(
                     self,
                     loc=("metrics",),
                     message=f"Group '{self.group_name}': active group needs metrics",
                     input_value=self.metrics,
                 )
             if len(self.metrics) > 10:
-                raise customized_model_validator_error(
+                raise customize_model_validator_error(
                     self,
                     loc=("metrics",),
                     message=f"Group '{self.group_name}': too many metrics",
@@ -1227,14 +1229,14 @@ def test_complex_three_layer_multiple_error_scenarios():
         @model_validator(mode="after")
         def validate_config(self):
             if self.config_version < 1:
-                raise customized_model_validator_error(
+                raise customize_model_validator_error(
                     self,
                     loc=("config_version",),
                     message="Config version must be >= 1",
                     input_value=self.config_version,
                 )
             if len(self.groups) == 0:
-                raise customized_model_validator_error(
+                raise customize_model_validator_error(
                     self,
                     loc=("groups",),
                     message="Config must have at least one group",
