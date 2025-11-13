@@ -369,7 +369,7 @@ def get_flow360_unit_system_liquid(params, to_flow360_unit: bool = False) -> u.U
     Parameters
     ----------
     params : SimulationParams
-        The parameters needed for unit conversion.
+        The parameters needed for unit conversion that uses liquid operating condition.
     to_flow360_unit : bool, optional
         Whether we want user input to be converted to flow360 unit system.
         The reverse path requires different conversion logic (from solver output to non-flow360 unit system)
@@ -388,7 +388,7 @@ def get_flow360_unit_system_liquid(params, to_flow360_unit: bool = False) -> u.U
     if to_flow360_unit:
         base_velocity = params.base_velocity
     else:
-        base_velocity = params._liquid_reference_velocity  # pylint:disable=protected-access
+        base_velocity = params.reference_velocity  # pylint:disable=protected-access
 
     time_unit = params.base_length / base_velocity
     return u.UnitSystem(
