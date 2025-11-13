@@ -825,7 +825,7 @@ def test_updater_to_25_7_6_remove_entity_bucket_field():
 
     params_new = updater(
         version_from="25.7.4",
-        version_to="25.8.0b4",
+        version_to="25.7.6",
         params_as_dict=params_as_dict,
     )
 
@@ -877,3 +877,246 @@ def test_updater_to_25_7_6_rename_rotation_cylinder():
 
     assert params_new["version"] == "25.7.6"
     assert params_new["meshing"]["volume_zones"][0]["type"] == "RotationVolume"
+
+
+def test_updater_to_25_7_7():
+    """Test updater for version 25.7.7 which handles:
+    1. Resetting frequency/frequency_offset to defaults for steady simulations
+    2. Removing transition-specific output fields when transition model is None
+    """
+
+    # Construct test params with:
+    # - Steady simulation with non-default frequency settings
+    # - Transition model set to None with transition-specific output fields
+    params_as_dict = {
+        "version": "25.7.6",
+        "time_stepping": {
+            "type_name": "Steady",
+            "max_steps": 1000,
+        },
+        "models": [
+            {
+                "type": "Fluid",
+                "transition_model_solver": {
+                    "type_name": "None",
+                },
+                "turbulence_model_solver": {
+                    "type_name": "SpalartAllmaras",
+                },
+            }
+        ],
+        "outputs": [
+            {
+                "output_type": "VolumeOutput",
+                "name": "Volume output",
+                "frequency": 10,
+                "frequency_offset": 5,
+                "output_format": "paraview",
+                "output_fields": {
+                    "items": [
+                        "primitiveVars",
+                        "residualNavierStokes",
+                        "residualTransition",
+                        "Mach",
+                    ]
+                },
+            },
+            {
+                "output_type": "SurfaceOutput",
+                "name": "Surface output",
+                "frequency": 20,
+                "frequency_offset": 10,
+                "output_format": "paraview",
+                "entities": {"stored_entities": []},
+                "output_fields": {
+                    "items": [
+                        "Cp",
+                        "Cf",
+                        "solutionTransition",
+                    ]
+                },
+            },
+            {
+                "output_type": "SliceOutput",
+                "name": "Slice output",
+                "frequency": 15,
+                "frequency_offset": 2,
+                "output_format": "paraview",
+                "entities": {"stored_entities": []},
+                "output_fields": {
+                    "items": [
+                        "vorticity",
+                        "linearResidualTransition",
+                    ]
+                },
+            },
+            {
+                "output_type": "ProbeOutput",
+                "name": "Probe output",
+                "entities": {"stored_entities": []},
+                "output_fields": {
+                    "items": [
+                        "primitiveVars",
+                        "residualTransition",
+                    ]
+                },
+            },
+            {
+                "output_type": "AeroAcousticOutput",
+                "name": "Aeroacoustic output",
+                "observers": [],
+            },
+        ],
+    }
+
+    params_new = updater(
+        version_from="25.7.6",
+        version_to="25.7.7",
+        params_as_dict=params_as_dict,
+    )
+
+    # Test 1: Verify frequency settings were reset to defaults for steady simulation
+    assert (
+        params_new["outputs"][0]["frequency"] == -1
+    ), "VolumeOutput frequency should be reset to -1"
+    assert (
+        params_new["outputs"][0]["frequency_offset"] == 0
+    ), "VolumeOutput frequency_offset should be reset to 0"
+
+    assert (
+        params_new["outputs"][1]["frequency"] == -1
+    ), "SurfaceOutput frequency should be reset to -1"
+    assert (
+        params_new["outputs"][1]["frequency_offset"] == 0
+    ), "SurfaceOutput frequency_offset should be reset to 0"
+
+    assert (
+        params_new["outputs"][2]["frequency"] == -1
+    ), "SliceOutput frequency should be reset to -1"
+    assert (
+        params_new["outputs"][2]["frequency_offset"] == 0
+    ), "SliceOutput frequency_offset should be reset to 0"
+
+    # Test 2: Verify transition-specific output fields were removed
+    volume_output_fields = params_new["outputs"][0]["output_fields"]["items"]
+    assert "residualTransition" not in volume_output_fields, "residualTransition should be removed"
+    assert "primitiveVars" in volume_output_fields, "primitiveVars should remain"
+    assert "residualNavierStokes" in volume_output_fields, "residualNavierStokes should remain"
+    assert "Mach" in volume_output_fields, "Mach should remain"
+
+    surface_output_fields = params_new["outputs"][1]["output_fields"]["items"]
+    assert "solutionTransition" not in surface_output_fields, "solutionTransition should be removed"
+    assert "Cp" in surface_output_fields, "Cp should remain"
+    assert "Cf" in surface_output_fields, "Cf should remain"
+
+    slice_output_fields = params_new["outputs"][2]["output_fields"]["items"]
+    assert (
+        "linearResidualTransition" not in slice_output_fields
+    ), "linearResidualTransition should be removed"
+    assert "vorticity" in slice_output_fields, "vorticity should remain"
+
+    probe_output_fields = params_new["outputs"][3]["output_fields"]["items"]
+    assert (
+        "residualTransition" not in probe_output_fields
+    ), "residualTransition should be removed from ProbeOutput"
+    assert "primitiveVars" in probe_output_fields, "primitiveVars should remain"
+
+    # Test 3: Verify version was updated
+    assert params_new["version"] == "25.7.7"
+
+
+def test_updater_to_25_7_7_unsteady_no_frequency_change():
+    """Test that frequency settings are NOT changed for unsteady simulations"""
+
+    params_as_dict = {
+        "version": "25.7.6",
+        "time_stepping": {
+            "type_name": "Unsteady",
+            "max_steps": 1000,
+        },
+        "models": [
+            {
+                "type": "Fluid",
+                "transition_model_solver": {
+                    "type_name": "None",
+                },
+            }
+        ],
+        "outputs": [
+            {
+                "output_type": "VolumeOutput",
+                "name": "Volume output",
+                "frequency": 10,
+                "frequency_offset": 5,
+                "output_format": "paraview",
+                "output_fields": {"items": ["primitiveVars", "Mach"]},
+            },
+        ],
+    }
+
+    params_new = updater(
+        version_from="25.7.6",
+        version_to="25.7.7",
+        params_as_dict=params_as_dict,
+    )
+
+    assert params_new["outputs"][0]["frequency"] == 10, "Unsteady frequency should not be changed"
+    assert (
+        params_new["outputs"][0]["frequency_offset"] == 5
+    ), "Unsteady frequency_offset should not be changed"
+
+
+def test_updater_to_25_7_7_with_transition_model():
+    """Test that transition output fields are NOT removed when transition model is enabled"""
+
+    params_as_dict = {
+        "version": "25.7.6",
+        "time_stepping": {
+            "type_name": "Steady",
+            "max_steps": 1000,
+        },
+        "models": [
+            {
+                "type": "Fluid",
+                "transition_model_solver": {
+                    "type_name": "AmplificationFactorTransport",
+                },
+            }
+        ],
+        "outputs": [
+            {
+                "output_type": "VolumeOutput",
+                "name": "Volume output",
+                "frequency": 10,
+                "frequency_offset": 5,
+                "output_format": "paraview",
+                "output_fields": {
+                    "items": [
+                        "primitiveVars",
+                        "residualTransition",
+                        "solutionTransition",
+                    ]
+                },
+            },
+        ],
+    }
+
+    params_new = updater(
+        version_from="25.7.6",
+        version_to="25.7.7",
+        params_as_dict=params_as_dict,
+    )
+
+    # Frequency settings should still be reset for steady simulation
+    assert params_new["outputs"][0]["frequency"] == -1
+    assert params_new["outputs"][0]["frequency_offset"] == 0
+
+    # Transition output fields should NOT be removed when transition model is enabled
+    volume_output_fields = params_new["outputs"][0]["output_fields"]["items"]
+    assert (
+        "residualTransition" in volume_output_fields
+    ), "residualTransition should remain with AmplificationFactorTransport"
+    assert (
+        "solutionTransition" in volume_output_fields
+    ), "solutionTransition should remain with AmplificationFactorTransport"
+    assert "primitiveVars" in volume_output_fields, "primitiveVars should remain"
