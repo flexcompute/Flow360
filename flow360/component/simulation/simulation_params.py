@@ -648,9 +648,9 @@ class SimulationParams(_ParamModelBase):
         return self.operating_condition.thermal_state.speed_of_sound.to("m/s")
 
     @property
-    def _liquid_reference_velocity(self) -> VelocityType:
+    def reference_velocity(self) -> VelocityType:
         """
-        This function returns the reference velocity for liquid operating condition.
+        This function returns the **reference velocity**.
         Note that the reference velocity is **NOT** the non-dimensionalization velocity scale
 
         For dimensionalization of Flow360 output (converting FROM flow360 unit)
@@ -661,8 +661,10 @@ class SimulationParams(_ParamModelBase):
         # pylint:disable=no-member
         if self.operating_condition.reference_velocity_magnitude is not None:
             reference_velocity = (self.operating_condition.reference_velocity_magnitude).to("m/s")
-        else:
+        elif self.operating_condition.type_name == "LiquidOperatingCondition":
             reference_velocity = self.base_velocity.to("m/s") * LIQUID_IMAGINARY_FREESTREAM_MACH
+        else:
+            reference_velocity = self.operating_condition.velocity_magnitude.to("m/s")
         return reference_velocity
 
     @property
