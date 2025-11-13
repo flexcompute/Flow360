@@ -347,14 +347,16 @@ class PorousMediumCoefficientsComputation:
 
     @staticmethod
     def _iter_zones(values: Dict[str, list]):
-        zone_names = np.unique(
-            [
-                v.split("_")[0] + "_" + v.split("_")[1]
-                for v in values.keys()
-                if v.startswith("zone_")
-            ]
-        )
-        yield from zone_names
+        # Support both default "zone_<idx>_<...>" and arbitrary GenericVolume-style names
+        # such as "blk-2_Force_x" by extracting the prefix before Force/Moment components.
+        pattern = re.compile(r"^(?P<zone>.+?)_(?:Force|Moment)_[xyz]$")
+        zone_set = set()
+        for key in values.keys():
+            match = pattern.match(key)
+            if match:
+                zone_set.add(match.group("zone"))
+        # Keep deterministic order similar to np.unique behavior
+        yield from sorted(zone_set)
 
     @staticmethod
     def _init_zone_output(out: Dict[str, list], zone_name: str) -> Dict[str, str]:
