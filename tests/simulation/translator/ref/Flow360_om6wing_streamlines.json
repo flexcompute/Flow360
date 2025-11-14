@@ -251,7 +251,6 @@
         "startAverageIntegrationStep": -1
     },
     "runControl": {
-        "shouldCheckStopCriterion": false,
         "externalProcessMonitorOutput": false
     }
 }

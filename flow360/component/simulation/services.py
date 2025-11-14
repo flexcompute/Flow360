@@ -44,7 +44,10 @@ from flow360.component.simulation.simulation_params import (
 )
 
 # Required for correct global scope initialization
-from flow360.component.simulation.translator.solver_translator import get_solver_json
+from flow360.component.simulation.translator.solver_translator import (
+    get_columnar_data_processor_json,
+    get_solver_json,
+)
 from flow360.component.simulation.translator.surface_meshing_translator import (
     get_surface_meshing_json,
 )
@@ -475,14 +478,22 @@ def validate_model(  # pylint: disable=too-many-locals
             updated_param_as_dict
         )
 
+        project_length_unit_dict = updated_param_as_dict.get(
+            "private_attribute_asset_cache", {}
+        ).get("project_length_unit", None)
+        parse_model_info = ParamsValidationInfo(
+            {"private_attribute_asset_cache": {"project_length_unit": project_length_unit_dict}},
+            [],
+        )
+        with ValidationContext(levels=validation_levels_to_use, info=parse_model_info):
+            # Multi-constructor model support
+            updated_param_as_dict = parse_model_dict(updated_param_as_dict, globals())
+
         additional_info = ParamsValidationInfo(
             param_as_dict=updated_param_as_dict,
             referenced_expressions=referenced_expressions,
         )
-
         with ValidationContext(levels=validation_levels_to_use, info=additional_info):
-            # Multi-constructor model support
-            updated_param_as_dict = parse_model_dict(updated_param_as_dict, globals())
             validated_param = SimulationParams(file_content=updated_param_as_dict)
     except pd.ValidationError as err:
         validation_errors = err.errors()
@@ -696,6 +707,16 @@ def simulation_to_case_json(input_params: SimulationParams, mesh_unit):
         mesh_unit,
         "case",
         get_solver_json,
+    )
+
+
+def simulation_to_columnar_data_processor_json(input_params: SimulationParams, mesh_unit):
+    """Get JSON for case postprocessing from a given simulation JSON."""
+    return _translate_simulation_json(
+        input_params,
+        mesh_unit,
+        "case postprocessing",
+        get_columnar_data_processor_json,
     )
 
 
