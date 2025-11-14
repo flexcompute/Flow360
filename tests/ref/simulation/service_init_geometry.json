@@ -4,6 +4,7 @@
         "name": "SI"
     },
     "meshing": {
+        "type_name": "MeshingParams",
         "refinement_factor": 1.0,
         "gap_treatment_strength": 0.0,
         "defaults": {

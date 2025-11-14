@@ -89,9 +89,10 @@ def test_automated_farfield_surface_usage():
         my_farfield = AutomatedFarfield(name="my_farfield")
         param_dict = {
             "meshing": {
+                "type_name": "MeshingParams",
                 "volume_zones": [
                     {"type": "AutomatedFarfield", "method": "auto"},
-                ]
+                ],
             },
             "private_attribute_asset_cache": {
                 "use_inhouse_mesher": True,

@@ -1016,7 +1016,6 @@ def test_probe_output(
 
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
-
     assert compare_values(probe_output_config[1], translated["monitorOutput"])
 
     ##:: monitorOutput with line probes

@@ -38,7 +38,9 @@ def compare_dicts(dict1, dict2, atol=1e-15, rtol=1e-10, ignore_keys=None):
     dict2_filtered = {k: v for k, v in dict2.items() if k not in ignore_keys}
 
     if dict1_filtered.keys() != dict2_filtered.keys():
-        print(f"dict keys not equal, dict1 {dict1_filtered.keys()}, dict2 {dict2_filtered.keys()}")
+        print(
+            f"dict keys not equal, dict1 {sorted(dict1_filtered.keys())}, dict2 {sorted(dict2_filtered.keys())}"
+        )
         return False
 
     for key in dict1_filtered:

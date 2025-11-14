@@ -52,6 +52,7 @@ class UniformRefinement(Flow360BaseModel):
     )
     # pylint: disable=no-member
     spacing: LengthType.Positive = pd.Field(description="The required refinement spacing.")
+    project_to_surface: bool = pd.Field(True)
 
 
 class StructuredBoxRefinement(Flow360BaseModel):
