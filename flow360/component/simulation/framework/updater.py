@@ -369,8 +369,83 @@ def _to_25_7_2(params_as_dict):
 
 
 def _to_25_7_6(params_as_dict):
-    """Remove legacy entity bucket field from all entity dicts."""
+    """
+    - Rename deprecated RotationCylinder discriminator to RotationVolume in meshing.volume_zones
+    - Remove legacy entity bucket field from all entity dicts
+    """
+    # 1) Update RotationCylinder -> RotationVolume
+    meshing = params_as_dict.get("meshing")
+    if isinstance(meshing, dict):
+        volume_zones = meshing.get("volume_zones")
+        if isinstance(volume_zones, list):
+            for volume_zone in volume_zones:
+                if isinstance(volume_zone, dict) and volume_zone.get("type") == "RotationCylinder":
+                    volume_zone["type"] = "RotationVolume"
+
+    # 2) Cleanup legacy entity bucket fields
     return remove_entity_bucket_field(params_as_dict=params_as_dict)
+
+
+def _to_25_7_7(params_as_dict):
+    """
+    1. Reset frequency and frequency_offset to defaults for steady simulations
+    2. Remove invalid output fields based on transition model
+    """
+
+    # 1. Handle frequency settings in steady simulations
+    if params_as_dict.get("time_stepping", {}).get("type_name") == "Steady":
+        outputs = params_as_dict.get("outputs") or []
+        for output in outputs:
+            # Output types that have frequency/frequency_offset settings
+            if output.get("output_type") in [
+                "VolumeOutput",
+                "TimeAverageVolumeOutput",
+                "SurfaceOutput",
+                "TimeAverageSurfaceOutput",
+                "SliceOutput",
+                "TimeAverageSliceOutput",
+                "IsosurfaceOutput",
+                "TimeAverageIsosurfaceOutput",
+                "SurfaceSliceOutput",
+            ]:
+                # Reset to defaults: frequency=-1, frequency_offset=0
+                if "frequency" in output:
+                    output["frequency"] = -1
+                if "frequency_offset" in output:
+                    output["frequency_offset"] = 0
+
+    # 2. Remove invalid output fields based on transition model
+    # Get transition model type from models
+    transition_model_type = "None"
+    models = params_as_dict.get("models") or []
+    for model in models:
+        if model.get("type") == "Fluid":
+            transition_solver = model.get("transition_model_solver") or {}
+            transition_model_type = transition_solver.get("type_name")
+            break
+
+    # If transition model is None or not found, remove transition-specific fields
+    if transition_model_type == "None":
+        transition_output_fields = [
+            "residualTransition",
+            "solutionTransition",
+            "linearResidualTransition",
+        ]
+
+        outputs = params_as_dict.get("outputs") or []
+        for output in outputs:
+            if output.get("output_type") in ["AeroAcousticOutput", "StreamlineOutput"]:
+                continue
+            if "output_fields" in output:
+                output_fields = output["output_fields"]
+                if isinstance(output_fields, dict) and "items" in output_fields:
+                    items = output_fields["items"]
+                    # Remove invalid fields
+                    output_fields["items"] = [
+                        field for field in items if field not in transition_output_fields
+                    ]
+
+    return params_as_dict
 
 
 def _to_25_8_0(params_as_dict):
@@ -396,6 +471,7 @@ VERSION_MILESTONES = [
     (Flow360Version("25.6.6"), _to_25_6_6),
     (Flow360Version("25.7.2"), _to_25_7_2),
     (Flow360Version("25.7.6"), _to_25_7_6),
+    (Flow360Version("25.7.7"), _to_25_7_7),
     (Flow360Version("25.8.0b4"), _to_25_8_0),
 ]  # A list of the Python API version tuple with there corresponding updaters.
 

@@ -116,7 +116,7 @@ def _check_output_fields_valid_given_turbulence_model(params):
         for item in output.output_fields.items:
             if isinstance(item, str) and item in invalid_output_fields[turbulence_model]:
                 raise ValueError(
-                    f"In `outputs`[{output_index}] {output.output_type}:, {item} is not a valid"
+                    f"In `outputs`[{output_index}] {output.output_type}: {item} is not a valid"
                     f" output field when using turbulence model: {turbulence_model}."
                 )
 
@@ -127,9 +127,42 @@ def _check_output_fields_valid_given_turbulence_model(params):
                     and entity.field in invalid_output_fields[turbulence_model]
                 ):
                     raise ValueError(
-                        f"In `outputs`[{output_index}] {output.output_type}:, {entity.field} is not a valid"
+                        f"In `outputs`[{output_index}] {output.output_type}: {entity.field} is not a valid"
                         f" iso field when using turbulence model: {turbulence_model}."
                     )
+    return params
+
+
+def _check_output_fields_valid_given_transition_model(params):
+    """Ensure that the output fields are consistent with the transition model used."""
+
+    if not params.models or not params.outputs:
+        return params
+
+    transition_model = "None"
+    for model in params.models:
+        if isinstance(model, Fluid):
+            transition_model = model.transition_model_solver.type_name
+            break
+
+    if transition_model != "None":
+        return params
+
+    transition_output_fields = [
+        "residualTransition",
+        "solutionTransition",
+        "linearResidualTransition",
+    ]
+
+    for output_index, output in enumerate(params.outputs):
+        if output.output_type in ("AeroAcousticOutput", "StreamlineOutput"):
+            continue
+        for item in output.output_fields.items:
+            if isinstance(item, str) and item in transition_output_fields:
+                raise ValueError(
+                    f"In `outputs`[{output_index}] {output.output_type}: {item} is not a valid"
+                    f" output field when transition model is not used."
+                )
     return params
 
 
