@@ -98,7 +98,7 @@ class UnitSystemManager:
 unit_system_manager = UnitSystemManager()
 
 
-def _encode_ndarray(x, enforce_vector=False):
+def _encode_ndarray(x):
     """
     encoder for ndarray
 
@@ -106,7 +106,7 @@ def _encode_ndarray(x, enforce_vector=False):
     For arrays (ndim>0), preserve as tuple/list even if size==1,
     since Array types should remain as collections.
     """
-    if x.size == 1 and not enforce_vector:
+    if x.ndim == 0:
         return float(x)
     # This is an array (e.g., LengthType.Array), preserve as collection
     return tuple(x.tolist())
@@ -611,7 +611,7 @@ class _DimensionedType(metaclass=ABCMeta):
             )
             cls_obj.__get_pydantic_json_schema__ = __get_pydantic_json_schema__
 
-            return Annotated[cls_obj, pd.PlainSerializer(_dimensioned_vector_type_serializer)]
+            return Annotated[cls_obj, pd.PlainSerializer(_dimensioned_type_serializer)]
 
     # pylint: disable=too-few-public-methods
     class _MatrixType:
