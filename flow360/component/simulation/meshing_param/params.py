@@ -157,22 +157,29 @@ class MeshingDefaults(Flow360BaseModel):
             "Default maximum angular deviation in degrees. This value will restrict:"
             " 1. The angle between a cell’s normal and its underlying surface normal."
             " 2. The angle between a line segment’s normal and its underlying curve normal."
-            " This can not be overridden per face."
+            " This can be overridden per face only when using geometry AI."
         ),
         context=SURFACE_MESH,
+    )
+
+    resolve_face_boundaries: bool = pd.Field(
+        False,
+        description="Flag to specify whether boundaries between adjacent faces should be resolved "
+        + "accurately during the surface meshing process using anisotropic mesh refinement. "
+        + "This option is only supported when using geometry AI, and can be overridden per face with flow360.SurfaceRefinement",
     )
 
     preserve_thin_geometry: bool = pd.Field(
         False,
         description="Flag to specify whether thin geometry features with thickness roughly equal "
-        + "to geometry_accuracy should be resolved accurately during the surface meshing process."
-        + "This can be overridden with class: ~flow360.GeometryRefinement",
+        + "to geometry_accuracy should be resolved accurately during the surface meshing process. "
+        + "This option is only supported when using geometry AI, and can be overridden per face with flow360.GeometryRefinement.",
     )
 
     sealing_size: LengthType.NonNegative = pd.Field(
         0.0 * u.m,
         description="Threshold size below which all geometry gaps are automatically closed. "
-        + "This can be overridden with class: ~flow360.GeometryRefinement",
+        + "This option is only supported when using geometry AI, and can be overridden per face with flow360.GeometryRefinement.",
     )
 
     remove_non_manifold_faces: bool = pd.Field(
@@ -212,6 +219,7 @@ class MeshingDefaults(Flow360BaseModel):
     @pd.field_validator(
         "surface_max_aspect_ratio",
         "surface_max_adaptation_iterations",
+        "resolve_face_boundaries",
         "preserve_thin_geometry",
         "sealing_size",
         "remove_non_manifold_faces",

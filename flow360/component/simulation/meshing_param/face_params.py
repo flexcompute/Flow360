@@ -12,7 +12,7 @@ from flow360.component.simulation.primitives import (
     GhostSurface,
     Surface,
 )
-from flow360.component.simulation.unit_system import LengthType
+from flow360.component.simulation.unit_system import AngleType, LengthType
 from flow360.component.simulation.validation.validation_context import (
     get_validation_info,
 )
@@ -43,8 +43,22 @@ class SurfaceRefinement(Flow360BaseModel):
         alias="faces"
     )
     # pylint: disable=no-member
-    max_edge_length: LengthType.Positive = pd.Field(
-        description="Maximum edge length of surface cells."
+    max_edge_length: Optional[LengthType.Positive] = pd.Field(
+        None, description="Maximum edge length of surface cells."
+    )
+
+    curvature_resolution_angle: Optional[AngleType.Positive] = pd.Field(
+        None,
+        description=(
+            "Default maximum angular deviation in degrees. "
+            "This value will restrict the angle between a cell’s normal and its underlying surface normal."
+        ),
+    )
+
+    resolve_face_boundaries: Optional[bool] = pd.Field(
+        None,
+        description="Flag to specify whether boundaries between adjacent faces should be resolved "
+        + "accurately during the surface meshing process using anisotropic mesh refinement.",
     )
 
     @pd.field_validator("entities", mode="after")
@@ -55,6 +69,22 @@ class SurfaceRefinement(Flow360BaseModel):
             value.stored_entities, feature_name="SurfaceRefinement"
         )
         return check_deleted_surface_in_entity_list(value)
+
+    @pd.field_validator("curvature_resolution_angle", "resolve_face_boundaries", mode="after")
+    @classmethod
+    def ensure_geometry_ai_features(cls, value, info):
+        """Ensure GAI features are not specified when GAI is not used"""
+        validation_info = get_validation_info()
+
+        if validation_info is None:
+            return value
+
+        # pylint: disable=unsubscriptable-object
+        default_value = cls.model_fields[info.field_name].default
+        if value != default_value and not validation_info.use_geometry_AI:
+            raise ValueError(f"{info.field_name} is only supported when geometry AI is used.")
+
+        return value
 
 
 class GeometryRefinement(Flow360BaseModel):
