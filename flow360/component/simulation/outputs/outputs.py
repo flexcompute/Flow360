@@ -138,11 +138,19 @@ class MovingStatistic(Flow360BaseModel):
     :class:`ProbeOutput`, :class:`SurfaceProbeOutput`,
     :class:`SurfaceIntegralOutput` and :class:`ForceOutput`.
 
+    Notes
+    -----
+    - The window size is defined by the number of data points recorded in the output.
+    - For steady simulations, the solver typically outputs a data point once every **10 pseudo steps**.
+      This means a :py:attr:`moving_window_size`=10 would cover 100 pseudo steps.
+      Thus, the :py:attr:`start_step` value is automatically rounded up to
+      the nearest multiple of 10 for steady simulations.
+
     Example
     -------
 
     Define a moving statistic to compute the standard deviation in a moving window of
-    10 steps, with the initial 100 steps skipped.
+    10 data points, with the initial 100 steps skipped.
 
     >>> fl.MovingStatistic(
     ...     moving_window_size=10,
@@ -153,29 +161,23 @@ class MovingStatistic(Flow360BaseModel):
     ====
     """
 
-    moving_window_size: pd.PositiveInt = pd.Field(
+    moving_window_size: pd.StrictInt = pd.Field(
         10,
-        description="The number of pseudo/physical steps to compute moving statistics. "
-        "For steady simulation, the moving_window_size should be a multiple of 10.",
+        ge=2,
+        description="The size of the moving window in data points over which the "
+        "statistic is calculated. Must be greater than or equal to 2.",
     )
     method: Literal["mean", "min", "max", "std", "deviation"] = pd.Field(
-        "mean", description="The type of moving statistics used to monitor the output."
+        "mean", description="The statistical method to apply to the data within the moving window."
     )
     start_step: pd.NonNegativeInt = pd.Field(
         0,
-        description="The number of pseudo/physical steps to skip before computing the moving statistics. "
-        "For steady simulation, the moving_window_size should be a multiple of 10.",
+        description="The number of steps (pseudo or physical) to skip at the beginning of the "
+        "simulation before the moving statistics calculation starts. For steady "
+        "simulations, this value is automatically rounded up to the nearest multiple of 10, "
+        "as the solver outputs data every 10 pseudo steps.",
     )
     type_name: Literal["MovingStatistic"] = pd.Field("MovingStatistic", frozen=True)
-
-    @contextual_field_validator("moving_window_size", "start_step", mode="after")
-    @classmethod
-    def _check_moving_window_for_steady_simulation(cls, value, param_info: ParamsValidationInfo):
-        if param_info.time_stepping == TimeSteppingType.STEADY and value % 10 != 0:
-            raise ValueError(
-                "For steady simulation, the number of steps should be a multiple of 10."
-            )
-        return value
 
 
 class _OutputBase(Flow360BaseModel):
