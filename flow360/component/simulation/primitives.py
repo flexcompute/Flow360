@@ -9,7 +9,6 @@ from typing import Annotated, ClassVar, List, Literal, Optional, Tuple, Union, f
 import numpy as np
 import pydantic as pd
 from pydantic import PositiveFloat
-from scipy.linalg import eig
 from typing_extensions import Self
 
 import flow360.component.simulation.units as u
@@ -348,6 +347,9 @@ class Box(MultiConstructorBaseModel, _VolumeEntityBase):
         """
         Construct box from principal axes
         """
+
+        from scipy.linalg import eig  # pylint: disable=import-outside-toplevel
+
         # validate
         x_axis, y_axis = np.array(axes[0]), np.array(axes[1])
         z_axis = np.cross(x_axis, y_axis)
@@ -750,10 +752,17 @@ class GhostSurfacePair(SurfacePairBase):
     Represents a pair of ghost surfaces.
 
     Attributes:
-        pair (Tuple[GhostSurface, GhostSurface]): A tuple containing two GhostSurface objects representing the pair.
+        pair (Tuple[GhostSurfaceType, GhostSurfaceType]):
+            A tuple containing two GhostSurfaceType objects representing the pair.
+            GhostSurface is for Python API, GhostCircularPlane is for Web UI.
     """
 
-    pair: Tuple[GhostSurface, GhostSurface]
+    GhostSurfaceType: ClassVar[type] = Annotated[
+        Union[GhostSurface, GhostCircularPlane],
+        pd.Field(discriminator="private_attribute_entity_type_name"),
+    ]
+
+    pair: Tuple[GhostSurfaceType, GhostSurfaceType]
 
 
 @final

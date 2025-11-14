@@ -640,6 +640,12 @@ def translate_acoustic_output(output_params: list):
                     for item in output.permeable_surfaces.stored_entities
                     if item.full_name != BOUNDARY_FULL_NAME_WHEN_NOT_FOUND
                 ]
+            if output.observer_time_step_size:
+                aeroacoustic_output["observerTimeStepSize"] = (
+                    output.observer_time_step_size.v.item()
+                )
+            aeroacoustic_output["startTime"] = output.aeroacoustic_solver_start_time.v.item()
+            aeroacoustic_output["newRun"] = output.force_clean_start
             return aeroacoustic_output
     return None
 
@@ -1089,6 +1095,7 @@ def actuator_disk_entity_info_serializer(volume):
         "axisThrust": v["axis"],
         "center": v["center"],
         "thickness": v["height"],
+        "name": v["name"],
     }
 
 

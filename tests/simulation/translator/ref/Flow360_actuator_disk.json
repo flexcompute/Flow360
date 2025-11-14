@@ -80,6 +80,7 @@
     },
     "actuatorDisks": [
         {
+	    "name": "my_cylinder-1",
             "center": [
                 0.0,
                 0.0,

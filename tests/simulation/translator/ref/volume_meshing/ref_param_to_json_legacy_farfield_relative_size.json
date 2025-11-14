@@ -1,0 +1,14 @@
+{
+  "faces": {},
+  "farfield": {
+    "planarFaceTolerance": 1e-06,
+    "relativeSize": 100.0,
+    "type": "quasi-3d"
+  },
+  "refinementFactor": 1.0,
+  "volume": {
+    "firstLayerThickness": 1e-03,
+    "gapTreatmentStrength": 0.0,
+    "growthRate": 1.25
+  }
+}
