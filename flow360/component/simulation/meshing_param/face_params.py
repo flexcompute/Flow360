@@ -18,6 +18,7 @@ from flow360.component.simulation.validation.validation_context import (
 )
 from flow360.component.simulation.validation.validation_utils import (
     check_deleted_surface_in_entity_list,
+    check_geometry_ai_features,
     check_ghost_surface_usage_policy_for_face_refinements,
 )
 
@@ -73,18 +74,8 @@ class SurfaceRefinement(Flow360BaseModel):
     @pd.field_validator("curvature_resolution_angle", "resolve_face_boundaries", mode="after")
     @classmethod
     def ensure_geometry_ai_features(cls, value, info):
-        """Ensure GAI features are not specified when GAI is not used"""
-        validation_info = get_validation_info()
-
-        if validation_info is None:
-            return value
-
-        # pylint: disable=unsubscriptable-object
-        default_value = cls.model_fields[info.field_name].default
-        if value != default_value and not validation_info.use_geometry_AI:
-            raise ValueError(f"{info.field_name} is only supported when geometry AI is used.")
-
-        return value
+        """Validate that the feature is only used when Geometry AI is enabled."""
+        return check_geometry_ai_features(cls, value, info)
 
 
 class GeometryRefinement(Flow360BaseModel):

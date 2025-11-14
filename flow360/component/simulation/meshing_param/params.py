@@ -34,7 +34,10 @@ from flow360.component.simulation.validation.validation_context import (
     ContextField,
     get_validation_info,
 )
-from flow360.component.simulation.validation.validation_utils import EntityUsageMap
+from flow360.component.simulation.validation.validation_utils import (
+    EntityUsageMap,
+    check_geometry_ai_features,
+)
 
 RefinementTypes = Annotated[
     Union[
@@ -166,20 +169,23 @@ class MeshingDefaults(Flow360BaseModel):
         False,
         description="Flag to specify whether boundaries between adjacent faces should be resolved "
         + "accurately during the surface meshing process using anisotropic mesh refinement. "
-        + "This option is only supported when using geometry AI, and can be overridden per face with flow360.SurfaceRefinement",
+        + "This option is only supported when using geometry AI, and can be overridden "
+        + "per face with flow360.SurfaceRefinement",
     )
 
     preserve_thin_geometry: bool = pd.Field(
         False,
         description="Flag to specify whether thin geometry features with thickness roughly equal "
         + "to geometry_accuracy should be resolved accurately during the surface meshing process. "
-        + "This option is only supported when using geometry AI, and can be overridden per face with flow360.GeometryRefinement.",
+        + "This option is only supported when using geometry AI, and can be overridden "
+        + "per face with flow360.GeometryRefinement.",
     )
 
     sealing_size: LengthType.NonNegative = pd.Field(
         0.0 * u.m,
         description="Threshold size below which all geometry gaps are automatically closed. "
-        + "This option is only supported when using geometry AI, and can be overridden per face with flow360.GeometryRefinement.",
+        + "This option is only supported when using geometry AI, and can be overridden "
+        + "per face with flow360.GeometryRefinement.",
     )
 
     remove_non_manifold_faces: bool = pd.Field(
@@ -226,19 +232,9 @@ class MeshingDefaults(Flow360BaseModel):
         mode="after",
     )
     @classmethod
-    def invalid_geometry_ai_features(cls, value, info):
-        """Ensure GAI features are not specified when GAI is not used"""
-        validation_info = get_validation_info()
-
-        if validation_info is None:
-            return value
-
-        # pylint: disable=unsubscriptable-object
-        default_value = cls.model_fields[info.field_name].default
-        if value != default_value and not validation_info.use_geometry_AI:
-            raise ValueError(f"{info.field_name} is only supported when geometry AI is used.")
-
-        return value
+    def ensure_geometry_ai_features(cls, value, info):
+        """Validate that the feature is only used when Geometry AI is enabled."""
+        return check_geometry_ai_features(cls, value, info)
 
 
 class MeshingParams(Flow360BaseModel):
