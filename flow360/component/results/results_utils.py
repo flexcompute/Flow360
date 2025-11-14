@@ -127,7 +127,7 @@ def _get_lift_drag_direction(params: SimulationParams):
 
 
 def _get_dynamic_pressure_in_flow360_unit(params: SimulationParams):
-    # pylint:disable=protected-access
+    # pylint:disable=protected-access,invalid-name
 
     v_ref = params.reference_velocity
 
