@@ -2,11 +2,32 @@ import json
 import os
 import re
 
+import pydantic
 import pytest
 
 import flow360 as fl
 import flow360.component.simulation.units as u
-from flow360.component.simulation.entity_info import VolumeMeshEntityInfo
+
+
+def assert_validation_error_contains(
+    error: pydantic.ValidationError,
+    expected_loc: tuple,
+    expected_msg_contains: str,
+):
+    """Helper function to assert validation error properties for moving_statistic tests"""
+    errors = error.errors()
+    # Find the error with matching location
+    matching_errors = [e for e in errors if e["loc"] == expected_loc]
+    assert (
+        len(matching_errors) == 1
+    ), f"Expected 1 error at {expected_loc}, found {len(matching_errors)}"
+    assert expected_msg_contains in matching_errors[0]["msg"], (
+        f"Expected '{expected_msg_contains}' in error message, "
+        f"but got: '{matching_errors[0]['msg']}'"
+    )
+    assert matching_errors[0]["type"] == "value_error"
+
+
 from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.models.solver_numerics import (
     KOmegaSST,
@@ -332,70 +353,357 @@ def test_duplicate_surface_usage():
         )
 
 
-def test_moving_statitic_validator():
-    wall_1 = Surface(name="wall_1", private_attribute_is_interface=False)
-    asset_cache = AssetCache(
-        project_length_unit="m",
-        project_entity_info=VolumeMeshEntityInfo(boundaries=[wall_1]),
-    )
+def test_check_moving_statistic_applicability_steady_valid():
+    """Test moving_statistic with steady simulation - valid case."""
+    wall_1 = Wall(entities=Surface(name="fluid/wing"))
 
-    with SI_unit_system:
-        monitored_variable = UserVariable(
-            name="Helicity_MONITOR",
-            value=math.dot(solution.velocity, solution.vorticity),
-        )
-        params = SimulationParams(
+    # Valid: window_size=10 (becomes 100 steps) + start_step=100 (becomes 100) = 200 <= 5000
+    with imperial_unit_system:
+        SimulationParams(
+            models=[Fluid(), wall_1],
             time_stepping=Steady(max_steps=5000),
-            models=[Fluid(), Wall(entities=wall_1)],
             outputs=[
-                ProbeOutput(
-                    name="point_legacy2",
-                    output_fields=["Mach", monitored_variable],
-                    probe_points=Point(name="Point1", location=(-0.026642, 0.56614, 0) * u.m),
-                    moving_statistic=MovingStatistic(method="std", moving_window_size=15),
+                fl.ForceOutput(
+                    name="force_output",
+                    models=[wall_1],
+                    output_fields=["CL", "CD"],
+                    moving_statistic=MovingStatistic(
+                        method="mean", moving_window_size=10, start_step=100
+                    ),
                 )
             ],
-            private_attribute_asset_cache=asset_cache,
         )
 
-    params, errors, _ = validate_model(
-        validated_by=ValidationCalledBy.LOCAL,
-        params_as_dict=params.model_dump(mode="json"),
-        root_item_type="VolumeMesh",
-        validation_level="Case",
-    )
-    assert len(errors) == 1
-    assert (
-        errors[0]["msg"] == "Value error, For steady simulation, "
-        "the number of steps should be a multiple of 10."
-    )
-
-    with SI_unit_system:
-        monitored_variable = UserVariable(
-            name="Helicity_MONITOR",
-            value=math.dot(solution.velocity, solution.vorticity),
-        )
-        params = SimulationParams(
-            time_stepping=Steady(max_steps=5000),
-            models=[Fluid(), Wall(entities=wall_1)],
+    # Valid: window_size=5 (becomes 50 steps) + start_step=50 (becomes 50) = 100 <= 1000
+    with imperial_unit_system:
+        SimulationParams(
+            models=[Fluid(), wall_1],
+            time_stepping=Steady(max_steps=1000),
             outputs=[
                 ProbeOutput(
-                    name="point_legacy2",
-                    output_fields=["Mach", monitored_variable],
-                    probe_points=Point(name="Point1", location=(-0.026642, 0.56614, 0) * u.m),
-                    moving_statistic=MovingStatistic(method="std", moving_window_size=20),
+                    name="probe_output",
+                    probe_points=[Point(name="point_1", location=[1, 2, 3] * u.m)],
+                    output_fields=["Cp"],
+                    moving_statistic=MovingStatistic(
+                        method="std", moving_window_size=5, start_step=50
+                    ),
                 )
             ],
-            private_attribute_asset_cache=asset_cache,
         )
 
-    _, errors, _ = validate_model(
-        validated_by=ValidationCalledBy.LOCAL,
-        params_as_dict=params.model_dump(mode="json"),
-        root_item_type="VolumeMesh",
-        validation_level="Case",
+
+def test_check_moving_statistic_applicability_steady_invalid():
+    """Test moving_statistic with steady simulation - invalid case."""
+    wall_1 = Wall(entities=Surface(name="fluid/wing"))
+
+    # Invalid: window_size=50 (becomes 500 steps) + start_step=4600 (becomes 4600) = 5100 > 5000
+    with pytest.raises(pydantic.ValidationError) as exc_info:
+        with imperial_unit_system:
+            SimulationParams(
+                models=[Fluid(), wall_1],
+                time_stepping=Steady(max_steps=5000),
+                outputs=[
+                    fl.ForceOutput(
+                        name="force_output",
+                        models=[wall_1],
+                        output_fields=["CL", "CD"],
+                        moving_statistic=MovingStatistic(
+                            method="mean", moving_window_size=50, start_step=4600
+                        ),
+                    )
+                ],
+            )
+
+    assert_validation_error_contains(
+        exc_info.value,
+        expected_loc=("outputs", 0, "moving_statistic"),
+        expected_msg_contains="`moving_statistic`'s moving_window_size + start_step exceeds "
+        "the total number of steps in the simulation.",
     )
-    assert errors is None
+
+    # Invalid: window_size=20 (becomes 200 steps) + start_step=850 (becomes 850) = 1060 > 1000
+    with pytest.raises(pydantic.ValidationError) as exc_info:
+        with imperial_unit_system:
+            SimulationParams(
+                models=[Fluid(), wall_1],
+                time_stepping=Steady(max_steps=1000),
+                outputs=[
+                    ProbeOutput(
+                        name="probe_output",
+                        probe_points=[Point(name="point_1", location=[1, 2, 3] * u.m)],
+                        output_fields=["Cp"],
+                        moving_statistic=MovingStatistic(
+                            method="std", moving_window_size=20, start_step=850
+                        ),
+                    )
+                ],
+            )
+
+    assert_validation_error_contains(
+        exc_info.value,
+        expected_loc=("outputs", 0, "moving_statistic"),
+        expected_msg_contains="`moving_statistic`'s moving_window_size + start_step exceeds "
+        "the total number of steps in the simulation.",
+    )
+
+
+def test_check_moving_statistic_applicability_unsteady_valid():
+    """Test moving_statistic with unsteady simulation - valid case."""
+    wall_1 = Wall(entities=Surface(name="fluid/wing"))
+
+    # Valid: window_size=100 + start_step=200 = 300 <= 1000
+    with imperial_unit_system:
+        SimulationParams(
+            models=[Fluid(), wall_1],
+            time_stepping=Unsteady(steps=1000, step_size=1e-3),
+            outputs=[
+                fl.ForceOutput(
+                    name="force_output",
+                    models=[wall_1],
+                    output_fields=["CL", "CD"],
+                    moving_statistic=MovingStatistic(
+                        method="mean", moving_window_size=100, start_step=200
+                    ),
+                )
+            ],
+        )
+
+    # Valid: window_size=50 + start_step=50 = 100 <= 500
+    with imperial_unit_system:
+        SimulationParams(
+            models=[Fluid(), wall_1],
+            time_stepping=Unsteady(steps=500, step_size=1e-3),
+            outputs=[
+                ProbeOutput(
+                    name="probe_output",
+                    probe_points=[Point(name="point_1", location=[1, 2, 3] * u.m)],
+                    output_fields=["Cp"],
+                    moving_statistic=MovingStatistic(
+                        method="std", moving_window_size=50, start_step=50
+                    ),
+                )
+            ],
+        )
+
+
+def test_check_moving_statistic_applicability_unsteady_invalid():
+    """Test moving_statistic with unsteady simulation - invalid case."""
+    wall_1 = Wall(entities=Surface(name="fluid/wing"))
+
+    # Invalid: window_size=500 + start_step=600 = 1100 > 1000
+    with pytest.raises(pydantic.ValidationError) as exc_info:
+        with imperial_unit_system:
+            SimulationParams(
+                models=[Fluid(), wall_1],
+                time_stepping=Unsteady(steps=1000, step_size=1e-3),
+                outputs=[
+                    fl.ForceOutput(
+                        name="force_output",
+                        models=[wall_1],
+                        output_fields=["CL", "CD"],
+                        moving_statistic=MovingStatistic(
+                            method="mean", moving_window_size=500, start_step=600
+                        ),
+                    )
+                ],
+            )
+
+    assert_validation_error_contains(
+        exc_info.value,
+        expected_loc=("outputs", 0, "moving_statistic"),
+        expected_msg_contains="`moving_statistic`'s moving_window_size + start_step exceeds "
+        "the total number of steps in the simulation.",
+    )
+
+    # Invalid: window_size=200 + start_step=350 = 550 > 500
+    with pytest.raises(pydantic.ValidationError) as exc_info:
+        with imperial_unit_system:
+            SimulationParams(
+                models=[Fluid(), wall_1],
+                time_stepping=Unsteady(steps=500, step_size=1e-3),
+                outputs=[
+                    ProbeOutput(
+                        name="probe_output",
+                        probe_points=[Point(name="point_1", location=[1, 2, 3] * u.m)],
+                        output_fields=["Cp"],
+                        moving_statistic=MovingStatistic(
+                            method="std", moving_window_size=200, start_step=350
+                        ),
+                    )
+                ],
+            )
+
+    assert_validation_error_contains(
+        exc_info.value,
+        expected_loc=("outputs", 0, "moving_statistic"),
+        expected_msg_contains="`moving_statistic`'s moving_window_size + start_step exceeds "
+        "the total number of steps in the simulation.",
+    )
+
+
+def test_check_moving_statistic_applicability_steady_edge_cases():
+    """Test moving_statistic with steady simulation - edge cases for rounding."""
+    wall_1 = Wall(entities=Surface(name="fluid/wing"))
+
+    # Edge case: start_step=47 rounds up to 50, window_size=10 becomes 100, total=150 <= 200
+    with imperial_unit_system:
+        SimulationParams(
+            models=[Fluid(), wall_1],
+            time_stepping=Steady(max_steps=200),
+            outputs=[
+                fl.ForceOutput(
+                    name="force_output",
+                    models=[wall_1],
+                    output_fields=["CL", "CD"],
+                    moving_statistic=MovingStatistic(
+                        method="mean", moving_window_size=10, start_step=47
+                    ),
+                )
+            ],
+        )
+
+    # Edge case: start_step=99 rounds up to 100, window_size=5 becomes 50, total=150 <= 200
+    with imperial_unit_system:
+        SimulationParams(
+            models=[Fluid(), wall_1],
+            time_stepping=Steady(max_steps=200),
+            outputs=[
+                ProbeOutput(
+                    name="probe_output",
+                    probe_points=[Point(name="point_1", location=[1, 2, 3] * u.m)],
+                    output_fields=["Cp"],
+                    moving_statistic=MovingStatistic(
+                        method="std", moving_window_size=5, start_step=99
+                    ),
+                )
+            ],
+        )
+
+    # Edge case: start_step=100 (already multiple of 10), window_size=10 becomes 100, total=200 <= 200
+    with imperial_unit_system:
+        SimulationParams(
+            models=[Fluid(), wall_1],
+            time_stepping=Steady(max_steps=200),
+            outputs=[
+                fl.ForceOutput(
+                    name="force_output",
+                    models=[wall_1],
+                    output_fields=["CL", "CD"],
+                    moving_statistic=MovingStatistic(
+                        method="mean", moving_window_size=10, start_step=100
+                    ),
+                )
+            ],
+        )
+
+
+def test_check_moving_statistic_applicability_multiple_outputs():
+    """
+    Test moving_statistic with multiple outputs - captures ALL errors from different outputs.
+
+    The validation function collects all errors from all invalid outputs and raises them together.
+    This follows Pydantic's pattern of collecting errors from list items.
+    """
+    wall_1 = Wall(entities=Surface(name="fluid/wing"))
+    uv_surface1 = UserVariable(
+        name="uv_surface1", value=math.dot(solution.velocity, solution.CfVec)
+    )
+
+    # Multiple outputs with errors - ALL errors should be collected
+    # All 4 outputs have invalid moving_statistic (500 + 600 = 1100 > 1000)
+    with pytest.raises(pydantic.ValidationError) as exc_info:
+        with imperial_unit_system:
+            SimulationParams(
+                models=[Fluid(), wall_1],
+                time_stepping=Unsteady(steps=1000, step_size=1e-3),
+                outputs=[
+                    fl.ForceOutput(
+                        name="force_output",
+                        models=[wall_1],
+                        output_fields=["CL", "CD"],
+                        moving_statistic=MovingStatistic(
+                            method="mean", moving_window_size=100, start_step=600
+                        ),
+                    ),
+                    ProbeOutput(
+                        name="probe_output",
+                        probe_points=[Point(name="point_1", location=[1, 2, 3] * u.m)],
+                        output_fields=["Cp"],
+                        moving_statistic=MovingStatistic(
+                            method="std", moving_window_size=100, start_step=600
+                        ),
+                    ),
+                    SurfaceIntegralOutput(
+                        entities=Surface(name="fluid/wing"),
+                        output_fields=[uv_surface1],
+                        moving_statistic=MovingStatistic(
+                            method="mean", moving_window_size=500, start_step=600
+                        ),
+                    ),
+                    SurfaceProbeOutput(
+                        name="surface_probe_output",
+                        probe_points=[Point(name="point_1", location=[1, 2, 3] * u.m)],
+                        output_fields=["Cp"],
+                        target_surfaces=[Surface(name="fluid/wing")],
+                        moving_statistic=MovingStatistic(
+                            method="mean", moving_window_size=100, start_step=600
+                        ),
+                    ),
+                ],
+            )
+
+    assert len(exc_info.value.errors()) == 1
+    assert_validation_error_contains(
+        exc_info.value,
+        expected_loc=("outputs", 2, "moving_statistic"),
+        expected_msg_contains="`moving_statistic`'s moving_window_size + start_step exceeds "
+        "the total number of steps in the simulation.",
+    )
+
+
+def test_check_moving_statistic_applicability_no_moving_statistic():
+    """Test that outputs without moving_statistic are not validated."""
+    wall_1 = Wall(entities=Surface(name="fluid/wing"))
+
+    # Should pass - no moving_statistic specified
+    with imperial_unit_system:
+        SimulationParams(
+            models=[Fluid(), wall_1],
+            time_stepping=Steady(max_steps=1000),
+            outputs=[
+                fl.ForceOutput(
+                    name="force_output",
+                    models=[wall_1],
+                    output_fields=["CL", "CD"],
+                ),
+                ProbeOutput(
+                    name="probe_output",
+                    probe_points=[Point(name="point_1", location=[1, 2, 3] * u.m)],
+                    output_fields=["Cp"],
+                ),
+            ],
+        )
+
+
+def test_check_moving_statistic_applicability_no_time_stepping():
+    """Test that function returns early when no time_stepping is provided."""
+    wall_1 = Wall(entities=Surface(name="fluid/wing"))
+
+    # Should pass - no time_stepping specified
+    with imperial_unit_system:
+        SimulationParams(
+            models=[Fluid(), wall_1],
+            outputs=[
+                fl.ForceOutput(
+                    name="force_output",
+                    models=[wall_1],
+                    output_fields=["CL", "CD"],
+                    moving_statistic=MovingStatistic(
+                        method="mean", moving_window_size=100, start_step=200
+                    ),
+                )
+            ],
+        )
 
 
 def test_duplicate_probe_names():
