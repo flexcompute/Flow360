@@ -126,7 +126,7 @@ def _dimensioned_vector_type_serializer(x):
     enforces the output to be an array even if the value has one element
     """
     # adding .expr helps to avoid degF/C becoming serialized as °F/C
-    return {"value": _encode_ndarray(x.value, True), "units": str(x.units.expr)}
+    return {"value": _encode_ndarray(x.value), "units": str(x.units.expr)}
 
 
 def _check_if_input_is_nested_collection(value, nest_level):
