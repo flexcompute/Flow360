@@ -117,7 +117,7 @@ CommonFieldNames = Literal[
 # Magnitude of CfVec
 # Non-dimensional heat flux
 # Wall normals
-# Spalart-Allmaras variable
+# Non-dimensional force per unit area at the node
 # Non-dimensional wall distance
 # Wall function metrics
 # Surface heat transfer coefficient (static temperature as reference)
