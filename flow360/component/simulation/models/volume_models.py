@@ -315,6 +315,13 @@ class Fluid(PDEModelBase):
         )
     )
 
+    relative_interpolation_tolerance: Optional[pd.PositiveFloat] = pd.Field(
+        None,
+        description="Interopolation will fail if the distance between an interpolation "
+        "point and the closest triangle is greater than `relative_interpolation_tolerance` "
+        "multiplied by the maximum edge length of the patch containing the interpolation point. "
+        "If not specified, default value is 0.2.",
+    )
     # pylint: disable=fixme
     # fixme: Add support for other initial conditions
 

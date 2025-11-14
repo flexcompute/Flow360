@@ -99,7 +99,8 @@
             },
             "transition_model_solver": {
                 "type_name": "None"
-            }
+            },
+	    "relative_interpolation_tolerance" : null
         }
     ],
     "time_stepping": {
