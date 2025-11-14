@@ -1309,9 +1309,10 @@ def boundary_spec_translator(model: SurfaceModelTypes, op_acoustic_to_static_pre
             boundary["velocityDirection"] = list(model_dict["velocityDirection"])
         if isinstance(model.spec, TotalPressure):
             boundary["type"] = "SubsonicInflow"
-            boundary["totalPressureRatio"] = (
-                model_dict["spec"]["value"] * op_acoustic_to_static_pressure_ratio
-            )
+            total_pressure_ratio = model_dict["spec"]["value"]
+            if not isinstance(model.spec.value, str):
+                total_pressure_ratio *= op_acoustic_to_static_pressure_ratio
+            boundary["totalPressureRatio"] = total_pressure_ratio
         if isinstance(model.spec, Supersonic):
             boundary["type"] = "SupersonicInflow"
             boundary["totalPressureRatio"] = (
