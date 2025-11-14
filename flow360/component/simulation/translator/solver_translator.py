@@ -1056,7 +1056,7 @@ def bet_disk_entity_info_serializer(volume):
     }
 
 
-def bet_disk_translator(model: BETDisk):
+def bet_disk_translator(model: BETDisk, is_unsteady: bool):
     """BET disk translator"""
     model_dict = convert_tuples_to_lists(remove_units_in_dict(dump_dict(model)))
     model_dict["alphas"] = [alpha.to("degree").value.item() for alpha in model.alphas]
@@ -1073,7 +1073,6 @@ def bet_disk_translator(model: BETDisk):
         "omega": model_dict["omega"],
         "chordRef": model_dict["chordRef"],
         "nLoadingNodes": model_dict["nLoadingNodes"],
-        "bladeLineChord": model_dict["bladeLineChord"],
         "twists": model_dict["twists"],
         "chords": model_dict["chords"],
         "sectionalPolars": model_dict["sectionalPolars"],
@@ -1083,8 +1082,16 @@ def bet_disk_translator(model: BETDisk):
         "ReynoldsNumbers": model_dict["reynoldsNumbers"],
         "tipGap": model_dict["tipGap"],
     }
-    if "initialBladeDirection" in model_dict:
-        disk_param["initialBladeDirection"] = model_dict["initialBladeDirection"]
+
+    if is_unsteady:
+        # Unsteady BET Line
+        disk_param["bladeLineChord"] = model_dict["bladeLineChord"]
+        if "initialBladeDirection" in model_dict:
+            disk_param["initialBladeDirection"] = model_dict["initialBladeDirection"]
+    else:
+        # Steady BET Disk
+        disk_param["bladeLineChord"] = 0
+
     return disk_param
 
 
@@ -1309,9 +1316,10 @@ def boundary_spec_translator(model: SurfaceModelTypes, op_acoustic_to_static_pre
             boundary["velocityDirection"] = list(model_dict["velocityDirection"])
         if isinstance(model.spec, TotalPressure):
             boundary["type"] = "SubsonicInflow"
-            boundary["totalPressureRatio"] = (
-                model_dict["spec"]["value"] * op_acoustic_to_static_pressure_ratio
-            )
+            total_pressure_ratio = model_dict["spec"]["value"]
+            if not isinstance(model.spec.value, str):
+                total_pressure_ratio *= op_acoustic_to_static_pressure_ratio
+            boundary["totalPressureRatio"] = total_pressure_ratio
         if isinstance(model.spec, Supersonic):
             boundary["type"] = "SupersonicInflow"
             boundary["totalPressureRatio"] = (
@@ -1662,6 +1670,7 @@ def get_solver_json(
             bet_disk_translator,
             to_list=True,
             entity_injection_func=bet_disk_entity_info_serializer,
+            translation_func_is_unsteady=isinstance(input_params.time_stepping, Unsteady),
         )
 
     if has_instance_in_list(input_params.models, ActuatorDisk):

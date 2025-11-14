@@ -10,6 +10,16 @@
                 0.0
             ]
         },
+        "boundary_name_D": {
+            "type": "SubsonicInflow",
+            "totalTemperatureRatio": "1 + x",
+            "totalPressureRatio": "1 + sin(y)",
+            "velocityDirection": [
+                0.0,
+                1.0,
+                0.0
+            ]
+        },
         "boundary_name_B": {
             "type": "MassInflow",
             "totalTemperatureRatio": 1.0411244143675171,

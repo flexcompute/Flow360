@@ -746,6 +746,15 @@ def test_boundaries():
                     ),
                     velocity_direction=(0, 1, 0),
                 ),
+                Inflow(
+                    name="inflow-4",
+                    total_temperature="1 + x",
+                    surfaces=Surface(name="boundary_name_D"),
+                    spec=TotalPressure(
+                        value="1 + sin(y)",
+                    ),
+                    velocity_direction=(0, 1, 0),
+                ),
                 Outflow(
                     name="outflow-1",
                     surfaces=Surface(name="boundary_name_E"),
