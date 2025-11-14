@@ -382,11 +382,11 @@ def airplane_surface_mesh():
 
 @pytest.fixture()
 def rotor_surface_mesh():
-    rotor_geopmetry = TempGeometry("rotor.csm")
+    rotor_geometry = TempGeometry("rotor.csm")
     with imperial_unit_system:
         param = SimulationParams(
             private_attribute_asset_cache=AssetCache(
-                project_entity_info=rotor_geopmetry._get_entity_info()
+                project_entity_info=rotor_geometry._get_entity_info()
             ),
             meshing=MeshingParams(
                 defaults=MeshingDefaults(
@@ -396,40 +396,40 @@ def rotor_surface_mesh():
                 ),
                 refinements=[
                     SurfaceRefinement(
-                        entities=[rotor_geopmetry["body01_face003"]],
+                        entities=[rotor_geometry["body01_face003"]],
                         max_edge_length=0.1 * u.inch,
                     ),
                     SurfaceRefinement(
                         entities=[
-                            rotor_geopmetry["body01_face001"],
-                            rotor_geopmetry["body01_face002"],
+                            rotor_geometry["body01_face001"],
+                            rotor_geometry["body01_face002"],
                         ],
                         max_edge_length=10 * u.inch,
                     ),
                     SurfaceEdgeRefinement(
-                        entities=[rotor_geopmetry["body01_edge001"]],
+                        entities=[rotor_geometry["body01_edge001"]],
                         method=AngleBasedRefinement(value=1 * u.degree),
                     ),
                     SurfaceEdgeRefinement(
                         entities=[
-                            rotor_geopmetry["body01_edge002"],
-                            rotor_geopmetry["body01_edge003"],
+                            rotor_geometry["body01_edge002"],
+                            rotor_geometry["body01_edge003"],
                         ],
                         method=HeightBasedRefinement(value=0.05 * u.inch),
                     ),
                     SurfaceEdgeRefinement(
                         entities=[
-                            rotor_geopmetry["body01_edge004"],
-                            rotor_geopmetry["body01_edge006"],
+                            rotor_geometry["body01_edge004"],
+                            rotor_geometry["body01_edge006"],
                         ],
                         method=ProjectAnisoSpacing(),
                     ),
                     SurfaceEdgeRefinement(
-                        entities=[rotor_geopmetry["body01_edge005"]],
+                        entities=[rotor_geometry["body01_edge005"]],
                         method=HeightBasedRefinement(value=0.01 * u.inch),
                     ),
                     SurfaceEdgeRefinement(
-                        entities=[rotor_geopmetry["body01_edge007"]],
+                        entities=[rotor_geometry["body01_edge007"]],
                         method=HeightBasedRefinement(value=0.01 * u.inch),
                     ),
                 ],
@@ -531,7 +531,7 @@ def test_gai_surface_mesher_refinements():
         params = SimulationParams(
             meshing=MeshingParams(
                 defaults=MeshingDefaults(
-                    geometry_accuracy=0.05 * u.m,  # GAI setting
+                    geometry_accuracy=0.05 * u.m,  # GAI only setting
                     surface_max_edge_length=0.2,
                     boundary_layer_first_layer_thickness=0.01,
                     surface_max_aspect_ratio=0.01,
@@ -543,6 +543,8 @@ def test_gai_surface_mesher_refinements():
                         name="renamed_surface",
                         max_edge_length=0.1,
                         faces=[geometry["*"]],
+                        curvature_resolution_angle=5.0 * u.deg,  # GAI only setting
+                        resolve_face_boundaries=True,  # GAI only setting
                     ),
                     GeometryRefinement(
                         name="Local_override",

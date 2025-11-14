@@ -16,6 +16,7 @@
                 "value": 12.0,
                 "units": "degree"
             },
+            "resolve_face_boundaries": false,
             "preserve_thin_geometry": false,
             "sealing_size": {
                 "value": 0.0,
