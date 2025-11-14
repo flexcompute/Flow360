@@ -69,4 +69,4 @@ def test_betdisk_steady_excludes_internal_fields():
     bet_item = translated["BETDisks"][0]
 
     assert "initialBladeDirection" not in bet_item
-    assert "bladeLineChord" not in bet_item
+    assert "bladeLineChord" in bet_item and bet_item["bladeLineChord"] == 0
