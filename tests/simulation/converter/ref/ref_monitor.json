@@ -120,6 +120,7 @@
         {
             "name": "R1",
             "entities": {
+                "selectors": null,
                 "stored_entities": [
                     {
                         "private_attribute_entity_type_name": "Point",
@@ -146,6 +147,7 @@
         {
             "name": "V3",
             "entities": {
+                "selectors": null,
                 "stored_entities": [
                     {
                         "private_attribute_entity_type_name": "Point",
@@ -202,3 +204,4 @@
         "use_geometry_AI": false
     }
 }
+
