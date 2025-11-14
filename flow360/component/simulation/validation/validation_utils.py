@@ -68,7 +68,7 @@ def _validator_append_instance_name(func):
 
 def customize_model_validator_error(
     model_instance,
-    loc: Tuple[Union[str, int], ...],
+    relative_location: Tuple[Union[str, int], ...],
     message: str,
     input_value: Any = None,
 ):
@@ -80,7 +80,7 @@ def customize_model_validator_error(
 
     Args:
         model_instance: The Pydantic model instance (e.g., self in a model_validator)
-        loc: Tuple specifying the field path relative to current model
+        relative_location: Tuple specifying the field path relative to current model
              e.g., ("field_name",) or ("outputs", 0, "output_fields", "items", 2)
         message: The error message describing what went wrong
         input_value: The invalid input value. If None, uses model_instance.model_dump()
@@ -94,7 +94,7 @@ def customize_model_validator_error(
             if invalid_condition:
                 raise customized_model_validation_error(
                     self,
-                    loc=("outputs", output_index, "output_fields", "items", item_index),
+                    relative_location=("outputs", output_index, "output_fields", "items", item_index),
                     message=f"{item} is not a valid output field",
                     input_value=item
                 )
@@ -106,7 +106,7 @@ def customize_model_validator_error(
         line_errors=[
             InitErrorDetails(
                 type="value_error",
-                loc=loc,
+                loc=relative_location,
                 input=input_value or model_instance.model_dump(),
                 ctx={"error": ValueError(message)},
             )

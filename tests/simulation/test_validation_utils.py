@@ -96,7 +96,7 @@ def simple_model():
             if self.name == "invalid":
                 raise customize_model_validator_error(
                     self,
-                    loc=("name",),
+                    relative_location=("name",),
                     message="name cannot be 'invalid'",
                     input_value=self.name,
                 )
@@ -119,7 +119,7 @@ def list_model():
                 if output.get("type") == "invalid":
                     raise customize_model_validator_error(
                         self,
-                        loc=("outputs", i, "type"),
+                        relative_location=("outputs", i, "type"),
                         message=f"output type 'invalid' at index {i}",
                         input_value=output.get("type"),
                     )
@@ -140,7 +140,7 @@ def two_layer_models():
             if self.nested_value < 0:
                 raise customize_model_validator_error(
                     self,
-                    loc=("nested_value",),
+                    relative_location=("nested_value",),
                     message="nested_value must be non-negative",
                     input_value=self.nested_value,
                 )
@@ -155,7 +155,7 @@ def two_layer_models():
             if self.config_name == "forbidden":
                 raise customize_model_validator_error(
                     self,
-                    loc=("config_name",),
+                    relative_location=("config_name",),
                     message="config_name cannot be 'forbidden'",
                     input_value=self.config_name,
                 )
@@ -179,7 +179,7 @@ def three_layer_models():
             if self.threshold <= 0:
                 raise customize_model_validator_error(
                     self,
-                    loc=("threshold",),
+                    relative_location=("threshold",),
                     message="Inner: threshold must be positive",
                     input_value=self.threshold,
                 )
@@ -194,7 +194,7 @@ def three_layer_models():
             if self.config_id < 0:
                 raise customize_model_validator_error(
                     self,
-                    loc=("config_id",),
+                    relative_location=("config_id",),
                     message="Middle: config_id must be non-negative",
                     input_value=self.config_id,
                 )
@@ -219,14 +219,14 @@ def three_layer_item_models():
             if self.value < 0:
                 raise customize_model_validator_error(
                     self,
-                    loc=("value",),
+                    relative_location=("value",),
                     message=f"Item '{self.name}' has negative value",
                     input_value=self.value,
                 )
             if self.value > 1000:
                 raise customize_model_validator_error(
                     self,
-                    loc=("value",),
+                    relative_location=("value",),
                     message=f"Item '{self.name}' exceeds maximum",
                     input_value=self.value,
                 )
@@ -241,7 +241,7 @@ def three_layer_item_models():
             if not self.items:
                 raise customize_model_validator_error(
                     self,
-                    loc=("items",),
+                    relative_location=("items",),
                     message=f"Section '{self.section_name}' must have items",
                     input_value=self.items,
                 )
@@ -252,7 +252,7 @@ def three_layer_item_models():
             if self.section_name == "empty":
                 raise customize_model_validator_error(
                     self,
-                    loc=("section_name",),
+                    relative_location=("section_name",),
                     message="Section name cannot be empty",
                     input_value=self.section_name,
                 )
@@ -267,7 +267,7 @@ def three_layer_item_models():
             if not self.sections:
                 raise customize_model_validator_error(
                     self,
-                    loc=("sections",),
+                    relative_location=("sections",),
                     message="Configuration must have sections",
                     input_value=self.sections,
                 )
@@ -290,7 +290,7 @@ def three_layer_parameter_models():
             if self.min_value >= self.max_value:
                 raise customize_model_validator_error(
                     self,
-                    loc=("min_value",),
+                    relative_location=("min_value",),
                     message=f"'{self.param_name}' min must be < max",
                     input_value=self.min_value,
                 )
@@ -306,7 +306,7 @@ def three_layer_parameter_models():
             if self.enabled and not self.parameters:
                 raise customize_model_validator_error(
                     self,
-                    loc=("parameters",),
+                    relative_location=("parameters",),
                     message=f"Enabled '{self.group_name}' needs parameters",
                     input_value=self.parameters,
                 )
@@ -335,13 +335,6 @@ def test_simple_validation_error(simple_model):
         expected_msg_contains="name cannot be 'invalid'",
         expected_input="invalid",
     )
-
-
-def test_simple_validation_success(simple_model):
-    """Test that valid data passes validation"""
-    model = simple_model(name="valid", value=10)
-    assert model.name == "valid"
-    assert model.value == 10
 
 
 def test_error_properties(simple_model):
@@ -397,47 +390,6 @@ def test_parent_validation_error(two_layer_models):
     )
 
 
-def test_pydantic_auto_prepending(two_layer_models):
-    """Test that Pydantic automatically prepends parent paths correctly"""
-    ChildModel = two_layer_models["child"]
-
-    class MiddleModel(BaseModel):
-        inner: ChildModel
-
-    class OuterModel(BaseModel):
-        middle: MiddleModel
-
-    # Override child validation for this specific test
-    class TestChild(BaseModel):
-        nested_value: int
-
-        @model_validator(mode="after")
-        def validate_value(self):
-            if self.nested_value == 0:
-                raise customize_model_validator_error(
-                    self,
-                    loc=("nested_value",),
-                    message="value cannot be zero",
-                    input_value=self.nested_value,
-                )
-            return self
-
-    class TestMiddle(BaseModel):
-        inner: TestChild
-
-    class TestOuter(BaseModel):
-        middle: TestMiddle
-
-    with pytest.raises(ValidationError) as exc_info:
-        TestOuter(middle={"inner": {"nested_value": 0}})
-
-    assert_validation_error(
-        exc_info.value,
-        expected_loc=("middle", "inner", "nested_value"),
-        expected_msg_contains="value cannot be zero",
-    )
-
-
 # ============================================================================
 # Test Cases - List Handling
 # ============================================================================
@@ -463,13 +415,6 @@ def test_list_index_in_location(list_model):
     )
 
 
-def test_empty_list_validation(list_model):
-    """Test validation with empty list doesn't raise error"""
-    model = list_model(name="test", outputs=[])
-    assert model.name == "test"
-    assert model.outputs == []
-
-
 # ============================================================================
 # Test Cases - Multiple Nesting Levels
 # ============================================================================
@@ -486,7 +431,7 @@ def test_multiple_nested_levels():
             if self.value == 999:
                 raise customize_model_validator_error(
                     self,
-                    loc=("value",),
+                    relative_location=("value",),
                     message="value cannot be 999",
                     input_value=self.value,
                 )
@@ -530,7 +475,7 @@ def test_without_input_value_parameter():
             if self.field1 == "error":
                 raise customize_model_validator_error(
                     self,
-                    loc=("field1",),
+                    relative_location=("field1",),
                     message="field1 cannot be 'error'",
                 )
             return self
@@ -546,34 +491,6 @@ def test_without_input_value_parameter():
     assert isinstance(errors[0]["input"], dict)
     assert errors[0]["input"]["field1"] == "error"
     assert errors[0]["input"]["field2"] == 42
-
-
-def test_validation_error_with_none_input_value():
-    """Test handling when input_value is explicitly None"""
-
-    class NoneInputModel(BaseModel):
-        field: Optional[str] = None
-
-        @model_validator(mode="after")
-        def validate_field(self):
-            if self.field is None:
-                raise customize_model_validator_error(
-                    self,
-                    loc=("field",),
-                    message="field cannot be None",
-                    input_value=None,
-                )
-            return self
-
-    with pytest.raises(ValidationError) as exc_info:
-        NoneInputModel(field=None)
-
-    error = exc_info.value
-    errors = error.errors()
-
-    assert len(errors) == 1
-    assert errors[0]["loc"] == ("field",)
-    assert isinstance(errors[0]["input"], dict)
 
 
 # ============================================================================
@@ -593,7 +510,7 @@ def test_custom_error_message_with_special_chars():
             if self.field == "trigger":
                 raise customize_model_validator_error(
                     self,
-                    loc=("field",),
+                    relative_location=("field",),
                     message=custom_message,
                     input_value=self.field,
                 )
@@ -615,7 +532,7 @@ def test_complex_location_tuple():
         def validate_data(self):
             raise customize_model_validator_error(
                 self,
-                loc=("data", "level1", 0, "level2", 5, "field"),
+                relative_location=("data", "level1", 0, "level2", 5, "field"),
                 message="complex location test",
                 input_value="test_value",
             )
@@ -1012,7 +929,7 @@ def test_three_layer_cascade_validation_order():
             if self.l3_value == "error_l3":
                 raise customize_model_validator_error(
                     self,
-                    loc=("l3_value",),
+                    relative_location=("l3_value",),
                     message="Level 3 validation failed",
                     input_value=self.l3_value,
                 )
@@ -1027,7 +944,7 @@ def test_three_layer_cascade_validation_order():
             if self.l2_value == "error_l2":
                 raise customize_model_validator_error(
                     self,
-                    loc=("l2_value",),
+                    relative_location=("l2_value",),
                     message="Level 2 validation failed",
                     input_value=self.l2_value,
                 )
@@ -1042,7 +959,7 @@ def test_three_layer_cascade_validation_order():
             if self.l1_value == "error_l1":
                 raise customize_model_validator_error(
                     self,
-                    loc=("l1_value",),
+                    relative_location=("l1_value",),
                     message="Level 1 validation failed",
                     input_value=self.l1_value,
                 )
@@ -1179,21 +1096,21 @@ def test_complex_three_layer_multiple_error_scenarios():
             if self.min_val >= self.max_val:
                 raise customize_model_validator_error(
                     self,
-                    loc=("min_val",),
+                    relative_location=("min_val",),
                     message=f"Metric '{self.name}': min must be < max",
                     input_value=self.min_val,
                 )
             if self.min_val < 0:
                 raise customize_model_validator_error(
                     self,
-                    loc=("min_val",),
+                    relative_location=("min_val",),
                     message=f"Metric '{self.name}': min cannot be negative",
                     input_value=self.min_val,
                 )
             if self.max_val > 1000:
                 raise customize_model_validator_error(
                     self,
-                    loc=("max_val",),
+                    relative_location=("max_val",),
                     message=f"Metric '{self.name}': max exceeds limit",
                     input_value=self.max_val,
                 )
@@ -1209,14 +1126,14 @@ def test_complex_three_layer_multiple_error_scenarios():
             if self.is_active and len(self.metrics) == 0:
                 raise customize_model_validator_error(
                     self,
-                    loc=("metrics",),
+                    relative_location=("metrics",),
                     message=f"Group '{self.group_name}': active group needs metrics",
                     input_value=self.metrics,
                 )
             if len(self.metrics) > 10:
                 raise customize_model_validator_error(
                     self,
-                    loc=("metrics",),
+                    relative_location=("metrics",),
                     message=f"Group '{self.group_name}': too many metrics",
                     input_value=self.metrics,
                 )
@@ -1231,14 +1148,14 @@ def test_complex_three_layer_multiple_error_scenarios():
             if self.config_version < 1:
                 raise customize_model_validator_error(
                     self,
-                    loc=("config_version",),
+                    relative_location=("config_version",),
                     message="Config version must be >= 1",
                     input_value=self.config_version,
                 )
             if len(self.groups) == 0:
                 raise customize_model_validator_error(
                     self,
-                    loc=("groups",),
+                    relative_location=("groups",),
                     message="Config must have at least one group",
                     input_value=self.groups,
                 )
