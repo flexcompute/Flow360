@@ -497,7 +497,7 @@ class StaticFloor(Flow360BaseModel):
     """Class for static wind tunnel floor with friction patch."""
 
     type: Literal["StaticFloor"] = pd.Field(
-        description="Static floor with friction patch.", frozen=True
+        "StaticFloor", description="Static floor with friction patch.", frozen=True
     )
     friction_patch_x_min: LengthType = pd.Field(
         default=-3 * u.m, description="Minimum x of friction patch."
@@ -513,14 +513,18 @@ class StaticFloor(Flow360BaseModel):
 class FullyMovingFloor(Flow360BaseModel):
     """Class for fully moving wind tunnel floor with friction patch."""
 
-    type: Literal["FullyMovingFloor"] = pd.Field(description="Fully moving floor.")
+    type: Literal["FullyMovingFloor"] = pd.Field(
+        "FullyMovingFloor", description="Fully moving floor.", frozen=True
+    )
 
 
 # pylint: disable=no-member
 class CentralBelt(Flow360BaseModel):
     """Class for wind tunnel floor with one central belt."""
 
-    type: Literal["CentralBelt"] = pd.Field(description="Floor with central belt.")
+    type: Literal["CentralBelt"] = pd.Field(
+        "CentralBelt", description="Floor with central belt.", frozen=True
+    )
     central_belt_x_min: LengthType = pd.Field(
         default=-2 * u.m, description="Minimum x of central belt."
     )
@@ -537,7 +541,7 @@ class WheelBelts(Flow360BaseModel):
     """Class for wind tunnel floor with one central belt and four wheel belts."""
 
     type: Literal["WheelBelts"] = pd.Field(
-        description="Floor with central belt and four wheel belts."
+        "WheelBelts", description="Floor with central belt and four wheel belts.", frozen=True
     )
     central_belt_x_min: LengthType = pd.Field(
         default=-2 * u.m, description="Minimum x of central belt."
@@ -549,14 +553,18 @@ class WheelBelts(Flow360BaseModel):
         default=1.2 * u.m, description="Width of central belt."
     )
     # No defaults for the below; user must specify
-    front_wheel_belt_x_min: LengthType
-    front_wheel_belt_x_max: LengthType
-    front_wheel_belt_inner: LengthType.Positive
-    front_wheel_belt_outer: LengthType.Positive
-    rear_wheel_belt_x_min: LengthType
-    rear_wheel_belt_x_max: LengthType
-    rear_wheel_belt_inner: LengthType.Positive
-    rear_wheel_belt_outer: LengthType.Positive
+    front_wheel_belt_x_min: LengthType = pd.Field(description="Minimum x of front wheel belt.")
+    front_wheel_belt_x_max: LengthType = pd.Field(description="Maximum x of front wheel belt.")
+    front_wheel_belt_inner: LengthType.Positive = pd.Field(
+        description="Inner y of front wheel belt."
+    )
+    front_wheel_belt_outer: LengthType.Positive = pd.Field(
+        description="Outer y of front wheel belt."
+    )
+    rear_wheel_belt_x_min: LengthType = pd.Field(description="Minimum x of rear wheel belt.")
+    rear_wheel_belt_x_max: LengthType = pd.Field(description="Maximum x of rear wheel belt.")
+    rear_wheel_belt_inner: LengthType.Positive = pd.Field(description="Inner y of rear wheel belt.")
+    rear_wheel_belt_outer: LengthType.Positive = pd.Field(description="Outer y of rear wheel belt.")
 
 
 # pylint: disable=no-member
@@ -572,9 +580,8 @@ class WindTunnelFarfield(_FarfieldBase):
             height = 10 * fl.u.m,
             inlet_x_position = -5 * fl.u.m,
             outlet_x_position = 15 * fl.u.m,
-            floor_position = 0 * fl.u.m,
+            floor_z_position = 0 * fl.u.m,
             floor_type = fl.CentralBelt(
-                type = "CentralBelt",
                 central_belt_x_min = -1 * fl.u.m,
                 central_belt_x_max = 6 * fl.u.m,
                 central_belt_width = 1.2 * fl.u.m
@@ -596,7 +603,7 @@ class WindTunnelFarfield(_FarfieldBase):
     outlet_x_position: LengthType = pd.Field(
         default=40 * u.m, description="X-position of the outlet."
     )
-    floor_position: LengthType = pd.Field(default=0 * u.m, description="Position of the floor.")
+    floor_z_position: LengthType = pd.Field(default=0 * u.m, description="Z-position of the floor.")
 
     floor_type: Union[
         StaticFloor,
