@@ -326,4 +326,8 @@ __all__ = [
     "ImportedSurface",
     "RunControl",
     "WindTunnelFarfield",
+    "StaticFloor",
+    "FullyMovingFloor",
+    "CentralBelt",
+    "WheelBelts",
 ]

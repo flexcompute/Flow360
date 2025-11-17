@@ -496,7 +496,7 @@ class UserDefinedFarfield(_FarfieldBase):
 class StaticFloor(Flow360BaseModel):
     """Class for static wind tunnel floor with friction patch."""
 
-    type: Literal["StaticFloor"] = pd.Field(
+    type_name: Literal["StaticFloor"] = pd.Field(
         "StaticFloor", description="Static floor with friction patch.", frozen=True
     )
     friction_patch_x_min: LengthType = pd.Field(
@@ -509,11 +509,19 @@ class StaticFloor(Flow360BaseModel):
         default=2 * u.m, description="Width of friction patch."
     )
 
+    @pd.model_validator(mode="after")
+    def _validate_friction_patch(self):
+        if self.friction_patch_x_min >= self.friction_patch_x_max:
+            raise ValueError(
+                f"Friction patch minimum x ({self.friction_patch_x_min}) must be less than maximum x ({self.friction_patch_x_max})."
+            )
+        return self
+
 
 class FullyMovingFloor(Flow360BaseModel):
     """Class for fully moving wind tunnel floor with friction patch."""
 
-    type: Literal["FullyMovingFloor"] = pd.Field(
+    type_name: Literal["FullyMovingFloor"] = pd.Field(
         "FullyMovingFloor", description="Fully moving floor.", frozen=True
     )
 
@@ -522,7 +530,7 @@ class FullyMovingFloor(Flow360BaseModel):
 class CentralBelt(Flow360BaseModel):
     """Class for wind tunnel floor with one central belt."""
 
-    type: Literal["CentralBelt"] = pd.Field(
+    type_name: Literal["CentralBelt"] = pd.Field(
         "CentralBelt", description="Floor with central belt.", frozen=True
     )
     central_belt_x_min: LengthType = pd.Field(
@@ -535,36 +543,63 @@ class CentralBelt(Flow360BaseModel):
         default=1.2 * u.m, description="Width of central belt."
     )
 
+    @pd.model_validator(mode="after")
+    def _validate_central_belt(self):
+        if self.central_belt_x_min >= self.central_belt_x_max:
+            raise ValueError(
+                f"Central belt minimum x ({self.central_belt_x_min}) must be less than maximum x ({self.central_belt_x_max})."
+            )
+        return self
+
 
 # pylint: disable=no-member
-class WheelBelts(Flow360BaseModel):
+class WheelBelts(CentralBelt):
     """Class for wind tunnel floor with one central belt and four wheel belts."""
 
-    type: Literal["WheelBelts"] = pd.Field(
+    type_name: Literal["WheelBelts"] = pd.Field(
         "WheelBelts", description="Floor with central belt and four wheel belts.", frozen=True
-    )
-    central_belt_x_min: LengthType = pd.Field(
-        default=-2 * u.m, description="Minimum x of central belt."
-    )
-    central_belt_x_max: LengthType = pd.Field(
-        default=2 * u.m, description="Maximum x of central belt."
-    )
-    central_belt_width: LengthType.Positive = pd.Field(
-        default=1.2 * u.m, description="Width of central belt."
     )
     # No defaults for the below; user must specify
     front_wheel_belt_x_min: LengthType = pd.Field(description="Minimum x of front wheel belt.")
     front_wheel_belt_x_max: LengthType = pd.Field(description="Maximum x of front wheel belt.")
-    front_wheel_belt_inner: LengthType.Positive = pd.Field(
+    front_wheel_belt_y_inner: LengthType.Positive = pd.Field(
         description="Inner y of front wheel belt."
     )
-    front_wheel_belt_outer: LengthType.Positive = pd.Field(
+    front_wheel_belt_y_outer: LengthType.Positive = pd.Field(
         description="Outer y of front wheel belt."
     )
     rear_wheel_belt_x_min: LengthType = pd.Field(description="Minimum x of rear wheel belt.")
     rear_wheel_belt_x_max: LengthType = pd.Field(description="Maximum x of rear wheel belt.")
-    rear_wheel_belt_inner: LengthType.Positive = pd.Field(description="Inner y of rear wheel belt.")
-    rear_wheel_belt_outer: LengthType.Positive = pd.Field(description="Outer y of rear wheel belt.")
+    rear_wheel_belt_y_inner: LengthType.Positive = pd.Field(
+        description="Inner y of rear wheel belt."
+    )
+    rear_wheel_belt_y_outer: LengthType.Positive = pd.Field(
+        description="Outer y of rear wheel belt."
+    )
+
+    @pd.model_validator(mode="after")
+    def _validate_wheel_belt_params(self):
+        if self.front_wheel_belt_x_min >= self.front_wheel_belt_x_max:
+            raise ValueError(
+                f"Front wheel belt minimum x ({self.front_wheel_belt_x_min}) must be less than maximum x ({self.front_wheel_belt_x_max})."
+            )
+        if self.front_wheel_belt_x_max >= self.rear_wheel_belt_x_min:
+            raise ValueError(
+                f"Front wheel belt maximum x ({self.front_wheel_belt_x_max}) must be less than rear wheel belt minimum x ({self.rear_wheel_belt_x_min})."
+            )
+        if self.rear_wheel_belt_x_min >= self.rear_wheel_belt_x_max:
+            raise ValueError(
+                f"Rear wheel belt minimum x ({self.rear_wheel_belt_x_min}) must be less than maximum x ({self.rear_wheel_belt_x_max})."
+            )
+        if self.front_wheel_belt_y_inner >= self.front_wheel_belt_y_outer:
+            raise ValueError(
+                f"Front wheel belt inner y ({self.front_wheel_belt_y_inner}) must be less than outer y ({self.front_wheel_belt_y_outer})."
+            )
+        if self.rear_wheel_belt_y_inner >= self.rear_wheel_belt_y_outer:
+            raise ValueError(
+                f"Rear wheel belt inner y ({self.rear_wheel_belt_y_inner}) must be less than outer y ({self.rear_wheel_belt_y_outer})."
+            )
+        return self
 
 
 # pylint: disable=no-member
@@ -590,7 +625,7 @@ class WindTunnelFarfield(_FarfieldBase):
     """
 
     type: Literal["WindTunnelFarfield"] = pd.Field("WindTunnelFarfield", frozen=True)
-    name: Optional[str] = pd.Field("Wind Tunnel Farfield")
+    name: str = pd.Field("Wind Tunnel Farfield", description="Name of the wind tunnel farfield.")
 
     # Tunnel parameters
     width: LengthType.Positive = pd.Field(default=10 * u.m, description="Width of the wind tunnel.")
@@ -623,12 +658,27 @@ class WindTunnelFarfield(_FarfieldBase):
         return GhostSurface(name="wind_tunnel_outlet")
 
     def symmetry_plane(self) -> GhostSurface:
-        """Returns the symmetry plane boundary surface for half body domains."""
+        """
+        Returns the symmetry plane boundary surface for half body domains.
+        """
+        if self.domain_type not in ("half_body_positive_y", "half_body_negative_y"):
+            raise ValueError(
+                "Symmetry plane for wind tunnel farfield is only supported when domain_type "
+                "is `half_body_positive_y` or `half_body_negative_y`."
+            )
         return GhostSurface(name="symmetric")
 
     def floor(self) -> GhostSurface:
         """Returns the floor boundary surface."""
         return GhostSurface(name="wind_tunnel_floor")
+
+    @pd.model_validator(mode="after")
+    def _validate_inlet_is_less_than_outlet(self):
+        if self.inlet_x_position >= self.outlet_x_position:
+            raise ValueError(
+                f"Inlet x position ({self.inlet_x_position}) must be less than outlet x position ({self.outlet_x_position})."
+            )
+        return self
 
 
 class MeshSliceOutput(Flow360BaseModel):
