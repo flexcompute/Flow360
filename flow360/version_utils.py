@@ -4,7 +4,7 @@ Utilities for version handling.
 
 from __future__ import annotations
 
-import textwrap
+import os
 from typing import List, Optional
 
 from .log import log
@@ -12,6 +12,7 @@ from .version import __version__
 
 _WARNED_PRERELEASE = False
 _BOX_MAX_WIDTH = 110
+_SUPPRESS_ENV_VAR = "FLOW360_SUPPRESS_BETA_WARNING"
 
 
 def is_prerelease_version(version: Optional[str] = None) -> bool:
@@ -65,6 +66,9 @@ def warn_if_prerelease_version() -> None:
     if _WARNED_PRERELEASE:
         return
     if not is_prerelease_version():
+        return
+    if os.environ.get(_SUPPRESS_ENV_VAR, "").strip().lower() in {"1", "true", "yes", "on"}:
+        _WARNED_PRERELEASE = True
         return
 
     warning_box = _build_warning_box(__version__)

@@ -27,3 +27,12 @@ def test_warn_if_prerelease_version_skips_release(monkeypatch):
     with patch.object(vu.log, "warning") as mock_warning:
         vu.warn_if_prerelease_version()
     mock_warning.assert_not_called()
+
+
+def test_warn_if_prerelease_version_respects_env(monkeypatch):
+    reset_warning_flag()
+    monkeypatch.setenv("FLOW360_SUPPRESS_BETA_WARNING", "1")
+    monkeypatch.setattr(vu, "__version__", "2.0.0b2", raising=False)
+    with patch.object(vu.log, "warning") as mock_warning:
+        vu.warn_if_prerelease_version()
+    mock_warning.assert_not_called()
