@@ -12,12 +12,13 @@ from flow360.component.simulation.primitives import (
     GhostSurface,
     Surface,
 )
-from flow360.component.simulation.unit_system import LengthType
+from flow360.component.simulation.unit_system import AngleType, LengthType
 from flow360.component.simulation.validation.validation_context import (
     get_validation_info,
 )
 from flow360.component.simulation.validation.validation_utils import (
     check_deleted_surface_in_entity_list,
+    check_geometry_ai_features,
     check_ghost_surface_usage_policy_for_face_refinements,
 )
 
@@ -43,8 +44,22 @@ class SurfaceRefinement(Flow360BaseModel):
         alias="faces"
     )
     # pylint: disable=no-member
-    max_edge_length: LengthType.Positive = pd.Field(
-        description="Maximum edge length of surface cells."
+    max_edge_length: Optional[LengthType.Positive] = pd.Field(
+        None, description="Maximum edge length of surface cells."
+    )
+
+    curvature_resolution_angle: Optional[AngleType.Positive] = pd.Field(
+        None,
+        description=(
+            "Default maximum angular deviation in degrees. "
+            "This value will restrict the angle between a cell’s normal and its underlying surface normal."
+        ),
+    )
+
+    resolve_face_boundaries: Optional[bool] = pd.Field(
+        None,
+        description="Flag to specify whether boundaries between adjacent faces should be resolved "
+        + "accurately during the surface meshing process using anisotropic mesh refinement.",
     )
 
     @pd.field_validator("entities", mode="after")
@@ -55,6 +70,28 @@ class SurfaceRefinement(Flow360BaseModel):
             value.stored_entities, feature_name="SurfaceRefinement"
         )
         return check_deleted_surface_in_entity_list(value)
+
+    @pd.field_validator("curvature_resolution_angle", "resolve_face_boundaries", mode="after")
+    @classmethod
+    def ensure_geometry_ai_features(cls, value, info):
+        """Validate that the feature is only used when Geometry AI is enabled."""
+        return check_geometry_ai_features(cls, value, info)
+
+    @pd.model_validator(mode="after")
+    def require_at_least_one_setting(self):
+        """Ensure that at least one of max_edge_length, curvature_resolution_angle,
+        or resolve_face_boundaries is specified for SurfaceRefinement.
+        """
+        if (
+            self.max_edge_length is None
+            and self.curvature_resolution_angle is None
+            and self.resolve_face_boundaries is None
+        ):
+            raise ValueError(
+                "SurfaceRefinement requires at least one of 'max_edge_length', "
+                "'curvature_resolution_angle', or 'resolve_face_boundaries' to be specified."
+            )
+        return self
 
 
 class GeometryRefinement(Flow360BaseModel):
