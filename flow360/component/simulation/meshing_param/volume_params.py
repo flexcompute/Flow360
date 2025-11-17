@@ -688,7 +688,7 @@ class WindTunnelFarfield(_FarfieldBase):
 
     def friction_patch(self) -> GhostSurface:
         """Returns the friction patch for StaticFloor floor type."""
-        if self.floor_type is not StaticFloor:
+        if not isinstance(self.floor_type, StaticFloor):
             raise ValueError(
                 "Friction patch for wind tunnel farfield "
                 "is only supported if floor type is `StaticFloor`."
@@ -697,7 +697,7 @@ class WindTunnelFarfield(_FarfieldBase):
 
     def central_belt(self) -> GhostSurface:
         """Returns the central belt for CentralBelt or WheelBelts floor types."""
-        if self.floor_type not in (CentralBelt, WheelBelts):
+        if not isinstance(self.floor_type, CentralBelt):
             raise ValueError(
                 "Central belt for wind tunnel farfield "
                 "is only supported if floor type is `CentralBelt` or `WheelBelts`."
@@ -706,7 +706,7 @@ class WindTunnelFarfield(_FarfieldBase):
 
     def front_wheel_belts(self) -> GhostSurface:
         """Returns the front wheel belts for WheelBelts floor type."""
-        if self.floor_type is not WheelBelts:
+        if not isinstance(self.floor_type, WheelBelts):
             raise ValueError(
                 "Front wheel belts for wind tunnel farfield "
                 "is only supported if floor type is `WheelBelts`."
@@ -715,7 +715,7 @@ class WindTunnelFarfield(_FarfieldBase):
 
     def rear_wheel_belts(self) -> GhostSurface:
         """Returns the rear wheel belts for WheelBelts floor type."""
-        if self.floor_type is not WheelBelts:
+        if not isinstance(self.floor_type, WheelBelts):
             raise ValueError(
                 "Rear wheel belts for wind tunnel farfield "
                 "is only supported if floor type is `WheelBelts`."

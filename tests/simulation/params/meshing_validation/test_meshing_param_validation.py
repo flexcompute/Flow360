@@ -518,7 +518,7 @@ def test_wind_tunnel_invalid_dimensions():
                 central_belt_x_min=-200,
                 central_belt_x_max=256,
                 central_belt_width=67,
-                front_wheel_belt_x_min=51,
+                front_wheel_belt_x_min=51,  # here
                 front_wheel_belt_x_max=50,  # here
                 front_wheel_belt_y_inner=70,
                 front_wheel_belt_y_outer=120,
@@ -542,7 +542,7 @@ def test_wind_tunnel_invalid_dimensions():
                 front_wheel_belt_y_outer=120,
                 rear_wheel_belt_x_min=260,
                 rear_wheel_belt_x_max=380,
-                rear_wheel_belt_y_inner=70,
+                rear_wheel_belt_y_inner=70,  # here
                 rear_wheel_belt_y_outer=69,  # here
             )
 
@@ -558,7 +558,7 @@ def test_wind_tunnel_invalid_dimensions():
                 front_wheel_belt_x_max=263,  # here
                 front_wheel_belt_y_inner=70,
                 front_wheel_belt_y_outer=120,
-                rear_wheel_belt_x_min=260,
+                rear_wheel_belt_x_min=260,  # here
                 rear_wheel_belt_x_max=380,
                 rear_wheel_belt_y_inner=70,
                 rear_wheel_belt_y_outer=120,
