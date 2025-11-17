@@ -170,7 +170,7 @@ class MeshingDefaults(Flow360BaseModel):
         description="Flag to specify whether boundaries between adjacent faces should be resolved "
         + "accurately during the surface meshing process using anisotropic mesh refinement. "
         + "This option is only supported when using geometry AI, and can be overridden "
-        + "per face with flow360.SurfaceRefinement",
+        + "per face with :class:`~flow360.SurfaceRefinement`.",
     )
 
     preserve_thin_geometry: bool = pd.Field(
@@ -178,14 +178,14 @@ class MeshingDefaults(Flow360BaseModel):
         description="Flag to specify whether thin geometry features with thickness roughly equal "
         + "to geometry_accuracy should be resolved accurately during the surface meshing process. "
         + "This option is only supported when using geometry AI, and can be overridden "
-        + "per face with flow360.GeometryRefinement.",
+        + "per face with :class:`~flow360.GeometryRefinement`.",
     )
 
     sealing_size: LengthType.NonNegative = pd.Field(
         0.0 * u.m,
         description="Threshold size below which all geometry gaps are automatically closed. "
         + "This option is only supported when using geometry AI, and can be overridden "
-        + "per face with flow360.GeometryRefinement.",
+        + "per face with :class:`~flow360.GeometryRefinement`.",
     )
 
     remove_non_manifold_faces: bool = pd.Field(
