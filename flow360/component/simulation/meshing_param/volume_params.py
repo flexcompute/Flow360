@@ -513,7 +513,8 @@ class StaticFloor(Flow360BaseModel):
     def _validate_friction_patch(self):
         if self.friction_patch_x_min >= self.friction_patch_x_max:
             raise ValueError(
-                f"Friction patch minimum x ({self.friction_patch_x_min}) must be less than maximum x ({self.friction_patch_x_max})."
+                f"Friction patch minimum x ({self.friction_patch_x_min}) "
+                f"must be less than maximum x ({self.friction_patch_x_max})."
             )
         return self
 
@@ -547,7 +548,8 @@ class CentralBelt(Flow360BaseModel):
     def _validate_central_belt(self):
         if self.central_belt_x_min >= self.central_belt_x_max:
             raise ValueError(
-                f"Central belt minimum x ({self.central_belt_x_min}) must be less than maximum x ({self.central_belt_x_max})."
+                f"Central belt minimum x ({self.central_belt_x_min}) "
+                f"must be less than maximum x ({self.central_belt_x_max})."
             )
         return self
 
@@ -581,23 +583,28 @@ class WheelBelts(CentralBelt):
     def _validate_wheel_belt_params(self):
         if self.front_wheel_belt_x_min >= self.front_wheel_belt_x_max:
             raise ValueError(
-                f"Front wheel belt minimum x ({self.front_wheel_belt_x_min}) must be less than maximum x ({self.front_wheel_belt_x_max})."
+                f"Front wheel belt minimum x ({self.front_wheel_belt_x_min}) "
+                f"must be less than maximum x ({self.front_wheel_belt_x_max})."
             )
         if self.front_wheel_belt_x_max >= self.rear_wheel_belt_x_min:
             raise ValueError(
-                f"Front wheel belt maximum x ({self.front_wheel_belt_x_max}) must be less than rear wheel belt minimum x ({self.rear_wheel_belt_x_min})."
+                f"Front wheel belt maximum x ({self.front_wheel_belt_x_max}) "
+                f"must be less than rear wheel belt minimum x ({self.rear_wheel_belt_x_min})."
             )
         if self.rear_wheel_belt_x_min >= self.rear_wheel_belt_x_max:
             raise ValueError(
-                f"Rear wheel belt minimum x ({self.rear_wheel_belt_x_min}) must be less than maximum x ({self.rear_wheel_belt_x_max})."
+                f"Rear wheel belt minimum x ({self.rear_wheel_belt_x_min}) "
+                f"must be less than maximum x ({self.rear_wheel_belt_x_max})."
             )
         if self.front_wheel_belt_y_inner >= self.front_wheel_belt_y_outer:
             raise ValueError(
-                f"Front wheel belt inner y ({self.front_wheel_belt_y_inner}) must be less than outer y ({self.front_wheel_belt_y_outer})."
+                f"Front wheel belt inner y ({self.front_wheel_belt_y_inner}) "
+                f"must be less than outer y ({self.front_wheel_belt_y_outer})."
             )
         if self.rear_wheel_belt_y_inner >= self.rear_wheel_belt_y_outer:
             raise ValueError(
-                f"Rear wheel belt inner y ({self.rear_wheel_belt_y_inner}) must be less than outer y ({self.rear_wheel_belt_y_outer})."
+                f"Rear wheel belt inner y ({self.rear_wheel_belt_y_inner}) "
+                f"must be less than outer y ({self.rear_wheel_belt_y_outer})."
             )
         return self
 
@@ -651,11 +658,11 @@ class WindTunnelFarfield(_FarfieldBase):
 
     def inlet(self) -> GhostSurface:
         """Returns the inlet boundary surface."""
-        return GhostSurface(name="wind_tunnel_inlet")
+        return GhostSurface(name="windTunnelInlet")
 
     def outlet(self) -> GhostSurface:
         """Returns the outlet boundary surface."""
-        return GhostSurface(name="wind_tunnel_outlet")
+        return GhostSurface(name="windTunnelOutlet")
 
     def symmetry_plane(self) -> GhostSurface:
         """
@@ -669,14 +676,55 @@ class WindTunnelFarfield(_FarfieldBase):
         return GhostSurface(name="symmetric")
 
     def floor(self) -> GhostSurface:
-        """Returns the floor boundary surface."""
-        return GhostSurface(name="wind_tunnel_floor")
+        """Returns the floor boundary surface, excluding friction, central, and wheel belts if applicable."""
+        return GhostSurface(name="windTunnelFloor")
+
+    def ceiling(self) -> GhostSurface:
+        """Returns the ceiling boundary surface."""
+        return GhostSurface(name="windTunnelCeiling")
+
+    def friction_patch(self) -> GhostSurface:
+        """Returns the friction patch for StaticFloor floor type."""
+        if self.floor_type is not StaticFloor:
+            raise ValueError(
+                "Friction patch for wind tunnel farfield "
+                "is only supported if floor type is `StaticFloor`."
+            )
+        return GhostSurface(name="windTunnelFrictionPatch")
+
+    def central_belt(self) -> GhostSurface:
+        """Returns the central belt for CentralBelt or WheelBelts floor types."""
+        if self.floor_type not in (CentralBelt, WheelBelts):
+            raise ValueError(
+                "Central belt for wind tunnel farfield "
+                "is only supported if floor type is `CentralBelt` or `WheelBelts`."
+            )
+        return GhostSurface(name="windTunnelCentralBelt")
+
+    def front_wheel_belts(self) -> GhostSurface:
+        """Returns the front wheel belts for WheelBelts floor type."""
+        if self.floor_type is not WheelBelts:
+            raise ValueError(
+                "Front wheel belts for wind tunnel farfield "
+                "is only supported if floor type is `WheelBelts`."
+            )
+        return GhostSurface(name="windTunnelFrontWheelBelt")
+
+    def rear_wheel_belts(self) -> GhostSurface:
+        """Returns the rear wheel belts for WheelBelts floor type."""
+        if self.floor_type is not WheelBelts:
+            raise ValueError(
+                "Rear wheel belts for wind tunnel farfield "
+                "is only supported if floor type is `WheelBelts`."
+            )
+        return GhostSurface(name="windTunnelRearWheelBelt")
 
     @pd.model_validator(mode="after")
     def _validate_inlet_is_less_than_outlet(self):
         if self.inlet_x_position >= self.outlet_x_position:
             raise ValueError(
-                f"Inlet x position ({self.inlet_x_position}) must be less than outlet x position ({self.outlet_x_position})."
+                f"Inlet x position ({self.inlet_x_position}) "
+                f"must be less than outlet x position ({self.outlet_x_position})."
             )
         return self
 
