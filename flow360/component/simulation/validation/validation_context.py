@@ -126,6 +126,7 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         "farfield_domain_type",
         "is_beta_mesher",
         "use_geometry_AI",
+        "use_snappy",
         "using_liquid_as_material",
         "time_stepping",
         "feature_usage",
@@ -204,6 +205,16 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
     def _get_is_beta_mesher_(cls, param_as_dict: dict):
         try:
             return param_as_dict["private_attribute_asset_cache"]["use_inhouse_mesher"]
+        except KeyError:
+            return False
+
+    @classmethod
+    def _get_use_snappy_(cls, param_as_dict: dict):
+        try:
+            return (
+                param_as_dict["meshing"]["surface_meshing"]["type_name"]
+                == "SnappySurfaceMeshingParams"
+            )
         except KeyError:
             return False
 
@@ -376,8 +387,6 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
 
     @classmethod
     def _get_to_be_generated_custom_volumes(cls, param_as_dict: dict):
-        # pylint:disable=fixme
-        # TODO: add seedpoint zones
         volume_zones = get_value_with_path(
             param_as_dict,
             ["meshing", "volume_zones"],
@@ -395,7 +404,7 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         # Return a mapping: { custom_volume_name: enforce_tetrahedra_boolean }
         custom_volume_info = {}
         for zone in volume_zones:
-            if zone.get("type") not in ["CustomZones", "SeedpointZone"]:
+            if zone.get("type") != "CustomZones":
                 continue
             element_type = zone.get("element_type")
             enforce_tetrahedra = element_type == "tetrahedra"
@@ -403,10 +412,9 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
             entities_obj = zone.get("entities", {})
             stored_entities = entities_obj.get("stored_entities", [])
             for entity in stored_entities:
-                if (
-                    isinstance(entity, dict)
-                    and entity.get("private_attribute_entity_type_name") == "CustomVolume"
-                ):
+                if isinstance(entity, dict) and entity.get(
+                    "private_attribute_entity_type_name"
+                ) in ["CustomVolume", "SeedpointVolume"]:
                     custom_volume_info[entity["name"]] = enforce_tetrahedra
         return custom_volume_info
 
@@ -417,6 +425,9 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         self.use_geometry_AI = self._get_use_geometry_AI_(  # pylint:disable=invalid-name
             param_as_dict=param_as_dict
         )
+        # self.use_snappy = self._get_use_snappy_(
+        #     param_as_dict=param_as_dict
+        # )
         self.using_liquid_as_material = self._get_using_liquid_as_material_(
             param_as_dict=param_as_dict
         )

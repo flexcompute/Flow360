@@ -347,7 +347,10 @@ def snappy_mesher_json(input_params: SimulationParams):
     # apply projected volumetric refinements
     if input_params.meshing.volume_meshing is not None:
         for refinement in input_params.meshing.volume_meshing.refinements:
-            if isinstance(refinement, UniformRefinement) and refinement.project_to_surface is True:
+            if isinstance(refinement, UniformRefinement) and refinement.project_to_surface in [
+                True,
+                None,
+            ]:
                 apply_UniformRefinement_w_snappy(refinement, translated, spacing_system)
 
     # apply settings

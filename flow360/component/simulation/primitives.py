@@ -888,11 +888,12 @@ def check_custom_volume_creation(value):
     if validation_info is None:
         return value
     for volume in value:
-        if not isinstance(volume, CustomVolume):
+        if not isinstance(volume, (CustomVolume, SeedpointVolume)):
             continue
         if volume.name not in validation_info.to_be_generated_custom_volumes:
             raise ValueError(
-                f"CustomVolume {volume.name} is not listed under meshing->volume_zones->CustomZones."
+                f"{type(volume).__name__} {volume.name} is not listed under meshing->volume_zones(or zones)"
+                + "->CustomZones."
             )
     return value
 

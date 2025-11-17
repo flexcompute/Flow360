@@ -19,9 +19,15 @@ from flow360.component.simulation.meshing_param.face_params import (
     BoundaryLayer,
     GeometryRefinement,
 )
-from flow360.component.simulation.meshing_param.params import (
+from flow360.component.simulation.meshing_param.meshing_specs import (
     MeshingDefaults,
+    VolumeMeshingDefaults,
+)
+from flow360.component.simulation.meshing_param.params import (
     MeshingParams,
+    ModularMeshingWorkflow,
+    VolumeMeshingParams,
+    snappy,
 )
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
@@ -92,6 +98,7 @@ from flow360.component.simulation.primitives import (
     GhostCircularPlane,
     GhostSphere,
     GhostSurface,
+    SeedpointVolume,
     Surface,
     SurfacePrivateAttributes,
 )
@@ -2246,7 +2253,100 @@ def test_check_custom_volume_in_volume_zones():
     )
     assert len(errors) == 1
     assert errors[0]["msg"] == (
-        "Value error, CustomVolume zone2 is not listed under meshing->volume_zones->CustomZones."
+        "Value error, CustomVolume zone2 is not listed under meshing->volume_zones(or zones)->CustomZones."
+    )
+    assert errors[0]["loc"] == ("models", 0, "entities", "stored_entities")
+
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=ModularMeshingWorkflow(
+                volume_meshing=VolumeMeshingParams(
+                    defaults=VolumeMeshingDefaults(boundary_layer_first_layer_thickness=1e-4),
+                ),
+                zones=[
+                    CustomZones(
+                        name="custom_zones",
+                        entities=[CustomVolume(name="zone1", boundaries=[Surface(name="face1")])],
+                    ),
+                ],
+            ),
+            models=[
+                PorousMedium(
+                    entities=[zone_2],
+                    darcy_coefficient=(1, 0, 0) / u.m**2,
+                    forchheimer_coefficient=(1, 0, 0) / u.m,
+                    volumetric_heat_source=1.0 * u.W / u.m**3,
+                ),
+            ],
+            private_attribute_asset_cache=AssetCache(
+                use_inhouse_mesher=True,
+                project_entity_info=SurfaceMeshEntityInfo(
+                    boundaries=[
+                        Surface(name="face1"),
+                        Surface(name="face2"),
+                    ]
+                ),
+            ),
+        )
+    params, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="SurfaceMesh",
+        validation_level="All",
+    )
+    assert len(errors) == 1
+    assert errors[0]["msg"] == (
+        "Value error, CustomVolume zone2 is not listed under meshing->volume_zones(or zones)->CustomZones."
+    )
+    assert errors[0]["loc"] == ("models", 0, "entities", "stored_entities")
+
+    zone2prim = SeedpointVolume(name="zone2", point_in_mesh=(0, 0, 0) * u.mm)
+    zone2prim.axes = [(1, 0, 0), (0, 1, 0)]
+
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=ModularMeshingWorkflow(
+                surface_meshing=snappy.SurfaceMeshingParams(
+                    defaults=snappy.SurfaceMeshingDefaults(
+                        min_spacing=2 * u.mm, max_spacing=4 * u.mm, gap_resolution=1 * u.mm
+                    )
+                ),
+                volume_meshing=VolumeMeshingParams(
+                    defaults=VolumeMeshingDefaults(boundary_layer_first_layer_thickness=1e-4),
+                ),
+                zones=[
+                    CustomZones(
+                        entities=[SeedpointVolume(name="zone1", point_in_mesh=(0, 0, 0) * u.mm)]
+                    )
+                ],
+            ),
+            models=[
+                PorousMedium(
+                    entities=[zone2prim],
+                    darcy_coefficient=(1, 0, 0) / u.m**2,
+                    forchheimer_coefficient=(1, 0, 0) / u.m,
+                    volumetric_heat_source=1.0 * u.W / u.m**3,
+                ),
+            ],
+            private_attribute_asset_cache=AssetCache(
+                use_inhouse_mesher=True,
+                project_entity_info=SurfaceMeshEntityInfo(
+                    boundaries=[
+                        Surface(name="face1"),
+                        Surface(name="face2"),
+                    ]
+                ),
+            ),
+        )
+    params, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="Geometry",
+        validation_level="All",
+    )
+    assert len(errors) == 1
+    assert errors[0]["msg"] == (
+        "Value error, SeedpointVolume zone2 is not listed under meshing->volume_zones(or zones)->CustomZones."
     )
     assert errors[0]["loc"] == ("models", 0, "entities", "stored_entities")
 
