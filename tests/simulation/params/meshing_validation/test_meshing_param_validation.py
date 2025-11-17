@@ -534,3 +534,12 @@ def test_surface_refinement_in_gai_mesher():
         with ValidationContext(SURFACE_MESH, non_gai_context):
             with CGS_unit_system:
                 SurfaceRefinement(resolve_face_boundaries=True)
+
+    # raise when no options are specified
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"SurfaceRefinement requires at least one of 'max_edge_length', 'curvature_resolution_angle', or 'resolve_face_boundaries' to be specified",
+    ):
+        with ValidationContext(SURFACE_MESH, non_gai_context):
+            with CGS_unit_system:
+                SurfaceRefinement(entities=Surface(name="testFace"))

@@ -77,6 +77,22 @@ class SurfaceRefinement(Flow360BaseModel):
         """Validate that the feature is only used when Geometry AI is enabled."""
         return check_geometry_ai_features(cls, value, info)
 
+    @pd.model_validator(mode="after")
+    def require_at_least_one_setting(self):
+        """Ensure that at least one of max_edge_length, curvature_resolution_angle,
+        or resolve_face_boundaries is specified for SurfaceRefinement.
+        """
+        if (
+            self.max_edge_length is None
+            and self.curvature_resolution_angle is None
+            and self.resolve_face_boundaries is None
+        ):
+            raise ValueError(
+                "SurfaceRefinement requires at least one of 'max_edge_length', "
+                "'curvature_resolution_angle', or 'resolve_face_boundaries' to be specified."
+            )
+        return self
+
 
 class GeometryRefinement(Flow360BaseModel):
     """
