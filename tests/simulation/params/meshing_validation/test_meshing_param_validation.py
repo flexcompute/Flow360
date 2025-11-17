@@ -607,3 +607,21 @@ def test_wind_tunnel_invalid_dimensions():
                     rear_wheel_belt_y_outer=120,
                 ),
             )
+
+        # legal, despite wheel belts being ahead/behind rather than left/right of central belt
+        _ = WindTunnelFarfield(
+            width=1024,
+            floor_type=WheelBelts(
+                central_belt_x_min=100,
+                central_belt_x_max=105,
+                central_belt_width=900.1,
+                front_wheel_belt_x_min=-30,
+                front_wheel_belt_x_max=50,
+                front_wheel_belt_y_inner=70,
+                front_wheel_belt_y_outer=123,
+                rear_wheel_belt_x_min=260,
+                rear_wheel_belt_x_max=380,
+                rear_wheel_belt_y_inner=70,
+                rear_wheel_belt_y_outer=120,
+            ),
+        )
