@@ -5,7 +5,7 @@ Utilities for version handling.
 from __future__ import annotations
 
 import os
-from typing import List, Optional
+from typing import Optional
 
 from .log import log
 from .version import __version__
