@@ -343,6 +343,9 @@ class RotationCylinder(RotationVolume):
     entities: EntityList[Cylinder] = pd.Field()
 
 
+### BEGIN FARFIELDS ###
+
+
 class _FarfieldBase(Flow360BaseModel):
     """Base class for farfield parameters."""
 
@@ -726,6 +729,70 @@ class WindTunnelFarfield(_FarfieldBase):
                 f"Inlet x position ({self.inlet_x_position}) "
                 f"must be less than outlet x position ({self.outlet_x_position})."
             )
+        return self
+
+    @pd.model_validator(mode="after")
+    def _validate_central_belt(self):
+        # friction patch
+        if isinstance(self.floor_type, StaticFloor):
+            if self.floor_type.friction_patch_width >= self.width:
+                raise ValueError(
+                    f"Friction patch width ({self.floor_type.friction_patch_width}) "
+                    f"must be less than wind tunnel width ({self.width})"
+                )
+            if self.floor_type.friction_patch_x_min <= self.inlet_x_position:
+                raise ValueError(
+                    f"Friction patch minimum x ({self.floor_type.friction_patch_x_min}) "
+                    f"must be greater than inlet x ({self.inlet_x_position})"
+                )
+            if self.floor_type.friction_patch_x_max >= self.outlet_x_position:
+                raise ValueError(
+                    f"Friction patch maximum x ({self.floor_type.friction_patch_x_max}) "
+                    f"must be less than outlet x ({self.outlet_x_position})"
+                )
+        # central belt
+        elif isinstance(self.floor_type, CentralBelt):
+            if self.floor_type.central_belt_width >= self.width:
+                raise ValueError(
+                    f"Central belt width ({self.floor_type.central_belt_width}) "
+                    f"must be less than wind tunnel width ({self.width})"
+                )
+            if self.floor_type.central_belt_x_min <= self.inlet_x_position:
+                raise ValueError(
+                    f"Central belt minimum x ({self.floor_type.central_belt_x_min}) "
+                    f"must be greater than inlet x ({self.inlet_x_position})"
+                )
+            if self.floor_type.central_belt_x_max >= self.outlet_x_position:
+                raise ValueError(
+                    f"Central belt maximum x ({self.floor_type.central_belt_x_max}) "
+                    f"must be less than outlet x ({self.outlet_x_position})"
+                )
+        return self
+
+    @pd.model_validator(mode="after")
+    def _validate_wheel_belts(self):
+        # pylint says too many branches if it's combined with the above
+        if isinstance(self.floor_type, WheelBelts):
+            if self.floor_type.front_wheel_belt_y_outer >= self.width * 0.5:
+                raise ValueError(
+                    f"Front wheel outer y ({self.floor_type.front_wheel_belt_y_outer}) "
+                    f"must be less than half of wind tunnel width ({self.width * 0.5})"
+                )
+            if self.floor_type.rear_wheel_belt_y_outer >= self.width * 0.5:
+                raise ValueError(
+                    f"Rear wheel outer y ({self.floor_type.rear_wheel_belt_y_outer}) "
+                    f"must be less than half of wind tunnel width ({self.width * 0.5})"
+                )
+            if self.floor_type.front_wheel_belt_x_min <= self.inlet_x_position:
+                raise ValueError(
+                    f"Front wheel minimum x ({self.floor_type.front_wheel_belt_x_min}) "
+                    f"must be greater than inlet x ({self.inlet_x_position})"
+                )
+            if self.floor_type.rear_wheel_belt_x_max >= self.outlet_x_position:
+                raise ValueError(
+                    f"Rear wheel maximum x ({self.floor_type.rear_wheel_belt_x_max}) "
+                    f"must be less than outlet x ({self.outlet_x_position})"
+                )
         return self
 
 

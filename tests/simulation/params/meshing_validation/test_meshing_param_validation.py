@@ -5,9 +5,13 @@ from flow360.component.simulation.meshing_param.params import MeshingParams
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     AxisymmetricRefinement,
+    FullyMovingFloor,
     RotationVolume,
+    StaticFloor,
     StructuredBoxRefinement,
     UniformRefinement,
+    WheelBelts,
+    WindTunnelFarfield,
 )
 from flow360.component.simulation.primitives import (
     AxisymmetricBody,
@@ -493,3 +497,113 @@ def test_enclosed_entities_none_does_not_raise():
             spacing_radial=0.2,
             spacing_circumferential=20,
         )
+
+
+def test_wind_tunnel_invalid_dimensions():
+    with CGS_unit_system:
+        # invalid floors
+        with pytest.raises(
+            pd.ValidationError,
+            match=r"Friction patch minimum x",
+        ):
+            _ = StaticFloor(
+                friction_patch_x_min=-100, friction_patch_x_max=-200, friction_patch_width=42
+            )
+
+        with pytest.raises(
+            pd.ValidationError,
+            match=r"Front wheel belt minimum x",
+        ):
+            _ = WheelBelts(
+                central_belt_x_min=-200,
+                central_belt_x_max=256,
+                central_belt_width=67,
+                front_wheel_belt_x_min=51,
+                front_wheel_belt_x_max=50,  # here
+                front_wheel_belt_y_inner=70,
+                front_wheel_belt_y_outer=120,
+                rear_wheel_belt_x_min=260,
+                rear_wheel_belt_x_max=380,
+                rear_wheel_belt_y_inner=70,
+                rear_wheel_belt_y_outer=120,
+            )
+
+        with pytest.raises(
+            pd.ValidationError,
+            match=r"Rear wheel belt inner y",
+        ):
+            _ = WheelBelts(
+                central_belt_x_min=-200,
+                central_belt_x_max=256,
+                central_belt_width=67,
+                front_wheel_belt_x_min=-30,
+                front_wheel_belt_x_max=50,
+                front_wheel_belt_y_inner=70,
+                front_wheel_belt_y_outer=120,
+                rear_wheel_belt_x_min=260,
+                rear_wheel_belt_x_max=380,
+                rear_wheel_belt_y_inner=70,
+                rear_wheel_belt_y_outer=69,  # here
+            )
+
+        with pytest.raises(
+            pd.ValidationError,
+            match=r"must be less than rear wheel belt minimum x",
+        ):
+            _ = WheelBelts(
+                central_belt_x_min=-200,
+                central_belt_x_max=256,
+                central_belt_width=67,
+                front_wheel_belt_x_min=-30,
+                front_wheel_belt_x_max=263,  # here
+                front_wheel_belt_y_inner=70,
+                front_wheel_belt_y_outer=120,
+                rear_wheel_belt_x_min=260,
+                rear_wheel_belt_x_max=380,
+                rear_wheel_belt_y_inner=70,
+                rear_wheel_belt_y_outer=120,
+            )
+
+        # invalid tunnels wrt patches
+        with pytest.raises(
+            pd.ValidationError,
+            match=r"must be less than outlet x position",
+        ):
+            _ = WindTunnelFarfield(
+                inlet_x_position=200, outlet_x_position=182, floor_type=FullyMovingFloor()
+            )
+
+        with pytest.raises(
+            pd.ValidationError,
+            match=r"must be less than wind tunnel width",
+        ):
+            _ = WindTunnelFarfield(width=2025, floor_type=StaticFloor(friction_patch_width=9001))
+
+        with pytest.raises(
+            pd.ValidationError,
+            match=r"must be greater than inlet x",
+        ):
+            _ = WindTunnelFarfield(
+                inlet_x_position=-2025, floor_type=StaticFloor(friction_patch_x_min=-9001)
+            )
+
+        with pytest.raises(
+            pd.ValidationError,
+            match=r"must be less than half of wind tunnel width",
+        ):
+            _ = WindTunnelFarfield(
+                width=538,  # here
+                floor_type=WheelBelts(
+                    central_belt_x_min=-200,
+                    central_belt_x_max=256,
+                    central_belt_width=120,
+                    front_wheel_belt_x_min=-30,
+                    front_wheel_belt_x_max=50,
+                    front_wheel_belt_y_inner=70,
+                    front_wheel_belt_y_outer=270,  # here
+                    rear_wheel_belt_x_min=260,
+                    rear_wheel_belt_x_max=380,
+                    rear_wheel_belt_y_inner=70,
+                    rear_wheel_belt_y_outer=120,
+                ),
+            )
