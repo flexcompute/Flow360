@@ -22,6 +22,7 @@ from flow360.component.simulation.meshing_param.meshing_specs import (
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     AxisymmetricRefinement,
+    CustomVolume,
     CustomZones,
     MeshSliceOutput,
     RotationCylinder,
@@ -30,7 +31,7 @@ from flow360.component.simulation.meshing_param.volume_params import (
     UniformRefinement,
     UserDefinedFarfield,
 )
-from flow360.component.simulation.primitives import SeedpointZone
+from flow360.component.simulation.primitives import SeedpointVolume
 from flow360.component.simulation.validation.validation_context import (
     SURFACE_MESH,
     VOLUME_MESH,
@@ -58,7 +59,6 @@ VolumeZonesTypes = Annotated[
         RotationCylinder,
         AutomatedFarfield,
         UserDefinedFarfield,
-        SeedpointZone,
         CustomZones,
     ],
     pd.Field(discriminator="type"),
@@ -69,7 +69,6 @@ ZoneTypesModular = Annotated[
         RotationVolume,
         AutomatedFarfield,
         UserDefinedFarfield,
-        SeedpointZone,
         CustomZones,
     ],
     pd.Field(discriminator="type"),
@@ -342,6 +341,12 @@ class ModularMeshingWorkflow(Flow360BaseModel):
     volume_meshing: Optional[VolumeMeshingParams] = ContextField(default=None, context=VOLUME_MESH)
     zones: List[ZoneTypesModular]
 
+    # Meshing outputs (for now, volume mesh slices)
+    outputs: List[MeshSliceOutput] = pd.Field(
+        default=[],
+        description="Mesh output settings.",
+    )
+
     @pd.field_validator("zones", mode="after")
     @classmethod
     def _check_volume_zones_has_farfield(cls, v):
@@ -353,12 +358,9 @@ class ModularMeshingWorkflow(Flow360BaseModel):
             isinstance(volume_zone, UserDefinedFarfield) for volume_zone in v
         )
         total_custom_zones = sum(isinstance(volume_zone, CustomZones) for volume_zone in v)
-        total_seedpoint_zone = sum(isinstance(volume_zone, SeedpointZone) for volume_zone in v)
 
-        if (total_custom_zones or total_seedpoint_zone) and total_user_defined_farfield:
-            raise ValueError(
-                "When using `CustomZones` or `SeedpointZone` the `UserDefinedFarfield` will be ignored."
-            )
+        if total_custom_zones and total_user_defined_farfield:
+            raise ValueError("When using `CustomZones` the `UserDefinedFarfield` will be ignored.")
 
         if total_automated_farfield > 1:
             raise ValueError("Only one `AutomatedFarfield` zone is allowed in `zones`.")
@@ -371,18 +373,11 @@ class ModularMeshingWorkflow(Flow360BaseModel):
                 "Cannot use `AutomatedFarfield` and `UserDefinedFarfield` simultaneously."
             )
 
-        if (
-            total_user_defined_farfield
-            + total_automated_farfield
-            + total_custom_zones
-            + total_seedpoint_zone
-        ) == 0:
+        if (total_user_defined_farfield + total_automated_farfield + total_custom_zones) == 0:
             raise ValueError("At least one zone defining the farfield is required.")
 
-        if total_automated_farfield and (total_seedpoint_zone or total_custom_zones):
-            raise ValueError(
-                "`SeedpointZone` and `CustomVolume` cannot be used with `AutomatedFarfield`."
-            )
+        if total_automated_farfield and total_custom_zones:
+            raise ValueError("`CustomZones` cannot be used with `AutomatedFarfield`.")
 
         return v
 
@@ -403,34 +398,34 @@ class ModularMeshingWorkflow(Flow360BaseModel):
                         )
                     to_be_generated_volume_zone_names.add(custom_volume.name)
 
-            if isinstance(volume_zone, SeedpointZone):
-                if volume_zone.name in to_be_generated_volume_zone_names:
-                    raise ValueError(
-                        f"Multiple `CustomVolume` or `SeedpointZone` with the same name `{volume_zone.name}` "
-                        + "are not allowed."
-                    )
-                to_be_generated_volume_zone_names.add(volume_zone.name)
-
         return v
 
     @pd.model_validator(mode="after")
     def _check_snappy_zones(self) -> Self:
+        total_custom_volumes = 0
+        total_seedpoint_volumes = 0
+        for zone in self.zones:  # pylint: disable=not-an-iterable
+            if isinstance(zone, CustomZones):
+                for custom_volume in zone.entities.stored_entities:
+                    if isinstance(custom_volume, CustomVolume):
+                        total_custom_volumes += 1
+                    if isinstance(custom_volume, SeedpointVolume):
+                        total_seedpoint_volumes += 1
+
         if isinstance(self.surface_meshing, snappy.SurfaceMeshingParams):
-            if self.farfield_method != "auto" and not sum(
-                isinstance(volume_zone, SeedpointZone) for volume_zone in self.zones
-            ):
+            if total_seedpoint_volumes and total_custom_volumes:
                 raise ValueError(
-                    "snappyHexMeshing requires at least one `SeedpointZone` when not using `AutomatedFarfield`."
+                    "Volume zones with snappyHexMeshing are defined using `SeedpointVolume`, not `CustomZones`."
                 )
-            for zone in self.zones:  # pylint: disable=not-an-iterable
-                if isinstance(zone, CustomZones):
-                    raise ValueError(
-                        "Volume zones with snappyHexMeshing are defined using `SeedpointZone`, not `CustomZones`."
-                    )
+
+            if self.farfield_method != "auto" and not total_seedpoint_volumes:
+                raise ValueError(
+                    "snappyHexMeshing requires at least one `SeedpointVolume` when not using `AutomatedFarfield`."
+                )
+
         else:
-            for zone in self.zones:  # pylint: disable=not-an-iterable
-                if isinstance(zone, SeedpointZone):
-                    raise ValueError("`SeedpointZone` is applicable only with snappyHexMeshing.")
+            if total_seedpoint_volumes:
+                raise ValueError("`SeedpointVolume` is applicable only with snappyHexMeshing.")
 
         return self
 

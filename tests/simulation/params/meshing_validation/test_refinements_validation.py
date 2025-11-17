@@ -6,7 +6,7 @@ import pytest
 import flow360.component.simulation.units as u
 from flow360.component.simulation.meshing_param import snappy
 from flow360.component.simulation.meshing_param.volume_params import UniformRefinement
-from flow360.component.simulation.primitives import Box, Cylinder, Surface
+from flow360.component.simulation.primitives import Box, Cylinder, SnappyBody, Surface
 from flow360.component.simulation.unit_system import SI_unit_system
 
 
@@ -180,3 +180,15 @@ def test_snappy_edge_refinement_increasing_values_validator():
             distances=[5 * u.mm, 4 * u.mm],
             entities=[Surface(name="test")],
         )
+
+
+def test_snappy_body_refinement_validator():
+    message = (
+        "No refinement (gap_resolution, min_spacing, max_spacing) specified in `BodyRefinement`."
+    )
+    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+        snappy.BodyRefinement(bodies=SnappyBody(name="body1", surfaces=[Surface(name="surface")]))
+
+    snappy.BodyRefinement(
+        bodies=SnappyBody(name="body1", surfaces=[Surface(name="surface")]), min_spacing=2 * u.mm
+    )

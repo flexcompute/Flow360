@@ -54,6 +54,15 @@ class BodyRefinement(SnappyEntityRefinement):
     gap_resolution: Optional[LengthType.NonNegative] = pd.Field(None)
     entities: EntityList[SnappyBody] = pd.Field(alias="bodies")
 
+    @pd.model_validator(mode="after")
+    def _check_parameters_given(self) -> Self:
+        if self.gap_resolution is None and self.min_spacing is None and self.max_spacing is None:
+            raise ValueError(
+                "No refinement (gap_resolution, min_spacing, max_spacing) specified in `BodyRefinement`."
+            )
+
+        return self
+
 
 class RegionRefinement(SnappyEntityRefinement):
     """

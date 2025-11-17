@@ -19,7 +19,10 @@ from flow360.component.simulation.meshing_param.params import (
     MeshingParams,
     ModularMeshingWorkflow,
 )
-from flow360.component.simulation.meshing_param.volume_params import UniformRefinement
+from flow360.component.simulation.meshing_param.volume_params import (
+    CustomZones,
+    UniformRefinement,
+)
 from flow360.component.simulation.migration.extra_operating_condition import (
     operating_condition_from_mach_muref,
 )
@@ -55,7 +58,7 @@ from flow360.component.simulation.primitives import (
     Edge,
     GenericVolume,
     ReferenceGeometry,
-    SeedpointZone,
+    SeedpointVolume,
     Surface,
 )
 from flow360.component.simulation.simulation_params import SimulationParams
@@ -230,7 +233,12 @@ def get_param_with_list_of_lengths():
                         )
                     ],
                 ),
-                zones=[SeedpointZone(name="fluid", point_in_mesh=[1, 1, 1])],
+                zones=[
+                    CustomZones(
+                        name="custom_zones",
+                        entities=[SeedpointVolume(name="fluid", point_in_mesh=[1, 1, 1])],
+                    )
+                ],
             ),
             operating_condition=AerospaceCondition.from_mach(
                 mach=0.8,

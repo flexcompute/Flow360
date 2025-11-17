@@ -787,7 +787,7 @@ class SnappyBody(EntityBase):
 
 
 @final
-class SeedpointZone(_VolumeEntityBase):
+class SeedpointVolume(_VolumeEntityBase):
     """
     Represents a separate zone in the mesh, defined by a point inside it.
     To be used only with snappyHexMesh.

@@ -58,7 +58,7 @@ from flow360.component.simulation.primitives import (
     Cylinder,
     EntityListWithCustomVolume,
     GenericVolume,
-    SeedpointZone,
+    SeedpointVolume,
 )
 from flow360.component.simulation.unit_system import (
     AngleType,
@@ -1236,7 +1236,7 @@ class Rotation(Flow360BaseModel):
     name: Optional[str] = pd.Field("Rotation", description="Name of the `Rotation` model.")
     type: Literal["Rotation"] = pd.Field("Rotation", frozen=True)
     entities: EntityListWithCustomVolume[
-        GenericVolume, Cylinder, CustomVolume, SeedpointZone, AxisymmetricBody
+        GenericVolume, Cylinder, CustomVolume, SeedpointVolume, AxisymmetricBody
     ] = pd.Field(
         alias="volumes",
         description="The entity list for the `Rotation` model. "
@@ -1250,7 +1250,7 @@ class Rotation(Flow360BaseModel):
     )
     parent_volume: Optional[
         Annotated[
-            Union[GenericVolume, Cylinder, CustomVolume, SeedpointZone, AxisymmetricBody],
+            Union[GenericVolume, Cylinder, CustomVolume, SeedpointVolume, AxisymmetricBody],
             pd.Field(discriminator="private_attribute_entity_type_name"),
         ]
     ] = pd.Field(
@@ -1345,7 +1345,7 @@ class PorousMedium(Flow360BaseModel):
 
     name: Optional[str] = pd.Field("Porous medium", description="Name of the `PorousMedium` model.")
     type: Literal["PorousMedium"] = pd.Field("PorousMedium", frozen=True)
-    entities: EntityListWithCustomVolume[GenericVolume, Box, CustomVolume, SeedpointZone] = (
+    entities: EntityListWithCustomVolume[GenericVolume, Box, CustomVolume, SeedpointVolume] = (
         pd.Field(
             alias="volumes",
             description="The entity list for the `PorousMedium` model. "

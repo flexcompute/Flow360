@@ -153,7 +153,7 @@ from flow360.component.simulation.primitives import (
     Cylinder,
     ImportedSurface,
     ReferenceGeometry,
-    SeedpointZone,
+    SeedpointVolume,
 )
 from flow360.component.simulation.run_control.run_control import RunControl
 from flow360.component.simulation.run_control.stopping_criterion import (
@@ -323,7 +323,7 @@ __all__ = [
     "report",
     "snappy",
     "ModularMeshingWorkflow",
-    "SeedpointZone",
+    "SeedpointVolume",
     "VolumeMeshingParams",
     "VolumeMeshingDefaults",
     "get_user_variable",

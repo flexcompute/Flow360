@@ -39,7 +39,7 @@ from flow360.component.simulation.primitives import (
     CustomVolume,
     Cylinder,
     GhostCircularPlane,
-    SeedpointZone,
+    SeedpointVolume,
     Surface,
 )
 from flow360.component.simulation.services import ValidationCalledBy, validate_model
@@ -526,8 +526,12 @@ def get_test_param_w_seedpoints():
                     refinements=[],
                 ),
                 zones=[
-                    SeedpointZone(name="fluid", point_in_mesh=(0, 0, 0)),
-                    SeedpointZone(name="radiator", point_in_mesh=(1, 1, 1)),
+                    CustomZones(
+                        entities=[
+                            SeedpointVolume(name="fluid", point_in_mesh=(0, 0, 0)),
+                            SeedpointVolume(name="radiator", point_in_mesh=(1, 1, 1)),
+                        ]
+                    )
                 ],
             ),
             private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
@@ -571,7 +575,11 @@ def test_user_defined_farfield(get_test_param, get_surface_mesh):
                 volume_meshing=VolumeMeshingParams(
                     defaults=VolumeMeshingDefaults(boundary_layer_first_layer_thickness=100),
                 ),
-                zones=[SeedpointZone(point_in_mesh=[0, 0, 0], name="farfield")],
+                zones=[
+                    CustomZones(
+                        entities=[SeedpointVolume(point_in_mesh=[0, 0, 0], name="farfield")]
+                    )
+                ],
             )
         )
     translated = get_volume_meshing_json(params, get_surface_mesh.mesh_unit)

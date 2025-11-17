@@ -13,13 +13,13 @@ from flow360.component.simulation.meshing_param.meshing_specs import OctreeSpaci
 from flow360.component.simulation.meshing_param.params import MeshingParams
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
+    CustomZones,
     UniformRefinement,
-    UserDefinedFarfield,
 )
 from flow360.component.simulation.primitives import (
     Box,
     Cylinder,
-    SeedpointZone,
+    SeedpointVolume,
     SnappyBody,
     Surface,
 )
@@ -455,13 +455,23 @@ def snappy_mesher_json(input_params: SimulationParams):
     # enforced spacing
     translated["enforcedSpacing"] = spacing_system.base_spacing.value.item()
 
-    # cad is fluid
+    # get seedpoint zones
     zones = input_params.meshing.zones
+
+    all_seedpoint_zones = []
+
+    # cad is fluid
     for zone in zones:
         if isinstance(zone, AutomatedFarfield):
             translated["cadIsFluid"] = False
-        if isinstance(zone, SeedpointZone):
-            translated["cadIsFluid"] = True
+
+        if isinstance(zone, CustomZones):
+            for subzone in zone.entities.stored_entities:
+                if isinstance(subzone, SeedpointVolume):
+                    all_seedpoint_zones.append(subzone)
+
+    if all_seedpoint_zones:
+        translated["cadIsFluid"] = True
 
     if "cadIsFluid" not in translated:
         raise Flow360TranslationError(
@@ -469,11 +479,10 @@ def snappy_mesher_json(input_params: SimulationParams):
         )
 
     # points in mesh
-    if zones is not None and translated["cadIsFluid"]:
+    if all_seedpoint_zones and translated["cadIsFluid"]:
         translated["locationInMesh"] = {
             zone.name: [point.value.item() for point in zone.point_in_mesh]
-            for zone in zones
-            if isinstance(zone, (SeedpointZone, UserDefinedFarfield))
+            for zone in all_seedpoint_zones
         }
 
     return translated

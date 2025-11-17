@@ -202,20 +202,10 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
 
     @classmethod
     def _get_is_beta_mesher_(cls, param_as_dict: dict):
-        beta_mesher_triggers = []
-        beta_mesher_triggers.append(
-            param_as_dict.get("private_attribute_asset_cache", {}).get("use_inhouse_mesher", False)
-        )
-        if param_as_dict.get("meshing", None) is not None:
-            beta_mesher_triggers.append(
-                param_as_dict.get("meshing", {}).get("surface_meshing", {}).get("type_name", "")
-                == "SnappySurfaceMeshingParams"
-            )
-            beta_mesher_triggers.append(
-                param_as_dict.get("meshing", {}).get("volume_meshing", {}).get("type_name", "")
-                == "VolumeMeshingParams"
-            )
-        return any(beta_mesher_triggers)
+        try:
+            return param_as_dict["private_attribute_asset_cache"]["use_inhouse_mesher"]
+        except KeyError:
+            return False
 
     @classmethod
     def _get_use_geometry_AI_(cls, param_as_dict: dict):  # pylint:disable=invalid-name

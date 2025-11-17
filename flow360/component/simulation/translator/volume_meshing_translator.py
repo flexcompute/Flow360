@@ -26,8 +26,9 @@ from flow360.component.simulation.meshing_param.volume_params import (
 from flow360.component.simulation.primitives import (
     AxisymmetricBody,
     Box,
+    CustomVolume,
     Cylinder,
-    SeedpointZone,
+    SeedpointVolume,
     Surface,
 )
 from flow360.component.simulation.simulation_params import SimulationParams
@@ -38,7 +39,6 @@ from flow360.component.simulation.translator.utils import (
     has_instance_in_list,
     preprocess_input,
     translate_setting_and_apply_to_all_entities,
-    using_snappy,
 )
 from flow360.component.simulation.utils import is_exact_instance
 from flow360.exceptions import Flow360TranslationError
@@ -223,38 +223,53 @@ def _get_custom_volumes(volume_zones: list):
         if isinstance(zone, CustomZones):
             # Extract CustomVolume from CustomZones (base branch: no tetrahedra enforcement output)
             for custom_volume in zone.entities.stored_entities:
-                custom_volumes.append(
-                    {
-                        "name": custom_volume.name,
-                        "patches": sorted(
-                            [surface.name for surface in custom_volume.boundaries.stored_entities]
-                        ),
-                    }
-                )
+                if isinstance(custom_volume, CustomVolume):
+                    custom_volumes.append(
+                        {
+                            "name": custom_volume.name,
+                            "patches": sorted(
+                                [
+                                    surface.name
+                                    for surface in custom_volume.boundaries.stored_entities
+                                ]
+                            ),
+                        }
+                    )
+
+                if isinstance(custom_volume, SeedpointVolume):
+                    custom_volumes.append(
+                        {
+                            "name": custom_volume.name,
+                            "pointInMesh": [
+                                coord.value.item() for coord in custom_volume.point_in_mesh
+                            ],
+                        }
+                    )
+
     if custom_volumes:
         # Sort custom volumes by name
         custom_volumes.sort(key=lambda x: x["name"])
     return custom_volumes
 
 
-def _get_seedpoint_zones(volume_zones: list):
-    """
-    Get translated seedpoint volumes from volume zones.
-    To be later filled with data from snappyHexMesh.
-    """
-    seedpoint_zones = []
-    for zone in volume_zones:
-        if isinstance(zone, SeedpointZone):
-            seedpoint_zones.append(
-                {
-                    "name": zone.name,
-                    "pointInMesh": [coord.value.item() for coord in zone.point_in_mesh],
-                }
-            )
-    if seedpoint_zones:
-        # Sort custom volumes by name
-        seedpoint_zones.sort(key=lambda x: x["name"])
-    return seedpoint_zones
+# def _get_seedpoint_zones(volume_zones: list):
+#     """
+#     Get translated seedpoint volumes from volume zones.
+#     To be later filled with data from snappyHexMesh.
+#     """
+#     seedpoint_zones = []
+#     for zone in volume_zones:
+#         if isinstance(zone, SeedpointVolume):
+#             seedpoint_zones.append(
+#                 {
+#                     "name": zone.name,
+#                     "pointInMesh": [coord.value.item() for coord in zone.point_in_mesh],
+#                 }
+#             )
+#     if seedpoint_zones:
+#         # Sort custom volumes by name
+#         seedpoint_zones.sort(key=lambda x: x["name"])
+#     return seedpoint_zones
 
 
 def translate_mesh_slice_output(
@@ -309,6 +324,8 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
         gap_treatment_strength = input_params.meshing.gap_treatment_strength
         planar_tolerance = input_params.meshing.defaults.planar_face_tolerance
 
+    outputs = input_params.meshing.outputs
+
     if volume_zones is None:
         raise Flow360TranslationError(
             "volume_zones cannot be None for volume meshing",
@@ -334,7 +351,7 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
 
     ##::  Step 2:  Get farfield
     for zone in volume_zones:
-        if isinstance(zone, (UserDefinedFarfield, CustomZones, SeedpointZone)):
+        if isinstance(zone, (UserDefinedFarfield, CustomZones)):
             translated["farfield"] = {"type": "user-defined"}
             if hasattr(zone, "domain_type") and zone.domain_type is not None:
                 translated["farfield"]["domainType"] = zone.domain_type
@@ -473,17 +490,7 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
     if custom_volumes:
         translated["zones"] = custom_volumes
 
-    ##::  Step 7: Get custom seedpoint zones
-    if using_snappy(input_params):
-        seedpoint_zones = _get_seedpoint_zones(volume_zones)
-        if seedpoint_zones:
-            translated["zones"] = seedpoint_zones
-
-    ##::  Step 8: Get meshing output fields
-    if isinstance(input_params.meshing, ModularMeshingWorkflow):
-        return translated
-
-    outputs = input_params.meshing.outputs
+    ##::  Step 7: Get meshing output fields
 
     mesh_slice_output_configs = [
         (MeshSliceOutput, "meshSliceOutput"),

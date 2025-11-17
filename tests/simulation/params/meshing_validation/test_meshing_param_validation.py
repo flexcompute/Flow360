@@ -28,7 +28,7 @@ from flow360.component.simulation.primitives import (
     Box,
     CustomVolume,
     Cylinder,
-    SeedpointZone,
+    SeedpointVolume,
     SnappyBody,
     Surface,
 )
@@ -592,12 +592,15 @@ def test_require_mesh_zones():
                     min_spacing=1 * u.mm, max_spacing=5 * u.mm, gap_resolution=0.01 * u.mm
                 ),
             ),
-            zones=[SeedpointZone(name="fluid", point_in_mesh=(0, 0, 0) * u.mm)],
+            zones=[
+                CustomZones(
+                    name="custom_zones",
+                    entities=[SeedpointVolume(name="fluid", point_in_mesh=(0, 0, 0) * u.mm)],
+                )
+            ],
         )
 
-    message = (
-        "snappyHexMeshing requires at least one `SeedpointZone` when not using `AutomatedFarfield`."
-    )
+    message = "snappyHexMeshing requires at least one `SeedpointVolume` when not using `AutomatedFarfield`."
     with pytest.raises(
         ValueError,
         match=re.escape(message),
@@ -843,9 +846,7 @@ def test_modular_workflow_zones_validation():
             zones=[],
         )
 
-    message = (
-        "When using `CustomZones` or `SeedpointZone` the `UserDefinedFarfield` will be ignored."
-    )
+    message = "When using `CustomZones` the `UserDefinedFarfield` will be ignored."
     with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
         ModularMeshingWorkflow(
             surface_meshing=snappy.SurfaceMeshingParams(
@@ -857,8 +858,11 @@ def test_modular_workflow_zones_validation():
                 defaults=VolumeMeshingDefaults(boundary_layer_first_layer_thickness=1 * u.mm)
             ),
             zones=[
-                SeedpointZone(name="fluid", point_in_mesh=(0, 0, 0) * u.mm),
                 UserDefinedFarfield(),
+                CustomZones(
+                    name="custom_zones",
+                    entities=[SeedpointVolume(name="fluid", point_in_mesh=(0, 0, 0) * u.mm)],
+                ),
             ],
         )
 
@@ -928,7 +932,7 @@ def test_modular_workflow_zones_validation():
             zones=[AutomatedFarfield(), UserDefinedFarfield()],
         )
 
-    message = "`SeedpointZone` and `CustomVolume` cannot be used with `AutomatedFarfield`."
+    message = "`CustomZones` cannot be used with `AutomatedFarfield`."
     with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
         ModularMeshingWorkflow(
             surface_meshing=snappy.SurfaceMeshingParams(
@@ -941,7 +945,10 @@ def test_modular_workflow_zones_validation():
             ),
             zones=[
                 AutomatedFarfield(),
-                SeedpointZone(name="fluid", point_in_mesh=(0, 0, 0) * u.mm),
+                CustomZones(
+                    name="custom_zones",
+                    entities=[SeedpointVolume(name="fluid", point_in_mesh=(0, 0, 0) * u.mm)],
+                ),
             ],
         )
 

@@ -34,6 +34,7 @@ from flow360.component.simulation.meshing_param.params import (
 )
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
+    CustomZones,
     UniformRefinement,
 )
 from flow360.component.simulation.operating_condition.operating_condition import (
@@ -43,7 +44,7 @@ from flow360.component.simulation.primitives import (
     Box,
     Cylinder,
     Edge,
-    SeedpointZone,
+    SeedpointVolume,
     Surface,
 )
 from flow360.component.simulation.simulation_params import SimulationParams
@@ -729,7 +730,11 @@ def snappy_coupled_refinements():
             meshing=ModularMeshingWorkflow(
                 surface_meshing=surf_meshing_params,
                 volume_meshing=vol_meshing_params,
-                zones=[SeedpointZone(name="farfield", point_in_mesh=[0, 0, 0] * u.mm)],
+                zones=[
+                    CustomZones(
+                        entities=[SeedpointVolume(name="farfield", point_in_mesh=[0, 0, 0] * u.mm)]
+                    )
+                ],
             ),
         )
     return param
@@ -826,7 +831,11 @@ def snappy_refinements_no_regions():
             ),
             meshing=ModularMeshingWorkflow(
                 surface_meshing=surf_meshing_params,
-                zones=[SeedpointZone(name="fluid", point_in_mesh=[0, 0, 0] * u.m)],
+                zones=[
+                    CustomZones(
+                        entities=[SeedpointVolume(name="fluid", point_in_mesh=[0, 0, 0] * u.m)]
+                    )
+                ],
             ),
         )
     return param
@@ -879,8 +888,14 @@ def snappy_settings():
             meshing=ModularMeshingWorkflow(
                 surface_meshing=surf_meshing_params,
                 zones=[
-                    SeedpointZone(name="fluid", point_in_mesh=[0, 0, 0] * u.m),
-                    SeedpointZone(name="solid", point_in_mesh=[0.001, 0.002, 0.003] * u.m),
+                    CustomZones(
+                        entities=[
+                            SeedpointVolume(name="fluid", point_in_mesh=[0, 0, 0] * u.m),
+                            SeedpointVolume(
+                                name="solid", point_in_mesh=[0.001, 0.002, 0.003] * u.m
+                            ),
+                        ]
+                    )
                 ],
             ),
         )
@@ -932,8 +947,14 @@ def snappy_settings_off_position():
             meshing=ModularMeshingWorkflow(
                 surface_meshing=surf_meshing_params,
                 zones=[
-                    SeedpointZone(name="fluid", point_in_mesh=[0, 0, 0] * u.m),
-                    SeedpointZone(name="solid", point_in_mesh=[0.001, 0.002, 0.003] * u.m),
+                    CustomZones(
+                        entities=[
+                            SeedpointVolume(name="fluid", point_in_mesh=[0, 0, 0] * u.m),
+                            SeedpointVolume(
+                                name="solid", point_in_mesh=[0.001, 0.002, 0.003] * u.m
+                            ),
+                        ]
+                    )
                 ],
             ),
         )
