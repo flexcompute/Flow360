@@ -3,7 +3,10 @@ validation utility functions
 """
 
 from functools import wraps
-from typing import get_args
+from typing import Any, Tuple, Union, get_args
+
+from pydantic import ValidationError
+from pydantic_core import InitErrorDetails
 
 from flow360.component.simulation.entity_info import DraftEntityTypes
 from flow360.component.simulation.primitives import (
@@ -61,6 +64,54 @@ def _validator_append_instance_name(func):
             raise ValueError(f"{prepend_message}: {str(e)}") from e
 
     return wrapper
+
+
+def customize_model_validator_error(
+    model_instance,
+    relative_location: Tuple[Union[str, int], ...],
+    message: str,
+    input_value: Any = None,
+):
+    """
+    Create a Pydantic ValidationError with a custom field location.
+
+    This function creates validation errors for model_validator that point to
+    specific fields in nested structures, making error messages more precise and useful.
+
+    Args:
+        model_instance: The Pydantic model instance (e.g., self in a model_validator)
+        relative_location: Tuple specifying the field path relative to current model
+             e.g., ("field_name",) or ("outputs", 0, "output_fields", "items", 2)
+        message: The error message describing what went wrong
+        input_value: The invalid input value. If None, uses model_instance.model_dump()
+
+    Returns:
+        ValidationError: A Pydantic ValidationError that can be raised or merged
+
+    Example:
+        @model_validator(mode='after')
+        def validate_outputs(self):
+            if invalid_condition:
+                raise customized_model_validation_error(
+                    self,
+                    relative_location=("outputs", output_index, "output_fields", "items", item_index),
+                    message=f"{item} is not a valid output field",
+                    input_value=item
+                )
+            return self
+    """
+
+    return ValidationError.from_exception_data(
+        title=model_instance.__class__.__name__,
+        line_errors=[
+            InitErrorDetails(
+                type="value_error",
+                loc=relative_location,
+                input=input_value or model_instance.model_dump(),
+                ctx={"error": ValueError(message)},
+            )
+        ],
+    )
 
 
 def check_deleted_surface_in_entity_list(value):
@@ -132,6 +183,7 @@ def check_user_defined_farfield_symmetry_existence(stored_entities):
 
     That:
     1. GAI and beta mesher is used.
+    2. Domain type is half_body_positive_y or half_body_negative_y
     """
     validation_info = get_validation_info()
 
@@ -150,6 +202,13 @@ def check_user_defined_farfield_symmetry_existence(stored_entities):
         if not validation_info.use_geometry_AI or not validation_info.is_beta_mesher:
             raise ValueError(
                 "Symmetry plane of user defined farfield will only be generated when both GAI and beta mesher are used."
+            )
+        if validation_info.farfield_domain_type not in (
+            "half_body_positive_y",
+            "half_body_negative_y",
+        ):
+            raise ValueError(
+                "Symmetry plane of user defined farfield is only supported for half body domains."
             )
     return stored_entities
 
@@ -179,6 +238,92 @@ def check_symmetric_boundary_existence(stored_entities):
 
             raise ValueError(error_msg)
 
+    return stored_entities
+
+
+def _ghost_surface_names(stored_entities) -> list[str]:
+    """Collect names of ghost-type boundaries in the list."""
+    names = []
+    for item in stored_entities:
+        entity_type = getattr(item, "private_attribute_entity_type_name", None)
+        if isinstance(entity_type, str) and entity_type.startswith("Ghost"):
+            names.append(getattr(item, "name", ""))
+    return names
+
+
+def check_ghost_surface_usage_policy_for_face_refinements(stored_entities, *, feature_name: str):
+    """
+    Enforce GhostSurface usage policy for face-based refinements (SurfaceRefinement, PassiveSpacing).
+
+    Rules provided by product spec:
+    - If starting from Geometry, SurfaceRefinement and PassiveSpacing both can use GhostSurface, if:
+        - Automated farfield: if using beta mesher.
+        - User-defined farfield: if using GAI and beta mesher.
+    - If starting from Surface mesh:
+        - Automated farfield: allow GhostSurface for PassiveSpacing only.
+        - User-defined farfield: do not allow any GhostSurface.
+    """
+    validation_info = get_validation_info()
+    if validation_info is None:
+        return stored_entities
+
+    if not stored_entities:
+        return stored_entities
+
+    ghost_names = _ghost_surface_names(stored_entities)
+    if not ghost_names:
+        return stored_entities
+
+    root_asset_type = getattr(validation_info, "root_asset_type", None)
+    farfield_method = validation_info.farfield_method
+    use_beta = validation_info.is_beta_mesher
+    use_gai = validation_info.use_geometry_AI
+
+    # Default error messages
+    def _err(msg):
+        raise ValueError(msg)
+
+    names_str = ", ".join(sorted(set(ghost_names)))
+
+    if root_asset_type == "geometry":
+        if farfield_method == "user-defined":
+            if not (use_beta and use_gai):
+                _err(
+                    (
+                        f"Face refinements on '{names_str}' require both Geometry AI and the beta mesher "
+                        "when using user-defined farfield."
+                    )
+                )
+        else:
+            # automated variants (auto / quasi-3d / quasi-3d-periodic)
+            if not use_beta:
+                _err(
+                    (
+                        f"Face refinements on '{names_str}' for automated farfield "
+                        "requires beta mesher."
+                    )
+                )
+        return stored_entities
+
+    if root_asset_type == "surface_mesh":
+        if farfield_method == "user-defined":
+            _err(
+                (
+                    f"Boundary '{names_str}' is not allowed when starting from an uploaded surface mesh "
+                    "with user-defined farfield."
+                )
+            )
+        # automated variants
+        if feature_name == "SurfaceRefinement":
+            _err(
+                (
+                    f"Boundary '{names_str}' is not allowed for SurfaceRefinement when starting from an "
+                    "uploaded surface mesh with automated farfield."
+                )
+            )
+        return stored_entities
+
+    # Other asset type: proceed without additional restriction
     return stored_entities
 
 

@@ -12,6 +12,7 @@ from flow360.component.simulation.outputs.outputs import (
     SurfaceProbeOutput,
 )
 from flow360.component.simulation.time_stepping.time_stepping import Steady
+from flow360.component.simulation.user_code.core.types import Expression
 from flow360.component.simulation.validation.validation_context import (
     get_validation_info,
 )
@@ -118,7 +119,7 @@ def _check_output_fields_valid_given_turbulence_model(params):
         for item in output.output_fields.items:
             if isinstance(item, str) and item in invalid_output_fields[turbulence_model]:
                 raise ValueError(
-                    f"In `outputs`[{output_index}] {output.output_type}:, {item} is not a valid"
+                    f"In `outputs`[{output_index}] {output.output_type}: {item} is not a valid"
                     f" output field when using turbulence model: {turbulence_model}."
                 )
 
@@ -129,9 +130,42 @@ def _check_output_fields_valid_given_turbulence_model(params):
                     and entity.field in invalid_output_fields[turbulence_model]
                 ):
                     raise ValueError(
-                        f"In `outputs`[{output_index}] {output.output_type}:, {entity.field} is not a valid"
+                        f"In `outputs`[{output_index}] {output.output_type}: {entity.field} is not a valid"
                         f" iso field when using turbulence model: {turbulence_model}."
                     )
+    return params
+
+
+def _check_output_fields_valid_given_transition_model(params):
+    """Ensure that the output fields are consistent with the transition model used."""
+
+    if not params.models or not params.outputs:
+        return params
+
+    transition_model = "None"
+    for model in params.models:
+        if isinstance(model, Fluid):
+            transition_model = model.transition_model_solver.type_name
+            break
+
+    if transition_model != "None":
+        return params
+
+    transition_output_fields = [
+        "residualTransition",
+        "solutionTransition",
+        "linearResidualTransition",
+    ]
+
+    for output_index, output in enumerate(params.outputs):
+        if output.output_type in ("AeroAcousticOutput", "StreamlineOutput"):
+            continue
+        for item in output.output_fields.items:
+            if isinstance(item, str) and item in transition_output_fields:
+                raise ValueError(
+                    f"In `outputs`[{output_index}] {output.output_type}: {item} is not a valid"
+                    f" output field when transition model is not used."
+                )
     return params
 
 
@@ -149,6 +183,27 @@ def _check_unsteadiness_to_use_aero_acoustics(params):
                     "`AeroAcousticOutput` can only be activated with `Unsteady` simulation."
                 )
     # Not running case or is using unsteady
+    return params
+
+
+def _check_aero_acoustics_observer_time_step_size(params):
+
+    if not params.outputs:
+        return params
+
+    for output_index, output in enumerate(params.outputs):
+        if isinstance(output, AeroAcousticOutput):
+            time_step_size = params.time_stepping.step_size
+            if isinstance(params.time_stepping.step_size, Expression):
+                time_step_size = params.time_stepping.step_size.evaluate(
+                    raise_on_non_evaluable=True, force_evaluate=True
+                )
+            if output.observer_time_step_size and output.observer_time_step_size < time_step_size:
+                raise ValueError(
+                    f"In `outputs`[{output_index}] {output.output_type}: "
+                    f"`observer_time_size` ({output.observer_time_step_size}) is smaller than "
+                    f"the time step size of CFD ({params.time_stepping.step_size})."
+                )
     return params
 
 

@@ -746,6 +746,15 @@ def test_boundaries():
                     ),
                     velocity_direction=(0, 1, 0),
                 ),
+                Inflow(
+                    name="inflow-4",
+                    total_temperature="1 + x",
+                    surfaces=Surface(name="boundary_name_D"),
+                    spec=TotalPressure(
+                        value="1 + sin(y)",
+                    ),
+                    velocity_direction=(0, 1, 0),
+                ),
                 Outflow(
                     name="outflow-1",
                     surfaces=Surface(name="boundary_name_E"),
@@ -996,14 +1005,24 @@ def test_param_with_user_variables():
                     ],
                 ),
                 SurfaceIntegralOutput(
-                    name="MassFluxIntegral",
+                    name="MassFluxIntegralImported1",
+                    output_fields=[surface_integral_variable],
+                    entities=ImportedSurface(name="imported1", file_name="imported1.stl"),
+                ),
+                SurfaceIntegralOutput(
+                    name="MassFluxIntegral1",
                     output_fields=[surface_integral_variable],
                     entities=Surface(name="VOLUME/LEFT"),
                 ),
                 SurfaceIntegralOutput(
-                    name="MassFluxIntegralImported",
+                    name="MassFluxIntegralImported2",
                     output_fields=[surface_integral_variable],
-                    entities=ImportedSurface(name="imported", file_name="imported.stl"),
+                    entities=ImportedSurface(name="imported2", file_name="imported2.stl"),
+                ),
+                SurfaceIntegralOutput(
+                    name="MassFluxIntegral2",
+                    output_fields=[surface_integral_variable],
+                    entities=Surface(name="VOLUME/RIGHT"),
                 ),
                 SurfaceOutput(
                     name="surface_output",

@@ -10,6 +10,7 @@ from typing_extensions import deprecated
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
+from flow360.component.simulation.outputs.output_entities import Slice
 from flow360.component.simulation.primitives import (
     AxisymmetricBody,
     Box,
@@ -268,7 +269,7 @@ class RotationVolume(AxisymmetricRefinementBase):
         The current prefix is 'rotatingBlock-' with 14 characters.
         """
         validation_info = get_validation_info()
-        if validation_info is None:
+        if validation_info is None or values is None:
             return values
         if validation_info.is_beta_mesher:
             return values
@@ -425,6 +426,17 @@ class AutomatedFarfield(_FarfieldBase):
         return GhostSurface(name="farfield")
 
     @property
+    def symmetry_plane(self) -> GhostSurface:
+        """
+        Returns the symmetry plane boundary surface.
+        """
+        if self.method == "auto":
+            return GhostSurface(name="symmetric")
+        raise ValueError(
+            "Unavailable for quasi-3d farfield methods. Please use `symmetry_planes` property instead."
+        )
+
+    @property
     def symmetry_planes(self):
         """Returns the symmetry plane boundary surface(s)."""
         # Make sure the naming is the same here and what the geometry/surface mesh pipeline generates.
@@ -475,7 +487,40 @@ class UserDefinedFarfield(_FarfieldBase):
 
         Warning: This should only be used when using GAI and beta mesher.
         """
+        if self.domain_type not in ("half_body_positive_y", "half_body_negative_y"):
+            raise ValueError(
+                "Symmetry plane of user defined farfield is only supported when domain_type "
+                "is `half_body_positive_y` or `half_body_negative_y`."
+            )
         return GhostSurface(name="symmetric")
+
+
+class MeshSliceOutput(Flow360BaseModel):
+    """
+    :class:`MeshSliceOutput` class for mesh slice output settings.
+
+    Example
+    -------
+
+    >>> fl.MeshSliceOutput(
+    ...     slices=[
+    ...         fl.Slice(
+    ...             name="Slice_1",
+    ...             normal=(0, 1, 0),
+    ...             origin=(0, 0.56, 0)*fl.u.m
+    ...         ),
+    ...     ],
+    ... )
+
+    ====
+    """
+
+    name: str = pd.Field("Mesh slice output", description="Name of the `MeshSliceOutput`.")
+    entities: EntityList[Slice] = pd.Field(
+        alias="slices",
+        description="List of output :class:`~flow360.Slice` entities.",
+    )
+    output_type: Literal["MeshSliceOutput"] = pd.Field("MeshSliceOutput", frozen=True)
 
 
 class CustomZones(Flow360BaseModel):
@@ -495,4 +540,10 @@ class CustomZones(Flow360BaseModel):
     name: str = pd.Field("Custom zones", description="Name of the `CustomZones` meshing setting.")
     entities: EntityList[CustomVolume] = pd.Field(
         description="The custom volume zones to be generated."
+    )
+    element_type: Literal["mixed", "tetrahedra"] = pd.Field(
+        default="mixed",
+        description="The element type to be used for the generated volume zones."
+        + " - mixed: Mesher will automatically choose the element types used."
+        + " - tetrahedra: Only tetrahedra element type will be used for the generated volume zones.",
     )

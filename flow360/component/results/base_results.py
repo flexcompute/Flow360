@@ -17,10 +17,7 @@ import numpy as np
 import pandas
 import pydantic as pd
 
-from flow360.cloud.s3_utils import (
-    CloudFileNotFoundError,
-    get_local_filename_and_create_folders,
-)
+from flow360.cloud.s3_utils import get_local_filename_and_create_folders
 from flow360.component.simulation.entity_info import GeometryEntityInfo
 from flow360.component.simulation.models.surface_models import BoundaryBase
 from flow360.component.simulation.simulation_params import SimulationParams
@@ -420,6 +417,8 @@ class ResultCSVModel(ResultBaseModel):
         """
         Wait until the Case finishes processing, refresh periodically. Useful for postprocessing, eg sectional data
         """
+        # pylint: disable=import-outside-toplevel
+        from botocore.exceptions import ClientError as CloudFileNotFoundError
 
         start_time = time.time()
         while time.time() - start_time < timeout_minutes * 60:

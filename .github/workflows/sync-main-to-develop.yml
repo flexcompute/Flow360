@@ -37,7 +37,28 @@ jobs:
             echo "- Runner: $(uname -a)"
           } >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Check develop branch exists
+        id: check_develop
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          REPO_URL="https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          if git ls-remote --heads "$REPO_URL" develop | grep develop >/dev/null; then
+            echo "develop branch exists on remote."
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "develop branch does NOT exist on remote. Skipping sync."
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            {
+              echo "### Outcome"
+              echo "- develop branch present: **false**"
+              echo "- Action: skipped scheduled sync (no develop branch)."
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
       - name: Checkout develop
+        if: steps.check_develop.outputs.exists == 'true'
         uses: actions/checkout@v4
         with:
           ref: develop
@@ -47,6 +68,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Show remotes and branches
+        if: steps.check_develop.outputs.exists == 'true'
         run: |
           git remote -v
           echo
@@ -59,6 +81,7 @@ jobs:
           echo "origin/main     : $(git rev-parse --short origin/main)"
 
       - name: Ahead/behind summary (before)
+        if: steps.check_develop.outputs.exists == 'true'
         id: ab
         run: |
           set -euo pipefail
@@ -83,6 +106,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Check if develop already contains main
+        if: steps.check_develop.outputs.exists == 'true'
         id: up
         run: |
           if git merge-base --is-ancestor origin/main HEAD; then
@@ -94,7 +118,7 @@ jobs:
           fi
 
       - name: Merge main into develop
-        if: steps.up.outputs.up_to_date == 'false'
+        if: steps.check_develop.outputs.exists == 'true' && steps.up.outputs.up_to_date == 'false'
         id: merge
         run: |
           set -e
@@ -115,7 +139,7 @@ jobs:
           echo "Post-merge HEAD: $(git rev-parse --short HEAD)"
 
       - name: Diff summary after merge
-        if: steps.up.outputs.up_to_date == 'false' && steps.merge.outputs.conflicted == 'false'
+        if: steps.check_develop.outputs.exists == 'true' && steps.up.outputs.up_to_date == 'false' && steps.merge.outputs.conflicted == 'false'
         run: |
           echo "Files changed (first 100):"
           git diff --name-status ORIG_HEAD..HEAD | head -n 100 || true
@@ -128,7 +152,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Push to develop (direct)
-        if: steps.up.outputs.up_to_date == 'false' && steps.merge.outputs.conflicted == 'false'
+        if: steps.check_develop.outputs.exists == 'true' && steps.up.outputs.up_to_date == 'false' && steps.merge.outputs.conflicted == 'false'
         id: push
         shell: bash
         run: |
@@ -144,7 +168,7 @@ jobs:
           fi
 
       - name: Open PR main -> develop (on conflict OR push failure)
-        if: steps.up.outputs.up_to_date == 'false' && (steps.merge.outputs.conflicted == 'true' || steps.push.outputs.exit_code != '0')
+        if: steps.check_develop.outputs.exists == 'true' && steps.up.outputs.up_to_date == 'false' && (steps.merge.outputs.conflicted == 'true' || steps.push.outputs.exit_code != '0')
         id: pr
         shell: bash
         run: |
@@ -159,14 +183,23 @@ jobs:
             --base develop \
             --head main \
             --title "Scheduled sync: main → develop" \
-            --body "$PR_BODY")
+            --body "$PR_BODY" \
+            --label "auto-develop-branch-sync")
           echo "pr_url=$PR_URL" >> "$GITHUB_OUTPUT"
           echo "Created PR: $PR_URL"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Enable auto-merge with merge commit
+        if: steps.check_develop.outputs.exists == 'true' && steps.up.outputs.up_to_date == 'false' && (steps.merge.outputs.conflicted == 'true' || steps.push.outputs.exit_code != '0')
+        continue-on-error: true
+        run: |
+          gh pr merge ${{ steps.pr.outputs.pr_url }} --merge --auto
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Send Slack notification
-        if: steps.up.outputs.up_to_date == 'false' && (steps.merge.outputs.conflicted == 'true' || steps.push.outputs.exit_code != '0')
+        if: steps.check_develop.outputs.exists == 'true' && steps.up.outputs.up_to_date == 'false' && (steps.merge.outputs.conflicted == 'true' || steps.push.outputs.exit_code != '0')
         uses: slackapi/slack-github-action@v2
         with:
           webhook-type: incoming-webhook
@@ -187,6 +220,7 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_MERGE_NOTIFICATION_URL }}
 
       - name: Final summary
+        if: steps.check_develop.outputs.exists == 'true'
         run: |
           {
             echo "### Outcome"

@@ -212,3 +212,85 @@ def test_porous_medium_real_case_coefficients():
         assert np.isclose(
             computed_CL, expected_coeffs["CL"], rtol=1e-10, atol=1e-15
         ), f"{zone_name} CL mismatch"
+
+
+def test_porous_medium_generic_volume_header_matching():
+    """
+    Ensure porous medium coefficient computation works with non-`zone_` CSV headers,
+    e.g. names like `blk-2_Force_x` and `blk-2_Moment_y`.
+    """
+    import tempfile
+
+    # Create a temporary CSV with a GenericVolume-style name containing a hyphen
+    csv_content = (
+        "physical_step,pseudo_step,blk-2_Force_x,blk-2_Force_y,blk-2_Force_z,blk-2_Moment_x,blk-2_Moment_y,blk-2_Moment_z\n"
+        "0,0,0,0,0,0,0,0\n"
+        "0,10,0,2.0,0,-0.5,0,1.0\n"
+        "0,20,0,4.0,0,-1.0,0,2.0\n"
+    )
+
+    with tempfile.NamedTemporaryFile("w", suffix=".csv", delete=False) as tmp:
+        tmp.write(csv_content)
+        temp_csv_path = tmp.name
+
+    try:
+        # Minimal params to enable coefficient computation
+        with fl.SI_unit_system:
+            params = fl.SimulationParams(
+                reference_geometry=fl.ReferenceGeometry(
+                    moment_center=(0, 0, 0) * fl.u.m,
+                    moment_length=1 * fl.u.m,
+                    area=1.0 * fl.u.m**2,
+                ),
+                operating_condition=fl.LiquidOperatingCondition(
+                    velocity_magnitude=10 * fl.u.m / fl.u.s,
+                    reference_velocity_magnitude=10 * fl.u.m / fl.u.s,
+                    alpha=0.0 * fl.u.deg,
+                    beta=0.0 * fl.u.deg,
+                ),
+                models=[
+                    # The computation does not require exact entity-name matching here,
+                    # but we include a PorousMedium model for completeness.
+                    fl.PorousMedium(
+                        entities=[
+                            fl.Box.from_principal_axes(
+                                name="dummy",
+                                axes=[(1, 0, 0), (0, 1, 0)],
+                                center=(0, 0, 0) * fl.u.m,
+                                size=(0.1, 0.1, 0.1) * fl.u.m,
+                            )
+                        ],
+                        darcy_coefficient=(1e6, 0, 0) / fl.u.m**2,
+                        forchheimer_coefficient=(1, 0, 0) / fl.u.m,
+                    )
+                ],
+                private_attribute_asset_cache=AssetCache(project_length_unit=1 * fl.u.m),
+            )
+
+        model = PorousMediumResultCSVModel()
+        model.load_from_local(temp_csv_path)
+        coeffs = model.compute_coefficients(params=params)
+        data = coeffs.as_dict()
+
+        # Keys should be derived from the CSV header prefix "blk-2"
+        assert "blk-2_CFx" in data
+        assert "blk-2_CFy" in data
+        assert "blk-2_CFz" in data
+        assert "blk-2_CMx" in data
+        assert "blk-2_CMy" in data
+        assert "blk-2_CMz" in data
+        assert "blk-2_CL" in data
+        assert "blk-2_CD" in data
+
+        # Time series length should match the number of data rows (3)
+        assert len(data["blk-2_CFx"]) == 3
+        assert len(data["blk-2_CFy"]) == 3
+        assert len(data["blk-2_CFz"]) == 3
+        assert len(data["blk-2_CMx"]) == 3
+        assert len(data["blk-2_CMy"]) == 3
+        assert len(data["blk-2_CMz"]) == 3
+        assert len(data["blk-2_CL"]) == 3
+        assert len(data["blk-2_CD"]) == 3
+    finally:
+        if os.path.exists(temp_csv_path):
+            os.remove(temp_csv_path)

@@ -32,6 +32,7 @@ from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     AxisymmetricRefinement,
     CustomZones,
+    MeshSliceOutput,
     RotationCylinder,
     RotationVolume,
     StructuredBoxRefinement,
@@ -177,6 +178,7 @@ from flow360.component.surface_mesh_v2 import SurfaceMeshV2 as SurfaceMesh
 from flow360.component.volume_mesh import VolumeMeshV2 as VolumeMesh
 from flow360.environment import Env
 from flow360.plugins import report
+from flow360.version_utils import warn_if_prerelease_version as _warn_prerelease
 
 __all__ = [
     "GeometryRefinement",
@@ -190,6 +192,7 @@ __all__ = [
     "Accounts",
     "Project",
     "u",
+    "MeshSliceOutput",
     "SimulationParams",
     "SI_unit_system",
     "imperial_unit_system",
@@ -319,3 +322,5 @@ __all__ = [
     "ImportedSurface",
     "RunControl",
 ]
+
+_warn_prerelease()

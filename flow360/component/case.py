@@ -20,7 +20,6 @@ from ..cloud.flow360_requests import (
     RenameAssetRequestV2,
 )
 from ..cloud.rest_api import RestApi
-from ..cloud.s3_utils import CloudFileNotFoundError
 from ..exceptions import Flow360RuntimeError, Flow360ValidationError, Flow360ValueError
 from ..log import log
 from .folder import Folder
@@ -462,6 +461,8 @@ class Case(CaseBase, Flow360Resource):
         """
         returns simulation params
         """
+        # pylint: disable=import-outside-toplevel
+        from botocore.exceptions import ClientError as CloudFileNotFoundError
 
         try:
             params_as_dict = self._parse_json_from_cloud("simulation.json")
@@ -583,7 +584,7 @@ class Case(CaseBase, Flow360Resource):
         return self._web_api_v2.info.tags
 
     @property
-    def volume_mesh(self) -> "VolumeMeshV2":
+    def volume_mesh(self) -> VolumeMeshV2:
         """
         returns volume mesh
         """

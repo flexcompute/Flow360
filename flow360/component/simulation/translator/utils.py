@@ -387,7 +387,7 @@ def translate_setting_and_apply_to_all_entities(
 
             if entity_type_to_include is not None and lump_list_of_entities:
                 if not isinstance(list_of_entities[0].stored_entities[0], entity_type_to_include):
-                    return output
+                    continue
 
             for entity in list_of_entities:
                 if (
