@@ -1,6 +1,6 @@
 """surface meshing parameters to use with snappyHexMesh"""
 
-from typing import List, Literal, Optional
+from typing import List, Literal, Optional, Union
 
 import pydantic as pd
 
@@ -41,7 +41,7 @@ class SurfaceMeshingParams(Flow360BaseModel):
     quality_metrics: QualityMetrics = pd.Field(QualityMetrics())
     snap_controls: SnapControls = pd.Field(SnapControls())
     castellated_mesh_controls: CastellatedMeshControls = pd.Field(CastellatedMeshControls())
-    smooth_controls: Optional[SmoothControls] = pd.Field(None)
+    smooth_controls: Union[SmoothControls, Literal[False]] = pd.Field(SmoothControls())
     refinements: Optional[List[SnappySurfaceRefinementTypes]] = pd.Field(None)
     base_spacing: Optional[OctreeSpacing] = pd.Field(None)
 

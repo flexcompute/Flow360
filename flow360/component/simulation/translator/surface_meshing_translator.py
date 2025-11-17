@@ -366,79 +366,73 @@ def snappy_mesher_json(input_params: SimulationParams):
             "snapControls": {
                 "nSmoothPatch": snap_controls.n_smooth_patch,
                 "tolerance": snap_controls.tolerance,
-                "nSolveIter": snap_controls.n_solve_iter,
-                "nRelaxIter": snap_controls.n_relax_iter,
-                "nFeatureSnapIter": snap_controls.n_feature_snap_iter,
+                "nSolveIter": snap_controls.n_solve_iterations,
+                "nRelaxIter": snap_controls.n_relax_iterations,
+                "nFeatureSnapIter": snap_controls.n_feature_snap_iterations,
                 "multiRegionFeatureSnap": snap_controls.multi_region_feature_snap,
                 "strictRegionSnap": snap_controls.strict_region_snap,
             },
         },
         "meshQuality": {
             "maxNonOrtho": (
-                quality_settings.max_non_ortho.to("degree").value.item()
-                if quality_settings.max_non_ortho is not None
+                quality_settings.max_non_orthogonality.to("degree").value.item()
+                if quality_settings.max_non_orthogonality
                 else 180
             ),
             "maxBoundarySkewness": (
                 quality_settings.max_boundary_skewness.to("degree").value.item()
-                if quality_settings.max_boundary_skewness is not None
+                if quality_settings.max_boundary_skewness
                 else -1
             ),
             "maxInternalSkewness": (
                 quality_settings.max_internal_skewness.to("degree").value.item()
-                if quality_settings.max_internal_skewness is not None
+                if quality_settings.max_internal_skewness
                 else -1
             ),
             "maxConcave": (
-                quality_settings.max_concave.to("degree").value.item()
-                if quality_settings.max_concave is not None
+                quality_settings.max_concavity.to("degree").value.item()
+                if quality_settings.max_concavity
                 else 180
             ),
-            "minVol": (quality_settings.min_vol if quality_settings.min_vol is not None else -1e30),
+            "minVol": (
+                quality_settings.min_pyramid_cell_volume
+                if quality_settings.min_pyramid_cell_volume
+                else -1e30
+            ),
             "minTetQuality": (
-                quality_settings.min_tet_quality
-                if quality_settings.min_tet_quality is not None
+                quality_settings.min_tetrahedron_quality
+                if quality_settings.min_tetrahedron_quality
                 else -1e30
             ),
             "minArea": (
-                quality_settings.min_area.value.item()
-                if quality_settings.min_area is not None
+                quality_settings.min_face_area.value.item()
+                if quality_settings.min_face_area
                 else -1
             ),
-            "minTwist": (
-                quality_settings.min_twist if quality_settings.min_twist is not None else -2
-            ),
+            "minTwist": (quality_settings.min_twist if quality_settings.min_twist else -2),
             "minDeterminant": (
-                quality_settings.min_determinant
-                if quality_settings.min_determinant is not None
+                quality_settings.min_cell_determinant
+                if quality_settings.min_cell_determinant
                 else -1e5
             ),
             "minVolRatio": (
-                quality_settings.min_vol_ratio if quality_settings.min_vol_ratio is not None else 0
+                quality_settings.min_volume_ratio if quality_settings.min_volume_ratio else 0
             ),
             "minFaceWeight": (
-                quality_settings.min_face_weight
-                if quality_settings.min_face_weight is not None
-                else 0
+                quality_settings.min_face_weight if quality_settings.min_face_weight else 0
             ),
             "minTriangleTwist": (
-                quality_settings.min_triangle_twist
-                if quality_settings.min_triangle_twist is not None
-                else -1
+                quality_settings.min_triangle_twist if quality_settings.min_triangle_twist else -1
             ),
             "nSmoothScale": (
-                quality_settings.n_smooth_scale
-                if quality_settings.n_smooth_scale is not None
-                else 0
+                quality_settings.n_smooth_scale if quality_settings.n_smooth_scale else 0
             ),
             "errorReduction": (
-                quality_settings.error_reduction
-                if quality_settings.error_reduction is not None
-                else 0
+                quality_settings.error_reduction if quality_settings.error_reduction else 0
             ),
             "minVolCollapseRatio": (
-                quality_settings.min_vol_collapse_ratio
-                if quality_settings.min_vol_collapse_ratio is not None
+                quality_settings.min_volume_collapse_ratio
+                if quality_settings.min_volume_collapse_ratio
                 else 0
             ),
         },
@@ -446,17 +440,17 @@ def snappy_mesher_json(input_params: SimulationParams):
     # smoothing settings
     smoothing_settings = surface_meshing_params.smooth_controls
 
-    if smoothing_settings is not None:
+    if smoothing_settings:
         translated["smoothingControls"] = {
-            "lambda": (
-                smoothing_settings.lambda_factor
-                if smoothing_settings.lambda_factor is not None
-                else 0
-            ),
-            "mu": (smoothing_settings.mu_factor if smoothing_settings.mu_factor is not None else 0),
-            "iter": (
-                smoothing_settings.iterations if smoothing_settings.iterations is not None else 0
-            ),
+            "lambda": (smoothing_settings.lambda_factor if smoothing_settings.lambda_factor else 0),
+            "mu": (smoothing_settings.mu_factor if smoothing_settings.mu_factor else 0),
+            "iter": (smoothing_settings.iterations if smoothing_settings.iterations else 0),
+        }
+    else:
+        translated["smoothingControls"] = {
+            "lambda": 0,
+            "mu": 0,
+            "iter": 0,
         }
     # enforced spacing
     translated["enforcedSpacing"] = spacing_system.base_spacing.value.item()

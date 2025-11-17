@@ -64,6 +64,17 @@ VolumeZonesTypes = Annotated[
     pd.Field(discriminator="type"),
 ]
 
+ZoneTypesModular = Annotated[
+    Union[
+        RotationVolume,
+        AutomatedFarfield,
+        UserDefinedFarfield,
+        SeedpointZone,
+        CustomZones,
+    ],
+    pd.Field(discriminator="type"),
+]
+
 VolumeRefinementTypes = Annotated[
     Union[
         UniformRefinement,
@@ -270,7 +281,8 @@ class MeshingParams(Flow360BaseModel):
             for zone in self.volume_zones:  # pylint: disable=not-an-iterable
                 if isinstance(zone, AutomatedFarfield):
                     return zone.method
-            return "user-defined"
+                if isinstance(zone, UserDefinedFarfield):
+                    return "user-defined"
         return None
 
 
@@ -328,7 +340,7 @@ class ModularMeshingWorkflow(Flow360BaseModel):
         default=None, context=SURFACE_MESH
     )
     volume_meshing: Optional[VolumeMeshingParams] = ContextField(default=None, context=VOLUME_MESH)
-    zones: List[VolumeZonesTypes]
+    zones: List[ZoneTypesModular]
 
     @pd.field_validator("zones", mode="after")
     @classmethod

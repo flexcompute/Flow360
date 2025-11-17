@@ -841,21 +841,21 @@ def snappy_settings():
                 min_spacing=3 * u.mm, max_spacing=4 * u.mm, gap_resolution=1 * u.mm
             ),
             quality_metrics=snappy.QualityMetrics(
-                max_non_ortho=55 * u.deg,
+                max_non_orthogonality=55 * u.deg,
                 max_boundary_skewness=30 * u.deg,
                 max_internal_skewness=70 * u.deg,
-                max_concave=20 * u.deg,
-                min_vol=1e-2,
+                max_concavity=20 * u.deg,
+                min_pyramid_cell_volume=1e-2,
                 min_tet_quality=0.15,
-                min_area=2 * u.mm * u.mm,
+                min_face_area=2 * u.mm * u.mm,
                 min_twist=0.3,
                 min_determinant=0.5,
-                min_vol_ratio=0.1,
+                min_volume_ratio=0.1,
                 min_face_weight=0.3,
                 min_triangle_twist=0.1,
                 n_smooth_scale=6,
                 error_reduction=0.4,
-                min_vol_collapse_ratio=0.5,
+                min_volume_collapse_ratio=0.5,
             ),
             snap_controls=snappy.SnapControls(
                 n_smooth_patch=5,
@@ -896,21 +896,19 @@ def snappy_settings_off_position():
                 min_spacing=3 * u.mm, max_spacing=4 * u.mm, gap_resolution=1 * u.mm
             ),
             quality_metrics=snappy.QualityMetrics(
-                max_non_ortho=None,
-                max_boundary_skewness=None,
-                max_internal_skewness=None,
-                max_concave=None,
-                min_vol=None,
-                min_tet_quality=None,
-                min_area=None,
-                min_twist=None,
-                min_determinant=None,
-                min_vol_ratio=None,
-                min_face_weight=None,
-                min_triangle_twist=None,
-                n_smooth_scale=None,
-                error_reduction=None,
-                min_vol_collapse_ratio=None,
+                max_non_ortho=False,
+                max_boundary_skewness=False,
+                max_internal_skewness=False,
+                max_concave=False,
+                min_vol=False,
+                min_tet_quality=False,
+                min_area=False,
+                min_twist=False,
+                min_determinant=False,
+                min_vol_ratio=False,
+                min_face_weight=False,
+                min_triangle_twist=False,
+                min_vol_collapse_ratio=False,
             ),
             snap_controls=snappy.SnapControls(
                 n_smooth_patch=5,
@@ -924,7 +922,7 @@ def snappy_settings_off_position():
             castellated_mesh_controls=snappy.CastellatedMeshControls(
                 resolve_feature_angle=10 * u.deg, n_cells_between_levels=3, min_refinement_cells=50
             ),
-            smooth_controls=snappy.SmoothControls(iterations=None),
+            smooth_controls=False,
         )
 
         param = SimulationParams(

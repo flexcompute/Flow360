@@ -819,14 +819,13 @@ def test_snappy_quality_metrics_validation():
 
     snappy.QualityMetrics(max_non_ortho=90 * u.deg, max_concave=90 * u.deg)
 
-    message = "Maximum skewness must be positive (your value: -2.0 degree). To disable enter None or -1*u.deg."
-    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+    with SI_unit_system, pytest.raises(pd.ValidationError):
         snappy.QualityMetrics(max_boundary_skewness=-2 * u.deg)
 
-    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+    with SI_unit_system, pytest.raises(pd.ValidationError):
         snappy.QualityMetrics(max_internal_skewness=-2 * u.deg)
 
-    snappy.QualityMetrics(max_boundary_skewness=-1 * u.deg, max_internal_skewness=-1 * u.deg)
+    snappy.QualityMetrics(max_boundary_skewness=23 * u.deg, max_internal_skewness=89 * u.deg)
 
 
 def test_modular_workflow_zones_validation():

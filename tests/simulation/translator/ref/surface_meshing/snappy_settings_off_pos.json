@@ -90,18 +90,18 @@
             "minTetQuality": -1e30,
             "minArea": -1,
             "minTwist": -2,
-            "minDeterminant": -1e+30,
+            "minDeterminant": -1e5,
             "minVolRatio": 0,
             "minFaceWeight": 0,
             "minTriangleTwist": -1,
-            "nSmoothScale": 0,
-            "errorReduction": 0,
+            "nSmoothScale": 4,
+            "errorReduction": 0.75,
             "minVolCollapseRatio": 0
         }
     },
     "smoothingControls": {
-        "lambda": 0.7,
-        "mu": 0.71,
+        "lambda": 0,
+        "mu": 0,
         "iter": 0
     },
     "locationInMesh": {

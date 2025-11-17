@@ -392,13 +392,20 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
             param_as_dict,
             ["meshing", "volume_zones"],
         )
+
+        if not volume_zones:
+            volume_zones = get_value_with_path(
+                param_as_dict,
+                ["meshing", "zones"],
+            )
+
         if not volume_zones:
             return {}
 
         # Return a mapping: { custom_volume_name: enforce_tetrahedra_boolean }
         custom_volume_info = {}
         for zone in volume_zones:
-            if zone.get("type") != "CustomZones":
+            if zone.get("type") not in ["CustomZones", "SeedpointZone"]:
                 continue
             element_type = zone.get("element_type")
             enforce_tetrahedra = element_type == "tetrahedra"

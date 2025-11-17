@@ -90,7 +90,7 @@
             "minTetQuality": -1e+30,
             "minArea": -1,
             "minTwist": -2,
-            "minDeterminant": -1e+30,
+            "minDeterminant": -1e5,
             "minVolRatio": 0,
             "minFaceWeight": 0,
             "minTriangleTwist": -1,
@@ -98,6 +98,11 @@
             "errorReduction": 0.75,
             "minVolCollapseRatio": 0
         }
+    },
+    "smoothingControls": {
+        "lambda": 0.7,
+        "mu": 0.71,
+        "iter": 5
     },
     "cadIsFluid": false,
     "enforcedSpacing": 1

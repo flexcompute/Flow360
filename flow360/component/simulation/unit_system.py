@@ -120,15 +120,6 @@ def _dimensioned_type_serializer(x):
     return {"value": _encode_ndarray(x.value), "units": str(x.units.expr)}
 
 
-def _dimensioned_vector_type_serializer(x):
-    """
-    encoder for dimensioned type (unyt_quantity, unyt_array, DimensionedType)
-    enforces the output to be an array even if the value has one element
-    """
-    # adding .expr helps to avoid degF/C becoming serialized as °F/C
-    return {"value": _encode_ndarray(x.value), "units": str(x.units.expr)}
-
-
 def _check_if_input_is_nested_collection(value, nest_level):
     def get_nesting_level(value):
         if isinstance(value, np.ndarray):
