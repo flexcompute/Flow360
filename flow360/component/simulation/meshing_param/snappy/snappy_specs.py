@@ -39,42 +39,42 @@ class QualityMetrics(Flow360BaseModel):
         default=85 * u.deg,
         alias="max_non_ortho",
         description="Maximum face non-orthogonality angle: the angle made by the vector between the two adjacent "
-        "cell centres across the common face and the face normal. Set to None to disable this metric.",
+        "cell centres across the common face and the face normal. Set to False to disable this metric.",
     )
     max_boundary_skewness: Union[AngleType.Positive, Literal[False]] = pd.Field(
         default=20 * u.deg,
-        description="Maximum boundary skewness. Set to None or -1° to disable this metric.",
+        description="Maximum boundary skewness. Set to False to disable this metric.",
     )
     max_internal_skewness: Union[AngleType.Positive, Literal[False]] = pd.Field(
         default=50 * u.deg,
-        description="Maximum internal face skewness. Set to None or -1° to disable this metric.",
+        description="Maximum internal face skewness. Set to False to disable this metric.",
     )
     max_concavity: Union[AngleType.Positive, Literal[False]] = pd.Field(
         default=50 * u.deg,
         alias="max_concave",
-        description="Maximum cell concavity. Set to None to disable this metric.",
+        description="Maximum cell concavity. Set to False to disable this metric.",
     )
     min_pyramid_cell_volume: Union[float, Literal[False]] = pd.Field(
         default=False,
         alias="min_vol",
-        description="Minimum cell pyramid volume [m³]. Set to None to disable this metric (uses -1e30 internally).",
+        description="Minimum cell pyramid volume [m³]. Set to False to disable this metric (uses -1e30 internally).",
     )
     min_tetrahedron_quality: Union[float, Literal[False]] = pd.Field(
         default=False,
         alias="min_tet_quality",
-        description="Minimum tetrahedron quality. Set to None to disable this metric (uses -1e30 internally).",
+        description="Minimum tetrahedron quality. Set to False to disable this metric (uses -1e30 internally).",
     )
     min_face_area: Union[AreaType.Positive, Literal[False]] = pd.Field(
-        default=False, alias="min_area", description="Minimum face area. Set to None to disable."
+        default=False, alias="min_area", description="Minimum face area. Set to False to disable."
     )
     min_twist: Union[float, Literal[False]] = pd.Field(
         default=False,
-        description="Minimum twist. Controls the twist quality of faces. Set to None to disable this metric.",
+        description="Minimum twist. Controls the twist quality of faces. Set to False to disable this metric.",
     )
     min_cell_determinant: Union[float, Literal[False]] = pd.Field(
         default=False,
         alias="min_determinant",
-        description="Minimum cell determinant. Set to None to disable this metric (uses -1e30 internally).",
+        description="Minimum cell determinant. Set to False to disable this metric (uses -1e5 internally).",
     )
     min_volume_ratio: Union[pd.NonNegativeFloat, Literal[False]] = pd.Field(
         default=0, alias="min_vol_ratio", description="Minimum volume ratio between adjacent cells."
@@ -84,7 +84,7 @@ class QualityMetrics(Flow360BaseModel):
         description="Minimum face interpolation weight. Controls the quality of face interpolation.",
     )
     min_triangle_twist: Union[float, Literal[False]] = pd.Field(
-        default=False, description="Minimum triangle twist. Set to None to disable this metric."
+        default=False, description="Minimum triangle twist. Set to False to disable this metric."
     )
     n_smooth_scale: pd.NonNegativeInt = pd.Field(
         default=4,
