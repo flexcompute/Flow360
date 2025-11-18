@@ -28,6 +28,7 @@ from flow360.component.simulation.validation.validation_context import (
 from flow360.component.simulation.validation.validation_utils import (
     check_deleted_surface_in_entity_list,
 )
+from flow360.exceptions import Flow360ValueError
 
 
 class UniformRefinement(Flow360BaseModel):
@@ -432,7 +433,7 @@ class AutomatedFarfield(_FarfieldBase):
         """
         if self.method == "auto":
             return GhostSurface(name="symmetric")
-        raise ValueError(
+        raise Flow360ValueError(
             "Unavailable for quasi-3d farfield methods. Please use `symmetry_planes` property instead."
         )
 
@@ -447,7 +448,7 @@ class AutomatedFarfield(_FarfieldBase):
                 GhostSurface(name="symmetric-1"),
                 GhostSurface(name="symmetric-2"),
             ]
-        raise ValueError(f"Unsupported method: {self.method}")
+        raise Flow360ValueError(f"Unsupported method: {self.method}")
 
     @pd.field_validator("method", mode="after")
     @classmethod
@@ -488,7 +489,7 @@ class UserDefinedFarfield(_FarfieldBase):
         Warning: This should only be used when using GAI and beta mesher.
         """
         if self.domain_type not in ("half_body_positive_y", "half_body_negative_y"):
-            raise ValueError(
+            raise Flow360ValueError(
                 "Symmetry plane of user defined farfield is only supported when domain_type "
                 "is `half_body_positive_y` or `half_body_negative_y`."
             )
@@ -548,7 +549,7 @@ class CentralBelt(Flow360BaseModel):
     )
 
     @pd.model_validator(mode="after")
-    def _validate_central_belt(self):
+    def _validate_central_belt_x_range(self):
         if self.central_belt_x_min >= self.central_belt_x_max:
             raise ValueError(
                 f"Central belt minimum x ({self.central_belt_x_min}) "
@@ -659,68 +660,122 @@ class WindTunnelFarfield(_FarfieldBase):
 
     # up direction not yet supported; assume +Z
 
+    @property
     def inlet(self) -> GhostSurface:
         """Returns the inlet boundary surface."""
         return GhostSurface(name="windTunnelInlet")
 
+    @property
     def outlet(self) -> GhostSurface:
         """Returns the outlet boundary surface."""
         return GhostSurface(name="windTunnelOutlet")
 
+    @property
+    def left(self) -> GhostSurface:
+        """Returns the left boundary surface."""
+        return GhostSurface(name="windTunnelLeft")
+
+    @property
+    def right(self) -> GhostSurface:
+        """Returns the right boundary surface."""
+        return GhostSurface(name="windTunnelRight")
+
+    @property
+    def ceiling(self) -> GhostSurface:
+        """Returns the ceiling boundary surface."""
+        return GhostSurface(name="windTunnelCeiling")
+
+    @property
+    def floor(self) -> GhostSurface:
+        """Returns the floor boundary surface, excluding friction, central, and wheel belts if applicable."""
+        return GhostSurface(name="windTunnelFloor")
+
+    @property
     def symmetry_plane(self) -> GhostSurface:
         """
         Returns the symmetry plane boundary surface for half body domains.
         """
         if self.domain_type not in ("half_body_positive_y", "half_body_negative_y"):
-            raise ValueError(
+            raise Flow360ValueError(
                 "Symmetry plane for wind tunnel farfield is only supported when domain_type "
                 "is `half_body_positive_y` or `half_body_negative_y`."
             )
         return GhostSurface(name="symmetric")
 
-    def floor(self) -> GhostSurface:
-        """Returns the floor boundary surface, excluding friction, central, and wheel belts if applicable."""
-        return GhostSurface(name="windTunnelFloor")
-
-    def ceiling(self) -> GhostSurface:
-        """Returns the ceiling boundary surface."""
-        return GhostSurface(name="windTunnelCeiling")
-
+    @property
     def friction_patch(self) -> GhostSurface:
         """Returns the friction patch for StaticFloor floor type."""
         if not isinstance(self.floor_type, StaticFloor):
-            raise ValueError(
+            raise Flow360ValueError(
                 "Friction patch for wind tunnel farfield "
                 "is only supported if floor type is `StaticFloor`."
             )
         return GhostSurface(name="windTunnelFrictionPatch")
 
+    @property
     def central_belt(self) -> GhostSurface:
         """Returns the central belt for CentralBelt or WheelBelts floor types."""
         if not isinstance(self.floor_type, CentralBelt):
-            raise ValueError(
+            raise Flow360ValueError(
                 "Central belt for wind tunnel farfield "
                 "is only supported if floor type is `CentralBelt` or `WheelBelts`."
             )
         return GhostSurface(name="windTunnelCentralBelt")
 
+    @property
     def front_wheel_belts(self) -> GhostSurface:
         """Returns the front wheel belts for WheelBelts floor type."""
         if not isinstance(self.floor_type, WheelBelts):
-            raise ValueError(
+            raise Flow360ValueError(
                 "Front wheel belts for wind tunnel farfield "
                 "is only supported if floor type is `WheelBelts`."
             )
         return GhostSurface(name="windTunnelFrontWheelBelt")
 
+    @property
     def rear_wheel_belts(self) -> GhostSurface:
         """Returns the rear wheel belts for WheelBelts floor type."""
         if not isinstance(self.floor_type, WheelBelts):
-            raise ValueError(
+            raise Flow360ValueError(
                 "Rear wheel belts for wind tunnel farfield "
                 "is only supported if floor type is `WheelBelts`."
             )
         return GhostSurface(name="windTunnelRearWheelBelt")
+
+    @staticmethod
+    def get_valid_ghost_surfaces(floor_string: str) -> list[GhostSurface]:
+        "Returns a list of valid ghost surfaces given a floor type as a string or ``all``."
+        shared_ghost_surfaces = [
+            GhostSurface(name="windTunnelInlet"),
+            GhostSurface(name="windTunnelOutlet"),
+            GhostSurface(name="windTunnelLeft"),
+            GhostSurface(name="windTunnelRight"),
+            GhostSurface(name="windTunnelCeiling"),
+            GhostSurface(name="windTunnelFloor"),
+        ]
+        if floor_string == "FullyMovingFloor":
+            return shared_ghost_surfaces
+        if floor_string == "StaticFloor":
+            return shared_ghost_surfaces + [GhostSurface(name="windTunnelFrictionPatch")]
+        if floor_string == "CentralBelt":
+            return shared_ghost_surfaces + [GhostSurface(name="windTunnelCentralBelt")]
+        if floor_string == "WheelBelts":
+            return shared_ghost_surfaces + [
+                GhostSurface(name="windTunnelCentralBelt"),
+                GhostSurface(name="windTunnelFrontWheelBelt"),
+                GhostSurface(name="windTunnelRearWheelBelt"),
+            ]
+        if floor_string == "all":
+            return shared_ghost_surfaces + [
+                GhostSurface(name="windTunnelFrictionPatch"),
+                GhostSurface(name="windTunnelCentralBelt"),
+                GhostSurface(name="windTunnelFrontWheelBelt"),
+                GhostSurface(name="windTunnelRearWheelBelt"),
+            ]
+        raise Flow360ValueError(
+            f"Unsupported string input for floor type: {floor_string}. Must be "
+            "`FullyMovingFloor`, `StaticFloor`, `CentralBelt`, `WheelBelts`, or `all`."
+        )
 
     @pd.model_validator(mode="after")
     def _validate_inlet_is_less_than_outlet(self):

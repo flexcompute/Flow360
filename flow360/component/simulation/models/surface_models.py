@@ -398,6 +398,11 @@ class Wall(BoundaryBase):
     )
     private_attribute_dict: Optional[Dict] = pd.Field(None)
 
+    entities: EntityList[Surface, GhostSurface, GhostSphere, GhostCircularPlane] = pd.Field(
+        alias="surfaces",
+        description="List of boundaries with the `Wall` boundary condition imposed.",
+    )
+
     @pd.model_validator(mode="after")
     def check_wall_function_conflict(self):
         """Check no setting is conflicting with the usage of wall function"""

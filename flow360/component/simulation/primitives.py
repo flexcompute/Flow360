@@ -580,8 +580,8 @@ class Surface(_SurfaceEntityBase):
             # VolumeMesh or Geometry/SurfaceMesh with legacy schema.
             return False
 
-        if farfield_method == "user-defined":
-            # Not applicable to user defined farfield
+        if farfield_method in ("user-defined", "wind-tunnel"):
+            # Not applicable to user defined or wind tunnel farfield
             return False
 
         length_tolerance = global_bounding_box.largest_dimension * planar_face_tolerance

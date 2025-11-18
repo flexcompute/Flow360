@@ -4,7 +4,10 @@ validation for SimulationParams
 
 from typing import Type, Union, get_args
 
-from flow360.component.simulation.meshing_param.volume_params import CustomZones
+from flow360.component.simulation.meshing_param.volume_params import (
+    CustomZones,
+    WindTunnelFarfield,
+)
 from flow360.component.simulation.models.solver_numerics import NoneSolver
 from flow360.component.simulation.models.surface_models import (
     Inflow,
@@ -367,13 +370,17 @@ def _check_complete_boundary_condition_and_unknown_surface(
                 for item in params.private_attribute_asset_cache.project_entity_info.ghost_entities
                 if item.name != "symmetric"
             ]
-        elif farfield_method == "user-defined":
+        elif farfield_method in ("user-defined", "wind-tunnel"):
             if validation_info.will_generate_forced_symmetry_plane():
                 asset_boundary_entities += [
                     item
                     for item in params.private_attribute_asset_cache.project_entity_info.ghost_entities
                     if item.name == "symmetric"
                 ]
+            if farfield_method == "wind-tunnel":
+                asset_boundary_entities += WindTunnelFarfield.get_valid_ghost_surfaces(
+                    params.meshing.volume_zones[0].floor_type.type_name
+                )
 
     potential_zone_zone_interfaces = set()
     if validation_info.farfield_method == "user-defined":
