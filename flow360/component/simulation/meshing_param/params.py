@@ -38,8 +38,7 @@ from flow360.component.simulation.validation.validation_context import (
     ContextField,
 )
 from flow360.component.simulation.validation.validation_utils import (
-    EntityUsageMap,
-    check_geometry_ai_features,
+    EntityUsageMap
 )
 
 RefinementTypes = Annotated[
