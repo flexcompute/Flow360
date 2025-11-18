@@ -62,6 +62,7 @@ from flow360.component.simulation.outputs.output_fields import (
 )
 from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
+    ForceDistributionOutput,
     Isosurface,
     IsosurfaceOutput,
     MonitorOutputType,
@@ -650,6 +651,17 @@ def translate_acoustic_output(output_params: list):
     return None
 
 
+def translate_force_distribution_output(output_params: list):
+    """Translate force distribution output settings."""
+    force_distribution_output = {}
+    for output in output_params:
+        if isinstance(output, ForceDistributionOutput):
+            force_distribution_output[output.name] = {
+                "direction": list(output.distribution_direction)
+            }
+    return force_distribution_output
+
+
 def user_variable_to_udf(
     variable: UserVariable, input_params: SimulationParams
 ):  # pylint:disable=too-many-branches
@@ -995,7 +1007,11 @@ def translate_output(input_params: SimulationParams, translated: dict):
         if imported_surface_integral_output_configs["surfaces"]:
             translated["importedSurfaceIntegralOutput"] = imported_surface_integral_output_configs
 
-    ##:: Step10: Sort all "output_fields" everywhere
+    ##:: Step10: Get translated["forceDistributionOutput"]
+    if has_instance_in_list(outputs, ForceDistributionOutput):
+        translated["forceDistributionOutput"] = translate_force_distribution_output(outputs)
+
+    ##:: Step11: Sort all "output_fields" everywhere
     # Recursively sort all "outputFields" lists in the translated dict
     def _sort_output_fields_in_dict(d):
         if isinstance(d, dict):

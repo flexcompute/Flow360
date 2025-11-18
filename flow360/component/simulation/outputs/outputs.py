@@ -55,6 +55,7 @@ from flow360.component.simulation.validation.validation_context import (
 from flow360.component.simulation.validation.validation_utils import (
     check_deleted_surface_in_entity_list,
 )
+from flow360.component.types import Axis
 
 
 class UserDefinedField(Flow360BaseModel):
@@ -1274,6 +1275,33 @@ class TimeAverageStreamlineOutput(StreamlineOutput):
     )
 
 
+class ForceDistributionOutput(Flow360BaseModel):
+    """
+    :class:`ForceDistributionOutput` class for customized force distribution output.
+
+    Example
+    -------
+
+
+    >>> fl.ForceDistributionOutput(
+    ...     name="spanwise",
+    ...     distribution_direction=[0.1, 0.9, 0.0],
+    ... )
+
+    ====
+    """
+
+    name: str = pd.Field(
+        description="Name of the `ForceDistributionOutput`. Used as the prefix for the output file name."
+    )
+    distribution_direction: Axis = pd.Field(
+        description="Direction of the force distribution output."
+    )
+    output_type: Literal["ForceDistributionOutput"] = pd.Field(
+        "ForceDistributionOutput", frozen=True
+    )
+
+
 OutputTypes = Annotated[
     Union[
         SurfaceOutput,
@@ -1293,6 +1321,7 @@ OutputTypes = Annotated[
         AeroAcousticOutput,
         StreamlineOutput,
         TimeAverageStreamlineOutput,
+        ForceDistributionOutput,
     ],
     pd.Field(discriminator="output_type"),
 ]

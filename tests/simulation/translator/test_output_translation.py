@@ -16,6 +16,7 @@ from flow360.component.simulation.outputs.output_entities import (
 )
 from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
+    ForceDistributionOutput,
     Isosurface,
     IsosurfaceOutput,
     Observer,
@@ -1188,6 +1189,30 @@ def test_acoustic_output(aeroacoustic_output_config, aeroacoustic_output_permeab
     translated = translate_output(param, translated)
 
     assert compare_values(aeroacoustic_output_permeable_config[1], translated["aeroacousticOutput"])
+
+
+def test_force_distribution_output():
+    param_with_ref = (
+        [
+            ForceDistributionOutput(
+                name="test_name",
+                distribution_direction=[0.1, 0.9, 0.0],
+            ),
+        ],
+        {
+            "test_name": {
+                "direction": [0.11043152607484655, 0.9938837346736189, 0.0],
+            },
+        },
+    )
+
+    with SI_unit_system:
+        param = SimulationParams(outputs=param_with_ref[0])
+    param = param._preprocess(mesh_unit=1.0 * u.m, exclude=["models"])
+
+    translated = {}
+    translated = translate_output(param, translated)
+    assert compare_values(param_with_ref[1], translated["forceDistributionOutput"])
 
 
 def test_surface_slice_output(vel_in_km_per_hr):
