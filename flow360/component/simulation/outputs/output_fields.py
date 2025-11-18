@@ -315,7 +315,7 @@ FIELD_TYPE_3DVECTOR = "3dvector"
 FIELD_TYPE_SCALAR = "scalar"
 
 _FIELD_TYPE_INFO = {
-    "velocity": {
+    "velocity_": {
         "type": FIELD_TYPE_3DVECTOR,
     },
     "velocity_magnitude": {
@@ -346,9 +346,9 @@ _FIELD_TYPE_INFO = {
 
 # Predefined UDF expressions
 PREDEFINED_UDF_EXPRESSIONS = {
-    "velocity": "velocity[0] = primitiveVars[1] * velocityScale;"
-    + "velocity[1] = primitiveVars[2] * velocityScale;"
-    + "velocity[2] = primitiveVars[3] * velocityScale;",
+    "velocity_": "velocity_[0] = primitiveVars[1] * velocityScale;"
+    + "velocity_[1] = primitiveVars[2] * velocityScale;"
+    + "velocity_[2] = primitiveVars[3] * velocityScale;",
     "velocity_magnitude": "double velocity[3];"
     + "velocity[0] = primitiveVars[1];"
     + "velocity[1] = primitiveVars[2];"
