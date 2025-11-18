@@ -31,25 +31,19 @@ from flow360.component.simulation.models.bet.bet_translator_interface import (
 )
 from flow360.component.simulation.models.surface_models import Freestream, Wall
 
-# Following unused-import for supporting parse_model_dict
 from flow360.component.simulation.models.volume_models import (  # pylint: disable=unused-import
-    BETDisk,
+    BETDisk,  # For parse_model_dict
 )
-
-# pylint: disable=unused-import
-from flow360.component.simulation.operating_condition.operating_condition import (
-    AerospaceCondition,
-    GenericReferenceCondition,
-    ThermalState,
+from flow360.component.simulation.operating_condition.operating_condition import (  # pylint: disable=unused-import
+    AerospaceCondition,  # For parse_model_dict
+    GenericReferenceCondition,  # For parse_model_dict
+    ThermalState,  # For parse_model_dict
 )
 from flow360.component.simulation.outputs.outputs import SurfaceOutput
-from flow360.component.simulation.primitives import Box  # pylint: disable=unused-import
-from flow360.component.simulation.primitives import Surface  # For parse_model_dict
-from flow360.component.simulation.primitives import (
-    Edge,
-    GenericVolume,
-    GeometryBodyGroup,
+from flow360.component.simulation.primitives import (  # pylint: disable=unused-import
+    Box,  # For parse_model_dict
 )
+from flow360.component.simulation.primitives import Surface
 from flow360.component.simulation.services_utils import has_any_entity_selectors
 from flow360.component.simulation.simulation_params import (
     ReferenceGeometry,
@@ -85,7 +79,6 @@ from flow360.component.simulation.validation.validation_context import (
     ALL,
     ParamsValidationInfo,
     ValidationContext,
-    get_value_with_path,
 )
 from flow360.exceptions import (
     Flow360RuntimeError,

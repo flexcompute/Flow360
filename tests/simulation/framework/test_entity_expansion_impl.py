@@ -246,9 +246,7 @@ def test_service_expand_entity_selectors_in_place_end_to_end():
 
     # Expand via service function
     expanded = json.loads(json.dumps(params))
-    print("\n [0] >>> expanded: ", expanded["outputs"])
     resolve_selectors(expanded)
-    print("\n [1] >>> expanded: ", expanded["outputs"])
 
     # Build or load a reference file (only created if missing)
     ref_dir = os.path.join(test_dir, "..", "ref")

@@ -282,7 +282,7 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
     @classmethod
     def _valid_individual_input(cls, input_data):
         """Validate each individual element in a list or as standalone entity."""
-        if isinstance(input_data, (str, EntityBase)):
+        if isinstance(input_data, EntityBase):
             return input_data
 
         raise ValueError(
@@ -344,7 +344,7 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
         """
         entities_to_store = []
         entity_patterns_to_store = []
-        valid_types = cls._get_valid_entity_types()
+        valid_types = tuple(cls._get_valid_entity_types())
         valid_type_names = [t.__name__ for t in valid_types]
 
         if isinstance(input_data, list):
@@ -354,20 +354,21 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
                 raise ValueError("Invalid input type to `entities`, list is empty.")
             for item in input_data:
                 if isinstance(item, list):  # Nested list comes from assets __getitem__
-                    _ = [cls._valid_individual_input(individual) for individual in item]
+                    processed_entities = [
+                        entity
+                        for entity in (
+                            cls._process_entity(individual, valid_types) for individual in item
+                        )
+                        if entity is not None
+                    ]
                     # pylint: disable=fixme
                     # TODO: Give notice when some of the entities are not selected due to `valid_types`?
-                    entities_to_store.extend(
-                        [
-                            individual
-                            for individual in item
-                            if is_exact_instance(individual, tuple(valid_types))
-                        ]
-                    )
+                    entities_to_store.extend(processed_entities)
                 else:
+                    # Single entity or selector
                     cls._process_single_item(
                         item,
-                        tuple(valid_types),
+                        valid_types,
                         valid_type_names,
                         entities_to_store,
                         entity_patterns_to_store,
@@ -383,7 +384,7 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
                 return cls._build_result(None, [])
             cls._process_single_item(
                 input_data,
-                tuple(valid_types),
+                valid_types,
                 valid_type_names,
                 entities_to_store,
                 entity_patterns_to_store,

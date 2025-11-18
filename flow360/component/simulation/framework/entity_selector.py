@@ -49,7 +49,7 @@ class EntitySelector(Flow360BaseModel):
     """
 
     target_class: TargetClass = pd.Field()
-    # Unique name for global reuse (aka tag)
+    # Unique name for global reuse
     name: str = pd.Field(description="Unique name for this selector.")
     logic: Literal["AND", "OR"] = pd.Field("AND")
     children: List[Predicate] = pd.Field()
@@ -137,7 +137,8 @@ def _validate_selector_factory_common(
     logic: str,
     syntax: Optional[str] = None,
 ) -> None:
-    """Validate common arguments for SelectorFactory methods.
+    """
+    Validate common arguments for SelectorFactory methods.
 
     This performs friendly, actionable validation with clear error messages.
     """
@@ -288,7 +289,7 @@ class SelectorFactory:
         ====
         """
         _validate_selector_factory_common("any_of", name=name, attribute=attribute, logic=logic)
-        _validate_selector_values("any_of", values)  # type: ignore[arg-type]
+        _validate_selector_values("any_of", values)
 
         selector = generate_entity_selector_from_class(
             selector_name=name, entity_class=cls, logic=logic
@@ -343,7 +344,9 @@ def generate_entity_selector_from_class(
 
 
 ########## EXPANSION IMPLEMENTATION ##########
-def _get_entity_pool(entity_database: EntityDictDatabase, target_class: TargetClass) -> list[dict]:
+def _get_entity_pool(
+    entity_database: EntityDictDatabase, target_class: TargetClass
+) -> list[dict]:
     """Return the correct entity list from the database for the target class."""
     if target_class == "Surface":
         return entity_database.surfaces
@@ -587,16 +590,16 @@ def _apply_single_selector(pool: list[dict], selector_dict: dict) -> list[dict]:
 
 def _get_selector_cache_key(selector_dict: dict) -> tuple:
     """
-    Return the cache key for a selector: requires unique name/tag.
+    Return the cache key for a selector: requires unique name.
 
     We mandate a unique identifier per selector; use ("name", target_class, name)
-    for stable global reuse. If neither `name` nor `tag` is provided, fall back to a
+    for stable global reuse. If neither `name` is provided, fall back to a
     structural key so different unnamed selectors won't collide.
     """
-    tclass = selector_dict.get("target_class")
+    target_class = selector_dict.get("target_class")
     name = selector_dict.get("name")
     if name:
-        return ("name", tclass, name)
+        return ("name", target_class, name)
 
     logic = selector_dict.get("logic", "AND")
     children = selector_dict.get("children") or []
@@ -606,7 +609,7 @@ def _get_selector_cache_key(selector_dict: dict) -> tuple:
             return tuple(v)
         return v
 
-    preds = tuple(
+    predicates = tuple(
         (
             p.get("attribute", "name"),
             p.get("operator"),
@@ -616,7 +619,7 @@ def _get_selector_cache_key(selector_dict: dict) -> tuple:
         for p in children
         if isinstance(p, dict)
     )
-    return ("struct", tclass, logic, preds)
+    return ("struct", target_class, logic, predicates)
 
 
 def _process_selectors(
@@ -700,8 +703,6 @@ def _expand_node_selectors(
     )
 
     node["stored_entities"] = base_entities
-    # node["selectors"] = selectors_value
-    print(">>> selectors: ", node["selectors"])
 
 
 def expand_entity_selectors_in_place(
@@ -714,7 +715,7 @@ def expand_entity_selectors_in_place(
 
     How caching works
     -----------------
-    - Each selector must provide a unique name (or tag). We build a cross-tree
+    - Each selector must provide a unique name. We build a cross-tree
       cache key as ("name", target_class, name).
     - For every node that contains a non-empty `selectors` list, we compute the
       additions once per unique cache key, store the expanded list of entity
