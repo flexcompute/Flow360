@@ -1040,6 +1040,8 @@ def test_uniform_project_only_with_snappy():
         "Value error, project_to_surface is supported only for snappyHexMesh."
     )
     assert errors[0]["loc"] == ("meshing", "refinements", 0, "UniformRefinement")
+
+
 def test_resolve_face_boundary_only_in_gai_mesher():
     # raise when GAI is off
     with pytest.raises(
