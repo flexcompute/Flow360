@@ -77,8 +77,8 @@ class StoppingCriterion(Flow360BaseModel):
     )
     tolerance_window_size: Optional[int] = pd.Field(
         None,
-        description="The number of data points from the monitor_output to be used "
-        "to check whether the deviation of the monitored field is below tolerance or not. "
+        description="The number of data points from the monitor_output to be used to check whether "
+        "the :math:`|max-min|/2` of the monitored field within this window is below tolerance or not. "
         "If not set, the criterion will directly compare the latest value with tolerance.",
         ge=2,
     )
