@@ -60,6 +60,7 @@ from flow360.component.simulation.models.surface_models import (
 )
 from flow360.component.simulation.models.volume_models import (
     AngleExpression,
+    AngularVelocity,
     Fluid,
     HeatEquationInitialCondition,
     NavierStokesInitialCondition,
@@ -2257,6 +2258,10 @@ def test_check_custom_volume_in_volume_zones():
     )
     assert errors[0]["loc"] == ("models", 0, "entities", "stored_entities")
 
+    zone_3 = CustomVolume(name="zone3", boundaries=[Surface(name="face3")])
+    zone_3.axis = (1, 0, 0)
+    zone_3.center = (0, 0, 0) * u.mm
+
     with SI_unit_system:
         params = SimulationParams(
             meshing=ModularMeshingWorkflow(
@@ -2277,6 +2282,7 @@ def test_check_custom_volume_in_volume_zones():
                     forchheimer_coefficient=(1, 0, 0) / u.m,
                     volumetric_heat_source=1.0 * u.W / u.m**3,
                 ),
+                Rotation(volumes=[zone_3], spec=AngularVelocity(30 * u.rpm)),
             ],
             private_attribute_asset_cache=AssetCache(
                 use_inhouse_mesher=True,
@@ -2294,11 +2300,16 @@ def test_check_custom_volume_in_volume_zones():
         root_item_type="SurfaceMesh",
         validation_level="All",
     )
-    assert len(errors) == 1
+    assert len(errors) == 2
     assert errors[0]["msg"] == (
         "Value error, CustomVolume zone2 is not listed under meshing->volume_zones(or zones)->CustomZones."
     )
     assert errors[0]["loc"] == ("models", 0, "entities", "stored_entities")
+
+    assert errors[1]["msg"] == (
+        "Value error, CustomVolume zone3 is not listed under meshing->volume_zones(or zones)->CustomZones."
+    )
+    assert errors[1]["loc"] == ("models", 1, "entities", "stored_entities")
 
     zone2prim = SeedpointVolume(name="zone2", point_in_mesh=(0, 0, 0) * u.mm)
     zone2prim.axes = [(1, 0, 0), (0, 1, 0)]

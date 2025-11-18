@@ -210,13 +210,13 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
 
     @classmethod
     def _get_use_snappy_(cls, param_as_dict: dict):
-        try:
+        if param_as_dict.get("meshing") and param_as_dict["meshing"].get("surface_meshing"):
             return (
                 param_as_dict["meshing"]["surface_meshing"]["type_name"]
                 == "SnappySurfaceMeshingParams"
             )
-        except KeyError:
-            return False
+
+        return False
 
     @classmethod
     def _get_use_geometry_AI_(cls, param_as_dict: dict):  # pylint:disable=invalid-name
@@ -425,9 +425,7 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         self.use_geometry_AI = self._get_use_geometry_AI_(  # pylint:disable=invalid-name
             param_as_dict=param_as_dict
         )
-        # self.use_snappy = self._get_use_snappy_(
-        #     param_as_dict=param_as_dict
-        # )
+        self.use_snappy = self._get_use_snappy_(param_as_dict=param_as_dict)
         self.using_liquid_as_material = self._get_using_liquid_as_material_(
             param_as_dict=param_as_dict
         )

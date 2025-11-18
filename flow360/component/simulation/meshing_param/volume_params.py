@@ -58,6 +58,17 @@ class UniformRefinement(Flow360BaseModel):
         description="Whether to include the refinement in the surface mesh. Defaults to True when using snappy.",
     )
 
+    @pd.model_validator(mode="after")
+    def check_project_to_surface_with_snappy(self):
+        """Check if project_to_surface is used only with snappy."""
+        validation_info = get_validation_info()
+        if validation_info is None:
+            return self
+        if not validation_info.use_snappy and self.project_to_surface is not None:
+            raise ValueError("project_to_surface is supported only for snappyHexMesh.")
+
+        return self
+
 
 class StructuredBoxRefinement(Flow360BaseModel):
     """

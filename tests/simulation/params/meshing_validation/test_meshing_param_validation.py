@@ -4,8 +4,10 @@ import pydantic as pd
 import pytest
 
 from flow360 import u
+from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.meshing_param import snappy
 from flow360.component.simulation.meshing_param.meshing_specs import (
+    MeshingDefaults,
     OctreeSpacing,
     VolumeMeshingDefaults,
 )
@@ -32,6 +34,7 @@ from flow360.component.simulation.primitives import (
     SnappyBody,
     Surface,
 )
+from flow360.component.simulation.services import ValidationCalledBy, validate_model
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import CGS_unit_system, SI_unit_system
 from flow360.component.simulation.validation.validation_context import (
@@ -975,3 +978,65 @@ def test_modular_workflow_zones_validation():
                 ),
             ],
         )
+
+
+def test_uniform_project_only_with_snappy():
+    refinement = UniformRefinement(
+        entities=[Box(center=(0, 0, 0) * u.m, size=(1, 1, 1) * u.m, name="box")],
+        spacing=0.1 * u.m,
+        project_to_surface=True,
+    )
+    with SI_unit_system:
+        params_snappy = SimulationParams(
+            meshing=ModularMeshingWorkflow(
+                surface_meshing=snappy.SurfaceMeshingParams(
+                    defaults=snappy.SurfaceMeshingDefaults(
+                        min_spacing=1 * u.mm, max_spacing=2 * u.mm, gap_resolution=1 * u.mm
+                    )
+                ),
+                volume_meshing=VolumeMeshingParams(
+                    defaults=VolumeMeshingDefaults(boundary_layer_first_layer_thickness=1 * u.mm),
+                    refinements=[refinement],
+                ),
+                zones=[
+                    AutomatedFarfield(),
+                ],
+            )
+        )
+
+    params_snappy, errors, _ = validate_model(
+        params_as_dict=params_snappy.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="Geometry",
+        validation_level="VolumeMesh",
+    )
+
+    assert errors is None
+
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                volume_zones=[
+                    AutomatedFarfield(),
+                ],
+                refinements=[refinement],
+                defaults=MeshingDefaults(
+                    curvature_resolution_angle=12 * u.deg,
+                    boundary_layer_growth_rate=1.1,
+                    boundary_layer_first_layer_thickness=1e-5 * u.m,
+                ),
+            )
+        )
+
+    params, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="SurfaceMesh",
+        validation_level="VolumeMesh",
+    )
+
+    assert len(errors) == 1
+    assert errors[0]["msg"] == (
+        "Value error, project_to_surface is supported only for snappyHexMesh."
+    )
+    assert errors[0]["loc"] == ("meshing", "refinements", 0, "UniformRefinement")
