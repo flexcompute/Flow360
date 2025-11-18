@@ -6,10 +6,16 @@ from flow360.component.simulation.meshing_param.face_params import (
     BoundaryLayer,
     PassiveSpacing,
 )
+from flow360.component.simulation.meshing_param.params import (
+    MeshingParams,
+    ModularMeshingWorkflow,
+    VolumeMeshingParams,
+)
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     AxisymmetricRefinement,
     AxisymmetricRefinementBase,
+    CustomZones,
     MeshSliceOutput,
     RotationCylinder,
     RotationVolume,
@@ -21,12 +27,15 @@ from flow360.component.simulation.meshing_param.volume_params import (
 from flow360.component.simulation.primitives import (
     AxisymmetricBody,
     Box,
+    CustomVolume,
     Cylinder,
+    SeedpointVolume,
     Surface,
 )
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.translator.solver_translator import inject_slice_info
 from flow360.component.simulation.translator.utils import (
+    ensure_meshing_is_specified,
     get_global_setting_from_first_instance,
     has_instance_in_list,
     preprocess_input,
@@ -209,26 +218,59 @@ def rotation_volume_entity_injector(
 
 def _get_custom_volumes(volume_zones: list):
     """Get translated custom volumes from volume zones."""
-    # pylint: disable=import-outside-toplevel
-    from flow360.component.simulation.meshing_param.volume_params import CustomZones
 
     custom_volumes = []
     for zone in volume_zones:
         if isinstance(zone, CustomZones):
             # Extract CustomVolume from CustomZones (base branch: no tetrahedra enforcement output)
             for custom_volume in zone.entities.stored_entities:
-                custom_volumes.append(
-                    {
-                        "name": custom_volume.name,
-                        "patches": sorted(
-                            [surface.name for surface in custom_volume.boundaries.stored_entities]
-                        ),
-                    }
-                )
+                if isinstance(custom_volume, CustomVolume):
+                    custom_volumes.append(
+                        {
+                            "name": custom_volume.name,
+                            "patches": sorted(
+                                [
+                                    surface.name
+                                    for surface in custom_volume.boundaries.stored_entities
+                                ]
+                            ),
+                        }
+                    )
+
+                if isinstance(custom_volume, SeedpointVolume):
+                    custom_volumes.append(
+                        {
+                            "name": custom_volume.name,
+                            "pointInMesh": [
+                                coord.value.item() for coord in custom_volume.point_in_mesh
+                            ],
+                        }
+                    )
+
     if custom_volumes:
         # Sort custom volumes by name
         custom_volumes.sort(key=lambda x: x["name"])
     return custom_volumes
+
+
+# def _get_seedpoint_zones(volume_zones: list):
+#     """
+#     Get translated seedpoint volumes from volume zones.
+#     To be later filled with data from snappyHexMesh.
+#     """
+#     seedpoint_zones = []
+#     for zone in volume_zones:
+#         if isinstance(zone, SeedpointVolume):
+#             seedpoint_zones.append(
+#                 {
+#                     "name": zone.name,
+#                     "pointInMesh": [coord.value.item() for coord in zone.point_in_mesh],
+#                 }
+#             )
+#     if seedpoint_zones:
+#         # Sort custom volumes by name
+#         seedpoint_zones.sort(key=lambda x: x["name"])
+#     return seedpoint_zones
 
 
 def translate_mesh_slice_output(
@@ -249,53 +291,71 @@ def translate_mesh_slice_output(
 
 
 @preprocess_input
-# pylint: disable=unused-argument,too-many-branches,too-many-statements
+# pylint: disable=unused-argument,too-many-branches,too-many-statements,too-many-locals
 def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
     """
     Get JSON for surface meshing.
 
     """
+    volume_zones = None
+    refinements = None
+    refinement_factor = None
+    defaults = None
+    gap_treatment_strength = None
+
     translated = {}
 
-    if input_params.meshing is None:
-        raise Flow360TranslationError(
-            "meshing not specified.",
-            None,
-            ["meshing"],
-        )
+    ensure_meshing_is_specified(input_params)
 
-    if input_params.meshing.volume_zones is None:
+    if isinstance(input_params.meshing, ModularMeshingWorkflow) and isinstance(
+        input_params.meshing.volume_meshing, VolumeMeshingParams
+    ):
+        volume_zones = input_params.meshing.zones
+        refinements = input_params.meshing.volume_meshing.refinements
+        refinement_factor = input_params.meshing.volume_meshing.refinement_factor
+        defaults = input_params.meshing.volume_meshing.defaults
+        gap_treatment_strength = input_params.meshing.volume_meshing.gap_treatment_strength
+        planar_tolerance = input_params.meshing.volume_meshing.planar_face_tolerance
+
+    if isinstance(input_params.meshing, MeshingParams):
+        volume_zones = input_params.meshing.volume_zones
+        refinements = input_params.meshing.refinements
+        refinement_factor = input_params.meshing.refinement_factor
+        defaults = input_params.meshing.defaults
+        gap_treatment_strength = input_params.meshing.gap_treatment_strength
+        planar_tolerance = input_params.meshing.defaults.planar_face_tolerance
+
+    outputs = input_params.meshing.outputs
+
+    if volume_zones is None:
         raise Flow360TranslationError(
             "volume_zones cannot be None for volume meshing",
-            input_params.meshing.volume_zones,
+            volume_zones,
             ["meshing", "volume_zones"],
         )
 
-    if input_params.meshing.refinements is None:
+    if refinements is None:
         raise Flow360TranslationError(
             "No `refinements` found in the input",
-            input_params.meshing.refinements,
+            refinements,
             ["meshing", "refinements"],
         )
 
-    meshing_params = input_params.meshing
-
     ##::  Step 1:  Get refinementFactor
-    if meshing_params.refinement_factor is None:
+    if refinement_factor is None:
         raise Flow360TranslationError(
             "No `refinement_factor` found for volume meshing.",
             None,
             ["meshing", "refinement_factor"],
         )
-    translated["refinementFactor"] = meshing_params.refinement_factor
+    translated["refinementFactor"] = refinement_factor
 
     ##::  Step 2:  Get farfield
-    for zone in input_params.meshing.volume_zones:
-        if isinstance(zone, UserDefinedFarfield):
+    for zone in volume_zones:
+        if isinstance(zone, (UserDefinedFarfield, CustomZones)):
             translated["farfield"] = {"type": "user-defined"}
-            if zone.domain_type is not None:
+            if hasattr(zone, "domain_type") and zone.domain_type is not None:
                 translated["farfield"]["domainType"] = zone.domain_type
-            break
 
         if isinstance(zone, WindTunnelFarfield):
             translated["farfield"] = {"type": "wind-tunnel"}
@@ -305,7 +365,7 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
 
         if isinstance(zone, AutomatedFarfield):
             translated["farfield"] = {
-                "planarFaceTolerance": meshing_params.defaults.planar_face_tolerance,
+                "planarFaceTolerance": planar_tolerance,
                 "relativeSize": zone.relative_size,
             }
             if zone.method == "quasi-3d-periodic":
@@ -328,49 +388,49 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
     ##:: Step 3: Get volumetric global settings
     translated["volume"] = {}
 
-    if meshing_params.defaults.boundary_layer_first_layer_thickness is None:
+    if defaults.boundary_layer_first_layer_thickness is None:
         # `first_layer_thickness` can be locally overridden so after completeness check, we can
         # get away with the first instance's value if global one does not exist.
         default_first_layer_thickness = get_global_setting_from_first_instance(
-            meshing_params.refinements,
+            refinements,
             BoundaryLayer,
             "first_layer_thickness",
         )
     else:
-        default_first_layer_thickness = meshing_params.defaults.boundary_layer_first_layer_thickness
+        default_first_layer_thickness = defaults.boundary_layer_first_layer_thickness
 
     translated["volume"]["firstLayerThickness"] = default_first_layer_thickness.value.item()
 
     # growthRate can only be global
-    translated["volume"]["growthRate"] = meshing_params.defaults.boundary_layer_growth_rate
+    translated["volume"]["growthRate"] = defaults.boundary_layer_growth_rate
 
-    translated["volume"]["gapTreatmentStrength"] = meshing_params.gap_treatment_strength
+    translated["volume"]["gapTreatmentStrength"] = gap_treatment_strength
 
     if input_params.private_attribute_asset_cache.use_inhouse_mesher:
-        number_of_boundary_layers = meshing_params.defaults.number_of_boundary_layers
+        number_of_boundary_layers = defaults.number_of_boundary_layers
         translated["volume"]["numBoundaryLayers"] = (
             number_of_boundary_layers if number_of_boundary_layers is not None else -1
         )
 
-        translated["volume"]["planarFaceTolerance"] = meshing_params.defaults.planar_face_tolerance
+        translated["volume"]["planarFaceTolerance"] = planar_tolerance
 
     ##::  Step 4: Get volume refinements (uniform + rotorDisks)
     uniform_refinement_list = translate_setting_and_apply_to_all_entities(
-        meshing_params.refinements,
+        refinements,
         UniformRefinement,
         uniform_refinement_translator,
         to_list=True,
         entity_injection_func=refinement_entity_injector,
     )
     rotor_disk_refinement = translate_setting_and_apply_to_all_entities(
-        meshing_params.refinements,
+        refinements,
         AxisymmetricRefinement,
         cylindrical_refinement_translator,
         to_list=True,
         entity_injection_func=rotor_disks_entity_injector,
     )
     structured_box_refinement = translate_setting_and_apply_to_all_entities(
-        meshing_params.refinements,
+        refinements,
         StructuredBoxRefinement,
         box_refinement_translator,
         to_list=True,
@@ -392,14 +452,14 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
         translated["structuredRegions"].extend(structured_box_refinement)
 
     faces_aniso_setting = translate_setting_and_apply_to_all_entities(
-        meshing_params.refinements,
+        refinements,
         BoundaryLayer,
         boundary_layer_translator,
         to_list=False,
     )
 
     faces_passive_setting = translate_setting_and_apply_to_all_entities(
-        meshing_params.refinements,
+        refinements,
         PassiveSpacing,
         passive_spacing_translator,
         to_list=False,
@@ -411,7 +471,7 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
 
     ##::  Step 5: Get sliding interfaces ()
     sliding_interfaces = translate_setting_and_apply_to_all_entities(
-        meshing_params.volume_zones,
+        volume_zones,
         RotationVolume,
         rotation_volume_translator,
         to_list=True,
@@ -420,7 +480,7 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
         entity_injection_use_inhouse_mesher=input_params.private_attribute_asset_cache.use_inhouse_mesher,
     )
     sliding_interfaces_cylinders = translate_setting_and_apply_to_all_entities(
-        meshing_params.volume_zones,
+        volume_zones,
         RotationCylinder,
         rotation_volume_translator,
         to_list=True,
@@ -433,12 +493,11 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
         translated["slidingInterfaces"] = sliding_interfaces + sliding_interfaces_cylinders
 
     ##::  Step 6: Get custom volumes
-    custom_volumes = _get_custom_volumes(meshing_params.volume_zones)
+    custom_volumes = _get_custom_volumes(volume_zones)
     if custom_volumes:
         translated["zones"] = custom_volumes
 
     ##::  Step 7: Get meshing output fields
-    outputs = input_params.meshing.outputs
 
     mesh_slice_output_configs = [
         (MeshSliceOutput, "meshSliceOutput"),

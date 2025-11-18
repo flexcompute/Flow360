@@ -58,6 +58,7 @@ from flow360.component.simulation.primitives import (
     Cylinder,
     EntityListWithCustomVolume,
     GenericVolume,
+    SeedpointVolume,
 )
 from flow360.component.simulation.unit_system import (
     AngleType,
@@ -1235,7 +1236,7 @@ class Rotation(Flow360BaseModel):
     name: Optional[str] = pd.Field("Rotation", description="Name of the `Rotation` model.")
     type: Literal["Rotation"] = pd.Field("Rotation", frozen=True)
     entities: EntityListWithCustomVolume[
-        GenericVolume, Cylinder, AxisymmetricBody, CustomVolume
+        GenericVolume, Cylinder, CustomVolume, SeedpointVolume, AxisymmetricBody
     ] = pd.Field(
         alias="volumes",
         description="The entity list for the `Rotation` model. "
@@ -1247,12 +1248,15 @@ class Rotation(Flow360BaseModel):
         discriminator="type_name",
         description="The angular velocity or rotation angle as a function of time.",
     )
-    parent_volume: Optional[Union[GenericVolume, Cylinder, AxisymmetricBody, CustomVolume]] = (
-        pd.Field(
-            None,
-            description="The parent rotating entity in a nested rotation case."
-            + "The entity should be :class:`Cylinder` or :class:`AxisymmetricBody` or :class:`GenericVolume` type.",
-        )
+    parent_volume: Optional[
+        Annotated[
+            Union[GenericVolume, Cylinder, CustomVolume, SeedpointVolume, AxisymmetricBody],
+            pd.Field(discriminator="private_attribute_entity_type_name"),
+        ]
+    ] = pd.Field(
+        None,
+        description="The parent rotating entity in a nested rotation case."
+        + "The entity should be :class:`Cylinder` or :class:`AxisymmetricBody` or :class:`GenericVolume` type.",
     )
     rotating_reference_frame_model: Optional[bool] = pd.Field(
         None,
@@ -1282,17 +1286,18 @@ class Rotation(Flow360BaseModel):
     @classmethod
     def _ensure_custom_volume_is_valid(
         cls,
-        value: Optional[Union[GenericVolume, Cylinder, CustomVolume]],
+        value: Optional[Union[GenericVolume, Cylinder, CustomVolume, SeedpointVolume]],
     ):
         """Ensure parent volume is a custom volume."""
         if value is None:
             return value
         validation_info = get_validation_info()
-        if validation_info is None or not isinstance(value, CustomVolume):
+        if validation_info is None or not isinstance(value, (CustomVolume, SeedpointVolume)):
             return value
         if value.name not in validation_info.to_be_generated_custom_volumes:
             raise ValueError(
-                f"Parent CustomVolume {value.name} is not listed under meshing->volume_zones->CustomZones."
+                f"Parent {type(value).__name__} {value.name} is not listed under meshing->volume_zones(or zones)"
+                + "->CustomZones."
             )
         return value
 
@@ -1341,12 +1346,15 @@ class PorousMedium(Flow360BaseModel):
 
     name: Optional[str] = pd.Field("Porous medium", description="Name of the `PorousMedium` model.")
     type: Literal["PorousMedium"] = pd.Field("PorousMedium", frozen=True)
-    entities: EntityListWithCustomVolume[GenericVolume, Box, CustomVolume] = pd.Field(
-        alias="volumes",
-        description="The entity list for the `PorousMedium` model. "
-        + "The entity should be defined by :class:`Box` or zones from the geometry/volume mesh."
-        + "The axes of entity must be specified to serve as the the principle axes of the "
-        + "porous medium material model.",
+    entities: EntityListWithCustomVolume[GenericVolume, Box, CustomVolume, SeedpointVolume] = (
+        pd.Field(
+            alias="volumes",
+            description="The entity list for the `PorousMedium` model. "
+            + "The entity should be defined by :class:`Box`, zones from the geometry/volume mesh or"
+            + "by :class:`SeedpointZone` when using snappyHexMeshing."
+            + "The axes of entity must be specified to serve as the the principle axes of the "
+            + "porous medium material model.",
+        )
     )
 
     darcy_coefficient: InverseAreaType.Point = pd.Field(

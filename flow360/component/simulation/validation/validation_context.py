@@ -126,6 +126,7 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         "farfield_domain_type",
         "is_beta_mesher",
         "use_geometry_AI",
+        "use_snappy",
         "using_liquid_as_material",
         "time_stepping",
         "feature_usage",
@@ -143,19 +144,33 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
 
     @classmethod
     def _get_farfield_method_(cls, param_as_dict: dict):
-        volume_zones = None
-        try:
-            if param_as_dict["meshing"]:
-                volume_zones = param_as_dict["meshing"]["volume_zones"]
-        except KeyError:
-            # No farfield/meshing info.
+        meshing = param_as_dict.get("meshing")
+        modular = False
+        if meshing is None:
+            # No meshing info.
             return None
+
+        if meshing["type_name"] == "MeshingParams":
+            volume_zones = meshing.get("volume_zones")
+        else:
+            volume_zones = meshing.get("zones")
+            modular = True
         if volume_zones:
             for zone in volume_zones:
                 if zone["type"] == "AutomatedFarfield":
                     return zone["method"]
                 if zone["type"] == "UserDefinedFarfield":
                     return "user-defined"
+                if (
+                    zone["type"]
+                    in [
+                        "CustomZones",
+                        "SeedpointZone",
+                    ]
+                    and modular
+                ):
+                    return "user-defined"
+
         return None
 
     @classmethod
@@ -192,6 +207,16 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
             return param_as_dict["private_attribute_asset_cache"]["use_inhouse_mesher"]
         except KeyError:
             return False
+
+    @classmethod
+    def _get_use_snappy_(cls, param_as_dict: dict):
+        if param_as_dict.get("meshing") and param_as_dict["meshing"].get("surface_meshing"):
+            return (
+                param_as_dict["meshing"]["surface_meshing"]["type_name"]
+                == "SnappySurfaceMeshingParams"
+            )
+
+        return False
 
     @classmethod
     def _get_use_geometry_AI_(cls, param_as_dict: dict):  # pylint:disable=invalid-name
@@ -243,9 +268,16 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
 
     @classmethod
     def _get_planar_face_tolerance(cls, param_as_dict: dict):
-        planar_face_tolerance = get_value_with_path(
-            param_as_dict, ["meshing", "defaults", "planar_face_tolerance"]
-        )
+        planar_face_tolerance = None
+        if "meshing" in param_as_dict and param_as_dict["meshing"]:
+            if param_as_dict["meshing"]["type_name"] == "MeshingParams":
+                planar_face_tolerance = get_value_with_path(
+                    param_as_dict, ["meshing", "defaults", "planar_face_tolerance"]
+                )
+            else:
+                planar_face_tolerance = get_value_with_path(
+                    param_as_dict, ["meshing", "volume_meshing", "planar_face_tolerance"]
+                )
         return planar_face_tolerance
 
     @classmethod
@@ -359,6 +391,13 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
             param_as_dict,
             ["meshing", "volume_zones"],
         )
+
+        if not volume_zones:
+            volume_zones = get_value_with_path(
+                param_as_dict,
+                ["meshing", "zones"],
+            )
+
         if not volume_zones:
             return {}
 
@@ -373,10 +412,9 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
             entities_obj = zone.get("entities", {})
             stored_entities = entities_obj.get("stored_entities", [])
             for entity in stored_entities:
-                if (
-                    isinstance(entity, dict)
-                    and entity.get("private_attribute_entity_type_name") == "CustomVolume"
-                ):
+                if isinstance(entity, dict) and entity.get(
+                    "private_attribute_entity_type_name"
+                ) in ["CustomVolume", "SeedpointVolume"]:
                     custom_volume_info[entity["name"]] = enforce_tetrahedra
         return custom_volume_info
 
@@ -387,6 +425,7 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         self.use_geometry_AI = self._get_use_geometry_AI_(  # pylint:disable=invalid-name
             param_as_dict=param_as_dict
         )
+        self.use_snappy = self._get_use_snappy_(param_as_dict=param_as_dict)
         self.using_liquid_as_material = self._get_using_liquid_as_material_(
             param_as_dict=param_as_dict
         )

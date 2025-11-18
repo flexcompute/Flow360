@@ -1120,3 +1120,38 @@ def test_updater_to_25_7_7_with_transition_model():
         "solutionTransition" in volume_output_fields
     ), "solutionTransition should remain with AmplificationFactorTransport"
     assert "primitiveVars" in volume_output_fields, "primitiveVars should remain"
+
+
+def test_updater_to_25_8_0_add_meshing_type_name():
+    params_as_dict = {
+        "meshing": {
+            "refinement_factor": 1,
+            "gap_treatment_strength": 0,
+            "defaults": {
+                "surface_edge_growth_rate": 1.2,
+                "surface_max_edge_length": {"value": 0.1, "units": "m"},
+                "curvature_resolution_angle": {"value": 14, "units": "degree"},
+                "boundary_layer_growth_rate": 1.2,
+                "boundary_layer_first_layer_thickness": {"value": 0.05, "units": "m"},
+                "planar_face_tolerance": 0.01,
+            },
+            "volume_zones": [
+                {
+                    "type": "AutomatedFarfield",
+                    "name": "Farfield",
+                    "method": "auto",
+                    "_id": "0kd7rt12-7c82-0fma-js93-bf7jx7216532",
+                }
+            ],
+            "refinements": [],
+        }
+    }
+
+    params_new = updater(
+        version_from="25.7.6",
+        version_to="25.8.0",
+        params_as_dict=params_as_dict,
+    )
+
+    assert "type_name" in params_new["meshing"]
+    assert params_new["meshing"]["type_name"] == "MeshingParams"

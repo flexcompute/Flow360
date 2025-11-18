@@ -366,3 +366,18 @@ class EntityUsageMap:  # pylint:disable=too-few-public-methods
         )
         entity_log["model_list"].append(model_type)
         self.dict_entity[entity_type][entity_key] = entity_log
+
+
+def check_geometry_ai_features(cls, value, info):
+    """Ensure GAI features are not specified when GAI is not used"""
+    validation_info = get_validation_info()
+
+    if validation_info is None:
+        return value
+
+    # pylint: disable=unsubscriptable-object
+    default_value = cls.model_fields[info.field_name].default
+    if value != default_value and not validation_info.use_geometry_AI:
+        raise ValueError(f"{info.field_name} is only supported when geometry AI is used.")
+
+    return value

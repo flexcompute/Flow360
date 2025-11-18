@@ -1,27 +1,48 @@
+import re
+
 import pydantic as pd
 import pytest
 
-from flow360.component.simulation.meshing_param.params import MeshingParams
+from flow360 import u
+from flow360.component.simulation.meshing_param import snappy
+from flow360.component.simulation.meshing_param.face_params import SurfaceRefinement
+from flow360.component.simulation.meshing_param.meshing_specs import (
+    MeshingDefaults,
+    OctreeSpacing,
+    VolumeMeshingDefaults,
+)
+from flow360.component.simulation.meshing_param.params import (
+    MeshingParams,
+    ModularMeshingWorkflow,
+    VolumeMeshingParams,
+)
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     AxisymmetricRefinement,
+    CustomZones,
     FullyMovingFloor,
     RotationVolume,
     StaticFloor,
     StructuredBoxRefinement,
     UniformRefinement,
+    UserDefinedFarfield,
     WheelBelts,
     WindTunnelFarfield,
 )
 from flow360.component.simulation.primitives import (
     AxisymmetricBody,
     Box,
+    CustomVolume,
     Cylinder,
+    SeedpointVolume,
+    SnappyBody,
     Surface,
 )
+from flow360.component.simulation.services import ValidationCalledBy, validate_model
 from flow360.component.simulation.simulation_params import SimulationParams
-from flow360.component.simulation.unit_system import CGS_unit_system
+from flow360.component.simulation.unit_system import CGS_unit_system, SI_unit_system
 from flow360.component.simulation.validation.validation_context import (
+    SURFACE_MESH,
     VOLUME_MESH,
     ParamsValidationInfo,
     ValidationContext,
@@ -35,6 +56,7 @@ non_gai_context.use_geometry_AI = False
 
 beta_mesher_context = ParamsValidationInfo({}, [])
 beta_mesher_context.is_beta_mesher = True
+beta_mesher_context.project_length_unit = "mm"
 
 
 def test_structured_box_only_in_beta_mesher():
@@ -183,6 +205,41 @@ def test_disable_multiple_cylinder_in_one_rotation_volume():
                     ],
                 )
             )
+    with pytest.raises(
+        pd.ValidationError,
+        match="Only single instance is allowed in entities for each `RotationVolume`.",
+    ):
+        with CGS_unit_system:
+            cylinder_1 = Cylinder(
+                name="1",
+                outer_radius=12,
+                height=2,
+                axis=(0, 1, 0),
+                center=(0, 5, 0),
+            )
+            cylinder_2 = Cylinder(
+                name="2",
+                outer_radius=2,
+                height=2,
+                axis=(0, 1, 0),
+                center=(0, 5, 0),
+            )
+            SimulationParams(
+                meshing=ModularMeshingWorkflow(
+                    zones=[
+                        RotationVolume(
+                            entities=[cylinder_1, cylinder_2],
+                            spacing_axial=20,
+                            spacing_radial=0.2,
+                            spacing_circumferential=20,
+                            enclosed_entities=[
+                                Surface(name="hub"),
+                            ],
+                        ),
+                        AutomatedFarfield(),
+                    ],
+                )
+            )
 
 
 def test_limit_cylinder_entity_name_length_in_rotation_volume():
@@ -316,6 +373,46 @@ def test_reuse_of_same_cylinder():
                 )
             )
 
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"Using Volume entity `I am reused` in `AxisymmetricRefinement`, `RotationVolume` at the same time is not allowed.",
+    ):
+        with CGS_unit_system:
+            cylinder = Cylinder(
+                name="I am reused",
+                outer_radius=1,
+                height=12,
+                axis=(0, 1, 0),
+                center=(0, 5, 0),
+            )
+            SimulationParams(
+                meshing=ModularMeshingWorkflow(
+                    volume_meshing=VolumeMeshingParams(
+                        refinements=[
+                            AxisymmetricRefinement(
+                                entities=[cylinder],
+                                spacing_axial=0.1,
+                                spacing_radial=0.2,
+                                spacing_circumferential=0.3,
+                            )
+                        ],
+                        defaults=VolumeMeshingDefaults(boundary_layer_first_layer_thickness=1),
+                    ),
+                    zones=[
+                        RotationVolume(
+                            entities=[cylinder],
+                            spacing_axial=20,
+                            spacing_radial=0.2,
+                            spacing_circumferential=20,
+                            enclosed_entities=[
+                                Surface(name="hub"),
+                            ],
+                        ),
+                        AutomatedFarfield(),
+                    ],
+                )
+            )
+
     with CGS_unit_system:
         cylinder = Cylinder(
             name="Okay to reuse",
@@ -343,6 +440,40 @@ def test_reuse_of_same_cylinder():
                         entities=[cylinder],
                         spacing=0.1,
                     )
+                ],
+            )
+        )
+
+    with CGS_unit_system:
+        cylinder = Cylinder(
+            name="Okay to reuse",
+            outer_radius=1,
+            height=12,
+            axis=(0, 1, 0),
+            center=(0, 5, 0),
+        )
+        SimulationParams(
+            meshing=ModularMeshingWorkflow(
+                volume_meshing=VolumeMeshingParams(
+                    refinements=[
+                        UniformRefinement(
+                            entities=[cylinder],
+                            spacing=0.1,
+                        )
+                    ],
+                    defaults=VolumeMeshingDefaults(boundary_layer_first_layer_thickness=1),
+                ),
+                zones=[
+                    RotationVolume(
+                        entities=[cylinder],
+                        spacing_axial=20,
+                        spacing_radial=0.2,
+                        spacing_circumferential=20,
+                        enclosed_entities=[
+                            Surface(name="hub"),
+                        ],
+                    ),
+                    AutomatedFarfield(),
                 ],
             )
         )
@@ -375,6 +506,36 @@ def test_reuse_of_same_cylinder():
 
     with pytest.raises(
         pd.ValidationError,
+        match=r"Using Volume entity `I am reused` in `AxisymmetricRefinement`, `UniformRefinement` at the same time is not allowed.",
+    ):
+        with CGS_unit_system:
+            cylinder = Cylinder(
+                name="I am reused",
+                outer_radius=1,
+                height=12,
+                axis=(0, 1, 0),
+                center=(0, 5, 0),
+            )
+            SimulationParams(
+                meshing=ModularMeshingWorkflow(
+                    volume_meshing=VolumeMeshingParams(
+                        refinements=[
+                            UniformRefinement(entities=[cylinder], spacing=0.1),
+                            AxisymmetricRefinement(
+                                entities=[cylinder],
+                                spacing_axial=0.1,
+                                spacing_radial=0.1,
+                                spacing_circumferential=0.1,
+                            ),
+                        ],
+                        defaults=VolumeMeshingDefaults(boundary_layer_first_layer_thickness=1),
+                    ),
+                    zones=[AutomatedFarfield()],
+                )
+            )
+
+    with pytest.raises(
+        pd.ValidationError,
         match=r" Volume entity `I am reused` is used multiple times in `UniformRefinement`.",
     ):
         with CGS_unit_system:
@@ -393,6 +554,107 @@ def test_reuse_of_same_cylinder():
                     ],
                 )
             )
+
+    with pytest.raises(
+        pd.ValidationError,
+        match=r" Volume entity `I am reused` is used multiple times in `UniformRefinement`.",
+    ):
+        with CGS_unit_system:
+            cylinder = Cylinder(
+                name="I am reused",
+                outer_radius=1,
+                height=12,
+                axis=(0, 1, 0),
+                center=(0, 5, 0),
+            )
+            SimulationParams(
+                meshing=ModularMeshingWorkflow(
+                    volume_meshing=VolumeMeshingParams(
+                        refinements=[
+                            UniformRefinement(entities=[cylinder], spacing=0.1),
+                            UniformRefinement(entities=[cylinder], spacing=0.2),
+                        ],
+                        defaults=VolumeMeshingDefaults(boundary_layer_first_layer_thickness=1),
+                    ),
+                    zones=[AutomatedFarfield()],
+                )
+            )
+
+
+def test_require_mesh_zones():
+    with SI_unit_system:
+        ModularMeshingWorkflow(
+            surface_meshing=snappy.SurfaceMeshingParams(
+                defaults=snappy.SurfaceMeshingDefaults(
+                    min_spacing=1 * u.mm, max_spacing=5 * u.mm, gap_resolution=0.001 * u.mm
+                ),
+            ),
+            zones=[AutomatedFarfield()],
+        )
+
+    with SI_unit_system:
+        ModularMeshingWorkflow(
+            surface_meshing=snappy.SurfaceMeshingParams(
+                defaults=snappy.SurfaceMeshingDefaults(
+                    min_spacing=1 * u.mm, max_spacing=5 * u.mm, gap_resolution=0.01 * u.mm
+                ),
+            ),
+            zones=[
+                CustomZones(
+                    name="custom_zones",
+                    entities=[SeedpointVolume(name="fluid", point_in_mesh=(0, 0, 0) * u.mm)],
+                )
+            ],
+        )
+
+    message = "snappyHexMeshing requires at least one `SeedpointVolume` when not using `AutomatedFarfield`."
+    with pytest.raises(
+        ValueError,
+        match=re.escape(message),
+    ):
+        with SI_unit_system:
+            ModularMeshingWorkflow(
+                surface_meshing=snappy.SurfaceMeshingParams(
+                    defaults=snappy.SurfaceMeshingDefaults(
+                        min_spacing=1 * u.mm, max_spacing=5 * u.mm, gap_resolution=0.01 * u.mm
+                    )
+                ),
+                zones=[UserDefinedFarfield()],
+            )
+
+
+def test_bad_refinements():
+    message = "Default maximum spacing (5.0 mm) is lower than refinement minimum spacing (6.0 mm) and maximum spacing is not provided for BodyRefinement."
+    with pytest.raises(
+        ValueError,
+        match=re.escape(message),
+    ):
+        snappy.SurfaceMeshingParams(
+            defaults=snappy.SurfaceMeshingDefaults(
+                min_spacing=1 * u.mm, max_spacing=5 * u.mm, gap_resolution=0.01 * u.mm
+            ),
+            refinements=[
+                snappy.BodyRefinement(
+                    min_spacing=6 * u.mm, bodies=[SnappyBody(name="bbb", surfaces=[])]
+                )
+            ],
+        )
+
+    message = "Default minimum spacing (1.0 mm) is higher than refinement maximum spacing (0.5 mm) and minimum spacing is not provided for BodyRefinement."
+    with pytest.raises(
+        ValueError,
+        match=re.escape(message),
+    ):
+        snappy.SurfaceMeshingParams(
+            defaults=snappy.SurfaceMeshingDefaults(
+                min_spacing=1 * u.mm, max_spacing=5 * u.mm, gap_resolution=0.01 * u.mm
+            ),
+            refinements=[
+                snappy.BodyRefinement(
+                    max_spacing=0.5 * u.mm, bodies=[SnappyBody(name="bbb", surfaces=[])]
+                )
+            ],
+        )
 
 
 def test_box_entity_enclosed_only_in_beta_mesher():
@@ -447,6 +709,64 @@ def test_box_entity_enclosed_only_in_beta_mesher():
                 spacing_circumferential=20,
                 enclosed_entities=[box_entity],
             )
+
+
+def test_octree_spacing():
+    spacing = OctreeSpacing(base_spacing=2 * u.mm)
+
+    assert spacing[0] == 2 * u.mm
+    assert spacing[3] == 2 * u.mm * (2**-3)
+    assert spacing[-4] == 2 * u.mm * (2**4)
+    assert spacing[1] == 2 * u.mm * (2**-1)
+
+    with pytest.raises(pd.ValidationError):
+        _ = spacing[0.2]
+
+    assert spacing.to_level(2 * u.mm) == (0, True)
+    assert spacing.to_level(4 * u.mm) == (-1, True)
+    assert spacing.to_level(0.5 * u.mm) == (2, True)
+    assert spacing.to_level(3.9993 * u.mm) == (0, False)
+    assert spacing.to_level(3.9999999999993 * u.mm) == (-1, True)
+
+
+def test_set_default_base_spacing():
+    surface_meshing = snappy.SurfaceMeshingParams(
+        defaults=snappy.SurfaceMeshingDefaults(
+            min_spacing=1 * u.mm, max_spacing=2 * u.mm, gap_resolution=1 * u.mm
+        )
+    )
+
+    assert surface_meshing.base_spacing is None
+
+    with ValidationContext(SURFACE_MESH, beta_mesher_context):
+        surface_meshing = snappy.SurfaceMeshingParams(
+            defaults=snappy.SurfaceMeshingDefaults(
+                min_spacing=1 * u.mm, max_spacing=2 * u.mm, gap_resolution=1 * u.mm
+            )
+        )
+
+    assert surface_meshing.base_spacing.base_spacing == 1 * u.mm
+    assert surface_meshing.base_spacing[2] == 0.25 * u.mm
+    assert surface_meshing.base_spacing.to_level(2 * u.mm) == (-1, True)
+
+
+def test_set_spacing_with_value():
+    surface_meshing = snappy.SurfaceMeshingParams(
+        defaults=snappy.SurfaceMeshingDefaults(
+            min_spacing=1 * u.mm, max_spacing=2 * u.mm, gap_resolution=1 * u.mm
+        ),
+        base_spacing=3 * u.mm,
+    )
+
+    assert surface_meshing.base_spacing.base_spacing == 3 * u.mm
+
+    with pytest.raises(pd.ValidationError):
+        surface_meshing = snappy.SurfaceMeshingParams(
+            defaults=snappy.SurfaceMeshingDefaults(
+                min_spacing=1 * u.mm, max_spacing=2 * u.mm, gap_resolution=1 * u.mm
+            ),
+            base_spacing=-3 * u.mm,
+        )
 
 
 def test_quasi_3d_periodic_only_in_legacy_mesher():
@@ -625,3 +945,274 @@ def test_wind_tunnel_invalid_dimensions():
                 rear_wheel_belt_y_outer=120,
             ),
         )
+
+
+def test_snappy_quality_metrics_validation():
+    message = "Value must be less than or equal to 180 degrees."
+    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+        snappy.QualityMetrics(max_non_ortho=190 * u.deg)
+
+    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+        snappy.QualityMetrics(max_concave=190 * u.deg)
+
+    snappy.QualityMetrics(max_non_ortho=90 * u.deg, max_concave=90 * u.deg)
+
+    with SI_unit_system, pytest.raises(pd.ValidationError):
+        snappy.QualityMetrics(max_boundary_skewness=-2 * u.deg)
+
+    with SI_unit_system, pytest.raises(pd.ValidationError):
+        snappy.QualityMetrics(max_internal_skewness=-2 * u.deg)
+
+    snappy.QualityMetrics(max_boundary_skewness=23 * u.deg, max_internal_skewness=89 * u.deg)
+
+
+def test_modular_workflow_zones_validation():
+    message = "At least one zone defining the farfield is required."
+    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+        ModularMeshingWorkflow(
+            surface_meshing=snappy.SurfaceMeshingParams(
+                defaults=snappy.SurfaceMeshingDefaults(
+                    min_spacing=1 * u.mm, max_spacing=2 * u.mm, gap_resolution=1 * u.mm
+                )
+            ),
+            volume_meshing=VolumeMeshingParams(
+                defaults=VolumeMeshingDefaults(boundary_layer_first_layer_thickness=1 * u.mm)
+            ),
+            zones=[],
+        )
+
+    message = "When using `CustomZones` the `UserDefinedFarfield` will be ignored."
+    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+        ModularMeshingWorkflow(
+            surface_meshing=snappy.SurfaceMeshingParams(
+                defaults=snappy.SurfaceMeshingDefaults(
+                    min_spacing=1 * u.mm, max_spacing=2 * u.mm, gap_resolution=1 * u.mm
+                )
+            ),
+            volume_meshing=VolumeMeshingParams(
+                defaults=VolumeMeshingDefaults(boundary_layer_first_layer_thickness=1 * u.mm)
+            ),
+            zones=[
+                UserDefinedFarfield(),
+                CustomZones(
+                    name="custom_zones",
+                    entities=[SeedpointVolume(name="fluid", point_in_mesh=(0, 0, 0) * u.mm)],
+                ),
+            ],
+        )
+
+    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+        ModularMeshingWorkflow(
+            surface_meshing=snappy.SurfaceMeshingParams(
+                defaults=snappy.SurfaceMeshingDefaults(
+                    min_spacing=1 * u.mm, max_spacing=2 * u.mm, gap_resolution=1 * u.mm
+                )
+            ),
+            volume_meshing=VolumeMeshingParams(
+                defaults=VolumeMeshingDefaults(boundary_layer_first_layer_thickness=1 * u.mm)
+            ),
+            zones=[
+                CustomZones(
+                    name="custom_zones",
+                    entities=[
+                        CustomVolume(
+                            name="zone1",
+                            boundaries=[Surface(name="face1"), Surface(name="face2")],
+                        )
+                    ],
+                ),
+                UserDefinedFarfield(),
+            ],
+        )
+
+    message = "Only one `AutomatedFarfield` zone is allowed in `zones`."
+    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+        ModularMeshingWorkflow(
+            surface_meshing=snappy.SurfaceMeshingParams(
+                defaults=snappy.SurfaceMeshingDefaults(
+                    min_spacing=1 * u.mm, max_spacing=2 * u.mm, gap_resolution=1 * u.mm
+                )
+            ),
+            volume_meshing=VolumeMeshingParams(
+                defaults=VolumeMeshingDefaults(boundary_layer_first_layer_thickness=1 * u.mm)
+            ),
+            zones=[AutomatedFarfield(), AutomatedFarfield()],
+        )
+
+    message = "Only one `UserDefinedFarfield` zone is allowed in `zones`."
+    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+        ModularMeshingWorkflow(
+            surface_meshing=snappy.SurfaceMeshingParams(
+                defaults=snappy.SurfaceMeshingDefaults(
+                    min_spacing=1 * u.mm, max_spacing=2 * u.mm, gap_resolution=1 * u.mm
+                )
+            ),
+            volume_meshing=VolumeMeshingParams(
+                defaults=VolumeMeshingDefaults(boundary_layer_first_layer_thickness=1 * u.mm)
+            ),
+            zones=[UserDefinedFarfield(), UserDefinedFarfield()],
+        )
+
+    message = "Cannot use `AutomatedFarfield` and `UserDefinedFarfield` simultaneously."
+    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+        ModularMeshingWorkflow(
+            surface_meshing=snappy.SurfaceMeshingParams(
+                defaults=snappy.SurfaceMeshingDefaults(
+                    min_spacing=1 * u.mm, max_spacing=2 * u.mm, gap_resolution=1 * u.mm
+                )
+            ),
+            volume_meshing=VolumeMeshingParams(
+                defaults=VolumeMeshingDefaults(boundary_layer_first_layer_thickness=1 * u.mm)
+            ),
+            zones=[AutomatedFarfield(), UserDefinedFarfield()],
+        )
+
+    message = "`CustomZones` cannot be used with `AutomatedFarfield`."
+    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+        ModularMeshingWorkflow(
+            surface_meshing=snappy.SurfaceMeshingParams(
+                defaults=snappy.SurfaceMeshingDefaults(
+                    min_spacing=1 * u.mm, max_spacing=2 * u.mm, gap_resolution=1 * u.mm
+                )
+            ),
+            volume_meshing=VolumeMeshingParams(
+                defaults=VolumeMeshingDefaults(boundary_layer_first_layer_thickness=1 * u.mm)
+            ),
+            zones=[
+                AutomatedFarfield(),
+                CustomZones(
+                    name="custom_zones",
+                    entities=[SeedpointVolume(name="fluid", point_in_mesh=(0, 0, 0) * u.mm)],
+                ),
+            ],
+        )
+
+    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+        ModularMeshingWorkflow(
+            surface_meshing=snappy.SurfaceMeshingParams(
+                defaults=snappy.SurfaceMeshingDefaults(
+                    min_spacing=1 * u.mm, max_spacing=2 * u.mm, gap_resolution=1 * u.mm
+                )
+            ),
+            volume_meshing=VolumeMeshingParams(
+                defaults=VolumeMeshingDefaults(boundary_layer_first_layer_thickness=1 * u.mm)
+            ),
+            zones=[
+                AutomatedFarfield(),
+                CustomZones(
+                    name="custom_zones",
+                    entities=[
+                        CustomVolume(
+                            name="zone1",
+                            boundaries=[Surface(name="face1"), Surface(name="face2")],
+                        )
+                    ],
+                ),
+            ],
+        )
+
+
+def test_uniform_project_only_with_snappy():
+    refinement = UniformRefinement(
+        entities=[Box(center=(0, 0, 0) * u.m, size=(1, 1, 1) * u.m, name="box")],
+        spacing=0.1 * u.m,
+        project_to_surface=True,
+    )
+    with SI_unit_system:
+        params_snappy = SimulationParams(
+            meshing=ModularMeshingWorkflow(
+                surface_meshing=snappy.SurfaceMeshingParams(
+                    defaults=snappy.SurfaceMeshingDefaults(
+                        min_spacing=1 * u.mm, max_spacing=2 * u.mm, gap_resolution=1 * u.mm
+                    )
+                ),
+                volume_meshing=VolumeMeshingParams(
+                    defaults=VolumeMeshingDefaults(boundary_layer_first_layer_thickness=1 * u.mm),
+                    refinements=[refinement],
+                ),
+                zones=[
+                    AutomatedFarfield(),
+                ],
+            )
+        )
+
+    params_snappy, errors, _ = validate_model(
+        params_as_dict=params_snappy.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="Geometry",
+        validation_level="VolumeMesh",
+    )
+
+    assert errors is None
+
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                volume_zones=[
+                    AutomatedFarfield(),
+                ],
+                refinements=[refinement],
+                defaults=MeshingDefaults(
+                    curvature_resolution_angle=12 * u.deg,
+                    boundary_layer_growth_rate=1.1,
+                    boundary_layer_first_layer_thickness=1e-5 * u.m,
+                ),
+            )
+        )
+
+    params, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="SurfaceMesh",
+        validation_level="VolumeMesh",
+    )
+
+    assert len(errors) == 1
+    assert errors[0]["msg"] == (
+        "Value error, project_to_surface is supported only for snappyHexMesh."
+    )
+    assert errors[0]["loc"] == ("meshing", "refinements", 0, "UniformRefinement")
+
+
+def test_resolve_face_boundary_only_in_gai_mesher():
+    # raise when GAI is off
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"resolve_face_boundaries is only supported when geometry AI is used",
+    ):
+        with ValidationContext(SURFACE_MESH, non_gai_context):
+            with CGS_unit_system:
+                MeshingParams(
+                    defaults=MeshingDefaults(
+                        boundary_layer_first_layer_thickness=0.1, resolve_face_boundaries=True
+                    )
+                )
+
+
+def test_surface_refinement_in_gai_mesher():
+    # raise when GAI is off
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"curvature_resolution_angle is only supported when geometry AI is used",
+    ):
+        with ValidationContext(SURFACE_MESH, non_gai_context):
+            with CGS_unit_system:
+                SurfaceRefinement(max_edge_length=0.1, curvature_resolution_angle=10 * u.deg)
+
+    # raise when GAI is off
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"resolve_face_boundaries is only supported when geometry AI is used",
+    ):
+        with ValidationContext(SURFACE_MESH, non_gai_context):
+            with CGS_unit_system:
+                SurfaceRefinement(resolve_face_boundaries=True)
+
+    # raise when no options are specified
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"SurfaceRefinement requires at least one of 'max_edge_length', 'curvature_resolution_angle', or 'resolve_face_boundaries' to be specified",
+    ):
+        with ValidationContext(SURFACE_MESH, non_gai_context):
+            with CGS_unit_system:
+                SurfaceRefinement(entities=Surface(name="testFace"))
