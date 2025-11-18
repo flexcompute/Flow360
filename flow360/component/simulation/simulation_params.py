@@ -446,7 +446,7 @@ class SimulationParams(_ParamModelBase):
         """Ensure that all the cylinder names used in ActuatorDisks are unique."""
         return _check_duplicate_actuator_disk_cylinder_names(models)
 
-    @pd.field_validator("user_defined_dynamics", "user_defined_fields", mode="after")
+    @pd.field_validator("user_defined_fields", mode="after")
     @classmethod
     def _disable_expression_for_liquid(cls, value, info: pd.ValidationInfo):
         """Ensure that string expressions are disabled for liquid simulation."""
