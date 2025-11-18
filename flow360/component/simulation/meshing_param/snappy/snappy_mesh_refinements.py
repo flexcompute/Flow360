@@ -117,6 +117,9 @@ class SurfaceEdgeRefinement(Flow360BaseModel):
         else:
             distances_state = (False, 0)
 
+        # pylint: disable=fixme
+        # TODO: Note to self:
+        # TODO: Maybe we can come up with a more efficient and elegant way of differentiating Array from scalar
         try:
             spacing_state = (True, len(self.spacing))
         except TypeError:
