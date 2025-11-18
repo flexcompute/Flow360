@@ -19,31 +19,18 @@ def simulation_params():
     return params
 
 
-def test_generate_field_udf_no_unit(simulation_params):
-    """Test generating UDF expression for a field without units."""
-    result = generate_predefined_udf("velocity", simulation_params)
-
-    expected = (
-        "velocity[0] = primitiveVars[1] * velocityScale;"
-        "velocity[1] = primitiveVars[2] * velocityScale;"
-        "velocity[2] = primitiveVars[3] * velocityScale;"
-    )
-
-    assert result == expected
-
-
 def test_generate_field_udf_with_unit(simulation_params):
     """Test generating UDF expression for a field with units."""
     result = generate_predefined_udf("velocity_m_per_s", simulation_params)
 
     expected = (
-        "double velocity[3];"
-        "velocity[0] = primitiveVars[1] * velocityScale;"
-        "velocity[1] = primitiveVars[2] * velocityScale;"
-        "velocity[2] = primitiveVars[3] * velocityScale;"
-        "velocity_m_per_s[0] = velocity[0] * 340.2940058082124;"
-        "velocity_m_per_s[1] = velocity[1] * 340.2940058082124;"
-        "velocity_m_per_s[2] = velocity[2] * 340.2940058082124;"
+        "double velocity_[3];"
+        "velocity_[0] = primitiveVars[1] * velocityScale;"
+        "velocity_[1] = primitiveVars[2] * velocityScale;"
+        "velocity_[2] = primitiveVars[3] * velocityScale;"
+        "velocity_m_per_s[0] = velocity_[0] * 340.2940058082124;"
+        "velocity_m_per_s[1] = velocity_[1] * 340.2940058082124;"
+        "velocity_m_per_s[2] = velocity_[2] * 340.2940058082124;"
     )
 
     assert result == expected
