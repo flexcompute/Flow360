@@ -37,9 +37,7 @@ from flow360.component.simulation.validation.validation_context import (
     VOLUME_MESH,
     ContextField,
 )
-from flow360.component.simulation.validation.validation_utils import (
-    EntityUsageMap
-)
+from flow360.component.simulation.validation.validation_utils import EntityUsageMap
 
 RefinementTypes = Annotated[
     Union[
