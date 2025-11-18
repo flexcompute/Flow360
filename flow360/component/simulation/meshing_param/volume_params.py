@@ -18,6 +18,7 @@ from flow360.component.simulation.primitives import (
     Cylinder,
     GenericVolume,
     GhostSurface,
+    SeedpointVolume,
     Surface,
 )
 from flow360.component.simulation.unit_system import LengthType
@@ -52,6 +53,21 @@ class UniformRefinement(Flow360BaseModel):
     )
     # pylint: disable=no-member
     spacing: LengthType.Positive = pd.Field(description="The required refinement spacing.")
+    project_to_surface: Optional[bool] = pd.Field(
+        None,
+        description="Whether to include the refinement in the surface mesh. Defaults to True when using snappy.",
+    )
+
+    @pd.model_validator(mode="after")
+    def check_project_to_surface_with_snappy(self):
+        """Check if project_to_surface is used only with snappy."""
+        validation_info = get_validation_info()
+        if validation_info is None:
+            return self
+        if not validation_info.use_snappy and self.project_to_surface is not None:
+            raise ValueError("project_to_surface is supported only for snappyHexMesh.")
+
+        return self
 
 
 class StructuredBoxRefinement(Flow360BaseModel):
@@ -521,7 +537,7 @@ class MeshSliceOutput(Flow360BaseModel):
 
 class CustomZones(Flow360BaseModel):
     """
-    :class:`CustomZones` class for creating volume zones from custom volumes.
+    :class:`CustomZones` class for creating volume zones from custom volumes or seedpoint volumes.
     Names of the generated volume zones will be the names of the custom volumes.
 
     Example
@@ -534,7 +550,7 @@ class CustomZones(Flow360BaseModel):
 
     type: Literal["CustomZones"] = pd.Field("CustomZones", frozen=True)
     name: str = pd.Field("Custom zones", description="Name of the `CustomZones` meshing setting.")
-    entities: EntityList[CustomVolume] = pd.Field(
+    entities: EntityList[CustomVolume, SeedpointVolume] = pd.Field(
         description="The custom volume zones to be generated."
     )
     element_type: Literal["mixed", "tetrahedra"] = pd.Field(

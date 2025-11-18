@@ -1,0 +1,129 @@
+{
+    "geometry": {
+        "bodies": [
+            {
+                "bodyName": "body0",
+                "gap": 1,
+                "spacing": {
+                    "min": 3,
+                    "max": 4
+                },
+                "regions": [
+                    {
+                        "patchName": "patch0"
+                    },
+                    {
+                        "patchName": "patch1"
+                    }
+                ]
+            },
+            {
+                "bodyName": "body1",
+                "gap": 1,
+                "spacing": {
+                    "min": 3,
+                    "max": 4
+                },
+                "regions": [
+                    {
+                        "patchName": "patch0"
+                    },
+                    {
+                        "patchName": "patch1"
+                    },
+                    {
+                        "patchName": "patch2"
+                    }
+                ]
+            },
+            {
+                "bodyName": "body2",
+                "gap": 1,
+                "spacing": {
+                    "min": 3,
+                    "max": 4
+                },
+                "regions": [
+                    {
+                        "patchName": "patch0"
+                    }
+                ]
+            },
+            {
+                "bodyName": "body3",
+                "gap": 1,
+                "spacing": {
+                    "min": 3,
+                    "max": 4
+                },
+                "regions": [
+                    {
+                        "patchName": "patch0"
+                    }
+                ]
+            }
+        ],
+        "refinementVolumes": [
+            {
+                "type": "box",
+                "min": {"x": -10, "y": 15, "z": 40},
+                "max": {"x": 10, "y": 45, "z": 80},
+                "name": "box0",
+                "spacing": 2
+            },
+            {
+                "type": "cylinder",
+                "point1": {"x": 10, "y": 20, "z": 0},
+                "point2": {"x": 10, "y": 20, "z": 60},
+                "radius": 20,
+                "name": "cyl0",
+                "spacing": 2
+            }
+        ]
+    },
+    "mesherSettings": {
+        "snappyHexMesh": {
+            "castellatedMeshControls": {
+                "resolveFeatureAngle": 25,
+                "nCellsBetweenLevels": 1,
+                "minRefinementCells": 10
+            },
+            "snapControls": {
+                "nSmoothPatch": 3,
+                "tolerance": 2,
+                "nSolveIter": 30,
+                "nRelaxIter": 5,
+                "nFeatureSnapIter": 15,
+                "multiRegionFeatureSnap": true,
+                "strictRegionSnap": false
+            }
+        },
+    "meshQuality": {
+            "maxNonOrtho": 85,
+            "maxBoundarySkewness": 20,
+            "maxInternalSkewness": 50,
+            "maxConcave": 50,
+            "minVol": -1e+30,
+            "minTetQuality": -1e+30,
+            "minArea": -1,
+            "minTwist": -2,
+            "minDeterminant": -1e5,
+            "minVolRatio": 0,
+            "minFaceWeight": 0,
+            "minTriangleTwist": -1,
+            "nSmoothScale": 4,
+            "errorReduction": 0.75,
+            "minVolCollapseRatio": 0
+        }
+    },
+    "smoothingControls": {
+        "lambda": 0.7,
+        "mu": 0.71,
+        "iter": 5
+    },
+    "locationInMesh": {
+        "farfield": [0, 0, 0]
+    },
+    "cadIsFluid": true,
+    "enforcedSpacing": 5
+}

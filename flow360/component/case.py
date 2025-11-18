@@ -296,7 +296,7 @@ class CaseDraft(CaseBase, ResourceDraft):
     @before_submit_only
     def submit(self, force_submit: bool = False) -> Case:
         """
-        submits case to cloud for running
+        Submits case to cloud for running.
         """
         assert self.name
         assert self.volume_mesh_id or self.other_case or self.parent_id or self.parent_case

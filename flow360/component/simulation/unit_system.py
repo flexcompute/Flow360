@@ -107,7 +107,6 @@ def _encode_ndarray(x):
     since Array types should remain as collections.
     """
     if x.ndim == 0:
-        # This is a true scalar (e.g., LengthType, not LengthType.Array)
         return float(x)
     # This is an array (e.g., LengthType.Array), preserve as collection
     return tuple(x.tolist())
@@ -711,6 +710,16 @@ class _DimensionedType(metaclass=ABCMeta):
         Array value which accepts nonnegative with any length
         """
         return self._VectorType.get_class_object(self, length=None, allow_negative_value=False)
+
+    # pylint: disable=invalid-name
+    @classproperty
+    def PositiveArray(self):
+        """
+        Array value which accepts positive with any length
+        """
+        return self._VectorType.get_class_object(
+            self, length=None, allow_negative_value=False, allow_zero_component=False
+        )
 
     # pylint: disable=invalid-name
     @classproperty
