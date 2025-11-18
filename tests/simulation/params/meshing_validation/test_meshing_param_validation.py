@@ -143,8 +143,8 @@ def test_disable_invalid_axisymmetric_body_construction():
             )
 
 
-def test_disable_multiple_cylinder_in_one_rotation_volume():
-    with pytest.raises(
+def test_disable_multiple_cylinder_in_one_rotation_volume(mock_validation_context):
+    with mock_validation_context, pytest.raises(
         pd.ValidationError,
         match="Only single instance is allowed in entities for each `RotationVolume`.",
     ):
@@ -274,8 +274,8 @@ def test_limit_axisymmetric_body_in_rotation_volume():
             )
 
 
-def test_reuse_of_same_cylinder():
-    with pytest.raises(
+def test_reuse_of_same_cylinder(mock_validation_context):
+    with mock_validation_context, pytest.raises(
         pd.ValidationError,
         match=r"Using Volume entity `I am reused` in `AxisymmetricRefinement`, `RotationVolume` at the same time is not allowed.",
     ):
@@ -343,7 +343,7 @@ def test_reuse_of_same_cylinder():
             )
         )
 
-    with pytest.raises(
+    with mock_validation_context, pytest.raises(
         pd.ValidationError,
         match=r"Using Volume entity `I am reused` in `AxisymmetricRefinement`, `UniformRefinement` at the same time is not allowed.",
     ):
@@ -369,7 +369,7 @@ def test_reuse_of_same_cylinder():
                 )
             )
 
-    with pytest.raises(
+    with mock_validation_context, pytest.raises(
         pd.ValidationError,
         match=r" Volume entity `I am reused` is used multiple times in `UniformRefinement`.",
     ):

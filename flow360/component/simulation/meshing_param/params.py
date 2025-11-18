@@ -371,12 +371,16 @@ class MeshingParams(Flow360BaseModel):
 
         usage = EntityUsageMap()
 
+        if not get_validation_info():
+            # Validation deferred since the entities are not deduplicated yet
+            return self
+
         for volume_zone in self.volume_zones if self.volume_zones is not None else []:
             if isinstance(volume_zone, (RotationVolume, RotationCylinder)):
                 # pylint: disable=protected-access
                 _ = [
                     usage.add_entity_usage(item, volume_zone.type)
-                    for item in volume_zone.entities._get_expanded_entities(create_hard_copy=False)
+                    for item in volume_zone.entities.stored_entities
                 ]
 
         for refinement in self.refinements if self.refinements is not None else []:
@@ -387,7 +391,7 @@ class MeshingParams(Flow360BaseModel):
                 # pylint: disable=protected-access
                 _ = [
                     usage.add_entity_usage(item, refinement.refinement_type)
-                    for item in refinement.entities._get_expanded_entities(create_hard_copy=False)
+                    for item in refinement.entities.stored_entities
                 ]
 
         error_msg = ""

@@ -223,9 +223,9 @@ def test_conflicting_entity_grouping_tags(mock_response, capsys):
         ),
     ):
         geo.group_faces_by_tag("groupByBodyId")
-        params_as_dict["outputs"][0]["entities"]["stored_entities"][0][
-            "private_attribute_tag_key"
-        ] = "groupByBodyId"
+        params_as_dict["outputs"][0]["entities"]["stored_entities"][
+            0
+        ].private_attribute_tag_key = "groupByBodyId"
         params, _, _ = validate_model(
             params_as_dict=params_as_dict,
             validated_by=ValidationCalledBy.LOCAL,

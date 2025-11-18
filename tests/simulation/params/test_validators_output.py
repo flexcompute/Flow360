@@ -453,10 +453,10 @@ def test_duplicate_probe_names():
             )
 
 
-def test_duplicate_probe_entity_names():
+def test_duplicate_probe_entity_names(mock_validation_context):
 
     # should have no error
-    with imperial_unit_system:
+    with imperial_unit_system, mock_validation_context:
         SimulationParams(
             outputs=[
                 ProbeOutput(
@@ -475,7 +475,7 @@ def test_duplicate_probe_entity_names():
             ],
         )
 
-    with pytest.raises(
+    with mock_validation_context, pytest.raises(
         ValueError,
         match=re.escape(
             "In `outputs`[0] ProbeOutput: Entity name point_1 has already been used in the "
@@ -501,7 +501,7 @@ def test_duplicate_probe_entity_names():
                 ],
             )
 
-    with pytest.raises(
+    with mock_validation_context, pytest.raises(
         ValueError,
         match=re.escape(
             "In `outputs`[0] SurfaceProbeOutput: Entity name point_1 has already been used in the "

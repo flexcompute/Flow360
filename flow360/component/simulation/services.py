@@ -13,8 +13,11 @@ from pydantic_core import ErrorDetails
 from flow360.component.simulation.blueprint.core.dependency_graph import DependencyGraph
 from flow360.component.simulation.entity_info import get_entity_database_for_selectors
 from flow360.component.simulation.exposed_units import supported_units_by_front_end
+from flow360.component.simulation.framework.entity_materializer import (
+    materialize_entities_in_place,
+)
 from flow360.component.simulation.framework.entity_selector import (
-    expand_entity_selectors_in_place as expand_entity_selectors_in_place_impl,
+    expand_entity_selectors_in_place,
 )
 from flow360.component.simulation.framework.multi_constructor_model_base import (
     parse_model_dict,
@@ -28,20 +31,16 @@ from flow360.component.simulation.models.bet.bet_translator_interface import (
 )
 from flow360.component.simulation.models.surface_models import Freestream, Wall
 
-# Following unused-import for supporting parse_model_dict
-from flow360.component.simulation.models.volume_models import (  # pylint: disable=unused-import
-    BETDisk,
-)
-
-# pylint: disable=unused-import
+# pylint: disable=unused-import # For parse_model_dict
+from flow360.component.simulation.models.volume_models import BETDisk
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
     GenericReferenceCondition,
     ThermalState,
 )
-from flow360.component.simulation.outputs.outputs import SurfaceOutput
-from flow360.component.simulation.primitives import Box  # pylint: disable=unused-import
-from flow360.component.simulation.primitives import Surface  # For parse_model_dict
+from flow360.component.simulation.primitives import Box
+
+# pylint: enable=unused-import
 from flow360.component.simulation.services_utils import has_any_entity_selectors
 from flow360.component.simulation.simulation_params import (
     ReferenceGeometry,
@@ -77,7 +76,6 @@ from flow360.component.simulation.validation.validation_context import (
     ALL,
     ParamsValidationInfo,
     ValidationContext,
-    get_value_with_path,
 )
 from flow360.exceptions import (
     Flow360RuntimeError,
@@ -172,6 +170,9 @@ def get_default_params(
         Default parameters for Flow360 simulation stored in a dictionary.
 
     """
+    # pylint: disable=import-outside-toplevel
+    from flow360.component.simulation.outputs.outputs import SurfaceOutput
+    from flow360.component.simulation.primitives import Surface
 
     unit_system = init_unit_system(unit_system_name)
     dummy_value = 0.1
@@ -423,7 +424,11 @@ def initialize_variable_space(param_as_dict: dict, use_clear_context: bool = Fal
 
 def resolve_selectors(params_as_dict: dict):
     """
-    Expand the entity selectors in the params as dict.
+    Expand any EntitySelector into stored_entities in-place (dict level).
+
+    - Performs a fast existence check first.
+    - Builds an entity database from asset cache.
+    - Applies expansion with merge semantics (explicit entities kept, selectors appended).
     """
 
     # Step1: Check in the dictionary via looping and ensure selectors are present, if not just return.
@@ -433,8 +438,8 @@ def resolve_selectors(params_as_dict: dict):
     # Step2: Parse the entity info part and retrieve the entity lookup table.
     entity_database = get_entity_database_for_selectors(params_as_dict=params_as_dict)
 
-    # Step3: Expand selectors using the entity database
-    return expand_entity_selectors_in_place_impl(entity_database, params_as_dict)
+    # Step3: Expand selectors using the entity database (default merge: explicit first)
+    return expand_entity_selectors_in_place(entity_database, params_as_dict, merge_mode="merge")
 
 
 def validate_model(  # pylint: disable=too-many-locals
@@ -502,9 +507,19 @@ def validate_model(  # pylint: disable=too-many-locals
         )
 
         with ValidationContext(levels=validation_levels_to_use, info=additional_info):
-            # Multi-constructor model support
             updated_param_as_dict = parse_model_dict(updated_param_as_dict, globals())
-            validated_param = SimulationParams(file_content=updated_param_as_dict)
+            # Expand selectors (if any) with tag/name cache and merge strategy
+            updated_param_as_dict = resolve_selectors(updated_param_as_dict)
+            # Materialize entities (dict -> shared instances) and per-list dedupe
+            updated_param_as_dict = materialize_entities_in_place(updated_param_as_dict)
+            # Multi-constructor model support
+            updated_param_as_dict = SimulationParams._sanitize_params_dict(updated_param_as_dict)
+            updated_param_as_dict, _ = SimulationParams._update_param_dict(updated_param_as_dict)
+
+            unit_system = updated_param_as_dict.get("unit_system")
+            with UnitSystem.from_dict(**unit_system):  # pylint: disable=not-context-manager
+                validated_param = SimulationParams(**updated_param_as_dict)
+
     except pd.ValidationError as err:
         validation_errors = err.errors()
     except Exception as err:  # pylint: disable=broad-exception-caught

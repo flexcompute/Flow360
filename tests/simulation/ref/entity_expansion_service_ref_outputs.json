@@ -43,7 +43,18 @@
           "private_attribute_potential_issues": []
         }
       ],
-      "selectors": []
+      "selectors": [
+        {
+          "target_class": "Surface",
+          "children": [
+            {
+              "attribute": "name",
+              "operator": "matches",
+              "value": "*"
+            }
+          ]
+        }
+      ]
     },
     "write_single_file": false,
     "output_type": "SurfaceOutput"

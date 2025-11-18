@@ -202,6 +202,8 @@ class _ParamModelBase(Flow360BaseModel):
         """
         recursive_remove_key(model_dict, "_id")
 
+        model_dict.pop("hash", None)
+
         return model_dict
 
     def _init_no_unit_context(self, filename, file_content, **kwargs):
@@ -231,6 +233,7 @@ class _ParamModelBase(Flow360BaseModel):
     def _init_with_unit_context(self, **kwargs):
         """
         Initializes the simulation parameters with the given unit context.
+        This is the entry when user construct Param with Python script.
         """
         # When treating dicts the updater is skipped.
         kwargs = _ParamModelBase._init_check_unit_system(**kwargs)

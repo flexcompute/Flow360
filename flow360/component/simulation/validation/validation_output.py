@@ -13,6 +13,9 @@ from flow360.component.simulation.outputs.outputs import (
 )
 from flow360.component.simulation.time_stepping.time_stepping import Steady
 from flow360.component.simulation.user_code.core.types import Expression
+from flow360.component.simulation.validation.validation_context import (
+    get_validation_info,
+)
 
 
 def _check_output_fields(params):
@@ -228,6 +231,10 @@ def _check_unique_surface_volume_probe_names(params):
 def _check_unique_surface_volume_probe_entity_names(params):
 
     if not params.outputs:
+        return params
+
+    if not get_validation_info():
+        # stored_entities is not expanded yet.
         return params
 
     for output_index, output in enumerate(params.outputs):

@@ -19,6 +19,7 @@ from flow360.cloud.flow360_requests import (
 from flow360.cloud.rest_api import RestApi
 from flow360.component.interfaces import DraftInterface
 from flow360.component.resource_base import Flow360Resource, ResourceDraft
+from flow360.component.simulation.services_utils import strip_selector_matches_inplace
 from flow360.component.utils import (
     check_existence_of_one_file,
     check_read_access_of_one_file,
@@ -134,10 +135,13 @@ class Draft(Flow360Resource):
 
     def update_simulation_params(self, params):
         """update the SimulationParams of the draft"""
+        # Serialize to dict and strip selector-matched entities so that UI can distinguish handpicked items
+        params_dict = params.model_dump(mode="json", exclude_none=True)
+        params_dict = strip_selector_matches_inplace(params_dict)
 
         self.post(
             json={
-                "data": params.model_dump_json(exclude_none=True),
+                "data": json.dumps(params_dict),
                 "type": "simulation",
                 "version": "",
             },

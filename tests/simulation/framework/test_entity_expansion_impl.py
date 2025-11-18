@@ -11,64 +11,9 @@ from flow360.component.simulation.framework.updater_utils import compare_values
 from flow360.component.simulation.services import resolve_selectors
 
 
-def _mk_pool(names, etype):
+def _mk_pool(names, entity_type):
     # Build list of entity dicts with given names and type
-    return [{"name": n, "private_attribute_entity_type_name": etype} for n in names]
-
-
-def test_in_place_expansion_and_replacement_per_class():
-    # Entity database with two classes
-    db = EntityDictDatabase(
-        surfaces=_mk_pool(["wing", "tail", "fuselage"], "Surface"),
-        edges=_mk_pool(["edgeA", "edgeB"], "Edge"),
-    )
-
-    # params_as_dict with existing stored_entities including a non-persistent entity
-    params = {
-        "outputs": [
-            {
-                "stored_entities": [
-                    {"name": "custom-box", "private_attribute_entity_type_name": "Box"},
-                    {"name": "old-wing", "private_attribute_entity_type_name": "Surface"},
-                    {"name": "old-edgeA", "private_attribute_entity_type_name": "Edge"},
-                ],
-                "selectors": [
-                    {
-                        "target_class": "Surface",
-                        "logic": "AND",
-                        "children": [
-                            {"attribute": "name", "operator": "matches", "value": "w*"},
-                        ],
-                    },
-                    {
-                        "target_class": "Edge",
-                        "logic": "OR",
-                        "children": [
-                            {"attribute": "name", "operator": "any_of", "value": ["edgeB"]},
-                        ],
-                    },
-                ],
-            }
-        ]
-    }
-
-    out = expand_entity_selectors_in_place(db, params)
-
-    # In-place: the returned object should be the same reference
-    assert out is params
-
-    # Non-persistent entity remains; Surface and Edge replaced by new selection
-    stored = params["outputs"][0]["stored_entities"]
-    names_by_type = {}
-    for e in stored:
-        names_by_type.setdefault(e["private_attribute_entity_type_name"], []).append(e["name"])
-
-    assert names_by_type["Box"] == ["custom-box"]
-    assert names_by_type["Surface"] == ["wing"]  # matches w*
-    assert names_by_type["Edge"] == ["edgeB"]  # in ["edgeB"]
-
-    # selectors cleared
-    assert params["outputs"][0]["selectors"] == []
+    return [{"name": n, "private_attribute_entity_type_name": entity_type} for n in names]
 
 
 def test_operator_and_syntax_coverage():
@@ -269,7 +214,6 @@ def test_attribute_tag_scalar_support():
 
     expand_entity_selectors_in_place(db, params)
     stored = params["node"]["stored_entities"]
-
     # Expect union of two selectors:
     # 1) AND tag in ["A"] -> [wing, fuselage]
     # 2) OR tag in {B} or matches 'A' -> pool-order union -> [wing, tail, fuselage]

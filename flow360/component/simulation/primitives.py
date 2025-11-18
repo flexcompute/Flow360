@@ -789,6 +789,9 @@ class CustomVolume(_VolumeEntityBase):
     @classmethod
     def ensure_unique_boundary_names(cls, v):
         """Check if the boundaries have different names within a CustomVolume."""
+        if not get_validation_info():
+            # stored_entities is not expanded yet.
+            return v
         if len(v.stored_entities) != len({boundary.name for boundary in v.stored_entities}):
             raise ValueError("The boundaries of a CustomVolume must have different names.")
         return v

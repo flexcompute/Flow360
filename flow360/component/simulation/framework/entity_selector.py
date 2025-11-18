@@ -49,6 +49,8 @@ class EntitySelector(Flow360BaseModel):
     """
 
     target_class: TargetClass = pd.Field()
+    # Unique name for global reuse
+    name: str = pd.Field(description="Unique name for this selector.")
     logic: Literal["AND", "OR"] = pd.Field("AND")
     children: List[Predicate] = pd.Field()
 
@@ -127,6 +129,64 @@ class EntityDictDatabase:
 ########## API IMPLEMENTATION ##########
 
 
+def _validate_selector_factory_common(
+    method_name: str,
+    *,
+    name: str,
+    attribute: str,
+    logic: str,
+    syntax: Optional[str] = None,
+) -> None:
+    """
+    Validate common arguments for SelectorFactory methods.
+
+    This performs friendly, actionable validation with clear error messages.
+    """
+    # name: required and meaningful
+    if not isinstance(name, str) or not name.strip():
+        raise ValueError(
+            f"SelectorFactory.{method_name}: 'name' must be a non-empty string; "
+            "it is the selector's unique identifier."
+        )
+
+    # attribute: currently only 'name' is supported
+    if attribute != "name":
+        raise ValueError(
+            f"SelectorFactory.{method_name}: attribute must be 'name'. Other attributes are not supported."
+        )
+
+    # logic
+    if logic not in ("AND", "OR"):
+        raise ValueError(
+            f"SelectorFactory.{method_name}: logic must be one of {{'AND','OR'}}. Got: {logic!r}."
+        )
+
+    # syntax (if applicable)
+    if syntax is not None and syntax not in ("glob", "regex"):
+        raise ValueError(
+            f"SelectorFactory.{method_name}: syntax must be one of {{'glob','regex'}}. Got: {syntax!r}."
+        )
+
+
+def _validate_selector_pattern(method_name: str, pattern: str) -> None:
+    """Validate the pattern argument for match/not_match."""
+    if not isinstance(pattern, str) or len(pattern) == 0:
+        raise ValueError(f"SelectorFactory.{method_name}: pattern must be a non-empty string.")
+
+
+def _validate_selector_values(method_name: str, values: list[str]) -> None:
+    """Validate values argument for any_of/not_any_of."""
+    if not isinstance(values, list) or len(values) == 0:
+        raise ValueError(
+            f"SelectorFactory.{method_name}: values must be a non-empty list of strings."
+        )
+    for i, v in enumerate(values):
+        if not isinstance(v, str) or not v:
+            raise ValueError(
+                f"SelectorFactory.{method_name}: values[{i}] must be a non-empty string."
+            )
+
+
 class SelectorFactory:
     """
     Mixin providing class-level helpers to build EntitySelector instances with
@@ -134,12 +194,13 @@ class SelectorFactory:
     """
 
     @classmethod
-    @pd.validate_call
+    # pylint: disable=too-many-arguments
     def match(
         cls,
         pattern: str,
         /,
         *,
+        name: str,
         attribute: Literal["name"] = "name",
         syntax: Literal["glob", "regex"] = "glob",
         logic: Literal["AND", "OR"] = "AND",
@@ -150,27 +211,35 @@ class SelectorFactory:
         Example
         -------
         >>> # Glob match on Surface names (AND logic by default)
-        >>> fl.Surface.match("wing*")
+        >>> fl.Surface.match("wing*", name="wing_sel")
         >>> # Regex full match
-        >>> fl.Surface.match(r"^wing$", syntax="regex")
+        >>> fl.Surface.match(r"^wing$", syntax="regex", name="wing_sel")
         >>> # Chain more predicates with AND logic
-        >>> fl.Surface.match("wing*").not_any_of(["wing"])
+        >>> fl.Surface.match("wing*", name="wing_sel").not_any_of(["wing"])
         >>> # Use OR logic across predicates (short alias)
-        >>> fl.Surface.match("s1", logic="OR").any_of(["tail"])
+        >>> fl.Surface.match("s1", name="s1_or", logic="OR").any_of(["tail"])
 
         ====
         """
-        selector = generate_entity_selector_from_class(cls, logic=logic)
+        _validate_selector_factory_common(
+            "match", name=name, attribute=attribute, logic=logic, syntax=syntax
+        )
+        _validate_selector_pattern("match", pattern)
+
+        selector = generate_entity_selector_from_class(
+            selector_name=name, entity_class=cls, logic=logic
+        )
         selector.match(pattern, attribute=attribute, syntax=syntax)
         return selector
 
     @classmethod
-    @pd.validate_call
+    # pylint: disable=too-many-arguments
     def not_match(
         cls,
         pattern: str,
         /,
         *,
+        name: str,
         attribute: Literal["name"] = "name",
         syntax: Literal["glob", "regex"] = "glob",
         logic: Literal["AND", "OR"] = "AND",
@@ -180,23 +249,30 @@ class SelectorFactory:
         Example
         -------
         >>> # Exclude all surfaces ending with '-root'
-        >>> fl.Surface.match("*").not_match("*-root")
+        >>> fl.Surface.match("*", name="exclude_root").not_match("*-root")
         >>> # Exclude by regex
         >>> fl.Surface.match("*").not_match(r".*-(root|tip)$", syntax="regex")
 
         ====
         """
-        selector = generate_entity_selector_from_class(cls, logic=logic)
+        _validate_selector_factory_common(
+            "not_match", name=name, attribute=attribute, logic=logic, syntax=syntax
+        )
+        _validate_selector_pattern("not_match", pattern)
+
+        selector = generate_entity_selector_from_class(
+            selector_name=name, entity_class=cls, logic=logic
+        )
         selector.not_match(pattern, attribute=attribute, syntax=syntax)
         return selector
 
     @classmethod
-    @pd.validate_call
     def any_of(
         cls,
         values: List[str],
         /,
         *,
+        name: str,
         attribute: Literal["name"] = "name",
         logic: Literal["AND", "OR"] = "AND",
     ) -> EntitySelector:
@@ -212,17 +288,22 @@ class SelectorFactory:
 
         ====
         """
-        selector = generate_entity_selector_from_class(cls, logic=logic)
+        _validate_selector_factory_common("any_of", name=name, attribute=attribute, logic=logic)
+        _validate_selector_values("any_of", values)
+
+        selector = generate_entity_selector_from_class(
+            selector_name=name, entity_class=cls, logic=logic
+        )
         selector.any_of(values, attribute=attribute)
         return selector
 
     @classmethod
-    @pd.validate_call
     def not_any_of(
         cls,
         values: List[str],
         /,
         *,
+        name: str,
         attribute: Literal["name"] = "name",
         logic: Literal["AND", "OR"] = "AND",
     ) -> EntitySelector:
@@ -235,13 +316,18 @@ class SelectorFactory:
 
         ====
         """
-        selector = generate_entity_selector_from_class(cls, logic=logic)
+        _validate_selector_factory_common("not_any_of", name=name, attribute=attribute, logic=logic)
+        _validate_selector_values("not_any_of", values)  # type: ignore[arg-type]
+
+        selector = generate_entity_selector_from_class(
+            selector_name=name, entity_class=cls, logic=logic
+        )
         selector.not_any_of(values, attribute=attribute)
         return selector
 
 
 def generate_entity_selector_from_class(
-    entity_class: type, logic: Literal["AND", "OR"] = "AND"
+    selector_name: str, entity_class: type, logic: Literal["AND", "OR"] = "AND"
 ) -> EntitySelector:
     """
     Create a new selector for the given entity class.
@@ -254,7 +340,7 @@ def generate_entity_selector_from_class(
         class_name in allowed_classes
     ), f"Unknown entity class: {entity_class} for generating entity selector."
 
-    return EntitySelector(target_class=class_name, logic=logic, children=[])
+    return EntitySelector(name=selector_name, target_class=class_name, logic=logic, children=[])
 
 
 ########## EXPANSION IMPLEMENTATION ##########
@@ -500,11 +586,46 @@ def _apply_single_selector(pool: list[dict], selector_dict: dict) -> list[dict]:
     return _apply_and_selector(pool, ordered_children, indices_by_attribute)
 
 
-def _expand_node_selectors(entity_database: EntityDictDatabase, node: dict) -> None:
-    selectors_value = node.get("selectors")
-    if not (isinstance(selectors_value, list) and len(selectors_value) > 0):
-        return
+def _get_selector_cache_key(selector_dict: dict) -> tuple:
+    """
+    Return the cache key for a selector: requires unique name.
 
+    We mandate a unique identifier per selector; use ("name", target_class, name)
+    for stable global reuse. If neither `name` is provided, fall back to a
+    structural key so different unnamed selectors won't collide.
+    """
+    target_class = selector_dict.get("target_class")
+    name = selector_dict.get("name")
+    if name:
+        return ("name", target_class, name)
+
+    logic = selector_dict.get("logic", "AND")
+    children = selector_dict.get("children") or []
+
+    def _normalize_value(v):
+        if isinstance(v, list):
+            return tuple(v)
+        return v
+
+    predicates = tuple(
+        (
+            p.get("attribute", "name"),
+            p.get("operator"),
+            _normalize_value(p.get("value")),
+            p.get("non_glob_syntax"),
+        )
+        for p in children
+        if isinstance(p, dict)
+    )
+    return ("struct", target_class, logic, predicates)
+
+
+def _process_selectors(
+    entity_database: EntityDictDatabase,
+    selectors_value: list,
+    selector_cache: dict,
+) -> tuple[dict[str, list[dict]], list[str]]:
+    """Process selectors and return additions grouped by class."""
     additions_by_class: dict[str, list[dict]] = {}
     ordered_target_classes: list[str] = []
 
@@ -515,37 +636,111 @@ def _expand_node_selectors(entity_database: EntityDictDatabase, node: dict) -> N
         pool = _get_entity_pool(entity_database, target_class)
         if not pool:
             continue
+        cache_key = _get_selector_cache_key(selector_dict)
+        additions = selector_cache.get(cache_key)
+        if additions is None:
+            additions = _apply_single_selector(pool, selector_dict)
+            selector_cache[cache_key] = additions
         if target_class not in additions_by_class:
             additions_by_class[target_class] = []
             ordered_target_classes.append(target_class)
-        additions_by_class[target_class].extend(_apply_single_selector(pool, selector_dict))
+        additions_by_class[target_class].extend(additions)
 
-    existing = node.get("stored_entities")
+    return additions_by_class, ordered_target_classes
+
+
+def _merge_entities(
+    existing: list[dict],
+    additions_by_class: dict[str, list[dict]],
+    ordered_target_classes: list[str],
+    merge_mode: Literal["merge", "replace"],
+) -> list[dict]:
+    """Merge existing entities with selector additions based on merge mode."""
     base_entities: list[dict] = []
-    classes_to_update = set(ordered_target_classes)
-    if isinstance(existing, list):
-        for item in existing:
-            etype = item.get("private_attribute_entity_type_name")
-            if etype in classes_to_update:
-                continue
-            base_entities.append(item)
 
-    for target_class in ordered_target_classes:
-        base_entities.extend(additions_by_class.get(target_class, []))
+    if merge_mode == "merge":  # explicit first, then selector additions
+        base_entities.extend(existing)
+        for target_class in ordered_target_classes:
+            base_entities.extend(additions_by_class.get(target_class, []))
+
+    else:  # replace: drop explicit items of targeted classes
+        classes_to_update = set(ordered_target_classes)
+        for item in existing:
+            entity_type = item.get("private_attribute_entity_type_name")
+            if entity_type not in classes_to_update:
+                base_entities.append(item)
+        for target_class in ordered_target_classes:
+            base_entities.extend(additions_by_class.get(target_class, []))
+
+    return base_entities
+
+
+def _expand_node_selectors(
+    entity_database: EntityDictDatabase,
+    node: dict,
+    selector_cache: dict,
+    merge_mode: Literal["merge", "replace"],
+) -> None:
+    """
+    Expand selectors on one node and write results into stored_entities.
+
+    - merge_mode="merge": keep explicit stored_entities first, then append selector results.
+    - merge_mode="replace": replace explicit items of target classes affected by selectors.
+    """
+    selectors_value = node.get("selectors")
+    if not (isinstance(selectors_value, list) and len(selectors_value) > 0):
+        return
+
+    additions_by_class, ordered_target_classes = _process_selectors(
+        entity_database, selectors_value, selector_cache
+    )
+
+    existing = node.get("stored_entities", [])
+    base_entities = _merge_entities(
+        existing, additions_by_class, ordered_target_classes, merge_mode
+    )
 
     node["stored_entities"] = base_entities
-    node["selectors"] = []
 
 
 def expand_entity_selectors_in_place(
-    entity_database: EntityDictDatabase, params_as_dict: dict
+    entity_database: EntityDictDatabase,
+    params_as_dict: dict,
+    *,
+    merge_mode: Literal["merge", "replace"] = "merge",
 ) -> dict:
-    """Traverse params_as_dict and expand any EntitySelector in place."""
+    """Traverse params_as_dict and expand any EntitySelector in place.
+
+    How caching works
+    -----------------
+    - Each selector must provide a unique name. We build a cross-tree
+      cache key as ("name", target_class, name).
+    - For every node that contains a non-empty `selectors` list, we compute the
+      additions once per unique cache key, store the expanded list of entity
+      dicts in `selector_cache`, and reuse it for subsequent nodes that reference
+      the same selector name and target_class.
+    - This avoids repeated pool scans and matcher compilation across the tree
+      while preserving stable result ordering.
+
+    Merge policy
+    ------------
+    - merge_mode="merge" (default): keep explicit `stored_entities` first, then
+      append selector results; duplicates (if any) can be handled later by the
+      materialization/dedup stage.
+    - merge_mode="replace": for classes targeted by selectors in the node,
+      drop explicit items of those classes and use selector results instead.
+    """
     queue: deque[Any] = deque([params_as_dict])
+    selector_cache: dict = {}
     while queue:
         node = queue.popleft()
         if isinstance(node, dict):
-            _expand_node_selectors(entity_database, node)
+            _expand_node_selectors(
+                entity_database,
+                node,
+                selector_cache=selector_cache,
+                merge_mode=merge_mode,
+            )
             for value in node.values():
                 if isinstance(value, (dict, list)):
                     queue.append(value)
