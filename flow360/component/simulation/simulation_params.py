@@ -27,7 +27,10 @@ from flow360.component.simulation.framework.updater_utils import (
     Flow360Version,
     recursive_remove_key,
 )
-from flow360.component.simulation.meshing_param.params import MeshingParams
+from flow360.component.simulation.meshing_param.params import (
+    MeshingParams,
+    ModularMeshingWorkflow,
+)
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     RotationCylinder,
@@ -259,9 +262,10 @@ class _ParamModelBase(Flow360BaseModel):
 class SimulationParams(_ParamModelBase):
     """All-in-one class for surface meshing + volume meshing + case configurations"""
 
-    meshing: Optional[MeshingParams] = ConditionalField(
+    meshing: Optional[Union[MeshingParams, ModularMeshingWorkflow]] = ConditionalField(
         None,
         context=[SURFACE_MESH, VOLUME_MESH],
+        discriminator="type_name",
         description="Surface and volume meshing parameters. See :class:`MeshingParams` for more details.",
     )
 
@@ -590,23 +594,32 @@ class SimulationParams(_ParamModelBase):
 
         ##::1. Update full names in the Surface entities with zone names
         # pylint: disable=no-member
-        if self.meshing is not None and self.meshing.volume_zones is not None:
-            for volume in self.meshing.volume_zones:
-                if isinstance(volume, AutomatedFarfield):
-                    _set_boundary_full_name_with_zone_name(
-                        registry,
-                        "farfield",
-                        volume.private_attribute_entity.name,
-                    )
-                    _set_boundary_full_name_with_zone_name(
-                        registry,
-                        "symmetric*",
-                        volume.private_attribute_entity.name,
-                    )
-                if isinstance(volume, (RotationCylinder, RotationVolume)):
-                    # pylint: disable=fixme
-                    # TODO: Implement this
-                    pass
+        if self.meshing is not None:
+            volume_zones = None
+            if isinstance(self.meshing, MeshingParams):
+                volume_zones = self.meshing.volume_zones
+            if (
+                isinstance(self.meshing, ModularMeshingWorkflow)
+                and self.meshing.volume_meshing is not None
+            ):
+                volume_zones = self.meshing.zones
+            if volume_zones is not None:
+                for volume in volume_zones:
+                    if isinstance(volume, AutomatedFarfield):
+                        _set_boundary_full_name_with_zone_name(
+                            registry,
+                            "farfield",
+                            volume.private_attribute_entity.name,
+                        )
+                        _set_boundary_full_name_with_zone_name(
+                            registry,
+                            "symmetric*",
+                            volume.private_attribute_entity.name,
+                        )
+                    if isinstance(volume, (RotationCylinder, RotationVolume)):
+                        # pylint: disable=fixme
+                        # TODO: Implement this
+                        pass
 
         return registry
 

@@ -22,6 +22,8 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    env:
+      FLOW360_SUPPRESS_BETA_WARNING: "1"
     steps:
     - uses: actions/checkout@v3
 
