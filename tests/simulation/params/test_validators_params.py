@@ -1724,7 +1724,7 @@ def test_validate_liquid_operating_condition():
         validation_level="All",
     )
 
-    assert len(errors) == 3
+    assert len(errors) == 2
     assert (
         errors[0]["msg"]
         == "Value error, `Outflow` type model cannot be used when using liquid as simulation material."
@@ -1732,14 +1732,9 @@ def test_validate_liquid_operating_condition():
     assert errors[0]["loc"] == ("models",)
     assert (
         errors[1]["msg"]
-        == "Value error, user_defined_dynamics cannot be used when using liquid as simulation material."
-    )
-    assert errors[1]["loc"] == ("user_defined_dynamics",)
-    assert (
-        errors[2]["msg"]
         == "Value error, user_defined_fields cannot be used when using liquid as simulation material."
     )
-    assert errors[2]["loc"] == ("user_defined_fields",)
+    assert errors[1]["loc"] == ("user_defined_fields",)
 
     with u.SI_unit_system:
         params = SimulationParams(
