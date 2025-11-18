@@ -5,11 +5,13 @@ import pytest
 
 import flow360.component.simulation.units as u
 from flow360.component.geometry import Geometry, GeometryMeta
+from flow360.component.project_utils import validate_params_with_context
 from flow360.component.resource_base import local_metadata_builder
 from flow360.component.simulation.entity_info import GeometryEntityInfo
 from flow360.component.simulation.entity_operation import Transformation
 from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.framework.updater_utils import compare_values
+from flow360.component.simulation.meshing_param import snappy
 from flow360.component.simulation.meshing_param.edge_params import (
     AngleBasedRefinement,
     AspectRatioBasedRefinement,
@@ -21,18 +23,30 @@ from flow360.component.simulation.meshing_param.face_params import (
     GeometryRefinement,
     SurfaceRefinement,
 )
+from flow360.component.simulation.meshing_param.meshing_specs import (
+    VolumeMeshingDefaults,
+)
 from flow360.component.simulation.meshing_param.params import (
     MeshingDefaults,
     MeshingParams,
+    ModularMeshingWorkflow,
+    VolumeMeshingParams,
 )
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
+    CustomZones,
     UniformRefinement,
 )
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
 )
-from flow360.component.simulation.primitives import Cylinder, Edge, Surface
+from flow360.component.simulation.primitives import (
+    Box,
+    Cylinder,
+    Edge,
+    SeedpointVolume,
+    Surface,
+)
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.translator.surface_meshing_translator import (
     get_surface_meshing_json,
@@ -96,6 +110,28 @@ class TempGeometry(AssetBase):
                     "body01_edge007": {},
                 },
                 "mesh_unit": {"units": "inch", "value": 1.0},
+            }
+        elif self.fname == "tester.stl":
+            return {
+                "surfaces": {
+                    "body0::patch0": {},
+                    "body0::patch1": {},
+                    "body1::patch0": {},
+                    "body1::patch1": {},
+                    "body1::patch2": {},
+                    "body2::patch0": {},
+                    "body3::patch0": {},
+                },
+                "mesh_unit": {"units": "mm", "value": 1.0},
+            }
+        elif self.fname == "tester_no_naming.stl":
+            return {
+                "surfaces": {
+                    "body01_face001": {},
+                    "body01_face002": {},
+                    "body01_face003": {},
+                },
+                "mesh_unit": {"units": "mm", "value": 1.0},
             }
         else:
             raise ValueError("Invalid file name")
@@ -197,28 +233,107 @@ class TempGeometry(AssetBase):
                 ],
             )
             r
+        elif self.fname == "tester.stl":
+            return GeometryEntityInfo(
+                face_ids=[
+                    "body0::patch0",
+                    "body0::patch1",
+                    "body1::patch0",
+                    "body1::patch1",
+                    "body1::patch2",
+                    "body2::patch0",
+                    "body3::patch0",
+                ],
+                edge_ids=[],
+                face_attribute_names=["faceId"],
+                face_group_tag="dummy",
+                grouped_faces=[
+                    [
+                        Surface(
+                            name="body0::patch0",
+                            private_attribute_sub_components=["body0::patch0"],
+                        ),
+                        Surface(
+                            name="body0::patch1",
+                            private_attribute_sub_components=["body0::patch1"],
+                        ),
+                        Surface(
+                            name="body1::patch0",
+                            private_attribute_sub_components=["body1::patch0"],
+                        ),
+                        Surface(
+                            name="body1::patch1",
+                            private_attribute_sub_components=["body1::patch1"],
+                        ),
+                        Surface(
+                            name="body1::patch2",
+                            private_attribute_sub_components=["body1::patch2"],
+                        ),
+                        Surface(
+                            name="body2::patch0",
+                            private_attribute_sub_components=["body2::patch0"],
+                        ),
+                        Surface(
+                            name="body3::patch0",
+                            private_attribute_sub_components=["body3::patch0"],
+                        ),
+                    ]
+                ],
+            )
+        elif self.fname == "tester_no_naming.stl":
+            return GeometryEntityInfo(
+                face_ids=["body01_face001", "body01_face002", "body01_face003"],
+                edge_ids=[],
+                face_attribute_names=["faceId"],
+                face_group_tag="faceId",
+                grouped_faces=[
+                    [
+                        Surface(
+                            name="body01_face001",
+                            private_attribute_sub_components=["body01_face001"],
+                        ),
+                        Surface(
+                            name="body01_face002",
+                            private_attribute_sub_components=["body01_face002"],
+                        ),
+                        Surface(
+                            name="body01_face003",
+                            private_attribute_sub_components=["body01_face003"],
+                        ),
+                    ]
+                ],
+            )
         else:
             raise ValueError("Invalid file name")
 
     def _populate_registry(self):
         self.mesh_unit = LengthType.validate(self._get_meta_data()["mesh_unit"])
-        for zone_name in self._get_meta_data()["edges"] if "edges" in self._get_meta_data() else []:
-            # pylint: disable=fixme
-            # TODO: private_attribute_sub_components is hacked to be just the grouped name,
-            # TODO: this should actually be the list of edgeIDs/faceIDs
-            self.internal_registry.register(
-                Edge(name=zone_name, private_attribute_sub_components=[zone_name])
+        if self.snappy:
+            self.internal_registry = self._get_entity_info()._group_entity_by_tag(
+                "face", "faceId", self.internal_registry
             )
-        for surface_name in (
-            self._get_meta_data()["surfaces"] if "surfaces" in self._get_meta_data() else []
-        ):
-            self.internal_registry.register(
-                Surface(name=surface_name, private_attribute_sub_components=[surface_name])
-            )
+            self.snappy_bodies = self._get_entity_info()._group_faces_by_snappy_format()
+        else:
+            for zone_name in (
+                self._get_meta_data()["edges"] if "edges" in self._get_meta_data() else []
+            ):
+                # pylint: disable=fixme
+                # TODO: private_attribute_sub_components is hacked to be just the grouped name,
+                # TODO: this should actually be the list of edgeIDs/faceIDs
+                self.internal_registry.register(
+                    Edge(name=zone_name, private_attribute_sub_components=[zone_name])
+                )
+            for surface_name in (
+                self._get_meta_data()["surfaces"] if "surfaces" in self._get_meta_data() else []
+            ):
+                self.internal_registry.register(
+                    Surface(name=surface_name, private_attribute_sub_components=[surface_name])
+                )
 
-    def __init__(self, file_name: str):
+    def __init__(self, file_name: str, for_snappy=False):
         super().__init__()
         self.fname = file_name
+        self.snappy = for_snappy
         self._populate_registry()
 
 
@@ -333,6 +448,11 @@ def get_rotor_geometry():
 
 
 @pytest.fixture()
+def get_snappy_geometry():
+    return TempGeometry("tester.stl")
+
+
+@pytest.fixture()
 def airplane_surface_mesh():
     my_geometry = TempGeometry("geometry.egads")
     from numpy import pi
@@ -438,7 +558,412 @@ def rotor_surface_mesh():
     return param
 
 
-def _translate_and_compare(param, mesh_unit, ref_json_file: str):
+@pytest.fixture()
+def snappy_all_defaults():
+    test_geometry = TempGeometry("tester.stl", True)
+    with SI_unit_system:
+        surf_meshing_params = snappy.SurfaceMeshingParams(
+            defaults=snappy.SurfaceMeshingDefaults(
+                min_spacing=3 * u.mm, max_spacing=4 * u.mm, gap_resolution=1 * u.mm
+            )
+        )
+
+        param = SimulationParams(
+            private_attribute_asset_cache=AssetCache(
+                project_entity_info=test_geometry._get_entity_info(), project_length_unit=1 * u.mm
+            ),
+            meshing=ModularMeshingWorkflow(
+                surface_meshing=surf_meshing_params, zones=[AutomatedFarfield()]
+            ),
+        )
+    return param
+
+
+@pytest.fixture()
+def snappy_basic_refinements():
+    test_geometry = TempGeometry("tester.stl", True)
+    with SI_unit_system:
+        surf_meshing_params = snappy.SurfaceMeshingParams(
+            defaults=snappy.SurfaceMeshingDefaults(
+                min_spacing=3 * u.mm, max_spacing=4 * u.mm, gap_resolution=1 * u.mm
+            ),
+            base_spacing=3.5 * u.mm,
+            refinements=[
+                snappy.BodyRefinement(
+                    gap_resolution=2 * u.mm,
+                    min_spacing=5 * u.mm,
+                    max_spacing=10 * u.mm,
+                    bodies=[
+                        test_geometry.snappy_bodies["body1"],
+                        test_geometry.snappy_bodies["body3"],
+                    ],
+                ),
+                snappy.BodyRefinement(
+                    gap_resolution=0.5 * u.mm,
+                    min_spacing=1 * u.mm,
+                    max_spacing=2 * u.mm,
+                    bodies=[test_geometry.snappy_bodies["body2"]],
+                    proximity_spacing=0.2 * u.mm,
+                ),
+                snappy.RegionRefinement(
+                    min_spacing=20 * u.mm,
+                    max_spacing=40 * u.mm,
+                    proximity_spacing=3 * u.mm,
+                    regions=[
+                        test_geometry.snappy_bodies["body0"]["patch0"],
+                        test_geometry["body1::patch1"],
+                    ],
+                ),
+                snappy.SurfaceEdgeRefinement(
+                    spacing=4 * u.mm,
+                    min_elem=3,
+                    included_angle=120 * u.deg,
+                    entities=test_geometry.snappy_bodies["body1"],
+                ),
+                snappy.SurfaceEdgeRefinement(
+                    spacing=[4 * u.mm],
+                    distances=[5 * u.mm],
+                    min_elem=3,
+                    included_angle=120 * u.deg,
+                    entities=[test_geometry.snappy_bodies["body0"]["patch0"]],
+                ),
+                snappy.SurfaceEdgeRefinement(
+                    spacing=[3 * u.mm, 5e-3 * u.m],
+                    distances=[1 * u.mm, 3e-3 * u.m],
+                    min_len=6 * u.mm,
+                    entities=[
+                        test_geometry.snappy_bodies["*"]["patch1"],
+                        test_geometry.snappy_bodies["body3"],
+                    ],
+                    retain_on_smoothing=False,
+                ),
+                UniformRefinement(
+                    spacing=2 * u.mm,
+                    entities=[
+                        Box(name="box0", center=[0, 30, 60] * u.mm, size=[20, 30, 40] * u.mm),
+                        Cylinder(
+                            name="cyl0",
+                            axis=[0, 0, 1],
+                            center=[10, 20, 30] * u.mm,
+                            height=60 * u.mm,
+                            outer_radius=20 * u.mm,
+                        ),
+                    ],
+                ),
+                UniformRefinement(
+                    spacing=8 * u.mm,
+                    entities=[
+                        Cylinder(
+                            name="cyl1",
+                            axis=[-0.26, 0.45, -0.43],
+                            center=[10, 20, 30] * u.mm,
+                            height=60 * u.mm,
+                            outer_radius=34 * u.mm,
+                        )
+                    ],
+                ),
+            ],
+            smooth_controls=snappy.SmoothControls(),
+        )
+
+        param = SimulationParams(
+            private_attribute_asset_cache=AssetCache(
+                project_entity_info=test_geometry._get_entity_info(), project_length_unit=1 * u.mm
+            ),
+            meshing=ModularMeshingWorkflow(
+                surface_meshing=surf_meshing_params, zones=[AutomatedFarfield()]
+            ),
+        )
+    return param
+
+
+@pytest.fixture()
+def snappy_coupled_refinements():
+    test_geometry = TempGeometry("tester.stl", True)
+    with SI_unit_system:
+        surf_meshing_params = snappy.SurfaceMeshingParams(
+            defaults=snappy.SurfaceMeshingDefaults(
+                min_spacing=3 * u.mm, max_spacing=4 * u.mm, gap_resolution=1 * u.mm
+            ),
+            base_spacing=5 * u.mm,
+            refinements=[],
+            smooth_controls=snappy.SmoothControls(),
+        )
+        vol_meshing_params = VolumeMeshingParams(
+            defaults=VolumeMeshingDefaults(
+                boundary_layer_first_layer_thickness=1 * u.mm, boundary_layer_growth_rate=1.2
+            ),
+            refinements=[
+                UniformRefinement(
+                    spacing=2 * u.mm,
+                    entities=[
+                        Box(name="box0", center=[0, 30, 60] * u.mm, size=[20, 30, 40] * u.mm),
+                        Cylinder(
+                            name="cyl0",
+                            axis=[0, 0, 1],
+                            center=[10, 20, 30] * u.mm,
+                            height=60 * u.mm,
+                            outer_radius=20 * u.mm,
+                        ),
+                    ],
+                    project_to_surface=True,
+                ),
+                UniformRefinement(
+                    spacing=8 * u.mm,
+                    entities=[
+                        Cylinder(
+                            name="cyl1",
+                            axis=[-0.26, 0.45, -0.43],
+                            center=[10, 20, 30] * u.mm,
+                            height=60 * u.mm,
+                            outer_radius=34 * u.mm,
+                        )
+                    ],
+                    project_to_surface=False,
+                ),
+            ],
+        )
+        param = SimulationParams(
+            private_attribute_asset_cache=AssetCache(
+                project_entity_info=test_geometry._get_entity_info(), project_length_unit=1 * u.mm
+            ),
+            meshing=ModularMeshingWorkflow(
+                surface_meshing=surf_meshing_params,
+                volume_meshing=vol_meshing_params,
+                zones=[
+                    CustomZones(
+                        entities=[SeedpointVolume(name="farfield", point_in_mesh=[0, 0, 0] * u.mm)]
+                    )
+                ],
+            ),
+        )
+    return param
+
+
+@pytest.fixture()
+def snappy_refinements_multiple_regions():
+    test_geometry = TempGeometry("tester.stl", True)
+    with SI_unit_system:
+        surf_meshing_params = snappy.SurfaceMeshingParams(
+            defaults=snappy.SurfaceMeshingDefaults(
+                min_spacing=2.999999992 * u.mm, max_spacing=4 * u.mm, gap_resolution=1 * u.mm
+            ),
+            base_spacing=3 * u.mm,
+            refinements=[
+                snappy.RegionRefinement(
+                    min_spacing=20 * u.mm,
+                    max_spacing=40 * u.mm,
+                    proximity_spacing=3 * u.mm,
+                    regions=[
+                        test_geometry["body1::patch0"],
+                        test_geometry.snappy_bodies["body1"]["patch1"],
+                        test_geometry["body1::patch2"],
+                    ],
+                ),
+                snappy.RegionRefinement(
+                    min_spacing=10 * u.mm, max_spacing=40 * u.mm, regions=test_geometry["body0::*"]
+                ),
+                snappy.RegionRefinement(
+                    min_spacing=5 * u.mm,
+                    max_spacing=40 * u.mm,
+                    regions=[
+                        test_geometry.snappy_bodies["body2"]["*"],
+                        test_geometry["body3::patch0"],
+                    ],
+                ),
+                snappy.SurfaceEdgeRefinement(
+                    spacing=4 * u.mm,
+                    min_elem=3,
+                    included_angle=120 * u.deg,
+                    entities=[test_geometry["body0::patch0"], test_geometry["body0::patch1"]],
+                    retain_on_smoothing=False,
+                ),
+            ],
+            smooth_controls=snappy.SmoothControls(),
+        )
+
+        param = SimulationParams(
+            private_attribute_asset_cache=AssetCache(
+                project_entity_info=test_geometry._get_entity_info(), project_length_unit=1 * u.mm
+            ),
+            meshing=ModularMeshingWorkflow(
+                surface_meshing=surf_meshing_params, zones=[AutomatedFarfield()]
+            ),
+        )
+    return param
+
+
+@pytest.fixture()
+def snappy_refinements_no_regions():
+    test_geometry = TempGeometry("tester_no_naming.stl", True)
+    with SI_unit_system:
+        surf_meshing_params = snappy.SurfaceMeshingParams(
+            defaults=snappy.SurfaceMeshingDefaults(
+                min_spacing=3 * u.mm, max_spacing=4 * u.mm, gap_resolution=1 * u.mm
+            ),
+            refinements=[
+                snappy.BodyRefinement(
+                    gap_resolution=2 * u.mm,
+                    min_spacing=5 * u.mm,
+                    max_spacing=10 * u.mm,
+                    bodies=[test_geometry.snappy_bodies["body01_face001"]],
+                ),
+                snappy.BodyRefinement(
+                    gap_resolution=0.5 * u.mm,
+                    min_spacing=1 * u.mm,
+                    max_spacing=2 * u.mm,
+                    bodies=[test_geometry.snappy_bodies["body01_face002"]],
+                    proximity_spacing=0.2 * u.mm,
+                ),
+                snappy.SurfaceEdgeRefinement(
+                    spacing=4 * u.mm,
+                    min_elem=3,
+                    included_angle=120 * u.deg,
+                    entities=[test_geometry.snappy_bodies["body01_face003"]],
+                ),
+            ],
+            smooth_controls=snappy.SmoothControls(),
+        )
+
+        param = SimulationParams(
+            private_attribute_asset_cache=AssetCache(
+                project_entity_info=test_geometry._get_entity_info(), project_length_unit=1 * u.mm
+            ),
+            meshing=ModularMeshingWorkflow(
+                surface_meshing=surf_meshing_params,
+                zones=[
+                    CustomZones(
+                        entities=[SeedpointVolume(name="fluid", point_in_mesh=[0, 0, 0] * u.m)]
+                    )
+                ],
+            ),
+        )
+    return param
+
+
+@pytest.fixture()
+def snappy_settings():
+    test_geometry = TempGeometry("tester.stl", True)
+    with SI_unit_system:
+        surf_meshing_params = snappy.SurfaceMeshingParams(
+            defaults=snappy.SurfaceMeshingDefaults(
+                min_spacing=3 * u.mm, max_spacing=4 * u.mm, gap_resolution=1 * u.mm
+            ),
+            quality_metrics=snappy.QualityMetrics(
+                max_non_orthogonality=55 * u.deg,
+                max_boundary_skewness=30 * u.deg,
+                max_internal_skewness=70 * u.deg,
+                max_concavity=20 * u.deg,
+                min_pyramid_cell_volume=1e-2,
+                min_tet_quality=0.15,
+                min_face_area=2 * u.mm * u.mm,
+                min_twist=0.3,
+                min_determinant=0.5,
+                min_volume_ratio=0.1,
+                min_face_weight=0.3,
+                min_triangle_twist=0.1,
+                n_smooth_scale=6,
+                error_reduction=0.4,
+                min_volume_collapse_ratio=0.5,
+            ),
+            snap_controls=snappy.SnapControls(
+                n_smooth_patch=5,
+                tolerance=4,
+                n_solve_iter=20,
+                n_relax_iter=2,
+                n_feature_snap_iter=10,
+                multi_region_feature_snap=False,
+                strict_region_snap=True,
+            ),
+            castellated_mesh_controls=snappy.CastellatedMeshControls(
+                resolve_feature_angle=10 * u.deg, n_cells_between_levels=3, min_refinement_cells=50
+            ),
+            smooth_controls=snappy.SmoothControls(lambda_factor=0.3, mu_factor=0.31, iterations=5),
+        )
+
+        param = SimulationParams(
+            private_attribute_asset_cache=AssetCache(
+                project_entity_info=test_geometry._get_entity_info(), project_length_unit=1 * u.mm
+            ),
+            meshing=ModularMeshingWorkflow(
+                surface_meshing=surf_meshing_params,
+                zones=[
+                    CustomZones(
+                        entities=[
+                            SeedpointVolume(name="fluid", point_in_mesh=[0, 0, 0] * u.m),
+                            SeedpointVolume(
+                                name="solid", point_in_mesh=[0.001, 0.002, 0.003] * u.m
+                            ),
+                        ]
+                    )
+                ],
+            ),
+        )
+    return param
+
+
+@pytest.fixture()
+def snappy_settings_off_position():
+    test_geometry = TempGeometry("tester.stl", True)
+    with SI_unit_system:
+        surf_meshing_params = snappy.SurfaceMeshingParams(
+            defaults=snappy.SurfaceMeshingDefaults(
+                min_spacing=3 * u.mm, max_spacing=4 * u.mm, gap_resolution=1 * u.mm
+            ),
+            quality_metrics=snappy.QualityMetrics(
+                max_non_ortho=False,
+                max_boundary_skewness=False,
+                max_internal_skewness=False,
+                max_concave=False,
+                min_vol=False,
+                min_tet_quality=False,
+                min_area=False,
+                min_twist=False,
+                min_determinant=False,
+                min_vol_ratio=False,
+                min_face_weight=False,
+                min_triangle_twist=False,
+                min_vol_collapse_ratio=False,
+            ),
+            snap_controls=snappy.SnapControls(
+                n_smooth_patch=5,
+                tolerance=4,
+                n_solve_iter=20,
+                n_relax_iter=2,
+                n_feature_snap_iter=10,
+                multi_region_feature_snap=False,
+                strict_region_snap=True,
+            ),
+            castellated_mesh_controls=snappy.CastellatedMeshControls(
+                resolve_feature_angle=10 * u.deg, n_cells_between_levels=3, min_refinement_cells=50
+            ),
+            smooth_controls=False,
+        )
+
+        param = SimulationParams(
+            private_attribute_asset_cache=AssetCache(
+                project_entity_info=test_geometry._get_entity_info(), project_length_unit=1 * u.mm
+            ),
+            meshing=ModularMeshingWorkflow(
+                surface_meshing=surf_meshing_params,
+                zones=[
+                    CustomZones(
+                        entities=[
+                            SeedpointVolume(name="fluid", point_in_mesh=[0, 0, 0] * u.m),
+                            SeedpointVolume(
+                                name="solid", point_in_mesh=[0.001, 0.002, 0.003] * u.m
+                            ),
+                        ]
+                    )
+                ],
+            ),
+        )
+    return param
+
+
+def _translate_and_compare(param, mesh_unit, ref_json_file: str, atol=1e-15):
+    param, err = validate_params_with_context(param, "Geometry", "SurfaceMesh")
+    assert err is None, f"Validation error: {err}"
     translated = get_surface_meshing_json(param, mesh_unit=mesh_unit)
     with open(
         os.path.join(
@@ -446,7 +971,13 @@ def _translate_and_compare(param, mesh_unit, ref_json_file: str):
         )
     ) as fh:
         ref_dict = json.load(fh)
-    assert compare_values(ref_dict, translated)
+
+    # It is important that the list in the configs are sorted beforehand
+    # as the hash values for reuse resource rely on that
+
+    # check if everything is seriazable
+    json.dumps(translated)
+    assert compare_values(ref_dict, translated, atol=atol)
 
 
 def test_om6wing_tutorial(
@@ -486,6 +1017,54 @@ def test_rotor_surface_mesh(get_rotor_geometry, rotor_surface_mesh):
         rotor_surface_mesh,
         get_rotor_geometry.mesh_unit,
         "rotor.json",
+    )
+
+
+def test_snappy_default(get_snappy_geometry, snappy_all_defaults):
+    _translate_and_compare(
+        snappy_all_defaults, get_snappy_geometry.mesh_unit, "default_snappy.json"
+    )
+
+
+def test_snappy_basic(get_snappy_geometry, snappy_basic_refinements):
+    _translate_and_compare(
+        snappy_basic_refinements,
+        get_snappy_geometry.mesh_unit,
+        "snappy_basic_refinements.json",
+        atol=1e-6,
+    )
+
+
+def test_snappy_coupled(get_snappy_geometry, snappy_coupled_refinements):
+    _translate_and_compare(
+        snappy_coupled_refinements,
+        get_snappy_geometry.mesh_unit,
+        "snappy_coupled_refinements.json",
+        atol=1e-6,
+    )
+
+
+def test_snappy_multiple_regions(get_snappy_geometry, snappy_refinements_multiple_regions):
+    _translate_and_compare(
+        snappy_refinements_multiple_regions,
+        get_snappy_geometry.mesh_unit,
+        "snappy_refinements_multiple_regions.json",
+    )
+
+
+def test_snappy_settings(get_snappy_geometry, snappy_settings):
+    _translate_and_compare(snappy_settings, get_snappy_geometry.mesh_unit, "snappy_settings.json")
+
+
+def test_snappy_settings_off_position(get_snappy_geometry, snappy_settings_off_position):
+    _translate_and_compare(
+        snappy_settings_off_position, get_snappy_geometry.mesh_unit, "snappy_settings_off_pos.json"
+    )
+
+
+def test_snappy_no_refinements(get_snappy_geometry, snappy_refinements_no_regions):
+    _translate_and_compare(
+        snappy_refinements_no_regions, get_snappy_geometry.mesh_unit, "snappy_no_regions.json"
     )
 
 

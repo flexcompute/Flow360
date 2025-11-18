@@ -35,6 +35,8 @@ from flow360.component.simulation.primitives import (
     GhostSphere,
     GhostSurface,
     ImportedSurface,
+    SeedpointVolume,
+    SnappyBody,
     Surface,
 )
 
@@ -54,6 +56,8 @@ ENTITY_TYPE_MAP = {
     "PointArray": PointArray,
     "PointArray2D": PointArray2D,
     "Slice": Slice,
+    "SeedpointVolume": SeedpointVolume,
+    "SnappyBody": SnappyBody,
 }
 
 

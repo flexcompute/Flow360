@@ -448,6 +448,15 @@ def _to_25_7_7(params_as_dict):
     return params_as_dict
 
 
+def _to_25_8_0(params_as_dict):
+    # new method of specifying meshing was added, as well as the method discriminator
+    meshing = params_as_dict.get("meshing")
+    if meshing:
+        meshing["type_name"] = "MeshingParams"
+
+    return params_as_dict
+
+
 VERSION_MILESTONES = [
     (Flow360Version("24.11.1"), _to_24_11_1),
     (Flow360Version("24.11.7"), _to_24_11_7),
@@ -463,6 +472,7 @@ VERSION_MILESTONES = [
     (Flow360Version("25.7.2"), _to_25_7_2),
     (Flow360Version("25.7.6"), _to_25_7_6),
     (Flow360Version("25.7.7"), _to_25_7_7),
+    (Flow360Version("25.8.0b4"), _to_25_8_0),
 ]  # A list of the Python API version tuple with there corresponding updaters.
 
 

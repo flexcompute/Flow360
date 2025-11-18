@@ -4,6 +4,10 @@ validation for SimulationParams
 
 from typing import Type, Union, get_args
 
+from flow360.component.simulation.meshing_param.params import (
+    MeshingParams,
+    ModularMeshingWorkflow,
+)
 from flow360.component.simulation.meshing_param.volume_params import CustomZones
 from flow360.component.simulation.models.solver_numerics import NoneSolver
 from flow360.component.simulation.models.surface_models import (
@@ -29,6 +33,7 @@ from flow360.component.simulation.outputs.outputs import (
     TimeAverageSurfaceOutput,
     VolumeOutput,
 )
+from flow360.component.simulation.primitives import SeedpointVolume
 from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
 from flow360.component.simulation.utils import is_exact_instance
 from flow360.component.simulation.validation.validation_context import (
@@ -321,7 +326,7 @@ def _validate_cht_has_heat_transfer(params):
 
 def _check_complete_boundary_condition_and_unknown_surface(
     params,
-):  # pylint:disable=too-many-branches, too-many-locals
+):  # pylint:disable=too-many-branches, too-many-locals,too-many-statements
     ## Step 1: Get all boundaries patches from asset cache
     current_lvls = get_validation_levels() if get_validation_levels() else []
     if all(level not in current_lvls for level in (ALL, CASE)):
@@ -336,6 +341,11 @@ def _check_complete_boundary_condition_and_unknown_surface(
 
     # Filter out the ones that will be deleted by mesher
     farfield_method = params.meshing.farfield_method if params.meshing else None
+    volume_zones = []
+    if isinstance(params.meshing, MeshingParams):
+        volume_zones = params.meshing.volume_zones
+    if isinstance(params.meshing, ModularMeshingWorkflow):
+        volume_zones = params.meshing.zones
 
     if farfield_method:
         if validation_info.at_least_one_body_transformed:
@@ -381,7 +391,7 @@ def _check_complete_boundary_condition_and_unknown_surface(
 
     potential_zone_zone_interfaces = set()
     if validation_info.farfield_method == "user-defined":
-        for zones in params.meshing.volume_zones:
+        for zones in volume_zones:
             # Support new CustomZones container
             if not isinstance(zones, CustomZones):
                 continue
@@ -421,7 +431,14 @@ def _check_complete_boundary_condition_and_unknown_surface(
     missing_boundaries = asset_boundaries - used_boundaries - potential_zone_zone_interfaces
     unknown_boundaries = used_boundaries - asset_boundaries
 
-    if missing_boundaries:
+    ## disable missing boundaries with snappy multizone
+    snappy_multizone = False
+    for zone in volume_zones:
+        if isinstance(zone, SeedpointVolume):
+            snappy_multizone = True
+            break
+
+    if missing_boundaries and not snappy_multizone:
         missing_list = ", ".join(sorted(missing_boundaries))
         raise ValueError(
             f"The following boundaries do not have a boundary condition: {missing_list}. "

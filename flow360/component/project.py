@@ -1462,7 +1462,7 @@ class Project(pd.BaseModel):
             destination_id = draft.run_up_to_target_asset(
                 target,
                 source_item_type=source_item_type,
-                use_beta_mesher=use_beta_mesher,
+                use_beta_mesher=params.private_attribute_asset_cache.use_inhouse_mesher,
                 use_geometry_AI=use_geometry_AI,
                 start_from=start_from,
             )
