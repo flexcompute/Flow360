@@ -1,5 +1,5 @@
 {
-    "version": "25.8.0b4",
+    "version": "25.8.0b5",
     "unit_system": {
         "name": "SI"
     },
@@ -17,6 +17,7 @@
                 "value": 12.0,
                 "units": "degree"
             },
+            "resolve_face_boundaries": false,
             "preserve_thin_geometry": false,
             "sealing_size": {
                 "value": 0.0,

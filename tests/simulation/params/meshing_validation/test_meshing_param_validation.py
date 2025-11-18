@@ -4,8 +4,8 @@ import pydantic as pd
 import pytest
 
 from flow360 import u
-from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.meshing_param import snappy
+from flow360.component.simulation.meshing_param.face_params import SurfaceRefinement
 from flow360.component.simulation.meshing_param.meshing_specs import (
     MeshingDefaults,
     OctreeSpacing,
@@ -1040,3 +1040,45 @@ def test_uniform_project_only_with_snappy():
         "Value error, project_to_surface is supported only for snappyHexMesh."
     )
     assert errors[0]["loc"] == ("meshing", "refinements", 0, "UniformRefinement")
+def test_resolve_face_boundary_only_in_gai_mesher():
+    # raise when GAI is off
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"resolve_face_boundaries is only supported when geometry AI is used",
+    ):
+        with ValidationContext(SURFACE_MESH, non_gai_context):
+            with CGS_unit_system:
+                MeshingParams(
+                    defaults=MeshingDefaults(
+                        boundary_layer_first_layer_thickness=0.1, resolve_face_boundaries=True
+                    )
+                )
+
+
+def test_surface_refinement_in_gai_mesher():
+    # raise when GAI is off
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"curvature_resolution_angle is only supported when geometry AI is used",
+    ):
+        with ValidationContext(SURFACE_MESH, non_gai_context):
+            with CGS_unit_system:
+                SurfaceRefinement(max_edge_length=0.1, curvature_resolution_angle=10 * u.deg)
+
+    # raise when GAI is off
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"resolve_face_boundaries is only supported when geometry AI is used",
+    ):
+        with ValidationContext(SURFACE_MESH, non_gai_context):
+            with CGS_unit_system:
+                SurfaceRefinement(resolve_face_boundaries=True)
+
+    # raise when no options are specified
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"SurfaceRefinement requires at least one of 'max_edge_length', 'curvature_resolution_angle', or 'resolve_face_boundaries' to be specified",
+    ):
+        with ValidationContext(SURFACE_MESH, non_gai_context):
+            with CGS_unit_system:
+                SurfaceRefinement(entities=Surface(name="testFace"))
