@@ -1,7 +1,12 @@
 import pydantic as pd
 import pytest
 
-from flow360.component.simulation.meshing_param.params import MeshingParams
+import flow360.component.simulation.units as u
+from flow360.component.simulation.meshing_param.face_params import SurfaceRefinement
+from flow360.component.simulation.meshing_param.params import (
+    MeshingDefaults,
+    MeshingParams,
+)
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     AxisymmetricRefinement,
@@ -18,6 +23,7 @@ from flow360.component.simulation.primitives import (
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import CGS_unit_system
 from flow360.component.simulation.validation.validation_context import (
+    SURFACE_MESH,
     VOLUME_MESH,
     ParamsValidationInfo,
     ValidationContext,
@@ -493,3 +499,47 @@ def test_enclosed_entities_none_does_not_raise():
             spacing_radial=0.2,
             spacing_circumferential=20,
         )
+
+
+def test_resolve_face_boundary_only_in_gai_mesher():
+    # raise when GAI is off
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"resolve_face_boundaries is only supported when geometry AI is used",
+    ):
+        with ValidationContext(SURFACE_MESH, non_gai_context):
+            with CGS_unit_system:
+                MeshingParams(
+                    defaults=MeshingDefaults(
+                        boundary_layer_first_layer_thickness=0.1, resolve_face_boundaries=True
+                    )
+                )
+
+
+def test_surface_refinement_in_gai_mesher():
+    # raise when GAI is off
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"curvature_resolution_angle is only supported when geometry AI is used",
+    ):
+        with ValidationContext(SURFACE_MESH, non_gai_context):
+            with CGS_unit_system:
+                SurfaceRefinement(max_edge_length=0.1, curvature_resolution_angle=10 * u.deg)
+
+    # raise when GAI is off
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"resolve_face_boundaries is only supported when geometry AI is used",
+    ):
+        with ValidationContext(SURFACE_MESH, non_gai_context):
+            with CGS_unit_system:
+                SurfaceRefinement(resolve_face_boundaries=True)
+
+    # raise when no options are specified
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"SurfaceRefinement requires at least one of 'max_edge_length', 'curvature_resolution_angle', or 'resolve_face_boundaries' to be specified",
+    ):
+        with ValidationContext(SURFACE_MESH, non_gai_context):
+            with CGS_unit_system:
+                SurfaceRefinement(entities=Surface(name="testFace"))
