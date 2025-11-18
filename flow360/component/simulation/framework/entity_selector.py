@@ -344,9 +344,7 @@ def generate_entity_selector_from_class(
 
 
 ########## EXPANSION IMPLEMENTATION ##########
-def _get_entity_pool(
-    entity_database: EntityDictDatabase, target_class: TargetClass
-) -> list[dict]:
+def _get_entity_pool(entity_database: EntityDictDatabase, target_class: TargetClass) -> list[dict]:
     """Return the correct entity list from the database for the target class."""
     if target_class == "Surface":
         return entity_database.surfaces
