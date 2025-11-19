@@ -1459,7 +1459,19 @@ def check_external_postprocessing_existence(params: SimulationParams):
         for output in params.outputs:
             if not isinstance(output, get_args(get_args(MonitorOutputType)[0])):
                 continue
-            if not isinstance(output, ForceOutput) and output.moving_statistic is None:
+            if (
+                isinstance(output, (ProbeOutput, SurfaceProbeOutput))
+                and output.moving_statistic is None
+            ):
+                continue
+            if (
+                isinstance(output, SurfaceIntegralOutput)
+                and output.moving_statistic is None
+                and all(
+                    not isinstance(surface, ImportedSurface)
+                    for surface in output.entities.stored_entities
+                )
+            ):
                 continue
             return True
     return False
@@ -1984,7 +1996,19 @@ def get_columnar_data_processor_json(
     for output in input_params.outputs:
         if not isinstance(output, get_args(get_args(MonitorOutputType)[0])):
             continue
-        if not isinstance(output, ForceOutput) and output.moving_statistic is None:
+        if (
+            isinstance(output, (ProbeOutput, SurfaceProbeOutput))
+            and output.moving_statistic is None
+        ):
+            continue
+        if (
+            isinstance(output, SurfaceIntegralOutput)
+            and output.moving_statistic is None
+            and all(
+                not isinstance(surface, ImportedSurface)
+                for surface in output.entities.stored_entities
+            )
+        ):
             continue
         output_dict = output.model_dump(
             exclude_none=True,
