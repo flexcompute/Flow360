@@ -519,24 +519,12 @@ class StaticFloor(Flow360BaseModel):
     type_name: Literal["StaticFloor"] = pd.Field(
         "StaticFloor", description="Static floor with friction patch.", frozen=True
     )
-    friction_patch_x_min: LengthType = pd.Field(
-        default=-3 * u.m, description="Minimum x of friction patch."
-    )
-    friction_patch_x_max: LengthType = pd.Field(
-        default=6 * u.m, description="Maximum x of friction patch."
+    friction_patch_x_range: LengthType.Range = pd.Field(
+        default=(-3, 6) * u.m, description="(Minimum, maximum) x of friction patch."
     )
     friction_patch_width: LengthType.Positive = pd.Field(
         default=2 * u.m, description="Width of friction patch."
     )
-
-    @pd.model_validator(mode="after")
-    def _validate_friction_patch(self):
-        if self.friction_patch_x_min >= self.friction_patch_x_max:
-            raise ValueError(
-                f"Friction patch minimum x ({self.friction_patch_x_min}) "
-                f"must be less than maximum x ({self.friction_patch_x_max})."
-            )
-        return self
 
 
 class FullyMovingFloor(Flow360BaseModel):
@@ -554,24 +542,12 @@ class CentralBelt(Flow360BaseModel):
     type_name: Literal["CentralBelt"] = pd.Field(
         "CentralBelt", description="Floor with central belt.", frozen=True
     )
-    central_belt_x_min: LengthType = pd.Field(
-        default=-2 * u.m, description="Minimum x of central belt."
-    )
-    central_belt_x_max: LengthType = pd.Field(
-        default=2 * u.m, description="Maximum x of central belt."
+    central_belt_x_range: LengthType.Range = pd.Field(
+        default=(-2, 2) * u.m, description="(Minimum, maximum) x of central belt."
     )
     central_belt_width: LengthType.Positive = pd.Field(
         default=1.2 * u.m, description="Width of central belt."
     )
-
-    @pd.model_validator(mode="after")
-    def _validate_central_belt_x_range(self):
-        if self.central_belt_x_min >= self.central_belt_x_max:
-            raise ValueError(
-                f"Central belt minimum x ({self.central_belt_x_min}) "
-                f"must be less than maximum x ({self.central_belt_x_max})."
-            )
-        return self
 
 
 # pylint: disable=no-member
@@ -582,49 +558,25 @@ class WheelBelts(CentralBelt):
         "WheelBelts", description="Floor with central belt and four wheel belts.", frozen=True
     )
     # No defaults for the below; user must specify
-    front_wheel_belt_x_min: LengthType = pd.Field(description="Minimum x of front wheel belt.")
-    front_wheel_belt_x_max: LengthType = pd.Field(description="Maximum x of front wheel belt.")
-    front_wheel_belt_y_inner: LengthType.Positive = pd.Field(
-        description="Inner y of front wheel belt."
+    front_wheel_belt_x_range: LengthType.Range = pd.Field(
+        description="(Minimum, maximum) x of front wheel belt."
     )
-    front_wheel_belt_y_outer: LengthType.Positive = pd.Field(
-        description="Outer y of front wheel belt."
+    front_wheel_belt_y_range: LengthType.PositiveRange = pd.Field(
+        description="(Inner, outer) y of front wheel belt."
     )
-    rear_wheel_belt_x_min: LengthType = pd.Field(description="Minimum x of rear wheel belt.")
-    rear_wheel_belt_x_max: LengthType = pd.Field(description="Maximum x of rear wheel belt.")
-    rear_wheel_belt_y_inner: LengthType.Positive = pd.Field(
-        description="Inner y of rear wheel belt."
+    rear_wheel_belt_x_range: LengthType.Range = pd.Field(
+        description="(Minimum, maximum) x of rear wheel belt."
     )
-    rear_wheel_belt_y_outer: LengthType.Positive = pd.Field(
-        description="Outer y of rear wheel belt."
+    rear_wheel_belt_y_range: LengthType.PositiveRange = pd.Field(
+        description="(Inner, outer) y of rear wheel belt."
     )
 
     @pd.model_validator(mode="after")
-    def _validate_wheel_belt_params(self):
-        if self.front_wheel_belt_x_min >= self.front_wheel_belt_x_max:
+    def _validate_wheel_belt_ranges(self):
+        if self.front_wheel_belt_x_range[1] >= self.rear_wheel_belt_x_range[0]:
             raise ValueError(
-                f"Front wheel belt minimum x ({self.front_wheel_belt_x_min}) "
-                f"must be less than maximum x ({self.front_wheel_belt_x_max})."
-            )
-        if self.front_wheel_belt_x_max >= self.rear_wheel_belt_x_min:
-            raise ValueError(
-                f"Front wheel belt maximum x ({self.front_wheel_belt_x_max}) "
-                f"must be less than rear wheel belt minimum x ({self.rear_wheel_belt_x_min})."
-            )
-        if self.rear_wheel_belt_x_min >= self.rear_wheel_belt_x_max:
-            raise ValueError(
-                f"Rear wheel belt minimum x ({self.rear_wheel_belt_x_min}) "
-                f"must be less than maximum x ({self.rear_wheel_belt_x_max})."
-            )
-        if self.front_wheel_belt_y_inner >= self.front_wheel_belt_y_outer:
-            raise ValueError(
-                f"Front wheel belt inner y ({self.front_wheel_belt_y_inner}) "
-                f"must be less than outer y ({self.front_wheel_belt_y_outer})."
-            )
-        if self.rear_wheel_belt_y_inner >= self.rear_wheel_belt_y_outer:
-            raise ValueError(
-                f"Rear wheel belt inner y ({self.rear_wheel_belt_y_inner}) "
-                f"must be less than outer y ({self.rear_wheel_belt_y_outer})."
+                f"Front wheel belt maximum x ({self.front_wheel_belt_x_range[1]}) "
+                f"must be less than rear wheel belt minimum x ({self.rear_wheel_belt_x_range[0]})."
             )
         return self
 
@@ -644,7 +596,7 @@ class WindTunnelFarfield(_FarfieldBase):
             outlet_x_position = 15 * fl.u.m,
             floor_z_position = 0 * fl.u.m,
             floor_type = fl.CentralBelt(
-                central_belt_x_min = -1 * fl.u.m,
+                central_belt_x_range = (-1, 6) * fl.u.m,
                 central_belt_x_max = 6 * fl.u.m,
                 central_belt_width = 1.2 * fl.u.m
             )
@@ -761,7 +713,7 @@ class WindTunnelFarfield(_FarfieldBase):
     @staticmethod
     def get_valid_ghost_surfaces(floor_string: str) -> list[GhostSurface]:
         "Returns a list of valid ghost surfaces given a floor type as a string or ``all``."
-        shared_ghost_surfaces = [
+        common_ghost_surfaces = [
             GhostSurface(name="windTunnelInlet"),
             GhostSurface(name="windTunnelOutlet"),
             GhostSurface(name="windTunnelLeft"),
@@ -770,19 +722,19 @@ class WindTunnelFarfield(_FarfieldBase):
             GhostSurface(name="windTunnelFloor"),
         ]
         if floor_string == "FullyMovingFloor":
-            return shared_ghost_surfaces
+            return common_ghost_surfaces
         if floor_string == "StaticFloor":
-            return shared_ghost_surfaces + [GhostSurface(name="windTunnelFrictionPatch")]
+            return common_ghost_surfaces + [GhostSurface(name="windTunnelFrictionPatch")]
         if floor_string == "CentralBelt":
-            return shared_ghost_surfaces + [GhostSurface(name="windTunnelCentralBelt")]
+            return common_ghost_surfaces + [GhostSurface(name="windTunnelCentralBelt")]
         if floor_string == "WheelBelts":
-            return shared_ghost_surfaces + [
+            return common_ghost_surfaces + [
                 GhostSurface(name="windTunnelCentralBelt"),
                 GhostSurface(name="windTunnelFrontWheelBelt"),
                 GhostSurface(name="windTunnelRearWheelBelt"),
             ]
         if floor_string == "all":
-            return shared_ghost_surfaces + [
+            return common_ghost_surfaces + [
                 GhostSurface(name="windTunnelFrictionPatch"),
                 GhostSurface(name="windTunnelCentralBelt"),
                 GhostSurface(name="windTunnelFrontWheelBelt"),
@@ -811,14 +763,14 @@ class WindTunnelFarfield(_FarfieldBase):
                     f"Friction patch width ({self.floor_type.friction_patch_width}) "
                     f"must be less than wind tunnel width ({self.width})"
                 )
-            if self.floor_type.friction_patch_x_min <= self.inlet_x_position:
+            if self.floor_type.friction_patch_x_range[0] <= self.inlet_x_position:
                 raise ValueError(
-                    f"Friction patch minimum x ({self.floor_type.friction_patch_x_min}) "
+                    f"Friction patch minimum x ({self.floor_type.friction_patch_x_range[0]}) "
                     f"must be greater than inlet x ({self.inlet_x_position})"
                 )
-            if self.floor_type.friction_patch_x_max >= self.outlet_x_position:
+            if self.floor_type.friction_patch_x_range[1] >= self.outlet_x_position:
                 raise ValueError(
-                    f"Friction patch maximum x ({self.floor_type.friction_patch_x_max}) "
+                    f"Friction patch maximum x ({self.floor_type.friction_patch_x_range[1]}) "
                     f"must be less than outlet x ({self.outlet_x_position})"
                 )
         # central belt
@@ -828,14 +780,14 @@ class WindTunnelFarfield(_FarfieldBase):
                     f"Central belt width ({self.floor_type.central_belt_width}) "
                     f"must be less than wind tunnel width ({self.width})"
                 )
-            if self.floor_type.central_belt_x_min <= self.inlet_x_position:
+            if self.floor_type.central_belt_x_range[0] <= self.inlet_x_position:
                 raise ValueError(
-                    f"Central belt minimum x ({self.floor_type.central_belt_x_min}) "
+                    f"Central belt minimum x ({self.floor_type.central_belt_x_range[0]}) "
                     f"must be greater than inlet x ({self.inlet_x_position})"
                 )
-            if self.floor_type.central_belt_x_max >= self.outlet_x_position:
+            if self.floor_type.central_belt_x_range[1] >= self.outlet_x_position:
                 raise ValueError(
-                    f"Central belt maximum x ({self.floor_type.central_belt_x_max}) "
+                    f"Central belt maximum x ({self.floor_type.central_belt_x_range[1]}) "
                     f"must be less than outlet x ({self.outlet_x_position})"
                 )
         return self
@@ -844,24 +796,24 @@ class WindTunnelFarfield(_FarfieldBase):
     def _validate_wheel_belts(self):
         # pylint says too many branches if it's combined with the above
         if isinstance(self.floor_type, WheelBelts):
-            if self.floor_type.front_wheel_belt_y_outer >= self.width * 0.5:
+            if self.floor_type.front_wheel_belt_y_range[1] >= self.width * 0.5:
                 raise ValueError(
-                    f"Front wheel outer y ({self.floor_type.front_wheel_belt_y_outer}) "
+                    f"Front wheel outer y ({self.floor_type.front_wheel_belt_y_range[1]}) "
                     f"must be less than half of wind tunnel width ({self.width * 0.5})"
                 )
-            if self.floor_type.rear_wheel_belt_y_outer >= self.width * 0.5:
+            if self.floor_type.rear_wheel_belt_y_range[1] >= self.width * 0.5:
                 raise ValueError(
-                    f"Rear wheel outer y ({self.floor_type.rear_wheel_belt_y_outer}) "
+                    f"Rear wheel outer y ({self.floor_type.rear_wheel_belt_y_range[1]}) "
                     f"must be less than half of wind tunnel width ({self.width * 0.5})"
                 )
-            if self.floor_type.front_wheel_belt_x_min <= self.inlet_x_position:
+            if self.floor_type.front_wheel_belt_x_range[0] <= self.inlet_x_position:
                 raise ValueError(
-                    f"Front wheel minimum x ({self.floor_type.front_wheel_belt_x_min}) "
+                    f"Front wheel minimum x ({self.floor_type.front_wheel_belt_x_range[0]}) "
                     f"must be greater than inlet x ({self.inlet_x_position})"
                 )
-            if self.floor_type.rear_wheel_belt_x_max >= self.outlet_x_position:
+            if self.floor_type.rear_wheel_belt_x_range[1] >= self.outlet_x_position:
                 raise ValueError(
-                    f"Rear wheel maximum x ({self.floor_type.rear_wheel_belt_x_max}) "
+                    f"Rear wheel maximum x ({self.floor_type.rear_wheel_belt_x_range[1]}) "
                     f"must be less than outlet x ({self.outlet_x_position})"
                 )
         return self
