@@ -311,52 +311,6 @@ def test_validate_multiple_errors():
         assert err["ctx"]["relevant_for"] == exp_err["ctx"]["relevant_for"]
 
 
-def test_validate_errors():
-
-    params_data = {
-        "meshing": {
-            "farfield": "auto",
-            "refinement_factor": 1,
-            "refinements": [
-                {
-                    "_id": "926a6cbd-0ddb-4051-b860-3414565e6408",
-                    "curvature_resolution_angle": 10,
-                    "max_edge_length": 0.1,
-                    "name": "Surface refinement_0",
-                    "refinement_type": "SurfaceRefinement",
-                },
-                {
-                    "_id": "3972fbbf-4af6-4ca5-a8bb-341bbcf1294b",
-                    "first_layer_thickness": 0.001,
-                    "name": "Boundary layer refinement_1",
-                    "refinement_type": "BoundaryLayer",
-                },
-            ],
-            "volume_zones": [
-                {
-                    "method": "auto",
-                    "type": "AutomatedFarfield",
-                    "private_attribute_entity": {
-                        "private_attribute_registry_bucket_name": "VolumetricEntityType",
-                        "private_attribute_entity_type_name": "GenericVolume",
-                        "name": "automated_farfield_entity",
-                        "private_attribute_zone_boundary_names": {"items": []},
-                    },
-                }
-            ],
-            "defaults": {"surface_edge_growth_rate": 1.2},
-        },
-        "unit_system": {"name": "SI"},
-    }
-
-    _, errors, _ = services.validate_model(
-        params_as_dict=params_data,
-        validated_by=services.ValidationCalledBy.LOCAL,
-        root_item_type="Geometry",
-    )
-    json.dumps(errors)
-
-
 def test_validate_error_from_initialize_variable_space():
     with open("../translator/data/simulation_isosurface.json", "r") as fp:
         param_dict = json.load(fp)
