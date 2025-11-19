@@ -495,7 +495,7 @@ def validate_model(  # pylint: disable=too-many-locals
         """
         Preprocess the parameters dictionary before validation.
         """
-
+        params_as_dict = SimulationParams._sanitize_params_dict(params_as_dict)
         params_as_dict = handle_multi_constructor_model(params_as_dict)
         # Expand selectors (if any) with tag/name cache and merge strategy
         params_as_dict = resolve_selectors(params_as_dict)
@@ -519,8 +519,8 @@ def validate_model(  # pylint: disable=too-many-locals
     # Note: Need to run updater first to accommodate possible schema change in input caches.
     params_as_dict, forward_compatibility_mode = SimulationParams._update_param_dict(params_as_dict)
     try:
-        params_as_dict = SimulationParams._sanitize_params_dict(params_as_dict)
         updated_param_as_dict, forward_compatibility_mode = dict_preprocessing(params_as_dict)
+
         # Initialize variable space
         use_clear_context = validated_by == ValidationCalledBy.SERVICE
         initialize_variable_space(updated_param_as_dict, use_clear_context)
@@ -528,12 +528,13 @@ def validate_model(  # pylint: disable=too-many-locals
             updated_param_as_dict
         )
 
-        additional_info = ParamsValidationInfo(
-            param_as_dict=updated_param_as_dict,
-            referenced_expressions=referenced_expressions,
-        )
-
-        with ValidationContext(levels=validation_levels_to_use, info=additional_info):
+        with ValidationContext(
+            levels=validation_levels_to_use,
+            info=ParamsValidationInfo(
+                param_as_dict=updated_param_as_dict,
+                referenced_expressions=referenced_expressions,
+            ),
+        ):
 
             unit_system = updated_param_as_dict.get("unit_system")
             with UnitSystem.from_dict(**unit_system):  # pylint: disable=not-context-manager
