@@ -1202,6 +1202,7 @@ def test_force_distribution_output():
         {
             "test_name": {
                 "direction": [0.11043152607484655, 0.9938837346736189, 0.0],
+                "type": "incremental",
             },
         },
     )

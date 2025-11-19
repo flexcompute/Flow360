@@ -1277,7 +1277,7 @@ class TimeAverageStreamlineOutput(StreamlineOutput):
 
 class ForceDistributionOutput(Flow360BaseModel):
     """
-    :class:`ForceDistributionOutput` class for customized force distribution output.
+    :class:`ForceDistributionOutput` class for customized force and moment distribution output.
 
     Example
     -------
@@ -1296,6 +1296,9 @@ class ForceDistributionOutput(Flow360BaseModel):
     )
     distribution_direction: Axis = pd.Field(
         description="Direction of the force distribution output."
+    )
+    distribution_type: Literal["incremental", "cumulative"] = pd.Field(
+        "incremental", description="Type of the distribution."
     )
     output_type: Literal["ForceDistributionOutput"] = pd.Field(
         "ForceDistributionOutput", frozen=True

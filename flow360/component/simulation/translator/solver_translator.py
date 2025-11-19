@@ -657,7 +657,8 @@ def translate_force_distribution_output(output_params: list):
     for output in output_params:
         if isinstance(output, ForceDistributionOutput):
             force_distribution_output[output.name] = {
-                "direction": list(output.distribution_direction)
+                "direction": list(output.distribution_direction),
+                "type": output.distribution_type,
             }
     return force_distribution_output
 
