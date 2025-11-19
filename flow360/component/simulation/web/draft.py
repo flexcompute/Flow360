@@ -19,6 +19,9 @@ from flow360.cloud.flow360_requests import (
 from flow360.cloud.rest_api import RestApi
 from flow360.component.interfaces import DraftInterface
 from flow360.component.resource_base import Flow360Resource, ResourceDraft
+from flow360.component.simulation.framework.entity_selector import (
+    collect_and_tokenize_selectors_in_place,
+)
 from flow360.component.simulation.services_utils import strip_selector_matches_inplace
 from flow360.component.utils import (
     check_existence_of_one_file,
@@ -138,6 +141,7 @@ class Draft(Flow360Resource):
         # Serialize to dict and strip selector-matched entities so that UI can distinguish handpicked items
         params_dict = params.model_dump(mode="json", exclude_none=True)
         params_dict = strip_selector_matches_inplace(params_dict)
+        params_dict = collect_and_tokenize_selectors_in_place(params_dict)
 
         self.post(
             json={

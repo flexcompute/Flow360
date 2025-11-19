@@ -50,6 +50,9 @@ class AssetCache(Flow360BaseModel):
     variable_context: Optional[VariableContextList] = pd.Field(
         None, description="List of user variables that are used in all the `Expression` instances."
     )
+    selectors: Optional[List[dict]] = pd.Field(
+        None, description="Collected entity selectors for token reference."
+    )
 
     @property
     def boundaries(self):
@@ -68,7 +71,7 @@ class AssetCache(Flow360BaseModel):
         required_by: List[str] = None,
         flow360_unit_system=None,
     ) -> Flow360BaseModel:
-        exclude_asset_cache = exclude + ["variable_context"]
+        exclude_asset_cache = exclude + ["variable_context", "selectors"]
         return super().preprocess(
             params=params,
             exclude=exclude_asset_cache,
