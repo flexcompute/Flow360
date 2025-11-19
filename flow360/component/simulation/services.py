@@ -495,6 +495,7 @@ def validate_model(  # pylint: disable=too-many-locals
         """
         Preprocess the parameters dictionary before validation.
         """
+        # pylint: disable=protected-access
         params_as_dict = SimulationParams._sanitize_params_dict(params_as_dict)
         params_as_dict = handle_multi_constructor_model(params_as_dict)
         # Expand selectors (if any) with tag/name cache and merge strategy
