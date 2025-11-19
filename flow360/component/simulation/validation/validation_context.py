@@ -412,10 +412,8 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
             entities_obj = zone.get("entities", {})
             stored_entities = entities_obj.get("stored_entities", [])
             for entity in stored_entities:
-                if isinstance(entity, dict) and entity.get(
-                    "private_attribute_entity_type_name"
-                ) in ["CustomVolume", "SeedpointVolume"]:
-                    custom_volume_info[entity["name"]] = enforce_tetrahedra
+                if entity.private_attribute_entity_type_name in ("CustomVolume", "SeedpointVolume"):
+                    custom_volume_info[entity.name] = enforce_tetrahedra
         return custom_volume_info
 
     def __init__(self, param_as_dict: dict, referenced_expressions: list):

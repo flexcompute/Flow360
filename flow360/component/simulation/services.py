@@ -474,6 +474,36 @@ def validate_model(  # pylint: disable=too-many-locals
     validation_warnings : list or None
         A list of validation warnings if any occurred.
     """
+
+    def handle_multi_constructor_model(params_as_dict: dict) -> dict:
+        """
+        Handle input cache of multi-constructor models.
+        """
+        project_length_unit_dict = params_as_dict.get("private_attribute_asset_cache", {}).get(
+            "project_length_unit", None
+        )
+        parse_model_info = ParamsValidationInfo(
+            {"private_attribute_asset_cache": {"project_length_unit": project_length_unit_dict}},
+            [],
+        )
+        with ValidationContext(levels=validation_levels_to_use, info=parse_model_info):
+            # Multi-constructor model support
+            updated_param_as_dict = parse_model_dict(params_as_dict, globals())
+        return updated_param_as_dict
+
+    def dict_preprocessing(params_as_dict: dict) -> dict:
+        """
+        Preprocess the parameters dictionary before validation.
+        """
+        # pylint: disable=protected-access
+        params_as_dict = SimulationParams._sanitize_params_dict(params_as_dict)
+        params_as_dict = handle_multi_constructor_model(params_as_dict)
+        # Expand selectors (if any) with tag/name cache and merge strategy
+        params_as_dict = resolve_selectors(params_as_dict)
+        # Materialize entities (dict -> shared instances) and per-list dedupe
+        params_as_dict = materialize_entities_in_place(params_as_dict)
+        return params_as_dict, forward_compatibility_mode
+
     validation_errors = None
     validation_warnings = None
     validated_param = None
@@ -486,35 +516,26 @@ def validate_model(  # pylint: disable=too-many-locals
     validation_levels_to_use = _intersect_validation_levels(validation_level, available_levels)
     forward_compatibility_mode = False
 
+    # pylint: disable=protected-access
+    # Note: Need to run updater first to accommodate possible schema change in input caches.
+    params_as_dict, forward_compatibility_mode = SimulationParams._update_param_dict(params_as_dict)
     try:
-        # pylint: disable=protected-access
-        params_as_dict = SimulationParams._sanitize_params_dict(params_as_dict)
-        # Note: Need to run updater first to accommodate possible schema change in input caches.
-        updated_param_as_dict, forward_compatibility_mode = SimulationParams._update_param_dict(
-            params_as_dict
-        )
+        updated_param_as_dict, forward_compatibility_mode = dict_preprocessing(params_as_dict)
 
+        # Initialize variable space
         use_clear_context = validated_by == ValidationCalledBy.SERVICE
         initialize_variable_space(updated_param_as_dict, use_clear_context)
-
         referenced_expressions = get_referenced_expressions_and_user_variables(
             updated_param_as_dict
         )
 
-        additional_info = ParamsValidationInfo(
-            param_as_dict=updated_param_as_dict,
-            referenced_expressions=referenced_expressions,
-        )
-
-        with ValidationContext(levels=validation_levels_to_use, info=additional_info):
-            updated_param_as_dict = parse_model_dict(updated_param_as_dict, globals())
-            # Expand selectors (if any) with tag/name cache and merge strategy
-            updated_param_as_dict = resolve_selectors(updated_param_as_dict)
-            # Materialize entities (dict -> shared instances) and per-list dedupe
-            updated_param_as_dict = materialize_entities_in_place(updated_param_as_dict)
-            # Multi-constructor model support
-            updated_param_as_dict = SimulationParams._sanitize_params_dict(updated_param_as_dict)
-            updated_param_as_dict, _ = SimulationParams._update_param_dict(updated_param_as_dict)
+        with ValidationContext(
+            levels=validation_levels_to_use,
+            info=ParamsValidationInfo(
+                param_as_dict=updated_param_as_dict,
+                referenced_expressions=referenced_expressions,
+            ),
+        ):
 
             unit_system = updated_param_as_dict.get("unit_system")
             with UnitSystem.from_dict(**unit_system):  # pylint: disable=not-context-manager
