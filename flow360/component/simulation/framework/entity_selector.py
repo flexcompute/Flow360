@@ -624,14 +624,34 @@ def _process_selectors(
     entity_database: EntityDictDatabase,
     selectors_value: list,
     selector_cache: dict,
+    known_selectors: dict[str, dict] = None,
 ) -> tuple[dict[str, list[dict]], list[str]]:
-    """Process selectors and return additions grouped by class."""
+    """Process selectors and return additions grouped by class.
+
+    This function iterates over the list of selectors (which can be full dictionaries or
+    string tokens).
+    - If a selector is a string token, it looks up the full definition in `known_selectors`.
+    - If a selector is a dictionary, it uses it directly.
+    - It then applies the selector logic to find matching entities from the database.
+    - Results are cached in `selector_cache` to avoid re-computation for the same selector.
+    """
     additions_by_class: dict[str, list[dict]] = {}
     ordered_target_classes: list[str] = []
 
-    for selector_dict in selectors_value:
-        if not isinstance(selector_dict, dict):
+    if known_selectors is None:
+        known_selectors = {}
+
+    for item in selectors_value:
+        selector_dict = None
+        # Check if the item is a token (string) or a full selector definition (dict)
+        if isinstance(item, str):
+            selector_dict = known_selectors.get(item)
+        elif isinstance(item, dict):
+            selector_dict = item
+
+        if selector_dict is None:
             continue
+
         target_class = selector_dict.get("target_class")
         pool = _get_entity_pool(entity_database, target_class)
         if not pool:
@@ -680,6 +700,7 @@ def _expand_node_selectors(
     node: dict,
     selector_cache: dict,
     merge_mode: Literal["merge", "replace"],
+    known_selectors: dict[str, dict] = None,
 ) -> None:
     """
     Expand selectors on one node and write results into stored_entities.
@@ -692,7 +713,7 @@ def _expand_node_selectors(
         return
 
     additions_by_class, ordered_target_classes = _process_selectors(
-        entity_database, selectors_value, selector_cache
+        entity_database, selectors_value, selector_cache, known_selectors=known_selectors
     )
 
     existing = node.get("stored_entities", [])
@@ -701,6 +722,60 @@ def _expand_node_selectors(
     )
 
     node["stored_entities"] = base_entities
+
+
+def collect_and_tokenize_selectors_in_place(  # pylint: disable=too-many-branches
+    params_as_dict: dict,
+) -> dict:
+    """
+    Collect all matched/defined selectors into AssetCache and replace them with tokens (names).
+
+    This optimization reduces the size of the JSON and allows for efficient re-use of
+    selector definitions.
+    1. It traverses the `params_as_dict` to find all `EntitySelector` definitions (dicts with "name").
+    2. It moves these definitions into `private_attribute_asset_cache["selectors"]`.
+    3. It replaces the original dictionary definition in the `selectors` list with just the name (token).
+    """
+    known_selectors = {}
+
+    # Pre-populate from existing AssetCache if any
+    asset_cache = params_as_dict.setdefault("private_attribute_asset_cache", {})
+    if isinstance(asset_cache, dict):
+        if "selectors" in asset_cache and isinstance(asset_cache["selectors"], list):
+            for s in asset_cache["selectors"]:
+                if isinstance(s, dict) and "name" in s:
+                    known_selectors[s["name"]] = s
+
+    queue = deque([params_as_dict])
+    while queue:
+        node = queue.popleft()
+        if isinstance(node, dict):
+            selectors = node.get("selectors")
+            if isinstance(selectors, list):
+                new_selectors = []
+                for item in selectors:
+                    if isinstance(item, dict) and "name" in item:
+                        name = item["name"]
+                        known_selectors[name] = item
+                        new_selectors.append(name)
+                    else:
+                        new_selectors.append(item)
+                node["selectors"] = new_selectors
+
+            # Recurse
+            for value in node.values():
+                if isinstance(value, (dict, list)):
+                    queue.append(value)
+
+        elif isinstance(node, list):
+            for item in node:
+                if isinstance(item, (dict, list)):
+                    queue.append(item)
+
+    # Update AssetCache
+    if isinstance(asset_cache, dict):
+        asset_cache["selectors"] = list(known_selectors.values())
+    return params_as_dict
 
 
 def expand_entity_selectors_in_place(
@@ -722,6 +797,12 @@ def expand_entity_selectors_in_place(
     - This avoids repeated pool scans and matcher compilation across the tree
       while preserving stable result ordering.
 
+    Token Support
+    -------------
+    This function now also builds a `known_selectors` map from `private_attribute_asset_cache["selectors"]`.
+    This map is passed down to `_process_selectors` to allow resolving string tokens back to their
+    full selector definitions.
+
     Merge policy
     ------------
     - merge_mode="merge" (default): keep explicit `stored_entities` first, then
@@ -730,6 +811,13 @@ def expand_entity_selectors_in_place(
     - merge_mode="replace": for classes targeted by selectors in the node,
       drop explicit items of those classes and use selector results instead.
     """
+    # Build known_selectors map from AssetCache if available
+    known_selectors = {}
+    selectors_list = params_as_dict.get("private_attribute_asset_cache", {}).get("selectors", [])
+    for s in selectors_list:
+        if isinstance(s, dict) and "name" in s:
+            known_selectors[s["name"]] = s
+
     queue: deque[Any] = deque([params_as_dict])
     selector_cache: dict = {}
     while queue:
@@ -740,6 +828,7 @@ def expand_entity_selectors_in_place(
                 node,
                 selector_cache=selector_cache,
                 merge_mode=merge_mode,
+                known_selectors=known_selectors,
             )
             for value in node.values():
                 if isinstance(value, (dict, list)):

@@ -46,6 +46,9 @@ def has_any_entity_selectors(params_as_dict: dict) -> bool:
             selectors = node.get("selectors")
             if isinstance(selectors, list) and len(selectors) > 0:
                 first = selectors[0]
+                if isinstance(first, str):
+                    # Tokens
+                    return True
                 if isinstance(first, dict) and "target_class" in first and "children" in first:
                     return True
 
@@ -88,8 +91,19 @@ def strip_selector_matches_inplace(params_as_dict: dict) -> dict:
     entity_database = get_entity_database_for_selectors(params_as_dict)
     selector_cache: dict = {}
 
+    known_selectors = {}
+    asset_cache = params_as_dict.get("private_attribute_asset_cache", {})
+    if isinstance(asset_cache, dict):
+        selectors_list = asset_cache.get("selectors")
+        if isinstance(selectors_list, list):
+            for s in selectors_list:
+                if isinstance(s, dict) and "name" in s:
+                    known_selectors[s["name"]] = s
+
     def _matched_keyset_for_selectors(selectors_value: list) -> set:
-        additions_by_class, _ = _process_selectors(entity_database, selectors_value, selector_cache)
+        additions_by_class, _ = _process_selectors(
+            entity_database, selectors_value, selector_cache, known_selectors=known_selectors
+        )
         keys: set = set()
         for items in additions_by_class.values():
             for d in items:
