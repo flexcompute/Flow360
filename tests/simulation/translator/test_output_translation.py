@@ -1399,17 +1399,12 @@ def test_dimensioned_output_fields_translation(vel_in_km_per_hr):
                 "from_user_variables": False,
             },
             {
-                "name": "velocity",
-                "expression": "velocity[0] = primitiveVars[1] * velocityScale;velocity[1] = primitiveVars[2] * velocityScale;velocity[2] = primitiveVars[3] * velocityScale;",
-                "from_user_variables": False,
-            },
-            {
                 "name": "velocity_in_km_per_hr",
                 "expression": "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;velocity_in_km_per_hr[0] = (___velocity[0] * 360.0); velocity_in_km_per_hr[1] = (___velocity[1] * 360.0); velocity_in_km_per_hr[2] = (___velocity[2] * 360.0);",
             },
             {
                 "name": "velocity_m_per_s",
-                "expression": "double velocity[3];velocity[0] = primitiveVars[1] * velocityScale;velocity[1] = primitiveVars[2] * velocityScale;velocity[2] = primitiveVars[3] * velocityScale;velocity_m_per_s[0] = velocity[0] * 100.0;velocity_m_per_s[1] = velocity[1] * 100.0;velocity_m_per_s[2] = velocity[2] * 100.0;",
+                "expression": "double velocity_[3];velocity_[0] = primitiveVars[1] * velocityScale;velocity_[1] = primitiveVars[2] * velocityScale;velocity_[2] = primitiveVars[3] * velocityScale;velocity_m_per_s[0] = velocity_[0] * 100.0;velocity_m_per_s[1] = velocity_[1] * 100.0;velocity_m_per_s[2] = velocity_[2] * 100.0;",
                 "from_user_variables": False,
             },
             {
