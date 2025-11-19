@@ -1292,7 +1292,7 @@ class ForceDistributionOutput(Flow360BaseModel):
     """
 
     name: str = pd.Field(
-        description="Name of the `ForceDistributionOutput`. Used as the prefix for the output file name."
+        description="Name of the `ForceDistributionOutput`."
     )
     distribution_direction: Axis = pd.Field(
         description="Direction of the force distribution output."
