@@ -1278,6 +1278,7 @@ class TimeAverageStreamlineOutput(StreamlineOutput):
 class ForceDistributionOutput(Flow360BaseModel):
     """
     :class:`ForceDistributionOutput` class for customized force and moment distribution output.
+    Axis-aligned components are output for force and moment coefficients at the end of the simulation.
 
     Example
     -------
@@ -1291,9 +1292,7 @@ class ForceDistributionOutput(Flow360BaseModel):
     ====
     """
 
-    name: str = pd.Field(
-        description="Name of the `ForceDistributionOutput`."
-    )
+    name: str = pd.Field(description="Name of the `ForceDistributionOutput`.")
     distribution_direction: Axis = pd.Field(
         description="Direction of the force distribution output."
     )
