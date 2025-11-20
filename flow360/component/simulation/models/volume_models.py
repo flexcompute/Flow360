@@ -315,7 +315,7 @@ class Fluid(PDEModelBase):
         )
     )
 
-    interface_interpolation_tolerance: Optional[pd.PositiveFloat] = pd.Field(
+    interface_interpolation_tolerance: pd.PositiveFloat = pd.Field(
         0.2,
         description="Interpolation will fail if the distance between an interpolation "
         "point and the closest triangle is greater than `relative_interpolation_tolerance` "
