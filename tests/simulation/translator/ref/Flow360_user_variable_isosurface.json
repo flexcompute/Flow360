@@ -27,7 +27,8 @@
             1.2,
             1.2
         ],
-        "refArea": 0.016286016316209486
+        "refArea": 0.016286016316209486,
+	"interfaceInterpolationTolerance" : 0.2
     },
     "initialCondition": {
         "p": "p",

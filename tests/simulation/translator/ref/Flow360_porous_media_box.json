@@ -26,7 +26,9 @@
         "alphaAngle": 0.0,
         "betaAngle": 0.0
     },
-    "geometry": {},
+    "geometry": {
+	"interfaceInterpolationTolerance" : 0.2
+    },
     "navierStokesSolver": {
         "CFLMultiplier": 1.0,
         "absoluteTolerance": 1e-10,
