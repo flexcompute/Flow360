@@ -1648,7 +1648,7 @@ def get_solver_json(
                 model.initial_condition
             )
 
-            if model.interface_interpolation_tolerance is not None and "geometry" in translated:
+            if "geometry" in translated:
                 translated["geometry"][
                     "interfaceInterpolationTolerance"
                 ] = model.interface_interpolation_tolerance
