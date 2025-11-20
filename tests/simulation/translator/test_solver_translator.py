@@ -1353,6 +1353,7 @@ def test_auto_ref_area_settings():
             "refArea": 0.0040039062500000005,
             "momentCenter": [0.0, 0.0, 0.0],
             "momentLength": [0.01, 0.01, 0.010001],
+            "interfaceInterpolationTolerance" : 0.2
         },
         translated["geometry"],
     )

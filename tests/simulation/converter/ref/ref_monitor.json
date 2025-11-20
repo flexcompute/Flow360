@@ -100,7 +100,7 @@
             "transition_model_solver": {
                 "type_name": "None"
             },
-	    "relative_interpolation_tolerance" : null
+	    "interface_interpolation_tolerance" : 0.2
         }
     ],
     "time_stepping": {
