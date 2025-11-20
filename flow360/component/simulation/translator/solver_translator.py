@@ -5,6 +5,7 @@ import hashlib
 import json
 from typing import Type, Union, get_args
 
+import numpy as np
 import unyt as u
 
 from flow360.component.simulation.conversion import (
@@ -62,6 +63,7 @@ from flow360.component.simulation.outputs.output_fields import (
 )
 from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
+    ForceOutput,
     Isosurface,
     IsosurfaceOutput,
     MonitorOutputType,
@@ -93,6 +95,9 @@ from flow360.component.simulation.primitives import (
     ImportedSurface,
     Surface,
     SurfacePair,
+)
+from flow360.component.simulation.run_control.stopping_criterion import (
+    StoppingCriterion,
 )
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
@@ -1444,24 +1449,32 @@ def update_controls_modeling_constants(controls, translated):
             control["modelConstants"] = control.pop("modelingConstants")
 
 
-def check_moving_statistic_existence(params: SimulationParams):
-    """Check if moving statistic exists in the monitor outputs"""
-    if not params.outputs:
-        return False
-    for output in params.outputs:
-        if not isinstance(output, get_args(get_args(MonitorOutputType)[0])):
-            continue
-        if output.moving_statistic is None:
-            continue
-        return True
+def check_external_postprocessing_existence(params: SimulationParams):
+    """Check if external postprocessing needed."""
+    if params.models:
+        for model in params.models:
+            if isinstance(model, (BETDisk, ActuatorDisk, PorousMedium)):
+                return True
+    if params.outputs:
+        for output in params.outputs:
+            if not isinstance(output, get_args(get_args(MonitorOutputType)[0])):
+                continue
+            if (
+                isinstance(output, (ProbeOutput, SurfaceProbeOutput))
+                and output.moving_statistic is None
+            ):
+                continue
+            if (
+                isinstance(output, SurfaceIntegralOutput)
+                and output.moving_statistic is None
+                and all(
+                    not isinstance(surface, ImportedSurface)
+                    for surface in output.entities.stored_entities
+                )
+            ):
+                continue
+            return True
     return False
-
-
-def check_stopping_criterion_existence(params: SimulationParams):
-    """Check if stopping criterion exists in the Fluid model"""
-    if not params.run_control:
-        return False
-    return bool(params.run_control.stopping_criteria)
 
 
 def calculate_monitor_semaphore_hash(params: SimulationParams):
@@ -1471,16 +1484,96 @@ def calculate_monitor_semaphore_hash(params: SimulationParams):
         for output in params.outputs:
             if not isinstance(output, get_args(get_args(MonitorOutputType)[0])):
                 continue
-            if output.moving_statistic is None:
-                continue
-            json_string_list.append(json.dumps(dump_dict(output.moving_statistic)))
-    if params.run_control and params.run_control.stopping_criteria:
-        for criterion in params.run_control.stopping_criteria:
-            json_string_list.append(json.dumps(dump_dict(criterion)))
+            if isinstance(output, ForceOutput):
+                json_string_list.extend(
+                    [
+                        json.dumps(dump_dict(model))
+                        for model in sorted(
+                            output.models, key=lambda x: (x.type, x.name, x.private_attribute_id)
+                        )
+                    ]
+                )
+                json_string_list.extend(output.output_fields.items)
+            if output.moving_statistic is not None:
+                json_string_list.append(json.dumps(dump_dict(output.moving_statistic)))
     combined_string = "".join(sorted(json_string_list))
     hasher = hashlib.sha256()
     hasher.update(combined_string.encode("utf-8"))
     return hasher.hexdigest()
+
+
+def get_stop_criterion_settings(criterion: StoppingCriterion, params: SimulationParams):
+    """Get the stop criterion settings"""
+
+    def get_criterion_monitored_file_info(monitor_output, monitor_field):
+        monitor_output_name = monitor_output.name.replace("/", "_")
+        monitored_column = None
+        monitored_dataset_name = None
+        if isinstance(monitor_output, (ProbeOutput, SurfaceProbeOutput)):
+            point = monitor_output.entities.stored_entities[0]
+            monitored_column = f"{monitor_output.name}_{point.name}_{str(monitor_field)}"
+            monitored_dataset_name = f"monitor_{monitor_output_name}"
+        if isinstance(monitor_output, SurfaceIntegralOutput):
+            monitored_column = f"{str(monitor_field)}_integral"
+            monitor_output_processed = [monitor_output.copy()]
+            process_user_variables_for_integral(monitor_output_processed)
+            monitor_field = monitor_output_processed[0].output_fields.items[0]
+            monitored_dataset_name = f"monitor_{monitor_output_name}"
+        if isinstance(monitor_output, ForceOutput):
+            monitored_column = f"total{monitor_field}"
+            monitored_dataset_name = f"force_output_{monitor_output_name}"
+
+        if monitor_output.moving_statistic is not None:
+            monitored_column += f"_{monitor_output.moving_statistic.method}"
+            monitored_dataset_name += "_moving_statistic"
+        return monitored_dataset_name, monitored_column
+
+    def get_criterion_tolerance_info(criterion_tolerance, monitor_field, params):
+        flow360_unit_system = params.flow360_unit_system
+        if isinstance(monitor_field, UserVariable):
+            source_units = monitor_field.value.get_output_units(input_params=params)
+            if source_units.dimensions == u.dimensions.angle:
+                flow360_unit_system["angle"] = source_units.units
+            criterion_tolerance_nondim = (
+                criterion_tolerance.in_base(flow360_unit_system).v.item()
+                if not isinstance(criterion_tolerance, float)
+                else criterion_tolerance
+            )
+        else:
+            source_units = u.dimensionless  # pylint:disable=no-member
+            criterion_tolerance_nondim = criterion_tolerance
+
+        flow360_units = source_units.get_base_equivalent(flow360_unit_system)
+        coeff_source_to_flow360, offset_source_to_flow360 = source_units.get_conversion_factor(
+            flow360_units, dtype=np.float64
+        )
+        offset_source_to_flow360 = (
+            0.0
+            if offset_source_to_flow360 is None
+            else -offset_source_to_flow360 / coeff_source_to_flow360
+        )
+
+        return criterion_tolerance_nondim, coeff_source_to_flow360, offset_source_to_flow360
+
+    criterion_dataset_name, criterion_column = get_criterion_monitored_file_info(
+        monitor_output=criterion.monitor_output, monitor_field=criterion.monitor_field
+    )
+    criterion_tolerance_nondim, coeff_source_to_flow360, offset_source_to_flow360 = (
+        get_criterion_tolerance_info(
+            criterion_tolerance=criterion.tolerance,
+            monitor_field=criterion.monitor_field,
+            params=params,
+        )
+    )
+
+    return {
+        "monitoredColumn": criterion_column,
+        "monitoredDatasetName": criterion_dataset_name,
+        "tolerance": criterion_tolerance_nondim,
+        "toleranceWindowSize": criterion.tolerance_window_size,
+        "sourceToFlow360Coefficient": coeff_source_to_flow360,
+        "sourceToFlow360Offset": offset_source_to_flow360,
+    }
 
 
 # pylint: disable=too-many-statements
@@ -1864,16 +1957,18 @@ def get_solver_json(
 
     ##:: Step 11: Get run control settings
     translated["runControl"] = {}
-    translated["runControl"]["shouldCheckStopCriterion"] = check_stopping_criterion_existence(
-        input_params
+    translated["runControl"]["externalProcessMonitorOutput"] = (
+        check_external_postprocessing_existence(input_params)
     )
-    translated["runControl"]["externalProcessMonitorOutput"] = check_moving_statistic_existence(
-        input_params
-    ) or check_stopping_criterion_existence(input_params)
     if translated["runControl"]["externalProcessMonitorOutput"]:
         translated["runControl"]["monitorProcessorHash"] = calculate_monitor_semaphore_hash(
             input_params
         )
+    stopping_criteria = []
+    if input_params.run_control and bool(input_params.run_control.stopping_criteria):
+        for criterion in input_params.run_control.stopping_criteria:
+            stopping_criteria.append(get_stop_criterion_settings(criterion, input_params))
+        translated["runControl"]["stoppingCriteria"] = stopping_criteria
 
     translated["usingLiquidAsMaterial"] = isinstance(
         input_params.operating_condition, LiquidOperatingCondition
@@ -1888,4 +1983,41 @@ def get_solver_json(
     if input_params.private_attribute_dict is not None:
         translated.update(input_params.private_attribute_dict)
 
+    return translated
+
+
+@preprocess_input
+def get_columnar_data_processor_json(
+    input_params: SimulationParams,
+    # pylint: disable=no-member,unused-argument
+    mesh_unit: LengthType.Positive,
+):
+    """
+    Get the columnar data processor json from the simulation parameters.
+    """
+    translated = {"outputs": []}
+    if not input_params.outputs:
+        return translated
+    for output in input_params.outputs:
+        if not isinstance(output, get_args(get_args(MonitorOutputType)[0])):
+            continue
+        if (
+            isinstance(output, (ProbeOutput, SurfaceProbeOutput))
+            and output.moving_statistic is None
+        ):
+            continue
+        if (
+            isinstance(output, SurfaceIntegralOutput)
+            and output.moving_statistic is None
+            and all(
+                not isinstance(surface, ImportedSurface)
+                for surface in output.entities.stored_entities
+            )
+        ):
+            continue
+        output_dict = output.model_dump(
+            exclude_none=True,
+            context={"columnar_data_processor": True},
+        )
+        translated["outputs"].append(output_dict)
     return translated
