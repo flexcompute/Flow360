@@ -1727,7 +1727,7 @@ def test_validate_liquid_operating_condition():
         validation_level="All",
     )
 
-    assert len(errors) == 3
+    assert len(errors) == 2
     assert (
         errors[0]["msg"]
         == "Value error, `Outflow` type model cannot be used when using liquid as simulation material."
@@ -1735,14 +1735,9 @@ def test_validate_liquid_operating_condition():
     assert errors[0]["loc"] == ("models",)
     assert (
         errors[1]["msg"]
-        == "Value error, user_defined_dynamics cannot be used when using liquid as simulation material."
-    )
-    assert errors[1]["loc"] == ("user_defined_dynamics",)
-    assert (
-        errors[2]["msg"]
         == "Value error, user_defined_fields cannot be used when using liquid as simulation material."
     )
-    assert errors[2]["loc"] == ("user_defined_fields",)
+    assert errors[1]["loc"] == ("user_defined_fields",)
 
     with u.SI_unit_system:
         params = SimulationParams(
@@ -2393,3 +2388,60 @@ def test_ghost_surface_pair_requires_quasi_3d_periodic_farfield():
     # Case 4: Farfield method IS "quasi-3d-periodic" → should pass
     with SI_unit_system, ValidationContext(CASE, quasi_3d_periodic_farfield_context):
         Periodic(surface_pairs=(periodic_1, periodic_2), spec=Translational())
+
+
+def test_seedpoint_zone_based_params():
+    from flow360.component.simulation.meshing_param.volume_params import CustomZones
+
+    with SI_unit_system:
+        far_field_zone = SeedpointVolume(
+            point_in_mesh=[32.5231, 112.35123, 32.342] * u.mm, name="fluid"
+        )
+        radiator_zone = SeedpointVolume(
+            point_in_mesh=[3.2341, -1.324535, 23.345211] * u.mm,
+            name="radiator",
+            axes=[(1, 0, 0), (0, 1, 0)],
+        )
+
+        params = SimulationParams(
+            meshing=ModularMeshingWorkflow(
+                surface_meshing=snappy.SurfaceMeshingParams(
+                    defaults=snappy.SurfaceMeshingDefaults(
+                        min_spacing=1 * u.mm, max_spacing=100 * u.mm, gap_resolution=0.01 * u.mm
+                    ),
+                    smooth_controls=snappy.SmoothControls(
+                        lambda_factor=0.7, mu_factor=0, iterations=3
+                    ),
+                ),
+                volume_meshing=VolumeMeshingParams(
+                    defaults=VolumeMeshingDefaults(
+                        boundary_layer_growth_rate=1.2,
+                        boundary_layer_first_layer_thickness=0.01 * u.mm,
+                    ),
+                ),
+                zones=[CustomZones(entities=[far_field_zone, radiator_zone])],
+            ),
+            operating_condition=AerospaceCondition(
+                velocity_magnitude=40 * u.m / u.s,
+            ),
+            time_stepping=Steady(),
+            models=[Wall(surfaces=[Surface(name="face1")])],
+            private_attribute_asset_cache=AssetCache(
+                use_inhouse_mesher=True,
+                project_entity_info=SurfaceMeshEntityInfo(
+                    boundaries=[
+                        Surface(name="face1"),
+                        Surface(name="face2"),
+                    ]
+                ),
+            ),
+        )
+
+    params, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="Geometry",
+        validation_level="All",
+    )
+
+    assert errors is None
