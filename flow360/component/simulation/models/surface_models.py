@@ -9,7 +9,8 @@ import pydantic as pd
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.simulation.framework.entity_base import EntityList, generate_uuid
+from flow360.component.simulation.framework.entity_base import EntityList
+from flow360.component.simulation.framework.entity_utils import generate_uuid
 from flow360.component.simulation.framework.expressions import StringExpression
 from flow360.component.simulation.framework.single_attribute_base import (
     SingleAttributeModel,

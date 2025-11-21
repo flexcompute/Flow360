@@ -14,16 +14,10 @@ import pydantic as pd
 from typing_extensions import Self
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
+from flow360.component.simulation.framework.entity_utils import generate_uuid
 
 # These corresponds to the private_attribute_entity_type_name of supported entity types.
 TargetClass = Literal["Surface", "Edge", "GenericVolume", "GeometryBodyGroup"]
-
-
-def _generate_selector_uuid() -> str:
-    # Lazy import to avoid circular dependency at module import time.
-    from flow360.component.simulation.framework.entity_base import generate_uuid
-
-    return generate_uuid()
 
 
 class Predicate(Flow360BaseModel):
@@ -60,7 +54,7 @@ class EntitySelector(Flow360BaseModel):
         None, description="Customizable description of the selector."
     )
     selector_id: str = pd.Field(
-        default_factory=_generate_selector_uuid,
+        default_factory=generate_uuid,
         description="[Internal] Unique identifier for the selector.",
         frozen=True,
     )
@@ -289,6 +283,7 @@ class SelectorFactory:
         selector.not_match(pattern, attribute=attribute, syntax=syntax)
         return selector
 
+    # pylint: disable=too-many-arguments
     @classmethod
     def any_of(
         cls,
@@ -324,6 +319,7 @@ class SelectorFactory:
         selector.any_of(values, attribute=attribute)
         return selector
 
+    # pylint: disable=too-many-arguments
     @classmethod
     def not_any_of(
         cls,
