@@ -21,11 +21,24 @@
         "slices": {
             "test_slice_y_normal": {
                 "sliceOrigin": [0.1, 0.2, 0.3],
-                "sliceNormal": [0.0, 1.0, 0.0]
+                "sliceNormal": [0.0, 1.0, 0.0],
+                "crinkled": false
             },
             "test_slice_z_normal": {
                 "sliceOrigin": [0.6, 0.1, 0.4],
-                "sliceNormal": [0.0, 0.0, 1.0]
+                "sliceNormal": [0.0, 0.0, 1.0],
+                "crinkled": false
+            },
+            "crinkled_slice_with_cutoff": {
+                "sliceOrigin": [0.1, 0.2, 0.3],
+                "sliceNormal": [0.0, 0.7071067811865475, 0.7071067811865475],
+                "crinkled": true,
+                "cutoffRadius": 10.0
+            },
+            "crinkled_slice_without_cutoff": {
+                "sliceOrigin": [0.5, 0.6, 0.7],
+                "sliceNormal": [-1.0, 0.0, 0.0],
+                "crinkled": true
             }
         }
     },
