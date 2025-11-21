@@ -33,7 +33,7 @@
                 "sliceOrigin": [0.1, 0.2, 0.3],
                 "sliceNormal": [0.0, 0.7071067811865475, 0.7071067811865475],
                 "crinkled": true,
-                "cutoff_radius": 10.0
+                "cutoffRadius": 10.0
             },
             "crinkled_slice_without_cutoff": {
                 "sliceOrigin": [0.5, 0.6, 0.7],
