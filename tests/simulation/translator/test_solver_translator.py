@@ -103,6 +103,9 @@ from flow360.component.simulation.utils import model_attribute_unlock
 from tests.simulation.translator.utils.actuator_disk_param_generator import (
     actuator_disk_create_param,
 )
+from tests.simulation.translator.utils.analytic_windtunnel_param_generator import (
+    create_windtunnel_params,
+)
 from tests.simulation.translator.utils.CHTThreeCylinders_param_generator import (
     create_conjugate_heat_transfer_param,
 )
@@ -156,7 +159,6 @@ from tests.simulation.translator.utils.XV15HoverMRF_param_generator import (
     create_XV15HoverMRF_param,
     rotation_cylinder,
 )
-from tests.simulation.translator.utils.analytic_windtunnel_param_generator import create_windtunnel_params
 
 assertions = unittest.TestCase("__init__")
 
