@@ -36,7 +36,7 @@ from flow360.component.simulation.outputs.outputs import (
     TimeAverageSurfaceOutput,
     VolumeOutput,
 )
-from flow360.component.simulation.primitives import SeedpointVolume
+from flow360.component.simulation.primitives import CustomVolume, SeedpointVolume
 from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
 from flow360.component.simulation.utils import is_exact_instance
 from flow360.component.simulation.validation.validation_context import (
@@ -392,6 +392,7 @@ def _check_complete_boundary_condition_and_unknown_surface(
                     params.meshing.volume_zones[0].floor_type.type_name
                 )
 
+    snappy_multizone = False
     potential_zone_zone_interfaces = set()
     if validation_info.farfield_method == "user-defined":
         for zones in volume_zones:
@@ -399,8 +400,12 @@ def _check_complete_boundary_condition_and_unknown_surface(
             if not isinstance(zones, CustomZones):
                 continue
             for custom_volume in zones.entities.stored_entities:
-                for boundary in custom_volume.boundaries.stored_entities:
-                    potential_zone_zone_interfaces.add(boundary.name)
+                if isinstance(custom_volume, CustomVolume):
+                    for boundary in custom_volume.boundaries.stored_entities:
+                        potential_zone_zone_interfaces.add(boundary.name)
+                if isinstance(custom_volume, SeedpointVolume):
+                    ## disable missing boundaries with snappy multizone
+                    snappy_multizone = True
 
     if asset_boundary_entities is None or asset_boundary_entities == []:
         raise ValueError("[Internal] Failed to retrieve asset boundaries")
@@ -433,13 +438,6 @@ def _check_complete_boundary_condition_and_unknown_surface(
     ## Step 3: Use set operations to find missing and unknown boundaries
     missing_boundaries = asset_boundaries - used_boundaries - potential_zone_zone_interfaces
     unknown_boundaries = used_boundaries - asset_boundaries
-
-    ## disable missing boundaries with snappy multizone
-    snappy_multizone = False
-    for zone in volume_zones:
-        if isinstance(zone, SeedpointVolume):
-            snappy_multizone = True
-            break
 
     if missing_boundaries and not snappy_multizone:
         missing_list = ", ".join(sorted(missing_boundaries))

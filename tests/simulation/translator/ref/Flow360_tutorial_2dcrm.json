@@ -10,7 +10,8 @@
             1.0,
             1.0,
             1.0
-        ]
+        ],
+	"interfaceInterpolationTolerance" : 0.2
     },
     "freestream": {
         "alphaAngle": 16.0,
