@@ -313,13 +313,13 @@ def get_test_param():
                     name="slice_output_2",
                     entities=[
                         Slice(
-                            name=f"crinkled_slice",
+                            name=f"crinkled_slice_with_cutoff",
                             origin=(0.1, 0.2, 0.3),
                             normal=(0, 1, 1),
                         ),
                     ],
-                    slice_type="crinkled",
-                    radius=10.0,
+                    also_generate_crinkled_slices=True,
+                    cutoff_radius=10.0,
                 )
             )
 
@@ -328,12 +328,12 @@ def get_test_param():
                     name="slice_output_3",
                     entities=[
                         Slice(
-                            name=f"crinkled_and_flat_slice",
+                            name=f"crinkled_slice_without_cutoff",
                             origin=(0.5, 0.6, 0.7),
                             normal=(-1, 0, 0),
                         ),
                     ],
-                    slice_type=["flat", "crinkled"],
+                    also_generate_crinkled_slices=True,
                 )
             )
 

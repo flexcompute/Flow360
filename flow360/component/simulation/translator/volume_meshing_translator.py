@@ -257,9 +257,9 @@ def translate_mesh_slice_fields(
 ):
     """Translate mesh slice type and radius fields."""
     mesh_slice_fields = {}
-    mesh_slice_fields["sliceType"] = model.slice_type
-    if model.radius is not None:
-        mesh_slice_fields["radius"] = model.radius
+    mesh_slice_fields["crinkled"] = model.also_generate_crinkled_slices
+    if model.cutoff_radius is not None:
+        mesh_slice_fields["cutoff_radius"] = model.cutoff_radius
     return mesh_slice_fields
 
 

@@ -532,23 +532,15 @@ class MeshSliceOutput(Flow360BaseModel):
         alias="slices",
         description="List of output :class:`~flow360.Slice` entities.",
     )
-    slice_type: list[Literal["flat", "crinkled"]] = pd.Field(
-        default_factory=lambda: ["flat"],
-        description="The type of slice to output.",
+    also_generate_crinkled_slices: bool = pd.Field(
+        default=False, description="Generate crinkled slices in addition to flat slices."
     )
-    radius: Optional[pd.PositiveFloat] = pd.Field(
-        default=None, description="Radius of the slice output."
+    cutoff_radius: Optional[pd.PositiveFloat] = pd.Field(
+        default=None,
+        description="Cutoff radius of the slice output. If not specified, "
+        "the slice extends to the boundaries of the volume mesh.",
     )
     output_type: Literal["MeshSliceOutput"] = pd.Field("MeshSliceOutput", frozen=True)
-
-    @pd.model_validator(mode="before")
-    @classmethod
-    def convert_single_item_to_list(cls, values):
-        """If user specifies a single slice type, convert it to a list"""
-        v = values.get("slice_type")
-        if isinstance(v, str):
-            values["slice_type"] = [v]
-        return values
 
 
 class CustomZones(Flow360BaseModel):
