@@ -625,8 +625,11 @@ class WindTunnelFarfield(_FarfieldBase):
         FullyMovingFloor,
         CentralBelt,
         WheelBelts,
-    ] = pd.Field(default_factory=StaticFloor, description="Floor type of the wind tunnel.",
-                 discriminator="type_name")
+    ] = pd.Field(
+        default_factory=StaticFloor,
+        description="Floor type of the wind tunnel.",
+        discriminator="type_name",
+    )
 
     # up direction not yet supported; assume +Z
 
@@ -690,7 +693,9 @@ class WindTunnelFarfield(_FarfieldBase):
                 "Central belt for wind tunnel farfield "
                 "is only supported if floor type is `CentralBelt` or `WheelBelts`."
             )
-        return WindTunnelGhostSurface(name="windTunnelCentralBelt", used_by=["CentralBelt", "WheelBelts"])
+        return WindTunnelGhostSurface(
+            name="windTunnelCentralBelt", used_by=["CentralBelt", "WheelBelts"]
+        )
 
     @property
     def front_wheel_belts(self) -> WindTunnelGhostSurface:

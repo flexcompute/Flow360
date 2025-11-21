@@ -650,7 +650,8 @@ class GhostSurface(_SurfaceEntityBase):
 
 
 class WindTunnelGhostSurface(GhostSurface):
-    '''Wind tunnel boundary patches.'''
+    """Wind tunnel boundary patches."""
+
     private_attribute_entity_type_name: Literal["WindTunnelGhostSurface"] = pd.Field(
         "WindTunnelGhostSurface", frozen=True
     )

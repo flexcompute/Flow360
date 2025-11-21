@@ -29,7 +29,7 @@ from flow360.component.simulation.primitives import (
     GhostSphere,
     SnappyBody,
     Surface,
-    WindTunnelGhostSurface
+    WindTunnelGhostSurface,
 )
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.utils import BoundingBoxType, model_attribute_unlock
@@ -57,10 +57,10 @@ class EntityInfoModel(Flow360BaseModel, metaclass=ABCMeta):
     # entities that appear in simulation JSON but did not appear in EntityInfo
     draft_entities: List[DraftEntityTypes] = pd.Field([])
     ghost_entities: List[
-            Annotated[
-                Union[GhostSphere, GhostCircularPlane, WindTunnelGhostSurface],
-                pd.Field(discriminator="private_attribute_entity_type_name"),
-            ],
+        Annotated[
+            Union[GhostSphere, GhostCircularPlane, WindTunnelGhostSurface],
+            pd.Field(discriminator="private_attribute_entity_type_name"),
+        ],
     ] = pd.Field([])
 
     @abstractmethod
