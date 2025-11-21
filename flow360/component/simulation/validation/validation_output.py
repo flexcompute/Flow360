@@ -7,6 +7,7 @@ from typing import List, Literal, Union, get_args, get_origin
 from flow360.component.simulation.models.volume_models import Fluid
 from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
+    ForceDistributionOutput,
     ProbeOutput,
     SurfaceIntegralOutput,
     SurfaceProbeOutput,
@@ -59,7 +60,11 @@ def _check_output_fields(params):
     additional_fields = [item.name for item in params.user_defined_fields]
 
     for output_index, output in enumerate(params.outputs):
-        if output.output_type in ("AeroAcousticOutput", "StreamlineOutput"):
+        if output.output_type in (
+            "AeroAcousticOutput",
+            "StreamlineOutput",
+            "ForceDistributionOutput",
+        ):
             continue
         # Get allowed output fields items:
         natively_supported = extract_literal_values(
@@ -111,7 +116,11 @@ def _check_output_fields_valid_given_turbulence_model(params):
             break
 
     for output_index, output in enumerate(params.outputs):
-        if output.output_type in ("AeroAcousticOutput", "StreamlineOutput"):
+        if output.output_type in (
+            "AeroAcousticOutput",
+            "StreamlineOutput",
+            "ForceDistributionOutput",
+        ):
             continue
         for item in output.output_fields.items:
             if isinstance(item, str) and item in invalid_output_fields[turbulence_model]:
@@ -155,7 +164,11 @@ def _check_output_fields_valid_given_transition_model(params):
     ]
 
     for output_index, output in enumerate(params.outputs):
-        if output.output_type in ("AeroAcousticOutput", "StreamlineOutput"):
+        if output.output_type in (
+            "AeroAcousticOutput",
+            "StreamlineOutput",
+            "ForceDistributionOutput",
+        ):
             continue
         for item in output.output_fields.items:
             if isinstance(item, str) and item in transition_output_fields:
@@ -221,6 +234,26 @@ def _check_unique_surface_volume_probe_names(params):
                     "outputs."
                 )
             active_probe_names.add(output.name)
+
+    return params
+
+
+def _check_unique_force_distribution_output_names(params):
+
+    if not params.outputs:
+        return params
+
+    active_names = set()
+
+    for output_index, output in enumerate(params.outputs):
+        if isinstance(output, ForceDistributionOutput):
+            if output.name in active_names:
+                raise ValueError(
+                    f"In `outputs`[{output_index}] {output.output_type}: "
+                    f"Output name {output.name} has already been used for a `ForceDistributionOutput`. "
+                    "Output names must be unique among all force distribution outputs."
+                )
+            active_names.add(output.name)
 
     return params
 
