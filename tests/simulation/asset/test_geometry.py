@@ -7,7 +7,9 @@ import pytest
 from flow360 import exceptions as ex
 from flow360.component.geometry import Geometry, GeometryMeta
 from flow360.component.resource_base import local_metadata_builder
+from flow360.component.simulation.primitives import SnappyBody, Surface
 from flow360.examples import Cylinder3D
+from flow360.exceptions import Flow360ValueError
 
 assertions = unittest.TestCase("__init__")
 
@@ -21,6 +23,29 @@ geo_meta = {
 @pytest.fixture(autouse=True)
 def change_test_dir(request, monkeypatch):
     monkeypatch.chdir(request.fspath.dirname)
+
+
+@pytest.fixture
+def stl_geo_meta():
+    geo_meta = {
+        "id": "geo-b2ca24af-f60d-4fb3-8120-c653f3e65be6",
+        "name": "stl_mixed_convention",
+        "s3_path": "s3://flow360meshes-v1/users/user-id",
+    }
+
+    geometry = Geometry.from_local_storage(
+        geometry_id=geo_meta["id"],
+        local_storage_path=os.path.join("../../data", geo_meta["id"]),
+        meta_data=GeometryMeta(
+            **local_metadata_builder(
+                id=geo_meta["id"],
+                name=geo_meta["name"],
+                cloud_path_prefix=geo_meta["s3_path"].rsplit("/", 1)[0],
+                status="processed",
+            )
+        ),
+    )
+    return geometry
 
 
 def test_draft_geometry_from_file():
@@ -296,3 +321,54 @@ def test_geometry_rename_body_groups():
         match=(f"No entity found in registry with given name/naming pattern: 'newAirplane_0002'."),
     ):
         assert geometry["newAirplane_0002"]
+
+
+def test_geometry_group_for_snappy(stl_geo_meta):
+    geo: Geometry = stl_geo_meta
+
+    with pytest.raises(Flow360ValueError):
+        geo.snappy_bodies
+
+    geo.group_faces_for_snappy()
+
+    # body with one region
+    assert isinstance(geo.snappy_bodies["rr-wh-rim-lhs"], SnappyBody)
+    assert len(geo.snappy_bodies["rr-wh-rim-lhs"]["*"]) == 1
+    assert isinstance(geo.snappy_bodies["rr-wh-rim-lhs"]["*"][0], Surface)
+    assert geo.snappy_bodies["rr-wh-rim-lhs"]["*"][0].name == "rr-wh-rim-lhs"
+
+    # body with more regions
+    assert all([isinstance(region, Surface) for region in geo.snappy_bodies["tunnel"]["*"]])
+    assert len(geo.snappy_bodies["tunnel"]["*"]) == 5
+
+    # registry wildcard
+    assert len(geo["uf*"]) == 2
+    assert len(geo["velocity*"]) == 10
+    assert all([isinstance(region, Surface) for region in geo["velocity*"]])
+    assert all([isinstance(region, SnappyBody) for region in geo.snappy_bodies["velocity*"]])
+
+    # double indexing with wildcard
+    assert len(geo.snappy_bodies["*nn*"]["*"]) == 6
+
+
+def test_snappy_grouping_not_found_messages(stl_geo_meta):
+    geo: Geometry = stl_geo_meta
+
+    geo.group_faces_for_snappy()
+
+    with pytest.raises(
+        ValueError,
+        match=(f"No entity found in registry with given name/naming pattern: 'dummy'."),
+    ):
+        assert geo.snappy_bodies["dummy"]
+
+    with pytest.raises(
+        ValueError,
+        match=(
+            f"No entity found in registry for parent entities: body-inner-nlyr, tunnel with given name/naming pattern: 'dummy'."
+        ),
+    ):
+        assert geo.snappy_bodies["*nn*"]["dummy"]
+
+    with pytest.raises(KeyError):
+        assert geo.snappy_bodies["body-nose"]["dummy*"]

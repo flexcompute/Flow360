@@ -19,9 +19,15 @@ from flow360.component.simulation.meshing_param.face_params import (
     BoundaryLayer,
     GeometryRefinement,
 )
-from flow360.component.simulation.meshing_param.params import (
+from flow360.component.simulation.meshing_param.meshing_specs import (
     MeshingDefaults,
+    VolumeMeshingDefaults,
+)
+from flow360.component.simulation.meshing_param.params import (
     MeshingParams,
+    ModularMeshingWorkflow,
+    VolumeMeshingParams,
+    snappy,
 )
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
@@ -54,6 +60,7 @@ from flow360.component.simulation.models.surface_models import (
 )
 from flow360.component.simulation.models.volume_models import (
     AngleExpression,
+    AngularVelocity,
     Fluid,
     HeatEquationInitialCondition,
     NavierStokesInitialCondition,
@@ -92,6 +99,7 @@ from flow360.component.simulation.primitives import (
     GhostCircularPlane,
     GhostSphere,
     GhostSurface,
+    SeedpointVolume,
     Surface,
     SurfacePrivateAttributes,
 )
@@ -1697,7 +1705,6 @@ def test_validate_liquid_operating_condition():
             ],
             outputs=[
                 VolumeOutput(
-                    frequency=1,
                     output_format="both",
                     output_fields=["four"],
                 ),
@@ -1717,7 +1724,7 @@ def test_validate_liquid_operating_condition():
         validation_level="All",
     )
 
-    assert len(errors) == 3
+    assert len(errors) == 2
     assert (
         errors[0]["msg"]
         == "Value error, `Outflow` type model cannot be used when using liquid as simulation material."
@@ -1725,14 +1732,9 @@ def test_validate_liquid_operating_condition():
     assert errors[0]["loc"] == ("models",)
     assert (
         errors[1]["msg"]
-        == "Value error, user_defined_dynamics cannot be used when using liquid as simulation material."
-    )
-    assert errors[1]["loc"] == ("user_defined_dynamics",)
-    assert (
-        errors[2]["msg"]
         == "Value error, user_defined_fields cannot be used when using liquid as simulation material."
     )
-    assert errors[2]["loc"] == ("user_defined_fields",)
+    assert errors[1]["loc"] == ("user_defined_fields",)
 
     with u.SI_unit_system:
         params = SimulationParams(
@@ -2144,7 +2146,6 @@ def test_redefined_user_defined_fields():
             ),
             outputs=[
                 VolumeOutput(
-                    frequency=1,
                     output_format="both",
                     output_fields=["pressure"],
                 ),
@@ -2248,7 +2249,110 @@ def test_check_custom_volume_in_volume_zones():
     )
     assert len(errors) == 1
     assert errors[0]["msg"] == (
-        "Value error, CustomVolume zone2 is not listed under meshing->volume_zones->CustomZones."
+        "Value error, CustomVolume zone2 is not listed under meshing->volume_zones(or zones)->CustomZones."
+    )
+    assert errors[0]["loc"] == ("models", 0, "entities", "stored_entities")
+
+    zone_3 = CustomVolume(name="zone3", boundaries=[Surface(name="face3")])
+    zone_3.axis = (1, 0, 0)
+    zone_3.center = (0, 0, 0) * u.mm
+
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=ModularMeshingWorkflow(
+                volume_meshing=VolumeMeshingParams(
+                    defaults=VolumeMeshingDefaults(boundary_layer_first_layer_thickness=1e-4),
+                ),
+                zones=[
+                    CustomZones(
+                        name="custom_zones",
+                        entities=[CustomVolume(name="zone1", boundaries=[Surface(name="face1")])],
+                    ),
+                ],
+            ),
+            models=[
+                PorousMedium(
+                    entities=[zone_2],
+                    darcy_coefficient=(1, 0, 0) / u.m**2,
+                    forchheimer_coefficient=(1, 0, 0) / u.m,
+                    volumetric_heat_source=1.0 * u.W / u.m**3,
+                ),
+                Rotation(volumes=[zone_3], spec=AngularVelocity(30 * u.rpm)),
+            ],
+            private_attribute_asset_cache=AssetCache(
+                use_inhouse_mesher=True,
+                project_entity_info=SurfaceMeshEntityInfo(
+                    boundaries=[
+                        Surface(name="face1"),
+                        Surface(name="face2"),
+                    ]
+                ),
+            ),
+        )
+    params, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="SurfaceMesh",
+        validation_level="All",
+    )
+    assert len(errors) == 2
+    assert errors[0]["msg"] == (
+        "Value error, CustomVolume zone2 is not listed under meshing->volume_zones(or zones)->CustomZones."
+    )
+    assert errors[0]["loc"] == ("models", 0, "entities", "stored_entities")
+
+    assert errors[1]["msg"] == (
+        "Value error, CustomVolume zone3 is not listed under meshing->volume_zones(or zones)->CustomZones."
+    )
+    assert errors[1]["loc"] == ("models", 1, "entities", "stored_entities")
+
+    zone2prim = SeedpointVolume(name="zone2", point_in_mesh=(0, 0, 0) * u.mm)
+    zone2prim.axes = [(1, 0, 0), (0, 1, 0)]
+
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=ModularMeshingWorkflow(
+                surface_meshing=snappy.SurfaceMeshingParams(
+                    defaults=snappy.SurfaceMeshingDefaults(
+                        min_spacing=2 * u.mm, max_spacing=4 * u.mm, gap_resolution=1 * u.mm
+                    )
+                ),
+                volume_meshing=VolumeMeshingParams(
+                    defaults=VolumeMeshingDefaults(boundary_layer_first_layer_thickness=1e-4),
+                ),
+                zones=[
+                    CustomZones(
+                        entities=[SeedpointVolume(name="zone1", point_in_mesh=(0, 0, 0) * u.mm)]
+                    )
+                ],
+            ),
+            models=[
+                PorousMedium(
+                    entities=[zone2prim],
+                    darcy_coefficient=(1, 0, 0) / u.m**2,
+                    forchheimer_coefficient=(1, 0, 0) / u.m,
+                    volumetric_heat_source=1.0 * u.W / u.m**3,
+                ),
+            ],
+            private_attribute_asset_cache=AssetCache(
+                use_inhouse_mesher=True,
+                project_entity_info=SurfaceMeshEntityInfo(
+                    boundaries=[
+                        Surface(name="face1"),
+                        Surface(name="face2"),
+                    ]
+                ),
+            ),
+        )
+    params, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="Geometry",
+        validation_level="All",
+    )
+    assert len(errors) == 1
+    assert errors[0]["msg"] == (
+        "Value error, SeedpointVolume zone2 is not listed under meshing->volume_zones(or zones)->CustomZones."
     )
     assert errors[0]["loc"] == ("models", 0, "entities", "stored_entities")
 
@@ -2281,3 +2385,60 @@ def test_ghost_surface_pair_requires_quasi_3d_periodic_farfield():
     # Case 4: Farfield method IS "quasi-3d-periodic" → should pass
     with SI_unit_system, ValidationContext(CASE, quasi_3d_periodic_farfield_context):
         Periodic(surface_pairs=(periodic_1, periodic_2), spec=Translational())
+
+
+def test_seedpoint_zone_based_params():
+    from flow360.component.simulation.meshing_param.volume_params import CustomZones
+
+    with SI_unit_system:
+        far_field_zone = SeedpointVolume(
+            point_in_mesh=[32.5231, 112.35123, 32.342] * u.mm, name="fluid"
+        )
+        radiator_zone = SeedpointVolume(
+            point_in_mesh=[3.2341, -1.324535, 23.345211] * u.mm,
+            name="radiator",
+            axes=[(1, 0, 0), (0, 1, 0)],
+        )
+
+        params = SimulationParams(
+            meshing=ModularMeshingWorkflow(
+                surface_meshing=snappy.SurfaceMeshingParams(
+                    defaults=snappy.SurfaceMeshingDefaults(
+                        min_spacing=1 * u.mm, max_spacing=100 * u.mm, gap_resolution=0.01 * u.mm
+                    ),
+                    smooth_controls=snappy.SmoothControls(
+                        lambda_factor=0.7, mu_factor=0, iterations=3
+                    ),
+                ),
+                volume_meshing=VolumeMeshingParams(
+                    defaults=VolumeMeshingDefaults(
+                        boundary_layer_growth_rate=1.2,
+                        boundary_layer_first_layer_thickness=0.01 * u.mm,
+                    ),
+                ),
+                zones=[CustomZones(entities=[far_field_zone, radiator_zone])],
+            ),
+            operating_condition=AerospaceCondition(
+                velocity_magnitude=40 * u.m / u.s,
+            ),
+            time_stepping=Steady(),
+            models=[Wall(surfaces=[Surface(name="face1")])],
+            private_attribute_asset_cache=AssetCache(
+                use_inhouse_mesher=True,
+                project_entity_info=SurfaceMeshEntityInfo(
+                    boundaries=[
+                        Surface(name="face1"),
+                        Surface(name="face2"),
+                    ]
+                ),
+            ),
+        )
+
+    params, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="Geometry",
+        validation_level="All",
+    )
+
+    assert errors is None

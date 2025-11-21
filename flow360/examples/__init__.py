@@ -4,6 +4,7 @@ from .bet_evtol import BETEVTOL
 from .bet_example_data import BETExampleData
 from .bet_line import BETLine
 from .convergence import Convergence
+from .cube import Cube
 from .cylinder2D import Cylinder2D
 from .cylinder3D import Cylinder3D
 from .drivaer import DrivAer
@@ -31,6 +32,7 @@ __all__ = [
     "BETExampleData",
     "BETLine",
     "Convergence",
+    "Cube",
     "Cylinder2D",
     "Cylinder3D",
     "DrivAer",

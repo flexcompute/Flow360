@@ -1,5 +1,5 @@
 {
-    "version": "25.8.0b4",
+    "version": "25.8.0b5",
     "unit_system": {
         "name": "SI"
     },
@@ -219,7 +219,8 @@
             },
             "transition_model_solver": {
                 "type_name": "None"
-            }
+            },
+            "interface_interpolation_tolerance" : 0.2
         }
     ],
     "time_stepping": {

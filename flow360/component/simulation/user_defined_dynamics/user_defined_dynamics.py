@@ -11,6 +11,7 @@ from flow360.component.simulation.primitives import (
     CustomVolume,
     Cylinder,
     GenericVolume,
+    SeedpointVolume,
     Surface,
 )
 from flow360.component.simulation.validation.validation_context import (
@@ -145,16 +146,18 @@ class UserDefinedDynamic(Flow360BaseModel):
     @pd.field_validator("output_target", mode="after")
     @classmethod
     def _ensure_custom_volume_is_valid(
-        cls, value: Optional[Union[Cylinder, GenericVolume, Surface, CustomVolume]]
+        cls,
+        value: Optional[Union[GenericVolume, Cylinder, CustomVolume, SeedpointVolume]],
     ):
         """Ensure parent volume is a custom volume."""
         if value is None:
             return value
         validation_info = get_validation_info()
-        if validation_info is None or not isinstance(value, CustomVolume):
+        if validation_info is None or not isinstance(value, (CustomVolume, SeedpointVolume)):
             return value
         if value.name not in validation_info.to_be_generated_custom_volumes:
             raise ValueError(
-                f"Parent CustomVolume {value.name} is not listed under meshing->volume_zones->CustomZones."
+                f"Parent {type(value).__name__} {value.name} is not listed under meshing->volume_zones(or zones)"
+                + "->CustomZones."
             )
         return value

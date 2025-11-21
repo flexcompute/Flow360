@@ -13,6 +13,8 @@ import unyt as u
 from flow360.component.simulation.framework.base_model import snake_to_camel
 from flow360.component.simulation.framework.entity_base import EntityBase, EntityList
 from flow360.component.simulation.framework.unique_list import UniqueItemList
+from flow360.component.simulation.meshing_param import snappy
+from flow360.component.simulation.meshing_param.params import ModularMeshingWorkflow
 from flow360.component.simulation.primitives import (
     BOUNDARY_FULL_NAME_WHEN_NOT_FOUND,
     _SurfaceEntityBase,
@@ -22,6 +24,7 @@ from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.user_code.core.types import Expression
 from flow360.component.simulation.utils import is_exact_instance
+from flow360.exceptions import Flow360TranslationError
 
 
 def preprocess_input(func):
@@ -448,3 +451,20 @@ def merge_unique_item_lists(list1: list[str], list2: list[str]) -> list:
     """Merge two lists and remove duplicates."""
     combined = list1 + list2
     return list(OrderedDict.fromkeys(combined))
+
+
+def ensure_meshing_is_specified(input_params: SimulationParams):
+    """Check if meshing parameters are included in SimulationParams."""
+    if input_params.meshing is None:
+        raise Flow360TranslationError(
+            "meshing not specified.",
+            None,
+            ["meshing"],
+        )
+
+
+def using_snappy(input_params: SimulationParams):
+    """Checks if snappy is being used"""
+    return isinstance(input_params.meshing, ModularMeshingWorkflow) and isinstance(
+        input_params.meshing.surface_meshing, snappy.SurfaceMeshingParams
+    )

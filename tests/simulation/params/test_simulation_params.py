@@ -13,11 +13,16 @@ from flow360.component.simulation.entity_info import (
 )
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
 from flow360.component.simulation.framework.param_utils import AssetCache
+from flow360.component.simulation.meshing_param import snappy
 from flow360.component.simulation.meshing_param.params import (
     MeshingDefaults,
     MeshingParams,
+    ModularMeshingWorkflow,
 )
-from flow360.component.simulation.meshing_param.volume_params import UniformRefinement
+from flow360.component.simulation.meshing_param.volume_params import (
+    CustomZones,
+    UniformRefinement,
+)
 from flow360.component.simulation.migration.extra_operating_condition import (
     operating_condition_from_mach_muref,
 )
@@ -53,6 +58,7 @@ from flow360.component.simulation.primitives import (
     Edge,
     GenericVolume,
     ReferenceGeometry,
+    SeedpointVolume,
     Surface,
 )
 from flow360.component.simulation.simulation_params import SimulationParams
@@ -210,6 +216,41 @@ def get_param_with_liquid_operating_condition():
         return param
 
 
+@pytest.fixture()
+def get_param_with_list_of_lengths():
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=ModularMeshingWorkflow(
+                surface_meshing=snappy.SurfaceMeshingParams(
+                    defaults=snappy.SurfaceMeshingDefaults(
+                        min_spacing=10 * u.mm, max_spacing=2 * u.m, gap_resolution=0.01 * u.m
+                    ),
+                    refinements=[
+                        snappy.SurfaceEdgeRefinement(
+                            spacing=[1e-3, 8] * u.m,
+                            distances=[0.4 * u.mm, 2 * u.m],
+                            entities=[Surface(name="test")],
+                        )
+                    ],
+                ),
+                zones=[
+                    CustomZones(
+                        name="custom_zones",
+                        entities=[SeedpointVolume(name="fluid", point_in_mesh=[1, 1, 1])],
+                    )
+                ],
+            ),
+            operating_condition=AerospaceCondition.from_mach(
+                mach=0.8,
+                alpha=30 * u.deg,
+                beta=20 * u.deg,
+                thermal_state=ThermalState(temperature=300 * u.K, density=1 * u.g / u.cm**3),
+                reference_mach=0.5,
+            ),
+        )
+    return params
+
+
 @pytest.mark.usefixtures("array_equality_override")
 def test_simulation_params_serialization(get_the_param):
     to_file_from_file_test(get_the_param)
@@ -282,6 +323,26 @@ def test_simulation_params_unit_conversion(get_the_param):
         converted.models[6].turbulence_quantities.specific_dissipation_rate.value,
         28.80012584,
     )
+
+
+@pytest.mark.usefixtures("array_equality_override")
+def test_simulation_params_unit_conversion_with_list_of_lengths(get_param_with_list_of_lengths):
+    converted = get_param_with_list_of_lengths._preprocess(mesh_unit=10 * u.m)
+
+    assertions.assertAlmostEqual(converted.meshing.surface_meshing.defaults.min_spacing.value, 1e-3)
+    assertions.assertAlmostEqual(converted.meshing.surface_meshing.defaults.max_spacing, 0.2)
+
+    assertions.assertAlmostEqual(converted.meshing.surface_meshing.defaults.gap_resolution, 1e-3)
+
+    assertions.assertAlmostEqual(converted.meshing.surface_meshing.refinements[0].spacing[0], 1e-4)
+
+    assertions.assertAlmostEqual(converted.meshing.surface_meshing.refinements[0].spacing[1], 0.8)
+
+    assertions.assertAlmostEqual(
+        converted.meshing.surface_meshing.refinements[0].distances[0], 4e-5
+    )
+
+    assertions.assertAlmostEqual(converted.meshing.surface_meshing.refinements[0].distances[1], 0.2)
 
 
 def test_standard_atmosphere():

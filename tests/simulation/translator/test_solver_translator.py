@@ -11,10 +11,8 @@ from flow360.component.project_utils import set_up_params_for_uploading
 from flow360.component.resource_base import local_metadata_builder
 from flow360.component.simulation.entity_info import SurfaceMeshEntityInfo
 from flow360.component.simulation.framework.param_utils import AssetCache
-from flow360.component.simulation.meshing_param.params import (
-    MeshingDefaults,
-    MeshingParams,
-)
+from flow360.component.simulation.meshing_param.meshing_specs import MeshingDefaults
+from flow360.component.simulation.meshing_param.params import MeshingParams
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     CustomZones,
@@ -746,6 +744,15 @@ def test_boundaries():
                     ),
                     velocity_direction=(0, 1, 0),
                 ),
+                Inflow(
+                    name="inflow-4",
+                    total_temperature="1 + x",
+                    surfaces=Surface(name="boundary_name_D"),
+                    spec=TotalPressure(
+                        value="1 + sin(y)",
+                    ),
+                    velocity_direction=(0, 1, 0),
+                ),
                 Outflow(
                     name="outflow-1",
                     surfaces=Surface(name="boundary_name_E"),
@@ -1353,6 +1360,7 @@ def test_auto_ref_area_settings():
             "refArea": 0.0040039062500000005,
             "momentCenter": [0.0, 0.0, 0.0],
             "momentLength": [0.01, 0.01, 0.010001],
+            "interfaceInterpolationTolerance": 0.2,
         },
         translated["geometry"],
     )

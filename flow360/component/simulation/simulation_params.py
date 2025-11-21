@@ -27,7 +27,10 @@ from flow360.component.simulation.framework.updater_utils import (
     Flow360Version,
     recursive_remove_key,
 )
-from flow360.component.simulation.meshing_param.params import MeshingParams
+from flow360.component.simulation.meshing_param.params import (
+    MeshingParams,
+    ModularMeshingWorkflow,
+)
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     RotationCylinder,
@@ -86,6 +89,7 @@ from flow360.component.simulation.utils import model_attribute_unlock
 from flow360.component.simulation.validation.validation_output import (
     _check_aero_acoustics_observer_time_step_size,
     _check_output_fields,
+    _check_output_fields_valid_given_transition_model,
     _check_output_fields_valid_given_turbulence_model,
     _check_unique_surface_volume_probe_entity_names,
     _check_unique_surface_volume_probe_names,
@@ -258,9 +262,10 @@ class _ParamModelBase(Flow360BaseModel):
 class SimulationParams(_ParamModelBase):
     """All-in-one class for surface meshing + volume meshing + case configurations"""
 
-    meshing: Optional[MeshingParams] = ConditionalField(
+    meshing: Optional[Union[MeshingParams, ModularMeshingWorkflow]] = ConditionalField(
         None,
         context=[SURFACE_MESH, VOLUME_MESH],
+        discriminator="type_name",
         description="Surface and volume meshing parameters. See :class:`MeshingParams` for more details.",
     )
 
@@ -441,7 +446,7 @@ class SimulationParams(_ParamModelBase):
         """Ensure that all the cylinder names used in ActuatorDisks are unique."""
         return _check_duplicate_actuator_disk_cylinder_names(models)
 
-    @pd.field_validator("user_defined_dynamics", "user_defined_fields", mode="after")
+    @pd.field_validator("user_defined_fields", mode="after")
     @classmethod
     def _disable_expression_for_liquid(cls, value, info: pd.ValidationInfo):
         """Ensure that string expressions are disabled for liquid simulation."""
@@ -560,6 +565,11 @@ class SimulationParams(_ParamModelBase):
         return _check_output_fields_valid_given_turbulence_model(params)
 
     @pd.model_validator(mode="after")
+    def check_output_fields_valid_given_transition_model(params):
+        """Check output fields are valid given the transition model"""
+        return _check_output_fields_valid_given_transition_model(params)
+
+    @pd.model_validator(mode="after")
     def check_and_add_rotating_reference_frame_model_flag_in_volumezones(params):
         """Ensure that all volume zones have the rotating_reference_frame_model flag with correct values"""
         return _check_and_add_noninertial_reference_frame_flag(params)
@@ -584,23 +594,32 @@ class SimulationParams(_ParamModelBase):
 
         ##::1. Update full names in the Surface entities with zone names
         # pylint: disable=no-member
-        if self.meshing is not None and self.meshing.volume_zones is not None:
-            for volume in self.meshing.volume_zones:
-                if isinstance(volume, AutomatedFarfield):
-                    _set_boundary_full_name_with_zone_name(
-                        registry,
-                        "farfield",
-                        volume.private_attribute_entity.name,
-                    )
-                    _set_boundary_full_name_with_zone_name(
-                        registry,
-                        "symmetric*",
-                        volume.private_attribute_entity.name,
-                    )
-                if isinstance(volume, (RotationCylinder, RotationVolume)):
-                    # pylint: disable=fixme
-                    # TODO: Implement this
-                    pass
+        if self.meshing is not None:
+            volume_zones = None
+            if isinstance(self.meshing, MeshingParams):
+                volume_zones = self.meshing.volume_zones
+            if (
+                isinstance(self.meshing, ModularMeshingWorkflow)
+                and self.meshing.volume_meshing is not None
+            ):
+                volume_zones = self.meshing.zones
+            if volume_zones is not None:
+                for volume in volume_zones:
+                    if isinstance(volume, AutomatedFarfield):
+                        _set_boundary_full_name_with_zone_name(
+                            registry,
+                            "farfield",
+                            volume.private_attribute_entity.name,
+                        )
+                        _set_boundary_full_name_with_zone_name(
+                            registry,
+                            "symmetric*",
+                            volume.private_attribute_entity.name,
+                        )
+                    if isinstance(volume, (RotationCylinder, RotationVolume)):
+                        # pylint: disable=fixme
+                        # TODO: Implement this
+                        pass
 
         return registry
 
@@ -642,9 +661,9 @@ class SimulationParams(_ParamModelBase):
         return self.operating_condition.thermal_state.speed_of_sound.to("m/s")
 
     @property
-    def _liquid_reference_velocity(self) -> VelocityType:
+    def reference_velocity(self) -> VelocityType:
         """
-        This function returns the reference velocity for liquid operating condition.
+        This function returns the **reference velocity**.
         Note that the reference velocity is **NOT** the non-dimensionalization velocity scale
 
         For dimensionalization of Flow360 output (converting FROM flow360 unit)
@@ -655,8 +674,10 @@ class SimulationParams(_ParamModelBase):
         # pylint:disable=no-member
         if self.operating_condition.reference_velocity_magnitude is not None:
             reference_velocity = (self.operating_condition.reference_velocity_magnitude).to("m/s")
-        else:
+        elif self.operating_condition.type_name == "LiquidOperatingCondition":
             reference_velocity = self.base_velocity.to("m/s") * LIQUID_IMAGINARY_FREESTREAM_MACH
+        else:
+            reference_velocity = self.operating_condition.velocity_magnitude.to("m/s")
         return reference_velocity
 
     @property

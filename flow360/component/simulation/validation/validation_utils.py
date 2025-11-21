@@ -3,7 +3,10 @@ validation utility functions
 """
 
 from functools import wraps
-from typing import get_args
+from typing import Any, Tuple, Union, get_args
+
+from pydantic import ValidationError
+from pydantic_core import InitErrorDetails
 
 from flow360.component.simulation.entity_info import DraftEntityTypes
 from flow360.component.simulation.primitives import (
@@ -61,6 +64,54 @@ def _validator_append_instance_name(func):
             raise ValueError(f"{prepend_message}: {str(e)}") from e
 
     return wrapper
+
+
+def customize_model_validator_error(
+    model_instance,
+    relative_location: Tuple[Union[str, int], ...],
+    message: str,
+    input_value: Any = None,
+):
+    """
+    Create a Pydantic ValidationError with a custom field location.
+
+    This function creates validation errors for model_validator that point to
+    specific fields in nested structures, making error messages more precise and useful.
+
+    Args:
+        model_instance: The Pydantic model instance (e.g., self in a model_validator)
+        relative_location: Tuple specifying the field path relative to current model
+             e.g., ("field_name",) or ("outputs", 0, "output_fields", "items", 2)
+        message: The error message describing what went wrong
+        input_value: The invalid input value. If None, uses model_instance.model_dump()
+
+    Returns:
+        ValidationError: A Pydantic ValidationError that can be raised or merged
+
+    Example:
+        @model_validator(mode='after')
+        def validate_outputs(self):
+            if invalid_condition:
+                raise customized_model_validation_error(
+                    self,
+                    relative_location=("outputs", output_index, "output_fields", "items", item_index),
+                    message=f"{item} is not a valid output field",
+                    input_value=item
+                )
+            return self
+    """
+
+    return ValidationError.from_exception_data(
+        title=model_instance.__class__.__name__,
+        line_errors=[
+            InitErrorDetails(
+                type="value_error",
+                loc=relative_location,
+                input=input_value or model_instance.model_dump(),
+                ctx={"error": ValueError(message)},
+            )
+        ],
+    )
 
 
 def check_deleted_surface_in_entity_list(value):
@@ -315,3 +366,18 @@ class EntityUsageMap:  # pylint:disable=too-few-public-methods
         )
         entity_log["model_list"].append(model_type)
         self.dict_entity[entity_type][entity_key] = entity_log
+
+
+def check_geometry_ai_features(cls, value, info):
+    """Ensure GAI features are not specified when GAI is not used"""
+    validation_info = get_validation_info()
+
+    if validation_info is None:
+        return value
+
+    # pylint: disable=unsubscriptable-object
+    default_value = cls.model_fields[info.field_name].default
+    if value != default_value and not validation_info.use_geometry_AI:
+        raise ValueError(f"{info.field_name} is only supported when geometry AI is used.")
+
+    return value

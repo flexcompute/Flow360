@@ -11,6 +11,7 @@ from flow360.component.simulation import migration, services
 from flow360.component.simulation import units as u
 from flow360.component.simulation.entity_operation import Transformation
 from flow360.component.simulation.folder import Folder
+from flow360.component.simulation.meshing_param import snappy
 from flow360.component.simulation.meshing_param.edge_params import (
     AngleBasedRefinement,
     AspectRatioBasedRefinement,
@@ -24,9 +25,15 @@ from flow360.component.simulation.meshing_param.face_params import (
     PassiveSpacing,
     SurfaceRefinement,
 )
-from flow360.component.simulation.meshing_param.params import (
+from flow360.component.simulation.meshing_param.meshing_specs import (
     MeshingDefaults,
+    OctreeSpacing,
+    VolumeMeshingDefaults,
+)
+from flow360.component.simulation.meshing_param.params import (
     MeshingParams,
+    ModularMeshingWorkflow,
+    VolumeMeshingParams,
 )
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
@@ -146,6 +153,7 @@ from flow360.component.simulation.primitives import (
     Cylinder,
     ImportedSurface,
     ReferenceGeometry,
+    SeedpointVolume,
 )
 from flow360.component.simulation.run_control.run_control import RunControl
 from flow360.component.simulation.run_control.stopping_criterion import (
@@ -178,6 +186,7 @@ from flow360.component.surface_mesh_v2 import SurfaceMeshV2 as SurfaceMesh
 from flow360.component.volume_mesh import VolumeMeshV2 as VolumeMesh
 from flow360.environment import Env
 from flow360.plugins import report
+from flow360.version_utils import warn_if_prerelease_version as _warn_prerelease
 
 __all__ = [
     "GeometryRefinement",
@@ -313,11 +322,19 @@ __all__ = [
     "math",
     "solution",
     "report",
+    "snappy",
+    "ModularMeshingWorkflow",
+    "SeedpointVolume",
+    "VolumeMeshingParams",
+    "VolumeMeshingDefaults",
     "get_user_variable",
     "show_user_variables",
     "remove_user_variable",
     "StoppingCriterion",
     "MovingStatistic",
     "ImportedSurface",
+    "OctreeSpacing",
     "RunControl",
 ]
+
+_warn_prerelease()
