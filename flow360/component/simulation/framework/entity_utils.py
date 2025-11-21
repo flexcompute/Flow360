@@ -1,3 +1,5 @@
+"""Shared utilities for entity operations."""
+
 import uuid
 
 
