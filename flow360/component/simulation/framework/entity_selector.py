@@ -8,7 +8,7 @@ import re
 from collections import deque
 from dataclasses import dataclass, field
 from functools import lru_cache
-from typing import Any, List, Literal, Optional, Union, get_args
+from typing import Any, Dict, List, Literal, Optional, Union, get_args
 
 import pydantic as pd
 from typing_extensions import Self
@@ -18,6 +18,8 @@ from flow360.component.simulation.framework.entity_utils import generate_uuid
 
 # These corresponds to the private_attribute_entity_type_name of supported entity types.
 TargetClass = Literal["Surface", "Edge", "GenericVolume", "GeometryBodyGroup"]
+
+EntityNode = Union[Any, Dict[str, Any]]  # Union[EntityBase, Dict[str, Any]]
 
 
 class Predicate(Flow360BaseModel):
@@ -125,14 +127,13 @@ class EntityDictDatabase:
 
     Entity database for entity selectors. Provides a unified data interface for entity selectors.
 
-    This is intended to strip off differences between root resources and
-    ensure the expansion has a uniform data interface.
+    Stored items can be either plain dictionaries (serialized form) or deserialized entity objects.
     """
 
-    surfaces: list[dict] = field(default_factory=list)
-    edges: list[dict] = field(default_factory=list)
-    generic_volumes: list[dict] = field(default_factory=list)
-    geometry_body_groups: list[dict] = field(default_factory=list)
+    surfaces: list[EntityNode] = field(default_factory=list)
+    edges: list[EntityNode] = field(default_factory=list)
+    generic_volumes: list[EntityNode] = field(default_factory=list)
+    geometry_body_groups: list[EntityNode] = field(default_factory=list)
 
 
 ########## API IMPLEMENTATION ##########
@@ -380,7 +381,9 @@ def generate_entity_selector_from_class(
 
 
 ########## EXPANSION IMPLEMENTATION ##########
-def _get_entity_pool(entity_database: EntityDictDatabase, target_class: TargetClass) -> list[dict]:
+def _get_entity_pool(
+    entity_database: EntityDictDatabase, target_class: TargetClass
+) -> list[EntityNode]:
     """Return the correct entity list from the database for the target class."""
     if target_class == "Surface":
         return entity_database.surfaces
@@ -440,12 +443,43 @@ def _compile_glob_cached(pattern: str) -> re.Pattern:
     return re.compile(translated)
 
 
-def _get_attribute_value(entity: dict, attribute: str) -> Optional[str]:
+def _get_node_attribute(entity: Any, attribute: str):
+    """Return attribute value from either dicts or entity objects."""
+    if isinstance(entity, dict):
+        return entity.get(attribute)
+    return getattr(entity, attribute, None)
+
+
+def _collect_known_selectors_from_asset_cache(asset_cache) -> dict[str, dict]:
+    """Normalize selector definitions originating from asset cache."""
+    if asset_cache is None:
+        return {}
+    if isinstance(asset_cache, dict):
+        selectors = asset_cache.get("selectors", [])
+    else:
+        selectors = getattr(asset_cache, "selectors", [])
+    known: dict[str, dict] = {}
+    for item in selectors or []:
+        if isinstance(item, str):
+            continue
+        if hasattr(item, "model_dump"):
+            selector_dict = item.model_dump(mode="json", exclude_none=True)
+        elif isinstance(item, dict):
+            selector_dict = item
+        else:
+            continue
+        name = selector_dict.get("name")
+        if name:
+            known[name] = selector_dict
+    return known
+
+
+def _get_attribute_value(entity: Any, attribute: str) -> Optional[str]:
     """Return the scalar string value of an attribute, or None if absent/unsupported.
 
     Only scalar string attributes are supported by this matcher layer for now.
     """
-    val = entity.get(attribute)
+    val = _get_node_attribute(entity, attribute)
     if isinstance(val, str):
         return val
     return None
@@ -496,20 +530,20 @@ def _build_value_matcher(predicate: dict):
     return base_match
 
 
-def _build_index(pool: list[dict], attribute: str) -> dict[str, list[int]]:
+def _build_index(pool: list[EntityNode], attribute: str) -> dict[str, list[int]]:
     """Build an index for in lookups on a given attribute."""
     value_to_indices: dict[str, list[int]] = {}
     for idx, item in enumerate(pool):
-        val = item.get(attribute)
+        val = _get_node_attribute(item, attribute)
         if isinstance(val, str):
             value_to_indices.setdefault(val, []).append(idx)
     return value_to_indices
 
 
 def _apply_or_selector(
-    pool: list[dict],
+    pool: list[EntityNode],
     ordered_children: list[dict],
-) -> list[dict]:
+) -> list[Any]:
     indices: set[int] = set()
     for predicate in ordered_children:
         attribute = predicate.get("attribute", "name")
@@ -527,10 +561,10 @@ def _apply_or_selector(
 
 
 def _apply_and_selector(
-    pool: list[dict],
+    pool: list[EntityNode],
     ordered_children: list[dict],
     indices_by_attribute: dict[str, dict[str, list[int]]],
-) -> list[dict]:
+) -> list[Any]:
     candidate_indices: Optional[set[int]] = None
 
     def _matched_indices_for_predicate(
@@ -571,8 +605,8 @@ def _apply_and_selector(
     return [pool[i] for i in range(len(pool)) if i in candidate_indices]
 
 
-def _apply_single_selector(pool: list[dict], selector_dict: dict) -> list[dict]:
-    """Apply one selector over a pool of entity dicts.
+def _apply_single_selector(pool: list[EntityNode], selector_dict: dict) -> list[EntityNode]:
+    """Apply one selector over a pool of entities (dicts or objects).
 
     Implementation notes for future readers:
     - We assume selector_dict conforms to the EntitySelector schema (no validation here for speed).
@@ -661,7 +695,7 @@ def _process_selectors(
     selectors_value: list,
     selector_cache: dict,
     known_selectors: dict[str, dict] = None,
-) -> tuple[dict[str, list[dict]], list[str]]:
+) -> tuple[dict[str, list[EntityNode]], list[str]]:
     """Process selectors and return additions grouped by class.
 
     This function iterates over the list of selectors (which can be full dictionaries or
@@ -671,7 +705,7 @@ def _process_selectors(
     - It then applies the selector logic to find matching entities from the database.
     - Results are cached in `selector_cache` to avoid re-computation for the same selector.
     """
-    additions_by_class: dict[str, list[dict]] = {}
+    additions_by_class: dict[str, list[EntityNode]] = {}
     ordered_target_classes: list[str] = []
 
     if known_selectors is None:
@@ -706,13 +740,13 @@ def _process_selectors(
 
 
 def _merge_entities(
-    existing: list[dict],
-    additions_by_class: dict[str, list[dict]],
+    existing: list[EntityNode],
+    additions_by_class: dict[str, list[EntityNode]],
     ordered_target_classes: list[str],
     merge_mode: Literal["merge", "replace"],
-) -> list[dict]:
+) -> list[Any]:
     """Merge existing entities with selector additions based on merge mode."""
-    base_entities: list[dict] = []
+    base_entities: list[EntityNode] = []
 
     if merge_mode == "merge":  # explicit first, then selector additions
         base_entities.extend(existing)
@@ -722,7 +756,7 @@ def _merge_entities(
     else:  # replace: drop explicit items of targeted classes
         classes_to_update = set(ordered_target_classes)
         for item in existing:
-            entity_type = item.get("private_attribute_entity_type_name")
+            entity_type = _get_node_attribute(item, "private_attribute_entity_type_name")
             if entity_type not in classes_to_update:
                 base_entities.append(item)
         for target_class in ordered_target_classes:
@@ -848,11 +882,8 @@ def expand_entity_selectors_in_place(
       drop explicit items of those classes and use selector results instead.
     """
     # Build known_selectors map from AssetCache if available
-    known_selectors = {}
-    selectors_list = params_as_dict.get("private_attribute_asset_cache", {}).get("selectors", [])
-    for s in selectors_list:
-        if isinstance(s, dict) and "name" in s:
-            known_selectors[s["name"]] = s
+    asset_cache = params_as_dict.get("private_attribute_asset_cache")
+    known_selectors = _collect_known_selectors_from_asset_cache(asset_cache)
 
     queue: deque[Any] = deque([params_as_dict])
     selector_cache: dict = {}

@@ -218,6 +218,7 @@ def _collect_disk_axes_and_centers(
     for model in params.models:
         if model.type != model_type:
             continue
+        # No draft entity (cylinder) selector so it is fine.
         for cyl in model.entities.stored_entities:
             # Axis is assumed normalized by the inputs
             # pylint:disable=protected-access
@@ -475,6 +476,7 @@ class BETDiskCSVHeaderOperation:
 
         diskCount = 0
         for disk in bet_disks:
+            # No draft entity (cylinder) selector so it is fine.
             for disk_local_index, cylinder in enumerate(disk.entities.stored_entities):
                 new_name = pattern.replace("$BETName", disk.name)
                 new_name = new_name.replace("$CylinderName", cylinder.name)

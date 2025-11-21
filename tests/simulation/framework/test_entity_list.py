@@ -5,8 +5,10 @@ import pydantic as pd
 import pytest
 
 import flow360 as fl
+from flow360.component.simulation.entity_info import SurfaceMeshEntityInfo
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityBase, EntityList
+from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.primitives import GenericVolume, Surface
 
 
@@ -23,6 +25,21 @@ class TempSurface(_SurfaceEntityBase):
     private_attribute_entity_type_name: Literal["TempSurface"] = pd.Field(
         "TempSurface", frozen=True
     )
+
+
+class _ParamsStub:
+    def __init__(self, asset_cache: AssetCache):
+        self.private_attribute_asset_cache = asset_cache
+
+
+def _build_preview_context(boundary_names: list[str]):
+    with fl.SI_unit_system:
+        boundaries = [
+            Surface(name=name, private_attribute_id=f"{name}_id") for name in boundary_names
+        ]
+    entity_info = SurfaceMeshEntityInfo(boundaries=boundaries)
+    asset_cache = AssetCache(project_entity_info=entity_info)
+    return boundaries, _ParamsStub(asset_cache)
 
 
 def test_entity_list_deserializer_handles_mixed_types_and_selectors():
@@ -155,3 +172,27 @@ def test_entity_list_invalid_inputs():
     ):
         with fl.SI_unit_system:
             EntityList[Surface].model_validate([GenericVolume(name="a_volume")])
+
+
+def test_preview_selection_returns_names_by_default():
+    boundaries, params_stub = _build_preview_context(["tail", "wing_leading", "wing_trailing"])
+    selector = Surface.match("wing*", name="wing_surfaces")
+
+    entity_list = EntityList[Surface].model_validate([boundaries[0], selector])
+
+    previewed_names = entity_list.preview_selection(params_stub)
+
+    assert previewed_names == ["tail", "wing_leading", "wing_trailing"]
+
+
+def test_preview_selection_returns_instances_when_requested():
+    boundaries, params_stub = _build_preview_context(["body00001", "body00002"])
+    selector = Surface.match("body00002", name="second_body")
+
+    entity_list = EntityList[Surface].model_validate([selector])
+    entity_list.stored_entities = [boundaries[0].model_dump(mode="json", exclude_none=True)]
+
+    expanded_entities = entity_list.preview_selection(params_stub, return_names=False)
+
+    assert [entity.name for entity in expanded_entities] == ["body00001", "body00002"]
+    assert all(isinstance(entity, Surface) for entity in expanded_entities)
