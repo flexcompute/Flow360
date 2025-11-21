@@ -318,7 +318,7 @@ def get_test_param():
                             normal=(0, 1, 1),
                         ),
                     ],
-                    also_generate_crinkled_slices=True,
+                    include_crinkled_slices=True,
                     cutoff_radius=10.0,
                 )
             )
@@ -333,7 +333,7 @@ def get_test_param():
                             normal=(-1, 0, 0),
                         ),
                     ],
-                    also_generate_crinkled_slices=True,
+                    include_crinkled_slices=True,
                 )
             )
 
