@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import hashlib
-import uuid
 from abc import ABCMeta
 from collections import defaultdict
 from typing import Annotated, ClassVar, List, Optional, Union, get_args, get_origin
@@ -13,11 +12,6 @@ import pydantic as pd
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_selector import EntitySelector
 from flow360.component.simulation.utils import is_exact_instance
-
-
-def generate_uuid():
-    """generate a unique identifier for non-persistent entities. Required by front end."""
-    return str(uuid.uuid4())
 
 
 class EntityBase(Flow360BaseModel, metaclass=ABCMeta):

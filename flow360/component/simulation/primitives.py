@@ -17,12 +17,9 @@ from flow360.component.simulation.entity_operation import (
     rotation_matrix_from_axis_and_angle,
 )
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.simulation.framework.entity_base import (
-    EntityBase,
-    EntityList,
-    generate_uuid,
-)
+from flow360.component.simulation.framework.entity_base import EntityBase, EntityList
 from flow360.component.simulation.framework.entity_selector import SelectorFactory
+from flow360.component.simulation.framework.entity_utils import generate_uuid
 from flow360.component.simulation.framework.multi_constructor_model_base import (
     MultiConstructorBaseModel,
 )
