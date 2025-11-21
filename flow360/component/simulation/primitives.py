@@ -649,6 +649,15 @@ class GhostSurface(_SurfaceEntityBase):
     )
 
 
+class WindTunnelGhostSurface(GhostSurface):
+    '''Wind tunnel boundary patches.'''
+    private_attribute_entity_type_name: Literal["WindTunnelGhostSurface"] = pd.Field(
+        "WindTunnelGhostSurface", frozen=True
+    )
+    # For frontend: list of floor types that use this boundary patch, or ["all"]
+    used_by: List[str] = pd.Field(default_factory=lambda: ["all"], frozen=True)
+
+
 # pylint: disable=missing-class-docstring
 @final
 class GhostSphere(_SurfaceEntityBase):
