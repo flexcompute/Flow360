@@ -578,7 +578,11 @@ def translate_isosurface_output(
     return translated_output
 
 
-def translate_render_output(output_params: list, injection_function):
+def translate_render_output(
+    input_params: SimulationParams,
+    output_params: list,
+    injection_function
+):
     """Translate render output settings."""
 
     renders = get_all_entries_of_type(output_params, RenderOutput)
@@ -604,14 +608,23 @@ def translate_render_output(output_params: list, injection_function):
                 translation_func=translate_output_fields,
                 to_list=False,
                 entity_injection_func=injection_function,
+                entity_type_to_include=Isosurface,
                 entity_list_attribute_name="isosurfaces",
+                entity_injection_input_params=input_params,
             ),
             "surfaces": translate_setting_and_apply_to_all_entities(
                 [render],
                 RenderOutput,
                 translation_func=translate_output_fields,
                 to_list=False,
-                entity_list_attribute_name="surfaces",
+                entity_type_to_include=Surface,
+            ),
+            "slices": translate_setting_and_apply_to_all_entities(
+                [render],
+                RenderOutput,
+                translation_func=translate_output_fields,
+                to_list=False,
+                entity_type_to_include=Slice,
             ),
             "camera": remove_units_in_dict(camera),
             "lighting": remove_units_in_dict(lighting),
@@ -1016,7 +1029,7 @@ def translate_output(input_params: SimulationParams, translated: dict):
 
     ##:: Step6: Get translated["renderOutput"]
     if has_instance_in_list(outputs, RenderOutput):
-        translated["renderOutput"] = translate_render_output(outputs, inject_isosurface_info)
+        translated["renderOutput"] = translate_render_output(input_params, outputs, inject_isosurface_info)
 
     ##:: Step7: Get translated["monitorOutput"]
     probe_output = {}
