@@ -1,0 +1,321 @@
+{
+    "meshing": {
+        "defaults": {
+            "surface_max_edge_length": {
+                "value": 0.2,
+                "units": "1.0*m"
+            },
+            "curvature_resolution_angle": {
+                "value": 0.2617993877991494,
+                "units": "rad"
+            },
+            "surface_edge_growth_rate": 1.2,
+            "geometry_accuracy": {
+                "value": 0.01,
+                "units": "1.0*m"
+            },
+            "resolve_face_boundaries": false,
+            "preserve_thin_geometry": false,
+            "surface_max_aspect_ratio": 10.0,
+            "surface_max_adaptation_iterations": 50,
+            "sealing_size": {
+                "value": 0.0,
+                "units": "1.0*m"
+            },
+            "remove_non_manifold_faces": false
+        },
+        "refinements": [],
+        "volume_zones": [
+            {
+                "type": "WindTunnelFarfield",
+                "name": "Wind Tunnel Farfield",
+                "width": {
+                    "value": 10.0,
+                    "units": "1.0*m"
+                },
+                "height": {
+                    "value": 10.0,
+                    "units": "1.0*m"
+                },
+                "inlet_x_position": {
+                    "value": -5.0,
+                    "units": "1.0*m"
+                },
+                "outlet_x_position": {
+                    "value": 15.0,
+                    "units": "1.0*m"
+                },
+                "floor_z_position": {
+                    "value": 0.0,
+                    "units": "1.0*m"
+                },
+                "floor_type": {
+                    "type_name": "WheelBelts",
+                    "central_belt_x_range": {
+                        "value": [
+                            -1.0,
+                            6.0
+                        ],
+                        "units": "1.0*m"
+                    },
+                    "central_belt_width": {
+                        "value": 1.2,
+                        "units": "1.0*m"
+                    },
+                    "front_wheel_belt_x_range": {
+                        "value": [
+                            -0.3,
+                            0.5
+                        ],
+                        "units": "1.0*m"
+                    },
+                    "front_wheel_belt_y_range": {
+                        "value": [
+                            0.7,
+                            1.2
+                        ],
+                        "units": "1.0*m"
+                    },
+                    "rear_wheel_belt_x_range": {
+                        "value": [
+                            2.6,
+                            3.8
+                        ],
+                        "units": "1.0*m"
+                    },
+                    "rear_wheel_belt_y_range": {
+                        "value": [
+                            0.7,
+                            1.2
+                        ],
+                        "units": "1.0*m"
+                    }
+                }
+            }
+        ]
+    },
+    "private_attribute_asset_cache": {
+        "project_entity_info": {
+            "face_group_tag": "faceId",
+            "face_attribute_names": [
+                "groupByBodyId",
+                "faceId"
+            ],
+            "grouped_faces": [
+                [
+                    {
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "cylinder.lb8.ugrid",
+                        "name": "cylinder.lb8.ugrid",
+                        "private_attribute_tag_key": "groupByBodyId",
+                        "private_attribute_sub_components": [
+                            "cylinder.lb8.ugrid_BottomCap",
+                            "cylinder.lb8.ugrid_Curved",
+                            "cylinder.lb8.ugrid_TopCap"
+                        ],
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    -0.35,
+                                    -0.12500000000000003,
+                                    -5.551115123125783e-17
+                                ],
+                                [
+                                    0.35,
+                                    0.12500000000000003,
+                                    0.7
+                                ]
+                            ]
+                        }
+                    }
+                ],
+                [
+                    {
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "cylinder.lb8.ugrid_Curved",
+                        "name": "cylinder.lb8.ugrid_Curved",
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "cylinder.lb8.ugrid_Curved"
+                        ],
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    -0.35,
+                                    -0.12500000000000003,
+                                    -5.551115123125783e-17
+                                ],
+                                [
+                                    0.35,
+                                    0.12500000000000003,
+                                    0.7
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "cylinder.lb8.ugrid_TopCap",
+                        "name": "cylinder.lb8.ugrid_TopCap",
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "cylinder.lb8.ugrid_TopCap"
+                        ],
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    -0.3499999999999999,
+                                    0.12499999999999997,
+                                    0.0
+                                ],
+                                [
+                                    0.3499999999999999,
+                                    0.12500000000000003,
+                                    0.7
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "cylinder.lb8.ugrid_BottomCap",
+                        "name": "cylinder.lb8.ugrid_BottomCap",
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "cylinder.lb8.ugrid_BottomCap"
+                        ],
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    -0.3499999999999999,
+                                    -0.12500000000000003,
+                                    0.0
+                                ],
+                                [
+                                    0.3499999999999999,
+                                    -0.12499999999999997,
+                                    0.7
+                                ]
+                            ]
+                        }
+                    }
+                ]
+            ],
+            "body_group_tag": "groupByFile",
+            "body_attribute_names": [
+                "bodyId",
+                "groupByFile"
+            ],
+            "grouped_bodies": [
+                [
+                    {
+                        "private_attribute_entity_type_name": "GeometryBodyGroup",
+                        "private_attribute_id": "cylinder.lb8.ugrid",
+                        "name": "cylinder.lb8.ugrid",
+                        "private_attribute_tag_key": "bodyId",
+                        "private_attribute_sub_components": [
+                            "cylinder.lb8.ugrid"
+                        ],
+                        "transformation": {
+                            "type_name": "BodyGroupTransformation",
+                            "origin": {
+                                "value": [
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "units": "1.0*m"
+                            },
+                            "axis_of_rotation": [
+                                1.0,
+                                0.0,
+                                0.0
+                            ],
+                            "angle_of_rotation": {
+                                "value": 0.0,
+                                "units": "rad"
+                            },
+                            "scale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "translation": {
+                                "value": [
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "units": "1.0*m"
+                            }
+                        },
+                        "mesh_exterior": true
+                    }
+                ],
+                [
+                    {
+                        "private_attribute_entity_type_name": "GeometryBodyGroup",
+                        "private_attribute_id": "cylinder.lb8.ugrid",
+                        "name": "cylinder.lb8.ugrid",
+                        "private_attribute_tag_key": "groupByFile",
+                        "private_attribute_sub_components": [
+                            "cylinder.lb8.ugrid"
+                        ],
+                        "transformation": {
+                            "type_name": "BodyGroupTransformation",
+                            "origin": {
+                                "value": [
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "units": "1.0*m"
+                            },
+                            "axis_of_rotation": [
+                                1.0,
+                                0.0,
+                                0.0
+                            ],
+                            "angle_of_rotation": {
+                                "value": 0.0,
+                                "units": "rad"
+                            },
+                            "scale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "translation": {
+                                "value": [
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "units": "1.0*m"
+                            },
+                            "private_attribute_matrix": [
+                                1.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                1.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                1.0,
+                                0.0
+                            ]
+                        },
+                        "mesh_exterior": true
+                    }
+                ]
+            ]
+        }
+    }
+}

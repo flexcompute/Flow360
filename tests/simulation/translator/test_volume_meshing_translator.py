@@ -31,6 +31,8 @@ from flow360.component.simulation.meshing_param.volume_params import (
     StructuredBoxRefinement,
     UniformRefinement,
     UserDefinedFarfield,
+    WheelBelts,
+    WindTunnelFarfield,
 )
 from flow360.component.simulation.outputs.outputs import Slice
 from flow360.component.simulation.primitives import (
@@ -900,6 +902,48 @@ def test_farfield_relative_size():
         "ref",
         "volume_meshing",
         "ref_param_to_json_legacy_farfield_relative_size.json",
+    )
+    with open(ref_path, "r") as fh:
+        ref_dict = json.load(fh)
+    assert compare_values(translated, ref_dict)
+
+
+def test_analytic_wind_tunnel_farfield():
+    with SI_unit_system:
+        wind_tunnel = WindTunnelFarfield(
+            width=10,
+            height=10,
+            inlet_x_position=-5,
+            outlet_x_position=15,
+            floor_z_position=0,
+            floor_type=WheelBelts(
+                central_belt_x_range=(-1, 6),
+                central_belt_width=1.2,
+                front_wheel_belt_x_range=(-0.3, 0.5),
+                front_wheel_belt_y_range=(0.7, 1.2),
+                rear_wheel_belt_x_range=(2.6, 3.8),
+                rear_wheel_belt_y_range=(0.7, 1.2),
+            ),
+        )
+        meshing_params = MeshingParams(
+            defaults=MeshingDefaults(
+                surface_max_aspect_ratio=10,
+                curvature_resolution_angle=15 * u.deg,
+                geometry_accuracy=1e-2,
+                boundary_layer_first_layer_thickness=1e-4,
+                boundary_layer_growth_rate=1.2,
+                planar_face_tolerance=1e-3,
+            ),
+            volume_zones=[wind_tunnel],
+        )
+        param = SimulationParams(meshing=meshing_params)
+
+    translated = get_volume_meshing_json(param, u.m)
+    ref_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "ref",
+        "volume_meshing",
+        "ref_param_to_json_wind_tunnel.json",
     )
     with open(ref_path, "r") as fh:
         ref_dict = json.load(fh)

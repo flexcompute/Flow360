@@ -156,6 +156,7 @@ from tests.simulation.translator.utils.XV15HoverMRF_param_generator import (
     create_XV15HoverMRF_param,
     rotation_cylinder,
 )
+from tests.simulation.translator.utils.analytic_windtunnel_param_generator import create_windtunnel_params
 
 assertions = unittest.TestCase("__init__")
 
@@ -1465,4 +1466,12 @@ def test_ghost_periodic():
     processed_params = set_up_params_for_uploading(geometry, 1 * u.m, params, False, False)
     translate_and_compare(
         processed_params, mesh_unit=1 * u.m, ref_json_file="Flow360_ghost_periodic.json", debug=True
+    )
+
+
+def test_analytic_windtunnel(create_windtunnel_params):
+    translate_and_compare(
+        create_windtunnel_params,
+        mesh_unit=1 * u.m,
+        ref_json_file="Flow360_windtunnel.json",
     )

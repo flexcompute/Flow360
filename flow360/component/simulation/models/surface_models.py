@@ -402,9 +402,7 @@ class Wall(BoundaryBase):
     )
     private_attribute_dict: Optional[Dict] = pd.Field(None)
 
-    entities: EntityListAllowingGhost[
-        Surface, WindTunnelGhostSurface
-    ] = pd.Field(
+    entities: EntityListAllowingGhost[Surface, WindTunnelGhostSurface] = pd.Field(
         alias="surfaces",
         description="List of boundaries with the `Wall` boundary condition imposed.",
     )
