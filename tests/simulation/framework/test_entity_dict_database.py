@@ -2,12 +2,17 @@
 Tests for entity selector and get_entity_database_for_selectors function.
 """
 
+import copy
 import json
 import os
+from types import SimpleNamespace
 
 import pytest
 
-from flow360.component.simulation.entity_info import get_entity_database_for_selectors
+from flow360.component.simulation.framework.entity_expansion_utils import (
+    get_entity_database_for_selectors,
+    get_entity_database_from_params,
+)
 from flow360.component.simulation.framework.entity_selector import EntityDictDatabase
 
 
@@ -17,6 +22,65 @@ def _load_simulation_json(relative_path: str) -> dict:
     json_path = os.path.join(test_dir, "..", relative_path)
     with open(json_path, "r", encoding="utf-8") as f:
         return json.load(f)
+
+
+class _DummyParams:
+    """Minimal SimulationParams-like object for database helpers."""
+
+    def __init__(self, params_dict: dict, entity_info_obj=None):
+        self._params_dict = copy.deepcopy(params_dict)
+        asset_cache_dict = self._params_dict.get("private_attribute_asset_cache", {})
+        if entity_info_obj is None:
+            entity_info_dict = asset_cache_dict.get("project_entity_info", {})
+            entity_info_obj = SimpleNamespace(
+                type_name=entity_info_dict.get("type_name"),
+                boundaries=[
+                    SimpleNamespace(**boundary)
+                    for boundary in entity_info_dict.get("boundaries", [])
+                ],
+                zones=[SimpleNamespace(**zone) for zone in entity_info_dict.get("zones", [])],
+                face_attribute_names=entity_info_dict.get("face_attribute_names"),
+                grouped_faces=entity_info_dict.get("grouped_faces"),
+                face_group_tag=entity_info_dict.get("face_group_tag"),
+                edge_attribute_names=entity_info_dict.get("edge_attribute_names"),
+                grouped_edges=entity_info_dict.get("grouped_edges"),
+                edge_group_tag=entity_info_dict.get("edge_group_tag"),
+                body_attribute_names=entity_info_dict.get("body_attribute_names"),
+                grouped_bodies=entity_info_dict.get("grouped_bodies"),
+                body_group_tag=entity_info_dict.get("body_group_tag"),
+            )
+        selectors = asset_cache_dict.get("selectors")
+        self.private_attribute_asset_cache = SimpleNamespace(
+            project_entity_info=entity_info_obj,
+            selectors=selectors,
+        )
+
+    def model_dump(self, **kwargs):
+        return copy.deepcopy(self._params_dict)
+
+
+def _entity_names(entries):
+    return [
+        entry["name"] if isinstance(entry, dict) else getattr(entry, "name", None)
+        for entry in entries
+    ]
+
+
+def _build_simple_params_dict():
+    return {
+        "private_attribute_asset_cache": {
+            "project_entity_info": {
+                "type_name": "VolumeMeshEntityInfo",
+                "boundaries": [
+                    {"name": "wall", "private_attribute_entity_type_name": "Surface"},
+                    {"name": "sym", "private_attribute_entity_type_name": "Surface"},
+                ],
+                "zones": [
+                    {"name": "zone-1", "private_attribute_entity_type_name": "GenericVolume"}
+                ],
+            }
+        }
+    }
 
 
 def test_get_entity_database_for_geometry_entity_info():
@@ -174,3 +238,33 @@ def test_geometry_entity_info_respects_grouping_tags():
         index = body_attribute_names.index(body_group_tag)
         expected_bodies = grouped_bodies[index]
         assert len(entity_db.geometry_body_groups) == len(expected_bodies)
+
+
+def test_get_entity_database_from_params_instances_matches_dict():
+    params_as_dict = _build_simple_params_dict()
+    dummy_params = _DummyParams(params_as_dict)
+
+    dict_db = get_entity_database_for_selectors(params_as_dict)
+    instance_db = get_entity_database_from_params(dummy_params, use_instances=True)
+
+    assert isinstance(instance_db, EntityDictDatabase)
+    assert _entity_names(dict_db.surfaces) == _entity_names(instance_db.surfaces)
+    assert _entity_names(dict_db.edges) == _entity_names(instance_db.edges)
+    assert _entity_names(dict_db.geometry_body_groups) == _entity_names(
+        instance_db.geometry_body_groups
+    )
+    assert _entity_names(dict_db.generic_volumes) == _entity_names(instance_db.generic_volumes)
+
+
+def test_get_entity_database_from_params_default_matches_dict():
+    params_as_dict = _build_simple_params_dict()
+    dummy_params = _DummyParams(params_as_dict)
+
+    dict_db = get_entity_database_for_selectors(params_as_dict)
+    default_db = get_entity_database_from_params(dummy_params)
+
+    assert isinstance(default_db, EntityDictDatabase)
+    assert default_db.surfaces == dict_db.surfaces
+    assert default_db.edges == dict_db.edges
+    assert default_db.generic_volumes == dict_db.generic_volumes
+    assert default_db.geometry_body_groups == dict_db.geometry_body_groups

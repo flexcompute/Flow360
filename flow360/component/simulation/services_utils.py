@@ -3,7 +3,9 @@
 from collections import deque
 from typing import Any
 
-from flow360.component.simulation.entity_info import get_entity_database_for_selectors
+from flow360.component.simulation.framework.entity_expansion_utils import (
+    get_entity_database_for_selectors,
+)
 from flow360.component.simulation.framework.entity_materializer import (
     _stable_entity_key_from_dict,
 )

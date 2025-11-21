@@ -122,6 +122,7 @@ def test_validate_model_materializes_dict_and_preserves_selectors():
         "target_class": "Surface",
         "name": "some_selector_name",
         "logic": "AND",
+        "selector_id": "some_selector_id",
         "children": [{"attribute": "name", "operator": "matches", "value": "*"}],
     }
     outputs = params.get("outputs") or []

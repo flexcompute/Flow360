@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import hashlib
-import uuid
 from abc import ABCMeta
 from collections import defaultdict
 from typing import Annotated, ClassVar, List, Optional, Union, get_args, get_origin
@@ -13,11 +12,6 @@ import pydantic as pd
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_selector import EntitySelector
 from flow360.component.simulation.utils import is_exact_instance
-
-
-def generate_uuid():
-    """generate a unique identifier for non-persistent entities. Required by front end."""
-    return str(uuid.uuid4())
 
 
 class EntityBase(Flow360BaseModel, metaclass=ABCMeta):
@@ -397,3 +391,22 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
             )
 
         return cls._build_result(entities_to_store, entity_patterns_to_store)
+
+    def preview_selection(self, params, *, return_names: bool = True):
+        """
+        Preview selected entities from selectors within the provided SimulationParams context.
+
+        Parameters
+        ----------
+        params :
+            SimulationParams (or compatible object) that contains the asset cache context.
+        return_names : bool, default True
+            When True, returns a list of entity names instead of entity instances.
+        """
+
+        # pylint: disable=import-outside-toplevel, cyclic-import
+        from flow360.component.simulation.framework.entity_expansion_utils import (
+            expand_entity_list_in_context,
+        )
+
+        return expand_entity_list_in_context(self, params, return_names=return_names)
