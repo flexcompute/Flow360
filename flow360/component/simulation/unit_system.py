@@ -515,6 +515,7 @@ class _DimensionedType(metaclass=ABCMeta):
             allow_zero_component=True,
             allow_zero_norm=True,
             allow_negative_value=True,
+            allow_decreasing=True,
             length=3,
         ):
             """Get a dynamically created metaclass representing the vector"""
@@ -558,6 +559,10 @@ class _DimensionedType(metaclass=ABCMeta):
                         raise ValueError(f"arg '{value}' cannot have zero norm")
                     if not vec_cls.allow_negative_value and any(item < 0 for item in value):
                         raise ValueError(f"arg '{value}' cannot have negative value")
+                    if not vec_cls.allow_decreasing and any(
+                        x >= y for x, y in zip(value, value[1:])
+                    ):
+                        raise ValueError(f"arg '{value}' is not strictly increasing")
 
                     if vec_cls.type.has_defaults:
                         value = _unit_inference_validator(
@@ -597,6 +602,7 @@ class _DimensionedType(metaclass=ABCMeta):
             cls_obj.allow_zero_norm = allow_zero_norm
             cls_obj.allow_zero_component = allow_zero_component
             cls_obj.allow_negative_value = allow_negative_value
+            cls_obj.allow_decreasing = allow_decreasing
             cls_obj.__get_pydantic_core_schema__ = lambda *args: __get_pydantic_core_schema__(
                 cls_obj, *args
             )
@@ -778,6 +784,22 @@ class _DimensionedType(metaclass=ABCMeta):
         """
         return self._VectorType.get_class_object(
             self, allow_zero_norm=False, allow_zero_component=False
+        )
+
+    @classproperty
+    def Range(self):
+        """
+        Array value which accepts length 2 and is strictly increasing
+        """
+        return self._VectorType.get_class_object(self, allow_decreasing=False, length=2)
+
+    @classproperty
+    def PositiveRange(self):
+        """
+        Range which contains strictly positive values
+        """
+        return self._VectorType.get_class_object(
+            self, allow_negative_value=False, allow_decreasing=False, length=2
         )
 
     @classproperty

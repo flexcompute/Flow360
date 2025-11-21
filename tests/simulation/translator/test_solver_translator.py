@@ -103,6 +103,9 @@ from flow360.component.simulation.utils import model_attribute_unlock
 from tests.simulation.translator.utils.actuator_disk_param_generator import (
     actuator_disk_create_param,
 )
+from tests.simulation.translator.utils.analytic_windtunnel_param_generator import (
+    create_windtunnel_params,
+)
 from tests.simulation.translator.utils.CHTThreeCylinders_param_generator import (
     create_conjugate_heat_transfer_param,
 )
@@ -1465,4 +1468,12 @@ def test_ghost_periodic():
     processed_params = set_up_params_for_uploading(geometry, 1 * u.m, params, False, False)
     translate_and_compare(
         processed_params, mesh_unit=1 * u.m, ref_json_file="Flow360_ghost_periodic.json", debug=True
+    )
+
+
+def test_analytic_windtunnel(create_windtunnel_params):
+    translate_and_compare(
+        create_windtunnel_params,
+        mesh_unit=1 * u.m,
+        ref_json_file="Flow360_windtunnel.json",
     )
