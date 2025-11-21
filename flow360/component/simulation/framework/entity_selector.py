@@ -19,6 +19,13 @@ from flow360.component.simulation.framework.base_model import Flow360BaseModel
 TargetClass = Literal["Surface", "Edge", "GenericVolume", "GeometryBodyGroup"]
 
 
+def _generate_selector_uuid() -> str:
+    # Lazy import to avoid circular dependency at module import time.
+    from flow360.component.simulation.framework.entity_base import generate_uuid
+
+    return generate_uuid()
+
+
 class Predicate(Flow360BaseModel):
     """
     Single predicate in a selector.
@@ -49,6 +56,14 @@ class EntitySelector(Flow360BaseModel):
     """
 
     target_class: TargetClass = pd.Field()
+    description: Optional[str] = pd.Field(
+        None, description="Customizable description of the selector."
+    )
+    selector_id: str = pd.Field(
+        default_factory=_generate_selector_uuid,
+        description="[Internal] Unique identifier for the selector.",
+        frozen=True,
+    )
     # Unique name for global reuse
     name: str = pd.Field(description="Unique name for this selector.")
     logic: Literal["AND", "OR"] = pd.Field("AND")
@@ -204,6 +219,7 @@ class SelectorFactory:
         attribute: Literal["name"] = "name",
         syntax: Literal["glob", "regex"] = "glob",
         logic: Literal["AND", "OR"] = "AND",
+        description: Optional[str] = None,
     ) -> EntitySelector:
         """
         Create an EntitySelector for this class and seed it with one matches predicate.
@@ -227,7 +243,10 @@ class SelectorFactory:
         _validate_selector_pattern("match", pattern)
 
         selector = generate_entity_selector_from_class(
-            selector_name=name, entity_class=cls, logic=logic
+            selector_name=name,
+            entity_class=cls,
+            logic=logic,
+            selector_description=description,
         )
         selector.match(pattern, attribute=attribute, syntax=syntax)
         return selector
@@ -243,6 +262,7 @@ class SelectorFactory:
         attribute: Literal["name"] = "name",
         syntax: Literal["glob", "regex"] = "glob",
         logic: Literal["AND", "OR"] = "AND",
+        description: Optional[str] = None,
     ) -> EntitySelector:
         """Create an EntitySelector and seed a notMatches predicate.
 
@@ -261,7 +281,10 @@ class SelectorFactory:
         _validate_selector_pattern("not_match", pattern)
 
         selector = generate_entity_selector_from_class(
-            selector_name=name, entity_class=cls, logic=logic
+            selector_name=name,
+            entity_class=cls,
+            logic=logic,
+            selector_description=description,
         )
         selector.not_match(pattern, attribute=attribute, syntax=syntax)
         return selector
@@ -275,6 +298,7 @@ class SelectorFactory:
         name: str,
         attribute: Literal["name"] = "name",
         logic: Literal["AND", "OR"] = "AND",
+        description: Optional[str] = None,
     ) -> EntitySelector:
         """Create an EntitySelector and seed an in predicate.
 
@@ -292,7 +316,10 @@ class SelectorFactory:
         _validate_selector_values("any_of", values)
 
         selector = generate_entity_selector_from_class(
-            selector_name=name, entity_class=cls, logic=logic
+            selector_name=name,
+            entity_class=cls,
+            logic=logic,
+            selector_description=description,
         )
         selector.any_of(values, attribute=attribute)
         return selector
@@ -306,6 +333,7 @@ class SelectorFactory:
         name: str,
         attribute: Literal["name"] = "name",
         logic: Literal["AND", "OR"] = "AND",
+        description: Optional[str] = None,
     ) -> EntitySelector:
         """Create an EntitySelector and seed a notIn predicate.
 
@@ -320,14 +348,20 @@ class SelectorFactory:
         _validate_selector_values("not_any_of", values)  # type: ignore[arg-type]
 
         selector = generate_entity_selector_from_class(
-            selector_name=name, entity_class=cls, logic=logic
+            selector_name=name,
+            entity_class=cls,
+            logic=logic,
+            selector_description=description,
         )
         selector.not_any_of(values, attribute=attribute)
         return selector
 
 
 def generate_entity_selector_from_class(
-    selector_name: str, entity_class: type, logic: Literal["AND", "OR"] = "AND"
+    selector_name: str,
+    entity_class: type,
+    logic: Literal["AND", "OR"] = "AND",
+    selector_description: Optional[str] = None,
 ) -> EntitySelector:
     """
     Create a new selector for the given entity class.
@@ -340,7 +374,13 @@ def generate_entity_selector_from_class(
         class_name in allowed_classes
     ), f"Unknown entity class: {entity_class} for generating entity selector."
 
-    return EntitySelector(name=selector_name, target_class=class_name, logic=logic, children=[])
+    return EntitySelector(
+        name=selector_name,
+        description=selector_description,
+        target_class=class_name,
+        logic=logic,
+        children=[],
+    )
 
 
 ########## EXPANSION IMPLEMENTATION ##########

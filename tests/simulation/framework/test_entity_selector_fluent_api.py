@@ -146,3 +146,16 @@ def test_edge_class_basic_match():
     assert [e["name"] for e in stored if e["private_attribute_entity_type_name"] == "Edge"] == [
         "edgeA"
     ]
+
+
+def test_selector_factory_propagates_description():
+    """
+    Test: SelectorFactory methods propagate description into EntitySelector instances.
+
+    Expected behavior:
+    - Passing description to Surface.match() stores it on the resulting selector.
+    - model_dump() contains the provided description for serialization/round-trip.
+    """
+    selector = Surface.match("*", name="desc_selector", description="Select all surfaces")
+    assert selector.description == "Select all surfaces"
+    assert selector.model_dump()["description"] == "Select all surfaces"
