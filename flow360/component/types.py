@@ -14,6 +14,7 @@ COMMENTS = "comments"
 List2D = List[List[float]]
 # we use tuple for fixed length lists, beacause List is a mutable, variable length structure
 Coordinate = Tuple[float, float, float]
+Color = Tuple[int, int, int]
 
 
 class Vector(Coordinate):
