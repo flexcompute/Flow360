@@ -716,11 +716,11 @@ class RenderOutput(_AnimationSettings):
     """
 
     name: Optional[str] = pd.Field("Render output", description="Name of the `IsosurfaceOutput`.")
+    entities: Optional[EntityList[Surface, Slice]] = pd.Field(
+        None, description="List of of :class:`~flow360.Surface` or `~flow360.Slice` entities."
+    )
     isosurfaces: Optional[UniqueItemList[Isosurface]] = pd.Field(
         None, description="List of :class:`~flow360.Isosurface` entities."
-    )
-    surfaces: Optional[EntityList[Surface]] = pd.Field(
-        None, description="List of of :class:`~flow360.Surface` entities."
     )
     output_fields: UniqueItemList[Union[CommonFieldNames, str]] = pd.Field(
         description="List of output variables. Including "

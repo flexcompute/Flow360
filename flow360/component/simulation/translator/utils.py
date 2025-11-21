@@ -316,6 +316,7 @@ def translate_setting_and_apply_to_all_entities(
     use_instance_name_as_key=False,
     use_sub_item_as_key=False,
     entity_type_to_include=None,
+    entity_list_attribute_name="entities",
     **kwargs,
 ):
     """
@@ -398,23 +399,23 @@ def translate_setting_and_apply_to_all_entities(
     # pylint: disable=too-many-nested-blocks
     for obj in obj_list:
         if class_type and is_exact_instance(obj, class_type):
-
             list_of_entities = []
-            if "entities" in obj.__class__.model_fields:
-                if obj.entities is None or (
-                    "stored_entities" in obj.entities.__class__.model_fields
-                    and obj.entities.stored_entities is None
+            if entity_list_attribute_name in obj.__class__.model_fields:
+                entity_list = getattr(obj, entity_list_attribute_name)
+                if entity_list is None or (
+                    "stored_entities" in entity_list.__class__.model_fields
+                    and entity_list.stored_entities is None
                 ):  # unique item list does not allow None "items" for now.
                     continue
-                if isinstance(obj.entities, EntityList):
+                if isinstance(entity_list, EntityList):
                     list_of_entities = (
-                        obj.entities.stored_entities
+                        entity_list.stored_entities
                         if lump_list_of_entities is False
-                        else [obj.entities]
+                        else [entity_list]
                     )
-                elif isinstance(obj.entities, UniqueItemList):
+                elif isinstance(entity_list, UniqueItemList):
                     list_of_entities = (
-                        obj.entities.items if lump_list_of_entities is False else [obj.entities]
+                        entity_list.items if lump_list_of_entities is False else [entity_list]
                     )
             elif "entity_pairs" in obj.__class__.model_fields:
                 # Note: This is only used in Periodic BC and lump_list_of_entities is not relavant
