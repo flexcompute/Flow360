@@ -24,7 +24,8 @@ from flow360.component.simulation.meshing_param.volume_params import UniformRefi
 from flow360.component.simulation.primitives import Box, Cylinder
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.validation.validation_context import (
-    get_validation_info,
+    ParamsValidationInfo,
+    contexted_field_validator,
 )
 from flow360.log import log
 
@@ -137,13 +138,12 @@ class SurfaceMeshingParams(Flow360BaseModel):
 
         return self
 
-    @pd.field_validator("base_spacing", mode="after")
+    @contexted_field_validator("base_spacing", mode="after")
     @classmethod
-    def _set_default_base_spacing(cls, base_spacing):
-        info = get_validation_info()
-        if (info is None) or (base_spacing is not None) or (info.project_length_unit is None):
+    def _set_default_base_spacing(cls, base_spacing, param_info: ParamsValidationInfo):
+        if (base_spacing is not None) or (param_info.project_length_unit is None):
             return base_spacing
 
         # pylint: disable=no-member
-        base_spacing = 1 * LengthType.validate(info.project_length_unit)
+        base_spacing = 1 * LengthType.validate(param_info.project_length_unit)
         return OctreeSpacing(base_spacing=base_spacing)
