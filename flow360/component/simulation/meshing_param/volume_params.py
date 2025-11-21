@@ -851,6 +851,14 @@ class MeshSliceOutput(Flow360BaseModel):
         alias="slices",
         description="List of output :class:`~flow360.Slice` entities.",
     )
+    include_crinkled_slices: bool = pd.Field(
+        default=False, description="Generate crinkled slices in addition to flat slices."
+    )
+    cutoff_radius: Optional[pd.PositiveFloat] = pd.Field(
+        default=None,
+        description="Cutoff radius of the slice output. If not specified, "
+        "the slice extends to the boundaries of the volume mesh.",
+    )
     output_type: Literal["MeshSliceOutput"] = pd.Field("MeshSliceOutput", frozen=True)
 
 

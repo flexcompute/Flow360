@@ -253,6 +253,17 @@ def _get_custom_volumes(volume_zones: list):
     return custom_volumes
 
 
+def translate_mesh_slice_fields(
+    model: MeshSliceOutput,
+):
+    """Translate mesh slice type and radius fields."""
+    mesh_slice_fields = {}
+    mesh_slice_fields["crinkled"] = model.include_crinkled_slices
+    if model.cutoff_radius is not None:
+        mesh_slice_fields["cutoffRadius"] = model.cutoff_radius
+    return mesh_slice_fields
+
+
 # def _get_seedpoint_zones(volume_zones: list):
 #     """
 #     Get translated seedpoint volumes from volume zones.
@@ -275,15 +286,15 @@ def _get_custom_volumes(volume_zones: list):
 
 def translate_mesh_slice_output(
     output_params: list,
-    output_class: Union[MeshSliceOutput],
+    output_class: MeshSliceOutput,
     injection_function,
 ):
-    """Translate slice or isosurface output settings."""
+    """Translate mesh slice output settings."""
     translated_output = {}
     translated_output["slices"] = translate_setting_and_apply_to_all_entities(
         output_params,
         output_class,
-        translation_func=lambda x: {},
+        translation_func=translate_mesh_slice_fields,
         to_list=False,
         entity_injection_func=injection_function,
     )
