@@ -232,7 +232,9 @@ class _ParamModelBase(Flow360BaseModel):
 
         unit_system = model_dict.get("unit_system")
 
-        with UnitSystem.from_dict(**unit_system):  # pylint: disable=not-context-manager
+        with UnitSystem.from_dict(
+            **unit_system, verbose=False
+        ):  # pylint: disable=not-context-manager
             super().__init__(**model_dict)
 
     def _init_with_unit_context(self, **kwargs):
