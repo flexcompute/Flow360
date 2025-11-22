@@ -1643,7 +1643,7 @@ class UnitSystem(pd.BaseModel):
         model = _TemporaryModel(**params)
 
         unit_system = model.unit_system
-        unit_system._verbose = verbose  # type: ignore[attr-defined]
+        unit_system._verbose = verbose  # pylint: disable=protected-access
 
         return unit_system
 
