@@ -12,6 +12,10 @@ import pydantic as pd
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_selector import EntitySelector
 from flow360.component.simulation.utils import is_exact_instance
+from flow360.component.simulation.validation.validation_context import (
+    ParamsValidationInfo,
+    contextual_field_validator,
+)
 
 
 class EntityBase(Flow360BaseModel, metaclass=ABCMeta):
@@ -242,6 +246,18 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
     selectors: Optional[List[EntitySelector]] = pd.Field(
         None, description="Selectors on persistent entities for rule-based selection."
     )
+
+    @contextual_field_validator("stored_entities", mode="after")
+    @classmethod
+    def _ensure_entities_after_expansion(
+        cls, value: List, param_info: ParamsValidationInfo  # pylint:disable=unused-argument
+    ):
+        """
+        Ensure entity selections yielded at least one entity once selectors are expanded.
+        """
+        if not value:
+            raise ValueError("No entities were selected.")
+        return value
 
     @classmethod
     def _get_valid_entity_types(cls):

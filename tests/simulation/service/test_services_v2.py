@@ -782,9 +782,19 @@ def test_validate_init_data_vm_workflow_errors():
             "type": "missing",
             "ctx": {"relevant_for": ["Case"]},
         },
+        {
+            "loc": ("models", 0, "entities", "stored_entities"),
+            "type": "value_error",
+            "ctx": {"relevant_for": ["Case"]},
+        },
+        {
+            "loc": ("models", 1, "entities", "stored_entities"),
+            "type": "value_error",
+            "ctx": {"relevant_for": ["Case"]},
+        },
     ]
 
-    assert len(errors) == len(expected_errors)
+    assert len(errors) == len(expected_errors), print(">>> errors:", errors)
     for err, exp_err in zip(errors, expected_errors):
         assert err["loc"] == exp_err["loc"]
         assert err["type"] == exp_err["type"]

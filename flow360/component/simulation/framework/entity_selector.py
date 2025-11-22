@@ -15,6 +15,7 @@ from typing_extensions import Self
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_utils import generate_uuid
+from flow360.log import log
 
 # These corresponds to the private_attribute_entity_type_name of supported entity types.
 TargetClass = Literal["Surface", "Edge", "GenericVolume", "GeometryBodyGroup"]
@@ -651,9 +652,21 @@ def _apply_single_selector(pool: list[EntityNode], selector_dict: dict) -> list[
     if logic == "OR":
         # Favor a full scan for OR to preserve predictable union behavior
         # and avoid over-indexing that could complicate ordering.
-        return _apply_or_selector(pool, ordered_children)
+        result = _apply_or_selector(pool, ordered_children)
+    else:
+        result = _apply_and_selector(pool, ordered_children, indices_by_attribute)
 
-    return _apply_and_selector(pool, ordered_children, indices_by_attribute)
+    if not result:
+        name = selector_dict.get("name", "unnamed")
+        target_class = selector_dict.get("target_class", "Unknown")
+        log.warning(
+            "Entity selector '%s' (target_class=%s) matched 0 entities. "
+            "Please check if the entity name or pattern is correct.",
+            name,
+            target_class,
+        )
+
+    return result
 
 
 def _get_selector_cache_key(selector_dict: dict) -> tuple:
