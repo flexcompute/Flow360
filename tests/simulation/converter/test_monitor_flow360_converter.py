@@ -33,7 +33,7 @@ def test_flow360_monitor_convert():
 
     with u.SI_unit_system:
         params = SimulationParams(outputs=[*monitor_list])
-
+    print(params.private_attribute_asset_cache)
     params_dict = params.model_dump(
         mode="json",
         exclude={
@@ -42,6 +42,7 @@ def test_flow360_monitor_convert():
             "private_attribute_input_cache",
             "private_attribute_dict",
         },
+        exclude_none=True,
     )
     del params_dict["outputs"][0]["private_attribute_id"]
     del params_dict["outputs"][0]["entities"]["stored_entities"][0]["private_attribute_id"]

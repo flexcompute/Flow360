@@ -1,0 +1,62 @@
+[
+  {
+    "output_fields": {
+      "items": [
+        "Cp",
+        "yPlus",
+        "Cf",
+        "CfVec"
+      ]
+    },
+    "frequency": -1,
+    "frequency_offset": 0,
+    "output_format": "paraview",
+    "name": "Surface output",
+    "entities": {
+      "stored_entities": [
+        {
+          "private_attribute_registry_bucket_name": "SurfaceEntityType",
+          "private_attribute_entity_type_name": "Surface",
+          "private_attribute_id": "body00001",
+          "name": "body00001",
+          "private_attribute_tag_key": "groupByBodyId",
+          "private_attribute_sub_components": [
+            "body00001_face00001",
+            "body00001_face00002",
+            "body00001_face00003",
+            "body00001_face00004",
+            "body00001_face00005",
+            "body00001_face00006",
+            "body00001_face00007",
+            "body00001_face00008",
+            "body00001_face00009",
+            "body00001_face00010",
+            "body00001_face00011",
+            "body00001_face00012",
+            "body00001_face00013",
+            "body00001_face00014",
+            "body00001_face00015",
+            "body00001_face00016",
+            "body00001_face00017",
+            "body00001_face00018"
+          ],
+          "private_attribute_potential_issues": []
+        }
+      ],
+      "selectors": [
+        {
+          "target_class": "Surface",
+          "children": [
+            {
+              "attribute": "name",
+              "operator": "matches",
+              "value": "*"
+            }
+          ]
+        }
+      ]
+    },
+    "write_single_file": false,
+    "output_type": "SurfaceOutput"
+  }
+]

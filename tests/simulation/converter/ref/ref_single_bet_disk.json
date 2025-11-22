@@ -416,6 +416,7 @@
         }
     ],
     "entities": {
+        "selectors": null,
         "stored_entities": [
             {
                 "axis": [
@@ -468,10 +469,11 @@
         "angle_unit": null,
         "blade_line_chord": null,
         "chord_ref": {
-            "value": 14.0,
-            "units": "cm"
+            "units": "cm",
+            "value": 14.0
         },
         "entities": {
+            "selectors": null,
             "stored_entities": [
                 {
                     "axis": [
@@ -515,8 +517,8 @@
         "name": "MyBETDisk",
         "number_of_blades": 3,
         "omega": {
-            "value": 156.5352426717779,
-            "units": "rad/s"
+            "units": "rad/s",
+            "value": 156.5352426717779
         },
         "rotation_direction_rule": "leftHand"
     },

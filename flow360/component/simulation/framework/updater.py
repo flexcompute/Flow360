@@ -11,7 +11,7 @@ import copy
 import re
 from typing import Any
 
-from flow360.component.simulation.framework.entity_base import generate_uuid
+from flow360.component.simulation.framework.entity_utils import generate_uuid
 from flow360.component.simulation.framework.updater_functions import (
     fix_ghost_sphere_schema,
     populate_entity_id_with_name,
