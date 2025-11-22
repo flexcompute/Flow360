@@ -74,7 +74,7 @@ from flow360.component.simulation.unit_system import (
 from flow360.component.simulation.user_code.core.types import ValueOrExpression
 from flow360.component.simulation.validation.validation_context import (
     ParamsValidationInfo,
-    contexted_field_validator,
+    contextual_field_validator,
 )
 from flow360.component.simulation.validation.validation_utils import (
     _validator_append_instance_name,
@@ -213,7 +213,7 @@ class NavierStokesInitialCondition(ExpressionInitialConditionBase):
     w: StringExpression = pd.Field("w", description="Z-direction velocity")
     p: StringExpression = pd.Field("p", description="Pressure")
 
-    @contexted_field_validator("rho", "u", "v", "w", "p", mode="after")
+    @contextual_field_validator("rho", "u", "v", "w", "p", mode="after")
     @classmethod
     def _disable_expression_for_liquid(
         cls,
@@ -384,7 +384,7 @@ class Solid(PDEModelBase):
         None, description="The initial condition of the heat equation solver."
     )
 
-    @contexted_field_validator("entities", mode="after")
+    @contextual_field_validator("entities", mode="after")
     @classmethod
     def ensure_custom_volume_has_tets_only(cls, v, param_info: ParamsValidationInfo):
         """
@@ -853,6 +853,7 @@ class BETDisk(MultiConstructorBaseModel):
     )
     @classmethod
     def _update_input_cache(cls, value, info: pd.ValidationInfo):
+        # BETDisk input cache does not currently support EntityList with selectors.
         setattr(
             info.data["private_attribute_input_cache"],
             info.field_name,
@@ -1268,7 +1269,7 @@ class Rotation(Flow360BaseModel):
     )
     private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
 
-    @contexted_field_validator("entities", mode="after")
+    @contextual_field_validator("entities", mode="after")
     @classmethod
     def _ensure_entities_have_sufficient_attributes(cls, value: EntityList):
         """Ensure entities have sufficient attributes."""
@@ -1284,7 +1285,7 @@ class Rotation(Flow360BaseModel):
                 )
         return value
 
-    @contexted_field_validator("parent_volume", mode="after")
+    @contextual_field_validator("parent_volume", mode="after")
     @classmethod
     def _ensure_custom_volume_is_valid(
         cls,
@@ -1373,7 +1374,7 @@ class PorousMedium(Flow360BaseModel):
     )
     private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
 
-    @contexted_field_validator("entities", mode="after")
+    @contextual_field_validator("entities", mode="after")
     @classmethod
     def _ensure_entities_have_sufficient_attributes(cls, value: EntityList):
         """Ensure entities have sufficient attributes."""
@@ -1385,7 +1386,7 @@ class PorousMedium(Flow360BaseModel):
                 )
         return value
 
-    @contexted_field_validator("volumetric_heat_source", mode="after")
+    @contextual_field_validator("volumetric_heat_source", mode="after")
     @classmethod
     def _validate_volumetric_heat_source_for_liquid(
         cls,

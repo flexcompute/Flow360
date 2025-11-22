@@ -81,7 +81,6 @@ def _check_duplicate_entities_in_models(params):
 
     for model in models:
         if hasattr(model, "entities"):
-            # pylint: disable = protected-access
             expanded_entities = model.entities.stored_entities
             for entity in expanded_entities:
                 usage.add_entity_usage(entity, model.type)

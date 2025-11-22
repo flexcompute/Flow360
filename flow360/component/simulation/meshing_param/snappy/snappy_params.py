@@ -25,7 +25,8 @@ from flow360.component.simulation.primitives import Box, Cylinder
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.validation.validation_context import (
     ParamsValidationInfo,
-    contexted_field_validator,
+    contextual_field_validator,
+    contextual_model_validator,
 )
 from flow360.log import log
 
@@ -74,7 +75,7 @@ class SurfaceMeshingParams(Flow360BaseModel):
                     )
         return self
 
-    @pd.model_validator(mode="after")
+    @contextual_model_validator(mode="after")
     def _check_uniform_refinement_entities(self):
         # pylint: disable=no-member
         if self.refinements is None:
@@ -138,7 +139,7 @@ class SurfaceMeshingParams(Flow360BaseModel):
 
         return self
 
-    @contexted_field_validator("base_spacing", mode="after")
+    @contextual_field_validator("base_spacing", mode="after")
     @classmethod
     def _set_default_base_spacing(cls, base_spacing, param_info: ParamsValidationInfo):
         if (base_spacing is not None) or (param_info.project_length_unit is None):

@@ -16,7 +16,7 @@ from flow360.component.simulation.validation.validation_context import (
     ConditionalField,
     ContextField,
     ParamsValidationInfo,
-    contexted_field_validator,
+    contextual_field_validator,
 )
 from flow360.component.simulation.validation.validation_utils import (
     check_geometry_ai_features,
@@ -151,7 +151,7 @@ class MeshingDefaults(Flow360BaseModel):
         description="Flag to remove non-manifold and interior faces.",
     )
 
-    @contexted_field_validator("number_of_boundary_layers", mode="after")
+    @contextual_field_validator("number_of_boundary_layers", mode="after")
     @classmethod
     def invalid_number_of_boundary_layers(cls, value, param_info: ParamsValidationInfo):
         """Ensure number of boundary layers is not specified"""
@@ -159,7 +159,7 @@ class MeshingDefaults(Flow360BaseModel):
             raise ValueError("Number of boundary layers is only supported by the beta mesher.")
         return value
 
-    @contexted_field_validator("geometry_accuracy", mode="after")
+    @contextual_field_validator("geometry_accuracy", mode="after")
     @classmethod
     def invalid_geometry_accuracy(cls, value, param_info: ParamsValidationInfo):
         """Ensure geometry accuracy is not specified when GAI is not used"""
@@ -170,7 +170,7 @@ class MeshingDefaults(Flow360BaseModel):
             raise ValueError("Geometry accuracy is required when geometry AI is used.")
         return value
 
-    @contexted_field_validator(
+    @contextual_field_validator(
         "surface_max_aspect_ratio",
         "surface_max_adaptation_iterations",
         "resolve_face_boundaries",

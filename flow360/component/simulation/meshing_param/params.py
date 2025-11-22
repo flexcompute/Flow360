@@ -36,8 +36,8 @@ from flow360.component.simulation.validation.validation_context import (
     SURFACE_MESH,
     VOLUME_MESH,
     ContextField,
-    contexted_field_validator,
-    contexted_model_validator,
+    contextual_field_validator,
+    contextual_model_validator,
 )
 from flow360.component.simulation.validation.validation_utils import EntityUsageMap
 
@@ -180,7 +180,7 @@ class MeshingParams(Flow360BaseModel):
 
         return v
 
-    @contexted_field_validator("volume_zones", mode="after")
+    @contextual_field_validator("volume_zones", mode="after")
     @classmethod
     def _check_volume_zones_have_unique_names(cls, v):
         """Ensure there won't be duplicated volume zone names."""
@@ -202,7 +202,7 @@ class MeshingParams(Flow360BaseModel):
 
         return v
 
-    @contexted_model_validator(mode="after")
+    @contextual_model_validator(mode="after")
     def _check_no_reused_volume_entities(self) -> Self:
         """
         Meshing entities reuse check.
@@ -431,7 +431,7 @@ class ModularMeshingWorkflow(Flow360BaseModel):
 
         return self
 
-    @contexted_model_validator(mode="after")
+    @contextual_model_validator(mode="after")
     def _check_no_reused_volume_entities(self) -> Self:
         """
         Meshing entities reuse check.
@@ -459,7 +459,6 @@ class ModularMeshingWorkflow(Flow360BaseModel):
 
         for volume_zone in self.zones if self.zones is not None else []:
             if isinstance(volume_zone, RotationVolume):
-                # pylint: disable=protected-access
                 _ = [
                     usage.add_entity_usage(item, volume_zone.type)
                     for item in volume_zone.entities.stored_entities
@@ -474,7 +473,6 @@ class ModularMeshingWorkflow(Flow360BaseModel):
                 refinement,
                 (UniformRefinement, AxisymmetricRefinement, StructuredBoxRefinement),
             ):
-                # pylint: disable=protected-access
                 _ = [
                     usage.add_entity_usage(item, refinement.refinement_type)
                     for item in refinement.entities.stored_entities

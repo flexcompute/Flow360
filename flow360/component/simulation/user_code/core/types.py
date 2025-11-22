@@ -43,7 +43,7 @@ from flow360.component.simulation.user_code.core.utils import (
 )
 from flow360.component.simulation.validation.validation_context import (
     ParamsValidationInfo,
-    contexted_model_validator,
+    contextual_model_validator,
 )
 from flow360.log import log
 
@@ -848,7 +848,7 @@ class Expression(Flow360BaseModel, Evaluable):
             )
         return value
 
-    @contexted_model_validator(mode="after")
+    @contextual_model_validator(mode="after")
     def ensure_dependent_feature_enabled(self, param_info: ParamsValidationInfo) -> str:
         """
         Ensure that all dependent features are enabled for all the solver variables.

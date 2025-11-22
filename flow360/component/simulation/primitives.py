@@ -29,8 +29,8 @@ from flow360.component.simulation.user_code.core.types import ValueOrExpression
 from flow360.component.simulation.utils import BoundingBoxType, model_attribute_unlock
 from flow360.component.simulation.validation.validation_context import (
     ParamsValidationInfo,
-    contexted_field_validator,
-    contexted_model_validator,
+    contextual_field_validator,
+    contextual_model_validator,
 )
 from flow360.component.types import Axis
 from flow360.component.utils import _naming_pattern_handler
@@ -861,7 +861,7 @@ class CustomVolume(_VolumeEntityBase):
     # pylint: disable=no-member
     center: Optional[LengthType.Point] = pd.Field(None, description="")  # Rotation support
 
-    @contexted_field_validator("boundaries", mode="after")
+    @contextual_field_validator("boundaries", mode="after")
     @classmethod
     def ensure_unique_boundary_names(cls, v):
         """Check if the boundaries have different names within a CustomVolume."""
@@ -869,7 +869,7 @@ class CustomVolume(_VolumeEntityBase):
             raise ValueError("The boundaries of a CustomVolume must have different names.")
         return v
 
-    @contexted_model_validator(mode="after")
+    @contextual_model_validator(mode="after")
     def ensure_beta_mesher_and_user_defined_farfield(self, param_info: ParamsValidationInfo):
         """Check if the beta mesher is enabled and that the user is using user defined farfield."""
         if param_info.is_beta_mesher and param_info.farfield_method == "user-defined":
@@ -895,7 +895,7 @@ def check_custom_volume_creation(value, param_info: ParamsValidationInfo):
 class EntityListWithCustomVolume(EntityList):
     """Entity list with customized validators for CustomVolume"""
 
-    @contexted_field_validator("stored_entities", mode="after")
+    @contextual_field_validator("stored_entities", mode="after")
     @classmethod
     def custom_volume_validator(cls, value, param_info: ParamsValidationInfo):
         """Run all validators"""

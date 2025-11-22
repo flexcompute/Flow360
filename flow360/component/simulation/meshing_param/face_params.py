@@ -15,8 +15,8 @@ from flow360.component.simulation.primitives import (
 from flow360.component.simulation.unit_system import AngleType, LengthType
 from flow360.component.simulation.validation.validation_context import (
     ParamsValidationInfo,
-    contexted_field_validator,
-    contexted_model_validator,
+    contextual_field_validator,
+    contextual_model_validator,
 )
 from flow360.component.simulation.validation.validation_utils import (
     check_deleted_surface_in_entity_list,
@@ -64,7 +64,7 @@ class SurfaceRefinement(Flow360BaseModel):
         + "accurately during the surface meshing process using anisotropic mesh refinement.",
     )
 
-    @contexted_field_validator("entities", mode="after")
+    @contextual_field_validator("entities", mode="after")
     @classmethod
     def ensure_surface_existence(cls, value, param_info: ParamsValidationInfo):
         """Ensure all boundaries will be present after mesher"""
@@ -73,7 +73,7 @@ class SurfaceRefinement(Flow360BaseModel):
         )
         return check_deleted_surface_in_entity_list(value, param_info)
 
-    @contexted_field_validator(
+    @contextual_field_validator(
         "curvature_resolution_angle", "resolve_face_boundaries", mode="after"
     )
     @classmethod
@@ -136,7 +136,7 @@ class GeometryRefinement(Flow360BaseModel):
 
     # Note: No checking on deleted surfaces since geometry accuracy on deleted surface does impact the volume mesh.
 
-    @contexted_model_validator(mode="after")
+    @contextual_model_validator(mode="after")
     def ensure_geometry_ai(self, param_info: ParamsValidationInfo):
         """Ensure feature is only activated with geometry AI enabled."""
         if not param_info.use_geometry_AI:
@@ -175,7 +175,7 @@ class PassiveSpacing(Flow360BaseModel):
         alias="faces"
     )
 
-    @contexted_field_validator("entities", mode="after")
+    @contextual_field_validator("entities", mode="after")
     @classmethod
     def ensure_surface_existence(cls, value, param_info: ParamsValidationInfo):
         """Ensure all boundaries will be present after mesher"""
@@ -217,13 +217,13 @@ class BoundaryLayer(Flow360BaseModel):
         " Supported only by the beta mesher.",
     )
 
-    @contexted_field_validator("entities", mode="after")
+    @contextual_field_validator("entities", mode="after")
     @classmethod
     def ensure_surface_existence(cls, value, param_info: ParamsValidationInfo):
         """Ensure all boundaries will be present after mesher"""
         return check_deleted_surface_in_entity_list(value, param_info)
 
-    @contexted_field_validator("growth_rate", mode="after")
+    @contextual_field_validator("growth_rate", mode="after")
     @classmethod
     def invalid_growth_rate(cls, value, param_info: ParamsValidationInfo):
         """Ensure growth rate per face is not specified"""
@@ -232,7 +232,7 @@ class BoundaryLayer(Flow360BaseModel):
             raise ValueError("Growth rate per face is only supported by the beta mesher.")
         return value
 
-    @contexted_field_validator("first_layer_thickness", mode="after")
+    @contextual_field_validator("first_layer_thickness", mode="after")
     @classmethod
     def require_first_layer_thickness(cls, value, param_info: ParamsValidationInfo):
         """Verify first layer thickness is specified"""

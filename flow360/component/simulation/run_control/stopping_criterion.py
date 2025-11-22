@@ -28,7 +28,7 @@ from flow360.component.simulation.user_code.core.types import (
 )
 from flow360.component.simulation.validation.validation_context import (
     ParamsValidationInfo,
-    contexted_field_validator,
+    contextual_field_validator,
 )
 
 
@@ -117,7 +117,7 @@ class StoppingCriterion(Flow360BaseModel):
             raise ValueError("The stopping criterion can only be defined on a scalar field.")
         return v
 
-    @contexted_field_validator("monitor_output", mode="before")
+    @contextual_field_validator("monitor_output", mode="before")
     @classmethod
     def _preprocess_monitor_output_with_id(cls, v, param_info: ParamsValidationInfo):
         if not isinstance(v, str):

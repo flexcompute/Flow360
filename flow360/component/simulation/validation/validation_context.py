@@ -660,7 +660,7 @@ def context_validator(context: Literal["SurfaceMesh", "VolumeMesh", "Case"]):
 
 
 # pylint: disable=invalid-name
-def contexted_field_validator(*fields, mode="after", **kwargs):
+def contextual_field_validator(*fields, mode="after", **kwargs):
     """
     Wrapper around pydantic.field_validator that automatically skips validation
     if get_validation_info() returns None.
@@ -685,7 +685,7 @@ def contexted_field_validator(*fields, mode="after", **kwargs):
 
     Usage
     -----
-    @contexted_field_validator("volume_zones", mode="after")
+    @contextual_field_validator("volume_zones", mode="after")
     @classmethod
     def _check_volume_zones_have_unique_names(cls, v):
         # No need to manually check get_validation_info()
@@ -765,7 +765,7 @@ def contexted_field_validator(*fields, mode="after", **kwargs):
 
 
 # pylint: disable=invalid-name
-def contexted_model_validator(mode="after", **kwargs):
+def contextual_model_validator(mode="after", **kwargs):
     """
     Wrapper around pydantic.model_validator that automatically skips validation
     if get_validation_info() returns None.
@@ -788,7 +788,7 @@ def contexted_model_validator(mode="after", **kwargs):
 
     Usage
     -----
-    @contexted_model_validator(mode="after")
+    @contextual_model_validator(mode="after")
     def _check_no_reused_volume_entities(self):
         # No need to manually check get_validation_info()
         # Validation logic here

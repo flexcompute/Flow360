@@ -16,7 +16,7 @@ from flow360.component.simulation.primitives import (
 )
 from flow360.component.simulation.validation.validation_context import (
     ParamsValidationInfo,
-    contexted_field_validator,
+    contextual_field_validator,
 )
 from flow360.component.simulation.validation.validation_utils import (
     check_deleted_surface_in_entity_list,
@@ -110,7 +110,7 @@ class UserDefinedDynamic(Flow360BaseModel):
         + ":class:`~flow360.Cylinder` entity is supported as target for now.",
     )  # Limited to `Cylinder` for now as we have only tested using UDD to control rotation.
 
-    @contexted_field_validator("input_boundary_patches", mode="after")
+    @contextual_field_validator("input_boundary_patches", mode="after")
     @classmethod
     def ensure_surface_existence(cls, value, param_info: ParamsValidationInfo):
         """Ensure all boundaries will be present after mesher"""
@@ -118,7 +118,7 @@ class UserDefinedDynamic(Flow360BaseModel):
             return value
         return check_deleted_surface_in_entity_list(value, param_info)
 
-    @contexted_field_validator("output_target", mode="after")
+    @contextual_field_validator("output_target", mode="after")
     @classmethod
     def ensure_output_surface_existence(cls, value, param_info: ParamsValidationInfo):
         """Ensure that the output target surface is not a deleted surface"""
@@ -140,7 +140,7 @@ class UserDefinedDynamic(Flow360BaseModel):
             )
         return value
 
-    @contexted_field_validator("output_target", mode="after")
+    @contextual_field_validator("output_target", mode="after")
     @classmethod
     def _ensure_custom_volume_is_valid(
         cls,

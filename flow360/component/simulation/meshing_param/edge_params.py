@@ -10,7 +10,7 @@ from flow360.component.simulation.primitives import Edge
 from flow360.component.simulation.unit_system import AngleType, LengthType
 from flow360.component.simulation.validation.validation_context import (
     ParamsValidationInfo,
-    contexted_model_validator,
+    contextual_model_validator,
 )
 
 
@@ -109,7 +109,7 @@ class SurfaceEdgeRefinement(Flow360BaseModel):
         " :class:`HeightBasedRefinement`, :class:`AspectRatioBasedRefinement`, :class:`ProjectAnisoSpacing`",
     )
 
-    @contexted_model_validator(mode="after")
+    @contextual_model_validator(mode="after")
     def ensure_not_geometry_ai(self, param_info: ParamsValidationInfo):
         """Ensure that geometry AI is disabled when using this feature."""
         if param_info.use_geometry_AI:

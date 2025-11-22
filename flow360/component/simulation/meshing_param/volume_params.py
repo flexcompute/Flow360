@@ -24,8 +24,8 @@ from flow360.component.simulation.primitives import (
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.validation.validation_context import (
     ParamsValidationInfo,
-    contexted_field_validator,
-    contexted_model_validator,
+    contextual_field_validator,
+    contextual_model_validator,
 )
 from flow360.component.simulation.validation.validation_utils import (
     check_deleted_surface_in_entity_list,
@@ -60,7 +60,7 @@ class UniformRefinement(Flow360BaseModel):
         description="Whether to include the refinement in the surface mesh. Defaults to True when using snappy.",
     )
 
-    @contexted_model_validator(mode="after")
+    @contextual_model_validator(mode="after")
     def check_project_to_surface_with_snappy(self, param_info: ParamsValidationInfo):
         """Check if project_to_surface is used only with snappy."""
         if not param_info.use_snappy and self.project_to_surface is not None:
@@ -112,7 +112,7 @@ class StructuredBoxRefinement(Flow360BaseModel):
         description="Spacing along the normal axial direction."
     )
 
-    @contexted_model_validator(mode="after")
+    @contextual_model_validator(mode="after")
     def _validate_only_in_beta_mesher(self, param_info: ParamsValidationInfo):
         """
         Ensure that StructuredBoxRefinement objects are only processed with the beta mesher.
@@ -228,7 +228,7 @@ class RotationVolume(AxisymmetricRefinementBase):
         "and/or other :class:`~flow360.Box`(s)",
     )
 
-    @contexted_field_validator("entities", mode="after")
+    @contextual_field_validator("entities", mode="after")
     @classmethod
     def _validate_single_instance_in_entity_list(cls, values):
         """
@@ -245,7 +245,7 @@ class RotationVolume(AxisymmetricRefinementBase):
             )
         return values
 
-    @contexted_field_validator("entities", mode="after")
+    @contextual_field_validator("entities", mode="after")
     @classmethod
     def _validate_cylinder_name_length(cls, values, param_info: ParamsValidationInfo):
         """
@@ -266,7 +266,7 @@ class RotationVolume(AxisymmetricRefinementBase):
                 )
         return values
 
-    @contexted_field_validator("enclosed_entities", mode="after")
+    @contextual_field_validator("enclosed_entities", mode="after")
     @classmethod
     def _validate_enclosed_box_only_in_beta_mesher(cls, values, param_info: ParamsValidationInfo):
         """
@@ -287,7 +287,7 @@ class RotationVolume(AxisymmetricRefinementBase):
 
         return values
 
-    @contexted_field_validator("entities", mode="after")
+    @contextual_field_validator("entities", mode="after")
     @classmethod
     def _validate_axisymmetric_only_in_beta_mesher(cls, values, param_info: ParamsValidationInfo):
         """
@@ -303,7 +303,7 @@ class RotationVolume(AxisymmetricRefinementBase):
                 )
         return values
 
-    @contexted_field_validator("enclosed_entities", mode="after")
+    @contextual_field_validator("enclosed_entities", mode="after")
     @classmethod
     def ensure_surface_existence(cls, value, param_info: ParamsValidationInfo):
         """Ensure all boundaries will be present after mesher"""
@@ -364,7 +364,7 @@ class _FarfieldBase(Flow360BaseModel):
         )
     )
 
-    @contexted_field_validator("domain_type", mode="after")
+    @contextual_field_validator("domain_type", mode="after")
     @classmethod
     def _validate_only_in_beta_mesher(cls, value, param_info: ParamsValidationInfo):
         """
@@ -446,7 +446,7 @@ class AutomatedFarfield(_FarfieldBase):
             ]
         raise ValueError(f"Unsupported method: {self.method}")
 
-    @contexted_field_validator("method", mode="after")
+    @contextual_field_validator("method", mode="after")
     @classmethod
     def _validate_quasi_3d_periodic_only_in_legacy_mesher(
         cls, values, param_info: ParamsValidationInfo

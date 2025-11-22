@@ -51,7 +51,7 @@ from flow360.component.simulation.validation.validation_context import (
     CASE,
     ParamsValidationInfo,
     TimeSteppingType,
-    contexted_field_validator,
+    contextual_field_validator,
     get_validation_levels,
 )
 from flow360.component.simulation.validation.validation_utils import (
@@ -151,7 +151,7 @@ class MovingStatistic(Flow360BaseModel):
     )
     type_name: Literal["MovingStatistic"] = pd.Field("MovingStatistic", frozen=True)
 
-    @contexted_field_validator("moving_window_size", "start_step", mode="after")
+    @contextual_field_validator("moving_window_size", "start_step", mode="after")
     @classmethod
     def _check_moving_window_for_steady_simulation(cls, value, param_info: ParamsValidationInfo):
         if param_info.time_stepping == TimeSteppingType.STEADY and value % 10 != 0:
@@ -194,7 +194,7 @@ class _OutputBase(Flow360BaseModel):
                 )
         return value
 
-    @contexted_field_validator("output_fields", mode="after")
+    @contextual_field_validator("output_fields", mode="after")
     @classmethod
     def _validate_non_liquid_output_fields(
         cls, value: UniqueItemList, param_info: ParamsValidationInfo
@@ -243,7 +243,7 @@ class _AnimationSettings(_OutputBase):
         + " 0 is at beginning of simulation.",
     )
 
-    @contexted_field_validator("frequency", "frequency_offset", mode="after")
+    @contextual_field_validator("frequency", "frequency_offset", mode="after")
     @classmethod
     def disable_frequency_settings_in_steady_simulation(
         cls, value, info: pd.ValidationInfo, param_info: ParamsValidationInfo
@@ -321,7 +321,7 @@ class SurfaceOutput(_AnimationAndFileFormatSettings):
     )
     output_type: Literal["SurfaceOutput"] = pd.Field("SurfaceOutput", frozen=True)
 
-    @contexted_field_validator("entities", mode="after")
+    @contextual_field_validator("entities", mode="after")
     @classmethod
     def ensure_surface_existence(cls, value, param_info: ParamsValidationInfo):
         """Ensure all boundaries will be present after mesher"""
@@ -644,7 +644,7 @@ class SurfaceIntegralOutput(_OutputBase):
     )
     output_type: Literal["SurfaceIntegralOutput"] = pd.Field("SurfaceIntegralOutput", frozen=True)
 
-    @contexted_field_validator("entities", mode="after")
+    @contextual_field_validator("entities", mode="after")
     @classmethod
     def ensure_surface_existence(cls, value, param_info: ParamsValidationInfo):
         """Ensure all boundaries will be present after mesher"""
@@ -792,7 +792,7 @@ class SurfaceProbeOutput(_OutputBase):
     )
     output_type: Literal["SurfaceProbeOutput"] = pd.Field("SurfaceProbeOutput", frozen=True)
 
-    @contexted_field_validator("target_surfaces", mode="after")
+    @contextual_field_validator("target_surfaces", mode="after")
     @classmethod
     def ensure_surface_existence(cls, value, param_info: ParamsValidationInfo):
         """Ensure all boundaries will be present after mesher"""
@@ -821,7 +821,7 @@ class SurfaceSliceOutput(_AnimationAndFileFormatSettings):
     )
     output_type: Literal["SurfaceSliceOutput"] = pd.Field("SurfaceSliceOutput", frozen=True)
 
-    @contexted_field_validator("target_surfaces", mode="after")
+    @contextual_field_validator("target_surfaces", mode="after")
     @classmethod
     def ensure_surface_existence(cls, value, param_info: ParamsValidationInfo):
         """Ensure all boundaries will be present after mesher"""
@@ -1131,7 +1131,7 @@ class AeroAcousticOutput(Flow360BaseModel):
 
         return self
 
-    @contexted_field_validator("permeable_surfaces", mode="after")
+    @contextual_field_validator("permeable_surfaces", mode="after")
     @classmethod
     def ensure_surface_existence(cls, value, param_info: ParamsValidationInfo):
         """Ensure all boundaries will be present after mesher"""
