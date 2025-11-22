@@ -115,6 +115,7 @@ from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics im
 )
 from flow360.component.simulation.validation.validation_context import (
     CASE,
+    SURFACE_MESH,
     VOLUME_MESH,
     ParamsValidationInfo,
     ValidationContext,
@@ -924,28 +925,28 @@ def test_incomplete_BC_surface_mesh():
     )
 
 
-def test_porousJump_entities_is_interface():
+def test_porousJump_entities_is_interface(mock_validation_context):
     surface_1_is_interface = Surface(name="Surface-1", private_attribute_is_interface=True)
     surface_2_is_not_interface = Surface(name="Surface-2", private_attribute_is_interface=False)
     surface_3_is_interface = Surface(name="Surface-3", private_attribute_is_interface=True)
     error_message = "Boundary `Surface-2` is not an interface"
-    with pytest.raises(ValueError, match=re.escape(error_message)):
-        porousJump = PorousJump(
+    with mock_validation_context, pytest.raises(ValueError, match=re.escape(error_message)):
+        PorousJump(
             entity_pairs=[(surface_1_is_interface, surface_2_is_not_interface)],
             darcy_coefficient=1e6 / (u.m * u.m),
             forchheimer_coefficient=1e3 / u.m,
             thickness=0.01 * u.m,
         )
 
-    with pytest.raises(ValueError, match=re.escape(error_message)):
-        porousJump = PorousJump(
+    with mock_validation_context, pytest.raises(ValueError, match=re.escape(error_message)):
+        PorousJump(
             entity_pairs=[(surface_2_is_not_interface, surface_1_is_interface)],
             darcy_coefficient=1e6,
             forchheimer_coefficient=1e3,
             thickness=0.01,
         )
 
-    porousJump = PorousJump(
+    PorousJump(
         entity_pairs=[(surface_1_is_interface, surface_3_is_interface)],
         darcy_coefficient=1e6 / (u.m * u.m),
         forchheimer_coefficient=1e3 / u.m,
@@ -1935,7 +1936,11 @@ def test_beta_mesher_only_features(mock_validation_context):
     )
 
     # Unique volume zone names
-    with pytest.raises(
+    beta_mesher_context = ParamsValidationInfo({}, [])
+    beta_mesher_context.is_beta_mesher = True
+    beta_mesher_context.farfield_method = "user-defined"
+
+    with ValidationContext(SURFACE_MESH, beta_mesher_context), pytest.raises(
         ValueError, match="Multiple CustomVolume with the same name `zone1` are not allowed."
     ):
         with SI_unit_system:
@@ -1944,6 +1949,7 @@ def test_beta_mesher_only_features(mock_validation_context):
                     defaults=MeshingDefaults(
                         boundary_layer_first_layer_thickness=1e-4,
                         planar_face_tolerance=1e-4,
+                        surface_max_edge_length=1e-5,
                     ),
                     volume_zones=[
                         CustomZones(

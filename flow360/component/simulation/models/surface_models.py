@@ -41,7 +41,8 @@ from flow360.component.simulation.unit_system import (
     PressureType,
 )
 from flow360.component.simulation.validation.validation_context import (
-    get_validation_info,
+    ParamsValidationInfo,
+    contexted_field_validator,
 )
 from flow360.component.simulation.validation.validation_utils import (
     check_deleted_surface_in_entity_list,
@@ -58,12 +59,12 @@ from flow360.component.types import Axis
 class EntityListAllowingGhost(EntityList):
     """Entity list with customized validators for ghost entities"""
 
-    @pd.field_validator("stored_entities", mode="after")
+    @contexted_field_validator("stored_entities", mode="after")
     @classmethod
-    def ghost_entity_validator(cls, value):
+    def ghost_entity_validator(cls, value, param_info: ParamsValidationInfo):
         """Run all validators"""
-        check_user_defined_farfield_symmetry_existence(value)
-        return check_symmetric_boundary_existence(value)
+        check_user_defined_farfield_symmetry_existence(value, param_info)
+        return check_symmetric_boundary_existence(value, param_info)
 
 
 class BoundaryBase(Flow360BaseModel, metaclass=ABCMeta):
@@ -76,13 +77,13 @@ class BoundaryBase(Flow360BaseModel, metaclass=ABCMeta):
     )
     private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
 
-    @pd.field_validator("entities", mode="after")
+    @contexted_field_validator("entities", mode="after")
     @classmethod
-    def ensure_surface_existence(cls, value):
+    def ensure_surface_existence(cls, value, param_info: ParamsValidationInfo):
         """Ensure all boundaries will be present after mesher"""
         # pylint: disable=fixme
         # TODO: This should have been moved to EntityListAllowingGhost?
-        return check_deleted_surface_in_entity_list(value)
+        return check_deleted_surface_in_entity_list(value, param_info)
 
 
 class BoundaryBaseWithTurbulenceQuantities(BoundaryBase, metaclass=ABCMeta):
@@ -413,22 +414,20 @@ class Wall(BoundaryBase):
             )
         return self
 
-    @pd.field_validator("heat_spec", mode="after")
+    @contexted_field_validator("heat_spec", mode="after")
     @classmethod
-    def _ensure_adiabatic_wall_for_liquid(cls, value):
+    def _ensure_adiabatic_wall_for_liquid(cls, value, param_info: ParamsValidationInfo):
         """Allow only adiabatic wall when liquid operating condition is used"""
-        validation_info = get_validation_info()
-        if validation_info is None or validation_info.using_liquid_as_material is False:
+        if param_info.using_liquid_as_material is False:
             return value
         if isinstance(value, HeatFlux) and value.value == 0 * u.W / u.m**2:
             return value
         raise ValueError("Only adiabatic wall is allowed when using liquid as simulation material.")
 
-    @pd.field_validator("velocity", mode="after")
+    @contexted_field_validator("velocity", mode="after")
     @classmethod
-    def _disable_expression_for_liquid(cls, value):
-        validation_info = get_validation_info()
-        if validation_info is None or validation_info.using_liquid_as_material is False:
+    def _disable_expression_for_liquid(cls, value, param_info: ParamsValidationInfo):
+        if param_info.using_liquid_as_material is False:
             return value
 
         if isinstance(value, tuple):
@@ -488,11 +487,10 @@ class Freestream(BoundaryBaseWithTurbulenceQuantities):
         )
     )
 
-    @pd.field_validator("velocity", mode="after")
+    @contexted_field_validator("velocity", mode="after")
     @classmethod
-    def _disable_expression_for_liquid(cls, value):
-        validation_info = get_validation_info()
-        if validation_info is None or validation_info.using_liquid_as_material is False:
+    def _disable_expression_for_liquid(cls, value, param_info: ParamsValidationInfo):
+        if param_info.using_liquid_as_material is False:
             return value
 
         if isinstance(value, tuple):
@@ -718,27 +716,25 @@ class Periodic(Flow360BaseModel):
     )
     private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
 
-    @pd.field_validator("entity_pairs", mode="after")
+    @contexted_field_validator("entity_pairs", mode="after")
     @classmethod
-    def ensure_surface_existence(cls, value):
+    def ensure_surface_existence(cls, value, param_info: ParamsValidationInfo):
         """Ensure all boundaries will be present after mesher"""
         for surface_pair in value.items:
-            check_deleted_surface_pair(surface_pair)
+            check_deleted_surface_pair(surface_pair, param_info)
         return value
 
-    @pd.field_validator("entity_pairs", mode="after")
+    @contexted_field_validator("entity_pairs", mode="after")
     @classmethod
-    def _ensure_quasi_3d_periodic_when_using_ghost_surface(cls, value):
+    def _ensure_quasi_3d_periodic_when_using_ghost_surface(
+        cls, value, param_info: ParamsValidationInfo
+    ):
         """
         When using ghost surface pairs, ensure the farfield type is quasi-3d-periodic.
         """
-        validation_info = get_validation_info()
-        if validation_info is None:
-            return value
-
         for surface_pair in value.items:
             if isinstance(surface_pair, GhostSurfacePair):
-                if validation_info.farfield_method != "quasi-3d-periodic":
+                if param_info.farfield_method != "quasi-3d-periodic":
                     raise ValueError(
                         "Farfield type must be 'quasi-3d-periodic' when using GhostSurfacePair."
                     )
@@ -787,12 +783,12 @@ class PorousJump(Flow360BaseModel):
     )
     private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
 
-    @pd.field_validator("entity_pairs", mode="after")
+    @contexted_field_validator("entity_pairs", mode="after")
     @classmethod
-    def ensure_surface_existence(cls, value):
+    def ensure_surface_existence(cls, value, param_info: ParamsValidationInfo):
         """Ensure all boundaries will be present after mesher and all entities are surfaces"""
         for surface_pair in value.items:
-            check_deleted_surface_pair(surface_pair)
+            check_deleted_surface_pair(surface_pair, param_info)
             for surface in surface_pair.pair:
                 if not surface.private_attribute_is_interface:
                     raise ValueError(f"Boundary `{surface.name}` is not an interface")

@@ -23,7 +23,9 @@ from flow360.component.simulation.primitives import (
 )
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.validation.validation_context import (
-    get_validation_info,
+    ParamsValidationInfo,
+    contexted_field_validator,
+    contexted_model_validator,
 )
 from flow360.component.simulation.validation.validation_utils import (
     check_deleted_surface_in_entity_list,
@@ -58,13 +60,10 @@ class UniformRefinement(Flow360BaseModel):
         description="Whether to include the refinement in the surface mesh. Defaults to True when using snappy.",
     )
 
-    @pd.model_validator(mode="after")
-    def check_project_to_surface_with_snappy(self):
+    @contexted_model_validator(mode="after")
+    def check_project_to_surface_with_snappy(self, param_info: ParamsValidationInfo):
         """Check if project_to_surface is used only with snappy."""
-        validation_info = get_validation_info()
-        if validation_info is None:
-            return self
-        if not validation_info.use_snappy and self.project_to_surface is not None:
+        if not param_info.use_snappy and self.project_to_surface is not None:
             raise ValueError("project_to_surface is supported only for snappyHexMesh.")
 
         return self
@@ -113,15 +112,12 @@ class StructuredBoxRefinement(Flow360BaseModel):
         description="Spacing along the normal axial direction."
     )
 
-    @pd.model_validator(mode="after")
-    def _validate_only_in_beta_mesher(self):
+    @contexted_model_validator(mode="after")
+    def _validate_only_in_beta_mesher(self, param_info: ParamsValidationInfo):
         """
         Ensure that StructuredBoxRefinement objects are only processed with the beta mesher.
         """
-        validation_info = get_validation_info()
-        if validation_info is None:
-            return self
-        if validation_info.is_beta_mesher:
+        if param_info.is_beta_mesher:
             return self
 
         raise ValueError("`StructuredBoxRefinement` is only supported with the beta mesher.")
@@ -232,7 +228,7 @@ class RotationVolume(AxisymmetricRefinementBase):
         "and/or other :class:`~flow360.Box`(s)",
     )
 
-    @pd.field_validator("entities", mode="after")
+    @contexted_field_validator("entities", mode="after")
     @classmethod
     def _validate_single_instance_in_entity_list(cls, values):
         """
@@ -243,27 +239,21 @@ class RotationVolume(AxisymmetricRefinementBase):
         """
         # pylint: disable=protected-access
 
-        if not get_validation_info():
-            return values
-
         if len(values.stored_entities) > 1:
             raise ValueError(
                 "Only single instance is allowed in entities for each `RotationVolume`."
             )
         return values
 
-    @pd.field_validator("entities", mode="after")
+    @contexted_field_validator("entities", mode="after")
     @classmethod
-    def _validate_cylinder_name_length(cls, values):
+    def _validate_cylinder_name_length(cls, values, param_info: ParamsValidationInfo):
         """
         Check the name length for the cylinder entities due to the 32-character
         limitation of all data structure names and labels in CGNS format.
         The current prefix is 'rotatingBlock-' with 14 characters.
         """
-        validation_info = get_validation_info()
-        if validation_info is None:
-            return values
-        if validation_info.is_beta_mesher:
+        if param_info.is_beta_mesher:
             return values
 
         cgns_max_zone_name_length = 32
@@ -276,18 +266,17 @@ class RotationVolume(AxisymmetricRefinementBase):
                 )
         return values
 
-    @pd.field_validator("enclosed_entities", mode="after")
+    @contexted_field_validator("enclosed_entities", mode="after")
     @classmethod
-    def _validate_enclosed_box_only_in_beta_mesher(cls, values):
+    def _validate_enclosed_box_only_in_beta_mesher(cls, values, param_info: ParamsValidationInfo):
         """
         Check the name length for the cylinder entities due to the 32-character
         limitation of all data structure names and labels in CGNS format.
         The current prefix is 'rotatingBlock-' with 14 characters.
         """
-        validation_info = get_validation_info()
-        if validation_info is None or values is None:
+        if values is None:
             return values
-        if validation_info.is_beta_mesher:
+        if param_info.is_beta_mesher:
             return values
 
         for entity in values.stored_entities:
@@ -298,16 +287,13 @@ class RotationVolume(AxisymmetricRefinementBase):
 
         return values
 
-    @pd.field_validator("entities", mode="after")
+    @contexted_field_validator("entities", mode="after")
     @classmethod
-    def _validate_axisymmetric_only_in_beta_mesher(cls, values):
+    def _validate_axisymmetric_only_in_beta_mesher(cls, values, param_info: ParamsValidationInfo):
         """
         Ensure that axisymmetric RotationVolumes are only processed with the beta mesher.
         """
-        validation_info = get_validation_info()
-        if validation_info is None:
-            return values
-        if validation_info.is_beta_mesher:
+        if param_info.is_beta_mesher:
             return values
 
         for entity in values.stored_entities:
@@ -317,13 +303,13 @@ class RotationVolume(AxisymmetricRefinementBase):
                 )
         return values
 
-    @pd.field_validator("enclosed_entities", mode="after")
+    @contexted_field_validator("enclosed_entities", mode="after")
     @classmethod
-    def ensure_surface_existence(cls, value):
+    def ensure_surface_existence(cls, value, param_info: ParamsValidationInfo):
         """Ensure all boundaries will be present after mesher"""
         if value is None:
             return value
-        return check_deleted_surface_in_entity_list(value)
+        return check_deleted_surface_in_entity_list(value, param_info)
 
 
 @deprecated(
@@ -378,18 +364,13 @@ class _FarfieldBase(Flow360BaseModel):
         )
     )
 
-    @pd.field_validator("domain_type", mode="after")
+    @contexted_field_validator("domain_type", mode="after")
     @classmethod
-    def _validate_only_in_beta_mesher(cls, value):
+    def _validate_only_in_beta_mesher(cls, value, param_info: ParamsValidationInfo):
         """
         Ensure that domain_type is only used with the beta mesher and GAI.
         """
-        validation_info = get_validation_info()
-        if validation_info is None:
-            return value
-        if not value or (
-            validation_info.use_geometry_AI is True and validation_info.is_beta_mesher is True
-        ):
+        if not value or (param_info.use_geometry_AI is True and param_info.is_beta_mesher is True):
             return value
         raise ValueError(
             "`domain_type` is only supported when using both GAI surface mesher and beta volume mesher."
@@ -465,16 +446,15 @@ class AutomatedFarfield(_FarfieldBase):
             ]
         raise ValueError(f"Unsupported method: {self.method}")
 
-    @pd.field_validator("method", mode="after")
+    @contexted_field_validator("method", mode="after")
     @classmethod
-    def _validate_quasi_3d_periodic_only_in_legacy_mesher(cls, values):
+    def _validate_quasi_3d_periodic_only_in_legacy_mesher(
+        cls, values, param_info: ParamsValidationInfo
+    ):
         """
         Check mesher and AutomatedFarfield method compatibility
         """
-        validation_info = get_validation_info()
-        if validation_info is None:
-            return values
-        if validation_info.is_beta_mesher and values == "quasi-3d-periodic":
+        if param_info.is_beta_mesher and values == "quasi-3d-periodic":
             raise ValueError("Only legacy mesher can support quasi-3d-periodic")
         return values
 

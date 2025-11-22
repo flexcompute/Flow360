@@ -15,10 +15,12 @@ Features
 """
 
 import contextvars
+import inspect
 from enum import Enum
 from functools import wraps
 from typing import Any, Callable, List, Literal, Union
 
+import pydantic as pd
 from pydantic import Field, TypeAdapter
 
 from flow360.component.simulation.unit_system import LengthType
@@ -653,5 +655,188 @@ def context_validator(context: Literal["SurfaceMesh", "VolumeMesh", "Case"]):
             return self
 
         return wrapper
+
+    return decorator
+
+
+# pylint: disable=invalid-name
+def contexted_field_validator(*fields, mode="after", **kwargs):
+    """
+    Wrapper around pydantic.field_validator that automatically skips validation
+    if get_validation_info() returns None.
+
+    This function accepts the same parameters as pydantic.field_validator and
+    returns a decorator that wraps the validator function. The validator will
+    be skipped if validation_info is not available.
+
+    Parameters
+    ----------
+    *fields : str
+        Field names to validate (same as pydantic.field_validator)
+    mode : str, optional
+        Validation mode: "before", "after", "wrap" (default: "after")
+    **kwargs : dict
+        Additional keyword arguments passed to pydantic.field_validator
+
+    Returns
+    -------
+    Callable
+        A decorator that wraps the validator function
+
+    Usage
+    -----
+    @contexted_field_validator("volume_zones", mode="after")
+    @classmethod
+    def _check_volume_zones_have_unique_names(cls, v):
+        # No need to manually check get_validation_info()
+        # Validation logic here
+        return v
+
+    Notes
+    -----
+    This is equivalent to using pd.field_validator with a manual check:
+    @pd.field_validator("volume_zones", mode="after")
+    @classmethod
+    def _check_volume_zones_have_unique_names(cls, v):
+        if get_validation_info() is None:
+            return v
+        # Validation logic here
+        return v
+    """
+
+    def decorator(func: Callable):
+        # Handle classmethod and staticmethod
+        is_classmethod = isinstance(func, classmethod)
+        is_staticmethod = isinstance(func, staticmethod)
+
+        if is_classmethod:
+            original_func = func.__func__
+        elif is_staticmethod:
+            original_func = func.__func__
+        else:
+            original_func = func
+
+        original_sig = inspect.signature(original_func)
+        pass_param_info = "param_info" in original_sig.parameters
+        new_signature = original_sig
+        original_signature_backup = getattr(original_func, "__signature__", None)
+
+        if pass_param_info:
+            params_without = tuple(
+                param for name, param in original_sig.parameters.items() if name != "param_info"
+            )
+            new_signature = original_sig.replace(parameters=params_without)
+            original_func.__signature__ = new_signature
+
+        @wraps(original_func)
+        def wrapper(*args, **kwargs_inner):
+            param_info = get_validation_info()
+            if param_info is None:
+                if not args:
+                    return None
+                # Determine the index of the value argument.
+                value_idx = 1 if isinstance(args[0], type) and len(args) >= 2 else 0
+                return args[value_idx]
+
+            # Call the original function (not the classmethod/staticmethod wrapper)
+            call_kwargs = dict(kwargs_inner)
+            if pass_param_info:
+                call_kwargs["param_info"] = param_info
+            return original_func(*args, **call_kwargs)
+
+        if pass_param_info:
+            if original_signature_backup is None:
+                if hasattr(original_func, "__signature__"):
+                    del original_func.__signature__
+            else:
+                original_func.__signature__ = original_signature_backup
+
+        # If original was classmethod/staticmethod, wrap so pydantic recognizes it
+        if is_classmethod:
+            wrapped_func = classmethod(wrapper)
+        elif is_staticmethod:
+            wrapped_func = staticmethod(wrapper)
+        else:
+            wrapped_func = wrapper
+
+        return pd.field_validator(*fields, mode=mode, **kwargs)(wrapped_func)
+
+    return decorator
+
+
+# pylint: disable=invalid-name
+def contexted_model_validator(mode="after", **kwargs):
+    """
+    Wrapper around pydantic.model_validator that automatically skips validation
+    if get_validation_info() returns None.
+
+    This function accepts the same parameters as pydantic.model_validator and
+    returns a decorator that wraps the validator function. The validator will
+    be skipped if validation_info is not available.
+
+    Parameters
+    ----------
+    mode : str, optional
+        Validation mode: "before", "after", "wrap" (default: "after")
+    **kwargs : dict
+        Additional keyword arguments passed to pydantic.model_validator
+
+    Returns
+    -------
+    Callable
+        A decorator that wraps the validator function
+
+    Usage
+    -----
+    @contexted_model_validator(mode="after")
+    def _check_no_reused_volume_entities(self):
+        # No need to manually check get_validation_info()
+        # Validation logic here
+        return self
+
+    Notes
+    -----
+    This is equivalent to using pd.model_validator with a manual check:
+    @pd.model_validator(mode="after")
+    def _check_no_reused_volume_entities(self):
+        if not get_validation_info():
+            return self
+        # Validation logic here
+        return self
+    """
+
+    def decorator(func: Callable):
+        original_sig = inspect.signature(func)
+        pass_param_info = "param_info" in original_sig.parameters
+        new_signature = original_sig
+        original_signature_backup = getattr(func, "__signature__", None)
+
+        if pass_param_info:
+            params_without = tuple(
+                param for name, param in original_sig.parameters.items() if name != "param_info"
+            )
+            new_signature = original_sig.replace(parameters=params_without)
+            func.__signature__ = new_signature
+
+        @wraps(func)
+        def wrapper(*args, **kwargs_inner):
+            param_info = get_validation_info()
+            if param_info is None:
+                if args:
+                    return args[0]
+                return None
+            call_kwargs = dict(kwargs_inner)
+            if pass_param_info:
+                call_kwargs["param_info"] = param_info
+            return func(*args, **call_kwargs)
+
+        if pass_param_info:
+            if original_signature_backup is None:
+                if hasattr(func, "__signature__"):
+                    del func.__signature__
+            else:
+                func.__signature__ = original_signature_backup
+
+        return pd.model_validator(mode=mode, **kwargs)(wrapper)
 
     return decorator

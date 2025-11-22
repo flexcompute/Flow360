@@ -127,8 +127,10 @@ from .validation.validation_context import (
     VOLUME_MESH,
     CaseField,
     ConditionalField,
+    ParamsValidationInfo,
     context_validator,
-    get_validation_info,
+    contexted_field_validator,
+    contexted_model_validator,
 )
 
 ModelTypes = Annotated[Union[VolumeModelTypes, SurfaceModelTypes], pd.Field(discriminator="type")]
@@ -437,11 +439,11 @@ class SimulationParams(_ParamModelBase):
         """Ensure that all the parent volumes listed in the `Rotation` model are not static"""
         return _check_parent_volume_is_rotating(models)
 
-    @pd.field_validator("models", mode="after")
+    @contexted_field_validator("models", mode="after")
     @classmethod
-    def check_valid_models_for_liquid(cls, models):
+    def check_valid_models_for_liquid(cls, models, param_info: ParamsValidationInfo):
         """Ensure that all the boundary conditions used are valid."""
-        return _check_valid_models_for_liquid(models)
+        return _check_valid_models_for_liquid(models, param_info)
 
     @pd.field_validator("models", mode="after")
     @classmethod
@@ -449,12 +451,16 @@ class SimulationParams(_ParamModelBase):
         """Ensure that all the cylinder names used in ActuatorDisks are unique."""
         return _check_duplicate_actuator_disk_cylinder_names(models)
 
-    @pd.field_validator("user_defined_fields", mode="after")
+    @contexted_field_validator("user_defined_fields", mode="after")
     @classmethod
-    def _disable_expression_for_liquid(cls, value, info: pd.ValidationInfo):
+    def _disable_expression_for_liquid(
+        cls,
+        value,
+        info: pd.ValidationInfo,
+        param_info: ParamsValidationInfo,
+    ):
         """Ensure that string expressions are disabled for liquid simulation."""
-        validation_info = get_validation_info()
-        if validation_info is None or validation_info.using_liquid_as_material is False:
+        if param_info.using_liquid_as_material is False:
             return value
         if value:
             raise ValueError(
@@ -531,12 +537,12 @@ class SimulationParams(_ParamModelBase):
         """Only allow unique probe names"""
         return _check_unique_surface_volume_probe_names(self)
 
-    @pd.model_validator(mode="after")
+    @contexted_model_validator(mode="after")
     def check_unique_surface_volume_probe_entity_names(self):
         """Only allow unique probe entity names"""
         return _check_unique_surface_volume_probe_entity_names(self)
 
-    @pd.model_validator(mode="after")
+    @contexted_model_validator(mode="after")
     def check_duplicate_entities_in_models(self):
         """Only allow each Surface/Volume entity to appear once in the Surface/Volume model"""
         return _check_duplicate_entities_in_models(self)
@@ -551,11 +557,13 @@ class SimulationParams(_ParamModelBase):
         """Only allow lowMachPreconditioner output field when the lowMachPreconditioner is enabled in the NS solver"""
         return _check_low_mach_preconditioner_output(self)
 
-    @pd.model_validator(mode="after")
+    @contexted_model_validator(mode="after")
     @context_validator(context=CASE)
-    def check_complete_boundary_condition_and_unknown_surface(self):
+    def check_complete_boundary_condition_and_unknown_surface(
+        self, param_info: ParamsValidationInfo
+    ):
         """Make sure that all boundaries have been assigned with a boundary condition"""
-        return _check_complete_boundary_condition_and_unknown_surface(self)
+        return _check_complete_boundary_condition_and_unknown_surface(self, param_info)
 
     @pd.model_validator(mode="after")
     def check_output_fields(params):
@@ -727,6 +735,9 @@ class SimulationParams(_ParamModelBase):
         """
         Get a entity registry that collects all the entities used in the simulation.
         And also try to update the entities now that we have a global view of the simulation.
+
+        # Hint:
+        Used by _set_up_params_non_persistent_entity_info & _update_param_with_actual_volume_mesh_meta
         """
         registry = EntityRegistry()
         registry = self._register_assigned_entities(registry)
@@ -740,12 +751,10 @@ class SimulationParams(_ParamModelBase):
         Some thoughts:
         Do we also need to update the params when the **surface meshing** is done?
         """
-        # pylint:disable=no-member
-        used_entity_registry = self.used_entity_registry
         # Below includes the Ghost entities.
         _update_entity_full_name(self, _SurfaceEntityBase, volume_mesh_meta_data)
         _update_entity_full_name(self, _VolumeEntityBase, volume_mesh_meta_data)
-        _update_zone_boundaries_with_metadata(used_entity_registry, volume_mesh_meta_data)
+        _update_zone_boundaries_with_metadata(self.used_entity_registry, volume_mesh_meta_data)
         return self
 
     def is_steady(self):

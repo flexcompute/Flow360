@@ -42,7 +42,8 @@ from flow360.component.simulation.user_code.core.utils import (
     split_keep_delimiters,
 )
 from flow360.component.simulation.validation.validation_context import (
-    get_validation_info,
+    ParamsValidationInfo,
+    contexted_model_validator,
 )
 from flow360.log import log
 
@@ -847,8 +848,8 @@ class Expression(Flow360BaseModel, Evaluable):
             )
         return value
 
-    @pd.model_validator(mode="after")
-    def ensure_dependent_feature_enabled(self) -> str:
+    @contexted_model_validator(mode="after")
+    def ensure_dependent_feature_enabled(self, param_info: ParamsValidationInfo) -> str:
         """
         Ensure that all dependent features are enabled for all the solver variables.
         Remaining checks:
@@ -856,14 +857,13 @@ class Expression(Flow360BaseModel, Evaluable):
         2. variable location check.
 
         """
-        validation_info = get_validation_info()
-        if validation_info is None or self.expression not in validation_info.referenced_expressions:
+        if self.expression not in param_info.referenced_expressions:
             return self
         # Setting recursive to False to avoid recursive error message.
         # All user variables will be checked anyways.
         for solver_variable_name in self.solver_variable_names(recursive=False):
             if solver_variable_name in _feature_requirement_map:
-                if not _feature_requirement_map[solver_variable_name][0](validation_info):
+                if not _feature_requirement_map[solver_variable_name][0](param_info):
                     raise ValueError(
                         f"`{solver_variable_name}` cannot be used "
                         f"because {_feature_requirement_map[solver_variable_name][1]}"

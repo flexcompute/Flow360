@@ -36,7 +36,8 @@ from flow360.component.simulation.validation.validation_context import (
     SURFACE_MESH,
     VOLUME_MESH,
     ContextField,
-    get_validation_info,
+    contexted_field_validator,
+    contexted_model_validator,
 )
 from flow360.component.simulation.validation.validation_utils import EntityUsageMap
 
@@ -179,7 +180,7 @@ class MeshingParams(Flow360BaseModel):
 
         return v
 
-    @pd.field_validator("volume_zones", mode="after")
+    @contexted_field_validator("volume_zones", mode="after")
     @classmethod
     def _check_volume_zones_have_unique_names(cls, v):
         """Ensure there won't be duplicated volume zone names."""
@@ -201,7 +202,7 @@ class MeshingParams(Flow360BaseModel):
 
         return v
 
-    @pd.model_validator(mode="after")
+    @contexted_model_validator(mode="after")
     def _check_no_reused_volume_entities(self) -> Self:
         """
         Meshing entities reuse check.
@@ -226,10 +227,6 @@ class MeshingParams(Flow360BaseModel):
         """
 
         usage = EntityUsageMap()
-
-        if not get_validation_info():
-            # Validation deferred since the entities are not deduplicated yet
-            return self
 
         for volume_zone in self.volume_zones if self.volume_zones is not None else []:
             if isinstance(volume_zone, (RotationVolume, RotationCylinder)):
@@ -434,7 +431,7 @@ class ModularMeshingWorkflow(Flow360BaseModel):
 
         return self
 
-    @pd.model_validator(mode="after")
+    @contexted_model_validator(mode="after")
     def _check_no_reused_volume_entities(self) -> Self:
         """
         Meshing entities reuse check.
@@ -459,10 +456,6 @@ class ModularMeshingWorkflow(Flow360BaseModel):
         """
 
         usage = EntityUsageMap()
-
-        if not get_validation_info():
-            # Validation deferred since the entities are not deduplicated yet
-            return self
 
         for volume_zone in self.zones if self.zones is not None else []:
             if isinstance(volume_zone, RotationVolume):

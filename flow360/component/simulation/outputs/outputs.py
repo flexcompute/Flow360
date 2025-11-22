@@ -49,8 +49,9 @@ from flow360.component.simulation.user_code.core.types import (
 from flow360.component.simulation.validation.validation_context import (
     ALL,
     CASE,
+    ParamsValidationInfo,
     TimeSteppingType,
-    get_validation_info,
+    contexted_field_validator,
     get_validation_levels,
 )
 from flow360.component.simulation.validation.validation_utils import (
@@ -150,15 +151,10 @@ class MovingStatistic(Flow360BaseModel):
     )
     type_name: Literal["MovingStatistic"] = pd.Field("MovingStatistic", frozen=True)
 
-    @pd.field_validator("moving_window_size", "start_step", mode="after")
+    @contexted_field_validator("moving_window_size", "start_step", mode="after")
     @classmethod
-    def _check_moving_window_for_steady_simulation(cls, value):
-        validation_info = get_validation_info()
-        if (
-            validation_info
-            and validation_info.time_stepping == TimeSteppingType.STEADY
-            and value % 10 != 0
-        ):
+    def _check_moving_window_for_steady_simulation(cls, value, param_info: ParamsValidationInfo):
+        if param_info.time_stepping == TimeSteppingType.STEADY and value % 10 != 0:
             raise ValueError(
                 "For steady simulation, the number of steps should be a multiple of 10."
             )
@@ -198,11 +194,12 @@ class _OutputBase(Flow360BaseModel):
                 )
         return value
 
-    @pd.field_validator("output_fields", mode="after")
+    @contexted_field_validator("output_fields", mode="after")
     @classmethod
-    def _validate_non_liquid_output_fields(cls, value: UniqueItemList):
-        validation_info = get_validation_info()
-        if validation_info is None or validation_info.using_liquid_as_material is False:
+    def _validate_non_liquid_output_fields(
+        cls, value: UniqueItemList, param_info: ParamsValidationInfo
+    ):
+        if param_info.using_liquid_as_material is False:
             return value
         for output_item in value.items:
             if output_item in get_args(InvalidOutputFieldsForLiquid):
@@ -246,12 +243,13 @@ class _AnimationSettings(_OutputBase):
         + " 0 is at beginning of simulation.",
     )
 
-    @pd.field_validator("frequency", "frequency_offset", mode="after")
+    @contexted_field_validator("frequency", "frequency_offset", mode="after")
     @classmethod
-    def disable_frequency_settings_in_steady_simulation(cls, value, info: pd.ValidationInfo):
+    def disable_frequency_settings_in_steady_simulation(
+        cls, value, info: pd.ValidationInfo, param_info: ParamsValidationInfo
+    ):
         """Disable frequency settings in a steady simulation"""
-        validation_info = get_validation_info()
-        if validation_info is None or validation_info.time_stepping != TimeSteppingType.STEADY:
+        if param_info.time_stepping != TimeSteppingType.STEADY:
             return value
         # pylint: disable=unsubscriptable-object
         if value != cls.model_fields[info.field_name].default:
@@ -323,11 +321,11 @@ class SurfaceOutput(_AnimationAndFileFormatSettings):
     )
     output_type: Literal["SurfaceOutput"] = pd.Field("SurfaceOutput", frozen=True)
 
-    @pd.field_validator("entities", mode="after")
+    @contexted_field_validator("entities", mode="after")
     @classmethod
-    def ensure_surface_existence(cls, value):
+    def ensure_surface_existence(cls, value, param_info: ParamsValidationInfo):
         """Ensure all boundaries will be present after mesher"""
-        return check_deleted_surface_in_entity_list(value)
+        return check_deleted_surface_in_entity_list(value, param_info)
 
 
 class TimeAverageSurfaceOutput(SurfaceOutput):
@@ -646,11 +644,11 @@ class SurfaceIntegralOutput(_OutputBase):
     )
     output_type: Literal["SurfaceIntegralOutput"] = pd.Field("SurfaceIntegralOutput", frozen=True)
 
-    @pd.field_validator("entities", mode="after")
+    @contexted_field_validator("entities", mode="after")
     @classmethod
-    def ensure_surface_existence(cls, value):
+    def ensure_surface_existence(cls, value, param_info: ParamsValidationInfo):
         """Ensure all boundaries will be present after mesher"""
-        return check_deleted_surface_in_entity_list(value)
+        return check_deleted_surface_in_entity_list(value, param_info)
 
     @pd.field_validator("entities", mode="after")
     @classmethod
@@ -794,11 +792,11 @@ class SurfaceProbeOutput(_OutputBase):
     )
     output_type: Literal["SurfaceProbeOutput"] = pd.Field("SurfaceProbeOutput", frozen=True)
 
-    @pd.field_validator("target_surfaces", mode="after")
+    @contexted_field_validator("target_surfaces", mode="after")
     @classmethod
-    def ensure_surface_existence(cls, value):
+    def ensure_surface_existence(cls, value, param_info: ParamsValidationInfo):
         """Ensure all boundaries will be present after mesher"""
-        return check_deleted_surface_in_entity_list(value)
+        return check_deleted_surface_in_entity_list(value, param_info)
 
 
 class SurfaceSliceOutput(_AnimationAndFileFormatSettings):
@@ -823,11 +821,11 @@ class SurfaceSliceOutput(_AnimationAndFileFormatSettings):
     )
     output_type: Literal["SurfaceSliceOutput"] = pd.Field("SurfaceSliceOutput", frozen=True)
 
-    @pd.field_validator("target_surfaces", mode="after")
+    @contexted_field_validator("target_surfaces", mode="after")
     @classmethod
-    def ensure_surface_existence(cls, value):
+    def ensure_surface_existence(cls, value, param_info: ParamsValidationInfo):
         """Ensure all boundaries will be present after mesher"""
-        return check_deleted_surface_in_entity_list(value)
+        return check_deleted_surface_in_entity_list(value, param_info)
 
 
 class TimeAverageProbeOutput(ProbeOutput):
@@ -1133,13 +1131,13 @@ class AeroAcousticOutput(Flow360BaseModel):
 
         return self
 
-    @pd.field_validator("permeable_surfaces", mode="after")
+    @contexted_field_validator("permeable_surfaces", mode="after")
     @classmethod
-    def ensure_surface_existence(cls, value):
+    def ensure_surface_existence(cls, value, param_info: ParamsValidationInfo):
         """Ensure all boundaries will be present after mesher"""
         if value is None:
             return value
-        return check_deleted_surface_in_entity_list(value)
+        return check_deleted_surface_in_entity_list(value, param_info)
 
 
 class StreamlineOutput(_OutputBase):
