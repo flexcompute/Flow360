@@ -205,6 +205,70 @@ def test_validate_model_deduplicates_non_point_entities():
     assert final_entities[0].name == "wing"
 
 
+def test_strip_selector_matches_removes_selector_overlap():
+    """Ensure selector-overlap entities are dropped prior to upload."""
+    params = {
+        "outputs": [
+            {
+                "output_type": "SurfaceOutput",
+                "name": "surface_output",
+                "entities": {
+                    "stored_entities": [
+                        {
+                            "name": "front",
+                            "private_attribute_entity_type_name": "Surface",
+                            "private_attribute_id": "front",
+                        },
+                        {
+                            "name": "rear",
+                            "private_attribute_entity_type_name": "Surface",
+                            "private_attribute_id": "rear",
+                        },
+                    ],
+                    "selectors": [
+                        {
+                            "target_class": "Surface",
+                            "name": "front_selector",
+                            "children": [
+                                {
+                                    "attribute": "name",
+                                    "operator": "any_of",
+                                    "value": ["front"],
+                                }
+                            ],
+                        }
+                    ],
+                },
+            }
+        ],
+        "private_attribute_asset_cache": {
+            "project_entity_info": {
+                "type_name": "SurfaceMeshEntityInfo",
+                "boundaries": [
+                    {
+                        "name": "front",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "front",
+                    },
+                    {
+                        "name": "rear",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "rear",
+                    },
+                ],
+            }
+        },
+    }
+
+    stripped = strip_selector_matches_inplace(copy.deepcopy(params))
+
+    stored_entities = stripped["outputs"][0]["entities"]["stored_entities"]
+    assert [entity["name"] for entity in stored_entities] == ["rear"]
+
+    selectors = stripped["outputs"][0]["entities"]["selectors"]
+    assert selectors == params["outputs"][0]["entities"]["selectors"]
+
+
 def test_validate_model_does_not_deduplicate_point_entities():
     """
     Test: `validate_model` preserves duplicate Point entities.

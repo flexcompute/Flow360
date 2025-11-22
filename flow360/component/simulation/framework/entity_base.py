@@ -236,7 +236,9 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
             instances of `Box`, `Cylinder`, or strings representing naming patterns.
     """
 
-    stored_entities: List = pd.Field()
+    stored_entities: List = pd.Field(
+        description="List of manually picked entities in addition to the ones selected by selectors."
+    )
     selectors: Optional[List[EntitySelector]] = pd.Field(
         None, description="Selectors on persistent entities for rule-based selection."
     )
