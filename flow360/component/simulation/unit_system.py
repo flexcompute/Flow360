@@ -1623,8 +1623,18 @@ class UnitSystem(pd.BaseModel):
         return all(equal)
 
     @classmethod
-    def from_dict(cls, **kwargs):
-        """Construct a unit system from the provided dictionary"""
+    def from_dict(cls, verbose: bool = True, **kwargs):
+        """
+        Construct a unit system from the provided dictionary.
+
+        Parameters
+        ----------
+        verbose : bool, optional
+            If False, suppress the info logging when the unit system context
+            is entered. By default True.
+        kwargs :
+            Fields of the unit system dictionary.
+        """
 
         class _TemporaryModel(pd.BaseModel):
             unit_system: UnitSystemType = pd.Field(discriminator="name")
@@ -1632,7 +1642,10 @@ class UnitSystem(pd.BaseModel):
         params = {"unit_system": kwargs}
         model = _TemporaryModel(**params)
 
-        return model.unit_system
+        unit_system = model.unit_system
+        unit_system._verbose = verbose  # type: ignore[attr-defined]
+
+        return unit_system
 
     def defaults(self):
         """

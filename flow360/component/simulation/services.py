@@ -540,7 +540,9 @@ def validate_model(  # pylint: disable=too-many-locals
         ):
 
             unit_system = updated_param_as_dict.get("unit_system")
-            with UnitSystem.from_dict(**unit_system):  # pylint: disable=not-context-manager
+            with UnitSystem.from_dict(  # pylint: disable=not-context-manager
+                verbose=False, **unit_system
+            ):
                 validated_param = SimulationParams(**updated_param_as_dict)
 
     except pd.ValidationError as err:
