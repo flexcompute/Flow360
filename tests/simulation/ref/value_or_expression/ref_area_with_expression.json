@@ -1,6 +1,7 @@
 {
     "geometry": {
-        "refArea": 0.0225
+        "refArea": 0.0225,
+	"interfaceInterpolationTolerance" : 0.2
     },
     "freestream": {
         "alphaAngle": 0.0,

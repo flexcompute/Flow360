@@ -18,6 +18,7 @@ from flow360.component.simulation.models.volume_models import Fluid
 from flow360.component.simulation.outputs.output_entities import Point
 from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
+    ForceDistributionOutput,
     Isosurface,
     IsosurfaceOutput,
     MovingStatistic,
@@ -448,6 +449,29 @@ def test_duplicate_probe_names():
                         probe_points=[Point(name="point_1", location=[1, 2, 3] * u.m)],
                         output_fields=["velocity_y"],
                         target_surfaces=[Surface(name="fluid/body")],
+                    ),
+                ],
+            )
+
+
+def test_duplicate_force_distribution_names():
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "`outputs`[1] ForceDistributionOutput: Output name test has already been used for a "
+            "`ForceDistributionOutput`. Output names must be unique among all force distribution outputs."
+        ),
+    ):
+        with imperial_unit_system:
+            SimulationParams(
+                outputs=[
+                    ForceDistributionOutput(
+                        name="test",
+                        distribution_direction=[1.0, 0.0, 0.0],
+                    ),
+                    ForceDistributionOutput(
+                        name="test",
+                        distribution_direction=[0.0, 1.0, 0.0],
                     ),
                 ],
             )

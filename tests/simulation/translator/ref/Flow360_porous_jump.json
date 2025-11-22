@@ -39,7 +39,9 @@
         "betaAngle": 0,
         "muRef": 2.0000000000000003e-06
     },
-    "geometry": {},
+    "geometry": {
+	"interfaceInterpolationTolerance" : 0.2
+    },
     "initialCondition": {
         "p": "p",
         "rho": "rho",

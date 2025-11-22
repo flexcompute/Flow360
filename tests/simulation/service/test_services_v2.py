@@ -668,6 +668,7 @@ def test_init():
     remove_model_and_output_id_in_default_dict(data)
     # to convert tuples to lists:
     data = json.loads(json.dumps(data))
+
     compare_dict_to_ref(data, "../../ref/simulation/service_init_geometry.json")
 
     ##2: test default values for volume mesh starting point

@@ -413,7 +413,8 @@
             1.0,
             1.0
         ],
-        "refArea": 70685.83470577035
+        "refArea": 70685.83470577035,
+	"interfaceInterpolationTolerance" : 0.2
     },
     "navierStokesSolver": {
         "CFLMultiplier": 1.0,

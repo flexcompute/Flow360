@@ -126,6 +126,7 @@ from flow360.component.simulation.outputs.output_entities import (
 )
 from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
+    ForceDistributionOutput,
     IsosurfaceOutput,
     MovingStatistic,
     Observer,
@@ -251,6 +252,7 @@ __all__ = [
     "TimeAverageSurfaceOutput",
     "VolumeOutput",
     "TimeAverageVolumeOutput",
+    "ForceDistributionOutput",
     "SliceOutput",
     "TimeAverageSliceOutput",
     "IsosurfaceOutput",
