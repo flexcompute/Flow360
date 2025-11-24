@@ -290,6 +290,55 @@ def get_test_param():
                     )
                 )
 
+            # Build mesh slice outputs
+            meshSliceOutputs = []
+            meshSliceOutputs.append(
+                MeshSliceOutput(
+                    name="slice_output",
+                    entities=[
+                        Slice(
+                            name=f"test_slice_y_normal",
+                            origin=(0.1, 0.2, 0.3),
+                            normal=(0, 1, 0),
+                        ),
+                        Slice(
+                            name=f"test_slice_z_normal",
+                            origin=(0.6, 0.1, 0.4),
+                            normal=(0, 0, 1),
+                        ),
+                    ],
+                )
+            )
+
+            meshSliceOutputs.append(
+                MeshSliceOutput(
+                    name="slice_output_2",
+                    entities=[
+                        Slice(
+                            name=f"crinkled_slice_with_cutoff",
+                            origin=(0.1, 0.2, 0.3),
+                            normal=(0, 1, 1),
+                        ),
+                    ],
+                    include_crinkled_slices=True,
+                    cutoff_radius=10.0,
+                )
+            )
+
+            meshSliceOutputs.append(
+                MeshSliceOutput(
+                    name="slice_output_3",
+                    entities=[
+                        Slice(
+                            name=f"crinkled_slice_without_cutoff",
+                            origin=(0.5, 0.6, 0.7),
+                            normal=(-1, 0, 0),
+                        ),
+                    ],
+                    include_crinkled_slices=True,
+                )
+            )
+
             param = SimulationParams(
                 meshing=MeshingParams(
                     refinement_factor=1.45,
@@ -299,23 +348,7 @@ def get_test_param():
                     ),
                     refinements=refinements,
                     volume_zones=volume_zones,
-                    outputs=[
-                        MeshSliceOutput(
-                            name="slice_output",
-                            entities=[
-                                Slice(
-                                    name=f"test_slice_y_normal",
-                                    origin=(0.1, 0.2, 0.3),
-                                    normal=(0, 1, 0),
-                                ),
-                                Slice(
-                                    name=f"test_slice_z_normal",
-                                    origin=(0.6, 0.1, 0.4),
-                                    normal=(0, 0, 1),
-                                ),
-                            ],
-                        ),
-                    ],
+                    outputs=meshSliceOutputs,
                 ),
                 private_attribute_asset_cache=AssetCache(use_inhouse_mesher=beta_mesher),
             )

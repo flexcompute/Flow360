@@ -91,6 +91,7 @@ from flow360.component.simulation.validation.validation_output import (
     _check_output_fields,
     _check_output_fields_valid_given_transition_model,
     _check_output_fields_valid_given_turbulence_model,
+    _check_unique_force_distribution_output_names,
     _check_unique_surface_volume_probe_entity_names,
     _check_unique_surface_volume_probe_names,
     _check_unsteadiness_to_use_aero_acoustics,
@@ -532,6 +533,11 @@ class SimulationParams(_ParamModelBase):
     def check_unique_surface_volume_probe_entity_names(self):
         """Only allow unique probe entity names"""
         return _check_unique_surface_volume_probe_entity_names(self)
+
+    @pd.model_validator(mode="after")
+    def check_unique_force_distribution_output_names(self):
+        """Only allow unique force distribution names"""
+        return _check_unique_force_distribution_output_names(self)
 
     @pd.model_validator(mode="after")
     def check_duplicate_entities_in_models(self):
