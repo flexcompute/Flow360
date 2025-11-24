@@ -801,7 +801,6 @@ class WindTunnelFarfield(_FarfieldBase):
 
     @pd.model_validator(mode="after")
     def _validate_wheel_belts_ranges(self):
-        # pylint says too many branches if it's combined with the above
         if isinstance(self.floor_type, WheelBelts):
             if self.floor_type.front_wheel_belt_y_range[1] >= self.width * 0.5:
                 raise ValueError(

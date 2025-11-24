@@ -60,7 +60,7 @@ class EntityInfoModel(Flow360BaseModel, metaclass=ABCMeta):
         Annotated[
             Union[GhostSphere, GhostCircularPlane, WindTunnelGhostSurface],
             pd.Field(discriminator="private_attribute_entity_type_name"),
-        ],
+        ]
     ] = pd.Field([])
 
     @abstractmethod

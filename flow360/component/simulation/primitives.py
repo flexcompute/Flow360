@@ -656,7 +656,9 @@ class WindTunnelGhostSurface(GhostSurface):
         "WindTunnelGhostSurface", frozen=True
     )
     # For frontend: list of floor types that use this boundary patch, or ["all"]
-    used_by: List[str] = pd.Field(default_factory=lambda: ["all"], frozen=True)
+    used_by: List[
+        Literal["StaticFloor", "FullyMovingFloor", "CentralBelt", "WheelBelts", "all"]
+    ] = pd.Field(default_factory=lambda: ["all"], frozen=True)
 
 
 # pylint: disable=missing-class-docstring
