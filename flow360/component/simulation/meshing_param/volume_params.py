@@ -551,7 +551,6 @@ class CentralBelt(Flow360BaseModel):
     )
 
 
-# pylint: disable=no-member
 class WheelBelts(CentralBelt):
     """Class for wind tunnel floor with one central belt and four wheel belts."""
 
@@ -592,13 +591,12 @@ class WindTunnelFarfield(_FarfieldBase):
     -------
         >>> fl.WindTunnelFarfield(
             width = 10 * fl.u.m,
-            height = 10 * fl.u.m,
-            inlet_x_position = -5 * fl.u.m,
-            outlet_x_position = 15 * fl.u.m,
+            height = 5 * fl.u.m,
+            inlet_x_position = -10 * fl.u.m,
+            outlet_x_position = 20 * fl.u.m,
             floor_z_position = 0 * fl.u.m,
             floor_type = fl.CentralBelt(
-                central_belt_x_range = (-1, 6) * fl.u.m,
-                central_belt_x_max = 6 * fl.u.m,
+                central_belt_x_range = (-1, 4) * fl.u.m,
                 central_belt_width = 1.2 * fl.u.m
             )
         )
@@ -721,31 +719,31 @@ class WindTunnelFarfield(_FarfieldBase):
     def get_valid_ghost_surfaces(floor_string: str = "all") -> list[WindTunnelGhostSurface]:
         "Returns a list of valid ghost surfaces given a floor type as a string or ``all``."
         common_ghost_surfaces = [
-            WindTunnelGhostSurface(name="windTunnelInlet"),
-            WindTunnelGhostSurface(name="windTunnelOutlet"),
-            WindTunnelGhostSurface(name="windTunnelLeft"),
-            WindTunnelGhostSurface(name="windTunnelRight"),
-            WindTunnelGhostSurface(name="windTunnelCeiling"),
-            WindTunnelGhostSurface(name="windTunnelFloor"),
+            WindTunnelFarfield.inlet,
+            WindTunnelFarfield.outlet,
+            WindTunnelFarfield.left,
+            WindTunnelFarfield.right,
+            WindTunnelFarfield.ceiling,
+            WindTunnelFarfield.floor,
         ]
         if floor_string == "StaticFloor":
-            return common_ghost_surfaces + [WindTunnelGhostSurface(name="windTunnelFrictionPatch")]
+            return common_ghost_surfaces + [WindTunnelFarfield.friction_patch]
         if floor_string == "FullyMovingFloor":
             return common_ghost_surfaces
         if floor_string == "CentralBelt":
-            return common_ghost_surfaces + [WindTunnelGhostSurface(name="windTunnelCentralBelt")]
+            return common_ghost_surfaces + [WindTunnelFarfield.central_belt]
         if floor_string == "WheelBelts":
             return common_ghost_surfaces + [
-                WindTunnelGhostSurface(name="windTunnelCentralBelt"),
-                WindTunnelGhostSurface(name="windTunnelFrontWheelBelt"),
-                WindTunnelGhostSurface(name="windTunnelRearWheelBelt"),
+                WindTunnelFarfield.central_belt,
+                WindTunnelFarfield.front_wheel_belts,
+                WindTunnelFarfield.rear_wheel_belts,
             ]
         if floor_string == "all":
             return common_ghost_surfaces + [
-                WindTunnelGhostSurface(name="windTunnelFrictionPatch"),
-                WindTunnelGhostSurface(name="windTunnelCentralBelt"),
-                WindTunnelGhostSurface(name="windTunnelFrontWheelBelt"),
-                WindTunnelGhostSurface(name="windTunnelRearWheelBelt"),
+                WindTunnelFarfield.friction_patch,
+                WindTunnelFarfield.central_belt,
+                WindTunnelFarfield.front_wheel_belts,
+                WindTunnelFarfield.rear_wheel_belts,
             ]
         raise Flow360ValueError(
             f"Unsupported string input for floor type: {floor_string}. Must be "
