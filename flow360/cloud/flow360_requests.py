@@ -153,20 +153,6 @@ class NewVolumeMeshRequestV2(Flow360RequestsV2):
     format: Literal["cgns", "aflr3"] = pd_v2.Field(description="data format")
 
 
-class _Resource(Flow360RequestsV2):
-    type: Literal["Case", "Project"]
-    id: str
-
-
-class NewReportRequest(Flow360RequestsV2):
-    "New report request"
-
-    name: str
-    resources: List[_Resource]
-    config_json: str
-    solver_version: str
-
-
 class DraftCreateRequest(Flow360RequestsV2):
     """Data model for draft create request"""
 
