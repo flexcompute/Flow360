@@ -726,13 +726,11 @@ class RenderOutput(_AnimationSettings):
         description="List of output variables. Including "
         ":ref:`universal output variables<UniversalVariablesV2>` and :class:`UserDefinedField`."
     )
-    camera: RenderCameraConfig = pd.Field(description="Camera settings")
-    lighting: RenderLightingConfig = pd.Field(description="Lighting settings")
-    environment: RenderEnvironmentConfig = pd.Field(description="Environment settings")
+    camera: RenderCameraConfig = pd.Field(description="Camera settings", default_factory=RenderCameraConfig.orthographic)
+    lighting: RenderLightingConfig = pd.Field(description="Lighting settings", default_factory=RenderLightingConfig.default)
+    environment: RenderEnvironmentConfig = pd.Field(description="Environment settings", default_factory=RenderEnvironmentConfig.simple)
     materials: RenderMaterialConfig = pd.Field(description="Material settings")
-    transform: Optional[Transform] = pd.Field(
-        None, description="Optional model transform to apply to all entities"
-    )
+    transform: Optional[Transform] = pd.Field(None, description="Optional model transform to apply to all entities")
     output_type: Literal["RenderOutput"] = pd.Field("RenderOutput", frozen=True)
 
 
