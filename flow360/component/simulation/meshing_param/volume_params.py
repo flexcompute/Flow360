@@ -766,16 +766,22 @@ class WindTunnelFarfield(_FarfieldBase):
         return WindTunnelFarfield._rear_wheel_belts()
 
     @staticmethod
-    def get_valid_ghost_surfaces(floor_string: str = "all") -> list[WindTunnelGhostSurface]:
-        "Returns a list of valid ghost surfaces given a floor type as a string or ``all``."
+    def get_valid_ghost_surfaces(
+        floor_string: Optional[str] = None, domain_string: Optional[str] = None
+    ) -> list[WindTunnelGhostSurface]:
+        "Returns a list of valid ghost surfaces given a floor type as a string or ``all``, and the domain type as a string."
+        if floor_string is None:
+            floor_string = "all"
         common_ghost_surfaces = [
             WindTunnelFarfield._inlet(),
             WindTunnelFarfield._outlet(),
-            WindTunnelFarfield._left(),
-            WindTunnelFarfield._right(),
             WindTunnelFarfield._ceiling(),
             WindTunnelFarfield._floor(),
         ]
+        if domain_string != "half_body_negative_y":
+            common_ghost_surfaces += [WindTunnelFarfield._right()]
+        if domain_string != "half_body_positive_y":
+            common_ghost_surfaces += [WindTunnelFarfield._left()]
         for ghost_surface_type in [
             WindTunnelFarfield._friction_patch(),
             WindTunnelFarfield._central_belt(),

@@ -581,7 +581,9 @@ class Surface(_SurfaceEntityBase):
         # pylint: disable=too-many-arguments, too-many-return-statements
         self,
         at_least_one_body_transformed: bool,
-        farfield_method: Optional[Literal["auto", "quasi-3d", "quasi-3d-periodic", "user-defined"]],
+        farfield_method: Optional[
+            Literal["auto", "quasi-3d", "quasi-3d-periodic", "user-defined", "wind-tunnel"]
+        ],
         global_bounding_box: Optional[BoundingBoxType],
         planar_face_tolerance: Optional[float],
         half_model_symmetry_plane_center_y: Optional[float],

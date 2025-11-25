@@ -352,8 +352,6 @@ def _check_complete_boundary_condition_and_unknown_surface(
             # since we do not know the final bounding box for each surface and global model.
             return params
 
-        # If transformed then `_will_be_deleted_by_mesher()` will no longer be accurate
-        # since we do not know the final bounding box for each surface and global model.
         # pylint:disable=protected-access
         asset_boundary_entities = [
             item
@@ -389,7 +387,8 @@ def _check_complete_boundary_condition_and_unknown_surface(
                 ]
             if farfield_method == "wind-tunnel":
                 asset_boundary_entities += WindTunnelFarfield.get_valid_ghost_surfaces(
-                    params.meshing.volume_zones[0].floor_type.type_name
+                    params.meshing.volume_zones[0].floor_type.type_name,
+                    params.meshing.volume_zones[0].domain_type,
                 )
 
     snappy_multizone = False
