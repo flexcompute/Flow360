@@ -387,7 +387,7 @@ def _check_complete_boundary_condition_and_unknown_surface(
                     if item.name == "symmetric"
                 ]
             if farfield_method == "wind-tunnel":
-                asset_boundary_entities += WindTunnelFarfield.get_valid_ghost_surfaces(
+                asset_boundary_entities += WindTunnelFarfield._get_valid_ghost_surfaces(
                     params.meshing.volume_zones[0].floor_type.type_name,
                     params.meshing.volume_zones[0].domain_type,
                 )
