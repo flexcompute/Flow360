@@ -125,7 +125,9 @@ def test_automated_farfield_surface_usage():
         my_farfield = AutomatedFarfield(name="my_farfield")
         with pytest.raises(
             ValueError,
-            match=re.escape("Can not find any valid entity of type ['Surface'] from the input."),
+            match=re.escape(
+                "Can not find any valid entity of type ['Surface', 'WindTunnelGhostSurface'] from the input."
+            ),
         ):
             _ = SimulationParams(
                 meshing=MeshingParams(

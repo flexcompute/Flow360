@@ -581,7 +581,9 @@ class Surface(_SurfaceEntityBase):
         # pylint: disable=too-many-arguments, too-many-return-statements, too-many-branches
         self,
         at_least_one_body_transformed: bool,
-        farfield_method: Optional[Literal["auto", "quasi-3d", "quasi-3d-periodic", "user-defined"]],
+        farfield_method: Optional[
+            Literal["auto", "quasi-3d", "quasi-3d-periodic", "user-defined", "wind-tunnel"]
+        ],
         global_bounding_box: Optional[BoundingBoxType],
         planar_face_tolerance: Optional[float],
         half_model_symmetry_plane_center_y: Optional[float],
@@ -615,8 +617,8 @@ class Surface(_SurfaceEntityBase):
                 if farfield_domain_type == "half_body_negative_y" and y_min > length_tolerance:
                     return True
 
-        if farfield_method == "user-defined":
-            # Not applicable to user defined farfield
+        if farfield_method in ("user-defined", "wind-tunnel"):
+            # Not applicable to user defined or wind tunnel farfield
             return False
 
         if farfield_method == "auto":
@@ -660,6 +662,18 @@ class GhostSurface(_SurfaceEntityBase):
     private_attribute_entity_type_name: Literal["GhostSurface"] = pd.Field(
         "GhostSurface", frozen=True
     )
+
+
+class WindTunnelGhostSurface(GhostSurface):
+    """Wind tunnel boundary patches."""
+
+    private_attribute_entity_type_name: Literal["WindTunnelGhostSurface"] = pd.Field(
+        "WindTunnelGhostSurface", frozen=True
+    )
+    # For frontend: list of floor types that use this boundary patch, or ["all"]
+    used_by: List[
+        Literal["StaticFloor", "FullyMovingFloor", "CentralBelt", "WheelBelts", "all"]
+    ] = pd.Field(default_factory=lambda: ["all"], frozen=True)
 
 
 # pylint: disable=missing-class-docstring

@@ -578,7 +578,7 @@ def _get_volume_zones(volume_zones_list: list[dict]):
     return [
         item
         for item in volume_zones_list
-        if item["type"] in ("AutomatedFarfield", "UserDefinedFarfield")
+        if item["type"] in ("AutomatedFarfield", "UserDefinedFarfield", "WindTunnelFarfield")
     ]
 
 
