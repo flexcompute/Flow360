@@ -578,7 +578,7 @@ class Surface(_SurfaceEntityBase):
         return True
 
     def _will_be_deleted_by_mesher(
-        # pylint: disable=too-many-arguments, too-many-return-statements
+        # pylint: disable=too-many-arguments, too-many-return-statements, too-many-branches
         self,
         at_least_one_body_transformed: bool,
         farfield_method: Optional[
@@ -588,6 +588,7 @@ class Surface(_SurfaceEntityBase):
         planar_face_tolerance: Optional[float],
         half_model_symmetry_plane_center_y: Optional[float],
         quasi_3d_symmetry_planes_center_y: Optional[tuple[float]],
+        farfield_domain_type: Optional[str] = None,
     ) -> bool:
         """
         Check against the automated farfield method and
@@ -602,11 +603,23 @@ class Surface(_SurfaceEntityBase):
             # VolumeMesh or Geometry/SurfaceMesh with legacy schema.
             return False
 
-        if farfield_method in ("user-defined", "wind-tunnel"):
-            # Not applicable to user defined or wind tunnel farfield
-            return False
-
         length_tolerance = global_bounding_box.largest_dimension * planar_face_tolerance
+
+        if farfield_domain_type in ("half_body_positive_y", "half_body_negative_y"):
+            if self.private_attributes is not None:
+                # pylint: disable=no-member
+                y_min = self.private_attributes.bounding_box.ymin
+                y_max = self.private_attributes.bounding_box.ymax
+
+                if farfield_domain_type == "half_body_positive_y" and y_max < -length_tolerance:
+                    return True
+
+                if farfield_domain_type == "half_body_negative_y" and y_min > length_tolerance:
+                    return True
+
+        if farfield_method == "user-defined":
+            # Not applicable to user defined farfield
+            return False
 
         if farfield_method == "auto":
             if half_model_symmetry_plane_center_y is None:

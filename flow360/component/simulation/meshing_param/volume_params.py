@@ -397,6 +397,57 @@ class _FarfieldBase(Flow360BaseModel):
             "`domain_type` is only supported when using both GAI surface mesher and beta volume mesher."
         )
 
+    @pd.field_validator("domain_type", mode="after")
+    @classmethod
+    def _validate_domain_type_bbox(cls, value):
+        """
+        Ensure that when domain_type is used, the model actually spans across Y=0.
+        """
+        validation_info = get_validation_info()
+        if validation_info is None:
+            return value
+
+        if (
+            value not in ("half_body_positive_y", "half_body_negative_y")
+            or validation_info.global_bounding_box is None
+        ):
+            return value
+
+        y_min = validation_info.global_bounding_box[0][1]
+        y_max = validation_info.global_bounding_box[1][1]
+
+        largest_dimension = -float("inf")
+        for dim in range(3):
+            dimension = (
+                validation_info.global_bounding_box[1][dim]
+                - validation_info.global_bounding_box[0][dim]
+            )
+            largest_dimension = max(largest_dimension, dimension)
+
+        tolerance = largest_dimension * validation_info.planar_face_tolerance
+
+        # Check if model crosses Y=0
+        crossing = y_min < -tolerance and y_max > tolerance
+        if crossing:
+            return value
+
+        # If not crossing, check if it matches the requested domain
+        if value == "half_body_positive_y":
+            # Should be on positive side (y > 0)
+            if y_min >= -tolerance:
+                return value
+
+        if value == "half_body_negative_y":
+            # Should be on negative side (y < 0)
+            if y_max <= tolerance:
+                return value
+
+        raise ValueError(
+            f"The model does not cross the symmetry plane (Y=0) with tolerance {tolerance:.2g}. "
+            f"Model Y range: [{y_min:.2g}, {y_max:.2g}]. "
+            "Please check if `domain_type` is set correctly."
+        )
+
 
 class AutomatedFarfield(_FarfieldBase):
     """
