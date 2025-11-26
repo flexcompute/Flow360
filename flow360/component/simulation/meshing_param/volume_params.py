@@ -769,7 +769,10 @@ class WindTunnelFarfield(_FarfieldBase):
     def get_valid_ghost_surfaces(
         floor_string: Optional[str] = None, domain_string: Optional[str] = None
     ) -> list[WindTunnelGhostSurface]:
-        "Returns a list of valid ghost surfaces given a floor type as a string or ``all``, and the domain type as a string."
+        """
+        Returns a list of valid ghost surfaces given a floor type as a string
+        or ``all``, and the domain type as a string.
+        """
         if floor_string is None:
             floor_string = "all"
         common_ghost_surfaces = [
