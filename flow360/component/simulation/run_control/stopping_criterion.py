@@ -1,11 +1,12 @@
 """Module for setting up the stopping criterion of simulation."""
 
-from typing import List, Literal, Optional, Union, get_args
+from typing import List, Literal, Optional, Union
 
 import pydantic as pd
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
+from flow360.component.simulation.framework.param_utils import serialize_model_obj_to_id
 from flow360.component.simulation.outputs.output_entities import Point
 from flow360.component.simulation.outputs.output_fields import _FIELD_IS_SCALAR_MAPPING
 from flow360.component.simulation.outputs.outputs import (
@@ -69,16 +70,14 @@ class StoppingCriterion(Flow360BaseModel):
         description="The field to be monitored. This field must be "
         "present in the `output_fields` of `monitor_output`."
     )
-    monitor_output: Union[MonitorOutputType, str] = pd.Field(
-        description="The output to be monitored."
-    )
+    monitor_output: MonitorOutputType = pd.Field(description="The output to be monitored.")
     tolerance: ValueOrExpression[Union[UnytQuantity, float]] = pd.Field(
         description="The tolerance threshold of this criterion."
     )
     tolerance_window_size: Optional[int] = pd.Field(
         None,
-        description="The number of data points from the monitor_output to be used "
-        "to check whether the deviation of the monitored field is below tolerance or not. "
+        description="The number of data points from the monitor_output to be used to check whether "
+        "the :math:`|max-min|/2` of the monitored field within this window is below tolerance or not. "
         "If not set, the criterion will directly compare the latest value with tolerance.",
         ge=2,
     )
@@ -103,9 +102,7 @@ class StoppingCriterion(Flow360BaseModel):
     @pd.field_serializer("monitor_output")
     def serialize_monitor_output(self, v):
         """Serialize only the output's id of the related object."""
-        if isinstance(v, get_args(get_args(MonitorOutputType)[0])):
-            return v.private_attribute_id
-        return v
+        return serialize_model_obj_to_id(model_obj=v)
 
     @pd.field_validator("monitor_field", mode="after")
     @classmethod
@@ -150,8 +147,6 @@ class StoppingCriterion(Flow360BaseModel):
     @classmethod
     def _check_field_exists_in_monitor_output(cls, v, info: pd.ValidationInfo):
         """Ensure the monitor field exist in the monitor output."""
-        if isinstance(v, str):
-            return v
         monitor_field = info.data.get("monitor_field", None)
         if monitor_field not in v.output_fields.items:
             raise ValueError("The monitor field does not exist in the monitor output.")

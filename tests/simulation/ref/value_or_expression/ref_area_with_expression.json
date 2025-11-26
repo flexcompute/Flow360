@@ -109,7 +109,6 @@
         "velocityScale": 20.0
     },
     "runControl": {
-        "shouldCheckStopCriterion": false,
         "externalProcessMonitorOutput": false
     }
 }
