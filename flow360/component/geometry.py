@@ -433,7 +433,7 @@ class Geometry(AssetBase):
         """
         # pylint: disable=protected-access,no-member
         self.internal_registry = self._entity_info._group_entity_by_tag(
-            "face", "faceId", self.internal_registry
+            "face", "solidName", self.internal_registry
         )
         # pylint: disable=protected-access
         self.snappy_body_registry = self._entity_info._group_faces_by_snappy_format()
