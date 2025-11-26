@@ -363,6 +363,7 @@ def _check_complete_boundary_condition_and_unknown_surface(
                 planar_face_tolerance=validation_info.planar_face_tolerance,
                 half_model_symmetry_plane_center_y=validation_info.half_model_symmetry_plane_center_y,
                 quasi_3d_symmetry_planes_center_y=validation_info.quasi_3d_symmetry_planes_center_y,
+                farfield_domain_type=validation_info.farfield_domain_type,
             )
             is False
         ]

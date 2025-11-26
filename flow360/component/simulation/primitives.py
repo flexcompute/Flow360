@@ -617,8 +617,8 @@ class Surface(_SurfaceEntityBase):
                 if farfield_domain_type == "half_body_negative_y" and y_min > length_tolerance:
                     return True
 
-        if farfield_method == "user-defined":
-            # Not applicable to user defined farfield
+        if farfield_method in ("user-defined", "wind-tunnel"):
+            # Not applicable to user defined or wind tunnel farfield
             return False
 
         if farfield_method == "auto":
