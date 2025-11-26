@@ -2387,6 +2387,7 @@ def test_ghost_surface_pair_requires_quasi_3d_periodic_farfield():
         Periodic(surface_pairs=(periodic_1, periodic_2), spec=Translational())
 
 
+<<<<<<< HEAD
 def test_seedpoint_zone_based_params():
     from flow360.component.simulation.meshing_param.volume_params import CustomZones
 
@@ -2442,3 +2443,93 @@ def test_seedpoint_zone_based_params():
     )
 
     assert errors is None
+=======
+def test_deleted_surfaces_domain_type():
+    # Mock Asset Cache
+    surface_pos = Surface(
+        name="pos_surf",
+        private_attributes=SurfacePrivateAttributes(bounding_box=[[0, 1, 0], [1, 2, 1]]),
+    )
+    surface_neg = Surface(
+        name="neg_surf",
+        private_attributes=SurfacePrivateAttributes(bounding_box=[[0, -2, 0], [1, -1, 1]]),
+    )
+    surface_cross = Surface(
+        name="cross_surf",
+        private_attributes=SurfacePrivateAttributes(
+            bounding_box=[[0, -0.000001, 0], [1, 0.000001, 1]]
+        ),
+    )
+
+    asset_cache = AssetCache(
+        project_length_unit="m",
+        use_inhouse_mesher=True,
+        use_geometry_AI=True,
+        project_entity_info=SurfaceMeshEntityInfo(
+            global_bounding_box=[[0, -2, 0], [1, 2, 1]],  # Crosses Y=0
+            boundaries=[surface_pos, surface_neg, surface_cross],
+        ),
+    )
+
+    # Test half_body_positive_y -> keeps positive, deletes negative
+    farfield = UserDefinedFarfield(domain_type="half_body_positive_y")
+
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    planar_face_tolerance=1e-4,
+                    geometry_accuracy=1e-5,
+                    boundary_layer_first_layer_thickness=1e-3,
+                ),
+                volume_zones=[farfield],
+            ),
+            models=[
+                Wall(entities=[surface_pos]),  # OK
+                Wall(entities=[surface_neg]),  # Error
+                Wall(entities=[surface_cross]),  # OK (touches 0)
+            ],
+            private_attribute_asset_cache=asset_cache,
+        )
+
+    _, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="SurfaceMesh",
+        validation_level="All",
+    )
+
+    assert len(errors) == 1
+    assert "Boundary `neg_surf` will likely be deleted" in errors[0]["msg"]
+
+    # Test half_body_negative_y -> keeps negative, deletes positive
+    farfield_neg = UserDefinedFarfield(domain_type="half_body_negative_y")
+
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    planar_face_tolerance=1e-4,
+                    geometry_accuracy=1e-5,
+                    boundary_layer_first_layer_thickness=1e-3,
+                ),
+                volume_zones=[farfield_neg],
+            ),
+            models=[
+                Wall(entities=[surface_pos]),  # Error
+                Wall(entities=[surface_neg]),  # OK
+                Wall(entities=[surface_cross]),  # OK
+            ],
+            private_attribute_asset_cache=asset_cache,
+        )
+
+    _, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="SurfaceMesh",
+        validation_level="All",
+    )
+
+    assert len(errors) == 1
+    assert "Boundary `pos_surf` will likely be deleted" in errors[0]["msg"]
+>>>>>>> 5cd538bf (Validate `domain_type` and check for deleted surfaces in half-body simulations (#1615))
