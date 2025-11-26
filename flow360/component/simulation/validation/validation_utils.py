@@ -84,6 +84,7 @@ def check_deleted_surface_in_entity_list(value):
             planar_face_tolerance=validation_info.planar_face_tolerance,
             half_model_symmetry_plane_center_y=validation_info.half_model_symmetry_plane_center_y,
             quasi_3d_symmetry_planes_center_y=validation_info.quasi_3d_symmetry_planes_center_y,
+            farfield_domain_type=validation_info.farfield_domain_type,
         ):
             raise ValueError(
                 f"Boundary `{surface.name}` will likely be deleted after mesh generation. "
@@ -115,6 +116,7 @@ def check_deleted_surface_pair(value):
             planar_face_tolerance=validation_info.planar_face_tolerance,
             half_model_symmetry_plane_center_y=validation_info.half_model_symmetry_plane_center_y,
             quasi_3d_symmetry_planes_center_y=validation_info.quasi_3d_symmetry_planes_center_y,
+            farfield_domain_type=validation_info.farfield_domain_type,
         ):
             raise ValueError(
                 f"Boundary `{surface.name}` will likely be deleted after mesh generation. "
@@ -171,6 +173,12 @@ def check_symmetric_boundary_existence(stored_entities):
 
     for item in stored_entities:
         if item.private_attribute_entity_type_name != "GhostCircularPlane":
+            continue
+
+        if validation_info.farfield_domain_type in (
+            "half_body_positive_y",
+            "half_body_negative_y",
+        ):
             continue
 
         if not item.exists(validation_info):
