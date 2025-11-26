@@ -14,7 +14,11 @@ from flow360.component.simulation.conversion import (
 )
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.framework.updater_utils import recursive_remove_key
-from flow360.component.simulation.models.material import Sutherland
+from flow360.component.simulation.models.material import (
+    Air,
+    NASAPolynomialCoefficients,
+    Sutherland,
+)
 from flow360.component.simulation.models.solver_numerics import NoneSolver
 from flow360.component.simulation.models.surface_models import (
     Freestream,
@@ -1876,6 +1880,82 @@ def get_stop_criterion_settings(criterion: StoppingCriterion, params: Simulation
 # pylint: disable=too-many-branches
 # pylint: disable=too-many-locals
 @preprocess_input
+def translate_nasa_polynomial_coefficients(
+    nasa_coeffs: NASAPolynomialCoefficients,
+    reference_temperature,
+    gas_constant,
+):
+    """
+    Translate and non-dimensionalize NASA polynomial coefficients.
+    
+    The dimensional form is: cp = R * (a1 + a2*T + a3*T^2 + ...)
+    The non-dimensional form uses T_nd = T / T_ref
+    
+    Parameters
+    ----------
+    nasa_coeffs : NASAPolynomialCoefficients
+        NASA polynomial coefficients with dimensional temperature ranges
+    reference_temperature : float
+        Reference temperature for non-dimensionalization (in K)
+    gas_constant : float
+        Gas constant R (in non-dimensional units)
+    
+    Returns
+    -------
+    dict
+        Non-dimensionalized NASA polynomial coefficients for Flow360.json
+    """
+    
+    # Non-dimensionalize temperature ranges
+    t_min_low_nd = nasa_coeffs.low_temperature.temperature_range_min.to("K").v.item() / reference_temperature
+    t_max_low_nd = nasa_coeffs.low_temperature.temperature_range_max.to("K").v.item() / reference_temperature
+    t_min_high_nd = nasa_coeffs.high_temperature.temperature_range_min.to("K").v.item() / reference_temperature
+    t_max_high_nd = nasa_coeffs.high_temperature.temperature_range_max.to("K").v.item() / reference_temperature
+    
+    # The coefficients themselves are already dimensionless (they represent cp/R)
+    # but we need to transform them for the non-dimensional temperature T_nd = T/T_ref
+    # Original: cp/R = a1 + a2*T + a3*T^2 + ...
+    # With T_nd: cp/R = a1 + a2*(T_nd*T_ref) + a3*(T_nd*T_ref)^2 + ...
+    #                 = a1 + (a2*T_ref)*T_nd + (a3*T_ref^2)*T_nd^2 + ...
+    
+    low_coeffs = nasa_coeffs.low_temperature.coefficients
+    high_coeffs = nasa_coeffs.high_temperature.coefficients
+    
+    # Transform coefficients for non-dimensional temperature
+    low_coeffs_nd = [
+        low_coeffs[0],  # a1 (constant term)
+        low_coeffs[1] * reference_temperature,  # a2 * T_ref
+        low_coeffs[2] * reference_temperature**2,  # a3 * T_ref^2
+        low_coeffs[3] * reference_temperature**3,  # a4 * T_ref^3
+        low_coeffs[4] * reference_temperature**4,  # a5 * T_ref^4
+        low_coeffs[5] * reference_temperature**5,  # a6 * T_ref^5
+        low_coeffs[6] * reference_temperature**6,  # a7 * T_ref^6
+    ]
+    
+    high_coeffs_nd = [
+        high_coeffs[0],
+        high_coeffs[1] * reference_temperature,
+        high_coeffs[2] * reference_temperature**2,
+        high_coeffs[3] * reference_temperature**3,
+        high_coeffs[4] * reference_temperature**4,
+        high_coeffs[5] * reference_temperature**5,
+        high_coeffs[6] * reference_temperature**6,
+    ]
+    
+    return {
+        "lowTemperature": {
+            "temperatureRangeMin": t_min_low_nd,
+            "temperatureRangeMax": t_max_low_nd,
+            "coefficients": low_coeffs_nd,
+        },
+        "highTemperature": {
+            "temperatureRangeMin": t_min_high_nd,
+            "temperatureRangeMax": t_max_high_nd,
+            "coefficients": high_coeffs_nd,
+        },
+    }
+
+
 def get_solver_json(
     input_params: SimulationParams,
     # pylint: disable=no-member,unused-argument
@@ -1923,6 +2003,22 @@ def get_solver_json(
             else op.material.dynamic_viscosity.in_base(input_params.flow360_unit_system).v.item()
         ),
     }
+    
+    ##:: Step 2.5: Get NASA polynomial coefficients for gas model (if Air material)
+    if not isinstance(op, LiquidOperatingCondition) and isinstance(op.thermal_state.material, Air):
+        # Get reference temperature and gas constant for non-dimensionalization
+        # Reference temperature is the freestream temperature
+        reference_temperature = op.thermal_state.temperature.to("K").v.item()
+        # Gas constant R in dimensional form (J/kg/K), then convert to non-dimensional
+        gas_constant_dimensional = op.thermal_state.material.gas_constant.to("m**2/s**2/K").v.item()
+        # In Flow360 non-dimensional system, R_nd = R / (velocity_scale^2 / T_ref)
+        # But for the NASA coefficients, we work with cp/R which is already dimensionless
+        
+        translated["gasModel"] = translate_nasa_polynomial_coefficients(
+            op.thermal_state.material.nasa_polynomial_coefficients,
+            reference_temperature,
+            gas_constant_dimensional,
+        )
     if (
         "reference_velocity_magnitude" in op.__class__.model_fields.keys()
         and op.reference_velocity_magnitude
