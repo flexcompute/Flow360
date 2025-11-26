@@ -161,8 +161,6 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
                     return zone["method"]
                 if zone["type"] == "UserDefinedFarfield":
                     return "user-defined"
-                if zone["type"] == "WindTunnelFarfield":
-                    return "wind-tunnel"
                 if (
                     zone["type"]
                     in [
@@ -187,11 +185,7 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         if not volume_zones:
             return None
         for zone in volume_zones:
-            if zone.get("type") in (
-                "AutomatedFarfield",
-                "UserDefinedFarfield",
-                "WindTunnelFarfield",
-            ):
+            if zone.get("type") in ("AutomatedFarfield", "UserDefinedFarfield"):
                 return zone.get("domain_type")
         return None
 

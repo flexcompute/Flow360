@@ -38,18 +38,13 @@ from flow360.component.simulation.meshing_param.params import (
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     AxisymmetricRefinement,
-    CentralBelt,
     CustomZones,
-    FullyMovingFloor,
     MeshSliceOutput,
     RotationCylinder,
     RotationVolume,
-    StaticFloor,
     StructuredBoxRefinement,
     UniformRefinement,
     UserDefinedFarfield,
-    WheelBelts,
-    WindTunnelFarfield,
 )
 from flow360.component.simulation.models.material import (
     Air,
@@ -342,11 +337,6 @@ __all__ = [
     "ImportedSurface",
     "OctreeSpacing",
     "RunControl",
-    "WindTunnelFarfield",
-    "StaticFloor",
-    "FullyMovingFloor",
-    "CentralBelt",
-    "WheelBelts",
 ]
 
 _warn_prerelease()

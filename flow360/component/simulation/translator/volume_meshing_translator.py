@@ -22,7 +22,6 @@ from flow360.component.simulation.meshing_param.volume_params import (
     StructuredBoxRefinement,
     UniformRefinement,
     UserDefinedFarfield,
-    WindTunnelFarfield,
 )
 from flow360.component.simulation.primitives import (
     AxisymmetricBody,
@@ -367,12 +366,6 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
             translated["farfield"] = {"type": "user-defined"}
             if hasattr(zone, "domain_type") and zone.domain_type is not None:
                 translated["farfield"]["domainType"] = zone.domain_type
-
-        if isinstance(zone, WindTunnelFarfield):
-            translated["farfield"] = {"type": "wind-tunnel"}
-            if zone.domain_type is not None:
-                translated["farfield"]["domainType"] = zone.domain_type
-            break
 
         if isinstance(zone, AutomatedFarfield):
             translated["farfield"] = {
