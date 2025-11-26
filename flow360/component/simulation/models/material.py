@@ -1,6 +1,6 @@
 """Material classes for the simulation framework."""
 
-from typing import Literal, Optional, Union
+from typing import List, Literal, Optional, Union
 
 import pydantic as pd
 from numpy import sqrt
@@ -26,6 +26,90 @@ class MaterialBase(Flow360BaseModel):
 
     type: str = pd.Field()
     name: str = pd.Field()
+
+
+class NASAPolynomialCoefficientSet(Flow360BaseModel):
+    """
+    Represents a set of 7 NASA polynomial coefficients for a specific temperature range.
+    
+    The NASA polynomial computes cp/R as:
+    cp/R = a1 + a2*T + a3*T^2 + a4*T^3 + a5*T^4 + a6*T^5 + a7*T^6
+    
+    Example
+    -------
+    
+    >>> fl.NASAPolynomialCoefficientSet(
+    ...     temperature_range_min=200.0 * fl.u.K,
+    ...     temperature_range_max=1000.0 * fl.u.K,
+    ...     coefficients=[3.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    ... )
+    
+    ====
+    """
+    
+    temperature_range_min: AbsoluteTemperatureType = pd.Field(
+        description="Minimum temperature for which this coefficient set is valid."
+    )
+    temperature_range_max: AbsoluteTemperatureType = pd.Field(
+        description="Maximum temperature for which this coefficient set is valid."
+    )
+    coefficients: List[float] = pd.Field(
+        description="Seven NASA polynomial coefficients [a1, a2, a3, a4, a5, a6, a7]. "
+        "These are dimensionless coefficients for the cp/R polynomial."
+    )
+    
+    @pd.model_validator(mode="after")
+    def validate_coefficients(self):
+        """Validate that exactly 7 coefficients are provided."""
+        if len(self.coefficients) != 7:
+            raise ValueError(
+                f"NASA polynomial requires exactly 7 coefficients, got {len(self.coefficients)}"
+            )
+        return self
+
+
+class NASAPolynomialCoefficients(Flow360BaseModel):
+    """
+    NASA 7-coefficient polynomial coefficients for computing temperature-dependent thermodynamic properties.
+    
+    Two coefficient sets are required: one for low temperatures and one for high temperatures.
+    
+    Example
+    -------
+    
+    >>> fl.NASAPolynomialCoefficients(
+    ...     low_temperature=fl.NASAPolynomialCoefficientSet(
+    ...         temperature_range_min=200.0 * fl.u.K,
+    ...         temperature_range_max=1000.0 * fl.u.K,
+    ...         coefficients=[3.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    ...     ),
+    ...     high_temperature=fl.NASAPolynomialCoefficientSet(
+    ...         temperature_range_min=1000.0 * fl.u.K,
+    ...         temperature_range_max=6000.0 * fl.u.K,
+    ...         coefficients=[3.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    ...     )
+    ... )
+    
+    ====
+    """
+    
+    low_temperature: NASAPolynomialCoefficientSet = pd.Field(
+        description="NASA polynomial coefficients for low temperature range (typically 200-1000 K)."
+    )
+    high_temperature: NASAPolynomialCoefficientSet = pd.Field(
+        description="NASA polynomial coefficients for high temperature range (typically 1000-6000 K)."
+    )
+    
+    @pd.model_validator(mode="after")
+    def validate_temperature_ranges(self):
+        """Validate that temperature ranges are continuous and non-overlapping."""
+        if self.low_temperature.temperature_range_max != self.high_temperature.temperature_range_min:
+            raise ValueError(
+                f"Temperature ranges must be continuous: low range max "
+                f"({self.low_temperature.temperature_range_max}) must equal high range min "
+                f"({self.high_temperature.temperature_range_min})"
+            )
+        return self
 
 
 class Sutherland(Flow360BaseModel):
@@ -87,12 +171,33 @@ class Air(MaterialBase):
     Represents the material properties for air.
     This sets specific material properties for air,
     including dynamic viscosity, specific heat ratio, gas constant, and Prandtl number.
+    
+    The thermodynamic properties can be specified using NASA 7-coefficient polynomials
+    for temperature-dependent specific heats. By default, coefficients are set to 
+    reproduce a constant gamma=1.4 (calorically perfect gas).
 
     Example
     -------
 
     >>> fl.Air(
     ...     dynamic_viscosity=1.063e-05 * fl.u.Pa * fl.u.s
+    ... )
+    
+    With custom NASA polynomial coefficients:
+    
+    >>> fl.Air(
+    ...     nasa_polynomial_coefficients=fl.NASAPolynomialCoefficients(
+    ...         low_temperature=fl.NASAPolynomialCoefficientSet(
+    ...             temperature_range_min=200.0 * fl.u.K,
+    ...             temperature_range_max=1000.0 * fl.u.K,
+    ...             coefficients=[2.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    ...         ),
+    ...         high_temperature=fl.NASAPolynomialCoefficientSet(
+    ...             temperature_range_min=1000.0 * fl.u.K,
+    ...             temperature_range_max=6000.0 * fl.u.K,
+    ...             coefficients=[2.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    ...         )
+    ...     )
     ... )
 
     ====
@@ -111,6 +216,28 @@ class Air(MaterialBase):
         description=(
             "The dynamic viscosity model or value for air. Defaults to a `Sutherland` "
             "model with standard atmospheric conditions."
+        ),
+    )
+    nasa_polynomial_coefficients: NASAPolynomialCoefficients = pd.Field(
+        default_factory=lambda: NASAPolynomialCoefficients(
+            low_temperature=NASAPolynomialCoefficientSet(
+                temperature_range_min=200.0 * u.K,
+                temperature_range_max=1000.0 * u.K,
+                # For constant gamma=1.4: cp/R = gamma/(gamma-1) = 1.4/0.4 = 3.5
+                # All temperature-dependent coefficients are zero
+                coefficients=[3.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            ),
+            high_temperature=NASAPolynomialCoefficientSet(
+                temperature_range_min=1000.0 * u.K,
+                temperature_range_max=6000.0 * u.K,
+                # Same constant cp/R for high temperature range
+                coefficients=[3.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            ),
+        ),
+        description=(
+            "NASA 7-coefficient polynomial coefficients for computing temperature-dependent "
+            "specific heat capacity. Defaults to coefficients that reproduce constant gamma=1.4 "
+            "(calorically perfect gas). For air with gamma=1.4: cp/R = 3.5."
         ),
     )
 
