@@ -137,7 +137,6 @@ from flow360.component.simulation.outputs.output_render_types import (
     RenderCameraConfig,
     RenderEnvironmentConfig,
     RenderLightingConfig,
-    RenderMaterialConfig,
     SkyboxBackground,
     SkyboxTexture,
     SolidBackground,
