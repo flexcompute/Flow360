@@ -352,7 +352,7 @@ def _check_complete_boundary_condition_and_unknown_surface(
             # since we do not know the final bounding box for each surface and global model.
             return params
 
-        # pylint:disable=protected-access
+        # pylint:disable=protected-access,duplicate-code
         asset_boundary_entities = [
             item
             for item in asset_boundary_entities
