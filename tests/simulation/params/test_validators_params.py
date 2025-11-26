@@ -2387,7 +2387,6 @@ def test_ghost_surface_pair_requires_quasi_3d_periodic_farfield():
         Periodic(surface_pairs=(periodic_1, periodic_2), spec=Translational())
 
 
-<<<<<<< HEAD
 def test_seedpoint_zone_based_params():
     from flow360.component.simulation.meshing_param.volume_params import CustomZones
 
@@ -2443,7 +2442,8 @@ def test_seedpoint_zone_based_params():
     )
 
     assert errors is None
-=======
+
+
 def test_deleted_surfaces_domain_type():
     # Mock Asset Cache
     surface_pos = Surface(
@@ -2532,4 +2532,3 @@ def test_deleted_surfaces_domain_type():
 
     assert len(errors) == 1
     assert "Boundary `pos_surf` will likely be deleted" in errors[0]["msg"]
->>>>>>> 5cd538bf (Validate `domain_type` and check for deleted surfaces in half-body simulations (#1615))
