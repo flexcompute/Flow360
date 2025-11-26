@@ -244,12 +244,7 @@ class FieldMaterial(RenderMaterialBase):
 
 
 AllMaterialTypes = Union[PBRMaterial, FieldMaterial]
-
-
-class RenderMaterialConfig(Flow360BaseModel):
-    materials: List[AllMaterialTypes] = pd.Field([])
-    mappings: Dict[str, int] = pd.Field({})
-
+    
 
 class Transform(Flow360BaseModel):
     translation: LengthType.Point = pd.Field(default=[0, 0, 0])

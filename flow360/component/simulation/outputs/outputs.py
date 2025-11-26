@@ -6,7 +6,7 @@ Caveats:
 """
 
 # pylint: disable=too-many-lines
-from typing import Annotated, List, Literal, Optional, Union, get_args
+from typing import Annotated, Dict, List, Literal, Optional, Union, get_args
 
 import pydantic as pd
 
@@ -34,10 +34,10 @@ from flow360.component.simulation.outputs.output_fields import (
     get_field_values,
 )
 from flow360.component.simulation.outputs.output_render_types import (
+    AllMaterialTypes,
     RenderCameraConfig,
     RenderEnvironmentConfig,
     RenderLightingConfig,
-    RenderMaterialConfig,
     Transform,
 )
 from flow360.component.simulation.primitives import (
@@ -716,20 +716,22 @@ class RenderOutput(_AnimationSettings):
     """
 
     name: Optional[str] = pd.Field("Render output", description="Name of the `IsosurfaceOutput`.")
-    entities: Optional[EntityList[Surface, Slice]] = pd.Field(
-        None, description="List of of :class:`~flow360.Surface` or `~flow360.Slice` entities."
+    surfaces: Optional[EntityList[Surface]] = pd.Field(
+        None, description="List of of :class:`~flow360.Surface` entities."
+    )
+    slices: Optional[EntityList[Slice]] = pd.Field(
+        None, description="List of of :class:`~flow360.Slice` entities."
     )
     isosurfaces: Optional[UniqueItemList[Isosurface]] = pd.Field(
         None, description="List of :class:`~flow360.Isosurface` entities."
     )
     output_fields: UniqueItemList[Union[CommonFieldNames, str]] = pd.Field(
-        description="List of output variables. Including "
-        ":ref:`universal output variables<UniversalVariablesV2>` and :class:`UserDefinedField`."
+        [], description="List of output variables."
     )
     camera: RenderCameraConfig = pd.Field(description="Camera settings", default_factory=RenderCameraConfig.orthographic)
     lighting: RenderLightingConfig = pd.Field(description="Lighting settings", default_factory=RenderLightingConfig.default)
     environment: RenderEnvironmentConfig = pd.Field(description="Environment settings", default_factory=RenderEnvironmentConfig.simple)
-    materials: RenderMaterialConfig = pd.Field(description="Material settings")
+    materials: Dict[str, AllMaterialTypes] = pd.Field(description="Material settings per entity")
     transform: Optional[Transform] = pd.Field(None, description="Optional model transform to apply to all entities")
     output_type: Literal["RenderOutput"] = pd.Field("RenderOutput", frozen=True)
 
