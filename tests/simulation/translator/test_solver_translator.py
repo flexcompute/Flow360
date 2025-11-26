@@ -72,7 +72,6 @@ from flow360.component.simulation.outputs.output_render_types import (
     RenderCameraConfig,
     RenderEnvironmentConfig,
     RenderLightingConfig,
-    RenderMaterialConfig,
     SkyboxBackground,
     SkyboxTexture,
     StaticCamera,
@@ -279,17 +278,14 @@ def get_om6Wing_tutorial_param():
                     environment=RenderEnvironmentConfig(
                         background=SkyboxBackground(texture=SkyboxTexture.SKY)
                     ),
-                    materials=RenderMaterialConfig(
-                        materials=[
-                            PBRMaterial(
-                                color=(245, 245, 246),
-                                alpha=1.0,
-                                roughness=0.3,
-                                f0=(0.56, 0.56, 0.56),
-                            )
-                        ],
-                        mappings={"iso": 0},
-                    ),
+                    materials={
+                        "iso": PBRMaterial(
+                            color=(245, 245, 246),
+                            alpha=1.0,
+                            roughness=0.3,
+                            f0=(0.56, 0.56, 0.56),
+                        )
+                    }
                 ),
             ],
         )
