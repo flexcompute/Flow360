@@ -167,7 +167,7 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
                     zone["type"]
                     in [
                         "CustomZones",
-                        "SeedpointZone",
+                        "SeedpointVolume",
                     ]
                     and modular
                 ):
