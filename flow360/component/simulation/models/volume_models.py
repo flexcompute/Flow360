@@ -1357,7 +1357,7 @@ class PorousMedium(Flow360BaseModel):
             alias="volumes",
             description="The entity list for the `PorousMedium` model. "
             + "The entity should be defined by :class:`Box`, zones from the geometry/volume mesh or"
-            + "by :class:`SeedpointZone` when using snappyHexMeshing."
+            + "by :class:`SeedpointVolume` when using snappyHexMeshing."
             + "The axes of entity must be specified to serve as the the principle axes of the "
             + "porous medium material model.",
         )

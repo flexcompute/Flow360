@@ -821,10 +821,10 @@ class SeedpointVolume(_VolumeEntityBase):
     """
 
     # pylint: disable=no-member
-    private_attribute_entity_type_name: Literal["SeedpointZone"] = pd.Field(
-        "SeedpointZone", frozen=True
+    private_attribute_entity_type_name: Literal["SeedpointVolume"] = pd.Field(
+        "SeedpointVolume", frozen=True
     )
-    type: Literal["SeedpointZone"] = pd.Field("SeedpointZone", frozen=True)
+    type: Literal["SeedpointVolume"] = pd.Field("SeedpointVolume", frozen=True)
     point_in_mesh: LengthType.Point = pd.Field(
         description="Seedpoint for a main fluid zone in snappyHexMesh."
     )
