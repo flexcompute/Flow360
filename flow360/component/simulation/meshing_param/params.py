@@ -30,6 +30,7 @@ from flow360.component.simulation.meshing_param.volume_params import (
     StructuredBoxRefinement,
     UniformRefinement,
     UserDefinedFarfield,
+    WindTunnelFarfield,
 )
 from flow360.component.simulation.primitives import SeedpointVolume
 from flow360.component.simulation.validation.validation_context import (
@@ -62,6 +63,7 @@ VolumeZonesTypes = Annotated[
         AutomatedFarfield,
         UserDefinedFarfield,
         CustomZones,
+        WindTunnelFarfield,
     ],
     pd.Field(discriminator="type"),
 ]
@@ -164,13 +166,14 @@ class MeshingParams(Flow360BaseModel):
 
     @pd.field_validator("volume_zones", mode="after")
     @classmethod
-    def _check_volume_zones_has_farfied(cls, v):
+    def _check_volume_zones_has_farfield(cls, v):
         if v is None:
             # User did not put anything in volume_zones so may not want to use volume meshing
             return v
 
         total_farfield = sum(
-            isinstance(volume_zone, (AutomatedFarfield, UserDefinedFarfield)) for volume_zone in v
+            isinstance(volume_zone, (AutomatedFarfield, WindTunnelFarfield, UserDefinedFarfield))
+            for volume_zone in v
         )
         if total_farfield == 0:
             raise ValueError("Farfield zone is required in `volume_zones`.")
@@ -277,11 +280,13 @@ class MeshingParams(Flow360BaseModel):
 
     @property
     def farfield_method(self):
-        """Returns the  farfield method used."""
+        """Returns the farfield method used."""
         if self.volume_zones:
             for zone in self.volume_zones:  # pylint: disable=not-an-iterable
                 if isinstance(zone, AutomatedFarfield):
                     return zone.method
+                if isinstance(zone, WindTunnelFarfield):
+                    return "wind-tunnel"
                 if isinstance(zone, UserDefinedFarfield):
                     return "user-defined"
         return None

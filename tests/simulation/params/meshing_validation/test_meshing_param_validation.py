@@ -20,10 +20,14 @@ from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     AxisymmetricRefinement,
     CustomZones,
+    FullyMovingFloor,
     RotationVolume,
+    StaticFloor,
     StructuredBoxRefinement,
     UniformRefinement,
     UserDefinedFarfield,
+    WheelBelts,
+    WindTunnelFarfield,
 )
 from flow360.component.simulation.primitives import (
     AxisymmetricBody,
@@ -1084,3 +1088,98 @@ def test_surface_refinement_in_gai_mesher():
         with ValidationContext(SURFACE_MESH, non_gai_context):
             with CGS_unit_system:
                 SurfaceRefinement(entities=Surface(name="testFace"))
+
+
+def test_wind_tunnel_invalid_dimensions():
+    with CGS_unit_system:
+        # invalid floors
+        with pytest.raises(
+            pd.ValidationError,
+            match=r"is not strictly increasing",
+        ):
+            # invalid range
+            _ = StaticFloor(friction_patch_x_range=(-100, -200), friction_patch_width=42)
+
+        with pytest.raises(
+            pd.ValidationError,
+            match=r"cannot have negative value",
+        ):
+            # invalid positive range
+            _ = WheelBelts(
+                central_belt_x_range=(-200, 256),
+                central_belt_width=67,
+                front_wheel_belt_x_range=(-30, 50),
+                front_wheel_belt_y_range=(70, 120),
+                rear_wheel_belt_x_range=(260, 380),
+                rear_wheel_belt_y_range=(-5, 101),  # here
+            )
+
+        with pytest.raises(
+            pd.ValidationError,
+            match=r"must be less than rear wheel belt minimum x",
+        ):
+            # front, rear belt x ranges overlap
+            _ = WheelBelts(
+                central_belt_x_range=(-200, 256),
+                central_belt_width=67,
+                front_wheel_belt_x_range=(-30, 263),  # here
+                front_wheel_belt_y_range=(70, 120),
+                rear_wheel_belt_x_range=(260, 380),
+                rear_wheel_belt_y_range=(70, 120),
+            )
+
+        # invalid tunnels
+        with pytest.raises(
+            pd.ValidationError,
+            match=r"must be less than outlet x position",
+        ):
+            # inlet behind outlet
+            _ = WindTunnelFarfield(
+                inlet_x_position=200, outlet_x_position=182, floor_type=FullyMovingFloor()
+            )
+
+        with pytest.raises(
+            pd.ValidationError,
+            match=r"must be less than wind tunnel width",
+        ):
+            # friction patch too wide
+            _ = WindTunnelFarfield(width=2025, floor_type=StaticFloor(friction_patch_width=9001))
+
+        with pytest.raises(
+            pd.ValidationError,
+            match=r"must be greater than inlet x",
+        ):
+            # friction patch x min too small
+            _ = WindTunnelFarfield(
+                inlet_x_position=-2025, floor_type=StaticFloor(friction_patch_x_range=(-9001, 333))
+            )
+
+        with pytest.raises(
+            pd.ValidationError,
+            match=r"must be less than half of wind tunnel width",
+        ):
+            # wheel belt y outer too large
+            _ = WindTunnelFarfield(
+                width=538,  # here
+                floor_type=WheelBelts(
+                    central_belt_x_range=(-200, 256),
+                    central_belt_width=120,
+                    front_wheel_belt_x_range=(-30, 50),
+                    front_wheel_belt_y_range=(70, 270),  # here
+                    rear_wheel_belt_x_range=(260, 380),
+                    rear_wheel_belt_y_range=(70, 120),
+                ),
+            )
+
+        # legal, despite wheel belts being ahead/behind rather than left/right of central belt
+        _ = WindTunnelFarfield(
+            width=1024,
+            floor_type=WheelBelts(
+                central_belt_x_range=(-100, 105),
+                central_belt_width=900.1,
+                front_wheel_belt_x_range=(-30, 50),
+                front_wheel_belt_y_range=(70, 123),
+                rear_wheel_belt_x_range=(260, 380),
+                rear_wheel_belt_y_range=(70, 120),
+            ),
+        )

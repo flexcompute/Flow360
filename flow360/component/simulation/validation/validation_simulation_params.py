@@ -8,7 +8,10 @@ from flow360.component.simulation.meshing_param.params import (
     MeshingParams,
     ModularMeshingWorkflow,
 )
-from flow360.component.simulation.meshing_param.volume_params import CustomZones
+from flow360.component.simulation.meshing_param.volume_params import (
+    CustomZones,
+    WindTunnelFarfield,
+)
 from flow360.component.simulation.models.solver_numerics import NoneSolver
 from flow360.component.simulation.models.surface_models import (
     Inflow,
@@ -342,9 +345,7 @@ def _check_complete_boundary_condition_and_unknown_surface(
             # since we do not know the final bounding box for each surface and global model.
             return params
 
-        # If transformed then `_will_be_deleted_by_mesher()` will no longer be accurate
-        # since we do not know the final bounding box for each surface and global model.
-        # pylint:disable=protected-access
+        # pylint:disable=protected-access,duplicate-code
         asset_boundary_entities = [
             item
             for item in asset_boundary_entities
@@ -355,9 +356,11 @@ def _check_complete_boundary_condition_and_unknown_surface(
                 planar_face_tolerance=param_info.planar_face_tolerance,
                 half_model_symmetry_plane_center_y=param_info.half_model_symmetry_plane_center_y,
                 quasi_3d_symmetry_planes_center_y=param_info.quasi_3d_symmetry_planes_center_y,
+                farfield_domain_type=param_info.farfield_domain_type,
             )
             is False
         ]
+
         if farfield_method == "auto":
             asset_boundary_entities += [
                 item
@@ -370,13 +373,18 @@ def _check_complete_boundary_condition_and_unknown_surface(
                 for item in params.private_attribute_asset_cache.project_entity_info.ghost_entities
                 if item.name != "symmetric"
             ]
-        elif farfield_method == "user-defined":
+        elif farfield_method in ("user-defined", "wind-tunnel"):
             if param_info.will_generate_forced_symmetry_plane():
                 asset_boundary_entities += [
                     item
                     for item in params.private_attribute_asset_cache.project_entity_info.ghost_entities
                     if item.name == "symmetric"
                 ]
+            if farfield_method == "wind-tunnel":
+                asset_boundary_entities += WindTunnelFarfield._get_valid_ghost_surfaces(
+                    params.meshing.volume_zones[0].floor_type.type_name,
+                    params.meshing.volume_zones[0].domain_type,
+                )
 
     snappy_multizone = False
     potential_zone_zone_interfaces = set()

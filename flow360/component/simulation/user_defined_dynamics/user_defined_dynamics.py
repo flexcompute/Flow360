@@ -134,6 +134,7 @@ class UserDefinedDynamic(Flow360BaseModel):
             planar_face_tolerance=param_info.planar_face_tolerance,
             half_model_symmetry_plane_center_y=param_info.half_model_symmetry_plane_center_y,
             quasi_3d_symmetry_planes_center_y=param_info.quasi_3d_symmetry_planes_center_y,
+            farfield_domain_type=param_info.farfield_domain_type,
         ):
             raise ValueError(
                 f"Boundary `{value.name}` will likely be deleted after mesh generation. Therefore it cannot be used."

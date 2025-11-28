@@ -8,6 +8,8 @@ from flow360.component.geometry import Geometry, GeometryMeta
 from flow360.component.project_utils import set_up_params_for_uploading
 from flow360.component.resource_base import local_metadata_builder
 from flow360.component.simulation import services
+from flow360.component.simulation.entity_info import SurfaceMeshEntityInfo
+from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.meshing_param.face_params import SurfaceRefinement
 from flow360.component.simulation.meshing_param.params import (
     MeshingDefaults,
@@ -123,7 +125,9 @@ def test_automated_farfield_surface_usage():
         my_farfield = AutomatedFarfield(name="my_farfield")
         with pytest.raises(
             ValueError,
-            match=re.escape("Can not find any valid entity of type ['Surface'] from the input."),
+            match=re.escape(
+                "Can not find any valid entity of type ['Surface', 'WindTunnelGhostSurface'] from the input."
+            ),
         ):
             _ = SimulationParams(
                 meshing=MeshingParams(
@@ -270,7 +274,6 @@ def test_user_defined_farfield_symmetry_plane(surface_mesh):
         errors[0]["msg"]
         == "Value error, `domain_type` is only supported when using both GAI surface mesher and beta volume mesher."
     )
-    params.meshing.defaults.geometry_accuracy = 1 * u.mm
     params.meshing.defaults.geometry_accuracy = 1 * u.mm
     errors = _run_validation(params, surface_mesh, use_beta_mesher=True, use_geometry_AI=True)
     assert errors is None
@@ -482,3 +485,81 @@ def test_rotated_symmetric_existence():
     assert errors_1 is None
     assert errors_2 is None
     assert errors_3 is None
+
+
+def test_domain_type_bounding_box_check():
+    # Case 1: Model does not cross Y=0 (Positive Half)
+    # y range [1, 10]
+    # Request half_body_positive_y -> Should pass (aligned)
+
+    dummy_boundary = Surface(name="dummy")
+
+    asset_cache_positive = AssetCache(
+        project_length_unit="m",
+        use_inhouse_mesher=True,
+        use_geometry_AI=True,
+        project_entity_info=SurfaceMeshEntityInfo(
+            global_bounding_box=[[0, 1, 0], [10, 10, 10]],
+            ghost_entities=[],
+            boundaries=[dummy_boundary],
+        ),
+    )
+
+    farfield_pos = UserDefinedFarfield(domain_type="half_body_positive_y")
+
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    planar_face_tolerance=0.01,
+                    geometry_accuracy=1e-5,
+                    boundary_layer_first_layer_thickness=1e-3,
+                ),
+                volume_zones=[farfield_pos],
+            ),
+            models=[Wall(entities=[dummy_boundary])],  # Assign BC to avoid missing BC error
+            private_attribute_asset_cache=asset_cache_positive,
+        )
+
+    params_dict = params.model_dump(mode="json", exclude_none=True)
+    _, errors, _ = services.validate_model(
+        params_as_dict=params_dict,
+        validated_by=services.ValidationCalledBy.LOCAL,
+        root_item_type="SurfaceMesh",
+        validation_level="All",
+    )
+
+    domain_errors = [
+        e for e in (errors or []) if "The model does not cross the symmetry plane" in e["msg"]
+    ]
+    assert len(domain_errors) == 0
+
+    # Case 2: Misaligned
+    # Request half_body_negative_y on Positive Model -> Should Fail
+    farfield_neg = UserDefinedFarfield(domain_type="half_body_negative_y")
+
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    planar_face_tolerance=0.01,
+                    geometry_accuracy=1e-5,
+                    boundary_layer_first_layer_thickness=1e-3,
+                ),
+                volume_zones=[farfield_neg],
+            ),
+            models=[Wall(entities=[dummy_boundary])],
+            private_attribute_asset_cache=asset_cache_positive,
+        )
+
+    params_dict = params.model_dump(mode="json", exclude_none=True)
+    _, errors, _ = services.validate_model(
+        params_as_dict=params_dict,
+        validated_by=services.ValidationCalledBy.LOCAL,
+        root_item_type="SurfaceMesh",
+        validation_level="All",
+    )
+
+    assert errors is not None
+    domain_errors = [e for e in errors if "The model does not cross the symmetry plane" in e["msg"]]
+    assert len(domain_errors) == 1

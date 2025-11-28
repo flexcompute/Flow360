@@ -3,11 +3,12 @@ Meshing settings that applies to volumes.
 """
 
 from abc import ABCMeta
-from typing import Literal, Optional
+from typing import Literal, Optional, Union
 
 import pydantic as pd
 from typing_extensions import deprecated
 
+import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.outputs.output_entities import Slice
@@ -20,16 +21,19 @@ from flow360.component.simulation.primitives import (
     GhostSurface,
     SeedpointVolume,
     Surface,
+    WindTunnelGhostSurface,
 )
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.validation.validation_context import (
     ParamsValidationInfo,
     contextual_field_validator,
     contextual_model_validator,
+    get_validation_info,
 )
 from flow360.component.simulation.validation.validation_utils import (
     check_deleted_surface_in_entity_list,
 )
+from flow360.exceptions import Flow360ValueError
 
 
 class UniformRefinement(Flow360BaseModel):
@@ -348,6 +352,9 @@ class RotationCylinder(RotationVolume):
     entities: EntityList[Cylinder] = pd.Field()
 
 
+### BEGIN FARFIELDS ###
+
+
 class _FarfieldBase(Flow360BaseModel):
     """Base class for farfield parameters."""
 
@@ -374,6 +381,57 @@ class _FarfieldBase(Flow360BaseModel):
             return value
         raise ValueError(
             "`domain_type` is only supported when using both GAI surface mesher and beta volume mesher."
+        )
+
+    @pd.field_validator("domain_type", mode="after")
+    @classmethod
+    def _validate_domain_type_bbox(cls, value):
+        """
+        Ensure that when domain_type is used, the model actually spans across Y=0.
+        """
+        validation_info = get_validation_info()
+        if validation_info is None:
+            return value
+
+        if (
+            value not in ("half_body_positive_y", "half_body_negative_y")
+            or validation_info.global_bounding_box is None
+        ):
+            return value
+
+        y_min = validation_info.global_bounding_box[0][1]
+        y_max = validation_info.global_bounding_box[1][1]
+
+        largest_dimension = -float("inf")
+        for dim in range(3):
+            dimension = (
+                validation_info.global_bounding_box[1][dim]
+                - validation_info.global_bounding_box[0][dim]
+            )
+            largest_dimension = max(largest_dimension, dimension)
+
+        tolerance = largest_dimension * validation_info.planar_face_tolerance
+
+        # Check if model crosses Y=0
+        crossing = y_min < -tolerance and y_max > tolerance
+        if crossing:
+            return value
+
+        # If not crossing, check if it matches the requested domain
+        if value == "half_body_positive_y":
+            # Should be on positive side (y > 0)
+            if y_min >= -tolerance:
+                return value
+
+        if value == "half_body_negative_y":
+            # Should be on negative side (y < 0)
+            if y_max <= tolerance:
+                return value
+
+        raise ValueError(
+            f"The model does not cross the symmetry plane (Y=0) with tolerance {tolerance:.2g}. "
+            f"Model Y range: [{y_min:.2g}, {y_max:.2g}]. "
+            "Please check if `domain_type` is set correctly."
         )
 
 
@@ -429,7 +487,7 @@ class AutomatedFarfield(_FarfieldBase):
         """
         if self.method == "auto":
             return GhostSurface(name="symmetric")
-        raise ValueError(
+        raise Flow360ValueError(
             "Unavailable for quasi-3d farfield methods. Please use `symmetry_planes` property instead."
         )
 
@@ -444,7 +502,7 @@ class AutomatedFarfield(_FarfieldBase):
                 GhostSurface(name="symmetric-1"),
                 GhostSurface(name="symmetric-2"),
             ]
-        raise ValueError(f"Unsupported method: {self.method}")
+        raise Flow360ValueError(f"Unsupported method: {self.method}")
 
     @contextual_field_validator("method", mode="after")
     @classmethod
@@ -484,11 +542,364 @@ class UserDefinedFarfield(_FarfieldBase):
         Warning: This should only be used when using GAI and beta mesher.
         """
         if self.domain_type not in ("half_body_positive_y", "half_body_negative_y"):
-            raise ValueError(
+            raise Flow360ValueError(
                 "Symmetry plane of user defined farfield is only supported when domain_type "
                 "is `half_body_positive_y` or `half_body_negative_y`."
             )
         return GhostSurface(name="symmetric")
+
+
+# pylint: disable=no-member
+class StaticFloor(Flow360BaseModel):
+    """Class for static wind tunnel floor with friction patch."""
+
+    type_name: Literal["StaticFloor"] = pd.Field(
+        "StaticFloor", description="Static floor with friction patch.", frozen=True
+    )
+    friction_patch_x_range: LengthType.Range = pd.Field(
+        default=(-3, 6) * u.m, description="(Minimum, maximum) x of friction patch."
+    )
+    friction_patch_width: LengthType.Positive = pd.Field(
+        default=2 * u.m, description="Width of friction patch."
+    )
+
+
+class FullyMovingFloor(Flow360BaseModel):
+    """Class for fully moving wind tunnel floor with friction patch."""
+
+    type_name: Literal["FullyMovingFloor"] = pd.Field(
+        "FullyMovingFloor", description="Fully moving floor.", frozen=True
+    )
+
+
+# pylint: disable=no-member
+class CentralBelt(Flow360BaseModel):
+    """Class for wind tunnel floor with one central belt."""
+
+    type_name: Literal["CentralBelt"] = pd.Field(
+        "CentralBelt", description="Floor with central belt.", frozen=True
+    )
+    central_belt_x_range: LengthType.Range = pd.Field(
+        default=(-2, 2) * u.m, description="(Minimum, maximum) x of central belt."
+    )
+    central_belt_width: LengthType.Positive = pd.Field(
+        default=1.2 * u.m, description="Width of central belt."
+    )
+
+
+class WheelBelts(CentralBelt):
+    """Class for wind tunnel floor with one central belt and four wheel belts."""
+
+    type_name: Literal["WheelBelts"] = pd.Field(
+        "WheelBelts", description="Floor with central belt and four wheel belts.", frozen=True
+    )
+    # No defaults for the below; user must specify
+    front_wheel_belt_x_range: LengthType.Range = pd.Field(
+        description="(Minimum, maximum) x of front wheel belt."
+    )
+    front_wheel_belt_y_range: LengthType.PositiveRange = pd.Field(
+        description="(Inner, outer) y of front wheel belt."
+    )
+    rear_wheel_belt_x_range: LengthType.Range = pd.Field(
+        description="(Minimum, maximum) x of rear wheel belt."
+    )
+    rear_wheel_belt_y_range: LengthType.PositiveRange = pd.Field(
+        description="(Inner, outer) y of rear wheel belt."
+    )
+
+    @pd.model_validator(mode="after")
+    def _validate_wheel_belt_ranges(self):
+        if self.front_wheel_belt_x_range[1] >= self.rear_wheel_belt_x_range[0]:
+            raise ValueError(
+                f"Front wheel belt maximum x ({self.front_wheel_belt_x_range[1]}) "
+                f"must be less than rear wheel belt minimum x ({self.rear_wheel_belt_x_range[0]})."
+            )
+        return self
+
+
+# pylint: disable=no-member
+class WindTunnelFarfield(_FarfieldBase):
+    """
+    Settings for analytic wind tunnel farfield generation.
+    The user only needs to provide tunnel dimensions and floor type and dimensions, rather than a geometry.
+
+    Example
+    -------
+        >>> fl.WindTunnelFarfield(
+            width = 10 * fl.u.m,
+            height = 5 * fl.u.m,
+            inlet_x_position = -10 * fl.u.m,
+            outlet_x_position = 20 * fl.u.m,
+            floor_z_position = 0 * fl.u.m,
+            floor_type = fl.CentralBelt(
+                central_belt_x_range = (-1, 4) * fl.u.m,
+                central_belt_width = 1.2 * fl.u.m
+            )
+        )
+    """
+
+    type: Literal["WindTunnelFarfield"] = pd.Field("WindTunnelFarfield", frozen=True)
+    name: str = pd.Field("Wind Tunnel Farfield", description="Name of the wind tunnel farfield.")
+
+    # Tunnel parameters
+    width: LengthType.Positive = pd.Field(default=10 * u.m, description="Width of the wind tunnel.")
+    height: LengthType.Positive = pd.Field(
+        default=6 * u.m, description="Height of the wind tunnel."
+    )
+    inlet_x_position: LengthType = pd.Field(
+        default=-20 * u.m, description="X-position of the inlet."
+    )
+    outlet_x_position: LengthType = pd.Field(
+        default=40 * u.m, description="X-position of the outlet."
+    )
+    floor_z_position: LengthType = pd.Field(default=0 * u.m, description="Z-position of the floor.")
+
+    floor_type: Union[
+        StaticFloor,
+        FullyMovingFloor,
+        CentralBelt,
+        WheelBelts,
+    ] = pd.Field(
+        default_factory=StaticFloor,
+        description="Floor type of the wind tunnel.",
+        discriminator="type_name",
+    )
+
+    # up direction not yet supported; assume +Z
+
+    @property
+    def symmetry_plane(self) -> GhostSurface:
+        """
+        Returns the symmetry plane boundary surface for half body domains.
+        """
+        if self.domain_type not in ("half_body_positive_y", "half_body_negative_y"):
+            raise Flow360ValueError(
+                "Symmetry plane for wind tunnel farfield is only supported when domain_type "
+                "is `half_body_positive_y` or `half_body_negative_y`."
+            )
+        return GhostSurface(name="symmetric")
+
+    @staticmethod
+    def _left():
+        return WindTunnelGhostSurface(name="windTunnelLeft")
+
+    @property
+    def left(self) -> WindTunnelGhostSurface:
+        """Returns the left boundary surface."""
+        if self.domain_type == "half_body_positive_y":
+            raise Flow360ValueError(
+                "Left boundary for wind tunnel farfield is not applicable when domain_type "
+                "is `half_body_positive_y`."
+            )
+        return WindTunnelFarfield._left()
+
+    @staticmethod
+    def _right():
+        return WindTunnelGhostSurface(name="windTunnelRight")
+
+    @property
+    def right(self) -> WindTunnelGhostSurface:
+        """Returns the right boundary surface."""
+        if self.domain_type == "half_body_negative_y":
+            raise Flow360ValueError(
+                "Right boundary for wind tunnel farfield is not applicable when domain_type "
+                "is `half_body_negative_y`."
+            )
+        return WindTunnelFarfield._right()
+
+    @staticmethod
+    def _inlet():
+        return WindTunnelGhostSurface(name="windTunnelInlet")
+
+    @property
+    def inlet(self) -> WindTunnelGhostSurface:
+        """Returns the inlet boundary surface."""
+        return WindTunnelFarfield._inlet()
+
+    @staticmethod
+    def _outlet():
+        return WindTunnelGhostSurface(name="windTunnelOutlet")
+
+    @property
+    def outlet(self) -> WindTunnelGhostSurface:
+        """Returns the outlet boundary surface."""
+        return WindTunnelFarfield._outlet()
+
+    @staticmethod
+    def _ceiling():
+        return WindTunnelGhostSurface(name="windTunnelCeiling")
+
+    @property
+    def ceiling(self) -> WindTunnelGhostSurface:
+        """Returns the ceiling boundary surface."""
+        return WindTunnelFarfield._ceiling()
+
+    @staticmethod
+    def _floor():
+        return WindTunnelGhostSurface(name="windTunnelFloor")
+
+    @property
+    def floor(self) -> WindTunnelGhostSurface:
+        """Returns the floor boundary surface, excluding friction, central, and wheel belts if applicable."""
+        return WindTunnelFarfield._floor()
+
+    @staticmethod
+    def _friction_patch():
+        return WindTunnelGhostSurface(name="windTunnelFrictionPatch", used_by=["StaticFloor"])
+
+    @property
+    def friction_patch(self) -> WindTunnelGhostSurface:
+        """Returns the friction patch for StaticFloor floor type."""
+        if not isinstance(self.floor_type, StaticFloor):
+            raise Flow360ValueError(
+                "Friction patch for wind tunnel farfield "
+                "is only supported if floor type is `StaticFloor`."
+            )
+        return WindTunnelFarfield._friction_patch()
+
+    @staticmethod
+    def _central_belt():
+        return WindTunnelGhostSurface(
+            name="windTunnelCentralBelt", used_by=["CentralBelt", "WheelBelts"]
+        )
+
+    @property
+    def central_belt(self) -> WindTunnelGhostSurface:
+        """Returns the central belt for CentralBelt or WheelBelts floor types."""
+        if not isinstance(self.floor_type, CentralBelt):
+            raise Flow360ValueError(
+                "Central belt for wind tunnel farfield "
+                "is only supported if floor type is `CentralBelt` or `WheelBelts`."
+            )
+        return WindTunnelFarfield._central_belt()
+
+    @staticmethod
+    def _front_wheel_belts():
+        return WindTunnelGhostSurface(name="windTunnelFrontWheelBelt", used_by=["WheelBelts"])
+
+    @property
+    def front_wheel_belts(self) -> WindTunnelGhostSurface:
+        """Returns the front wheel belts for WheelBelts floor type."""
+        if not isinstance(self.floor_type, WheelBelts):
+            raise Flow360ValueError(
+                "Front wheel belts for wind tunnel farfield "
+                "is only supported if floor type is `WheelBelts`."
+            )
+        return WindTunnelFarfield._front_wheel_belts()
+
+    @staticmethod
+    def _rear_wheel_belts():
+        return WindTunnelGhostSurface(name="windTunnelRearWheelBelt", used_by=["WheelBelts"])
+
+    @property
+    def rear_wheel_belts(self) -> WindTunnelGhostSurface:
+        """Returns the rear wheel belts for WheelBelts floor type."""
+        if not isinstance(self.floor_type, WheelBelts):
+            raise Flow360ValueError(
+                "Rear wheel belts for wind tunnel farfield "
+                "is only supported if floor type is `WheelBelts`."
+            )
+        return WindTunnelFarfield._rear_wheel_belts()
+
+    @staticmethod
+    def _get_valid_ghost_surfaces(
+        floor_string: Optional[str] = "all", domain_string: Optional[str] = None
+    ) -> list[WindTunnelGhostSurface]:
+        """
+        Returns a list of valid ghost surfaces given a floor type as a string
+        or ``all``, and the domain type as a string.
+        """
+        common_ghost_surfaces = [
+            WindTunnelFarfield._inlet(),
+            WindTunnelFarfield._outlet(),
+            WindTunnelFarfield._ceiling(),
+            WindTunnelFarfield._floor(),
+        ]
+        if domain_string != "half_body_negative_y":
+            common_ghost_surfaces += [WindTunnelFarfield._right()]
+        if domain_string != "half_body_positive_y":
+            common_ghost_surfaces += [WindTunnelFarfield._left()]
+        for ghost_surface_type in [
+            WindTunnelFarfield._friction_patch(),
+            WindTunnelFarfield._central_belt(),
+            WindTunnelFarfield._front_wheel_belts(),
+            WindTunnelFarfield._rear_wheel_belts(),
+        ]:
+            if floor_string == "all" or floor_string in ghost_surface_type.used_by:
+                common_ghost_surfaces += [ghost_surface_type]
+        return common_ghost_surfaces
+
+    @pd.model_validator(mode="after")
+    def _validate_inlet_is_less_than_outlet(self):
+        if self.inlet_x_position >= self.outlet_x_position:
+            raise ValueError(
+                f"Inlet x position ({self.inlet_x_position}) "
+                f"must be less than outlet x position ({self.outlet_x_position})."
+            )
+        return self
+
+    @pd.model_validator(mode="after")
+    def _validate_central_belt_ranges(self):
+        # friction patch
+        if isinstance(self.floor_type, StaticFloor):
+            if self.floor_type.friction_patch_width >= self.width:
+                raise ValueError(
+                    f"Friction patch width ({self.floor_type.friction_patch_width}) "
+                    f"must be less than wind tunnel width ({self.width})"
+                )
+            if self.floor_type.friction_patch_x_range[0] <= self.inlet_x_position:
+                raise ValueError(
+                    f"Friction patch minimum x ({self.floor_type.friction_patch_x_range[0]}) "
+                    f"must be greater than inlet x ({self.inlet_x_position})"
+                )
+            if self.floor_type.friction_patch_x_range[1] >= self.outlet_x_position:
+                raise ValueError(
+                    f"Friction patch maximum x ({self.floor_type.friction_patch_x_range[1]}) "
+                    f"must be less than outlet x ({self.outlet_x_position})"
+                )
+        # central belt
+        elif isinstance(self.floor_type, CentralBelt):
+            if self.floor_type.central_belt_width >= self.width:
+                raise ValueError(
+                    f"Central belt width ({self.floor_type.central_belt_width}) "
+                    f"must be less than wind tunnel width ({self.width})"
+                )
+            if self.floor_type.central_belt_x_range[0] <= self.inlet_x_position:
+                raise ValueError(
+                    f"Central belt minimum x ({self.floor_type.central_belt_x_range[0]}) "
+                    f"must be greater than inlet x ({self.inlet_x_position})"
+                )
+            if self.floor_type.central_belt_x_range[1] >= self.outlet_x_position:
+                raise ValueError(
+                    f"Central belt maximum x ({self.floor_type.central_belt_x_range[1]}) "
+                    f"must be less than outlet x ({self.outlet_x_position})"
+                )
+        return self
+
+    @pd.model_validator(mode="after")
+    def _validate_wheel_belts_ranges(self):
+        if isinstance(self.floor_type, WheelBelts):
+            if self.floor_type.front_wheel_belt_y_range[1] >= self.width * 0.5:
+                raise ValueError(
+                    f"Front wheel outer y ({self.floor_type.front_wheel_belt_y_range[1]}) "
+                    f"must be less than half of wind tunnel width ({self.width * 0.5})"
+                )
+            if self.floor_type.rear_wheel_belt_y_range[1] >= self.width * 0.5:
+                raise ValueError(
+                    f"Rear wheel outer y ({self.floor_type.rear_wheel_belt_y_range[1]}) "
+                    f"must be less than half of wind tunnel width ({self.width * 0.5})"
+                )
+            if self.floor_type.front_wheel_belt_x_range[0] <= self.inlet_x_position:
+                raise ValueError(
+                    f"Front wheel minimum x ({self.floor_type.front_wheel_belt_x_range[0]}) "
+                    f"must be greater than inlet x ({self.inlet_x_position})"
+                )
+            if self.floor_type.rear_wheel_belt_x_range[1] >= self.outlet_x_position:
+                raise ValueError(
+                    f"Rear wheel maximum x ({self.floor_type.rear_wheel_belt_x_range[1]}) "
+                    f"must be less than outlet x ({self.outlet_x_position})"
+                )
+        return self
 
 
 class MeshSliceOutput(Flow360BaseModel):

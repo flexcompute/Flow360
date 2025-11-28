@@ -29,6 +29,7 @@ from flow360.component.simulation.primitives import (
     GhostSurfacePair,
     Surface,
     SurfacePair,
+    WindTunnelGhostSurface,
 )
 from flow360.component.simulation.unit_system import (
     AbsoluteTemperatureType,
@@ -403,6 +404,11 @@ class Wall(BoundaryBase):
     )
     private_attribute_dict: Optional[Dict] = pd.Field(None)
 
+    entities: EntityList[Surface, WindTunnelGhostSurface] = pd.Field(
+        alias="surfaces",
+        description="List of boundaries with the `Wall` boundary condition imposed.",
+    )
+
     @pd.model_validator(mode="after")
     def check_wall_function_conflict(self):
         """Check no setting is conflicting with the usage of wall function"""
@@ -480,11 +486,11 @@ class Freestream(BoundaryBaseWithTurbulenceQuantities):
         + ":py:attr:`AerospaceCondition.alpha` and :py:attr:`AerospaceCondition.beta` angles. "
         + "Optionally, an expression for each of the velocity components can be specified.",
     )
-    entities: EntityListAllowingGhost[Surface, GhostSurface, GhostSphere, GhostCircularPlane] = (
-        pd.Field(
-            alias="surfaces",
-            description="List of boundaries with the `Freestream` boundary condition imposed.",
-        )
+    entities: EntityListAllowingGhost[
+        Surface, GhostSurface, WindTunnelGhostSurface, GhostSphere, GhostCircularPlane
+    ] = pd.Field(
+        alias="surfaces",
+        description="List of boundaries with the `Freestream` boundary condition imposed.",
     )
 
     @contextual_field_validator("velocity", mode="after")
@@ -636,7 +642,9 @@ class SlipWall(BoundaryBase):
         "Slip wall", description="Name of the `SlipWall` boundary condition."
     )
     type: Literal["SlipWall"] = pd.Field("SlipWall", frozen=True)
-    entities: EntityListAllowingGhost[Surface, GhostSurface, GhostCircularPlane] = pd.Field(
+    entities: EntityListAllowingGhost[
+        Surface, GhostSurface, WindTunnelGhostSurface, GhostCircularPlane
+    ] = pd.Field(
         alias="surfaces",
         description="List of boundaries with the :code:`SlipWall` boundary condition imposed.",
     )

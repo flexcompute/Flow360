@@ -36,6 +36,8 @@ from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     CustomZones,
     UniformRefinement,
+    WheelBelts,
+    WindTunnelFarfield,
 )
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
@@ -1196,3 +1198,55 @@ def test_gai_translator_hashing_ignores_id():
     assert (
         hashes[0] == hashes[1]
     ), f"Hashes should be identical despite different UUIDs:\n  Hash 1: {hashes[0]}\n  Hash 2: {hashes[1]}"
+
+
+def test_gai_analytic_wind_tunnel_farfield():
+    with SI_unit_system:
+        wind_tunnel = WindTunnelFarfield(
+            width=10,
+            height=10,
+            inlet_x_position=-5,
+            outlet_x_position=15,
+            floor_z_position=0,
+            floor_type=WheelBelts(
+                central_belt_x_range=(-1, 6),
+                central_belt_width=1.2,
+                front_wheel_belt_x_range=(-0.3, 0.5),
+                front_wheel_belt_y_range=(0.7, 1.2),
+                rear_wheel_belt_x_range=(2.6, 3.8),
+                rear_wheel_belt_y_range=(0.7, 1.2),
+            ),
+        )
+        meshing_params = MeshingParams(
+            defaults=MeshingDefaults(
+                surface_max_aspect_ratio=10,
+                curvature_resolution_angle=15 * u.deg,
+                geometry_accuracy=1e-2,
+                boundary_layer_first_layer_thickness=1e-4,
+                boundary_layer_growth_rate=1.2,
+                planar_face_tolerance=1e-3,
+                surface_max_edge_length=0.2,
+            ),
+            volume_zones=[wind_tunnel],
+        )
+        with open(
+            os.path.join(
+                os.path.dirname(__file__), "data", "gai_windtunnel_farfield_info", "simulation.json"
+            ),
+            "r",
+        ) as fh:
+            asset_cache = AssetCache.model_validate(
+                json.load(fh).pop("private_attribute_asset_cache")
+            )
+
+        params = SimulationParams(
+            meshing=meshing_params,
+            operating_condition=AerospaceCondition(velocity_magnitude=30 * u.m / u.s),
+            private_attribute_asset_cache=asset_cache,
+        )
+
+    _translate_and_compare(
+        params,
+        1 * u.m,
+        "gai_windtunnel.json",
+    )
