@@ -469,9 +469,9 @@ def _collect_known_selectors_from_asset_cache(asset_cache) -> dict[str, dict]:
             selector_dict = item
         else:
             continue
-        name = selector_dict.get("name")
-        if name:
-            known[name] = selector_dict
+        selector_id = selector_dict.get("selector_id")
+        if selector_id:
+            known[selector_id] = selector_dict
     return known
 
 
@@ -811,13 +811,13 @@ def collect_and_tokenize_selectors_in_place(  # pylint: disable=too-many-branche
     params_as_dict: dict,
 ) -> dict:
     """
-    Collect all matched/defined selectors into AssetCache and replace them with tokens (names).
+    Collect all matched/defined selectors into AssetCache and replace them with tokens (`selector_id`).
 
     This optimization reduces the size of the JSON and allows for efficient re-use of
     selector definitions.
     1. It traverses the `params_as_dict` to find all `EntitySelector` definitions (dicts with "name").
     2. It moves these definitions into `private_attribute_asset_cache["selectors"]`.
-    3. It replaces the original dictionary definition in the `selectors` list with just the name (token).
+    3. It replaces the original dictionary definition in the `selectors` list with just the `selector_id` (token).
     """
     known_selectors = {}
 
@@ -826,24 +826,23 @@ def collect_and_tokenize_selectors_in_place(  # pylint: disable=too-many-branche
     if isinstance(asset_cache, dict):
         if "selectors" in asset_cache and isinstance(asset_cache["selectors"], list):
             for s in asset_cache["selectors"]:
-                if isinstance(s, dict) and "name" in s:
-                    known_selectors[s["name"]] = s
+                selector_id = s.get("selector_id")
+                if selector_id is None:
+                    selector_id = generate_uuid()
+                    s["selector_id"] = selector_id
+                known_selectors[selector_id] = s
 
     queue = deque([params_as_dict])
     while queue:
         node = queue.popleft()
         if isinstance(node, dict):
-            selectors = node.get("selectors")
-            if isinstance(selectors, list):
-                new_selectors = []
-                for item in selectors:
-                    if isinstance(item, dict) and "name" in item:
-                        name = item["name"]
-                        known_selectors[name] = item
-                        new_selectors.append(name)
-                    else:
-                        new_selectors.append(item)
-                node["selectors"] = new_selectors
+            selectors = node.get("selectors", ())
+            new_selectors = []
+            for item in selectors:
+                selector_id = item.get("selector_id")
+                known_selectors[selector_id] = item
+                new_selectors.append(selector_id)
+            node["selectors"] = new_selectors
 
             # Recurse
             for value in node.values():

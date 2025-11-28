@@ -19,6 +19,7 @@ def test_entity_selector_token_flow():
                 "name": "m1",
                 "selectors": [
                     {
+                        "selector_id": "sel1-token",
                         "target_class": "Surface",
                         "name": "sel1",
                         "children": [
@@ -31,6 +32,7 @@ def test_entity_selector_token_flow():
                 "name": "m2",
                 "selectors": [
                     {
+                        "selector_id": "sel1-token",
                         "target_class": "Surface",
                         "name": "sel1",
                         "children": [
@@ -58,11 +60,12 @@ def test_entity_selector_token_flow():
     asset_cache = tokenized_params["private_attribute_asset_cache"]
     assert "selectors" in asset_cache
     assert len(asset_cache["selectors"]) == 1
+    assert asset_cache["selectors"][0]["selector_id"] == "sel1-token"
     assert asset_cache["selectors"][0]["name"] == "sel1"
 
     # Check that selectors are replaced by tokens
-    assert tokenized_params["models"][0]["selectors"] == ["sel1"]
-    assert tokenized_params["models"][1]["selectors"] == ["sel1"]
+    assert tokenized_params["models"][0]["selectors"] == ["sel1-token"]
+    assert tokenized_params["models"][1]["selectors"] == ["sel1-token"]
 
     # 4. Run expansion
     expanded_params = expand_entity_selectors_in_place(db, tokenized_params)
@@ -85,6 +88,7 @@ def test_entity_selector_mixed_token_and_dict():
         "private_attribute_asset_cache": {
             "selectors": [
                 {
+                    "selector_id": "sel-cache-id",
                     "target_class": "Surface",
                     "name": "sel_cache",
                     "children": [{"attribute": "name", "operator": "matches", "value": "wing*"}],
@@ -93,8 +97,9 @@ def test_entity_selector_mixed_token_and_dict():
         },
         "model": {
             "selectors": [
-                "sel_cache",  # Token
+                "sel-cache-id",  # Token
                 {  # Inline dict
+                    "selector_id": "sel-inline-id",
                     "target_class": "Surface",
                     "name": "sel_inline",
                     "children": [{"attribute": "name", "operator": "matches", "value": "fuselage"}],

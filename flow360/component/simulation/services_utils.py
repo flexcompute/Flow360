@@ -99,8 +99,8 @@ def strip_selector_matches_inplace(params_as_dict: dict) -> dict:
         selectors_list = asset_cache.get("selectors")
         if isinstance(selectors_list, list):
             for s in selectors_list:
-                if isinstance(s, dict) and "name" in s:
-                    known_selectors[s["name"]] = s
+                selector_id = s.get("selector_id")
+                known_selectors[selector_id] = s
 
     def _matched_keyset_for_selectors(selectors_value: list) -> set:
         additions_by_class, _ = _process_selectors(
