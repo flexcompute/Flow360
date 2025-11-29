@@ -1,5 +1,10 @@
 import os
 
+from flow360.component.simulation.validation.validation_context import (
+    ParamsValidationInfo,
+    ValidationContext,
+)
+
 os.environ["MPLBACKEND"] = "Agg"
 
 import matplotlib
@@ -41,3 +46,10 @@ def before_log_test(request):
 def after_log_test():
     yield
     set_logging_file(pytest.tmp_log_file, level="DEBUG")
+
+
+@pytest.fixture
+def mock_validation_context():
+    return ValidationContext(
+        levels=None, info=ParamsValidationInfo(param_as_dict={}, referenced_expressions=[])
+    )

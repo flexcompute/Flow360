@@ -3,9 +3,6 @@
     "unit_system": {
         "name": "SI"
     },
-    "meshing": null,
-    "reference_geometry": null,
-    "operating_condition": null,
     "models": [
         {
             "material": {
@@ -28,7 +25,6 @@
             },
             "initial_condition": {
                 "type_name": "NavierStokesInitialCondition",
-                "constants": null,
                 "rho": "rho",
                 "u": "u",
                 "v": "v",
@@ -43,11 +39,8 @@
                 "order_of_accuracy": 2,
                 "equation_evaluation_frequency": 1,
                 "linear_solver": {
-                    "max_iterations": 30,
-                    "absolute_tolerance": null,
-                    "relative_tolerance": null
+                    "max_iterations": 30
                 },
-                "private_attribute_dict": null,
                 "CFL_multiplier": 1.0,
                 "kappa_MUSCL": -1.0,
                 "numerical_dissipation_factor": 1.0,
@@ -55,7 +48,6 @@
                 "limit_pressure_density": false,
                 "type_name": "Compressible",
                 "low_mach_preconditioner": false,
-                "low_mach_preconditioner_threshold": null,
                 "update_jacobian_frequency": 4,
                 "max_force_jac_update_physical_steps": 0
             },
@@ -65,11 +57,8 @@
                 "order_of_accuracy": 2,
                 "equation_evaluation_frequency": 4,
                 "linear_solver": {
-                    "max_iterations": 20,
-                    "absolute_tolerance": null,
-                    "relative_tolerance": null
+                    "max_iterations": 20
                 },
-                "private_attribute_dict": null,
                 "CFL_multiplier": 2.0,
                 "type_name": "SpalartAllmaras",
                 "reconstruction_gradient_limiter": 0.5,
@@ -92,9 +81,7 @@
                 },
                 "update_jacobian_frequency": 4,
                 "max_force_jac_update_physical_steps": 0,
-                "hybrid_model": null,
                 "rotation_correction": false,
-                "controls": null,
                 "low_reynolds_correction": false
             },
             "transition_model_solver": {
@@ -114,8 +101,6 @@
             "convergence_limiting_factor": 0.25
         }
     },
-    "user_defined_dynamics": null,
-    "run_control": null,
     "user_defined_fields": [],
     "outputs": [
         {
@@ -141,7 +126,6 @@
                     "primitiveVars"
                 ]
             },
-            "moving_statistic": null,
             "output_type": "ProbeOutput"
         },
         {
@@ -191,15 +175,11 @@
                     "mut"
                 ]
             },
-            "moving_statistic": null,
             "output_type": "ProbeOutput"
         }
     ],
     "private_attribute_asset_cache": {
-        "project_length_unit": null,
-        "project_entity_info": null,
         "use_inhouse_mesher": false,
-        "variable_context": null,
         "use_geometry_AI": false
     }
 }

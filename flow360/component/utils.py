@@ -16,7 +16,7 @@ from typing import List, Literal, Optional, Union
 import pydantic as pd
 import zstandard as zstd
 
-from flow360.component.simulation.framework.base_model import Flow360BaseModel
+from flow360.component.simulation.framework.base_model_config import base_model_config
 
 from ..accounts_utils import Accounts
 from ..cloud.s3_utils import get_local_filename_and_create_folders
@@ -798,8 +798,10 @@ def _check_mapbc_existence(value):
             log.warning(f"The mapbc file ({mapbc_file_name}) for {value} is not found")
 
 
-class InputFileModel(Flow360BaseModel):
+class InputFileModel(pd.BaseModel):
     """Base model for input files creating projects"""
+
+    model_config = base_model_config
 
     file_names: Union[List[str], str] = pd.Field()
 

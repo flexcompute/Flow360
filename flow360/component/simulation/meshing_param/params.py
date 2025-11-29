@@ -37,6 +37,8 @@ from flow360.component.simulation.validation.validation_context import (
     SURFACE_MESH,
     VOLUME_MESH,
     ContextField,
+    contextual_field_validator,
+    contextual_model_validator,
 )
 from flow360.component.simulation.validation.validation_utils import EntityUsageMap
 
@@ -181,7 +183,7 @@ class MeshingParams(Flow360BaseModel):
 
         return v
 
-    @pd.field_validator("volume_zones", mode="after")
+    @contextual_field_validator("volume_zones", mode="after")
     @classmethod
     def _check_volume_zones_have_unique_names(cls, v):
         """Ensure there won't be duplicated volume zone names."""
@@ -203,7 +205,7 @@ class MeshingParams(Flow360BaseModel):
 
         return v
 
-    @pd.model_validator(mode="after")
+    @contextual_model_validator(mode="after")
     def _check_no_reused_volume_entities(self) -> Self:
         """
         Meshing entities reuse check.
@@ -234,7 +236,7 @@ class MeshingParams(Flow360BaseModel):
                 # pylint: disable=protected-access
                 _ = [
                     usage.add_entity_usage(item, volume_zone.type)
-                    for item in volume_zone.entities._get_expanded_entities(create_hard_copy=False)
+                    for item in volume_zone.entities.stored_entities
                 ]
 
         for refinement in self.refinements if self.refinements is not None else []:
@@ -245,7 +247,7 @@ class MeshingParams(Flow360BaseModel):
                 # pylint: disable=protected-access
                 _ = [
                     usage.add_entity_usage(item, refinement.refinement_type)
-                    for item in refinement.entities._get_expanded_entities(create_hard_copy=False)
+                    for item in refinement.entities.stored_entities
                 ]
 
         error_msg = ""
@@ -434,7 +436,7 @@ class ModularMeshingWorkflow(Flow360BaseModel):
 
         return self
 
-    @pd.model_validator(mode="after")
+    @contextual_model_validator(mode="after")
     def _check_no_reused_volume_entities(self) -> Self:
         """
         Meshing entities reuse check.
@@ -462,10 +464,9 @@ class ModularMeshingWorkflow(Flow360BaseModel):
 
         for volume_zone in self.zones if self.zones is not None else []:
             if isinstance(volume_zone, RotationVolume):
-                # pylint: disable=protected-access
                 _ = [
                     usage.add_entity_usage(item, volume_zone.type)
-                    for item in volume_zone.entities._get_expanded_entities(create_hard_copy=False)
+                    for item in volume_zone.entities.stored_entities
                 ]
         # pylint: disable=no-member
         for refinement in (
@@ -477,10 +478,9 @@ class ModularMeshingWorkflow(Flow360BaseModel):
                 refinement,
                 (UniformRefinement, AxisymmetricRefinement, StructuredBoxRefinement),
             ):
-                # pylint: disable=protected-access
                 _ = [
                     usage.add_entity_usage(item, refinement.refinement_type)
-                    for item in refinement.entities._get_expanded_entities(create_hard_copy=False)
+                    for item in refinement.entities.stored_entities
                 ]
 
         error_msg = ""

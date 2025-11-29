@@ -42,7 +42,6 @@ from flow360.component.simulation.utils import is_exact_instance
 from flow360.component.simulation.validation.validation_context import (
     ALL,
     CASE,
-    get_validation_info,
     get_validation_levels,
 )
 from flow360.component.simulation.validation.validation_utils import EntityUsageMap
@@ -85,8 +84,7 @@ def _check_duplicate_entities_in_models(params):
 
     for model in models:
         if hasattr(model, "entities"):
-            # pylint: disable = protected-access
-            expanded_entities = model.entities._get_expanded_entities(create_hard_copy=False)
+            expanded_entities = model.entities.stored_entities
             for entity in expanded_entities:
                 usage.add_entity_usage(entity, model.type)
 
@@ -324,16 +322,11 @@ def _validate_cht_has_heat_transfer(params):
 
 
 def _check_complete_boundary_condition_and_unknown_surface(
-    params,
+    params, param_info
 ):  # pylint:disable=too-many-branches, too-many-locals,too-many-statements
     ## Step 1: Get all boundaries patches from asset cache
     current_lvls = get_validation_levels() if get_validation_levels() else []
     if all(level not in current_lvls for level in (ALL, CASE)):
-        return params
-
-    validation_info = get_validation_info()
-
-    if not validation_info:
         return params
 
     asset_boundary_entities = params.private_attribute_asset_cache.boundaries  # Persistent ones
@@ -347,7 +340,7 @@ def _check_complete_boundary_condition_and_unknown_surface(
         volume_zones = params.meshing.zones
 
     if farfield_method:
-        if validation_info.at_least_one_body_transformed:
+        if param_info.at_least_one_body_transformed:
             # If transformed then `_will_be_deleted_by_mesher()` will no longer be accurate
             # since we do not know the final bounding box for each surface and global model.
             return params
@@ -357,21 +350,22 @@ def _check_complete_boundary_condition_and_unknown_surface(
             item
             for item in asset_boundary_entities
             if item._will_be_deleted_by_mesher(
-                at_least_one_body_transformed=validation_info.at_least_one_body_transformed,
+                at_least_one_body_transformed=param_info.at_least_one_body_transformed,
                 farfield_method=farfield_method,
-                global_bounding_box=validation_info.global_bounding_box,
-                planar_face_tolerance=validation_info.planar_face_tolerance,
-                half_model_symmetry_plane_center_y=validation_info.half_model_symmetry_plane_center_y,
-                quasi_3d_symmetry_planes_center_y=validation_info.quasi_3d_symmetry_planes_center_y,
-                farfield_domain_type=validation_info.farfield_domain_type,
+                global_bounding_box=param_info.global_bounding_box,
+                planar_face_tolerance=param_info.planar_face_tolerance,
+                half_model_symmetry_plane_center_y=param_info.half_model_symmetry_plane_center_y,
+                quasi_3d_symmetry_planes_center_y=param_info.quasi_3d_symmetry_planes_center_y,
+                farfield_domain_type=param_info.farfield_domain_type,
             )
             is False
         ]
+
         if farfield_method == "auto":
             asset_boundary_entities += [
                 item
                 for item in params.private_attribute_asset_cache.project_entity_info.ghost_entities
-                if item.name not in ("symmetric-1", "symmetric-2") and item.exists(validation_info)
+                if item.name not in ("symmetric-1", "symmetric-2") and item.exists(param_info)
             ]
         elif farfield_method in ("quasi-3d", "quasi-3d-periodic"):
             asset_boundary_entities += [
@@ -380,7 +374,7 @@ def _check_complete_boundary_condition_and_unknown_surface(
                 if item.name != "symmetric"
             ]
         elif farfield_method in ("user-defined", "wind-tunnel"):
-            if validation_info.will_generate_forced_symmetry_plane():
+            if param_info.will_generate_forced_symmetry_plane():
                 asset_boundary_entities += [
                     item
                     for item in params.private_attribute_asset_cache.project_entity_info.ghost_entities
@@ -394,7 +388,7 @@ def _check_complete_boundary_condition_and_unknown_surface(
 
     snappy_multizone = False
     potential_zone_zone_interfaces = set()
-    if validation_info.farfield_method == "user-defined":
+    if param_info.farfield_method == "user-defined":
         for zones in volume_zones:
             # Support new CustomZones container
             if not isinstance(zones, CustomZones):
@@ -426,7 +420,7 @@ def _check_complete_boundary_condition_and_unknown_surface(
         entities = []
         # pylint: disable=protected-access
         if hasattr(model, "entities"):
-            entities = model.entities._get_expanded_entities(create_hard_copy=False)
+            entities = model.entities.stored_entities
         elif hasattr(model, "entity_pairs"):  # Periodic BC
             entities = [
                 pair for surface_pair in model.entity_pairs.items for pair in surface_pair.pair
@@ -528,11 +522,10 @@ def _check_time_average_output(params):
     return params
 
 
-def _check_valid_models_for_liquid(models):
+def _check_valid_models_for_liquid(models, param_info):
     if not models:
         return models
-    validation_info = get_validation_info()
-    if validation_info is None or validation_info.using_liquid_as_material is False:
+    if param_info.using_liquid_as_material is False:
         return models
     for model in models:
         if isinstance(model, (Inflow, Outflow, Solid)):

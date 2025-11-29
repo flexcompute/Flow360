@@ -10,7 +10,7 @@ from flow360.component.simulation.primitives import Box, Cylinder, SnappyBody, S
 from flow360.component.simulation.unit_system import SI_unit_system
 
 
-def test_snappy_refinements_validators():
+def test_snappy_refinements_validators(mock_validation_context):
     message = "Minimum spacing must be lower than maximum spacing."
     with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
         snappy.RegionRefinement(
@@ -18,7 +18,9 @@ def test_snappy_refinements_validators():
         )
 
     message = "UniformRefinement for snappy accepts only Boxes with axes aligned with the global coordinate system (angle_of_rotation=0)."
-    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+    with mock_validation_context, SI_unit_system, pytest.raises(
+        ValueError, match=re.escape(message)
+    ):
         snappy.SurfaceMeshingParams(
             defaults=snappy.SurfaceMeshingDefaults(
                 min_spacing=3 * u.mm, max_spacing=10 * u.mm, gap_resolution=0.1 * u.mm
@@ -83,7 +85,9 @@ def test_snappy_refinements_validators():
     )
 
     message = "UniformRefinement for snappy accepts only full cylinders (where inner_radius = 0)."
-    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+    with mock_validation_context, SI_unit_system, pytest.raises(
+        ValueError, match=re.escape(message)
+    ):
         snappy.SurfaceMeshingParams(
             defaults=snappy.SurfaceMeshingDefaults(
                 min_spacing=3 * u.mm, max_spacing=10 * u.mm, gap_resolution=0.1 * u.mm
@@ -107,7 +111,7 @@ def test_snappy_refinements_validators():
         )
 
 
-def test_snappy_edge_refinement_valdators():
+def test_snappy_edge_refinement_validators():
     message = "When using a distance spacing specification both spacing (2.0 mm) and distances ([5] mm) fields must be arrays and the same length."
     with pytest.raises(
         ValueError,
