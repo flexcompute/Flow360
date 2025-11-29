@@ -1,8 +1,8 @@
 """Shared utilities for entity operations."""
 
-from functools import lru_cache
 import re
 import uuid
+from functools import lru_cache
 
 
 def generate_uuid():

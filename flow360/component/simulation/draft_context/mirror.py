@@ -1,7 +1,11 @@
+"""Mirror plane and mirrored entities."""
+
 from typing import ClassVar, Literal
-from flow360.component.simulation.framework.entity_base import EntityBase
+
 import pydantic as pd
-from flow360.component.simulation.framework.entity_base import generate_uuid
+
+from flow360.component.simulation.framework.entity_base import EntityBase
+from flow360.component.simulation.framework.entity_utils import generate_uuid
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.types import Axis
 
@@ -22,6 +26,7 @@ class MirrorPlane(EntityBase):
 
     name: str = pd.Field()
     normal: Axis = pd.Field(description="Normal direction of the plane.")
+    # pylint: disable=no-member
     center: LengthType.Point = pd.Field(description="Center point of the plane.")
 
     private_attribute_entity_type_name: Literal["MirrorPlane"] = pd.Field(

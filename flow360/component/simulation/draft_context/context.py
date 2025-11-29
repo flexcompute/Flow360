@@ -2,33 +2,41 @@
 
 from __future__ import annotations
 
+import copy
 from contextlib import AbstractContextManager
 from contextvars import ContextVar, Token
-import copy
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, get_args
 
-from flow360.component.simulation.framework.entity_base import EntityBase
-from flow360.component.simulation.framework.entity_registry import EntityRegistry
-from flow360.component.simulation.primitives import GeometryBodyGroup, Surface
 from flow360.component.simulation.draft_context.mirror import (
-    MirrorPlane,
     MirroredGeometryBodyGroup,
     MirroredSurface,
+    MirrorPlane,
+)
+from flow360.component.simulation.entity_info import DraftEntityTypes, EntityInfoModel
+from flow360.component.simulation.framework.entity_base import EntityBase
+from flow360.component.simulation.framework.entity_registry import EntityRegistry
+from flow360.component.simulation.framework.entity_utils import compile_glob_cached
+from flow360.component.simulation.primitives import (
+    Edge,
+    GenericVolume,
+    GeometryBodyGroup,
+    Surface,
 )
 from flow360.component.simulation.utils import is_exact_instance
-from flow360.exceptions import Flow360RuntimeError
+from flow360.exceptions import Flow360RuntimeError, Flow360ValueError
 from flow360.log import log
-
 
 __all__ = [
     "DraftContext",
-    "create_draft",
     "get_active_draft",
-    "capture_into_draft",
 ]
 
 
 _ACTIVE_DRAFT: ContextVar[DraftContext | None] = ContextVar("_ACTIVE_DRAFT", default=None)
+
+_DRAFT_ENTITY_TYPE_TUPLE: tuple[type[EntityBase], ...] = tuple(
+    get_args(get_args(DraftEntityTypes)[0])
+)
 
 
 def get_active_draft() -> DraftContext | None:
@@ -36,42 +44,73 @@ def get_active_draft() -> DraftContext | None:
     return _ACTIVE_DRAFT.get()
 
 
-def create_draft(*, new_run_from: Union[Project]) -> DraftContext:
-    """Factory helper used by end users (`with fl.create_draft() as draft`)."""
-    # Get the entity info from the `new_run_ from` asset.
-    root_asset = new_run_from.root_asset
-    entity_info = root_asset.get_entity_info()
-    return DraftContext()
-
-
-# class _MirrorActionOnEntities(Flow360BaseModel):
-#     """Action to mirror a GeometryBodyGroup entity."""
-
-#     #TODO: Actually may not need Flow360BaseModel since it is too powerful for this simple case.
-#     type_name: Literal["MirrorActionOnEntities"] = pd.Field("MirrorActionOnEntities", frozen=True)
-#     geometry_body_group_ids: List[str] = pd.Field(description="List of GeometryBodyGroup IDs to mirror.")
-#     mirror_plane_id: str = pd.Field(description="ID of the MirrorPlane to mirror the GeometryBodyGroup entities.")
-
-
- class _SingleTypeEntityRegistry(EntityRegistry):
+def capture_into_draft(entity: EntityBase) -> EntityBase:
     """
-    Entity registry for a single type of entity.
+    Capture an entity into the active draft context.
     """
-    def __init__(self) -> None:
-        ...
-    def __getitem__(self, key: str) -> EntityBase:
+
+    # TODO: so For this function the only usage that I can think of is capturing draft entities that are
+    # created under the draft context So is it possible that we have this function in the constructor of these
+    # models for example in the box or cylinder etc? Tell me how this design sounds to you and what's your
+    # concern about this design?
+    draft = get_active_draft()
+    if draft is None:
+        raise Flow360RuntimeError("Cannot capture entity because no draft context is active.")
+    draft._capture_entity(entity)  # pylint: disable=protected-access
+    return entity
+
+
+class _SingleTypeEntityRegistry:
+    """
+    A thin view over `EntityRegistry` restricted to a single entity type.
+    """
+
+    def __init__(self, *, registry: EntityRegistry, entity_type: type[EntityBase]) -> None:
+        self._registry = registry
+        self._entity_type = entity_type
+
+    def __iter__(self):
+        return iter(self.entities)
+
+    def __len__(self):
+        return len(self.entities)
+
+    def __dir__(self):
+        # Limit tab-completion to read-only accessors.
+        return ["__iter__", "__len__", "__getitem__"]
+
+    @property
+    def entities(self) -> list[EntityBase]:
+        """Entities of the target type."""
+        bucket = self._registry.get_bucket(by_type=self._entity_type)
+
+        return [item for item in bucket.entities if is_exact_instance(item, self._entity_type)]
+
+    def __getitem__(self, key: str) -> EntityBase | list[EntityBase]:
         """
-        Supporting syntax like my_draft.body_groups["body_group_1"] and also my_draft.body_groups["body_group*"]
-        Only glob patter is supported for now.
+        Support syntax like `draft.body_groups['body_group_1']`
+        and `draft.body_groups['body_group*']` (glob only).
         """
-        ...
-        find_by_naming_pattern(pattern, use_glob_only=True)
+        if not isinstance(key, str):
+            raise Flow360ValueError(f"Entity naming pattern: {key} is not a string.")
+
+        matcher = compile_glob_cached(key)
+        matched = [entity for entity in self.entities if matcher.match(entity.name)]
+
+        if not matched:
+            raise ValueError(
+                f"No entity found in registry with given name/naming pattern: '{key}'."
+            )
+        if len(matched) == 1:
+            return matched[0]
+        return matched
 
 
 class DraftContext(AbstractContextManager["DraftContext"]):
     """Context manager that tracks locally modified simulation entities."""
 
-    def __init__(self, entity_info) -> None:
+    # pylint: disable=too-many-instance-attributes
+    def __init__(self, *, entity_info: EntityInfoModel) -> None:
         """
         Data members:
         - _token: Token to track the active draft context.
@@ -81,22 +120,35 @@ class DraftContext(AbstractContextManager["DraftContext"]):
 
         - _mirror_planes: List to track the MirrorPlane entities.
 
-        - _entity_registry: Registry of entities captured into the draft (optional).
+        - _entity_registry: Registry of entities of self._entity_info.
+                            This provides interface for user to access the entities in the draft.
+
         """
+
+        if entity_info is None:
+            raise Flow360RuntimeError(
+                "[Internal] DraftContext requires `entity_info` to initialize."
+            )
         self._token: Optional[Token] = None
 
         self._mirror_actions: Dict[str, str] = {}
         self._mirror_planes: List[MirrorPlane] = []
 
         self._entity_info = copy.deepcopy(entity_info)
+        self._entity_registry: EntityRegistry = self._entity_info.get_registry(None)
 
+        # TODO: Handle draft entities here.
         # Persistent entities (referencing objects in the _entity_info)
-        self._body_groups:_SingleTypeEntityRegistry = ...
-        self._surfaces:_SingleTypeEntityRegistry = ...
-        self._edges:_SingleTypeEntityRegistry = ...
-        self._volumes:_SingleTypeEntityRegistry = ...
-        self._boxes:_SingleTypeEntityRegistry = ...
-        self._cylinders:_SingleTypeEntityRegistry = ...
+        self._body_groups = _SingleTypeEntityRegistry(
+            registry=self._entity_registry, entity_type=GeometryBodyGroup
+        )
+        self._surfaces = _SingleTypeEntityRegistry(
+            registry=self._entity_registry, entity_type=Surface
+        )
+        self._edges = _SingleTypeEntityRegistry(registry=self._entity_registry, entity_type=Edge)
+        self._volumes = _SingleTypeEntityRegistry(
+            registry=self._entity_registry, entity_type=GenericVolume
+        )
 
     def __enter__(self) -> DraftContext:
         if get_active_draft() is not None:
@@ -114,20 +166,17 @@ class DraftContext(AbstractContextManager["DraftContext"]):
         return False
 
     # region -----------------------------Private implementations Below-----------------------------
-
     def _update_mirror_status_into_asset_cache(self) -> None:
         """
         Before submission, serialize the mirror status into the asset cache.
         """
         # TODO: Get front end's requirement on the schema.
-        ...
 
-    def _read_mirror_status_from_asset_cache(self, param_as_dict: dict) -> None:
+    def _read_mirror_status_from_asset_cache(self) -> None:
         """
         Deserialize the mirror status from the asset cache.
         """
         # TODO: Get front end's requirement on the schema.
-        ...
 
     # endregion ------------------------------------------------------------------------------------
 
@@ -144,34 +193,45 @@ class DraftContext(AbstractContextManager["DraftContext"]):
           >>> with fl.create_draft(new_run_from=geometry) as draft:
           >>>     draft.body_groups["body_group_1"]
           >>>     draft.body_groups["body_group*"]
-        
+
         ====
         """
-        ...
+        return self._body_groups
 
     @property
     def surfaces(self) -> _SingleTypeEntityRegistry:
         """
         Return the list of surfaces in the draft.
         """
-        ...
+        return self._surfaces
 
     @property
     def edges(self) -> _SingleTypeEntityRegistry:
-        ...
+        """
+        Return the list of edges in the draft.
+        """
+        return self._edges
 
     @property
     def volumes(self) -> _SingleTypeEntityRegistry:
+        """
+        Return the list of volumes (volume zones) in the draft.
+        """
         # If volume zone as root asset.
-        ...
-    
+        return self._volumes
+
     # Non persistent entities
     @property
     def boxes(self) -> _SingleTypeEntityRegistry:
-        ...
+        """
+        Return the list of boxes in the draft.
+        """
+
     @property
     def cylinders(self) -> _SingleTypeEntityRegistry:
-        ...
+        """
+        Return the list of cylinders in the draft.
+        """
 
     # endregion ------------------------------------------------------------------------------------
 

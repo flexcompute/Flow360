@@ -14,10 +14,11 @@ import pydantic as pd
 from typing_extensions import Self
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.simulation.framework.entity_utils import generate_uuid
+from flow360.component.simulation.framework.entity_utils import (
+    compile_glob_cached,
+    generate_uuid,
+)
 from flow360.log import log
-
-from flow360.component.simulation.framework.entity_utils import compile_glob_cached
 
 # These corresponds to the private_attribute_entity_type_name of supported entity types.
 TargetClass = Literal["Surface", "Edge", "GenericVolume", "GeometryBodyGroup"]
