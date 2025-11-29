@@ -6,6 +6,7 @@ import pydantic as pd
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityBase
+from flow360.component.simulation.framework.entity_utils import compile_glob_cached
 from flow360.component.utils import _naming_pattern_handler
 from flow360.exceptions import Flow360ValueError
 
@@ -138,7 +139,11 @@ class EntityRegistry(Flow360BaseModel):
         return matched_entities
 
     def find_by_naming_pattern(
-        self, pattern: str, enforce_output_as_list: bool = True, error_when_no_match: bool = False
+        self,
+        pattern: str,
+        enforce_output_as_list: bool = True,
+        error_when_no_match: bool = False,
+        use_glob_only: bool = False,
     ) -> list[EntityBase]:
         """
         Finds all registered entities whose names match a given pattern.
@@ -150,7 +155,12 @@ class EntityRegistry(Flow360BaseModel):
             List[EntityBase]: A list of entities whose names match the pattern.
         """
         matched_entities = []
-        regex = _naming_pattern_handler(pattern=pattern)
+        if not use_glob_only:
+            # This is actually only supports * (glob like) and regexp but
+            # may give user wrong impression that both glob and regexp are supported.
+            regex = _naming_pattern_handler(pattern=pattern)
+        else:
+            regex = compile_glob_cached(pattern)
         # pylint: disable=no-member
         for entity_list in self.internal_registry.values():
             matched_entities.extend(filter(lambda x: regex.match(x.name), entity_list))
