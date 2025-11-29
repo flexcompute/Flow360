@@ -27,7 +27,8 @@ from flow360.component.simulation.user_code.core.types import (
     solver_variable_to_user_variable,
 )
 from flow360.component.simulation.validation.validation_context import (
-    get_validation_info,
+    ParamsValidationInfo,
+    contextual_field_validator,
 )
 
 
@@ -116,19 +117,14 @@ class StoppingCriterion(Flow360BaseModel):
             raise ValueError("The stopping criterion can only be defined on a scalar field.")
         return v
 
-    @pd.field_validator("monitor_output", mode="before")
+    @contextual_field_validator("monitor_output", mode="before")
     @classmethod
-    def _preprocess_monitor_output_with_id(cls, v):
+    def _preprocess_monitor_output_with_id(cls, v, param_info: ParamsValidationInfo):
         if not isinstance(v, str):
             return v
-        validation_info = get_validation_info()
-        if (
-            validation_info is None
-            or validation_info.output_dict is None
-            or validation_info.output_dict.get(v) is None
-        ):
+        if param_info.output_dict is None or param_info.output_dict.get(v) is None:
             raise ValueError("The monitor output does not exist in the outputs list.")
-        monitor_output_dict = validation_info.output_dict[v]
+        monitor_output_dict = param_info.output_dict[v]
         monitor_output = pd.TypeAdapter(MonitorOutputType).validate_python(monitor_output_dict)
         return monitor_output
 

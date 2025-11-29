@@ -275,7 +275,6 @@ def test_user_defined_farfield_symmetry_plane(surface_mesh):
         == "Value error, `domain_type` is only supported when using both GAI surface mesher and beta volume mesher."
     )
     params.meshing.defaults.geometry_accuracy = 1 * u.mm
-    params.meshing.defaults.geometry_accuracy = 1 * u.mm
     errors = _run_validation(params, surface_mesh, use_beta_mesher=True, use_geometry_AI=True)
     assert errors is None
 

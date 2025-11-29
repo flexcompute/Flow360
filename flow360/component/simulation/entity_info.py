@@ -626,14 +626,3 @@ def parse_entity_info_model(data) -> EntityInfoUnion:
     parse entity info data and return one of [GeometryEntityInfo, VolumeMeshEntityInfo, SurfaceMeshEntityInfo]
     """
     return pd.TypeAdapter(EntityInfoUnion).validate_python(data)
-
-
-def get_entity_info_type_from_str(entity_type: str) -> type[EntityInfoModel]:
-    """Get EntityInfo type from the asset type from the project tree"""
-    entity_info_type = None
-    if entity_type == "Geometry":
-        entity_info_type = GeometryEntityInfo
-    if entity_type == "VolumeMesh":
-        entity_info_type = VolumeMeshEntityInfo
-
-    return entity_info_type

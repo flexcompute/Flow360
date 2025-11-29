@@ -6,7 +6,8 @@ from typing import ClassVar, Literal, Optional, Union
 import pydantic as pd
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.simulation.framework.entity_base import EntityBase, generate_uuid
+from flow360.component.simulation.framework.entity_base import EntityBase
+from flow360.component.simulation.framework.entity_utils import generate_uuid
 from flow360.component.simulation.outputs.output_fields import IsoSurfaceFieldNames
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.user_code.core.types import (

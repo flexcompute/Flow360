@@ -54,7 +54,8 @@ class UniqueItemList(Flow360BaseModel, metaclass=_UniqueListMeta):
 
     @pd.model_validator(mode="before")
     @classmethod
-    def _format_input_to_list(cls, input_data: Union[dict, list, Any]):
+    def deserializer(cls, input_data: Union[dict, list, Any]):
+        """Deserializer handling both JSON dict input as well as Python object input"""
         if isinstance(input_data, list):
             return {"items": input_data}
         if isinstance(input_data, dict):
@@ -83,7 +84,8 @@ class UniqueStringList(Flow360BaseModel):
 
     @pd.model_validator(mode="before")
     @classmethod
-    def _format_input_to_list(cls, input_data: Union[dict, list, str]):
+    def deserializer(cls, input_data: Union[dict, list, str]):
+        """Deserializer handling both JSON dict input as well as Python object input"""
         if isinstance(input_data, list):
             return {"items": input_data}
         if isinstance(input_data, dict):
