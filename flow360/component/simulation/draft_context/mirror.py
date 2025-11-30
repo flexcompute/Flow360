@@ -262,16 +262,16 @@ def _build_mirror_status(
     )
 
 
-def _extract_mirror_actions_from_status(
+def _extract_body_group_id_to_mirror_id_from_status(
     *,
-    mirror_status: Optional[MirrorStatus],
+    mirror_status: MirrorStatus,
     entity_info: EntityInfoModel,
 ) -> Tuple[Dict[str, str], List[MirrorPlane]]:
     """
     Deserialize mirror actions from a :class:`MirrorStatus` instance.
 
     Returns a tuple of:
-    - ``mirror_actions``: mapping from geometry body group ID to mirror plane ID.
+    - ``body_group_id_to_mirror_id``: mapping from geometry body group ID to mirror plane ID.
     - ``mirror_planes``: list of :class:`MirrorPlane` instances referenced by those actions.
 
     Any entries referencing geometry body groups that no longer exist in ``entity_info``
@@ -279,8 +279,8 @@ def _extract_mirror_actions_from_status(
     """
 
     if mirror_status is None:
-        return {}, []
-    if mirror_status is None:
+        # No mirror feature used in the asset.
+        log.de
         return {}, []
 
     # Determine valid body group IDs based on current entity info.
@@ -296,7 +296,7 @@ def _extract_mirror_actions_from_status(
         plane.private_attribute_id: plane for plane in mirror_status.mirror_planes
     }
 
-    mirror_actions: Dict[str, str] = {}
+    body_group_id_to_mirror_id: Dict[str, str] = {}
     for mirrored_group in mirror_status.mirrored_geometry_body_groups:
         body_group_id = mirrored_group.geometry_body_group_id
         mirror_plane_id = mirrored_group.mirror_plane_id
@@ -309,13 +309,13 @@ def _extract_mirror_actions_from_status(
             # Skip if the referenced mirror plane is no longer present.
             continue
 
-        mirror_actions[body_group_id] = mirror_plane_id
+        body_group_id_to_mirror_id[body_group_id] = mirror_plane_id
 
-    used_plane_ids = set(mirror_actions.values())
+    used_plane_ids = set(body_group_id_to_mirror_id.values())
     mirror_planes: List[MirrorPlane] = [
         plane
         for plane in mirror_status.mirror_planes
         if plane.private_attribute_id in used_plane_ids
     ]
 
-    return mirror_actions, mirror_planes
+    return body_group_id_to_mirror_id, mirror_planes

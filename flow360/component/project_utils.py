@@ -410,6 +410,8 @@ def set_up_params_for_uploading(
     # we need to update the entity grouping tags to the ones in the SimulationParams.
     entity_info = _update_entity_grouping_tags(entity_info, params)
 
+    entity_info = _update_mirror_status_from_draft_context()
+
     with model_attribute_unlock(params.private_attribute_asset_cache, "project_entity_info"):
         params.private_attribute_asset_cache.project_entity_info = entity_info
     # Replace the ghost surfaces in the SimulationParams by the real ghost ones from asset metadata.

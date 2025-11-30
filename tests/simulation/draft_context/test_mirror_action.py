@@ -28,7 +28,7 @@ def test_mirror_single_call_returns_expected_entities(mock_geometry):
         assert mirrored_body_group.name == f"{body_group.name}_<mirror>"
 
         # 2) Draft mirror actions store the same mapping.
-        assert draft._mirror_status == {
+        assert draft._body_group_id_to_mirror_id == {
             body_group.private_attribute_id: mirror_plane.private_attribute_id
         }
 
@@ -78,13 +78,13 @@ def test_mirror_multiple_calls_accumulate_and_derive_from_actions(mock_geometry)
         # Second mirror request for the same body group should overwrite the action.
         draft.mirror(entities=[body_group], mirror_plane=second_plane)
 
-        assert draft._mirror_status == {
+        assert draft._body_group_id_to_mirror_id == {
             body_group.private_attribute_id: second_plane.private_attribute_id
         }
 
         # Derive the full list of mirrored entities from the accumulated mirror actions.
         all_mirrored_body_groups, all_mirrored_surfaces = _derive_mirrored_entities_from_actions(
-            mirror_actions=draft._mirror_status,
+            mirror_actions=draft._body_group_id_to_mirror_id,
             entity_info=draft._entity_info,
             body_groups=draft.body_groups.entities,
             surfaces=draft.surfaces.entities,

@@ -119,45 +119,52 @@ def create_draft(
     edge_grouping: Optional[str] = None,
 ) -> DraftContext:
     """Factory helper used by end users (`with fl.create_draft() as draft`)."""
+
+    # region -----------------------------Private implementations Below-----------------------------
+    def _inform_grouping_selections(entity_info) -> None:
+        """Inform the user about the grouping selections made on the entity provider cloud asset."""
+
+        if isinstance(entity_info, GeometryEntityInfo):
+            applied_grouping = {
+                "face": entity_info.face_group_tag,
+                "edge": entity_info.edge_group_tag,
+                "body": entity_info.body_group_tag,
+            }
+            if face_grouping is not None or edge_grouping is not None:
+                applied_grouping = _apply_geometry_grouping_overrides(
+                    entity_info, face_grouping, edge_grouping
+                )
+            # If tags were None, fall back to defaults for logging purposes.
+            # pylint:disable = protected-access
+            face_tag = applied_grouping.get("face") or entity_info._get_default_grouping_tag("face")
+            edge_tag = applied_grouping.get("edge")
+            if edge_tag is None and entity_info.edge_attribute_names:
+                edge_tag = entity_info._get_default_grouping_tag("edge")
+
+            log.info(
+                "Creating draft with geometry grouping:\n"
+                "  faces: %s\n"
+                "  edges: %s\n"
+                "To change grouping, call:\n"
+                "  fl.create_draft(face_grouping='%s', edge_grouping='%s', ...)",
+                face_tag,
+                edge_tag,
+                face_tag,
+                edge_tag,
+            )
+        elif face_grouping is not None or edge_grouping is not None:
+            log.info(
+                "Grouping override ignored: only geometry assets support face/edge/body regrouping."
+            )
+
+    # endregion ------------------------------------------------------------------------------------
+
     if not isinstance(new_run_from, AssetBase):
         raise Flow360RuntimeError("create_draft expects a cloud asset instance as `new_run_from`.")
 
-    entity_provider_cloud_asset = new_run_from
+    entity_info = copy.deepcopy(new_run_from.entity_info)
 
-    entity_info = copy.deepcopy(entity_provider_cloud_asset.entity_info)
-
-    if isinstance(entity_info, GeometryEntityInfo):
-        applied_grouping = {
-            "face": entity_info.face_group_tag,
-            "edge": entity_info.edge_group_tag,
-            "body": entity_info.body_group_tag,
-        }
-        if face_grouping is not None or edge_grouping is not None:
-            applied_grouping = _apply_geometry_grouping_overrides(
-                entity_info, face_grouping, edge_grouping
-            )
-        # If tags were None, fall back to defaults for logging purposes.
-        # pylint:disable = protected-access
-        face_tag = applied_grouping.get("face") or entity_info._get_default_grouping_tag("face")
-        edge_tag = applied_grouping.get("edge")
-        if edge_tag is None and entity_info.edge_attribute_names:
-            edge_tag = entity_info._get_default_grouping_tag("edge")
-
-        log.info(
-            "Creating draft with geometry grouping:\n"
-            "  faces: %s\n"
-            "  edges: %s\n"
-            "To change grouping, call:\n"
-            "  fl.create_draft(face_grouping='%s', edge_grouping='%s', ...)",
-            face_tag,
-            edge_tag,
-            face_tag,
-            edge_tag,
-        )
-    elif face_grouping is not None or edge_grouping is not None:
-        log.info(
-            "Grouping override ignored: only geometry assets support face/edge/body regrouping."
-        )
+    _inform_grouping_selections(entity_info)
 
     return DraftContext(entity_info=entity_info)
 

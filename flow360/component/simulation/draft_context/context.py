@@ -12,6 +12,7 @@ from flow360.component.simulation.draft_context.mirror import (
     MirroredSurface,
     MirrorPlane,
     _derive_mirrored_entities_from_actions,
+    _extract_body_group_id_to_mirror_id_from_status,
 )
 from flow360.component.simulation.entity_info import DraftEntityTypes, EntityInfoModel
 from flow360.component.simulation.framework.entity_base import EntityBase
@@ -116,7 +117,7 @@ class DraftContext(AbstractContextManager["DraftContext"]):
         Data members:
         - _token: Token to track the active draft context.
 
-        - _mirror_status: Dictionary to track the mirror actions.
+        - _body_group_id_to_mirror_id: Dictionary to track the mirror actions.
         The key is the GeometryBodyGroup ID and the value is MirrorPlane ID to mirror.
 
         - _mirror_planes: List to track the MirrorPlane entities.
@@ -132,8 +133,14 @@ class DraftContext(AbstractContextManager["DraftContext"]):
             )
         self._token: Optional[Token] = None
 
-        self._mirror_status: Dict[str, str] = {}
+        self._body_group_id_to_mirror_id: Dict[str, str] = {}
         self._mirror_planes: List[MirrorPlane] = []
+        self._body_group_id_to_mirror_id, self._mirror_planes = (
+            _extract_body_group_id_to_mirror_id_from_status(
+                mirror_status=entity_info.mirror_status,
+                entity_info=entity_info,
+            )
+        )
 
         self._entity_info = copy.deepcopy(entity_info)
         self._entity_registry: EntityRegistry = self._entity_info.get_registry(None)
@@ -149,6 +156,17 @@ class DraftContext(AbstractContextManager["DraftContext"]):
         self._edges = _SingleTypeEntityRegistry(registry=self._entity_registry, entity_type=Edge)
         self._volumes = _SingleTypeEntityRegistry(
             registry=self._entity_registry, entity_type=GenericVolume
+        )
+
+        __slots__ = (
+            "_body_group_id_to_mirror_id",
+            "_mirror_planes",
+            "_entity_info",
+            "_entity_registry",
+            "_body_groups",
+            "_surfaces",
+            "_edges",
+            "_volumes",
         )
 
     def __enter__(self) -> DraftContext:
@@ -284,19 +302,19 @@ class DraftContext(AbstractContextManager["DraftContext"]):
         #                  If a duplicate request is made, reset to the new one with a warning.
         for body_group in geometry_body_groups:
             body_group_id = body_group.private_attribute_id
-            if body_group_id in self._mirror_status:
+            if body_group_id in self._body_group_id_to_mirror_id:
                 log.warning(
                     "GeometryBodyGroup `%s` was already mirrored; resetting to the latest mirror plane request.",
                     body_group.name,
                 )
 
-        # 4. Create/Update the self._mirror_status
+        # 4. Create/Update the self._body_group_id_to_mirror_id
         #    and also capture the MirrorPlane into the `draft`.
         mirror_actions_update: Dict[str, str] = {}
         for body_group in geometry_body_groups:
             body_group_id = body_group.private_attribute_id
             mirror_actions_update[body_group_id] = mirror_plane.private_attribute_id
-            self._mirror_status[body_group_id] = mirror_plane.private_attribute_id
+            self._body_group_id_to_mirror_id[body_group_id] = mirror_plane.private_attribute_id
 
         existing_plane_ids = {plane.private_attribute_id for plane in self._mirror_planes}
         if mirror_plane.private_attribute_id not in existing_plane_ids:
