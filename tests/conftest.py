@@ -1,9 +1,16 @@
+import copy
+import json
 import os
+from pathlib import Path
 
+from flow360.component.geometry import Geometry, GeometryMeta
+from flow360.component.resource_base import local_metadata_builder
 from flow360.component.simulation.validation.validation_context import (
     ParamsValidationInfo,
     ValidationContext,
 )
+from flow360.component.surface_mesh_v2 import SurfaceMeshV2
+from flow360.component.volume_mesh import VolumeMeshMetaV2, VolumeMeshV2
 
 os.environ["MPLBACKEND"] = "Agg"
 
@@ -53,3 +60,50 @@ def mock_validation_context():
     return ValidationContext(
         levels=None, info=ParamsValidationInfo(param_as_dict={}, referenced_expressions=[])
     )
+
+
+@pytest.fixture
+def mock_geometry():
+    data_root = Path(__file__).parent / "data"
+    geometry_meta = local_metadata_builder(
+        id="geo-e5c01a98-2180-449e-b255-d60162854a83",
+        name="simple-airplane",
+        cloud_path_prefix="--",
+        status="processed",
+    )
+
+    geometry = Geometry.from_local_storage(
+        geometry_id=geometry_meta["id"],
+        local_storage_path=data_root / geometry_meta["id"],
+        meta_data=GeometryMeta(**geometry_meta),
+    )
+    return geometry
+
+
+@pytest.fixture
+def mock_surface_mesh():
+    simulation_path = Path(__file__).parent / "simulation" / "service" / "data" / "simulation.json"
+    simulation_dict = copy.deepcopy(json.loads(simulation_path.read_text()))
+
+    surface_mesh = SurfaceMeshV2(id=None)
+    surface_mesh = SurfaceMeshV2._from_supplied_entity_info(simulation_dict, surface_mesh)
+    surface_mesh.internal_registry = surface_mesh._entity_info.get_registry(
+        surface_mesh.internal_registry
+    )
+    return surface_mesh
+
+
+@pytest.fixture
+def mock_volume_mesh():
+    data_root = Path(__file__).parent / "data"
+
+    volume_meta = local_metadata_builder(
+        id="vm-93a5dad9-a54c-4db9-a8ab-e22a976bb27a",
+        name="VolumeMesh_v1",
+        cloud_path_prefix="--",
+    )
+    volume_mesh = VolumeMeshV2.from_local_storage(
+        local_storage_path=data_root / volume_meta["id"],
+        meta_data=VolumeMeshMetaV2(**volume_meta),
+    )
+    return volume_mesh

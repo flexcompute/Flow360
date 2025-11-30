@@ -4,7 +4,7 @@ import os
 
 from flow360.component.simulation.framework.entity_selector import (
     EntityDictDatabase,
-    _compile_glob_cached,
+    compile_glob_cached,
     expand_entity_selectors_in_place,
 )
 from flow360.component.simulation.framework.updater_utils import compare_values
@@ -33,7 +33,7 @@ def test_operator_and_syntax_coverage():
     ]
     db = EntityDictDatabase(surfaces=_mk_pool(pool_names, "Surface"))
 
-    # Build selectors that cover operators和regex/glob（每条注释标注该 selector 的期望匹配，按池顺序）
+    # Build selectors that cover operators和regex/glob
     params = {
         "node": {
             "selectors": [
@@ -258,7 +258,7 @@ def test_service_expand_entity_selectors_in_place_end_to_end():
     assert compare_values(expanded.get("outputs"), ref_outputs)
 
 
-def test_compile_glob_cached_extended_syntax_support():
+def testcompile_glob_cached_extended_syntax_support():
     # Comments in English for maintainers
     # Ensure extended glob features supported by wcmatch translation are honored.
     candidates = [
@@ -284,7 +284,7 @@ def test_compile_glob_cached_extended_syntax_support():
     ]
 
     def match(pattern: str) -> list[str]:
-        regex = _compile_glob_cached(pattern)
+        regex = compile_glob_cached(pattern)
         return [n for n in candidates if regex.fullmatch(n) is not None]
 
     # Basic glob

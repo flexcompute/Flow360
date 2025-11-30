@@ -43,16 +43,12 @@ def test_change_unit_system_with_nested_arrays():
     assert moment_length["units"] == "m"
 
     # Verify nested array conversion (profile_curve)
-    draft_entities = converted_data["private_attribute_asset_cache"]["project_entity_info"][
-        "draft_entities"
-    ]
-    profile_curve = None
-    for entity in draft_entities:
-        if entity.get("profile_curve"):
-            profile_curve = entity["profile_curve"]
-            break
+    nested_unyt_array = {
+        "unit_system": {"name": "CGS"},
+        "some_value": {"value": [[0, 0], [0, 1], [1, 0]], "units": "cm"},
+    }
+    converted = change_unit_system(data=nested_unyt_array, target_unit_system="SI")["some_value"]
 
-    assert profile_curve is not None, "profile_curve not found in test data"
-    assert profile_curve["units"] == "m"
-    # Should be the same values since it's already in meters
-    assert profile_curve["value"] == [[0, 0], [0, 1], [1, 0]]
+    assert converted is not None, "profile_curve not found in test data"
+    assert converted["units"] == "m"
+    assert converted["value"] == [[0.0, 0.0], [0.0, 0.01], [0.01, 0.0]]
