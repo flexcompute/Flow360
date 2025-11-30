@@ -11,6 +11,8 @@ import pydantic as pd
 from flow360.cloud.rest_api import RestApi
 from flow360.component.interfaces import ProjectInterface
 from flow360.component.simulation import services
+from flow360.component.simulation.draft_context import get_active_draft
+from flow360.component.simulation.draft_context.mirror import _build_mirror_status
 from flow360.component.simulation.entity_info import DraftEntityTypes, EntityInfoModel
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
@@ -410,10 +412,21 @@ def set_up_params_for_uploading(
     # we need to update the entity grouping tags to the ones in the SimulationParams.
     entity_info = _update_entity_grouping_tags(entity_info, params)
 
-    entity_info = _update_mirror_status_from_draft_context()
-
     with model_attribute_unlock(params.private_attribute_asset_cache, "project_entity_info"):
         params.private_attribute_asset_cache.project_entity_info = entity_info
+
+    active_draft = get_active_draft()
+    if active_draft is not None:
+        with model_attribute_unlock(params.private_attribute_asset_cache, "mirror_action"):
+            # pylint: disable=protected-access
+            params.private_attribute_asset_cache.mirror_action = _build_mirror_status(
+                mirror_actions=active_draft._body_group_id_to_mirror_id,
+                entity_info=active_draft._entity_info,
+                body_groups=active_draft._body_groups.entities,
+                surfaces=active_draft._surfaces.entities,
+                mirror_planes=active_draft._mirror_planes,
+            )
+
     # Replace the ghost surfaces in the SimulationParams by the real ghost ones from asset metadata.
     # This has to be done after `project_entity_info` is properly set.
     params = _replace_ghost_surfaces(params)

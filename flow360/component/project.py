@@ -12,7 +12,7 @@ from typing import Iterable, List, Literal, Optional, Union
 
 import pydantic as pd
 import typing_extensions
-from pydantic import PositiveInt
+from pydantic import PositiveInt, ValidationError
 
 from flow360.cloud.flow360_requests import LengthUnitType, RenameAssetRequestV2
 from flow360.cloud.rest_api import RestApi
@@ -33,6 +33,7 @@ from flow360.component.project_utils import (
 )
 from flow360.component.resource_base import Flow360Resource
 from flow360.component.simulation.draft_context.context import DraftContext
+from flow360.component.simulation.draft_context.mirror import MirrorStatus
 from flow360.component.simulation.entity_info import GeometryEntityInfo
 from flow360.component.simulation.folder import Folder
 from flow360.component.simulation.simulation_params import SimulationParams
@@ -157,6 +158,28 @@ def create_draft(
                 "Grouping override ignored: only geometry assets support face/edge/body regrouping."
             )
 
+    def _load_mirror_status_from_asset(asset: AssetBase) -> Optional[MirrorStatus]:
+        """Get the mirror status from the asset"""
+
+        mirror_status_dict = (
+            # pylint: disable=protected-access
+            AssetBase._get_simulation_json(asset=asset, clean_front_end_keys=True)
+            .get("private_attribute_asset_cache", {})
+            .get("mirror_action", None)
+        )
+
+        if mirror_status_dict is None:
+            # No mirroring feature used.
+            return None
+        try:
+            # Note: Unfortunately, model_validate alone disabled supporting for EntitySelectors.
+            mirror_status = MirrorStatus.model_validate(mirror_status_dict)
+        except ValidationError as exc:
+            raise Flow360RuntimeError(
+                f"Failed to parse stored mirror status for {asset.__class__.__name__}. Error: {exc}",
+            ) from exc
+        return mirror_status
+
     # endregion ------------------------------------------------------------------------------------
 
     if not isinstance(new_run_from, AssetBase):
@@ -166,7 +189,9 @@ def create_draft(
 
     _inform_grouping_selections(entity_info)
 
-    return DraftContext(entity_info=entity_info)
+    mirror_status = _load_mirror_status_from_asset(new_run_from)
+
+    return DraftContext(entity_info=entity_info, mirror_status=mirror_status)
 
 
 class ProjectMeta(pd.BaseModel, extra="allow"):

@@ -280,7 +280,7 @@ def _extract_body_group_id_to_mirror_id_from_status(
 
     if mirror_status is None:
         # No mirror feature used in the asset.
-        log.de
+        log.debug("Mirror status not provided; no mirroring actions to restore.")
         return {}, []
 
     # Determine valid body group IDs based on current entity info.

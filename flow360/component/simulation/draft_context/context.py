@@ -5,12 +5,13 @@ from __future__ import annotations
 import copy
 from contextlib import AbstractContextManager
 from contextvars import ContextVar, Token
-from typing import TYPE_CHECKING, Dict, List, Optional, get_args
+from typing import Dict, List, Optional, get_args
 
 from flow360.component.simulation.draft_context.mirror import (
     MirroredGeometryBodyGroup,
     MirroredSurface,
     MirrorPlane,
+    MirrorStatus,
     _derive_mirrored_entities_from_actions,
     _extract_body_group_id_to_mirror_id_from_status,
 )
@@ -112,7 +113,24 @@ class DraftContext(AbstractContextManager["DraftContext"]):
     """Context manager that tracks locally modified simulation entities."""
 
     # pylint: disable=too-many-instance-attributes
-    def __init__(self, *, entity_info: EntityInfoModel) -> None:
+    __slots__ = (
+        "_body_group_id_to_mirror_id",
+        "_mirror_planes",
+        "_entity_info",
+        "_entity_registry",
+        "_body_groups",
+        "_surfaces",
+        "_edges",
+        "_volumes",
+    )
+
+    # pylint: disable=too-many-instance-attributes
+    def __init__(
+        self,
+        *,
+        entity_info: EntityInfoModel,
+        mirror_status: Optional[MirrorStatus] = None,
+    ) -> None:
         """
         Data members:
         - _token: Token to track the active draft context.
@@ -137,7 +155,7 @@ class DraftContext(AbstractContextManager["DraftContext"]):
         self._mirror_planes: List[MirrorPlane] = []
         self._body_group_id_to_mirror_id, self._mirror_planes = (
             _extract_body_group_id_to_mirror_id_from_status(
-                mirror_status=entity_info.mirror_status,
+                mirror_status=mirror_status,
                 entity_info=entity_info,
             )
         )
@@ -156,17 +174,6 @@ class DraftContext(AbstractContextManager["DraftContext"]):
         self._edges = _SingleTypeEntityRegistry(registry=self._entity_registry, entity_type=Edge)
         self._volumes = _SingleTypeEntityRegistry(
             registry=self._entity_registry, entity_type=GenericVolume
-        )
-
-        __slots__ = (
-            "_body_group_id_to_mirror_id",
-            "_mirror_planes",
-            "_entity_info",
-            "_entity_registry",
-            "_body_groups",
-            "_surfaces",
-            "_edges",
-            "_volumes",
         )
 
     def __enter__(self) -> DraftContext:

@@ -126,7 +126,7 @@ class AssetBase(metaclass=ABCMeta):
         return self.info.name
 
     @classmethod
-    def _from_supplied_entity_info(
+    def _from_supplied_simulation_dict(
         cls,
         simulation_dict: dict,
         asset_obj: AssetBase,
@@ -166,7 +166,7 @@ class AssetBase(metaclass=ABCMeta):
         return asset_obj
 
     @classmethod
-    def _get_simulation_json(cls, asset: AssetBase) -> dict:
+    def _get_simulation_json(cls, asset: AssetBase, clean_front_end_keys: bool = False) -> dict:
         """Get the simulation json AKA birth setting of the asset. Do we want to cache it in the asset object?"""
         ##>> Check if the current asset is project's root item.
         ##>> If so then we need to wait for its pipeline to finish generating the simulation json.
@@ -188,6 +188,9 @@ class AssetBase(metaclass=ABCMeta):
             )
 
         updated_params_as_dict, _ = SimulationParams._update_param_dict(json.loads(simulation_json))
+
+        if clean_front_end_keys:
+            updated_params_as_dict = SimulationParams._sanitize_params_dict(updated_params_as_dict)
         return updated_params_as_dict
 
     @property
@@ -256,7 +259,7 @@ class AssetBase(metaclass=ABCMeta):
         # Get the json from bucket, same as before.
         asset_simulation_dict = cls._get_simulation_json(asset_obj)
 
-        asset_obj = cls._from_supplied_entity_info(
+        asset_obj = cls._from_supplied_simulation_dict(
             entity_info_supplier_dict if entity_info_supplier_dict else asset_simulation_dict,
             asset_obj,
         )
@@ -316,7 +319,7 @@ class AssetBase(metaclass=ABCMeta):
         with open(os.path.join(local_storage_path, "simulation.json"), encoding="utf-8") as f:
             params_dict = json.load(f)
 
-        asset_obj = cls._from_supplied_entity_info(params_dict, cls(asset_id))
+        asset_obj = cls._from_supplied_simulation_dict(params_dict, cls(asset_id))
         asset_obj.get_dynamic_default_settings(params_dict)
 
         # pylint: disable=protected-access
