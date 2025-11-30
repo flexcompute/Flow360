@@ -320,10 +320,10 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
 
         # 4. Create/Update the self._body_group_id_to_mirror_id
         #    and also capture the MirrorPlane into the `draft`.
-        mirror_actions_update: Dict[str, str] = {}
+        body_group_id_to_mirror_id_update: Dict[str, str] = {}
         for body_group in geometry_body_groups:
             body_group_id = body_group.private_attribute_id
-            mirror_actions_update[body_group_id] = mirror_plane.private_attribute_id
+            body_group_id_to_mirror_id_update[body_group_id] = mirror_plane.private_attribute_id
             self._body_group_id_to_mirror_id[body_group_id] = mirror_plane.private_attribute_id
 
         existing_plane_ids = {plane.private_attribute_id for plane in self._mirror_planes}
@@ -333,7 +333,7 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
         # 5. Derive the generated mirrored entities (MirroredGeometryBodyGroup + MirroredSurface)
         #    and return to user as tokens of use.
         return _derive_mirrored_entities_from_actions(
-            mirror_actions=mirror_actions_update,
+            body_group_id_to_mirror_id=body_group_id_to_mirror_id_update,
             entity_info=self._entity_info,
             body_groups=self._body_groups.entities,
             surfaces=self._surfaces.entities,

@@ -54,8 +54,8 @@ class AssetCache(Flow360BaseModel):
     selectors: Optional[List[dict]] = pd.Field(
         None, description="Collected entity selectors for token reference."
     )
-    mirror_action: Optional[MirrorStatus] = pd.Field(
-        None, description="List of mirror planes that are used in the simulation."
+    mirror_status: Optional[MirrorStatus] = pd.Field(
+        None, description="Status of mirroring operations that are used in the simulation."
     )
 
     @property

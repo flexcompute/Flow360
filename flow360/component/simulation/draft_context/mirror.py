@@ -93,10 +93,12 @@ class MirrorStatus(Flow360BaseModel):
 
 MIRROR_SUFFIX = "_<mirror>"
 
+# region -----------------------------Internal Functions Below-------------------------------------
+
 
 def _build_mirrored_geometry_groups(
     *,
-    mirror_actions: Dict[str, str],
+    body_group_id_to_mirror_id: Dict[str, str],
     body_groups_by_id: Dict[str, GeometryBodyGroup],
     mirror_planes_by_id: Dict[str, MirrorPlane],
 ) -> List[MirroredGeometryBodyGroup]:
@@ -104,7 +106,7 @@ def _build_mirrored_geometry_groups(
 
     mirrored_groups: List[MirroredGeometryBodyGroup] = []
 
-    for body_group_id, mirror_plane_id in mirror_actions.items():
+    for body_group_id, mirror_plane_id in body_group_id_to_mirror_id.items():
         body_group = body_groups_by_id.get(body_group_id)
         if body_group is None:
             log.warning(
@@ -134,14 +136,14 @@ def _build_mirrored_geometry_groups(
 
 def _build_mirrored_surfaces(
     *,
-    mirror_actions: Dict[str, str],
+    body_group_id_to_mirror_id: Dict[str, str],
     entity_info: GeometryEntityInfo,
     surfaces: List[Surface],
     mirror_planes_by_id: Dict[str, MirrorPlane],
 ) -> List[MirroredSurface]:
     """Create mirrored surfaces for the requested body groups."""
 
-    if not mirror_actions:
+    if not body_group_id_to_mirror_id:
         return []
 
     try:
@@ -152,7 +154,7 @@ def _build_mirrored_surfaces(
         ) from exc
 
     surfaces_by_name: Dict[str, Surface] = {surface.name: surface for surface in surfaces}
-    requested_body_group_ids = set(mirror_actions.keys())
+    requested_body_group_ids = set(body_group_id_to_mirror_id.keys())
     mirrored_surfaces: List[MirroredSurface] = []
 
     for surface_name, owning_body_group_id in face_group_to_body_group.items():
@@ -168,7 +170,7 @@ def _build_mirrored_surfaces(
             )
             continue
 
-        mirror_plane_id = mirror_actions.get(owning_body_group_id)
+        mirror_plane_id = body_group_id_to_mirror_id.get(owning_body_group_id)
         mirror_plane = mirror_planes_by_id.get(mirror_plane_id)
         if mirror_plane is None:
             log.warning(
@@ -193,7 +195,7 @@ def _build_mirrored_surfaces(
 
 def _derive_mirrored_entities_from_actions(
     *,
-    mirror_actions: Dict[str, str],
+    body_group_id_to_mirror_id: Dict[str, str],
     entity_info: EntityInfoModel,
     body_groups: List[GeometryBodyGroup],
     surfaces: List[Surface],
@@ -201,9 +203,9 @@ def _derive_mirrored_entities_from_actions(
 ) -> Tuple[List[MirroredGeometryBodyGroup], List[MirroredSurface]]:
     """
     Derive mirrored entities (MirroredGeometryBodyGroup + MirroredSurface)
-    based on the given ``mirror_actions`` mapping.
+    based on the given ``body_group_id_to_mirror_id`` mapping.
 
-    The ``mirror_actions`` schema is::
+    The ``body_group_id_to_mirror_id`` schema is::
 
         {geometry_body_group_id: mirror_plane_id}
 
@@ -212,7 +214,7 @@ def _derive_mirrored_entities_from_actions(
     of mirrored entities from the stored mirror status).
     """
 
-    if not mirror_actions or not isinstance(entity_info, GeometryEntityInfo):
+    if not body_group_id_to_mirror_id or not isinstance(entity_info, GeometryEntityInfo):
         return [], []
 
     # Lookup tables for body groups and mirror planes.
@@ -224,75 +226,18 @@ def _derive_mirrored_entities_from_actions(
     }
 
     mirrored_geometry_groups = _build_mirrored_geometry_groups(
-        mirror_actions=mirror_actions,
+        body_group_id_to_mirror_id=body_group_id_to_mirror_id,
         body_groups_by_id=body_groups_by_id,
         mirror_planes_by_id=mirror_planes_by_id,
     )
     mirrored_surfaces = _build_mirrored_surfaces(
-        mirror_actions=mirror_actions,
+        body_group_id_to_mirror_id=body_group_id_to_mirror_id,
         entity_info=entity_info,
         surfaces=surfaces,
         mirror_planes_by_id=mirror_planes_by_id,
     )
 
     return mirrored_geometry_groups, mirrored_surfaces
-
-
-def _build_mirror_status(
-    *,
-    mirror_actions: Dict[str, str],
-    entity_info: EntityInfoModel,
-    body_groups: List[GeometryBodyGroup],
-    surfaces: List[Surface],
-    mirror_planes: List[MirrorPlane],
-) -> Optional[MirrorStatus]:
-    """
-    Construct a :class:`MirrorStatus` instance from the given mirror actions and entities.
-
-    This will:
-    - Drop any mirror actions that reference geometry body groups that no longer exist.
-    - Derive the corresponding mirrored entities.
-    - Restrict the stored mirror planes to those actually referenced.
-    """
-
-    # Filter out actions that refer to body groups that no longer exist.
-    valid_body_group_ids = {body_group.private_attribute_id for body_group in body_groups}
-    filtered_actions: Dict[str, str] = {
-        body_group_id: mirror_plane_id
-        for body_group_id, mirror_plane_id in mirror_actions.items()
-        if body_group_id in valid_body_group_ids
-    }
-
-    if not filtered_actions:
-        # No valid mirror actions – nothing to serialize.
-        return None
-
-    mirrored_geometry_groups, mirrored_surfaces = _derive_mirrored_entities_from_actions(
-        mirror_actions=filtered_actions,
-        entity_info=entity_info,
-        body_groups=body_groups,
-        surfaces=surfaces,
-        mirror_planes=mirror_planes,
-    )
-
-    # Only keep mirror planes that are actually referenced by the filtered actions.
-    mirror_planes_by_id: Dict[str, MirrorPlane] = {
-        plane.private_attribute_id: plane for plane in mirror_planes
-    }
-    used_plane_ids = {
-        mirror_plane_id
-        for mirror_plane_id in filtered_actions.values()
-        if mirror_plane_id in mirror_planes_by_id
-    }
-    mirror_planes_for_status: List[MirrorPlane] = [
-        plane for plane in mirror_planes if plane.private_attribute_id in used_plane_ids
-    ]
-
-    return MirrorStatus(
-        mirror_planes=mirror_planes_for_status,
-        mirrored_geometry_body_groups=mirrored_geometry_groups,
-        mirrored_surfaces=mirrored_surfaces,
-    )
 
 
 def _extract_body_group_id_to_mirror_id_from_status(
@@ -352,3 +297,68 @@ def _extract_body_group_id_to_mirror_id_from_status(
     ]
 
     return body_group_id_to_mirror_id, mirror_planes
+
+
+# endregion -------------------------------------------------------------------------------------
+
+# region -----------------------------Public Functions Below-------------------------------------
+
+
+def build_mirror_status(
+    *,
+    body_group_id_to_mirror_id: Dict[str, str],
+    entity_info: EntityInfoModel,
+    body_groups: List[GeometryBodyGroup],
+    surfaces: List[Surface],
+    mirror_planes: List[MirrorPlane],
+) -> Optional[MirrorStatus]:
+    """
+    Construct a :class:`MirrorStatus` instance from the given mirror actions and entities.
+
+    This will:
+    - Drop any mirror actions that reference geometry body groups that no longer exist.
+    - Derive the corresponding mirrored entities.
+    - Restrict the stored mirror planes to those actually referenced.
+    """
+
+    # Filter out actions that refer to body groups that no longer exist.
+    valid_body_group_ids = {body_group.private_attribute_id for body_group in body_groups}
+    filtered_actions: Dict[str, str] = {
+        body_group_id: mirror_plane_id
+        for body_group_id, mirror_plane_id in body_group_id_to_mirror_id.items()
+        if body_group_id in valid_body_group_ids
+    }
+
+    if not filtered_actions:
+        # No valid mirror actions – nothing to serialize.
+        return None
+
+    mirrored_geometry_groups, mirrored_surfaces = _derive_mirrored_entities_from_actions(
+        body_group_id_to_mirror_id=filtered_actions,
+        entity_info=entity_info,
+        body_groups=body_groups,
+        surfaces=surfaces,
+        mirror_planes=mirror_planes,
+    )
+
+    # Only keep mirror planes that are actually referenced by the filtered actions.
+    mirror_planes_by_id: Dict[str, MirrorPlane] = {
+        plane.private_attribute_id: plane for plane in mirror_planes
+    }
+    used_plane_ids = {
+        mirror_plane_id
+        for mirror_plane_id in filtered_actions.values()
+        if mirror_plane_id in mirror_planes_by_id
+    }
+    mirror_planes_for_status: List[MirrorPlane] = [
+        plane for plane in mirror_planes if plane.private_attribute_id in used_plane_ids
+    ]
+
+    return MirrorStatus(
+        mirror_planes=mirror_planes_for_status,
+        mirrored_geometry_body_groups=mirrored_geometry_groups,
+        mirrored_surfaces=mirrored_surfaces,
+    )
+
+
+# endregion -------------------------------------------------------------------------------------

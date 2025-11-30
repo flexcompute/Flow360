@@ -95,7 +95,7 @@ def test_mirror_multiple_calls_accumulate_and_derive_from_actions(mock_geometry)
 
         # Derive the full list of mirrored entities from the accumulated mirror actions.
         all_mirrored_body_groups, all_mirrored_surfaces = _derive_mirrored_entities_from_actions(
-            mirror_actions=draft._body_group_id_to_mirror_id,
+            body_group_id_to_mirror_id=draft._body_group_id_to_mirror_id,
             entity_info=draft._entity_info,
             body_groups=draft.body_groups.entities,
             surfaces=draft.surfaces.entities,
@@ -179,7 +179,7 @@ def test_mirror_status_round_trip_through_asset_cache(mock_geometry):
             use_geometry_AI=False,
         )
 
-        mirror_status = processed_params.private_attribute_asset_cache.mirror_action
+        mirror_status = processed_params.private_attribute_asset_cache.mirror_status
 
         # Mirror status must be populated and reference the expected plane/body groups.
         assert isinstance(mirror_status, MirrorStatus)

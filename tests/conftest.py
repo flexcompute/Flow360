@@ -3,12 +3,10 @@ from pathlib import Path
 
 from flow360.component.geometry import Geometry, GeometryMeta
 from flow360.component.resource_base import local_metadata_builder
-from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.validation.validation_context import (
     ParamsValidationInfo,
     ValidationContext,
 )
-from flow360.component.simulation.web.asset_base import AssetBase
 from flow360.component.surface_mesh_v2 import SurfaceMeshMetaV2, SurfaceMeshV2
 from flow360.component.volume_mesh import VolumeMeshMetaV2, VolumeMeshV2
 

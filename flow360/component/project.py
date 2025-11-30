@@ -25,6 +25,7 @@ from flow360.component.interfaces import (
     VolumeMeshInterfaceV2,
 )
 from flow360.component.project_utils import (
+    apply_geometry_grouping_overrides,
     get_project_records,
     set_up_params_for_uploading,
     show_projects_with_keyword_filter,
@@ -85,34 +86,6 @@ class RootType(Enum):
     VOLUME_MESH = "VolumeMesh"
 
 
-def _apply_geometry_grouping_overrides(
-    entity_info: GeometryEntityInfo,
-    face_grouping: Optional[str],
-    edge_grouping: Optional[str],
-) -> dict[str, Optional[str]]:
-    """Apply explicit face/edge grouping overrides onto geometry entity info."""
-
-    def _validate_tag(tag: str, available: list[str], kind: str) -> str:
-        if available and tag not in available:  # pylint:disable=unsupported-membership-test
-            raise Flow360ValueError(
-                f"Invalid {kind} grouping tag '{tag}'. Available tags: {available}."
-            )
-        return tag
-
-    if face_grouping is not None:
-        face_tag = _validate_tag(face_grouping, entity_info.face_attribute_names, "face")
-        entity_info._group_entity_by_tag("face", face_tag)  # pylint:disable=protected-access
-    if edge_grouping is not None and entity_info.edge_attribute_names:
-        edge_tag = _validate_tag(edge_grouping, entity_info.edge_attribute_names, "edge")
-        entity_info._group_entity_by_tag("edge", edge_tag)  # pylint:disable=protected-access
-
-    return {
-        "face": entity_info.face_group_tag,
-        "edge": entity_info.edge_group_tag,
-        "body": entity_info.body_group_tag,
-    }
-
-
 def create_draft(
     *,
     new_run_from: Union[Geometry, SurfaceMeshV2, VolumeMeshV2],
@@ -132,7 +105,7 @@ def create_draft(
                 "body": entity_info.body_group_tag,
             }
             if face_grouping is not None or edge_grouping is not None:
-                applied_grouping = _apply_geometry_grouping_overrides(
+                applied_grouping = apply_geometry_grouping_overrides(
                     entity_info, face_grouping, edge_grouping
                 )
             # If tags were None, fall back to defaults for logging purposes.
@@ -168,7 +141,7 @@ def create_draft(
             simulation_dict = AssetBase._get_simulation_json(asset=asset, clean_front_end_keys=True)
 
         mirror_status_dict = simulation_dict.get("private_attribute_asset_cache", {}).get(
-            "mirror_action", None
+            "mirror_status", None
         )
 
         if mirror_status_dict is None:

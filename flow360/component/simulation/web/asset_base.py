@@ -319,17 +319,12 @@ class AssetBase(metaclass=ABCMeta):
         with open(os.path.join(local_storage_path, "simulation.json"), encoding="utf-8") as f:
             params_dict = json.load(f)
 
-        # _simulation_dict_cache_for_local_mode for local mode to avoid hitting cloud APIs.
         # pylint: disable=protected-access
-
         asset_obj = cls._from_supplied_simulation_dict(params_dict, cls(asset_id))
         asset_obj.get_dynamic_default_settings(params_dict)
 
+        # _simulation_dict_cache_for_local_mode for local mode to avoid hitting cloud APIs.
         asset_obj._simulation_dict_cache_for_local_mode = copy.deepcopy(params_dict)
-        print(
-            ">>> hasattr(_simulation_dict_cache_for_local_mode):",
-            hasattr(asset_obj, "_simulation_dict_cache_for_local_mode"),
-        )
         if not hasattr(asset_obj, "_webapi"):
             # Handle local test case execution which has no valid ID
             return asset_obj

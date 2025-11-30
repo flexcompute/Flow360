@@ -9,7 +9,6 @@ from flow360.component.geometry import Geometry
 from flow360.component.project import Project, create_draft
 from flow360.component.simulation import migration, services
 from flow360.component.simulation import units as u
-from flow360.component.simulation.draft_context import DraftContext
 from flow360.component.simulation.entity_operation import Transformation
 from flow360.component.simulation.folder import Folder
 from flow360.component.simulation.meshing_param import snappy
@@ -200,7 +199,6 @@ __all__ = [
     "Env",
     "Case",
     "create_draft",
-    "DraftContext",
     "AngleBasedRefinement",
     "AspectRatioBasedRefinement",
     "ProjectAnisoSpacing",
