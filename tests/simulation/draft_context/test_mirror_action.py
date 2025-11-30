@@ -156,6 +156,12 @@ def test_mirror_status_round_trip_through_asset_cache(mock_geometry):
         draft.mirror(entities=[first_body_group], mirror_plane=mirror_plane)
         draft.mirror(entities=[second_body_group], mirror_plane=mirror_plane)
 
+        expected_plane_ids = {mirror_plane.private_attribute_id}
+        expected_body_group_ids = {
+            first_body_group.private_attribute_id,
+            second_body_group.private_attribute_id,
+        }
+
         # Use a minimal SimulationParams that still exercises the
         # pre-upload path without introducing grouping-tag conflicts.
         with u.SI_unit_system:
@@ -177,13 +183,12 @@ def test_mirror_status_round_trip_through_asset_cache(mock_geometry):
         assert mirror_status.mirrored_geometry_body_groups
 
         plane_ids_in_status = {plane.private_attribute_id for plane in mirror_status.mirror_planes}
-        assert mirror_plane.private_attribute_id in plane_ids_in_status
+        assert plane_ids_in_status == expected_plane_ids
 
         body_group_ids_in_status = {
             group.geometry_body_group_id for group in mirror_status.mirrored_geometry_body_groups
         }
-        assert first_body_group.private_attribute_id in body_group_ids_in_status
-        assert second_body_group.private_attribute_id in body_group_ids_in_status
+        assert body_group_ids_in_status == expected_body_group_ids
 
     # 2. Mimic cloud upload by constructing a geometry asset from the processed params
     #    and ensuring create_draft restores the mirror actions from storage.
@@ -199,10 +204,11 @@ def test_mirror_status_round_trip_through_asset_cache(mock_geometry):
 
     with create_draft(new_run_from=uploaded_geometry) as restored:
         restored_mapping = restored._body_group_id_to_mirror_id
-        assert restored_mapping
-
-        restored_body_group_ids = set(restored_mapping.keys())
-        assert body_group_ids_in_status.issubset(restored_body_group_ids)
+        expected_mapping = {
+            body_group_id: mirror_plane.private_attribute_id
+            for body_group_id in expected_body_group_ids
+        }
+        assert restored_mapping == expected_mapping
 
         restored_plane_ids = {plane.private_attribute_id for plane in restored.mirror_planes}
-        assert restored_plane_ids == plane_ids_in_status
+        assert restored_plane_ids == expected_plane_ids

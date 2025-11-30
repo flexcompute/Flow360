@@ -91,6 +91,105 @@ class MirrorStatus(Flow360BaseModel):
 
 # endregion -------------------------------------------------------------------------------------
 
+MIRROR_SUFFIX = "_<mirror>"
+
+
+def _build_mirrored_geometry_groups(
+    *,
+    mirror_actions: Dict[str, str],
+    body_groups_by_id: Dict[str, GeometryBodyGroup],
+    mirror_planes_by_id: Dict[str, MirrorPlane],
+) -> List[MirroredGeometryBodyGroup]:
+    """Create mirrored geometry body groups for valid mirror actions."""
+
+    mirrored_groups: List[MirroredGeometryBodyGroup] = []
+
+    for body_group_id, mirror_plane_id in mirror_actions.items():
+        body_group = body_groups_by_id.get(body_group_id)
+        if body_group is None:
+            log.warning(
+                "Mirror action references unknown GeometryBodyGroup id '%s'; skipping.",
+                body_group_id,
+            )
+            continue
+
+        mirror_plane = mirror_planes_by_id.get(mirror_plane_id)
+        if mirror_plane is None:
+            log.warning(
+                "Mirror action references unknown MirrorPlane id '%s'; skipping.",
+                mirror_plane_id,
+            )
+            continue
+
+        mirrored_groups.append(
+            MirroredGeometryBodyGroup(
+                name=f"{body_group.name}{MIRROR_SUFFIX}",
+                geometry_body_group_id=body_group_id,
+                mirror_plane_id=mirror_plane_id,
+            )
+        )
+
+    return mirrored_groups
+
+
+def _build_mirrored_surfaces(
+    *,
+    mirror_actions: Dict[str, str],
+    entity_info: GeometryEntityInfo,
+    surfaces: List[Surface],
+    mirror_planes_by_id: Dict[str, MirrorPlane],
+) -> List[MirroredSurface]:
+    """Create mirrored surfaces for the requested body groups."""
+
+    if not mirror_actions:
+        return []
+
+    try:
+        face_group_to_body_group = entity_info.get_face_group_to_body_group_id_map()
+    except ValueError as exc:
+        raise Flow360RuntimeError(
+            "[Internal] Failed to derive surface-to-body-group mapping for mirroring."
+        ) from exc
+
+    surfaces_by_name: Dict[str, Surface] = {surface.name: surface for surface in surfaces}
+    requested_body_group_ids = set(mirror_actions.keys())
+    mirrored_surfaces: List[MirroredSurface] = []
+
+    for surface_name, owning_body_group_id in face_group_to_body_group.items():
+        if owning_body_group_id not in requested_body_group_ids:
+            continue
+
+        surface = surfaces_by_name.get(surface_name)
+        if surface is None:
+            log.warning(
+                "Surface '%s' referenced in GeometryEntityInfo was not found in draft registry; "
+                "skipping mirroring for this surface.",
+                surface_name,
+            )
+            continue
+
+        mirror_plane_id = mirror_actions.get(owning_body_group_id)
+        mirror_plane = mirror_planes_by_id.get(mirror_plane_id)
+        if mirror_plane is None:
+            log.warning(
+                "Mirror action references unknown MirrorPlane id '%s' for body group '%s'; "
+                "skipping mirroring for surface '%s'.",
+                mirror_plane_id,
+                owning_body_group_id,
+                surface_name,
+            )
+            continue
+
+        mirrored_surfaces.append(
+            MirroredSurface(
+                name=f"{surface.name}{MIRROR_SUFFIX}",
+                surface_id=surface.private_attribute_id,
+                mirror_plane_id=mirror_plane_id,
+            )
+        )
+
+    return mirrored_surfaces
+
 
 def _derive_mirrored_entities_from_actions(
     *,
@@ -113,11 +212,8 @@ def _derive_mirrored_entities_from_actions(
     of mirrored entities from the stored mirror status).
     """
 
-    mirrored_geometry_groups: List[MirroredGeometryBodyGroup] = []
-    mirrored_surfaces: List[MirroredSurface] = []
-
     if not mirror_actions or not isinstance(entity_info, GeometryEntityInfo):
-        return mirrored_geometry_groups, mirrored_surfaces
+        return [], []
 
     # Lookup tables for body groups and mirror planes.
     body_groups_by_id: Dict[str, GeometryBodyGroup] = {
@@ -127,80 +223,17 @@ def _derive_mirrored_entities_from_actions(
         plane.private_attribute_id: plane for plane in mirror_planes
     }
 
-    mirror_suffix = "_<mirror>"
-
-    # 1. Create MirroredGeometryBodyGroup tokens for requested body groups.
-    for body_group_id, mirror_plane_id in mirror_actions.items():
-        body_group = body_groups_by_id.get(body_group_id)
-        if body_group is None:
-            log.warning(
-                "Mirror action references unknown GeometryBodyGroup id '%s'; skipping.",
-                body_group_id,
-            )
-            continue
-
-        mirror_plane = mirror_planes_by_id.get(mirror_plane_id)
-        if mirror_plane is None:
-            log.warning(
-                "Mirror action references unknown MirrorPlane id '%s'; skipping.",
-                mirror_plane_id,
-            )
-            continue
-
-        mirrored_geometry_groups.append(
-            MirroredGeometryBodyGroup(
-                name=f"{body_group.name}{mirror_suffix}",
-                geometry_body_group_id=body_group_id,
-                mirror_plane_id=mirror_plane_id,
-            )
-        )
-
-    # 2. Determine which surfaces belong to the requested body groups and
-    #    create MirroredSurface tokens for them (geometry-based drafts only).
-    requested_body_group_ids = set(mirror_actions.keys())
-
-    if requested_body_group_ids:
-        try:
-            face_group_to_body_group = entity_info.get_face_group_to_body_group_id_map()
-        except ValueError as exc:
-            raise Flow360RuntimeError(
-                "[Internal] Failed to derive surface-to-body-group mapping for mirroring."
-            ) from exc
-
-        surfaces_by_name: Dict[str, Surface] = {surface.name: surface for surface in surfaces}
-
-        for surface_name, owning_body_group_id in face_group_to_body_group.items():
-            if owning_body_group_id not in requested_body_group_ids:
-                continue
-
-            surface = surfaces_by_name.get(surface_name)
-            if surface is None:
-                log.warning(
-                    "Surface '%s' referenced in GeometryEntityInfo was not found in draft registry; "
-                    "skipping mirroring for this surface.",
-                    surface_name,
-                )
-                continue
-
-            mirror_plane_id = mirror_actions.get(owning_body_group_id)
-            mirror_plane = mirror_planes_by_id.get(mirror_plane_id)
-            if mirror_plane is None:
-                log.warning(
-                    "Mirror action references unknown MirrorPlane id '%s' for body group '%s'; "
-                    "skipping mirroring for surface '%s'.",
-                    mirror_plane_id,
-                    owning_body_group_id,
-                    surface_name,
-                )
-                continue
-
-            mirrored_surfaces.append(
-                MirroredSurface(
-                    name=f"{surface.name}{mirror_suffix}",
-                    surface_id=surface.private_attribute_id,
-                    mirror_plane_id=mirror_plane_id,
-                )
-            )
+    mirrored_geometry_groups = _build_mirrored_geometry_groups(
+        mirror_actions=mirror_actions,
+        body_groups_by_id=body_groups_by_id,
+        mirror_planes_by_id=mirror_planes_by_id,
+    )
+    mirrored_surfaces = _build_mirrored_surfaces(
+        mirror_actions=mirror_actions,
+        entity_info=entity_info,
+        surfaces=surfaces,
+        mirror_planes_by_id=mirror_planes_by_id,
+    )
 
     return mirrored_geometry_groups, mirrored_surfaces
 

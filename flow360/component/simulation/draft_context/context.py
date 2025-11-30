@@ -109,10 +109,11 @@ class _SingleTypeEntityRegistry:
         return matched
 
 
-class DraftContext(AbstractContextManager["DraftContext"]):
+class DraftContext(  # pylint: disable=too-many-instance-attributes
+    AbstractContextManager["DraftContext"]
+):
     """Context manager that tracks locally modified simulation entities."""
 
-    # pylint: disable=too-many-instance-attributes
     __slots__ = (
         "_body_group_id_to_mirror_id",
         "_mirror_planes",
@@ -124,7 +125,6 @@ class DraftContext(AbstractContextManager["DraftContext"]):
         "_volumes",
     )
 
-    # pylint: disable=too-many-instance-attributes
     def __init__(
         self,
         *,
