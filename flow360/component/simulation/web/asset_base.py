@@ -166,7 +166,7 @@ class AssetBase(metaclass=ABCMeta):
         return asset_obj
 
     @classmethod
-    def _get_simulation_json(cls, asset: AssetBase) -> dict:
+    def _get_simulation_json(cls, asset: AssetBase, clean_front_end_keys: bool = False) -> dict:
         """Get the simulation json AKA birth setting of the asset. Do we want to cache it in the asset object?"""
         ##>> Check if the current asset is project's root item.
         ##>> If so then we need to wait for its pipeline to finish generating the simulation json.
@@ -188,6 +188,8 @@ class AssetBase(metaclass=ABCMeta):
             )
 
         updated_params_as_dict, _ = SimulationParams._update_param_dict(json.loads(simulation_json))
+        if clean_front_end_keys:
+            updated_params_as_dict = SimulationParams._sanitize_params_dict(updated_params_as_dict)
         return updated_params_as_dict
 
     @property
