@@ -4,6 +4,7 @@ from typing import Annotated, List, Optional, Union
 
 import pydantic as pd
 
+from flow360.component.simulation.draft_context.mirror import MirrorStatus
 from flow360.component.simulation.entity_info import (
     GeometryEntityInfo,
     SurfaceMeshEntityInfo,
@@ -52,6 +53,9 @@ class AssetCache(Flow360BaseModel):
     )
     selectors: Optional[List[dict]] = pd.Field(
         None, description="Collected entity selectors for token reference."
+    )
+    mirror_action: Optional[MirrorStatus] = pd.Field(
+        None, description="List of mirror planes that are used in the simulation."
     )
 
     @property

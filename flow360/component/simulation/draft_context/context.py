@@ -5,12 +5,13 @@ from __future__ import annotations
 import copy
 from contextlib import AbstractContextManager
 from contextvars import ContextVar, Token
-from typing import Dict, List, Optional, get_args
+from typing import TYPE_CHECKING, Dict, List, Optional, get_args
 
 from flow360.component.simulation.draft_context.mirror import (
     MirroredGeometryBodyGroup,
     MirroredSurface,
     MirrorPlane,
+    _derive_mirrored_entities_from_actions,
 )
 from flow360.component.simulation.entity_info import DraftEntityTypes, EntityInfoModel
 from flow360.component.simulation.framework.entity_base import EntityBase
@@ -115,7 +116,7 @@ class DraftContext(AbstractContextManager["DraftContext"]):
         Data members:
         - _token: Token to track the active draft context.
 
-        - _mirror_actions: Dictionary to track the mirror actions.
+        - _mirror_status: Dictionary to track the mirror actions.
         The key is the GeometryBodyGroup ID and the value is MirrorPlane ID to mirror.
 
         - _mirror_planes: List to track the MirrorPlane entities.
@@ -131,7 +132,7 @@ class DraftContext(AbstractContextManager["DraftContext"]):
             )
         self._token: Optional[Token] = None
 
-        self._mirror_actions: Dict[str, str] = {}
+        self._mirror_status: Dict[str, str] = {}
         self._mirror_planes: List[MirrorPlane] = []
 
         self._entity_info = copy.deepcopy(entity_info)
@@ -166,17 +167,6 @@ class DraftContext(AbstractContextManager["DraftContext"]):
         return False
 
     # region -----------------------------Private implementations Below-----------------------------
-    def _update_mirror_status_into_asset_cache(self) -> None:
-        """
-        Before submission, serialize the mirror status into the asset cache.
-        """
-        # TODO: Get front end's requirement on the schema.
-
-    def _read_mirror_status_from_asset_cache(self) -> None:
-        """
-        Deserialize the mirror status from the asset cache.
-        """
-        # TODO: Get front end's requirement on the schema.
 
     # endregion ------------------------------------------------------------------------------------
 
@@ -233,6 +223,13 @@ class DraftContext(AbstractContextManager["DraftContext"]):
         Return the list of cylinders in the draft.
         """
 
+    @property
+    def mirror_planes(self) -> List[MirrorPlane]:
+        """
+        Return the list of mirror planes in the draft.
+        """
+        return self._mirror_planes
+
     # endregion ------------------------------------------------------------------------------------
 
     # region -----------------------------Public Methods Below-------------------------------------
@@ -256,6 +253,8 @@ class DraftContext(AbstractContextManager["DraftContext"]):
         # TODO: Support EntitySelector for specifying the GeometryBodyGroup in the future?
 
         # 1. [Validation] Ensure `entities` are GeometryBodyGroup entities.
+        # Note:We could in the future just move these into pd.validate_call but for first
+        # roll out let's keep the error message clear and readable.
         normalized_entities: list[EntityBase]
         if isinstance(entities, EntityBase):
             normalized_entities = [entities]
@@ -285,21 +284,19 @@ class DraftContext(AbstractContextManager["DraftContext"]):
         #                  If a duplicate request is made, reset to the new one with a warning.
         for body_group in geometry_body_groups:
             body_group_id = body_group.private_attribute_id
-            if body_group_id in self._mirror_actions:
+            if body_group_id in self._mirror_status:
                 log.warning(
                     "GeometryBodyGroup `%s` was already mirrored; resetting to the latest mirror plane request.",
                     body_group.name,
                 )
 
-        # 3.2[Restriction] Face grouping should not clash with body grouping? (Waiting for PM's confirmation)
-        #    (Intentionally left blank pending PM requirements.)
-
-        # 4. Create/Update the self._mirror_actions
+        # 4. Create/Update the self._mirror_status
         #    and also capture the MirrorPlane into the `draft`.
+        mirror_actions_update: Dict[str, str] = {}
         for body_group in geometry_body_groups:
-            self._mirror_actions[body_group.private_attribute_id] = (
-                mirror_plane.private_attribute_id
-            )
+            body_group_id = body_group.private_attribute_id
+            mirror_actions_update[body_group_id] = mirror_plane.private_attribute_id
+            self._mirror_status[body_group_id] = mirror_plane.private_attribute_id
 
         existing_plane_ids = {plane.private_attribute_id for plane in self._mirror_planes}
         if mirror_plane.private_attribute_id not in existing_plane_ids:
@@ -307,65 +304,12 @@ class DraftContext(AbstractContextManager["DraftContext"]):
 
         # 5. Derive the generated mirrored entities (MirroredGeometryBodyGroup + MirroredSurface)
         #    and return to user as tokens of use.
-        def _add_mirror_suffix(name: str) -> str:
-            # suffix = mirror_plane.name or "mirror"
-            suffix = "<mirror>"
-            return f"{name}_{suffix}"
-
-        mirrored_geometry_groups = [
-            MirroredGeometryBodyGroup(
-                name=_add_mirror_suffix(body_group.name),
-                geometry_body_group_id=body_group.private_attribute_id,
-                mirror_plane_id=mirror_plane.private_attribute_id,
-            )
-            for body_group in geometry_body_groups
-        ]
-
-        mirrored_surfaces: list[MirroredSurface] = []
-        surface_candidates: list[Surface] = []
-        registry = getattr(self, "_entity_registry", None)
-        if registry is not None:
-            try:
-                surface_candidates = registry.get_bucket(by_type=Surface).entities
-            except Exception:  # pylint: disable=broad-exception-caught
-                surface_candidates = []
-
-        def _extract_body_ids_from_surface(surface: Surface) -> set[str]:
-            body_id_candidates: set[str] = set()
-            for face_id in surface.private_attribute_sub_components or []:
-                if "::" in face_id:
-                    body_id_candidates.add(face_id.split("::", 1)[0])
-                elif "_" in face_id:
-                    body_id_candidates.add(face_id.split("_", 1)[0])
-                else:
-                    body_id_candidates.add(face_id)
-            return body_id_candidates
-
-        mirrored_surface_ids: set[str] = set()
-        for candidate_surface in surface_candidates:
-            surface_body_ids = _extract_body_ids_from_surface(candidate_surface)
-            if not surface_body_ids:
-                continue
-
-            if len(surface_body_ids) > 1:
-                log.warning(
-                    "Surface `%s` spans multiple body groups (%s); mirrored copy may overlap.",
-                    candidate_surface.name,
-                    ", ".join(sorted(surface_body_ids)),
-                )
-
-            if candidate_surface.private_attribute_id in mirrored_surface_ids:
-                continue
-
-            mirrored_surface_ids.add(candidate_surface.private_attribute_id)
-            mirrored_surfaces.append(
-                MirroredSurface(
-                    name=_add_mirror_suffix(candidate_surface.name),
-                    surface_id=candidate_surface.private_attribute_id,
-                    mirror_plane_id=mirror_plane.private_attribute_id,
-                )
-            )
-
-        return mirrored_geometry_groups, mirrored_surfaces
+        return _derive_mirrored_entities_from_actions(
+            mirror_actions=mirror_actions_update,
+            entity_info=self._entity_info,
+            body_groups=self._body_groups.entities,
+            surfaces=self._surfaces.entities,
+            mirror_planes=self._mirror_planes,
+        )
 
     # endregion -------------------------------------------------------------------------------------

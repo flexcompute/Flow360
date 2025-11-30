@@ -562,8 +562,6 @@ class Surface(_SurfaceEntityBase, SelectorFactory):
     )
     private_attributes: Optional[SurfacePrivateAttributes] = pd.Field(None)
 
-    _belonging_body_group_id: str
-
     # Note: private_attribute_id should not be `Optional` anymore.
     # B.C. Updater and geometry pipeline will populate it.
 
