@@ -160,12 +160,15 @@ def create_draft(
 
     def _load_mirror_status_from_asset(asset: AssetBase) -> Optional[MirrorStatus]:
         """Get the mirror status from the asset"""
+        # pylint: disable=protected-access
+        if hasattr(asset, "_simulation_dict_cache_for_local_mode"):
+            # local asset mode
+            simulation_dict = asset._simulation_dict_cache_for_local_mode
+        else:
+            simulation_dict = AssetBase._get_simulation_json(asset=asset, clean_front_end_keys=True)
 
-        mirror_status_dict = (
-            # pylint: disable=protected-access
-            AssetBase._get_simulation_json(asset=asset, clean_front_end_keys=True)
-            .get("private_attribute_asset_cache", {})
-            .get("mirror_action", None)
+        mirror_status_dict = simulation_dict.get("private_attribute_asset_cache", {}).get(
+            "mirror_action", None
         )
 
         if mirror_status_dict is None:

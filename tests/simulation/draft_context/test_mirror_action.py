@@ -1,9 +1,13 @@
 import copy
+import json
+import os
+import tempfile
 
 import flow360.component.simulation.units as u
-from flow360.component.geometry import Geometry
+from flow360.component.geometry import Geometry, GeometryMeta
 from flow360.component.project import create_draft
 from flow360.component.project_utils import set_up_params_for_uploading
+from flow360.component.resource_base import local_metadata_builder
 from flow360.component.simulation.draft_context.context import DraftContext
 from flow360.component.simulation.draft_context.mirror import (
     MirrorPlane,
@@ -193,14 +197,25 @@ def test_mirror_status_round_trip_through_asset_cache(mock_geometry):
     # 2. Mimic cloud upload by constructing a geometry asset from the processed params
     #    and ensuring create_draft restores the mirror actions from storage.
     serialized_params = processed_params.model_dump(mode="json")
-    uploaded_geometry = Geometry._from_supplied_simulation_dict(
-        serialized_params,
-        Geometry(id=None),
-    )
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        with open(os.path.join(temp_dir, "simulation.json"), "w") as f:
+            json.dump(serialized_params, f)
+        uploaded_geometry = Geometry._from_local_storage(
+            asset_id="geo-aaa-aaaa-aaaaaaaa",
+            local_storage_path=temp_dir,
+            meta_data=GeometryMeta(
+                **local_metadata_builder(
+                    id="geo-aaa-aaaa-aaaaaaaa",
+                    name="Geometry",
+                    cloud_path_prefix="--",
+                    status="processed",
+                )
+            ),
+        )
     uploaded_geometry.internal_registry = uploaded_geometry._entity_info.get_registry(
         uploaded_geometry.internal_registry
     )
-    uploaded_geometry._local_simulation_json = copy.deepcopy(serialized_params)
 
     with create_draft(new_run_from=uploaded_geometry) as restored:
         restored_mapping = restored._body_group_id_to_mirror_id

@@ -112,7 +112,10 @@ class _SingleTypeEntityRegistry:
 class DraftContext(  # pylint: disable=too-many-instance-attributes
     AbstractContextManager["DraftContext"]
 ):
-    """Context manager that tracks locally modified simulation entities."""
+    """
+    Context manager that tracks locally modified simulation entities/status.
+    This should (eventually, not right now) be replacement of accessing entities directly from assets.
+    """
 
     __slots__ = (
         "_body_group_id_to_mirror_id",
