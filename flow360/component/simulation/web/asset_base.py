@@ -188,7 +188,6 @@ class AssetBase(metaclass=ABCMeta):
             )
 
         updated_params_as_dict, _ = SimulationParams._update_param_dict(json.loads(simulation_json))
-
         if clean_front_end_keys:
             updated_params_as_dict = SimulationParams._sanitize_params_dict(updated_params_as_dict)
         return updated_params_as_dict
