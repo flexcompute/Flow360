@@ -86,8 +86,8 @@ def mock_validation_context():
 def mock_geometry():
     data_root = Path(__file__).parent / "data"
     geometry_meta = local_metadata_builder(
-        id="geo-e5c01a98-2180-449e-b255-d60162854a83",
-        name="simple-airplane",
+        id="geo-entity-provider",
+        name="three-boxes",
         cloud_path_prefix="--",
         status="processed",
     )
