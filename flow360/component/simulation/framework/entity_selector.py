@@ -14,7 +14,10 @@ import pydantic as pd
 from typing_extensions import Self
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.simulation.framework.entity_utils import generate_uuid
+from flow360.component.simulation.framework.entity_utils import (
+    compile_glob_cached,
+    generate_uuid,
+)
 from flow360.log import log
 
 # These corresponds to the private_attribute_entity_type_name of supported entity types.
@@ -402,48 +405,6 @@ def _compile_regex_cached(pattern: str) -> re.Pattern:
     return re.compile(pattern)
 
 
-@lru_cache(maxsize=2048)
-def _compile_glob_cached(pattern: str) -> re.Pattern:
-    """Compile an extended-glob pattern via wcmatch to a fullmatch-ready regex.
-
-    We enable extended glob features including brace expansion, extglob groups,
-    and globstar. We intentionally avoid PATHNAME semantics because entity
-    names are not paths in this context, and we keep case-sensitive matching to
-    remain predictable across platforms.
-    """
-    # Strong requirement: wcmatch must be present to support full glob features.
-    try:
-        # pylint: disable=import-outside-toplevel
-        from wcmatch import fnmatch as wfnmatch
-    except Exception as exc:  # pragma: no cover - explicit failure path
-        raise RuntimeError(
-            "wcmatch is required for extended glob support. Please install 'wcmatch>=10.0'."
-        ) from exc
-
-    # Enforce case-sensitive matching across platforms (Windows defaults to case-insensitive).
-    wc_flags = wfnmatch.BRACE | wfnmatch.EXTMATCH | wfnmatch.DOTMATCH | wfnmatch.CASE
-    translated = wfnmatch.translate(pattern, flags=wc_flags)
-    # wcmatch.translate may return a tuple: (list_of_regex_strings, list_of_flags)
-    if isinstance(translated, tuple):
-        regex_parts, _flags = translated
-        if isinstance(regex_parts, list) and len(regex_parts) > 1:
-
-            def _strip_anchors(expr: str) -> str:
-                if expr.startswith("^"):
-                    expr = expr[1:]
-                if expr.endswith("$"):
-                    expr = expr[:-1]
-                return expr
-
-            stripped = [_strip_anchors(s) for s in regex_parts]
-            combined = "^(?:" + ")|(?:".join(stripped) + ")$"
-            return re.compile(combined)
-        if isinstance(regex_parts, list) and len(regex_parts) == 1:
-            return re.compile(regex_parts[0])
-    # Otherwise, assume it's a single regex string
-    return re.compile(translated)
-
-
 def _get_node_attribute(entity: Any, attribute: str):
     """Return attribute value from either dicts or entity objects."""
     if isinstance(entity, dict):
@@ -516,7 +477,7 @@ def _build_value_matcher(predicate: dict):
         if non_glob_syntax == "regex":
             pattern = _compile_regex_cached(value)
         else:
-            pattern = _compile_glob_cached(value)
+            pattern = compile_glob_cached(value)
 
         def base_match(val: Optional[str]) -> bool:
             return isinstance(val, str) and (pattern.fullmatch(val) is not None)
