@@ -417,9 +417,9 @@ def _collect_known_selectors_from_asset_cache(asset_cache) -> dict[str, dict]:
     if asset_cache is None:
         return {}
     if isinstance(asset_cache, dict):
-        selectors = asset_cache.get("selectors", [])
+        selectors = asset_cache.get("used_selectors", [])
     else:
-        selectors = getattr(asset_cache, "selectors", [])
+        selectors = getattr(asset_cache, "used_selectors", [])
     known: dict[str, dict] = {}
     for item in selectors or []:
         if isinstance(item, str):
@@ -785,8 +785,9 @@ def collect_and_tokenize_selectors_in_place(  # pylint: disable=too-many-branche
     # Pre-populate from existing AssetCache if any
     asset_cache = params_as_dict.setdefault("private_attribute_asset_cache", {})
     if isinstance(asset_cache, dict):
-        if "selectors" in asset_cache and isinstance(asset_cache["selectors"], list):
-            for s in asset_cache["selectors"]:
+        cached_selectors = asset_cache.get("used_selectors")
+        if isinstance(cached_selectors, list):
+            for s in cached_selectors:
                 selector_id = s.get("selector_id")
                 if selector_id is None:
                     selector_id = generate_uuid()
@@ -797,13 +798,14 @@ def collect_and_tokenize_selectors_in_place(  # pylint: disable=too-many-branche
     while queue:
         node = queue.popleft()
         if isinstance(node, dict):
-            selectors = node.get("selectors", ())
+            selectors = node.get("selectors")
             new_selectors = []
-            for item in selectors:
+            for item in selectors or ():
                 selector_id = item.get("selector_id")
                 known_selectors[selector_id] = item
                 new_selectors.append(selector_id)
-            node["selectors"] = new_selectors
+            if selectors is not None:
+                node["selectors"] = new_selectors
 
             # Recurse
             for value in node.values():
@@ -817,7 +819,8 @@ def collect_and_tokenize_selectors_in_place(  # pylint: disable=too-many-branche
 
     # Update AssetCache
     if isinstance(asset_cache, dict):
-        asset_cache["selectors"] = list(known_selectors.values())
+        asset_cache.pop("used_selectors", None)
+        asset_cache["used_selectors"] = list(known_selectors.values())
     return params_as_dict
 
 
