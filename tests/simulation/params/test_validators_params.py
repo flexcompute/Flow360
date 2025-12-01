@@ -2431,7 +2431,15 @@ def test_seedpoint_zone_based_params():
                 velocity_magnitude=40 * u.m / u.s,
             ),
             time_stepping=Steady(),
-            models=[Wall(surfaces=[Surface(name="face1")])],
+            models=[
+                Wall(surfaces=[Surface(name="face1")]),
+                PorousMedium(
+                    entities=[radiator_zone],
+                    darcy_coefficient=(1, 0, 0) / u.m**2,
+                    forchheimer_coefficient=(1, 0, 0) / u.m,
+                    volumetric_heat_source=1.0 * u.W / u.m**3,
+                ),
+            ],
             private_attribute_asset_cache=AssetCache(
                 use_inhouse_mesher=True,
                 project_entity_info=SurfaceMeshEntityInfo(
