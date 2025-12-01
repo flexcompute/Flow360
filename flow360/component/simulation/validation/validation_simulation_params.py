@@ -365,13 +365,13 @@ def _check_complete_boundary_condition_and_unknown_surface(
             asset_boundary_entities += [
                 item
                 for item in params.private_attribute_asset_cache.project_entity_info.ghost_entities
-                if item.name not in ("symmetric-1", "symmetric-2") and item.exists(param_info)
+                if item.name in ("farfield", "symmetric") and item.exists(param_info)
             ]
         elif farfield_method in ("quasi-3d", "quasi-3d-periodic"):
             asset_boundary_entities += [
                 item
                 for item in params.private_attribute_asset_cache.project_entity_info.ghost_entities
-                if item.name != "symmetric"
+                if item.name in ("farfield", "symmetric-1", "symmetric-2")
             ]
         elif farfield_method in ("user-defined", "wind-tunnel"):
             if param_info.will_generate_forced_symmetry_plane():
