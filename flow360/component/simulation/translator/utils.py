@@ -307,7 +307,7 @@ def _get_key_name(entity: EntityBase):
 def translate_setting_and_apply_to_all_entities(
     obj_list: list,
     class_type,
-    translation_func,
+    translation_func=lambda x, **kwargs: {},
     to_list: bool = False,
     entity_injection_func=lambda x, **kwargs: {},
     pass_translated_setting_to_entity_injection=False,

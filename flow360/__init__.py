@@ -156,6 +156,7 @@ from flow360.component.simulation.outputs.outputs import (
     MovingStatistic,
     Observer,
     ProbeOutput,
+    RenderOutputGroup,
     RenderOutput,
     SliceOutput,
     StreamlineOutput,

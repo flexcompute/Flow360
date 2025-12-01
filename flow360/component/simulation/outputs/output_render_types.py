@@ -10,7 +10,6 @@ from flow360.component.simulation.unit_system import AngleType, LengthType
 from flow360.component.types import Color, Vector
 
 
-
 class StaticCamera(Flow360BaseModel):
     position: LengthType.Point = pd.Field(description="Position of the camera in the scene")
     target: LengthType.Point = pd.Field(description="Target point of the camera")
@@ -243,7 +242,7 @@ class FieldMaterial(RenderMaterialBase):
         )
 
 
-AllMaterialTypes = Union[PBRMaterial, FieldMaterial]
+AnyMaterial = Union[PBRMaterial, FieldMaterial]
     
 
 class Transform(Flow360BaseModel):

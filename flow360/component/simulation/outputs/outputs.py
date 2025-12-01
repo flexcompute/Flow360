@@ -34,7 +34,7 @@ from flow360.component.simulation.outputs.output_fields import (
     get_field_values,
 )
 from flow360.component.simulation.outputs.output_render_types import (
-    AllMaterialTypes,
+    AnyMaterial,
     RenderCameraConfig,
     RenderEnvironmentConfig,
     RenderLightingConfig,
@@ -686,6 +686,19 @@ class SurfaceIntegralOutput(_OutputBase):
         return value
 
 
+class RenderOutputGroup(Flow360BaseModel):
+    surfaces: Optional[EntityList[Surface]] = pd.Field(
+        None, description="List of of :class:`~flow360.Surface` entities."
+    )
+    slices: Optional[EntityList[Slice]] = pd.Field(
+        None, description="List of of :class:`~flow360.Slice` entities."
+    )
+    isosurfaces: Optional[UniqueItemList[Isosurface]] = pd.Field(
+        None, description="List of :class:`~flow360.Isosurface` entities."
+    )
+    material: AnyMaterial = pd.Field()
+
+
 class RenderOutput(_AnimationSettings):
     """
 
@@ -715,23 +728,14 @@ class RenderOutput(_AnimationSettings):
     ====
     """
 
-    name: Optional[str] = pd.Field("Render output", description="Name of the `IsosurfaceOutput`.")
-    surfaces: Optional[EntityList[Surface]] = pd.Field(
-        None, description="List of of :class:`~flow360.Surface` entities."
-    )
-    slices: Optional[EntityList[Slice]] = pd.Field(
-        None, description="List of of :class:`~flow360.Slice` entities."
-    )
-    isosurfaces: Optional[UniqueItemList[Isosurface]] = pd.Field(
-        None, description="List of :class:`~flow360.Isosurface` entities."
-    )
+    name: str = pd.Field("Render output", description="Name of the `RenderOutput`.")
+    groups: List[RenderOutputGroup] = pd.Field("Render groups")
     output_fields: UniqueItemList[Union[CommonFieldNames, str]] = pd.Field(
         [], description="List of output variables."
     )
     camera: RenderCameraConfig = pd.Field(description="Camera settings", default_factory=RenderCameraConfig.orthographic)
     lighting: RenderLightingConfig = pd.Field(description="Lighting settings", default_factory=RenderLightingConfig.default)
     environment: RenderEnvironmentConfig = pd.Field(description="Environment settings", default_factory=RenderEnvironmentConfig.simple)
-    materials: Dict[str, AllMaterialTypes] = pd.Field(description="Material settings per entity")
     transform: Optional[Transform] = pd.Field(None, description="Optional model transform to apply to all entities")
     output_type: Literal["RenderOutput"] = pd.Field("RenderOutput", frozen=True)
 
