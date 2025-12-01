@@ -10,7 +10,8 @@ import pydantic as pd
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.simulation.framework.entity_base import EntityList, generate_uuid
+from flow360.component.simulation.framework.entity_base import EntityList
+from flow360.component.simulation.framework.entity_utils import generate_uuid
 from flow360.component.simulation.framework.expressions import (
     StringExpression,
     validate_angle_expression_of_t_seconds,
@@ -72,7 +73,8 @@ from flow360.component.simulation.unit_system import (
 )
 from flow360.component.simulation.user_code.core.types import ValueOrExpression
 from flow360.component.simulation.validation.validation_context import (
-    get_validation_info,
+    ParamsValidationInfo,
+    contextual_field_validator,
 )
 from flow360.component.simulation.validation.validation_utils import (
     _validator_append_instance_name,
@@ -211,11 +213,15 @@ class NavierStokesInitialCondition(ExpressionInitialConditionBase):
     w: StringExpression = pd.Field("w", description="Z-direction velocity")
     p: StringExpression = pd.Field("p", description="Pressure")
 
-    @pd.field_validator("rho", "u", "v", "w", "p", mode="after")
+    @contextual_field_validator("rho", "u", "v", "w", "p", mode="after")
     @classmethod
-    def _disable_expression_for_liquid(cls, value, info: pd.ValidationInfo):
-        validation_info = get_validation_info()
-        if validation_info is None or validation_info.using_liquid_as_material is False:
+    def _disable_expression_for_liquid(
+        cls,
+        value,
+        info: pd.ValidationInfo,
+        param_info: ParamsValidationInfo,
+    ):
+        if param_info.using_liquid_as_material is False:
             return value
 
         # pylint:disable = unsubscriptable-object
@@ -384,21 +390,17 @@ class Solid(PDEModelBase):
         None, description="The initial condition of the heat equation solver."
     )
 
-    @pd.field_validator("entities", mode="after")
+    @contextual_field_validator("entities", mode="after")
     @classmethod
-    def ensure_custom_volume_has_tets_only(cls, v):
+    def ensure_custom_volume_has_tets_only(cls, v, param_info: ParamsValidationInfo):
         """
         Check if the CustomVolume object was meshed with tetrahedra-only elements.
         """
-        validation_info = get_validation_info()
-        if validation_info is None:
-            return v
-
         for entity in getattr(v, "stored_entities", []):
             if not isinstance(entity, CustomVolume):
                 continue
 
-            enforce_map = getattr(validation_info, "to_be_generated_custom_volumes", {})
+            enforce_map = getattr(param_info, "to_be_generated_custom_volumes", {})
             if not isinstance(enforce_map, dict):
                 continue
 
@@ -857,6 +859,7 @@ class BETDisk(MultiConstructorBaseModel):
     )
     @classmethod
     def _update_input_cache(cls, value, info: pd.ValidationInfo):
+        # BETDisk input cache does not currently support EntityList with selectors.
         setattr(
             info.data["private_attribute_input_cache"],
             info.field_name,
@@ -1272,7 +1275,7 @@ class Rotation(Flow360BaseModel):
     )
     private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
 
-    @pd.field_validator("entities", mode="after")
+    @contextual_field_validator("entities", mode="after")
     @classmethod
     def _ensure_entities_have_sufficient_attributes(cls, value: EntityList):
         """Ensure entities have sufficient attributes."""
@@ -1288,19 +1291,19 @@ class Rotation(Flow360BaseModel):
                 )
         return value
 
-    @pd.field_validator("parent_volume", mode="after")
+    @contextual_field_validator("parent_volume", mode="after")
     @classmethod
     def _ensure_custom_volume_is_valid(
         cls,
         value: Optional[Union[GenericVolume, Cylinder, CustomVolume, SeedpointVolume]],
+        param_info: ParamsValidationInfo,
     ):
         """Ensure parent volume is a custom volume."""
         if value is None:
             return value
-        validation_info = get_validation_info()
-        if validation_info is None or not isinstance(value, (CustomVolume, SeedpointVolume)):
+        if not isinstance(value, (CustomVolume, SeedpointVolume)):
             return value
-        if value.name not in validation_info.to_be_generated_custom_volumes:
+        if value.name not in param_info.to_be_generated_custom_volumes:
             raise ValueError(
                 f"Parent {type(value).__name__} {value.name} is not listed under meshing->volume_zones(or zones)"
                 + "->CustomZones."
@@ -1377,7 +1380,7 @@ class PorousMedium(Flow360BaseModel):
     )
     private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
 
-    @pd.field_validator("entities", mode="after")
+    @contextual_field_validator("entities", mode="after")
     @classmethod
     def _ensure_entities_have_sufficient_attributes(cls, value: EntityList):
         """Ensure entities have sufficient attributes."""
@@ -1389,14 +1392,15 @@ class PorousMedium(Flow360BaseModel):
                 )
         return value
 
-    @pd.field_validator("volumetric_heat_source", mode="after")
+    @contextual_field_validator("volumetric_heat_source", mode="after")
     @classmethod
     def _validate_volumetric_heat_source_for_liquid(
-        cls, value: Optional[Union[StringExpression, HeatSourceType]]
+        cls,
+        value: Optional[Union[StringExpression, HeatSourceType]],
+        param_info: ParamsValidationInfo,
     ):
         """Disable the volumetric_heat_source when liquid operating condition is used"""
-        validation_info = get_validation_info()
-        if validation_info is None or validation_info.using_liquid_as_material is False:
+        if param_info.using_liquid_as_material is False:
             return value
         if value is not None:
             raise ValueError(

@@ -17,11 +17,9 @@ from flow360.component.simulation.entity_operation import (
     rotation_matrix_from_axis_and_angle,
 )
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.simulation.framework.entity_base import (
-    EntityBase,
-    EntityList,
-    generate_uuid,
-)
+from flow360.component.simulation.framework.entity_base import EntityBase, EntityList
+from flow360.component.simulation.framework.entity_selector import SelectorFactory
+from flow360.component.simulation.framework.entity_utils import generate_uuid
 from flow360.component.simulation.framework.multi_constructor_model_base import (
     MultiConstructorBaseModel,
 )
@@ -30,7 +28,9 @@ from flow360.component.simulation.unit_system import AngleType, AreaType, Length
 from flow360.component.simulation.user_code.core.types import ValueOrExpression
 from flow360.component.simulation.utils import BoundingBoxType, model_attribute_unlock
 from flow360.component.simulation.validation.validation_context import (
-    get_validation_info,
+    ParamsValidationInfo,
+    contextual_field_validator,
+    contextual_model_validator,
 )
 from flow360.component.types import Axis
 from flow360.component.utils import _naming_pattern_handler
@@ -146,7 +146,7 @@ class ReferenceGeometry(Flow360BaseModel):
         return cls(area=area, moment_center=moment_center, moment_length=moment_length)
 
 
-class GeometryBodyGroup(EntityBase):
+class GeometryBodyGroup(EntityBase, SelectorFactory):
     """
     :class:`GeometryBodyGroup` represents a collection of bodies that are grouped for transformation.
     """
@@ -260,7 +260,7 @@ class _EdgeEntityBase(EntityBase, metaclass=ABCMeta):
 
 
 @final
-class Edge(_EdgeEntityBase):
+class Edge(_EdgeEntityBase, SelectorFactory):
     """
     Edge which contains a set of grouped edges from geometry.
     """
@@ -278,7 +278,7 @@ class Edge(_EdgeEntityBase):
 
 
 @final
-class GenericVolume(_VolumeEntityBase):
+class GenericVolume(_VolumeEntityBase, SelectorFactory):
     """
     Do not expose.
     This type of entity will get auto-constructed by assets when loading metadata.
@@ -538,7 +538,7 @@ class SurfacePrivateAttributes(Flow360BaseModel):
 
 
 @final
-class Surface(_SurfaceEntityBase):
+class Surface(_SurfaceEntityBase, SelectorFactory):
     """
     :class:`Surface` represents a boundary surface in three-dimensional space.
     """
@@ -888,7 +888,7 @@ class CustomVolume(_VolumeEntityBase):
     # pylint: disable=no-member
     center: Optional[LengthType.Point] = pd.Field(None, description="")  # Rotation support
 
-    @pd.field_validator("boundaries", mode="after")
+    @contextual_field_validator("boundaries", mode="after")
     @classmethod
     def ensure_unique_boundary_names(cls, v):
         """Check if the boundaries have different names within a CustomVolume."""
@@ -896,28 +896,22 @@ class CustomVolume(_VolumeEntityBase):
             raise ValueError("The boundaries of a CustomVolume must have different names.")
         return v
 
-    @pd.model_validator(mode="after")
-    def ensure_beta_mesher_and_user_defined_farfield(self):
+    @contextual_model_validator(mode="after")
+    def ensure_beta_mesher_and_user_defined_farfield(self, param_info: ParamsValidationInfo):
         """Check if the beta mesher is enabled and that the user is using user defined farfield."""
-        validation_info = get_validation_info()
-        if validation_info is None:
-            return self
-        if validation_info.is_beta_mesher and validation_info.farfield_method == "user-defined":
+        if param_info.is_beta_mesher and param_info.farfield_method == "user-defined":
             return self
         raise ValueError(
             "CustomVolume is only supported when beta mesher and user defined farfield are enabled."
         )
 
 
-def check_custom_volume_creation(value):
+def check_custom_volume_creation(value, param_info: ParamsValidationInfo):
     """Check if the custom volume is listed under meshing->volume_zones."""
-    validation_info = get_validation_info()
-    if validation_info is None:
-        return value
     for volume in value:
         if not isinstance(volume, (CustomVolume, SeedpointVolume)):
             continue
-        if volume.name not in validation_info.to_be_generated_custom_volumes:
+        if volume.name not in param_info.to_be_generated_custom_volumes:
             raise ValueError(
                 f"{type(volume).__name__} {volume.name} is not listed under meshing->volume_zones(or zones)"
                 + "->CustomZones."
@@ -928,8 +922,8 @@ def check_custom_volume_creation(value):
 class EntityListWithCustomVolume(EntityList):
     """Entity list with customized validators for CustomVolume"""
 
-    @pd.field_validator("stored_entities", mode="after")
+    @contextual_field_validator("stored_entities", mode="after")
     @classmethod
-    def custom_volume_validator(cls, value):
+    def custom_volume_validator(cls, value, param_info: ParamsValidationInfo):
         """Run all validators"""
-        return check_custom_volume_creation(value)
+        return check_custom_volume_creation(value, param_info)

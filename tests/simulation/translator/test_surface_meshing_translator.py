@@ -965,7 +965,7 @@ def snappy_settings_off_position():
 
 def _translate_and_compare(param, mesh_unit, ref_json_file: str, atol=1e-15):
     param, err = validate_params_with_context(param, "Geometry", "SurfaceMesh")
-    print(err)
+    assert err is None, f"Validation error: {err}"
     translated = get_surface_meshing_json(param, mesh_unit=mesh_unit)
     with open(
         os.path.join(

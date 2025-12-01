@@ -15,7 +15,8 @@ from flow360.component.simulation.validation.validation_context import (
     VOLUME_MESH,
     ConditionalField,
     ContextField,
-    get_validation_info,
+    ParamsValidationInfo,
+    contextual_field_validator,
 )
 from flow360.component.simulation.validation.validation_utils import (
     check_geometry_ai_features,
@@ -150,36 +151,26 @@ class MeshingDefaults(Flow360BaseModel):
         description="Flag to remove non-manifold and interior faces.",
     )
 
-    @pd.field_validator("number_of_boundary_layers", mode="after")
+    @contextual_field_validator("number_of_boundary_layers", mode="after")
     @classmethod
-    def invalid_number_of_boundary_layers(cls, value):
+    def invalid_number_of_boundary_layers(cls, value, param_info: ParamsValidationInfo):
         """Ensure number of boundary layers is not specified"""
-        validation_info = get_validation_info()
-
-        if validation_info is None:
-            return value
-
-        if value is not None and not validation_info.is_beta_mesher:
+        if value is not None and not param_info.is_beta_mesher:
             raise ValueError("Number of boundary layers is only supported by the beta mesher.")
         return value
 
-    @pd.field_validator("geometry_accuracy", mode="after")
+    @contextual_field_validator("geometry_accuracy", mode="after")
     @classmethod
-    def invalid_geometry_accuracy(cls, value):
+    def invalid_geometry_accuracy(cls, value, param_info: ParamsValidationInfo):
         """Ensure geometry accuracy is not specified when GAI is not used"""
-        validation_info = get_validation_info()
-
-        if validation_info is None:
-            return value
-
-        if value is not None and not validation_info.use_geometry_AI:
+        if value is not None and not param_info.use_geometry_AI:
             raise ValueError("Geometry accuracy is only supported when geometry AI is used.")
 
-        if value is None and validation_info.use_geometry_AI:
+        if value is None and param_info.use_geometry_AI:
             raise ValueError("Geometry accuracy is required when geometry AI is used.")
         return value
 
-    @pd.field_validator(
+    @contextual_field_validator(
         "surface_max_aspect_ratio",
         "surface_max_adaptation_iterations",
         "resolve_face_boundaries",
@@ -189,9 +180,9 @@ class MeshingDefaults(Flow360BaseModel):
         mode="after",
     )
     @classmethod
-    def ensure_geometry_ai_features(cls, value, info):
+    def ensure_geometry_ai_features(cls, value, info, param_info: ParamsValidationInfo):
         """Validate that the feature is only used when Geometry AI is enabled."""
-        return check_geometry_ai_features(cls, value, info)
+        return check_geometry_ai_features(cls, value, info, param_info)
 
 
 class VolumeMeshingDefaults(Flow360BaseModel):
