@@ -1,6 +1,6 @@
 """Operations that can be performed on entities."""
 
-from typing import Literal, Mapping, Optional, Tuple
+from typing import Literal, Optional, Tuple
 
 import numpy as np
 import pydantic as pd
@@ -11,7 +11,6 @@ from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_utils import generate_uuid
 from flow360.component.simulation.unit_system import AngleType, LengthType
 from flow360.component.types import Axis
-from flow360.exceptions import Flow360RuntimeError
 
 
 def rotation_matrix_from_axis_and_angle(axis, angle):
@@ -101,45 +100,6 @@ def _compose_transformation_matrices(parent: np.ndarray, child: np.ndarray) -> n
     return np.hstack([combined_rotation, combined_translation[:, np.newaxis]])
 
 
-def _index_coordinate_systems(
-    coordinate_systems: Mapping[str, "CoordinateSystem"],
-) -> dict[str, "CoordinateSystem"]:
-    """
-    Ensure we have an id->CoordinateSystem mapping and detect duplicate ids.
-    """
-    index: dict[str, CoordinateSystem] = {}
-    for _, cs in coordinate_systems.items():
-        if cs.private_attribute_id in index:
-            raise Flow360RuntimeError(
-                f"Duplicate CoordinateSystem id detected: {cs.private_attribute_id}"
-            )
-        index[cs.private_attribute_id] = cs
-    return index
-
-
-def validate_coordinate_systems(coordinate_systems: Mapping[str, "CoordinateSystem"]) -> None:
-    """
-    Validate the inheritance graph:
-    - all parent ids exist in the mapping
-    - no cycles
-    """
-    index = _index_coordinate_systems(coordinate_systems)
-
-    for cs in index.values():
-        seen: set[str] = set()
-        parent_id = cs.parent_id
-        while parent_id is not None:
-            if parent_id in seen:
-                raise Flow360RuntimeError("Cycle detected in coordinate system inheritance.")
-            seen.add(parent_id)
-            parent = index.get(parent_id)
-            if parent is None:
-                raise Flow360RuntimeError(
-                    f"Parent coordinate system '{parent_id}' not found for '{cs.name}'."
-                )
-            parent_id = parent.parent_id
-
-
 class Transformation(Flow360BaseModel):
     """[Deprecating] Transformation that will be applied to a body group."""
 
@@ -194,10 +154,6 @@ class CoordinateSystem(Flow360BaseModel):
 
     translation: LengthType.Point = pd.Field((0, 0, 0) * u.m)  # pylint:disable=no-member
 
-    parent_id: Optional[str] = pd.Field(
-        default=None, description="Optional parent coordinate system id for inheritance."
-    )
-
     private_attribute_matrix: Optional[list[float]] = pd.Field(
         None, description="Optional precomputed 3x4 transformation matrix in row-major order."
     )
@@ -214,31 +170,9 @@ class CoordinateSystem(Flow360BaseModel):
             private_attribute_matrix=self.private_attribute_matrix,
         )
 
-    def get_transformation_matrix(
-        self, coordinate_systems: Optional[Mapping[str, "CoordinateSystem"]] = None
-    ) -> np.ndarray:
+    def get_transformation_matrix(self) -> np.ndarray:
         """
         Find 3(row)x4(column) transformation matrix and store as row major.
-        If ``coordinate_systems`` is provided, inherit parent transformations recursively.
         Applies to vector of [x, y, z, 1] in project length unit.
         """
-        combined_matrix = self._get_local_matrix()
-
-        if coordinate_systems is None or self.parent_id is None:
-            return combined_matrix
-
-        index = _index_coordinate_systems(coordinate_systems)
-
-        visited: set[str] = set()
-        parent_id = self.parent_id
-        # Plz ensure validate_coordinate_systems is called before this function is called.
-        while parent_id is not None:
-            visited.add(parent_id)
-            parent = index.get(parent_id)
-            parent_local_matrix = parent._get_local_matrix()  # pylint:disable=protected-access
-            combined_matrix = _compose_transformation_matrices(
-                parent=parent_local_matrix, child=combined_matrix
-            )
-            parent_id = parent.parent_id
-
-        return combined_matrix
+        return self._get_local_matrix()
