@@ -3,7 +3,7 @@ from flow360.examples import TutorialPeriodicBC
 
 TutorialPeriodicBC.get_files()
 project = fl.Project.from_volume_mesh(
-    TutorialPeriodicBC.mesh_filename, length_unit = 'mm'
+    TutorialPeriodicBC.mesh_filename, length_unit = 'mm',
     name="Tutorial Periodic Boundary Condition from Python",
 )
 volume_mesh = project.volume_mesh
