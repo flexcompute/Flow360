@@ -11,6 +11,7 @@ from flow360.component.simulation.outputs.outputs import (
     ProbeOutput,
     SurfaceIntegralOutput,
     SurfaceProbeOutput,
+    TimeAverageForceDistributionOutput,
 )
 from flow360.component.simulation.time_stepping.time_stepping import Steady
 from flow360.component.simulation.user_code.core.types import Expression
@@ -64,6 +65,7 @@ def _check_output_fields(params):
             "AeroAcousticOutput",
             "StreamlineOutput",
             "ForceDistributionOutput",
+            "TimeAverageForceDistributionOutput",
         ):
             continue
         # Get allowed output fields items:
@@ -120,6 +122,7 @@ def _check_output_fields_valid_given_turbulence_model(params):
             "AeroAcousticOutput",
             "StreamlineOutput",
             "ForceDistributionOutput",
+            "TimeAverageForceDistributionOutput",
         ):
             continue
         for item in output.output_fields.items:
@@ -168,6 +171,7 @@ def _check_output_fields_valid_given_transition_model(params):
             "AeroAcousticOutput",
             "StreamlineOutput",
             "ForceDistributionOutput",
+            "TimeAverageForceDistributionOutput",
         ):
             continue
         for item in output.output_fields.items:
@@ -246,7 +250,7 @@ def _check_unique_force_distribution_output_names(params):
     active_names = set()
 
     for output_index, output in enumerate(params.outputs):
-        if isinstance(output, ForceDistributionOutput):
+        if isinstance(output, (ForceDistributionOutput, TimeAverageForceDistributionOutput)):
             if output.name in active_names:
                 raise ValueError(
                     f"In `outputs`[{output_index}] {output.output_type}: "

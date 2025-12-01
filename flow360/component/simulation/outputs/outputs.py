@@ -1314,6 +1314,37 @@ class ForceDistributionOutput(Flow360BaseModel):
     )
 
 
+class TimeAverageForceDistributionOutput(ForceDistributionOutput):
+    """
+    :class:`TimeAverageForceDistributionOutput` class for time-averaged customized force and moment distribution output.
+    Axis-aligned components are output for force and moment coefficients at the end of the simulation.
+
+    Example
+    -------
+
+    Calculate the average value starting from the :math:`4^{th}` physical step.
+
+    >>> fl.TimeAverageForceDistributionOutput(
+    ...     name="spanwise",
+    ...     distribution_direction=[0.1, 0.9, 0.0],
+    ...     start_step=4,
+    ... )
+
+    ====
+    """
+
+    name: str = pd.Field(
+        "Time average force distribution output",
+        description="Name of the `TimeAverageForceDistributionOutput`.",
+    )
+    start_step: Union[pd.NonNegativeInt, Literal[-1]] = pd.Field(
+        default=-1, description="Physical time step to start calculating averaging."
+    )
+    output_type: Literal["TimeAverageForceDistributionOutput"] = pd.Field(
+        "TimeAverageForceDistributionOutput", frozen=True
+    )
+
+
 OutputTypes = Annotated[
     Union[
         SurfaceOutput,
@@ -1334,6 +1365,7 @@ OutputTypes = Annotated[
         StreamlineOutput,
         TimeAverageStreamlineOutput,
         ForceDistributionOutput,
+        TimeAverageForceDistributionOutput,
     ],
     pd.Field(discriminator="output_type"),
 ]
@@ -1346,6 +1378,7 @@ TimeAverageOutputTypes = (
     TimeAverageProbeOutput,
     TimeAverageSurfaceProbeOutput,
     TimeAverageStreamlineOutput,
+    TimeAverageForceDistributionOutput,
 )
 
 MonitorOutputType = Annotated[

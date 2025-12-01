@@ -26,6 +26,7 @@ from flow360.component.simulation.outputs.outputs import (
     SurfaceIntegralOutput,
     SurfaceOutput,
     SurfaceProbeOutput,
+    TimeAverageForceDistributionOutput,
     TimeAverageSurfaceOutput,
     VolumeOutput,
 )
@@ -474,6 +475,27 @@ def test_duplicate_force_distribution_names():
                         distribution_direction=[0.0, 1.0, 0.0],
                     ),
                 ],
+            )
+
+
+def test_time_averaged_force_distribution_output_requires_unsteady():
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "`TimeAverageForceDistributionOutput` can only be used in unsteady simulations."
+        ),
+    ):
+        with imperial_unit_system:
+            SimulationParams(
+                models=[Fluid(turbulence_model_solver=NoneSolver())],
+                outputs=[
+                    TimeAverageForceDistributionOutput(
+                        name="test",
+                        distribution_direction=[1.0, 0.0, 0.0],
+                        start_step=10,
+                    ),
+                ],
+                time_stepping=Steady(),
             )
 
 

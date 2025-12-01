@@ -74,6 +74,7 @@ from flow360.component.simulation.outputs.outputs import (
     SurfaceOutput,
     SurfaceProbeOutput,
     SurfaceSliceOutput,
+    TimeAverageForceDistributionOutput,
     TimeAverageIsosurfaceOutput,
     TimeAverageProbeOutput,
     TimeAverageSliceOutput,
@@ -655,12 +656,33 @@ def translate_force_distribution_output(output_params: list):
     """Translate force distribution output settings."""
     force_distribution_output = {}
     for output in output_params:
-        if isinstance(output, ForceDistributionOutput):
+        if isinstance(output, ForceDistributionOutput) and not isinstance(
+            output, TimeAverageForceDistributionOutput
+        ):
             force_distribution_output[output.name] = {
                 "direction": list(output.distribution_direction),
                 "type": output.distribution_type,
             }
     return force_distribution_output
+
+
+def translate_time_averaged_force_distribution_output(output_params: list):
+    """Translate time-averaged force distribution output settings."""
+    time_averaged_force_distribution_output = {}
+    min_start_step = None
+    for output in output_params:
+        if isinstance(output, TimeAverageForceDistributionOutput):
+            time_averaged_force_distribution_output[output.name] = {
+                "direction": list(output.distribution_direction),
+                "type": output.distribution_type,
+                "startAverageIntegrationStep": output.start_step if output.start_step != -1 else 0,
+            }
+            if output.start_step != -1:
+                if min_start_step is None or output.start_step < min_start_step:
+                    min_start_step = output.start_step
+    if min_start_step is not None:
+        time_averaged_force_distribution_output["minStartAverageIntegrationStep"] = min_start_step
+    return time_averaged_force_distribution_output
 
 
 def user_variable_to_udf(
@@ -1011,6 +1033,12 @@ def translate_output(input_params: SimulationParams, translated: dict):
     ##:: Step10: Get translated["forceDistributionOutput"]
     if has_instance_in_list(outputs, ForceDistributionOutput):
         translated["forceDistributionOutput"] = translate_force_distribution_output(outputs)
+
+    ##:: Step10b: Get translated["timeAveragedForceDistributionOutput"]
+    if has_instance_in_list(outputs, TimeAverageForceDistributionOutput):
+        translated["timeAveragedForceDistributionOutput"] = (
+            translate_time_averaged_force_distribution_output(outputs)
+        )
 
     ##:: Step11: Sort all "output_fields" everywhere
     # Recursively sort all "outputFields" lists in the translated dict
