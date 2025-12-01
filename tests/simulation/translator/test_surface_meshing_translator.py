@@ -1250,3 +1250,109 @@ def test_gai_analytic_wind_tunnel_farfield():
         1 * u.m,
         "gai_windtunnel.json",
     )
+
+
+def test_sliding_interface_tolerance_gai():
+    """Test that sliding_interface_tolerance is included in GAI filtered JSON."""
+    geometry = Geometry.from_local_storage(
+        geometry_id="geo-e5c01a98-2180-449e-b255-d60162854a83",
+        local_storage_path=os.path.join(
+            os.path.dirname(__file__), "data", "gai_geometry_entity_info"
+        ),
+        meta_data=GeometryMeta(
+            **local_metadata_builder(
+                id="geo-e5c01a98-2180-449e-b255-d60162854a83",
+                name="aaa",
+                cloud_path_prefix="aaa",
+                status="processed",
+            )
+        ),
+    )
+    geometry.group_faces_by_tag("faceId")
+    geometry.group_edges_by_tag("edgeId")
+    geometry.group_bodies_by_tag("groupByFile")
+
+    with open(
+        os.path.join(
+            os.path.dirname(__file__), "data", "gai_geometry_entity_info", "simulation.json"
+        ),
+        "r",
+    ) as fh:
+        asset_cache = AssetCache.model_validate(json.load(fh).pop("private_attribute_asset_cache"))
+
+    with SI_unit_system:
+        farfield = AutomatedFarfield(domain_type="half_body_positive_y")
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    geometry_accuracy=0.05 * u.m,
+                    surface_max_edge_length=0.2,
+                    sliding_interface_tolerance=3e-3,
+                ),
+                volume_zones=[farfield],
+            ),
+            private_attribute_asset_cache=asset_cache,
+        )
+
+    param, err = validate_params_with_context(params, "Geometry", "SurfaceMesh")
+    assert err is None, f"Validation error: {err}"
+    translated = get_surface_meshing_json(params, mesh_unit=1 * u.m)
+
+    # Verify sliding_interface_tolerance is in the translated JSON
+    assert "meshing" in translated
+    assert "defaults" in translated["meshing"]
+    assert "sliding_interface_tolerance" in translated["meshing"]["defaults"]
+    assert translated["meshing"]["defaults"]["sliding_interface_tolerance"] == 3e-3
+
+
+def test_sliding_interface_tolerance_gai_default_value():
+    """Test that default sliding_interface_tolerance value is used in GAI mode when not specified."""
+    geometry = Geometry.from_local_storage(
+        geometry_id="geo-e5c01a98-2180-449e-b255-d60162854a83",
+        local_storage_path=os.path.join(
+            os.path.dirname(__file__), "data", "gai_geometry_entity_info"
+        ),
+        meta_data=GeometryMeta(
+            **local_metadata_builder(
+                id="geo-e5c01a98-2180-449e-b255-d60162854a83",
+                name="aaa",
+                cloud_path_prefix="aaa",
+                status="processed",
+            )
+        ),
+    )
+    geometry.group_faces_by_tag("faceId")
+    geometry.group_edges_by_tag("edgeId")
+    geometry.group_bodies_by_tag("groupByFile")
+
+    with open(
+        os.path.join(
+            os.path.dirname(__file__), "data", "gai_geometry_entity_info", "simulation.json"
+        ),
+        "r",
+    ) as fh:
+        asset_cache = AssetCache.model_validate(json.load(fh).pop("private_attribute_asset_cache"))
+
+    with SI_unit_system:
+        farfield = AutomatedFarfield(domain_type="half_body_positive_y")
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    geometry_accuracy=0.05 * u.m,
+                    surface_max_edge_length=0.2,
+                ),
+                volume_zones=[farfield],
+            ),
+            private_attribute_asset_cache=asset_cache,
+        )
+
+    param, err = validate_params_with_context(params, "Geometry", "SurfaceMesh")
+    assert err is None, f"Validation error: {err}"
+    translated = get_surface_meshing_json(params, mesh_unit=1 * u.m)
+
+    # Verify sliding_interface_tolerance is in the translated JSON with default value
+    assert "meshing" in translated
+    assert "defaults" in translated["meshing"]
+    assert "sliding_interface_tolerance" in translated["meshing"]["defaults"]
+    # Default value is 1e-2 from DEFAULT_SLIDING_INTERFACE_TOLERANCE
+    assert translated["meshing"]["defaults"]["sliding_interface_tolerance"] == 1e-2
