@@ -1,7 +1,6 @@
 import copy
 import json
 import os
-import tempfile
 
 import flow360.component.simulation.units as u
 from flow360.component.geometry import Geometry, GeometryMeta
@@ -134,7 +133,7 @@ def test_mirror_multiple_calls_accumulate_and_derive_from_actions(mock_geometry)
             assert mirrored.mirror_plane_id == second_plane.private_attribute_id
 
 
-def test_mirror_status_round_trip_through_asset_cache(mock_geometry):
+def test_mirror_status_round_trip_through_asset_cache(mock_geometry, tmp_path):
     # Ensure the geometry has an internal registry so that SimulationParams can
     # reference entities and pre-upload processing can update persistent entities.
     mock_geometry.internal_registry = mock_geometry._entity_info.get_registry(
@@ -198,21 +197,20 @@ def test_mirror_status_round_trip_through_asset_cache(mock_geometry):
     #    and ensuring create_draft restores the mirror actions from storage.
     serialized_params = processed_params.model_dump(mode="json")
 
-    with tempfile.TemporaryDirectory() as temp_dir:
-        with open(os.path.join(temp_dir, "simulation.json"), "w") as f:
-            json.dump(serialized_params, f)
-        uploaded_geometry = Geometry._from_local_storage(
-            asset_id="geo-aaa-aaaa-aaaaaaaa",
-            local_storage_path=temp_dir,
-            meta_data=GeometryMeta(
-                **local_metadata_builder(
-                    id="geo-aaa-aaaa-aaaaaaaa",
-                    name="Geometry",
-                    cloud_path_prefix="--",
-                    status="processed",
-                )
-            ),
-        )
+    with open(os.path.join(tmp_path, "simulation.json"), "w") as f:
+        json.dump(serialized_params, f)
+    uploaded_geometry = Geometry._from_local_storage(
+        asset_id="geo-aaa-aaaa-aaaaaaaa",
+        local_storage_path=tmp_path,
+        meta_data=GeometryMeta(
+            **local_metadata_builder(
+                id="geo-aaa-aaaa-aaaaaaaa",
+                name="Geometry",
+                cloud_path_prefix="--",
+                status="processed",
+            )
+        ),
+    )
     uploaded_geometry.internal_registry = uploaded_geometry._entity_info.get_registry(
         uploaded_geometry.internal_registry
     )

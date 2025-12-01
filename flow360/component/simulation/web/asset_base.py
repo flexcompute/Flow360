@@ -324,6 +324,7 @@ class AssetBase(metaclass=ABCMeta):
         asset_obj.get_dynamic_default_settings(params_dict)
 
         # _simulation_dict_cache_for_local_mode for local mode to avoid hitting cloud APIs.
+        # pylint: disable=attribute-defined-outside-init
         asset_obj._simulation_dict_cache_for_local_mode = copy.deepcopy(params_dict)
         if not hasattr(asset_obj, "_webapi"):
             # Handle local test case execution which has no valid ID

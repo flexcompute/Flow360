@@ -3,7 +3,16 @@ import pytest
 
 import flow360.component.simulation.units as u
 from flow360.component.project import create_draft
+from flow360.component.project_utils import set_up_params_for_uploading
+from flow360.component.simulation.draft_context.coordinate_system_manager import (
+    CoordinateSystemAssignmentGroup,
+    CoordinateSystemEntityRef,
+    CoordinateSystemManager,
+    CoordinateSystemParent,
+    CoordinateSystemStatus,
+)
 from flow360.component.simulation.entity_operation import CoordinateSystem
+from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.exceptions import Flow360RuntimeError
 
 
@@ -41,7 +50,7 @@ def test_register_and_assign_coordinate_system(mock_geometry):
 
         # Ensure composed matrix matches manual composition using parent-child relationship.
         expected = _compose(root.get_transformation_matrix(), child.get_transformation_matrix())
-        matrix = draft.coordinate_systems.get_coordinate_system_matrix(assigned)
+        matrix = draft.coordinate_systems.get_coordinate_system_matrix(coordinate_system=assigned)
         assert matrix is not None
         np.testing.assert_allclose(matrix, expected)
 
@@ -191,3 +200,174 @@ def test_get_coordinate_system_matrix_requires_registration(mock_geometry):
             match="Coordinate system must be registered to compute its matrix.",
         ):
             draft.coordinate_systems.get_coordinate_system_matrix(coordinate_system=cs)
+
+
+def test_to_status_and_from_status_round_trip(mock_geometry):
+    with create_draft(new_run_from=mock_geometry) as draft:
+        body_group = list(draft.body_groups)[0]
+        cs_root = draft.coordinate_systems.add(coordinate_system=CoordinateSystem(name="root"))
+        cs_child = draft.coordinate_systems.add(
+            coordinate_system=CoordinateSystem(name="child"), parent=cs_root
+        )
+        draft.coordinate_systems.assign(entities=body_group, coordinate_system=cs_child)
+
+        status = draft.coordinate_systems._to_status()
+
+        restored = CoordinateSystemManager._from_status(
+            status=status, entity_registry=draft._entity_registry  # pylint:disable=protected-access
+        )
+
+        restored_child = restored.get_by_name("child")
+        assert restored_child.private_attribute_id == cs_child.private_attribute_id
+        restored_assignment = restored.get_for_entity(entity=body_group)
+        assert restored_assignment.private_attribute_id == cs_child.private_attribute_id
+
+
+def test_from_status_validation_errors(mock_geometry):
+    with create_draft(new_run_from=mock_geometry) as draft:
+        status = CoordinateSystemStatus(
+            coordinate_systems=[CoordinateSystem(name="cs1")],
+            parents=[CoordinateSystemParent(coordinate_system_id="missing", parent_id=None)],
+            assignments=[
+                CoordinateSystemAssignmentGroup(
+                    coordinate_system_id="missing",
+                    entities=[CoordinateSystemEntityRef(entity_type="Surface", entity_id="surf-1")],
+                )
+            ],
+        )
+        with pytest.raises(
+            Flow360RuntimeError,
+            match="Parent record references unknown coordinate system 'missing'",
+        ):
+            CoordinateSystemManager._from_status(
+                status=status,
+                entity_registry=draft._entity_registry,  # pylint:disable=protected-access
+            )
+
+
+def test_from_status_rejects_duplicate_cs_id(mock_geometry):
+    with create_draft(new_run_from=mock_geometry) as draft:
+        cs = CoordinateSystem(name="cs")
+        status = CoordinateSystemStatus(
+            coordinate_systems=[cs, cs],
+            parents=[],
+            assignments=[],
+        )
+        with pytest.raises(
+            Flow360RuntimeError,
+            match="Duplicate coordinate system id",
+        ):
+            CoordinateSystemManager._from_status(
+                status=status,
+                entity_registry=draft._entity_registry,  # pylint:disable=protected-access
+            )
+
+
+def test_from_status_rejects_assignment_unknown_cs(mock_geometry):
+    with create_draft(new_run_from=mock_geometry) as draft:
+        status = CoordinateSystemStatus(
+            coordinate_systems=[],
+            parents=[],
+            assignments=[
+                CoordinateSystemAssignmentGroup(
+                    coordinate_system_id="missing",
+                    entities=[CoordinateSystemEntityRef(entity_type="Surface", entity_id="s1")],
+                )
+            ],
+        )
+        with pytest.raises(
+            Flow360RuntimeError,
+            match="Assignment references unknown coordinate system 'missing'",
+        ):
+            CoordinateSystemManager._from_status(
+                status=status,
+                entity_registry=draft._entity_registry,  # pylint:disable=protected-access
+            )
+
+
+def test_from_status_rejects_duplicate_entity_assignment(mock_geometry):
+    with create_draft(new_run_from=mock_geometry) as draft:
+        cs = CoordinateSystem(name="cs")
+        status = CoordinateSystemStatus(
+            coordinate_systems=[cs],
+            parents=[],
+            assignments=[
+                CoordinateSystemAssignmentGroup(
+                    coordinate_system_id=cs.private_attribute_id,
+                    entities=[
+                        CoordinateSystemEntityRef(entity_type="Surface", entity_id="s1"),
+                        CoordinateSystemEntityRef(entity_type="Surface", entity_id="s1"),
+                    ],
+                )
+            ],
+        )
+        with pytest.raises(
+            Flow360RuntimeError,
+            match="Duplicate entity assignment for entity 'Surface:s1'",
+        ):
+            CoordinateSystemManager._from_status(
+                status=status,
+                entity_registry=draft._entity_registry,  # pylint:disable=protected-access
+            )
+
+
+def test_coordinate_system_status_round_trip_through_asset_cache(mock_geometry, tmp_path):
+    mock_geometry.internal_registry = mock_geometry._entity_info.get_registry(
+        mock_geometry.internal_registry
+    )
+    with create_draft(new_run_from=mock_geometry) as draft:
+        body_groups = list(draft.body_groups)
+        assert body_groups
+        target = body_groups[0]
+
+        cs_root = draft.coordinate_systems.add(coordinate_system=CoordinateSystem(name="root"))
+        cs_child = draft.coordinate_systems.add(
+            coordinate_system=CoordinateSystem(name="child"), parent=cs_root
+        )
+        draft.coordinate_systems.assign(entities=target, coordinate_system=cs_child)
+
+        with u.SI_unit_system:
+            params = SimulationParams()
+
+        processed = set_up_params_for_uploading(
+            root_asset=mock_geometry,
+            length_unit=1 * u.m,
+            params=params,
+            use_beta_mesher=False,
+            use_geometry_AI=False,
+        )
+
+        status = processed.private_attribute_asset_cache.coordinate_system_status
+        assert isinstance(status, CoordinateSystemStatus)
+        assert status.coordinate_systems
+        assert status.parents
+        assert status.assignments
+
+    serialized = processed.model_dump(mode="json")
+    json_path = tmp_path / "simulation.json"
+    json_path.write_text(__import__("json").dumps(serialized))
+
+    from flow360.component.geometry import Geometry, GeometryMeta
+    from flow360.component.resource_base import local_metadata_builder
+
+    uploaded_geometry = Geometry._from_local_storage(
+        asset_id="geo-aaa-aaaa-aaaaaaaa",
+        local_storage_path=tmp_path,
+        meta_data=GeometryMeta(
+            **local_metadata_builder(
+                id="geo-aaa-aaaa-aaaaaaaa",
+                name="Geometry",
+                cloud_path_prefix="--",
+                status="processed",
+            )
+        ),
+    )
+    uploaded_geometry.internal_registry = uploaded_geometry._entity_info.get_registry(
+        uploaded_geometry.internal_registry
+    )
+
+    with create_draft(new_run_from=uploaded_geometry) as restored:
+        restored_target = list(restored.body_groups)[0]
+        restored_assignment = restored.coordinate_systems.get_for_entity(entity=restored_target)
+        assert restored_assignment is not None
+        assert restored_assignment.name == "child"

@@ -9,6 +9,7 @@ from typing import Dict, List, Optional, get_args
 
 from flow360.component.simulation.draft_context.coordinate_system_manager import (
     CoordinateSystemManager,
+    CoordinateSystemStatus,
 )
 from flow360.component.simulation.draft_context.mirror import (
     MirroredGeometryBodyGroup,
@@ -137,6 +138,7 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
         *,
         entity_info: EntityInfoModel,
         mirror_status: Optional[MirrorStatus] = None,
+        coordinate_system_status: Optional[CoordinateSystemStatus] = None,
     ) -> None:
         """
         Data members:
@@ -183,8 +185,9 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
             registry=self._entity_registry, entity_type=GenericVolume
         )
 
-        self._coordinate_system_manager = CoordinateSystemManager(
-            entity_registry=self._entity_registry
+        self._coordinate_system_manager = CoordinateSystemManager._from_status(
+            status=coordinate_system_status,
+            entity_registry=self._entity_registry,
         )
 
     def __enter__(self) -> DraftContext:

@@ -59,8 +59,9 @@ def _build_transformation_matrix(
     return np.hstack([rotation_scale_matrix, final_translation[:, np.newaxis]])
 
 
-def _resolve_transformation_matrix(
+def _resolve_transformation_matrix(  # pylint:disable=too-many-arguments
     *,
+    # pylint: disable=no-member
     origin: LengthType.Point,
     axis_of_rotation: Axis,
     angle_of_rotation: AngleType,

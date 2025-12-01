@@ -450,12 +450,20 @@ def set_up_params_for_uploading(
     active_draft = get_active_draft()
     if active_draft is not None:
         with model_attribute_unlock(params.private_attribute_asset_cache, "mirror_status"):
+            # pylint: disable=protected-access
             params.private_attribute_asset_cache.mirror_status = build_mirror_status(
                 body_group_id_to_mirror_id=active_draft._body_group_id_to_mirror_id,
                 entity_info=active_draft._entity_info,
                 body_groups=active_draft._body_groups.entities,
                 surfaces=active_draft._surfaces.entities,
                 mirror_planes=active_draft._mirror_planes,
+            )
+        with model_attribute_unlock(
+            params.private_attribute_asset_cache, "coordinate_system_status"
+        ):
+            # pylint: disable=protected-access
+            params.private_attribute_asset_cache.coordinate_system_status = (
+                active_draft.coordinate_systems._to_status()
             )
 
     # Replace the ghost surfaces in the SimulationParams by the real ghost ones from asset metadata.
