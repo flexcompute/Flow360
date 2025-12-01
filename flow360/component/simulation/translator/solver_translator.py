@@ -84,7 +84,7 @@ from flow360.component.simulation.outputs.outputs import (
     TimeAverageSurfaceProbeOutput,
     TimeAverageVolumeOutput,
     UserDefinedField,
-    VolumeOutput,
+    VolumeOutput, RenderOutputGroup,
 )
 from flow360.component.simulation.primitives import (
     BOUNDARY_FULL_NAME_WHEN_NOT_FOUND,
@@ -115,7 +115,6 @@ from flow360.component.simulation.translator.utils import (
     replace_dict_key,
     translate_setting_and_apply_to_all_entities,
     translate_value_or_expression_object,
-    update_dict_recursively,
 )
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.user_code.core.types import (
@@ -598,56 +597,51 @@ def translate_render_output(
             exclude_none=True, exclude_unset=True, by_alias=True
         )
 
-        materials = {}
-
-        for name, material in render.materials.items():
-            material = material.model_dump(exclude_none=True, exclude_unset=True, by_alias=True) 
-            materials[name] = material
-
+        for render_group in render.groups:
+            material = render_group.material.model_dump(exclude_none=True, exclude_unset=True, by_alias=True) 
             if "outputField" in material and material["outputField"] not in render.output_fields:
-                print(f"Adding material field: {material['outputField']}")
-                render.output_fields.append(material["outputField"])            
-
-        print(f"Render output fields are: {render.output_fields}")
-
-        print(f"Materials are: {materials}")
+                render.output_fields.append(material["outputField"])
 
         translated_output = {
+            "name": render.name,
             "animationFrequency": render.frequency,
             "animationFrequencyOffset": render.frequency_offset,
-            "surfaces": translate_setting_and_apply_to_all_entities(
-                [render],
-                RenderOutput,
-                translation_func=translate_output_fields,
-                to_list=False,
-                entity_type_to_include=Surface,
-                entity_list_attribute_name="surfaces"
-            ),
-            "slices": translate_setting_and_apply_to_all_entities(
-                [render],
-                RenderOutput,
-                translation_func=translate_output_fields,
-                to_list=False,
-                entity_injection_func=slice_injection_function,
-                entity_type_to_include=Slice,
-                entity_list_attribute_name="slices"
-            ),
-            "isoSurfaces": translate_setting_and_apply_to_all_entities(
-                [render],
-                RenderOutput,
-                translation_func=translate_output_fields,
-                to_list=False,
-                entity_injection_func=isosurface_injection_function,
-                entity_type_to_include=Isosurface,
-                entity_list_attribute_name="isosurfaces",
-                entity_injection_input_params=input_params,
-            ),
+            "groups": [],
             "camera": remove_units_in_dict(camera),
             "lighting": remove_units_in_dict(lighting),
             "environment": remove_units_in_dict(environment),
-            "materials": remove_units_in_dict(materials),
+            "outputFields": translate_output_fields(render)["outputFields"]
         }
 
+        for render_group in render.groups:
+            material = render_group.material.model_dump(exclude_none=True, exclude_unset=True, by_alias=True)
+            translated_output["groups"].append({
+                "surfaces": translate_setting_and_apply_to_all_entities(
+                    [render_group],
+                    RenderOutputGroup,
+                    to_list=False,
+                    entity_type_to_include=Surface,
+                    entity_list_attribute_name="surfaces"
+                ),
+                "slices": translate_setting_and_apply_to_all_entities(
+                    [render_group],
+                    RenderOutputGroup,
+                    to_list=False,
+                    entity_injection_func=slice_injection_function,
+                    entity_type_to_include=Slice,
+                    entity_list_attribute_name="slices"
+                ),
+                "isoSurfaces": translate_setting_and_apply_to_all_entities(
+                    [render_group],
+                    RenderOutputGroup,
+                    to_list=False,
+                    entity_injection_func=isosurface_injection_function,
+                    entity_type_to_include=Isosurface,
+                    entity_list_attribute_name="isosurfaces",
+                    entity_injection_input_params=input_params,
+                ),
+                "material": remove_units_in_dict(material)
+            })
         if render.transform:
             transform = render.transform.model_dump(
                 exclude_none=True, exclude_unset=True, by_alias=True
