@@ -669,7 +669,6 @@ def translate_force_distribution_output(output_params: list):
 def translate_time_averaged_force_distribution_output(output_params: list):
     """Translate time-averaged force distribution output settings."""
     time_averaged_force_distribution_output = {}
-    min_start_step = None
     for output in output_params:
         if isinstance(output, TimeAverageForceDistributionOutput):
             time_averaged_force_distribution_output[output.name] = {
@@ -677,11 +676,6 @@ def translate_time_averaged_force_distribution_output(output_params: list):
                 "type": output.distribution_type,
                 "startAverageIntegrationStep": output.start_step if output.start_step != -1 else 0,
             }
-            if output.start_step != -1:
-                if min_start_step is None or output.start_step < min_start_step:
-                    min_start_step = output.start_step
-    if min_start_step is not None:
-        time_averaged_force_distribution_output["minStartAverageIntegrationStep"] = min_start_step
     return time_averaged_force_distribution_output
 
 

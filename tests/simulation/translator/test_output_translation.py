@@ -1243,7 +1243,6 @@ def test_time_averaged_force_distribution_output():
                 "type": "cumulative",
                 "startAverageIntegrationStep": 5,
             },
-            "minStartAverageIntegrationStep": 5,
         },
     )
 
