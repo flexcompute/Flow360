@@ -459,7 +459,7 @@ def test_duplicate_force_distribution_names():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "`outputs`[1] ForceDistributionOutput: Output name test has already been used for a "
+            "`outputs`[1] TimeAverageForceDistributionOutput: Output name test has already been used for a "
             "`ForceDistributionOutput`. Output names must be unique among all force distribution outputs."
         ),
     ):
@@ -470,7 +470,7 @@ def test_duplicate_force_distribution_names():
                         name="test",
                         distribution_direction=[1.0, 0.0, 0.0],
                     ),
-                    ForceDistributionOutput(
+                    TimeAverageForceDistributionOutput(
                         name="test",
                         distribution_direction=[0.0, 1.0, 0.0],
                     ),

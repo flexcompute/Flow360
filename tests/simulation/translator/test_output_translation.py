@@ -1223,7 +1223,6 @@ def test_time_averaged_force_distribution_output():
             TimeAverageForceDistributionOutput(
                 name="test_name",
                 distribution_direction=[0.1, 0.9, 0.0],
-                start_step=10,
             ),
             TimeAverageForceDistributionOutput(
                 name="test_name2",
@@ -1236,42 +1235,12 @@ def test_time_averaged_force_distribution_output():
             "test_name": {
                 "direction": [0.11043152607484655, 0.9938837346736189, 0.0],
                 "type": "incremental",
-                "startAverageIntegrationStep": 10,
+                "startAverageIntegrationStep": -1,
             },
             "test_name2": {
                 "direction": [1.0, 0.0, 0.0],
                 "type": "cumulative",
                 "startAverageIntegrationStep": 5,
-            },
-        },
-    )
-
-    with SI_unit_system:
-        param = SimulationParams(
-            outputs=param_with_ref[0], time_stepping=Unsteady(steps=1, step_size=0.1)
-        )
-    param = param._preprocess(mesh_unit=1.0 * u.m, exclude=["models"])
-
-    translated = {}
-    translated = translate_output(param, translated)
-    assert compare_values(param_with_ref[1], translated["timeAveragedForceDistributionOutput"])
-
-
-def test_time_averaged_force_distribution_output_default_start_step():
-    """Test that start_step=-1 (default) is converted to 0."""
-    param_with_ref = (
-        [
-            TimeAverageForceDistributionOutput(
-                name="test_name",
-                distribution_direction=[0.1, 0.9, 0.0],
-                start_step=-1,  # Default value
-            ),
-        ],
-        {
-            "test_name": {
-                "direction": [0.11043152607484655, 0.9938837346736189, 0.0],
-                "type": "incremental",
-                "startAverageIntegrationStep": 0,
             },
         },
     )

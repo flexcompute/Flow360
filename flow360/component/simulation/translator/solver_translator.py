@@ -656,9 +656,7 @@ def translate_force_distribution_output(output_params: list):
     """Translate force distribution output settings."""
     force_distribution_output = {}
     for output in output_params:
-        if isinstance(output, ForceDistributionOutput) and not isinstance(
-            output, TimeAverageForceDistributionOutput
-        ):
+        if is_exact_instance(output, ForceDistributionOutput):
             force_distribution_output[output.name] = {
                 "direction": list(output.distribution_direction),
                 "type": output.distribution_type,
@@ -674,7 +672,7 @@ def translate_time_averaged_force_distribution_output(output_params: list):
             time_averaged_force_distribution_output[output.name] = {
                 "direction": list(output.distribution_direction),
                 "type": output.distribution_type,
-                "startAverageIntegrationStep": output.start_step if output.start_step != -1 else 0,
+                "startAverageIntegrationStep": output.start_step,
             }
     return time_averaged_force_distribution_output
 
