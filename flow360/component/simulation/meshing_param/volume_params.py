@@ -36,6 +36,16 @@ from flow360.component.simulation.validation.validation_utils import (
 from flow360.exceptions import Flow360ValueError
 
 
+class classproperty:  # pylint: disable=invalid-name,too-few-public-methods
+    """Descriptor to create class-level properties that can be accessed from the class itself."""
+
+    def __init__(self, func):
+        self.func = func
+
+    def __get__(self, obj, owner):
+        return self.func(owner)
+
+
 class UniformRefinement(Flow360BaseModel):
     """
     Uniform spacing refinement inside specified region of mesh.
@@ -614,6 +624,28 @@ class WheelBelts(CentralBelt):
                 f"Front wheel belt maximum x ({self.front_wheel_belt_x_range[1]}) "
                 f"must be less than rear wheel belt minimum x ({self.rear_wheel_belt_x_range[0]})."
             )
+
+        # Central belt is centered at y=0 and extends from -width/2 to +width/2
+        # It must fit within the inner edges of the wheel belts
+        front_wheel_inner_edge = self.front_wheel_belt_y_range[0]
+        rear_wheel_inner_edge = self.rear_wheel_belt_y_range[0]
+
+        # Validate central belt width against front wheel belt inner edge
+        if self.central_belt_width > 2 * front_wheel_inner_edge:
+            raise ValueError(
+                f"Central belt width ({self.central_belt_width}) "
+                f"must be less than or equal to twice the front wheel belt inner edge "
+                f"(2 × {front_wheel_inner_edge} = {2 * front_wheel_inner_edge})."
+            )
+
+        # Validate central belt width against rear wheel belt inner edge
+        if self.central_belt_width > 2 * rear_wheel_inner_edge:
+            raise ValueError(
+                f"Central belt width ({self.central_belt_width}) "
+                f"must be less than or equal to twice the rear wheel belt inner edge "
+                f"(2 × {rear_wheel_inner_edge} = {2 * rear_wheel_inner_edge})."
+            )
+
         return self
 
 
@@ -637,6 +669,8 @@ class WindTunnelFarfield(_FarfieldBase):
             )
         )
     """
+
+    model_config = pd.ConfigDict(ignored_types=(classproperty,))
 
     type: Literal["WindTunnelFarfield"] = pd.Field("WindTunnelFarfield", frozen=True)
     name: str = pd.Field("Wind Tunnel Farfield", description="Name of the wind tunnel farfield.")
@@ -679,127 +713,60 @@ class WindTunnelFarfield(_FarfieldBase):
             )
         return GhostSurface(name="symmetric")
 
-    @staticmethod
-    def _left():
+    # pylint: disable=no-self-argument
+    @classproperty
+    def left(cls):
+        """Return the ghost surface representing the tunnel's left wall."""
         return WindTunnelGhostSurface(name="windTunnelLeft")
 
-    @property
-    def left(self) -> WindTunnelGhostSurface:
-        """Returns the left boundary surface."""
-        if self.domain_type == "half_body_positive_y":
-            raise Flow360ValueError(
-                "Left boundary for wind tunnel farfield is not applicable when domain_type "
-                "is `half_body_positive_y`."
-            )
-        return WindTunnelFarfield._left()
-
-    @staticmethod
-    def _right():
+    @classproperty
+    def right(cls):
+        """Return the ghost surface representing the tunnel's right wall."""
         return WindTunnelGhostSurface(name="windTunnelRight")
 
-    @property
-    def right(self) -> WindTunnelGhostSurface:
-        """Returns the right boundary surface."""
-        if self.domain_type == "half_body_negative_y":
-            raise Flow360ValueError(
-                "Right boundary for wind tunnel farfield is not applicable when domain_type "
-                "is `half_body_negative_y`."
-            )
-        return WindTunnelFarfield._right()
-
-    @staticmethod
-    def _inlet():
+    @classproperty
+    def inlet(cls):
+        """Return the ghost surface corresponding to the wind tunnel inlet."""
         return WindTunnelGhostSurface(name="windTunnelInlet")
 
-    @property
-    def inlet(self) -> WindTunnelGhostSurface:
-        """Returns the inlet boundary surface."""
-        return WindTunnelFarfield._inlet()
-
-    @staticmethod
-    def _outlet():
+    @classproperty
+    def outlet(cls):
+        """Return the ghost surface corresponding to the wind tunnel outlet."""
         return WindTunnelGhostSurface(name="windTunnelOutlet")
 
-    @property
-    def outlet(self) -> WindTunnelGhostSurface:
-        """Returns the outlet boundary surface."""
-        return WindTunnelFarfield._outlet()
-
-    @staticmethod
-    def _ceiling():
+    @classproperty
+    def ceiling(cls):
+        """Return the ghost surface for the tunnel ceiling."""
         return WindTunnelGhostSurface(name="windTunnelCeiling")
 
-    @property
-    def ceiling(self) -> WindTunnelGhostSurface:
-        """Returns the ceiling boundary surface."""
-        return WindTunnelFarfield._ceiling()
-
-    @staticmethod
-    def _floor():
+    @classproperty
+    def floor(cls):
+        """Return the ghost surface for the tunnel floor."""
         return WindTunnelGhostSurface(name="windTunnelFloor")
 
-    @property
-    def floor(self) -> WindTunnelGhostSurface:
-        """Returns the floor boundary surface, excluding friction, central, and wheel belts if applicable."""
-        return WindTunnelFarfield._floor()
-
-    @staticmethod
-    def _friction_patch():
+    @classproperty
+    def friction_patch(cls):
+        """Return the ghost surface for the floor friction patch used by static floors."""
         return WindTunnelGhostSurface(name="windTunnelFrictionPatch", used_by=["StaticFloor"])
 
-    @property
-    def friction_patch(self) -> WindTunnelGhostSurface:
-        """Returns the friction patch for StaticFloor floor type."""
-        if not isinstance(self.floor_type, StaticFloor):
-            raise Flow360ValueError(
-                "Friction patch for wind tunnel farfield "
-                "is only supported if floor type is `StaticFloor`."
-            )
-        return WindTunnelFarfield._friction_patch()
-
-    @staticmethod
-    def _central_belt():
+    @classproperty
+    def central_belt(cls):
+        """Return the ghost surface used by central and wheel belt floor types."""
         return WindTunnelGhostSurface(
             name="windTunnelCentralBelt", used_by=["CentralBelt", "WheelBelts"]
         )
 
-    @property
-    def central_belt(self) -> WindTunnelGhostSurface:
-        """Returns the central belt for CentralBelt or WheelBelts floor types."""
-        if not isinstance(self.floor_type, CentralBelt):
-            raise Flow360ValueError(
-                "Central belt for wind tunnel farfield "
-                "is only supported if floor type is `CentralBelt` or `WheelBelts`."
-            )
-        return WindTunnelFarfield._central_belt()
-
-    @staticmethod
-    def _front_wheel_belts():
+    @classproperty
+    def front_wheel_belts(cls):
+        """Return the ghost surface for the front wheel belt region."""
         return WindTunnelGhostSurface(name="windTunnelFrontWheelBelt", used_by=["WheelBelts"])
 
-    @property
-    def front_wheel_belts(self) -> WindTunnelGhostSurface:
-        """Returns the front wheel belts for WheelBelts floor type."""
-        if not isinstance(self.floor_type, WheelBelts):
-            raise Flow360ValueError(
-                "Front wheel belts for wind tunnel farfield "
-                "is only supported if floor type is `WheelBelts`."
-            )
-        return WindTunnelFarfield._front_wheel_belts()
-
-    @staticmethod
-    def _rear_wheel_belts():
+    @classproperty
+    def rear_wheel_belts(cls):
+        """Return the ghost surface for the rear wheel belt region."""
         return WindTunnelGhostSurface(name="windTunnelRearWheelBelt", used_by=["WheelBelts"])
 
-    @property
-    def rear_wheel_belts(self) -> WindTunnelGhostSurface:
-        """Returns the rear wheel belts for WheelBelts floor type."""
-        if not isinstance(self.floor_type, WheelBelts):
-            raise Flow360ValueError(
-                "Rear wheel belts for wind tunnel farfield "
-                "is only supported if floor type is `WheelBelts`."
-            )
-        return WindTunnelFarfield._rear_wheel_belts()
+    # pylint: enable=no-self-argument
 
     @staticmethod
     def _get_valid_ghost_surfaces(
@@ -810,20 +777,20 @@ class WindTunnelFarfield(_FarfieldBase):
         or ``all``, and the domain type as a string.
         """
         common_ghost_surfaces = [
-            WindTunnelFarfield._inlet(),
-            WindTunnelFarfield._outlet(),
-            WindTunnelFarfield._ceiling(),
-            WindTunnelFarfield._floor(),
+            WindTunnelFarfield.inlet,
+            WindTunnelFarfield.outlet,
+            WindTunnelFarfield.ceiling,
+            WindTunnelFarfield.floor,
         ]
         if domain_string != "half_body_negative_y":
-            common_ghost_surfaces += [WindTunnelFarfield._right()]
+            common_ghost_surfaces += [WindTunnelFarfield.right]
         if domain_string != "half_body_positive_y":
-            common_ghost_surfaces += [WindTunnelFarfield._left()]
+            common_ghost_surfaces += [WindTunnelFarfield.left]
         for ghost_surface_type in [
-            WindTunnelFarfield._friction_patch(),
-            WindTunnelFarfield._central_belt(),
-            WindTunnelFarfield._front_wheel_belts(),
-            WindTunnelFarfield._rear_wheel_belts(),
+            WindTunnelFarfield.friction_patch,
+            WindTunnelFarfield.central_belt,
+            WindTunnelFarfield.front_wheel_belts,
+            WindTunnelFarfield.rear_wheel_belts,
         ]:
             if floor_string == "all" or floor_string in ghost_surface_type.used_by:
                 common_ghost_surfaces += [ghost_surface_type]

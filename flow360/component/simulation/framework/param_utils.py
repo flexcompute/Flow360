@@ -54,8 +54,9 @@ class AssetCache(Flow360BaseModel):
     variable_context: Optional[VariableContextList] = pd.Field(
         None, description="List of user variables that are used in all the `Expression` instances."
     )
-    selectors: Optional[List[dict]] = pd.Field(
-        None, description="Collected entity selectors for token reference."
+    used_selectors: Optional[List[dict]] = pd.Field(
+        None,
+        description="Collected entity selectors for token reference.",
     )
     mirror_status: Optional[MirrorStatus] = pd.Field(
         None, description="Status of mirroring operations that are used in the simulation."

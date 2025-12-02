@@ -1160,12 +1160,12 @@ def test_wind_tunnel_invalid_dimensions():
         ):
             # wheel belt y outer too large
             _ = WindTunnelFarfield(
-                width=538,  # here
+                width=538,
                 floor_type=WheelBelts(
                     central_belt_x_range=(-200, 256),
                     central_belt_width=120,
                     front_wheel_belt_x_range=(-30, 50),
-                    front_wheel_belt_y_range=(70, 270),  # here
+                    front_wheel_belt_y_range=(70, 270),
                     rear_wheel_belt_x_range=(260, 380),
                     rear_wheel_belt_y_range=(70, 120),
                 ),
@@ -1176,10 +1176,75 @@ def test_wind_tunnel_invalid_dimensions():
             width=1024,
             floor_type=WheelBelts(
                 central_belt_x_range=(-100, 105),
-                central_belt_width=900.1,
+                central_belt_width=90.1,
                 front_wheel_belt_x_range=(-30, 50),
                 front_wheel_belt_y_range=(70, 123),
                 rear_wheel_belt_x_range=(260, 380),
                 rear_wheel_belt_y_range=(70, 120),
             ),
+        )
+
+
+def test_central_belt_width_validation():
+    with CGS_unit_system:
+        # Test central belt width larger than 2x front wheel belt inner edge
+        with pytest.raises(
+            pd.ValidationError,
+            match=r"must be less than or equal to twice the front wheel belt inner edge",
+        ):
+            _ = WheelBelts(
+                central_belt_x_range=(-200, 256),
+                central_belt_width=150,  # Width is 150
+                front_wheel_belt_x_range=(-30, 50),
+                front_wheel_belt_y_range=(70, 120),  # Inner edge is 70, 2×70 = 140 < 150
+                rear_wheel_belt_x_range=(260, 380),
+                rear_wheel_belt_y_range=(80, 170),  # Inner edge is 80, 2×80 = 160 > 150
+            )
+
+        # Test central belt width larger than 2x rear wheel belt inner edge
+        with pytest.raises(
+            pd.ValidationError,
+            match=r"must be less than or equal to twice the rear wheel belt inner edge",
+        ):
+            _ = WheelBelts(
+                central_belt_x_range=(-200, 256),
+                central_belt_width=150,  # Width is 150
+                front_wheel_belt_x_range=(-30, 50),
+                front_wheel_belt_y_range=(80, 170),  # Inner edge is 80, 2×80 = 160 > 150
+                rear_wheel_belt_x_range=(260, 380),
+                rear_wheel_belt_y_range=(70, 200),  # Inner edge is 70, 2×70 = 140 < 150
+            )
+
+        # Test central belt width larger than both inner edges
+        with pytest.raises(
+            pd.ValidationError,
+            match=r"must be less than or equal to twice the front wheel belt inner edge",
+        ):
+            _ = WheelBelts(
+                central_belt_x_range=(-200, 256),
+                central_belt_width=200,  # Width is 200
+                front_wheel_belt_x_range=(-30, 50),
+                front_wheel_belt_y_range=(90, 120),  # Inner edge is 90, 2×90 = 180 < 200
+                rear_wheel_belt_x_range=(260, 380),
+                rear_wheel_belt_y_range=(95, 140),  # Inner edge is 95, 2×95 = 190 < 200
+            )
+
+        # Legal: central belt width equal to 2x inner edges
+        _ = WheelBelts(
+            central_belt_x_range=(-200, 256),
+            central_belt_width=140,  # Width is 140
+            front_wheel_belt_x_range=(-30, 50),
+            front_wheel_belt_y_range=(70, 170),  # Inner edge is 70, 2×70 = 140
+            rear_wheel_belt_x_range=(260, 380),
+            rear_wheel_belt_y_range=(70, 170),  # Inner edge is 70, 2×70 = 140
+        )
+
+        # Legal: central belt width less than 2x inner edges
+        _ = WheelBelts(
+            central_belt_x_range=(-200, 256),
+            central_belt_width=100,  # Width is 100
+            front_wheel_belt_x_range=(-30, 50),
+            front_wheel_belt_y_range=(70, 170),  # Inner edge is 70, 2×70 = 140 > 100
+            rear_wheel_belt_x_range=(260, 380),
+            rear_wheel_belt_y_range=(80, 190),  # Inner edge is 80, 2×80 = 160 > 100
         )
