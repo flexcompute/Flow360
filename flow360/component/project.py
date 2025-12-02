@@ -34,6 +34,9 @@ from flow360.component.project_utils import (
 )
 from flow360.component.resource_base import Flow360Resource
 from flow360.component.simulation.draft_context.context import DraftContext
+from flow360.component.simulation.draft_context.coordinate_system_manager import (
+    CoordinateSystemStatus,
+)
 from flow360.component.simulation.draft_context.mirror import MirrorStatus
 from flow360.component.simulation.entity_info import GeometryEntityInfo
 from flow360.component.simulation.folder import Folder
@@ -156,6 +159,29 @@ def create_draft(
             ) from exc
         return mirror_status
 
+    def _load_coordinate_system_status_from_asset(
+        asset: AssetBase,
+    ) -> Optional[CoordinateSystemStatus]:
+        """Get the coordinate system status from the asset."""
+
+        # pylint: disable=protected-access
+        if hasattr(asset, "_simulation_dict_cache_for_local_mode"):
+            simulation_dict = asset._simulation_dict_cache_for_local_mode
+        else:
+            simulation_dict = AssetBase._get_simulation_json(asset=asset, clean_front_end_keys=True)
+
+        status_dict = simulation_dict.get("private_attribute_asset_cache", {}).get(
+            "coordinate_system_status", None
+        )
+        if status_dict is None:
+            return None
+        try:
+            return CoordinateSystemStatus.model_validate(status_dict)
+        except ValidationError as exc:
+            raise Flow360RuntimeError(
+                f"Failed to parse stored coordinate system status for {asset.__class__.__name__}. Error: {exc}",
+            ) from exc
+
     # endregion ------------------------------------------------------------------------------------
 
     if not isinstance(new_run_from, AssetBase):
@@ -166,8 +192,13 @@ def create_draft(
     _inform_grouping_selections(entity_info)
 
     mirror_status = _load_mirror_status_from_asset(new_run_from)
+    coordinate_system_status = _load_coordinate_system_status_from_asset(new_run_from)
 
-    return DraftContext(entity_info=entity_info, mirror_status=mirror_status)
+    return DraftContext(
+        entity_info=entity_info,
+        mirror_status=mirror_status,
+        coordinate_system_status=coordinate_system_status,
+    )
 
 
 class ProjectMeta(pd.BaseModel, extra="allow"):

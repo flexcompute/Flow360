@@ -4,6 +4,9 @@ from typing import Annotated, List, Optional, Union
 
 import pydantic as pd
 
+from flow360.component.simulation.draft_context.coordinate_system_manager import (
+    CoordinateSystemStatus,
+)
 from flow360.component.simulation.draft_context.mirror import MirrorStatus
 from flow360.component.simulation.entity_info import (
     GeometryEntityInfo,
@@ -56,6 +59,9 @@ class AssetCache(Flow360BaseModel):
     )
     mirror_status: Optional[MirrorStatus] = pd.Field(
         None, description="Status of mirroring operations that are used in the simulation."
+    )
+    coordinate_system_status: Optional[CoordinateSystemStatus] = pd.Field(
+        None, description="Status of coordinate systems used in the simulation."
     )
 
     @property

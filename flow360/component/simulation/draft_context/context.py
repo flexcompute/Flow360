@@ -7,6 +7,10 @@ from contextlib import AbstractContextManager
 from contextvars import ContextVar, Token
 from typing import Dict, List, Optional, get_args
 
+from flow360.component.simulation.draft_context.coordinate_system_manager import (
+    CoordinateSystemManager,
+    CoordinateSystemStatus,
+)
 from flow360.component.simulation.draft_context.mirror import (
     MirroredGeometryBodyGroup,
     MirroredSurface,
@@ -126,6 +130,7 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
         "_surfaces",
         "_edges",
         "_volumes",
+        "_coordinate_system_manager",
     )
 
     def __init__(
@@ -133,6 +138,7 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
         *,
         entity_info: EntityInfoModel,
         mirror_status: Optional[MirrorStatus] = None,
+        coordinate_system_status: Optional[CoordinateSystemStatus] = None,
     ) -> None:
         """
         Data members:
@@ -177,6 +183,11 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
         self._edges = _SingleTypeEntityRegistry(registry=self._entity_registry, entity_type=Edge)
         self._volumes = _SingleTypeEntityRegistry(
             registry=self._entity_registry, entity_type=GenericVolume
+        )
+
+        self._coordinate_system_manager = CoordinateSystemManager._from_status(
+            status=coordinate_system_status,
+            entity_registry=self._entity_registry,
         )
 
     def __enter__(self) -> DraftContext:
@@ -237,6 +248,11 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
         """
         # If volume zone as root asset.
         return self._volumes
+
+    @property
+    def coordinate_systems(self) -> CoordinateSystemManager:
+        """Coordinate system manager."""
+        return self._coordinate_system_manager
 
     # Non persistent entities
     @property
