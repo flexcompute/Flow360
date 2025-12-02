@@ -49,22 +49,22 @@ def create_windtunnel_params():
                 ),
                 fl.SlipWall(
                     entities=[
-                        wind_tunnel.left(),
-                        wind_tunnel.right(),
-                        wind_tunnel.ceiling(),
+                        wind_tunnel.left,
+                        wind_tunnel.right,
+                        wind_tunnel.ceiling,
                     ]
                 ),
-                fl.Wall(entities=[wind_tunnel.floor()], use_wall_function=False),
+                fl.Wall(entities=[wind_tunnel.floor], use_wall_function=False),
                 fl.Wall(
                     entities=[
-                        wind_tunnel.central_belt(),
-                        wind_tunnel.front_wheel_belts(),
-                        wind_tunnel.rear_wheel_belts(),
+                        wind_tunnel.central_belt,
+                        wind_tunnel.front_wheel_belts,
+                        wind_tunnel.rear_wheel_belts,
                     ],
                     velocity=[30 * fl.u.m / fl.u.s, 0 * fl.u.m / fl.u.s, 0 * fl.u.m / fl.u.s],
                     use_wall_function=True,
                 ),
-                fl.Freestream(entities=[wind_tunnel.inlet(), wind_tunnel.outlet()]),
+                fl.Freestream(entities=[wind_tunnel.inlet, wind_tunnel.outlet]),
             ],
             time_stepping=fl.Steady(
                 CFL=fl.AdaptiveCFL(max=1000),
@@ -76,10 +76,10 @@ def create_windtunnel_params():
                 ),
                 fl.SurfaceOutput(
                     entities=[
-                        wind_tunnel.floor(),
-                        wind_tunnel.central_belt(),
-                        wind_tunnel.front_wheel_belts(),
-                        wind_tunnel.rear_wheel_belts(),
+                        wind_tunnel.floor,
+                        wind_tunnel.central_belt,
+                        wind_tunnel.front_wheel_belts,
+                        wind_tunnel.rear_wheel_belts,
                     ],
                     output_format="paraview",
                     output_fields=["primitiveVars", "Cp", "Cf", "yPlus"],
