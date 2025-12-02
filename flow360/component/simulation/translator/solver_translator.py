@@ -1487,10 +1487,6 @@ def calculate_monitor_semaphore_hash(params: SimulationParams):
     return hasher.hexdigest()
 
 
-# pylint: disable=too-many-statements
-# pylint: disable=too-many-branches
-# pylint: disable=too-many-locals
-@preprocess_input
 def translate_nasa_polynomial_coefficients(
     nasa_coeffs: NASAPolynomialCoefficients,
     reference_temperature,
