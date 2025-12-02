@@ -1876,10 +1876,6 @@ def get_stop_criterion_settings(criterion: StoppingCriterion, params: Simulation
     }
 
 
-# pylint: disable=too-many-statements
-# pylint: disable=too-many-branches
-# pylint: disable=too-many-locals
-@preprocess_input
 def translate_nasa_polynomial_coefficients(
     nasa_coeffs: NASAPolynomialCoefficients,
     reference_temperature,

@@ -60,6 +60,8 @@ from flow360.component.simulation.meshing_param.volume_params import (
 )
 from flow360.component.simulation.models.material import (
     Air,
+    NASAPolynomialCoefficientSet,
+    NASAPolynomialCoefficients,
     SolidMaterial,
     Sutherland,
     Water,
