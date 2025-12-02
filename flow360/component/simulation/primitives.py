@@ -675,6 +675,10 @@ class WindTunnelGhostSurface(GhostSurface):
         Literal["StaticFloor", "FullyMovingFloor", "CentralBelt", "WheelBelts", "all"]
     ] = pd.Field(default_factory=lambda: ["all"], frozen=True)
 
+    def exists(self, validation_info) -> bool:
+        """Currently, .exists() is only called on automated farfield"""
+        raise ValueError(".exists should not be called on wind tunnel farfield")
+
 
 # pylint: disable=missing-class-docstring
 @final
