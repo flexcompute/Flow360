@@ -26,6 +26,7 @@ from flow360.log import log
 from flow360.version import __version__
 
 DEFAULT_PLANAR_FACE_TOLERANCE = 1e-6
+DEFAULT_SLIDING_INTERFACE_TOLERANCE = 1e-2
 
 
 def _to_24_11_1(params_as_dict):

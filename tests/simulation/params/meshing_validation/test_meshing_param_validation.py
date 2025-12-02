@@ -819,6 +819,154 @@ def test_enclosed_entities_none_does_not_raise():
         )
 
 
+def test_stationary_enclosed_entities_only_in_beta_mesher():
+    """Test that stationary_enclosed_entities is only supported with beta mesher."""
+    # raises when beta mesher is off
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"`stationary_enclosed_entities` in `RotationVolume` is only supported with the beta mesher.",
+    ):
+        with ValidationContext(VOLUME_MESH, non_beta_mesher_context):
+            with CGS_unit_system:
+                cylinder = Cylinder(
+                    name="cylinder",
+                    outer_radius=1,
+                    height=12,
+                    axis=(0, 1, 0),
+                    center=(0, 5, 0),
+                )
+                surface1 = Surface(name="hub")
+                _ = RotationVolume(
+                    entities=[cylinder],
+                    spacing_axial=20,
+                    spacing_radial=0.2,
+                    spacing_circumferential=20,
+                    enclosed_entities=[surface1],
+                    stationary_enclosed_entities=[surface1],
+                )
+
+    # does not raise with beta mesher on
+    with ValidationContext(VOLUME_MESH, beta_mesher_context):
+        with CGS_unit_system:
+            cylinder = Cylinder(
+                name="cylinder",
+                outer_radius=1,
+                height=12,
+                axis=(0, 1, 0),
+                center=(0, 5, 0),
+            )
+            surface1 = Surface(name="hub")
+            _ = RotationVolume(
+                entities=[cylinder],
+                spacing_axial=20,
+                spacing_radial=0.2,
+                spacing_circumferential=20,
+                enclosed_entities=[surface1],
+                stationary_enclosed_entities=[surface1],
+            )
+
+
+def test_stationary_enclosed_entities_requires_enclosed_entities():
+    """Test that stationary_enclosed_entities cannot be specified when enclosed_entities is None."""
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"`stationary_enclosed_entities` cannot be specified when `enclosed_entities` is None.",
+    ):
+        with ValidationContext(VOLUME_MESH, beta_mesher_context):
+            with CGS_unit_system:
+                cylinder = Cylinder(
+                    name="cylinder",
+                    outer_radius=1,
+                    height=12,
+                    axis=(0, 1, 0),
+                    center=(0, 5, 0),
+                )
+                surface1 = Surface(name="hub")
+                _ = RotationVolume(
+                    entities=[cylinder],
+                    spacing_axial=20,
+                    spacing_radial=0.2,
+                    spacing_circumferential=20,
+                    enclosed_entities=None,
+                    stationary_enclosed_entities=[surface1],
+                )
+
+
+def test_stationary_enclosed_entities_must_be_subset():
+    """Test that stationary_enclosed_entities must be a subset of enclosed_entities."""
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"All entities in `stationary_enclosed_entities` must be present in `enclosed_entities`.",
+    ):
+        with ValidationContext(VOLUME_MESH, beta_mesher_context):
+            with CGS_unit_system:
+                cylinder = Cylinder(
+                    name="cylinder",
+                    outer_radius=1,
+                    height=12,
+                    axis=(0, 1, 0),
+                    center=(0, 5, 0),
+                )
+                surface1 = Surface(name="hub")
+                surface2 = Surface(name="shroud")
+                surface3 = Surface(name="stationary")
+                _ = RotationVolume(
+                    entities=[cylinder],
+                    spacing_axial=20,
+                    spacing_radial=0.2,
+                    spacing_circumferential=20,
+                    enclosed_entities=[surface1, surface2],
+                    stationary_enclosed_entities=[
+                        surface1,
+                        surface3,
+                    ],  # surface3 not in enclosed_entities
+                )
+
+
+def test_stationary_enclosed_entities_valid_subset():
+    """Test that stationary_enclosed_entities works correctly when it's a valid subset."""
+    with ValidationContext(VOLUME_MESH, beta_mesher_context):
+        with CGS_unit_system:
+            cylinder = Cylinder(
+                name="cylinder",
+                outer_radius=1,
+                height=12,
+                axis=(0, 1, 0),
+                center=(0, 5, 0),
+            )
+            surface1 = Surface(name="hub")
+            surface2 = Surface(name="shroud")
+            # Should not raise when stationary_enclosed_entities is a valid subset
+            _ = RotationVolume(
+                entities=[cylinder],
+                spacing_axial=20,
+                spacing_radial=0.2,
+                spacing_circumferential=20,
+                enclosed_entities=[surface1, surface2],
+                stationary_enclosed_entities=[surface1],  # Valid subset
+            )
+
+            # Should also work with all entities being stationary
+            _ = RotationVolume(
+                entities=[cylinder],
+                spacing_axial=20,
+                spacing_radial=0.2,
+                spacing_circumferential=20,
+                enclosed_entities=[surface1, surface2],
+                stationary_enclosed_entities=[surface1, surface2],  # All entities stationary
+            )
+
+            # Should work with empty stationary_enclosed_entities (None)
+            _ = RotationVolume(
+                entities=[cylinder],
+                spacing_axial=20,
+                spacing_radial=0.2,
+                spacing_circumferential=20,
+                enclosed_entities=[surface1, surface2],
+                stationary_enclosed_entities=None,
+            )
+
+
 def test_snappy_quality_metrics_validation():
     message = "Value must be less than or equal to 180 degrees."
     with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):

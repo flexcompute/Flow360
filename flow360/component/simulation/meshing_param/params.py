@@ -6,7 +6,10 @@ import pydantic as pd
 from typing_extensions import Self
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.simulation.framework.updater import DEFAULT_PLANAR_FACE_TOLERANCE
+from flow360.component.simulation.framework.updater import (
+    DEFAULT_PLANAR_FACE_TOLERANCE,
+    DEFAULT_SLIDING_INTERFACE_TOLERANCE,
+)
 from flow360.component.simulation.meshing_param import snappy
 from flow360.component.simulation.meshing_param.edge_params import SurfaceEdgeRefinement
 from flow360.component.simulation.meshing_param.face_params import (
@@ -172,7 +175,10 @@ class MeshingParams(Flow360BaseModel):
             return v
 
         total_farfield = sum(
-            isinstance(volume_zone, (AutomatedFarfield, WindTunnelFarfield, UserDefinedFarfield))
+            isinstance(
+                volume_zone,
+                (AutomatedFarfield, WindTunnelFarfield, UserDefinedFarfield),
+            )
             for volume_zone in v
         )
         if total_farfield == 0:
@@ -330,6 +336,15 @@ class VolumeMeshingParams(Flow360BaseModel):
         " However the impact on regions without close proximity is negligible.",
     )
 
+    sliding_interface_tolerance: pd.NonNegativeFloat = pd.Field(
+        DEFAULT_SLIDING_INTERFACE_TOLERANCE,
+        strict=True,
+        description="Tolerance used for detecting / creating curves in the input surface mesh / geometry lying on"
+        " sliding interfaces. This tolerance is non-dimensional, and represents a distance"
+        " relative to the smallest radius of all sliding interfaces specified in meshing parameters."
+        " This cannot be overridden per sliding interface.",
+    )
+
 
 SurfaceMeshingParams = Annotated[
     Union[snappy.SurfaceMeshingParams], pd.Field(discriminator="type_name")
@@ -357,7 +372,6 @@ class ModularMeshingWorkflow(Flow360BaseModel):
     @pd.field_validator("zones", mode="after")
     @classmethod
     def _check_volume_zones_has_farfield(cls, v):
-
         total_automated_farfield = sum(
             isinstance(volume_zone, AutomatedFarfield) for volume_zone in v
         )
