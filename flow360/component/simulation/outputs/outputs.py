@@ -739,9 +739,9 @@ class ForceOutput(_OutputBase):
             model_ids.append(serialize_model_obj_to_id(model_obj=model))
         return model_ids
 
-    @pd.field_validator("models", mode="before")
+    @contextual_field_validator("models", mode="before")
     @classmethod
-    def _preprocess_models_with_id(cls, value):
+    def _preprocess_models_with_id(cls, value, param_info: ParamsValidationInfo):
         """Deserialize string-format models as model objects."""
 
         def preprocess_single_model(model, validation_info):
@@ -758,9 +758,8 @@ class ForceOutput(_OutputBase):
             return model
 
         processed_models = []
-        validation_info = get_validation_info()
         for model in value:
-            processed_models.append(preprocess_single_model(model, validation_info))
+            processed_models.append(preprocess_single_model(model, param_info))
         return processed_models
 
     @pd.field_validator("models", mode="after")
