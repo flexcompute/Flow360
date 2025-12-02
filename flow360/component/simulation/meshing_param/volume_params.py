@@ -617,7 +617,7 @@ class WheelBelts(CentralBelt):
         return self
 
 
-# pylint: disable=no-member,missing-function-docstring
+# pylint: disable=no-member
 class WindTunnelFarfield(_FarfieldBase):
     """
     Settings for analytic wind tunnel farfield generation.
@@ -681,44 +681,54 @@ class WindTunnelFarfield(_FarfieldBase):
 
     @staticmethod
     def left():
+        """Return the ghost surface representing the tunnel's left wall."""
         return WindTunnelGhostSurface(name="windTunnelLeft")
 
     @staticmethod
     def right():
+        """Return the ghost surface representing the tunnel's right wall."""
         return WindTunnelGhostSurface(name="windTunnelRight")
 
     @staticmethod
     def inlet():
+        """Return the ghost surface corresponding to the wind tunnel inlet."""
         return WindTunnelGhostSurface(name="windTunnelInlet")
 
     @staticmethod
     def outlet():
+        """Return the ghost surface corresponding to the wind tunnel outlet."""
         return WindTunnelGhostSurface(name="windTunnelOutlet")
 
     @staticmethod
     def ceiling():
+        """Return the ghost surface for the tunnel ceiling."""
         return WindTunnelGhostSurface(name="windTunnelCeiling")
 
     @staticmethod
     def floor():
+        """Return the ghost surface for the tunnel floor."""
         return WindTunnelGhostSurface(name="windTunnelFloor")
 
     @staticmethod
     def friction_patch():
+        """Return the ghost surface for the floor friction patch used by static floors."""
         return WindTunnelGhostSurface(name="windTunnelFrictionPatch", used_by=["StaticFloor"])
 
     @staticmethod
     def central_belt():
+        """Return the ghost surface used by central and wheel belt floor types."""
         return WindTunnelGhostSurface(
             name="windTunnelCentralBelt", used_by=["CentralBelt", "WheelBelts"]
         )
 
     @staticmethod
     def front_wheel_belts():
+        """Return the ghost surface for the front wheel belt region."""
         return WindTunnelGhostSurface(name="windTunnelFrontWheelBelt", used_by=["WheelBelts"])
 
     @staticmethod
     def rear_wheel_belts():
+        """Return the ghost surface for the rear wheel belt region."""
         return WindTunnelGhostSurface(name="windTunnelRearWheelBelt", used_by=["WheelBelts"])
 
     @staticmethod
