@@ -8,7 +8,7 @@ from __future__ import annotations
 import copy
 import json
 from enum import Enum
-from typing import Iterable, List, Literal, Optional, Union
+from typing import Iterable, List, Literal, Optional, Type, TypeVar, Union
 
 import pydantic as pd
 import typing_extensions
@@ -40,6 +40,7 @@ from flow360.component.simulation.draft_context.coordinate_system_manager import
 from flow360.component.simulation.draft_context.mirror import MirrorStatus
 from flow360.component.simulation.entity_info import GeometryEntityInfo
 from flow360.component.simulation.folder import Folder
+from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.web.asset_base import AssetBase
@@ -98,6 +99,76 @@ def create_draft(
     """Factory helper used by end users (`with fl.create_draft() as draft`)."""
 
     # region -----------------------------Private implementations Below-----------------------------
+
+    # Status type registry for generic loading
+    _STATUS_TYPE_REGISTRY = { # pylint: disable=invalid-name
+        MirrorStatus: "mirror_status",
+        CoordinateSystemStatus: "coordinate_system_status",
+    }
+
+    T = TypeVar("T", bound=Flow360BaseModel)
+
+    def _load_status_from_asset(
+        asset: AssetBase,
+        status_class: Type[T],
+    ) -> Optional[T]:
+        """
+        Generic status loader from asset cache.
+
+        Retrieves and validates status objects from asset's simulation cache.
+        Supports any status class registered in _STATUS_TYPE_REGISTRY.
+
+        Parameters
+        ----------
+        asset : AssetBase
+            The asset containing the status cache.
+        status_class : Type[T]
+            The status class to load (e.g., MirrorStatus, CoordinateSystemStatus).
+
+        Returns
+        -------
+        Optional[T]
+            The validated status instance, or None if not found in cache.
+
+        Raises
+        ------
+        Flow360RuntimeError
+            If status dict exists but validation fails.
+        ValueError
+            If status_class is not registered in _STATUS_TYPE_REGISTRY.
+        """
+        # Get cache key from registry
+        cache_key = _STATUS_TYPE_REGISTRY.get(status_class)
+        if cache_key is None:
+            raise ValueError(
+                f"[Internal] Status class {status_class.__name__} not registered. "
+                f"Available types: {list(_STATUS_TYPE_REGISTRY.keys())}"
+            )
+
+        # Retrieve simulation dict (local cache or REST API)
+        # pylint: disable=protected-access
+        if hasattr(asset, "_simulation_dict_cache_for_local_mode"):
+            simulation_dict = asset._simulation_dict_cache_for_local_mode
+        else:
+            simulation_dict = AssetBase._get_simulation_json(asset=asset, clean_front_end_keys=True)
+
+        # Extract status dict from cache
+        status_dict = simulation_dict.get("private_attribute_asset_cache", {}).get(cache_key, None)
+
+        if status_dict is None:
+            # Status not present in cache (feature not used)
+            return None
+
+        # Validate and construct status instance
+        try:
+            return status_class.model_validate(status_dict)
+        except ValidationError as exc:
+            # Convert cache key to friendly display name
+            status_name = cache_key.replace("_", " ")
+            raise Flow360RuntimeError(
+                f"Failed to parse stored {status_name} for {asset.__class__.__name__}. Error: {exc}",
+            ) from exc
+
     def _inform_grouping_selections(entity_info) -> None:
         """Inform the user about the grouping selections made on the entity provider cloud asset."""
 
@@ -134,54 +205,6 @@ def create_draft(
                 "Grouping override ignored: only geometry assets support face/edge/body regrouping."
             )
 
-    def _load_mirror_status_from_asset(asset: AssetBase) -> Optional[MirrorStatus]:
-        """Get the mirror status from the asset"""
-        # pylint: disable=protected-access
-        if hasattr(asset, "_simulation_dict_cache_for_local_mode"):
-            # local asset mode
-            simulation_dict = asset._simulation_dict_cache_for_local_mode
-        else:
-            simulation_dict = AssetBase._get_simulation_json(asset=asset, clean_front_end_keys=True)
-
-        mirror_status_dict = simulation_dict.get("private_attribute_asset_cache", {}).get(
-            "mirror_status", None
-        )
-
-        if mirror_status_dict is None:
-            # No mirroring feature used.
-            return None
-        try:
-            # Note: Unfortunately, model_validate alone disabled supporting for EntitySelectors.
-            mirror_status = MirrorStatus.model_validate(mirror_status_dict)
-        except ValidationError as exc:
-            raise Flow360RuntimeError(
-                f"Failed to parse stored mirror status for {asset.__class__.__name__}. Error: {exc}",
-            ) from exc
-        return mirror_status
-
-    def _load_coordinate_system_status_from_asset(
-        asset: AssetBase,
-    ) -> Optional[CoordinateSystemStatus]:
-        """Get the coordinate system status from the asset."""
-
-        # pylint: disable=protected-access
-        if hasattr(asset, "_simulation_dict_cache_for_local_mode"):
-            simulation_dict = asset._simulation_dict_cache_for_local_mode
-        else:
-            simulation_dict = AssetBase._get_simulation_json(asset=asset, clean_front_end_keys=True)
-
-        status_dict = simulation_dict.get("private_attribute_asset_cache", {}).get(
-            "coordinate_system_status", None
-        )
-        if status_dict is None:
-            return None
-        try:
-            return CoordinateSystemStatus.model_validate(status_dict)
-        except ValidationError as exc:
-            raise Flow360RuntimeError(
-                f"Failed to parse stored coordinate system status for {asset.__class__.__name__}. Error: {exc}",
-            ) from exc
-
     # endregion ------------------------------------------------------------------------------------
 
     if not isinstance(new_run_from, AssetBase):
@@ -191,8 +214,8 @@ def create_draft(
 
     _inform_grouping_selections(entity_info)
 
-    mirror_status = _load_mirror_status_from_asset(new_run_from)
-    coordinate_system_status = _load_coordinate_system_status_from_asset(new_run_from)
+    mirror_status = _load_status_from_asset(new_run_from, MirrorStatus)
+    coordinate_system_status = _load_status_from_asset(new_run_from, CoordinateSystemStatus)
 
     return DraftContext(
         entity_info=entity_info,

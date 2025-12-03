@@ -126,6 +126,7 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
         "_volumes",
         "_coordinate_system_manager",
         "_mirror_manager",
+        "_token",
     )
 
     def __init__(
@@ -155,7 +156,6 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
         self._entity_info = copy.deepcopy(entity_info)
         self._entity_registry: EntityRegistry = self._entity_info.get_registry(None)
 
-        # TODO: Handle draft entities here.
         # Persistent entities (referencing objects in the _entity_info)
         self._body_groups = _SingleTypeEntityRegistry(
             registry=self._entity_registry, entity_type=GeometryBodyGroup
