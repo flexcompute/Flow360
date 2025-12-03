@@ -77,17 +77,13 @@ class _SingleTypeEntityRegistry:
         self._entity_type = entity_type
 
     def __iter__(self):
-        return iter(self.entities)
+        return iter(self._entities)
 
     def __len__(self):
-        return len(self.entities)
-
-    def __dir__(self):
-        # Limit tab-completion to read-only accessors.
-        return ["__iter__", "__len__", "__getitem__"]
+        return len(self._entities)
 
     @property
-    def entities(self) -> list[EntityBase]:
+    def _entities(self) -> list[EntityBase]:
         """Entities of the target type."""
         bucket = self._registry.get_bucket(by_type=self._entity_type)
 
@@ -102,7 +98,7 @@ class _SingleTypeEntityRegistry:
             raise Flow360ValueError(f"Entity naming pattern: {key} is not a string.")
 
         matcher = compile_glob_cached(key)
-        matched = [entity for entity in self.entities if matcher.match(entity.name)]
+        matched = [entity for entity in self._entities if matcher.match(entity.name)]
 
         if not matched:
             raise ValueError(
@@ -200,8 +196,8 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
             status=mirror_status,
             face_group_to_body_group=face_group_to_body_group,
             valid_body_group_ids=valid_body_group_ids,
-            body_groups=self._body_groups.entities,
-            surfaces=self._surfaces.entities,
+            body_groups=self._body_groups._entities,
+            surfaces=self._surfaces._entities,
         )
 
     def __enter__(self) -> DraftContext:

@@ -472,7 +472,9 @@ class MirrorManager:
             mirror_planes=self._mirror_planes,
         )
 
-    def remove_mirror_of(self, *, entities: Union[List[GeometryBodyGroup], GeometryBodyGroup]) -> None:
+    def remove_mirror_of(
+        self, *, entities: Union[List[GeometryBodyGroup], GeometryBodyGroup]
+    ) -> None:
         """
         Remove the mirror of the given entities.
 
@@ -503,7 +505,6 @@ class MirrorManager:
         for body_group in normalized_entities:
             body_group_id = body_group.private_attribute_id
             self._body_group_id_to_mirror_id.pop(body_group_id, None)
-
 
     # endregion ------------------------------------------------------------------------------------
 

@@ -50,7 +50,7 @@ def test_mirror_single_call_returns_expected_entities(mock_geometry):
         # 3) Mirrored surfaces correspond exactly to the surfaces of the mirrored body group.
         entity_info = draft._entity_info
         face_group_to_body_group = entity_info.get_face_group_to_body_group_id_map()
-        surfaces_by_name = {surface.name: surface for surface in draft.surfaces.entities}
+        surfaces_by_name = {surface.name: surface for surface in draft.surfaces._entities}
 
         expected_surface_ids = {
             surfaces_by_name[surface_name].private_attribute_id
@@ -65,7 +65,7 @@ def test_mirror_single_call_returns_expected_entities(mock_geometry):
         for mirrored in mirrored_surfaces:
             original_surface = next(
                 surface
-                for surface in draft.surfaces.entities
+                for surface in draft.surfaces._entities
                 if surface.private_attribute_id == mirrored.surface_id
             )
             assert mirrored.name == f"{original_surface.name}_<mirror>"
@@ -103,8 +103,8 @@ def test_mirror_multiple_calls_accumulate_and_derive_from_actions(mock_geometry)
         all_mirrored_body_groups, all_mirrored_surfaces = _derive_mirrored_entities_from_actions(
             body_group_id_to_mirror_id=draft.mirror._body_group_id_to_mirror_id,
             face_group_to_body_group=face_group_to_body_group,
-            body_groups=draft.body_groups.entities,
-            surfaces=draft.surfaces.entities,
+            body_groups=draft.body_groups._entities,
+            surfaces=draft.surfaces._entities,
             mirror_planes=draft.mirror._mirror_planes,
         )
 
@@ -118,7 +118,7 @@ def test_mirror_multiple_calls_accumulate_and_derive_from_actions(mock_geometry)
         # All mirrored surfaces should also use the latest mirror plane.
         entity_info = draft._entity_info
         face_group_to_body_group = entity_info.get_face_group_to_body_group_id_map()
-        surfaces_by_name = {surface.name: surface for surface in draft.surfaces.entities}
+        surfaces_by_name = {surface.name: surface for surface in draft.surfaces._entities}
 
         expected_surface_ids = {
             surfaces_by_name[surface_name].private_attribute_id
@@ -133,7 +133,7 @@ def test_mirror_multiple_calls_accumulate_and_derive_from_actions(mock_geometry)
         for mirrored in all_mirrored_surfaces:
             original_surface = next(
                 surface
-                for surface in draft.surfaces.entities
+                for surface in draft.surfaces._entities
                 if surface.private_attribute_id == mirrored.surface_id
             )
             assert mirrored.name == f"{original_surface.name}_<mirror>"
