@@ -293,3 +293,92 @@ def test_mirror_from_status_rejects_duplicate_plane_names(mock_geometry):
                 ],
                 mirrored_surfaces=[],
             )
+
+
+def test_remove_mirror_of_removes_mirror_assignment(mock_geometry):
+    """Test that remove_mirror_of successfully removes mirror assignments."""
+    with create_draft(new_run_from=mock_geometry) as draft:
+        body_groups = list(draft.body_groups)
+        assert body_groups, "Test requires at least one body group."
+
+        body_group = body_groups[0]
+        mirror_plane = MirrorPlane(
+            name="mirrorX",
+            normal=(1, 0, 0),
+            center=(0, 0, 0) * u.m,
+        )
+
+        # Create mirror
+        mirrored_body_groups, mirrored_surfaces = draft.mirror.create_mirror_of(
+            entities=body_group, mirror_plane=mirror_plane
+        )
+
+        # Verify mirror was created
+        assert len(mirrored_body_groups) == 1
+        assert body_group.private_attribute_id in draft.mirror._body_group_id_to_mirror_id
+
+        # Remove mirror
+        draft.mirror.remove_mirror_of(entities=body_group)
+
+        # Verify mirror was removed
+        assert body_group.private_attribute_id not in draft.mirror._body_group_id_to_mirror_id
+
+        # Verify removing a non-mirrored entity doesn't raise an error
+        draft.mirror.remove_mirror_of(entities=body_group)  # Should not raise
+
+
+def test_remove_mirror_of_rejects_invalid_input_type(mock_geometry):
+    """Test that remove_mirror_of rejects invalid input types."""
+    with create_draft(new_run_from=mock_geometry) as draft:
+        # Try to pass something that's neither a GeometryBodyGroup nor a list
+        with pytest.raises(
+            Flow360RuntimeError,
+            match="`entities` accepts a single entity or a list of entities",
+        ):
+            draft.mirror.remove_mirror_of(entities="invalid_string")
+
+
+def test_remove_mirror_of_rejects_invalid_entity_type(mock_geometry):
+    """Test that remove_mirror_of rejects invalid entity types."""
+    with create_draft(new_run_from=mock_geometry) as draft:
+        # Try to remove mirror from a non-GeometryBodyGroup entity (passed as a list)
+        invalid_entity = MirrorPlane(name="invalid", normal=(1, 0, 0), center=(0, 0, 0) * u.m)
+
+        with pytest.raises(
+            Flow360RuntimeError,
+            match="Only GeometryBodyGroup entities are supported by `remove_mirror_of\\(\\)`",
+        ):
+            draft.mirror.remove_mirror_of(entities=[invalid_entity])
+
+
+def test_remove_mirror_of_accepts_list_of_entities(mock_geometry):
+    """Test that remove_mirror_of accepts a list of entities."""
+    with create_draft(new_run_from=mock_geometry) as draft:
+        body_groups = list(draft.body_groups)
+        assert body_groups, "Test requires at least one body group."
+
+        mirror_plane = MirrorPlane(
+            name="mirrorX",
+            normal=(1, 0, 0),
+            center=(0, 0, 0) * u.m,
+        )
+
+        # Use first two body groups if available, otherwise just the first one
+        entities_to_mirror = [body_groups[0]]
+        if len(body_groups) > 1:
+            entities_to_mirror.append(body_groups[1])
+
+        # Create mirrors for the body groups
+        for body_group in entities_to_mirror:
+            draft.mirror.create_mirror_of(entities=body_group, mirror_plane=mirror_plane)
+
+        # Verify mirrors were created
+        for body_group in entities_to_mirror:
+            assert body_group.private_attribute_id in draft.mirror._body_group_id_to_mirror_id
+
+        # Remove all mirrors at once using list
+        draft.mirror.remove_mirror_of(entities=entities_to_mirror)
+
+        # Verify all mirrors were removed
+        for body_group in entities_to_mirror:
+            assert body_group.private_attribute_id not in draft.mirror._body_group_id_to_mirror_id

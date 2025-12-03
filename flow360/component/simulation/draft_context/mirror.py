@@ -472,6 +472,39 @@ class MirrorManager:
             mirror_planes=self._mirror_planes,
         )
 
+    def remove_mirror_of(self, *, entities: Union[List[GeometryBodyGroup], GeometryBodyGroup]) -> None:
+        """
+        Remove the mirror of the given entities.
+
+        Parameters
+        ----------
+        entities : Union[List[GeometryBodyGroup], GeometryBodyGroup]
+            One or more geometry body groups to remove mirroring from.
+        """
+        # 1. [Validation] Ensure `entities` are GeometryBodyGroup entities.
+        normalized_entities: List[GeometryBodyGroup]
+        if isinstance(entities, GeometryBodyGroup):
+            normalized_entities = [entities]
+        elif isinstance(entities, list):
+            normalized_entities = entities
+        else:
+            raise Flow360RuntimeError(
+                f"`entities` accepts a single entity or a list of entities. Received type: {type(entities).__name__}."
+            )
+
+        for entity in normalized_entities:
+            if not is_exact_instance(entity, GeometryBodyGroup):
+                raise Flow360RuntimeError(
+                    "Only GeometryBodyGroup entities are supported by `remove_mirror_of()`. "
+                    f"Received: {type(entity).__name__}."
+                )
+
+        # 2. Remove mirror assignments for the given entities.
+        for body_group in normalized_entities:
+            body_group_id = body_group.private_attribute_id
+            self._body_group_id_to_mirror_id.pop(body_group_id, None)
+
+
     # endregion ------------------------------------------------------------------------------------
 
     def _to_status(self, *, entity_registry: EntityRegistry) -> Optional[MirrorStatus]:
