@@ -26,7 +26,7 @@ def test_mirror_single_call_returns_expected_entities(mock_geometry):
             center=(0, 0, 0) * u.m,
         )
 
-        mirrored_body_groups, mirrored_surfaces = draft.mirror(
+        mirrored_body_groups, mirrored_surfaces = draft.mirror.create(
             entities=[body_group], mirror_plane=mirror_plane
         )
 
@@ -38,7 +38,7 @@ def test_mirror_single_call_returns_expected_entities(mock_geometry):
         assert mirrored_body_group.name == f"{body_group.name}_<mirror>"
 
         # 2) Draft mirror actions store the same mapping.
-        assert draft._body_group_id_to_mirror_id == {
+        assert draft.mirror._body_group_id_to_mirror_id == {
             body_group.private_attribute_id: mirror_plane.private_attribute_id
         }
 
@@ -83,22 +83,24 @@ def test_mirror_multiple_calls_accumulate_and_derive_from_actions(mock_geometry)
         )
 
         # First mirror request.
-        draft.mirror(entities=[body_group], mirror_plane=first_plane)
+        draft.mirror.create(entities=[body_group], mirror_plane=first_plane)
 
         # Second mirror request for the same body group should overwrite the action.
-        draft.mirror(entities=[body_group], mirror_plane=second_plane)
+        draft.mirror.create(entities=[body_group], mirror_plane=second_plane)
 
-        assert draft._body_group_id_to_mirror_id == {
+        assert draft.mirror._body_group_id_to_mirror_id == {
             body_group.private_attribute_id: second_plane.private_attribute_id
         }
 
         # Derive the full list of mirrored entities from the accumulated mirror actions.
+        # Get face_group_to_body_group map for the test.
+        face_group_to_body_group = draft._entity_info.get_face_group_to_body_group_id_map()
         all_mirrored_body_groups, all_mirrored_surfaces = _derive_mirrored_entities_from_actions(
-            body_group_id_to_mirror_id=draft._body_group_id_to_mirror_id,
-            entity_info=draft._entity_info,
+            body_group_id_to_mirror_id=draft.mirror._body_group_id_to_mirror_id,
+            face_group_to_body_group=face_group_to_body_group,
             body_groups=draft.body_groups.entities,
             surfaces=draft.surfaces.entities,
-            mirror_planes=draft._mirror_planes,
+            mirror_planes=draft.mirror._mirror_planes,
         )
 
         # Only the latest mirror plane should be reflected.
@@ -156,8 +158,8 @@ def test_mirror_status_round_trip_through_asset_cache(mock_geometry, tmp_path):
         )
 
         # Use more than one mirror() call to exercise accumulation logic.
-        draft.mirror(entities=[first_body_group], mirror_plane=mirror_plane)
-        draft.mirror(entities=[second_body_group], mirror_plane=mirror_plane)
+        draft.mirror.create(entities=first_body_group, mirror_plane=mirror_plane)
+        draft.mirror.create(entities=[second_body_group], mirror_plane=mirror_plane)
 
         expected_plane_ids = {mirror_plane.private_attribute_id}
         expected_body_group_ids = {
@@ -216,12 +218,14 @@ def test_mirror_status_round_trip_through_asset_cache(mock_geometry, tmp_path):
     )
 
     with create_draft(new_run_from=uploaded_geometry) as restored:
-        restored_mapping = restored._body_group_id_to_mirror_id
+        restored_mapping = restored.mirror._body_group_id_to_mirror_id
         expected_mapping = {
             body_group_id: mirror_plane.private_attribute_id
             for body_group_id in expected_body_group_ids
         }
         assert restored_mapping == expected_mapping
 
-        restored_plane_ids = {plane.private_attribute_id for plane in restored.mirror_planes}
+        restored_plane_ids = {
+            plane.private_attribute_id for plane in restored.mirror._mirror_planes
+        }
         assert restored_plane_ids == expected_plane_ids
