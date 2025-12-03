@@ -91,6 +91,18 @@ class MirrorStatus(Flow360BaseModel):
     )
     mirrored_surfaces: List[MirroredSurface] = pd.Field(description="List of mirrored surfaces.")
 
+    @pd.model_validator(mode="after")
+    def _validate_unique_mirror_plane_names(self):
+        """Validate that all mirror plane names are unique."""
+        seen_names = set()
+        for plane in self.mirror_planes:
+            if plane.name in seen_names:
+                raise ValueError(
+                    f"Duplicate mirror plane name '{plane.name}' found in mirror status."
+                )
+            seen_names.add(plane.name)
+        return self
+
 
 # endregion -------------------------------------------------------------------------------------
 
@@ -342,6 +354,17 @@ class MirrorManager:
 
     # region Public API -------------------------------------------------
 
+    def known_mirror_plane_names(self) -> List[str]:
+        """
+        Return the names of all known mirror planes.
+
+        Returns
+        -------
+        List[str]
+            The names of all known mirror planes.
+        """
+        return [plane.name for plane in self._mirror_planes]
+
     def get_mirror_plane(self, name: str) -> MirrorPlane:
         """
         Retrieve a mirror plane by name.
@@ -366,7 +389,7 @@ class MirrorManager:
                 return plane
         raise Flow360RuntimeError(f"Mirror plane '{name}' not found in the draft.")
 
-    def create(
+    def create_mirror_of(
         self,
         *,
         entities: Union[List[GeometryBodyGroup], GeometryBodyGroup],
@@ -422,19 +445,24 @@ class MirrorManager:
                     body_group.name,
                 )
 
-        # 4. Create/Update the self._body_group_id_to_mirror_id
-        #    and also capture the MirrorPlane into the manager.
+        # 4. [Validation] Ensure mirror plane has a unique name if it's a new plane.
+        existing_plane_ids = {plane.private_attribute_id for plane in self._mirror_planes}
+        if mirror_plane.private_attribute_id not in existing_plane_ids:
+            # This is a new plane - validate the name is unique.
+            if any(plane.name == mirror_plane.name for plane in self._mirror_planes):
+                raise Flow360RuntimeError(
+                    f"Mirror plane name '{mirror_plane.name}' already exists in the draft."
+                )
+            self._mirror_planes.append(mirror_plane)
+
+        # 5. Create/Update the self._body_group_id_to_mirror_id
         body_group_id_to_mirror_id_update: Dict[str, str] = {}
         for body_group in normalized_entities:
             body_group_id = body_group.private_attribute_id
             body_group_id_to_mirror_id_update[body_group_id] = mirror_plane.private_attribute_id
             self._body_group_id_to_mirror_id[body_group_id] = mirror_plane.private_attribute_id
 
-        existing_plane_ids = {plane.private_attribute_id for plane in self._mirror_planes}
-        if mirror_plane.private_attribute_id not in existing_plane_ids:
-            self._mirror_planes.append(mirror_plane)
-
-        # 5. Derive the generated mirrored entities (MirroredGeometryBodyGroup + MirroredSurface)
+        # 6. Derive the generated mirrored entities (MirroredGeometryBodyGroup + MirroredSurface)
         #    and return to user as tokens of use.
         return _derive_mirrored_entities_from_actions(
             body_group_id_to_mirror_id=body_group_id_to_mirror_id_update,

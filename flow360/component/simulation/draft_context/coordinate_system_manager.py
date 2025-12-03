@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Dict, List, Optional, Tuple
 
 import numpy as np
+import pydantic as pd
 
 from flow360.component.simulation.entity_operation import (
     CoordinateSystem,
@@ -45,6 +46,25 @@ class CoordinateSystemStatus(Flow360BaseModel):
     coordinate_systems: List[CoordinateSystem]
     parents: List[CoordinateSystemParent]
     assignments: List[CoordinateSystemAssignmentGroup]
+
+    @pd.model_validator(mode="after")
+    def _validate_unique_coordinate_system_ids_and_names(self):
+        """Validate that all coordinate system IDs and names are unique."""
+        seen_ids = set()
+        seen_names = set()
+        for cs in self.coordinate_systems:
+            # Check IDs first to match the order of validation in _from_status
+            if cs.private_attribute_id in seen_ids:
+                raise ValueError(
+                    f"[Internal] Duplicate coordinate system id '{cs.private_attribute_id}' in status."
+                )
+            if cs.name in seen_names:
+                raise ValueError(
+                    f"[Internal] Duplicate coordinate system name '{cs.name}' in status."
+                )
+            seen_ids.add(cs.private_attribute_id)
+            seen_names.add(cs.name)
+        return self
 
 
 class CoordinateSystemManager:
@@ -181,7 +201,34 @@ class CoordinateSystemManager:
                     )
                 parent_id = self._coordinate_system_parents.get(parent_id)
 
-    # Lookup --------------------------------------------------------------------
+    def _get_coordinate_system_matrix(self, *, coordinate_system: CoordinateSystem) -> np.ndarray:
+        """Return the composed matrix for a registered coordinate system (parents applied)."""
+        if coordinate_system not in self._coordinate_systems:
+            raise Flow360RuntimeError("Coordinate system must be registered to compute its matrix.")
+
+        cs_id = coordinate_system.private_attribute_id
+        combined_matrix = coordinate_system._get_local_matrix()  # pylint:disable=protected-access
+
+        visited: set[str] = set()
+        parent_id = self._coordinate_system_parents.get(cs_id)
+        while parent_id is not None:
+            if parent_id in visited:
+                raise Flow360RuntimeError("Cycle detected in coordinate system inheritance")
+            visited.add(parent_id)
+            parent = self._get_coordinate_system_by_id(parent_id)
+            if parent is None:
+                raise Flow360RuntimeError(
+                    f"Parent coordinate system '{parent_id}' not found for '{coordinate_system.name}'."
+                )
+            combined_matrix = _compose_transformation_matrices(
+                parent=parent._get_local_matrix(),  # pylint:disable=protected-access
+                child=combined_matrix,
+            )
+            parent_id = self._coordinate_system_parents.get(parent_id)
+
+        return combined_matrix
+
+    # --------------------------------------------------------------------
     def get_by_name(self, name: str) -> CoordinateSystem:
         """Retrieve a coordinate system by name."""
         for cs in self._coordinate_systems:
@@ -256,33 +303,6 @@ class CoordinateSystemManager:
                 f"Coordinate system id '{cs_id}' assigned to entity '{entity.name}' is not registered."
             )
         return cs
-
-    def get_coordinate_system_matrix(self, *, coordinate_system: CoordinateSystem) -> np.ndarray:
-        """Return the composed matrix for a registered coordinate system (parents applied)."""
-        if coordinate_system not in self._coordinate_systems:
-            raise Flow360RuntimeError("Coordinate system must be registered to compute its matrix.")
-
-        cs_id = coordinate_system.private_attribute_id
-        combined_matrix = coordinate_system._get_local_matrix()  # pylint:disable=protected-access
-
-        visited: set[str] = set()
-        parent_id = self._coordinate_system_parents.get(cs_id)
-        while parent_id is not None:
-            if parent_id in visited:
-                raise Flow360RuntimeError("Cycle detected in coordinate system inheritance")
-            visited.add(parent_id)
-            parent = self._get_coordinate_system_by_id(parent_id)
-            if parent is None:
-                raise Flow360RuntimeError(
-                    f"Parent coordinate system '{parent_id}' not found for '{coordinate_system.name}'."
-                )
-            combined_matrix = _compose_transformation_matrices(
-                parent=parent._get_local_matrix(),  # pylint:disable=protected-access
-                child=combined_matrix,
-            )
-            parent_id = self._coordinate_system_parents.get(parent_id)
-
-        return combined_matrix
 
     # Serialization ----------------------------------------------------------------
     def _to_status(self, *, entity_registry: EntityRegistry) -> CoordinateSystemStatus:
@@ -365,12 +385,9 @@ class CoordinateSystemManager:
         if status is None:
             return mgr
 
+        # Build set of IDs for validation of parent/assignment references.
         existing_ids: set[str] = set()
         for cs in status.coordinate_systems:
-            if cs.private_attribute_id in existing_ids:
-                raise Flow360RuntimeError(
-                    f"Duplicate coordinate system id '{cs.private_attribute_id}' in status."
-                )
             mgr._coordinate_systems.append(cs)
             existing_ids.add(cs.private_attribute_id)
 

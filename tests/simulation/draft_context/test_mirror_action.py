@@ -2,6 +2,9 @@ import copy
 import json
 import os
 
+import pytest
+from pydantic import ValidationError
+
 import flow360.component.simulation.units as u
 from flow360.component.geometry import Geometry, GeometryMeta
 from flow360.component.project import create_draft
@@ -12,8 +15,10 @@ from flow360.component.simulation.draft_context.mirror import (
     MirrorPlane,
     MirrorStatus,
     _derive_mirrored_entities_from_actions,
+    _extract_body_group_id_to_mirror_id_from_status,
 )
 from flow360.component.simulation.simulation_params import SimulationParams
+from flow360.exceptions import Flow360RuntimeError
 
 
 def test_mirror_single_call_returns_expected_entities(mock_geometry):
@@ -26,7 +31,7 @@ def test_mirror_single_call_returns_expected_entities(mock_geometry):
             center=(0, 0, 0) * u.m,
         )
 
-        mirrored_body_groups, mirrored_surfaces = draft.mirror.create(
+        mirrored_body_groups, mirrored_surfaces = draft.mirror.create_mirror_of(
             entities=[body_group], mirror_plane=mirror_plane
         )
 
@@ -83,10 +88,10 @@ def test_mirror_multiple_calls_accumulate_and_derive_from_actions(mock_geometry)
         )
 
         # First mirror request.
-        draft.mirror.create(entities=[body_group], mirror_plane=first_plane)
+        draft.mirror.create_mirror_of(entities=[body_group], mirror_plane=first_plane)
 
         # Second mirror request for the same body group should overwrite the action.
-        draft.mirror.create(entities=[body_group], mirror_plane=second_plane)
+        draft.mirror.create_mirror_of(entities=[body_group], mirror_plane=second_plane)
 
         assert draft.mirror._body_group_id_to_mirror_id == {
             body_group.private_attribute_id: second_plane.private_attribute_id
@@ -158,8 +163,8 @@ def test_mirror_status_round_trip_through_asset_cache(mock_geometry, tmp_path):
         )
 
         # Use more than one mirror() call to exercise accumulation logic.
-        draft.mirror.create(entities=first_body_group, mirror_plane=mirror_plane)
-        draft.mirror.create(entities=[second_body_group], mirror_plane=mirror_plane)
+        draft.mirror.create_mirror_of(entities=first_body_group, mirror_plane=mirror_plane)
+        draft.mirror.create_mirror_of(entities=[second_body_group], mirror_plane=mirror_plane)
 
         expected_plane_ids = {mirror_plane.private_attribute_id}
         expected_body_group_ids = {
@@ -229,3 +234,62 @@ def test_mirror_status_round_trip_through_asset_cache(mock_geometry, tmp_path):
             plane.private_attribute_id for plane in restored.mirror._mirror_planes
         }
         assert restored_plane_ids == expected_plane_ids
+
+
+def test_mirror_create_rejects_duplicate_plane_name(mock_geometry):
+    """Test that creating a mirror with a duplicate plane name raises an error."""
+    with create_draft(new_run_from=mock_geometry) as draft:
+        body_groups = list(draft.body_groups)
+        assert body_groups, "Test requires at least one body group."
+
+        mirror_plane1 = MirrorPlane(
+            name="mirror",
+            normal=(1, 0, 0),
+            center=(0, 0, 0) * u.m,
+        )
+
+        # First mirror operation should succeed.
+        draft.mirror.create_mirror_of(entities=body_groups[0], mirror_plane=mirror_plane1)
+
+        # Second mirror operation with a different plane but same name should fail.
+        # Note: We can use the same body group since we're testing plane name uniqueness.
+        mirror_plane2 = MirrorPlane(
+            name="mirror",  # Same name as mirror_plane1
+            normal=(0, 1, 0),
+            center=(0, 0, 0) * u.m,
+        )
+
+        with pytest.raises(
+            Flow360RuntimeError,
+            match="Mirror plane name 'mirror' already exists in the draft",
+        ):
+            draft.mirror.create_mirror_of(entities=body_groups[0], mirror_plane=mirror_plane2)
+
+
+def test_mirror_from_status_rejects_duplicate_plane_names(mock_geometry):
+    """Test that MirrorStatus rejects duplicate mirror plane names via Pydantic validation."""
+    with create_draft(new_run_from=mock_geometry) as draft:
+        body_groups = list(draft.body_groups)
+        assert body_groups, "Test requires at least one body group."
+
+        # Create a status with duplicate mirror plane names.
+        plane1 = MirrorPlane(name="duplicate", normal=(1, 0, 0), center=(0, 0, 0) * u.m)
+        plane2 = MirrorPlane(name="duplicate", normal=(0, 1, 0), center=(0, 0, 0) * u.m)
+
+        # Build a MirrorStatus with duplicate plane names - should fail during construction.
+        from flow360.component.simulation.draft_context.mirror import (
+            MirroredGeometryBodyGroup,
+        )
+
+        with pytest.raises(ValidationError, match="Duplicate mirror plane name 'duplicate'"):
+            MirrorStatus(
+                mirror_planes=[plane1, plane2],
+                mirrored_geometry_body_groups=[
+                    MirroredGeometryBodyGroup(
+                        name=f"{body_groups[0].name}_<mirror>",
+                        geometry_body_group_id=body_groups[0].private_attribute_id,
+                        mirror_plane_id=plane1.private_attribute_id,
+                    )
+                ],
+                mirrored_surfaces=[],
+            )

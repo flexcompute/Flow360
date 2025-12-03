@@ -50,7 +50,7 @@ def test_register_and_assign_coordinate_system(mock_geometry):
 
         # Ensure composed matrix matches manual composition using parent-child relationship.
         expected = _compose(root.get_transformation_matrix(), child.get_transformation_matrix())
-        matrix = draft.coordinate_systems.get_coordinate_system_matrix(coordinate_system=assigned)
+        matrix = draft.coordinate_systems._get_coordinate_system_matrix(coordinate_system=assigned)
         assert matrix is not None
         np.testing.assert_allclose(matrix, expected)
 
@@ -199,7 +199,7 @@ def test_get_coordinate_system_matrix_requires_registration(mock_geometry):
             Flow360RuntimeError,
             match="Coordinate system must be registered to compute its matrix.",
         ):
-            draft.coordinate_systems.get_coordinate_system_matrix(coordinate_system=cs)
+            draft.coordinate_systems._get_coordinate_system_matrix(coordinate_system=cs)
 
 
 def test_to_status_and_from_status_round_trip(mock_geometry):
@@ -243,18 +243,38 @@ def test_from_status_validation_errors(mock_geometry):
 
 
 def test_from_status_rejects_duplicate_cs_id(mock_geometry):
+    """Test that CoordinateSystemStatus rejects duplicate coordinate system IDs via Pydantic validation."""
+    from pydantic import ValidationError
+
     with create_draft(new_run_from=mock_geometry) as draft:
         cs = CoordinateSystem(name="cs")
-        status = CoordinateSystemStatus(
-            coordinate_systems=[cs, cs],
-            parents=[],
-            assignments=[],
-        )
         with pytest.raises(
-            Flow360RuntimeError,
+            ValidationError,
             match="Duplicate coordinate system id",
         ):
-            CoordinateSystemManager._from_status(status=status)
+            CoordinateSystemStatus(
+                coordinate_systems=[cs, cs],
+                parents=[],
+                assignments=[],
+            )
+
+
+def test_from_status_rejects_duplicate_cs_name(mock_geometry):
+    """Test that CoordinateSystemStatus rejects duplicate coordinate system names via Pydantic validation."""
+    from pydantic import ValidationError
+
+    with create_draft(new_run_from=mock_geometry) as draft:
+        cs1 = CoordinateSystem(name="duplicate")
+        cs2 = CoordinateSystem(name="duplicate")
+        with pytest.raises(
+            ValidationError,
+            match="Duplicate coordinate system name 'duplicate'",
+        ):
+            CoordinateSystemStatus(
+                coordinate_systems=[cs1, cs2],
+                parents=[],
+                assignments=[],
+            )
 
 
 def test_from_status_rejects_assignment_unknown_cs(mock_geometry):
