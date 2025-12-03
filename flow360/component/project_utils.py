@@ -494,7 +494,7 @@ def upload_imported_surfaces_to_draft(params, draft, parent_case):
         method="imported-surfaces",
     )
 
-    basename_to_surface_mesh_ids: dict[str, list[str]] = {}
+    basename_to_surface_metadata: dict[str, list[dict[str, str]]] = {}
     for entry, resp in zip(deduplicated_surface_file_paths_to_import, response):
         surface_mesh_id = resp.get("surfaceMeshId")
         remote_file_name = resp.get("storageFileName") or resp.get("filename")
@@ -503,9 +503,14 @@ def upload_imported_surfaces_to_draft(params, draft, parent_case):
             remote_file_name=remote_file_name,
             local_file_path=entry["path"],
         )
-        basename_to_surface_mesh_ids.setdefault(entry["basename"], []).append(surface_mesh_id)
+        metadata = {
+            "surfaceMeshId": surface_mesh_id,
+            "storageFileName": remote_file_name,
+            "filename": entry["basename"],
+        }
+        basename_to_surface_metadata.setdefault(entry["basename"], []).append(metadata)
 
-    _normalize_imported_surface_entities(params, basename_to_surface_mesh_ids)
+    _normalize_imported_surface_entities(params, basename_to_surface_metadata)
 
 
 def _upload_surface_mesh_resource(surface_mesh_id: str, remote_file_name: str, local_file_path: str):
@@ -517,15 +522,16 @@ def _upload_surface_mesh_resource(surface_mesh_id: str, remote_file_name: str, l
 
 
 def _normalize_imported_surface_entities(
-    params: SimulationParams, basename_to_surface_mesh_ids: dict[str, list[str]] | None = None
+    params: SimulationParams, basename_to_surface_metadata: dict[str, list[dict[str, str]]] | None = None
 ):
     if params is None or params.outputs is None:
         return
 
     basename_to_iter = {}
-    if basename_to_surface_mesh_ids:
+    if basename_to_surface_metadata:
         basename_to_iter = {
-            basename: iter(mesh_ids) for basename, mesh_ids in basename_to_surface_mesh_ids.items()
+            basename: iter(metadata_list)
+            for basename, metadata_list in basename_to_surface_metadata.items()
         }
 
     for output in params.outputs:
@@ -536,4 +542,11 @@ def _normalize_imported_surface_entities(
                     surface.file_name = file_basename
                     iterator = basename_to_iter.get(file_basename)
                     if iterator is not None:
-                        surface.surface_mesh_id = next(iterator, surface.surface_mesh_id)
+                        metadata = next(iterator, None)
+                        if metadata is not None:
+                            surface.surface_mesh_id = metadata.get(
+                                "surfaceMeshId", surface.surface_mesh_id
+                            )
+                            surface.storage_file_name = metadata.get(
+                                "storageFileName", surface.storage_file_name
+                            )
