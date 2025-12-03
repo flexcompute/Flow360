@@ -211,11 +211,11 @@ def test_to_status_and_from_status_round_trip(mock_geometry):
         )
         draft.coordinate_systems.assign(entities=body_group, coordinate_system=cs_child)
 
-        status = draft.coordinate_systems._to_status()
-
-        restored = CoordinateSystemManager._from_status(
-            status=status, entity_registry=draft._entity_registry  # pylint:disable=protected-access
+        status = draft.coordinate_systems._to_status(
+            entity_registry=draft._entity_registry  # pylint:disable=protected-access
         )
+
+        restored = CoordinateSystemManager._from_status(status=status)
 
         restored_child = restored.get_by_name("child")
         assert restored_child.private_attribute_id == cs_child.private_attribute_id
@@ -239,10 +239,7 @@ def test_from_status_validation_errors(mock_geometry):
             Flow360RuntimeError,
             match="Parent record references unknown coordinate system 'missing'",
         ):
-            CoordinateSystemManager._from_status(
-                status=status,
-                entity_registry=draft._entity_registry,  # pylint:disable=protected-access
-            )
+            CoordinateSystemManager._from_status(status=status)
 
 
 def test_from_status_rejects_duplicate_cs_id(mock_geometry):
@@ -257,10 +254,7 @@ def test_from_status_rejects_duplicate_cs_id(mock_geometry):
             Flow360RuntimeError,
             match="Duplicate coordinate system id",
         ):
-            CoordinateSystemManager._from_status(
-                status=status,
-                entity_registry=draft._entity_registry,  # pylint:disable=protected-access
-            )
+            CoordinateSystemManager._from_status(status=status)
 
 
 def test_from_status_rejects_assignment_unknown_cs(mock_geometry):
@@ -279,10 +273,7 @@ def test_from_status_rejects_assignment_unknown_cs(mock_geometry):
             Flow360RuntimeError,
             match="Assignment references unknown coordinate system 'missing'",
         ):
-            CoordinateSystemManager._from_status(
-                status=status,
-                entity_registry=draft._entity_registry,  # pylint:disable=protected-access
-            )
+            CoordinateSystemManager._from_status(status=status)
 
 
 def test_from_status_rejects_duplicate_entity_assignment(mock_geometry):
@@ -305,10 +296,7 @@ def test_from_status_rejects_duplicate_entity_assignment(mock_geometry):
             Flow360RuntimeError,
             match="Duplicate entity assignment for entity 'Surface:s1'",
         ):
-            CoordinateSystemManager._from_status(
-                status=status,
-                entity_registry=draft._entity_registry,  # pylint:disable=protected-access
-            )
+            CoordinateSystemManager._from_status(status=status)
 
 
 def test_coordinate_system_status_round_trip_through_asset_cache(mock_geometry, tmp_path):

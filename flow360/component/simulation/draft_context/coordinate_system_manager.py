@@ -54,14 +54,12 @@ class CoordinateSystemManager:
         "_coordinate_systems",
         "_coordinate_system_parents",
         "_entity_key_to_coordinate_system_id",
-        "_entity_registry",
     )
 
-    def __init__(self, *, entity_registry: EntityRegistry) -> None:
+    def __init__(self) -> None:
         self._coordinate_systems: list[CoordinateSystem] = []
         self._coordinate_system_parents: dict[str, Optional[str]] = {}
         self._entity_key_to_coordinate_system_id: dict[Tuple[str, str], str] = {}
-        self._entity_registry = entity_registry
 
     # region Registration and hierarchy -------------------------------------------------
     def add(
@@ -225,10 +223,6 @@ class CoordinateSystemManager:
                 raise Flow360RuntimeError(
                     f"Only entities can be assigned a coordinate system. Received: {type(entity).__name__}."
                 )
-            if not self._entity_registry.contains(entity):
-                raise Flow360RuntimeError(
-                    f"Entity '{entity.name}' is not part of the draft registry and cannot be assigned."
-                )
 
         if coordinate_system not in self._coordinate_systems:
             self.add(coordinate_system=coordinate_system, parent=None)
@@ -249,14 +243,10 @@ class CoordinateSystemManager:
 
     def clear_assignment(self, *, entity: EntityBase) -> None:
         """Remove any coordinate system assignment for the given entity."""
-        if not self._entity_registry.contains(entity):
-            raise Flow360RuntimeError(f"Entity '{entity.name}' is not part of the draft registry.")
         self._entity_key_to_coordinate_system_id.pop(self._entity_key(entity), None)
 
     def get_for_entity(self, *, entity: EntityBase) -> CoordinateSystem | None:
         """Return the coordinate system assigned to the entity, if any."""
-        if not self._entity_registry.contains(entity):
-            raise Flow360RuntimeError(f"Entity '{entity.name}' is not part of the draft registry.")
         cs_id = self._entity_key_to_coordinate_system_id.get(self._entity_key(entity))
         if cs_id is None:
             return None
@@ -295,17 +285,58 @@ class CoordinateSystemManager:
         return combined_matrix
 
     # Serialization ----------------------------------------------------------------
-    def _to_status(self) -> CoordinateSystemStatus:
-        """Build a serializable status snapshot."""
+    def _to_status(self, *, entity_registry: EntityRegistry) -> CoordinateSystemStatus:
+        """Build a serializable status snapshot.
+
+        Parameters
+        ----------
+        entity_registry : EntityRegistry
+            The entity registry to validate entity references against.
+
+        Returns
+        -------
+        CoordinateSystemStatus
+            The serialized status.
+
+        Raises
+        ------
+        Flow360RuntimeError
+            If any assigned entity is not in the registry.
+        """
         parents = [
             CoordinateSystemParent(coordinate_system_id=cs_id, parent_id=parent_id)
             for cs_id, parent_id in self._coordinate_system_parents.items()
         ]
+
+        # Validate entity existence before serialization.
+        # Build a set of all existing entity keys in the registry for efficient lookup.
+        existing_entity_keys = set()
+        for entity_list in entity_registry.internal_registry.values():
+            for entity in entity_list:
+                existing_entity_keys.add(
+                    (entity.private_attribute_entity_type_name, entity.private_attribute_id)
+                )
+
         grouped: Dict[str, List[CoordinateSystemEntityRef]] = {}
         for (entity_type, entity_id), cs_id in self._entity_key_to_coordinate_system_id.items():
+            # Check if entity exists in registry.
+            # A missing entity is possible if the entity was removed from the draft context.
+            # For example by deleting a geometry body group.
+            entity_key = (entity_type, entity_id)
+            if entity_key not in existing_entity_keys:
+                log.debug(
+                    "Entity '%s:%s' assigned to coordinate system '%s' is not in the draft registry; "
+                    "skipping this assignment.",
+                    entity_type,
+                    entity_id,
+                    cs_id,
+                )
+                continue
+
             grouped.setdefault(cs_id, []).append(
                 CoordinateSystemEntityRef(entity_type=entity_type, entity_id=entity_id)
             )
+
         assignments = [
             CoordinateSystemAssignmentGroup(coordinate_system_id=cs_id, entities=entities)
             for cs_id, entities in grouped.items()
@@ -317,11 +348,20 @@ class CoordinateSystemManager:
         )
 
     @classmethod
-    def _from_status(
-        cls, *, status: CoordinateSystemStatus | None, entity_registry: EntityRegistry
-    ) -> "CoordinateSystemManager":
-        """Restore manager from a status snapshot."""
-        mgr = cls(entity_registry=entity_registry)
+    def _from_status(cls, *, status: CoordinateSystemStatus | None) -> "CoordinateSystemManager":
+        """Restore manager from a status snapshot.
+
+        Parameters
+        ----------
+        status : CoordinateSystemStatus | None
+            The status to restore from.
+
+        Returns
+        -------
+        CoordinateSystemManager
+            The restored manager.
+        """
+        mgr = cls()
         if status is None:
             return mgr
 

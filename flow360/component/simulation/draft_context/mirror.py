@@ -6,6 +6,7 @@ import pydantic as pd
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityBase
+from flow360.component.simulation.framework.entity_registry import EntityRegistry
 from flow360.component.simulation.framework.entity_utils import generate_uuid
 from flow360.component.simulation.primitives import GeometryBodyGroup, Surface
 from flow360.component.simulation.unit_system import LengthType
@@ -445,15 +446,37 @@ class MirrorManager:
 
     # endregion ------------------------------------------------------------------------------------
 
-    def _to_status(self) -> Optional[MirrorStatus]:
-        """Build a serializable status snapshot."""
-        # Filter out actions that refer to body groups that no longer exist.
-        valid_body_group_ids = {body_group.private_attribute_id for body_group in self._body_groups}
-        filtered_actions: Dict[str, str] = {
-            body_group_id: mirror_plane_id
-            for body_group_id, mirror_plane_id in self._body_group_id_to_mirror_id.items()
-            if body_group_id in valid_body_group_ids
-        }
+    def _to_status(self, *, entity_registry: EntityRegistry) -> Optional[MirrorStatus]:
+        """Build a serializable status snapshot.
+
+        Parameters
+        ----------
+        entity_registry : EntityRegistry
+            The entity registry to validate entity references against.
+
+        Returns
+        -------
+        Optional[MirrorStatus]
+            The serialized mirror status, or None if no valid mirror actions exist.
+        """
+        # Build a set of existing GeometryBodyGroup IDs in the registry for validation.
+        existing_body_group_ids = set()
+        for entity in entity_registry.find_by_type(GeometryBodyGroup):
+            if is_exact_instance(entity, GeometryBodyGroup):
+                existing_body_group_ids.add(entity.private_attribute_id)
+
+        # Filter out actions that refer to body groups that no longer exist in the registry.
+        filtered_actions: Dict[str, str] = {}
+        for body_group_id, mirror_plane_id in self._body_group_id_to_mirror_id.items():
+            if body_group_id not in existing_body_group_ids:
+                log.debug(
+                    "GeometryBodyGroup '%s' assigned to mirror plane '%s' is not in the draft registry; "
+                    "skipping this mirror action.",
+                    body_group_id,
+                    mirror_plane_id,
+                )
+                continue
+            filtered_actions[body_group_id] = mirror_plane_id
 
         if not filtered_actions:
             # No valid mirror actions – nothing to serialize.
