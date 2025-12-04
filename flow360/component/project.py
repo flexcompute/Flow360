@@ -13,10 +13,10 @@ import pydantic as pd
 import typing_extensions
 from pydantic import PositiveInt
 
-from flow360.component.cloud_examples import copy_example
 from flow360.cloud.flow360_requests import LengthUnitType, RenameAssetRequestV2
 from flow360.cloud.rest_api import RestApi
 from flow360.component.case import Case
+from flow360.component.cloud_examples import copy_example
 from flow360.component.geometry import Geometry
 from flow360.component.interfaces import (
     GeometryInterface,

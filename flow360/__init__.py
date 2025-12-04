@@ -350,7 +350,7 @@ __all__ = [
     "FullyMovingFloor",
     "CentralBelt",
     "WheelBelts",
-    "show_available_examples"
+    "show_available_examples",
 ]
 
 _warn_prerelease()
