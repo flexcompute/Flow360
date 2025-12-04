@@ -649,7 +649,6 @@ class ImportedSurface(EntityBase):
     )
     file_name: str
     surface_mesh_id: Optional[str] = None
-    storage_file_name: Optional[str] = None
 
 
 class GhostSurface(_SurfaceEntityBase):
