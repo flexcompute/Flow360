@@ -5,6 +5,7 @@ This module is flow360 for simulation based models
 from flow360.accounts_utils import Accounts
 from flow360.cli.api_set_func import configure_caller as configure
 from flow360.component.case import Case
+from flow360.component.cloud_examples import show_available_examples
 from flow360.component.geometry import Geometry
 from flow360.component.project import Project
 from flow360.component.simulation import migration, services
@@ -318,4 +319,5 @@ __all__ = [
     "MovingStatistic",
     "ImportedSurface",
     "RunControl",
+    "show_available_examples"
 ]

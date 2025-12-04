@@ -13,6 +13,7 @@ import pydantic as pd
 import typing_extensions
 from pydantic import PositiveInt
 
+from flow360.component.cloud_examples import copy_example
 from flow360.cloud.flow360_requests import LengthUnitType, RenameAssetRequestV2
 from flow360.cloud.rest_api import RestApi
 from flow360.component.case import Case
@@ -1196,6 +1197,30 @@ class Project(pd.BaseModel):
         project._get_root_simulation_json()
         project._get_tree_from_cloud()
         return project
+
+    @classmethod
+    @pd.validate_call
+    def from_example(cls, example_id: str):
+        """
+        Creates a project from an existing example in the cloud.
+
+        Parameters
+        ----------
+        example_id : str
+            ID of the example to copy.
+
+        Returns
+        -------
+        Project
+            An instance of the project created from the example.
+
+        Raises
+        ------
+        Flow360WebError
+            If the example cannot be copied or the project cannot be loaded.
+        """
+        project_id = copy_example(example_id)
+        return cls.from_cloud(project_id)
 
     def _check_initialized(self):
         """
