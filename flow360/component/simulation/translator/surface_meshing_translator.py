@@ -64,7 +64,9 @@ def SurfaceEdgeRefinement_to_edges(obj: SurfaceEdgeRefinement):
 
 
 # pylint: disable=invalid-name
-def SurfaceRefinement_to_faces(obj: SurfaceRefinement, global_max_edge_length):
+def SurfaceRefinement_to_faces(
+    obj: SurfaceRefinement, global_max_edge_length, global_curvature_resolution_angle
+):
     """
     Translate SurfaceRefinement to faces.
     """
@@ -73,6 +75,11 @@ def SurfaceRefinement_to_faces(obj: SurfaceRefinement, global_max_edge_length):
             obj.max_edge_length.value.item()
             if obj.max_edge_length is not None
             else global_max_edge_length.value.item()
+        ),
+        "curvatureResolutionAngle": (
+            obj.curvature_resolution_angle.to("degree").value.item()
+            if obj.curvature_resolution_angle is not None
+            else global_curvature_resolution_angle.to("degree").value.item()
         ),
     }
 
@@ -532,6 +539,7 @@ def legacy_mesher_json(input_params: SimulationParams):
         SurfaceRefinement,
         translation_func=SurfaceRefinement_to_faces,
         translation_func_global_max_edge_length=input_params.meshing.defaults.surface_max_edge_length,
+        translation_func_global_curvature_resolution_angle=input_params.meshing.defaults.curvature_resolution_angle,
         use_sub_item_as_key=True,
     )
 
