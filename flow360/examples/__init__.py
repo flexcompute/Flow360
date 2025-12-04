@@ -11,6 +11,7 @@ from .drivaer import DrivAer
 from .evtol import EVTOL
 from .isolated_propeller import IsolatedPropeller
 from .monitors import MonitorsAndSlices
+from .oblique_channel import ObliqueChannel
 from .om6wing import OM6wing
 from .quadcopter import Quadcopter
 from .rotating_spheres import RotatingSpheres
@@ -52,4 +53,5 @@ __all__ = [
     "TutorialRANSXv15",
     "TutorialUDDForcesMoments",
     "Quadcopter",
+    "ObliqueChannel",
 ]
