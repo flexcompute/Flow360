@@ -550,6 +550,10 @@ class Outflow(BoundaryBase):
         description="Specify the static pressure, mass flow rate, or Mach number parameters at"
         + " the `Outflow` boundary.",
     )
+    entities: EntityList[Surface, WindTunnelGhostSurface] = pd.Field(
+        alias="surfaces",
+        description="List of boundaries with the `Outflow` boundary condition imposed.",
+    )
 
 
 class Inflow(BoundaryBaseWithTurbulenceQuantities):
@@ -611,6 +615,10 @@ class Inflow(BoundaryBaseWithTurbulenceQuantities):
         None,
         description="Direction of the incoming flow. Must be a unit vector pointing "
         + "into the volume. If unspecified, the direction will be normal to the surface.",
+    )
+    entities: EntityList[Surface, WindTunnelGhostSurface] = pd.Field(
+        alias="surfaces",
+        description="List of boundaries with the `Inflow` boundary condition imposed.",
     )
 
 
