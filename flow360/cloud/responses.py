@@ -29,4 +29,3 @@ class ExamplesListResponse(pd_v2.BaseModel):
 
     data: List[ExampleItem] = pd_v2.Field(description="List of available examples")
     warning: Optional[str] = pd_v2.Field(default=None, description="Warning message if any")
-
