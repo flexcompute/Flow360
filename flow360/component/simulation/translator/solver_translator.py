@@ -67,6 +67,7 @@ from flow360.component.simulation.outputs.outputs import (
     IsosurfaceOutput,
     MonitorOutputType,
     ProbeOutput,
+    RenderOutput,
     Slice,
     SliceOutput,
     StreamlineOutput,
@@ -83,7 +84,7 @@ from flow360.component.simulation.outputs.outputs import (
     TimeAverageSurfaceProbeOutput,
     TimeAverageVolumeOutput,
     UserDefinedField,
-    VolumeOutput,
+    VolumeOutput, RenderOutputGroup,
 )
 from flow360.component.simulation.primitives import (
     BOUNDARY_FULL_NAME_WHEN_NOT_FOUND,
@@ -98,12 +99,14 @@ from flow360.component.simulation.primitives import (
 )
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
+from flow360.component.simulation.outputs.output_render_types import FieldMaterial
 from flow360.component.simulation.translator.user_expression_utils import (
     udf_prepending_code,
 )
 from flow360.component.simulation.translator.utils import (
     _get_key_name,
     convert_tuples_to_lists,
+    get_all_entries_of_type,
     get_global_setting_from_first_instance,
     has_instance_in_list,
     inline_expressions_in_dict,
@@ -384,6 +387,14 @@ def get_monitor_locations(entities: EntityList):
     return monitor_locations
 
 
+def inject_render_info(entity: Isosurface):
+    """inject entity info"""
+    return {
+        "surfaceField": entity.field,
+        "surfaceFieldMagnitude": entity.iso_value,
+    }
+
+
 def inject_probe_info(entity: EntityList):
     """inject entity info"""
 
@@ -565,6 +576,81 @@ def translate_isosurface_output(
         entity_injection_input_params=input_params,
     )
     return translated_output
+
+
+def translate_render_output(
+    input_params: SimulationParams,
+    output_params: list,
+    isosurface_injection_function,
+    slice_injection_function
+):
+    """Translate render output settings."""
+
+    renders = get_all_entries_of_type(output_params, RenderOutput)
+
+    translated_outputs = []
+
+    for render in renders:
+        camera = render.camera.model_dump(exclude_none=True, exclude_unset=True, by_alias=True)
+        lighting = render.lighting.model_dump(exclude_none=True, exclude_unset=True, by_alias=True)
+        environment = render.environment.model_dump(
+            exclude_none=True, exclude_unset=True, by_alias=True
+        )
+
+        for render_group in render.groups:
+            material = render_group.material.model_dump(exclude_none=True, exclude_unset=True, by_alias=True) 
+            if "outputField" in material and material["outputField"] not in render.output_fields:
+                render.output_fields.append(material["outputField"])
+
+        translated_output = {
+            "name": render.name,
+            "animationFrequency": render.frequency,
+            "animationFrequencyOffset": render.frequency_offset,
+            "groups": [],
+            "camera": remove_units_in_dict(camera),
+            "lighting": remove_units_in_dict(lighting),
+            "environment": remove_units_in_dict(environment),
+            "outputFields": translate_output_fields(render)["outputFields"]
+        }
+
+        for render_group in render.groups:
+            material = render_group.material.model_dump(exclude_none=True, exclude_unset=True, by_alias=True)
+            translated_output["groups"].append({
+                "surfaces": translate_setting_and_apply_to_all_entities(
+                    [render_group],
+                    RenderOutputGroup,
+                    to_list=False,
+                    entity_type_to_include=Surface,
+                    entity_list_attribute_name="surfaces"
+                ),
+                "slices": translate_setting_and_apply_to_all_entities(
+                    [render_group],
+                    RenderOutputGroup,
+                    to_list=False,
+                    entity_injection_func=slice_injection_function,
+                    entity_type_to_include=Slice,
+                    entity_list_attribute_name="slices"
+                ),
+                "isoSurfaces": translate_setting_and_apply_to_all_entities(
+                    [render_group],
+                    RenderOutputGroup,
+                    to_list=False,
+                    entity_injection_func=isosurface_injection_function,
+                    entity_type_to_include=Isosurface,
+                    entity_list_attribute_name="isosurfaces",
+                    entity_injection_input_params=input_params,
+                ),
+                "material": remove_units_in_dict(material)
+            })
+        if render.transform:
+            transform = render.transform.model_dump(
+                exclude_none=True, exclude_unset=True, by_alias=True
+            )
+            translated_output["transform"] = remove_units_in_dict(transform)
+
+        translated_outputs.append(translated_output)
+
+    return translated_outputs
 
 
 def translate_surface_slice_output(
@@ -951,7 +1037,16 @@ def translate_output(input_params: SimulationParams, translated: dict):
         if imported_surface_output_configs["surfaces"]:
             translated["timeAverageImportedSurfaceOutput"] = imported_surface_output_configs
 
-    ##:: Step6: Get translated["monitorOutput"]
+    ##:: Step6: Get translated["renderOutput"]
+    if has_instance_in_list(outputs, RenderOutput):
+        translated["renderOutput"] = translate_render_output(
+            input_params, 
+            outputs, 
+            inject_isosurface_info,
+            inject_slice_info
+        )
+
+    ##:: Step7: Get translated["monitorOutput"]
     probe_output = {}
     probe_output_average = {}
     integral_output = {}
@@ -973,7 +1068,7 @@ def translate_output(input_params: SimulationParams, translated: dict):
     if probe_output or integral_output:
         translated["monitorOutput"] = merge_monitor_output(probe_output, integral_output)
 
-    ##:: Step6.1: Get translated["surfaceMonitorOutput"]
+    ##:: Step7.1: Get translated["surfaceMonitorOutput"]
     surface_monitor_output = {}
     surface_monitor_output_average = {}
     if has_instance_in_list(outputs, SurfaceProbeOutput):
@@ -995,17 +1090,17 @@ def translate_output(input_params: SimulationParams, translated: dict):
             surface_monitor_output, surface_monitor_output_average
         )
 
-    ##:: Step6: Get translated["surfaceSliceOutput"]
+    ##:: Step8: Get translated["surfaceSliceOutput"]
     surface_slice_output = {}
     if has_instance_in_list(outputs, SurfaceSliceOutput):
         surface_slice_output = translate_surface_slice_output(outputs, SurfaceSliceOutput)
         translated["surfaceSliceOutput"] = surface_slice_output
 
-    ##:: Step7: Get translated["aeroacousticOutput"]
+    ##:: Step9: Get translated["aeroacousticOutput"]
     if has_instance_in_list(outputs, AeroAcousticOutput):
         translated["aeroacousticOutput"] = translate_acoustic_output(outputs)
 
-    ##:: Step8: Get translated["streamlineOutput"]
+    ##:: Step10: Get translated["streamlineOutput"]
     if has_instance_in_list(outputs, StreamlineOutput):
         translated["streamlineOutput"] = translate_streamline_output(outputs, StreamlineOutput)
 
@@ -1014,7 +1109,7 @@ def translate_output(input_params: SimulationParams, translated: dict):
             outputs, TimeAverageStreamlineOutput
         )
 
-    ##:: Step9: Get translated["importedSurfaceIntegralOutput"]
+    ##:: Step11: Get translated["importedSurfaceIntegralOutput"]
     if has_instance_in_list(outputs, SurfaceIntegralOutput):
         imported_surface_integral_output_configs = translate_imported_surface_integral_output(
             outputs,

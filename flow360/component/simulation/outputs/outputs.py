@@ -6,7 +6,7 @@ Caveats:
 """
 
 # pylint: disable=too-many-lines
-from typing import Annotated, List, Literal, Optional, Union, get_args
+from typing import Annotated, Dict, List, Literal, Optional, Union, get_args
 
 import pydantic as pd
 
@@ -32,6 +32,13 @@ from flow360.component.simulation.outputs.output_fields import (
     SurfaceFieldNames,
     VolumeFieldNames,
     get_field_values,
+)
+from flow360.component.simulation.outputs.output_render_types import (
+    AnyMaterial,
+    RenderCameraConfig,
+    RenderEnvironmentConfig,
+    RenderLightingConfig,
+    Transform,
 )
 from flow360.component.simulation.primitives import (
     GhostCircularPlane,
@@ -674,6 +681,60 @@ class SurfaceIntegralOutput(_OutputBase):
                     " Please assign them to separate outputs."
                 )
         return value
+
+
+class RenderOutputGroup(Flow360BaseModel):
+    surfaces: Optional[EntityList[Surface]] = pd.Field(
+        None, description="List of of :class:`~flow360.Surface` entities."
+    )
+    slices: Optional[EntityList[Slice]] = pd.Field(
+        None, description="List of of :class:`~flow360.Slice` entities."
+    )
+    isosurfaces: Optional[UniqueItemList[Isosurface]] = pd.Field(
+        None, description="List of :class:`~flow360.Isosurface` entities."
+    )
+    material: AnyMaterial = pd.Field()
+
+
+class RenderOutput(_AnimationSettings):
+    """
+
+    :class:`RenderOutput` class for backend rendered output settings.
+
+    Example
+    -------
+
+    Define the :class:`RenderOutput` of :code:`qcriterion` on two isosurfaces:
+
+    >>> fl.RenderOutput(
+    ...     isosurfaces=[
+    ...         fl.Isosurface(
+    ...             name="Isosurface_T_0.1",
+    ...             iso_value=0.1,
+    ...             field="T",
+    ...         ),
+    ...         fl.Isosurface(
+    ...             name="Isosurface_p_0.5",
+    ...             iso_value=0.5,
+    ...             field="p",
+    ...         ),
+    ...     ],
+    ...     output_field="qcriterion",
+    ... )
+
+    ====
+    """
+
+    name: str = pd.Field("Render output", description="Name of the `RenderOutput`.")
+    groups: List[RenderOutputGroup] = pd.Field("Render groups")
+    output_fields: UniqueItemList[Union[CommonFieldNames, str]] = pd.Field(
+        [], description="List of output variables."
+    )
+    camera: RenderCameraConfig = pd.Field(description="Camera settings", default_factory=RenderCameraConfig.orthographic)
+    lighting: RenderLightingConfig = pd.Field(description="Lighting settings", default_factory=RenderLightingConfig.default)
+    environment: RenderEnvironmentConfig = pd.Field(description="Environment settings", default_factory=RenderEnvironmentConfig.simple)
+    transform: Optional[Transform] = pd.Field(None, description="Optional model transform to apply to all entities")
+    output_type: Literal["RenderOutput"] = pd.Field("RenderOutput", frozen=True)
 
 
 class ProbeOutput(_OutputBase):
@@ -1366,6 +1427,7 @@ OutputTypes = Annotated[
         TimeAverageStreamlineOutput,
         ForceDistributionOutput,
         TimeAverageForceDistributionOutput,
+        RenderOutput,
     ],
     pd.Field(discriminator="output_type"),
 ]

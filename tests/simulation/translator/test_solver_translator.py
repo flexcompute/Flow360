@@ -58,16 +58,30 @@ from flow360.component.simulation.operating_condition.operating_condition import
     ThermalState,
 )
 from flow360.component.simulation.outputs.output_entities import (
+    Isosurface,
     Point,
     PointArray,
     PointArray2D,
     Slice,
+)
+from flow360.component.simulation.outputs.output_render_types import (
+    AmbientLight,
+    DirectionalLight,
+    OrthographicProjection,
+    PBRMaterial,
+    RenderCameraConfig,
+    RenderEnvironmentConfig,
+    RenderLightingConfig,
+    SkyboxBackground,
+    SkyboxTexture,
+    StaticCamera,
 )
 from flow360.component.simulation.outputs.outputs import (
     Isosurface,
     IsosurfaceOutput,
     MovingStatistic,
     ProbeOutput,
+    RenderOutput,
     SliceOutput,
     StreamlineOutput,
     SurfaceIntegralOutput,
@@ -184,6 +198,7 @@ def get_om6Wing_tutorial_param():
     my_wall = Surface(name="1")
     my_symmetry_plane = Surface(name="2")
     my_freestream = Surface(name="3")
+    my_isosurface = Isosurface(name="iso", field="Mach", iso_value=0.5)
     with SI_unit_system:
         param = SimulationParams(
             reference_geometry=ReferenceGeometry(
@@ -246,6 +261,31 @@ def get_om6Wing_tutorial_param():
                     entities=[my_wall, my_symmetry_plane, my_freestream],
                     output_format="paraview",
                     output_fields=["Cp"],
+                ),
+                RenderOutput(
+                    isosurfaces=[my_isosurface],
+                    output_fields=["qcriterion"],
+                    camera=RenderCameraConfig(
+                        view=StaticCamera(position=(20, 20, 20), target=(0, 0, 0)),
+                        projection=OrthographicProjection(width=30, near=0.01, far=100),
+                    ),
+                    lighting=RenderLightingConfig(
+                        ambient=AmbientLight(intensity=0.4, color=(255, 255, 255)),
+                        directional=DirectionalLight(
+                            intensity=1.5, color=(255, 255, 255), direction=(-1.0, -1.0, -1.0)
+                        ),
+                    ),
+                    environment=RenderEnvironmentConfig(
+                        background=SkyboxBackground(texture=SkyboxTexture.SKY)
+                    ),
+                    materials={
+                        "iso": PBRMaterial(
+                            color=(245, 245, 246),
+                            alpha=1.0,
+                            roughness=0.3,
+                            f0=(0.56, 0.56, 0.56),
+                        )
+                    }
                 ),
             ],
         )
