@@ -4,10 +4,11 @@ from typing import Optional
 import pydantic as pd
 
 from flow360.component.simulation.framework.entity_materializer import (
+    _stable_entity_key_from_obj,
     materialize_entities_in_place,
 )
 from flow360.component.simulation.outputs.output_entities import Point
-from flow360.component.simulation.primitives import Surface
+from flow360.component.simulation.primitives import Box, Surface
 
 
 def _mk_entity(name: str, entity_type: str, eid: Optional[str] = None) -> dict:
@@ -268,3 +269,211 @@ def test_materialize_reuses_cached_instance_across_nodes():
     obj2 = next(x for x in items2 if isinstance(x, Surface))
     # identity check: cached instance is reused across nodes
     assert obj1 is obj2
+
+
+def test_entity_pool_provides_reference_identity():
+    """
+    Test: Entity pool enables reference identity between pre-existing entities and materialized params.
+
+    Purpose:
+    - Verify that entity_pool parameter allows reusing pre-existing entity instances
+    - Verify that materialized entities are the exact same Python objects from the pool
+    - Verify that modifications to pool entities are reflected in materialized params
+
+    Expected behavior:
+    - Input: Pre-existing Surface and Box entities in entity_pool
+    - Process: Materialization looks up entities by (type, id) key in pool
+    - Output: Materialized entities are the same objects as pool entities (by identity)
+
+    This is the core feature enabling DraftContext entity modifications to propagate to params.
+    """
+    # Create pre-existing entity instances (simulating entity_info entities)
+    surface = pd.TypeAdapter(Surface).validate_python(
+        {
+            "private_attribute_entity_type_name": "Surface",
+            "private_attribute_id": "surf-001",
+            "name": "wing",
+        }
+    )
+    box = pd.TypeAdapter(Box).validate_python(
+        {
+            "private_attribute_entity_type_name": "Box",
+            "private_attribute_id": "box-001",
+            "name": "refinement_zone",
+            "center": {"value": [0.0, 0.0, 0.0], "units": "m"},
+            "size": {"value": [1.0, 1.0, 1.0], "units": "m"},
+            "axis_of_rotation": [0.0, 0.0, 1.0],
+            "angle_of_rotation": {"value": 0.0, "units": "degree"},
+        }
+    )
+
+    # Build entity pool keyed by (type, id)
+    entity_pool = {
+        _stable_entity_key_from_obj(surface): surface,
+        _stable_entity_key_from_obj(box): box,
+    }
+
+    # Params with entity dicts that match pool keys
+    params = {
+        "models": [
+            {
+                "entities": {
+                    "stored_entities": [
+                        {
+                            "private_attribute_entity_type_name": "Surface",
+                            "private_attribute_id": "surf-001",
+                            "name": "wing",
+                        },
+                    ]
+                }
+            }
+        ],
+        "volumes": {
+            "stored_entities": [
+                {
+                    "private_attribute_entity_type_name": "Box",
+                    "private_attribute_id": "box-001",
+                    "name": "refinement_zone",
+                    "center": {"value": [0.0, 0.0, 0.0], "units": "m"},
+                    "size": {"value": [1.0, 1.0, 1.0], "units": "m"},
+                    "axis_of_rotation": [0.0, 0.0, 1.0],
+                    "angle_of_rotation": {"value": 0.0, "units": "degree"},
+                },
+            ]
+        },
+    }
+
+    # Materialize with entity_pool
+    out = materialize_entities_in_place(params, entity_pool=entity_pool)
+
+    # Verify reference identity - materialized entities ARE the pool entities
+    materialized_surface = out["models"][0]["entities"]["stored_entities"][0]
+    materialized_box = out["volumes"]["stored_entities"][0]
+
+    assert materialized_surface is surface, "Surface should be same object from entity_pool"
+    assert materialized_box is box, "Box should be same object from entity_pool"
+
+
+def test_entity_pool_modification_reflects_in_materialized_params():
+    """
+    Test: Modifications to entity_pool entities are reflected in materialized params.
+
+    Purpose:
+    - Verify the end-to-end use case: modify entity in pool, see change in params
+    - This simulates the DraftContext workflow where users modify entities
+
+    Expected behavior:
+    - Create entity, add to pool, materialize params
+    - Modify the entity instance (non-frozen field like center)
+    - The modification is visible in the materialized params (same object)
+    """
+    import unyt as u
+
+    # Create entity and pool
+    box = pd.TypeAdapter(Box).validate_python(
+        {
+            "private_attribute_entity_type_name": "Box",
+            "private_attribute_id": "box-002",
+            "name": "my_box",
+            "center": {"value": [0.0, 0.0, 0.0], "units": "m"},
+            "size": {"value": [1.0, 1.0, 1.0], "units": "m"},
+            "axis_of_rotation": [0.0, 0.0, 1.0],
+            "angle_of_rotation": {"value": 0.0, "units": "degree"},
+        }
+    )
+    entity_pool = {_stable_entity_key_from_obj(box): box}
+
+    params = {
+        "volumes": {
+            "stored_entities": [
+                {
+                    "private_attribute_entity_type_name": "Box",
+                    "private_attribute_id": "box-002",
+                    "name": "my_box",
+                    "center": {"value": [0.0, 0.0, 0.0], "units": "m"},
+                    "size": {"value": [1.0, 1.0, 1.0], "units": "m"},
+                    "axis_of_rotation": [0.0, 0.0, 1.0],
+                    "angle_of_rotation": {"value": 0.0, "units": "degree"},
+                },
+            ]
+        },
+    }
+
+    out = materialize_entities_in_place(params, entity_pool=entity_pool)
+    materialized_box = out["volumes"]["stored_entities"][0]
+
+    # Verify initial state
+    assert materialized_box is box
+    assert list(box.center.value) == [0.0, 0.0, 0.0]
+
+    # Modify the entity (simulating draft.boxes["my_box"].center = ...)
+    # Note: center is a non-frozen field that can be modified
+    box.center = (1.0, 2.0, 3.0) * u.m
+
+    # The change is immediately visible in materialized params (same object)
+    assert list(materialized_box.center.value) == [1.0, 2.0, 3.0]
+    assert list(out["volumes"]["stored_entities"][0].center.value) == [1.0, 2.0, 3.0]
+
+
+def test_entity_pool_fallback_to_builder_for_unknown_entities():
+    """
+    Test: Entities not in pool are built via the default builder.
+
+    Purpose:
+    - Verify that entity_pool is optional and gracefully handles missing entries
+    - Verify that entities not found in pool are created normally via builder
+    - Verify that pool entities and built entities can coexist
+
+    Expected behavior:
+    - Input: Pool with Surface, params with Surface (in pool) and Box (not in pool)
+    - Process: Surface reuses pool, Box is built fresh
+    - Output: Surface is pool object, Box is new instance
+    """
+    surface = pd.TypeAdapter(Surface).validate_python(
+        {
+            "private_attribute_entity_type_name": "Surface",
+            "private_attribute_id": "surf-003",
+            "name": "fuselage",
+        }
+    )
+    entity_pool = {_stable_entity_key_from_obj(surface): surface}
+
+    params = {
+        "models": [
+            {
+                "entities": {
+                    "stored_entities": [
+                        # This one is in pool
+                        {
+                            "private_attribute_entity_type_name": "Surface",
+                            "private_attribute_id": "surf-003",
+                            "name": "fuselage",
+                        },
+                        # This one is NOT in pool - will be built
+                        {
+                            "private_attribute_entity_type_name": "Box",
+                            "private_attribute_id": "box-new",
+                            "name": "new_box",
+                            "center": {"value": [0.0, 0.0, 0.0], "units": "m"},
+                            "size": {"value": [1.0, 1.0, 1.0], "units": "m"},
+                            "axis_of_rotation": [0.0, 0.0, 1.0],
+                            "angle_of_rotation": {"value": 0.0, "units": "degree"},
+                        },
+                    ]
+                }
+            }
+        ],
+    }
+
+    out = materialize_entities_in_place(params, entity_pool=entity_pool)
+    items = out["models"][0]["entities"]["stored_entities"]
+
+    # Surface should be from pool
+    assert items[0] is surface
+
+    # Box should be a new instance (not in pool)
+    assert isinstance(items[1], Box)
+    assert items[1].name == "new_box"
+    # And it should NOT be in our original pool
+    box_key = _stable_entity_key_from_obj(items[1])
+    assert box_key not in entity_pool or entity_pool.get(box_key) is not items[1]

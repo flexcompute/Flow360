@@ -3,7 +3,7 @@ import json
 import pytest
 
 from flow360.component.simulation.framework.entity_selector import (
-    EntityDictDatabase,
+    SelectorEntityPool,
     expand_entity_selectors_in_place,
 )
 from flow360.component.simulation.primitives import Edge, Surface
@@ -14,7 +14,7 @@ def _mk_pool(names, entity_type):
     return [{"name": n, "private_attribute_entity_type_name": entity_type} for n in names]
 
 
-def _expand_and_get_names(db: EntityDictDatabase, selector_model) -> list[str]:
+def _expand_and_get_names(db: SelectorEntityPool, selector_model) -> list[str]:
     # Convert model to dict for the expansion engine
     params = {"node": {"selectors": [selector_model.model_dump()]}}
     expand_entity_selectors_in_place(db, params)
@@ -42,7 +42,7 @@ def test_surface_class_match_and_chain_and():
     - AND logic result: ["wing-root", "wingtip"]
     """
     # Prepare a pool of Surface entities
-    db = EntityDictDatabase(surfaces=_mk_pool(["wing", "wing-root", "wingtip", "tail"], "Surface"))
+    db = SelectorEntityPool(surfaces=_mk_pool(["wing", "wing-root", "wingtip", "tail"], "Surface"))
 
     # AND logic by default; expect intersection of predicates
     selector = Surface.match("wing*", name="t_and").not_any_of(["wing"])
@@ -65,7 +65,7 @@ def test_surface_class_match_or_union():
     - any_of(["tail"]) selects: ["tail"]
     - OR logic result: ["s1", "tail"] (in pool order)
     """
-    db = EntityDictDatabase(surfaces=_mk_pool(["s1", "s2", "tail", "wing"], "Surface"))
+    db = SelectorEntityPool(surfaces=_mk_pool(["s1", "s2", "tail", "wing"], "Surface"))
 
     # OR logic: union of predicates
     selector = Surface.match("s1", name="t_or", logic="OR").any_of(["tail"])
@@ -89,7 +89,7 @@ def test_surface_regex_and_not_match():
     - not_match("*-root", syntax="glob") excludes: ["wing-root"]
     - Result: ["wing"] (passed both predicates)
     """
-    db = EntityDictDatabase(surfaces=_mk_pool(["wing", "wing-root", "tail"], "Surface"))
+    db = SelectorEntityPool(surfaces=_mk_pool(["wing", "wing-root", "tail"], "Surface"))
 
     # Regex fullmatch for exact 'wing', then exclude via not_match (glob)
     selector = Surface.match(r"^wing$", name="t_regex", syntax="regex").not_match(
@@ -115,7 +115,7 @@ def test_in_and_not_any_of_chain():
     - not_any_of(["b"]) excludes: ["b"]
     - Final result: ["a", "c"]
     """
-    db = EntityDictDatabase(surfaces=_mk_pool(["a", "b", "c", "d"], "Surface"))
+    db = SelectorEntityPool(surfaces=_mk_pool(["a", "b", "c", "d"], "Surface"))
 
     # AND semantics: in {a,b,c} and not_in {b}
     selector = Surface.match("*", name="t_in").any_of(["a", "b", "c"]).not_any_of(["b"])
@@ -137,7 +137,7 @@ def test_edge_class_basic_match():
     - Edge.match("edgeA") selects only edgeA from the edges pool
     - Edge entities are correctly filtered by target_class
     """
-    db = EntityDictDatabase(edges=_mk_pool(["edgeA", "edgeB"], "Edge"))
+    db = SelectorEntityPool(edges=_mk_pool(["edgeA", "edgeB"], "Edge"))
 
     selector = Edge.match("edgeA", name="edge_basic")
     params = {"node": {"selectors": [selector.model_dump()]}}

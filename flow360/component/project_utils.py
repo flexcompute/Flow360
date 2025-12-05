@@ -430,23 +430,39 @@ def set_up_params_for_uploading(
             use_geometry_AI if use_geometry_AI else False
         )
 
-    # User may have made modifications to the entities which is recorded in asset's entity registry
-    # We need to reflect these changes.
-    root_asset.entity_info.update_persistent_entities(
-        asset_entity_registry=root_asset.internal_registry
-    )
+    # Determine entity_info source based on whether draft context is active
+    active_draft = get_active_draft()
+
+    if active_draft is not None:
+        # Draft mode: Use draft's entity_info as single source of truth.
+        # No update_persistent_entities() needed - modifications are already in entity_info.
+        # pylint: disable=protected-access
+        entity_info = active_draft._entity_info
+    else:
+        # Legacy mode: Use root_asset.entity_info with sync
+        log.warning(
+            "Running without draft context (legacy mode). "
+            "For better entity management, consider using: "
+            "with fl.create_draft(new_run_from=asset) as draft: ..."
+        )
+        # User may have made modifications to the entities which is recorded in asset's entity registry
+        # We need to reflect these changes.
+        root_asset.entity_info.update_persistent_entities(
+            asset_entity_registry=root_asset.internal_registry
+        )
+        entity_info = root_asset.entity_info
 
     # Check if there are any new draft entities that have been added in the params by the user
-    entity_info = _set_up_params_non_persistent_entity_info(root_asset.entity_info, params)
+    entity_info = _set_up_params_non_persistent_entity_info(entity_info, params)
 
     # If the customer just load the param without re-specify the same set of entity grouping tags,
     # we need to update the entity grouping tags to the ones in the SimulationParams.
+    # This should be unnecessary in draft mode since the entity grouping tags are already in the draft's entity_info.
     entity_info = _update_entity_grouping_tags(entity_info, params)
 
     with model_attribute_unlock(params.private_attribute_asset_cache, "project_entity_info"):
         params.private_attribute_asset_cache.project_entity_info = entity_info
 
-    active_draft = get_active_draft()
     if active_draft is not None:
         # pylint: disable=protected-access
         with model_attribute_unlock(params.private_attribute_asset_cache, "mirror_status"):

@@ -26,6 +26,9 @@ from flow360.component.simulation.entity_info import (
     parse_entity_info_model,
 )
 from flow360.component.simulation.folder import Folder
+from flow360.component.simulation.framework.entity_expansion_utils import (
+    build_entity_pool_from_entity_info,
+)
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.utils import (
     _local_download_overwrite,
@@ -200,12 +203,38 @@ class AssetBase(metaclass=ABCMeta):
 
     @property
     def entity_info(self):
-        """Return the entity info associated with the asset (copy to prevent unintentional overwrites)"""
-        return self._entity_info_class.model_validate(self._entity_info.model_dump())
+        """Return the entity info associated with the asset.
+
+        Note: This returns a direct reference to the internal entity_info.
+        Modifications (if any) to entities will be reflected in subsequent params access.
+        """
+        return self._entity_info
+
+    def _get_entity_pool(self):
+        """Build (and cache) an entity pool from the current entity_info.
+
+        The entity pool maps (type_name, private_attribute_id) to entity instances,
+        enabling reference identity between entity_info and params.
+        """
+        if not hasattr(self, "_cached_entity_pool") or self._cached_entity_pool is None:
+            self._cached_entity_pool = build_entity_pool_from_entity_info(self._entity_info)
+        return self._cached_entity_pool
+
+    def _invalidate_entity_pool(self):
+        """Invalidate the cached entity pool.
+
+        Call this when entities are added or removed from entity_info.
+        """
+        self._cached_entity_pool = None
 
     @property
     def params(self):
-        """Return the simulation parameters associated with the asset"""
+        """Return the simulation parameters associated with the asset.
+
+        Note: Entities in the returned params share reference identity with
+        entities in entity_info, enabling modifications via DraftContext to
+        be automatically reflected in params.
+        """
         params_as_dict = self._get_simulation_json(self)
 
         # pylint: disable=duplicate-code
@@ -214,6 +243,7 @@ class AssetBase(metaclass=ABCMeta):
             validated_by=services.ValidationCalledBy.LOCAL,
             root_item_type=None,
             validation_level=None,
+            entity_pool=self._get_entity_pool(),
         )
 
         if errors is not None:

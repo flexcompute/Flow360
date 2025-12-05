@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import copy
 from contextlib import AbstractContextManager
 from contextvars import ContextVar, Token
 from typing import Optional, get_args
@@ -153,7 +152,10 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
             )
         self._token: Optional[Token] = None
 
-        self._entity_info = copy.deepcopy(entity_info)
+        # Direct reference to entity_info
+        # Modifications to entities will be reflected in the asset's entity_info,
+        # mimicking web UI behavior where users can directly edit entity properties.
+        self._entity_info = entity_info
         self._entity_registry: EntityRegistry = self._entity_info.get_registry(None)
 
         # Persistent entities (referencing objects in the _entity_info)

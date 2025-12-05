@@ -5,7 +5,6 @@
 # ProjectMeta instances as FieldInfo, I'd rather not have this line
 from __future__ import annotations
 
-import copy
 import json
 from enum import Enum
 from typing import Iterable, List, Literal, Optional, Type, TypeVar, Union
@@ -101,7 +100,7 @@ def create_draft(
     # region -----------------------------Private implementations Below-----------------------------
 
     # Status type registry for generic loading
-    _STATUS_TYPE_REGISTRY = { # pylint: disable=invalid-name
+    _STATUS_TYPE_REGISTRY = {  # pylint: disable=invalid-name
         MirrorStatus: "mirror_status",
         CoordinateSystemStatus: "coordinate_system_status",
     }
@@ -210,7 +209,10 @@ def create_draft(
     if not isinstance(new_run_from, AssetBase):
         raise Flow360RuntimeError("create_draft expects a cloud asset instance as `new_run_from`.")
 
-    entity_info = copy.deepcopy(new_run_from.entity_info)
+    # Direct reference to entity_info (no deepcopy).
+    # Modifications to entities via draft will be reflected in the asset's entity_info,
+    # and subsequently in params (via entity_pool reference identity).
+    entity_info = new_run_from.entity_info
 
     _inform_grouping_selections(entity_info)
 

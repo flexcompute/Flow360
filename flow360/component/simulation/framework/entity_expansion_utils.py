@@ -6,9 +6,10 @@ import copy
 from typing import Any, List, Union
 
 from flow360.component.simulation.framework.entity_materializer import (
+    _stable_entity_key_from_obj,
     materialize_entities_in_place,
 )
-from flow360.component.simulation.framework.entity_selector import EntityDictDatabase
+from flow360.component.simulation.framework.entity_selector import SelectorEntityPool
 from flow360.exceptions import Flow360ValueError
 
 
@@ -67,8 +68,8 @@ def expand_entity_list_in_context(
             expand_entity_selectors_in_place,
         )
 
-        entity_database = get_entity_database_from_params(params, use_instances=True)
-        expand_entity_selectors_in_place(entity_database, params_payload, merge_mode="merge")
+        selector_pool = get_selector_pool_from_params(params, use_instances=True)
+        expand_entity_selectors_in_place(selector_pool, params_payload, merge_mode="merge")
         stored_entities = params_payload[wrapper_key].get("stored_entities", [])
 
     if not stored_entities:
@@ -160,8 +161,8 @@ def _extract_surface_mesh_entities(entity_info: Any) -> list:
     return _node_get(entity_info, "boundaries", []) or []
 
 
-def _build_entity_database_from_entity_info(entity_info: Any) -> EntityDictDatabase:
-    """Normalize entity info (dict or object) into EntityDictDatabase."""
+def _build_selector_entity_pool_from_entity_info(entity_info: Any) -> SelectorEntityPool:
+    """Normalize entity info (dict or object) into SelectorEntityPool for selector operations."""
     entity_info_type = _node_get(entity_info, "type_name")
 
     surfaces: list = []
@@ -176,7 +177,7 @@ def _build_entity_database_from_entity_info(entity_info: Any) -> EntityDictDatab
     elif entity_info_type == "SurfaceMeshEntityInfo":
         surfaces = _extract_surface_mesh_entities(entity_info)
 
-    return EntityDictDatabase(
+    return SelectorEntityPool(
         surfaces=surfaces,
         edges=edges,
         generic_volumes=generic_volumes,
@@ -184,7 +185,7 @@ def _build_entity_database_from_entity_info(entity_info: Any) -> EntityDictDatab
     )
 
 
-def get_entity_database_for_selectors(params_as_dict: dict) -> EntityDictDatabase:
+def get_selector_pool_from_dict(params_as_dict: dict) -> SelectorEntityPool:
     """
     Go through the simulation json and retrieve the entity database for entity selectors.
 
@@ -196,7 +197,7 @@ def get_entity_database_for_selectors(params_as_dict: dict) -> EntityDictDatabas
         params_as_dict: Simulation parameters as dictionary containing private_attribute_asset_cache
 
     Returns:
-        EntityDictDatabase: Database containing all available entities as dictionaries
+        SelectorEntityPool: Database containing all available entities as dictionaries
     """
     # Extract and validate asset cache
     asset_cache = params_as_dict.get("private_attribute_asset_cache")
@@ -207,10 +208,10 @@ def get_entity_database_for_selectors(params_as_dict: dict) -> EntityDictDatabas
     if entity_info is None:
         raise ValueError("[Internal] project_entity_info not found in asset cache.")
 
-    return _build_entity_database_from_entity_info(entity_info)
+    return _build_selector_entity_pool_from_entity_info(entity_info)
 
 
-def get_entity_database_from_params(params, *, use_instances: bool = False) -> EntityDictDatabase:
+def get_selector_pool_from_params(params, *, use_instances: bool = False) -> SelectorEntityPool:
     """
     Retrieve the entity database for selectors from a SimulationParams instance.
 
@@ -220,7 +221,7 @@ def get_entity_database_from_params(params, *, use_instances: bool = False) -> E
         SimulationParams (or compatible object) that holds `private_attribute_asset_cache`.
     use_instances : bool, default False
         When True, returns databases backed by deserialized entity objects.
-        When False, falls back to the JSON/dict path (same as `get_entity_database_for_selectors`).
+        When False, falls back to the JSON/dict path (same as `get_selector_pool_from_dict`).
     """
 
     if params is None:
@@ -234,10 +235,62 @@ def get_entity_database_from_params(params, *, use_instances: bool = False) -> E
 
     if not use_instances:
         params_as_dict = params.model_dump(mode="json", exclude_none=True)
-        return get_entity_database_for_selectors(params_as_dict)
+        return get_selector_pool_from_dict(params_as_dict)
 
     entity_info = getattr(asset_cache, "project_entity_info", None)
     if entity_info is None:
         raise ValueError("[Internal] SimulationParams is missing project_entity_info.")
 
-    return _build_entity_database_from_entity_info(entity_info)
+    return _build_selector_entity_pool_from_entity_info(entity_info)
+
+
+def build_entity_pool_from_entity_info(entity_info: Any) -> dict:
+    """
+    Build an entity pool from entity_info for use in materialization.
+
+    This function extracts all entities (persistent, draft, and ghost) from the entity_info
+    and creates a dict keyed by (type_name, private_attribute_id) for use as a pre-populated
+    cache during entity materialization.
+
+    This enables reference identity between entity_info and params.
+    And also standarizes access of entities from entity_info.
+
+    Parameters
+    ----------
+    entity_info : EntityInfoModel
+        The entity info containing all entities (GeometryEntityInfo, VolumeMeshEntityInfo,
+        or SurfaceMeshEntityInfo).
+
+    Returns
+    -------
+    dict
+        A dict mapping (type_name, private_attribute_id) tuples to entity instances.
+    """
+    pool = {}
+
+    def _add_entities_to_pool(entities):
+        """Helper to add entities to pool."""
+        for entity in entities:
+            key = _stable_entity_key_from_obj(entity)
+            pool[key] = entity
+
+    entity_info_type = _node_get(entity_info, "type_name")
+
+    # Collect persistent entities based on entity_info type
+    if entity_info_type == "GeometryEntityInfo":
+        for attr_name in ["grouped_faces", "grouped_edges", "grouped_bodies"]:
+            for group in _node_get(entity_info, attr_name, []) or []:
+                _add_entities_to_pool(group)
+
+    elif entity_info_type == "VolumeMeshEntityInfo":
+        for attr_name in ["boundaries", "zones"]:
+            _add_entities_to_pool(_node_get(entity_info, attr_name, []) or [])
+
+    elif entity_info_type == "SurfaceMeshEntityInfo":
+        _add_entities_to_pool(_node_get(entity_info, "boundaries", []) or [])
+
+    # Collect draft and ghost entities
+    for attr_name in ["draft_entities", "ghost_entities"]:
+        _add_entities_to_pool(_node_get(entity_info, attr_name, []) or [])
+
+    return pool

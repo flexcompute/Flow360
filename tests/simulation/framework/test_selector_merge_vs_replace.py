@@ -1,5 +1,5 @@
 from flow360.component.simulation.framework.entity_selector import (
-    EntityDictDatabase,
+    SelectorEntityPool,
     expand_entity_selectors_in_place,
 )
 
@@ -9,7 +9,7 @@ def _mk_pool(names, entity_type):
 
 
 def test_merge_mode_preserves_explicit_then_appends_selector_results():
-    db = EntityDictDatabase(surfaces=_mk_pool(["wing", "tail", "body"], "Surface"))
+    db = SelectorEntityPool(surfaces=_mk_pool(["wing", "tail", "body"], "Surface"))
     params = {
         "node": {
             "stored_entities": [{"name": "tail", "private_attribute_entity_type_name": "Surface"}],
@@ -36,7 +36,7 @@ def test_merge_mode_preserves_explicit_then_appends_selector_results():
 
 
 def test_replace_mode_overrides_target_class_only():
-    db = EntityDictDatabase(
+    db = SelectorEntityPool(
         surfaces=_mk_pool(["wing", "tail"], "Surface"), edges=_mk_pool(["e1"], "Edge")
     )
     params = {
