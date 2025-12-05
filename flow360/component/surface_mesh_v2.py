@@ -326,7 +326,9 @@ class SurfaceMeshV2(AssetBase):
         List[str]
             List of boundary names contained within the surface mesh
         """
-        self.internal_registry = self._entity_info.get_registry(self.internal_registry)
+        self.internal_registry = self._entity_info.get_persistent_entity_registry(
+            self.internal_registry
+        )
 
         return [
             surface.name for surface in self.internal_registry.get_bucket(by_type=Surface).entities
@@ -347,7 +349,9 @@ class SurfaceMeshV2(AssetBase):
         if isinstance(key, str) is False:
             raise Flow360ValueError(f"Entity naming pattern: {key} is not a string.")
 
-        self.internal_registry = self._entity_info.get_registry(self.internal_registry)
+        self.internal_registry = self._entity_info.get_persistent_entity_registry(
+            self.internal_registry
+        )
 
         return self.internal_registry.find_by_naming_pattern(
             key, enforce_output_as_list=False, error_when_no_match=True

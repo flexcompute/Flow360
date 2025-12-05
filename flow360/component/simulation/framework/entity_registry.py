@@ -60,7 +60,7 @@ class EntityRegistryBucket:
 
 class EntityRegistry(Flow360BaseModel):
     """
-    A registry for managing and storing instances of various entity types.
+    A registry for managing instances of various entity types.
 
     This class provides methods to register entities, retrieve entities by their type,
     and find entities by name patterns using regular expressions.

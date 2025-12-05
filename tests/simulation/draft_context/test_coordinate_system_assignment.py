@@ -320,7 +320,7 @@ def test_from_status_rejects_duplicate_entity_assignment(mock_geometry):
 
 
 def test_coordinate_system_status_round_trip_through_asset_cache(mock_geometry, tmp_path):
-    mock_geometry.internal_registry = mock_geometry._entity_info.get_registry(
+    mock_geometry.internal_registry = mock_geometry._entity_info.get_persistent_entity_registry(
         mock_geometry.internal_registry
     )
     with create_draft(new_run_from=mock_geometry) as draft:
@@ -370,8 +370,10 @@ def test_coordinate_system_status_round_trip_through_asset_cache(mock_geometry, 
             )
         ),
     )
-    uploaded_geometry.internal_registry = uploaded_geometry._entity_info.get_registry(
-        uploaded_geometry.internal_registry
+    uploaded_geometry.internal_registry = (
+        uploaded_geometry._entity_info.get_persistent_entity_registry(
+            uploaded_geometry.internal_registry
+        )
     )
 
     with create_draft(new_run_from=uploaded_geometry) as restored:

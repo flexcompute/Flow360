@@ -78,7 +78,7 @@ class EntityInfoModel(Flow360BaseModel, metaclass=ABCMeta):
         """
 
     @abstractmethod
-    def get_registry(self, internal_registry, **kwargs):
+    def get_persistent_entity_registry(self, internal_registry, **kwargs):
         """
         Ensure that `internal_registry` exists and if not, initialize `internal_registry`.
         """
@@ -407,7 +407,7 @@ class GeometryEntityInfo(EntityInfoModel):
                 self.body_group_tag = None
         return registry
 
-    def get_registry(self, internal_registry, **_) -> EntityRegistry:
+    def get_persistent_entity_registry(self, internal_registry, **_) -> EntityRegistry:
         if internal_registry is None:
             internal_registry = EntityRegistry()
             if self.face_group_tag is None:
@@ -585,7 +585,7 @@ class VolumeMeshEntityInfo(EntityInfoModel):
                 # pylint:disable = unsupported-assignment-operation
                 self.zones[i_zone] = assigned_zone
 
-    def get_registry(self, internal_registry, **_) -> EntityRegistry:
+    def get_persistent_entity_registry(self, internal_registry, **_) -> EntityRegistry:
         if internal_registry is None:
             # Initialize the local registry
             internal_registry = EntityRegistry()
@@ -625,7 +625,7 @@ class SurfaceMeshEntityInfo(EntityInfoModel):
         """
         return
 
-    def get_registry(self, internal_registry, **_) -> EntityRegistry:
+    def get_persistent_entity_registry(self, internal_registry, **_) -> EntityRegistry:
         if internal_registry is None:
             # Initialize the local registry
             internal_registry = EntityRegistry()

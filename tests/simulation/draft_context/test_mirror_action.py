@@ -143,7 +143,7 @@ def test_mirror_multiple_calls_accumulate_and_derive_from_actions(mock_geometry)
 def test_mirror_status_round_trip_through_asset_cache(mock_geometry, tmp_path):
     # Ensure the geometry has an internal registry so that SimulationParams can
     # reference entities and pre-upload processing can update persistent entities.
-    mock_geometry.internal_registry = mock_geometry._entity_info.get_registry(
+    mock_geometry.internal_registry = mock_geometry._entity_info.get_persistent_entity_registry(
         mock_geometry.internal_registry
     )
 
@@ -218,8 +218,10 @@ def test_mirror_status_round_trip_through_asset_cache(mock_geometry, tmp_path):
             )
         ),
     )
-    uploaded_geometry.internal_registry = uploaded_geometry._entity_info.get_registry(
-        uploaded_geometry.internal_registry
+    uploaded_geometry.internal_registry = (
+        uploaded_geometry._entity_info.get_persistent_entity_registry(
+            uploaded_geometry.internal_registry
+        )
     )
 
     with create_draft(new_run_from=uploaded_geometry) as restored:

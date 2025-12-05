@@ -447,6 +447,9 @@ def set_up_params_for_uploading(
         )
         # User may have made modifications to the entities which is recorded in asset's entity registry
         # We need to reflect these changes.
+        # This is needed becuase pre-draft context, root_asset.internal_registry and
+        # root_asset.entity_info holds 2 separate copies of entities.
+        # Although now that the draft context is introduced, this is no longer needed but we keep it here JIC.
         root_asset.entity_info.update_persistent_entities(
             asset_entity_registry=root_asset.internal_registry
         )

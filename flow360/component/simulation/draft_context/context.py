@@ -50,22 +50,6 @@ def get_active_draft() -> DraftContext | None:
     return _ACTIVE_DRAFT.get()
 
 
-def capture_into_draft(entity: EntityBase) -> EntityBase:
-    """
-    Capture an entity into the active draft context.
-    """
-
-    # TODO: so For this function the only usage that I can think of is capturing draft entities that are
-    # created under the draft context So is it possible that we have this function in the constructor of these
-    # models for example in the box or cylinder etc? Tell me how this design sounds to you and what's your
-    # concern about this design?
-    draft = get_active_draft()
-    if draft is None:
-        raise Flow360RuntimeError("Cannot capture entity because no draft context is active.")
-    draft._capture_entity(entity)  # pylint: disable=protected-access
-    return entity
-
-
 class _SingleTypeEntityRegistry:
     """
     A thin view over `EntityRegistry` restricted to a single entity type.
@@ -156,7 +140,9 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
         # Modifications to entities will be reflected in the asset's entity_info,
         # mimicking web UI behavior where users can directly edit entity properties.
         self._entity_info = entity_info
-        self._entity_registry: EntityRegistry = self._entity_info.get_registry(None)
+        self._entity_registry: EntityRegistry = self._entity_info.get_persistent_entity_registry(
+            None
+        )
 
         # Persistent entities (referencing objects in the _entity_info)
         self._body_groups = _SingleTypeEntityRegistry(

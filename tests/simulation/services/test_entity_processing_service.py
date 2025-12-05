@@ -58,7 +58,7 @@ def test_validate_model_expands_selectors_and_preserves_them():
     - Verifies that the process is idempotent.
     """
     vm = _load_local_vm()
-    vm.internal_registry = vm._entity_info.get_registry(vm.internal_registry)
+    vm.internal_registry = vm._entity_info.get_persistent_entity_registry(vm.internal_registry)
 
     with fl.SI_unit_system:
         all_wings_selector = Surface.match("*Wing", name="all_wings")
