@@ -13,7 +13,7 @@ from pydantic_core import ErrorDetails
 from flow360.component.simulation.blueprint.core.dependency_graph import DependencyGraph
 from flow360.component.simulation.exposed_units import supported_units_by_front_end
 from flow360.component.simulation.framework.entity_expansion_utils import (
-    get_entity_database_for_selectors,
+    get_selector_pool_from_dict,
 )
 from flow360.component.simulation.framework.entity_materializer import (
     materialize_entities_in_place,
@@ -438,10 +438,10 @@ def resolve_selectors(params_as_dict: dict):
         return params_as_dict
 
     # Step2: Parse the entity info part and retrieve the entity lookup table.
-    entity_database = get_entity_database_for_selectors(params_as_dict=params_as_dict)
+    selector_pool = get_selector_pool_from_dict(params_as_dict=params_as_dict)
 
     # Step3: Expand selectors using the entity database (default merge: explicit first)
-    return expand_entity_selectors_in_place(entity_database, params_as_dict, merge_mode="merge")
+    return expand_entity_selectors_in_place(selector_pool, params_as_dict, merge_mode="merge")
 
 
 def validate_model(  # pylint: disable=too-many-locals

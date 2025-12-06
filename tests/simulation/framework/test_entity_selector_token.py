@@ -4,8 +4,8 @@ import pytest
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_selector import (
-    EntityDictDatabase,
     EntitySelector,
+    SelectorEntityPool,
     collect_and_tokenize_selectors_in_place,
     expand_entity_selectors_in_place,
 )
@@ -50,7 +50,7 @@ def test_entity_selector_token_flow():
     }
 
     # Mock database
-    db = EntityDictDatabase(
+    db = SelectorEntityPool(
         surfaces=[
             {"name": "wing_left", "private_attribute_entity_type_name": "Surface"},
             {"name": "wing_right", "private_attribute_entity_type_name": "Surface"},
@@ -181,7 +181,7 @@ def test_entity_selector_mixed_token_and_dict():
         },
     }
 
-    db = EntityDictDatabase(
+    db = SelectorEntityPool(
         surfaces=[
             {"name": "wing_left", "private_attribute_entity_type_name": "Surface"},
             {"name": "fuselage", "private_attribute_entity_type_name": "Surface"},
@@ -228,7 +228,7 @@ def test_entity_selector_unknown_token_raises_error():
         },
     }
 
-    db = EntityDictDatabase(
+    db = SelectorEntityPool(
         surfaces=[
             {"name": "wing_left", "private_attribute_entity_type_name": "Surface"},
         ]
