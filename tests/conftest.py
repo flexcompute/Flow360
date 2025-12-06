@@ -110,7 +110,7 @@ def mock_surface_mesh():
 
     surface_mesh = SurfaceMeshV2(id=None)
     surface_mesh = SurfaceMeshV2._from_supplied_simulation_dict(simulation_dict, surface_mesh)
-    surface_mesh.internal_registry = surface_mesh._entity_info.get_registry(
+    surface_mesh.internal_registry = surface_mesh._entity_info.get_persistent_entity_registry(
         surface_mesh.internal_registry
     )
     surface_mesh._local_simulation_json = simulation_dict

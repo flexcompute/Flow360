@@ -125,7 +125,7 @@ class EntitySelector(Flow360BaseModel):
 
 
 @dataclass
-class EntityDictDatabase:
+class SelectorEntityPool:
     """
     [Internal Use Only]
 
@@ -386,17 +386,17 @@ def generate_entity_selector_from_class(
 
 ########## EXPANSION IMPLEMENTATION ##########
 def _get_entity_pool(
-    entity_database: EntityDictDatabase, target_class: TargetClass
+    selector_pool: SelectorEntityPool, target_class: TargetClass
 ) -> list[EntityNode]:
     """Return the correct entity list from the database for the target class."""
     if target_class == "Surface":
-        return entity_database.surfaces
+        return selector_pool.surfaces
     if target_class == "Edge":
-        return entity_database.edges
+        return selector_pool.edges
     if target_class == "GenericVolume":
-        return entity_database.generic_volumes
+        return selector_pool.generic_volumes
     if target_class == "GeometryBodyGroup":
-        return entity_database.geometry_body_groups
+        return selector_pool.geometry_body_groups
     raise ValueError(f"Unknown target class: {target_class}")
 
 
@@ -665,7 +665,7 @@ def _get_selector_cache_key(selector_dict: dict) -> tuple:
 
 
 def _process_selectors(
-    entity_database: EntityDictDatabase,
+    selector_pool: SelectorEntityPool,
     selectors_value: list,
     selector_cache: dict,
     known_selectors: dict[str, dict] = None,
@@ -697,7 +697,7 @@ def _process_selectors(
             continue
 
         target_class = selector_dict.get("target_class")
-        pool = _get_entity_pool(entity_database, target_class)
+        pool = _get_entity_pool(selector_pool, target_class)
         if not pool:
             continue
         cache_key = _get_selector_cache_key(selector_dict)
@@ -740,7 +740,7 @@ def _merge_entities(
 
 
 def _expand_node_selectors(
-    entity_database: EntityDictDatabase,
+    selector_pool: SelectorEntityPool,
     node: dict,
     selector_cache: dict,
     merge_mode: Literal["merge", "replace"],
@@ -757,7 +757,7 @@ def _expand_node_selectors(
         return
 
     additions_by_class, ordered_target_classes = _process_selectors(
-        entity_database, selectors_value, selector_cache, known_selectors=known_selectors
+        selector_pool, selectors_value, selector_cache, known_selectors=known_selectors
     )
 
     existing = node.get("stored_entities", [])
@@ -842,7 +842,7 @@ def collect_and_tokenize_selectors_in_place(  # pylint: disable=too-many-branche
 
 
 def expand_entity_selectors_in_place(
-    entity_database: EntityDictDatabase,
+    selector_pool: SelectorEntityPool,
     params_as_dict: dict,
     *,
     merge_mode: Literal["merge", "replace"] = "merge",
@@ -884,7 +884,7 @@ def expand_entity_selectors_in_place(
         node = queue.popleft()
         if isinstance(node, dict):
             _expand_node_selectors(
-                entity_database,
+                selector_pool,
                 node,
                 selector_cache=selector_cache,
                 merge_mode=merge_mode,

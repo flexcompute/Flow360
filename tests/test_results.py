@@ -22,7 +22,7 @@ from flow360.component.results.case_results import PerEntityResultCSVModel
 from flow360.component.simulation import units as u2
 from flow360.component.simulation.framework.entity_expansion_utils import (
     expand_entity_list_in_context,
-    get_entity_database_for_selectors,
+    get_selector_pool_from_dict,
 )
 from flow360.component.simulation.framework.entity_selector import (
     EntitySelector,
@@ -728,7 +728,7 @@ def test_surface_forces_result(mock_id, mock_response):
     assert expanded_names == ["body00001", "body00002"]
 
     serialized_params = params_with_selectors.model_dump(mode="json", exclude_none=True)
-    entity_database_dict = get_entity_database_for_selectors(serialized_params)
+    selector_pool_dict = get_selector_pool_from_dict(serialized_params)
     dict_wrapper_key = "__entity_list_dict__"
     dict_payload = {
         "private_attribute_asset_cache": serialized_params["private_attribute_asset_cache"],
@@ -740,7 +740,7 @@ def test_surface_forces_result(mock_id, mock_response):
             ],
         },
     }
-    expand_entity_selectors_in_place(entity_database_dict, dict_payload, merge_mode="merge")
+    expand_entity_selectors_in_place(selector_pool_dict, dict_payload, merge_mode="merge")
     dict_names = [entity["name"] for entity in dict_payload[dict_wrapper_key]["stored_entities"]]
     assert dict_names == expanded_names
 
