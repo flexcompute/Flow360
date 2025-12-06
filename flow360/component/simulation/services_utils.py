@@ -78,7 +78,7 @@ def strip_selector_matches_inplace(params_as_dict: dict) -> dict:
 
     Behavior:
     - For every dict node that has a non-empty `selectors` list, compute the set of additions
-      implied by those selectors over the current entity database, and remove those additions
+      implied by those selectors over the current selector pool, and remove those additions
       from the node's `stored_entities` list.
     - Nodes without `selectors` are left untouched.
 

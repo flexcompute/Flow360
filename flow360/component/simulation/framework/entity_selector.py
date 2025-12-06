@@ -770,6 +770,23 @@ def _expand_node_selectors(
 
     node["stored_entities"] = base_entities
 
+    # Replace string tokens with full selector definitions for pydantic validation
+    if known_selectors:
+        expanded_selectors = []
+        for item in selectors_value:
+            if isinstance(item, str):
+                # ID string token
+                if item in known_selectors:
+                    expanded_selectors.append(known_selectors[item])
+                else:
+                    raise ValueError(
+                        f"[Internal] Selector token '{item}' not found in known_selectors. "
+                        "This may indicate a missing or invalid selector reference."
+                    )
+            else:
+                expanded_selectors.append(item)
+        node["selectors"] = expanded_selectors
+
 
 def collect_and_tokenize_selectors_in_place(  # pylint: disable=too-many-branches
     params_as_dict: dict,

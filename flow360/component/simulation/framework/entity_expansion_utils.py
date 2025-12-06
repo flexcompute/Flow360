@@ -161,8 +161,8 @@ def _extract_surface_mesh_entities(entity_info: Any) -> list:
     return _node_get(entity_info, "boundaries", []) or []
 
 
-def _build_selector_entity_pool_from_entity_info(entity_info: Any) -> SelectorEntityPool:
-    """Normalize entity info (dict or object) into SelectorEntityPool for selector operations."""
+def _build_selector_pool_from_entity_info(entity_info: Any) -> SelectorEntityPool:
+    """Normalize entity info (dict or object) into SelectorEntityPool."""
     entity_info_type = _node_get(entity_info, "type_name")
 
     surfaces: list = []
@@ -208,7 +208,7 @@ def get_selector_pool_from_dict(params_as_dict: dict) -> SelectorEntityPool:
     if entity_info is None:
         raise ValueError("[Internal] project_entity_info not found in asset cache.")
 
-    return _build_selector_entity_pool_from_entity_info(entity_info)
+    return _build_selector_pool_from_entity_info(entity_info)
 
 
 def get_selector_pool_from_params(params, *, use_instances: bool = False) -> SelectorEntityPool:
@@ -241,7 +241,7 @@ def get_selector_pool_from_params(params, *, use_instances: bool = False) -> Sel
     if entity_info is None:
         raise ValueError("[Internal] SimulationParams is missing project_entity_info.")
 
-    return _build_selector_entity_pool_from_entity_info(entity_info)
+    return _build_selector_pool_from_entity_info(entity_info)
 
 
 def build_entity_pool_from_entity_info(entity_info: Any) -> dict:

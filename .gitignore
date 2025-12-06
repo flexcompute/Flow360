@@ -327,7 +327,6 @@ $RECYCLE.BIN/
 !tests/data/**/*.tar.gz
 
 tmp/
-# Or links to tmp/
 tmp
 
 /.vscode

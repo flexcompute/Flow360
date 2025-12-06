@@ -28,6 +28,7 @@ from flow360.component.simulation.outputs.outputs import (
     SurfaceOutput,
     SurfaceProbeOutput,
     SurfaceSliceOutput,
+    TimeAverageForceDistributionOutput,
     TimeAverageIsosurfaceOutput,
     TimeAverageProbeOutput,
     TimeAverageSurfaceOutput,
@@ -1214,6 +1215,45 @@ def test_force_distribution_output():
     translated = {}
     translated = translate_output(param, translated)
     assert compare_values(param_with_ref[1], translated["forceDistributionOutput"])
+
+
+def test_time_averaged_force_distribution_output():
+    param_with_ref = (
+        [
+            TimeAverageForceDistributionOutput(
+                name="test_name",
+                distribution_direction=[0.1, 0.9, 0.0],
+            ),
+            TimeAverageForceDistributionOutput(
+                name="test_name2",
+                distribution_direction=[1.0, 0.0, 0.0],
+                distribution_type="cumulative",
+                start_step=5,
+            ),
+        ],
+        {
+            "test_name": {
+                "direction": [0.11043152607484655, 0.9938837346736189, 0.0],
+                "type": "incremental",
+                "startAverageIntegrationStep": -1,
+            },
+            "test_name2": {
+                "direction": [1.0, 0.0, 0.0],
+                "type": "cumulative",
+                "startAverageIntegrationStep": 5,
+            },
+        },
+    )
+
+    with SI_unit_system:
+        param = SimulationParams(
+            outputs=param_with_ref[0], time_stepping=Unsteady(steps=1, step_size=0.1)
+        )
+    param = param._preprocess(mesh_unit=1.0 * u.m, exclude=["models"])
+
+    translated = {}
+    translated = translate_output(param, translated)
+    assert compare_values(param_with_ref[1], translated["timeAveragedForceDistributionOutput"])
 
 
 def test_surface_slice_output(vel_in_km_per_hr):
