@@ -129,9 +129,14 @@ class SelectorEntityPool:
     """
     [Internal Use Only]
 
-    Entity database for entity selectors. Provides a unified data interface for entity selectors.
+    #TODO: Eventually replaced by EntityRegistry
 
-    Stored items can be either plain dictionaries (serialized form) or deserialized entity objects.
+    Entity pool for entity selectors. Provides a unified data interface for entity selectors
+    to match against available entities.
+
+    This is a specialized helper class for EntitySelector operations, not a general-purpose
+    entity database. Stored items can be either plain dictionaries (serialized form) or
+    deserialized entity objects.
     """
 
     surfaces: list[EntityNode] = field(default_factory=list)

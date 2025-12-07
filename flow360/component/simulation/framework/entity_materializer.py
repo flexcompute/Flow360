@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from typing import Any
+from typing import Any, Optional
 
 import pydantic as pd
 
@@ -94,7 +94,11 @@ def _build_entity_instance(entity_dict: dict):
 
 
 def materialize_entities_in_place(
-    params_as_dict: dict, *, not_merged_types: set[str] = frozenset({"Point"})
+    params_as_dict: dict,
+    *,
+    not_merged_types: set[str] = frozenset({"Point"}),
+    # TODO: Does this have all entities including the draft entities?
+    entity_pool: Optional[dict] = None,
 ) -> dict:
     """Materialize entity dicts to shared instances and dedupe per list in-place.
 
@@ -102,6 +106,18 @@ def materialize_entities_in_place(
     - Deduplicates within each stored_entities list; skips types in not_merged_types.
     - If called re-entrantly on an already materialized structure, object
       instances are passed through and participate in per-list deduplication.
+
+    Parameters
+    ----------
+    params_as_dict : dict
+        The simulation params dictionary to materialize in-place.
+    not_merged_types : set[str]
+        Entity types to skip deduplication (e.g., Point).
+    entity_pool : Optional[dict]
+        Pre-existing entity instances keyed by (type_name, private_attribute_id).
+        When provided, entities matching these keys will reuse the pool instances
+        instead of creating new ones. This enables reference identity between
+        entity_info and params.
     """
 
     def visit(node):
@@ -145,6 +161,6 @@ def materialize_entities_in_place(
             for it in node:
                 visit(it)
 
-    with EntityMaterializationContext(builder=_build_entity_instance):
+    with EntityMaterializationContext(builder=_build_entity_instance, entity_pool=entity_pool):
         visit(params_as_dict)
     return params_as_dict

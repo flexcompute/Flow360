@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import json
 from enum import Enum
-from typing import Iterable, List, Literal, Optional, Union
+from typing import Iterable, List, Literal, Optional, TypeVar, Union
 
 import pydantic as pd
 import typing_extensions
@@ -24,6 +24,7 @@ from flow360.component.interfaces import (
     VolumeMeshInterfaceV2,
 )
 from flow360.component.project_utils import (
+    apply_geometry_grouping_overrides,
     get_project_records,
     set_up_params_for_uploading,
     show_projects_with_keyword_filter,
@@ -31,7 +32,10 @@ from flow360.component.project_utils import (
     validate_params_with_context,
 )
 from flow360.component.resource_base import Flow360Resource
+from flow360.component.simulation.draft_context.context import DraftContext
+from flow360.component.simulation.entity_info import GeometryEntityInfo
 from flow360.component.simulation.folder import Folder
+from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.web.asset_base import AssetBase
@@ -51,6 +55,7 @@ from flow360.component.volume_mesh import VolumeMeshV2
 from flow360.exceptions import (
     Flow360ConfigError,
     Flow360FileError,
+    Flow360RuntimeError,
     Flow360ValueError,
     Flow360WebError,
 )
@@ -78,6 +83,68 @@ class RootType(Enum):
     GEOMETRY = "Geometry"
     SURFACE_MESH = "SurfaceMesh"
     VOLUME_MESH = "VolumeMesh"
+
+
+def create_draft(
+    *,
+    new_run_from: Union[Geometry, SurfaceMeshV2, VolumeMeshV2],
+    face_grouping: Optional[str] = None,
+    edge_grouping: Optional[str] = None,
+) -> DraftContext:
+    """Factory helper used by end users (`with fl.create_draft() as draft`)."""
+
+    # region -----------------------------Private implementations Below-----------------------------
+
+    T = TypeVar("T", bound=Flow360BaseModel)
+
+    def _inform_grouping_selections(entity_info) -> None:
+        """Inform the user about the grouping selections made on the entity provider cloud asset."""
+
+        if isinstance(entity_info, GeometryEntityInfo):
+            applied_grouping = {
+                "face": entity_info.face_group_tag,
+                "edge": entity_info.edge_group_tag,
+                "body": entity_info.body_group_tag,
+            }
+            if face_grouping is not None or edge_grouping is not None:
+                applied_grouping = apply_geometry_grouping_overrides(
+                    entity_info, face_grouping, edge_grouping
+                )
+            # If tags were None, fall back to defaults for logging purposes.
+            # pylint:disable = protected-access
+            face_tag = applied_grouping.get("face") or entity_info._get_default_grouping_tag("face")
+            edge_tag = applied_grouping.get("edge")
+            if edge_tag is None and entity_info.edge_attribute_names:
+                edge_tag = entity_info._get_default_grouping_tag("edge")
+
+            log.info(
+                "Creating draft with geometry grouping:\n"
+                "  faces: %s\n"
+                "  edges: %s\n"
+                "To change grouping, call:\n"
+                "  fl.create_draft(face_grouping='%s', edge_grouping='%s', ...)",
+                face_tag,
+                edge_tag,
+                face_tag,
+                edge_tag,
+            )
+        elif face_grouping is not None or edge_grouping is not None:
+            log.info(
+                "Grouping override ignored: only geometry assets support face/edge/body regrouping."
+            )
+
+    # endregion ------------------------------------------------------------------------------------
+
+    if not isinstance(new_run_from, AssetBase):
+        raise Flow360RuntimeError("create_draft expects a cloud asset instance as `new_run_from`.")
+
+    entity_info = new_run_from.entity_info
+
+    _inform_grouping_selections(entity_info)
+
+    return DraftContext(
+        entity_info=entity_info,
+    )
 
 
 class ProjectMeta(pd.BaseModel, extra="allow"):

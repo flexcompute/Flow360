@@ -211,7 +211,7 @@ def test_update_zone_info_from_geometry_with_missing_symmetric():
 
     param._update_param_with_actual_volume_mesh_meta(mesh_meta_data)
 
-    symmetric = param.used_entity_registry.find_by_type(entity_class=GhostCircularPlane)[0]
+    symmetric = param.used_entity_registry.view(GhostCircularPlane)._entities[0]
     assert symmetric.name == "symmetric"
     assert symmetric.private_attribute_full_name == BOUNDARY_FULL_NAME_WHEN_NOT_FOUND
     translated = get_solver_json(param, mesh_unit="m")

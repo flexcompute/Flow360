@@ -23,15 +23,30 @@ class EntityMaterializationContext:
 
     Use this to avoid global state when materializing entity dictionaries
     into model instances while reusing objects across the validation pass.
+
+    Parameters
+    ----------
+    builder : Callable[[dict], Any]
+        Function to convert entity dict to instance when not found in cache.
+    entity_pool : Optional[dict]
+        Pre-existing entity instances keyed by (type_name, private_attribute_id).
+        When provided, entities matching these keys will reuse the pool instances
+        instead of creating new ones via builder.
     """
 
-    def __init__(self, *, builder: Callable[[dict], Any]):
+    def __init__(self, *, builder: Callable[[dict], Any], entity_pool: Optional[dict] = None):
         self._token_cache = None
         self._token_builder = None
         self._builder = builder
+        # TODO: This should be a EntityRegistry instance instead of a "Entity pool"
+        self._entity_pool = entity_pool
 
     def __enter__(self):
-        self._token_cache = _entity_cache_ctx.set({})
+        # Pre-populate cache from entity_pool if provided
+        initial_cache = {}
+        if self._entity_pool:
+            initial_cache = dict(self._entity_pool)  # Copy to avoid external mutation
+        self._token_cache = _entity_cache_ctx.set(initial_cache)
         self._token_builder = _entity_builder_ctx.set(self._builder)
         return self
 

@@ -1219,9 +1219,7 @@ class VolumeMeshV2(AssetBase):
             internal_registry=self.internal_registry
         )
 
-        return [
-            surface.name for surface in self.internal_registry.get_bucket(by_type=Surface).entities
-        ]
+        return [surface.name for surface in self.internal_registry.view(Surface)._entities]
 
     @property
     def zone_names(self) -> List[str]:
@@ -1237,10 +1235,7 @@ class VolumeMeshV2(AssetBase):
             internal_registry=self.internal_registry
         )
 
-        return [
-            volume.name
-            for volume in self.internal_registry.get_bucket(by_type=GenericVolume).entities
-        ]
+        return [volume.name for volume in self.internal_registry.view(GenericVolume)._entities]
 
     def __getitem__(self, key: str):
         """

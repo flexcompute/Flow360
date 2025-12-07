@@ -11,7 +11,11 @@ import pydantic as pd
 from flow360.cloud.rest_api import RestApi
 from flow360.component.interfaces import ProjectInterface
 from flow360.component.simulation import services
-from flow360.component.simulation.entity_info import DraftEntityTypes, EntityInfoModel
+from flow360.component.simulation.entity_info import (
+    DraftEntityTypes,
+    EntityInfoModel,
+    GeometryEntityInfo,
+)
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.framework.param_utils import AssetCache
@@ -32,8 +36,36 @@ from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.user_code.core.types import save_user_variables
 from flow360.component.simulation.utils import model_attribute_unlock
 from flow360.component.utils import parse_datetime
-from flow360.exceptions import Flow360ConfigurationError
+from flow360.exceptions import Flow360ConfigurationError, Flow360ValueError
 from flow360.log import log
+
+
+def apply_geometry_grouping_overrides(
+    entity_info: GeometryEntityInfo,
+    face_grouping: Optional[str],
+    edge_grouping: Optional[str],
+) -> dict[str, Optional[str]]:
+    """Apply explicit face/edge grouping overrides onto geometry entity info."""
+
+    def _validate_tag(tag: str, available: list[str], kind: str) -> str:
+        if available and tag not in available:  # pylint:disable=unsupported-membership-test
+            raise Flow360ValueError(
+                f"Invalid {kind} grouping tag '{tag}'. Available tags: {available}."
+            )
+        return tag
+
+    if face_grouping is not None:
+        face_tag = _validate_tag(face_grouping, entity_info.face_attribute_names, "face")
+        entity_info._group_entity_by_tag("face", face_tag)  # pylint:disable=protected-access
+    if edge_grouping is not None and entity_info.edge_attribute_names:
+        edge_tag = _validate_tag(edge_grouping, entity_info.edge_attribute_names, "edge")
+        entity_info._group_entity_by_tag("edge", edge_tag)  # pylint:disable=protected-access
+
+    return {
+        "face": entity_info.face_group_tag,
+        "edge": entity_info.edge_group_tag,
+        "body": entity_info.body_group_tag,  # Not used since customized body grouping is not supported yet
+    }
 
 
 class AssetStatistics(pd.BaseModel):
@@ -231,7 +263,7 @@ def _set_up_params_non_persistent_entity_info(entity_info, params: SimulationPar
     draft_type_union = get_args(DraftEntityTypes)[0]
     draft_type_list = get_args(draft_type_union)
     for draft_type in draft_type_list:
-        draft_entities = entity_registry.find_by_type(draft_type)
+        draft_entities = list(entity_registry.view(draft_type))
         for draft_entity in draft_entities:
             if draft_entity not in entity_info.draft_entities:
                 entity_info.draft_entities.append(draft_entity)
