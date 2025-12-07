@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import json
 from enum import Enum
-from typing import Iterable, List, Literal, Optional, TypeVar, Union
+from typing import Iterable, List, Literal, Optional, Union
 
 import pydantic as pd
 import typing_extensions
@@ -35,7 +35,6 @@ from flow360.component.resource_base import Flow360Resource
 from flow360.component.simulation.draft_context.context import DraftContext
 from flow360.component.simulation.entity_info import GeometryEntityInfo
 from flow360.component.simulation.folder import Folder
-from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.web.asset_base import AssetBase
@@ -94,8 +93,6 @@ def create_draft(
     """Factory helper used by end users (`with fl.create_draft() as draft`)."""
 
     # region -----------------------------Private implementations Below-----------------------------
-
-    T = TypeVar("T", bound=Flow360BaseModel)
 
     def _inform_grouping_selections(entity_info) -> None:
         """Inform the user about the grouping selections made on the entity provider cloud asset."""

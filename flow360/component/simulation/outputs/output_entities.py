@@ -1,7 +1,6 @@
 """Output for simulation."""
 
-from abc import ABCMeta
-from typing import ClassVar, Literal, Optional, Union
+from typing import Literal, Optional, Union
 
 import pydantic as pd
 

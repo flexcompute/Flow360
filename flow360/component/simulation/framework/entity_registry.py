@@ -1,6 +1,5 @@
 """Registry for managing and storing instances of various entity types."""
 
-import warnings
 from typing import Any, Dict, Union
 
 import pydantic as pd
@@ -65,6 +64,7 @@ class EntityRegistryView:
     def _entities(self) -> list[EntityBase]:
         """Get all entities of the target type (exact type match only)."""
         # Direct lookup in internal_registry for exact type
+        # pylint: disable=import-outside-toplevel
         from flow360.component.simulation.utils import is_exact_instance
 
         entities_of_type = self._registry.internal_registry.get(self._entity_type, [])
@@ -87,6 +87,7 @@ class EntityRegistryView:
         """
         if not isinstance(key, str):
             raise Flow360ValueError(f"Entity naming pattern: {key} is not a string.")
+        # pylint: disable=import-outside-toplevel
         from flow360.component.simulation.framework.entity_utils import (
             compile_glob_cached,
         )
@@ -111,7 +112,8 @@ class EntityRegistry(Flow360BaseModel):
     and find entities by name patterns using regular expressions.
 
     Attributes:
-        internal_registry (Dict[type[EntityBase], List[EntityBase]]): A dictionary that maps entity types to lists of instances.
+        internal_registry (Dict[type[EntityBase], List[EntityBase]]): A dictionary that maps entity
+        types to lists of instances.
 
     #Known Issues:
     frozen=True do not stop the user from changing the internal_registry
@@ -202,6 +204,7 @@ class EntityRegistry(Flow360BaseModel):
             >>> for view in surface_views:
             >>>     print(f"Found {len(view)} entities")
         """
+        # pylint: disable=import-outside-toplevel
         from flow360.component.simulation.utils import get_combined_subclasses
 
         subclasses = get_combined_subclasses(parent_type)
@@ -316,7 +319,7 @@ class EntityRegistry(Flow360BaseModel):
         Return None if no such entity is found.
         """
         # Get entities of the specific type (including subclasses)
-        entities = self.view(entity_class)._entities
+        entities = self.view(entity_class)._entities  # pylint: disable=protected-access
         matched_entities = [item for item in entities if item.private_attribute_id == entity_id]
 
         if len(matched_entities) > 1:
@@ -332,6 +335,67 @@ class EntityRegistry(Flow360BaseModel):
     def is_empty(self):
         """Return True if the registry is empty, False otherwise."""
         return not self.internal_registry
+
+    @classmethod
+    def from_entity_info(cls, entity_info) -> "EntityRegistry":
+        """Build registry by referencing entities from entity_info.
+
+        This is for the DraftContext workflow only. Legacy asset code
+        continues to use entity_info.get_persistent_entity_registry().
+
+        Parameters:
+            entity_info: One of GeometryEntityInfo, VolumeMeshEntityInfo, or SurfaceMeshEntityInfo.
+
+        Returns:
+            EntityRegistry: A registry populated with references to entities from entity_info.
+        """
+        registry = cls()
+        registry._register_from_entity_info(entity_info)
+        return registry
+
+    def _register_from_entity_info(self, entity_info):  # pylint: disable=too-many-branches
+        """Populate internal_registry with references to entity_info entities.
+
+        This method extracts all entities from the given entity_info and registers
+        them in this registry. It handles all three entity info types:
+        - GeometryEntityInfo: grouped_faces, grouped_edges, grouped_bodies
+        - VolumeMeshEntityInfo: boundaries, zones
+        - SurfaceMeshEntityInfo: boundaries
+
+        All entity info types also have draft_entities and ghost_entities which are
+        registered as well.
+        """
+        known_frozen_hashes = set()
+
+        if entity_info.type_name == "GeometryEntityInfo":
+            # Register all surfaces from all groupings
+            for surface_list in entity_info.grouped_faces:
+                for surface in surface_list:
+                    known_frozen_hashes = self.fast_register(surface, known_frozen_hashes)
+            # Register all edges from all groupings
+            for edge_list in entity_info.grouped_edges:
+                for edge in edge_list:
+                    known_frozen_hashes = self.fast_register(edge, known_frozen_hashes)
+            # Register all body groups from all groupings
+            for body_list in entity_info.grouped_bodies:
+                for body in body_list:
+                    known_frozen_hashes = self.fast_register(body, known_frozen_hashes)
+
+        elif entity_info.type_name == "VolumeMeshEntityInfo":
+            for boundary in entity_info.boundaries:
+                known_frozen_hashes = self.fast_register(boundary, known_frozen_hashes)
+            for zone in entity_info.zones:
+                known_frozen_hashes = self.fast_register(zone, known_frozen_hashes)
+
+        elif entity_info.type_name == "SurfaceMeshEntityInfo":
+            for boundary in entity_info.boundaries:
+                known_frozen_hashes = self.fast_register(boundary, known_frozen_hashes)
+
+        # Common to all: draft_entities and ghost_entities
+        for entity in entity_info.draft_entities:
+            known_frozen_hashes = self.fast_register(entity, known_frozen_hashes)
+        for entity in entity_info.ghost_entities:
+            known_frozen_hashes = self.fast_register(entity, known_frozen_hashes)
 
 
 class SnappyBodyRegistry(EntityRegistry):

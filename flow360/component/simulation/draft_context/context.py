@@ -16,9 +16,7 @@ from flow360.component.simulation.primitives import (
     GeometryBodyGroup,
     Surface,
 )
-from flow360.component.simulation.utils import is_exact_instance
 from flow360.exceptions import Flow360RuntimeError, Flow360ValueError
-from flow360.log import log
 
 __all__ = [
     "DraftContext",
@@ -56,6 +54,7 @@ class _SingleTypeEntityRegistry:
     @property
     def _entities(self) -> list[EntityBase]:
         """Entities of the target type."""
+        # pylint: disable=protected-access
         return self._registry.view(self._entity_type)._entities
 
     def __getitem__(self, key: str) -> EntityBase | list[EntityBase]:

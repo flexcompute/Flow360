@@ -329,7 +329,7 @@ class SurfaceMeshV2(AssetBase):
         self.internal_registry = self._entity_info.get_persistent_entity_registry(
             self.internal_registry
         )
-
+        # pylint: disable=protected-access
         return [surface.name for surface in self.internal_registry.view(Surface)._entities]
 
     def __getitem__(self, key: str):

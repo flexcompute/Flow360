@@ -1218,7 +1218,7 @@ class VolumeMeshV2(AssetBase):
         self.internal_registry = self._entity_info.get_persistent_entity_registry(
             internal_registry=self.internal_registry
         )
-
+        # pylint: disable=protected-access
         return [surface.name for surface in self.internal_registry.view(Surface)._entities]
 
     @property
@@ -1234,7 +1234,7 @@ class VolumeMeshV2(AssetBase):
         self.internal_registry = self._entity_info.get_persistent_entity_registry(
             internal_registry=self.internal_registry
         )
-
+        # pylint: disable=protected-access
         return [volume.name for volume in self.internal_registry.view(GenericVolume)._entities]
 
     def __getitem__(self, key: str):

@@ -209,7 +209,10 @@ def _update_zone_boundaries_with_metadata(
 ) -> None:
     """Update zone boundaries with volume mesh metadata."""
     for volume_entity in [
-        entity for view in registry.view_subclasses(_VolumeEntityBase) for entity in view._entities
+        # pylint: disable=protected-access
+        entity
+        for view in registry.view_subclasses(_VolumeEntityBase)
+        for entity in view._entities
     ]:
         if volume_entity.name in volume_mesh_meta_data["zones"]:
             with model_attribute_unlock(volume_entity, "private_attribute_zone_boundary_names"):
