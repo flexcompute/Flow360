@@ -32,7 +32,10 @@ from flow360.component.project_utils import (
     validate_params_with_context,
 )
 from flow360.component.resource_base import Flow360Resource
-from flow360.component.simulation.draft_context.context import DraftContext
+from flow360.component.simulation.draft_context.context import (
+    DraftContext,
+    get_active_draft,
+)
 from flow360.component.simulation.entity_info import GeometryEntityInfo
 from flow360.component.simulation.folder import Folder
 from flow360.component.simulation.simulation_params import SimulationParams
@@ -1480,12 +1483,17 @@ class Project(pd.BaseModel):
         if use_geometry_AI is True and use_beta_mesher is False:
             raise Flow360ValueError("Enabling Geometry AI requires also enabling beta mesher.")
 
+        # Check if there's an active DraftContext and get its entity_info
+        active_draft = get_active_draft()
+        draft_entity_info = active_draft._entity_info if active_draft is not None else None
+
         params = set_up_params_for_uploading(
             params=params,
             root_asset=self._root_asset,
             length_unit=self.length_unit,
             use_beta_mesher=use_beta_mesher,
             use_geometry_AI=use_geometry_AI,
+            draft_entity_info=draft_entity_info,
         )
 
         params, errors = validate_params_with_context(

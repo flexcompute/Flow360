@@ -3,6 +3,10 @@ from flow360.component.project import create_draft
 from flow360.component.project_utils import set_up_params_for_uploading
 from flow360.component.simulation import units as u
 from flow360.component.simulation.draft_context import get_active_draft
+from flow360.component.simulation.meshing_param.volume_params import UniformRefinement
+from flow360.component.simulation.primitives import Box
+from flow360.component.simulation.simulation_params import SimulationParams
+from flow360.component.simulation.unit_system import SI_unit_system
 
 
 def test_create_draft_exposes_entity_registry(mock_surface_mesh):
@@ -103,7 +107,9 @@ def test_draft_entities_reference_copied_entity_info(mock_surface_mesh):
                 found_in_draft_entity_info = True
                 break
 
-        assert found_in_draft_entity_info, "Draft surface should reference entity from copied entity_info"
+        assert (
+            found_in_draft_entity_info
+        ), "Draft surface should reference entity from copied entity_info"
 
 
 def test_multiple_drafts_are_isolated_from_each_other(mock_surface_mesh):
@@ -144,74 +150,281 @@ def test_draft_uses_entity_registry_from_entity_info(mock_surface_mesh):
             assert found, f"Surface {surface.name} should be same object as in entity_info"
 
 
-# TODO: Re enable the test once we are all done.
-# def test_draft_entity_modifications_flow_to_params_without_update_persistent_entities(
-#     mock_geometry,
-# ):
-#     """
-#     Test: Entity modifications via draft context flow through to params
-#     WITHOUT needing update_persistent_entities().
+# ======================= Stage 4: set_up_params_for_uploading with DraftContext =======================
 
-#     This test verifies that the draft context approach achieves the same behavior
-#     as the legacy update_persistent_entities() mechanism, but with direct reference
-#     identity instead of registry sync.
 
-#     The legacy flow was:
-#     1. User modifies entity via asset["wing"].color = "red"
-#     2. Modification stored in asset.internal_registry
-#     3. update_persistent_entities() syncs registry back to entity_info
-#     4. entity_info is used in params
+def test_draft_entity_modifications_flow_to_params_without_update_persistent_entities(
+    mock_geometry,
+):
+    """
+    Test: Entity modifications via draft context flow through to params
+    WITHOUT needing update_persistent_entities().
 
-#     The draft flow is:
-#     1. User modifies entity via draft.surfaces["wing"].color = "red"
-#     2. Modification is DIRECTLY on the entity_info entity (same object)
-#     3. No sync needed - entity_info already has the change
-#     4. entity_info is used in params
-#     """
-#     # Use default grouping to keep entities consistent between draft and entity_info
-#     with create_draft(new_run_from=mock_geometry) as draft:
-#         # Get a surface from the draft and modify it
-#         # The surfaces in draft are the SAME objects as in entity_info
-#         surface = draft.surfaces["*"][0]
-#         surface_id = surface.private_attribute_id
+    This test verifies that the draft context approach achieves the same behavior
+    as the legacy update_persistent_entities() mechanism, but with direct reference
+    identity instead of registry sync.
 
-#         # Modify a non-frozen attribute (private_attribute_color is not frozen)
-#         surface.private_attribute_color = "test_red_color"
+    The legacy flow was:
+    1. User modifies entity via asset["wing"].color = "red"
+    2. Modification stored in asset.internal_registry
+    3. update_persistent_entities() syncs registry back to entity_info
+    4. entity_info is used in params
 
-#         # Verify the change is immediately reflected in entity_info
-#         # Find the same entity by ID in entity_info
-#         entity_in_info = None
-#         for group in draft._entity_info.grouped_faces:
-#             for entity in group:
-#                 if entity.private_attribute_id == surface_id:
-#                     entity_in_info = entity
-#                     break
-#         assert entity_in_info is not None, "Entity not found in entity_info"
-#         assert entity_in_info.private_attribute_color == "test_red_color"
-#         assert entity_in_info is surface  # Same object!
+    The draft flow is:
+    1. User modifies entity via draft.surfaces["wing"].color = "red"
+    2. Modification is DIRECTLY on the entity_info entity (same object)
+    3. No sync needed - entity_info already has the change
+    4. entity_info is used in params
+    """
+    # Use default grouping to keep entities consistent between draft and entity_info
+    with create_draft(new_run_from=mock_geometry) as draft:
+        # Get a surface from the draft and modify it
+        # The surfaces in draft are the SAME objects as in entity_info
+        surface = draft.surfaces["*"][0]
+        surface_id = surface.private_attribute_id
 
-#         # Now create params and call set_up_params_for_uploading
-#         # Use a specific surface with consistent tag to avoid grouping conflicts
-#         with fl.SI_unit_system:
-#             params = fl.SimulationParams(
-#                 outputs=[fl.SurfaceOutput(surfaces=[surface], output_fields=["Cp"])],
-#             )
+        # Modify a non-frozen attribute (private_attribute_color is not frozen)
+        surface.private_attribute_color = "test_red_color"
 
-#         params = set_up_params_for_uploading(
-#             params=params,
-#             root_asset=mock_geometry,  # root_asset is passed but should be ignored in draft mode
-#             length_unit=1 * u.m,
-#             use_beta_mesher=False,
-#             use_geometry_AI=False,
-#         )
+        # Verify the change is immediately reflected in entity_info
+        # Find the same entity by ID in entity_info
+        entity_in_info = None
+        for group in draft._entity_info.grouped_faces:
+            for entity in group:
+                if entity.private_attribute_id == surface_id:
+                    entity_in_info = entity
+                    break
+        assert entity_in_info is not None, "Entity not found in entity_info"
+        assert entity_in_info.private_attribute_color == "test_red_color"
+        assert entity_in_info is surface  # Same object!
 
-#         # Verify the modification made it through to the final params
-#         # Find the entity by ID in the final params
-#         final_entity = None
-#         for group in params.private_attribute_asset_cache.project_entity_info.grouped_faces:
-#             for entity in group:
-#                 if entity.private_attribute_id == surface_id:
-#                     final_entity = entity
-#                     break
-#         assert final_entity is not None, "Entity not found in final params"
-#         assert final_entity.private_attribute_color == "test_red_color"
+        # Now create params and call set_up_params_for_uploading
+        # Use a specific surface with consistent tag to avoid grouping conflicts
+        with fl.SI_unit_system:
+            params = fl.SimulationParams(
+                outputs=[fl.SurfaceOutput(surfaces=[surface], output_fields=["Cp"])],
+            )
+
+        params = set_up_params_for_uploading(
+            params=params,
+            root_asset=mock_geometry,
+            length_unit=1 * u.m,
+            use_beta_mesher=False,
+            use_geometry_AI=False,
+            draft_entity_info=draft._entity_info,  # Pass draft's entity_info
+        )
+
+        # Verify the modification made it through to the final params
+        # Find the entity by ID in the final params
+        final_entity = None
+        for group in params.private_attribute_asset_cache.project_entity_info.grouped_faces:
+            for entity in group:
+                if entity.private_attribute_id == surface_id:
+                    final_entity = entity
+                    break
+        assert final_entity is not None, "Entity not found in final params"
+        assert final_entity.private_attribute_color == "test_red_color"
+
+
+def test_newly_created_draft_entities_in_params_after_set_up(mock_surface_mesh):
+    """
+    Test (ii): Newly created draft entities (e.g., Box) assigned to SimulationParams
+    are captured in entity_info after set_up_params_for_uploading.
+    """
+    with create_draft(new_run_from=mock_surface_mesh) as draft:
+        # Create a new Box entity (draft entity type)
+        with SI_unit_system:
+            box = Box(
+                name="test_refinement_box",
+                center=(0, 0, 0) * u.m,
+                size=(1, 1, 1) * u.m,
+            )
+
+            # Create params using this box in a refinement
+            params = SimulationParams(
+                meshing=fl.MeshingParams(
+                    refinements=[
+                        UniformRefinement(
+                            spacing=0.1 * u.m,
+                            entities=[box],
+                        )
+                    ],
+                )
+            )
+
+        # Call set_up_params_for_uploading with draft's entity_info
+        params = set_up_params_for_uploading(
+            params=params,
+            root_asset=mock_surface_mesh,
+            length_unit=1 * u.m,
+            use_beta_mesher=False,
+            use_geometry_AI=False,
+            draft_entity_info=draft._entity_info,
+        )
+
+        # Verify the box is in the final entity_info's draft_entities
+        final_entity_info = params.private_attribute_asset_cache.project_entity_info
+        box_found = any(
+            e.name == "test_refinement_box" and e.private_attribute_id == box.private_attribute_id
+            for e in final_entity_info.draft_entities
+        )
+        assert (
+            box_found
+        ), "Newly created Box should be in draft_entities after set_up_params_for_uploading"
+
+
+def test_draft_entity_modifications_preserved_after_set_up(mock_surface_mesh):
+    """
+    Test (iii): When user uses draft to access draft entities and makes changes,
+    these changes are preserved after set_up_params_for_uploading.
+    """
+    with create_draft(new_run_from=mock_surface_mesh) as draft:
+        # First, create a box and add it to draft's entity_info
+        with SI_unit_system:
+            box = Box(
+                name="modifiable_box",
+                center=(0, 0, 0) * u.m,
+                size=(1, 1, 1) * u.m,
+            )
+        # Add to draft's entity_info directly
+        draft._entity_info.draft_entities.append(box)
+        draft._entity_registry.register(box)
+
+        # Now modify the box (center is not frozen in Box)
+        original_box_id = box.private_attribute_id
+
+        # Create params using the box
+        with SI_unit_system:
+            params = SimulationParams(
+                meshing=fl.MeshingParams(
+                    refinements=[
+                        UniformRefinement(
+                            spacing=0.1 * u.m,
+                            entities=[box],
+                        )
+                    ],
+                )
+            )
+
+        params = set_up_params_for_uploading(
+            params=params,
+            root_asset=mock_surface_mesh,
+            length_unit=1 * u.m,
+            use_beta_mesher=False,
+            use_geometry_AI=False,
+            draft_entity_info=draft._entity_info,
+        )
+
+        # Verify the entity_info in params is draft's entity_info (source of truth)
+        final_entity_info = params.private_attribute_asset_cache.project_entity_info
+
+        # The box should be there with the same ID (from draft's entity_info)
+        box_in_final = None
+        for e in final_entity_info.draft_entities:
+            if e.private_attribute_id == original_box_id:
+                box_in_final = e
+                break
+        assert box_in_final is not None, "Box from draft entity_info should be preserved"
+        assert box_in_final.name == "modifiable_box"
+
+
+def test_external_draft_entities_from_copied_params_are_captured(mock_surface_mesh):
+    """
+    Test (iv): When user copies draft entities (e.g., Box in porous_medium) from
+    an imported SimulationParams to their current params, those entities should
+    be captured in entity_info after set_up_params_for_uploading.
+
+    This simulates the case where a user loads a JSON, extracts a section with
+    embedded draft entities, and uses it in their new params.
+    """
+    # Simulate loading a params from JSON that has a Box embedded in it
+    # (In reality this would be loaded from a file)
+    with SI_unit_system:
+        imported_box = Box(
+            name="imported_box_from_json",
+            center=(5, 5, 5) * u.m,
+            size=(2, 2, 2) * u.m,
+        )
+        imported_box_id = imported_box.private_attribute_id
+
+    with create_draft(new_run_from=mock_surface_mesh) as draft:
+        # User creates new params and uses the imported box
+        # (simulating copying porous_medium section from another params)
+        with SI_unit_system:
+            params = SimulationParams(
+                meshing=fl.MeshingParams(
+                    refinements=[
+                        UniformRefinement(
+                            spacing=0.5 * u.m,
+                            entities=[imported_box],
+                        )
+                    ],
+                )
+            )
+
+        params = set_up_params_for_uploading(
+            params=params,
+            root_asset=mock_surface_mesh,
+            length_unit=1 * u.m,
+            use_beta_mesher=False,
+            use_geometry_AI=False,
+            draft_entity_info=draft._entity_info,
+        )
+
+        # Verify the imported box is captured in draft_entities
+        final_entity_info = params.private_attribute_asset_cache.project_entity_info
+        imported_box_found = any(
+            e.private_attribute_id == imported_box_id for e in final_entity_info.draft_entities
+        )
+        assert (
+            imported_box_found
+        ), "External Box from copied params should be captured in draft_entities"
+
+
+def test_draft_entity_info_is_source_of_truth_over_params(mock_surface_mesh):
+    """
+    Test that when the same draft entity exists in both draft's entity_info
+    and params.used_entity_registry, the entity_info version is preserved
+    (source of truth).
+    """
+    with create_draft(new_run_from=mock_surface_mesh) as draft:
+        # Create a box and add to draft's entity_info
+        with SI_unit_system:
+            box = Box(
+                name="source_of_truth_box",
+                center=(0, 0, 0) * u.m,
+                size=(1, 1, 1) * u.m,
+            )
+        box_id = box.private_attribute_id
+
+        # Add to draft's entity_info
+        draft._entity_info.draft_entities.append(box)
+
+        # Create params using the SAME box (same ID)
+        with SI_unit_system:
+            params = SimulationParams(
+                meshing=fl.MeshingParams(
+                    refinements=[
+                        UniformRefinement(
+                            spacing=1 * u.m,
+                            entities=[box],
+                        )
+                    ],
+                )
+            )
+
+        params = set_up_params_for_uploading(
+            params=params,
+            root_asset=mock_surface_mesh,
+            length_unit=1 * u.m,
+            use_beta_mesher=False,
+            use_geometry_AI=False,
+            draft_entity_info=draft._entity_info,
+        )
+
+        # Verify exactly one box with this ID exists (no duplicates)
+        final_entity_info = params.private_attribute_asset_cache.project_entity_info
+        boxes_with_id = [
+            e for e in final_entity_info.draft_entities if e.private_attribute_id == box_id
+        ]
+        assert len(boxes_with_id) == 1, "Should have exactly one box with this ID (no duplicates)"

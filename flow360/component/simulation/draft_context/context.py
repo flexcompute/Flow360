@@ -102,6 +102,7 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
     # endregion ------------------------------------------------------------------------------------
 
     # region -----------------------------Public properties Below-------------------------------------
+
     # Persistent entities
     @property
     def body_groups(self) -> EntityRegistryView:
