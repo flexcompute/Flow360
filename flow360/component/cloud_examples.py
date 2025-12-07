@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import List
+import time
+from typing import List, Optional
 
 import pydantic as pd_v2
 
@@ -13,8 +14,9 @@ from flow360.cloud.responses import (
     ExamplesListResponse,
 )
 from flow360.cloud.rest_api import RestApi
+from flow360.component.interfaces import ProjectInterface
 from flow360.environment import Env
-from flow360.exceptions import Flow360WebError
+from flow360.exceptions import Flow360Error, Flow360WebError
 from flow360.log import log
 
 DRIVAER_ID = "prj-7fb80c26-6565-4ea5-97b6-9bf5e87882f2"
@@ -71,7 +73,69 @@ def show_available_examples() -> None:
         print(f"{idx+1:>3}  {title.ljust(title_width)}  {example_id.ljust(id_width)}  {tags}")
 
 
-def copy_example(example_id: str) -> str:
+def _get_project_copy_status(project_id: str) -> Optional[str]:
+    """
+    Get the copy status of a project.
+
+    Parameters
+    ----------
+    project_id : str
+        Project ID to check.
+
+    Returns
+    -------
+    Optional[str]
+        Copy status of the project, or None if not available.
+    """
+    try:
+        project_api = RestApi(ProjectInterface.endpoint, id=project_id)
+        info = project_api.get()
+        if isinstance(info, dict):
+            return info.get("copyStatus")
+    except Flow360Error:
+        pass
+    return None
+
+
+def _wait_for_copy_completion(project_id: str, timeout_minutes: int = 30) -> None:
+    """
+    Wait for the copy operation to complete.
+
+    Parameters
+    ----------
+    project_id : str
+        Project ID to monitor.
+    timeout_minutes : int
+        Maximum time to wait in minutes.
+
+    Raises
+    ------
+    TimeoutError
+        If the copy operation doesn't complete within the timeout period.
+    """
+    update_every_seconds = 2
+    start_time = time.time()
+    max_dots = 30
+
+    with log.status() as status_logger:
+        while True:
+            copy_status = _get_project_copy_status(project_id)
+            if copy_status != "copying":
+                break
+
+            elapsed = time.time() - start_time
+            dot_count = int((elapsed // update_every_seconds) % max_dots)
+            status_logger.update(f"Copying example{'.' * dot_count}")
+
+            if time.time() - start_time > timeout_minutes * 60:
+                raise TimeoutError(
+                    f"Timeout: Copy operation did not finish within {timeout_minutes} minutes."
+                )
+
+            time.sleep(update_every_seconds)
+
+
+def copy_example(example_id: str, wait_for_completion: bool = True) -> str:
     """
     Copy an example from the cloud and return the created project ID.
 
@@ -79,6 +143,9 @@ def copy_example(example_id: str) -> str:
     ----------
     example_id : str
         ID of the example to copy.
+    wait_for_completion : bool
+        Whether to wait for the copy operation to complete before returning.
+        Default is True (blocking).
 
     Returns
     -------
@@ -89,6 +156,8 @@ def copy_example(example_id: str) -> str:
     ------
     Flow360WebError
         If the example cannot be copied or the response format is unexpected.
+    TimeoutError
+        If wait_for_completion is True and the copy doesn't finish within timeout.
     """
     request = CopyExampleRequest(source_example_id=example_id)
     example_api = RestApi("v2/examples")
@@ -96,4 +165,13 @@ def copy_example(example_id: str) -> str:
     if not isinstance(resp, dict):
         raise Flow360WebError(f"Unexpected response format when copying example {example_id}")
     response_model = CopyExampleResponse(**resp)
-    return response_model.id
+    project_id = response_model.id
+
+    if wait_for_completion:
+        copy_status = _get_project_copy_status(project_id)
+        if copy_status == "copying":
+            log.info(f"Copy operation started for project {project_id}. Waiting for completion...")
+            _wait_for_copy_completion(project_id)
+            log.info("Copy operation completed successfully.")
+
+    return project_id
