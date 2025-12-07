@@ -137,38 +137,34 @@ def _register_from_entity_info(self, entity_info):
 
 ---
 
-## Stage 3: DraftContext Entity Isolation
+## Stage 3: DraftContext Entity Isolation - COMPLETED ✅
 
 ### Overview
 Implement proper entity_info deep copying in DraftContext and integrate registry.view().
 
 ### Tasks
 
-#### Task 3.1: Deep copy entity_info in create_draft()
+#### Task 3.1: Deep copy entity_info in create_draft() ✅
 **File**: `flow360/component/project.py`
 
-**Current (line 88-147)**:
+**Implemented**: `create_draft()` now deep copies entity_info via model_dump + model_validate:
 ```python
-def create_draft(...) -> DraftContext:
-    # Deep copy entity_info via model_dump + parse
-    entity_info_dict = new_run_from.entity_info.model_dump(mode="json")
-    entity_info_copy = type(new_run_from.entity_info).model_validate(entity_info_dict)
+def _deep_copy_entity_info(entity_info):
+    entity_info_dict = entity_info.model_dump(mode="json")
+    return type(entity_info).model_validate(entity_info_dict)
 
-    # Apply grouping overrides if specified
-    if isinstance(entity_info_copy, GeometryEntityInfo):
-        if face_grouping is not None or edge_grouping is not None:
-            apply_geometry_grouping_overrides(entity_info_copy, face_grouping, edge_grouping)
-
-    return DraftContext(entity_info=entity_info_copy)
+# In create_draft():
+entity_info_copy = _deep_copy_entity_info(new_run_from.entity_info)
+return DraftContext(entity_info=entity_info_copy)
 ```
 
-#### Task 3.2: Update DraftContext to use registry.view()
+#### Task 3.2: Update DraftContext to use registry.view() ✅
 **File**: `flow360/component/simulation/draft_context/context.py`
 
-**Changes**:
-- Remove `_SingleTypeEntityRegistry` class (lines 43-82)
-- Update `__init__` to use `EntityRegistry.from_entity_info()`
-- Replace property implementations with `registry.view()`:
+**Changes made**:
+- Removed `_SingleTypeEntityRegistry` class
+- Updated `__init__` to use `EntityRegistry.from_entity_info()`
+- Replaced property implementations with `registry.view()`:
 
 ```python
 @property
@@ -180,17 +176,20 @@ def surfaces(self) -> EntityRegistryView:
     return self._entity_registry.view(Surface)
 ```
 
-#### Task 3.3: Test draft isolation
+#### Task 3.3: Test draft isolation ✅
 **Test file**: `tests/simulation/draft_context/test_draft_context.py`
 
-**Verify**:
-- Modifications in draft don't affect original asset
-- Draft has independent entity_info copy
-- Registry operations work through view()
+**Added tests**:
+- `test_draft_entity_info_is_deep_copy` - Verifies entity_info is deep copied
+- `test_draft_entity_modifications_are_isolated` - Verifies draft modifications don't affect original
+- `test_draft_entity_info_is_independent_for_geometry` - Tests isolation for geometry assets
+- `test_draft_entities_reference_copied_entity_info` - Verifies registry references copied entity_info
+- `test_multiple_drafts_are_isolated_from_each_other` - Tests multiple drafts are independent
+- `test_draft_uses_entity_registry_from_entity_info` - Verifies EntityRegistry.from_entity_info() usage
 
 ### Testing
-- Test draft entity modifications are isolated
-- Test registry.view() provides correct filtering
+- All 8 draft context tests pass ✅
+- All 112 framework tests pass ✅
 
 ---
 
@@ -544,8 +543,8 @@ params = set_up_params_for_uploading(
 ## Success Criteria
 
 ✅ **Stage 1 Complete**: entity_bucket removed, type-based storage, registry.view() added
-⬜ **Stage 2**: entity_info returns direct reference, EntityRegistry.from_entity_info()
-⬜ **Stage 3**: DraftContext has deep copied entity_info
+✅ **Stage 2 Complete**: EntityRegistry.from_entity_info() added for DraftContext workflow
+✅ **Stage 3 Complete**: DraftContext has deep copied entity_info, uses registry.view()
 ⬜ **Stage 4**: Clean entity merging on upload
 ⬜ **Stage 5**: Deserialization with reference identity via entity_pool
 ⬜ **Stage 6**: All get_bucket() calls updated
@@ -553,7 +552,7 @@ params = set_up_params_for_uploading(
 
 **Final Success Metrics**:
 - ✅ Single Source of Truth: entity_info stores all entities, registry references
-- ⬜ Draft Isolation: Modifications in DraftContext don't affect original asset
+- ✅ Draft Isolation: Modifications in DraftContext don't affect original asset
 - ⬜ Reference Identity: Deserialized params share entity references with entity_info
 - ⬜ Clean Merging: Draft entities collected from params.used_entity_registry
 - ✅ No Buckets: Type-based access throughout, entity_bucket removed

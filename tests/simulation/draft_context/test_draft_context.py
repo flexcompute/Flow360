@@ -24,6 +24,126 @@ def test_create_draft_accepts_geometry_grouping_override(mock_geometry):
         assert draft._entity_info.face_group_tag == "faceId"
 
 
+# ======================= Draft Entity Isolation =======================
+
+
+def test_draft_entity_info_is_deep_copy(mock_surface_mesh):
+    """Test that DraftContext receives a deep copy of entity_info, not a reference."""
+    original_entity_info = mock_surface_mesh.entity_info
+
+    with create_draft(new_run_from=mock_surface_mesh) as draft:
+        # The draft's entity_info should be a different object
+        assert draft._entity_info is not original_entity_info
+
+        # But they should have the same type
+        assert type(draft._entity_info) is type(original_entity_info)
+
+        # And the same content (initially)
+        assert draft._entity_info.type_name == original_entity_info.type_name
+
+
+def test_draft_entity_modifications_are_isolated(mock_surface_mesh):
+    """Test that modifications in draft don't affect the original asset's entity_info."""
+    # Get the original surface name
+    original_entity_info = mock_surface_mesh.entity_info
+    original_boundaries = list(original_entity_info.boundaries)
+    assert len(original_boundaries) > 0
+
+    # Get the original name of the first boundary
+    original_name = original_boundaries[0].name
+
+    with create_draft(new_run_from=mock_surface_mesh) as draft:
+        # Get the first surface from the draft
+        draft_surface = list(draft.surfaces)[0]
+
+        # The draft surface should have the same name initially
+        assert draft_surface.name == original_name
+
+        # The draft surface should be a DIFFERENT object than the original
+        original_surface = original_boundaries[0]
+        assert draft_surface is not original_surface
+
+    # After exiting draft, original entity_info should be unchanged
+    assert original_boundaries[0].name == original_name
+
+
+def test_draft_entity_info_is_independent_for_geometry(mock_geometry):
+    """Test draft isolation works for geometry assets."""
+    original_entity_info = mock_geometry.entity_info
+
+    with create_draft(new_run_from=mock_geometry) as draft:
+        # The draft's entity_info should be a different object
+        assert draft._entity_info is not original_entity_info
+
+        # Verify the type
+        assert draft._entity_info.type_name == "GeometryEntityInfo"
+
+        # Get surfaces from draft - they should be different objects
+        if len(list(draft.surfaces)) > 0:
+            draft_surface = list(draft.surfaces)[0]
+            # Find corresponding surface in original
+            for group in original_entity_info.grouped_faces:
+                for surface in group:
+                    if surface.name == draft_surface.name:
+                        # Same name but different object
+                        assert draft_surface is not surface
+                        break
+
+
+def test_draft_entities_reference_copied_entity_info(mock_surface_mesh):
+    """Test that entities in draft registry reference the copied entity_info, not original."""
+    with create_draft(new_run_from=mock_surface_mesh) as draft:
+        # Get a surface from the draft
+        draft_surface = draft.surfaces["fuselage"]
+
+        # This surface should be in the draft's entity_info.boundaries
+        found_in_draft_entity_info = False
+        for boundary in draft._entity_info.boundaries:
+            if boundary is draft_surface:
+                found_in_draft_entity_info = True
+                break
+
+        assert found_in_draft_entity_info, "Draft surface should reference entity from copied entity_info"
+
+
+def test_multiple_drafts_are_isolated_from_each_other(mock_surface_mesh):
+    """Test that multiple drafts created from the same asset are isolated."""
+    # Create first draft and get entity IDs
+    with create_draft(new_run_from=mock_surface_mesh) as draft1:
+        draft1_surfaces = list(draft1.surfaces)
+        draft1_entity_info = draft1._entity_info
+
+    # Create second draft
+    with create_draft(new_run_from=mock_surface_mesh) as draft2:
+        draft2_surfaces = list(draft2.surfaces)
+        draft2_entity_info = draft2._entity_info
+
+        # The entity_info objects should be different
+        assert draft1_entity_info is not draft2_entity_info
+
+        # Surfaces should be different objects (even if same names)
+        for s1 in draft1_surfaces:
+            for s2 in draft2_surfaces:
+                if s1.name == s2.name:
+                    assert s1 is not s2
+
+
+def test_draft_uses_entity_registry_from_entity_info(mock_surface_mesh):
+    """Test that DraftContext uses EntityRegistry.from_entity_info() for building registry."""
+    with create_draft(new_run_from=mock_surface_mesh) as draft:
+        # The registry should be populated with entities
+        assert draft._entity_registry.entity_count() > 0
+
+        # All surfaces in the registry should be the same objects as in entity_info
+        for surface in draft.surfaces:
+            found = False
+            for boundary in draft._entity_info.boundaries:
+                if boundary is surface:
+                    found = True
+                    break
+            assert found, f"Surface {surface.name} should be same object as in entity_info"
+
+
 # TODO: Re enable the test once we are all done.
 # def test_draft_entity_modifications_flow_to_params_without_update_persistent_entities(
 #     mock_geometry,

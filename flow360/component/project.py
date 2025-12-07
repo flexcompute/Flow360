@@ -90,9 +90,23 @@ def create_draft(
     face_grouping: Optional[str] = None,
     edge_grouping: Optional[str] = None,
 ) -> DraftContext:
-    """Factory helper used by end users (`with fl.create_draft() as draft`)."""
+    """Factory helper used by end users (`with fl.create_draft() as draft`).
+
+    Creates a DraftContext with a deep copy of the asset's entity_info,
+    providing entity isolation so modifications in the draft don't affect
+    the original asset.
+    """
 
     # region -----------------------------Private implementations Below-----------------------------
+
+    def _deep_copy_entity_info(entity_info):
+        """Create a deep copy of entity_info via model_dump + model_validate.
+
+        This ensures DraftContext has an independent copy of entity_info,
+        so modifications don't affect the original asset.
+        """
+        entity_info_dict = entity_info.model_dump(mode="json")
+        return type(entity_info).model_validate(entity_info_dict)
 
     def _inform_grouping_selections(entity_info) -> None:
         """Inform the user about the grouping selections made on the entity provider cloud asset."""
@@ -135,12 +149,14 @@ def create_draft(
     if not isinstance(new_run_from, AssetBase):
         raise Flow360RuntimeError("create_draft expects a cloud asset instance as `new_run_from`.")
 
-    entity_info = new_run_from.entity_info
+    # Deep copy entity_info for draft isolation
+    entity_info_copy = _deep_copy_entity_info(new_run_from.entity_info)
 
-    _inform_grouping_selections(entity_info)
+    # Apply grouping overrides to the copy (not the original)
+    _inform_grouping_selections(entity_info_copy)
 
     return DraftContext(
-        entity_info=entity_info,
+        entity_info=entity_info_copy,
     )
 
 
