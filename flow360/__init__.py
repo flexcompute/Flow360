@@ -147,7 +147,8 @@ from flow360.component.simulation.outputs.output_render_types import (
     SkyboxTexture,
     SolidBackground,
     StaticCamera,
-    Transform,
+    RenderSceneTransform,
+    View
 )
 from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,

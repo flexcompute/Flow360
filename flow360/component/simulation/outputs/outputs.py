@@ -38,7 +38,7 @@ from flow360.component.simulation.outputs.output_render_types import (
     RenderCameraConfig,
     RenderEnvironmentConfig,
     RenderLightingConfig,
-    Transform,
+    RenderSceneTransform,
 )
 from flow360.component.simulation.primitives import (
     GhostCircularPlane,
@@ -736,7 +736,7 @@ class RenderOutput(_AnimationSettings):
     camera: RenderCameraConfig = pd.Field(description="Camera settings", default_factory=RenderCameraConfig.orthographic)
     lighting: RenderLightingConfig = pd.Field(description="Lighting settings", default_factory=RenderLightingConfig.default)
     environment: RenderEnvironmentConfig = pd.Field(description="Environment settings", default_factory=RenderEnvironmentConfig.simple)
-    transform: Optional[Transform] = pd.Field(None, description="Optional model transform to apply to all entities")
+    transform: Optional[RenderSceneTransform] = pd.Field(None, description="Optional model transform to apply to all entities")
     output_type: Literal["RenderOutput"] = pd.Field("RenderOutput", frozen=True)
 
 
