@@ -451,7 +451,7 @@ def _set_up_monitor_output_from_stopping_criterion(params: SimulationParams):
     return params
 
 
-def set_up_params_for_uploading(
+def set_up_params_for_uploading(  # pylint: disable=too-many-arguments
     root_asset,
     length_unit: LengthType,
     params: SimulationParams,

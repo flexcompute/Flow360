@@ -4,7 +4,7 @@ from collections import deque
 from typing import Any
 
 from flow360.component.simulation.framework.entity_expansion_utils import (
-    get_selector_pool_from_dict,
+    get_registry_from_dict,
 )
 from flow360.component.simulation.framework.entity_materializer import (
     _stable_entity_key_from_dict,
@@ -90,7 +90,7 @@ def strip_selector_matches_inplace(params_as_dict: dict) -> dict:
     if not has_any_entity_selectors(params_as_dict):
         return params_as_dict
 
-    selector_pool = get_selector_pool_from_dict(params_as_dict)
+    registry = get_registry_from_dict(params_as_dict)
     selector_cache: dict = {}
 
     known_selectors = {}
@@ -102,15 +102,23 @@ def strip_selector_matches_inplace(params_as_dict: dict) -> dict:
                 selector_id = s.get("selector_id")
                 known_selectors[selector_id] = s
 
+    def _extract_entity_key(item):
+        """Extract stable key from entity (dict or object). No dumping - direct attribute access."""
+        if isinstance(item, dict):
+            return _stable_entity_key_from_dict(item)
+        # Entity object - extract key fields directly without dumping
+        entity_type = getattr(item, "private_attribute_entity_type_name", None)
+        entity_id = getattr(item, "private_attribute_id", None)
+        return (entity_type, entity_id)
+
     def _matched_keyset_for_selectors(selectors_value: list) -> set:
         additions_by_class, _ = _process_selectors(
-            selector_pool, selectors_value, selector_cache, known_selectors=known_selectors
+            registry, selectors_value, selector_cache, known_selectors=known_selectors
         )
         keys: set = set()
         for items in additions_by_class.values():
-            for d in items:
-                if isinstance(d, dict):
-                    keys.add(_stable_entity_key_from_dict(d))
+            for entity in items:
+                keys.add(_extract_entity_key(entity))
         return keys
 
     def _visit_dict(node: dict) -> None:
@@ -120,12 +128,7 @@ def strip_selector_matches_inplace(params_as_dict: dict) -> dict:
             se = node.get("stored_entities")
             if isinstance(se, list) and len(se) > 0:
                 node["stored_entities"] = [
-                    item
-                    for item in se
-                    if not (
-                        isinstance(item, dict)
-                        and _stable_entity_key_from_dict(item) in matched_keys
-                    )
+                    item for item in se if _extract_entity_key(item) not in matched_keys
                 ]
         for v in node.values():
             if isinstance(v, (dict, list)):

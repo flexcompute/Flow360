@@ -1,6 +1,6 @@
 """Registry for managing and storing instances of various entity types."""
 
-from typing import Any, Dict, Union
+from typing import Any, Dict, Optional, Union
 
 import pydantic as pd
 
@@ -336,6 +336,58 @@ class EntityRegistry(Flow360BaseModel):
         """Return True if the registry is empty, False otherwise."""
         return not self.internal_registry
 
+    def find_by_name(self, name: str) -> Optional[EntityBase]:
+        """Find entity by exact name match.
+
+        Parameters:
+            name (str): The exact name to search for.
+
+        Returns:
+            EntityBase or None: The entity if found, None otherwise.
+        """
+        # pylint: disable=no-member
+        for entity_list in self.internal_registry.values():
+            for entity in entity_list:
+                if entity.name == name:
+                    return entity
+        return None
+
+    def find_by_type(self, entity_class: type[EntityBase]) -> list[EntityBase]:
+        """Find all registered entities of a given type (including subclasses).
+
+        Parameters:
+            entity_class (type[EntityBase]): The entity class to search for.
+
+        Returns:
+            list[EntityBase]: All entities that are instances of the given class.
+        """
+        matched_entities = []
+        # pylint: disable=no-member
+        for entity_type, entity_list in self.internal_registry.items():
+            # Check if entity_type is the target class or a subclass
+            if issubclass(entity_type, entity_class):
+                matched_entities.extend(entity_list)
+        return matched_entities
+
+    def find_by_type_name(self, type_name: str) -> list[EntityBase]:
+        """Find all registered entities with a given private_attribute_entity_type_name.
+
+        This is useful for matching entities by their serialized type name (e.g., "Surface", "Edge").
+
+        Parameters:
+            type_name (str): The entity type name to search for.
+
+        Returns:
+            list[EntityBase]: All entities with matching type name.
+        """
+        matched_entities = []
+        # pylint: disable=no-member
+        for entity_list in self.internal_registry.values():
+            for entity in entity_list:
+                if entity.private_attribute_entity_type_name == type_name:
+                    matched_entities.append(entity)
+        return matched_entities
+
     @classmethod
     def from_entity_info(cls, entity_info) -> "EntityRegistry":
         """Build registry by referencing entities from entity_info.
@@ -345,6 +397,7 @@ class EntityRegistry(Flow360BaseModel):
 
         Parameters:
             entity_info: One of GeometryEntityInfo, VolumeMeshEntityInfo, or SurfaceMeshEntityInfo.
+                Must be a deserialized object instance, not a dictionary.
 
         Returns:
             EntityRegistry: A registry populated with references to entities from entity_info.
@@ -367,19 +420,36 @@ class EntityRegistry(Flow360BaseModel):
         """
         known_frozen_hashes = set()
 
+        def _register_selected_grouping(group_tag, attribute_names, grouped_items):
+            """Helper to register entities from the selected grouping."""
+            if group_tag and group_tag in attribute_names:
+                idx = attribute_names.index(group_tag)
+                if idx < len(grouped_items):
+                    for entity in grouped_items[idx]:
+                        nonlocal known_frozen_hashes
+                        known_frozen_hashes = self.fast_register(entity, known_frozen_hashes)
+                else:
+                    raise Flow360ValueError(
+                        f"Group tag {group_tag} not found in attribute names {attribute_names}."
+                    )
+
         if entity_info.type_name == "GeometryEntityInfo":
-            # Register all surfaces from all groupings
-            for surface_list in entity_info.grouped_faces:
-                for surface in surface_list:
-                    known_frozen_hashes = self.fast_register(surface, known_frozen_hashes)
-            # Register all edges from all groupings
-            for edge_list in entity_info.grouped_edges:
-                for edge in edge_list:
-                    known_frozen_hashes = self.fast_register(edge, known_frozen_hashes)
-            # Register all body groups from all groupings
-            for body_list in entity_info.grouped_bodies:
-                for body in body_list:
-                    known_frozen_hashes = self.fast_register(body, known_frozen_hashes)
+            # Register only entities from the selected groupings
+            _register_selected_grouping(
+                entity_info.face_group_tag,
+                entity_info.face_attribute_names,
+                entity_info.grouped_faces,
+            )
+            _register_selected_grouping(
+                entity_info.edge_group_tag,
+                entity_info.edge_attribute_names,
+                entity_info.grouped_edges,
+            )
+            _register_selected_grouping(
+                entity_info.body_group_tag,
+                entity_info.body_attribute_names,
+                entity_info.grouped_bodies,
+            )
 
         elif entity_info.type_name == "VolumeMeshEntityInfo":
             for boundary in entity_info.boundaries:
