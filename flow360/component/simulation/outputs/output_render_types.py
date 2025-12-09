@@ -136,13 +136,25 @@ class View(Enum):
 
     def __add__(self, other):
         if isinstance(other, View):
-            a = self.value
             b = other.value
-            return tuple(x + y for x, y in zip(a, b))
-        return NotImplemented
+        elif isinstance(other, tuple):
+            b = other
+        else:
+            return NotImplemented
+
+        a = self.value
+        return tuple(x + y for x, y in zip(a, b))
 
     def __radd__(self, other):
-        return self.__add__(other)
+        if isinstance(other, tuple):
+            a = other
+        elif isinstance(other, View):
+            a = other.value
+        else:
+            return NotImplemented
+
+        b = self.value
+        return tuple(x + y for x, y in zip(a, b))
 
 
 class RenderCameraConfig(Flow360BaseModel):
