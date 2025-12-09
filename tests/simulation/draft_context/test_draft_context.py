@@ -428,3 +428,130 @@ def test_draft_entity_info_is_source_of_truth_over_params(mock_surface_mesh):
             e for e in final_entity_info.draft_entities if e.private_attribute_id == box_id
         ]
         assert len(boxes_with_id) == 1, "Should have exactly one box with this ID (no duplicates)"
+
+
+# ======================= Stage 4b: Legacy vs DraftContext pathway interplay =======================
+
+
+def test_legacy_asset_access_inside_draft_context_emits_warning(mock_surface_mesh, capsys):
+    """
+    Test Scenario B: Using legacy asset[key] access while inside a DraftContext
+    should emit a warning to guide users to the new pathway.
+    """
+    with create_draft(new_run_from=mock_surface_mesh) as draft:
+        # Access via legacy pathway - should emit warning
+        _ = mock_surface_mesh["fuselage"]
+
+    # Capture stdout/stderr (flow360 log uses Rich console which writes to stdout)
+    captured = capsys.readouterr()
+    assert "Accessing entities via asset" in captured.out, (
+        f"Expected warning about legacy access inside DraftContext. Got: {captured.out}"
+    )
+
+
+def test_legacy_geometry_access_inside_draft_context_emits_warning(mock_geometry, capsys):
+    """
+    Test Scenario B for Geometry: Using legacy geometry[key] access while inside
+    a DraftContext should emit a warning.
+    """
+    with create_draft(new_run_from=mock_geometry) as draft:
+        # Access via legacy pathway - should emit warning
+        # The mock_geometry may not have internal_registry set up, but the warning
+        # should still be emitted before that check
+        try:
+            _ = mock_geometry["*"]
+        except Exception:
+            pass  # We only care about the warning being emitted
+
+    # Capture stdout/stderr (flow360 log uses Rich console which writes to stdout)
+    captured = capsys.readouterr()
+    assert "Accessing entities via asset" in captured.out, (
+        f"Expected warning about legacy access inside DraftContext. Got: {captured.out}"
+    )
+
+
+def test_mixed_legacy_and_draft_access_emits_warning(mock_surface_mesh, capsys):
+    """
+    Test Scenario D: User mixes both legacy asset[key] and draft.surfaces[key] access.
+    Legacy access should emit warning, draft access should not.
+    """
+    with create_draft(new_run_from=mock_surface_mesh) as draft:
+        # Access via draft pathway - should NOT emit warning
+        draft_surface = draft.surfaces["fuselage"]
+        assert draft_surface.name == "fuselage"
+
+        # Access via legacy pathway - should emit warning
+        legacy_surface = mock_surface_mesh["fuselage"]
+
+    # Capture output - should have exactly one warning (from legacy access)
+    captured = capsys.readouterr()
+    # Count occurrences of the warning message
+    warning_count = captured.out.count("Accessing entities via asset")
+    assert warning_count == 1, (
+        f"Expected exactly one warning from legacy access, got {warning_count}. Output: {captured.out}"
+    )
+
+
+def test_legacy_access_outside_draft_context_no_warning(mock_surface_mesh, capsys):
+    """
+    Test that legacy asset[key] access OUTSIDE DraftContext does NOT emit warning.
+    This ensures backward compatibility for users not using DraftContext.
+    """
+    # Access outside any draft context - should NOT emit warning
+    _ = mock_surface_mesh["fuselage"]
+
+    # Capture output - should have no warning
+    captured = capsys.readouterr()
+    assert "Accessing entities via asset" not in captured.out, (
+        f"No warning expected when accessing outside DraftContext. Got: {captured.out}"
+    )
+
+
+def test_legacy_and_draft_entities_are_different_objects(mock_surface_mesh):
+    """
+    Test that entities accessed via legacy pathway and draft pathway are DIFFERENT objects.
+    This verifies the isolation - modifying one should not affect the other.
+    """
+    with create_draft(new_run_from=mock_surface_mesh) as draft:
+        # Get entity via draft pathway
+        draft_surface = draft.surfaces["fuselage"]
+
+        # Get entity via legacy pathway (will emit warning, but that's expected)
+        legacy_surface = mock_surface_mesh["fuselage"]
+
+        # They should be different objects due to draft isolation
+        assert draft_surface is not legacy_surface, (
+            "Draft and legacy entities should be different objects"
+        )
+
+        # But they should have the same name
+        assert draft_surface.name == legacy_surface.name
+
+
+def test_legacy_modifications_not_reflected_in_draft_entity_info(mock_surface_mesh):
+    """
+    Test that modifications via legacy pathway do NOT affect draft's entity_info.
+    This verifies the draft isolation is working correctly.
+    """
+    with create_draft(new_run_from=mock_surface_mesh) as draft:
+        # Get the draft surface
+        draft_surface = draft.surfaces["fuselage"]
+        draft_surface_id = draft_surface.private_attribute_id
+
+        # Get the legacy surface and modify it
+        legacy_surface = mock_surface_mesh["fuselage"]
+        legacy_surface.private_attribute_color = "legacy_red"
+
+        # The draft surface should NOT have this modification
+        assert draft_surface.private_attribute_color != "legacy_red", (
+            "Draft entity should not be affected by legacy modifications"
+        )
+
+        # Verify the draft's entity_info also doesn't have the modification
+        found_in_draft = False
+        for boundary in draft._entity_info.boundaries:
+            if boundary.private_attribute_id == draft_surface_id:
+                assert boundary.private_attribute_color != "legacy_red"
+                found_in_draft = True
+                break
+        assert found_in_draft

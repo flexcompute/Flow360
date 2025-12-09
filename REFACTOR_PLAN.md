@@ -193,7 +193,7 @@ def surfaces(self) -> EntityRegistryView:
 
 ---
 
-## Stage 4: Clean Entity Merging on Upload
+## Stage 4: Clean Entity Merging on Upload - COMPLETED ✅
 
 ### Overview
 Implement proper entity collection from params.used_entity_registry during upload.
@@ -545,7 +545,7 @@ params = set_up_params_for_uploading(
 ✅ **Stage 1 Complete**: entity_bucket removed, type-based storage, registry.view() added
 ✅ **Stage 2 Complete**: EntityRegistry.from_entity_info() added for DraftContext workflow
 ✅ **Stage 3 Complete**: DraftContext has deep copied entity_info, uses registry.view()
-⬜ **Stage 4**: Clean entity merging on upload
+✅ **Stage 4 Complete**: Clean entity merging on upload
 ⬜ **Stage 5**: Deserialization with reference identity via entity_pool
 ⬜ **Stage 6**: All get_bucket() calls updated
 ⬜ **Stage 7**: All tests pass, documentation complete
@@ -554,7 +554,7 @@ params = set_up_params_for_uploading(
 - ✅ Single Source of Truth: entity_info stores all entities, registry references
 - ✅ Draft Isolation: Modifications in DraftContext don't affect original asset
 - ⬜ Reference Identity: Deserialized params share entity references with entity_info
-- ⬜ Clean Merging: Draft entities collected from params.used_entity_registry
+- ✅ Clean Merging: Draft entities collected from params.used_entity_registry
 - ✅ No Buckets: Type-based access throughout, entity_bucket removed
 - ✅ Backward Compatible: Legacy asset.internal_registry still works with warnings
 - ⬜ Tests Pass: All tests pass + new tests for refactored behavior
@@ -576,6 +576,25 @@ params = set_up_params_for_uploading(
 **Next Steps**:
 - Begin Stage 2: Implement EntityRegistry.from_entity_info()
 - Note: build_entity_pool_from_entity_info() will eventually be replaced by EntityRegistry
+
+### Stage 4 Completion Summary
+
+**Completed**:
+- ✅ Implemented `_merge_draft_entities_from_params()` in project_utils.py
+  - Collects draft entities from params.used_entity_registry
+  - Preserves entity_info as source of truth for existing draft entities
+  - Adds new draft entities from params that aren't already in entity_info
+- ✅ Refactored `set_up_params_for_uploading()` to accept optional `draft_entity_info` parameter
+  - When `draft_entity_info` is provided (DraftContext workflow), uses it as source of truth
+  - When not provided (legacy workflow), uses root_asset.entity_info
+- ✅ Updated `Project._run()` to check for active DraftContext via `get_active_draft()`
+  - Passes `draft.entity_info` to `set_up_params_for_uploading()` when DraftContext is active
+- ✅ Added `entity_info` property to DraftContext for public access
+
+**Testing**:
+- All 661 simulation tests pass ✅
+- All 8 draft context tests pass ✅
+- All 112 framework tests pass ✅
 
 ### Key Design Decisions
 

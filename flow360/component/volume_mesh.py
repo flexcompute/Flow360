@@ -1249,6 +1249,16 @@ class VolumeMeshV2(AssetBase):
         Surface
             The boundary object
         """
+        # pylint: disable=import-outside-toplevel
+        from flow360.component.simulation.draft_context import get_active_draft
+
+        if get_active_draft() is not None:
+            log.warning(
+                "Accessing entities via asset[key] while a DraftContext is active. "
+                "Use draft.surfaces[key] or draft.volumes[key] instead to ensure "
+                "modifications are tracked in the draft's entity_info."
+            )
+
         if isinstance(key, str) is False:
             raise Flow360ValueError(f"Entity naming pattern: {key} is not a string.")
 
