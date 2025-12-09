@@ -8,7 +8,7 @@ from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityBase
 from flow360.component.simulation.framework.entity_utils import generate_uuid
 from flow360.component.simulation.outputs.output_fields import IsoSurfaceFieldNames
-from flow360.component.simulation.unit_system import AngleType, LengthType
+from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.user_code.core.types import (
     Expression,
     UnytQuantity,
@@ -21,7 +21,7 @@ from flow360.component.simulation.user_code.core.types import (
     solver_variable_to_user_variable,
 )
 from flow360.component.simulation.user_code.core.utils import is_runtime_expression
-from flow360.component.types import Axis, Color, Vector
+from flow360.component.types import Axis
 
 
 class _OutputItemBase(Flow360BaseModel):

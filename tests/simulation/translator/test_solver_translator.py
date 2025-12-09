@@ -280,31 +280,6 @@ def get_om6Wing_tutorial_param():
                     output_format="paraview",
                     output_fields=["Cp"],
                 ),
-                RenderOutput(
-                    isosurfaces=[my_isosurface],
-                    output_fields=["qcriterion"],
-                    camera=RenderCameraConfig(
-                        view=StaticCamera(position=(20, 20, 20), target=(0, 0, 0)),
-                        projection=OrthographicProjection(width=30, near=0.01, far=100),
-                    ),
-                    lighting=RenderLightingConfig(
-                        ambient=AmbientLight(intensity=0.4, color=(255, 255, 255)),
-                        directional=DirectionalLight(
-                            intensity=1.5, color=(255, 255, 255), direction=(-1.0, -1.0, -1.0)
-                        ),
-                    ),
-                    environment=RenderEnvironmentConfig(
-                        background=SkyboxBackground(texture=SkyboxTexture.SKY)
-                    ),
-                    materials={
-                        "iso": PBRMaterial(
-                            color=(245, 245, 246),
-                            alpha=1.0,
-                            roughness=0.3,
-                            f0=(0.56, 0.56, 0.56),
-                        )
-                    }
-                ),
             ],
         )
     return param

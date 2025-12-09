@@ -143,12 +143,12 @@ from flow360.component.simulation.outputs.output_render_types import (
     RenderCameraConfig,
     RenderEnvironmentConfig,
     RenderLightingConfig,
+    RenderSceneTransform,
     SkyboxBackground,
     SkyboxTexture,
     SolidBackground,
     StaticCamera,
-    RenderSceneTransform,
-    View
+    View,
 )
 from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
@@ -157,8 +157,8 @@ from flow360.component.simulation.outputs.outputs import (
     MovingStatistic,
     Observer,
     ProbeOutput,
-    RenderOutputGroup,
     RenderOutput,
+    RenderOutputGroup,
     SliceOutput,
     StreamlineOutput,
     SurfaceIntegralOutput,

@@ -6,7 +6,7 @@ Caveats:
 """
 
 # pylint: disable=too-many-lines
-from typing import Annotated, Dict, List, Literal, Optional, Union, get_args
+from typing import Annotated, List, Literal, Optional, Union, get_args
 
 import pydantic as pd
 
@@ -687,6 +687,35 @@ class SurfaceIntegralOutput(_OutputBase):
 
 
 class RenderOutputGroup(Flow360BaseModel):
+    """
+
+    :class:`RenderOutputGroup` for defining a render output group - i.e. a set of
+    entities sharing a common material (display options) settings.
+
+    Example
+    -------
+    Define two :class:`RenderOutputGroup` objects, one assigning all boundaries of the
+    uploaded geometry to a flat metallic material, and another assigning a slice and an
+    isosurface to a material which will display a scalar field on the surface of the
+    entity.
+
+    >>> fl.RenderOutputGroup(
+    ...     surfaces=geometry["*"],
+    ...     material=fl.PBRMaterial.metal(shine=0.8)
+    ... ),
+    ... fl.RenderOutputGroup(
+    ...     slices=[
+    ...         fl.Slice(name="Example slice", normal=(0, 1, 0), origin=(0, 0, 0))
+    ...     ],
+    ...     isosurfaces=[
+    ...         fl.Isosurface(name="Example isosurface", iso_value=0.1, field="T")
+    ...     ],
+    ...     material=fl.FieldMaterial.rainbow(field="T", min_value=0, max_value=1, alpha=0.4)
+    ... )
+    ====
+
+    """
+
     surfaces: Optional[EntityList[Surface]] = pd.Field(
         None, description="List of of :class:`~flow360.Surface` entities."
     )
@@ -707,24 +736,24 @@ class RenderOutput(_AnimationSettings):
     Example
     -------
 
-    Define the :class:`RenderOutput` of :code:`qcriterion` on two isosurfaces:
+    Define the :class:`RenderOutput` that outputs a basic image - boundaries and a Y-slice:
 
     >>> fl.RenderOutput(
-    ...     isosurfaces=[
-    ...         fl.Isosurface(
-    ...             name="Isosurface_T_0.1",
-    ...             iso_value=0.1,
-    ...             field="T",
+    ...     name="Example render",
+    ...     groups=[
+    ...         fl.RenderOutputGroup(
+    ...             surfaces=geometry["*"],
+    ...             material=fl.PBRMaterial.metal(shine=0.8)
     ...         ),
-    ...         fl.Isosurface(
-    ...             name="Isosurface_p_0.5",
-    ...             iso_value=0.5,
-    ...             field="p",
-    ...         ),
+    ...         fl.RenderOutputGroup(
+    ...             slices=[
+    ...                 fl.Slice(name="Example slice", normal=(0, 1, 0), origin=(0, 0, 0))
+    ...             ],
+    ...             material=fl.FieldMaterial.rainbow(field="T", min_value=0, max_value=1, alpha=0.4)
+    ...         )
     ...     ],
-    ...     output_field="qcriterion",
+    ...     camera=fl.RenderCameraConfig.orthographic(scale=5, view=fl.View.TOP + fl.View.LEFT)
     ... )
-
     ====
     """
 
@@ -733,10 +762,18 @@ class RenderOutput(_AnimationSettings):
     output_fields: UniqueItemList[Union[CommonFieldNames, str]] = pd.Field(
         [], description="List of output variables."
     )
-    camera: RenderCameraConfig = pd.Field(description="Camera settings", default_factory=RenderCameraConfig.orthographic)
-    lighting: RenderLightingConfig = pd.Field(description="Lighting settings", default_factory=RenderLightingConfig.default)
-    environment: RenderEnvironmentConfig = pd.Field(description="Environment settings", default_factory=RenderEnvironmentConfig.simple)
-    transform: Optional[RenderSceneTransform] = pd.Field(None, description="Optional model transform to apply to all entities")
+    camera: RenderCameraConfig = pd.Field(
+        description="Camera settings", default_factory=RenderCameraConfig.orthographic
+    )
+    lighting: RenderLightingConfig = pd.Field(
+        description="Lighting settings", default_factory=RenderLightingConfig.default
+    )
+    environment: RenderEnvironmentConfig = pd.Field(
+        description="Environment settings", default_factory=RenderEnvironmentConfig.simple
+    )
+    transform: Optional[RenderSceneTransform] = pd.Field(
+        None, description="Optional model transform to apply to all entities"
+    )
     output_type: Literal["RenderOutput"] = pd.Field("RenderOutput", frozen=True)
 
 

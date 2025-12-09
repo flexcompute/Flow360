@@ -251,6 +251,7 @@ def getattr_by_path(obj, path: Union[str, list], *args):
 
 
 def get_all_entries_of_type(obj_list: list, class_type: type[pd.BaseModel]):
+    """Get all entries matching the exact class_type in the obj_list"""
     entries = []
 
     if obj_list is not None:
