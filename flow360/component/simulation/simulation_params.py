@@ -88,6 +88,7 @@ from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics im
 from flow360.component.simulation.utils import model_attribute_unlock
 from flow360.component.simulation.validation.validation_output import (
     _check_aero_acoustics_observer_time_step_size,
+    _check_moving_statistic_applicability,
     _check_output_fields,
     _check_output_fields_valid_given_transition_model,
     _check_output_fields_valid_given_turbulence_model,
@@ -597,6 +598,11 @@ class SimulationParams(_ParamModelBase):
     def check_time_average_output(params):
         """Only allow TimeAverage output field in the unsteady simulations"""
         return _check_time_average_output(params)
+
+    @pd.model_validator(mode="after")
+    def check_moving_statistic_applicability(params):
+        """Check moving statistic settings are applicable to the simulation time stepping set up."""
+        return _check_moving_statistic_applicability(params)
 
     def _register_assigned_entities(self, registry: EntityRegistry) -> EntityRegistry:
         """Recursively register all entities listed in EntityList to the asset cache."""
