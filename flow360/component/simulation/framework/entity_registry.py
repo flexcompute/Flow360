@@ -417,6 +417,9 @@ class EntityRegistry(Flow360BaseModel):
 
         All entity info types also have draft_entities and ghost_entities which are
         registered as well.
+
+        Note:
+        self is supposed to be an empty registry.
         """
         known_frozen_hashes = set()
 

@@ -163,5 +163,3 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
         return self._entity_registry.view(Cylinder)
 
     # endregion ------------------------------------------------------------------------------------
-
-    # endregion -------------------------------------------------------------------------------------
