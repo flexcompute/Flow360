@@ -1085,7 +1085,9 @@ class AeroAcousticOutput(Flow360BaseModel):
         + "input.",
     )
     permeable_surfaces: Optional[
-        EntityListAllowingGhost[Surface, GhostSurface, GhostCircularPlane, GhostSphere, WindTunnelGhostSurface]
+        EntityListAllowingGhost[
+            Surface, GhostSurface, GhostCircularPlane, GhostSphere, WindTunnelGhostSurface
+        ]
     ] = pd.Field(
         None, description="List of permeable surfaces. Left empty if `patch_type` is solid"
     )
