@@ -171,7 +171,7 @@ def _wait_for_copy_completion(project_id: str, timeout_minutes: int = 30) -> Non
     with log.status() as status_logger:
         while True:
             copy_status = _get_project_copy_status(project_id)
-            if copy_status != "copying":
+            if copy_status is not None and copy_status != "copying":
                 break
 
             elapsed = time.time() - start_time
@@ -220,8 +220,14 @@ def copy_example(example_id: str, wait_for_completion: bool = True) -> str:
 
     if wait_for_completion:
         copy_status = _get_project_copy_status(project_id)
-        if copy_status == "copying":
-            log.info(f"Copy operation started for project {project_id}. Waiting for completion...")
+        if copy_status is None or copy_status == "copying":
+            if copy_status == "copying":
+                log.info(f"Copy operation started for project {project_id}. Waiting for completion...")
+            else:
+                log.info(
+                    f"Copy operation initiated for project {project_id}. "
+                    "Waiting for completion (status unknown, assuming in progress)..."
+                )
             _wait_for_copy_completion(project_id)
             log.info("Copy operation completed successfully.")
 
