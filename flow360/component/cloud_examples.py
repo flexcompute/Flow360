@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+import difflib
 import time
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 import pydantic as pd_v2
 
@@ -16,10 +17,55 @@ from flow360.cloud.responses import (
 from flow360.cloud.rest_api import RestApi
 from flow360.component.interfaces import ProjectInterface
 from flow360.environment import Env
-from flow360.exceptions import Flow360Error, Flow360WebError
+from flow360.exceptions import Flow360Error, Flow360ValueError, Flow360WebError
 from flow360.log import log
 
-DRIVAER_ID = "prj-7fb80c26-6565-4ea5-97b6-9bf5e87882f2"
+
+def find_example_by_name(query_name: str, examples: List[ExampleItem]) -> Tuple[ExampleItem, float]:
+    """
+    Find the best matching example by name using fuzzy string matching.
+
+    Parameters
+    ----------
+    query_name : str
+        The name to search for (case-insensitive, handles typos).
+    examples : List[ExampleItem]
+        List of available examples to search through.
+
+    Returns
+    -------
+    Tuple[ExampleItem, float]
+        The best matching example and its similarity score (0.0 to 1.0).
+
+    Raises
+    ------
+    Flow360ValueError
+        If no examples are provided or no match is found.
+    """
+    if not examples:
+        raise Flow360ValueError("No examples available to search.")
+
+    query_lower = query_name.lower().strip()
+    best_match = None
+    best_score = 0.0
+
+    for example in examples:
+        example_title_lower = example.title.lower()
+        score = difflib.SequenceMatcher(None, query_lower, example_title_lower).ratio()
+
+        if score > best_score:
+            best_score = score
+            best_match = example
+
+    if best_match is None or best_score < 0.3:
+        available_names = [ex.title for ex in examples]
+        raise Flow360ValueError(
+            f"No matching example found for '{query_name}'. "
+            f"Available examples: {', '.join(available_names[:5])}"
+            + (f" (and {len(available_names) - 5} more)" if len(available_names) > 5 else "")
+        )
+
+    return best_match, best_score
 
 
 def fetch_examples() -> List[ExampleItem]:
@@ -51,6 +97,7 @@ def show_available_examples() -> None:
     on the Flow360 web interface.
     """
     examples = fetch_examples()
+    print(examples)
     if not examples:
         log.info("No examples available.")
         return
@@ -63,14 +110,19 @@ def show_available_examples() -> None:
     id_width = max(len(e.id) for e in examples)
 
     header = f"{'#':>3}  {'Title'.ljust(title_width)}  {'Example ID'.ljust(id_width)}  Tags"
-    log.info(header)
-    log.info("-" * len(header))
+    table_string = ""
+    table_string += header + "\n"
+    table_string += "-" * len(header) + "\n"
 
     for idx, ex in enumerate(examples):
         title = ex.title
         example_id = ex.id
         tags = ", ".join(ex.tags)
-        log.info(f"{idx+1:>3}  {title.ljust(title_width)}  {example_id.ljust(id_width)}  {tags}")
+        table_string += (
+            f"{idx+1:>3}  {title.ljust(title_width)}  {example_id.ljust(id_width)}  {tags}\n"
+        )
+
+    log.info(table_string)
 
 
 def _get_project_copy_status(project_id: str) -> Optional[str]:
