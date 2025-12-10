@@ -1,6 +1,7 @@
 import json
 import os
 import re
+from unittest.mock import patch
 
 import pydantic as pd
 import pytest
@@ -12,6 +13,7 @@ from flow360.component.geometry import Geometry, GeometryMeta
 from flow360.component.project_utils import set_up_params_for_uploading
 from flow360.component.resource_base import local_metadata_builder
 from flow360.component.simulation.services import ValidationCalledBy, validate_model
+from flow360.component.volume_mesh import VolumeMeshV2
 from flow360.exceptions import Flow360ConfigurationError, Flow360ValueError
 
 log.set_logging_level("DEBUG")
@@ -235,3 +237,72 @@ def test_conflicting_entity_grouping_tags(mock_response, capsys):
         new_params = set_up_params_for_uploading(
             geo, 1 * u.m, params, use_beta_mesher=False, use_geometry_AI=False
         )
+
+
+@pytest.mark.usefixtures("s3_download_override")
+def test_interpolate_to_mesh_uses_vm_project_root_asset(mock_response):
+    """
+    Test that when run_case is called with interpolate_to_mesh,
+    the params are set up using the root asset from the project
+    that provides the interpolate_to_mesh, not from the current project.
+    """
+
+    # Load the geometry-based project (prj-41d2333b-85fd-4bed-ae13-15dcb6da519e)
+    project_geo = fl.Project.from_cloud(project_id="prj-41d2333b-85fd-4bed-ae13-15dcb6da519e")
+
+    # Load the volume mesh-based project (prj-99cc6f96-15d3-4170-973c-a0cced6bf36b)
+    project_vm = fl.Project.from_cloud(project_id="prj-99cc6f96-15d3-4170-973c-a0cced6bf36b")
+
+    # Get parent case from geometry project (case-69b8c249)
+    parent_case = project_geo.get_case("case-69b8c249")
+
+    # Get params from the VM project's case (case-f7480884) since the params should be defined based on this VM
+    params = project_vm.case.params
+
+    # Get volume mesh from the VM project to use as interpolate_to_mesh
+    vm_for_interpolation = project_vm.volume_mesh
+
+    # Track which root_asset is passed to set_up_params_for_uploading
+    captured_root_asset = None
+
+    def mock_set_up_params_for_uploading(
+        params, root_asset, length_unit, use_beta_mesher, use_geometry_AI
+    ):
+        nonlocal captured_root_asset
+        captured_root_asset = root_asset
+        return set_up_params_for_uploading(
+            params, root_asset, length_unit, use_beta_mesher, use_geometry_AI
+        )
+
+    with patch(
+        "flow360.component.project.set_up_params_for_uploading", mock_set_up_params_for_uploading
+    ):
+        # The run_case should fail at validation but we just need to verify the root_asset
+        # is from the VM project, not the geometry project
+        try:
+            project_geo.run_case(
+                params=params,
+                fork_from=parent_case,
+                interpolate_to_mesh=vm_for_interpolation,
+                raise_on_error=False,
+            )
+        except Exception:
+            # We expect this to fail because the mock doesn't fully support the run flow
+            pass
+
+    # Verify that the captured root_asset is from the VM project (VolumeMeshV2)
+    # and NOT from the geometry project (Geometry)
+    assert captured_root_asset is not None, "set_up_params_for_uploading was not called"
+
+    # The root asset should be a VolumeMeshV2 from the VM project, not a Geometry
+    assert isinstance(
+        captured_root_asset, VolumeMeshV2
+    ), f"Expected VolumeMeshV2 from VM project, got {type(captured_root_asset).__name__}"
+    assert not isinstance(
+        captured_root_asset, Geometry
+    ), "Root asset should NOT be Geometry from current project"
+
+    # Verify the root asset's project_id matches the VM project
+    assert (
+        captured_root_asset.project_id == project_vm.id
+    ), f"Root asset should be from VM project {project_vm.id}, got {captured_root_asset.project_id}"
