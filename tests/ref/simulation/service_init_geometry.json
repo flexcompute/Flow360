@@ -23,6 +23,7 @@
                 "value": 0.0,
                 "units": "m"
             },
+            "sliding_interface_tolerance": 0.01,
             "remove_non_manifold_faces": false
         },
         "outputs": [],
@@ -208,8 +209,8 @@
                 "w": "w",
                 "p": "p"
             },
-            "type": "Fluid",
             "private_attribute_id": "__default_fluid",
+            "type": "Fluid",
             "navier_stokes_solver": {
                 "absolute_tolerance": 1e-10,
                 "relative_tolerance": 0.0,
