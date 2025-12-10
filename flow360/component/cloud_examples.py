@@ -52,25 +52,25 @@ def show_available_examples() -> None:
     """
     examples = fetch_examples()
     if not examples:
-        print("No examples available.")
+        log.info("No examples available.")
         return
 
     examples_url = Env.current.get_web_real_url("examples")
-    print(f"These examples are pre-executed projects that can be visited on {examples_url}")
-    print()
+    log.info(f"These examples are pre-executed projects that can be visited on {examples_url}")
+    log.info("")
 
     title_width = max(len(e.title) for e in examples)
     id_width = max(len(e.id) for e in examples)
 
     header = f"{'#':>3}  {'Title'.ljust(title_width)}  {'Example ID'.ljust(id_width)}  Tags"
-    print(header)
-    print("-" * len(header))
+    log.info(header)
+    log.info("-" * len(header))
 
     for idx, ex in enumerate(examples):
         title = ex.title
         example_id = ex.id
         tags = ", ".join(ex.tags)
-        print(f"{idx+1:>3}  {title.ljust(title_width)}  {example_id.ljust(id_width)}  {tags}")
+        log.info(f"{idx+1:>3}  {title.ljust(title_width)}  {example_id.ljust(id_width)}  {tags}")
 
 
 def _get_project_copy_status(project_id: str) -> Optional[str]:
