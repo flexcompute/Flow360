@@ -9,4 +9,6 @@ class TutorialUDDStructural(BaseTestCase):
     name = "tutorialUDDStructural"
 
     class url:
-        geometry = "https://simcloud-public-1.s3.amazonaws.com/examples/rotatingPlate/rotatingPlate.cgns"
+        geometry = (
+            "https://simcloud-public-1.s3.amazonaws.com/examples/rotatingPlate/rotatingPlate.cgns"
+        )
