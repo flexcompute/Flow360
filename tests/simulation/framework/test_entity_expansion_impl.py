@@ -3,7 +3,7 @@ import json
 import os
 
 from flow360.component.simulation.framework.entity_selector import (
-    EntityDictDatabase,
+    SelectorEntityPool,
     compile_glob_cached,
     expand_entity_selectors_in_place,
 )
@@ -31,7 +31,7 @@ def test_operator_and_syntax_coverage():
         "my_wing",
         "hinge",
     ]
-    db = EntityDictDatabase(surfaces=_mk_pool(pool_names, "Surface"))
+    db = SelectorEntityPool(surfaces=_mk_pool(pool_names, "Surface"))
 
     # Build selectors that cover operators和regex/glob
     params = {
@@ -135,7 +135,7 @@ def test_operator_and_syntax_coverage():
 
 
 def test_combined_predicates_and_or():
-    db = EntityDictDatabase(surfaces=_mk_pool(["s1", "s2", "wing", "wing-root", "tail"], "Surface"))
+    db = SelectorEntityPool(surfaces=_mk_pool(["s1", "s2", "wing", "wing-root", "tail"], "Surface"))
 
     params = {
         "node": {
@@ -187,7 +187,7 @@ def test_attribute_tag_scalar_support():
         {"name": "tail", "tag": "B", "private_attribute_entity_type_name": "Surface"},
         {"name": "fuselage", "tag": "A", "private_attribute_entity_type_name": "Surface"},
     ]
-    db = EntityDictDatabase(surfaces=surfaces)
+    db = SelectorEntityPool(surfaces=surfaces)
 
     # Use attribute 'tag' in predicates (engine should not assume 'name')
     params = {

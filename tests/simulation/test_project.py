@@ -195,7 +195,7 @@ def test_conflicting_entity_grouping_tags(mock_response, capsys):
 
     assert geo.face_group_tag == "groupByBodyId"
 
-    geo.internal_registry = geo._entity_info.get_registry(geo.internal_registry)
+    geo.internal_registry = geo._entity_info.get_persistent_entity_registry(geo.internal_registry)
 
     new_params = set_up_params_for_uploading(
         geo, 1 * u.m, params, use_beta_mesher=False, use_geometry_AI=False

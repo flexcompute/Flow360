@@ -1,34 +1,44 @@
 {
   "faces": {
     "body01_face001": {
-      "maxEdgeLength": 1.5
+      "maxEdgeLength": 1.5,
+      "curvatureResolutionAngle": 15.0
     },
     "body01_face002": {
-      "maxEdgeLength": 1.5
+      "maxEdgeLength": 1.5,
+      "curvatureResolutionAngle": 15.0
     },
     "body01_face003": {
-      "maxEdgeLength": 1.5
+      "maxEdgeLength": 1.5,
+      "curvatureResolutionAngle": 15.0
     },
     "body01_face004": {
-      "maxEdgeLength": 1.5
+      "maxEdgeLength": 1.5,
+      "curvatureResolutionAngle": 15.0
     },
     "body01_face005": {
-      "maxEdgeLength": 0.7000000000000001
+      "maxEdgeLength": 0.7000000000000001,
+      "curvatureResolutionAngle": 15.0
     },
     "body01_face006": {
-      "maxEdgeLength": 0.7000000000000001
+      "maxEdgeLength": 0.7000000000000001,
+      "curvatureResolutionAngle": 15.0
     },
     "body01_face007": {
-      "maxEdgeLength": 0.7000000000000001
+      "maxEdgeLength": 0.7000000000000001,
+      "curvatureResolutionAngle": 15.0
     },
     "body01_face008": {
-      "maxEdgeLength": 0.5
+      "maxEdgeLength": 0.5,
+      "curvatureResolutionAngle": 15.0
     },
     "body01_face009": {
-      "maxEdgeLength": 0.5
+      "maxEdgeLength": 0.5,
+      "curvatureResolutionAngle": 15.0
     },
     "body01_face010": {
-      "maxEdgeLength": 0.5
+      "maxEdgeLength": 0.5,
+      "curvatureResolutionAngle": 15.0
     }
   },
   "curvatureResolutionAngle": 15.0,

@@ -1215,7 +1215,7 @@ class VolumeMeshV2(AssetBase):
         List[str]
             List of boundary names contained within the volume mesh
         """
-        self.internal_registry = self._entity_info.get_registry(
+        self.internal_registry = self._entity_info.get_persistent_entity_registry(
             internal_registry=self.internal_registry
         )
 
@@ -1233,7 +1233,7 @@ class VolumeMeshV2(AssetBase):
         List[str]
             List of zone names contained within the volume mesh
         """
-        self.internal_registry = self._entity_info.get_registry(
+        self.internal_registry = self._entity_info.get_persistent_entity_registry(
             internal_registry=self.internal_registry
         )
 
@@ -1257,7 +1257,7 @@ class VolumeMeshV2(AssetBase):
         if isinstance(key, str) is False:
             raise Flow360ValueError(f"Entity naming pattern: {key} is not a string.")
 
-        self.internal_registry = self._entity_info.get_registry(
+        self.internal_registry = self._entity_info.get_persistent_entity_registry(
             internal_registry=self.internal_registry
         )
 

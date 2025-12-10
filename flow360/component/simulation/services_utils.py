@@ -4,7 +4,7 @@ from collections import deque
 from typing import Any
 
 from flow360.component.simulation.framework.entity_expansion_utils import (
-    get_entity_database_for_selectors,
+    get_selector_pool_from_dict,
 )
 from flow360.component.simulation.framework.entity_materializer import (
     _stable_entity_key_from_dict,
@@ -78,7 +78,7 @@ def strip_selector_matches_inplace(params_as_dict: dict) -> dict:
 
     Behavior:
     - For every dict node that has a non-empty `selectors` list, compute the set of additions
-      implied by those selectors over the current entity database, and remove those additions
+      implied by those selectors over the current selector pool, and remove those additions
       from the node's `stored_entities` list.
     - Nodes without `selectors` are left untouched.
 
@@ -90,7 +90,7 @@ def strip_selector_matches_inplace(params_as_dict: dict) -> dict:
     if not has_any_entity_selectors(params_as_dict):
         return params_as_dict
 
-    entity_database = get_entity_database_for_selectors(params_as_dict)
+    selector_pool = get_selector_pool_from_dict(params_as_dict)
     selector_cache: dict = {}
 
     known_selectors = {}
@@ -104,7 +104,7 @@ def strip_selector_matches_inplace(params_as_dict: dict) -> dict:
 
     def _matched_keyset_for_selectors(selectors_value: list) -> set:
         additions_by_class, _ = _process_selectors(
-            entity_database, selectors_value, selector_cache, known_selectors=known_selectors
+            selector_pool, selectors_value, selector_cache, known_selectors=known_selectors
         )
         keys: set = set()
         for items in additions_by_class.values():

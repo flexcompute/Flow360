@@ -268,7 +268,7 @@ class AssetBase(metaclass=ABCMeta):
 
         # Attempting constructing entity registry.
         # This ensure that once from_cloud() returns, the entity_registry will be available.
-        asset_obj.internal_registry = asset_obj._entity_info.get_registry(
+        asset_obj.internal_registry = asset_obj._entity_info.get_persistent_entity_registry(
             asset_obj.internal_registry
         )
         return asset_obj
