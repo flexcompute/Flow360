@@ -222,7 +222,9 @@ def copy_example(example_id: str, wait_for_completion: bool = True) -> str:
         copy_status = _get_project_copy_status(project_id)
         if copy_status is None or copy_status == "copying":
             if copy_status == "copying":
-                log.info(f"Copy operation started for project {project_id}. Waiting for completion...")
+                log.info(
+                    f"Copy operation started for project {project_id}. Waiting for completion..."
+                )
             else:
                 log.info(
                     f"Copy operation initiated for project {project_id}. "
