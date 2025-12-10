@@ -302,7 +302,7 @@ def translate_mesh_slice_output(
 
 
 @preprocess_input
-# pylint: disable=unused-argument,too-many-branches,too-many-statements,too-many-locals,possibly-used-before-assignment
+# pylint: disable=unused-argument,too-many-branches,too-many-statements,too-many-locals
 def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
     """
     Get JSON for surface meshing.
@@ -313,6 +313,8 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
     refinement_factor = None
     defaults = None
     gap_treatment_strength = None
+    sliding_interface_tolerance = None
+    planar_tolerance = None
 
     translated = {}
 
@@ -427,8 +429,11 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
             number_of_boundary_layers if number_of_boundary_layers is not None else -1
         )
 
-        translated["volume"]["planarFaceTolerance"] = planar_tolerance
-        translated["volume"]["slidingInterfaceTolerance"] = sliding_interface_tolerance
+        if planar_tolerance is not None:
+            translated["volume"]["planarFaceTolerance"] = planar_tolerance
+
+        if sliding_interface_tolerance is not None:
+            translated["volume"]["slidingInterfaceTolerance"] = sliding_interface_tolerance
 
     ##::  Step 4: Get volume refinements (uniform + rotorDisks)
     uniform_refinement_list = translate_setting_and_apply_to_all_entities(
