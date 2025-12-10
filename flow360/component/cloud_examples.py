@@ -97,7 +97,6 @@ def show_available_examples() -> None:
     on the Flow360 web interface.
     """
     examples = fetch_examples()
-    print(examples)
     if not examples:
         log.info("No examples available.")
         return
