@@ -33,6 +33,8 @@ class EntityBase(Flow360BaseModel, metaclass=ABCMeta):
 
     private_attribute_entity_type_name: str = "Invalid"
     private_attribute_id: Optional[str] = pd.Field(
+        # pylint: disable=fixme
+        # TODO: This should not have default value. Everyone is supposed to set it.
         None,
         frozen=True,
         description="Unique identifier for the entity. Used by front end to track entities and enable auto update etc.",

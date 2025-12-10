@@ -474,7 +474,10 @@ class AutomatedFarfield(_FarfieldBase):
         """,
     )
     private_attribute_entity: GenericVolume = pd.Field(
-        GenericVolume(name="__farfield_zone_name_not_properly_set_yet"),
+        GenericVolume(
+            name="__farfield_zone_name_not_properly_set_yet",
+            private_attribute_id="farfield_zone_name_not_properly_set_yet",
+        ),
         frozen=True,
         exclude=True,
     )

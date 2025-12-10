@@ -510,6 +510,8 @@ def set_up_params_for_uploading(  # pylint: disable=too-many-arguments
         entity_info = _update_entity_grouping_tags(entity_info, params)
 
     with model_attribute_unlock(params.private_attribute_asset_cache, "project_entity_info"):
+        # At this point the draft entity info has replaced the SimulationParams's entity info.
+        # So the validation afterwards does not require the access to the draft entity info anymore.
         params.private_attribute_asset_cache.project_entity_info = entity_info
     # Replace the ghost surfaces in the SimulationParams by the real ghost ones from asset metadata.
     # This has to be done after `project_entity_info` is properly set.
