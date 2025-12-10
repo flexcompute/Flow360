@@ -1472,7 +1472,7 @@ class Project(pd.BaseModel):
             root asset (Geometry or VolumeMesh) is not initialized.
         """
 
-        # pylint: disable=too-many-branches
+        # pylint: disable=too-many-branches,too-many-statements
         if use_beta_mesher is None:
             if use_geometry_AI is True:
                 log.info("Beta mesher is enabled to use Geometry AI.")
@@ -1487,9 +1487,14 @@ class Project(pd.BaseModel):
         active_draft = get_active_draft()
         draft_entity_info = active_draft._entity_info if active_draft is not None else None
 
+        root_asset = self._root_asset
+        if interpolate_to_mesh is not None:
+            project_vm = Project.from_cloud(project_id=interpolate_to_mesh.project_id)
+            root_asset = project_vm._root_asset
+
         params = set_up_params_for_uploading(
             params=params,
-            root_asset=self._root_asset,
+            root_asset=root_asset,
             length_unit=self.length_unit,
             use_beta_mesher=use_beta_mesher,
             use_geometry_AI=use_geometry_AI,
