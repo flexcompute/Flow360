@@ -8,7 +8,10 @@ import pydantic as pd
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.simulation.framework.updater import DEFAULT_PLANAR_FACE_TOLERANCE
+from flow360.component.simulation.framework.updater import (
+    DEFAULT_PLANAR_FACE_TOLERANCE,
+    DEFAULT_SLIDING_INTERFACE_TOLERANCE,
+)
 from flow360.component.simulation.unit_system import AngleType, LengthType
 from flow360.component.simulation.validation.validation_context import (
     SURFACE_MESH,
@@ -89,6 +92,16 @@ class MeshingDefaults(Flow360BaseModel):
         " This tolerance is non-dimensional, and represents a distance"
         " relative to the largest dimension of the bounding box of the input surface mesh / geometry."
         " This can not be overridden per face.",
+    )
+    # pylint: disable=duplicate-code
+    sliding_interface_tolerance: pd.NonNegativeFloat = ConditionalField(
+        DEFAULT_SLIDING_INTERFACE_TOLERANCE,
+        strict=True,
+        description="Tolerance used for detecting / creating curves in the input surface mesh / geometry lying on"
+        " sliding interfaces. This tolerance is non-dimensional, and represents a distance"
+        " relative to the smallest radius of all sliding interfaces specified in meshing parameters."
+        " This cannot be overridden per sliding interface.",
+        context=VOLUME_MESH,
     )
 
     ##::    Default surface layer settings

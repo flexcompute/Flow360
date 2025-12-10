@@ -313,6 +313,8 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
     refinement_factor = None
     defaults = None
     gap_treatment_strength = None
+    sliding_interface_tolerance = None
+    planar_tolerance = None
 
     translated = {}
 
@@ -327,6 +329,9 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
         defaults = input_params.meshing.volume_meshing.defaults
         gap_treatment_strength = input_params.meshing.volume_meshing.gap_treatment_strength
         planar_tolerance = input_params.meshing.volume_meshing.planar_face_tolerance
+        sliding_interface_tolerance = (
+            input_params.meshing.volume_meshing.sliding_interface_tolerance
+        )
 
     if isinstance(input_params.meshing, MeshingParams):
         volume_zones = input_params.meshing.volume_zones
@@ -335,6 +340,7 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
         defaults = input_params.meshing.defaults
         gap_treatment_strength = input_params.meshing.gap_treatment_strength
         planar_tolerance = input_params.meshing.defaults.planar_face_tolerance
+        sliding_interface_tolerance = input_params.meshing.defaults.sliding_interface_tolerance
 
     outputs = input_params.meshing.outputs
 
@@ -423,7 +429,11 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
             number_of_boundary_layers if number_of_boundary_layers is not None else -1
         )
 
-        translated["volume"]["planarFaceTolerance"] = planar_tolerance
+        if planar_tolerance is not None:
+            translated["volume"]["planarFaceTolerance"] = planar_tolerance
+
+        if sliding_interface_tolerance is not None:
+            translated["volume"]["slidingInterfaceTolerance"] = sliding_interface_tolerance
 
     ##::  Step 4: Get volume refinements (uniform + rotorDisks)
     uniform_refinement_list = translate_setting_and_apply_to_all_entities(
