@@ -22,8 +22,7 @@
                 "value": 0.0,
                 "units": "1.0*m"
             },
-            "remove_non_manifold_faces": false,
-            "sliding_interface_tolerance": 1e-2
+            "remove_non_manifold_faces": false
         },
         "refinements": [],
         "volume_zones": [

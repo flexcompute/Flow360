@@ -597,35 +597,59 @@ def _get_volume_zones(volume_zones_list: list[dict]):
     ]
 
 
-GAI_SETTING_WHITELIST = {
-    "meshing": {
-        "defaults": {
-            "surface_max_edge_length": None,
-            "curvature_resolution_angle": None,
-            "surface_edge_growth_rate": None,
-            "geometry_accuracy": None,
-            "resolve_face_boundaries": None,
-            "preserve_thin_geometry": None,
-            "surface_max_aspect_ratio": None,
-            "surface_max_adaptation_iterations": None,
-            "sealing_size": None,
-            "remove_non_manifold_faces": None,
-            "sliding_interface_tolerance": None,
+def _get_gai_setting_whitelist(input_params: SimulationParams) -> dict:
+    """
+    Generate GAI whitelist with conditional fields based on simulation context.
+
+    Args:
+        input_params: The simulation parameters to determine which fields to include.
+
+    Returns:
+        A whitelist dictionary for filtering the simulation JSON.
+    """
+    # Check if rotation zones are present
+    has_rotation_zones = False
+    if input_params.meshing and input_params.meshing.volume_zones:
+        has_rotation_zones = any(
+            zone.__class__.__name__ in ("RotationCylinder", "RotationVolume")
+            for zone in input_params.meshing.volume_zones
+        )
+
+    # Build defaults whitelist
+    defaults_whitelist = {
+        "surface_max_edge_length": None,
+        "curvature_resolution_angle": None,
+        "surface_edge_growth_rate": None,
+        "geometry_accuracy": None,
+        "resolve_face_boundaries": None,
+        "preserve_thin_geometry": None,
+        "surface_max_aspect_ratio": None,
+        "surface_max_adaptation_iterations": None,
+        "sealing_size": None,
+        "remove_non_manifold_faces": None,
+    }
+
+    # Conditionally add sliding_interface_tolerance only when rotation zones are present
+    if has_rotation_zones:
+        defaults_whitelist["sliding_interface_tolerance"] = None
+
+    return {
+        "meshing": {
+            "defaults": defaults_whitelist,
+            "refinements": _get_surface_refinements,
+            "volume_zones": _get_volume_zones,
         },
-        "refinements": _get_surface_refinements,
-        "volume_zones": _get_volume_zones,
-    },
-    "private_attribute_asset_cache": {
-        "project_entity_info": {
-            "face_group_tag": None,
-            "face_attribute_names": None,
-            "grouped_faces": None,
-            "body_group_tag": None,
-            "body_attribute_names": None,
-            "grouped_bodies": None,
-        }
-    },
-}
+        "private_attribute_asset_cache": {
+            "project_entity_info": {
+                "face_group_tag": None,
+                "face_attribute_names": None,
+                "grouped_faces": None,
+                "body_group_tag": None,
+                "body_attribute_names": None,
+                "grouped_bodies": None,
+            }
+        },
+    }
 
 
 def _traverse_and_filter(data, whitelist):
@@ -664,8 +688,11 @@ def filter_simulation_json(input_params: SimulationParams):
     # Get the JSON from the input_params
     json_data = input_params.model_dump(mode="json", exclude_none=True)
 
+    # Generate whitelist based on simulation context
+    whitelist = _get_gai_setting_whitelist(input_params)
+
     # Filter the JSON to only include the GAI surface meshing parameters
-    filtered_json = _traverse_and_filter(json_data, GAI_SETTING_WHITELIST)
+    filtered_json = _traverse_and_filter(json_data, whitelist)
 
     return filtered_json
 
