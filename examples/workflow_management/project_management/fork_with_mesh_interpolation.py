@@ -14,6 +14,7 @@ def get_project_with_refinement_factor(refinement_factor: float, run_case: bool)
         far_field_zone = fl.AutomatedFarfield()
         params = fl.SimulationParams(
             meshing=fl.MeshingParams(
+                refinement_factor=refinement_factor,
                 defaults=fl.MeshingDefaults(
                     boundary_layer_first_layer_thickness=0.001,
                     surface_max_edge_length=1,

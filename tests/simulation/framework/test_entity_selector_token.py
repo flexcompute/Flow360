@@ -1,8 +1,11 @@
 import copy
 
+import pytest
+
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_selector import (
-    EntityDictDatabase,
+    EntitySelector,
+    SelectorEntityPool,
     collect_and_tokenize_selectors_in_place,
     expand_entity_selectors_in_place,
 )
@@ -47,7 +50,7 @@ def test_entity_selector_token_flow():
     }
 
     # Mock database
-    db = EntityDictDatabase(
+    db = SelectorEntityPool(
         surfaces=[
             {"name": "wing_left", "private_attribute_entity_type_name": "Surface"},
             {"name": "wing_right", "private_attribute_entity_type_name": "Surface"},
@@ -82,6 +85,22 @@ def test_entity_selector_token_flow():
 
     assert len(s2) == 2
     assert {e["name"] for e in s2} == {"wing_left", "wing_right"}
+
+    # 6. Verify selectors are expanded from tokens to full dicts (not strings)
+    sel1 = expanded_params["models"][0]["selectors"]
+    sel2 = expanded_params["models"][1]["selectors"]
+
+    assert len(sel1) == 1
+    assert isinstance(sel1[0], dict), "Selector token should be expanded to dict"
+    assert sel1[0]["selector_id"] == "sel1-token"
+    assert sel1[0]["name"] == "sel1"
+
+    assert len(sel2) == 1
+    assert isinstance(sel2[0], dict), "Selector token should be expanded to dict"
+
+    # 7. Verify expanded selectors can be validated as EntitySelector
+    EntitySelector.model_validate(sel1[0])
+    EntitySelector.model_validate(sel2[0])
 
 
 def test_entity_selector_token_round_trip_validation():
@@ -162,7 +181,7 @@ def test_entity_selector_mixed_token_and_dict():
         },
     }
 
-    db = EntityDictDatabase(
+    db = SelectorEntityPool(
         surfaces=[
             {"name": "wing_left", "private_attribute_entity_type_name": "Surface"},
             {"name": "fuselage", "private_attribute_entity_type_name": "Surface"},
@@ -176,3 +195,44 @@ def test_entity_selector_mixed_token_and_dict():
     assert "wing_left" in names
     assert "fuselage" in names
     assert len(names) == 2
+
+    # Verify selectors are all dicts after expansion (token resolved, inline kept)
+    selectors = expanded["model"]["selectors"]
+    assert len(selectors) == 2
+    assert all(isinstance(s, dict) for s in selectors), "All selectors should be dicts"
+    assert selectors[0]["selector_id"] == "sel-cache-id"  # Token was expanded
+    assert selectors[1]["selector_id"] == "sel-inline-id"  # Inline kept as-is
+
+    # Verify both can be validated as EntitySelector
+    for sel in selectors:
+        EntitySelector.model_validate(sel)
+
+
+def test_entity_selector_unknown_token_raises_error():
+    """Test that referencing an unknown selector token raises a ValueError."""
+    params = {
+        "private_attribute_asset_cache": {
+            "used_selectors": [
+                {
+                    "selector_id": "known-selector-id",
+                    "target_class": "Surface",
+                    "name": "known_selector",
+                    "children": [{"attribute": "name", "operator": "matches", "value": "wing*"}],
+                }
+            ]
+        },
+        "model": {
+            "selectors": [
+                "unknown-selector-id",  # This token does not exist in used_selectors
+            ]
+        },
+    }
+
+    db = SelectorEntityPool(
+        surfaces=[
+            {"name": "wing_left", "private_attribute_entity_type_name": "Surface"},
+        ]
+    )
+
+    with pytest.raises(ValueError, match="Selector token 'unknown-selector-id' not found"):
+        expand_entity_selectors_in_place(db, params)

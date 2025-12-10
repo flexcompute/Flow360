@@ -38,6 +38,7 @@ from flow360.component.simulation.primitives import (
     SeedpointVolume,
     SnappyBody,
     Surface,
+    WindTunnelGhostSurface,
 )
 
 ENTITY_TYPE_MAP = {
@@ -58,6 +59,7 @@ ENTITY_TYPE_MAP = {
     "Slice": Slice,
     "SeedpointVolume": SeedpointVolume,
     "SnappyBody": SnappyBody,
+    "WindTunnelGhostSurface": WindTunnelGhostSurface,
 }
 
 

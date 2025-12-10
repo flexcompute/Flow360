@@ -659,6 +659,8 @@ class GhostSurface(_SurfaceEntityBase):
     All `GhostSurface` entities will be replaced with exact entity instances before simulation.json submission.
     """
 
+    name: str = pd.Field(frozen=True)
+
     private_attribute_entity_type_name: Literal["GhostSurface"] = pd.Field(
         "GhostSurface", frozen=True
     )
@@ -674,6 +676,10 @@ class WindTunnelGhostSurface(GhostSurface):
     used_by: List[
         Literal["StaticFloor", "FullyMovingFloor", "CentralBelt", "WheelBelts", "all"]
     ] = pd.Field(default_factory=lambda: ["all"], frozen=True)
+
+    def exists(self, _) -> bool:
+        """Currently, .exists() is only called on automated farfield"""
+        raise ValueError(".exists should not be called on wind tunnel farfield")
 
 
 # pylint: disable=missing-class-docstring

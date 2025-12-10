@@ -36,13 +36,16 @@
     },
     "faces": {
         "body01_face001": {
-            "maxEdgeLength": 10
+            "maxEdgeLength": 10,
+            "curvatureResolutionAngle": 15
         },
         "body01_face002": {
-            "maxEdgeLength": 10
+            "maxEdgeLength": 10,
+            "curvatureResolutionAngle": 15
         },
         "body01_face003": {
-            "maxEdgeLength": 0.1
+            "maxEdgeLength": 0.1,
+            "curvatureResolutionAngle": 15
         }
     },
     "boundaries": {

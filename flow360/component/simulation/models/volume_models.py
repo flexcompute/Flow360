@@ -923,7 +923,7 @@ class BETDisk(MultiConstructorBaseModel):
         --------
         Create a BET disk with an C81 file.
 
-        >>> param = fl.BETDisk.from_xrotor(
+        >>> param = fl.BETDisk.from_c81(
         ...     file=fl.C81File(file_path="c81_xv15.csv")),
         ...     rotation_direction_rule="leftHand",
         ...     omega=0.0046 * fl.u.deg / fl.u.s,

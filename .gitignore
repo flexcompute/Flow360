@@ -327,6 +327,7 @@ $RECYCLE.BIN/
 !tests/data/**/*.tar.gz
 
 tmp/
+tmp
 
 /.vscode
 /.cursor
@@ -335,3 +336,7 @@ tmp/
 flow360/examples/cylinder2D/flow360mesh.json
 
 /local_tests
+
+#Claude:
+CLAUDE.md
+.claude/
