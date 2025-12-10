@@ -16,6 +16,11 @@ from pydantic import PositiveInt
 from flow360.cloud.flow360_requests import LengthUnitType, RenameAssetRequestV2
 from flow360.cloud.rest_api import RestApi
 from flow360.component.case import Case
+from flow360.component.cloud_examples import (
+    copy_example,
+    fetch_examples,
+    find_example_by_name,
+)
 from flow360.component.geometry import Geometry
 from flow360.component.interfaces import (
     GeometryInterface,
@@ -1196,6 +1201,52 @@ class Project(pd.BaseModel):
         project._get_root_simulation_json()
         project._get_tree_from_cloud()
         return project
+
+    @classmethod
+    @pd.validate_call
+    def from_example(cls, example_id: Optional[str] = None, by_name: Optional[str] = None):
+        """
+        Creates a project from an existing example in the cloud.
+
+        Parameters
+        ----------
+        example_id : str, optional
+            ID of the example to copy. Mutually exclusive with `by_name`.
+        by_name : str, optional
+            Name of the example to copy. Uses fuzzy matching to find the best match.
+            Mutually exclusive with `example_id`.
+
+        Returns
+        -------
+        Project
+            An instance of the project created from the example.
+
+        Raises
+        ------
+        Flow360ValueError
+            If neither or both `example_id` and `by_name` are provided, or if no matching
+            example is found when using `by_name`.
+        Flow360WebError
+            If the example cannot be copied or the project cannot be loaded.
+        """
+        if example_id is None and by_name is None:
+            raise Flow360ValueError("Either 'example_id' or 'by_name' must be provided.")
+        if example_id is not None and by_name is not None:
+            raise Flow360ValueError("'example_id' and 'by_name' are mutually exclusive.")
+
+        if by_name is not None:
+            examples = fetch_examples()
+            matched_example, score = find_example_by_name(by_name, examples)
+            if score < 1.0:
+                similarity_pct = score * 100
+                log.info(
+                    f"Found closest match for '{by_name}': '{matched_example.title}' "
+                    f"(similarity: {similarity_pct:.2f} %%)"
+                )
+            example_id = matched_example.id
+
+        project_id = copy_example(example_id)
+        return cls.from_cloud(project_id)
 
     def _check_initialized(self):
         """
