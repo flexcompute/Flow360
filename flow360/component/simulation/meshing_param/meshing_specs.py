@@ -93,7 +93,7 @@ class MeshingDefaults(Flow360BaseModel):
         " relative to the largest dimension of the bounding box of the input surface mesh / geometry."
         " This can not be overridden per face.",
     )
-
+    # pylint: disable=duplicate-code
     sliding_interface_tolerance: pd.NonNegativeFloat = ConditionalField(
         DEFAULT_SLIDING_INTERFACE_TOLERANCE,
         strict=True,
