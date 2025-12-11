@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 from abc import ABCMeta
 from collections import defaultdict
-from typing import Annotated, ClassVar, List, Optional, Union, get_args, get_origin
+from typing import Annotated, List, Optional, Union, get_args, get_origin
 
 import pydantic as pd
 
@@ -23,21 +23,18 @@ class EntityBase(Flow360BaseModel, metaclass=ABCMeta):
     Base class for dynamic entity types.
 
     Attributes:
-        private_attribute_registry_bucket_name (str):
+        private_attribute_entity_type_name (str):
             A string representing the specific type of the entity.
             This should be set in subclasses to differentiate between entity types.
-            Warning:
-            This controls the granularity of the registry and must be unique for each entity type
-            and it is **strongly recommended NOT** to change it as it will bring up compatibility problems.
 
         name (str):
             The name of the entity instance, used for identification and retrieval.
     """
 
-    # Class-level bucket identifier; not serialized
-    entity_bucket: ClassVar[str] = "Invalid"
     private_attribute_entity_type_name: str = "Invalid"
     private_attribute_id: Optional[str] = pd.Field(
+        # pylint: disable=fixme
+        # TODO: This should not have default value. Everyone is supposed to set it.
         None,
         frozen=True,
         description="Unique identifier for the entity. Used by front end to track entities and enable auto update etc.",
@@ -56,7 +53,6 @@ class EntityBase(Flow360BaseModel, metaclass=ABCMeta):
         This avoids per-instance checks and catches misconfigured subclasses early.
 
         Rules:
-        - Every subclass must define a non-"Invalid" `entity_bucket` (class var).
         - If a subclass explicitly defines `private_attribute_entity_type_name` in its own
           class body, it must also be non-"Invalid". Intermediate abstract bases that do not
           set an entity type are allowed.
@@ -64,18 +60,6 @@ class EntityBase(Flow360BaseModel, metaclass=ABCMeta):
         super().__init_subclass__(**kwargs)
         if cls is EntityBase:
             return
-
-        def _resolve_class_attr(attr_name: str):
-            for base in cls.__mro__:
-                if attr_name in getattr(base, "__dict__", {}):
-                    return getattr(base, attr_name)
-            return None
-
-        bucket_value = _resolve_class_attr("entity_bucket")
-        if bucket_value is None or bucket_value == "Invalid":
-            raise NotImplementedError(
-                f"entity_bucket is not defined in the entity class: {cls.__name__}."
-            )
 
         # Only enforce entity type when the subclass explicitly sets it.
         if "private_attribute_entity_type_name" in cls.__dict__:
@@ -122,16 +106,6 @@ class EntityBase(Flow360BaseModel, metaclass=ABCMeta):
                 other.name + "-" + other.__class__.__name__
             )
         return False
-
-    @property
-    def entity_bucket(self) -> str:
-        """returns the bucket to which the entity belongs (class-level)."""
-        return type(self).entity_bucket
-
-    @entity_bucket.setter
-    def entity_bucket(self, value: str):
-        """disallow modification of the bucket to which the entity belongs."""
-        raise AttributeError("Cannot modify the bucket to which the entity belongs.")
 
     @property
     def entity_type(self) -> str:

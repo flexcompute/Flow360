@@ -2,10 +2,12 @@ import copy
 from typing import Optional
 
 import pydantic as pd
+import pytest
 
 from flow360.component.simulation.framework.entity_materializer import (
     materialize_entities_in_place,
 )
+from flow360.component.simulation.framework.entity_registry import EntityRegistry
 from flow360.component.simulation.outputs.output_entities import Point
 from flow360.component.simulation.primitives import Surface
 
@@ -133,16 +135,19 @@ def test_skip_dedup_for_point():
                     "name": "p1",
                     "private_attribute_entity_type_name": "Point",
                     "location": {"units": "m", "value": [0.0, 0.0, 0.0]},
+                    "private_attribute_id": "p1ahgdszhf",
                 },
                 {
                     "name": "p1",
                     "private_attribute_entity_type_name": "Point",
                     "location": {"units": "m", "value": [0.0, 0.0, 0.0]},
+                    "private_attribute_id": "p2aaaaaa",
                 },  # duplicate Point remains
                 {
                     "name": "p2",
                     "private_attribute_entity_type_name": "Point",
                     "location": {"units": "m", "value": [1.0, 0.0, 0.0]},
+                    "private_attribute_id": "p3dszahg",
                 },
             ]
         }
@@ -268,3 +273,99 @@ def test_materialize_reuses_cached_instance_across_nodes():
     obj2 = next(x for x in items2 if isinstance(x, Surface))
     # identity check: cached instance is reused across nodes
     assert obj1 is obj2
+
+
+def test_materialize_with_entity_registry_mode():
+    """
+    Test: Mode 2 - materialize_entities_in_place with EntityRegistry.
+
+    Purpose:
+    - Verify that when EntityRegistry is provided, entities are looked up from registry
+    - Verify that params references point to the same instances as in the registry
+    - Verify that this enables reference identity between entity_info and params
+
+    Expected behavior:
+    - Input: Entity dicts with IDs + pre-populated EntityRegistry
+    - Process: Lookup entities by (type, id) from registry
+    - Output: Params contain references to registry instances (identity check)
+    """
+    # Create registry with canonical entity instances
+    registry = EntityRegistry()
+    wing = Surface(name="wing", private_attribute_id="s-1")
+    tail = Surface(name="tail", private_attribute_id="s-2")
+    registry.register(wing)
+    registry.register(tail)
+
+    # Params with entity dicts referencing the registry entities
+    params = {
+        "a": {"stored_entities": [_mk_surface_dict("wing", "s-1")]},
+        "b": {
+            "stored_entities": [
+                _mk_surface_dict("tail", "s-2"),
+                _mk_surface_dict("wing", "s-1"),
+            ]
+        },
+    }
+
+    # Materialize with registry - should use registry instances
+    out = materialize_entities_in_place(copy.deepcopy(params), entity_registry=registry)
+
+    # Verify that params now reference the exact registry instances
+    a_wing = out["a"]["stored_entities"][0]
+    b_tail = out["b"]["stored_entities"][0]
+    b_wing = out["b"]["stored_entities"][1]
+
+    assert a_wing is wing  # Same object from registry
+    assert b_tail is tail  # Same object from registry
+    assert b_wing is wing  # Same object from registry
+    assert a_wing is b_wing  # Same object across different lists
+
+
+def test_materialize_with_entity_registry_missing_entity_raises():
+    """
+    Test: Mode 2 - Error when entity not found in registry.
+
+    Purpose:
+    - Verify that materialize_entities_in_place raises clear error
+    - Verify that error includes entity type, ID, and name for debugging
+
+    Expected behavior:
+    - Input: Entity dict with ID not in registry
+    - Process: Lookup fails in registry
+    - Output: Raise ValueError with descriptive message
+    """
+    registry = EntityRegistry()
+    wing = pd.TypeAdapter(Surface).validate_python({"name": "wing", "private_attribute_id": "s-1"})
+    registry.register(wing)
+
+    # Reference to non-existent entity
+    params = {"a": {"stored_entities": [_mk_surface_dict("fuselage", "s-999")]}}
+
+    with pytest.raises(ValueError, match=r"Entity not found in EntityRegistry.*s-999.*fuselage"):
+        materialize_entities_in_place(copy.deepcopy(params), entity_registry=registry)
+
+
+def test_materialize_with_entity_registry_missing_id_raises():
+    """
+    Test: Mode 2 - Error when entity dict missing private_attribute_id.
+
+    Purpose:
+    - Verify that all entities must have IDs in registry mode
+    - Verify that error message is clear about missing ID requirement
+
+    Expected behavior:
+    - Input: Entity dict without private_attribute_id + registry provided
+    - Process: Validation detects missing ID
+    - Output: Raise ValueError indicating ID is required in registry mode
+    """
+    registry = EntityRegistry()
+
+    # Entity dict without ID
+    params = {
+        "a": {
+            "stored_entities": [{"name": "wing", "private_attribute_entity_type_name": "Surface"}]
+        }
+    }
+
+    with pytest.raises(ValueError, match=r"Entity missing 'private_attribute_id'.*EntityRegistry"):
+        materialize_entities_in_place(copy.deepcopy(params), entity_registry=registry)

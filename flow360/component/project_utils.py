@@ -11,7 +11,11 @@ import pydantic as pd
 from flow360.cloud.rest_api import RestApi
 from flow360.component.interfaces import ProjectInterface
 from flow360.component.simulation import services
-from flow360.component.simulation.entity_info import DraftEntityTypes, EntityInfoModel
+from flow360.component.simulation.entity_info import (
+    DraftEntityTypes,
+    EntityInfoModel,
+    GeometryEntityInfo,
+)
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.framework.param_utils import AssetCache
@@ -32,8 +36,36 @@ from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.user_code.core.types import save_user_variables
 from flow360.component.simulation.utils import model_attribute_unlock
 from flow360.component.utils import parse_datetime
-from flow360.exceptions import Flow360ConfigurationError
+from flow360.exceptions import Flow360ConfigurationError, Flow360ValueError
 from flow360.log import log
+
+
+def apply_geometry_grouping_overrides(
+    entity_info: GeometryEntityInfo,
+    face_grouping: Optional[str],
+    edge_grouping: Optional[str],
+) -> dict[str, Optional[str]]:
+    """Apply explicit face/edge grouping overrides onto geometry entity info."""
+
+    def _validate_tag(tag: str, available: list[str], kind: str) -> str:
+        if available and tag not in available:  # pylint:disable=unsupported-membership-test
+            raise Flow360ValueError(
+                f"Invalid {kind} grouping tag '{tag}'. Available tags: {available}."
+            )
+        return tag
+
+    if face_grouping is not None:
+        face_tag = _validate_tag(face_grouping, entity_info.face_attribute_names, "face")
+        entity_info._group_entity_by_tag("face", face_tag)  # pylint:disable=protected-access
+    if edge_grouping is not None and entity_info.edge_attribute_names:
+        edge_tag = _validate_tag(edge_grouping, entity_info.edge_attribute_names, "edge")
+        entity_info._group_entity_by_tag("edge", edge_tag)  # pylint:disable=protected-access
+
+    return {
+        "face": entity_info.face_group_tag,
+        "edge": entity_info.edge_group_tag,
+        "body": entity_info.body_group_tag,  # Not used since customized body grouping is not supported yet
+    }
 
 
 class AssetStatistics(pd.BaseModel):
@@ -223,6 +255,9 @@ def _set_up_params_non_persistent_entity_info(entity_info, params: SimulationPar
     """
     Setting up non-persistent entities (AKA draft entities) in params.
     Add the ones used to the entity info.
+
+    LEGACY: This function is used for the legacy workflow (without DraftContext).
+    For DraftContext workflow, use _merge_draft_entities_from_params() instead.
     """
 
     entity_registry = params.used_entity_registry
@@ -231,10 +266,53 @@ def _set_up_params_non_persistent_entity_info(entity_info, params: SimulationPar
     draft_type_union = get_args(DraftEntityTypes)[0]
     draft_type_list = get_args(draft_type_union)
     for draft_type in draft_type_list:
-        draft_entities = entity_registry.find_by_type(draft_type)
+        draft_entities = list(entity_registry.view(draft_type))
         for draft_entity in draft_entities:
             if draft_entity not in entity_info.draft_entities:
                 entity_info.draft_entities.append(draft_entity)
+    return entity_info
+
+
+def _merge_draft_entities_from_params(
+    entity_info: EntityInfoModel,
+    params: SimulationParams,
+) -> EntityInfoModel:
+    """
+    Collect draft entities from params.used_entity_registry and merge into entity_info.
+
+    This function implements the merging logic for the DraftContext workflow:
+    - If a draft entity already exists in entity_info (by ID), use entity_info version (source of truth)
+    - If a draft entity is new (not in entity_info), add it from params
+
+    This ensures that:
+    1. Entities managed by DraftContext retain their modifications
+    2. New entities created by the user during simulation setup are captured
+
+    Parameters:
+        entity_info: The entity_info to merge into (typically from DraftContext)
+        params: The SimulationParams containing used_entity_registry
+
+    Returns:
+        EntityInfoModel: The updated entity_info with merged draft entities
+    """
+    used_registry = params.used_entity_registry
+
+    # Get all draft entity types from the DraftEntityTypes annotation
+    draft_type_union = get_args(DraftEntityTypes)[0]
+    draft_type_list = get_args(draft_type_union)
+
+    # Build a set of IDs already in entity_info for quick lookup (Draft entities have unique UUIDs)
+    existing_ids = {e.private_attribute_id for e in entity_info.draft_entities}
+
+    for draft_type in draft_type_list:
+        draft_entities_used = list(used_registry.view(draft_type))
+        for draft_entity in draft_entities_used:
+            # Only add if not already in entity_info (by ID)
+            # If already present, entity_info version is source of truth - keep it as is
+            if draft_entity.private_attribute_id not in existing_ids:
+                entity_info.draft_entities.append(draft_entity)
+                existing_ids.add(draft_entity.private_attribute_id)
+
     return entity_info
 
 
@@ -373,15 +451,26 @@ def _set_up_monitor_output_from_stopping_criterion(params: SimulationParams):
     return params
 
 
-def set_up_params_for_uploading(
+def set_up_params_for_uploading(  # pylint: disable=too-many-arguments
     root_asset,
     length_unit: LengthType,
     params: SimulationParams,
     use_beta_mesher: bool,
     use_geometry_AI: bool,  # pylint: disable=invalid-name
+    draft_entity_info: Optional[EntityInfoModel] = None,
 ) -> SimulationParams:
     """
     Set up params before submitting the draft.
+
+    Parameters:
+        root_asset: The root asset (Geometry, SurfaceMesh, or VolumeMesh).
+        length_unit: The project length unit.
+        params: The SimulationParams to set up.
+        use_beta_mesher: Whether to use the beta mesher.
+        use_geometry_AI: Whether to use Geometry AI.
+        draft_entity_info: Optional entity_info from DraftContext. When provided,
+            this is used as the source of truth for entities instead of root_asset.entity_info (legacy behavior).
+            This enables proper entity isolation for the DraftContext workflow.
     """
 
     with model_attribute_unlock(params.private_attribute_asset_cache, "project_length_unit"):
@@ -397,20 +486,32 @@ def set_up_params_for_uploading(
             use_geometry_AI if use_geometry_AI else False
         )
 
-    # User may have made modifications to the entities which is recorded in asset's entity registry
-    # We need to reflect these changes.
-    root_asset.entity_info.update_persistent_entities(
-        asset_entity_registry=root_asset.internal_registry
-    )
+    if draft_entity_info is not None:
+        # New DraftContext workflow: use draft's entity_info as source of truth
+        # Merge draft entities from params.used_entity_registry into draft_entity_info
+        entity_info = _merge_draft_entities_from_params(draft_entity_info, params)
 
-    # Check if there are any new draft entities that have been added in the params by the user
-    entity_info = _set_up_params_non_persistent_entity_info(root_asset.entity_info, params)
+        # Update entity grouping tags if needed
+        # (back compatibility, since the grouping should already have been captured in the draft_entity_info)
+        entity_info = _update_entity_grouping_tags(entity_info, params)
+    else:
+        # Legacy workflow (without DraftContext): use root_asset.entity_info
+        # User may have made modifications to the entities which is recorded in asset's entity registry
+        # We need to reflect these changes.
+        root_asset.entity_info.update_persistent_entities(
+            asset_entity_registry=root_asset.internal_registry
+        )
 
-    # If the customer just load the param without re-specify the same set of entity grouping tags,
-    # we need to update the entity grouping tags to the ones in the SimulationParams.
-    entity_info = _update_entity_grouping_tags(entity_info, params)
+        # Check if there are any new draft entities that have been added in the params by the user
+        entity_info = _set_up_params_non_persistent_entity_info(root_asset.entity_info, params)
+
+        # If the customer just load the param without re-specify the same set of entity grouping tags,
+        # we need to update the entity grouping tags to the ones in the SimulationParams.
+        entity_info = _update_entity_grouping_tags(entity_info, params)
 
     with model_attribute_unlock(params.private_attribute_asset_cache, "project_entity_info"):
+        # At this point the draft entity info has replaced the SimulationParams's entity info.
+        # So the validation afterwards does not require the access to the draft entity info anymore.
         params.private_attribute_asset_cache.project_entity_info = entity_info
     # Replace the ghost surfaces in the SimulationParams by the real ghost ones from asset metadata.
     # This has to be done after `project_entity_info` is properly set.

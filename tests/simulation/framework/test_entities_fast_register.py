@@ -329,7 +329,7 @@ def test_by_reference_registry(my_cylinder2):
 
     registry = EntityRegistry()
     registry.fast_register(my_cylinder2, set())
-    entities = registry.get_bucket(by_type=Cylinder).entities  # get the entities now before change
+    entities = list(registry.view(Cylinder))  # get the entities now before change
     # [Registry] External changes --> Internal
     my_cylinder2.height = 131 * u.m
     for entity in entities:
@@ -358,13 +358,13 @@ def test_entity_registry_item_retrieval(
     known_frozen_hashes = registry.fast_register(my_cylinder2, known_frozen_hashes)
     known_frozen_hashes = registry.fast_register(my_box_zone1, known_frozen_hashes)
     known_frozen_hashes = registry.fast_register(my_box_zone2, known_frozen_hashes)
-    all_box_entities = registry.get_bucket(by_type=Box).entities
-    assert len(all_box_entities) == 4
+    all_box_entities = list(registry.view(Box))
+    # Note: After switching to type-based storage, Box and Cylinder are separate types
+    assert len(all_box_entities) == 2
     assert my_box_zone1 in all_box_entities
     assert my_box_zone2 in all_box_entities
-    # my_cylinder1 is not a Box but is a _volumeZoneBase and EntityRegistry registers by base type
-    assert my_cylinder1 in all_box_entities
-    assert my_cylinder2 in all_box_entities
+    assert my_cylinder1 not in all_box_entities
+    assert my_cylinder2 not in all_box_entities
 
     known_frozen_hashes = set()
     registry = EntityRegistry()
