@@ -61,8 +61,6 @@ def parse_in_xfoil_polar(polar_file_content: str):
     return: alpha_list, mach_list, cl_list, cd_list
     """
 
-    from scipy.interpolate import interp1d  # pylint: disable=import-outside-toplevel
-
     cl_alphas = []
     cl_values = {}
     cd_values = {}
@@ -106,13 +104,9 @@ def parse_in_xfoil_polar(polar_file_content: str):
         + list(np.arange(30, 190, 10).astype(float))
     )
 
-    cl_interp = interp1d(cl_alphas, cl_values[cl_mach_nums[0]], kind="linear")
-    cd_interp = interp1d(cl_alphas, cd_values[cl_mach_nums[0]], kind="linear")
-    cls = [0 for i in range(len(alphas))]
-    cds = [0 for i in range(len(alphas))]
-    for i, alpha in enumerate(alphas):
-        cls[i] = float(cl_interp(alpha))
-        cds[i] = float(cd_interp(alpha))
+    # Use numpy.interp instead of scipy.interpolate.interp1d for linear interpolation
+    cls = list(np.interp(alphas, cl_alphas, cl_values[cl_mach_nums[0]]))
+    cds = list(np.interp(alphas, cl_alphas, cd_values[cl_mach_nums[0]]))
 
     return alphas, cl_mach_nums[0], cls, cds
 
