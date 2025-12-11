@@ -70,19 +70,19 @@ def parse_in_xfoil_polar(polar_file_content: str):
 
     next(line_iter)  # Assuming the first readline skips a header
 
-    for i in range(8):
+    for _ in range(8):
         line = next(line_iter)
 
     mach_num = line.strip().split(" ")[4]
     cl_values[mach_num] = []
     cd_values[mach_num] = []
-    for i in range(4):
+    for _ in range(4):
         line = next(line_iter)
     while True:
         line_contents = line.strip().split(" ")
 
         c = line_contents.count("")
-        for i in range(c):
+        for _ in range(c):
             line_contents.remove("")
 
         cl_alphas.append(float(line_contents[0]))
