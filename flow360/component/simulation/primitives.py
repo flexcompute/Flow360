@@ -151,7 +151,6 @@ class GeometryBodyGroup(EntityBase, SelectorFactory):
     :class:`GeometryBodyGroup` represents a collection of bodies that are grouped for transformation.
     """
 
-    entity_bucket: ClassVar[str] = "GeometryBodyGroupEntityType"
     private_attribute_tag_key: str = pd.Field(
         description="The tag/attribute string used to group bodies.",
     )
@@ -177,8 +176,6 @@ class GeometryBodyGroup(EntityBase, SelectorFactory):
 class _VolumeEntityBase(EntityBase, metaclass=ABCMeta):
     """All volumetric entities should inherit from this class."""
 
-    ### Warning: Please do not change this as it affects registry bucketing.
-    entity_bucket: ClassVar[str] = "VolumetricEntityType"
     private_attribute_zone_boundary_names: UniqueStringList = pd.Field(
         UniqueStringList(),
         frozen=True,
@@ -220,8 +217,6 @@ class _VolumeEntityBase(EntityBase, metaclass=ABCMeta):
 
 
 class _SurfaceEntityBase(EntityBase, metaclass=ABCMeta):
-    ### Warning: Please do not change this as it affects registry bucketing.
-    entity_bucket: ClassVar[str] = "SurfaceEntityType"
     private_attribute_full_name: Optional[str] = pd.Field(None, frozen=True)
 
     def _update_entity_info_with_metadata(self, volume_mesh_meta_data: dict) -> None:
@@ -254,19 +249,12 @@ class _SurfaceEntityBase(EntityBase, metaclass=ABCMeta):
         return self.private_attribute_full_name
 
 
-class _EdgeEntityBase(EntityBase, metaclass=ABCMeta):
-    ### Warning: Please do not change this as it affects registry bucketing.
-    entity_bucket: ClassVar[str] = "EdgeEntityType"
-
-
 @final
-class Edge(_EdgeEntityBase, SelectorFactory):
+class Edge(EntityBase, SelectorFactory):
     """
     Edge which contains a set of grouped edges from geometry.
     """
 
-    ### Warning: Please do not change this as it affects registry bucketing.
-    entity_bucket: ClassVar[str] = "EdgeEntityType"
     private_attribute_entity_type_name: Literal["Edge"] = pd.Field("Edge", frozen=True)
     private_attribute_tag_key: Optional[str] = pd.Field(
         None,
@@ -795,7 +783,6 @@ class SnappyBody(EntityBase):
     keywords with a body::region naming scheme.
     """
 
-    entity_bucket: ClassVar[str] = "SurfaceGroupedEntityType"
     private_attribute_entity_type_name: Literal["SnappyBody"] = pd.Field("SnappyBody", frozen=True)
     private_attribute_id: str = pd.Field(
         default_factory=generate_uuid,

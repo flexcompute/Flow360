@@ -2,11 +2,13 @@ import copy
 from typing import Optional
 
 import pydantic as pd
+import pytest
 
 from flow360.component.simulation.framework.entity_materializer import (
     _stable_entity_key_from_obj,
     materialize_entities_in_place,
 )
+from flow360.component.simulation.framework.entity_registry import EntityRegistry
 from flow360.component.simulation.outputs.output_entities import Point
 from flow360.component.simulation.primitives import Box, Surface
 
@@ -134,16 +136,19 @@ def test_skip_dedup_for_point():
                     "name": "p1",
                     "private_attribute_entity_type_name": "Point",
                     "location": {"units": "m", "value": [0.0, 0.0, 0.0]},
+                    "private_attribute_id": "p1ahgdszhf",
                 },
                 {
                     "name": "p1",
                     "private_attribute_entity_type_name": "Point",
                     "location": {"units": "m", "value": [0.0, 0.0, 0.0]},
+                    "private_attribute_id": "p2aaaaaa",
                 },  # duplicate Point remains
                 {
                     "name": "p2",
                     "private_attribute_entity_type_name": "Point",
                     "location": {"units": "m", "value": [1.0, 0.0, 0.0]},
+                    "private_attribute_id": "p3dszahg",
                 },
             ]
         }
@@ -271,209 +276,97 @@ def test_materialize_reuses_cached_instance_across_nodes():
     assert obj1 is obj2
 
 
-def test_entity_pool_provides_reference_identity():
+def test_materialize_with_entity_registry_mode():
     """
-    Test: Entity pool enables reference identity between pre-existing entities and materialized params.
+    Test: Mode 2 - materialize_entities_in_place with EntityRegistry.
 
     Purpose:
-    - Verify that entity_pool parameter allows reusing pre-existing entity instances
-    - Verify that materialized entities are the exact same Python objects from the pool
-    - Verify that modifications to pool entities are reflected in materialized params
+    - Verify that when EntityRegistry is provided, entities are looked up from registry
+    - Verify that params references point to the same instances as in the registry
+    - Verify that this enables reference identity between entity_info and params
 
     Expected behavior:
-    - Input: Pre-existing Surface and Box entities in entity_pool
-    - Process: Materialization looks up entities by (type, id) key in pool
-    - Output: Materialized entities are the same objects as pool entities (by identity)
-
-    This is the core feature enabling DraftContext entity modifications to propagate to params.
+    - Input: Entity dicts with IDs + pre-populated EntityRegistry
+    - Process: Lookup entities by (type, id) from registry
+    - Output: Params contain references to registry instances (identity check)
     """
-    # Create pre-existing entity instances (simulating entity_info entities)
-    surface = pd.TypeAdapter(Surface).validate_python(
-        {
-            "private_attribute_entity_type_name": "Surface",
-            "private_attribute_id": "surf-001",
-            "name": "wing",
-        }
-    )
-    box = pd.TypeAdapter(Box).validate_python(
-        {
-            "private_attribute_entity_type_name": "Box",
-            "private_attribute_id": "box-001",
-            "name": "refinement_zone",
-            "center": {"value": [0.0, 0.0, 0.0], "units": "m"},
-            "size": {"value": [1.0, 1.0, 1.0], "units": "m"},
-            "axis_of_rotation": [0.0, 0.0, 1.0],
-            "angle_of_rotation": {"value": 0.0, "units": "degree"},
-        }
-    )
+    # Create registry with canonical entity instances
+    registry = EntityRegistry()
+    wing = Surface(name="wing", private_attribute_id="s-1")
+    tail = Surface(name="tail", private_attribute_id="s-2")
+    registry.register(wing)
+    registry.register(tail)
 
-    # Build entity pool keyed by (type, id)
-    entity_pool = {
-        _stable_entity_key_from_obj(surface): surface,
-        _stable_entity_key_from_obj(box): box,
-    }
-
-    # Params with entity dicts that match pool keys
+    # Params with entity dicts referencing the registry entities
     params = {
-        "models": [
-            {
-                "entities": {
-                    "stored_entities": [
-                        {
-                            "private_attribute_entity_type_name": "Surface",
-                            "private_attribute_id": "surf-001",
-                            "name": "wing",
-                        },
-                    ]
-                }
-            }
-        ],
-        "volumes": {
+        "a": {"stored_entities": [_mk_surface_dict("wing", "s-1")]},
+        "b": {
             "stored_entities": [
-                {
-                    "private_attribute_entity_type_name": "Box",
-                    "private_attribute_id": "box-001",
-                    "name": "refinement_zone",
-                    "center": {"value": [0.0, 0.0, 0.0], "units": "m"},
-                    "size": {"value": [1.0, 1.0, 1.0], "units": "m"},
-                    "axis_of_rotation": [0.0, 0.0, 1.0],
-                    "angle_of_rotation": {"value": 0.0, "units": "degree"},
-                },
+                _mk_surface_dict("tail", "s-2"),
+                _mk_surface_dict("wing", "s-1"),
             ]
         },
     }
 
-    # Materialize with entity_pool
-    out = materialize_entities_in_place(params, entity_pool=entity_pool)
+    # Materialize with registry - should use registry instances
+    out = materialize_entities_in_place(copy.deepcopy(params), entity_registry=registry)
 
-    # Verify reference identity - materialized entities ARE the pool entities
-    materialized_surface = out["models"][0]["entities"]["stored_entities"][0]
-    materialized_box = out["volumes"]["stored_entities"][0]
+    # Verify that params now reference the exact registry instances
+    a_wing = out["a"]["stored_entities"][0]
+    b_tail = out["b"]["stored_entities"][0]
+    b_wing = out["b"]["stored_entities"][1]
 
-    assert materialized_surface is surface, "Surface should be same object from entity_pool"
-    assert materialized_box is box, "Box should be same object from entity_pool"
+    assert a_wing is wing  # Same object from registry
+    assert b_tail is tail  # Same object from registry
+    assert b_wing is wing  # Same object from registry
+    assert a_wing is b_wing  # Same object across different lists
 
 
-def test_entity_pool_modification_reflects_in_materialized_params():
+def test_materialize_with_entity_registry_missing_entity_raises():
     """
-    Test: Modifications to entity_pool entities are reflected in materialized params.
+    Test: Mode 2 - Error when entity not found in registry.
 
     Purpose:
-    - Verify the end-to-end use case: modify entity in pool, see change in params
-    - This simulates the DraftContext workflow where users modify entities
+    - Verify that materialize_entities_in_place raises clear error
+    - Verify that error includes entity type, ID, and name for debugging
 
     Expected behavior:
-    - Create entity, add to pool, materialize params
-    - Modify the entity instance (non-frozen field like center)
-    - The modification is visible in the materialized params (same object)
+    - Input: Entity dict with ID not in registry
+    - Process: Lookup fails in registry
+    - Output: Raise ValueError with descriptive message
     """
-    import unyt as u
+    registry = EntityRegistry()
+    wing = pd.TypeAdapter(Surface).validate_python({"name": "wing", "private_attribute_id": "s-1"})
+    registry.register(wing)
 
-    # Create entity and pool
-    box = pd.TypeAdapter(Box).validate_python(
-        {
-            "private_attribute_entity_type_name": "Box",
-            "private_attribute_id": "box-002",
-            "name": "my_box",
-            "center": {"value": [0.0, 0.0, 0.0], "units": "m"},
-            "size": {"value": [1.0, 1.0, 1.0], "units": "m"},
-            "axis_of_rotation": [0.0, 0.0, 1.0],
-            "angle_of_rotation": {"value": 0.0, "units": "degree"},
-        }
-    )
-    entity_pool = {_stable_entity_key_from_obj(box): box}
+    # Reference to non-existent entity
+    params = {"a": {"stored_entities": [_mk_surface_dict("fuselage", "s-999")]}}
 
-    params = {
-        "volumes": {
-            "stored_entities": [
-                {
-                    "private_attribute_entity_type_name": "Box",
-                    "private_attribute_id": "box-002",
-                    "name": "my_box",
-                    "center": {"value": [0.0, 0.0, 0.0], "units": "m"},
-                    "size": {"value": [1.0, 1.0, 1.0], "units": "m"},
-                    "axis_of_rotation": [0.0, 0.0, 1.0],
-                    "angle_of_rotation": {"value": 0.0, "units": "degree"},
-                },
-            ]
-        },
-    }
-
-    out = materialize_entities_in_place(params, entity_pool=entity_pool)
-    materialized_box = out["volumes"]["stored_entities"][0]
-
-    # Verify initial state
-    assert materialized_box is box
-    assert list(box.center.value) == [0.0, 0.0, 0.0]
-
-    # Modify the entity (simulating draft.boxes["my_box"].center = ...)
-    # Note: center is a non-frozen field that can be modified
-    box.center = (1.0, 2.0, 3.0) * u.m
-
-    # The change is immediately visible in materialized params (same object)
-    assert list(materialized_box.center.value) == [1.0, 2.0, 3.0]
-    assert list(out["volumes"]["stored_entities"][0].center.value) == [1.0, 2.0, 3.0]
+    with pytest.raises(ValueError, match=r"Entity not found in EntityRegistry.*s-999.*fuselage"):
+        materialize_entities_in_place(copy.deepcopy(params), entity_registry=registry)
 
 
-def test_entity_pool_fallback_to_builder_for_unknown_entities():
+def test_materialize_with_entity_registry_missing_id_raises():
     """
-    Test: Entities not in pool are built via the default builder.
+    Test: Mode 2 - Error when entity dict missing private_attribute_id.
 
     Purpose:
-    - Verify that entity_pool is optional and gracefully handles missing entries
-    - Verify that entities not found in pool are created normally via builder
-    - Verify that pool entities and built entities can coexist
+    - Verify that all entities must have IDs in registry mode
+    - Verify that error message is clear about missing ID requirement
 
     Expected behavior:
-    - Input: Pool with Surface, params with Surface (in pool) and Box (not in pool)
-    - Process: Surface reuses pool, Box is built fresh
-    - Output: Surface is pool object, Box is new instance
+    - Input: Entity dict without private_attribute_id + registry provided
+    - Process: Validation detects missing ID
+    - Output: Raise ValueError indicating ID is required in registry mode
     """
-    surface = pd.TypeAdapter(Surface).validate_python(
-        {
-            "private_attribute_entity_type_name": "Surface",
-            "private_attribute_id": "surf-003",
-            "name": "fuselage",
-        }
-    )
-    entity_pool = {_stable_entity_key_from_obj(surface): surface}
+    registry = EntityRegistry()
 
+    # Entity dict without ID
     params = {
-        "models": [
-            {
-                "entities": {
-                    "stored_entities": [
-                        # This one is in pool
-                        {
-                            "private_attribute_entity_type_name": "Surface",
-                            "private_attribute_id": "surf-003",
-                            "name": "fuselage",
-                        },
-                        # This one is NOT in pool - will be built
-                        {
-                            "private_attribute_entity_type_name": "Box",
-                            "private_attribute_id": "box-new",
-                            "name": "new_box",
-                            "center": {"value": [0.0, 0.0, 0.0], "units": "m"},
-                            "size": {"value": [1.0, 1.0, 1.0], "units": "m"},
-                            "axis_of_rotation": [0.0, 0.0, 1.0],
-                            "angle_of_rotation": {"value": 0.0, "units": "degree"},
-                        },
-                    ]
-                }
-            }
-        ],
+        "a": {
+            "stored_entities": [{"name": "wing", "private_attribute_entity_type_name": "Surface"}]
+        }
     }
 
-    out = materialize_entities_in_place(params, entity_pool=entity_pool)
-    items = out["models"][0]["entities"]["stored_entities"]
-
-    # Surface should be from pool
-    assert items[0] is surface
-
-    # Box should be a new instance (not in pool)
-    assert isinstance(items[1], Box)
-    assert items[1].name == "new_box"
-    # And it should NOT be in our original pool
-    box_key = _stable_entity_key_from_obj(items[1])
-    assert box_key not in entity_pool or entity_pool.get(box_key) is not items[1]
+    with pytest.raises(ValueError, match=r"Entity missing 'private_attribute_id'.*EntityRegistry"):
+        materialize_entities_in_place(copy.deepcopy(params), entity_registry=registry)

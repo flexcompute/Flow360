@@ -2,6 +2,8 @@
 Meshing settings that applies to volumes.
 """
 
+# pylint: disable=too-many-lines
+
 from abc import ABCMeta
 from typing import Literal, Optional, Union
 
@@ -241,6 +243,13 @@ class RotationVolume(AxisymmetricRefinementBase):
         "and/or other :class:`~flow360.AxisymmetricBody`(s)"
         "and/or other :class:`~flow360.Box`(s)",
     )
+    stationary_enclosed_entities: Optional[EntityList[Surface]] = pd.Field(
+        None,
+        description=(
+            "Surface entities included in `enclosed_entities` which should remain stationary "
+            "(excluded from rotation)."
+        ),
+    )
 
     @contextual_field_validator("entities", mode="after")
     @classmethod
@@ -324,6 +333,52 @@ class RotationVolume(AxisymmetricRefinementBase):
         if value is None:
             return value
         return check_deleted_surface_in_entity_list(value, param_info)
+
+    @contextual_field_validator("stationary_enclosed_entities", mode="after")
+    @classmethod
+    def _validate_stationary_enclosed_entities_only_in_beta_mesher(
+        cls, values, param_info: ParamsValidationInfo
+    ):
+        """
+        Ensure that stationary_enclosed_entities is only used with the beta mesher.
+        """
+        if values is None:
+            return values
+        if not param_info.is_beta_mesher:
+            raise ValueError(
+                "`stationary_enclosed_entities` in `RotationVolume` is only supported with the beta mesher."
+            )
+        return values
+
+    @contextual_model_validator(mode="after")
+    def _validate_stationary_enclosed_entities_subset(self, _param_info: ParamsValidationInfo):
+        """
+        Ensure that stationary_enclosed_entities is a subset of enclosed_entities.
+        """
+        if self.stationary_enclosed_entities is None:
+            return self
+
+        if self.enclosed_entities is None:
+            raise ValueError(
+                "`stationary_enclosed_entities` cannot be specified when `enclosed_entities` is None."
+            )
+
+        # Get sets of entity names for comparison
+        # pylint: disable=no-member
+        enclosed_names = {entity.name for entity in self.enclosed_entities.stored_entities}
+        stationary_names = {
+            entity.name for entity in self.stationary_enclosed_entities.stored_entities
+        }
+
+        # Check if all stationary entities are in enclosed entities
+        if not stationary_names.issubset(enclosed_names):
+            missing_entities = stationary_names - enclosed_names
+            raise ValueError(
+                f"All entities in `stationary_enclosed_entities` must be present in `enclosed_entities`. "
+                f"Missing entities: {', '.join(missing_entities)}"
+            )
+
+        return self
 
 
 @deprecated(
@@ -474,7 +529,10 @@ class AutomatedFarfield(_FarfieldBase):
         """,
     )
     private_attribute_entity: GenericVolume = pd.Field(
-        GenericVolume(name="__farfield_zone_name_not_properly_set_yet"),
+        GenericVolume(
+            name="__farfield_zone_name_not_properly_set_yet",
+            private_attribute_id="farfield_zone_name_not_properly_set_yet",
+        ),
         frozen=True,
         exclude=True,
     )
@@ -601,7 +659,9 @@ class WheelBelts(CentralBelt):
     """Class for wind tunnel floor with one central belt and four wheel belts."""
 
     type_name: Literal["WheelBelts"] = pd.Field(
-        "WheelBelts", description="Floor with central belt and four wheel belts.", frozen=True
+        "WheelBelts",
+        description="Floor with central belt and four wheel belts.",
+        frozen=True,
     )
     # No defaults for the below; user must specify
     front_wheel_belt_x_range: LengthType.Range = pd.Field(
@@ -895,7 +955,8 @@ class MeshSliceOutput(Flow360BaseModel):
         description="List of output :class:`~flow360.Slice` entities.",
     )
     include_crinkled_slices: bool = pd.Field(
-        default=False, description="Generate crinkled slices in addition to flat slices."
+        default=False,
+        description="Generate crinkled slices in addition to flat slices.",
     )
     cutoff_radius: Optional[pd.PositiveFloat] = pd.Field(
         default=None,

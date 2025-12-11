@@ -20,7 +20,10 @@ from flow360.component.simulation.entity_info import (
     GeometryEntityInfo,
 )
 from flow360.component.simulation.framework.entity_base import EntityBase
-from flow360.component.simulation.framework.entity_registry import EntityRegistry
+from flow360.component.simulation.framework.entity_registry import (
+    EntityRegistry,
+    EntityRegistryView,
+)
 from flow360.component.simulation.framework.entity_utils import compile_glob_cached
 from flow360.component.simulation.primitives import (
     Edge,
@@ -50,48 +53,6 @@ def get_active_draft() -> DraftContext | None:
     return _ACTIVE_DRAFT.get()
 
 
-class _SingleTypeEntityRegistry:
-    """
-    A thin view over `EntityRegistry` restricted to a single entity type.
-    """
-
-    def __init__(self, *, registry: EntityRegistry, entity_type: type[EntityBase]) -> None:
-        self._registry = registry
-        self._entity_type = entity_type
-
-    def __iter__(self):
-        return iter(self._entities)
-
-    def __len__(self):
-        return len(self._entities)
-
-    @property
-    def _entities(self) -> list[EntityBase]:
-        """Entities of the target type."""
-        bucket = self._registry.get_bucket(by_type=self._entity_type)
-
-        return [item for item in bucket.entities if is_exact_instance(item, self._entity_type)]
-
-    def __getitem__(self, key: str) -> EntityBase | list[EntityBase]:
-        """
-        Support syntax like `draft.body_groups['body_group_1']`
-        and `draft.body_groups['body_group*']` (glob only).
-        """
-        if not isinstance(key, str):
-            raise Flow360ValueError(f"Entity naming pattern: {key} is not a string.")
-
-        matcher = compile_glob_cached(key)
-        matched = [entity for entity in self._entities if matcher.match(entity.name)]
-
-        if not matched:
-            raise ValueError(
-                f"No entity found in registry with given name/naming pattern: '{key}'."
-            )
-        if len(matched) == 1:
-            return matched[0]
-        return matched
-
-
 class DraftContext(  # pylint: disable=too-many-instance-attributes
     AbstractContextManager["DraftContext"]
 ):
@@ -103,10 +64,6 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
     __slots__ = (
         "_entity_info",
         "_entity_registry",
-        "_body_groups",
-        "_surfaces",
-        "_edges",
-        "_volumes",
         "_coordinate_system_manager",
         "_mirror_manager",
         "_token",
@@ -130,40 +87,29 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
 
         """
 
-        if entity_info is None:
-            raise Flow360RuntimeError(
-                "[Internal] DraftContext requires `entity_info` to initialize."
-            )
         self._token: Optional[Token] = None
-
-        # Direct reference to entity_info
-        # Modifications to entities will be reflected in the asset's entity_info,
-        # mimicking web UI behavior where users can directly edit entity properties.
-        self._entity_info = entity_info
-        self._entity_registry: EntityRegistry = self._entity_info.get_persistent_entity_registry(
-            None
-        )
-
-        # Persistent entities (referencing objects in the _entity_info)
-        self._body_groups = _SingleTypeEntityRegistry(
-            registry=self._entity_registry, entity_type=GeometryBodyGroup
-        )
-        self._surfaces = _SingleTypeEntityRegistry(
-            registry=self._entity_registry, entity_type=Surface
-        )
-        self._edges = _SingleTypeEntityRegistry(registry=self._entity_registry, entity_type=Edge)
-        self._volumes = _SingleTypeEntityRegistry(
-            registry=self._entity_registry, entity_type=GenericVolume
-        )
 
         self._coordinate_system_manager = CoordinateSystemManager._from_status(
             status=coordinate_system_status,
         )
 
+        # DraftContext owns a deep copy of entity_info (created by create_draft()).
+        # This ensures modifications in the draft don't affect the original asset.
+        if entity_info is None:
+            raise Flow360RuntimeError(
+                "[Internal] DraftContext requires `entity_info` to initialize."
+            )
+        self._entity_info = entity_info
+
+        # Use EntityRegistry.from_entity_info() for the new DraftContext workflow.
+        # This builds the registry by referencing entities from our copied entity_info.
+        self._entity_registry: EntityRegistry = EntityRegistry.from_entity_info(entity_info)
+
         # Pre-compute face_group_to_body_group map for mirror operations.
         # This is only available for GeometryEntityInfo.
         face_group_to_body_group = None
         valid_body_group_ids = None
+
         if isinstance(self._entity_info, GeometryEntityInfo):
             try:
                 face_group_to_body_group = self._entity_info.get_face_group_to_body_group_id_map()
@@ -208,9 +154,10 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
     # endregion ------------------------------------------------------------------------------------
 
     # region -----------------------------Public properties Below-------------------------------------
+
     # Persistent entities
     @property
-    def body_groups(self) -> _SingleTypeEntityRegistry:
+    def body_groups(self) -> EntityRegistryView:
         """
         Return the list of body groups in the draft.
 
@@ -223,29 +170,49 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
 
         ====
         """
-        return self._body_groups
+        return self._entity_registry.view(GeometryBodyGroup)
 
     @property
-    def surfaces(self) -> _SingleTypeEntityRegistry:
+    def surfaces(self) -> EntityRegistryView:
         """
         Return the list of surfaces in the draft.
         """
-        return self._surfaces
+        return self._entity_registry.view(Surface)
 
     @property
-    def edges(self) -> _SingleTypeEntityRegistry:
+    def edges(self) -> EntityRegistryView:
         """
         Return the list of edges in the draft.
         """
-        return self._edges
+        return self._entity_registry.view(Edge)
 
     @property
-    def volumes(self) -> _SingleTypeEntityRegistry:
+    def volumes(self) -> EntityRegistryView:
         """
         Return the list of volumes (volume zones) in the draft.
         """
-        # If volume zone as root asset.
-        return self._volumes
+        return self._entity_registry.view(GenericVolume)
+
+    # Non-persistent entities
+    @property
+    def boxes(self) -> EntityRegistryView:
+        """
+        Return the list of boxes in the draft.
+        """
+        # pylint: disable=import-outside-toplevel
+        from flow360.component.simulation.primitives import Box
+
+        return self._entity_registry.view(Box)
+
+    @property
+    def cylinders(self) -> EntityRegistryView:
+        """
+        Return the list of cylinders in the draft.
+        """
+        # pylint: disable=import-outside-toplevel
+        from flow360.component.simulation.primitives import Cylinder
+
+        return self._entity_registry.view(Cylinder)
 
     @property
     def coordinate_systems(self) -> CoordinateSystemManager:
@@ -257,19 +224,4 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
         """Mirror manager."""
         return self._mirror_manager
 
-    # Non-persistent entities
-    @property
-    def boxes(self) -> _SingleTypeEntityRegistry:
-        """
-        Return the list of boxes in the draft.
-        """
-
-    @property
-    def cylinders(self) -> _SingleTypeEntityRegistry:
-        """
-        Return the list of cylinders in the draft.
-        """
-
     # endregion ------------------------------------------------------------------------------------
-
-    # endregion -------------------------------------------------------------------------------------

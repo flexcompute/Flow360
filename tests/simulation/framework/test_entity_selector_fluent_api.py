@@ -2,8 +2,8 @@ import json
 
 import pytest
 
+from flow360.component.simulation.framework.entity_registry import EntityRegistry
 from flow360.component.simulation.framework.entity_selector import (
-    SelectorEntityPool,
     expand_entity_selectors_in_place,
 )
 from flow360.component.simulation.primitives import Edge, Surface
@@ -14,15 +14,25 @@ def _mk_pool(names, entity_type):
     return [{"name": n, "private_attribute_entity_type_name": entity_type} for n in names]
 
 
-def _expand_and_get_names(db: SelectorEntityPool, selector_model) -> list[str]:
+def _make_registry(surfaces=None, edges=None):
+    """Create an EntityRegistry from entity dictionaries."""
+    registry = EntityRegistry()
+    for entity_dict in surfaces or []:
+        registry.register(Surface(name=entity_dict["name"]))
+    for entity_dict in edges or []:
+        registry.register(Edge(name=entity_dict["name"]))
+    return registry
+
+
+def _expand_and_get_names(registry: EntityRegistry, selector_model) -> list[str]:
     # Convert model to dict for the expansion engine
     params = {"node": {"selectors": [selector_model.model_dump()]}}
-    expand_entity_selectors_in_place(db, params)
+    expand_entity_selectors_in_place(registry, params)
     stored = params["node"]["stored_entities"]
     return [
-        e["name"]
+        e.name
         for e in stored
-        if e["private_attribute_entity_type_name"] == selector_model.target_class
+        if e.private_attribute_entity_type_name == selector_model.target_class
     ]
 
 
@@ -42,11 +52,13 @@ def test_surface_class_match_and_chain_and():
     - AND logic result: ["wing-root", "wingtip"]
     """
     # Prepare a pool of Surface entities
-    db = SelectorEntityPool(surfaces=_mk_pool(["wing", "wing-root", "wingtip", "tail"], "Surface"))
+    registry = _make_registry(
+        surfaces=_mk_pool(["wing", "wing-root", "wingtip", "tail"], "Surface")
+    )
 
     # AND logic by default; expect intersection of predicates
     selector = Surface.match("wing*", name="t_and").not_any_of(["wing"])
-    names = _expand_and_get_names(db, selector)
+    names = _expand_and_get_names(registry, selector)
     assert names == ["wing-root", "wingtip"]
 
 
@@ -65,11 +77,11 @@ def test_surface_class_match_or_union():
     - any_of(["tail"]) selects: ["tail"]
     - OR logic result: ["s1", "tail"] (in pool order)
     """
-    db = SelectorEntityPool(surfaces=_mk_pool(["s1", "s2", "tail", "wing"], "Surface"))
+    registry = _make_registry(surfaces=_mk_pool(["s1", "s2", "tail", "wing"], "Surface"))
 
     # OR logic: union of predicates
     selector = Surface.match("s1", name="t_or", logic="OR").any_of(["tail"])
-    names = _expand_and_get_names(db, selector)
+    names = _expand_and_get_names(registry, selector)
     # Order preserved by pool scan under OR
     assert names == ["s1", "tail"]
 
@@ -89,13 +101,13 @@ def test_surface_regex_and_not_match():
     - not_match("*-root", syntax="glob") excludes: ["wing-root"]
     - Result: ["wing"] (passed both predicates)
     """
-    db = SelectorEntityPool(surfaces=_mk_pool(["wing", "wing-root", "tail"], "Surface"))
+    registry = _make_registry(surfaces=_mk_pool(["wing", "wing-root", "tail"], "Surface"))
 
     # Regex fullmatch for exact 'wing', then exclude via not_match (glob)
     selector = Surface.match(r"^wing$", name="t_regex", syntax="regex").not_match(
         "*-root", syntax="glob"
     )
-    names = _expand_and_get_names(db, selector)
+    names = _expand_and_get_names(registry, selector)
     assert names == ["wing"]
 
 
@@ -115,11 +127,11 @@ def test_in_and_not_any_of_chain():
     - not_any_of(["b"]) excludes: ["b"]
     - Final result: ["a", "c"]
     """
-    db = SelectorEntityPool(surfaces=_mk_pool(["a", "b", "c", "d"], "Surface"))
+    registry = _make_registry(surfaces=_mk_pool(["a", "b", "c", "d"], "Surface"))
 
     # AND semantics: in {a,b,c} and not_in {b}
     selector = Surface.match("*", name="t_in").any_of(["a", "b", "c"]).not_any_of(["b"])
-    names = _expand_and_get_names(db, selector)
+    names = _expand_and_get_names(registry, selector)
     assert names == ["a", "c"]
 
 
@@ -137,15 +149,13 @@ def test_edge_class_basic_match():
     - Edge.match("edgeA") selects only edgeA from the edges pool
     - Edge entities are correctly filtered by target_class
     """
-    db = SelectorEntityPool(edges=_mk_pool(["edgeA", "edgeB"], "Edge"))
+    registry = _make_registry(edges=_mk_pool(["edgeA", "edgeB"], "Edge"))
 
     selector = Edge.match("edgeA", name="edge_basic")
     params = {"node": {"selectors": [selector.model_dump()]}}
-    expand_entity_selectors_in_place(db, params)
+    expand_entity_selectors_in_place(registry, params)
     stored = params["node"]["stored_entities"]
-    assert [e["name"] for e in stored if e["private_attribute_entity_type_name"] == "Edge"] == [
-        "edgeA"
-    ]
+    assert [e.name for e in stored if e.private_attribute_entity_type_name == "Edge"] == ["edgeA"]
 
 
 def test_selector_factory_propagates_description():

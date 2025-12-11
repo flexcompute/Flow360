@@ -15,7 +15,6 @@ from flow360.component.simulation.primitives import GenericVolume, Surface
 class _SurfaceEntityBase(EntityBase):
     """Base class for surface-like entities (CAD or mesh)."""
 
-    entity_bucket: ClassVar[str] = "surfaces"
     private_attribute_entity_type_name: Literal["_SurfaceEntityBase"] = pd.Field(
         "_SurfaceEntityBase", frozen=True
     )
@@ -76,14 +75,12 @@ def test_entity_list_discrimination():
     """
 
     class ConfusingEntity1(EntityBase):
-        entity_bucket: ClassVar[str] = "confusing"
         some_value: int = pd.Field(1, gt=1)
         private_attribute_entity_type_name: Literal["ConfusingEntity1"] = pd.Field(
             "ConfusingEntity1", frozen=True
         )
 
     class ConfusingEntity2(EntityBase):
-        entity_bucket: ClassVar[str] = "confusing"
         some_value: int = pd.Field(1, gt=2)
         private_attribute_entity_type_name: Literal["ConfusingEntity2"] = pd.Field(
             "ConfusingEntity2", frozen=True

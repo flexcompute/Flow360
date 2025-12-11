@@ -35,6 +35,7 @@ from flow360.component.simulation.meshing_param.params import (
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     CustomZones,
+    RotationVolume,
     UniformRefinement,
     WheelBelts,
     WindTunnelFarfield,
@@ -1250,3 +1251,95 @@ def test_gai_analytic_wind_tunnel_farfield():
         1 * u.m,
         "gai_windtunnel.json",
     )
+
+
+def test_sliding_interface_tolerance_gai():
+    """Test that sliding_interface_tolerance is included in GAI filtered JSON."""
+    geometry = Geometry.from_local_storage(
+        geometry_id="geo-e5c01a98-2180-449e-b255-d60162854a83",
+        local_storage_path=os.path.join(
+            os.path.dirname(__file__), "data", "gai_geometry_entity_info"
+        ),
+        meta_data=GeometryMeta(
+            **local_metadata_builder(
+                id="geo-e5c01a98-2180-449e-b255-d60162854a83",
+                name="aaa",
+                cloud_path_prefix="aaa",
+                status="processed",
+            )
+        ),
+    )
+    geometry.group_faces_by_tag("faceId")
+    geometry.group_edges_by_tag("edgeId")
+    geometry.group_bodies_by_tag("groupByFile")
+
+    with open(
+        os.path.join(
+            os.path.dirname(__file__), "data", "gai_geometry_entity_info", "simulation.json"
+        ),
+        "r",
+    ) as fh:
+        asset_cache = AssetCache.model_validate(json.load(fh).pop("private_attribute_asset_cache"))
+
+    with SI_unit_system:
+        farfield = AutomatedFarfield(domain_type="half_body_positive_y")
+        rotating_volume = RotationVolume(
+            name="rotating_volume",
+            spacing_axial=0.1 * u.m,
+            spacing_circumferential=0.1 * u.m,
+            spacing_radial=0.1 * u.m,
+            entities=[
+                Cylinder(
+                    name="cylinder",
+                    center=[0, 0, 0] * u.m,
+                    axis=[0, 0, 1],
+                    height=10 * u.m,
+                    outer_radius=5 * u.m,
+                    private_attribute_id="b8d08e11-e837-4cc7-95b3-f92e05e71a65",
+                )
+            ],
+        )
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    geometry_accuracy=0.05 * u.m,
+                    surface_max_edge_length=0.2,
+                    sliding_interface_tolerance=3e-3,
+                ),
+                volume_zones=[farfield, rotating_volume],
+            ),
+            private_attribute_asset_cache=asset_cache,
+        )
+
+    _, err = validate_params_with_context(params, "Geometry", "SurfaceMesh")
+    assert err is None, f"Validation error: {err}"
+    translated = get_surface_meshing_json(params, mesh_unit=1 * u.m)
+
+    # Verify sliding_interface_tolerance is in the translated JSON
+    assert "meshing" in translated
+    assert "defaults" in translated["meshing"]
+    assert "sliding_interface_tolerance" in translated["meshing"]["defaults"]
+    assert translated["meshing"]["defaults"]["sliding_interface_tolerance"] == 3e-3
+    assert "volume_zones" in translated["meshing"]
+    assert translated["meshing"]["volume_zones"][1] == {
+        "entities": {
+            "stored_entities": [
+                {
+                    "axis": [0.0, 0.0, 1.0],
+                    "center": {"units": "1.0*m", "value": [0.0, 0.0, 0.0]},
+                    "height": {"units": "1.0*m", "value": 10.0},
+                    "inner_radius": {"units": "1.0*m", "value": 0.0},
+                    "name": "cylinder",
+                    "outer_radius": {"units": "1.0*m", "value": 5.0},
+                    "private_attribute_entity_type_name": "Cylinder",
+                    "private_attribute_id": "b8d08e11-e837-4cc7-95b3-f92e05e71a65",
+                    "private_attribute_zone_boundary_names": {"items": []},
+                }
+            ]
+        },
+        "name": "rotating_volume",
+        "spacing_axial": {"units": "1.0*m", "value": 0.1},
+        "spacing_circumferential": {"units": "1.0*m", "value": 0.1},
+        "spacing_radial": {"units": "1.0*m", "value": 0.1},
+        "type": "RotationVolume",
+    }

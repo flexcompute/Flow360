@@ -3,14 +3,16 @@
 from __future__ import annotations
 
 import copy
-from typing import Any, List, Union
+from typing import TYPE_CHECKING, Any, List, Union
 
 from flow360.component.simulation.framework.entity_materializer import (
     _stable_entity_key_from_obj,
     materialize_entities_in_place,
 )
-from flow360.component.simulation.framework.entity_selector import SelectorEntityPool
 from flow360.exceptions import Flow360ValueError
+
+if TYPE_CHECKING:
+    from flow360.component.simulation.framework.entity_registry import EntityRegistry
 
 
 def _serialize_selector(selector: Any):
@@ -68,8 +70,8 @@ def expand_entity_list_in_context(
             expand_entity_selectors_in_place,
         )
 
-        selector_pool = get_selector_pool_from_params(params, use_instances=True)
-        expand_entity_selectors_in_place(selector_pool, params_payload, merge_mode="merge")
+        registry = get_registry_from_params(params)
+        expand_entity_selectors_in_place(registry, params_payload, merge_mode="merge")
         stored_entities = params_payload[wrapper_key].get("stored_entities", [])
 
     if not stored_entities:
@@ -91,206 +93,67 @@ def _node_get(container, attribute, default=None):
     return getattr(container, attribute, default)
 
 
-def _get_grouped_entities_from_geometry(entity_info: Any, entity_type_name: str) -> list:
+def get_registry_from_params(params) -> EntityRegistry:
     """
-    Extract entities based on current grouping tag for GeometryEntityInfo.
-
-    Mimics the logic from GeometryEntityInfo._get_list_of_entities.
-    """
-    if entity_type_name == "face":
-        attribute_names = _node_get(entity_info, "face_attribute_names", []) or []
-        grouped_list = _node_get(entity_info, "grouped_faces", []) or []
-        group_tag = _node_get(entity_info, "face_group_tag")
-    elif entity_type_name == "edge":
-        attribute_names = _node_get(entity_info, "edge_attribute_names", []) or []
-        grouped_list = _node_get(entity_info, "grouped_edges", []) or []
-        group_tag = _node_get(entity_info, "edge_group_tag")
-    elif entity_type_name == "body":
-        attribute_names = _node_get(entity_info, "body_attribute_names", []) or []
-        grouped_list = _node_get(entity_info, "grouped_bodies", []) or []
-        group_tag = _node_get(entity_info, "body_group_tag")
-    else:
-        return []
-
-    # If no grouping tag is set, use the default (first non-ID tag)
-    if group_tag is None:
-        if not attribute_names:
-            return []
-        # Get first non-ID tag (mimics _get_default_grouping_tag logic)
-        id_tag = f"{entity_type_name}Id"
-        for tag in attribute_names:
-            if tag != id_tag:
-                group_tag = tag
-                break
-        if group_tag is None:
-            group_tag = id_tag
-
-    # Find the index of the grouping tag in attribute_names
-    if group_tag in attribute_names:
-        index = attribute_names.index(group_tag)
-        if index < len(grouped_list):
-            return grouped_list[index]
-
-    return []
-
-
-def _extract_geometry_entities(entity_info: Any) -> tuple[list, list, list]:
-    """Extract entities from GeometryEntityInfo."""
-    surfaces = _get_grouped_entities_from_geometry(entity_info, "face")
-
-    edges = []
-    if _node_get(entity_info, "edge_ids"):
-        edges = _get_grouped_entities_from_geometry(entity_info, "edge")
-
-    geometry_body_groups = []
-    if _node_get(entity_info, "body_attribute_names"):
-        geometry_body_groups = _get_grouped_entities_from_geometry(entity_info, "body")
-
-    return surfaces, edges, geometry_body_groups
-
-
-def _extract_volume_mesh_entities(entity_info: Any) -> tuple[list, list]:
-    """Extract entities from VolumeMeshEntityInfo."""
-    surfaces = _node_get(entity_info, "boundaries", []) or []
-    generic_volumes = _node_get(entity_info, "zones", []) or []
-    return surfaces, generic_volumes
-
-
-def _extract_surface_mesh_entities(entity_info: Any) -> list:
-    """Extract entities from SurfaceMeshEntityInfo."""
-    return _node_get(entity_info, "boundaries", []) or []
-
-
-def _build_selector_pool_from_entity_info(entity_info: Any) -> SelectorEntityPool:
-    """Normalize entity info (dict or object) into SelectorEntityPool."""
-    entity_info_type = _node_get(entity_info, "type_name")
-
-    surfaces: list = []
-    edges: list = []
-    generic_volumes: list = []
-    geometry_body_groups: list = []
-
-    if entity_info_type == "GeometryEntityInfo":
-        surfaces, edges, geometry_body_groups = _extract_geometry_entities(entity_info)
-    elif entity_info_type == "VolumeMeshEntityInfo":
-        surfaces, generic_volumes = _extract_volume_mesh_entities(entity_info)
-    elif entity_info_type == "SurfaceMeshEntityInfo":
-        surfaces = _extract_surface_mesh_entities(entity_info)
-
-    return SelectorEntityPool(
-        surfaces=surfaces,
-        edges=edges,
-        generic_volumes=generic_volumes,
-        geometry_body_groups=geometry_body_groups,
-    )
-
-
-def get_selector_pool_from_dict(params_as_dict: dict) -> SelectorEntityPool:
-    """
-    Go through the simulation json and retrieve the entity database for entity selectors.
-
-    This function extracts all entities from private_attribute_asset_cache and converts them
-    to dictionary format for use in entity selection operations. For GeometryEntityInfo, it
-    respects the current grouping tags (face_group_tag, edge_group_tag, body_group_tag).
-
-    Parameters:
-        params_as_dict: Simulation parameters as dictionary containing private_attribute_asset_cache
-
-    Returns:
-        SelectorEntityPool: Database containing all available entities as dictionaries
-    """
-    # Extract and validate asset cache
-    asset_cache = params_as_dict.get("private_attribute_asset_cache")
-    if asset_cache is None:
-        raise ValueError("[Internal] private_attribute_asset_cache not found in params_as_dict.")
-
-    entity_info = asset_cache.get("project_entity_info")
-    if entity_info is None:
-        raise ValueError("[Internal] project_entity_info not found in asset cache.")
-
-    return _build_selector_pool_from_entity_info(entity_info)
-
-
-def get_selector_pool_from_params(params, *, use_instances: bool = False) -> SelectorEntityPool:
-    """
-    Retrieve the entity database for selectors from a SimulationParams instance.
+    Create an EntityRegistry from SimulationParams.
 
     Parameters
     ----------
     params :
         SimulationParams (or compatible object) that holds `private_attribute_asset_cache`.
-    use_instances : bool, default False
-        When True, returns databases backed by deserialized entity objects.
-        When False, falls back to the JSON/dict path (same as `get_selector_pool_from_dict`).
+
+    Returns
+    -------
+    EntityRegistry
+        Registry containing all entities from the params.
     """
+    # pylint: disable=import-outside-toplevel
+    from flow360.component.simulation.framework.entity_registry import EntityRegistry
 
     if params is None:
-        raise ValueError("[Internal] SimulationParams is required to build entity database.")
+        raise ValueError("[Internal] SimulationParams is required to build entity registry.")
 
     asset_cache = getattr(params, "private_attribute_asset_cache", None)
     if asset_cache is None:
         raise ValueError(
-            "[Internal] SimulationParams.private_attribute_asset_cache is required to build entity database."
+            "[Internal] SimulationParams.private_attribute_asset_cache is required to build entity registry."
         )
-
-    if not use_instances:
-        params_as_dict = params.model_dump(mode="json", exclude_none=True)
-        return get_selector_pool_from_dict(params_as_dict)
 
     entity_info = getattr(asset_cache, "project_entity_info", None)
     if entity_info is None:
         raise ValueError("[Internal] SimulationParams is missing project_entity_info.")
 
-    return _build_selector_pool_from_entity_info(entity_info)
+    return EntityRegistry.from_entity_info(entity_info)
 
 
-def build_entity_pool_from_entity_info(entity_info: Any) -> dict:
+def get_registry_from_dict(params_as_dict: dict) -> EntityRegistry:
     """
-    Build an entity pool from entity_info for use in materialization.
-
-    This function extracts all entities (persistent, draft, and ghost) from the entity_info
-    and creates a dict keyed by (type_name, private_attribute_id) for use as a pre-populated
-    cache during entity materialization.
-
-    This enables reference identity between entity_info and params.
-    And also standarizes access of entities from entity_info.
+    Create an EntityRegistry from simulation params dictionary.
 
     Parameters
     ----------
-    entity_info : EntityInfoModel
-        The entity info containing all entities (GeometryEntityInfo, VolumeMeshEntityInfo,
-        or SurfaceMeshEntityInfo).
+    params_as_dict : dict
+        Simulation parameters as dictionary containing private_attribute_asset_cache.
 
     Returns
     -------
-    dict
-        A dict mapping (type_name, private_attribute_id) tuples to entity instances.
+    EntityRegistry
+        Registry containing all entities from the params.
     """
-    pool = {}
+    # pylint: disable=import-outside-toplevel
+    from flow360.component.simulation.framework.entity_registry import EntityRegistry
 
-    def _add_entities_to_pool(entities):
-        """Helper to add entities to pool."""
-        for entity in entities:
-            key = _stable_entity_key_from_obj(entity)
-            pool[key] = entity
+    asset_cache = params_as_dict.get("private_attribute_asset_cache")
+    if asset_cache is None:
+        raise ValueError("[Internal] private_attribute_asset_cache not found in params_as_dict.")
 
-    entity_info_type = _node_get(entity_info, "type_name")
+    entity_info_dict = asset_cache.get("project_entity_info")
+    if entity_info_dict is None:
+        raise ValueError("[Internal] project_entity_info not found in asset cache.")
 
-    # Collect persistent entities based on entity_info type
-    if entity_info_type == "GeometryEntityInfo":
-        for attr_name in ["grouped_faces", "grouped_edges", "grouped_bodies"]:
-            for group in _node_get(entity_info, attr_name, []) or []:
-                _add_entities_to_pool(group)
+    # Deserialize entity_info dict to the appropriate EntityInfo class
+    from flow360.component.simulation.entity_info import parse_entity_info_model
 
-    elif entity_info_type == "VolumeMeshEntityInfo":
-        for attr_name in ["boundaries", "zones"]:
-            _add_entities_to_pool(_node_get(entity_info, attr_name, []) or [])
+    entity_info = parse_entity_info_model(entity_info_dict)
 
-    elif entity_info_type == "SurfaceMeshEntityInfo":
-        _add_entities_to_pool(_node_get(entity_info, "boundaries", []) or [])
-
-    # Collect draft and ghost entities
-    for attr_name in ["draft_entities", "ghost_entities"]:
-        _add_entities_to_pool(_node_get(entity_info, attr_name, []) or [])
-
-    return pool
+    return EntityRegistry.from_entity_info(entity_info)

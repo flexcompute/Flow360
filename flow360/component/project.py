@@ -16,6 +16,11 @@ from pydantic import PositiveInt, ValidationError
 from flow360.cloud.flow360_requests import LengthUnitType, RenameAssetRequestV2
 from flow360.cloud.rest_api import RestApi
 from flow360.component.case import Case
+from flow360.component.cloud_examples import (
+    copy_example,
+    fetch_examples,
+    find_example_by_name,
+)
 from flow360.component.geometry import Geometry
 from flow360.component.interfaces import (
     GeometryInterface,
@@ -95,7 +100,13 @@ def create_draft(
     face_grouping: Optional[str] = None,
     edge_grouping: Optional[str] = None,
 ) -> DraftContext:
-    """Factory helper used by end users (`with fl.create_draft() as draft`)."""
+    """
+    Factory helper used by end users (`with fl.create_draft() as draft`).
+
+    Creates a DraftContext with a deep copy of the asset's entity_info,
+    providing entity isolation so modifications in the draft don't affect
+    the original asset.
+    """
 
     # region -----------------------------Private implementations Below-----------------------------
 
@@ -168,6 +179,15 @@ def create_draft(
                 f"Failed to parse stored {status_name} for {asset.__class__.__name__}. Error: {exc}",
             ) from exc
 
+    def _deep_copy_entity_info(entity_info):
+        """Create a deep copy of entity_info via model_dump + model_validate.
+
+        This ensures DraftContext has an independent copy of entity_info,
+        so modifications don't affect the original asset.
+        """
+        entity_info_dict = entity_info.model_dump(mode="json")
+        return type(entity_info).model_validate(entity_info_dict)
+
     def _inform_grouping_selections(entity_info) -> None:
         """Inform the user about the grouping selections made on the entity provider cloud asset."""
 
@@ -209,18 +229,17 @@ def create_draft(
     if not isinstance(new_run_from, AssetBase):
         raise Flow360RuntimeError("create_draft expects a cloud asset instance as `new_run_from`.")
 
-    # Direct reference to entity_info (no deepcopy).
-    # Modifications to entities via draft will be reflected in the asset's entity_info,
-    # and subsequently in params (via entity_pool reference identity).
-    entity_info = new_run_from.entity_info
+    # Deep copy entity_info for draft isolation
+    entity_info_copy = _deep_copy_entity_info(new_run_from.entity_info)
 
-    _inform_grouping_selections(entity_info)
+    # Apply grouping overrides to the copy (not the original)
+    _inform_grouping_selections(entity_info_copy)
 
     mirror_status = _load_status_from_asset(new_run_from, MirrorStatus)
     coordinate_system_status = _load_status_from_asset(new_run_from, CoordinateSystemStatus)
 
     return DraftContext(
-        entity_info=entity_info,
+        entity_info=entity_info_copy,
         mirror_status=mirror_status,
         coordinate_system_status=coordinate_system_status,
     )
@@ -1343,6 +1362,52 @@ class Project(pd.BaseModel):
         project._get_tree_from_cloud()
         return project
 
+    @classmethod
+    @pd.validate_call
+    def from_example(cls, example_id: Optional[str] = None, by_name: Optional[str] = None):
+        """
+        Creates a project from an existing example in the cloud.
+
+        Parameters
+        ----------
+        example_id : str, optional
+            ID of the example to copy. Mutually exclusive with `by_name`.
+        by_name : str, optional
+            Name of the example to copy. Uses fuzzy matching to find the best match.
+            Mutually exclusive with `example_id`.
+
+        Returns
+        -------
+        Project
+            An instance of the project created from the example.
+
+        Raises
+        ------
+        Flow360ValueError
+            If neither or both `example_id` and `by_name` are provided, or if no matching
+            example is found when using `by_name`.
+        Flow360WebError
+            If the example cannot be copied or the project cannot be loaded.
+        """
+        if example_id is None and by_name is None:
+            raise Flow360ValueError("Either 'example_id' or 'by_name' must be provided.")
+        if example_id is not None and by_name is not None:
+            raise Flow360ValueError("'example_id' and 'by_name' are mutually exclusive.")
+
+        if by_name is not None:
+            examples = fetch_examples()
+            matched_example, score = find_example_by_name(by_name, examples)
+            if score < 1.0:
+                similarity_pct = score * 100
+                log.info(
+                    f"Found closest match for '{by_name}': '{matched_example.title}' "
+                    f"(similarity: {similarity_pct:.2f} %%)"
+                )
+            example_id = matched_example.id
+
+        project_id = copy_example(example_id)
+        return cls.from_cloud(project_id)
+
     def _check_initialized(self):
         """
         Checks if the project instance has been initialized correctly.
@@ -1535,7 +1600,7 @@ class Project(pd.BaseModel):
             root asset (Geometry or VolumeMesh) is not initialized.
         """
 
-        # pylint: disable=too-many-branches
+        # pylint: disable=too-many-branches,too-many-statements
         if use_beta_mesher is None:
             if use_geometry_AI is True:
                 log.info("Beta mesher is enabled to use Geometry AI.")
@@ -1546,12 +1611,22 @@ class Project(pd.BaseModel):
         if use_geometry_AI is True and use_beta_mesher is False:
             raise Flow360ValueError("Enabling Geometry AI requires also enabling beta mesher.")
 
+        # Check if there's an active DraftContext and get its entity_info
+        active_draft = get_active_draft()
+        draft_entity_info = active_draft._entity_info if active_draft is not None else None
+
+        root_asset = self._root_asset
+        if interpolate_to_mesh is not None:
+            project_vm = Project.from_cloud(project_id=interpolate_to_mesh.project_id)
+            root_asset = project_vm._root_asset
+
         params = set_up_params_for_uploading(
             params=params,
-            root_asset=self._root_asset,
+            root_asset=root_asset,
             length_unit=self.length_unit,
             use_beta_mesher=use_beta_mesher,
             use_geometry_AI=use_geometry_AI,
+            draft_entity_info=draft_entity_info,
         )
 
         params, errors = validate_params_with_context(

@@ -6,7 +6,6 @@ Defines a minimal, stable schema for selecting entities by rules.
 
 import re
 from collections import deque
-from dataclasses import dataclass, field
 from functools import lru_cache
 from typing import Any, Dict, List, Literal, Optional, Union, get_args
 
@@ -122,25 +121,6 @@ class EntitySelector(Flow360BaseModel):
         # pylint: disable=no-member
         self.children.append(Predicate(attribute=attribute, operator="not_any_of", value=values))
         return self
-
-
-@dataclass
-class SelectorEntityPool:
-    """
-    [Internal Use Only]
-
-    Entity pool for entity selectors. Provides a unified data interface for entity selectors
-    to match against available entities.
-
-    This is a specialized helper class for EntitySelector operations, not a general-purpose
-    entity database. Stored items can be either plain dictionaries (serialized form) or
-    deserialized entity objects.
-    """
-
-    surfaces: list[EntityNode] = field(default_factory=list)
-    edges: list[EntityNode] = field(default_factory=list)
-    generic_volumes: list[EntityNode] = field(default_factory=list)
-    geometry_body_groups: list[EntityNode] = field(default_factory=list)
 
 
 ########## API IMPLEMENTATION ##########
@@ -388,19 +368,6 @@ def generate_entity_selector_from_class(
 
 
 ########## EXPANSION IMPLEMENTATION ##########
-def _get_entity_pool(
-    selector_pool: SelectorEntityPool, target_class: TargetClass
-) -> list[EntityNode]:
-    """Return the correct entity list from the database for the target class."""
-    if target_class == "Surface":
-        return selector_pool.surfaces
-    if target_class == "Edge":
-        return selector_pool.edges
-    if target_class == "GenericVolume":
-        return selector_pool.generic_volumes
-    if target_class == "GeometryBodyGroup":
-        return selector_pool.geometry_body_groups
-    raise ValueError(f"Unknown target class: {target_class}")
 
 
 @lru_cache(maxsize=2048)
@@ -668,7 +635,7 @@ def _get_selector_cache_key(selector_dict: dict) -> tuple:
 
 
 def _process_selectors(
-    selector_pool: SelectorEntityPool,
+    registry,
     selectors_value: list,
     selector_cache: dict,
     known_selectors: dict[str, dict] = None,
@@ -679,8 +646,17 @@ def _process_selectors(
     string tokens).
     - If a selector is a string token, it looks up the full definition in `known_selectors`.
     - If a selector is a dictionary, it uses it directly.
-    - It then applies the selector logic to find matching entities from the database.
+    - It then applies the selector logic to find matching entities from the registry.
     - Results are cached in `selector_cache` to avoid re-computation for the same selector.
+
+    Parameters:
+        registry: EntityRegistry instance containing entities.
+        selectors_value: List of selector definitions or selector ID tokens.
+        selector_cache: Cache for selector results.
+        known_selectors: Map of selector IDs to selector definitions.
+
+    Returns:
+        Tuple of (additions_by_class dict, ordered_target_classes list).
     """
     additions_by_class: dict[str, list[EntityNode]] = {}
     ordered_target_classes: list[str] = []
@@ -700,13 +676,13 @@ def _process_selectors(
             continue
 
         target_class = selector_dict.get("target_class")
-        pool = _get_entity_pool(selector_pool, target_class)
-        if not pool:
+        entities = registry.find_by_type_name(target_class)
+        if not entities:
             continue
         cache_key = _get_selector_cache_key(selector_dict)
         additions = selector_cache.get(cache_key)
         if additions is None:
-            additions = _apply_single_selector(pool, selector_dict)
+            additions = _apply_single_selector(entities, selector_dict)
             selector_cache[cache_key] = additions
         if target_class not in additions_by_class:
             additions_by_class[target_class] = []
@@ -743,7 +719,7 @@ def _merge_entities(
 
 
 def _expand_node_selectors(
-    selector_pool: SelectorEntityPool,
+    registry,
     node: dict,
     selector_cache: dict,
     merge_mode: Literal["merge", "replace"],
@@ -754,13 +730,20 @@ def _expand_node_selectors(
 
     - merge_mode="merge": keep explicit stored_entities first, then append selector results.
     - merge_mode="replace": replace explicit items of target classes affected by selectors.
+
+    Parameters:
+        registry: EntityRegistry instance containing entities.
+        node: Dictionary node containing selectors to expand.
+        selector_cache: Cache for selector results.
+        merge_mode: How to merge selector results with existing entities.
+        known_selectors: Map of selector IDs to selector definitions.
     """
     selectors_value = node.get("selectors")
     if not (isinstance(selectors_value, list) and len(selectors_value) > 0):
         return
 
     additions_by_class, ordered_target_classes = _process_selectors(
-        selector_pool, selectors_value, selector_cache, known_selectors=known_selectors
+        registry, selectors_value, selector_cache, known_selectors=known_selectors
     )
 
     existing = node.get("stored_entities", [])
@@ -845,12 +828,21 @@ def collect_and_tokenize_selectors_in_place(  # pylint: disable=too-many-branche
 
 
 def expand_entity_selectors_in_place(
-    selector_pool: SelectorEntityPool,
+    registry,
     params_as_dict: dict,
     *,
     merge_mode: Literal["merge", "replace"] = "merge",
 ) -> dict:
     """Traverse params_as_dict and expand any EntitySelector in place.
+
+    Parameters
+    ----------
+    registry : EntityRegistry
+        EntityRegistry instance containing entities.
+    params_as_dict : dict
+        Simulation parameters as a dictionary.
+    merge_mode : {"merge", "replace"}, default "merge"
+        How to merge selector results with existing entities.
 
     How caching works
     -----------------
@@ -887,7 +879,7 @@ def expand_entity_selectors_in_place(
         node = queue.popleft()
         if isinstance(node, dict):
             _expand_node_selectors(
-                selector_pool,
+                registry,
                 node,
                 selector_cache=selector_cache,
                 merge_mode=merge_mode,

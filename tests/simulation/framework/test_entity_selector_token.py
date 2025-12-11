@@ -3,13 +3,22 @@ import copy
 import pytest
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
+from flow360.component.simulation.framework.entity_registry import EntityRegistry
 from flow360.component.simulation.framework.entity_selector import (
     EntitySelector,
-    SelectorEntityPool,
     collect_and_tokenize_selectors_in_place,
     expand_entity_selectors_in_place,
 )
 from flow360.component.simulation.framework.param_utils import AssetCache
+from flow360.component.simulation.primitives import Surface
+
+
+def _make_registry(surfaces=None):
+    """Create an EntityRegistry from entity dictionaries."""
+    registry = EntityRegistry()
+    for entity_dict in surfaces or []:
+        registry.register(Surface(name=entity_dict["name"]))
+    return registry
 
 
 def test_entity_selector_token_flow():
@@ -50,7 +59,7 @@ def test_entity_selector_token_flow():
     }
 
     # Mock database
-    db = SelectorEntityPool(
+    registry = _make_registry(
         surfaces=[
             {"name": "wing_left", "private_attribute_entity_type_name": "Surface"},
             {"name": "wing_right", "private_attribute_entity_type_name": "Surface"},
@@ -73,7 +82,7 @@ def test_entity_selector_token_flow():
     assert tokenized_params["models"][1]["selectors"] == ["sel1-token"]
 
     # 4. Run expansion
-    expanded_params = expand_entity_selectors_in_place(db, tokenized_params)
+    expanded_params = expand_entity_selectors_in_place(registry, tokenized_params)
 
     # 5. Verify expansion results
     s1 = expanded_params["models"][0].get("stored_entities", [])
@@ -81,10 +90,10 @@ def test_entity_selector_token_flow():
 
     # Only 2 surfaces match "wing*"
     assert len(s1) == 2
-    assert {e["name"] for e in s1} == {"wing_left", "wing_right"}
+    assert {e.name for e in s1} == {"wing_left", "wing_right"}
 
     assert len(s2) == 2
-    assert {e["name"] for e in s2} == {"wing_left", "wing_right"}
+    assert {e.name for e in s2} == {"wing_left", "wing_right"}
 
     # 6. Verify selectors are expanded from tokens to full dicts (not strings)
     sel1 = expanded_params["models"][0]["selectors"]
@@ -181,17 +190,17 @@ def test_entity_selector_mixed_token_and_dict():
         },
     }
 
-    db = SelectorEntityPool(
+    registry = _make_registry(
         surfaces=[
             {"name": "wing_left", "private_attribute_entity_type_name": "Surface"},
             {"name": "fuselage", "private_attribute_entity_type_name": "Surface"},
         ]
     )
 
-    expanded = expand_entity_selectors_in_place(db, params)
+    expanded = expand_entity_selectors_in_place(registry, params)
     stored = expanded["model"].get("stored_entities", [])
 
-    names = {e["name"] for e in stored}
+    names = {e.name for e in stored}
     assert "wing_left" in names
     assert "fuselage" in names
     assert len(names) == 2
@@ -228,11 +237,11 @@ def test_entity_selector_unknown_token_raises_error():
         },
     }
 
-    db = SelectorEntityPool(
+    registry = _make_registry(
         surfaces=[
             {"name": "wing_left", "private_attribute_entity_type_name": "Surface"},
         ]
     )
 
     with pytest.raises(ValueError, match="Selector token 'unknown-selector-id' not found"):
-        expand_entity_selectors_in_place(db, params)
+        expand_entity_selectors_in_place(registry, params)

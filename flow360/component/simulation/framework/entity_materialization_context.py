@@ -8,13 +8,19 @@ state and enabling high-performance reuse during validation.
 from __future__ import annotations
 
 import contextvars
-from typing import Any, Callable, Optional
+from typing import TYPE_CHECKING, Any, Callable, Optional
+
+if TYPE_CHECKING:
+    from flow360.component.simulation.framework.entity_registry import EntityRegistry
 
 _entity_cache_ctx: contextvars.ContextVar[Optional[dict]] = contextvars.ContextVar(
     "entity_cache", default=None
 )
 _entity_builder_ctx: contextvars.ContextVar[Optional[Callable[[dict], Any]]] = (
     contextvars.ContextVar("entity_builder", default=None)
+)
+_entity_registry_ctx: contextvars.ContextVar[Optional[EntityRegistry]] = contextvars.ContextVar(
+    "entity_registry", default=None
 )
 
 
@@ -28,30 +34,36 @@ class EntityMaterializationContext:
     ----------
     builder : Callable[[dict], Any]
         Function to convert entity dict to instance when not found in cache.
-    entity_pool : Optional[dict]
-        Pre-existing entity instances keyed by (type_name, private_attribute_id).
-        When provided, entities matching these keys will reuse the pool instances
-        instead of creating new ones via builder.
+    entity_registry : Optional[EntityRegistry]
+        Pre-existing EntityRegistry containing canonical entity instances.
+        When provided, entities are looked up by (type_name, private_attribute_id)
+        and must exist in the registry (errors if not found).
     """
 
-    def __init__(self, *, builder: Callable[[dict], Any], entity_pool: Optional[dict] = None):
+    def __init__(
+        self,
+        *,
+        builder: Callable[[dict], Any],
+        entity_registry: Optional[EntityRegistry] = None,
+    ):
         self._token_cache = None
         self._token_builder = None
+        self._supplied_entity_registry = None
         self._builder = builder
-        self._entity_pool = entity_pool
+        self._entity_registry = entity_registry
 
     def __enter__(self):
-        # Pre-populate cache from entity_pool if provided
+        # Set up context variables
         initial_cache = {}
-        if self._entity_pool:
-            initial_cache = dict(self._entity_pool)  # Copy to avoid external mutation
         self._token_cache = _entity_cache_ctx.set(initial_cache)
         self._token_builder = _entity_builder_ctx.set(self._builder)
+        self._supplied_entity_registry = _entity_registry_ctx.set(self._entity_registry)
         return self
 
     def __exit__(self, exc_type, exc, tb):
         _entity_cache_ctx.reset(self._token_cache)
         _entity_builder_ctx.reset(self._token_builder)
+        _entity_registry_ctx.reset(self._supplied_entity_registry)
 
 
 def get_entity_cache() -> Optional[dict]:
@@ -64,3 +76,9 @@ def get_entity_builder() -> Optional[Callable[[dict], Any]]:
     """Return the current dict->entity builder, or None if not active."""
 
     return _entity_builder_ctx.get()
+
+
+def get_entity_registry() -> Optional[EntityRegistry]:
+    """Return the current EntityRegistry for entity lookup, or None if not active."""
+
+    return _entity_registry_ctx.get()
