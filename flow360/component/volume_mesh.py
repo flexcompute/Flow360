@@ -1218,10 +1218,8 @@ class VolumeMeshV2(AssetBase):
         self.internal_registry = self._entity_info.get_persistent_entity_registry(
             internal_registry=self.internal_registry
         )
-
-        return [
-            surface.name for surface in self.internal_registry.get_bucket(by_type=Surface).entities
-        ]
+        # pylint: disable=protected-access
+        return [surface.name for surface in self.internal_registry.view(Surface)._entities]
 
     @property
     def zone_names(self) -> List[str]:
@@ -1236,11 +1234,8 @@ class VolumeMeshV2(AssetBase):
         self.internal_registry = self._entity_info.get_persistent_entity_registry(
             internal_registry=self.internal_registry
         )
-
-        return [
-            volume.name
-            for volume in self.internal_registry.get_bucket(by_type=GenericVolume).entities
-        ]
+        # pylint: disable=protected-access
+        return [volume.name for volume in self.internal_registry.view(GenericVolume)._entities]
 
     def __getitem__(self, key: str):
         """
@@ -1254,6 +1249,16 @@ class VolumeMeshV2(AssetBase):
         Surface
             The boundary object
         """
+        # pylint: disable=import-outside-toplevel
+        from flow360.component.simulation.draft_context import get_active_draft
+
+        if get_active_draft() is not None:
+            log.warning(
+                "Accessing entities via asset[key] while a DraftContext is active. "
+                "Use draft.surfaces[key] or draft.volumes[key] instead to ensure "
+                "modifications are tracked in the draft's entity_info."
+            )
+
         if isinstance(key, str) is False:
             raise Flow360ValueError(f"Entity naming pattern: {key} is not a string.")
 

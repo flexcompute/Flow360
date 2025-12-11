@@ -269,7 +269,7 @@ def test_om6wing_tutorial(get_om6Wing_tutorial_param):
         get_om6Wing_tutorial_param,
         mesh_unit=0.8059 * u.m,
         ref_json_file="Flow360_om6Wing.json",
-        debug=True,
+        debug=False,
     )
 
 
@@ -278,7 +278,7 @@ def test_porous_jump(create_porous_jump_zone_param):
         create_porous_jump_zone_param,
         mesh_unit=1 * u.m,
         ref_json_file="Flow360_porous_jump.json",
-        debug=True,
+        debug=False,
     )
 
 
@@ -426,7 +426,7 @@ def test_om6wing_with_stopping_criterion_and_moving_statistic(get_om6Wing_tutori
         get_om6Wing_tutorial_param,
         mesh_unit=0.8059 * u.m,
         ref_json_file="Flow360_om6wing_stopping_criterion_and_moving_statistic.json",
-        debug=True,
+        debug=False,
     )
 
 
@@ -455,7 +455,7 @@ def test_stopping_criterion_tolerance_in_unit_system():
         params_validated,
         mesh_unit=0.8059 * u.m,
         ref_json_file="Flow360_om6wing_stopping_criterion_and_moving_statistic.json",
-        debug=True,
+        debug=False,
     )
 
 
@@ -664,7 +664,7 @@ def test_initial_condition_and_restart():
             ],
         )
     translate_and_compare(
-        param, mesh_unit=1 * u.m, ref_json_file="Flow360_restart_manipulation_v2.json", debug=True
+        param, mesh_unit=1 * u.m, ref_json_file="Flow360_restart_manipulation_v2.json", debug=False
     )
 
 
@@ -846,7 +846,7 @@ def test_liquid_simulation_translation():
         # Flow360 time to seconds = 1m/(200m/s) = 0.005 s
         # t_seconds = (0.005 s * t)
     translate_and_compare(
-        param, mesh_unit=1 * u.m, ref_json_file="Flow360_liquid_rotation_dd.json", debug=True
+        param, mesh_unit=1 * u.m, ref_json_file="Flow360_liquid_rotation_dd.json", debug=False
     )
 
     with model_attribute_unlock(param.operating_condition, "reference_velocity_magnitude"):
@@ -855,7 +855,7 @@ def test_liquid_simulation_translation():
         param,
         mesh_unit=1 * u.m,
         ref_json_file="Flow360_liquid_rotation_dd_with_ref_vel.json",
-        debug=True,
+        debug=False,
     )
 
 
@@ -1058,7 +1058,7 @@ def test_param_with_user_variables():
 
     assert params_validated
     translate_and_compare(
-        params_validated, mesh_unit=1 * u.m, ref_json_file="Flow360_user_variable.json", debug=True
+        params_validated, mesh_unit=1 * u.m, ref_json_file="Flow360_user_variable.json", debug=False
     )
 
     with SI_unit_system:
@@ -1127,7 +1127,7 @@ def test_isosurface_iso_value_in_unit_system():
         params_validated,
         mesh_unit=1 * u.m,
         ref_json_file="Flow360_user_variable_isosurface.json",
-        debug=True,
+        debug=False,
     )
 
     with open(
@@ -1421,7 +1421,7 @@ def test_custom_volume_translation():
         params,
         mesh_unit=1 * u.m,
         ref_json_file="Flow360_custom_volume_translation.json",
-        debug=True,
+        debug=False,
     )
 
 
@@ -1467,7 +1467,10 @@ def test_ghost_periodic():
         )
     processed_params = set_up_params_for_uploading(geometry, 1 * u.m, params, False, False)
     translate_and_compare(
-        processed_params, mesh_unit=1 * u.m, ref_json_file="Flow360_ghost_periodic.json", debug=True
+        processed_params,
+        mesh_unit=1 * u.m,
+        ref_json_file="Flow360_ghost_periodic.json",
+        debug=False,
     )
 
 

@@ -2,18 +2,33 @@ import copy
 import json
 import os
 
+from flow360.component.simulation.framework.entity_registry import EntityRegistry
 from flow360.component.simulation.framework.entity_selector import (
-    SelectorEntityPool,
     compile_glob_cached,
     expand_entity_selectors_in_place,
 )
 from flow360.component.simulation.framework.updater_utils import compare_values
+from flow360.component.simulation.primitives import Edge, GenericVolume, Surface
 from flow360.component.simulation.services import resolve_selectors
+from flow360.component.simulation.simulation_params import SimulationParams
 
 
 def _mk_pool(names, entity_type):
     # Build list of entity dicts with given names and type
     return [{"name": n, "private_attribute_entity_type_name": entity_type} for n in names]
+
+
+def _make_registry(surfaces=None, edges=None, generic_volumes=None, geometry_body_groups=None):
+    """Create an EntityRegistry from entity dictionaries."""
+    registry = EntityRegistry()
+    for entity_dict in surfaces or []:
+        registry.register(Surface(name=entity_dict["name"]))
+    for entity_dict in edges or []:
+        registry.register(Edge(name=entity_dict["name"]))
+    for entity_dict in generic_volumes or []:
+        registry.register(GenericVolume(name=entity_dict["name"]))
+    # GeometryBodyGroup is handled separately if needed
+    return registry
 
 
 def test_operator_and_syntax_coverage():
@@ -31,7 +46,7 @@ def test_operator_and_syntax_coverage():
         "my_wing",
         "hinge",
     ]
-    db = SelectorEntityPool(surfaces=_mk_pool(pool_names, "Surface"))
+    registry = _make_registry(surfaces=_mk_pool(pool_names, "Surface"))
 
     # Build selectors that cover operators和regex/glob
     params = {
@@ -84,7 +99,7 @@ def test_operator_and_syntax_coverage():
         }
     }
 
-    expand_entity_selectors_in_place(db, params)
+    expand_entity_selectors_in_place(registry, params)
     stored = params["node"]["stored_entities"]
 
     # Build expected union by concatenating each selector's expected results (order matters)
@@ -128,14 +143,14 @@ def test_operator_and_syntax_coverage():
         "hinge",
     ]
 
-    final_names = [
-        e["name"] for e in stored if e["private_attribute_entity_type_name"] == "Surface"
-    ]
+    final_names = [e.name for e in stored if e.private_attribute_entity_type_name == "Surface"]
     assert final_names == expected
 
 
 def test_combined_predicates_and_or():
-    db = SelectorEntityPool(surfaces=_mk_pool(["s1", "s2", "wing", "wing-root", "tail"], "Surface"))
+    registry = _make_registry(
+        surfaces=_mk_pool(["s1", "s2", "wing", "wing-root", "tail"], "Surface")
+    )
 
     params = {
         "node": {
@@ -166,7 +181,7 @@ def test_combined_predicates_and_or():
         }
     }
 
-    expand_entity_selectors_in_place(db, params)
+    expand_entity_selectors_in_place(registry, params)
     stored = params["node"]["stored_entities"]
 
     # Union across three selectors (concatenated in selector order, no dedup):
@@ -174,20 +189,26 @@ def test_combined_predicates_and_or():
     # 2) OR in ["s1"] or in ["tail"] -> ["s1", "tail"]
     # 3) default AND with in {wing, wing-root} -> ["wing", "wing-root"]
     # Final list -> ["wing-root", "s1", "tail", "wing", "wing-root"]
-    final_names = [
-        e["name"] for e in stored if e["private_attribute_entity_type_name"] == "Surface"
-    ]
+    final_names = [e.name for e in stored if e.private_attribute_entity_type_name == "Surface"]
     assert final_names == ["wing-root", "s1", "tail", "wing", "wing-root"]
 
 
 def test_attribute_tag_scalar_support():
     # Entities include an additional scalar attribute 'tag'
-    surfaces = [
-        {"name": "wing", "tag": "A", "private_attribute_entity_type_name": "Surface"},
-        {"name": "tail", "tag": "B", "private_attribute_entity_type_name": "Surface"},
-        {"name": "fuselage", "tag": "A", "private_attribute_entity_type_name": "Surface"},
-    ]
-    db = SelectorEntityPool(surfaces=surfaces)
+    # Note: EntityRegistry stores entity objects, so we need to handle this differently
+    # For this test, we'll create Surface objects with the tag attribute stored as extra data
+    registry = EntityRegistry()
+    # Create surfaces with tag attribute via custom approach
+    s1 = Surface(name="wing")
+    s2 = Surface(name="tail")
+    s3 = Surface(name="fuselage")
+    # Store tag as a custom attribute
+    object.__setattr__(s1, "tag", "A")
+    object.__setattr__(s2, "tag", "B")
+    object.__setattr__(s3, "tag", "A")
+    registry.register(s1)
+    registry.register(s2)
+    registry.register(s3)
 
     # Use attribute 'tag' in predicates (engine should not assume 'name')
     params = {
@@ -212,14 +233,12 @@ def test_attribute_tag_scalar_support():
         }
     }
 
-    expand_entity_selectors_in_place(db, params)
+    expand_entity_selectors_in_place(registry, params)
     stored = params["node"]["stored_entities"]
     # Expect union of two selectors:
     # 1) AND tag in ["A"] -> [wing, fuselage]
     # 2) OR tag in {B} or matches 'A' -> pool-order union -> [wing, tail, fuselage]
-    final_names = [
-        e["name"] for e in stored if e["private_attribute_entity_type_name"] == "Surface"
-    ]
+    final_names = [e.name for e in stored if e.private_attribute_entity_type_name == "Surface"]
     assert final_names == ["wing", "fuselage", "wing", "tail", "fuselage"]
 
 
@@ -229,6 +248,8 @@ def test_service_expand_entity_selectors_in_place_end_to_end():
     sim_path = os.path.join(test_dir, "..", "data", "geometry_grouped_by_file", "simulation.json")
     with open(sim_path, "r", encoding="utf-8") as fp:
         params = json.load(fp)
+
+    params, _ = SimulationParams._update_param_dict(params)
 
     # Convert first output's entities to use a wildcard selector and clear stored entities
     outputs = params.get("outputs") or []
@@ -247,6 +268,15 @@ def test_service_expand_entity_selectors_in_place_end_to_end():
     # Expand via service function
     expanded = json.loads(json.dumps(params))
     resolve_selectors(expanded)
+
+    # Convert entity objects to dicts for comparison
+    for output in expanded.get("outputs", []):
+        entities_obj = output.get("entities", {})
+        stored = entities_obj.get("stored_entities", [])
+        entities_obj["stored_entities"] = [
+            e.model_dump(mode="json", exclude_none=True) if hasattr(e, "model_dump") else e
+            for e in stored
+        ]
 
     # Build or load a reference file (only created if missing)
     ref_dir = os.path.join(test_dir, "..", "ref")

@@ -790,7 +790,7 @@ class SurfaceProbeOutput(_OutputBase):
         + "is used to define monitored points along a line.",
     )
     # Maybe add preprocess for this and by default add all Surfaces?
-    target_surfaces: EntityList[Surface] = pd.Field(
+    target_surfaces: EntityList[Surface, WindTunnelGhostSurface] = pd.Field(
         description="List of :class:`~flow360.component.simulation.primitives.Surface` "
         + "entities belonging to this monitor group."
     )
@@ -821,7 +821,7 @@ class SurfaceSliceOutput(_AnimationAndFileFormatSettings):
         alias="slices", description="List of :class:`Slice` entities."
     )
     # Maybe add preprocess for this and by default add all Surfaces?
-    target_surfaces: EntityList[Surface] = pd.Field(
+    target_surfaces: EntityList[Surface, WindTunnelGhostSurface] = pd.Field(
         description="List of :class:`Surface` entities on which the slice will cut through."
     )
 
@@ -1085,7 +1085,9 @@ class AeroAcousticOutput(Flow360BaseModel):
         + "input.",
     )
     permeable_surfaces: Optional[
-        EntityListAllowingGhost[Surface, GhostSurface, GhostCircularPlane, GhostSphere]
+        EntityListAllowingGhost[
+            Surface, GhostSurface, GhostCircularPlane, GhostSphere, WindTunnelGhostSurface
+        ]
     ] = pd.Field(
         None, description="List of permeable surfaces. Left empty if `patch_type` is solid"
     )

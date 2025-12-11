@@ -1,7 +1,6 @@
 """Output for simulation."""
 
-from abc import ABCMeta
-from typing import ClassVar, Literal, Optional, Union
+from typing import Literal, Optional, Union
 
 import pydantic as pd
 
@@ -42,15 +41,7 @@ class _OutputItemBase(Flow360BaseModel):
         return f"{self.__class__.__name__} with name: {self.name}"
 
 
-class _SliceEntityBase(EntityBase, metaclass=ABCMeta):
-    entity_bucket: ClassVar[str] = "SliceEntityType"
-
-
-class _PointEntityBase(EntityBase, metaclass=ABCMeta):
-    entity_bucket: ClassVar[str] = "PointEntityType"
-
-
-class Slice(_SliceEntityBase):
+class Slice(EntityBase):
     """
 
     :class:`Slice` class for defining a slice for :class:`~flow360.SliceOutput`.
@@ -204,7 +195,7 @@ class Isosurface(_OutputItemBase):
         return v
 
 
-class Point(_PointEntityBase):
+class Point(EntityBase):
     """
     :class:`Point` class for defining a single point used in various outputs.
 
@@ -225,7 +216,7 @@ class Point(_PointEntityBase):
     location: LengthType.Point = pd.Field(description="The coordinate of the point.")
 
 
-class PointArray(_PointEntityBase):
+class PointArray(EntityBase):
     """
     :class:`PointArray` class for defining multiple equally spaced monitor points along a line used in various outputs.
 
@@ -253,7 +244,7 @@ class PointArray(_PointEntityBase):
     number_of_points: int = pd.Field(ge=2, description="Number of points along the line.")
 
 
-class PointArray2D(_PointEntityBase):
+class PointArray2D(EntityBase):
     """
     :class:`PointArray2D` class for defining multiple equally spaced points along the u and
     v axes of a parallelogram.

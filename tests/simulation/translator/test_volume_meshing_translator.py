@@ -657,6 +657,7 @@ def test_seedpoint_zones(get_test_param_w_seedpoints, get_surface_mesh):
             "growthRate": 1.04,
             "gapTreatmentStrength": 0.0,
             "planarFaceTolerance": 1e-6,
+            "slidingInterfaceTolerance": 1e-2,
             "numBoundaryLayers": -1,
         },
         "faces": {},
@@ -981,3 +982,65 @@ def test_analytic_wind_tunnel_farfield():
     with open(ref_path, "r") as fh:
         ref_dict = json.load(fh)
     assert compare_values(translated, ref_dict)
+
+
+def test_sliding_interface_tolerance_meshing_params(get_surface_mesh):
+    """Test that sliding_interface_tolerance is translated correctly in MeshingParams."""
+    with SI_unit_system:
+        param = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-3,
+                    boundary_layer_growth_rate=1.2,
+                    sliding_interface_tolerance=5e-3,
+                ),
+                volume_zones=[AutomatedFarfield()],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+        )
+    translated = get_volume_meshing_json(param, get_surface_mesh.mesh_unit)
+    assert "volume" in translated
+    assert "slidingInterfaceTolerance" in translated["volume"]
+    assert translated["volume"]["slidingInterfaceTolerance"] == 5e-3
+
+
+def test_sliding_interface_tolerance_modular_workflow(get_surface_mesh):
+    """Test that sliding_interface_tolerance is translated correctly in ModularMeshingWorkflow."""
+    with SI_unit_system:
+        param = SimulationParams(
+            meshing=ModularMeshingWorkflow(
+                volume_meshing=VolumeMeshingParams(
+                    defaults=VolumeMeshingDefaults(
+                        boundary_layer_first_layer_thickness=1e-3,
+                        boundary_layer_growth_rate=1.2,
+                    ),
+                    sliding_interface_tolerance=2e-3,
+                ),
+                zones=[AutomatedFarfield()],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+        )
+    translated = get_volume_meshing_json(param, get_surface_mesh.mesh_unit)
+    assert "volume" in translated
+    assert "slidingInterfaceTolerance" in translated["volume"]
+    assert translated["volume"]["slidingInterfaceTolerance"] == 2e-3
+
+
+def test_sliding_interface_tolerance_default_value(get_surface_mesh):
+    """Test that default sliding_interface_tolerance value is used when not specified."""
+    with SI_unit_system:
+        param = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-3,
+                    boundary_layer_growth_rate=1.2,
+                ),
+                volume_zones=[AutomatedFarfield()],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+        )
+    translated = get_volume_meshing_json(param, get_surface_mesh.mesh_unit)
+    assert "volume" in translated
+    assert "slidingInterfaceTolerance" in translated["volume"]
+    # Default value is 1e-2 from DEFAULT_SLIDING_INTERFACE_TOLERANCE
+    assert translated["volume"]["slidingInterfaceTolerance"] == 1e-2

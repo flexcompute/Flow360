@@ -250,3 +250,10 @@ class RenameAssetRequestV2(Flow360RequestsV2):
     """
 
     name: str = pd_v2.Field(description="case to rename")
+
+
+class CopyExampleRequest(Flow360RequestsV2):
+    """Data model for copying an example to create a new project"""
+
+    source_example_id: str = pd_v2.Field(alias="sourceExampleId", description="example ID to copy")
+    target_parent_folder_id: str = pd_v2.Field(alias="targetParentFolderId", default="ROOT.FLOW360")

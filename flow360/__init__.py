@@ -5,8 +5,9 @@ This module is flow360 for simulation based models
 from flow360.accounts_utils import Accounts
 from flow360.cli.api_set_func import configure_caller as configure
 from flow360.component.case import Case
+from flow360.component.cloud_examples import show_available_examples
 from flow360.component.geometry import Geometry
-from flow360.component.project import Project
+from flow360.component.project import Project, create_draft
 from flow360.component.simulation import migration, services
 from flow360.component.simulation import units as u
 from flow360.component.simulation.entity_operation import Transformation
@@ -199,6 +200,7 @@ __all__ = [
     "GeometryRefinement",
     "Env",
     "Case",
+    "create_draft",
     "AngleBasedRefinement",
     "AspectRatioBasedRefinement",
     "ProjectAnisoSpacing",
@@ -349,6 +351,7 @@ __all__ = [
     "FullyMovingFloor",
     "CentralBelt",
     "WheelBelts",
+    "show_available_examples",
 ]
 
 _warn_prerelease()

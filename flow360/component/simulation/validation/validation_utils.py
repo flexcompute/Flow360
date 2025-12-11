@@ -118,6 +118,7 @@ def check_deleted_surface_in_entity_list(value, param_info):
     """
 
     # - Check if the surfaces are deleted.
+    deleted_boundaries = []
     for surface in value.stored_entities:
         if isinstance(
             surface, Surface
@@ -130,10 +131,15 @@ def check_deleted_surface_in_entity_list(value, param_info):
             quasi_3d_symmetry_planes_center_y=param_info.quasi_3d_symmetry_planes_center_y,
             farfield_domain_type=param_info.farfield_domain_type,
         ):
-            raise ValueError(
-                f"Boundary `{surface.name}` will likely be deleted after mesh generation. "
-                "Therefore it cannot be used."
-            )
+            deleted_boundaries.append(surface.name)
+
+    if deleted_boundaries:
+        boundary_list = ", ".join(f"`{name}`" for name in deleted_boundaries)
+        plural = "Boundaries" if len(deleted_boundaries) > 1 else "Boundary"
+        raise ValueError(
+            f"{plural} {boundary_list} will likely be deleted after mesh generation. "
+            f"Therefore {'they' if len(deleted_boundaries) > 1 else 'it'} cannot be used."
+        )
 
     return value
 
@@ -145,6 +151,7 @@ def check_deleted_surface_pair(value, param_info):
     """
 
     # - Check if the surfaces are deleted.
+    deleted_boundaries = []
     for surface in value.pair:
         if isinstance(
             surface, Surface
@@ -157,10 +164,15 @@ def check_deleted_surface_pair(value, param_info):
             quasi_3d_symmetry_planes_center_y=param_info.quasi_3d_symmetry_planes_center_y,
             farfield_domain_type=param_info.farfield_domain_type,
         ):
-            raise ValueError(
-                f"Boundary `{surface.name}` will likely be deleted after mesh generation. "
-                "Therefore it cannot be used."
-            )
+            deleted_boundaries.append(surface.name)
+
+    if deleted_boundaries:
+        boundary_list = ", ".join(f"`{name}`" for name in deleted_boundaries)
+        plural = "Boundaries" if len(deleted_boundaries) > 1 else "Boundary"
+        raise ValueError(
+            f"{plural} {boundary_list} will likely be deleted after mesh generation. "
+            f"Therefore {'they' if len(deleted_boundaries) > 1 else 'it'} cannot be used."
+        )
 
     return value
 
