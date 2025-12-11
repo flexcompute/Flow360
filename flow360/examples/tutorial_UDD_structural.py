@@ -9,4 +9,6 @@ class TutorialUDDStructural(BaseTestCase):
     name = "tutorialUDDStructural"
 
     class url:
-        mesh = "https://simcloud-public-1.s3.amazonaws.com/examples/rotatingPlate/rotatingPlate.cgns"
+        mesh = (
+            "https://simcloud-public-1.s3.amazonaws.com/examples/rotatingPlate/rotatingPlate.cgns"
+        )
