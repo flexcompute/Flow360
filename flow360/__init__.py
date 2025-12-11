@@ -319,5 +319,5 @@ __all__ = [
     "MovingStatistic",
     "ImportedSurface",
     "RunControl",
-    "show_available_examples"
+    "show_available_examples",
 ]
