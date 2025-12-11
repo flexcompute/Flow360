@@ -102,7 +102,6 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
         # Pre-compute face_group_to_body_group map for mirror operations.
         # This is only available for GeometryEntityInfo.
         face_group_to_body_group = None
-        valid_body_group_ids = None
 
         if isinstance(self._entity_info, GeometryEntityInfo):
             try:
@@ -114,17 +113,10 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
                     "Mirroring surfaces will be disabled.",
                     exc,
                 )
-            # TODO: Why not respect the body grouping setting?
-            valid_body_group_ids = {
-                body_group.private_attribute_id
-                for group in self._entity_info.grouped_bodies
-                for body_group in group
-            }
 
         self._mirror_manager = MirrorManager._from_status(
             status=mirror_status,
             face_group_to_body_group=face_group_to_body_group,
-            valid_body_group_ids=valid_body_group_ids,
             body_groups=self._entity_registry.view(GeometryBodyGroup)._entities,
             surfaces=self._entity_registry.view(Surface)._entities,
         )

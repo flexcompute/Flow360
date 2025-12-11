@@ -577,7 +577,6 @@ class MirrorManager:
         *,
         status: Optional[MirrorStatus],
         face_group_to_body_group: Optional[Dict[str, str]],
-        valid_body_group_ids: Optional[set[str]],
         body_groups: List[GeometryBodyGroup],
         surfaces: List[Surface],
     ) -> "MirrorManager":
@@ -589,8 +588,6 @@ class MirrorManager:
             The mirror status to restore from.
         face_group_to_body_group : Optional[Dict[str, str]]
             Mapping from surface name to owning body group ID.
-        valid_body_group_ids : Optional[set[str]]
-            Set of valid body group IDs. Used to filter out stale mirror actions.
         body_groups : List[GeometryBodyGroup]
             List of all body groups.
         surfaces : List[Surface]
@@ -609,6 +606,8 @@ class MirrorManager:
 
         if status is None:
             return mgr
+
+        valid_body_group_ids = {body_group.private_attribute_id for body_group in body_groups}
 
         body_group_id_to_mirror_id, mirror_planes = _extract_body_group_id_to_mirror_id_from_status(
             mirror_status=status,
