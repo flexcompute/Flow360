@@ -266,7 +266,7 @@ def test_interpolate_to_mesh_uses_vm_project_root_asset(mock_response):
     captured_root_asset = None
 
     def mock_set_up_params_for_uploading(
-        params, root_asset, length_unit, use_beta_mesher, use_geometry_AI, draft_entity_info=None
+        params, root_asset, length_unit, use_beta_mesher, use_geometry_AI
     ):
         nonlocal captured_root_asset
         captured_root_asset = root_asset
@@ -276,7 +276,6 @@ def test_interpolate_to_mesh_uses_vm_project_root_asset(mock_response):
             params=params,
             use_beta_mesher=use_beta_mesher,
             use_geometry_AI=use_geometry_AI,
-            draft_entity_info=draft_entity_info,
         )
 
     with patch(

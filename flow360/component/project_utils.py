@@ -11,6 +11,7 @@ import pydantic as pd
 from flow360.cloud.rest_api import RestApi
 from flow360.component.interfaces import ProjectInterface
 from flow360.component.simulation import services
+from flow360.component.simulation.draft_context import get_active_draft
 from flow360.component.simulation.entity_info import (
     DraftEntityTypes,
     EntityInfoModel,
@@ -457,7 +458,6 @@ def set_up_params_for_uploading(  # pylint: disable=too-many-arguments
     params: SimulationParams,
     use_beta_mesher: bool,
     use_geometry_AI: bool,  # pylint: disable=invalid-name
-    draft_entity_info: Optional[EntityInfoModel] = None,
 ) -> SimulationParams:
     """
     Set up params before submitting the draft.
@@ -468,9 +468,6 @@ def set_up_params_for_uploading(  # pylint: disable=too-many-arguments
         params: The SimulationParams to set up.
         use_beta_mesher: Whether to use the beta mesher.
         use_geometry_AI: Whether to use Geometry AI.
-        draft_entity_info: Optional entity_info from DraftContext. When provided,
-            this is used as the source of truth for entities instead of root_asset.entity_info (legacy behavior).
-            This enables proper entity isolation for the DraftContext workflow.
     """
 
     with model_attribute_unlock(params.private_attribute_asset_cache, "project_length_unit"):
@@ -486,14 +483,30 @@ def set_up_params_for_uploading(  # pylint: disable=too-many-arguments
             use_geometry_AI if use_geometry_AI else False
         )
 
-    if draft_entity_info is not None:
+    active_draft = get_active_draft()
+
+    if active_draft is not None:
         # New DraftContext workflow: use draft's entity_info as source of truth
         # Merge draft entities from params.used_entity_registry into draft_entity_info
-        entity_info = _merge_draft_entities_from_params(draft_entity_info, params)
+        # pylint: disable=protected-access
+        entity_info = _merge_draft_entities_from_params(active_draft._entity_info, params)
 
         # Update entity grouping tags if needed
         # (back compatibility, since the grouping should already have been captured in the draft_entity_info)
         entity_info = _update_entity_grouping_tags(entity_info, params)
+
+        with model_attribute_unlock(params.private_attribute_asset_cache, "mirror_status"):
+            params.private_attribute_asset_cache.mirror_status = active_draft.mirror._to_status(
+                entity_registry=active_draft._entity_registry
+            )
+        with model_attribute_unlock(
+            params.private_attribute_asset_cache, "coordinate_system_status"
+        ):
+            params.private_attribute_asset_cache.coordinate_system_status = (
+                active_draft.coordinate_systems._to_status(
+                    entity_registry=active_draft._entity_registry
+                )
+            )
     else:
         # Legacy workflow (without DraftContext): use root_asset.entity_info
         # User may have made modifications to the entities which is recorded in asset's entity registry
@@ -569,15 +582,15 @@ def upload_imported_surfaces_to_draft(params, draft, parent_case):
         - Only surfaces not present in the parent case are uploaded.
     """
 
-    parent_existing_imported_file_basenames = []
+    parent_existing_imported_file_base_names = []
     if parent_case is not None:
-        parent_existing_imported_file_basenames = _get_imported_surface_file_names(
+        parent_existing_imported_file_base_names = _get_imported_surface_file_names(
             parent_case.params, basename_only=True
         )
     current_draft_surface_file_paths_to_import = _get_imported_surface_file_names(params)
     deduplicated_surface_file_paths_to_import = []
     for file_path_to_import in current_draft_surface_file_paths_to_import:
         file_basename = os.path.basename(file_path_to_import)
-        if file_basename not in parent_existing_imported_file_basenames:
+        if file_basename not in parent_existing_imported_file_base_names:
             deduplicated_surface_file_paths_to_import.append(file_path_to_import)
     draft.upload_imported_surfaces(deduplicated_surface_file_paths_to_import)

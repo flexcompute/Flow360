@@ -7,11 +7,11 @@ from __future__ import annotations
 
 import json
 from enum import Enum
-from typing import Iterable, List, Literal, Optional, Union
+from typing import Iterable, List, Literal, Optional, Type, TypeVar, Union
 
 import pydantic as pd
 import typing_extensions
-from pydantic import PositiveInt
+from pydantic import PositiveInt, ValidationError
 
 from flow360.cloud.flow360_requests import LengthUnitType, RenameAssetRequestV2
 from flow360.cloud.rest_api import RestApi
@@ -41,8 +41,13 @@ from flow360.component.simulation.draft_context.context import (
     DraftContext,
     get_active_draft,
 )
+from flow360.component.simulation.draft_context.coordinate_system_manager import (
+    CoordinateSystemStatus,
+)
+from flow360.component.simulation.draft_context.mirror import MirrorStatus
 from flow360.component.simulation.entity_info import GeometryEntityInfo
 from flow360.component.simulation.folder import Folder
+from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.web.asset_base import AssetBase
@@ -98,7 +103,8 @@ def create_draft(
     face_grouping: Optional[str] = None,
     edge_grouping: Optional[str] = None,
 ) -> DraftContext:
-    """Factory helper used by end users (`with fl.create_draft() as draft`).
+    """
+    Factory helper used by end users (`with fl.create_draft() as draft`).
 
     Creates a DraftContext with a deep copy of the asset's entity_info,
     providing entity isolation so modifications in the draft don't affect
@@ -106,6 +112,56 @@ def create_draft(
     """
 
     # region -----------------------------Private implementations Below-----------------------------
+
+    # Status type registry for generic loading
+    _STATUS_TYPE_REGISTRY = {  # pylint: disable=invalid-name
+        MirrorStatus: "mirror_status",
+        CoordinateSystemStatus: "coordinate_system_status",
+    }
+
+    T = TypeVar("T", bound=Flow360BaseModel)
+
+    def _load_status_from_asset(
+        asset: AssetBase,
+        status_class: Type[T],
+    ) -> Optional[T]:
+        """
+        Generic status loader from asset cache.
+
+        Retrieves and validates status objects from asset's simulation cache.
+        Supports any status class registered in _STATUS_TYPE_REGISTRY.
+        """
+        # Get cache key from registry
+        cache_key = _STATUS_TYPE_REGISTRY.get(status_class)
+        if cache_key is None:
+            raise ValueError(
+                f"[Internal] Status class {status_class.__name__} not registered. "
+                f"Available types: {list(_STATUS_TYPE_REGISTRY.keys())}"
+            )
+
+        # Retrieve simulation dict (local cache or REST API)
+        # pylint: disable=protected-access
+        if hasattr(asset, "_simulation_dict_cache_for_local_mode"):
+            simulation_dict = asset._simulation_dict_cache_for_local_mode
+        else:
+            simulation_dict = AssetBase._get_simulation_json(asset=asset, clean_front_end_keys=True)
+
+        # Extract status dict from cache
+        status_dict = simulation_dict.get("private_attribute_asset_cache", {}).get(cache_key, None)
+
+        if status_dict is None:
+            # Status not present in cache (feature not used)
+            return None
+
+        # Validate and construct status instance
+        try:
+            return status_class.model_validate(status_dict)
+        except ValidationError as exc:
+            # Convert cache key to friendly display name
+            status_name = cache_key.replace("_", " ")
+            raise Flow360RuntimeError(
+                f"[Internal] Failed to parse stored {status_name} for {asset.__class__.__name__}. Error: {exc}",
+            ) from exc
 
     def _deep_copy_entity_info(entity_info):
         """Create a deep copy of entity_info via model_dump + model_validate.
@@ -163,8 +219,13 @@ def create_draft(
     # Apply grouping overrides to the copy (not the original)
     _inform_grouping_selections(entity_info_copy)
 
+    mirror_status = _load_status_from_asset(new_run_from, MirrorStatus)
+    coordinate_system_status = _load_status_from_asset(new_run_from, CoordinateSystemStatus)
+
     return DraftContext(
         entity_info=entity_info_copy,
+        mirror_status=mirror_status,
+        coordinate_system_status=coordinate_system_status,
     )
 
 
@@ -1534,10 +1595,6 @@ class Project(pd.BaseModel):
         if use_geometry_AI is True and use_beta_mesher is False:
             raise Flow360ValueError("Enabling Geometry AI requires also enabling beta mesher.")
 
-        # Check if there's an active DraftContext and get its entity_info
-        active_draft = get_active_draft()
-        draft_entity_info = active_draft._entity_info if active_draft is not None else None
-
         root_asset = self._root_asset
         if interpolate_to_mesh is not None:
             project_vm = Project.from_cloud(project_id=interpolate_to_mesh.project_id)
@@ -1549,7 +1606,6 @@ class Project(pd.BaseModel):
             length_unit=self.length_unit,
             use_beta_mesher=use_beta_mesher,
             use_geometry_AI=use_geometry_AI,
-            draft_entity_info=draft_entity_info,
         )
 
         params, errors = validate_params_with_context(
