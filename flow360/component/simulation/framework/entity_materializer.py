@@ -26,6 +26,7 @@ from flow360.component.simulation.outputs.output_entities import (
     Slice,
 )
 from flow360.component.simulation.primitives import (
+    AxisymmetricBody,
     Box,
     CustomVolume,
     Cylinder,
@@ -51,6 +52,7 @@ ENTITY_TYPE_MAP = {
     "GenericVolume": GenericVolume,
     "GeometryBodyGroup": GeometryBodyGroup,
     "CustomVolume": CustomVolume,
+    "AxisymmetricBody": AxisymmetricBody,
     "Box": Box,
     "Cylinder": Cylinder,
     "ImportedSurface": ImportedSurface,
