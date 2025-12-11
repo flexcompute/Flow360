@@ -37,10 +37,7 @@ from flow360.component.project_utils import (
     validate_params_with_context,
 )
 from flow360.component.resource_base import Flow360Resource
-from flow360.component.simulation.draft_context.context import (
-    DraftContext,
-    get_active_draft,
-)
+from flow360.component.simulation.draft_context.context import DraftContext
 from flow360.component.simulation.draft_context.coordinate_system_manager import (
     CoordinateSystemStatus,
 )
