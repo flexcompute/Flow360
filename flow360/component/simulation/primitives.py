@@ -355,16 +355,14 @@ class Box(MultiConstructorBaseModel, _VolumeEntityBase):
         Construct box from principal axes
         """
 
-        from scipy.linalg import eig  # pylint: disable=import-outside-toplevel
-
         # validate
         x_axis, y_axis = np.array(axes[0]), np.array(axes[1])
         z_axis = np.cross(x_axis, y_axis)
 
         rotation_matrix = np.transpose(np.asarray([x_axis, y_axis, z_axis], dtype=np.float64))
 
-        # Calculate the rotation axis n
-        eigvals, eigvecs = eig(rotation_matrix)
+        # Calculate the rotation axis n using numpy instead of scipy
+        eigvals, eigvecs = np.linalg.eig(rotation_matrix)
         axis = np.real(eigvecs[:, np.where(np.isreal(eigvals))])
         if axis.shape[2] > 1:  # in case of 0 rotation angle
             axis = axis[:, :, 0]

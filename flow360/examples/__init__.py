@@ -7,6 +7,7 @@ from .convergence import Convergence
 from .cube import Cube
 from .cylinder2D import Cylinder2D
 from .cylinder3D import Cylinder3D
+from .DARPA import DARPA_SUBOFF
 from .drivaer import DrivAer
 from .evtol import EVTOL
 from .isolated_propeller import IsolatedPropeller
@@ -24,6 +25,8 @@ from .tutorial_dynamic_derivatives import TutorialDynamicDerivatives
 from .tutorial_periodic_BC import TutorialPeriodicBC
 from .tutorial_RANS_xv15 import TutorialRANSXv15
 from .tutorial_UDD_forces_moments import TutorialUDDForcesMoments
+from .tutorial_UDD_structural import TutorialUDDStructural
+from .XV15_csm import XV15_CSM
 
 __all__ = [
     "ActuatorDisk",
@@ -35,6 +38,7 @@ __all__ = [
     "Cube",
     "Cylinder2D",
     "Cylinder3D",
+    "DARPA_SUBOFF",
     "DrivAer",
     "EVTOL",
     "IsolatedPropeller",
@@ -51,5 +55,7 @@ __all__ = [
     "TutorialDynamicDerivatives",
     "TutorialRANSXv15",
     "TutorialUDDForcesMoments",
+    "TutorialUDDStructural",
     "Quadcopter",
+    "XV15_CSM",
 ]
