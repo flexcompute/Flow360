@@ -1602,8 +1602,9 @@ def test_deleted_surfaces():
     )
     assert len(errors) == 1
     assert (
-        errors[0]["msg"] == "Value error, Boundary `body0001_face0004` will likely"
-        " be deleted after mesh generation. Therefore it cannot be used."
+        errors[0]["msg"]
+        == "Value error, Boundaries `body0001_face0004`, `body0001_face0003` will likely "
+        + "be deleted after mesh generation. Therefore they cannot be used."
     )
     assert errors[0]["loc"] == ("models", 2, "entity_pairs")
 
