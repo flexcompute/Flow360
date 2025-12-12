@@ -521,6 +521,29 @@ class GeometryEntityInfo(EntityInfoModel):
 
         return body_group_to_boundary
 
+    def get_face_group_to_body_group_id_map(self) -> dict[str, str]:
+        """
+        Returns a mapping from face group (Surface) name to the owning body group ID.
+
+        This is the inverse of :meth:`get_body_group_to_face_group_name_map` and uses the
+        same underlying assumptions and validations about the grouping tags.
+        """
+
+        body_group_to_boundary = self.get_body_group_to_face_group_name_map()
+
+        face_group_to_body_group: dict[str, str] = {}
+        for body_group_id, boundary_names in body_group_to_boundary.items():
+            for boundary_name in boundary_names:
+                existing_owner = face_group_to_body_group.get(boundary_name)
+                if existing_owner is not None and existing_owner != body_group_id:
+                    raise ValueError(
+                        f"[Internal] Face group '{boundary_name}' is mapped to multiple body groups: "
+                        f"{existing_owner}, {body_group_id}. Data is likely corrupted."
+                    )
+                face_group_to_body_group[boundary_name] = body_group_id
+
+        return face_group_to_body_group
+
 
 class VolumeMeshEntityInfo(EntityInfoModel):
     """Data model for volume mesh entityInfo.json"""

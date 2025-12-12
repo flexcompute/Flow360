@@ -205,13 +205,13 @@ def test_draft_entity_modifications_flow_to_params_without_update_persistent_ent
                 outputs=[fl.SurfaceOutput(surfaces=[surface], output_fields=["Cp"])],
             )
 
+        # Call set_up_params_for_uploading with draft context
         params = set_up_params_for_uploading(
             params=params,
             root_asset=mock_geometry,
             length_unit=1 * u.m,
             use_beta_mesher=False,
             use_geometry_AI=False,
-            draft_entity_info=draft._entity_info,  # Pass draft's entity_info
         )
 
         # Verify the modification made it through to the final params
@@ -224,6 +224,38 @@ def test_draft_entity_modifications_flow_to_params_without_update_persistent_ent
                     break
         assert final_entity is not None, "Entity not found in final params"
         assert final_entity.private_attribute_color == "test_red_color"
+
+
+def test_draft_volume_zone_modifications_flow_to_params(mock_volume_mesh):
+    """
+    Test: Volume zone modifications via draft context flow through to params.
+
+    This mirrors test_persistent_entity_info_update_volume_mesh but uses
+    draft context instead of update_persistent_entities().
+    """
+    with create_draft(new_run_from=mock_volume_mesh) as draft:
+        # Modify the center of a zone
+        zone = draft.volumes["blk-1"]
+        zone.center = (1.2, 2.3, 3.4) * u.cm
+
+        # Verify change is in entity_info
+        assert all(draft._entity_info.zones[0].center == (1.2, 2.3, 3.4) * u.cm)
+
+        # Create params and go through set_up_params_for_uploading
+        with fl.SI_unit_system:
+            params = fl.SimulationParams()
+
+        params = set_up_params_for_uploading(
+            params=params,
+            root_asset=mock_volume_mesh,
+            length_unit=1 * u.m,
+            use_beta_mesher=False,
+            use_geometry_AI=False,
+        )
+
+        # Verify the modification made it through
+        final_zone = params.private_attribute_asset_cache.project_entity_info.zones[0]
+        assert all(final_zone.center == (1.2, 2.3, 3.4) * u.cm)
 
 
 def test_newly_created_draft_entities_in_params_after_set_up(mock_surface_mesh):
@@ -252,14 +284,13 @@ def test_newly_created_draft_entities_in_params_after_set_up(mock_surface_mesh):
                 )
             )
 
-        # Call set_up_params_for_uploading with draft's entity_info
+        # Call set_up_params_for_uploading with draft context
         params = set_up_params_for_uploading(
             params=params,
             root_asset=mock_surface_mesh,
             length_unit=1 * u.m,
             use_beta_mesher=False,
             use_geometry_AI=False,
-            draft_entity_info=draft._entity_info,
         )
 
         # Verify the box is in the final entity_info's draft_entities
@@ -312,7 +343,6 @@ def test_draft_entity_modifications_preserved_after_set_up(mock_surface_mesh):
             length_unit=1 * u.m,
             use_beta_mesher=False,
             use_geometry_AI=False,
-            draft_entity_info=draft._entity_info,
         )
 
         # Verify the entity_info in params is draft's entity_info (source of truth)
@@ -368,7 +398,6 @@ def test_external_draft_entities_from_copied_params_are_captured(mock_surface_me
             length_unit=1 * u.m,
             use_beta_mesher=False,
             use_geometry_AI=False,
-            draft_entity_info=draft._entity_info,
         )
 
         # Verify the imported box is captured in draft_entities
@@ -419,7 +448,6 @@ def test_draft_entity_info_is_source_of_truth_over_params(mock_surface_mesh):
             length_unit=1 * u.m,
             use_beta_mesher=False,
             use_geometry_AI=False,
-            draft_entity_info=draft._entity_info,
         )
 
         # Verify exactly one box with this ID exists (no duplicates)

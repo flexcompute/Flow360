@@ -1343,3 +1343,138 @@ def test_sliding_interface_tolerance_gai():
         "spacing_radial": {"units": "1.0*m", "value": 0.1},
         "type": "RotationVolume",
     }
+
+
+def test_gai_mirror_status_translation():
+    """Test that mirror_status is properly translated into GAI surface meshing JSON.
+
+    This test verifies:
+    1. mirror_status is included in the translated JSON
+    2. All dimensional values (e.g., MirrorPlane.center) are serialized with proper units
+    """
+    from flow360.component.simulation.draft_context.mirror import (
+        MirroredGeometryBodyGroup,
+        MirroredSurface,
+        MirrorPlane,
+        MirrorStatus,
+    )
+
+    geometry = Geometry.from_local_storage(
+        geometry_id="geo-e5c01a98-2180-449e-b255-d60162854a83",
+        local_storage_path=os.path.join(
+            os.path.dirname(__file__), "data", "gai_geometry_entity_info"
+        ),
+        meta_data=GeometryMeta(
+            **local_metadata_builder(
+                id="geo-e5c01a98-2180-449e-b255-d60162854a83",
+                name="mirror_test",
+                cloud_path_prefix="mirror_test",
+                status="processed",
+            )
+        ),
+    )
+    geometry.group_faces_by_tag("faceId")
+    geometry.group_edges_by_tag("edgeId")
+    geometry.group_bodies_by_tag("groupByFile")
+
+    with open(
+        os.path.join(
+            os.path.dirname(__file__), "data", "gai_geometry_entity_info", "simulation.json"
+        ),
+        "r",
+    ) as fh:
+        asset_cache_dict = json.load(fh).pop("private_attribute_asset_cache")
+
+    # Create mirror status with dimensional values
+    # Use fixed IDs to ensure reproducibility
+    mirror_plane = MirrorPlane(
+        name="y_symmetry_plane",
+        normal=(0, 1, 0),
+        center=[0.5, 0, 0.25] * u.m,
+        private_attribute_id="mirror-plane-test-id-001",
+    )
+
+    mirrored_body_group = MirroredGeometryBodyGroup(
+        name="cube-holes.egads_<mirror>",
+        geometry_body_group_id="cube-holes.egads",
+        mirror_plane_id="mirror-plane-test-id-001",
+        private_attribute_id="mirrored-body-group-test-id-001",
+    )
+
+    mirrored_surface = MirroredSurface(
+        name="body00001_face00001_<mirror>",
+        surface_id="body00001_face00001",
+        mirror_plane_id="mirror-plane-test-id-001",
+        private_attribute_id="mirrored-surface-test-id-001",
+    )
+
+    mirror_status = MirrorStatus(
+        mirror_planes=[mirror_plane],
+        mirrored_geometry_body_groups=[mirrored_body_group],
+        mirrored_surfaces=[mirrored_surface],
+    )
+
+    # Add mirror_status to asset_cache
+    asset_cache_dict["mirror_status"] = mirror_status.model_dump(mode="json")
+    asset_cache = AssetCache.model_validate(asset_cache_dict)
+
+    with SI_unit_system:
+        farfield = AutomatedFarfield(domain_type="half_body_positive_y")
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    geometry_accuracy=0.05 * u.m,
+                    surface_max_edge_length=0.2,
+                ),
+                volume_zones=[farfield],
+            ),
+            private_attribute_asset_cache=asset_cache,
+        )
+
+    _, err = validate_params_with_context(params, "Geometry", "SurfaceMesh")
+    assert err is None, f"Validation error: {err}"
+
+    translated = get_surface_meshing_json(params, mesh_unit=1 * u.m)
+
+    # Verify the JSON is serializable
+    json.dumps(translated)
+
+    # Assert mirror_status is in the translated JSON
+    assert "private_attribute_asset_cache" in translated
+    assert "mirror_status" in translated["private_attribute_asset_cache"]
+
+    mirror_status_json = translated["private_attribute_asset_cache"]["mirror_status"]
+
+    # Assert mirror_planes is present and has expected structure
+    assert "mirror_planes" in mirror_status_json
+    assert len(mirror_status_json["mirror_planes"]) == 1
+
+    plane_json = mirror_status_json["mirror_planes"][0]
+
+    # Verify plane name and normal
+    assert plane_json["name"] == "y_symmetry_plane"
+    assert plane_json["normal"] == [0.0, 1.0, 0.0]
+
+    # KEY ASSERTION: Verify dimensional value (center) has proper units format
+    assert "center" in plane_json
+    center = plane_json["center"]
+    assert isinstance(center, dict), "center should be a dict with value and units"
+    assert "value" in center, "center must have 'value' key"
+    assert "units" in center, "center must have 'units' key"
+
+    # Verify the values are correct (converted to Flow360 units - meters)
+    assert center["value"] == [0.5, 0.0, 0.25], f"Expected [0.5, 0.0, 0.25], got {center['value']}"
+    # Units should be in meter format (could be "m" or "1.0*m" depending on serialization)
+    assert "m" in center["units"], f"Expected meter units, got {center['units']}"
+
+    # Assert mirrored entities are present
+    assert "mirrored_geometry_body_groups" in mirror_status_json
+    assert len(mirror_status_json["mirrored_geometry_body_groups"]) == 1
+    assert (
+        mirror_status_json["mirrored_geometry_body_groups"][0]["name"]
+        == "cube-holes.egads_<mirror>"
+    )
+
+    assert "mirrored_surfaces" in mirror_status_json
+    assert len(mirror_status_json["mirrored_surfaces"]) == 1
+    assert mirror_status_json["mirrored_surfaces"][0]["name"] == "body00001_face00001_<mirror>"
