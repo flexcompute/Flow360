@@ -67,18 +67,6 @@ from flow360.component.simulation.outputs.output_entities import (
     PointArray2D,
     Slice,
 )
-from flow360.component.simulation.outputs.output_render_types import (
-    AmbientLight,
-    DirectionalLight,
-    OrthographicProjection,
-    PBRMaterial,
-    RenderCameraConfig,
-    RenderEnvironmentConfig,
-    RenderLightingConfig,
-    SkyboxBackground,
-    SkyboxTexture,
-    StaticCamera,
-)
 from flow360.component.simulation.outputs.outputs import (
     Isosurface,
     IsosurfaceOutput,
@@ -92,6 +80,18 @@ from flow360.component.simulation.outputs.outputs import (
     TimeAverageStreamlineOutput,
     UserDefinedField,
     VolumeOutput,
+)
+from flow360.component.simulation.outputs.render_config import (
+    AmbientLight,
+    CameraConfig,
+    DirectionalLight,
+    EnvironmentConfig,
+    LightingConfig,
+    OrthographicProjection,
+    PBRMaterial,
+    SkyboxBackground,
+    SkyboxTexture,
+    StaticCamera,
 )
 from flow360.component.simulation.primitives import (
     CustomVolume,

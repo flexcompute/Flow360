@@ -591,16 +591,15 @@ def translate_render_output(
     translated_outputs = []
 
     for render in renders:
-        camera = render.camera.model_dump(exclude_none=True, exclude_unset=True, by_alias=True)
-        lighting = render.lighting.model_dump(exclude_none=True, exclude_unset=True, by_alias=True)
-        environment = render.environment.model_dump(
-            exclude_none=True, exclude_unset=True, by_alias=True
-        )
+        render_dict = render.model_dump(exclude_none=True, exclude_unset=True, by_alias=True)
+        remove_units_in_dict(render_dict)
 
-        for render_group in render.groups:
-            material = render_group.material.model_dump(
-                exclude_none=True, exclude_unset=True, by_alias=True
-            )
+        camera = render["camera"]
+        lighting = render["lighting"]
+        environment = render["environment"]
+
+        for render_group_dict in render_dict["groups"]:
+            material = render_group_dict["material"]
             if "outputField" in material and material["outputField"] not in render.output_fields:
                 render.output_fields.append(material["outputField"])
 
@@ -609,10 +608,10 @@ def translate_render_output(
             "animationFrequency": render.frequency,
             "animationFrequencyOffset": render.frequency_offset,
             "groups": [],
-            "camera": remove_units_in_dict(camera),
-            "lighting": remove_units_in_dict(lighting),
-            "environment": remove_units_in_dict(environment),
-            "outputFields": translate_output_fields(render)["outputFields"],
+            "camera": camera,
+            "lighting": lighting,
+            "environment": environment,
+            "outputFields": render["outputFields"],
         }
 
         for render_group in render.groups:
@@ -626,7 +625,7 @@ def translate_render_output(
                         RenderOutputGroup,
                         to_list=False,
                         entity_type_to_include=Surface,
-                        entity_list_attribute_name="surfaces",
+                        entity_list_field_name="surfaces",
                     ),
                     "slices": translate_setting_and_apply_to_all_entities(
                         [render_group],
@@ -634,7 +633,7 @@ def translate_render_output(
                         to_list=False,
                         entity_injection_func=slice_injection_function,
                         entity_type_to_include=Slice,
-                        entity_list_attribute_name="slices",
+                        entity_list_field_name="slices",
                     ),
                     "isoSurfaces": translate_setting_and_apply_to_all_entities(
                         [render_group],
@@ -642,7 +641,7 @@ def translate_render_output(
                         to_list=False,
                         entity_injection_func=isosurface_injection_function,
                         entity_type_to_include=Isosurface,
-                        entity_list_attribute_name="isosurfaces",
+                        entity_list_field_name="isosurfaces",
                         entity_injection_input_params=input_params,
                     ),
                     "material": remove_units_in_dict(material),

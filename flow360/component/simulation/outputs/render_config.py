@@ -3,14 +3,16 @@
 import abc
 import colorsys
 from enum import Enum
-from typing import List, Optional, Union
+from typing import List, Literal, Optional, Union
 
 import pydantic as pd
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.simulation.unit_system import AngleType, LengthType
-from flow360.component.types import Color, Vector
+from flow360.component.simulation.outputs.output_fields import CommonFieldNames
+from flow360.component.simulation.unit_system import AngleType, LengthType, TimeType
+from flow360.component.simulation.user_code.core.types import UserVariable
+from flow360.component.types import Axis, Color, Vector
 
 
 class StaticCamera(Flow360BaseModel):
@@ -28,6 +30,7 @@ class StaticCamera(Flow360BaseModel):
     ... )
     """
 
+    type_name: Literal["StaticCamera"] = pd.Field("StaticCamera", frozen=True)
     # pylint: disable=no-member
     position: LengthType.Point = pd.Field(description="Position of the camera in the scene")
     # pylint: disable=no-member
@@ -49,8 +52,11 @@ class Keyframe(Flow360BaseModel):
     ... )
     """
 
-    time: pd.confloat(ge=0) = pd.Field(0)
-    view: StaticCamera = pd.Field()
+    type_name: Literal["Keyframe"] = pd.Field("Keyframe", frozen=True)
+    time: TimeType = pd.Field(
+        0, ge=0, description="Timestamp at which the keyframe should be reached"
+    )
+    view: StaticCamera = pd.Field(description="Camera parameters at this keyframe")
 
 
 class AnimatedCamera(Flow360BaseModel):
@@ -67,10 +73,23 @@ class AnimatedCamera(Flow360BaseModel):
     ... )
     """
 
-    keyframes: List[Keyframe] = pd.Field([])
+    type_name: Literal["AnimatedCamera"] = pd.Field("AnimatedCamera", frozen=True)
+    keyframes: List[Keyframe] = pd.Field(
+        [], description="List of keyframes between which the animated camera interpolates"
+    )
 
+    @pd.field_validator("keyframes", mode="after")
+    @classmethod
+    def check_has_keyframes_and_sort(cls, value):
+        if len(value) < 1:
+            raise ValueError("Animated camera requires at least one keyframe to be defined")
 
-AllCameraTypes = Union[StaticCamera, AnimatedCamera]
+        value = sorted(value, key=lambda v: v.time)
+
+        if value[0].time != 0:
+            raise ValueError(
+                "The first keyframe needs to be defined at time = 0 (the starting camera position)"
+            )
 
 
 class OrthographicProjection(Flow360BaseModel):
@@ -86,10 +105,14 @@ class OrthographicProjection(Flow360BaseModel):
     ... )
     """
 
-    type: str = pd.Field(default="orthographic", frozen=True)
-    width: LengthType = pd.Field()
-    near: LengthType = pd.Field()
-    far: LengthType = pd.Field()
+    type_name: Literal["OrthographicProjection"] = pd.Field("OrthographicProjection", frozen=True)
+    width: LengthType = pd.Field(description="Width of the camera frustum in world units")
+    near: LengthType = pd.Field(
+        description="Near clipping plane in world units, pixels closer to the camera than this value are culled"
+    )
+    far: LengthType = pd.Field(
+        description="Far clipping plane in world units, pixels further from the camera than this value are culled"
+    )
 
 
 class PerspectiveProjection(Flow360BaseModel):
@@ -105,10 +128,14 @@ class PerspectiveProjection(Flow360BaseModel):
     ... )
     """
 
-    type: str = pd.Field(default="perspective", frozen=True)
-    fov: AngleType = pd.Field()
-    near: LengthType = pd.Field()
-    far: LengthType = pd.Field()
+    type_name: Literal["PerspectiveProjection"] = pd.Field("PerspectiveProjection", frozen=True)
+    fov: AngleType = pd.Field(description="Field of view of the camera (angle)")
+    near: LengthType = pd.Field(
+        description="Near clipping plane in world units, pixels closer to the camera than this value are culled"
+    )
+    far: LengthType = pd.Field(
+        description="Far clipping plane in world units, pixels further from the camera than this value are culled"
+    )
 
 
 class View(Enum):
@@ -157,19 +184,25 @@ class View(Enum):
         return tuple(x + y for x, y in zip(a, b))
 
 
-class RenderCameraConfig(Flow360BaseModel):
+class CameraConfig(Flow360BaseModel):
     """
     :class:`RenderCameraConfig` configures the camera and projection used for rendering.
 
     Example
     -------
-    >>> RenderCameraConfig.perspective(
+    >>> CameraConfig.perspective(
     ...     x=1, y=1, z=1, scale=2, view=View.FRONT
     ... )
     """
 
-    view: AllCameraTypes = pd.Field()
-    projection: Union[OrthographicProjection, PerspectiveProjection] = pd.Field()
+    type_name: Literal["CameraConfig"] = pd.Field("CameraConfig", frozen=True)
+    view: Union[StaticCamera, AnimatedCamera] = pd.Field(
+        discriminator="type_name", description="View settings (position, target)"
+    )
+    projection: Union[OrthographicProjection, PerspectiveProjection] = pd.Field(
+        discriminator="type_name",
+        description="Projection settings (FOV / width, near/far clipping planes)",
+    )
 
     @classmethod
     def orthographic(cls, position=(0, 0, 0), scale=1, view=None):
@@ -178,7 +211,7 @@ class RenderCameraConfig(Flow360BaseModel):
 
         Example
         -------
-        >>> RenderCameraConfig.orthographic(
+        >>> CameraConfig.orthographic(
         ...     position=(0, 0, 0), scale=1.5, view=View.TOP
         ... )
         """
@@ -194,7 +227,7 @@ class RenderCameraConfig(Flow360BaseModel):
         y = position[1]
         z = position[2]
 
-        return RenderCameraConfig(
+        return CameraConfig(
             view=StaticCamera(
                 # pylint: disable=no-member
                 position=(x + view[0] * scale, y + view[1] * scale, z + view[2] * scale) * u.m,
@@ -216,7 +249,7 @@ class RenderCameraConfig(Flow360BaseModel):
 
         Example
         -------
-        >>> RenderCameraConfig.perspective(
+        >>> CameraConfig.perspective(
         ...     position=(0, 0, 0), scale=3, view=View.LEFT
         ... )
         """
@@ -232,7 +265,7 @@ class RenderCameraConfig(Flow360BaseModel):
         y = position[1]
         z = position[2]
 
-        return RenderCameraConfig(
+        return CameraConfig(
             view=StaticCamera(
                 # pylint: disable=no-member
                 position=(x + view[0] * scale, y + view[1] * scale, z + view[2] * scale) * u.m,
@@ -257,8 +290,9 @@ class AmbientLight(Flow360BaseModel):
     ... )
     """
 
-    intensity: float = pd.Field()
-    color: Color = pd.Field()
+    type_name: Literal["AmbientLight"] = pd.Field("AmbientLight", frozen=True)
+    intensity: float = pd.Field(ge=0, description="Light intensity multiplier")
+    color: Color = pd.Field(description="Color of the ambient light")
 
 
 class DirectionalLight(Flow360BaseModel):
@@ -274,22 +308,30 @@ class DirectionalLight(Flow360BaseModel):
     ... )
     """
 
-    intensity: float = pd.Field()
-    color: Color = pd.Field()
-    direction: Vector = pd.Field()
+    type_name: Literal["DirectionalLight"] = pd.Field("DirectionalLight", frozen=True)
+    intensity: float = pd.Field(ge=0, description="Light intensity multiplier")
+    color: Color = pd.Field(description="Color of the directional light beam")
+    direction: Axis = pd.Field(
+        description="The direction of the light beam (all beams are parallel)"
+    )
 
 
-class RenderLightingConfig(Flow360BaseModel):
+class LightingConfig(Flow360BaseModel):
     """
     :class:`RenderLightingConfig` defines ambient and directional lighting for rendering.
 
     Example
     -------
-    >>> RenderLightingConfig.default()
+    >>> LightingConfig.default()
     """
 
-    directional: DirectionalLight = pd.Field()
-    ambient: Optional[AmbientLight] = pd.Field(None)
+    type_name: Literal["LightingConfig"] = pd.Field("LightingConfig", frozen=True)
+    directional: DirectionalLight = pd.Field(
+        description="Directional component of the light (falls from a single direction)"
+    )
+    ambient: Optional[AmbientLight] = pd.Field(
+        description="Ambient component of the light (applied from all directions equally)"
+    )
 
     @classmethod
     def default(cls):
@@ -298,9 +340,9 @@ class RenderLightingConfig(Flow360BaseModel):
 
         Example
         -------
-        >>> light = RenderLightingConfig.default()
+        >>> light = LightingConfig.default()
         """
-        return RenderLightingConfig(
+        return LightingConfig(
             ambient=AmbientLight(intensity=0.4, color=(255, 255, 255)),
             directional=DirectionalLight(
                 intensity=1.0, color=(255, 255, 255), direction=(-1.0, -1.0, -1.0)
@@ -308,15 +350,15 @@ class RenderLightingConfig(Flow360BaseModel):
         )
 
 
-class RenderBackgroundBase(Flow360BaseModel, metaclass=abc.ABCMeta):
+class BackgroundBase(Flow360BaseModel, metaclass=abc.ABCMeta):
     """
     :class:`RenderBackgroundBase` is an abstract base class for all background types.
     """
 
-    type: str = pd.Field(default="", frozen=True)
+    type_name: str = pd.Field(default="", frozen=True)
 
 
-class SolidBackground(RenderBackgroundBase):
+class SolidBackground(BackgroundBase):
     """
     :class:`SolidBackground` defines a single-color background.
 
@@ -325,8 +367,8 @@ class SolidBackground(RenderBackgroundBase):
     >>> SolidBackground(color=(200, 200, 255))
     """
 
-    type: str = pd.Field(default="solid", frozen=True)
-    color: Color = pd.Field()
+    type_name: Literal["SolidBackground"] = pd.Field("SolidBackground", frozen=True)
+    color: Color = pd.Field(description="Flat background color")
 
 
 class SkyboxTexture(str, Enum):
@@ -343,7 +385,7 @@ class SkyboxTexture(str, Enum):
     GRADIENT = "gradient"
 
 
-class SkyboxBackground(RenderBackgroundBase):
+class SkyboxBackground(BackgroundBase):
     """
     :class:`SkyboxBackground` defines a skybox background using a sky or gradient texture.
 
@@ -352,23 +394,25 @@ class SkyboxBackground(RenderBackgroundBase):
     >>> SkyboxBackground(texture=SkyboxTexture.SKY)
     """
 
-    type: str = pd.Field(default="skybox", frozen=True)
-    texture: SkyboxTexture = pd.Field(SkyboxTexture.SKY)
+    type_name: Literal["SkyboxBackground"] = pd.Field("SkyboxBackground", frozen=True)
+    texture: SkyboxTexture = pd.Field(
+        SkyboxTexture.SKY, description="Cubemap texture applied to the skybox"
+    )
 
 
-AllBackgroundTypes = Union[SolidBackground, SkyboxBackground]
-
-
-class RenderEnvironmentConfig(Flow360BaseModel):
+class EnvironmentConfig(Flow360BaseModel):
     """
     :class:`RenderEnvironmentConfig` configures the background environment for rendering.
 
     Example
     -------
-    >>> RenderEnvironmentConfig.simple()
+    >>> EnvironmentConfig.simple()
     """
 
-    background: AllBackgroundTypes = pd.Field()
+    type_name: Literal["EnvironmentConfig"] = pd.Field("EnvironmentConfig", frozen=True)
+    background: Union[SolidBackground, SkyboxBackground] = pd.Field(
+        discriminator="type_name", description="Background image, solid or textured"
+    )
 
     @classmethod
     def simple(cls):
@@ -377,9 +421,9 @@ class RenderEnvironmentConfig(Flow360BaseModel):
 
         Example
         -------
-        >>> RenderEnvironmentConfig.simple()
+        >>> EnvironmentConfig.simple()
         """
-        return RenderEnvironmentConfig(background=SolidBackground(color=(207, 226, 230)))
+        return EnvironmentConfig(background=SolidBackground(color=(207, 226, 230)))
 
     @classmethod
     def sky(cls):
@@ -388,9 +432,9 @@ class RenderEnvironmentConfig(Flow360BaseModel):
 
         Example
         -------
-        >>> RenderEnvironmentConfig.sky()
+        >>> EnvironmentConfig.sky()
         """
-        return RenderEnvironmentConfig(background=SkyboxBackground(texture=SkyboxTexture.SKY))
+        return EnvironmentConfig(background=SkyboxBackground(texture=SkyboxTexture.SKY))
 
     @classmethod
     def gradient(cls):
@@ -399,20 +443,20 @@ class RenderEnvironmentConfig(Flow360BaseModel):
 
         Example
         -------
-        >>> RenderEnvironmentConfig.gradient()
+        >>> EnvironmentConfig.gradient()
         """
-        return RenderEnvironmentConfig(background=SkyboxBackground(texture=SkyboxTexture.GRADIENT))
+        return EnvironmentConfig(background=SkyboxBackground(texture=SkyboxTexture.GRADIENT))
 
 
-class RenderMaterialBase(Flow360BaseModel, metaclass=abc.ABCMeta):
+class MaterialBase(Flow360BaseModel, metaclass=abc.ABCMeta):
     """
     :class:`RenderMaterialBase` is an abstract base class for material definitions used during rendering.
     """
 
-    type: str = pd.Field(default="", frozen=True)
+    type_name: str = pd.Field("", frozen=True)
 
 
-class PBRMaterial(RenderMaterialBase):
+class PBRMaterial(MaterialBase):
     """
     :class:`PBRMaterial` defines a physically based rendering (PBR) material.
 
@@ -421,11 +465,26 @@ class PBRMaterial(RenderMaterialBase):
     >>> PBRMaterial(color=(180, 180, 255), roughness=0.3)
     """
 
-    color: Color = pd.Field(default=[255, 255, 255])
-    alpha: float = pd.Field(default=1)
-    roughness: float = pd.Field(default=0.5)
-    f0: Vector = pd.Field(default=(0.03, 0.03, 0.03))
-    type: str = pd.Field(default="pbr", frozen=True)
+    type_name: Literal["PBRMaterial"] = pd.Field("PBRMaterial", frozen=True)
+    color: Color = pd.Field(
+        default=[255, 255, 255], description="Basic diffuse color of the material (base color)"
+    )
+    alpha: float = pd.Field(
+        default=1,
+        ge=0,
+        le=1,
+        description="The transparency of the material 1 is fully opaque, 0 is fully transparent",
+    )
+    roughness: float = pd.Field(
+        default=0.5,
+        ge=0,
+        le=1,
+        description="Material roughness, controls the fuzziness of reflections",
+    )
+    f0: Vector = pd.Field(
+        default=(0.03, 0.03, 0.03),
+        description="Fresnel reflection coeff. at 0 incidence angle, controls reflectivity",
+    )
 
     @classmethod
     def metal(cls, shine=0.5, alpha=1.0):
@@ -454,20 +513,7 @@ class PBRMaterial(RenderMaterialBase):
         )
 
 
-class ColorKey(Flow360BaseModel):
-    """
-    :class:`ColorKey` maps a scalar value to a color for continuous color maps.
-
-    Example
-    -------
-    >>> ColorKey(color=(255, 0, 0), value=0.5)
-    """
-
-    color: Color = pd.Field(default=[255, 255, 255])
-    value: pd.confloat(ge=0, le=1) = pd.Field(default=0.5)
-
-
-class FieldMaterial(RenderMaterialBase):
+class FieldMaterial(MaterialBase):
     """
     :class:`FieldMaterial` maps scalar field values to colors for flow visualization.
 
@@ -476,12 +522,30 @@ class FieldMaterial(RenderMaterialBase):
     >>> FieldMaterial.rainbow(field="pressure", min_value=0, max_value=100000)
     """
 
-    alpha: float = pd.Field(default=1)
-    output_field: str = pd.Field(default="")
-    min: float = pd.Field(default=0)
-    max: float = pd.Field(default=1)
-    colormap: List[ColorKey] = pd.Field()
-    type: str = pd.Field(default="field", frozen=True)
+    type_name: Literal["FieldMaterial"] = pd.Field("FieldMaterial", frozen=True)
+    alpha: float = pd.Field(
+        default=1,
+        ge=0,
+        le=1,
+        description="The transparency of the material 1 is fully opaque, 0 is fully transparent",
+    )
+    output_field: Union[CommonFieldNames, str, UserVariable] = pd.Field(
+        description="Scalar field applied to the surface via the colormap"
+    )
+    min: float = pd.Field(
+        description="Reference min value (in solver units) representing the left boundary of the colormap"
+    )
+    max: float = pd.Field(
+        description="Reference max value (in solver units) representing the right boundary of the colormap"
+    )
+    colormap: List[Color] = pd.Field(
+        description="List of key colors distributed evenly across the gradient, defines value to color mappings"
+    )
+
+    @pd.model_validator(mode="after")
+    def check_min_max(self):
+        if self.min > self.max:
+            raise ValueError("Invalid range - min value greater than max value")
 
     @classmethod
     def rainbow(cls, field, min_value=0, max_value=1, alpha=1):
@@ -501,7 +565,7 @@ class FieldMaterial(RenderMaterialBase):
         colormap = []
         for i in range(20):
             t = i / (20 - 1)
-            colormap.append(ColorKey(color=_rainbow_rgb(t), value=t))
+            colormap.append(_rainbow_rgb(t))
 
         # Approximated from TS rainbowGradient sampling
         return FieldMaterial(
@@ -526,7 +590,7 @@ class FieldMaterial(RenderMaterialBase):
         colormap = []
         for i in range(20):
             t = i / (20 - 1)
-            colormap.append(ColorKey(color=_orizon_rgb(t), value=t))
+            colormap.append(_orizon_rgb(t))
 
         # Approximated from TS orizonGradient sampling
         return FieldMaterial(
@@ -548,12 +612,12 @@ class FieldMaterial(RenderMaterialBase):
             min=min_value,
             max=max_value,
             colormap=[
-                ColorKey(color=(68, 1, 84), value=0.0),
-                ColorKey(color=(65, 68, 135), value=0.2),
-                ColorKey(color=(42, 120, 142), value=0.4),
-                ColorKey(color=(34, 168, 132), value=0.6),
-                ColorKey(color=(122, 209, 81), value=0.8),
-                ColorKey(color=(253, 231, 37), value=1.0),
+                (68, 1, 84),
+                (65, 68, 135),
+                (42, 120, 142),
+                (34, 168, 132),
+                (122, 209, 81),
+                (253, 231, 37),
             ],
         )
 
@@ -572,11 +636,11 @@ class FieldMaterial(RenderMaterialBase):
             min=min_value,
             max=max_value,
             colormap=[
-                ColorKey(color=(0, 0, 4), value=0.0),
-                ColorKey(color=(86, 20, 125), value=0.25),
-                ColorKey(color=(192, 58, 118), value=0.5),
-                ColorKey(color=(253, 154, 106), value=0.75),
-                ColorKey(color=(252, 253, 191), value=1.0),
+                (0, 0, 4),
+                (86, 20, 125),
+                (192, 58, 118),
+                (253, 154, 106),
+                (252, 253, 191),
             ],
         )
 
@@ -595,36 +659,40 @@ class FieldMaterial(RenderMaterialBase):
             min=min_value,
             max=max_value,
             colormap=[
-                ColorKey(color=(0, 100, 60), value=0.0),
-                ColorKey(color=(97, 178, 156), value=0.14),
-                ColorKey(color=(123, 189, 240), value=0.28),
-                ColorKey(color=(241, 241, 240), value=0.42),
-                ColorKey(color=(254, 216, 139), value=0.57),
-                ColorKey(color=(247, 139, 141), value=0.71),
-                ColorKey(color=(252, 122, 76), value=0.85),
-                ColorKey(color=(176, 90, 249), value=1.0),
+                (0, 100, 60),
+                (97, 178, 156),
+                (123, 189, 240),
+                (241, 241, 240),
+                (254, 216, 139),
+                (247, 139, 141),
+                (252, 122, 76),
+                (176, 90, 249),
             ],
         )
 
 
-AnyMaterial = Union[PBRMaterial, FieldMaterial]
-
-
-class RenderSceneTransform(Flow360BaseModel):
+class SceneTransform(Flow360BaseModel):
     """
     :class:`RenderSceneTransform` applies translation, rotation, and scaling to renderable objects.
 
+    This may be
+
     Example
     -------
-    >>> RenderSceneTransform(
-    ...     translation=(1 * u.m, 0, 0),
-    ...     rotation=(0, 0, 90 * u.deg),
+    >>> SceneTransform(
+    ...     translation=(1, 0, 0) * u.m,
+    ...     rotation=(0, 0, 90) * u.deg,
     ...     scale=(1, 2, 1),
     ... )
     """
 
+    type_name: Literal["SceneTransform"] = pd.Field("SceneTransform", frozen=True)
     # pylint: disable=no-member
-    translation: LengthType.Point = pd.Field(default=[0, 0, 0])
+    translation: LengthType.Point = pd.Field(
+        (0, 0, 0) * u.m, description="Translation applied to all scene objects"
+    )
     # pylint: disable=no-member
-    rotation: AngleType.Vector = pd.Field(default=[0, 0, 0])
-    scale: Vector = pd.Field(default=[1, 1, 1])
+    rotation: AngleType.Vector = pd.Field(
+        (0, 0, 0) * u.deg, description="Rotation applied to all scene objects (Euler XYZ)"
+    )
+    scale: Vector = pd.Field((1, 1, 1), description="Scaling applied to all scene objects")

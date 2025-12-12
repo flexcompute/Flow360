@@ -317,7 +317,7 @@ def translate_setting_and_apply_to_all_entities(
     use_instance_name_as_key=False,
     use_sub_item_as_key=False,
     entity_type_to_include=None,
-    entity_list_attribute_name="entities",
+    entity_list_field_name="entities",
     **kwargs,
 ):
     """
@@ -401,8 +401,8 @@ def translate_setting_and_apply_to_all_entities(
     for obj in obj_list:
         if class_type and is_exact_instance(obj, class_type):
             list_of_entities = []
-            if entity_list_attribute_name in obj.__class__.model_fields:
-                entity_list = getattr(obj, entity_list_attribute_name)
+            if entity_list_field_name in obj.__class__.model_fields:
+                entity_list = getattr(obj, entity_list_field_name)
                 if entity_list is None or (
                     "stored_entities" in entity_list.__class__.model_fields
                     and entity_list.stored_entities is None

@@ -123,32 +123,13 @@ from flow360.component.simulation.operating_condition.operating_condition import
     LiquidOperatingCondition,
     ThermalState,
 )
+from flow360.component.simulation.outputs import render_config as render
 from flow360.component.simulation.outputs.output_entities import (
     Isosurface,
     Point,
     PointArray,
     PointArray2D,
     Slice,
-)
-from flow360.component.simulation.outputs.output_render_types import (
-    AmbientLight,
-    AnimatedCamera,
-    ColorKey,
-    DirectionalLight,
-    FieldMaterial,
-    Keyframe,
-    OrthographicProjection,
-    PBRMaterial,
-    PerspectiveProjection,
-    RenderCameraConfig,
-    RenderEnvironmentConfig,
-    RenderLightingConfig,
-    RenderSceneTransform,
-    SkyboxBackground,
-    SkyboxTexture,
-    SolidBackground,
-    StaticCamera,
-    View,
 )
 from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
@@ -374,6 +355,8 @@ __all__ = [
     "CentralBelt",
     "WheelBelts",
     "show_available_examples",
+    "RenderOutput",
+    "RenderOutputGroup",
 ]
 
 _warn_prerelease()

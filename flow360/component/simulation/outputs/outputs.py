@@ -33,12 +33,13 @@ from flow360.component.simulation.outputs.output_fields import (
     VolumeFieldNames,
     get_field_values,
 )
-from flow360.component.simulation.outputs.output_render_types import (
-    AnyMaterial,
-    RenderCameraConfig,
-    RenderEnvironmentConfig,
-    RenderLightingConfig,
-    RenderSceneTransform,
+from flow360.component.simulation.outputs.render_config import (
+    CameraConfig,
+    EnvironmentConfig,
+    FieldMaterial,
+    LightingConfig,
+    PBRMaterial,
+    SceneTransform,
 )
 from flow360.component.simulation.primitives import (
     GhostCircularPlane,
@@ -725,7 +726,23 @@ class RenderOutputGroup(Flow360BaseModel):
     isosurfaces: Optional[UniqueItemList[Isosurface]] = pd.Field(
         None, description="List of :class:`~flow360.Isosurface` entities."
     )
-    material: AnyMaterial = pd.Field()
+    material: Union[PBRMaterial, FieldMaterial] = pd.Field(
+        description="Materials settings (color, surface field, roughness etc..) to be applied to the entire group"
+    )
+
+    @contextual_field_validator("surfaces", mode="after")
+    @classmethod
+    def ensure_surface_existence(cls, value, param_info: ParamsValidationInfo):
+        """Ensure all boundaries will be present after mesher"""
+        return check_deleted_surface_in_entity_list(value, param_info)
+
+    @pd.model_validator(mode="after")
+    def check_not_empty(self):
+        if not self.surfaces and not self.slices and not self.isosurfaces:
+            raise ValueError(
+                "Render group should include at least one entity (surface, slice or isosurface)"
+            )
+        return self
 
 
 class RenderOutput(_AnimationSettings):
@@ -743,38 +760,45 @@ class RenderOutput(_AnimationSettings):
     ...     groups=[
     ...         fl.RenderOutputGroup(
     ...             surfaces=geometry["*"],
-    ...             material=fl.PBRMaterial.metal(shine=0.8)
+    ...             material=fl.render.PBRMaterial.metal(shine=0.8)
     ...         ),
     ...         fl.RenderOutputGroup(
     ...             slices=[
     ...                 fl.Slice(name="Example slice", normal=(0, 1, 0), origin=(0, 0, 0))
     ...             ],
-    ...             material=fl.FieldMaterial.rainbow(field="T", min_value=0, max_value=1, alpha=0.4)
+    ...             material=fl.render.FieldMaterial.rainbow(field="T", min_value=0, max_value=1, alpha=0.4)
     ...         )
     ...     ],
-    ...     camera=fl.RenderCameraConfig.orthographic(scale=5, view=fl.View.TOP + fl.View.LEFT)
+    ...     camera=fl.render.CameraConfig.orthographic(scale=5, view=fl.View.TOP + fl.View.LEFT)
     ... )
     ====
     """
 
     name: str = pd.Field("Render output", description="Name of the `RenderOutput`.")
-    groups: List[RenderOutputGroup] = pd.Field("Render groups")
-    output_fields: UniqueItemList[Union[CommonFieldNames, str]] = pd.Field(
-        [], description="List of output variables."
+    groups: List[RenderOutputGroup] = pd.Field([])
+    output_fields: UniqueItemList[Union[CommonFieldNames, str, UserVariable]] = pd.Field(
+        description="List of output variables."
     )
-    camera: RenderCameraConfig = pd.Field(
-        description="Camera settings", default_factory=RenderCameraConfig.orthographic
+    camera: CameraConfig = pd.Field(
+        description="Camera settings", default_factory=CameraConfig.orthographic
     )
-    lighting: RenderLightingConfig = pd.Field(
-        description="Lighting settings", default_factory=RenderLightingConfig.default
+    lighting: LightingConfig = pd.Field(
+        description="Lighting settings", default_factory=LightingConfig.default
     )
-    environment: RenderEnvironmentConfig = pd.Field(
-        description="Environment settings", default_factory=RenderEnvironmentConfig.simple
+    environment: EnvironmentConfig = pd.Field(
+        description="Environment settings", default_factory=EnvironmentConfig.simple
     )
-    transform: Optional[RenderSceneTransform] = pd.Field(
+    transform: Optional[SceneTransform] = pd.Field(
         None, description="Optional model transform to apply to all entities"
     )
     output_type: Literal["RenderOutput"] = pd.Field("RenderOutput", frozen=True)
+
+    @pd.field_validator("groups", mode="after")
+    @classmethod
+    def check_has_output_groups(cls, value):
+        if len(value) < 1:
+            raise ValueError("Render output requires at least one output group to be defined")
+        return value
 
 
 class ProbeOutput(_OutputBase):
