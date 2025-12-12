@@ -647,7 +647,8 @@ def _get_gai_setting_whitelist(input_params: SimulationParams) -> dict:
                 "body_group_tag": None,
                 "body_attribute_names": None,
                 "grouped_bodies": None,
-            }
+            },
+            "mirror_status": None,
         },
     }
 
