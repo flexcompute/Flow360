@@ -12,6 +12,7 @@ from .drivaer import DrivAer
 from .evtol import EVTOL
 from .isolated_propeller import IsolatedPropeller
 from .monitors import MonitorsAndSlices
+from .NLF_airfoil import NLFAirfoil2D
 from .om6wing import OM6wing
 from .quadcopter import Quadcopter
 from .rotating_spheres import RotatingSpheres
@@ -43,6 +44,7 @@ __all__ = [
     "EVTOL",
     "IsolatedPropeller",
     "MonitorsAndSlices",
+    "NLFAirfoil2D",
     "OM6wing",
     "RotatingSpheres",
     "Tutorial2DCRM",
