@@ -22,7 +22,7 @@ from flow360.component.simulation.primitives import (
 )
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import LengthType
-from flow360.component.simulation.user_code.core.types import Expression
+from flow360.component.simulation.user_code.core.types import Expression, UserVariable
 from flow360.component.simulation.utils import is_exact_instance
 from flow360.exceptions import Flow360TranslationError
 
@@ -152,6 +152,20 @@ def remove_units_in_dict(input_dict, skip_keys: list[str] = None):
     if isinstance(input_dict, list):
         return [remove_units_in_dict(item, skip_keys=skip_keys) for item in input_dict]
     return input_dict
+
+
+def get_units_from_field(field, input_params) -> u.Unit:
+    """Get output units from a field, which can be either a UserVariable or a string."""
+    if isinstance(field, UserVariable):
+        return field.value.get_output_units(input_params=input_params)
+    return u.dimensionless  # pylint:disable=no-member
+
+
+def convert_value_to_units(value, units):
+    """Convert a value to specified units or unit system if the value is not already a float."""
+    if isinstance(value, float):
+        return value
+    return value.to(units).v.item()
 
 
 def translate_value_or_expression_object(
