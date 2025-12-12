@@ -1044,3 +1044,32 @@ def test_sliding_interface_tolerance_default_value(get_surface_mesh):
     assert "slidingInterfaceTolerance" in translated["volume"]
     # Default value is 1e-2 from DEFAULT_SLIDING_INTERFACE_TOLERANCE
     assert translated["volume"]["slidingInterfaceTolerance"] == 1e-2
+
+
+def test_windtunnel_ghost_surface_supported_in_volume_face_refinements(get_surface_mesh):
+    with SI_unit_system:
+        wind_tunnel = WindTunnelFarfield()
+        param = SimulationParams(
+            meshing=MeshingParams(
+                refinement_factor=1.1,
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-3,
+                    boundary_layer_growth_rate=1.2,
+                ),
+                volume_zones=[wind_tunnel],
+                refinements=[
+                    BoundaryLayer(
+                        entities=[wind_tunnel.floor],
+                        first_layer_thickness=1e-3 * u.m,
+                        growth_rate=1.2,
+                    ),
+                    PassiveSpacing(entities=[wind_tunnel.inlet], type="projected"),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+        )
+
+    translated = get_volume_meshing_json(param, get_surface_mesh.mesh_unit)
+    assert "faces" in translated
+    assert translated["faces"]["windTunnelFloor"]["type"] == "aniso"
+    assert translated["faces"]["windTunnelInlet"]["type"] == "projectAnisoSpacing"
