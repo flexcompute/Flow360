@@ -385,7 +385,7 @@ def test_check_moving_statistic_applicability_steady_valid():
                     probe_points=[Point(name="point_1", location=[1, 2, 3] * u.m)],
                     output_fields=["Cp"],
                     moving_statistic=MovingStatistic(
-                        method="std", moving_window_size=5, start_step=50
+                        method="standard_deviation", moving_window_size=5, start_step=50
                     ),
                 )
             ],
@@ -433,7 +433,7 @@ def test_check_moving_statistic_applicability_steady_invalid():
                         probe_points=[Point(name="point_1", location=[1, 2, 3] * u.m)],
                         output_fields=["Cp"],
                         moving_statistic=MovingStatistic(
-                            method="std", moving_window_size=20, start_step=850
+                            method="standard_deviation", moving_window_size=20, start_step=850
                         ),
                     )
                 ],
@@ -479,7 +479,7 @@ def test_check_moving_statistic_applicability_unsteady_valid():
                     probe_points=[Point(name="point_1", location=[1, 2, 3] * u.m)],
                     output_fields=["Cp"],
                     moving_statistic=MovingStatistic(
-                        method="std", moving_window_size=50, start_step=50
+                        method="standard_deviation", moving_window_size=50, start_step=50
                     ),
                 )
             ],
@@ -527,7 +527,7 @@ def test_check_moving_statistic_applicability_unsteady_invalid():
                         probe_points=[Point(name="point_1", location=[1, 2, 3] * u.m)],
                         output_fields=["Cp"],
                         moving_statistic=MovingStatistic(
-                            method="std", moving_window_size=200, start_step=350
+                            method="standard_deviation", moving_window_size=200, start_step=350
                         ),
                     )
                 ],
@@ -573,7 +573,7 @@ def test_check_moving_statistic_applicability_steady_edge_cases():
                     probe_points=[Point(name="point_1", location=[1, 2, 3] * u.m)],
                     output_fields=["Cp"],
                     moving_statistic=MovingStatistic(
-                        method="std", moving_window_size=5, start_step=99
+                        method="standard_deviation", moving_window_size=5, start_step=99
                     ),
                 )
             ],
@@ -630,7 +630,7 @@ def test_check_moving_statistic_applicability_multiple_outputs():
                         probe_points=[Point(name="point_1", location=[1, 2, 3] * u.m)],
                         output_fields=["Cp"],
                         moving_statistic=MovingStatistic(
-                            method="std", moving_window_size=100, start_step=600
+                            method="standard_deviation", moving_window_size=100, start_step=600
                         ),
                     ),
                     SurfaceIntegralOutput(

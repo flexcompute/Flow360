@@ -42,7 +42,7 @@ class StoppingCriterion(Flow360BaseModel):
     -------
 
     Define a stopping criterion on a :class:`ProbeOutput` with a tolerance of 0.01.
-    The ProbeOutput monitors the moving deviation of Helicity in a moving window of 10 steps,
+    The ProbeOutput monitors the moving range of Helicity in a moving window of 10 steps,
     at the location of (0, 0, 0,005) * fl.u.m.
 
     >>> monitored_variable = fl.UserVariable(
@@ -57,7 +57,7 @@ class StoppingCriterion(Flow360BaseModel):
     ...             monitored_variable,
     ...         ],
     ...         probe_points=fl.Point(name="Point1", location=(0, 0, 0.005) * fl.u.m),
-    ...         moving_statistic = fl.MovingStatistic(method = "deviation", moving_window_size = 10)
+    ...         moving_statistic = fl.MovingStatistic(method = "range", moving_window_size = 10)
     ...     ),
     ...     monitor_field=monitored_variable,
     ...     tolerance=0.01,

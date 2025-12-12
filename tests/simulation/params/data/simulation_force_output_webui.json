@@ -651,7 +651,7 @@
             },
             "moving_statistic": {
                 "moving_window_size": 100,
-                "method": "std",
+                "method": "standard_deviation",
                 "start_step": 0,
                 "type_name": "MovingStatistic"
             },

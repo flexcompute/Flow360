@@ -147,7 +147,7 @@ class MovingStatistic(Flow360BaseModel):
       the nearest multiple of 10 for steady simulations.
     - For unsteady simulations, the solver outputs a data point for ** every physical step**.
       A :py:attr:`moving_window_size`=10 would cover 10 physical steps.
-    - When :py:attr:`method` is set to ``"std"``, the standard deviation is computed as a
+    - When :py:attr:`method` is set to ``"standard_deviation"``, the standard deviation is computed as a
       **sample standard deviation** normalized by :math:`n-1` (Bessel's correction), where :math:`n`
       is the number of data points in the moving window.
 
@@ -159,7 +159,7 @@ class MovingStatistic(Flow360BaseModel):
 
     >>> fl.MovingStatistic(
     ...     moving_window_size=10,
-    ...     method="std",
+    ...     method="standard_deviation",
     ...     start_step=100,
     ... )
 
@@ -172,7 +172,7 @@ class MovingStatistic(Flow360BaseModel):
         description="The size of the moving window in data points over which the "
         "statistic is calculated. Must be greater than or equal to 2.",
     )
-    method: Literal["mean", "min", "max", "std", "deviation"] = pd.Field(
+    method: Literal["mean", "min", "max", "standard_deviation", "range"] = pd.Field(
         "mean", description="The statistical method to apply to the data within the moving window."
     )
     start_step: pd.NonNegativeInt = pd.Field(
