@@ -1,10 +1,10 @@
 """Defines 'types' that various fields can be"""
 
-from typing import List, Optional, Tuple
+from typing import Annotated, List, Optional, Tuple
 
 import numpy as np
 import pydantic.v1 as pd
-from pydantic import GetJsonSchemaHandler
+from pydantic import Field, GetJsonSchemaHandler
 from pydantic_core import CoreSchema, core_schema
 
 # type tag default name
@@ -14,7 +14,9 @@ COMMENTS = "comments"
 List2D = List[List[float]]
 # we use tuple for fixed length lists, beacause List is a mutable, variable length structure
 Coordinate = Tuple[float, float, float]
-Color = Tuple[int, int, int]
+
+Int8 = Annotated[int, Field(ge=0, le=255)]
+Color = Tuple[Int8, Int8, Int8]
 
 
 class Vector(Coordinate):
