@@ -2,6 +2,13 @@
 
 from typing import Annotated, List, Optional, Union
 
+from flow360.component.simulation.meshing_param.params import VolumeZonesTypes
+from flow360.component.simulation.meshing_param.volume_params import (
+    RotationCylinder,
+    RotationVolume,
+)
+from flow360.component.simulation.simulation_params import ModelTypes
+from flow360.component.simulation.validation.validation_utils import EntityUsageMap
 import pydantic as pd
 
 from flow360.component.simulation.entity_info import (
@@ -23,6 +30,7 @@ from flow360.component.simulation.user_code.core.types import (
     update_global_context,
 )
 from flow360.component.simulation.utils import model_attribute_unlock
+from flow360.component.simulation.models.volume_models import Rotation
 
 VariableContextList = Annotated[
     List[VariableContextInfo],
@@ -48,7 +56,8 @@ class AssetCache(Flow360BaseModel):
         False, description="Flag whether user requested the use of GAI."
     )
     variable_context: Optional[VariableContextList] = pd.Field(
-        None, description="List of user variables that are used in all the `Expression` instances."
+        None,
+        description="List of user variables that are used in all the `Expression` instances.",
     )
     used_selectors: Optional[List[dict]] = pd.Field(
         None,
@@ -140,7 +149,9 @@ def register_entity_list(model: Flow360BaseModel, registry: EntityRegistry) -> N
 
         if isinstance(field, EntityList):
             for entity in field.stored_entities if field.stored_entities else []:
-                known_frozen_hashes = registry.fast_register(entity, known_frozen_hashes)
+                known_frozen_hashes = registry.fast_register(
+                    entity, known_frozen_hashes
+                )
 
         elif isinstance(field, (list, tuple)):
             for item in field:
@@ -185,15 +196,15 @@ def _update_entity_full_name(
             added_entities = []
             for item in field:
                 if isinstance(item, target_entity_type):
-                    partial_additions = (
-                        item._update_entity_info_with_metadata(  # pylint: disable=protected-access
-                            volume_mesh_meta_data
-                        )
+                    partial_additions = item._update_entity_info_with_metadata(  # pylint: disable=protected-access
+                        volume_mesh_meta_data
                     )
                     if partial_additions is not None:
                         added_entities.extend(partial_additions)
                 elif isinstance(item, Flow360BaseModel):
-                    _update_entity_full_name(item, target_entity_type, volume_mesh_meta_data)
+                    _update_entity_full_name(
+                        item, target_entity_type, volume_mesh_meta_data
+                    )
 
             if isinstance(field, list):
                 field.extend(added_entities)
@@ -215,9 +226,13 @@ def _update_zone_boundaries_with_metadata(
         for entity in view._entities
     ]:
         if volume_entity.name in volume_mesh_meta_data["zones"]:
-            with model_attribute_unlock(volume_entity, "private_attribute_zone_boundary_names"):
+            with model_attribute_unlock(
+                volume_entity, "private_attribute_zone_boundary_names"
+            ):
                 volume_entity.private_attribute_zone_boundary_names = UniqueStringList(
-                    items=volume_mesh_meta_data["zones"][volume_entity.name]["boundaryNames"]
+                    items=volume_mesh_meta_data["zones"][volume_entity.name][
+                        "boundaryNames"
+                    ]
                 )
 
 
@@ -237,3 +252,35 @@ def _set_boundary_full_name_with_zone_name(
                 continue
             with model_attribute_unlock(surface, "private_attribute_full_name"):
                 surface.private_attribute_full_name = f"{give_zone_name}/{surface.name}"
+
+
+def _update_enclosed_entities_for_rotating_zone(
+    registry: EntityRegistry,
+    zone: RotationVolume,
+    volume_mesh_meta_data: dict,
+):
+    # get the enclosed entities for zone
+    #
+    # check for each enclosed entity "xyz",
+    #   if there exists a entity in the metadata which has a "__rotating_*" patch name
+    #       if so, update name to version with "xyz__rotating_*" (this should be present in volume_mesh_meta_data)
+    #       if name was updated, also update in stationary_enclosed_entities if "xyz" present in it
+    # if "xyz" was present in stationary_enclosed_entities, collect in a list
+
+    pass
+
+
+def _update_models_with_metadata(
+    registry: EntityRegistry,
+    volume_zones: List[VolumeZonesTypes],
+    solver_models: List[ModelTypes],
+    volume_mesh_meta_data: dict,
+):
+    rotation_entity_usage_map = EntityUsageMap()
+    for volume_zone in volume_zones if volume_zones is not None else []:
+        if isinstance(volume_zone, RotationVolume):
+            _ = _update_enclosed_entities_for_rotating_zone(
+                registry, volume_zone, volume_mesh_meta_data
+            )
+
+    pass
