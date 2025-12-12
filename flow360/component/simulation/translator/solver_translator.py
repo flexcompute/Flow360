@@ -109,7 +109,9 @@ from flow360.component.simulation.translator.user_expression_utils import (
 from flow360.component.simulation.translator.utils import (
     _get_key_name,
     convert_tuples_to_lists,
+    convert_value_to_units,
     get_global_setting_from_first_instance,
+    get_units_from_field,
     has_instance_in_list,
     inline_expressions_in_dict,
     preprocess_input,
@@ -350,17 +352,11 @@ def inject_surface_slice_info(entity: Slice):
 def inject_isosurface_info(entity: Isosurface, input_params: SimulationParams):
     """inject entity info"""
 
-    if isinstance(entity.field, UserVariable):
-        units = entity.field.value.get_output_units(input_params=input_params)
-        surface_field = entity.field.name
-        surface_magnitude = (
-            entity.iso_value.to(units).v.item()
-            if not isinstance(entity.iso_value, float)
-            else entity.iso_value
-        )
-    else:
-        surface_field = entity.field
-        surface_magnitude = entity.iso_value
+    surface_field = entity.field.name if isinstance(entity.field, UserVariable) else entity.field
+    surface_magnitude = convert_value_to_units(
+        value=entity.iso_value, units=get_units_from_field(entity.field, input_params)
+    )
+
     return_dict = {
         "surfaceField": surface_field,
         "surfaceFieldMagnitude": surface_magnitude,
@@ -1566,21 +1562,15 @@ def get_stop_criterion_settings(criterion: StoppingCriterion, params: Simulation
         return monitored_dataset_name, monitored_column
 
     def get_criterion_tolerance_info(criterion_tolerance, monitor_field, params):
+        source_units = get_units_from_field(monitor_field, params)
         flow360_unit_system = params.flow360_unit_system
-        if isinstance(monitor_field, UserVariable):
-            source_units = monitor_field.value.get_output_units(input_params=params)
-            if source_units.dimensions == u.dimensions.angle:
-                flow360_unit_system["angle"] = source_units.units
-            criterion_tolerance_nondim = (
-                criterion_tolerance.in_base(flow360_unit_system).v.item()
-                if not isinstance(criterion_tolerance, float)
-                else criterion_tolerance
-            )
-        else:
-            source_units = u.dimensionless  # pylint:disable=no-member
-            criterion_tolerance_nondim = criterion_tolerance
-
+        if source_units.dimensions == u.dimensions.angle:
+            flow360_unit_system["angle"] = source_units.units
         flow360_units = source_units.get_base_equivalent(flow360_unit_system)
+
+        criterion_tolerance_nondim = convert_value_to_units(
+            value=criterion_tolerance, units=flow360_units
+        )
         source_to_flow360_coeff, source_to_flow360_offset = source_units.get_conversion_factor(
             flow360_units, dtype=np.float64
         )
