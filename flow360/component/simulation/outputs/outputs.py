@@ -145,6 +145,8 @@ class MovingStatistic(Flow360BaseModel):
       This means a :py:attr:`moving_window_size`=10 would cover 100 pseudo steps.
       Thus, the :py:attr:`start_step` value is automatically rounded up to
       the nearest multiple of 10 for steady simulations.
+    - For unsteady simulations, the solver outputs a data point for ** every physical step**.
+      A :py:attr:`moving_window_size`=10 would cover 10 physical steps.
     - When :py:attr:`method` is set to ``"std"``, the standard deviation is computed as a
       **sample standard deviation** normalized by :math:`n-1` (Bessel's correction), where :math:`n`
       is the number of data points in the moving window.
@@ -766,13 +768,12 @@ class ForceOutput(_OutputBase):
     @classmethod
     def _check_duplicate_models(cls, value):
         """Ensure no duplicate models are specified."""
-        model_ids = []
+        model_ids = set()
         for model in value:
             model_id = model.private_attribute_id
-            if model_id not in model_ids:
-                model_ids.append(model_id)
-                continue
-            raise ValueError("Duplicate models are not allowed in the same `ForceOutput`.")
+            if model_id in model_ids:
+                raise ValueError("Duplicate models are not allowed in the same `ForceOutput`.")
+            model_ids.add(model_id)
         return value
 
     @pd.field_validator("models", mode="after")

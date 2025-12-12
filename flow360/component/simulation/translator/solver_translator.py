@@ -1486,7 +1486,7 @@ def update_controls_modeling_constants(controls, translated):
             control["modelConstants"] = control.pop("modelingConstants")
 
 
-def check_external_postprocessing_existence(params: SimulationParams):
+def require_external_postprocessing(params: SimulationParams):
     """Check if external postprocessing needed."""
     if params.models:
         for model in params.models:
@@ -1581,21 +1581,21 @@ def get_stop_criterion_settings(criterion: StoppingCriterion, params: Simulation
             criterion_tolerance_nondim = criterion_tolerance
 
         flow360_units = source_units.get_base_equivalent(flow360_unit_system)
-        coeff_source_to_flow360, offset_source_to_flow360 = source_units.get_conversion_factor(
+        source_to_flow360_coeff, source_to_flow360_offset = source_units.get_conversion_factor(
             flow360_units, dtype=np.float64
         )
-        offset_source_to_flow360 = (
+        source_to_flow360_offset = (
             0.0
-            if offset_source_to_flow360 is None
-            else -offset_source_to_flow360 / coeff_source_to_flow360
+            if source_to_flow360_offset is None
+            else -source_to_flow360_offset / source_to_flow360_coeff
         )
 
-        return criterion_tolerance_nondim, coeff_source_to_flow360, offset_source_to_flow360
+        return criterion_tolerance_nondim, source_to_flow360_coeff, source_to_flow360_offset
 
     criterion_dataset_name, criterion_column = get_criterion_monitored_file_info(
         monitor_output=criterion.monitor_output, monitor_field=criterion.monitor_field
     )
-    criterion_tolerance_nondim, coeff_source_to_flow360, offset_source_to_flow360 = (
+    criterion_tolerance_nondim, source_to_flow360_coeff, source_to_flow360_offset = (
         get_criterion_tolerance_info(
             criterion_tolerance=criterion.tolerance,
             monitor_field=criterion.monitor_field,
@@ -1608,8 +1608,8 @@ def get_stop_criterion_settings(criterion: StoppingCriterion, params: Simulation
         "monitoredDatasetName": criterion_dataset_name,
         "tolerance": criterion_tolerance_nondim,
         "toleranceWindowSize": criterion.tolerance_window_size,
-        "sourceToFlow360Coefficient": coeff_source_to_flow360,
-        "sourceToFlow360Offset": offset_source_to_flow360,
+        "sourceToFlow360Coefficient": source_to_flow360_coeff,
+        "sourceToFlow360Offset": source_to_flow360_offset,
     }
 
 
@@ -1994,15 +1994,15 @@ def get_solver_json(
 
     ##:: Step 11: Get run control settings
     translated["runControl"] = {}
-    translated["runControl"]["externalProcessMonitorOutput"] = (
-        check_external_postprocessing_existence(input_params)
+    translated["runControl"]["externalProcessMonitorOutput"] = require_external_postprocessing(
+        input_params
     )
     if translated["runControl"]["externalProcessMonitorOutput"]:
         translated["runControl"]["monitorProcessorHash"] = calculate_monitor_semaphore_hash(
             input_params
         )
     stopping_criteria = []
-    if input_params.run_control and bool(input_params.run_control.stopping_criteria):
+    if input_params.run_control and input_params.run_control.stopping_criteria:
         for criterion in input_params.run_control.stopping_criteria:
             stopping_criteria.append(get_stop_criterion_settings(criterion, input_params))
         translated["runControl"]["stoppingCriteria"] = stopping_criteria
