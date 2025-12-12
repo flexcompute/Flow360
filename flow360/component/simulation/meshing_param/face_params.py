@@ -11,6 +11,7 @@ from flow360.component.simulation.primitives import (
     GhostCircularPlane,
     GhostSurface,
     Surface,
+    WindTunnelGhostSurface,
 )
 from flow360.component.simulation.unit_system import AngleType, LengthType
 from flow360.component.simulation.validation.validation_context import (
@@ -42,9 +43,9 @@ class SurfaceRefinement(Flow360BaseModel):
 
     name: Optional[str] = pd.Field("Surface refinement")
     refinement_type: Literal["SurfaceRefinement"] = pd.Field("SurfaceRefinement", frozen=True)
-    entities: EntityListAllowingGhost[Surface, GhostSurface, GhostCircularPlane] = pd.Field(
-        alias="faces"
-    )
+    entities: EntityListAllowingGhost[
+        Surface, WindTunnelGhostSurface, GhostSurface, GhostCircularPlane
+    ] = pd.Field(alias="faces")
     # pylint: disable=no-member
     max_edge_length: Optional[LengthType.Positive] = pd.Field(
         None, description="Maximum edge length of surface cells."
@@ -171,9 +172,9 @@ class PassiveSpacing(Flow360BaseModel):
         """
     )
     refinement_type: Literal["PassiveSpacing"] = pd.Field("PassiveSpacing", frozen=True)
-    entities: EntityListAllowingGhost[Surface, GhostSurface, GhostCircularPlane] = pd.Field(
-        alias="faces"
-    )
+    entities: EntityListAllowingGhost[
+        Surface, WindTunnelGhostSurface, GhostSurface, GhostCircularPlane
+    ] = pd.Field(alias="faces")
 
     @contextual_field_validator("entities", mode="after")
     @classmethod
@@ -203,7 +204,7 @@ class BoundaryLayer(Flow360BaseModel):
 
     name: Optional[str] = pd.Field("Boundary layer refinement")
     refinement_type: Literal["BoundaryLayer"] = pd.Field("BoundaryLayer", frozen=True)
-    entities: EntityList[Surface] = pd.Field(alias="faces")
+    entities: EntityList[Surface, WindTunnelGhostSurface] = pd.Field(alias="faces")
     # pylint: disable=no-member
     first_layer_thickness: Optional[LengthType.Positive] = pd.Field(
         None,
