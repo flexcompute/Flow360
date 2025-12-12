@@ -1539,6 +1539,8 @@ def get_stop_criterion_settings(criterion: StoppingCriterion, params: Simulation
     """Get the stop criterion settings"""
 
     def get_criterion_monitored_file_info(monitor_output, monitor_field):
+        # pylint: disable=fixme
+        # TODO: Add instance function to control the output metadata generation for each output type.
         monitor_output_name = monitor_output.name.replace("/", "_")
         monitored_column = None
         monitored_dataset_name = None
@@ -1548,9 +1550,6 @@ def get_stop_criterion_settings(criterion: StoppingCriterion, params: Simulation
             monitored_dataset_name = f"monitor_{monitor_output_name}"
         if isinstance(monitor_output, SurfaceIntegralOutput):
             monitored_column = f"{str(monitor_field)}_integral"
-            monitor_output_processed = [monitor_output.copy()]
-            process_user_variables_for_integral(monitor_output_processed)
-            monitor_field = monitor_output_processed[0].output_fields.items[0]
             monitored_dataset_name = f"monitor_{monitor_output_name}"
         if isinstance(monitor_output, ForceOutput):
             monitored_column = f"total{monitor_field}"
