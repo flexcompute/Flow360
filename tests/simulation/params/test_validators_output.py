@@ -1141,6 +1141,10 @@ def test_force_output_with_model_id():
     _, errors, _ = validate_model(
         params_as_dict=data, validated_by=ValidationCalledBy.LOCAL, root_item_type="VolumeMesh"
     )
+    # Expected errors:
+    # - outputs[3,4,5] have validation errors in their models field
+    # - Since outputs field has validation errors, the output_dict is not populated
+    # - Therefore all stopping_criteria that reference outputs by ID fail with a clear error message
     expected_errors = [
         {
             "type": "value_error",
@@ -1163,8 +1167,23 @@ def test_force_output_with_model_id():
         },
         {
             "type": "value_error",
-            "loc": ("run_control", "stopping_criteria", 2, "monitor_output", "models"),
-            "msg": "Value error, Duplicate models are not allowed in the same `ForceOutput`.",
+            "loc": ("run_control", "stopping_criteria", 0, "monitor_output"),
+            "msg": "Value error, Cannot resolve monitor_output reference because the `outputs` "
+            "field has validation errors. Please fix those errors first.",
+            "ctx": {"relevant_for": ["Case"]},
+        },
+        {
+            "type": "value_error",
+            "loc": ("run_control", "stopping_criteria", 1, "monitor_output"),
+            "msg": "Value error, Cannot resolve monitor_output reference because the `outputs` "
+            "field has validation errors. Please fix those errors first.",
+            "ctx": {"relevant_for": ["Case"]},
+        },
+        {
+            "type": "value_error",
+            "loc": ("run_control", "stopping_criteria", 2, "monitor_output"),
+            "msg": "Value error, Cannot resolve monitor_output reference because the `outputs` "
+            "field has validation errors. Please fix those errors first.",
             "ctx": {"relevant_for": ["Case"]},
         },
     ]

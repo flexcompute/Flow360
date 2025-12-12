@@ -315,26 +315,6 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         return None
 
     @classmethod
-    def _get_output_dict(cls, param_as_dict: dict):
-        if param_as_dict.get("outputs") is None:
-            return None
-        return {
-            output["private_attribute_id"]: output
-            for output in param_as_dict["outputs"]
-            if output.get("private_attribute_id") is not None
-        }
-
-    @classmethod
-    def _get_physics_model_dict(cls, param_as_dict: dict):
-        if param_as_dict.get("models") is None:
-            return None
-        return {
-            model["private_attribute_id"]: model
-            for model in param_as_dict["models"]
-            if model.get("private_attribute_id") is not None
-        }
-
-    @classmethod
     def _get_half_model_symmetry_plane_center_y(cls, param_as_dict: dict):
         ghost_entities = get_value_with_path(
             param_as_dict,
@@ -452,8 +432,12 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         self.project_length_unit = self._get_project_length_unit_(param_as_dict=param_as_dict)
         self.global_bounding_box = self._get_global_bounding_box(param_as_dict=param_as_dict)
         self.planar_face_tolerance = self._get_planar_face_tolerance(param_as_dict=param_as_dict)
-        self.output_dict = self._get_output_dict(param_as_dict=param_as_dict)
-        self.physics_model_dict = self._get_physics_model_dict(param_as_dict=param_as_dict)
+        # Initialized as None. When SimulationParams field validation succeeds, the
+        # field validators will populate these with validated objects.
+        # None = validation not yet complete (or failed)
+        # {} or {id: obj} = validation succeeded
+        self.output_dict = None
+        self.physics_model_dict = None
         self.half_model_symmetry_plane_center_y = self._get_half_model_symmetry_plane_center_y(
             param_as_dict=param_as_dict
         )

@@ -744,25 +744,26 @@ class ForceOutput(_OutputBase):
     @contextual_field_validator("models", mode="before")
     @classmethod
     def _preprocess_models_with_id(cls, value, param_info: ParamsValidationInfo):
-        """Deserialize string-format models as model objects."""
+        """Resolve string model IDs to model objects from validation context."""
 
-        def preprocess_single_model(model, validation_info):
+        def resolve_model(model):
             if not isinstance(model, str):
-                return model
-            if (
-                validation_info is None
-                or validation_info.physics_model_dict is None
-                or validation_info.physics_model_dict.get(model) is None
-            ):
-                raise ValueError("The model does not exist in simulation params' models list.")
-            physics_model_dict = validation_info.physics_model_dict[model]
-            model = pd.TypeAdapter(ForceOutputModelType).validate_python(physics_model_dict)
-            return model
+                return model  # Already an object
 
-        processed_models = []
-        for model in value:
-            processed_models.append(preprocess_single_model(model, param_info))
-        return processed_models
+            # physics_model_dict is None if models field had validation errors
+            if param_info.physics_model_dict is None:
+                raise ValueError(
+                    "Cannot resolve model reference because the `models` field has validation errors. "
+                    "Please fix those errors first."
+                )
+
+            model_obj = param_info.physics_model_dict.get(model)
+            if model_obj is None:
+                raise ValueError("The model does not exist in simulation params' models list.")
+
+            return model_obj  # Return validated object directly
+
+        return [resolve_model(m) for m in value]
 
     @pd.field_validator("models", mode="after")
     @classmethod

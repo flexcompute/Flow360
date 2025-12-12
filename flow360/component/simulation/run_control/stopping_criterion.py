@@ -117,13 +117,22 @@ class StoppingCriterion(Flow360BaseModel):
     @contextual_field_validator("monitor_output", mode="before")
     @classmethod
     def _preprocess_monitor_output_with_id(cls, v, param_info: ParamsValidationInfo):
+        """Resolve string output ID to output object from validation context."""
         if not isinstance(v, str):
             return v
-        if param_info.output_dict is None or param_info.output_dict.get(v) is None:
+
+        # output_dict is None if outputs field had validation errors
+        if param_info.output_dict is None:
+            raise ValueError(
+                "Cannot resolve monitor_output reference because the `outputs` field has validation errors. "
+                "Please fix those errors first."
+            )
+
+        output_obj = param_info.output_dict.get(v)
+        if output_obj is None:
             raise ValueError("The monitor output does not exist in the outputs list.")
-        monitor_output_dict = param_info.output_dict[v]
-        monitor_output = pd.TypeAdapter(MonitorOutputType).validate_python(monitor_output_dict)
-        return monitor_output
+
+        return output_obj  # Return validated object directly
 
     @pd.field_validator("monitor_output", mode="after")
     @classmethod
