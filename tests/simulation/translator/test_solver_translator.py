@@ -58,6 +58,7 @@ from flow360.component.simulation.operating_condition.operating_condition import
     ThermalState,
 )
 from flow360.component.simulation.outputs.output_entities import (
+    Isosurface,
     Point,
     PointArray,
     PointArray2D,
@@ -68,6 +69,7 @@ from flow360.component.simulation.outputs.outputs import (
     IsosurfaceOutput,
     MovingStatistic,
     ProbeOutput,
+    RenderOutput,
     SliceOutput,
     StreamlineOutput,
     SurfaceIntegralOutput,
@@ -75,6 +77,18 @@ from flow360.component.simulation.outputs.outputs import (
     TimeAverageStreamlineOutput,
     UserDefinedField,
     VolumeOutput,
+)
+from flow360.component.simulation.outputs.render_config import (
+    AmbientLight,
+    CameraConfig,
+    DirectionalLight,
+    EnvironmentConfig,
+    LightingConfig,
+    OrthographicProjection,
+    PBRMaterial,
+    SkyboxBackground,
+    SkyboxTexture,
+    StaticCamera,
 )
 from flow360.component.simulation.primitives import (
     CustomVolume,
@@ -184,6 +198,7 @@ def get_om6Wing_tutorial_param():
     my_wall = Surface(name="1")
     my_symmetry_plane = Surface(name="2")
     my_freestream = Surface(name="3")
+    my_isosurface = Isosurface(name="iso", field="Mach", iso_value=0.5)
     with SI_unit_system:
         param = SimulationParams(
             reference_geometry=ReferenceGeometry(
