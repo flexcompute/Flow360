@@ -33,6 +33,8 @@ from flow360.component.simulation.validation.validation_context import (
 )
 from flow360.component.types import Axis
 from flow360.component.utils import _naming_pattern_handler
+from flow360.exceptions import Flow360DeprecationError
+from flow360.log import log
 
 BOUNDARY_FULL_NAME_WHEN_NOT_FOUND = "This boundary does not exist!!!"
 
@@ -169,7 +171,21 @@ class GeometryBodyGroup(EntityBase, SelectorFactory):
         "Note that this is a beta feature and the interface might change in future releases.",
     )
 
-    # TODO: Add transformation property deprecation warning!
+    @property
+    def transformation(self):
+        """Deprecated property."""
+        raise Flow360DeprecationError(
+            "GeometryBodyGroup.transformation is deprecated and has been removed. "
+            "Please use CoordinateSystem for transformations instead."
+        )
+
+    @transformation.setter
+    def transformation(self, value):
+        """Deprecated property setter."""
+        raise Flow360DeprecationError(
+            "GeometryBodyGroup.transformation is deprecated and has been removed. "
+            "Please use CoordinateSystem for transformations instead."
+        )
 
 
 class _VolumeEntityBase(EntityBase, metaclass=ABCMeta):
