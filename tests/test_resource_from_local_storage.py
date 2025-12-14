@@ -8,8 +8,14 @@ import flow360.component.simulation.units as u
 from flow360 import log
 from flow360.component.case import Case, CaseMeta
 from flow360.component.geometry import Geometry, GeometryMeta
+from flow360.component.project import create_draft
 from flow360.component.project_utils import set_up_params_for_uploading
 from flow360.component.resource_base import local_metadata_builder
+from flow360.component.simulation.draft_context.coordinate_system_manager import (
+    CoordinateSystemAssignmentGroup,
+    CoordinateSystemEntityRef,
+)
+from flow360.component.simulation.entity_operation import CoordinateSystem
 from flow360.component.simulation.models.volume_models import (
     AngleExpression,
     PorousMedium,
@@ -98,34 +104,43 @@ def pre_upload_change_reflection_geo(geometry: Geometry):
     # Test Volume Mesh
     geometry.group_bodies_by_tag("groupByFile")
     geometry.group_faces_by_tag("faceName")
-    with SI_unit_system:
-        # Renaming
-        geometry.rename_surfaces("fuselage", "main_boundary")
-        geometry.rename_body_groups("my_file.csm", "main_body")
-        geometry["main_body"].transformation.scale = (1, 2, 3)
-        my_box = Box(
-            name="my_box_default",
-            center=(1, 2, 3),
-            size=(2, 2, 3),
-            angle_of_rotation=20 * u.deg,
-            axis_of_rotation=(1, 0, 0),
+    # Renaming (must happen before creating the draft copy).
+    geometry.rename_surfaces("fuselage", "main_boundary")
+    geometry.rename_body_groups("my_file.csm", "main_body")
+
+    with create_draft(new_run_from=geometry) as draft:
+        with SI_unit_system:
+            # Coordinate systems replace body-group transformations.
+            cs = CoordinateSystem(name="main_body_cs", scale=(1.0, 2.0, 3.0))
+            main_body = draft.body_groups["main_body"]
+            main_body_entity_id = main_body.private_attribute_id
+            draft.coordinate_systems.assign(entities=main_body, coordinate_system=cs)
+
+            my_box = Box(
+                name="my_box_default",
+                center=(1, 2, 3),
+                size=(2, 2, 3),
+                angle_of_rotation=20 * u.deg,
+                axis_of_rotation=(1, 0, 0),
+            )
+            params = SimulationParams(
+                models=[
+                    PorousMedium(
+                        volumes=my_box,
+                        darcy_coefficient=(1, 1, 1),
+                        forchheimer_coefficient=(0.1, 0.1, 0.2),
+                    ),
+                ]
+            )
+
+        new_param = set_up_params_for_uploading(
+            root_asset=geometry,
+            length_unit=1 * u.m,
+            params=params,
+            use_beta_mesher=False,
+            use_geometry_AI=False,
         )
-        params = SimulationParams(
-            models=[
-                PorousMedium(
-                    volumes=my_box,
-                    darcy_coefficient=(1, 1, 1),
-                    forchheimer_coefficient=(0.1, 0.1, 0.2),
-                ),
-            ]
-        )
-    new_param = set_up_params_for_uploading(
-        root_asset=geometry,
-        length_unit=1 * u.m,
-        params=params,
-        use_beta_mesher=False,
-        use_geometry_AI=False,
-    )
+
     assert new_param.private_attribute_asset_cache.project_entity_info.face_group_tag == "faceName"
     assert (
         new_param.private_attribute_asset_cache.project_entity_info.body_group_tag == "groupByFile"
@@ -138,9 +153,18 @@ def pre_upload_change_reflection_geo(geometry: Geometry):
         new_param.private_attribute_asset_cache.project_entity_info.grouped_bodies[1][0].name
         == "main_body"
     )
-    assert new_param.private_attribute_asset_cache.project_entity_info.grouped_bodies[1][
-        0
-    ].transformation.scale == (1, 2, 3)
+    status = new_param.private_attribute_asset_cache.coordinate_system_status
+    assert status is not None
+    assert status.assignments == [
+        CoordinateSystemAssignmentGroup(
+            coordinate_system_id=cs.private_attribute_id,
+            entities=[
+                CoordinateSystemEntityRef(
+                    entity_type="GeometryBodyGroup", entity_id=main_body_entity_id
+                )
+            ],
+        )
+    ]
 
 
 def test_resources_from_local_storage_geo():

@@ -681,13 +681,129 @@ def _traverse_and_filter(data, whitelist):
     return data
 
 
-def filter_simulation_json(input_params: SimulationParams):
+def _inject_body_group_transformations_for_mesher(
+    *, json_data: dict, input_params: SimulationParams, mesh_unit
+) -> None:
+    """
+    Inject body-group transformation payload expected by the mesher.
+
+    The user-facing `GeometryBodyGroup.transformation` field has been removed. Mesher translation
+    still needs per-body-group 3x4 transformation matrices; those are now sourced from coordinate
+    system assignments.
+    """
+    # pylint: disable=import-outside-toplevel
+    from flow360.component.simulation.draft_context.coordinate_system_manager import (
+        CoordinateSystemManager,
+    )
+
+    asset_cache = input_params.private_attribute_asset_cache
+    project_entity_info = asset_cache.project_entity_info
+    if project_entity_info is None or not isinstance(project_entity_info, GeometryEntityInfo):
+        return
+
+    entity_info_dict = json_data.get("private_attribute_asset_cache", {}).get(
+        "project_entity_info", None
+    )
+    if not isinstance(entity_info_dict, dict):
+        return
+
+    grouped_bodies = entity_info_dict.get("grouped_bodies", None)
+    if not isinstance(grouped_bodies, list):
+        return
+
+    # Build a default transformation payload that matches the translator's preprocessed
+    # unit serialization format, without relying on model preprocessing.
+    try:
+        unit_scale = float(mesh_unit.value)
+    except Exception:  # pylint: disable=broad-exception-caught
+        unit_scale = 1.0
+    try:
+        unit_name = str(mesh_unit.units)
+    except Exception:  # pylint: disable=broad-exception-caught
+        unit_name = "m"
+    length_unit_string = f"{unit_scale}*{unit_name}"
+
+    default_transformation = {
+        "type_name": "BodyGroupTransformation",
+        "origin": {"value": [0.0, 0.0, 0.0], "units": length_unit_string},
+        "axis_of_rotation": [1.0, 0.0, 0.0],
+        "angle_of_rotation": {"value": 0.0, "units": "rad"},
+        "scale": [1.0, 1.0, 1.0],
+        "translation": {"value": [0.0, 0.0, 0.0], "units": length_unit_string},
+    }
+
+    body_group_tag = entity_info_dict.get("body_group_tag") or project_entity_info.body_group_tag
+    body_attribute_names = (
+        entity_info_dict.get("body_attribute_names") or project_entity_info.body_attribute_names
+    )
+    selected_group_index = None
+    if (
+        isinstance(body_group_tag, str)
+        and isinstance(body_attribute_names, list)
+        and body_group_tag in body_attribute_names
+    ):
+        selected_group_index = body_attribute_names.index(body_group_tag)
+
+    cs_mgr = CoordinateSystemManager._from_status(  # pylint: disable=protected-access
+        status=asset_cache.coordinate_system_status
+    )
+
+    identity_matrix_row_major = [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+    ]
+
+    for i_group, body_groups in enumerate(grouped_bodies):
+        if not isinstance(body_groups, list):
+            continue
+        for body_group in body_groups:
+            if not isinstance(body_group, dict):
+                continue
+
+            # Always include a legacy `transformation` object (without matrix by default).
+            body_group["transformation"] = dict(default_transformation)
+
+            # For the selected grouping, always provide an explicit matrix (identity by default).
+            if selected_group_index is None or i_group != selected_group_index:
+                continue
+
+            entity_type = body_group.get("private_attribute_entity_type_name")
+            entity_id = body_group.get("private_attribute_id")
+
+            matrix = None
+            if isinstance(entity_type, str) and isinstance(entity_id, str):
+                matrix_nd = cs_mgr._get_matrix_for_entity_key(  # pylint: disable=protected-access
+                    entity_type=entity_type, entity_id=entity_id
+                )
+                if matrix_nd is not None:
+                    matrix = matrix_nd.flatten().tolist()
+
+            body_group["transformation"]["private_attribute_matrix"] = (
+                identity_matrix_row_major if matrix is None else matrix
+            )
+
+
+def filter_simulation_json(input_params: SimulationParams, mesh_units):
     """
     Filter the simulation JSON to only include the GAI surface meshing parameters.
     """
 
     # Get the JSON from the input_params
     json_data = input_params.model_dump(mode="json", exclude_none=True)
+
+    _inject_body_group_transformations_for_mesher(
+        json_data=json_data, input_params=input_params, mesh_unit=mesh_units
+    )
 
     # Generate whitelist based on simulation context
     whitelist = _get_gai_setting_whitelist(input_params)
@@ -717,6 +833,5 @@ def get_surface_meshing_json(input_params: SimulationParams, mesh_units):
         )
 
     # === GAI mode ===
-    input_params.private_attribute_asset_cache.project_entity_info.compute_transformation_matrices()
     # Just do a filtering of the input_params's JSON
-    return filter_simulation_json(input_params)
+    return filter_simulation_json(input_params, mesh_units)

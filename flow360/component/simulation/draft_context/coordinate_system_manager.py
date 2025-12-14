@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Literal, Optional, Tuple
 
 import numpy as np
 import pydantic as pd
@@ -22,13 +22,17 @@ from flow360.log import log
 class CoordinateSystemParent(Flow360BaseModel):
     """Parent relationship for a coordinate system."""
 
+    type_name: Literal["CoordinateSystemParent"] = pd.Field("CoordinateSystemParent", frozen=True)
     coordinate_system_id: str
-    parent_id: Optional[str]
+    parent_id: Optional[str] = pd.Field(None)
 
 
 class CoordinateSystemEntityRef(Flow360BaseModel):
     """Entity reference used in assignment serialization."""
 
+    type_name: Literal["CoordinateSystemEntityRef"] = pd.Field(
+        "CoordinateSystemEntityRef", frozen=True
+    )
     entity_type: str
     entity_id: str
 
@@ -36,6 +40,9 @@ class CoordinateSystemEntityRef(Flow360BaseModel):
 class CoordinateSystemAssignmentGroup(Flow360BaseModel):
     """Grouped entity assignments for a coordinate system."""
 
+    type_name: Literal["CoordinateSystemAssignmentGroup"] = pd.Field(
+        "CoordinateSystemAssignmentGroup", frozen=True
+    )
     coordinate_system_id: str
     entities: List[CoordinateSystemEntityRef]
 
@@ -43,6 +50,7 @@ class CoordinateSystemAssignmentGroup(Flow360BaseModel):
 class CoordinateSystemStatus(Flow360BaseModel):
     """Serializable snapshot for front end/asset cache."""
 
+    type_name: Literal["CoordinateSystemStatus"] = pd.Field("CoordinateSystemStatus", frozen=True)
     coordinate_systems: List[CoordinateSystem]
     parents: List[CoordinateSystemParent]
     assignments: List[CoordinateSystemAssignmentGroup]
@@ -292,7 +300,7 @@ class CoordinateSystemManager:
         """Remove any coordinate system assignment for the given entity."""
         self._entity_key_to_coordinate_system_id.pop(self._entity_key(entity), None)
 
-    def get_for_entity(self, *, entity: EntityBase) -> CoordinateSystem | None:
+    def _get_coordinate_system_for_entity(self, *, entity: EntityBase) -> CoordinateSystem | None:
         """Return the coordinate system assigned to the entity, if any."""
         cs_id = self._entity_key_to_coordinate_system_id.get(self._entity_key(entity))
         if cs_id is None:
@@ -303,6 +311,27 @@ class CoordinateSystemManager:
                 f"Coordinate system id '{cs_id}' assigned to entity '{entity.name}' is not registered."
             )
         return cs
+
+    def _get_matrix_for_entity(self, *, entity: EntityBase) -> Optional[np.ndarray]:
+        """Return the composed 3x4 transformation matrix for an entity, if assigned."""
+        cs = self._get_coordinate_system_for_entity(entity=entity)
+        if cs is None:
+            return None
+        return self._get_coordinate_system_matrix(coordinate_system=cs)
+
+    def _get_matrix_for_entity_key(
+        self, *, entity_type: str, entity_id: str
+    ) -> Optional[np.ndarray]:
+        """Return the composed 3x4 matrix for an entity reference, if assigned."""
+        cs_id = self._entity_key_to_coordinate_system_id.get((entity_type, entity_id))
+        if cs_id is None:
+            return None
+        cs = self._get_coordinate_system_by_id(cs_id)
+        if cs is None:
+            raise Flow360RuntimeError(
+                f"Coordinate system id '{cs_id}' assigned to entity '{entity_type}:{entity_id}' is not registered."
+            )
+        return self._get_coordinate_system_matrix(coordinate_system=cs)
 
     # Serialization ----------------------------------------------------------------
     def _to_status(self, *, entity_registry: EntityRegistry) -> CoordinateSystemStatus:

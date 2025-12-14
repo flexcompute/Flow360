@@ -15,7 +15,7 @@ from flow360.component.simulation.utils import model_attribute_unlock
 
 
 def _minimal_geometry_entity_info():
-    # Create minimal GeometryEntityInfo to satisfy GAI translator's compute_transformation_matrices
+    # Create minimal GeometryEntityInfo to satisfy GAI translator's body-group matrix injection
     info = GeometryEntityInfo(
         body_ids=["body00001"],
         body_attribute_names=["groupByFile"],

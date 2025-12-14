@@ -193,7 +193,7 @@
     },
     "private_attribute_asset_cache": {
         "project_entity_info": {
-            "face_group_tag": "groupByBodyId",
+            "face_group_tag": "faceId",
             "face_attribute_names": [
                 "groupByBodyId",
                 "faceId"
@@ -541,15 +541,15 @@
                                 1.0,
                                 0.0,
                                 0.0,
+                                10.0,
+                                0.0,
+                                1.0,
+                                0.0,
+                                20.0,
                                 0.0,
                                 0.0,
                                 1.0,
-                                0.0,
-                                0.0,
-                                0.0,
-                                0.0,
-                                1.0,
-                                0.0
+                                30.0
                             ]
                         },
                         "mesh_exterior": true
@@ -598,15 +598,15 @@
                                 1.0,
                                 0.0,
                                 0.0,
+                                10.0,
+                                0.0,
+                                1.0,
+                                0.0,
+                                20.0,
                                 0.0,
                                 0.0,
                                 1.0,
-                                0.0,
-                                0.0,
-                                0.0,
-                                0.0,
-                                1.0,
-                                0.0
+                                30.0
                             ]
                         },
                         "mesh_exterior": true

@@ -5,10 +5,19 @@ import pytest
 
 import flow360.component.simulation.units as u
 from flow360.component.geometry import Geometry, GeometryMeta
-from flow360.component.project_utils import validate_params_with_context
+from flow360.component.project import create_draft
+from flow360.component.project_utils import (
+    set_up_params_for_uploading,
+    validate_params_with_context,
+)
 from flow360.component.resource_base import local_metadata_builder
+from flow360.component.simulation.draft_context.coordinate_system_manager import (
+    CoordinateSystemAssignmentGroup,
+    CoordinateSystemEntityRef,
+    CoordinateSystemStatus,
+)
 from flow360.component.simulation.entity_info import GeometryEntityInfo
-from flow360.component.simulation.entity_operation import Transformation
+from flow360.component.simulation.entity_operation import CoordinateSystem
 from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.framework.updater_utils import compare_values
 from flow360.component.simulation.meshing_param import snappy
@@ -1090,56 +1099,64 @@ def test_gai_surface_mesher_refinements():
     geometry.group_edges_by_tag("edgeId")
     geometry.group_bodies_by_tag("groupByFile")
 
-    with open(
-        os.path.join(
-            os.path.dirname(__file__), "data", "gai_geometry_entity_info", "simulation.json"
-        ),
-        "r",
-    ) as fh:
-        asset_cache = AssetCache.model_validate(json.load(fh).pop("private_attribute_asset_cache"))
+    with create_draft(new_run_from=geometry) as draft:
+        with SI_unit_system:
+            # Coordinate systems replace body-group transformations.
+            coordinate_system = CoordinateSystem(
+                name="body_group_cs",
+                origin=[0, 0, 0] * u.m,
+                axis_of_rotation=(0, 0, 1),
+                angle_of_rotation=0 * u.deg,
+                scale=(1.0, 1.0, 1.0),
+                translation=[10, 20, 30] * u.m,
+            )
 
-    with SI_unit_system:
-        # Rotate around z-axis for 90 deg, and scale in 3 axes
-        transformation = Transformation(
-            origin=[0, 0, 0] * u.m,
-            axis_of_rotation=(0, 0, 1),
-            angle_of_rotation=90 * u.deg,
-            scale=(4.0, 3.0, 2.0),
-            translation=[0, 0, 0] * u.m,
-        )
-        geometry["cube-holes.egads"].transformation = transformation
-        geometry["cylinder.stl"].transformation = transformation
-        farfield = AutomatedFarfield(domain_type="half_body_positive_y")
-        params = SimulationParams(
-            meshing=MeshingParams(
-                defaults=MeshingDefaults(
-                    geometry_accuracy=0.05 * u.m,  # GAI only setting
-                    surface_max_edge_length=0.2,
-                    boundary_layer_first_layer_thickness=0.01,
-                    surface_max_aspect_ratio=0.01,
-                    surface_max_adaptation_iterations=19,
-                ),
-                volume_zones=[farfield],
-                refinements=[
-                    SurfaceRefinement(
-                        name="renamed_surface",
-                        max_edge_length=0.1,
-                        faces=[geometry["*"]],
-                        curvature_resolution_angle=5.0 * u.deg,  # GAI only setting
-                        resolve_face_boundaries=True,  # GAI only setting
-                    ),
-                    GeometryRefinement(
-                        name="Local_override",
-                        geometry_accuracy=0.05 * u.m,
-                        faces=[geometry["body00001_face00001"]],
-                    ),
+            draft.coordinate_systems.assign(
+                entities=[
+                    draft.body_groups["cube-holes.egads"],
+                    draft.body_groups["cylinder.stl"],
                 ],
-            ),
-            operating_condition=AerospaceCondition(
-                velocity_magnitude=10 * u.m / u.s,
-            ),
-            private_attribute_asset_cache=asset_cache,
-        )
+                coordinate_system=coordinate_system,
+            )
+
+            farfield = AutomatedFarfield(domain_type="half_body_positive_y")
+            params = SimulationParams(
+                meshing=MeshingParams(
+                    defaults=MeshingDefaults(
+                        geometry_accuracy=0.05 * u.m,  # GAI only setting
+                        surface_max_edge_length=0.2,
+                        boundary_layer_first_layer_thickness=0.01,
+                        surface_max_aspect_ratio=0.01,
+                        surface_max_adaptation_iterations=19,
+                    ),
+                    volume_zones=[farfield],
+                    refinements=[
+                        SurfaceRefinement(
+                            name="renamed_surface",
+                            max_edge_length=0.1,
+                            faces=[geometry["*"]],
+                            curvature_resolution_angle=5.0 * u.deg,  # GAI only setting
+                            resolve_face_boundaries=True,  # GAI only setting
+                        ),
+                        GeometryRefinement(
+                            name="Local_override",
+                            geometry_accuracy=0.05 * u.m,
+                            faces=[geometry["body00001_face00001"]],
+                        ),
+                    ],
+                ),
+                operating_condition=AerospaceCondition(
+                    velocity_magnitude=10 * u.m / u.s,
+                ),
+            )
+
+            params = set_up_params_for_uploading(
+                root_asset=geometry,
+                length_unit=1 * u.m,
+                params=params,
+                use_beta_mesher=True,
+                use_geometry_AI=True,
+            )
 
     _translate_and_compare(
         params,

@@ -214,6 +214,8 @@ def create_draft(
     entity_info_copy = _deep_copy_entity_info(new_run_from.entity_info)
 
     # Apply grouping overrides to the copy (not the original)
+    # TODO: Add fallback to use new_run_from's registry's grouping while giving user a deprecation warning?
+    # TODO: This helps if user decides to group geometry outside of the draft context.
     _inform_grouping_selections(entity_info_copy)
 
     mirror_status = _load_status_from_asset(new_run_from, MirrorStatus)

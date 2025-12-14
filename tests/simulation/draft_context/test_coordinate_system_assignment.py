@@ -44,7 +44,7 @@ def test_register_and_assign_coordinate_system(mock_geometry):
 
         draft.coordinate_systems.assign(entities=body_group, coordinate_system=child)
 
-        assigned = draft.coordinate_systems.get_for_entity(entity=body_group)
+        assigned = draft.coordinate_systems._get_coordinate_system_for_entity(entity=body_group)
         assert assigned is not None
         assert assigned.private_attribute_id == child.private_attribute_id
 
@@ -55,7 +55,7 @@ def test_register_and_assign_coordinate_system(mock_geometry):
         np.testing.assert_allclose(matrix, expected)
 
         draft.coordinate_systems.clear_assignment(entity=body_group)
-        assert draft.coordinate_systems.get_for_entity(entity=body_group) is None
+        assert draft.coordinate_systems._get_coordinate_system_for_entity(entity=body_group) is None
 
 
 def test_assign_will_register_when_parent_known(mock_geometry):
@@ -70,7 +70,9 @@ def test_assign_will_register_when_parent_known(mock_geometry):
         draft.coordinate_systems.assign(entities=[body_group], coordinate_system=child)
 
         assert child in draft.coordinate_systems._coordinate_systems
-        assert draft.coordinate_systems.get_for_entity(entity=body_group) == child
+        assert (
+            draft.coordinate_systems._get_coordinate_system_for_entity(entity=body_group) == child
+        )
 
 
 def test_assign_coordinate_system_rejects_missing_parent(mock_geometry):
@@ -178,7 +180,12 @@ def test_remove_coordinate_system_errors(mock_geometry):
 
         # Removing child succeeds
         draft.coordinate_systems.remove(coordinate_system=child)
-        assert draft.coordinate_systems.get_for_entity(entity=list(draft.body_groups)[0]) is None
+        assert (
+            draft.coordinate_systems._get_coordinate_system_for_entity(
+                entity=list(draft.body_groups)[0]
+            )
+            is None
+        )
 
 
 def test_assign_requires_registered_entity(mock_geometry):
@@ -219,7 +226,7 @@ def test_to_status_and_from_status_round_trip(mock_geometry):
 
         restored_child = restored.get_by_name("child")
         assert restored_child.private_attribute_id == cs_child.private_attribute_id
-        restored_assignment = restored.get_for_entity(entity=body_group)
+        restored_assignment = restored._get_coordinate_system_for_entity(entity=body_group)
         assert restored_assignment.private_attribute_id == cs_child.private_attribute_id
 
 
@@ -378,6 +385,8 @@ def test_coordinate_system_status_round_trip_through_asset_cache(mock_geometry, 
 
     with create_draft(new_run_from=uploaded_geometry) as restored:
         restored_target = list(restored.body_groups)[0]
-        restored_assignment = restored.coordinate_systems.get_for_entity(entity=restored_target)
+        restored_assignment = restored.coordinate_systems._get_coordinate_system_for_entity(
+            entity=restored_target
+        )
         assert restored_assignment is not None
         assert restored_assignment.name == "child"

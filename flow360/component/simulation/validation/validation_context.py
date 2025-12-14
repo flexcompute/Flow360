@@ -361,35 +361,26 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
 
     @classmethod
     def _get_at_least_one_body_transformed(cls, param_as_dict: dict):  # pylint:disable=invalid-name
-        body_group_tag: str = get_value_with_path(
-            param_as_dict,
-            ["private_attribute_asset_cache", "project_entity_info", "body_group_tag"],
-        )
-        body_attribute_names: list[str] = get_value_with_path(
-            param_as_dict,
-            ["private_attribute_asset_cache", "project_entity_info", "body_attribute_names"],
-        )
-        grouped_bodies: list[dict] = get_value_with_path(
-            param_as_dict,
-            ["private_attribute_asset_cache", "project_entity_info", "grouped_bodies"],
+        """
+        Get the flag indicating if at least one body was transformed.
+        This is used to skip boundary deletion/assignment checks since once translated
+        the bounding box as well as the boundary existence is no longer valid.
+        """
+        # pylint: disable=import-outside-toplevel
+        from flow360.component.simulation.draft_context.coordinate_system_manager import (
+            CoordinateSystemStatus,
         )
 
-        if body_group_tag is None or not body_attribute_names or not grouped_bodies:
+        coordinate_system_status_dict = get_value_with_path(
+            param_as_dict, ["private_attribute_asset_cache", "coordinate_system_status"]
+        )
+        if not coordinate_system_status_dict:
             return False
 
-        grouped_body_index = body_attribute_names.index(body_group_tag)
+        status = CoordinateSystemStatus.model_validate(coordinate_system_status_dict)
 
-        for body_group in grouped_bodies[grouped_body_index]:
-            if "transformation" not in body_group:
-                continue
-            if body_group["transformation"]["angle_of_rotation"]["value"] != 0:
-                return True
-
-            if body_group["transformation"]["scale"] != [1, 1, 1]:
-                return True
-
-            if body_group["transformation"]["translation"]["value"] != [0, 0, 0]:
-                return True
+        if status.assignments:
+            return True
 
         return False
 

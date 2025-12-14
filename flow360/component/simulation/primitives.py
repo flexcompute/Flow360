@@ -13,7 +13,6 @@ from typing_extensions import Self
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.entity_operation import (
-    Transformation,
     rotation_matrix_from_axis_and_angle,
 )
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
@@ -148,7 +147,8 @@ class ReferenceGeometry(Flow360BaseModel):
 
 class GeometryBodyGroup(EntityBase, SelectorFactory):
     """
-    :class:`GeometryBodyGroup` represents a collection of bodies that are grouped for transformation.
+    :class:`GeometryBodyGroup` represents a collection of bodies that are grouped for meshing and
+    coordinate-system-based transformation.
     """
 
     private_attribute_tag_key: str = pd.Field(
@@ -163,14 +163,13 @@ class GeometryBodyGroup(EntityBase, SelectorFactory):
     private_attribute_color: Optional[str] = pd.Field(
         None, description="Color used for visualization"
     )
-    transformation: Transformation = pd.Field(
-        Transformation(), description="The transformation performed on the body group"
-    )
     mesh_exterior: bool = pd.Field(
         True,
         description="Option to define whether to mesh exterior or interior of body group in geometry AI."
         "Note that this is a beta feature and the interface might change in future releases.",
     )
+
+    # TODO: Add transformation property deprecation warning!
 
 
 class _VolumeEntityBase(EntityBase, metaclass=ABCMeta):
