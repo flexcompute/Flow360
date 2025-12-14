@@ -4,9 +4,10 @@ Support class and functions for project interface.
 
 import datetime
 import os
-from typing import List, Literal, Optional, get_args
+from typing import List, Literal, Optional, Type, TypeVar, get_args
 
 import pydantic as pd
+from pydantic import ValidationError
 
 from flow360.cloud.rest_api import RestApi
 from flow360.component.interfaces import ProjectInterface
@@ -36,12 +37,19 @@ from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.user_code.core.types import save_user_variables
 from flow360.component.simulation.utils import model_attribute_unlock
+from flow360.component.simulation.web.asset_base import AssetBase
 from flow360.component.utils import parse_datetime
-from flow360.exceptions import Flow360ConfigurationError, Flow360ValueError
+from flow360.exceptions import (
+    Flow360ConfigurationError,
+    Flow360RuntimeError,
+    Flow360ValueError,
+)
 from flow360.log import log
 
+T = TypeVar("T", bound=Flow360BaseModel)
 
-def apply_geometry_grouping_overrides(
+
+def _apply_geometry_grouping_overrides(
     entity_info: GeometryEntityInfo,
     face_grouping: Optional[str],
     edge_grouping: Optional[str],
@@ -67,6 +75,119 @@ def apply_geometry_grouping_overrides(
         "edge": entity_info.edge_group_tag,
         "body": entity_info.body_group_tag,  # Not used since customized body grouping is not supported yet
     }
+
+
+def load_status_from_asset(
+    *,
+    asset: AssetBase,
+    status_class: Type[T],
+    cache_key: str,
+) -> Optional[T]:
+    """
+    Retrieve a cached status object from an asset's simulation metadata.
+
+    Parameters
+    ----------
+    asset : AssetBase
+        Asset that owns the cache.
+    status_class : Type[T]
+        Target status model to deserialize.
+    cache_key : str
+        Cache key name.
+
+    Returns
+    -------
+    Optional[T]
+        Parsed status instance or None when not present.
+    """
+
+    # pylint: disable=protected-access
+    if hasattr(asset, "_simulation_dict_cache_for_local_mode"):
+        simulation_dict = asset._simulation_dict_cache_for_local_mode
+    else:
+        simulation_dict = AssetBase._get_simulation_json(asset=asset, clean_front_end_keys=True)
+
+    status_dict = simulation_dict.get("private_attribute_asset_cache", {}).get(cache_key, None)
+    if status_dict is None:
+        return None
+
+    try:
+        return status_class.model_validate(status_dict)
+    except ValidationError as exc:  # pragma: no cover - raises immediately
+        status_name = cache_key.replace("_", " ")
+        raise Flow360RuntimeError(
+            f"[Internal] Failed to parse stored {status_name} for {asset.__class__.__name__}. Error: {exc}",
+        ) from exc
+
+
+def deep_copy_entity_info(entity_info: Flow360BaseModel) -> Flow360BaseModel:
+    """
+    Create a deep copy of an entity_info instance.
+
+    Uses model_dump + model_validate to ensure DraftContext receives an isolated snapshot.
+    """
+
+    entity_info_dict = entity_info.model_dump(mode="json")
+    return type(entity_info).model_validate(entity_info_dict)
+
+
+def apply_and_inform_grouping_selections(
+    *,
+    entity_info,
+    face_grouping: Optional[str],
+    edge_grouping: Optional[str],
+) -> None:
+    """
+    Apply and emit logging messages describing which geometry grouping tags will be used.
+
+    Highlights legacy registry-derived tags so users can migrate to explicit DraftContext
+    overrides via create_draft().
+    """
+
+    if not isinstance(entity_info, GeometryEntityInfo):
+        if face_grouping is None and edge_grouping is None:
+            return
+        log.warning(
+            "Ignoring face/edge grouping (%s/%s): only geometry assets support face/edge grouping.",
+            face_grouping,
+            edge_grouping,
+        )
+        return
+
+    applied_grouping = _apply_geometry_grouping_overrides(entity_info, face_grouping, edge_grouping)
+    #
+    # pylint:disable = protected-access
+    ############## DEBUG only ##############
+    face_tag = applied_grouping.get("face")
+    edge_tag = applied_grouping.get("edge")
+
+    assert edge_tag is not None and face_tag is not None, print(
+        "[Internal] Default should have already been set, applied_grouping: ", applied_grouping
+    )
+    ##########################################
+
+    # 1. Print out the grouping used for user's convenience.
+
+    log.info(
+        "Creating draft with geometry grouping:\n" "  faces: %s\n" "  edges: %s\n",
+        face_tag,
+        edge_tag,
+    )
+
+    missing_groupings = []
+    if face_grouping is None:
+        missing_groupings.append("face_grouping")
+    if edge_grouping is None:
+        missing_groupings.append("edge_grouping")
+
+    if missing_groupings:
+        # We had to use legacy grouping from asset metadata.
+        log.warning(
+            "%s not specified when creating draft and therefore come from geometry asset object. "
+            "This support will be deprecated in the future. Please specify all groupings during the draft creation"
+            " (`create_draft(face_grouping='...', edge_grouping='...', ...)`) instead.",
+            " and ".join(missing_groupings),
+        )
 
 
 class AssetStatistics(pd.BaseModel):

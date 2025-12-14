@@ -462,6 +462,14 @@ class GeometryEntityInfo(EntityInfoModel):
         boundary_to_face = create_group_to_sub_component_mapping(
             self._get_list_of_entities(entity_type_name="face", attribute_name=self.face_group_tag)
         )
+
+        if "groupByBodyId" not in self.face_attribute_names:
+            # This likely means the geometry asset is pre-25.5.
+            raise ValueError(
+                "Geometry cloud resource is too old."
+                " Please consider re-uploading the geometry with newer solver version."
+            )
+
         face_group_by_body_id_to_face = create_group_to_sub_component_mapping(
             self._get_list_of_entities(entity_type_name="face", attribute_name="groupByBodyId")
         )

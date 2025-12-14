@@ -34,7 +34,6 @@ from flow360.component.simulation.validation.validation_context import (
 from flow360.component.types import Axis
 from flow360.component.utils import _naming_pattern_handler
 from flow360.exceptions import Flow360DeprecationError
-from flow360.log import log
 
 BOUNDARY_FULL_NAME_WHEN_NOT_FOUND = "This boundary does not exist!!!"
 

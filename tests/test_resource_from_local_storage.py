@@ -101,7 +101,10 @@ def pre_upload_change_reflection_vm(volume_mesh: VolumeMeshV2):
 
 
 def pre_upload_change_reflection_geo(geometry: Geometry):
-    # Test Volume Mesh
+    # Ensure same behavior as from_cloud()
+    geometry.internal_registry = geometry._entity_info.get_persistent_entity_registry(
+        geometry.internal_registry
+    )
     geometry.group_bodies_by_tag("groupByFile")
     geometry.group_faces_by_tag("faceName")
     # Renaming (must happen before creating the draft copy).

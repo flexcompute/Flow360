@@ -108,6 +108,7 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
                 face_group_to_body_group = self._entity_info.get_face_group_to_body_group_id_map()
             except ValueError as exc:
                 # Face grouping spans across body groups.
+                # TODO: Are you sure just impacts the surface?
                 log.warning(
                     "Failed to derive surface-to-body-group mapping for mirroring: %s. "
                     "Mirroring surfaces will be disabled.",

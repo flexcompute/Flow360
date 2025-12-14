@@ -7,11 +7,11 @@ from __future__ import annotations
 
 import json
 from enum import Enum
-from typing import Iterable, List, Literal, Optional, Type, TypeVar, Union
+from typing import Iterable, List, Literal, Optional, Union
 
 import pydantic as pd
 import typing_extensions
-from pydantic import PositiveInt, ValidationError
+from pydantic import PositiveInt
 
 from flow360.cloud.flow360_requests import LengthUnitType, RenameAssetRequestV2
 from flow360.cloud.rest_api import RestApi
@@ -29,8 +29,10 @@ from flow360.component.interfaces import (
     VolumeMeshInterfaceV2,
 )
 from flow360.component.project_utils import (
-    apply_geometry_grouping_overrides,
+    apply_and_inform_grouping_selections,
+    deep_copy_entity_info,
     get_project_records,
+    load_status_from_asset,
     set_up_params_for_uploading,
     show_projects_with_keyword_filter,
     upload_imported_surfaces_to_draft,
@@ -42,9 +44,7 @@ from flow360.component.simulation.draft_context.coordinate_system_manager import
     CoordinateSystemStatus,
 )
 from flow360.component.simulation.draft_context.mirror import MirrorStatus
-from flow360.component.simulation.entity_info import GeometryEntityInfo
 from flow360.component.simulation.folder import Folder
-from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.web.asset_base import AssetBase
@@ -108,118 +108,28 @@ def create_draft(
     the original asset.
     """
 
-    # region -----------------------------Private implementations Below-----------------------------
-
-    # Status type registry for generic loading
-    _STATUS_TYPE_REGISTRY = {  # pylint: disable=invalid-name
-        MirrorStatus: "mirror_status",
-        CoordinateSystemStatus: "coordinate_system_status",
-    }
-
-    T = TypeVar("T", bound=Flow360BaseModel)
-
-    def _load_status_from_asset(
-        asset: AssetBase,
-        status_class: Type[T],
-    ) -> Optional[T]:
-        """
-        Generic status loader from asset cache.
-
-        Retrieves and validates status objects from asset's simulation cache.
-        Supports any status class registered in _STATUS_TYPE_REGISTRY.
-        """
-        # Get cache key from registry
-        cache_key = _STATUS_TYPE_REGISTRY.get(status_class)
-        if cache_key is None:
-            raise ValueError(
-                f"[Internal] Status class {status_class.__name__} not registered. "
-                f"Available types: {list(_STATUS_TYPE_REGISTRY.keys())}"
-            )
-
-        # Retrieve simulation dict (local cache or REST API)
-        # pylint: disable=protected-access
-        if hasattr(asset, "_simulation_dict_cache_for_local_mode"):
-            simulation_dict = asset._simulation_dict_cache_for_local_mode
-        else:
-            simulation_dict = AssetBase._get_simulation_json(asset=asset, clean_front_end_keys=True)
-
-        # Extract status dict from cache
-        status_dict = simulation_dict.get("private_attribute_asset_cache", {}).get(cache_key, None)
-
-        if status_dict is None:
-            # Status not present in cache (feature not used)
-            return None
-
-        # Validate and construct status instance
-        try:
-            return status_class.model_validate(status_dict)
-        except ValidationError as exc:
-            # Convert cache key to friendly display name
-            status_name = cache_key.replace("_", " ")
-            raise Flow360RuntimeError(
-                f"[Internal] Failed to parse stored {status_name} for {asset.__class__.__name__}. Error: {exc}",
-            ) from exc
-
-    def _deep_copy_entity_info(entity_info):
-        """Create a deep copy of entity_info via model_dump + model_validate.
-
-        This ensures DraftContext has an independent copy of entity_info,
-        so modifications don't affect the original asset.
-        """
-        entity_info_dict = entity_info.model_dump(mode="json")
-        return type(entity_info).model_validate(entity_info_dict)
-
-    def _inform_grouping_selections(entity_info) -> None:
-        """Inform the user about the grouping selections made on the entity provider cloud asset."""
-
-        if isinstance(entity_info, GeometryEntityInfo):
-            applied_grouping = {
-                "face": entity_info.face_group_tag,
-                "edge": entity_info.edge_group_tag,
-                "body": entity_info.body_group_tag,
-            }
-            if face_grouping is not None or edge_grouping is not None:
-                applied_grouping = apply_geometry_grouping_overrides(
-                    entity_info, face_grouping, edge_grouping
-                )
-            # If tags were None, fall back to defaults for logging purposes.
-            # pylint:disable = protected-access
-            face_tag = applied_grouping.get("face") or entity_info._get_default_grouping_tag("face")
-            edge_tag = applied_grouping.get("edge")
-            if edge_tag is None and entity_info.edge_attribute_names:
-                edge_tag = entity_info._get_default_grouping_tag("edge")
-
-            log.info(
-                "Creating draft with geometry grouping:\n"
-                "  faces: %s\n"
-                "  edges: %s\n"
-                "To change grouping, call:\n"
-                "  fl.create_draft(face_grouping='%s', edge_grouping='%s', ...)",
-                face_tag,
-                edge_tag,
-                face_tag,
-                edge_tag,
-            )
-        elif face_grouping is not None or edge_grouping is not None:
-            log.info(
-                "Grouping override ignored: only geometry assets support face/edge/body regrouping."
-            )
-
-    # endregion ------------------------------------------------------------------------------------
-
     if not isinstance(new_run_from, AssetBase):
         raise Flow360RuntimeError("create_draft expects a cloud asset instance as `new_run_from`.")
 
     # Deep copy entity_info for draft isolation
-    entity_info_copy = _deep_copy_entity_info(new_run_from.entity_info)
+    entity_info_copy = deep_copy_entity_info(new_run_from.entity_info)
 
-    # Apply grouping overrides to the copy (not the original)
-    # TODO: Add fallback to use new_run_from's registry's grouping while giving user a deprecation warning?
-    # TODO: This helps if user decides to group geometry outside of the draft context.
-    _inform_grouping_selections(entity_info_copy)
+    apply_and_inform_grouping_selections(
+        entity_info=entity_info_copy,
+        face_grouping=face_grouping,
+        edge_grouping=edge_grouping,
+    )
 
-    mirror_status = _load_status_from_asset(new_run_from, MirrorStatus)
-    coordinate_system_status = _load_status_from_asset(new_run_from, CoordinateSystemStatus)
+    mirror_status = load_status_from_asset(
+        asset=new_run_from,
+        status_class=MirrorStatus,
+        cache_key="mirror_status",
+    )
+    coordinate_system_status = load_status_from_asset(
+        asset=new_run_from,
+        status_class=CoordinateSystemStatus,
+        cache_key="coordinate_system_status",
+    )
 
     return DraftContext(
         entity_info=entity_info_copy,

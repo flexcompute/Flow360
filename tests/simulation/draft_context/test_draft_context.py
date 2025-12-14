@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 import flow360 as fl
 from flow360.component.project import create_draft
 from flow360.component.project_utils import set_up_params_for_uploading
@@ -26,6 +28,67 @@ def test_create_draft_accepts_geometry_grouping_override(mock_geometry):
     assert mock_geometry.entity_info.face_group_tag == "ByBody"
     with create_draft(new_run_from=mock_geometry, face_grouping="faceId") as draft:
         assert draft._entity_info.face_group_tag == "faceId"
+
+
+def _ensure_geometry_grouping_available(geometry):
+    entity_info = geometry._entity_info
+    if entity_info.face_attribute_names:
+        geometry.group_faces_by_tag(entity_info.face_attribute_names[0])
+    if entity_info.edge_attribute_names:
+        geometry.group_edges_by_tag(entity_info.edge_attribute_names[0])
+    if entity_info.body_attribute_names:
+        geometry.group_bodies_by_tag(entity_info.body_attribute_names[0])
+
+
+def test_create_draft_warns_about_legacy_registry_grouping(mock_geometry):
+    geometry = mock_geometry
+    _ensure_geometry_grouping_available(geometry)
+
+    with patch("flow360.component.project.log.warning") as mock_warning:
+        with create_draft(new_run_from=geometry):
+            pass
+
+    # Check that a single warning was issued about both unspecified groupings
+    assert (
+        mock_warning.call_count == 1
+    ), f"Expected exactly one warning, got: {mock_warning.call_count}"
+
+    warning_message = mock_warning.call_args[0][0]
+    formatted_message = warning_message % mock_warning.call_args[0][1:]
+
+    # The warning should mention both face_grouping and edge_grouping
+    assert (
+        "face_grouping and edge_grouping" in formatted_message
+    ), f"Expected warning about 'face_grouping and edge_grouping', got: {formatted_message}"
+    assert (
+        "not specified" in formatted_message
+    ), f"Expected 'not specified' in warning, got: {formatted_message}"
+
+
+def test_create_draft_silences_warning_when_grouping_overridden(mock_geometry):
+    geometry = mock_geometry
+    _ensure_geometry_grouping_available(geometry)
+
+    entity_info = geometry._entity_info
+    face_override = entity_info.face_attribute_names[0]
+    edge_override = (
+        entity_info.edge_attribute_names[0] if entity_info.edge_attribute_names else None
+    )
+
+    draft_kwargs = {"face_grouping": face_override}
+    if edge_override is not None:
+        draft_kwargs["edge_grouping"] = edge_override
+
+    with patch("flow360.component.project.log.warning") as mock_warning:
+        with create_draft(new_run_from=geometry, **draft_kwargs):
+            pass
+
+    # Check that warnings about unspecified grouping were NOT issued
+    warning_messages = [call.args[0] for call in mock_warning.call_args_list]
+    assert not any(
+        "not specified" in msg and ("face_grouping" in msg or "edge_grouping" in msg)
+        for msg in warning_messages
+    ), "Unexpected warning about grouping when user explicitly sets both face_grouping and edge_grouping"
 
 
 # ======================= Draft Entity Isolation =======================
