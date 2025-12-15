@@ -86,12 +86,6 @@ def expand_entity_list_in_context(
     return stored_entities
 
 
-def _node_get(container, attribute, default=None):
-    if isinstance(container, dict):
-        return container.get(attribute, default)
-    return getattr(container, attribute, default)
-
-
 def get_registry_from_params(params) -> EntityRegistry:
     """
     Create an EntityRegistry from SimulationParams.
@@ -125,9 +119,12 @@ def get_registry_from_params(params) -> EntityRegistry:
     return EntityRegistry.from_entity_info(entity_info)
 
 
-def get_registry_from_dict(params_as_dict: dict) -> EntityRegistry:
+def get_entity_info_and_registry_from_dict(params_as_dict: dict) -> tuple:
     """
-    Create an EntityRegistry from simulation params dictionary.
+    Create EntityInfo and EntityRegistry from simulation params dictionary.
+
+    The EntityInfo owns the entities, and EntityRegistry holds references to them.
+    Callers must keep entity_info alive as long as registry is used.
 
     Parameters
     ----------
@@ -136,8 +133,8 @@ def get_registry_from_dict(params_as_dict: dict) -> EntityRegistry:
 
     Returns
     -------
-    EntityRegistry
-        Registry containing all entities from the params.
+    tuple[EntityInfo, EntityRegistry]
+        (entity_info, registry) where entity_info owns entities and registry references them.
     """
     # pylint: disable=import-outside-toplevel
     from flow360.component.simulation.framework.entity_registry import EntityRegistry
@@ -154,5 +151,6 @@ def get_registry_from_dict(params_as_dict: dict) -> EntityRegistry:
     from flow360.component.simulation.entity_info import parse_entity_info_model
 
     entity_info = parse_entity_info_model(entity_info_dict)
+    registry = EntityRegistry.from_entity_info(entity_info)
 
-    return EntityRegistry.from_entity_info(entity_info)
+    return entity_info, registry

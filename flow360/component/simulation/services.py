@@ -13,7 +13,7 @@ from pydantic_core import ErrorDetails
 from flow360.component.simulation.blueprint.core.dependency_graph import DependencyGraph
 from flow360.component.simulation.exposed_units import supported_units_by_front_end
 from flow360.component.simulation.framework.entity_expansion_utils import (
-    get_registry_from_dict,
+    get_entity_info_and_registry_from_dict,
 )
 from flow360.component.simulation.framework.entity_materializer import (
     materialize_entities_in_place,
@@ -438,7 +438,7 @@ def resolve_selectors(params_as_dict: dict):
         return params_as_dict
 
     # Step2: Parse the entity info part and retrieve the entity registry.
-    registry = get_registry_from_dict(params_as_dict=params_as_dict)
+    entity_info, registry = get_entity_info_and_registry_from_dict(params_as_dict=params_as_dict)
 
     # Step3: Expand selectors using the entity registry (default merge: explicit first)
     return expand_entity_selectors_in_place(registry, params_as_dict, merge_mode="merge")
@@ -531,19 +531,30 @@ def validate_model(  # pylint: disable=too-many-locals
             updated_param_as_dict
         )
 
+        validation_info = ParamsValidationInfo(
+            param_as_dict=updated_param_as_dict,
+            referenced_expressions=referenced_expressions,
+        )
+
         with ValidationContext(
             levels=validation_levels_to_use,
-            info=ParamsValidationInfo(
-                param_as_dict=updated_param_as_dict,
-                referenced_expressions=referenced_expressions,
-            ),
+            info=validation_info,
         ):
-
             unit_system = updated_param_as_dict.get("unit_system")
             with UnitSystem.from_dict(  # pylint: disable=not-context-manager
                 verbose=False, **unit_system
             ):
-                validated_param = SimulationParams(**updated_param_as_dict)
+                # Reuse pre-deserialized entity_info to avoid double deserialization
+                pre_deserialized_entity_info = validation_info.get_entity_info()
+                if pre_deserialized_entity_info is not None:
+                    # Create shallow copy with entity_info substituted
+                    updated_param_as_dict = {**updated_param_as_dict}
+                    updated_param_as_dict["private_attribute_asset_cache"] = {
+                        **updated_param_as_dict["private_attribute_asset_cache"],
+                        "project_entity_info": pre_deserialized_entity_info,
+                    }
+
+                validated_param = SimulationParams.model_validate(updated_param_as_dict)
 
     except pd.ValidationError as err:
         validation_errors = err.errors()

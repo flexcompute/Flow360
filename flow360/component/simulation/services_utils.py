@@ -4,7 +4,7 @@ from collections import deque
 from typing import Any
 
 from flow360.component.simulation.framework.entity_expansion_utils import (
-    get_registry_from_dict,
+    get_entity_info_and_registry_from_dict,
 )
 from flow360.component.simulation.framework.entity_materializer import (
     _stable_entity_key_from_dict,
@@ -90,7 +90,7 @@ def strip_selector_matches_inplace(params_as_dict: dict) -> dict:
     if not has_any_entity_selectors(params_as_dict):
         return params_as_dict
 
-    registry = get_registry_from_dict(params_as_dict)
+    _, registry = get_entity_info_and_registry_from_dict(params_as_dict)
     selector_cache: dict = {}
 
     known_selectors = {}
