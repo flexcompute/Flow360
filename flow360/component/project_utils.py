@@ -20,7 +20,6 @@ from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.outputs.outputs import (
-    MonitorOutputType,
     SurfaceIntegralOutput,
     SurfaceOutput,
 )
@@ -426,31 +425,6 @@ def _set_up_default_reference_geometry(params: SimulationParams, length_unit: Le
     return params
 
 
-def _set_up_monitor_output_from_stopping_criterion(params: SimulationParams):
-    """
-    Setting up the monitor output in the stopping criterion if not provided in params.outputs.
-    """
-    if not params.run_control:
-        return params
-    stopping_criterion = params.run_control.stopping_criteria
-    if not stopping_criterion:
-        return params
-    monitor_output_ids = []
-    if params.outputs is not None:
-        for output in params.outputs:
-            if not isinstance(output, get_args(get_args(MonitorOutputType)[0])):
-                continue
-            monitor_output_ids.append(output.private_attribute_id)
-    for criterion in stopping_criterion:
-        monitor_output = criterion.monitor_output
-        if isinstance(monitor_output, str):
-            continue
-        if monitor_output.private_attribute_id not in monitor_output_ids:
-            params.outputs.append(monitor_output)
-            monitor_output_ids.append(monitor_output.private_attribute_id)
-    return params
-
-
 def set_up_params_for_uploading(  # pylint: disable=too-many-arguments
     root_asset,
     length_unit: LengthType,
@@ -519,7 +493,6 @@ def set_up_params_for_uploading(  # pylint: disable=too-many-arguments
     params = _set_up_default_geometry_accuracy(root_asset, params, use_geometry_AI)
 
     params = _set_up_default_reference_geometry(params, length_unit)
-    params = _set_up_monitor_output_from_stopping_criterion(params=params)
 
     # Convert all reference of UserVariables to VariableToken
     params = save_user_variables(params)
