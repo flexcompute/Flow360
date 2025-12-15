@@ -1016,10 +1016,11 @@ def test_force_output_with_wall_models():
         )
 
 
-def test_force_output_with_surface_and_volume_models():
+def test_force_output_with_surface_and_volume_models(mock_validation_context):
     """Test ForceOutput with volume models (BETDisk, ActuatorDisk, PorousMedium)."""
     wall_1 = Wall(entities=Surface(name="fluid/wing"))
     with imperial_unit_system:
+        fluid_model = Fluid()
         porous_zone = fl.Box.from_principal_axes(
             name="box",
             axes=[[0, 1, 0], [0, 0, 1]],
@@ -1034,7 +1035,12 @@ def test_force_output_with_surface_and_volume_models():
         )
 
     # Valid case: only basic force coefficients
-    with imperial_unit_system:
+    mock_validation_context.info.physics_model_dict = {
+        fluid_model.private_attribute_id: fluid_model,
+        wall_1.private_attribute_id: wall_1,
+        porous_medium.private_attribute_id: porous_medium,
+    }
+    with imperial_unit_system, mock_validation_context:
         SimulationParams(
             models=[Fluid(), wall_1, porous_medium],
             outputs=[
@@ -1046,7 +1052,12 @@ def test_force_output_with_surface_and_volume_models():
             ],
         )
 
-    with pytest.raises(
+    mock_validation_context.info.physics_model_dict = {
+        fluid_model.private_attribute_id: fluid_model,
+        wall_1.private_attribute_id: wall_1,
+        porous_medium.private_attribute_id: porous_medium,
+    }
+    with mock_validation_context, pytest.raises(
         ValueError,
         match=re.escape(
             "When ActuatorDisk/BETDisk/PorousMedium is specified, "
@@ -1163,27 +1174,6 @@ def test_force_output_with_model_id():
             "type": "value_error",
             "loc": ("outputs", 5, "models"),
             "msg": "Value error, The model does not exist in simulation params' models list.",
-            "ctx": {"relevant_for": ["Case"]},
-        },
-        {
-            "type": "value_error",
-            "loc": ("run_control", "stopping_criteria", 0, "monitor_output"),
-            "msg": "Value error, Cannot resolve monitor_output reference because the `outputs` "
-            "field has validation errors. Please fix those errors first.",
-            "ctx": {"relevant_for": ["Case"]},
-        },
-        {
-            "type": "value_error",
-            "loc": ("run_control", "stopping_criteria", 1, "monitor_output"),
-            "msg": "Value error, Cannot resolve monitor_output reference because the `outputs` "
-            "field has validation errors. Please fix those errors first.",
-            "ctx": {"relevant_for": ["Case"]},
-        },
-        {
-            "type": "value_error",
-            "loc": ("run_control", "stopping_criteria", 2, "monitor_output"),
-            "msg": "Value error, Cannot resolve monitor_output reference because the `outputs` "
-            "field has validation errors. Please fix those errors first.",
             "ctx": {"relevant_for": ["Case"]},
         },
     ]

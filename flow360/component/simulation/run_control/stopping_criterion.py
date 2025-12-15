@@ -71,7 +71,9 @@ class StoppingCriterion(Flow360BaseModel):
         description="The field to be monitored. This field must be "
         "present in the `output_fields` of `monitor_output`."
     )
-    monitor_output: MonitorOutputType = pd.Field(description="The output to be monitored.")
+    monitor_output: Union[MonitorOutputType, str] = pd.Field(
+        description="The monitored output or its id."
+    )
     tolerance: ValueOrExpression[Union[UnytQuantity, float]] = pd.Field(
         description="The tolerance threshold of this criterion."
     )
@@ -100,10 +102,12 @@ class StoppingCriterion(Flow360BaseModel):
             flow360_unit_system=flow360_unit_system,
         )
 
-    @pd.field_serializer("monitor_output")
-    def serialize_monitor_output(self, v):
-        """Serialize only the output's id of the related object."""
-        return serialize_model_obj_to_id(model_obj=v)
+    @pd.field_validator("monitor_field", mode="before")
+    @classmethod
+    def _convert_solver_variable_as_user_variable(cls, value):
+        if isinstance(value, SolverVariable):
+            return solver_variable_to_user_variable(value)
+        return value
 
     @pd.field_validator("monitor_field", mode="after")
     @classmethod
@@ -114,33 +118,31 @@ class StoppingCriterion(Flow360BaseModel):
             raise ValueError("The stopping criterion can only be defined on a scalar field.")
         return v
 
-    @contextual_field_validator("monitor_output", mode="before")
-    @classmethod
-    def _preprocess_monitor_output_with_id(cls, v, param_info: ParamsValidationInfo):
-        """Resolve string output ID to output object from validation context."""
-        if not isinstance(v, str):
-            return v
-
-        # output_dict is None if outputs field had validation errors
-        if param_info.output_dict is None:
-            raise ValueError(
-                "Cannot resolve monitor_output reference because the `outputs` field has validation errors. "
-                "Please fix those errors first."
-            )
-
-        output_obj = param_info.output_dict.get(v)
-        if output_obj is None:
-            raise ValueError("The monitor output does not exist in the outputs list.")
-
-        return output_obj  # Return validated object directly
-
     @pd.field_validator("monitor_output", mode="after")
     @classmethod
-    def _check_single_point_in_probe_output(cls, v):
-        if not isinstance(v, (ProbeOutput, SurfaceProbeOutput)):
+    def _convert_monitor_output_obj_to_id(cls, value):
+        """Convert monitor_output object to id"""
+        if isinstance(value, str):
+            return value
+        return serialize_model_obj_to_id(model_obj=value)
+
+    @contextual_field_validator("monitor_output", mode="after", required_context=["output_dict"])
+    @classmethod
+    def _check_monitor_exists_in_output_list(cls, v, param_info: ParamsValidationInfo):
+        """Ensure the monitor output exist in the outputs list of SimulationParams."""
+        # output_dict is None if outputs field had validation errors
+        if param_info.output_dict.get(v) is None:
+            raise ValueError("The monitor output does not exist in the outputs list.")
+        return v
+
+    @contextual_field_validator("monitor_output", mode="after", required_context=["output_dict"])
+    @classmethod
+    def _check_single_point_in_probe_output(cls, v, param_info: ParamsValidationInfo):
+        monitor_output = param_info.output_dict.get(v)
+        if not isinstance(monitor_output, (ProbeOutput, SurfaceProbeOutput)):
             return v
-        if len(v.entities.stored_entities) == 1 and isinstance(
-            v.entities.stored_entities[0], Point
+        if len(monitor_output.entities.stored_entities) == 1 and isinstance(
+            monitor_output.entities.stored_entities[0], Point
         ):
             return v
         raise ValueError(
@@ -148,18 +150,23 @@ class StoppingCriterion(Flow360BaseModel):
             "in `ProbeOutput`/`SurfaceProbeOutput`."
         )
 
-    @pd.field_validator("monitor_output", mode="after")
+    @contextual_field_validator("monitor_output", mode="after", required_context=["output_dict"])
     @classmethod
-    def _check_field_exists_in_monitor_output(cls, v, info: pd.ValidationInfo):
+    def _check_field_exists_in_monitor_output(
+        cls, v, info: pd.ValidationInfo, param_info: ParamsValidationInfo
+    ):
         """Ensure the monitor field exist in the monitor output."""
+        monitor_output = param_info.output_dict.get(v)
         monitor_field = info.data.get("monitor_field", None)
-        if monitor_field not in v.output_fields.items:
+        if monitor_field not in monitor_output.output_fields.items:
             raise ValueError("The monitor field does not exist in the monitor output.")
         return v
 
-    @pd.field_validator("tolerance", mode="before")
+    @contextual_field_validator("tolerance", mode="before", required_context=["output_dict"])
     @classmethod
-    def _preprocess_field_with_unit_system(cls, value, info: pd.ValidationInfo):
+    def _preprocess_field_with_unit_system(
+        cls, value, info: pd.ValidationInfo, param_info: ParamsValidationInfo
+    ):
         if is_variable_with_unit_system_as_units(value):
             return value
         if info.data.get("monitor_field") is None:
@@ -173,7 +180,7 @@ class StoppingCriterion(Flow360BaseModel):
             )
         units = value["units"]
         monitor_field = info.data["monitor_field"]
-        monitor_output = info.data.get("monitor_output")
+        monitor_output = param_info.output_dict.get(info.data.get("monitor_output"))
         field_dimensions = get_input_value_dimensions(value=monitor_field.value)
         if isinstance(monitor_output, SurfaceIntegralOutput):
             field_dimensions = field_dimensions * u.dimensions.length**2
@@ -195,25 +202,20 @@ class StoppingCriterion(Flow360BaseModel):
             )
         return v
 
-    @pd.field_validator("tolerance", mode="after")
+    @contextual_field_validator("tolerance", mode="after", required_context=["output_dict"])
     @classmethod
-    def _check_tolerance_and_monitor_field_match_dimensions(cls, v, info: pd.ValidationInfo):
+    def _check_tolerance_and_monitor_field_match_dimensions(
+        cls, v, info: pd.ValidationInfo, param_info: ParamsValidationInfo
+    ):
         """Ensure the tolerance has the same dimensions as the monitor field."""
         monitor_field = info.data.get("monitor_field", None)
-        monitor_output = info.data.get("monitor_output", None)
         if not isinstance(monitor_field, UserVariable):
             return v
         field_dimensions = get_input_value_dimensions(value=monitor_field.value)
+        monitor_output = param_info.output_dict.get(info.data.get("monitor_output", None), None)
         if isinstance(monitor_output, SurfaceIntegralOutput):
             field_dimensions = field_dimensions * u.dimensions.length**2
         tolerance_dimensions = get_input_value_dimensions(value=v)
         if tolerance_dimensions != field_dimensions:
             raise ValueError("The dimensions of monitor field and tolerance do not match.")
         return v
-
-    @pd.field_validator("monitor_field", mode="before")
-    @classmethod
-    def _convert_solver_variable_as_user_variable(cls, value):
-        if isinstance(value, SolverVariable):
-            return solver_variable_to_user_variable(value)
-        return value

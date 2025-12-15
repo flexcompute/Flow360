@@ -723,65 +723,49 @@ class ForceOutput(_OutputBase):
         description="List of force coefficients. Including CL, CD, CFx, CFy, CFz, CMx, CMy, CMz. "
         "For surface forces, their SkinFriction/Pressure is also supported, such as CLSkinFriction and CLPressure."
     )
-    models: List[ForceOutputModelType] = pd.Field(
-        description="List of surface/volume models whose force contribution will be calculated.",
+    models: List[Union[ForceOutputModelType, str]] = pd.Field(
+        description="List of surface/volume models (or model ids) whose force contribution will be calculated.",
     )
     moving_statistic: Optional[MovingStatistic] = pd.Field(
         None, description="When specified, report moving statistics of the fields instead."
     )
     output_type: Literal["ForceOutput"] = pd.Field("ForceOutput", frozen=True)
 
-    @pd.field_serializer("models")
-    def serialize_models(self, value, info: pd.FieldSerializationInfo):
-        """Serialize only the model's id of the related object."""
-        if isinstance(info.context, dict) and info.context.get("columnar_data_processor"):
-            return value
-        model_ids = []
-        for model in value:
-            model_ids.append(serialize_model_obj_to_id(model_obj=model))
-        return model_ids
-
-    @contextual_field_validator("models", mode="before")
-    @classmethod
-    def _preprocess_models_with_id(cls, value, param_info: ParamsValidationInfo):
-        """Resolve string model IDs to model objects from validation context."""
-
-        def resolve_model(model):
-            if not isinstance(model, str):
-                return model  # Already an object
-
-            # physics_model_dict is None if models field had validation errors
-            if param_info.physics_model_dict is None:
-                raise ValueError(
-                    "Cannot resolve model reference because the `models` field has validation errors. "
-                    "Please fix those errors first."
-                )
-
-            model_obj = param_info.physics_model_dict.get(model)
-            if model_obj is None:
-                raise ValueError("The model does not exist in simulation params' models list.")
-
-            return model_obj  # Return validated object directly
-
-        return [resolve_model(m) for m in value]
-
     @pd.field_validator("models", mode="after")
     @classmethod
-    def _check_duplicate_models(cls, value):
-        """Ensure no duplicate models are specified."""
+    def _convert_model_obj_to_id(cls, value):
+        """Validate duplicate models and convert model object to id"""
         model_ids = set()
         for model in value:
-            model_id = model.private_attribute_id
+            model_id = (
+                model if isinstance(model, str) else serialize_model_obj_to_id(model_obj=model)
+            )
             if model_id in model_ids:
                 raise ValueError("Duplicate models are not allowed in the same `ForceOutput`.")
             model_ids.add(model_id)
+        return list(model_ids)
+
+    @contextual_field_validator("models", mode="after", required_context=["physics_model_dict"])
+    @classmethod
+    def _check_model_exist_in_model_list(cls, value, param_info: ParamsValidationInfo):
+        """Ensure all models exist in SimulationParams' model list."""
+        for model_id in value:
+            model_obj = param_info.physics_model_dict.get(model_id)
+            if model_obj is None:
+                raise ValueError("The model does not exist in simulation params' models list.")
+
         return value
 
-    @pd.field_validator("models", mode="after")
+    @contextual_field_validator("models", mode="after", required_context=["physics_model_dict"])
     @classmethod
-    def _check_output_fields_with_volume_models_specified(cls, value, info: pd.ValidationInfo):
+    def _check_output_fields_with_volume_models_specified(
+        cls, value, info: pd.ValidationInfo, param_info: ParamsValidationInfo
+    ):
         """Ensure the output field exists when volume models are specified."""
-        if all(isinstance(model, Wall) for model in value):
+
+        model_objs = [param_info.physics_model_dict.get(model_id) for model_id in value]
+
+        if all(isinstance(model, Wall) for model in model_objs):
             return value
         output_fields = info.data.get("output_fields", None)
         if all(

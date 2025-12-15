@@ -854,33 +854,36 @@ def translate_streamline_output(output_params: list, streamline_class):
     return streamline_output
 
 
+def process_output_field_for_integral(output_field):
+    """Multiply UserVariable by area for surface integrals"""
+    if isinstance(output_field, UserVariable):
+        expression = Expression.model_validate(output_field.value)
+        if expression.length == 0:
+            expression_processed = expression * math.magnitude(solution.node_area_vector)
+        else:
+            expression_processed = [
+                expression[i] * math.magnitude(solution.node_area_vector)
+                for i in range(expression.length)
+            ]
+        return UserVariable(
+            name=output_field.name + "_integral",
+            value=expression_processed,
+        )
+    return output_field
+
+
 def process_user_variables_for_integral(
     outputs,
 ):
-    """Multiply UserVariable by area for surface integrals."""
+    """Process UserVariable output fields for surface integrals."""
     for output in outputs:
         if not isinstance(output, SurfaceIntegralOutput):
             continue
         output_fields_processed = []
         for output_field in output.output_fields.items:
-            if isinstance(output_field, UserVariable):
-                expression = Expression.model_validate(output_field.value)
-                if expression.length == 0:
-                    expression_processed = expression * math.magnitude(solution.node_area_vector)
-                else:
-                    expression_processed = [
-                        expression[i] * math.magnitude(solution.node_area_vector)
-                        for i in range(expression.length)
-                    ]
-
-                output_fields_processed.append(
-                    UserVariable(
-                        name=output_field.name + "_integral",
-                        value=expression_processed,
-                    )
-                )
-            else:
-                output_fields_processed.append(output_field)
+            output_fields_processed.append(
+                process_output_field_for_integral(output_field=output_field)
+            )
         output.output_fields.items = output_fields_processed
 
 
@@ -1518,14 +1521,7 @@ def calculate_monitor_semaphore_hash(params: SimulationParams):
             if not isinstance(output, get_args(get_args(MonitorOutputType)[0])):
                 continue
             if isinstance(output, ForceOutput):
-                json_string_list.extend(
-                    [
-                        json.dumps(dump_dict(model))
-                        for model in sorted(
-                            output.models, key=lambda x: (x.type, x.name, x.private_attribute_id)
-                        )
-                    ]
-                )
+                json_string_list.extend(list(sorted(output.models)))
                 json_string_list.extend(output.output_fields.items)
             if output.moving_statistic is not None:
                 json_string_list.append(json.dumps(dump_dict(output.moving_statistic)))
@@ -1581,13 +1577,25 @@ def get_stop_criterion_settings(criterion: StoppingCriterion, params: Simulation
 
         return criterion_tolerance_nondim, source_to_flow360_coeff, source_to_flow360_offset
 
+    criterion_monitor_output = None
+    for output in params.outputs:
+        if output.private_attribute_id == criterion.monitor_output:
+            criterion_monitor_output = output
+            break
+
+    criterion_monitor_field = (
+        process_output_field_for_integral(criterion.monitor_field)
+        if isinstance(criterion_monitor_output, SurfaceIntegralOutput)
+        else criterion.monitor_field
+    )
+
     criterion_dataset_name, criterion_column = get_criterion_monitored_file_info(
-        monitor_output=criterion.monitor_output, monitor_field=criterion.monitor_field
+        monitor_output=criterion_monitor_output, monitor_field=criterion_monitor_field
     )
     criterion_tolerance_nondim, source_to_flow360_coeff, source_to_flow360_offset = (
         get_criterion_tolerance_info(
             criterion_tolerance=criterion.tolerance,
-            monitor_field=criterion.monitor_field,
+            monitor_field=criterion_monitor_field,
             params=params,
         )
     )
