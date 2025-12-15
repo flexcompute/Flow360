@@ -749,7 +749,8 @@ def test_incomplete_BC_volume_mesh():
             ),
             models=[
                 Fluid(),
-                Wall(entities=wall_1),
+                # Stage 1.5: Use selector instead of explicit entity to test BC validation
+                Wall(entities=[Surface.match("wall_*", name="wall_selector")]),
                 Periodic(surface_pairs=(periodic_1, periodic_2), spec=Translational()),
                 SlipWall(entities=[i_exist]),
             ],
@@ -777,9 +778,9 @@ def test_incomplete_BC_volume_mesh():
             ),
             models=[
                 Fluid(),
-                Wall(entities=[wall_1]),
+                # Stage 1.5: Mix selector with explicit entity
+                Wall(entities=[Surface.match("wall_*", name="wall_selector"), i_exist]),
                 Periodic(surface_pairs=(periodic_1, periodic_2), spec=Translational()),
-                SlipWall(entities=[i_exist]),
                 SlipWall(entities=[Surface(name="plz_dont_do_this"), no_bc]),
             ],
             private_attribute_asset_cache=asset_cache,
@@ -838,7 +839,8 @@ def test_incomplete_BC_surface_mesh():
             ),
             models=[
                 Fluid(),
-                Wall(entities=wall_1),
+                # Stage 1.5: Use selector instead of explicit entity
+                Wall(entities=[Surface.match("wall_*", name="wall_selector")]),
                 Periodic(surface_pairs=(periodic_1, periodic_2), spec=Translational()),
                 SlipWall(entities=[i_exist]),
                 SlipWall(entities=[no_bc]),
@@ -871,7 +873,8 @@ def test_incomplete_BC_surface_mesh():
             ),
             models=[
                 Fluid(),
-                Wall(entities=wall_1),
+                # Stage 1.5: Use selector for wall
+                Wall(entities=[Surface.match("wall_*", name="wall_selector")]),
                 Periodic(surface_pairs=(periodic_1, periodic_2), spec=Translational()),
                 SlipWall(entities=[auto_farfield.symmetry_planes]),
                 SlipWall(entities=[i_exist]),

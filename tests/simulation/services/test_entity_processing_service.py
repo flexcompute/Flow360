@@ -50,10 +50,6 @@ def _load_json(path_from_tests_dir: str) -> dict:
         return json.load(file)
 
 
-@pytest.mark.skip(
-    reason="Requires Stage 2 implementation: boundary condition validators need to use "
-    "param_info.expand_entity_list() to check selector coverage"
-)
 def test_validate_model_keeps_selectors_unexpanded():
     """
     Test: End-to-end validation with delayed selector expansion.

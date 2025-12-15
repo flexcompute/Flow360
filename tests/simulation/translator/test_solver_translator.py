@@ -242,8 +242,12 @@ def get_om6Wing_tutorial_param():
                         "Mach",
                     ],
                 ),
+                # Stage 1.5: Mix selector with explicit entities in SurfaceOutput
                 SurfaceOutput(
-                    entities=[my_wall, my_symmetry_plane, my_freestream],
+                    entities=[
+                        Surface.match("[12]", name="walls_and_symmetry"),
+                        my_freestream,
+                    ],
                     output_format="paraview",
                     output_fields=["Cp"],
                 ),
