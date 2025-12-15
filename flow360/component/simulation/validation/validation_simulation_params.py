@@ -48,8 +48,14 @@ from flow360.component.simulation.validation.validation_utils import EntityUsage
 
 
 def _populate_validated_field_to_validation_context(v, param_info, attribute_name):
-    """Populate validated objects to validation context."""
-    if v is None:
+    """Populate validated objects to validation context.
+
+    Sets the attribute to an empty dict {} when v is None or empty list,
+    distinguishing successful validation with no items from validation errors
+    (which leave the attribute as None).
+    """
+    if v is None or len(v) == 0:
+        setattr(param_info, attribute_name, {})
         return v
     setattr(
         param_info,
