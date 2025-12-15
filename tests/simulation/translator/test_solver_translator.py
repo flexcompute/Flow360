@@ -9,7 +9,10 @@ import flow360.component.simulation.units as u
 from flow360.component.geometry import Geometry, GeometryMeta
 from flow360.component.project_utils import set_up_params_for_uploading
 from flow360.component.resource_base import local_metadata_builder
-from flow360.component.simulation.entity_info import SurfaceMeshEntityInfo
+from flow360.component.simulation.entity_info import (
+    GeometryEntityInfo,
+    SurfaceMeshEntityInfo,
+)
 from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.meshing_param.meshing_specs import MeshingDefaults
 from flow360.component.simulation.meshing_param.params import MeshingParams
@@ -181,9 +184,19 @@ def reset_context():
 
 @pytest.fixture()
 def get_om6Wing_tutorial_param():
-    my_wall = Surface(name="1")
-    my_symmetry_plane = Surface(name="2")
-    my_freestream = Surface(name="3")
+    my_wall = Surface(name="1", private_attribute_sub_components=["body01_face001"])
+    my_symmetry_plane = Surface(name="2", private_attribute_sub_components=["body01_face002"])
+    my_freestream = Surface(name="3", private_attribute_sub_components=["body01_face003"])
+
+    # Create entity_info so selectors can be expanded
+    entity_info = GeometryEntityInfo(
+        face_ids=["body01_face001", "body01_face002", "body01_face003"],
+        face_attribute_names=["default"],
+        face_group_tag="default",
+        grouped_faces=[[my_wall, my_symmetry_plane, my_freestream]],
+    )
+    asset_cache = AssetCache(project_entity_info=entity_info, project_length_unit="m")
+
     with SI_unit_system:
         param = SimulationParams(
             reference_geometry=ReferenceGeometry(
@@ -191,6 +204,7 @@ def get_om6Wing_tutorial_param():
                 moment_length=0.6460682372650963,
                 moment_center=(0, 0, 0),
             ),
+            private_attribute_asset_cache=asset_cache,
             operating_condition=AerospaceCondition.from_mach(
                 mach=0.84,
                 alpha=3.06 * u.degree,

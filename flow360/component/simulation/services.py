@@ -426,6 +426,7 @@ def initialize_variable_space(param_as_dict: dict, use_clear_context: bool = Fal
 
 def resolve_selectors(params_as_dict: dict):
     """
+    # TODO: Remove this as no longer relevant.
     Expand any EntitySelector into stored_entities in-place (dict level).
 
     - Performs a fast existence check first.
