@@ -11,26 +11,37 @@ import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.outputs.output_fields import CommonFieldNames
 from flow360.component.simulation.unit_system import AngleType, LengthType, TimeType
-from flow360.component.simulation.user_code.core.types import UserVariable
+from flow360.component.simulation.user_code.core.types import (
+    Expression,
+    UnytQuantity,
+    UserVariable,
+    ValueOrExpression,
+    get_input_value_dimensions,
+    get_input_value_length,
+    infer_units_by_unit_system,
+    is_variable_with_unit_system_as_units,
+    solver_variable_to_user_variable,
+)
+from flow360.component.simulation.user_code.core.utils import is_runtime_expression
 from flow360.component.types import Axis, Color, Vector
 
 
-class StaticCamera(Flow360BaseModel):
+class StaticView(Flow360BaseModel):
     """
-    :class:`StaticCamera` defines a fixed camera in the scene with a position, target, and up-direction.
+    :class:`StaticView` defines a fixed camera in the scene with a position, target, and up-direction.
 
     Example
     -------
     Define a simple static camera positioned at (1, 1, 1) looking at the origin:
 
-    >>> cam = StaticCamera(
+    >>> cam = StaticView(
     ...     position=(1, 1, 1),
     ...     target=(0, 0, 0),
     ...     up=(0, 0, 1),
     ... )
     """
 
-    type_name: Literal["StaticCamera"] = pd.Field("StaticCamera", frozen=True)
+    type_name: Literal["StaticView"] = pd.Field("StaticView", frozen=True)
     # pylint: disable=no-member
     position: LengthType.Point = pd.Field(description="Position of the camera in the scene")
     # pylint: disable=no-member
@@ -48,7 +59,7 @@ class Keyframe(Flow360BaseModel):
     -------
     >>> Keyframe(
     ...     time=0.5,
-    ...     view=StaticCamera(position=(2, 0, 1), target=(0, 0, 0))
+    ...     view=StaticView(position=(2, 0, 1), target=(0, 0, 0))
     ... )
     """
 
@@ -56,24 +67,24 @@ class Keyframe(Flow360BaseModel):
     time: TimeType = pd.Field(
         0, ge=0, description="Timestamp at which the keyframe should be reached"
     )
-    view: StaticCamera = pd.Field(description="Camera parameters at this keyframe")
+    view: StaticView = pd.Field(description="Camera parameters at this keyframe")
 
 
-class AnimatedCamera(Flow360BaseModel):
+class AnimatedView(Flow360BaseModel):
     """
-    :class:`AnimatedCamera` defines a sequence of camera keyframes to create motion.
+    :class:`AnimatedView` defines a sequence of camera keyframes to create motion.
 
     Example
     -------
-    >>> AnimatedCamera(
+    >>> AnimatedView(
     ...     keyframes=[
-    ...         Keyframe(time=0, view=StaticCamera(position=(2,0,0), target=(0,0,0))),
-    ...         Keyframe(time=1, view=StaticCamera(position=(0,2,0), target=(0,0,0))),
+    ...         Keyframe(time=0, view=StaticView(position=(2,0,0), target=(0,0,0))),
+    ...         Keyframe(time=1, view=StaticView(position=(0,2,0), target=(0,0,0))),
     ...     ]
     ... )
     """
 
-    type_name: Literal["AnimatedCamera"] = pd.Field("AnimatedCamera", frozen=True)
+    type_name: Literal["AnimatedView"] = pd.Field("AnimatedView", frozen=True)
     keyframes: List[Keyframe] = pd.Field(
         [], description="List of keyframes between which the animated camera interpolates"
     )
@@ -81,6 +92,8 @@ class AnimatedCamera(Flow360BaseModel):
     @pd.field_validator("keyframes", mode="after")
     @classmethod
     def check_has_keyframes_and_sort(cls, value):
+        """Check if the view has any keyframes assigned, the
+        first frame is at time 0 and the frames are sorted"""
         if len(value) < 1:
             raise ValueError("Animated camera requires at least one keyframe to be defined")
 
@@ -138,16 +151,16 @@ class PerspectiveProjection(Flow360BaseModel):
     )
 
 
-class View(Enum):
+class Viewpoint(Enum):
     """
     :class:`View` provides predefined canonical view directions.
 
     Example
     -------
-    >>> View.FRONT.value
+    >>> Viewpoint.FRONT.value
     (-1, 0, 0)
 
-    >>> View.FRONT + View.TOP
+    >>> Viewpoint.FRONT + Viewpoint.TOP
     (-1, 0, 1)
     """
 
@@ -162,7 +175,7 @@ class View(Enum):
         return self.value[idx]
 
     def __add__(self, other):
-        if isinstance(other, View):
+        if isinstance(other, Viewpoint):
             b = other.value
         elif isinstance(other, tuple):
             b = other
@@ -175,7 +188,7 @@ class View(Enum):
     def __radd__(self, other):
         if isinstance(other, tuple):
             a = other
-        elif isinstance(other, View):
+        elif isinstance(other, Viewpoint):
             a = other.value
         else:
             return NotImplemented
@@ -191,12 +204,12 @@ class CameraConfig(Flow360BaseModel):
     Example
     -------
     >>> CameraConfig.perspective(
-    ...     x=1, y=1, z=1, scale=2, view=View.FRONT
+    ...     x=1, y=1, z=1, scale=2, view=Viewpoint.FRONT
     ... )
     """
 
     type_name: Literal["CameraConfig"] = pd.Field("CameraConfig", frozen=True)
-    view: Union[StaticCamera, AnimatedCamera] = pd.Field(
+    view: Union[StaticView, AnimatedView] = pd.Field(
         discriminator="type_name", description="View settings (position, target)"
     )
     projection: Union[OrthographicProjection, PerspectiveProjection] = pd.Field(
@@ -212,15 +225,15 @@ class CameraConfig(Flow360BaseModel):
         Example
         -------
         >>> CameraConfig.orthographic(
-        ...     position=(0, 0, 0), scale=1.5, view=View.TOP
+        ...     position=(0, 0, 0), scale=1.5, view=Viewpoint.TOP
         ... )
         """
         if view is None:
-            view = View.FRONT + View.RIGHT + View.TOP
+            view = Viewpoint.FRONT + Viewpoint.RIGHT + Viewpoint.TOP
 
         up = (0, 0, 1)
 
-        if view in (View.TOP, View.BOTTOM):
+        if view in (Viewpoint.TOP, Viewpoint.BOTTOM):
             up = (0, 1, 0)
 
         x = position[0]
@@ -228,7 +241,7 @@ class CameraConfig(Flow360BaseModel):
         z = position[2]
 
         return CameraConfig(
-            view=StaticCamera(
+            view=StaticView(
                 # pylint: disable=no-member
                 position=(x + view[0] * scale, y + view[1] * scale, z + view[2] * scale) * u.m,
                 target=(x, y, z),
@@ -250,15 +263,15 @@ class CameraConfig(Flow360BaseModel):
         Example
         -------
         >>> CameraConfig.perspective(
-        ...     position=(0, 0, 0), scale=3, view=View.LEFT
+        ...     position=(0, 0, 0), scale=3, view=Viewpoint.LEFT
         ... )
         """
         if view is None:
-            view = View.FRONT + View.RIGHT + View.TOP
+            view = Viewpoint.FRONT + Viewpoint.RIGHT + Viewpoint.TOP
 
         up = (0, 0, 1)
 
-        if view in (View.TOP, View.BOTTOM):
+        if view in (Viewpoint.TOP, Viewpoint.BOTTOM):
             up = (0, 1, 0)
 
         x = position[0]
@@ -266,7 +279,7 @@ class CameraConfig(Flow360BaseModel):
         z = position[2]
 
         return CameraConfig(
-            view=StaticCamera(
+            view=StaticView(
                 # pylint: disable=no-member
                 position=(x + view[0] * scale, y + view[1] * scale, z + view[2] * scale) * u.m,
                 # pylint: disable=no-member
@@ -532,23 +545,110 @@ class FieldMaterial(MaterialBase):
     output_field: Union[CommonFieldNames, str, UserVariable] = pd.Field(
         description="Scalar field applied to the surface via the colormap"
     )
-    min: float = pd.Field(
+    min: ValueOrExpression[Union[UnytQuantity, float]] = pd.Field(
         description="Reference min value (in solver units) representing the left boundary of the colormap"
     )
-    max: float = pd.Field(
+    max: ValueOrExpression[Union[UnytQuantity, float]] = pd.Field(
         description="Reference max value (in solver units) representing the right boundary of the colormap"
     )
     colormap: List[Color] = pd.Field(
         description="List of key colors distributed evenly across the gradient, defines value to color mappings"
     )
 
-    @pd.model_validator(mode="after")
-    def check_min_max(self):
-        if self.min > self.max:
-            raise ValueError("Invalid range - min value greater than max value")
+    @pd.field_validator("output_field", mode="before")
+    @classmethod
+    def _preprocess_expression_and_solver_variable(cls, value):
+        if isinstance(value, Expression):
+            raise ValueError(
+                f"Expression ({value}) cannot be directly used as output field, "
+                "please define a UserVariable first."
+            )
+        return solver_variable_to_user_variable(value)
+
+    @pd.field_validator("output_field", mode="after")
+    @classmethod
+    def check_expression_length(cls, v):
+        """Ensure the output field is a scalar."""
+        if isinstance(v, UserVariable) and len(v) != 0:
+            raise ValueError(f"The output field ({v}) must be defined with a scalar variable.")
+        return v
+
+    @pd.field_validator("output_field", mode="after")
+    @classmethod
+    def check_runtime_expression(cls, v):
+        """Ensure the output field is a runtime expression but not a constant value."""
+        if isinstance(v, UserVariable):
+            if not isinstance(v.value, Expression):
+                raise ValueError(f"The output field ({v}) cannot be a constant value.")
+            try:
+                result = v.value.evaluate(raise_on_non_evaluable=False, force_evaluate=True)
+            except Exception as err:
+                raise ValueError(
+                    f"expression evaluation failed for the output field: {err}"
+                ) from err
+            if not is_runtime_expression(result):
+                raise ValueError(f"The output field ({v}) cannot be a constant value.")
+        return v
+
+    @pd.field_validator("min", "max", mode="before")
+    @classmethod
+    def _preprocess_range_with_unit_system(cls, value, info: pd.ValidationInfo):
+        if is_variable_with_unit_system_as_units(value):
+            return value
+        if info.data.get("field") is None:
+            # `field` validation failed.
+            raise ValueError(
+                "The output field is invalid and therefore unit inference is not possible."
+            )
+        units = value["units"]
+        field = info.data["field"]
+        value_dimensions = get_input_value_dimensions(value=field)
+        value = infer_units_by_unit_system(
+            value=value, value_dimensions=value_dimensions, unit_system=units
+        )
+        return value
+
+    @pd.field_validator("min", "max", mode="after")
+    @classmethod
+    def check_range_single_value(cls, v):
+        """Ensure the min/max range is a single value."""
+        if get_input_value_length(v) == 0:
+            return v
+        raise ValueError(f"The min/max range ({v}) must be a scalar.")
+
+    @pd.field_validator("min", "max", mode="after")
+    @classmethod
+    def check_range_dimensions(cls, v, info: pd.ValidationInfo):
+        """Ensure the min/max range has the same dimensions as the field."""
+        field = info.data.get("output_field", None)
+        if not isinstance(field, UserVariable):
+            return v
+        range_dimensions = get_input_value_dimensions(value=v)
+        if range_dimensions is None:
+            return v
+        field_dimensions = get_input_value_dimensions(value=field)
+        if field_dimensions != range_dimensions:
+            raise ValueError(
+                f"The min/max range ({v}, dimensions:{range_dimensions}) should have the same dimensions as "
+                f"the output field ({field}, dimensions: {field_dimensions})."
+            )
+        return v
+
+    @pd.field_validator("min", "max", mode="after")
+    @classmethod
+    def check_iso_value_for_string_field(cls, v, info: pd.ValidationInfo):
+        """Ensure the iso_value is float when string field is used."""
+
+        field = info.data.get("output_field", None)
+        if isinstance(field, str) and not isinstance(v, float):
+            raise ValueError(
+                f"The output field ({field}) specified by string "
+                "can only be used with a nondimensional min/max range."
+            )
+        return v
 
     @classmethod
-    def rainbow(cls, field, min_value=0, max_value=1, alpha=1):
+    def rainbow(cls, field, min_value, max_value, alpha=1):
         """
         Create a rainbow-style colormap for scalar fields.
 
@@ -573,7 +673,7 @@ class FieldMaterial(MaterialBase):
         )
 
     @classmethod
-    def orizon(cls, field, min_value=0, max_value=1, alpha=1):
+    def orizon(cls, field, min_value, max_value, alpha=1):
         """
         Create an Orizon-style (blue–orange) colormap.
 
@@ -598,7 +698,7 @@ class FieldMaterial(MaterialBase):
         )
 
     @classmethod
-    def viridis(cls, field, min_value=0, max_value=1, alpha=1):
+    def viridis(cls, field, min_value, max_value, alpha=1):
         """
         Create a Viridis colormap.
 
@@ -622,7 +722,7 @@ class FieldMaterial(MaterialBase):
         )
 
     @classmethod
-    def magma(cls, field, min_value=0, max_value=1, alpha=1):
+    def magma(cls, field, min_value, max_value, alpha=1):
         """
         Create a Magma colormap.
 
@@ -645,7 +745,7 @@ class FieldMaterial(MaterialBase):
         )
 
     @classmethod
-    def airflow(cls, field, min_value=0, max_value=1, alpha=1):
+    def airflow(cls, field, min_value, max_value, alpha=1):
         """
         Create an Airflow-style visualization colormap.
 

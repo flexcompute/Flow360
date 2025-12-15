@@ -591,33 +591,27 @@ def translate_render_output(
     translated_outputs = []
 
     for render in renders:
-        render_dict = render.model_dump(exclude_none=True, exclude_unset=True, by_alias=True)
-        remove_units_in_dict(render_dict)
-
-        camera = render["camera"]
-        lighting = render["lighting"]
-        environment = render["environment"]
+        render_dict = dump_dict(render)
+        render_dict = remove_units_in_dict(render_dict)
 
         for render_group_dict in render_dict["groups"]:
             material = render_group_dict["material"]
             if "outputField" in material and material["outputField"] not in render.output_fields:
-                render.output_fields.append(material["outputField"])
+                render_dict["outputFields"]["items"].append(material["outputField"])
 
         translated_output = {
             "name": render.name,
             "animationFrequency": render.frequency,
             "animationFrequencyOffset": render.frequency_offset,
             "groups": [],
-            "camera": camera,
-            "lighting": lighting,
-            "environment": environment,
-            "outputFields": render["outputFields"],
+            "camera": render_dict["camera"],
+            "lighting": render_dict["lighting"],
+            "environment": render_dict["environment"],
+            "outputFields": render_dict["outputFields"]["items"],
         }
 
         for render_group in render.groups:
-            material = render_group.material.model_dump(
-                exclude_none=True, exclude_unset=True, by_alias=True
-            )
+            material = dump_dict(render_group.material)
             translated_output["groups"].append(
                 {
                     "surfaces": translate_setting_and_apply_to_all_entities(
@@ -648,9 +642,7 @@ def translate_render_output(
                 }
             )
         if render.transform:
-            transform = render.transform.model_dump(
-                exclude_none=True, exclude_unset=True, by_alias=True
-            )
+            transform = dump_dict(render.transform)
             translated_output["transform"] = remove_units_in_dict(transform)
 
         translated_outputs.append(translated_output)

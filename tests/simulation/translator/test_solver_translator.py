@@ -73,6 +73,7 @@ from flow360.component.simulation.outputs.outputs import (
     MovingStatistic,
     ProbeOutput,
     RenderOutput,
+    RenderOutputGroup,
     SliceOutput,
     StreamlineOutput,
     SurfaceIntegralOutput,
@@ -84,14 +85,11 @@ from flow360.component.simulation.outputs.outputs import (
 from flow360.component.simulation.outputs.render_config import (
     AmbientLight,
     CameraConfig,
-    DirectionalLight,
     EnvironmentConfig,
+    FieldMaterial,
     LightingConfig,
-    OrthographicProjection,
     PBRMaterial,
-    SkyboxBackground,
-    SkyboxTexture,
-    StaticCamera,
+    Viewpoint,
 )
 from flow360.component.simulation.primitives import (
     CustomVolume,
@@ -1512,4 +1510,48 @@ def test_analytic_windtunnel(create_windtunnel_params):
         create_windtunnel_params,
         mesh_unit=1 * u.m,
         ref_json_file="Flow360_windtunnel.json",
+    )
+
+
+def test_om6wing_render_output(get_om6Wing_tutorial_param):
+    with SI_unit_system:
+        params = get_om6Wing_tutorial_param
+        params.outputs.append(
+            RenderOutput(
+                groups=[
+                    RenderOutputGroup(
+                        surfaces=[Surface(name="1")],
+                        material=PBRMaterial.metal(shine=0.7, alpha=1.0),
+                    ),
+                    RenderOutputGroup(
+                        slices=[
+                            Slice(
+                                name="Example slice",
+                                normal=(0, 1, 0),
+                                origin=(0, 0.56413, 0) * u.m,
+                            )
+                        ],
+                        isosurfaces=[
+                            Isosurface(
+                                name="Q Criterion",
+                                field=solution.qcriterion,
+                                iso_value=0.0004128 / u.s**2,
+                            )
+                        ],
+                        material=FieldMaterial.rainbow(
+                            field=solution.Mach, min_value=0, max_value=0.1, alpha=1
+                        ),
+                    ),
+                ],
+                lighting=LightingConfig.default(),
+                camera=CameraConfig.orthographic(view=Viewpoint.TOP + Viewpoint.LEFT),
+                environment=EnvironmentConfig.simple(),
+            )
+        )
+
+    translate_and_compare(
+        get_om6Wing_tutorial_param,
+        mesh_unit=0.8059 * u.m,
+        ref_json_file="Flow360_om6Wing_render.json",
+        debug=False,
     )

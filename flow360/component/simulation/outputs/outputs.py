@@ -738,6 +738,7 @@ class RenderOutputGroup(Flow360BaseModel):
 
     @pd.model_validator(mode="after")
     def check_not_empty(self):
+        """Verify the render group has at least one entity assigned to it"""
         if not self.surfaces and not self.slices and not self.isosurfaces:
             raise ValueError(
                 "Render group should include at least one entity (surface, slice or isosurface)"
@@ -769,7 +770,7 @@ class RenderOutput(_AnimationSettings):
     ...             material=fl.render.FieldMaterial.rainbow(field="T", min_value=0, max_value=1, alpha=0.4)
     ...         )
     ...     ],
-    ...     camera=fl.render.CameraConfig.orthographic(scale=5, view=fl.View.TOP + fl.View.LEFT)
+    ...     camera=fl.render.CameraConfig.orthographic(scale=5, view=fl.Viewpoint.TOP + fl.Viewpoint.LEFT)
     ... )
     ====
     """
@@ -777,7 +778,7 @@ class RenderOutput(_AnimationSettings):
     name: str = pd.Field("Render output", description="Name of the `RenderOutput`.")
     groups: List[RenderOutputGroup] = pd.Field([])
     output_fields: UniqueItemList[Union[CommonFieldNames, str, UserVariable]] = pd.Field(
-        description="List of output variables."
+        [], description="List of output variables (inferred from material info)"
     )
     camera: CameraConfig = pd.Field(
         description="Camera settings", default_factory=CameraConfig.orthographic
@@ -796,6 +797,7 @@ class RenderOutput(_AnimationSettings):
     @pd.field_validator("groups", mode="after")
     @classmethod
     def check_has_output_groups(cls, value):
+        """Verify the render output has at least one group to render"""
         if len(value) < 1:
             raise ValueError("Render output requires at least one output group to be defined")
         return value
