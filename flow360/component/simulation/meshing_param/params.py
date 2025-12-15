@@ -135,7 +135,7 @@ class MeshingParams(Flow360BaseModel):
 
     # pylint: disable=duplicate-code
     gap_treatment_strength: Optional[float] = ContextField(
-        default=0,
+        default=None,
         ge=0,
         le=1,
         description="Narrow gap treatment strength used when two surfaces are in close proximity."
@@ -327,7 +327,7 @@ class VolumeMeshingParams(Flow360BaseModel):
     )
 
     gap_treatment_strength: Optional[float] = pd.Field(
-        default=0,
+        default=None,
         ge=0,
         le=1,
         description="Narrow gap treatment strength used when two surfaces are in close proximity."

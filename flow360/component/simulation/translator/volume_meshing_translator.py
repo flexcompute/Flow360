@@ -421,7 +421,8 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
     # growthRate can only be global
     translated["volume"]["growthRate"] = defaults.boundary_layer_growth_rate
 
-    translated["volume"]["gapTreatmentStrength"] = gap_treatment_strength
+    if gap_treatment_strength is not None:
+        translated["volume"]["gapTreatmentStrength"] = gap_treatment_strength
 
     if input_params.private_attribute_asset_cache.use_inhouse_mesher:
         number_of_boundary_layers = defaults.number_of_boundary_layers
