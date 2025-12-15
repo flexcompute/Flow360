@@ -625,6 +625,7 @@ def test_user_defined_farfield(get_test_param, get_surface_mesh):
         "volume": {
             "firstLayerThickness": 100.0,
             "growthRate": 1.2,
+            "gapTreatmentStrength": 0.0,
         },
         "faces": {},
     }
@@ -634,6 +635,7 @@ def test_user_defined_farfield(get_test_param, get_surface_mesh):
         "volume": {
             "firstLayerThickness": 100.0,
             "growthRate": 1.2,
+            "gapTreatmentStrength": 0.0,
         },
         "faces": {},
         "zones": [{"name": "farfield", "pointInMesh": [0, 0, 0]}],
@@ -653,6 +655,7 @@ def test_seedpoint_zones(get_test_param_w_seedpoints, get_surface_mesh):
         "volume": {
             "firstLayerThickness": 1.35e-06,
             "growthRate": 1.04,
+            "gapTreatmentStrength": 1.0,
             "planarFaceTolerance": 1e-6,
             "slidingInterfaceTolerance": 1e-2,
             "numBoundaryLayers": -1,

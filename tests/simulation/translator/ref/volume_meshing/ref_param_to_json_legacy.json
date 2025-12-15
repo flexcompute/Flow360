@@ -3,7 +3,8 @@
     "farfield": {"type": "user-defined"},
     "volume": {
         "firstLayerThickness": 1.35e-06,
-        "growthRate": 1.04
+        "growthRate": 1.04,
+        "gapTreatmentStrength": 0.0
     },
     "faces": {
         "boundary1": {

@@ -5,7 +5,8 @@
     },
     "volume": {
         "firstLayerThickness": 0.0001,
-        "growthRate": 1.2
+        "growthRate": 1.2,
+        "gapTreatmentStrength": 0.0
     },
     "faces": {}
 }
