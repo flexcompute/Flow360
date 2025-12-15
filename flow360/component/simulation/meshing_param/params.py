@@ -135,13 +135,14 @@ class MeshingParams(Flow360BaseModel):
 
     # pylint: disable=duplicate-code
     gap_treatment_strength: Optional[float] = ContextField(
-        default=0,
+        default=None,
         ge=0,
         le=1,
         description="Narrow gap treatment strength used when two surfaces are in close proximity."
         " Use a value between 0 and 1, where 0 is no treatment and 1 is the most conservative treatment."
         " This parameter has a global impact where the anisotropic transition into the isotropic mesh."
-        " However the impact on regions without close proximity is negligible.",
+        " However the impact on regions without close proximity is negligible."
+        " The beta mesher uses a conservative default value of 1.0.",
         context=VOLUME_MESH,
     )
 
@@ -327,13 +328,14 @@ class VolumeMeshingParams(Flow360BaseModel):
     )
 
     gap_treatment_strength: Optional[float] = pd.Field(
-        default=0,
+        default=None,
         ge=0,
         le=1,
         description="Narrow gap treatment strength used when two surfaces are in close proximity."
         " Use a value between 0 and 1, where 0 is no treatment and 1 is the most conservative treatment."
         " This parameter has a global impact where the anisotropic transition into the isotropic mesh."
-        " However the impact on regions without close proximity is negligible.",
+        " However the impact on regions without close proximity is negligible."
+        " The beta mesher uses a conservative default value of 1.0.",
     )
 
     sliding_interface_tolerance: pd.NonNegativeFloat = pd.Field(

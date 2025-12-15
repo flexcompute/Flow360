@@ -627,6 +627,7 @@ def _get_gai_setting_whitelist(input_params: SimulationParams) -> dict:
         "surface_max_adaptation_iterations": None,
         "sealing_size": None,
         "remove_non_manifold_faces": None,
+        "planar_face_tolerance": None,
     }
 
     # Conditionally add sliding_interface_tolerance only when rotation zones are present
