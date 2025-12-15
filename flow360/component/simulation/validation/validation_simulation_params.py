@@ -47,6 +47,22 @@ from flow360.component.simulation.validation.validation_context import (
 from flow360.component.simulation.validation.validation_utils import EntityUsageMap
 
 
+def _populate_validated_field_to_validation_context(v, param_info, attribute_name):
+    """Populate validated objects to validation context."""
+    if v is None:
+        return v
+    setattr(
+        param_info,
+        attribute_name,
+        {
+            obj.private_attribute_id: obj
+            for obj in v
+            if hasattr(obj, "private_attribute_id") and obj.private_attribute_id is not None
+        },
+    )
+    return v
+
+
 def _check_consistency_wall_function_and_surface_output(v):
     models = v.models
 

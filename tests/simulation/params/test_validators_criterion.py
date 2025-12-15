@@ -160,6 +160,9 @@ def test_criterion_multi_entities_probe_validation_fails(
     multi_point_probe_output.entities.stored_entities.append(
         Point(name="pt2", location=(1, 1, 1) * u.m)
     )
+    mock_validation_context.info.output_dict = {
+        multi_point_probe_output.private_attribute_id: multi_point_probe_output
+    }
     with SI_unit_system, mock_validation_context, pytest.raises(ValueError, match=message):
         StoppingCriterion(
             monitor_field=scalar_user_variable_density,
@@ -176,6 +179,9 @@ def test_criterion_multi_entities_probe_validation_fails(
             number_of_points=2,
         ),
     ]
+    mock_validation_context.info.output_dict = {
+        point_array_surface_probe_output.private_attribute_id: point_array_surface_probe_output
+    }
     with SI_unit_system, mock_validation_context, pytest.raises(ValueError, match=message):
         StoppingCriterion(
             monitor_field=scalar_user_variable_density,

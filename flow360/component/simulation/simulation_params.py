@@ -114,6 +114,7 @@ from flow360.component.simulation.validation.validation_simulation_params import
     _check_time_average_output,
     _check_unsteadiness_to_use_hybrid_model,
     _check_valid_models_for_liquid,
+    _populate_validated_field_to_validation_context,
 )
 from flow360.error_messages import (
     unit_system_inconsistent_msg,
@@ -455,6 +456,16 @@ class SimulationParams(_ParamModelBase):
         """Ensure that all the cylinder names used in ActuatorDisks are unique."""
         return _check_duplicate_actuator_disk_cylinder_names(models)
 
+    @contextual_field_validator("models", mode="after")
+    @classmethod
+    def populate_validated_models_to_validation_context(
+        cls, models, param_info: ParamsValidationInfo
+    ):
+        """After models are validated, store {id: model_obj} in validation context."""
+        return _populate_validated_field_to_validation_context(
+            models, param_info, "physics_model_dict"
+        )
+
     @contextual_field_validator("user_defined_fields", mode="after")
     @classmethod
     def _disable_expression_for_liquid(
@@ -483,6 +494,14 @@ class SimulationParams(_ParamModelBase):
     def check_duplicate_surface_usage(cls, outputs):
         """Disallow the same boundary/surface being used in multiple outputs"""
         return _check_duplicate_surface_usage(outputs)
+
+    @contextual_field_validator("outputs", mode="after")
+    @classmethod
+    def populate_validated_outputs_to_validation_context(
+        cls, outputs, param_info: ParamsValidationInfo
+    ):
+        """After outputs are validated, store {id: output_obj} in validation context."""
+        return _populate_validated_field_to_validation_context(outputs, param_info, "output_dict")
 
     @pd.field_validator("user_defined_fields", mode="after")
     @classmethod
