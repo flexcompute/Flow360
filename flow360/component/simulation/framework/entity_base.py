@@ -14,7 +14,7 @@ from flow360.component.simulation.framework.entity_selector import EntitySelecto
 from flow360.component.simulation.utils import is_exact_instance
 from flow360.component.simulation.validation.validation_context import (
     ParamsValidationInfo,
-    contextual_field_validator,
+    contextual_model_validator,
 )
 
 
@@ -221,17 +221,26 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
         None, description="Selectors on persistent entities for rule-based selection."
     )
 
-    @contextual_field_validator("stored_entities", mode="after")
-    @classmethod
-    def _ensure_entities_after_expansion(
-        cls, value: List, param_info: ParamsValidationInfo  # pylint:disable=unused-argument
-    ):
+    @contextual_model_validator(mode="after")
+    def _ensure_entities_after_expansion(self, param_info: ParamsValidationInfo):
         """
         Ensure entity selections yielded at least one entity once selectors are expanded.
+
+        With delayed selector expansion, stored_entities may be empty if only selectors
+        are defined.
         """
-        if not value:
-            raise ValueError("No entities were selected.")
-        return value
+        # If stored_entities already has entities, validation passes
+        if self.stored_entities:
+            return self
+
+        # No stored_entities - check if selectors will produce any entities
+        if self.selectors:
+            expanded = param_info.expand_entity_list(self)
+            if expanded:
+                return self
+
+        # Neither stored_entities nor selectors produced any entities
+        raise ValueError("No entities were selected.")
 
     @classmethod
     def _get_valid_entity_types(cls):
@@ -360,11 +369,12 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
                         entity_patterns_to_store,
                     )
         elif isinstance(input_data, dict):  # Deserialization
-            if "stored_entities" not in input_data:
-                raise KeyError(
-                    f"Invalid input type to `entities`, dict {input_data} is missing the key 'stored_entities'."
-                )
-            return cls._build_result(input_data["stored_entities"], input_data.get("selectors", []))
+            # With delayed selector expansion, stored_entities may be absent if only selectors are defined.
+            # We allow empty stored_entities + empty/None selectors here - the model_validator
+            # (_ensure_entities_after_expansion) will raise a proper error if no entities are selected.
+            stored_entities = input_data.get("stored_entities", [])
+            selectors = input_data.get("selectors", [])
+            return cls._build_result(stored_entities, selectors)
         else:  # Single entity or selector
             if input_data is None:
                 return cls._build_result(None, [])

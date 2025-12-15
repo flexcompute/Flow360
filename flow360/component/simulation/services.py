@@ -500,9 +500,7 @@ def validate_model(  # pylint: disable=too-many-locals
         # pylint: disable=protected-access
         params_as_dict = SimulationParams._sanitize_params_dict(params_as_dict)
         params_as_dict = handle_multi_constructor_model(params_as_dict)
-        # Expand selectors (if any) with tag/name cache and merge strategy
-        params_as_dict = resolve_selectors(params_as_dict)
-        # Materialize entities (dict -> shared instances) and per-list dedupe
+        # Materialize stored_entities (dict -> shared instances) and per-list dedupe
         params_as_dict = materialize_entities_in_place(params_as_dict)
         return params_as_dict, forward_compatibility_mode
 

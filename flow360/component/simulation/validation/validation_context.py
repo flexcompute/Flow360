@@ -534,17 +534,17 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         """
         return self._entity_info
 
-    def expand_entity_list(self, entity_list_dict: dict) -> list:
+    def expand_entity_list(self, entity_list) -> list:
         """
-        Expand selectors in an EntityList dict and return the combined list of entities.
+        Expand selectors in an EntityList and return the combined list of entities.
 
-        This method performs on-demand expansion without modifying the original dict.
+        This method performs on-demand expansion without modifying the original input.
         Results are cached per selector to avoid recomputation across multiple validator calls.
 
         Parameters
         ----------
-        entity_list_dict : dict
-            A dict with 'stored_entities' and optional 'selectors' keys.
+        entity_list : EntityList
+            A deserialized EntityList object with `stored_entities` and `selectors` attributes.
 
         Returns
         -------
@@ -557,18 +557,22 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
             _process_selectors,
         )
 
-        stored_entities = list(entity_list_dict.get("stored_entities") or [])
-        selector_list = entity_list_dict.get("selectors") or []
+        stored_entities = list(entity_list.stored_entities or [])
+        raw_selectors = entity_list.selectors or []
 
         # Fast path: no selectors or no registry available
-        if not selector_list or self._entity_registry is None:
+        if not raw_selectors or self._entity_registry is None:
             return stored_entities
+
+        # Convert EntitySelector objects to dicts (_process_selectors expects dicts/tokens)
+        # TODO: model dump? really?
+        selector_list = [sel.model_dump() for sel in raw_selectors]
 
         # Lazily initialize selector-specific infrastructure
         self._ensure_known_selectors()
         self._ensure_selector_cache()
 
-        # Process selectors (already in dict/token format from JSON)
+        # Process selectors (in dict/token format)
         additions_by_class, ordered_target_classes = _process_selectors(
             self._entity_registry,
             selector_list,

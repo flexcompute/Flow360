@@ -324,7 +324,8 @@ def materialize_entities_in_place(
     not_merged_types: set[str] = frozenset({"Point"}),
     entity_registry: Optional[EntityRegistry] = None,
 ) -> dict:
-    """Materialize entity dicts to shared instances and dedupe per list in-place.
+    """
+    Materialize `stored_entities` dicts to shared instances and dedupe per list in-place.
 
     Two operation modes:
 
@@ -338,9 +339,11 @@ def materialize_entities_in_place(
         - Replaces entity dicts with references to registry instances
         - Errors if an entity is not found in the registry
         - No new entity instances are created
+        # TODO: [NEW] This turns out to be the only mode we need since we always have the entity registry built from the params. Do we need Mode 1 for anything at all?
+        # TODO: Also since we do not expand the selectors a-priori, we do not need to deduplicate anymore? Unless maybe manually assigned duplicate entities?
         # NOTE: Possibly unnecessary:
         This function as of now is mostly used by the validate_model().
-        The slot for entity_registry was reserved for the entity registry coming from draft context.
+        The slot for entity_registry **was** reserved for the entity registry coming from draft context.
         However the only scenario where validate_model() will be called within the draft context,
         is when the user eventually submits the simulation json.
         Due to set_up_params_for_uploading(), The entity_info before validation has already been replaced by the
