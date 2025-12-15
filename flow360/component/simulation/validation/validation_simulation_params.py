@@ -395,7 +395,8 @@ def _check_complete_boundary_condition_and_unknown_surface(
                 continue
             for custom_volume in zones.entities.stored_entities:
                 if isinstance(custom_volume, CustomVolume):
-                    for boundary in custom_volume.boundaries.stored_entities:
+                    expanded = param_info.expand_entity_list(custom_volume.boundaries)
+                    for boundary in expanded:
                         potential_zone_zone_interfaces.add(boundary.name)
                 if isinstance(custom_volume, SeedpointVolume):
                     ## disable missing boundaries with snappy multizone
@@ -420,7 +421,7 @@ def _check_complete_boundary_condition_and_unknown_surface(
         entities = []
         # pylint: disable=protected-access
         if hasattr(model, "entities"):
-            entities = model.entities.stored_entities
+            entities = param_info.expand_entity_list(model.entities)
         elif hasattr(model, "entity_pairs"):  # Periodic BC
             entities = [
                 pair for surface_pair in model.entity_pairs.items for pair in surface_pair.pair

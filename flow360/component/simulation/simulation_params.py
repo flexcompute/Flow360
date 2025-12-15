@@ -553,6 +553,7 @@ class SimulationParams(_ParamModelBase):
     @contextual_model_validator(mode="after")
     def check_duplicate_entities_in_models(self):
         """Only allow each Surface/Volume entity to appear once in the Surface/Volume model"""
+        # Note: Probes are not covered by Selectors so no need to expand them here.
         return _check_duplicate_entities_in_models(self)
 
     @pd.model_validator(mode="after")
@@ -746,6 +747,8 @@ class SimulationParams(_ParamModelBase):
 
         # Hint:
         Used by _set_up_params_non_persistent_entity_info & _update_param_with_actual_volume_mesh_meta
+
+        # TODO: With the change of entity selector expansion, this no longer captures all non-draft entities.
         """
         registry = EntityRegistry()
         registry = self._register_assigned_entities(registry)

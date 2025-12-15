@@ -2264,7 +2264,7 @@ def test_check_custom_volume_in_volume_zones():
     assert errors[0]["msg"] == (
         "Value error, CustomVolume zone2 is not listed under meshing->volume_zones(or zones)->CustomZones."
     )
-    assert errors[0]["loc"] == ("models", 0, "entities", "stored_entities")
+    assert errors[0]["loc"] == ("models", 0, "entities")
 
     zone_3 = CustomVolume(name="zone3", boundaries=[Surface(name="face3")])
     zone_3.axis = (1, 0, 0)
@@ -2312,12 +2312,12 @@ def test_check_custom_volume_in_volume_zones():
     assert errors[0]["msg"] == (
         "Value error, CustomVolume zone2 is not listed under meshing->volume_zones(or zones)->CustomZones."
     )
-    assert errors[0]["loc"] == ("models", 0, "entities", "stored_entities")
+    assert errors[0]["loc"] == ("models", 0, "entities")
 
     assert errors[1]["msg"] == (
         "Value error, CustomVolume zone3 is not listed under meshing->volume_zones(or zones)->CustomZones."
     )
-    assert errors[1]["loc"] == ("models", 1, "entities", "stored_entities")
+    assert errors[1]["loc"] == ("models", 1, "entities")
 
     zone2prim = SeedpointVolume(name="zone2", point_in_mesh=(0, 0, 0) * u.mm)
     zone2prim.axes = [(1, 0, 0), (0, 1, 0)]
@@ -2367,7 +2367,7 @@ def test_check_custom_volume_in_volume_zones():
     assert errors[0]["msg"] == (
         "Value error, SeedpointVolume zone2 is not listed under meshing->volume_zones(or zones)->CustomZones."
     )
-    assert errors[0]["loc"] == ("models", 0, "entities", "stored_entities")
+    assert errors[0]["loc"] == ("models", 0, "entities")
 
 
 def test_ghost_surface_pair_requires_quasi_3d_periodic_farfield():

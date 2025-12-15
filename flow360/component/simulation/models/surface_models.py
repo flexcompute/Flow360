@@ -44,6 +44,7 @@ from flow360.component.simulation.unit_system import (
 from flow360.component.simulation.validation.validation_context import (
     ParamsValidationInfo,
     contextual_field_validator,
+    contextual_model_validator,
 )
 from flow360.component.simulation.validation.validation_utils import (
     check_deleted_surface_in_entity_list,
@@ -60,12 +61,13 @@ from flow360.component.types import Axis
 class EntityListAllowingGhost(EntityList):
     """Entity list with customized validators for ghost entities"""
 
-    @contextual_field_validator("stored_entities", mode="after")
-    @classmethod
-    def ghost_entity_validator(cls, value, param_info: ParamsValidationInfo):
+    @contextual_model_validator(mode="after")
+    def ghost_entity_validator(self, param_info: ParamsValidationInfo):
         """Run all validators"""
-        check_user_defined_farfield_symmetry_existence(value, param_info)
-        return check_symmetric_boundary_existence(value, param_info)
+        expanded = param_info.expand_entity_list(self)
+        check_user_defined_farfield_symmetry_existence(expanded, param_info)
+        check_symmetric_boundary_existence(expanded, param_info)
+        return self
 
 
 class BoundaryBase(Flow360BaseModel, metaclass=ABCMeta):
@@ -84,7 +86,9 @@ class BoundaryBase(Flow360BaseModel, metaclass=ABCMeta):
         """Ensure all boundaries will be present after mesher"""
         # pylint: disable=fixme
         # TODO: This should have been moved to EntityListAllowingGhost?
-        return check_deleted_surface_in_entity_list(value, param_info)
+        expanded = param_info.expand_entity_list(value)
+        check_deleted_surface_in_entity_list(expanded, param_info)
+        return value
 
 
 class BoundaryBaseWithTurbulenceQuantities(BoundaryBase, metaclass=ABCMeta):

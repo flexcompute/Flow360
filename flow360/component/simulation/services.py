@@ -501,6 +501,15 @@ def validate_model(  # pylint: disable=too-many-locals
         params_as_dict = SimulationParams._sanitize_params_dict(params_as_dict)
         params_as_dict = handle_multi_constructor_model(params_as_dict)
         # Materialize stored_entities (dict -> shared instances) and per-list dedupe
+        # pylint: disable=fixme
+        # TODO: Ideally stored_entities should store entity IDs only. And we do not even need to materialize them here.
+        # TODO: We just need same treatment as the selector expansion.
+        # TODO: This change has to wait for the front end to support entity IDs.
+        # Benefits:
+        # 1. Much shorter JSON.
+        # 2. Deserialization ALL entities just once, not just the persistent ones.
+        # 3. Strong requirement that ALL entities must come from entity_info/registry.
+        # 4. Data structural-wise single source of truth.
         params_as_dict = materialize_entities_in_place(params_as_dict)
         return params_as_dict, forward_compatibility_mode
 

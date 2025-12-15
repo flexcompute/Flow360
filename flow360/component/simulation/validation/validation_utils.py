@@ -111,7 +111,7 @@ def customize_model_validator_error(
     )
 
 
-def check_deleted_surface_in_entity_list(value, param_info):
+def check_deleted_surface_in_entity_list(expanded_entities: list, param_info) -> None:
     """
     Check if any boundary is meant to be deleted
     value--> EntityList
@@ -119,7 +119,7 @@ def check_deleted_surface_in_entity_list(value, param_info):
 
     # - Check if the surfaces are deleted.
     deleted_boundaries = []
-    for surface in value.stored_entities:
+    for surface in expanded_entities:
         if isinstance(
             surface, Surface
         ) and surface._will_be_deleted_by_mesher(  # pylint:disable=protected-access
@@ -140,8 +140,7 @@ def check_deleted_surface_in_entity_list(value, param_info):
             f"{plural} {boundary_list} will likely be deleted after mesh generation. "
             f"Therefore {'they' if len(deleted_boundaries) > 1 else 'it'} cannot be used."
         )
-
-    return value
+    return
 
 
 def check_deleted_surface_pair(value, param_info):

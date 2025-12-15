@@ -261,7 +261,7 @@ class RotationVolume(AxisymmetricRefinementBase):
         `enclosed_entities` is planned to be auto_populated in the future.
         """
         # pylint: disable=protected-access
-
+        # Note: Should be fine without expansion since we only allow Draft entities here.
         if len(values.stored_entities) > 1:
             raise ValueError(
                 "Only single instance is allowed in entities for each `RotationVolume`."
@@ -278,6 +278,7 @@ class RotationVolume(AxisymmetricRefinementBase):
         """
         if param_info.is_beta_mesher:
             return values
+        # Note: Should be fine without expansion since we only allow Draft entities here.
 
         cgns_max_zone_name_length = 32
         max_cylinder_name_length = cgns_max_zone_name_length - len("rotatingBlock-")
@@ -302,7 +303,8 @@ class RotationVolume(AxisymmetricRefinementBase):
         if param_info.is_beta_mesher:
             return values
 
-        for entity in values.stored_entities:
+        expanded = param_info.expand_entity_list(values)  # Can Have `Surface`
+        for entity in expanded:
             if isinstance(entity, Box):
                 raise ValueError(
                     "`Box` entity in `RotationVolume.enclosed_entities` is only supported with the beta mesher."
@@ -332,7 +334,9 @@ class RotationVolume(AxisymmetricRefinementBase):
         """Ensure all boundaries will be present after mesher"""
         if value is None:
             return value
-        return check_deleted_surface_in_entity_list(value, param_info)
+        expanded = param_info.expand_entity_list(value)
+        check_deleted_surface_in_entity_list(expanded, param_info)
+        return value
 
     @contextual_field_validator("stationary_enclosed_entities", mode="after")
     @classmethod
@@ -351,7 +355,7 @@ class RotationVolume(AxisymmetricRefinementBase):
         return values
 
     @contextual_model_validator(mode="after")
-    def _validate_stationary_enclosed_entities_subset(self, _param_info: ParamsValidationInfo):
+    def _validate_stationary_enclosed_entities_subset(self, param_info: ParamsValidationInfo):
         """
         Ensure that stationary_enclosed_entities is a subset of enclosed_entities.
         """
@@ -365,10 +369,12 @@ class RotationVolume(AxisymmetricRefinementBase):
 
         # Get sets of entity names for comparison
         # pylint: disable=no-member
-        enclosed_names = {entity.name for entity in self.enclosed_entities.stored_entities}
-        stationary_names = {
-            entity.name for entity in self.stationary_enclosed_entities.stored_entities
-        }
+        expanded_enclosed_entities = param_info.expand_entity_list(self.enclosed_entities)
+        enclosed_names = {entity.name for entity in expanded_enclosed_entities}
+        expanded_stationary_enclosed_entities = param_info.expand_entity_list(
+            self.stationary_enclosed_entities
+        )
+        stationary_names = {entity.name for entity in expanded_stationary_enclosed_entities}
 
         # Check if all stationary entities are in enclosed entities
         if not stationary_names.issubset(enclosed_names):

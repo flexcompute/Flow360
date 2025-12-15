@@ -82,6 +82,7 @@ class SurfaceMeshingParams(Flow360BaseModel):
             return self
         for refinement in self.refinements:
             if isinstance(refinement, UniformRefinement):
+                # No expansion needed since we only allow Draft entities here.
                 for entity in refinement.entities.stored_entities:
                     if (
                         isinstance(entity, Box)

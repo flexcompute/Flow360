@@ -116,7 +116,9 @@ class UserDefinedDynamic(Flow360BaseModel):
         """Ensure all boundaries will be present after mesher"""
         if value is None:
             return value
-        return check_deleted_surface_in_entity_list(value, param_info)
+        expanded = param_info.expand_entity_list(value)
+        check_deleted_surface_in_entity_list(expanded, param_info)
+        return value
 
     @contextual_field_validator("output_target", mode="after")
     @classmethod

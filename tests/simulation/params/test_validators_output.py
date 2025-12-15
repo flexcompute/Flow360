@@ -576,7 +576,7 @@ def test_duplicate_probe_entity_names(mock_validation_context):
             )
 
 
-def test_surface_integral_entity_types():
+def test_surface_integral_entity_types(mock_validation_context):
     uv_surface1 = UserVariable(
         name="uv_surface1", value=math.dot(solution.velocity, solution.CfVec)
     )
@@ -593,7 +593,7 @@ def test_surface_integral_entity_types():
             ],
         )
 
-    with pytest.raises(
+    with mock_validation_context, pytest.raises(
         ValueError,
         match=re.escape(
             "Imported and simulation surfaces cannot be used together in the same SurfaceIntegralOutput."

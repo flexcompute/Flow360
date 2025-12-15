@@ -299,7 +299,7 @@ def test_user_defined_farfield_symmetry_plane_requires_half_domain(surface_mesh)
             ],
         )
     errors = _run_validation(params, surface_mesh, use_beta_mesher=True, use_geometry_AI=True)
-    assert errors[0]["loc"] == ("models", 1, "entities", "stored_entities")
+    assert errors[0]["loc"] == ("models", 1, "entities")
     assert (
         errors[0]["msg"]
         == "Value error, Symmetry plane of user defined farfield is only supported for half body domains."
