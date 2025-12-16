@@ -7,7 +7,7 @@ Pydantic model instances and perform per-list deduplication.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, Optional
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
 
 import pydantic as pd
 
@@ -17,6 +17,7 @@ from flow360.component.simulation.framework.entity_materialization_context impor
     get_entity_cache,
     get_entity_registry,
 )
+from flow360.component.simulation.framework.entity_selector import EntitySelector
 from flow360.component.simulation.framework.entity_utils import (
     DEFAULT_NOT_MERGED_TYPES,
     deduplicate_entities,
@@ -215,6 +216,74 @@ def _convert_entity_dict_to_object(
     return obj, key
 
 
+def _deserialize_used_selectors_and_build_lookup(params_as_dict: dict) -> Dict[str, EntitySelector]:
+    """Deserialize asset_cache.used_selectors in-place and build selector_id -> selector lookup."""
+    asset_cache = params_as_dict.get("private_attribute_asset_cache")
+    if not isinstance(asset_cache, dict):
+        return {}
+
+    raw_used_selectors = asset_cache.get("used_selectors")
+    if not isinstance(raw_used_selectors, list) or not raw_used_selectors:
+        return {}
+
+    selector_list = pd.TypeAdapter(List[EntitySelector]).validate_python(raw_used_selectors)
+    selector_lookup = {selector.selector_id: selector for selector in selector_list}
+
+    # Keep used_selectors as a list, but ensure it contains deserialized EntitySelector instances.
+    asset_cache["used_selectors"] = selector_list
+    return selector_lookup
+
+
+def _materialize_stored_entities_list_in_node(
+    node: dict,
+    *,
+    is_registry_mode: bool,
+    cache: Optional[dict],
+    builder: Optional[Callable],
+    not_merged_types: set[str],
+) -> None:
+    """Materialize node['stored_entities'] in-place if present."""
+    stored_entities = node.get("stored_entities")
+    if not isinstance(stored_entities, list):
+        return
+
+    def processor(item):
+        if isinstance(item, dict):
+            return _convert_entity_dict_to_object(item, is_registry_mode, cache, builder)
+        # Already materialized
+        return item, get_entity_key(item)
+
+    node["stored_entities"] = deduplicate_entities(
+        stored_entities,
+        processor=processor,
+        not_merged_types=not_merged_types,
+    )
+
+
+def _materialize_selectors_list_in_node(
+    node: dict, selector_lookup: Dict[str, EntitySelector]
+) -> None:
+    """Replace selector tokens in node['selectors'] with shared EntitySelector instances."""
+    selectors = node.get("selectors")
+    if not isinstance(selectors, list) or not selectors:
+        return
+
+    materialized_selectors: List[Any] = []
+    for selector_item in selectors:
+        if isinstance(selector_item, str):
+            selector_object = selector_lookup.get(selector_item)
+            if selector_object is None:
+                raise ValueError(
+                    "[EntityMaterializer] Selector token not found in "
+                    "private_attribute_asset_cache.used_selectors: "
+                    f"{selector_item}"
+                )
+            materialized_selectors.append(selector_object)
+        else:
+            materialized_selectors.append(selector_item)
+    node["selectors"] = materialized_selectors
+
+
 def materialize_entities_in_place(
     params_as_dict: dict,
     *,
@@ -258,6 +327,8 @@ def materialize_entities_in_place(
         When provided, all entities must exist in registry (Mode 2).
     """
 
+    selector_lookup = _deserialize_used_selectors_and_build_lookup(params_as_dict)
+
     # TODO: [NEW] This turns out to be the only mode we need since we always
     # have the entity registry built from the params. Do we need Mode 1 for anything at all?
     # TODO: Also since we do not expand the selectors a-priori
@@ -279,22 +350,15 @@ def materialize_entities_in_place(
 
         def visit(node):
             if isinstance(node, dict):
-                stored_entities = node.get("stored_entities", None)
-                if isinstance(stored_entities, list):
+                _materialize_stored_entities_list_in_node(
+                    node,
+                    is_registry_mode=is_registry_mode,
+                    cache=cache,
+                    builder=builder,
+                    not_merged_types=not_merged_types,
+                )
+                _materialize_selectors_list_in_node(node, selector_lookup)
 
-                    def processor(item):
-                        if isinstance(item, dict):
-                            return _convert_entity_dict_to_object(
-                                item, is_registry_mode, cache, builder
-                            )
-                        # Already materialized
-                        return item, get_entity_key(item)
-
-                    node["stored_entities"] = deduplicate_entities(
-                        stored_entities,
-                        processor=processor,
-                        not_merged_types=not_merged_types,
-                    )
                 for v in node.values():
                     visit(v)
             elif isinstance(node, list):

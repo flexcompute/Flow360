@@ -8,6 +8,7 @@ from flow360.component.simulation.framework.entity_materializer import (
     materialize_entities_in_place,
 )
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
+from flow360.component.simulation.framework.entity_selector import EntitySelector
 from flow360.component.simulation.outputs.output_entities import Point
 from flow360.component.simulation.primitives import Surface
 
@@ -369,3 +370,43 @@ def test_materialize_with_entity_registry_missing_id_raises():
 
     with pytest.raises(ValueError, match=r"Entity missing 'private_attribute_id'.*EntityRegistry"):
         materialize_entities_in_place(copy.deepcopy(params), entity_registry=registry)
+
+
+def test_materialize_deserializes_used_selectors_and_materializes_selector_tokens():
+    selector_dict = {
+        "target_class": "Surface",
+        "name": "my-selector",
+        "selector_id": "sel-1",
+        "logic": "AND",
+        "children": [
+            {
+                "attribute": "name",
+                "operator": "matches",
+                "value": "wing*",
+                "non_glob_syntax": None,
+            }
+        ],
+    }
+    params = {
+        "private_attribute_asset_cache": {"used_selectors": [selector_dict]},
+        "node": {"selectors": ["sel-1"]},
+    }
+
+    out = materialize_entities_in_place(copy.deepcopy(params))
+    used_selectors = out["private_attribute_asset_cache"]["used_selectors"]
+    assert isinstance(used_selectors[0], EntitySelector)
+
+    node_selectors = out["node"]["selectors"]
+    assert isinstance(node_selectors[0], EntitySelector)
+    # Ensure the token was replaced with the same shared instance as in used_selectors
+    assert node_selectors[0] is used_selectors[0]
+
+
+def test_materialize_selector_token_missing_definition_raises():
+    params = {
+        "private_attribute_asset_cache": {"used_selectors": []},
+        "node": {"selectors": ["sel-missing"]},
+    }
+
+    with pytest.raises(ValueError, match=r"Selector token not found.*sel-missing"):
+        materialize_entities_in_place(copy.deepcopy(params))
