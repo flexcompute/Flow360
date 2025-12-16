@@ -632,9 +632,8 @@ class ImportedSurface(EntityBase):
     private_attribute_entity_type_name: Literal["ImportedSurface"] = pd.Field(
         "ImportedSurface", frozen=True
     )
-    file_name: str
+    file_name: Optional[str] = None
     surface_mesh_id: Optional[str] = None
-
 
 class GhostSurface(_SurfaceEntityBase):
     """

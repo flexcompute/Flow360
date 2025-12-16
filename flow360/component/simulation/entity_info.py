@@ -155,6 +155,7 @@ class GeometryEntityInfo(EntityInfoModel):
         description="The default value based on uploaded geometry for geometry_accuracy.",
     )
 
+
     def group_in_registry(
         self,
         entity_type_name: Literal["face", "edge", "body", "snappy_body"],
