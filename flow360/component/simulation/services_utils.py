@@ -48,7 +48,6 @@ def strip_selector_matches_inplace(params) -> Any:
             registry,
             selectors_list,
             selector_cache,
-            known_selectors=known_selectors,
         )
         keys: set = set()
         for items in additions_by_class.values():

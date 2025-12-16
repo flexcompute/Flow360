@@ -640,31 +640,23 @@ def _process_selectors(
     registry,
     selectors_list: list,
     selector_cache: dict,
-    known_selectors: dict[str, dict] = None,
 ) -> tuple[dict[str, list[EntityNode]], list[str]]:
     """Process selectors and return additions grouped by class.
 
-    This function iterates over the list of selectors (which can be full dictionaries or
-    string tokens).
-    - If a selector is a string token, it looks up the full definition in `known_selectors`.
-    - If a selector is a dictionary, it uses it directly.
-    - It then applies the selector logic to find matching entities from the registry.
-    - Results are cached in `selector_cache` to avoid re-computation for the same selector.
+    This function iterates over a list of materialized selectors (EntitySelector-like objects
+    or plain dicts) and applies them over the entity registry.
+    Results are cached in `selector_cache` to avoid re-computation for the same selector.
 
     Parameters:
         registry: EntityRegistry instance containing entities.
-        selectors_list: List of selector definitions or selector ID tokens.
+        selectors_list: List of selector definitions (materialized; no string tokens).
         selector_cache: Cache for selector results.
-        known_selectors: Map of selector IDs to selector definitions.
 
     Returns:
         Tuple of (additions_by_class dict, ordered_target_classes list).
     """
     additions_by_class: dict[str, list[EntityNode]] = {}
     ordered_target_classes: list[str] = []
-
-    if known_selectors is None:
-        known_selectors = {}
 
     def _selector_object_to_dict(selector) -> dict:
         # TODO: Remove.
@@ -688,10 +680,9 @@ def _process_selectors(
 
     for item in selectors_list:
         selector_dict = None
-        # Check if the item is a token (string) or an EntitySelector object.
-        if isinstance(item, str):
-            # Is token
-            selector_dict = known_selectors.get(item)
+        # Stage2: token strings must be materialized at deserialization time or by callers.
+        if isinstance(item, dict):
+            selector_dict = item
         elif hasattr(item, "model_dump"):
             # TODO: rework underlying low level logic to work with EntitySelector objects directly.
             selector_dict = _selector_object_to_dict(item)
@@ -776,11 +767,22 @@ def expand_entity_list_selectors(
     if not raw_selectors:
         return stored_entities
 
+    # Compatibility: some callers may still provide selector tokens (strings).
+    # Materialize them here so _process_selectors() only operates on selector objects/dicts.
+    materialized_selectors: list = []
+    for item in raw_selectors:
+        if isinstance(item, str):
+            selector_dict = known_selectors.get(item)
+            if selector_dict is None:
+                continue
+            materialized_selectors.append(selector_dict)
+        else:
+            materialized_selectors.append(item)
+
     additions_by_class, ordered_target_classes = _process_selectors(
         registry,
-        raw_selectors,
+        materialized_selectors,
         selector_cache,
-        known_selectors=known_selectors,
     )
     return _merge_entities(
         stored_entities,
