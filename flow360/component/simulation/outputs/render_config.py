@@ -197,18 +197,18 @@ class Viewpoint(Enum):
         return tuple(x + y for x, y in zip(a, b))
 
 
-class CameraConfig(Flow360BaseModel):
+class Camera(Flow360BaseModel):
     """
-    :class:`RenderCameraConfig` configures the camera and projection used for rendering.
+    :class:`Camera` configures the camera and projection used for rendering.
 
     Example
     -------
-    >>> CameraConfig.perspective(
+    >>> Camera.perspective(
     ...     x=1, y=1, z=1, scale=2, view=Viewpoint.FRONT
     ... )
     """
 
-    type_name: Literal["CameraConfig"] = pd.Field("CameraConfig", frozen=True)
+    type_name: Literal["Camera"] = pd.Field("Camera", frozen=True)
     view: Union[StaticView, AnimatedView] = pd.Field(
         discriminator="type_name", description="View settings (position, target)"
     )
@@ -224,7 +224,7 @@ class CameraConfig(Flow360BaseModel):
 
         Example
         -------
-        >>> CameraConfig.orthographic(
+        >>> Camera.orthographic(
         ...     position=(0, 0, 0), scale=1.5, view=Viewpoint.TOP
         ... )
         """
@@ -240,7 +240,7 @@ class CameraConfig(Flow360BaseModel):
         y = position[1]
         z = position[2]
 
-        return CameraConfig(
+        return Camera(
             view=StaticView(
                 # pylint: disable=no-member
                 position=(x + view[0] * scale, y + view[1] * scale, z + view[2] * scale) * u.m,
@@ -262,7 +262,7 @@ class CameraConfig(Flow360BaseModel):
 
         Example
         -------
-        >>> CameraConfig.perspective(
+        >>> Camera.perspective(
         ...     position=(0, 0, 0), scale=3, view=Viewpoint.LEFT
         ... )
         """
@@ -278,7 +278,7 @@ class CameraConfig(Flow360BaseModel):
         y = position[1]
         z = position[2]
 
-        return CameraConfig(
+        return Camera(
             view=StaticView(
                 # pylint: disable=no-member
                 position=(x + view[0] * scale, y + view[1] * scale, z + view[2] * scale) * u.m,
@@ -329,16 +329,16 @@ class DirectionalLight(Flow360BaseModel):
     )
 
 
-class LightingConfig(Flow360BaseModel):
+class Lighting(Flow360BaseModel):
     """
-    :class:`RenderLightingConfig` defines ambient and directional lighting for rendering.
+    :class:`Lighting` defines ambient and directional lighting for rendering.
 
     Example
     -------
-    >>> LightingConfig.default()
+    >>> Lighting.default()
     """
 
-    type_name: Literal["LightingConfig"] = pd.Field("LightingConfig", frozen=True)
+    type_name: Literal["Lighting"] = pd.Field("Lighting", frozen=True)
     directional: DirectionalLight = pd.Field(
         description="Directional component of the light (falls from a single direction)"
     )
@@ -353,9 +353,9 @@ class LightingConfig(Flow360BaseModel):
 
         Example
         -------
-        >>> light = LightingConfig.default()
+        >>> light = Lighting.default()
         """
-        return LightingConfig(
+        return Lighting(
             ambient=AmbientLight(intensity=0.4, color=(255, 255, 255)),
             directional=DirectionalLight(
                 intensity=1.0, color=(255, 255, 255), direction=(-1.0, -1.0, -1.0)
@@ -413,16 +413,16 @@ class SkyboxBackground(BackgroundBase):
     )
 
 
-class EnvironmentConfig(Flow360BaseModel):
+class Environment(Flow360BaseModel):
     """
-    :class:`RenderEnvironmentConfig` configures the background environment for rendering.
+    :class:`Environment` configures the background environment for rendering.
 
     Example
     -------
-    >>> EnvironmentConfig.simple()
+    >>> Environment.simple()
     """
 
-    type_name: Literal["EnvironmentConfig"] = pd.Field("EnvironmentConfig", frozen=True)
+    type_name: Literal["Environment"] = pd.Field("Environment", frozen=True)
     background: Union[SolidBackground, SkyboxBackground] = pd.Field(
         discriminator="type_name", description="Background image, solid or textured"
     )
@@ -434,9 +434,9 @@ class EnvironmentConfig(Flow360BaseModel):
 
         Example
         -------
-        >>> EnvironmentConfig.simple()
+        >>> Environment.simple()
         """
-        return EnvironmentConfig(background=SolidBackground(color=(207, 226, 230)))
+        return Environment(background=SolidBackground(color=(207, 226, 230)))
 
     @classmethod
     def sky(cls):
@@ -445,9 +445,9 @@ class EnvironmentConfig(Flow360BaseModel):
 
         Example
         -------
-        >>> EnvironmentConfig.sky()
+        >>> Environment.sky()
         """
-        return EnvironmentConfig(background=SkyboxBackground(texture=SkyboxTexture.SKY))
+        return Environment(background=SkyboxBackground(texture=SkyboxTexture.SKY))
 
     @classmethod
     def gradient(cls):
@@ -456,14 +456,14 @@ class EnvironmentConfig(Flow360BaseModel):
 
         Example
         -------
-        >>> EnvironmentConfig.gradient()
+        >>> Environment.gradient()
         """
-        return EnvironmentConfig(background=SkyboxBackground(texture=SkyboxTexture.GRADIENT))
+        return Environment(background=SkyboxBackground(texture=SkyboxTexture.GRADIENT))
 
 
 class MaterialBase(Flow360BaseModel, metaclass=abc.ABCMeta):
     """
-    :class:`RenderMaterialBase` is an abstract base class for material definitions used during rendering.
+    :class:`MaterialBase` is an abstract base class for material definitions used during rendering.
     """
 
     type_name: str = pd.Field("", frozen=True)
@@ -773,7 +773,7 @@ class FieldMaterial(MaterialBase):
 
 class SceneTransform(Flow360BaseModel):
     """
-    :class:`RenderSceneTransform` applies translation, rotation, and scaling to renderable objects.
+    :class:`SceneTransform` applies translation, rotation, and scaling to renderable objects.
 
     This may be
 

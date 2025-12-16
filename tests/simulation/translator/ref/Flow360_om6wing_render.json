@@ -70,10 +70,9 @@
                 "projection": {
                     "far": 62.04243702692642,
                     "near": 0.012408487405385285,
-                    "typeName": "OrthographicProjection",
+                    "type": "orthographic",
                     "width": 1.2408487405385284
                 },
-                "typeName": "CameraConfig",
                 "view": {
                     "position": [
                         0.0,
@@ -85,7 +84,6 @@
                         0.0,
                         0.0
                     ],
-                    "typeName": "StaticView",
                     "up": [
                         0,
                         0,
@@ -100,9 +98,8 @@
                         226,
                         230
                     ],
-                    "typeName": "SolidBackground"
-                },
-                "typeName": "EnvironmentConfig"
+                    "type": "solid"
+                }
             },
             "groups": [
                 {
@@ -120,6 +117,7 @@
                             0.56
                         ],
                         "roughness": 0.30000000000000004,
+                        "type": "pbr",
                         "typeName": "PBRMaterial"
                     },
                     "slices": {},
@@ -250,6 +248,7 @@
                             "name": "Mach_SI",
                             "typeName": "UserVariable"
                         },
+                        "type": "field",
                         "typeName": "FieldMaterial"
                     },
                     "slices": {
@@ -276,8 +275,7 @@
                         255,
                         255
                     ],
-                    "intensity": 0.4,
-                    "typeName": "AmbientLight"
+                    "intensity": 0.4
                 },
                 "directional": {
                     "color": [
@@ -290,16 +288,13 @@
                         -0.5773502691896258,
                         -0.5773502691896258
                     ],
-                    "intensity": 1.0,
-                    "typeName": "DirectionalLight"
-                },
-                "typeName": "LightingConfig"
+                    "intensity": 1.0
+                }
             },
             "name": "Render output",
             "outputFields": [
                 {
-                    "name": "Mach_SI",
-                    "typeName": "UserVariable"
+                    "name": "Mach_SI"
                 }
             ]
         }

@@ -111,6 +111,7 @@ from flow360.component.simulation.translator.utils import (
     has_instance_in_list,
     inline_expressions_in_dict,
     preprocess_input,
+    remove_keys,
     remove_units_in_dict,
     replace_dict_key,
     translate_setting_and_apply_to_all_entities,
@@ -594,10 +595,27 @@ def translate_render_output(
         render_dict = dump_dict(render)
         render_dict = remove_units_in_dict(render_dict)
 
+        environment_dict = render_dict["environment"]
+        if environment_dict["background"]["typeName"] == "SkyboxBackground":
+            environment_dict["background"]["type"] = "skybox"
+        elif environment_dict["background"]["typeName"] == "SolidBackground":
+            environment_dict["background"]["type"] = "solid"
+
+        camera_dict = render_dict["camera"]
+        if camera_dict["projection"]["typeName"] == "OrthographicProjection":
+            camera_dict["projection"]["type"] = "orthographic"
+        elif camera_dict["projection"]["typeName"] == "PerspectiveProjection":
+            camera_dict["projection"]["type"] = "perspective"
+
         for render_group_dict in render_dict["groups"]:
-            material = render_group_dict["material"]
-            if "outputField" in material and material["outputField"] not in render.output_fields:
-                render_dict["outputFields"]["items"].append(material["outputField"])
+            material_dict = render_group_dict["material"]
+            if (
+                "outputField" in material_dict
+                and material_dict["outputField"] not in render.output_fields
+            ):
+                render_dict["outputFields"]["items"].append(material_dict["outputField"])
+
+        render_dict = remove_keys(render_dict, "typeName")
 
         translated_output = {
             "name": render.name,
@@ -611,7 +629,13 @@ def translate_render_output(
         }
 
         for render_group in render.groups:
-            material = dump_dict(render_group.material)
+            material_dict = dump_dict(render_group.material)
+
+            if material_dict["typeName"] == "PBRMaterial":
+                material_dict["type"] = "pbr"
+            elif material_dict["typeName"] == "FieldMaterial":
+                material_dict["type"] = "field"
+
             translated_output["groups"].append(
                 {
                     "surfaces": translate_setting_and_apply_to_all_entities(
@@ -638,7 +662,7 @@ def translate_render_output(
                         entity_list_field_name="isosurfaces",
                         entity_injection_input_params=input_params,
                     ),
-                    "material": remove_units_in_dict(material),
+                    "material": remove_units_in_dict(material_dict),
                 }
             )
         if render.transform:

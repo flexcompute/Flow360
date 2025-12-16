@@ -123,7 +123,7 @@ from flow360.component.simulation.operating_condition.operating_condition import
     LiquidOperatingCondition,
     ThermalState,
 )
-from flow360.component.simulation.outputs import render_config as render
+from flow360.component.simulation.outputs import render_config
 from flow360.component.simulation.outputs.output_entities import (
     Isosurface,
     Point,

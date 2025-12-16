@@ -511,3 +511,12 @@ def using_snappy(input_params: SimulationParams):
     return isinstance(input_params.meshing, ModularMeshingWorkflow) and isinstance(
         input_params.meshing.surface_meshing, snappy.SurfaceMeshingParams
     )
+
+
+def remove_keys(obj, key_to_remove):
+    """Remove all keys recursively from the input dict"""
+    if isinstance(obj, dict):
+        return {k: remove_keys(v, key_to_remove) for k, v in obj.items() if k != key_to_remove}
+    if isinstance(obj, list):
+        return [remove_keys(item, key_to_remove) for item in obj]
+    return obj

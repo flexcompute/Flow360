@@ -4,6 +4,7 @@ import unittest
 
 import numpy as np
 import pytest
+from pandas.io.clipboard import clipboard_set
 
 import flow360.component.simulation.units as u
 from flow360.component.geometry import Geometry, GeometryMeta
@@ -84,10 +85,10 @@ from flow360.component.simulation.outputs.outputs import (
 )
 from flow360.component.simulation.outputs.render_config import (
     AmbientLight,
-    CameraConfig,
-    EnvironmentConfig,
+    Camera,
+    Environment,
     FieldMaterial,
-    LightingConfig,
+    Lighting,
     PBRMaterial,
     Viewpoint,
 )
@@ -287,6 +288,7 @@ def translate_and_compare(
     param, mesh_unit, ref_json_file: str, atol=1e-15, rtol=1e-10, debug=False
 ):
     translated = get_solver_json(param, mesh_unit=mesh_unit)
+    clipboard_set(json.dumps(translated, indent=4, sort_keys=True))
     with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "ref", ref_json_file)) as fh:
         ref_dict = json.load(fh)
     if debug:
@@ -1543,9 +1545,9 @@ def test_om6wing_render_output(get_om6Wing_tutorial_param):
                         ),
                     ),
                 ],
-                lighting=LightingConfig.default(),
-                camera=CameraConfig.orthographic(view=Viewpoint.TOP + Viewpoint.LEFT),
-                environment=EnvironmentConfig.simple(),
+                lighting=Lighting.default(),
+                camera=Camera.orthographic(view=Viewpoint.TOP + Viewpoint.LEFT),
+                environment=Environment.simple(),
             )
         )
 

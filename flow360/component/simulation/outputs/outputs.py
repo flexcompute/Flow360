@@ -34,10 +34,10 @@ from flow360.component.simulation.outputs.output_fields import (
     get_field_values,
 )
 from flow360.component.simulation.outputs.render_config import (
-    CameraConfig,
-    EnvironmentConfig,
+    Camera,
+    Environment,
     FieldMaterial,
-    LightingConfig,
+    Lighting,
     PBRMaterial,
     SceneTransform,
 )
@@ -770,7 +770,7 @@ class RenderOutput(_AnimationSettings):
     ...             material=fl.render.FieldMaterial.rainbow(field="T", min_value=0, max_value=1, alpha=0.4)
     ...         )
     ...     ],
-    ...     camera=fl.render.CameraConfig.orthographic(scale=5, view=fl.Viewpoint.TOP + fl.Viewpoint.LEFT)
+    ...     camera=fl.render.Camera.orthographic(scale=5, view=fl.Viewpoint.TOP + fl.Viewpoint.LEFT)
     ... )
     ====
     """
@@ -780,14 +780,10 @@ class RenderOutput(_AnimationSettings):
     output_fields: UniqueItemList[Union[CommonFieldNames, str, UserVariable]] = pd.Field(
         [], description="List of output variables (inferred from material info)"
     )
-    camera: CameraConfig = pd.Field(
-        description="Camera settings", default_factory=CameraConfig.orthographic
-    )
-    lighting: LightingConfig = pd.Field(
-        description="Lighting settings", default_factory=LightingConfig.default
-    )
-    environment: EnvironmentConfig = pd.Field(
-        description="Environment settings", default_factory=EnvironmentConfig.simple
+    camera: Camera = pd.Field(description="Camera settings", default_factory=Camera.orthographic)
+    lighting: Lighting = pd.Field(description="Lighting settings", default_factory=Lighting.default)
+    environment: Environment = pd.Field(
+        description="Environment settings", default_factory=Environment.simple
     )
     transform: Optional[SceneTransform] = pd.Field(
         None, description="Optional model transform to apply to all entities"
