@@ -268,30 +268,44 @@ def _materialize_selectors_list_in_node(
     if not isinstance(selectors, list) or not selectors:
         return
 
-    materialized_selectors: List[Any] = []
+    materialized_selectors: List[EntitySelector] = []
     for selector_item in selectors:
         if isinstance(selector_item, str):
+            # ==== Selector token (str) ====
             selector_object = selector_lookup.get(selector_item)
             if selector_object is None:
                 raise ValueError(
-                    "[EntityMaterializer] Selector token not found in "
+                    "[Internal] Selector token not found in "
                     "private_attribute_asset_cache.used_selectors: "
                     f"{selector_item}"
                 )
             materialized_selectors.append(selector_object)
+        elif isinstance(selector_item, dict):
+            # ==== Inline selector definition (dict, pre-submit JSON) ====
+            # Cloud/Production JSON data will only contain selector tokens (str).
+            # Local pre-upload JSON (from model_dump) will contain inline selector definitions (dict).
+            # At local validaiton, `selector_lookup` is empty.
+            # Since it is presubmit, no need to "materialize", "deserialize" is fine.
+            materialized_selectors.append(EntitySelector.model_validate(selector_item))
         else:
-            materialized_selectors.append(selector_item)
+            raise TypeError(
+                "[Internal] Unsupported selector item type in selectors list. "
+                "Expected selector tokens (str/dict). Got: "
+                f"{type(selector_item)}"
+            )
     node["selectors"] = materialized_selectors
 
 
-def materialize_entities_in_place(
+def materialize_entities_and_selectors_in_place(
     params_as_dict: dict,
     *,
     not_merged_types: set[str] = DEFAULT_NOT_MERGED_TYPES,
     entity_registry: Optional[EntityRegistry] = None,
 ) -> dict:
     """
-    Materialize `stored_entities` dicts to shared instances and dedupe per list in-place.
+    From raw dict simulation params:
+    1. Materialize `stored_entities` dicts to shared instances and dedupe per list in-place.
+    2. Materialize `selectors` list to shared EntitySelector instances.
 
     Two operation modes:
 

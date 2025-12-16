@@ -5,7 +5,7 @@ import pydantic as pd
 import pytest
 
 from flow360.component.simulation.framework.entity_materializer import (
-    materialize_entities_in_place,
+    materialize_entities_and_selectors_in_place,
 )
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
 from flow360.component.simulation.framework.entity_selector import EntitySelector
@@ -42,7 +42,7 @@ def test_materializes_dicts_and_shares_instances_across_lists():
     Test: Entity materializer converts dicts to Pydantic instances and shares them globally.
 
     Purpose:
-    - Verify that materialize_entities_in_place() converts entity dicts to model instances
+    - Verify that materialize_entities_and_selectors_in_place() converts entity dicts to model instances
     - Verify that entities with same (type, id) are the same Python object (by identity)
     - Verify that instance sharing works across different nodes in the params tree
     - Verify that materialization is idempotent with respect to instance identity
@@ -70,7 +70,7 @@ def test_materializes_dicts_and_shares_instances_across_lists():
         },
     }
 
-    out = materialize_entities_in_place(copy.deepcopy(params))
+    out = materialize_entities_and_selectors_in_place(copy.deepcopy(params))
     a_list = out["a"]["stored_entities"]
     b_list = out["b"]["stored_entities"]
 
@@ -84,7 +84,7 @@ def test_per_list_dedup_for_non_point():
     Test: Materializer deduplicates non-Point entities within each list.
 
     Purpose:
-    - Verify that materialize_entities_in_place() removes duplicate entities
+    - Verify that materialize_entities_and_selectors_in_place() removes duplicate entities
     - Verify that deduplication is based on stable key (type, id) tuple
     - Verify that order is preserved (first occurrence kept)
     - Verify that this applies to all non-Point entity types
@@ -106,7 +106,7 @@ def test_per_list_dedup_for_non_point():
         }
     }
 
-    out = materialize_entities_in_place(copy.deepcopy(params))
+    out = materialize_entities_and_selectors_in_place(copy.deepcopy(params))
     items = out["node"]["stored_entities"]
     # Dedup preserves order and removes duplicates for non-Point types
     assert [e.name for e in items] == ["wing", "tail"]
@@ -154,7 +154,7 @@ def test_skip_dedup_for_point():
         }
     }
 
-    out = materialize_entities_in_place(copy.deepcopy(params))
+    out = materialize_entities_and_selectors_in_place(copy.deepcopy(params))
     items = out["node"]["stored_entities"]
     assert [e.name for e in items] == ["p1", "p1", "p2"]
 
@@ -164,7 +164,7 @@ def test_reentrant_safe_and_idempotent():
     Test: Materializer is reentrant-safe and idempotent.
 
     Purpose:
-    - Verify that materialize_entities_in_place() can be called multiple times safely
+    - Verify that materialize_entities_and_selectors_in_place() can be called multiple times safely
     - Verify that subsequent calls on already-materialized data are no-ops
     - Verify that object identity is maintained across re-entrant calls
     - Verify that deduplication results are stable
@@ -187,9 +187,9 @@ def test_reentrant_safe_and_idempotent():
         }
     }
 
-    out1 = materialize_entities_in_place(copy.deepcopy(params))
+    out1 = materialize_entities_and_selectors_in_place(copy.deepcopy(params))
     # Re-entrant call on already materialized objects
-    out2 = materialize_entities_in_place(out1)
+    out2 = materialize_entities_and_selectors_in_place(out1)
     items1 = out1["node"]["stored_entities"]
     items2 = out2["node"]["stored_entities"]
 
@@ -215,7 +215,7 @@ def test_materialize_dedup_and_point_passthrough():
         ]
     }
 
-    out = materialize_entities_in_place(params)
+    out = materialize_entities_and_selectors_in_place(params)
     items = out["models"][0]["entities"]["stored_entities"]
 
     # 1) Surfaces are deduped per list
@@ -224,7 +224,7 @@ def test_materialize_dedup_and_point_passthrough():
     assert sum(isinstance(x, Point) for x in items) == 1
 
     # 3) Idempotency: re-run should keep the same shape and types
-    out2 = materialize_entities_in_place(out)
+    out2 = materialize_entities_and_selectors_in_place(out)
     items2 = out2["models"][0]["entities"]["stored_entities"]
     assert len(items2) == len(items)
     assert sum(isinstance(x, Surface) for x in items2) == 1
@@ -251,7 +251,7 @@ def test_materialize_passthrough_on_reentrant_call():
             }
         ]
     }
-    out = materialize_entities_in_place(params)
+    out = materialize_entities_and_selectors_in_place(params)
     items = out["models"][0]["entities"]["stored_entities"]
     assert len([x for x in items if isinstance(x, Surface)]) == 1
 
@@ -266,7 +266,7 @@ def test_materialize_reuses_cached_instance_across_nodes():
         ]
     }
 
-    out = materialize_entities_in_place(params)
+    out = materialize_entities_and_selectors_in_place(params)
     items1 = out["models"][0]["entities"]["stored_entities"]
     items2 = out["models"][1]["entities"]["stored_entities"]
 
@@ -278,7 +278,7 @@ def test_materialize_reuses_cached_instance_across_nodes():
 
 def test_materialize_with_entity_registry_mode():
     """
-    Test: Mode 2 - materialize_entities_in_place with EntityRegistry.
+    Test: Mode 2 - materialize_entities_and_selectors_in_place with EntityRegistry.
 
     Purpose:
     - Verify that when EntityRegistry is provided, entities are looked up from registry
@@ -309,7 +309,9 @@ def test_materialize_with_entity_registry_mode():
     }
 
     # Materialize with registry - should use registry instances
-    out = materialize_entities_in_place(copy.deepcopy(params), entity_registry=registry)
+    out = materialize_entities_and_selectors_in_place(
+        copy.deepcopy(params), entity_registry=registry
+    )
 
     # Verify that params now reference the exact registry instances
     a_wing = out["a"]["stored_entities"][0]
@@ -327,7 +329,7 @@ def test_materialize_with_entity_registry_missing_entity_raises():
     Test: Mode 2 - Error when entity not found in registry.
 
     Purpose:
-    - Verify that materialize_entities_in_place raises clear error
+    - Verify that materialize_entities_and_selectors_in_place raises clear error
     - Verify that error includes entity type, ID, and name for debugging
 
     Expected behavior:
@@ -343,7 +345,7 @@ def test_materialize_with_entity_registry_missing_entity_raises():
     params = {"a": {"stored_entities": [_mk_surface_dict("fuselage", "s-999")]}}
 
     with pytest.raises(ValueError, match=r"Entity not found in EntityRegistry.*s-999.*fuselage"):
-        materialize_entities_in_place(copy.deepcopy(params), entity_registry=registry)
+        materialize_entities_and_selectors_in_place(copy.deepcopy(params), entity_registry=registry)
 
 
 def test_materialize_with_entity_registry_missing_id_raises():
@@ -369,7 +371,7 @@ def test_materialize_with_entity_registry_missing_id_raises():
     }
 
     with pytest.raises(ValueError, match=r"Entity missing 'private_attribute_id'.*EntityRegistry"):
-        materialize_entities_in_place(copy.deepcopy(params), entity_registry=registry)
+        materialize_entities_and_selectors_in_place(copy.deepcopy(params), entity_registry=registry)
 
 
 def test_materialize_deserializes_used_selectors_and_materializes_selector_tokens():
@@ -392,7 +394,7 @@ def test_materialize_deserializes_used_selectors_and_materializes_selector_token
         "node": {"selectors": ["sel-1"]},
     }
 
-    out = materialize_entities_in_place(copy.deepcopy(params))
+    out = materialize_entities_and_selectors_in_place(copy.deepcopy(params))
     used_selectors = out["private_attribute_asset_cache"]["used_selectors"]
     assert isinstance(used_selectors[0], EntitySelector)
 
@@ -409,4 +411,4 @@ def test_materialize_selector_token_missing_definition_raises():
     }
 
     with pytest.raises(ValueError, match=r"Selector token not found.*sel-missing"):
-        materialize_entities_in_place(copy.deepcopy(params))
+        materialize_entities_and_selectors_in_place(copy.deepcopy(params))

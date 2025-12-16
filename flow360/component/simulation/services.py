@@ -13,7 +13,7 @@ from pydantic_core import ErrorDetails
 from flow360.component.simulation.blueprint.core.dependency_graph import DependencyGraph
 from flow360.component.simulation.exposed_units import supported_units_by_front_end
 from flow360.component.simulation.framework.entity_materializer import (
-    materialize_entities_in_place,
+    materialize_entities_and_selectors_in_place,
 )
 from flow360.component.simulation.framework.multi_constructor_model_base import (
     parse_model_dict,
@@ -486,7 +486,7 @@ def validate_model(  # pylint: disable=too-many-locals
         # * 2. Deserialization ALL entities just once, not just the persistent ones.
         # * 3. Strong requirement that ALL entities must come from entity_info/registry.
         # * 4. Data structural-wise single source of truth.
-        params_as_dict = materialize_entities_in_place(params_as_dict)
+        params_as_dict = materialize_entities_and_selectors_in_place(params_as_dict)
         return params_as_dict, forward_compatibility_mode
 
     validation_errors = None

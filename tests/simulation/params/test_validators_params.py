@@ -10,6 +10,9 @@ from flow360.component.simulation.entity_info import (
     SurfaceMeshEntityInfo,
     VolumeMeshEntityInfo,
 )
+from flow360.component.simulation.framework.entity_selector import (
+    collect_and_tokenize_selectors_in_place,
+)
 from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.meshing_param.edge_params import (
     HeightBasedRefinement,
@@ -756,8 +759,12 @@ def test_incomplete_BC_volume_mesh():
             ],
             private_attribute_asset_cache=asset_cache,
         )
+
+    submission_ready_dict = collect_and_tokenize_selectors_in_place(
+        params.model_dump(mode="json", exclude_none=True)
+    )
     params, errors, _ = validate_model(
-        params_as_dict=params.model_dump(mode="json", exclude_none=True),
+        params_as_dict=submission_ready_dict,
         validated_by=ValidationCalledBy.LOCAL,
         root_item_type="VolumeMesh",
         validation_level="All",
@@ -785,8 +792,11 @@ def test_incomplete_BC_volume_mesh():
             ],
             private_attribute_asset_cache=asset_cache,
         )
+    submission_ready_dict = collect_and_tokenize_selectors_in_place(
+        params.model_dump(mode="json", exclude_none=True)
+    )
     params, errors, _ = validate_model(
-        params_as_dict=params.model_dump(mode="json", exclude_none=True),
+        params_as_dict=submission_ready_dict,
         validated_by=ValidationCalledBy.LOCAL,
         root_item_type="VolumeMesh",
         validation_level="All",

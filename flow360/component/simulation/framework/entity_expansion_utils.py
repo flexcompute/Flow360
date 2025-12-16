@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, List, Literal, Union
 
 from flow360.component.simulation.framework.entity_materializer import (
-    materialize_entities_in_place,
+    materialize_entities_and_selectors_in_place,
 )
 from flow360.exceptions import Flow360ValueError
 
@@ -49,17 +49,14 @@ def expand_entity_list_in_context(
 
         # pylint: disable=import-outside-toplevel
         from flow360.component.simulation.framework.entity_selector import (
-            _collect_known_selectors_from_asset_cache,
             expand_entity_list_selectors,
         )
 
         registry = get_registry_from_params(params)
-        known_selectors = _collect_known_selectors_from_asset_cache(asset_cache)
         stored_entities = expand_entity_list_selectors(
             registry,
             entity_list,
             selector_cache={},
-            known_selectors=known_selectors,
             merge_mode="merge",
         )
 
@@ -68,7 +65,7 @@ def expand_entity_list_in_context(
 
     if not all(hasattr(entity, "name") for entity in stored_entities):
         wrapper = {"stored_entities": stored_entities}
-        materialize_entities_in_place(wrapper)
+        materialize_entities_and_selectors_in_place(wrapper)
         stored_entities = wrapper.get("stored_entities", [])
 
     if return_names:
@@ -120,7 +117,6 @@ def expand_all_entity_lists_in_place(
     # pylint: disable=import-outside-toplevel
     from flow360.component.simulation.framework.entity_base import EntityList
     from flow360.component.simulation.framework.entity_selector import (
-        _collect_known_selectors_from_asset_cache,
         expand_entity_list_selectors_in_place,
     )
 
@@ -131,7 +127,6 @@ def expand_all_entity_lists_in_place(
         return
 
     registry = get_registry_from_params(params)
-    known_selectors = _collect_known_selectors_from_asset_cache(asset_cache)
     selector_cache: dict = {}
 
     visited: set[int] = set()
@@ -147,7 +142,6 @@ def expand_all_entity_lists_in_place(
                 registry,
                 obj,
                 selector_cache=selector_cache,
-                known_selectors=known_selectors,
                 merge_mode=merge_mode,
             )
             return

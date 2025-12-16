@@ -145,9 +145,7 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         # Entity expansion support
         "_entity_info",  # Owns the entities (keeps them alive), initialized eagerly
         "_entity_registry",  # References entities from _entity_info, initialized eagerly
-        "_asset_cache",  # Reference to asset_cache dict (for lazy _known_selectors)
         "_selector_cache",  # Lazy, populated as selectors are expanded
-        "_known_selectors",  # Lazy, built on first expand_entity_list() call
     ]
 
     @classmethod
@@ -467,11 +465,8 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         self._entity_info, self._entity_registry = self._build_entity_info_and_registry(
             param_as_dict
         )
-        # Store asset_cache reference for lazy _known_selectors
-        self._asset_cache = param_as_dict.get("private_attribute_asset_cache")
         # Lazy initialization for selector-specific data
         self._selector_cache = None
-        self._known_selectors = None
 
     def will_generate_forced_symmetry_plane(self) -> bool:
         """
@@ -504,17 +499,6 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
             return get_entity_info_and_registry_from_dict(param_as_dict)
         except (KeyError, ValueError):
             return None, None
-
-    def _ensure_known_selectors(self):
-        """Lazily build known_selectors map from asset cache."""
-        if self._known_selectors is not None:
-            return
-        # pylint: disable=import-outside-toplevel
-        from flow360.component.simulation.framework.entity_selector import (
-            _collect_known_selectors_from_asset_cache,
-        )
-
-        self._known_selectors = _collect_known_selectors_from_asset_cache(self._asset_cache)
 
     def _ensure_selector_cache(self):
         """Lazily initialize selector cache."""
@@ -560,7 +544,6 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
             return stored_entities
 
         # Lazily initialize selector-specific infrastructure
-        self._ensure_known_selectors()
         self._ensure_selector_cache()
         # pylint: disable=import-outside-toplevel
         from flow360.component.simulation.framework.entity_selector import (
@@ -571,7 +554,6 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
             self._entity_registry,
             entity_list,
             selector_cache=self._selector_cache,
-            known_selectors=self._known_selectors,
             merge_mode="merge",
         )
 

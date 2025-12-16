@@ -5,10 +5,7 @@ from typing import Any
 from flow360.component.simulation.framework.entity_expansion_utils import (
     get_registry_from_params,
 )
-from flow360.component.simulation.framework.entity_selector import (
-    _collect_known_selectors_from_asset_cache,
-    _process_selectors,
-)
+from flow360.component.simulation.framework.entity_selector import _process_selectors
 
 
 def strip_selector_matches_inplace(params) -> Any:
@@ -34,7 +31,6 @@ def strip_selector_matches_inplace(params) -> Any:
         return params
 
     selector_cache: dict = {}
-    known_selectors = _collect_known_selectors_from_asset_cache(asset_cache)
     registry = get_registry_from_params(params)
 
     def _extract_entity_key(item) -> tuple:
