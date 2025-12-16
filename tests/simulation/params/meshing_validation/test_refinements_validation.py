@@ -187,12 +187,23 @@ def test_snappy_edge_refinement_increasing_values_validator():
 
 
 def test_snappy_body_refinement_validator():
-    message = (
-        "No refinement (gap_resolution, min_spacing, max_spacing) specified in `BodyRefinement`."
-    )
+    message = "No refinement (gap_resolution, min_spacing, max_spacing, proximity_spacing) specified in `BodyRefinement`."
     with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
         snappy.BodyRefinement(bodies=SnappyBody(name="body1", surfaces=[Surface(name="surface")]))
 
     snappy.BodyRefinement(
         bodies=SnappyBody(name="body1", surfaces=[Surface(name="surface")]), min_spacing=2 * u.mm
+    )
+
+    snappy.BodyRefinement(
+        bodies=SnappyBody(name="body1", surfaces=[Surface(name="surface")]), max_spacing=2 * u.mm
+    )
+
+    snappy.BodyRefinement(
+        bodies=SnappyBody(name="body1", surfaces=[Surface(name="surface")]),
+        proximity_spacing=2 * u.mm,
+    )
+
+    snappy.BodyRefinement(
+        bodies=SnappyBody(name="body1", surfaces=[Surface(name="surface")]), gap_resolution=2 * u.mm
     )
