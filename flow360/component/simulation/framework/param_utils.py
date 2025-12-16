@@ -1,7 +1,7 @@
 """pre processing and post processing utilities for simulation parameters."""
 
 import re
-from typing import Annotated, List, Optional, Union, get_args
+from typing import TYPE_CHECKING, Annotated, List, Optional, Union, get_args
 
 import pydantic as pd
 
@@ -31,13 +31,15 @@ from flow360.component.simulation.primitives import (
     _SurfaceEntityBase,
     _VolumeEntityBase,
 )
-from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.user_code.core.types import (
     VariableContextInfo,
     update_global_context,
 )
 from flow360.component.simulation.utils import model_attribute_unlock
+
+if TYPE_CHECKING:
+    from flow360.component.simulation.simulation_params import SimulationParams
 
 VariableContextList = Annotated[
     List[VariableContextInfo],
@@ -256,8 +258,8 @@ def _set_boundary_full_name_with_zone_name(
 
 
 def _update_rotating_entity_names_with_metadata(
-    params: SimulationParams, volume_mesh_meta_data: dict
-) -> tuple[dict, set]:
+    params: "SimulationParams", volume_mesh_meta_data: dict
+) -> tuple[dict, set, dict]:
     """
     Update entity names to point to __rotating patches.
 
@@ -268,14 +270,15 @@ def _update_rotating_entity_names_with_metadata(
 
     Returns
     -------
-    tuple[dict, set]
+    tuple[dict, set, dict]
         A tuple containing:
         - Mapping of original_boundary_name -> rotating_boundary_name for all entities with __rotating patches.
         - Set of rotating_boundary_name values that are in stationary_enclosed_entities.
+        - Mapping of rotating_boundary_name -> updated Surface entity to avoid creating duplicates.
     """
     # Get volume zones from params
     if params.meshing is None:
-        return {}, set()
+        return {}, set(), {}
 
     volume_zones = None
     if isinstance(params.meshing, MeshingParams):
@@ -287,18 +290,21 @@ def _update_rotating_entity_names_with_metadata(
         volume_zones = params.meshing.zones
 
     if volume_zones is None:
-        return {}, set()
+        return {}, set(), {}
 
     # Find all RotationVolume instances
     rotation_volumes = [zone for zone in volume_zones if isinstance(zone, RotationVolume)]
     if len(rotation_volumes) == 0:
-        return {}, set()
+        return {}, set(), {}
 
     # Track mapping: original_boundary_name -> rotating_boundary_name for all entities with __rotating patches
     # This is used to copy models later
     original_to_rotating_map = {}
     # Track which boundaries are in stationary_enclosed_entities (for velocity=0 setting)
     stationary_boundaries = set()
+    # Track updated entities: rotating_boundary_name -> updated Surface entity
+    # This avoids creating duplicate Surface entities in the model update function
+    rotating_boundary_to_entity_map = {}
 
     # Process each RotationVolume
     for rotation_volume in rotation_volumes:
@@ -309,19 +315,15 @@ def _update_rotating_entity_names_with_metadata(
         if rotation_volume.entities and rotation_volume.entities.stored_entities:
             entity = rotation_volume.entities.stored_entities[0]
             entity_name = entity.name
-            # Check if entity has been updated with metadata (full_name differs from name)
-            if hasattr(entity, "full_name") and entity.full_name != entity_name:
-                zone_name = entity.full_name
-            else:
-                # Entity hasn't been updated, search for matching zone
-                # Search through zones to find the one matching this entity
-                # Zone name may have any prefix/suffix, so check if entity_name appears in zone_name
-                for candidate_zone_name in volume_mesh_meta_data.get("zones", {}).keys():
-                    # Check if entity_name is contained in zone_name
-                    # This handles cases like "rotatingBlock-{entity_name}", "{entity_name}-suffix", etc.
-                    if entity_name in candidate_zone_name:
-                        zone_name = candidate_zone_name
-                        break
+
+            # Search through zones to find the one matching this entity
+            # Zone name may have any prefix/suffix, so check if entity_name appears in zone_name
+            for candidate_zone_name in volume_mesh_meta_data.get("zones", {}).keys():
+                # Check if entity_name is contained in zone_name
+                # This handles cases like "rotatingBlock-{entity_name}", "{entity_name}-suffix", etc.
+                if entity_name in candidate_zone_name:
+                    zone_name = candidate_zone_name
+                    break
 
         if zone_name is None:
             continue
@@ -398,6 +400,8 @@ def _update_rotating_entity_names_with_metadata(
 
                 # Track this mapping for model copying (for all boundaries with __rotating patches)
                 original_to_rotating_map[original_boundary_name] = rotating_boundary_name
+                # Track the updated entity to avoid creating duplicates in model update
+                rotating_boundary_to_entity_map[rotating_boundary_name] = updated_entity
 
                 # Check if this entity is in stationary_enclosed_entities
                 if original_entity_name in stationary_entity_names:
@@ -409,10 +413,8 @@ def _update_rotating_entity_names_with_metadata(
                         for idx, stationary_entity in enumerate(
                             rotation_volume.stationary_enclosed_entities.stored_entities
                         ):
-                            if (
-                                isinstance(stationary_entity, Surface)
-                                and stationary_entity.name == original_entity_name
-                            ):
+                            # these are all Surface by construction
+                            if stationary_entity.name == original_entity_name:
                                 updated_stationary_entity = stationary_entity.copy(
                                     update={
                                         "name": rotating_base_name,
@@ -424,13 +426,14 @@ def _update_rotating_entity_names_with_metadata(
                                 ] = updated_stationary_entity
                                 break
 
-    return original_to_rotating_map, stationary_boundaries
+    return original_to_rotating_map, stationary_boundaries, rotating_boundary_to_entity_map
 
 
 def _update_rotating_models_with_metadata(
-    params: SimulationParams,
+    params: "SimulationParams",
     original_to_rotating_map: dict,
     stationary_boundaries: set,
+    rotating_boundary_to_entity_map: dict,
 ) -> None:
     """
     Copy boundary condition models from original patches to __rotating patches.
@@ -453,10 +456,10 @@ def _update_rotating_models_with_metadata(
 
     models_to_add = []
     for model in params.models:
-        # Only process SurfaceModel types with list of entities associated (no models that act on pairs of surfaces)
-        if not isinstance(model, get_args(SurfaceModelTypes)):
+        # only Wall boundaries need special treatment
+        if not isinstance(model, Wall):
             continue
-        if not hasattr(model, "entities") or not model.entities:
+        if not model.entities:
             continue
 
         # Check if this model references any of the original boundaries
@@ -473,16 +476,20 @@ def _update_rotating_models_with_metadata(
             # Check if this entity's boundary needs model copying
             if entity_full_name in original_to_rotating_map:
                 rotating_boundary_name = original_to_rotating_map[entity_full_name]
-                # Extract base name from rotating boundary (everything after last /)
-                base_name = (
-                    rotating_boundary_name.split("/")[-1]
-                    if "/" in rotating_boundary_name
-                    else rotating_boundary_name
-                )
-                # Create a new Surface entity for the __rotating boundary
-                rotating_surface = Surface(name=base_name)
-                with model_attribute_unlock(rotating_surface, "private_attribute_full_name"):
-                    rotating_surface.private_attribute_full_name = rotating_boundary_name
+                # Reuse the updated entity from enclosed_entities if available, otherwise create new
+                if rotating_boundary_name in rotating_boundary_to_entity_map:
+                    rotating_surface = rotating_boundary_to_entity_map[rotating_boundary_name]
+                else:
+                    # Extract base name from rotating boundary (everything after last /)
+                    base_name = (
+                        rotating_boundary_name.split("/")[-1]
+                        if "/" in rotating_boundary_name
+                        else rotating_boundary_name
+                    )
+                    # Create a new Surface entity for the __rotating boundary
+                    rotating_surface = Surface(name=base_name)
+                    with model_attribute_unlock(rotating_surface, "private_attribute_full_name"):
+                        rotating_surface.private_attribute_full_name = rotating_boundary_name
 
                 # Separate into stationary and non-stationary
                 if rotating_boundary_name in stationary_boundaries:
@@ -491,32 +498,26 @@ def _update_rotating_models_with_metadata(
                     rotating_surfaces_non_stationary.append(rotating_surface)
 
         # Create separate models for stationary and non-stationary entities
-        # Stationary entities get velocity=0 for Wall models
         if rotating_surfaces_stationary:
-            update_dict = {"entities": rotating_surfaces_stationary}
-            if isinstance(model, Wall):
-                update_dict["velocity"] = [0, 0, 0]
+            update_dict = {"velocity": ("0", "0", "0")}
             new_model = model.copy(update=update_dict)
+            new_model.entities = rotating_surfaces_stationary
             models_to_add.append(new_model)
 
         # Non-stationary entities keep original velocity settings
         if rotating_surfaces_non_stationary:
-            update_dict = {"entities": rotating_surfaces_non_stationary}
-            new_model = model.copy(update=update_dict)
+            new_model = model.copy()
+            new_model.entities = rotating_surfaces_non_stationary
             models_to_add.append(new_model)
 
     # Add the new models to params.models
     if models_to_add:
-        if params.models is None:
-            with model_attribute_unlock(params, "models"):
-                params.models = models_to_add
-        else:
-            with model_attribute_unlock(params, "models"):
-                params.models.extend(models_to_add)
+        with model_attribute_unlock(params, "models"):
+            params.models.extend(models_to_add)
 
 
 def _update_rotating_boundaries_with_metadata(
-    params: SimulationParams, volume_mesh_meta_data: dict
+    params: "SimulationParams", volume_mesh_meta_data: dict
 ):
     """
     Update rotating boundaries with metadata from volume mesh.
@@ -526,9 +527,16 @@ def _update_rotating_boundaries_with_metadata(
     2. Copying boundary condition models for all boundaries with __rotating patches
     """
     # Update entity names and get mapping for model copying
-    original_to_rotating_map, stationary_boundaries = _update_rotating_entity_names_with_metadata(
-        params, volume_mesh_meta_data
-    )
+    (
+        original_to_rotating_map,
+        stationary_boundaries,
+        rotating_boundary_to_entity_map,
+    ) = _update_rotating_entity_names_with_metadata(params, volume_mesh_meta_data)
 
     # Copy models for all boundaries with __rotating patches
-    _update_rotating_models_with_metadata(params, original_to_rotating_map, stationary_boundaries)
+    _update_rotating_models_with_metadata(
+        params,
+        original_to_rotating_map,
+        stationary_boundaries,
+        rotating_boundary_to_entity_map,
+    )
