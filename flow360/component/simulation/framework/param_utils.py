@@ -426,7 +426,11 @@ def _update_rotating_entity_names_with_metadata(
                                 ] = updated_stationary_entity
                                 break
 
-    return original_to_rotating_map, stationary_boundaries, rotating_boundary_to_entity_map
+    return (
+        original_to_rotating_map,
+        stationary_boundaries,
+        rotating_boundary_to_entity_map,
+    )
 
 
 def _update_rotating_models_with_metadata(
@@ -477,19 +481,8 @@ def _update_rotating_models_with_metadata(
             if entity_full_name in original_to_rotating_map:
                 rotating_boundary_name = original_to_rotating_map[entity_full_name]
                 # Reuse the updated entity from enclosed_entities if available, otherwise create new
-                if rotating_boundary_name in rotating_boundary_to_entity_map:
-                    rotating_surface = rotating_boundary_to_entity_map[rotating_boundary_name]
-                else:
-                    # Extract base name from rotating boundary (everything after last /)
-                    base_name = (
-                        rotating_boundary_name.split("/")[-1]
-                        if "/" in rotating_boundary_name
-                        else rotating_boundary_name
-                    )
-                    # Create a new Surface entity for the __rotating boundary
-                    rotating_surface = Surface(name=base_name)
-                    with model_attribute_unlock(rotating_surface, "private_attribute_full_name"):
-                        rotating_surface.private_attribute_full_name = rotating_boundary_name
+                assert rotating_boundary_name in rotating_boundary_to_entity_map
+                rotating_surface = rotating_boundary_to_entity_map[rotating_boundary_name]
 
                 # Separate into stationary and non-stationary
                 if rotating_boundary_name in stationary_boundaries:
@@ -512,8 +505,7 @@ def _update_rotating_models_with_metadata(
 
     # Add the new models to params.models
     if models_to_add:
-        with model_attribute_unlock(params, "models"):
-            params.models.extend(models_to_add)
+        params.models.extend(models_to_add)
 
 
 def _update_rotating_boundaries_with_metadata(
