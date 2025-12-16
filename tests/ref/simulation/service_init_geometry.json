@@ -6,7 +6,6 @@
     "meshing": {
         "type_name": "MeshingParams",
         "refinement_factor": 1.0,
-        "gap_treatment_strength": 0.0,
         "defaults": {
             "surface_edge_growth_rate": 1.2,
             "boundary_layer_growth_rate": 1.2,

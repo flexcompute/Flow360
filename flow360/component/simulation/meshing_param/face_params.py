@@ -116,7 +116,7 @@ class GeometryRefinement(Flow360BaseModel):
 
     name: Optional[str] = pd.Field("Geometry refinement")
     refinement_type: Literal["GeometryRefinement"] = pd.Field("GeometryRefinement", frozen=True)
-    entities: EntityList[Surface] = pd.Field(alias="faces")
+    entities: EntityList[Surface, WindTunnelGhostSurface] = pd.Field(alias="faces")
     # pylint: disable=no-member
 
     geometry_accuracy: Optional[LengthType.Positive] = pd.Field(
