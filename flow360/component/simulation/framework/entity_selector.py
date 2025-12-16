@@ -688,6 +688,7 @@ def _process_selectors(
         selector_dict = None
         # Check if the item is a token (string) or an EntitySelector object.
         if isinstance(item, str):
+            # Is token
             selector_dict = known_selectors.get(item)
         elif hasattr(item, "model_dump"):
             # TODO: rework underlying low level logic to work with EntitySelector objects directly.
@@ -803,48 +804,6 @@ def expand_entity_list_selectors_in_place(
         merge_mode=merge_mode,
     )
     entity_list.stored_entities = expanded
-
-
-def resolve_selector_tokens_in_place(params_as_dict: dict) -> dict:
-    # TODO: Remove since this is only used by tests.
-    """
-    Resolve selector tokens (string selector_id) to full selector dict definitions in-place.
-
-    This does NOT expand selectors into stored_entities; it only replaces tokens in `selectors`
-    lists using `private_attribute_asset_cache["used_selectors"]`.
-    """
-    asset_cache = params_as_dict.get("private_attribute_asset_cache")
-    known_selectors = _collect_known_selectors_from_asset_cache(asset_cache)
-
-    queue: deque[Any] = deque([params_as_dict])
-    while queue:
-        node = queue.popleft()
-        if isinstance(node, dict):
-            selectors_list = node.get("selectors")
-            if isinstance(selectors_list, list) and selectors_list:
-                expanded_selectors = []
-                for item in selectors_list:
-                    if isinstance(item, str):
-                        if item in known_selectors:
-                            expanded_selectors.append(known_selectors[item])
-                        else:
-                            raise ValueError(
-                                f"[Internal] Selector token '{item}' not found in known_selectors. "
-                                "This may indicate a missing or invalid selector reference."
-                            )
-                    else:
-                        expanded_selectors.append(item)
-                node["selectors"] = expanded_selectors
-
-            for value in node.values():
-                if isinstance(value, (dict, list)):
-                    queue.append(value)
-        elif isinstance(node, list):
-            for item in node:
-                if isinstance(item, (dict, list)):
-                    queue.append(item)
-
-    return params_as_dict
 
 
 def collect_and_tokenize_selectors_in_place(  # pylint: disable=too-many-branches

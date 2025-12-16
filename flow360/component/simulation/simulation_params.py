@@ -543,6 +543,7 @@ class SimulationParams(_ParamModelBase):
     @contextual_model_validator(mode="after")
     def check_unique_surface_volume_probe_entity_names(self):
         """Only allow unique probe entity names"""
+        # Note: Probes are not covered by Selectors so no need to expand them here.
         return _check_unique_surface_volume_probe_entity_names(self)
 
     @pd.model_validator(mode="after")
@@ -553,7 +554,6 @@ class SimulationParams(_ParamModelBase):
     @contextual_model_validator(mode="after")
     def check_duplicate_entities_in_models(self):
         """Only allow each Surface/Volume entity to appear once in the Surface/Volume model"""
-        # Note: Probes are not covered by Selectors so no need to expand them here.
         return _check_duplicate_entities_in_models(self)
 
     @pd.model_validator(mode="after")

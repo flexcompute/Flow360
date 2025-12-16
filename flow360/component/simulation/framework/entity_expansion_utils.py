@@ -152,12 +152,6 @@ def expand_all_entity_lists_in_place(
             )
             return
 
-        if isinstance(obj, dict):
-            # TODO: Even possible? We do not nest stuff under a pure dict.
-            for v in obj.values():
-                if isinstance(v, (dict, list, tuple)) or hasattr(v, "__dict__"):
-                    _walk(v)
-            return
 
         if isinstance(obj, (list, tuple)):
             for item in obj:

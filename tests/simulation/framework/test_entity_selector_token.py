@@ -2,54 +2,74 @@ import copy
 
 import pytest
 
+from flow360.component.simulation.entity_info import GeometryEntityInfo
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
+from flow360.component.simulation.framework.entity_expansion_utils import (
+    expand_all_entity_lists_in_place,
+)
 from flow360.component.simulation.framework.entity_selector import (
     EntitySelector,
     collect_and_tokenize_selectors_in_place,
-    resolve_selector_tokens_in_place,
 )
 from flow360.component.simulation.framework.param_utils import AssetCache
+from flow360.component.simulation.models.surface_models import Wall
+from flow360.component.simulation.primitives import Surface
+from flow360.component.simulation.simulation_params import SimulationParams
+from flow360.component.simulation.units import SI_unit_system
 
 
 def test_entity_selector_token_flow():
     # 1. Setup input dictionary with repeated selectors
-    params = {
-        "private_attribute_asset_cache": {
-            # Mock entity info for database
-            "project_entity_info": {"type_name": "GeometryEntityInfo", "boundaries": []}
-        },
-        "models": [
-            {
-                "name": "m1",
-                "selectors": [
-                    {
-                        "selector_id": "sel1-token",
-                        "target_class": "Surface",
-                        "name": "sel1",
-                        "children": [
-                            {"attribute": "name", "operator": "matches", "value": "wing*"}
-                        ],
-                    }
-                ],
-            },
-            {
-                "name": "m2",
-                "selectors": [
-                    {
-                        "selector_id": "sel1-token",
-                        "target_class": "Surface",
-                        "name": "sel1",
-                        "children": [
-                            {"attribute": "name", "operator": "matches", "value": "wing*"}
-                        ],
-                    }
-                ],
-            },
-        ],
-    }
+    with SI_unit_system:
+        selector = Surface.matches("wing*", name="sel1")
+        params = SimulationParams(
+            models=[
+                Wall(name="m1", entities=[selector]),
+                Wall(name="m2", entities=[selector]),
+            ],
+            private_attribute_asset_cache=AssetCache(
+                project_entity_info=GeometryEntityInfo(
+                    boundaries=[]
+                )
+            )
+        )
+    # params = {
+    #     "private_attribute_asset_cache": {
+    #         # Mock entity info for database
+    #         "project_entity_info": {"type_name": "GeometryEntityInfo", "boundaries": []}
+    #     },
+    #     "models": [
+    #         {
+    #             "name": "m1",
+    #             "selectors": [
+    #                 {
+    #                     "selector_id": "sel1-token",
+    #                     "target_class": "Surface",
+    #                     "name": "sel1",
+    #                     "children": [
+    #                         {"attribute": "name", "operator": "matches", "value": "wing*"}
+    #                     ],
+    #                 }
+    #             ],
+    #         },
+    #         {
+    #             "name": "m2",
+    #             "selectors": [
+    #                 {
+    #                     "selector_id": "sel1-token",
+    #                     "target_class": "Surface",
+    #                     "name": "sel1",
+    #                     "children": [
+    #                         {"attribute": "name", "operator": "matches", "value": "wing*"}
+    #                     ],
+    #                 }
+    #             ],
+    #         },
+    #     ],
+    # }
 
     # 2. Run tokenization
-    tokenized_params = collect_and_tokenize_selectors_in_place(copy.deepcopy(params))
+    tokenized_params = collect_and_tokenize_selectors_in_place(params.model_dump(mode="json"))
 
     # 3. Verify AssetCache and tokens
     asset_cache = tokenized_params["private_attribute_asset_cache"]
@@ -63,7 +83,7 @@ def test_entity_selector_token_flow():
     assert tokenized_params["models"][1]["selectors"] == ["sel1-token"]
 
     # 4. Resolve selector tokens back to full dicts
-    resolved_params = resolve_selector_tokens_in_place(tokenized_params)
+    resolved_params = expand_all_entity_lists_in_place(tokenized_params)
 
     # 5. Verify selectors are resolved from tokens to full dicts (not strings)
     sel1 = resolved_params["models"][0]["selectors"]
@@ -160,7 +180,7 @@ def test_entity_selector_mixed_token_and_dict():
         },
     }
 
-    resolved = resolve_selector_tokens_in_place(params)
+    resolved = expand_all_entity_lists_in_place(params)
 
     # Verify selectors are all dicts after resolution (token resolved, inline kept)
     selectors = resolved["model"]["selectors"]
@@ -195,4 +215,4 @@ def test_entity_selector_unknown_token_raises_error():
     }
 
     with pytest.raises(ValueError, match="Selector token 'unknown-selector-id' not found"):
-        resolve_selector_tokens_in_place(params)
+        expand_all_entity_lists_in_place(params)
