@@ -147,7 +147,7 @@ def test_entity_selector_token_round_trip_validation():
 
     cache = validated.private_attribute_asset_cache
     assert cache.used_selectors is not None
-    assert cache.used_selectors[0]["selector_id"] == "sel1-token"
+    assert cache.used_selectors[0].selector_id == "sel1-token"
     assert validated.models[0].selectors == ["sel1-token"]
     assert validated.models[1].selectors == ["sel1-token"]
 
