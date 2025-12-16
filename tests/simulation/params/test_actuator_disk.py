@@ -73,7 +73,7 @@ def test_actuator_disk_from_json():
     assert ad.entities.stored_entities[0].center[0].value == 1.2
 
 
-def test_actuator_disk_duplicate_cylinder_names():
+def test_actuator_disk_duplicate_cylinder_names(mock_validation_context):
     with SI_unit_system:
         fpa = ForcePerArea(radius=[0, 1, 2, 4], thrust=[1, 1, 2, 2], circumferential=[1, 1, 3, 4])
         my_cylinder_1 = Cylinder(
@@ -97,7 +97,7 @@ def test_actuator_disk_duplicate_cylinder_names():
 
         assert sm
 
-        with pytest.raises(
+        with mock_validation_context, pytest.raises(
             ValueError,
             match=re.escape(
                 f"The ActuatorDisk cylinder name `my_cylinder-1` at index 1 in model `Actuator disk` "

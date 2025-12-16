@@ -7,8 +7,6 @@ Pydantic model instances and perform per-list deduplication.
 
 from __future__ import annotations
 
-import hashlib
-import json
 from typing import TYPE_CHECKING, Any, Callable, Optional
 
 import pydantic as pd
@@ -18,6 +16,11 @@ from flow360.component.simulation.framework.entity_materialization_context impor
     get_entity_builder,
     get_entity_cache,
     get_entity_registry,
+)
+from flow360.component.simulation.framework.entity_utils import (
+    DEFAULT_NOT_MERGED_TYPES,
+    deduplicate_entities,
+    get_entity_key,
 )
 from flow360.component.simulation.outputs.output_entities import (
     Point,
@@ -67,32 +70,6 @@ ENTITY_TYPE_MAP = {
     "SnappyBody": SnappyBody,
     "WindTunnelGhostSurface": WindTunnelGhostSurface,
 }
-
-
-def _stable_entity_key_from_dict(d: dict) -> tuple:
-    """Return a stable deduplication key for an entity dict.
-
-    Prefer (type, private_attribute_id);
-    if missing, hash a sanitized JSON-dumped copy (excluding volatile fields like private_attribute_input_cache).
-    """
-    t = d.get("private_attribute_entity_type_name")
-    pid = d.get("private_attribute_id")
-    if pid:
-        return (t, pid)
-    # Fallback mode, possibly because:
-    # 1. Test does not set private_attribute_id.
-    # 2. Very legacy JSON where private_attribute_id was not even defined back then.
-    # 3. Ghost entities (we should have enforced private_attribute_id required for all entities)
-    # All production persistent data should have private_attribute_id set.
-    data = {k: v for k, v in d.items() if k not in ("private_attribute_input_cache",)}
-    return (t, hashlib.sha256(json.dumps(data, sort_keys=True).encode("utf-8")).hexdigest())
-
-
-def _stable_entity_key_from_obj(o: Any) -> tuple:
-    """Return a stable deduplication key for an entity object instance."""
-    t = getattr(o, "private_attribute_entity_type_name", type(o).__name__)
-    pid = getattr(o, "private_attribute_id", None)
-    return (t, pid) if pid else (t, id(o))
 
 
 def _build_entity_instance(entity_dict: dict):
@@ -193,7 +170,7 @@ def _build_entity_from_dict(entity_dict: dict, cache: Optional[dict], builder: C
     Any
         Entity instance.
     """
-    key = _stable_entity_key_from_dict(entity_dict)
+    key = get_entity_key(entity_dict)
     obj = cache.get(key) if (cache and key in cache) else builder(entity_dict)
     if cache is not None and key not in cache:
         cache[key] = obj
@@ -233,95 +210,15 @@ def _convert_entity_dict_to_object(
     else:
         # Mode 1: Create and cache within params
         obj = _build_entity_from_dict(item, cache, builder)
-        key = _stable_entity_key_from_dict(item)
+        key = get_entity_key(item)
 
     return obj, key
-
-
-def _get_entity_key_from_object(obj: Any) -> tuple:
-    """Extract stable key from already-materialized entity object.
-
-    Parameters
-    ----------
-    obj : Any
-        Entity object instance.
-
-    Returns
-    -------
-    tuple
-        Stable key (type_name, id).
-    """
-    # Optimized: direct key extraction without temporary dict
-    entity_type = getattr(obj, "private_attribute_entity_type_name", type(obj).__name__)
-    entity_id = getattr(obj, "private_attribute_id", None)
-
-    if entity_id:
-        return (entity_type, entity_id)
-
-    # Fallback: use object identity if no ID (rare case)
-    return (entity_type, id(obj))
-
-
-def _process_stored_entities_list(
-    stored_entities: list,
-    not_merged_types: set[str],
-    is_registry_mode: bool,
-    cache: Optional[dict],
-    builder: Optional[Callable],
-) -> list:
-    """Process stored_entities list: materialize and deduplicate.
-
-    Parameters
-    ----------
-    stored_entities : list
-        List of entity dicts or objects.
-    not_merged_types : set[str]
-        Entity types to skip deduplication.
-    is_registry_mode : bool
-        True if using EntityRegistry mode.
-    cache : Optional[dict]
-        Cache for entity lookups/storage.
-    builder : Optional[Callable]
-        Builder function for Mode 1.
-
-    Returns
-    -------
-    list
-        Processed list with materialized and deduplicated entities.
-    """
-    new_list = []
-    seen = set()
-
-    for item in stored_entities:
-        # Convert to object instance
-        if isinstance(item, dict):
-            obj, key = _convert_entity_dict_to_object(item, is_registry_mode, cache, builder)
-        else:
-            # Already materialized (re-entrant call), passthrough
-            obj = item
-            key = _get_entity_key_from_object(obj)
-
-        # Apply deduplication logic
-        entity_type = getattr(obj, "private_attribute_entity_type_name", None)
-        if entity_type in not_merged_types:
-            # Skip deduplication for these types
-            new_list.append(obj)
-            continue
-
-        if key in seen:
-            # Duplicate, skip
-            continue
-
-        seen.add(key)
-        new_list.append(obj)
-
-    return new_list
 
 
 def materialize_entities_in_place(
     params_as_dict: dict,
     *,
-    not_merged_types: set[str] = frozenset({"Point"}),
+    not_merged_types: set[str] = DEFAULT_NOT_MERGED_TYPES,
     entity_registry: Optional[EntityRegistry] = None,
 ) -> dict:
     """
@@ -361,8 +258,11 @@ def materialize_entities_in_place(
         When provided, all entities must exist in registry (Mode 2).
     """
 
-    # TODO: [NEW] This turns out to be the only mode we need since we always have the entity registry built from the params. Do we need Mode 1 for anything at all?
-    # TODO: Also since we do not expand the selectors a-priori, we do not need to deduplicate anymore? Unless maybe manually assigned duplicate entities?
+    # TODO: [NEW] This turns out to be the only mode we need since we always
+    # have the entity registry built from the params. Do we need Mode 1 for anything at all?
+    # TODO: Also since we do not expand the selectors a-priori
+    # we do not need to deduplicate anymore? Unless maybe manually assigned duplicate entities?
+
     with EntityMaterializationContext(
         builder=_build_entity_instance, entity_registry=entity_registry
     ):
@@ -381,8 +281,19 @@ def materialize_entities_in_place(
             if isinstance(node, dict):
                 stored_entities = node.get("stored_entities", None)
                 if isinstance(stored_entities, list):
-                    node["stored_entities"] = _process_stored_entities_list(
-                        stored_entities, not_merged_types, is_registry_mode, cache, builder
+
+                    def processor(item):
+                        if isinstance(item, dict):
+                            return _convert_entity_dict_to_object(
+                                item, is_registry_mode, cache, builder
+                            )
+                        # Already materialized
+                        return item, get_entity_key(item)
+
+                    node["stored_entities"] = deduplicate_entities(
+                        stored_entities,
+                        processor=processor,
+                        not_merged_types=not_merged_types,
                     )
                 for v in node.values():
                     visit(v)

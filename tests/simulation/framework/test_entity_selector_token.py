@@ -28,10 +28,8 @@ def test_entity_selector_token_flow():
                 Wall(name="m2", entities=[selector]),
             ],
             private_attribute_asset_cache=AssetCache(
-                project_entity_info=GeometryEntityInfo(
-                    boundaries=[]
-                )
-            )
+                project_entity_info=GeometryEntityInfo(boundaries=[])
+            ),
         )
     # params = {
     #     "private_attribute_asset_cache": {

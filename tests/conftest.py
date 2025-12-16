@@ -4,6 +4,7 @@ from pathlib import Path
 from flow360.component.geometry import Geometry, GeometryMeta
 from flow360.component.resource_base import local_metadata_builder
 from flow360.component.simulation.validation.validation_context import (
+    CASE,
     ParamsValidationInfo,
     ValidationContext,
 )
@@ -57,6 +58,13 @@ def after_log_test():
 def mock_validation_context():
     return ValidationContext(
         levels=None, info=ParamsValidationInfo(param_as_dict={}, referenced_expressions=[])
+    )
+
+
+@pytest.fixture
+def mock_case_validation_context():
+    return ValidationContext(
+        levels=CASE, info=ParamsValidationInfo(param_as_dict={}, referenced_expressions=[])
     )
 
 

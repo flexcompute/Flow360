@@ -1,13 +1,105 @@
 """Shared utilities for entity operations."""
 
+import hashlib
+import json
 import re
 import uuid
 from functools import lru_cache
+from typing import Any, Callable, Iterable, List, Optional, Set, Tuple
+
+# Define a default set of types that should not be merged/deduplicated.
+DEFAULT_NOT_MERGED_TYPES = frozenset({"Point"})
 
 
 def generate_uuid():
     """generate a unique identifier for non-persistent entities. Required by front end."""
     return str(uuid.uuid4())
+
+
+def get_entity_type(item: Any) -> Optional[str]:
+    """Get entity type name from dict or object."""
+    if isinstance(item, dict):
+        return item.get("private_attribute_entity_type_name")
+    return getattr(item, "private_attribute_entity_type_name", type(item).__name__)
+
+
+def get_entity_key(item: Any) -> tuple:
+    """Return a stable deduplication key for an entity (dict or object).
+
+    Strategy:
+    1. (type, private_attribute_id) if ID exists.
+    2. For dicts without ID: (type, hash(json_dump(content))).
+    3. For objects without ID: (type, id(object)).
+    """
+    t = get_entity_type(item)
+
+    # Try getting ID
+    if isinstance(item, dict):
+        pid = item.get("private_attribute_id")
+    else:
+        pid = getattr(item, "private_attribute_id", None)
+
+    if pid:
+        return (t, pid)
+
+    # Fallback
+    if isinstance(item, dict):
+        # Hash content for dicts without ID
+        # Exclude volatile fields
+        data = {k: v for k, v in item.items() if k not in ("private_attribute_input_cache",)}
+        return (t, hashlib.sha256(json.dumps(data, sort_keys=True).encode("utf-8")).hexdigest())
+
+    # Object identity for objects without ID
+    return (t, id(item))
+
+
+def deduplicate_entities(
+    entities: Iterable[Any],
+    *,
+    processor: Optional[Callable[[Any], Tuple[Any, tuple]]] = None,
+    not_merged_types: Set[str] = DEFAULT_NOT_MERGED_TYPES,
+) -> List[Any]:
+    """
+    Process and deduplicate a list of entities.
+
+    Parameters
+    ----------
+    entities : Iterable[Any]
+        Input list of entities (dicts or objects).
+    processor : Callable[[Any], Tuple[Any, tuple]], optional
+        Function that processes an item and returns (processed_item, key).
+        If None, the item is used as is, and key is derived via get_entity_key.
+    not_merged_types : Set[str]
+        Set of entity type names to skip deduplication (always keep).
+
+    Returns
+    -------
+    List[Any]
+        New list of processed and deduplicated entities.
+    """
+    new_list = []
+    seen = set()
+
+    for item in entities:
+        if processor:
+            obj, key = processor(item)
+        else:
+            obj = item
+            key = get_entity_key(obj)
+
+        # Check if we should skip deduplication for this type
+        t = get_entity_type(obj)
+        if t in not_merged_types:
+            new_list.append(obj)
+            continue
+
+        if key in seen:
+            continue
+
+        seen.add(key)
+        new_list.append(obj)
+
+    return new_list
 
 
 @lru_cache(maxsize=2048)

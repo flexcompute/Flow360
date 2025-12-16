@@ -120,9 +120,9 @@ def test_operator_and_syntax_coverage():
         "my_wing",
         "hinge",
     ]
-
+    # Note: final_names has been deduplicated by merging.
     final_names = [e.name for e in stored if e.private_attribute_entity_type_name == "Surface"]
-    assert final_names == expected
+    assert sorted(final_names) == sorted(list(set(expected)))
 
 
 def test_combined_predicates_and_or():
@@ -147,8 +147,9 @@ def test_combined_predicates_and_or():
     # 2) OR in ["s1"] or in ["tail"] -> ["s1", "tail"]
     # 3) default AND with in {wing, wing-root} -> ["wing", "wing-root"]
     # Final list -> ["wing-root", "s1", "tail", "wing", "wing-root"]
+    # Note: final_names has been deduplicated by merging.
     final_names = [e.name for e in stored if e.private_attribute_entity_type_name == "Surface"]
-    assert final_names == ["wing-root", "s1", "tail", "wing", "wing-root"]
+    assert sorted(final_names) == sorted(list(set(["wing-root", "s1", "tail", "wing"])))
 
 
 def test_compile_glob_cached_extended_syntax_support():

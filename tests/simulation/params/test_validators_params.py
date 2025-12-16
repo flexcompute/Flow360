@@ -1294,7 +1294,7 @@ def test_output_fields_with_user_defined_fields():
             )
 
 
-def test_rotation_parent_volumes():
+def test_rotation_parent_volumes(mock_case_validation_context):
 
     c_1 = Cylinder(
         name="inner_rotating_cylinder",
@@ -1324,15 +1324,14 @@ def test_rotation_parent_volumes():
 
     msg = "For model #1, the parent rotating volume (stationary_cylinder) is not "
     "used in any other `Rotation` model's `volumes`."
-    with pytest.raises(ValueError, match=re.escape(msg)):
-        with ValidationContext(CASE):
-            with SI_unit_system:
-                SimulationParams(
-                    models=[
-                        Fluid(),
-                        Rotation(entities=[c_1], spec=AngleExpression("1+2"), parent_volume=c_3),
-                    ]
-                )
+    with mock_case_validation_context, pytest.raises(ValueError, match=re.escape(msg)):
+        with SI_unit_system:
+            SimulationParams(
+                models=[
+                    Fluid(),
+                    Rotation(entities=[c_1], spec=AngleExpression("1+2"), parent_volume=c_3),
+                ]
+            )
 
     with ValidationContext(CASE):
         with SI_unit_system:

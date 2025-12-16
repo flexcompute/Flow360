@@ -14,7 +14,9 @@ from typing_extensions import Self
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_utils import (
+    DEFAULT_NOT_MERGED_TYPES,
     compile_glob_cached,
+    deduplicate_entities,
     generate_uuid,
 )
 from flow360.log import log
@@ -721,25 +723,30 @@ def _merge_entities(
     additions_by_class: dict[str, list[EntityNode]],
     ordered_target_classes: list[str],
     merge_mode: Literal["merge", "replace"],
+    not_merged_types: set[str] = DEFAULT_NOT_MERGED_TYPES,
 ) -> list[Any]:
     """Merge existing entities with selector additions based on merge mode."""
-    base_entities: list[EntityNode] = []
+    candidates: list[EntityNode] = []
 
     if merge_mode == "merge":  # explicit first, then selector additions
-        base_entities.extend(existing)
+        candidates.extend(existing)
         for target_class in ordered_target_classes:
-            base_entities.extend(additions_by_class.get(target_class, []))
+            candidates.extend(additions_by_class.get(target_class, []))
 
     else:  # replace: drop explicit items of targeted classes
         classes_to_update = set(ordered_target_classes)
         for item in existing:
             entity_type = _get_node_attribute(item, "private_attribute_entity_type_name")
             if entity_type not in classes_to_update:
-                base_entities.append(item)
+                candidates.append(item)
         for target_class in ordered_target_classes:
-            base_entities.extend(additions_by_class.get(target_class, []))
+            candidates.extend(additions_by_class.get(target_class, []))
 
-    return base_entities
+    # Deduplication logic (same as materialize_entities_in_place)
+    return deduplicate_entities(
+        candidates,
+        not_merged_types=not_merged_types,
+    )
 
 
 def expand_entity_list_selectors(

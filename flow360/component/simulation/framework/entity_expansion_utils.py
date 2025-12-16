@@ -152,7 +152,6 @@ def expand_all_entity_lists_in_place(
             )
             return
 
-
         if isinstance(obj, (list, tuple)):
             for item in obj:
                 if isinstance(item, (dict, list, tuple)) or hasattr(item, "__dict__"):
