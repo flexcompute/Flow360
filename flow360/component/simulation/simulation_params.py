@@ -20,6 +20,7 @@ from flow360.component.simulation.framework.param_utils import (
     _set_boundary_full_name_with_zone_name,
     _update_entity_full_name,
     _update_zone_boundaries_with_metadata,
+    _update_rotating_boundaries_with_metadata,
     register_entity_list,
 )
 from flow360.component.simulation.framework.updater import updater
@@ -347,7 +348,9 @@ class SimulationParams(_ParamModelBase):
             # pylint: disable=not-context-manager
             with self.unit_system:
                 return super().preprocess(
-                    params=self, exclude=exclude, flow360_unit_system=self.flow360_unit_system
+                    params=self,
+                    exclude=exclude,
+                    flow360_unit_system=self.flow360_unit_system,
                 )
         return super().preprocess(
             params=self, exclude=exclude, flow360_unit_system=self.flow360_unit_system
@@ -763,6 +766,8 @@ class SimulationParams(_ParamModelBase):
         _update_entity_full_name(self, _SurfaceEntityBase, volume_mesh_meta_data)
         _update_entity_full_name(self, _VolumeEntityBase, volume_mesh_meta_data)
         _update_zone_boundaries_with_metadata(self.used_entity_registry, volume_mesh_meta_data)
+
+        _update_rotating_boundaries_with_metadata(self, volume_mesh_meta_data)
         return self
 
     def is_steady(self):
