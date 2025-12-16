@@ -19,8 +19,8 @@ from flow360.component.simulation.framework.param_utils import (
     AssetCache,
     _set_boundary_full_name_with_zone_name,
     _update_entity_full_name,
-    _update_zone_boundaries_with_metadata,
     _update_rotating_boundaries_with_metadata,
+    _update_zone_boundaries_with_metadata,
     register_entity_list,
 )
 from flow360.component.simulation.framework.updater import updater

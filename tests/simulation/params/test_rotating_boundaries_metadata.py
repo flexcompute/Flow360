@@ -78,7 +78,6 @@ def test_update_rotating_boundaries_with_metadata():
         # Create Wall model for the sphere surface
         wall_model = Wall(
             entities=[sphere_surface],
-            velocity=[1, 0, 0],  # Non-zero velocity
         )
 
         # Create simulation params
@@ -114,9 +113,9 @@ def test_update_rotating_boundaries_with_metadata():
 
         # Verify that a new Wall model was created for the __rotating patch
         # Original model should still exist
-        assert len(params.models) >= 1
+        assert len(params.models) > 1
         wall_models = [m for m in params.models if isinstance(m, Wall)]
-        assert len(wall_models) >= 1
+        assert len(wall_models) > 1
 
         # Find the model for the rotating boundary
         rotating_wall = None

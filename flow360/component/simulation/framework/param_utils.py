@@ -1,7 +1,7 @@
 """pre processing and post processing utilities for simulation parameters."""
 
 import re
-from typing import TYPE_CHECKING, Annotated, List, Optional, Union, get_args
+from typing import TYPE_CHECKING, Annotated, List, Optional, Union
 
 import pydantic as pd
 
@@ -18,14 +18,8 @@ from flow360.component.simulation.meshing_param.params import (
     MeshingParams,
     ModularMeshingWorkflow,
 )
-from flow360.component.simulation.meshing_param.volume_params import (
-    RotationCylinder,
-    RotationVolume,
-)
-from flow360.component.simulation.models.surface_models import (
-    SurfaceModelTypes,
-    Wall,
-)
+from flow360.component.simulation.meshing_param.volume_params import RotationVolume
+from flow360.component.simulation.models.surface_models import Wall
 from flow360.component.simulation.primitives import (
     Surface,
     _SurfaceEntityBase,
@@ -257,6 +251,95 @@ def _set_boundary_full_name_with_zone_name(
                 surface.private_attribute_full_name = f"{give_zone_name}/{surface.name}"
 
 
+def _find_zone_name_for_rotation_volume(
+    rotation_volume: RotationVolume, volume_mesh_meta_data: dict
+) -> Optional[str]:
+    """Find the zone name for a rotation volume by matching entity name."""
+    if not rotation_volume.entities or not rotation_volume.entities.stored_entities:
+        return None
+
+    entity_name = rotation_volume.entities.stored_entities[0].name
+    for candidate_zone_name in volume_mesh_meta_data.get("zones", {}).keys():
+        if entity_name in candidate_zone_name:
+            return candidate_zone_name
+    return None
+
+
+def _find_rotating_boundary_name(
+    zone_name: str, base_boundary_name: str, boundary_names: List[str]
+) -> Optional[str]:
+    """Find the __rotating boundary name matching the pattern."""
+    rotating_pattern = (
+        re.escape(zone_name)
+        + r"/"
+        + re.escape(base_boundary_name)
+        + r"__rotating_"
+        + re.escape(zone_name)
+    )
+    for boundary_name in boundary_names:
+        if re.fullmatch(rotating_pattern, boundary_name):
+            return boundary_name
+    return None
+
+
+def _update_enclosed_entity_to_rotating(
+    rotation_volume: RotationVolume,
+    enclosed_entity: Surface,
+    rotating_boundary_name: str,
+    original_to_rotating_map: dict,
+    rotating_boundary_to_entity_map: dict,
+    stationary_entity_names: set,
+    stationary_boundaries: set,
+) -> None:
+    """Update an enclosed entity to point to __rotating patch and handle stationary entities."""
+    original_boundary_name = enclosed_entity.full_name
+    base_boundary_name = (
+        original_boundary_name.split("/", 1)[1]
+        if "/" in original_boundary_name
+        else original_boundary_name
+    )
+
+    rotating_base_name = (
+        rotating_boundary_name.split("/")[-1]
+        if "/" in rotating_boundary_name
+        else rotating_boundary_name
+    )
+    original_entity_name = enclosed_entity.name
+
+    # Update the entity to point to the __rotating patch
+    updated_entity = enclosed_entity.copy(
+        update={
+            "name": rotating_base_name,
+            "private_attribute_full_name": rotating_boundary_name,
+        }
+    )
+    entity_index = rotation_volume.enclosed_entities.stored_entities.index(enclosed_entity)
+    rotation_volume.enclosed_entities.stored_entities[entity_index] = updated_entity
+
+    # Track mappings
+    original_to_rotating_map[original_boundary_name] = rotating_boundary_name
+    rotating_boundary_to_entity_map[rotating_boundary_name] = updated_entity
+
+    # Handle stationary entities
+    if original_entity_name in stationary_entity_names:
+        stationary_boundaries.add(rotating_boundary_name)
+        if rotation_volume.stationary_enclosed_entities:
+            for idx, stationary_entity in enumerate(
+                rotation_volume.stationary_enclosed_entities.stored_entities
+            ):
+                if stationary_entity.name == original_entity_name:
+                    updated_stationary = stationary_entity.copy(
+                        update={
+                            "name": rotating_base_name,
+                            "private_attribute_full_name": rotating_boundary_name,
+                        }
+                    )
+                    rotation_volume.stationary_enclosed_entities.stored_entities[idx] = (
+                        updated_stationary
+                    )
+                    break
+
+
 def _update_rotating_entity_names_with_metadata(
     params: "SimulationParams", volume_mesh_meta_data: dict
 ) -> tuple[dict, set, dict]:
@@ -276,7 +359,6 @@ def _update_rotating_entity_names_with_metadata(
         - Set of rotating_boundary_name values that are in stationary_enclosed_entities.
         - Mapping of rotating_boundary_name -> updated Surface entity to avoid creating duplicates.
     """
-    # Get volume zones from params
     if params.meshing is None:
         return {}, set(), {}
 
@@ -292,50 +374,26 @@ def _update_rotating_entity_names_with_metadata(
     if volume_zones is None:
         return {}, set(), {}
 
-    # Find all RotationVolume instances
     rotation_volumes = [zone for zone in volume_zones if isinstance(zone, RotationVolume)]
     if len(rotation_volumes) == 0:
         return {}, set(), {}
 
-    # Track mapping: original_boundary_name -> rotating_boundary_name for all entities with __rotating patches
-    # This is used to copy models later
     original_to_rotating_map = {}
-    # Track which boundaries are in stationary_enclosed_entities (for velocity=0 setting)
     stationary_boundaries = set()
-    # Track updated entities: rotating_boundary_name -> updated Surface entity
-    # This avoids creating duplicate Surface entities in the model update function
     rotating_boundary_to_entity_map = {}
 
-    # Process each RotationVolume
     for rotation_volume in rotation_volumes:
-        # Get the entity name from the rotation volume's entity
-        # The zone name may have prefixes/suffixes (e.g., "rotatingBlock-{entity_name}")
-        entity_name = None
-        zone_name = None
-        if rotation_volume.entities and rotation_volume.entities.stored_entities:
-            entity = rotation_volume.entities.stored_entities[0]
-            entity_name = entity.name
-
-            # Search through zones to find the one matching this entity
-            # Zone name may have any prefix/suffix, so check if entity_name appears in zone_name
-            for candidate_zone_name in volume_mesh_meta_data.get("zones", {}).keys():
-                # Check if entity_name is contained in zone_name
-                # This handles cases like "rotatingBlock-{entity_name}", "{entity_name}-suffix", etc.
-                if entity_name in candidate_zone_name:
-                    zone_name = candidate_zone_name
-                    break
-
+        zone_name = _find_zone_name_for_rotation_volume(rotation_volume, volume_mesh_meta_data)
         if zone_name is None:
             continue
 
-        # Get zone metadata
         zone_meta = volume_mesh_meta_data.get("zones", {}).get(zone_name)
         if zone_meta is None:
             continue
 
         boundary_names = zone_meta.get("boundaryNames", [])
 
-        # Track which entities are in stationary_enclosed_entities
+        # Track stationary entity names
         stationary_entity_names = set()
         if rotation_volume.stationary_enclosed_entities is not None:
             for stationary_entity in rotation_volume.stationary_enclosed_entities.stored_entities:
@@ -349,82 +407,27 @@ def _update_rotating_entity_names_with_metadata(
                     continue
 
                 original_boundary_name = enclosed_entity.full_name
-
-                # Extract the base boundary name (without zone prefix)
-                # Pattern: zone_name/boundary_name or just boundary_name
-                base_boundary_name = original_boundary_name
-                if "/" in original_boundary_name:
-                    base_boundary_name = original_boundary_name.split("/", 1)[1]
-
-                # Look for __rotating patch: zone_name/base_boundary_name__rotating_zone_name
-                # Pattern: {zone_name}/{base_boundary_name}__rotating_{zone_name}
-                rotating_pattern = (
-                    re.escape(zone_name)
-                    + r"/"
-                    + re.escape(base_boundary_name)
-                    + r"__rotating_"
-                    + re.escape(zone_name)
+                base_boundary_name = (
+                    original_boundary_name.split("/", 1)[1]
+                    if "/" in original_boundary_name
+                    else original_boundary_name
                 )
-                rotating_boundary_name = None
-                for boundary_name in boundary_names:
-                    if re.fullmatch(rotating_pattern, boundary_name):
-                        rotating_boundary_name = boundary_name
-                        break
 
+                rotating_boundary_name = _find_rotating_boundary_name(
+                    zone_name, base_boundary_name, boundary_names
+                )
                 if rotating_boundary_name is None:
                     continue
 
-                # Extract base name from rotating boundary (without zone prefix)
-                rotating_base_name = (
-                    rotating_boundary_name.split("/")[-1]
-                    if "/" in rotating_boundary_name
-                    else rotating_boundary_name
+                _update_enclosed_entity_to_rotating(
+                    rotation_volume,
+                    enclosed_entity,
+                    rotating_boundary_name,
+                    original_to_rotating_map,
+                    rotating_boundary_to_entity_map,
+                    stationary_entity_names,
+                    stationary_boundaries,
                 )
-
-                # Store original name before updating (needed for stationary check)
-                original_entity_name = enclosed_entity.name
-
-                # Update the entity to point to the __rotating patch
-                # Since name is frozen, we need to create a new entity with updated name
-                updated_entity = enclosed_entity.copy(
-                    update={
-                        "name": rotating_base_name,
-                        "private_attribute_full_name": rotating_boundary_name,
-                    }
-                )
-                # Replace the entity in the list
-                entity_index = rotation_volume.enclosed_entities.stored_entities.index(
-                    enclosed_entity
-                )
-                rotation_volume.enclosed_entities.stored_entities[entity_index] = updated_entity
-
-                # Track this mapping for model copying (for all boundaries with __rotating patches)
-                original_to_rotating_map[original_boundary_name] = rotating_boundary_name
-                # Track the updated entity to avoid creating duplicates in model update
-                rotating_boundary_to_entity_map[rotating_boundary_name] = updated_entity
-
-                # Check if this entity is in stationary_enclosed_entities
-                if original_entity_name in stationary_entity_names:
-                    # Mark this boundary as stationary (for velocity=0 setting)
-                    stationary_boundaries.add(rotating_boundary_name)
-
-                    # Update stationary entity to also point to __rotating patch
-                    if rotation_volume.stationary_enclosed_entities:
-                        for idx, stationary_entity in enumerate(
-                            rotation_volume.stationary_enclosed_entities.stored_entities
-                        ):
-                            # these are all Surface by construction
-                            if stationary_entity.name == original_entity_name:
-                                updated_stationary_entity = stationary_entity.copy(
-                                    update={
-                                        "name": rotating_base_name,
-                                        "private_attribute_full_name": rotating_boundary_name,
-                                    }
-                                )
-                                rotation_volume.stationary_enclosed_entities.stored_entities[
-                                    idx
-                                ] = updated_stationary_entity
-                                break
 
     return (
         original_to_rotating_map,
