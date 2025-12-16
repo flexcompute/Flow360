@@ -4,9 +4,17 @@ import pytest
 
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
 from flow360.component.simulation.framework.entity_selector import (
-    expand_entity_selectors_in_place,
+    expand_entity_list_selectors_in_place,
 )
 from flow360.component.simulation.primitives import Edge, Surface
+
+
+class _EntityListStub:
+    """Minimal stub for selector expansion tests (avoids EntityList metaclass constraints)."""
+
+    def __init__(self, *, stored_entities=None, selectors=None):
+        self.stored_entities = stored_entities or []
+        self.selectors = selectors
 
 
 def _mk_pool(names, entity_type):
@@ -25,10 +33,9 @@ def _make_registry(surfaces=None, edges=None):
 
 
 def _expand_and_get_names(registry: EntityRegistry, selector_model) -> list[str]:
-    # Convert model to dict for the expansion engine
-    params = {"node": {"selectors": [selector_model.model_dump()]}}
-    expand_entity_selectors_in_place(registry, params)
-    stored = params["node"]["stored_entities"]
+    entity_list = _EntityListStub(stored_entities=[], selectors=[selector_model])
+    expand_entity_list_selectors_in_place(registry, entity_list, merge_mode="merge")
+    stored = entity_list.stored_entities
     return [
         e.name
         for e in stored
@@ -152,9 +159,9 @@ def test_edge_class_basic_match():
     registry = _make_registry(edges=_mk_pool(["edgeA", "edgeB"], "Edge"))
 
     selector = Edge.match("edgeA", name="edge_basic")
-    params = {"node": {"selectors": [selector.model_dump()]}}
-    expand_entity_selectors_in_place(registry, params)
-    stored = params["node"]["stored_entities"]
+    entity_list = _EntityListStub(stored_entities=[], selectors=[selector])
+    expand_entity_list_selectors_in_place(registry, entity_list, merge_mode="merge")
+    stored = entity_list.stored_entities
     assert [e.name for e in stored if e.private_attribute_entity_type_name == "Edge"] == ["edgeA"]
 
 

@@ -140,7 +140,6 @@ def check_deleted_surface_in_entity_list(expanded_entities: list, param_info) ->
             f"{plural} {boundary_list} will likely be deleted after mesh generation. "
             f"Therefore {'they' if len(deleted_boundaries) > 1 else 'it'} cannot be used."
         )
-    return
 
 
 def check_deleted_surface_pair(value, param_info):

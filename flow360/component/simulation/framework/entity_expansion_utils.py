@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-import copy
-from typing import TYPE_CHECKING, Any, List, Union
+from typing import TYPE_CHECKING, Any, List, Literal, Union
 
 from flow360.component.simulation.framework.entity_materializer import (
     materialize_entities_in_place,
@@ -12,14 +11,6 @@ from flow360.exceptions import Flow360ValueError
 
 if TYPE_CHECKING:
     from flow360.component.simulation.framework.entity_registry import EntityRegistry
-
-
-def _serialize_selector(selector: Any):
-    if isinstance(selector, str):
-        return selector
-    if hasattr(selector, "model_dump"):
-        return selector.model_dump(mode="json", exclude_none=True)
-    return copy.deepcopy(selector)
 
 
 def expand_entity_list_in_context(
@@ -38,7 +29,7 @@ def expand_entity_list_in_context(
     params :
         SimulationParams instance providing the project entity info and selector cache.
     return_names : bool, default False
-        When True, return a list of entity names instead of entity instances.
+        When True, return only a list of entity names instead of entity instances.
 
     Returns
     -------
@@ -53,25 +44,24 @@ def expand_entity_list_in_context(
         asset_cache = getattr(params, "private_attribute_asset_cache", None)
         if asset_cache is None:
             raise Flow360ValueError(
-                "The given `params` does not contain any info on usable entities. Please try using "
+                "The given `params` does not contain any info on usable entities."
             )
 
-        wrapper_key = "__entity_list__"
-        params_payload = {
-            "private_attribute_asset_cache": asset_cache,
-            wrapper_key: {
-                "stored_entities": stored_entities,
-                "selectors": [_serialize_selector(selector) for selector in selectors],
-            },
-        }
         # pylint: disable=import-outside-toplevel
         from flow360.component.simulation.framework.entity_selector import (
-            expand_entity_selectors_in_place,
+            _collect_known_selectors_from_asset_cache,
+            expand_entity_list_selectors,
         )
 
         registry = get_registry_from_params(params)
-        expand_entity_selectors_in_place(registry, params_payload, merge_mode="merge")
-        stored_entities = params_payload[wrapper_key].get("stored_entities", [])
+        known_selectors = _collect_known_selectors_from_asset_cache(asset_cache)
+        stored_entities = expand_entity_list_selectors(
+            registry,
+            entity_list,
+            selector_cache={},
+            known_selectors=known_selectors,
+            merge_mode="merge",
+        )
 
     if not stored_entities:
         return []
@@ -117,6 +107,70 @@ def get_registry_from_params(params) -> EntityRegistry:
         raise ValueError("[Internal] SimulationParams is missing project_entity_info.")
 
     return EntityRegistry.from_entity_info(entity_info)
+
+
+def expand_all_entity_lists_in_place(
+    params, *, merge_mode: Literal["merge", "replace"] = "merge"
+) -> None:
+    """
+    Expand selectors for all EntityList objects under params in-place.
+
+    This is intended for translation-time expansion where mutating the params object is safe.
+    """
+    # pylint: disable=import-outside-toplevel
+    from flow360.component.simulation.framework.entity_base import EntityList
+    from flow360.component.simulation.framework.entity_selector import (
+        _collect_known_selectors_from_asset_cache,
+        expand_entity_list_selectors_in_place,
+    )
+
+    asset_cache = getattr(params, "private_attribute_asset_cache", None)
+    entity_info = getattr(asset_cache, "project_entity_info", None)
+    if asset_cache is None or entity_info is None:
+        # Unit tests may not provide entity_info; in that case selector expansion is not possible.
+        return
+
+    registry = get_registry_from_params(params)
+    known_selectors = _collect_known_selectors_from_asset_cache(asset_cache)
+    selector_cache: dict = {}
+
+    visited: set[int] = set()
+
+    def _walk(obj):
+        obj_id = id(obj)
+        if obj_id in visited:
+            return
+        visited.add(obj_id)
+
+        if isinstance(obj, EntityList):
+            expand_entity_list_selectors_in_place(
+                registry,
+                obj,
+                selector_cache=selector_cache,
+                known_selectors=known_selectors,
+                merge_mode=merge_mode,
+            )
+            return
+
+        if isinstance(obj, dict):
+            # TODO: Even possible? We do not nest stuff under a pure dict.
+            for v in obj.values():
+                if isinstance(v, (dict, list, tuple)) or hasattr(v, "__dict__"):
+                    _walk(v)
+            return
+
+        if isinstance(obj, (list, tuple)):
+            for item in obj:
+                if isinstance(item, (dict, list, tuple)) or hasattr(item, "__dict__"):
+                    _walk(item)
+            return
+
+        if hasattr(obj, "__dict__"):
+            for field_value in obj.__dict__.values():
+                if isinstance(field_value, (dict, list, tuple)) or hasattr(field_value, "__dict__"):
+                    _walk(field_value)
+
+    _walk(params)
 
 
 def get_entity_info_and_registry_from_dict(params_as_dict: dict) -> tuple:

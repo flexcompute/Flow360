@@ -42,71 +42,11 @@ def _expand_selectors_for_translation(input_params: SimulationParams):
     working directly with deserialized objects without unnecessary serialization.
     """
     # pylint: disable=import-outside-toplevel
-    from flow360.component.simulation.framework.entity_base import EntityList
     from flow360.component.simulation.framework.entity_expansion_utils import (
-        get_registry_from_params,
-    )
-    from flow360.component.simulation.framework.entity_selector import (
-        _collect_known_selectors_from_asset_cache,
-        _process_selectors,
+        expand_all_entity_lists_in_place,
     )
 
-    # Step 1: Get entity registry from params (no serialization needed)
-    asset_cache = getattr(input_params, "private_attribute_asset_cache", None)
-    entity_info = getattr(asset_cache, "project_entity_info", None)
-    if asset_cache and entity_info:
-        registry = get_registry_from_params(input_params)
-    else:
-        # Unit tests that do not have entity_info.
-        return
-
-    # Step 2: Build known_selectors map from asset cache
-    asset_cache = getattr(input_params, "private_attribute_asset_cache", None)
-    known_selectors = _collect_known_selectors_from_asset_cache(asset_cache)
-
-    # Step 3: Create selector cache for efficient reuse across multiple EntityLists
-    selector_cache = {}
-
-    # Step 4: Recursively traverse SimulationParams and expand each EntityList
-    def _expand_entity_list_in_place(obj):
-        """Recursively find and expand EntityList objects in-place."""
-        if isinstance(obj, EntityList):
-            # Expand selectors for this EntityList
-            stored_entities = list(obj.stored_entities or [])
-            raw_selectors = obj.selectors or []
-
-            if raw_selectors and registry is not None:
-                # Convert EntitySelector objects to dicts for _process_selectors
-                selector_list = [sel.model_dump() for sel in raw_selectors]
-
-                # Process selectors to get matched entities
-                additions_by_class, ordered_target_classes = _process_selectors(
-                    registry,
-                    selector_list,
-                    selector_cache,
-                    known_selectors=known_selectors,
-                )
-
-                # Merge: stored_entities first, then selector additions
-                result = list(stored_entities)
-                for target_class in ordered_target_classes:
-                    result.extend(additions_by_class.get(target_class, []))
-
-                # Update stored_entities in-place
-                obj.stored_entities = result
-
-        elif hasattr(obj, "__dict__"):
-            # Traverse nested objects
-            for field_value in obj.__dict__.values():
-                if isinstance(field_value, (list, tuple)):
-                    # Handle lists of objects
-                    for item in field_value:
-                        if isinstance(item, EntityList) or hasattr(item, "__dict__"):
-                            _expand_entity_list_in_place(item)
-                elif isinstance(field_value, EntityList) or hasattr(field_value, "__dict__"):
-                    _expand_entity_list_in_place(field_value)
-
-    _expand_entity_list_in_place(input_params)
+    expand_all_entity_lists_in_place(input_params, merge_mode="merge")
 
 
 def preprocess_input(func):

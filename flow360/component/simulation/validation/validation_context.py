@@ -552,11 +552,6 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
             Combined list of stored_entities and selector-matched entities.
             Returns stored_entities directly if no selectors present.
         """
-        # pylint: disable=import-outside-toplevel
-        from flow360.component.simulation.framework.entity_selector import (
-            _process_selectors,
-        )
-
         stored_entities = list(entity_list.stored_entities or [])
         raw_selectors = entity_list.selectors or []
 
@@ -564,28 +559,21 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         if not raw_selectors or self._entity_registry is None:
             return stored_entities
 
-        # Convert EntitySelector objects to dicts (_process_selectors expects dicts/tokens)
-        # TODO: model dump? really?
-        selector_list = [sel.model_dump() for sel in raw_selectors]
-
         # Lazily initialize selector-specific infrastructure
         self._ensure_known_selectors()
         self._ensure_selector_cache()
-
-        # Process selectors (in dict/token format)
-        additions_by_class, ordered_target_classes = _process_selectors(
-            self._entity_registry,
-            selector_list,
-            self._selector_cache,
-            known_selectors=self._known_selectors,
+        # pylint: disable=import-outside-toplevel
+        from flow360.component.simulation.framework.entity_selector import (
+            expand_entity_list_selectors,
         )
 
-        # Merge: stored_entities first, then selector additions
-        result = list(stored_entities)
-        for target_class in ordered_target_classes:
-            result.extend(additions_by_class.get(target_class, []))
-
-        return result
+        return expand_entity_list_selectors(
+            self._entity_registry,
+            entity_list,
+            selector_cache=self._selector_cache,
+            known_selectors=self._known_selectors,
+            merge_mode="merge",
+        )
 
 
 class ValidationContext:

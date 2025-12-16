@@ -636,7 +636,7 @@ def _get_selector_cache_key(selector_dict: dict) -> tuple:
 
 def _process_selectors(
     registry,
-    selectors_value: list,
+    selectors_list: list,
     selector_cache: dict,
     known_selectors: dict[str, dict] = None,
 ) -> tuple[dict[str, list[EntityNode]], list[str]]:
@@ -651,7 +651,7 @@ def _process_selectors(
 
     Parameters:
         registry: EntityRegistry instance containing entities.
-        selectors_value: List of selector definitions or selector ID tokens.
+        selectors_list: List of selector definitions or selector ID tokens.
         selector_cache: Cache for selector results.
         known_selectors: Map of selector IDs to selector definitions.
 
@@ -664,13 +664,36 @@ def _process_selectors(
     if known_selectors is None:
         known_selectors = {}
 
-    for item in selectors_value:
+    def _selector_object_to_dict(selector) -> dict:
+        # TODO: Remove.
+        """Convert an EntitySelector-like object to a plain dict without serializing."""
+        children = []
+        for predicate in getattr(selector, "children", []) or []:
+            children.append(
+                {
+                    "attribute": getattr(predicate, "attribute", "name"),
+                    "operator": getattr(predicate, "operator", None),
+                    "value": getattr(predicate, "value", None),
+                    "non_glob_syntax": getattr(predicate, "non_glob_syntax", None),
+                }
+            )
+        return {
+            "target_class": getattr(selector, "target_class", None),
+            "name": getattr(selector, "name", None),
+            "logic": getattr(selector, "logic", "AND"),
+            "children": children,
+        }
+
+    for item in selectors_list:
         selector_dict = None
-        # Check if the item is a token (string) or a full selector definition (dict)
+        # Check if the item is a token (string) or an EntitySelector object.
         if isinstance(item, str):
             selector_dict = known_selectors.get(item)
-        elif isinstance(item, dict):
-            selector_dict = item
+        elif hasattr(item, "model_dump"):
+            # TODO: rework underlying low level logic to work with EntitySelector objects directly.
+            selector_dict = _selector_object_to_dict(item)
+        else:
+            raise TypeError(f"[Internal] Unsupported selector type: {type(item)}")
 
         if selector_dict is None:
             continue
@@ -718,57 +741,110 @@ def _merge_entities(
     return base_entities
 
 
-def _expand_node_selectors(
+def expand_entity_list_selectors(
     registry,
-    node: dict,
-    selector_cache: dict,
-    merge_mode: Literal["merge", "replace"],
+    entity_list,
+    *,
+    selector_cache: dict = None,
     known_selectors: dict[str, dict] = None,
-) -> None:
+    merge_mode: Literal["merge", "replace"] = "merge",
+) -> list[EntityNode]:
     """
-    Expand selectors on one node and write results into stored_entities.
+    Expand selectors in a single EntityList within an EntityRegistry context.
 
-    - merge_mode="merge": keep explicit stored_entities first, then append selector results.
-    - merge_mode="replace": replace explicit items of target classes affected by selectors.
-
-    Parameters:
-        registry: EntityRegistry instance containing entities.
-        node: Dictionary node containing selectors to expand.
-        selector_cache: Cache for selector results.
-        merge_mode: How to merge selector results with existing entities.
-        known_selectors: Map of selector IDs to selector definitions.
+    Notes
+    -----
+    - This function does NOT modify the input EntityList.
+    - selector_cache can be shared across multiple calls to reuse selector results.
     """
-    selectors_value = node.get("selectors")
-    if not (isinstance(selectors_value, list) and len(selectors_value) > 0):
-        return
+    stored_entities = list(getattr(entity_list, "stored_entities", []) or [])
+    raw_selectors = list(getattr(entity_list, "selectors", []) or [])
+
+    if selector_cache is None:
+        selector_cache = {}
+    if known_selectors is None:
+        known_selectors = {}
+
+    if not raw_selectors:
+        return stored_entities
 
     additions_by_class, ordered_target_classes = _process_selectors(
-        registry, selectors_value, selector_cache, known_selectors=known_selectors
+        registry,
+        raw_selectors,
+        selector_cache,
+        known_selectors=known_selectors,
+    )
+    return _merge_entities(
+        stored_entities,
+        additions_by_class,
+        ordered_target_classes,
+        merge_mode,
     )
 
-    existing = node.get("stored_entities", [])
-    base_entities = _merge_entities(
-        existing, additions_by_class, ordered_target_classes, merge_mode
+
+def expand_entity_list_selectors_in_place(
+    registry,
+    entity_list,
+    *,
+    selector_cache: dict = None,
+    known_selectors: dict[str, dict] = None,
+    merge_mode: Literal["merge", "replace"] = "merge",
+) -> None:
+    """
+    Expand selectors in an EntityList and write results into stored_entities in-place.
+
+    This is intended for translation-time expansion where mutating the params object is safe.
+    """
+    expanded = expand_entity_list_selectors(
+        registry,
+        entity_list,
+        selector_cache=selector_cache,
+        known_selectors=known_selectors,
+        merge_mode=merge_mode,
     )
+    entity_list.stored_entities = expanded
 
-    node["stored_entities"] = base_entities
 
-    # Replace string tokens with full selector definitions for pydantic validation
-    if known_selectors:
-        expanded_selectors = []
-        for item in selectors_value:
-            if isinstance(item, str):
-                # ID string token
-                if item in known_selectors:
-                    expanded_selectors.append(known_selectors[item])
-                else:
-                    raise ValueError(
-                        f"[Internal] Selector token '{item}' not found in known_selectors. "
-                        "This may indicate a missing or invalid selector reference."
-                    )
-            else:
-                expanded_selectors.append(item)
-        node["selectors"] = expanded_selectors
+def resolve_selector_tokens_in_place(params_as_dict: dict) -> dict:
+    # TODO: Remove since this is only used by tests.
+    """
+    Resolve selector tokens (string selector_id) to full selector dict definitions in-place.
+
+    This does NOT expand selectors into stored_entities; it only replaces tokens in `selectors`
+    lists using `private_attribute_asset_cache["used_selectors"]`.
+    """
+    asset_cache = params_as_dict.get("private_attribute_asset_cache")
+    known_selectors = _collect_known_selectors_from_asset_cache(asset_cache)
+
+    queue: deque[Any] = deque([params_as_dict])
+    while queue:
+        node = queue.popleft()
+        if isinstance(node, dict):
+            selectors_list = node.get("selectors")
+            if isinstance(selectors_list, list) and selectors_list:
+                expanded_selectors = []
+                for item in selectors_list:
+                    if isinstance(item, str):
+                        if item in known_selectors:
+                            expanded_selectors.append(known_selectors[item])
+                        else:
+                            raise ValueError(
+                                f"[Internal] Selector token '{item}' not found in known_selectors. "
+                                "This may indicate a missing or invalid selector reference."
+                            )
+                    else:
+                        expanded_selectors.append(item)
+                node["selectors"] = expanded_selectors
+
+            for value in node.values():
+                if isinstance(value, (dict, list)):
+                    queue.append(value)
+        elif isinstance(node, list):
+            for item in node:
+                if isinstance(item, (dict, list)):
+                    queue.append(item)
+
+    return params_as_dict
 
 
 def collect_and_tokenize_selectors_in_place(  # pylint: disable=too-many-branches
@@ -824,73 +900,4 @@ def collect_and_tokenize_selectors_in_place(  # pylint: disable=too-many-branche
     if isinstance(asset_cache, dict):
         asset_cache.pop("used_selectors", None)
         asset_cache["used_selectors"] = list(known_selectors.values())
-    return params_as_dict
-
-
-def expand_entity_selectors_in_place(
-    registry,
-    params_as_dict: dict,
-    *,
-    merge_mode: Literal["merge", "replace"] = "merge",
-) -> dict:
-    """Traverse params_as_dict and expand any EntitySelector in place.
-
-    Parameters
-    ----------
-    registry : EntityRegistry
-        EntityRegistry instance containing entities.
-    params_as_dict : dict
-        Simulation parameters as a dictionary.
-    merge_mode : {"merge", "replace"}, default "merge"
-        How to merge selector results with existing entities.
-
-    How caching works
-    -----------------
-    - Each selector must provide a unique name. We build a cross-tree
-      cache key as ("name", target_class, name).
-    - For every node that contains a non-empty `selectors` list, we compute the
-      additions once per unique cache key, store the expanded list of entity
-      dicts in `selector_cache`, and reuse it for subsequent nodes that reference
-      the same selector name and target_class.
-    - This avoids repeated pool scans and matcher compilation across the tree
-      while preserving stable result ordering.
-
-    Token Support
-    -------------
-    This function now also builds a `known_selectors` map from `private_attribute_asset_cache["selectors"]`.
-    This map is passed down to `_process_selectors` to allow resolving string tokens back to their
-    full selector definitions.
-
-    Merge policy
-    ------------
-    - merge_mode="merge" (default): keep explicit `stored_entities` first, then
-      append selector results; duplicates (if any) can be handled later by the
-      materialization/dedup stage.
-    - merge_mode="replace": for classes targeted by selectors in the node,
-      drop explicit items of those classes and use selector results instead.
-    """
-    # Build known_selectors map from AssetCache if available
-    asset_cache = params_as_dict.get("private_attribute_asset_cache")
-    known_selectors = _collect_known_selectors_from_asset_cache(asset_cache)
-
-    queue: deque[Any] = deque([params_as_dict])
-    selector_cache: dict = {}
-    while queue:
-        node = queue.popleft()
-        if isinstance(node, dict):
-            _expand_node_selectors(
-                registry,
-                node,
-                selector_cache=selector_cache,
-                merge_mode=merge_mode,
-                known_selectors=known_selectors,
-            )
-            for value in node.values():
-                if isinstance(value, (dict, list)):
-                    queue.append(value)
-        elif isinstance(node, list):
-            for item in node:
-                if isinstance(item, (dict, list)):
-                    queue.append(item)
-
     return params_as_dict

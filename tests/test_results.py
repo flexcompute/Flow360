@@ -26,7 +26,8 @@ from flow360.component.simulation.framework.entity_expansion_utils import (
 )
 from flow360.component.simulation.framework.entity_selector import (
     EntitySelector,
-    expand_entity_selectors_in_place,
+    _collect_known_selectors_from_asset_cache,
+    expand_entity_list_selectors,
 )
 from flow360.component.simulation.framework.updater_utils import (
     compare_dicts,
@@ -729,19 +730,17 @@ def test_surface_forces_result(mock_id, mock_response):
 
     serialized_params = params_with_selectors.model_dump(mode="json", exclude_none=True)
     _, registry = get_entity_info_and_registry_from_dict(serialized_params)
-    dict_wrapper_key = "__entity_list_dict__"
-    dict_payload = {
-        "private_attribute_asset_cache": serialized_params["private_attribute_asset_cache"],
-        dict_wrapper_key: {
-            "stored_entities": [],
-            "selectors": [
-                selector.model_dump(mode="json", exclude_none=True)
-                for selector in selector_model.entities.selectors or []
-            ],
-        },
-    }
-    expand_entity_selectors_in_place(registry, dict_payload, merge_mode="merge")
-    dict_names = [entity.name for entity in dict_payload[dict_wrapper_key]["stored_entities"]]
+    known_selectors = _collect_known_selectors_from_asset_cache(
+        serialized_params["private_attribute_asset_cache"]
+    )
+    expanded_entities_via_registry = expand_entity_list_selectors(
+        registry,
+        selector_model.entities,
+        selector_cache={},
+        known_selectors=known_selectors,
+        merge_mode="merge",
+    )
+    dict_names = [entity.name for entity in expanded_entities_via_registry]
     assert dict_names == expanded_names
 
 

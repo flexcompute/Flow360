@@ -7,10 +7,12 @@ import pytest
 import flow360 as fl
 from flow360.component.project_utils import set_up_params_for_uploading
 from flow360.component.resource_base import local_metadata_builder
+from flow360.component.simulation.entity_info import SurfaceMeshEntityInfo
 from flow360.component.simulation.framework.entity_selector import (
     EntitySelector,
     Predicate,
 )
+from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.framework.updater_utils import compare_values
 from flow360.component.simulation.models.surface_models import Wall
 from flow360.component.simulation.outputs.output_entities import Point
@@ -82,10 +84,14 @@ def test_validate_model_keeps_selectors_unexpanded():
     )
     assert not errors, f"Unexpected validation errors: {errors}"
 
-    # Verify delayed expansion: only explicit entity is in stored_entities (NOT selector results)
+    # Verify delayed expansion: selectors are NOT expanded into stored_entities.
+    # Note: set_up_params_for_uploading() now strips entities that overlap with selectors so the UI can
+    # distinguish selector-implied selections from hand-picked ones. Since `fluid/leftWing` also matches
+    # the `*Wing` selector, it is expected to be stripped from stored_entities before validation.
     stored_entities1 = validated.models[0].entities.stored_entities
-    assert len(stored_entities1) == 1, "Selectors should NOT be expanded into stored_entities"
-    assert stored_entities1[0].name == "fluid/leftWing", "Only explicit entity should remain"
+    assert (
+        len(stored_entities1) == 0
+    ), "Selector-overlap entities should be stripped prior to upload"
 
     # Verify pure selector case: stored_entities should be empty
     stored_entities2 = validated.models[1].entities.stored_entities
@@ -210,66 +216,30 @@ def test_validate_model_deduplicates_non_point_entities():
 
 def test_strip_selector_matches_removes_selector_overlap():
     """Ensure selector-overlap entities are dropped prior to upload."""
-    params = {
-        "outputs": [
-            {
-                "output_type": "SurfaceOutput",
-                "name": "surface_output",
-                "entities": {
-                    "stored_entities": [
-                        {
-                            "name": "front",
-                            "private_attribute_entity_type_name": "Surface",
-                            "private_attribute_id": "front",
-                        },
-                        {
-                            "name": "rear",
-                            "private_attribute_entity_type_name": "Surface",
-                            "private_attribute_id": "rear",
-                        },
+    with fl.SI_unit_system:
+        params = fl.SimulationParams(
+            outputs=[
+                fl.SurfaceOutput(
+                    name="surface_output",
+                    output_fields=[fl.UserVariable(name="var", value=1)],
+                    entities=[
+                        Surface(name="front", private_attribute_id="s-1"),
+                        Surface(name="rear", private_attribute_id="s-2"),
+                        Surface.any_of(["front"], name="front_selector"),
                     ],
-                    "selectors": [
-                        {
-                            "target_class": "Surface",
-                            "name": "front_selector",
-                            "children": [
-                                {
-                                    "attribute": "name",
-                                    "operator": "any_of",
-                                    "value": ["front"],
-                                }
-                            ],
-                        }
-                    ],
-                },
-            }
-        ],
-        "private_attribute_asset_cache": {
-            "project_entity_info": {
-                "type_name": "SurfaceMeshEntityInfo",
-                "boundaries": [
-                    {
-                        "name": "front",
-                        "private_attribute_entity_type_name": "Surface",
-                        "private_attribute_id": "front",
-                    },
-                    {
-                        "name": "rear",
-                        "private_attribute_entity_type_name": "Surface",
-                        "private_attribute_id": "rear",
-                    },
-                ],
-            }
-        },
-    }
-
-    stripped = strip_selector_matches_inplace(copy.deepcopy(params))
-
-    stored_entities = stripped["outputs"][0]["entities"]["stored_entities"]
-    assert [entity["name"] for entity in stored_entities] == ["rear"]
-
-    selectors = stripped["outputs"][0]["entities"]["selectors"]
-    assert selectors == params["outputs"][0]["entities"]["selectors"]
+                )
+            ],
+            private_attribute_asset_cache=AssetCache(
+                project_entity_info=SurfaceMeshEntityInfo(
+                    boundaries=[
+                        Surface(name="front", private_attribute_id="s-1"),
+                        Surface(name="rear", private_attribute_id="s-2"),
+                    ]
+                )
+            ),
+        )
+    strip_selector_matches_inplace(params)
+    assert [entity.name for entity in params.outputs[0].entities.stored_entities] == ["rear"]
 
 
 def test_validate_model_does_not_deduplicate_point_entities():
