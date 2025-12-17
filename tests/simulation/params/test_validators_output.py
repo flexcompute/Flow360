@@ -302,9 +302,9 @@ def test_surface_user_variables_in_output_fields():
             )
 
 
-def test_duplicate_surface_usage():
+def test_duplicate_surface_usage(mock_validation_context):
     my_var = UserVariable(name="my_var", value=solution.node_forces_per_unit_area[1])
-    with pytest.raises(
+    with mock_validation_context, pytest.raises(
         ValueError,
         match=re.escape(
             "The same surface `fluid/body` is used in multiple `SurfaceOutput`s. "
@@ -321,7 +321,7 @@ def test_duplicate_surface_usage():
                 ],
             )
 
-    with pytest.raises(
+    with mock_validation_context, pytest.raises(
         ValueError,
         match=re.escape(
             "The same surface `fluid/body` is used in multiple `TimeAverageSurfaceOutput`s. "
@@ -894,7 +894,7 @@ def test_duplicate_probe_entity_names(mock_validation_context):
             )
 
 
-def test_surface_integral_entity_types():
+def test_surface_integral_entity_types(mock_validation_context):
     uv_surface1 = UserVariable(
         name="uv_surface1", value=math.dot(solution.velocity, solution.CfVec)
     )
@@ -911,7 +911,7 @@ def test_surface_integral_entity_types():
             ],
         )
 
-    with pytest.raises(
+    with mock_validation_context, pytest.raises(
         ValueError,
         match=re.escape(
             "Imported and simulation surfaces cannot be used together in the same SurfaceIntegralOutput."

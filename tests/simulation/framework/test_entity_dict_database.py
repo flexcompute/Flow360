@@ -1,5 +1,5 @@
 """
-Tests for entity selector and get_registry_from_dict function.
+Tests for entity selector and get_entity_info_and_registry_from_dict function.
 """
 
 import copy
@@ -9,7 +9,7 @@ import os
 import pytest
 
 from flow360.component.simulation.framework.entity_expansion_utils import (
-    get_registry_from_dict,
+    get_entity_info_and_registry_from_dict,
     get_registry_from_params,
 )
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
@@ -91,13 +91,13 @@ def _build_simple_params_dict():
 
 def test_get_registry_for_geometry_entity_info():
     """
-    Test get_registry_from_dict with GeometryEntityInfo.
+    Test get_entity_info_and_registry_from_dict with GeometryEntityInfo.
     Uses geometry_grouped_by_file/simulation.json as test data.
     """
     params_as_dict = _load_simulation_json("data/geometry_grouped_by_file/simulation.json")
     params_as_dict, _ = SimulationParams._update_param_dict(params_as_dict)
     entity_info = params_as_dict["private_attribute_asset_cache"]["project_entity_info"]
-    registry = get_registry_from_dict(params_as_dict)
+    _, registry = get_entity_info_and_registry_from_dict(params_as_dict)
 
     # Get expected counts from entity_info based on grouping tags
     face_group_tag = entity_info.get("face_group_tag")
@@ -143,12 +143,12 @@ def test_get_registry_for_geometry_entity_info():
 
 def test_get_registry_for_volume_mesh_entity_info():
     """
-    Test get_registry_from_dict with VolumeMeshEntityInfo.
+    Test get_entity_info_and_registry_from_dict with VolumeMeshEntityInfo.
     Uses vm_entity_provider/simulation.json as test data.
     """
     params_as_dict = _load_simulation_json("data/vm_entity_provider/simulation.json")
     entity_info = params_as_dict["private_attribute_asset_cache"]["project_entity_info"]
-    registry = get_registry_from_dict(params_as_dict)
+    _, registry = get_entity_info_and_registry_from_dict(params_as_dict)
 
     # Get expected counts from entity_info
     expected_boundaries_count = len(entity_info.get("boundaries", []))
@@ -174,13 +174,13 @@ def test_get_registry_for_volume_mesh_entity_info():
 
 def test_get_registry_for_surface_mesh_entity_info():
     """
-    Test get_registry_from_dict with SurfaceMeshEntityInfo.
+    Test get_entity_info_and_registry_from_dict with SurfaceMeshEntityInfo.
     Uses params/data/surface_mesh/simulation.json as test data.
     """
     params_as_dict = _load_simulation_json("params/data/surface_mesh/simulation.json")
     params_as_dict, _ = SimulationParams._update_param_dict(params_as_dict)
     entity_info = params_as_dict["private_attribute_asset_cache"]["project_entity_info"]
-    registry = get_registry_from_dict(params_as_dict)
+    _, registry = get_entity_info_and_registry_from_dict(params_as_dict)
 
     # Get expected count from entity_info
     expected_boundaries_count = len(entity_info.get("boundaries", []))
@@ -208,7 +208,7 @@ def test_get_registry_missing_asset_cache():
     params_as_dict = {}
 
     with pytest.raises(ValueError, match="private_attribute_asset_cache not found"):
-        get_registry_from_dict(params_as_dict)
+        get_entity_info_and_registry_from_dict(params_as_dict)
 
 
 def test_get_registry_missing_entity_info():
@@ -218,7 +218,7 @@ def test_get_registry_missing_entity_info():
     params_as_dict = {"private_attribute_asset_cache": {}}
 
     with pytest.raises(ValueError, match="project_entity_info not found"):
-        get_registry_from_dict(params_as_dict)
+        get_entity_info_and_registry_from_dict(params_as_dict)
 
 
 def test_geometry_entity_info_respects_grouping_tags():
@@ -229,7 +229,7 @@ def test_geometry_entity_info_respects_grouping_tags():
     params_as_dict = _load_simulation_json("data/geometry_grouped_by_file/simulation.json")
     params_as_dict, _ = SimulationParams._update_param_dict(params_as_dict)
     entity_info = params_as_dict["private_attribute_asset_cache"]["project_entity_info"]
-    registry = get_registry_from_dict(params_as_dict)
+    _, registry = get_entity_info_and_registry_from_dict(params_as_dict)
 
     # Verify face grouping
     face_group_tag = entity_info.get("face_group_tag")
@@ -268,7 +268,7 @@ def test_get_registry_from_params_matches_dict():
     params_as_dict = _build_simple_params_dict()
     dummy_params = _DummyParams(params_as_dict)
 
-    dict_registry = get_registry_from_dict(params_as_dict)
+    _, dict_registry = get_entity_info_and_registry_from_dict(params_as_dict)
     instance_registry = get_registry_from_params(dummy_params)
 
     assert isinstance(instance_registry, EntityRegistry)
@@ -303,7 +303,7 @@ def test_entity_registry_respects_grouping_selection():
     entity_info = params_as_dict["private_attribute_asset_cache"]["project_entity_info"]
 
     # Get the actual entity_info object by deserializing
-    registry = get_registry_from_dict(params_as_dict)
+    _, registry = get_entity_info_and_registry_from_dict(params_as_dict)
 
     # Verify we're testing GeometryEntityInfo with multiple groupings
     assert entity_info["type_name"] == "GeometryEntityInfo"

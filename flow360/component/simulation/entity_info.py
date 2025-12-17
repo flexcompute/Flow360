@@ -624,5 +624,7 @@ EntityInfoUnion = Annotated[
 def parse_entity_info_model(data) -> EntityInfoUnion:
     """
     parse entity info data and return one of [GeometryEntityInfo, VolumeMeshEntityInfo, SurfaceMeshEntityInfo]
+
+    # TODO: Add a fast mode by popping entities that are not needed due to wrong grouping tags before deserialization.
     """
     return pd.TypeAdapter(EntityInfoUnion).validate_python(data)

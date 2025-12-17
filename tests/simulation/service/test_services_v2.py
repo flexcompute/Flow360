@@ -784,12 +784,12 @@ def test_validate_init_data_vm_workflow_errors():
             "ctx": {"relevant_for": ["Case"]},
         },
         {
-            "loc": ("models", 0, "entities", "stored_entities"),
+            "loc": ("models", 0, "entities"),
             "type": "value_error",
             "ctx": {"relevant_for": ["Case"]},
         },
         {
-            "loc": ("models", 1, "entities", "stored_entities"),
+            "loc": ("models", 1, "entities"),
             "type": "value_error",
             "ctx": {"relevant_for": ["Case"]},
         },

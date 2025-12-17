@@ -30,6 +30,7 @@ from flow360.component.simulation.primitives import (
     ImportedSurface,
     Surface,
 )
+from flow360.component.simulation.services_utils import strip_selector_matches_inplace
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.user_code.core.types import save_user_variables
@@ -496,6 +497,10 @@ def set_up_params_for_uploading(  # pylint: disable=too-many-arguments
 
     # Convert all reference of UserVariables to VariableToken
     params = save_user_variables(params)
+
+    # Strip selector-matched entities from stored_entities before upload so that hand-picked
+    # entities remain distinguishable on the UI side.
+    strip_selector_matches_inplace(params)
 
     return params
 

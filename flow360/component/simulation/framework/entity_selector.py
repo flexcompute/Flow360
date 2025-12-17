@@ -14,7 +14,9 @@ from typing_extensions import Self
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_utils import (
+    DEFAULT_NOT_MERGED_TYPES,
     compile_glob_cached,
+    deduplicate_entities,
     generate_uuid,
 )
 from flow360.log import log
@@ -382,30 +384,6 @@ def _get_node_attribute(entity: Any, attribute: str):
     return getattr(entity, attribute, None)
 
 
-def _collect_known_selectors_from_asset_cache(asset_cache) -> dict[str, dict]:
-    """Normalize selector definitions originating from asset cache."""
-    if asset_cache is None:
-        return {}
-    if isinstance(asset_cache, dict):
-        selectors = asset_cache.get("used_selectors", [])
-    else:
-        selectors = getattr(asset_cache, "used_selectors", [])
-    known: dict[str, dict] = {}
-    for item in selectors or []:
-        if isinstance(item, str):
-            continue
-        if hasattr(item, "model_dump"):
-            selector_dict = item.model_dump(mode="json", exclude_none=True)
-        elif isinstance(item, dict):
-            selector_dict = item
-        else:
-            continue
-        selector_id = selector_dict.get("selector_id")
-        if selector_id:
-            known[selector_id] = selector_dict
-    return known
-
-
 def _get_attribute_value(entity: Any, attribute: str) -> Optional[str]:
     """Return the scalar string value of an attribute, or None if absent/unsupported.
 
@@ -417,15 +395,15 @@ def _get_attribute_value(entity: Any, attribute: str) -> Optional[str]:
     return None
 
 
-def _build_value_matcher(predicate: dict):
+def _build_value_matcher(predicate: Predicate):
     """
     Build a fast predicate(value: Optional[str])->bool matcher.
 
     Precompiles regex/glob and converts membership lists to sets for speed.
     """
-    operator = predicate.get("operator")
-    value = predicate.get("value")
-    non_glob_syntax = predicate.get("non_glob_syntax")
+    operator = predicate.operator
+    value = predicate.value
+    non_glob_syntax = predicate.non_glob_syntax
 
     negate = False
     if operator in ("not_any_of", "not_matches"):
@@ -474,11 +452,11 @@ def _build_index(pool: list[EntityNode], attribute: str) -> dict[str, list[int]]
 
 def _apply_or_selector(
     pool: list[EntityNode],
-    ordered_children: list[dict],
+    ordered_children: list[Predicate],
 ) -> list[Any]:
     indices: set[int] = set()
     for predicate in ordered_children:
-        attribute = predicate.get("attribute", "name")
+        attribute = predicate.attribute
         matcher = _build_value_matcher(predicate)
         for i, item in enumerate(pool):
             if i in indices:
@@ -494,21 +472,21 @@ def _apply_or_selector(
 
 def _apply_and_selector(
     pool: list[EntityNode],
-    ordered_children: list[dict],
+    ordered_children: list[Predicate],
     indices_by_attribute: dict[str, dict[str, list[int]]],
 ) -> list[Any]:
     candidate_indices: Optional[set[int]] = None
 
     def _matched_indices_for_predicate(
-        predicate: dict, current_candidates: Optional[set[int]]
+        predicate: Predicate, current_candidates: Optional[set[int]]
     ) -> set[int]:
-        operator = predicate.get("operator")
-        attribute = predicate.get("attribute", "name")
+        operator = predicate.operator
+        attribute = predicate.attribute
         if operator == "any_of":
             idx_map = indices_by_attribute.get(attribute)
             if idx_map is not None:
                 result: set[int] = set()
-                for v in predicate.get("value") or []:
+                for v in predicate.value or []:
                     result.update(idx_map.get(v, []))
                 return result
         matcher = _build_value_matcher(predicate)
@@ -537,7 +515,7 @@ def _apply_and_selector(
     return [pool[i] for i in range(len(pool)) if i in candidate_indices]
 
 
-def _apply_single_selector(pool: list[EntityNode], selector_dict: dict) -> list[EntityNode]:
+def _apply_single_selector(pool: list[EntityNode], selector: EntitySelector) -> list[EntityNode]:
     """Apply one selector over a pool of entities (dicts or objects).
 
     Implementation notes for future readers:
@@ -550,16 +528,16 @@ def _apply_single_selector(pool: list[EntityNode], selector_dict: dict) -> list[
       * Short-circuit when the candidate set becomes empty.
     - Result ordering is stable (by original pool index) to keep the operation idempotent.
     """
-    logic = selector_dict.get("logic", "AND")
-    children = selector_dict.get("children") or []
+    logic = selector.logic
+    children = selector.children
 
     # Fast path: empty predicates -> return nothing. Empty children is actually misuse.
     if not children:
         return []
 
     # Predicate ordering (AND only): cheap/selective first
-    def _cost(predicate: dict) -> int:
-        op = predicate.get("operator")
+    def _cost(predicate: Predicate) -> int:
+        op = predicate.operator
         order = {
             "any_of": 0,
             "matches": 1,
@@ -571,9 +549,7 @@ def _apply_single_selector(pool: list[EntityNode], selector_dict: dict) -> list[
     ordered_children = children if logic == "OR" else sorted(children, key=_cost)
 
     # Optional per-attribute indices for in
-    attributes_needing_index = {
-        p.get("attribute", "name") for p in ordered_children if p.get("operator") == "any_of"
-    }
+    attributes_needing_index = {p.attribute for p in ordered_children if p.operator == "any_of"}
     indices_by_attribute: dict[str, dict[str, list[int]]] = (
         {attr: _build_index(pool, attr) for attr in attributes_needing_index}
         if attributes_needing_index
@@ -588,8 +564,8 @@ def _apply_single_selector(pool: list[EntityNode], selector_dict: dict) -> list[
         result = _apply_and_selector(pool, ordered_children, indices_by_attribute)
 
     if not result:
-        name = selector_dict.get("name", "unnamed")
-        target_class = selector_dict.get("target_class", "Unknown")
+        name = selector.name
+        target_class = selector.target_class
         log.warning(
             "Entity selector '%s' (target_class=%s) matched 0 entities. "
             "Please check if the entity name or pattern is correct.",
@@ -600,7 +576,7 @@ def _apply_single_selector(pool: list[EntityNode], selector_dict: dict) -> list[
     return result
 
 
-def _get_selector_cache_key(selector_dict: dict) -> tuple:
+def _get_selector_cache_key(selector: EntitySelector) -> tuple:
     """
     Return the cache key for a selector: requires unique name.
 
@@ -608,52 +584,25 @@ def _get_selector_cache_key(selector_dict: dict) -> tuple:
     for stable global reuse. If neither `name` is provided, fall back to a
     structural key so different unnamed selectors won't collide.
     """
-    target_class = selector_dict.get("target_class")
-    name = selector_dict.get("name")
-    if name:
-        return ("name", target_class, name)
-
-    logic = selector_dict.get("logic", "AND")
-    children = selector_dict.get("children") or []
-
-    def _normalize_value(v):
-        if isinstance(v, list):
-            return tuple(v)
-        return v
-
-    predicates = tuple(
-        (
-            p.get("attribute", "name"),
-            p.get("operator"),
-            _normalize_value(p.get("value")),
-            p.get("non_glob_syntax"),
-        )
-        for p in children
-        if isinstance(p, dict)
-    )
-    return ("struct", target_class, logic, predicates)
+    # selector_id is always present and unique by schema.
+    return ("selector_id", selector.selector_id)
 
 
 def _process_selectors(
     registry,
-    selectors_value: list,
+    selectors_list: list,
     selector_cache: dict,
-    known_selectors: dict[str, dict] = None,
 ) -> tuple[dict[str, list[EntityNode]], list[str]]:
     """Process selectors and return additions grouped by class.
 
-    This function iterates over the list of selectors (which can be full dictionaries or
-    string tokens).
-    - If a selector is a string token, it looks up the full definition in `known_selectors`.
-    - If a selector is a dictionary, it uses it directly.
-    - It then applies the selector logic to find matching entities from the registry.
-    - Results are cached in `selector_cache` to avoid re-computation for the same selector.
+    This function iterates over a list of materialized selectors (EntitySelector-like objects
+    or plain dicts) and applies them over the entity registry.
+    Results are cached in `selector_cache` to avoid re-computation for the same selector.
 
     Parameters:
         registry: EntityRegistry instance containing entities.
-        selectors_value: List of selector definitions or selector ID tokens.
+        selectors_list: List of selector definitions (materialized; no string tokens).
         selector_cache: Cache for selector results.
-        known_selectors: Map of selector IDs to selector definitions.
 
     Returns:
         Tuple of (additions_by_class dict, ordered_target_classes list).
@@ -661,28 +610,20 @@ def _process_selectors(
     additions_by_class: dict[str, list[EntityNode]] = {}
     ordered_target_classes: list[str] = []
 
-    if known_selectors is None:
-        known_selectors = {}
-
-    for item in selectors_value:
-        selector_dict = None
-        # Check if the item is a token (string) or a full selector definition (dict)
-        if isinstance(item, str):
-            selector_dict = known_selectors.get(item)
-        elif isinstance(item, dict):
-            selector_dict = item
-
-        if selector_dict is None:
-            continue
-
-        target_class = selector_dict.get("target_class")
+    for item in selectors_list:
+        if not isinstance(item, EntitySelector):
+            raise TypeError(
+                f"[Internal] selectors_list must contain EntitySelector objects. Got: {type(item)}"
+            )
+        selector: EntitySelector = item
+        target_class = selector.target_class
         entities = registry.find_by_type_name(target_class)
         if not entities:
             continue
-        cache_key = _get_selector_cache_key(selector_dict)
+        cache_key = _get_selector_cache_key(selector)
         additions = selector_cache.get(cache_key)
         if additions is None:
-            additions = _apply_single_selector(entities, selector_dict)
+            additions = _apply_single_selector(entities, selector)
             selector_cache[cache_key] = additions
         if target_class not in additions_by_class:
             additions_by_class[target_class] = []
@@ -697,78 +638,88 @@ def _merge_entities(
     additions_by_class: dict[str, list[EntityNode]],
     ordered_target_classes: list[str],
     merge_mode: Literal["merge", "replace"],
+    not_merged_types: set[str] = DEFAULT_NOT_MERGED_TYPES,
 ) -> list[Any]:
     """Merge existing entities with selector additions based on merge mode."""
-    base_entities: list[EntityNode] = []
+    candidates: list[EntityNode] = []
 
     if merge_mode == "merge":  # explicit first, then selector additions
-        base_entities.extend(existing)
+        candidates.extend(existing)
         for target_class in ordered_target_classes:
-            base_entities.extend(additions_by_class.get(target_class, []))
+            candidates.extend(additions_by_class.get(target_class, []))
 
     else:  # replace: drop explicit items of targeted classes
         classes_to_update = set(ordered_target_classes)
         for item in existing:
             entity_type = _get_node_attribute(item, "private_attribute_entity_type_name")
             if entity_type not in classes_to_update:
-                base_entities.append(item)
+                candidates.append(item)
         for target_class in ordered_target_classes:
-            base_entities.extend(additions_by_class.get(target_class, []))
+            candidates.extend(additions_by_class.get(target_class, []))
 
-    return base_entities
+    # Deduplication logic (same as materialize_entities_and_selectors_in_place)
+    return deduplicate_entities(
+        candidates,
+        not_merged_types=not_merged_types,
+    )
 
 
-def _expand_node_selectors(
+def expand_entity_list_selectors(
     registry,
-    node: dict,
-    selector_cache: dict,
-    merge_mode: Literal["merge", "replace"],
-    known_selectors: dict[str, dict] = None,
-) -> None:
+    entity_list,
+    *,
+    selector_cache: dict = None,
+    merge_mode: Literal["merge", "replace"] = "merge",
+) -> list[EntityNode]:
     """
-    Expand selectors on one node and write results into stored_entities.
+    Expand selectors in a single EntityList within an EntityRegistry context.
 
-    - merge_mode="merge": keep explicit stored_entities first, then append selector results.
-    - merge_mode="replace": replace explicit items of target classes affected by selectors.
-
-    Parameters:
-        registry: EntityRegistry instance containing entities.
-        node: Dictionary node containing selectors to expand.
-        selector_cache: Cache for selector results.
-        merge_mode: How to merge selector results with existing entities.
-        known_selectors: Map of selector IDs to selector definitions.
+    Notes
+    -----
+    - This function does NOT modify the input EntityList.
+    - selector_cache can be shared across multiple calls to reuse selector results.
     """
-    selectors_value = node.get("selectors")
-    if not (isinstance(selectors_value, list) and len(selectors_value) > 0):
-        return
+    stored_entities = list(getattr(entity_list, "stored_entities", []) or [])
+    raw_selectors = list(getattr(entity_list, "selectors", []) or [])
+
+    if selector_cache is None:
+        selector_cache = {}
+
+    if not raw_selectors:
+        return stored_entities
 
     additions_by_class, ordered_target_classes = _process_selectors(
-        registry, selectors_value, selector_cache, known_selectors=known_selectors
+        registry,
+        raw_selectors,
+        selector_cache,
+    )
+    return _merge_entities(
+        stored_entities,
+        additions_by_class,
+        ordered_target_classes,
+        merge_mode,
     )
 
-    existing = node.get("stored_entities", [])
-    base_entities = _merge_entities(
-        existing, additions_by_class, ordered_target_classes, merge_mode
+
+def expand_entity_list_selectors_in_place(
+    registry,
+    entity_list,
+    *,
+    selector_cache: dict = None,
+    merge_mode: Literal["merge", "replace"] = "merge",
+) -> None:
+    """
+    Expand selectors in an EntityList and write results into stored_entities in-place.
+
+    This is intended for translation-time expansion where mutating the params object is safe.
+    """
+    expanded = expand_entity_list_selectors(
+        registry,
+        entity_list,
+        selector_cache=selector_cache,
+        merge_mode=merge_mode,
     )
-
-    node["stored_entities"] = base_entities
-
-    # Replace string tokens with full selector definitions for pydantic validation
-    if known_selectors:
-        expanded_selectors = []
-        for item in selectors_value:
-            if isinstance(item, str):
-                # ID string token
-                if item in known_selectors:
-                    expanded_selectors.append(known_selectors[item])
-                else:
-                    raise ValueError(
-                        f"[Internal] Selector token '{item}' not found in known_selectors. "
-                        "This may indicate a missing or invalid selector reference."
-                    )
-            else:
-                expanded_selectors.append(item)
-        node["selectors"] = expanded_selectors
+    entity_list.stored_entities = expanded
 
 
 def collect_and_tokenize_selectors_in_place(  # pylint: disable=too-many-branches
@@ -824,73 +775,4 @@ def collect_and_tokenize_selectors_in_place(  # pylint: disable=too-many-branche
     if isinstance(asset_cache, dict):
         asset_cache.pop("used_selectors", None)
         asset_cache["used_selectors"] = list(known_selectors.values())
-    return params_as_dict
-
-
-def expand_entity_selectors_in_place(
-    registry,
-    params_as_dict: dict,
-    *,
-    merge_mode: Literal["merge", "replace"] = "merge",
-) -> dict:
-    """Traverse params_as_dict and expand any EntitySelector in place.
-
-    Parameters
-    ----------
-    registry : EntityRegistry
-        EntityRegistry instance containing entities.
-    params_as_dict : dict
-        Simulation parameters as a dictionary.
-    merge_mode : {"merge", "replace"}, default "merge"
-        How to merge selector results with existing entities.
-
-    How caching works
-    -----------------
-    - Each selector must provide a unique name. We build a cross-tree
-      cache key as ("name", target_class, name).
-    - For every node that contains a non-empty `selectors` list, we compute the
-      additions once per unique cache key, store the expanded list of entity
-      dicts in `selector_cache`, and reuse it for subsequent nodes that reference
-      the same selector name and target_class.
-    - This avoids repeated pool scans and matcher compilation across the tree
-      while preserving stable result ordering.
-
-    Token Support
-    -------------
-    This function now also builds a `known_selectors` map from `private_attribute_asset_cache["selectors"]`.
-    This map is passed down to `_process_selectors` to allow resolving string tokens back to their
-    full selector definitions.
-
-    Merge policy
-    ------------
-    - merge_mode="merge" (default): keep explicit `stored_entities` first, then
-      append selector results; duplicates (if any) can be handled later by the
-      materialization/dedup stage.
-    - merge_mode="replace": for classes targeted by selectors in the node,
-      drop explicit items of those classes and use selector results instead.
-    """
-    # Build known_selectors map from AssetCache if available
-    asset_cache = params_as_dict.get("private_attribute_asset_cache")
-    known_selectors = _collect_known_selectors_from_asset_cache(asset_cache)
-
-    queue: deque[Any] = deque([params_as_dict])
-    selector_cache: dict = {}
-    while queue:
-        node = queue.popleft()
-        if isinstance(node, dict):
-            _expand_node_selectors(
-                registry,
-                node,
-                selector_cache=selector_cache,
-                merge_mode=merge_mode,
-                known_selectors=known_selectors,
-            )
-            for value in node.values():
-                if isinstance(value, (dict, list)):
-                    queue.append(value)
-        elif isinstance(node, list):
-            for item in node:
-                if isinstance(item, (dict, list)):
-                    queue.append(item)
-
     return params_as_dict

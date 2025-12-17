@@ -1,8 +1,17 @@
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
 from flow360.component.simulation.framework.entity_selector import (
-    expand_entity_selectors_in_place,
+    EntitySelector,
+    expand_entity_list_selectors_in_place,
 )
 from flow360.component.simulation.primitives import Edge, Surface
+
+
+class _EntityListStub:
+    """Minimal stub for selector expansion tests (avoids EntityList metaclass constraints)."""
+
+    def __init__(self, *, stored_entities=None, selectors=None):
+        self.stored_entities = stored_entities or []
+        self.selectors = selectors
 
 
 def _mk_pool(names, entity_type):
@@ -21,29 +30,25 @@ def _make_registry(surfaces=None, edges=None):
 
 def test_merge_mode_preserves_explicit_then_appends_selector_results():
     registry = _make_registry(surfaces=_mk_pool(["wing", "tail", "body"], "Surface"))
-    params = {
-        "node": {
-            "stored_entities": [Surface(name="tail")],
-            "selectors": [
+    entity_list = _EntityListStub(
+        stored_entities=[Surface(name="tail")],
+        selectors=[
+            EntitySelector.model_validate(
                 {
+                    "name": "sel_any_wing",
                     "target_class": "Surface",
                     "children": [{"attribute": "name", "operator": "any_of", "value": ["wing"]}],
                 }
-            ],
-        }
-    }
-    expand_entity_selectors_in_place(registry, params, merge_mode="merge")
-    items = params["node"]["stored_entities"]
+            )
+        ],
+    )
+    expand_entity_list_selectors_in_place(registry, entity_list, merge_mode="merge")
+    items = entity_list.stored_entities
     assert [e.name for e in items if e.private_attribute_entity_type_name == "Surface"] == [
         "tail",
         "wing",
     ]
-    assert params["node"]["selectors"] == [
-        {
-            "target_class": "Surface",
-            "children": [{"attribute": "name", "operator": "any_of", "value": ["wing"]}],
-        }
-    ]
+    assert entity_list.selectors is not None
 
 
 def test_replace_mode_overrides_target_class_only():
@@ -51,28 +56,24 @@ def test_replace_mode_overrides_target_class_only():
         surfaces=_mk_pool(["wing", "tail"], "Surface"),
         edges=_mk_pool(["e1"], "Edge"),
     )
-    params = {
-        "node": {
-            "stored_entities": [
-                Surface(name="tail"),
-                Edge(name="e1"),
-            ],
-            "selectors": [
+    entity_list = _EntityListStub(
+        stored_entities=[
+            Surface(name="tail"),
+            Edge(name="e1"),
+        ],
+        selectors=[
+            EntitySelector.model_validate(
                 {
+                    "name": "sel_any_wing",
                     "target_class": "Surface",
                     "children": [{"attribute": "name", "operator": "any_of", "value": ["wing"]}],
                 }
-            ],
-        }
-    }
-    expand_entity_selectors_in_place(registry, params, merge_mode="replace")
-    items = params["node"]["stored_entities"]
+            )
+        ],
+    )
+    expand_entity_list_selectors_in_place(registry, entity_list, merge_mode="replace")
+    items = entity_list.stored_entities
     # Surface entries replaced by selector result; Edge preserved
     assert [e.name for e in items if e.private_attribute_entity_type_name == "Surface"] == ["wing"]
     assert [e.name for e in items if e.private_attribute_entity_type_name == "Edge"] == ["e1"]
-    assert params["node"]["selectors"] == [
-        {
-            "children": [{"attribute": "name", "operator": "any_of", "value": ["wing"]}],
-            "target_class": "Surface",
-        }
-    ]
+    assert entity_list.selectors is not None

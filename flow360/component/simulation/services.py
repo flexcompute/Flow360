@@ -12,14 +12,8 @@ from pydantic_core import ErrorDetails
 # Required for correct global scope initialization
 from flow360.component.simulation.blueprint.core.dependency_graph import DependencyGraph
 from flow360.component.simulation.exposed_units import supported_units_by_front_end
-from flow360.component.simulation.framework.entity_expansion_utils import (
-    get_registry_from_dict,
-)
 from flow360.component.simulation.framework.entity_materializer import (
-    materialize_entities_in_place,
-)
-from flow360.component.simulation.framework.entity_selector import (
-    expand_entity_selectors_in_place,
+    materialize_entities_and_selectors_in_place,
 )
 from flow360.component.simulation.framework.multi_constructor_model_base import (
     parse_model_dict,
@@ -43,7 +37,6 @@ from flow360.component.simulation.operating_condition.operating_condition import
 from flow360.component.simulation.primitives import Box
 
 # pylint: enable=unused-import
-from flow360.component.simulation.services_utils import has_any_entity_selectors
 from flow360.component.simulation.simulation_params import (
     ReferenceGeometry,
     SimulationParams,
@@ -427,26 +420,6 @@ def initialize_variable_space(param_as_dict: dict, use_clear_context: bool = Fal
     return param_as_dict
 
 
-def resolve_selectors(params_as_dict: dict):
-    """
-    Expand any EntitySelector into stored_entities in-place (dict level).
-
-    - Performs a fast existence check first.
-    - Builds an entity database from asset cache.
-    - Applies expansion with merge semantics (explicit entities kept, selectors appended).
-    """
-
-    # Step1: Check in the dictionary via looping and ensure selectors are present, if not just return.
-    if not has_any_entity_selectors(params_as_dict):
-        return params_as_dict
-
-    # Step2: Parse the entity info part and retrieve the entity registry.
-    registry = get_registry_from_dict(params_as_dict=params_as_dict)
-
-    # Step3: Expand selectors using the entity registry (default merge: explicit first)
-    return expand_entity_selectors_in_place(registry, params_as_dict, merge_mode="merge")
-
-
 def validate_model(  # pylint: disable=too-many-locals
     *,
     params_as_dict,
@@ -503,11 +476,37 @@ def validate_model(  # pylint: disable=too-many-locals
         # pylint: disable=protected-access
         params_as_dict = SimulationParams._sanitize_params_dict(params_as_dict)
         params_as_dict = handle_multi_constructor_model(params_as_dict)
-        # Expand selectors (if any) with tag/name cache and merge strategy
-        params_as_dict = resolve_selectors(params_as_dict)
-        # Materialize entities (dict -> shared instances) and per-list dedupe
-        params_as_dict = materialize_entities_in_place(params_as_dict)
-        return params_as_dict, forward_compatibility_mode
+
+        # Materialize stored_entities (dict -> shared instances) and per-list dedupe
+        # pylint: disable=fixme
+        # TODO: The need for materialization on entities?
+        # *  Ideally stored_entities should store entity IDs only. And we do not even need to materialize them here.
+        # *  This change has to wait for the front end to support entity IDs.
+        # *  Although to be fair having entities esp the draft entities inlined allow copy pasting of
+        # *  the SimulationParams, otherwise user will copy a bunch of links which become stale under a new context.
+        # * Benefits:
+        # * 1. Much shorter JSON.
+        # * 2. Deserialization ALL entities just once, not just the persistent ones.
+        # * 3. Strong requirement that ALL entities must come from entity_info/registry.
+        # * 4. Data structural-wise single source of truth.
+
+        # TODO: Unifying Materialization and Entity Info?
+        # *  As of now entities will still be separate instances when being
+        # *  1. materialized here versus
+        # *  2. deserialized in the editing info.
+        # *  This impacts manually picked entities and all draft entities since they cannot be matched by Selectors.
+        # *  validate_mode() is called in 3 main places:
+        # *  1. Local validation
+        # *  2. Service validation
+        # *  3. Local deserialization of cloud simulation.json
+        # *  Only the last scenario is affected by this issue because in 1 and 2 user has done all the possible
+        # *  editing so keeping data linkage is non-beneficial.
+        # *  Although for the last scenario, if the user makes changes to the entities via create_draft(), the draft's
+        # *  entity_info will be source of truth and the changes should be reflected in
+        # *  both the assignment and the entity_info.
+
+        params_as_dict = materialize_entities_and_selectors_in_place(params_as_dict)
+        return params_as_dict
 
     validation_errors = None
     validation_warnings = None
@@ -525,7 +524,7 @@ def validate_model(  # pylint: disable=too-many-locals
     # Note: Need to run updater first to accommodate possible schema change in input caches.
     params_as_dict, forward_compatibility_mode = SimulationParams._update_param_dict(params_as_dict)
     try:
-        updated_param_as_dict, forward_compatibility_mode = dict_preprocessing(params_as_dict)
+        updated_param_as_dict = dict_preprocessing(params_as_dict)
 
         # Initialize variable space
         use_clear_context = validated_by == ValidationCalledBy.SERVICE
@@ -534,19 +533,30 @@ def validate_model(  # pylint: disable=too-many-locals
             updated_param_as_dict
         )
 
+        validation_info = ParamsValidationInfo(
+            param_as_dict=updated_param_as_dict,
+            referenced_expressions=referenced_expressions,
+        )
+
         with ValidationContext(
             levels=validation_levels_to_use,
-            info=ParamsValidationInfo(
-                param_as_dict=updated_param_as_dict,
-                referenced_expressions=referenced_expressions,
-            ),
+            info=validation_info,
         ):
-
             unit_system = updated_param_as_dict.get("unit_system")
             with UnitSystem.from_dict(  # pylint: disable=not-context-manager
                 verbose=False, **unit_system
             ):
-                validated_param = SimulationParams(**updated_param_as_dict)
+                # Reuse pre-deserialized entity_info to avoid double deserialization
+                pre_deserialized_entity_info = validation_info.get_entity_info()
+                if pre_deserialized_entity_info is not None:
+                    # Create shallow copy with entity_info substituted
+                    updated_param_as_dict = {**updated_param_as_dict}
+                    updated_param_as_dict["private_attribute_asset_cache"] = {
+                        **updated_param_as_dict["private_attribute_asset_cache"],
+                        "project_entity_info": pre_deserialized_entity_info,
+                    }
+
+                validated_param = SimulationParams.model_validate(updated_param_as_dict)
 
     except pd.ValidationError as err:
         validation_errors = err.errors()

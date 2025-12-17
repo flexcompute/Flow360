@@ -27,6 +27,28 @@ from flow360.component.simulation.utils import is_exact_instance
 from flow360.exceptions import Flow360TranslationError
 
 
+# pylint: disable=too-many-arguments
+def _expand_selectors_for_translation(input_params: SimulationParams):
+    """
+    Expand entity selectors in-place for translation.
+
+    This modifies the input_params object by expanding all selectors in EntityList
+    attributes and adding the results to their stored_entities.
+
+    After translation, the original params object is not needed, so in-place
+    modification is safe and efficient.
+
+    This implementation is consistent with ParamsValidationInfo.expand_entity_list(),
+    working directly with deserialized objects without unnecessary serialization.
+    """
+    # pylint: disable=import-outside-toplevel
+    from flow360.component.simulation.framework.entity_expansion_utils import (
+        expand_all_entity_lists_in_place,
+    )
+
+    expand_all_entity_lists_in_place(input_params, merge_mode="merge")
+
+
 def preprocess_input(func):
     """Call param preprocess() method before calling the translator."""
 
@@ -48,6 +70,12 @@ def preprocess_input(func):
             preprocess_exclude = []
         validated_mesh_unit = LengthType.validate(mesh_unit)
         processed_input = preprocess_param(input_params, validated_mesh_unit, preprocess_exclude)
+
+        # Expand entity selectors in-place before translation (Stage 4)
+        # This ensures selectors work for all translators (solver, surface mesh, volume mesh)
+        # pylint: disable=import-outside-toplevel
+        _expand_selectors_for_translation(processed_input)
+
         return func(processed_input, validated_mesh_unit, *args, **kwargs)
 
     return wrapper
