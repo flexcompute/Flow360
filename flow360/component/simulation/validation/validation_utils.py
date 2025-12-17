@@ -142,6 +142,36 @@ def check_deleted_surface_in_entity_list(expanded_entities: list, param_info) ->
         )
 
 
+def validate_entity_list_surface_existence(value, param_info):
+    """
+    Reusable validator to ensure all boundaries in an EntityList will be present after mesher.
+
+    This function can be used in contextual_field_validator decorators to check that
+    surfaces in an entity list are not deleted by the mesher.
+
+    Parameters
+    ----------
+    value : EntityList or None
+        The entity list to validate
+    param_info : ParamsValidationInfo
+        Validation info containing entity expansion and mesher info
+
+    Returns
+    -------
+    The original value unchanged
+
+    Raises
+    ------
+    ValueError
+        If any surface in the list will be deleted by the mesher
+    """
+    if value is None:
+        return value
+    expanded = param_info.expand_entity_list(value)
+    check_deleted_surface_in_entity_list(expanded, param_info)
+    return value
+
+
 def check_deleted_surface_pair(value, param_info):
     """
     Check if any boundary is meant to be deleted

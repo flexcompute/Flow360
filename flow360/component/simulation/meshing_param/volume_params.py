@@ -33,7 +33,7 @@ from flow360.component.simulation.validation.validation_context import (
     get_validation_info,
 )
 from flow360.component.simulation.validation.validation_utils import (
-    check_deleted_surface_in_entity_list,
+    validate_entity_list_surface_existence,
 )
 from flow360.exceptions import Flow360ValueError
 
@@ -332,11 +332,7 @@ class RotationVolume(AxisymmetricRefinementBase):
     @classmethod
     def ensure_surface_existence(cls, value, param_info: ParamsValidationInfo):
         """Ensure all boundaries will be present after mesher"""
-        if value is None:
-            return value
-        expanded = param_info.expand_entity_list(value)
-        check_deleted_surface_in_entity_list(expanded, param_info)
-        return value
+        return validate_entity_list_surface_existence(value, param_info)
 
     @contextual_field_validator("stationary_enclosed_entities", mode="after")
     @classmethod
@@ -552,7 +548,7 @@ class AutomatedFarfield(_FarfieldBase):
     def farfield(self):
         """Returns the farfield boundary surface."""
         # Make sure the naming is the same here and what the geometry/surface mesh pipeline generates.
-        return GhostSurface(name="farfield")
+        return GhostSurface(name="farfield", private_attribute_id="farfield")
 
     @property
     def symmetry_plane(self) -> GhostSurface:
@@ -560,7 +556,7 @@ class AutomatedFarfield(_FarfieldBase):
         Returns the symmetry plane boundary surface.
         """
         if self.method == "auto":
-            return GhostSurface(name="symmetric")
+            return GhostSurface(name="symmetric", private_attribute_id="symmetric")
         raise Flow360ValueError(
             "Unavailable for quasi-3d farfield methods. Please use `symmetry_planes` property instead."
         )
@@ -570,11 +566,11 @@ class AutomatedFarfield(_FarfieldBase):
         """Returns the symmetry plane boundary surface(s)."""
         # Make sure the naming is the same here and what the geometry/surface mesh pipeline generates.
         if self.method == "auto":
-            return GhostSurface(name="symmetric")
+            return GhostSurface(name="symmetric", private_attribute_id="symmetric")
         if self.method in ("quasi-3d", "quasi-3d-periodic"):
             return [
-                GhostSurface(name="symmetric-1"),
-                GhostSurface(name="symmetric-2"),
+                GhostSurface(name="symmetric-1", private_attribute_id="symmetric-1"),
+                GhostSurface(name="symmetric-2", private_attribute_id="symmetric-2"),
             ]
         raise Flow360ValueError(f"Unsupported method: {self.method}")
 
@@ -620,7 +616,7 @@ class UserDefinedFarfield(_FarfieldBase):
                 "Symmetry plane of user defined farfield is only supported when domain_type "
                 "is `half_body_positive_y` or `half_body_negative_y`."
             )
-        return GhostSurface(name="symmetric")
+        return GhostSurface(name="symmetric", private_attribute_id="symmetric")
 
 
 # pylint: disable=no-member
@@ -777,60 +773,84 @@ class WindTunnelFarfield(_FarfieldBase):
                 "Symmetry plane for wind tunnel farfield is only supported when domain_type "
                 "is `half_body_positive_y` or `half_body_negative_y`."
             )
-        return GhostSurface(name="symmetric")
+        return GhostSurface(name="symmetric", private_attribute_id="symmetric")
 
     # pylint: disable=no-self-argument
     @classproperty
     def left(cls):
         """Return the ghost surface representing the tunnel's left wall."""
-        return WindTunnelGhostSurface(name="windTunnelLeft")
+        return WindTunnelGhostSurface(name="windTunnelLeft", private_attribute_id="windTunnelLeft")
 
     @classproperty
     def right(cls):
         """Return the ghost surface representing the tunnel's right wall."""
-        return WindTunnelGhostSurface(name="windTunnelRight")
+        return WindTunnelGhostSurface(
+            name="windTunnelRight", private_attribute_id="windTunnelRight"
+        )
 
     @classproperty
     def inlet(cls):
         """Return the ghost surface corresponding to the wind tunnel inlet."""
-        return WindTunnelGhostSurface(name="windTunnelInlet")
+        return WindTunnelGhostSurface(
+            name="windTunnelInlet", private_attribute_id="windTunnelInlet"
+        )
 
     @classproperty
     def outlet(cls):
         """Return the ghost surface corresponding to the wind tunnel outlet."""
-        return WindTunnelGhostSurface(name="windTunnelOutlet")
+        return WindTunnelGhostSurface(
+            name="windTunnelOutlet", private_attribute_id="windTunnelOutlet"
+        )
 
     @classproperty
     def ceiling(cls):
         """Return the ghost surface for the tunnel ceiling."""
-        return WindTunnelGhostSurface(name="windTunnelCeiling")
+        return WindTunnelGhostSurface(
+            name="windTunnelCeiling", private_attribute_id="windTunnelCeiling"
+        )
 
     @classproperty
     def floor(cls):
         """Return the ghost surface for the tunnel floor."""
-        return WindTunnelGhostSurface(name="windTunnelFloor")
+        return WindTunnelGhostSurface(
+            name="windTunnelFloor", private_attribute_id="windTunnelFloor"
+        )
 
     @classproperty
     def friction_patch(cls):
         """Return the ghost surface for the floor friction patch used by static floors."""
-        return WindTunnelGhostSurface(name="windTunnelFrictionPatch", used_by=["StaticFloor"])
+        return WindTunnelGhostSurface(
+            name="windTunnelFrictionPatch",
+            used_by=["StaticFloor"],
+            private_attribute_id="windTunnelFrictionPatch",
+        )
 
     @classproperty
     def central_belt(cls):
         """Return the ghost surface used by central and wheel belt floor types."""
         return WindTunnelGhostSurface(
-            name="windTunnelCentralBelt", used_by=["CentralBelt", "WheelBelts"]
+            name="windTunnelCentralBelt",
+            used_by=["CentralBelt", "WheelBelts"],
+            private_attribute_id="windTunnelCentralBelt",
         )
 
     @classproperty
     def front_wheel_belts(cls):
         """Return the ghost surface for the front wheel belt region."""
-        return WindTunnelGhostSurface(name="windTunnelFrontWheelBelt", used_by=["WheelBelts"])
+        return WindTunnelGhostSurface(
+            name="windTunnelFrontWheelBelt",
+            used_by=["WheelBelts"],
+            private_attribute_id="windTunnelFrontWheelBelt",
+        )
 
     @classproperty
     def rear_wheel_belts(cls):
         """Return the ghost surface for the rear wheel belt region."""
-        return WindTunnelGhostSurface(name="windTunnelRearWheelBelt", used_by=["WheelBelts"])
+        return WindTunnelGhostSurface(
+            name="windTunnelRearWheelBelt",
+            used_by=["WheelBelts"],
+            private_attribute_id="windTunnelRearWheelBelt",
+        )
 
     # pylint: enable=no-self-argument
 

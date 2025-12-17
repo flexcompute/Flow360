@@ -518,6 +518,16 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         """
         return self._entity_info
 
+    def get_entity_registry(self):
+        """Get the entity_registry.
+
+        Returns
+        -------
+        EntityRegistry or None
+            The entity_registry, or None if not available.
+        """
+        return self._entity_registry
+
     def expand_entity_list(self, entity_list) -> list:
         """
         Expand selectors in an EntityList and return the combined list of entities.

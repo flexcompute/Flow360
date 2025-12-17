@@ -320,15 +320,9 @@ def materialize_entities_and_selectors_in_place(
         - Errors if an entity is not found in the registry
         - No new entity instances are created
 
-        # NOTE: Possibly unnecessary:
-        This function as of now is mostly used by the validate_model().
-        The slot for entity_registry **was** reserved for the entity registry coming from draft context.
-        However the only scenario where validate_model() will be called within the draft context,
-        is when the user eventually submits the simulation json.
-        Due to set_up_params_for_uploading(), The entity_info before validation has already been replaced by the
-        entity info from the draft context. So enforcing the entity registry here does not provide any benefit.
-        Because at this point user has finished all the editing and it's not beneficial to ensure the entity
-        deserialized by validate_model() has to be the same object as the one in draft context entity registry.
+        When called by validate_model(), the entity_registry can be provided by ParamsValidationInfo.
+        BLOCKED: This require all entities to have private_attribute_id set
+                 Which due to legacy reasons is not the case for all entities.
 
     Parameters
     ----------
@@ -342,11 +336,6 @@ def materialize_entities_and_selectors_in_place(
     """
 
     selector_lookup = _deserialize_used_selectors_and_build_lookup(params_as_dict)
-
-    # TODO: [NEW] This turns out to be the only mode we need since we always
-    # have the entity registry built from the params. Do we need Mode 1 for anything at all?
-    # TODO: Also since we do not expand the selectors a-priori
-    # we do not need to deduplicate anymore? Unless maybe manually assigned duplicate entities?
 
     with EntityMaterializationContext(
         builder=_build_entity_instance, entity_registry=entity_registry

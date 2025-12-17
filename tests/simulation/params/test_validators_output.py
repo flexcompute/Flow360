@@ -323,7 +323,9 @@ def test_duplicate_surface_usage(mock_validation_context):
 
 
 def test_moving_statitic_validator():
-    wall_1 = Surface(name="wall_1", private_attribute_is_interface=False)
+    wall_1 = Surface(
+        name="wall_1", private_attribute_is_interface=False, private_attribute_id="test-wall-1-id"
+    )
     asset_cache = AssetCache(
         project_length_unit="m",
         project_entity_info=VolumeMeshEntityInfo(boundaries=[wall_1]),

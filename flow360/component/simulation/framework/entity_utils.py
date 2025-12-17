@@ -102,6 +102,84 @@ def deduplicate_entities(
     return new_list
 
 
+def walk_object_tree_with_cycle_detection(
+    obj: Any,
+    visitor: Callable[[Any], bool],
+    *,
+    check_dict: bool = True,
+) -> None:
+    """
+    Walk an object tree using depth-first traversal with cycle detection.
+
+    This utility provides a reusable pattern for traversing nested object structures
+    (lists, tuples, dicts, and objects with __dict__) while avoiding infinite loops
+    caused by circular references.
+
+    Parameters
+    ----------
+    obj : Any
+        The root object to start traversal from
+    visitor : Callable[[Any], bool]
+        Function called on each object. Should return True to continue traversal
+        into this object's children, or False to skip traversal of children.
+        The visitor handles all type-specific logic.
+    check_dict : bool, default True
+        Whether to traverse dict objects. Set to False if you only want to traverse
+        list/tuple/object-with-__dict__.
+
+    Notes
+    -----
+    - Uses id() to track visited objects, preventing revisiting in cycles
+    - Traverses list, tuple, dict (if check_dict=True), and objects with __dict__
+    - The visitor function controls what happens at each node and whether to recurse
+
+    Examples
+    --------
+    >>> def print_entity_lists(obj):
+    ...     if isinstance(obj, EntityList):
+    ...         print(f"Found EntityList: {obj}")
+    ...         return False  # Don't traverse into EntityList internals
+    ...     return True  # Continue traversing
+    >>> walk_object_tree_with_cycle_detection(params, print_entity_lists)
+    """
+    visited: set[int] = set()
+
+    def _should_traverse(item):
+        """Check if an item should be traversed."""
+        return (
+            isinstance(item, (list, tuple))
+            or hasattr(item, "__dict__")
+            or (check_dict and isinstance(item, dict))
+        )
+
+    def _walk(current_obj):
+        obj_id = id(current_obj)
+        if obj_id in visited:
+            return
+        visited.add(obj_id)
+
+        # Call visitor and check if we should continue traversing
+        should_continue = visitor(current_obj)
+        if not should_continue:
+            return
+
+        # Get children to traverse based on object type
+        children = []
+        if isinstance(current_obj, (list, tuple)):
+            children = current_obj
+        elif check_dict and isinstance(current_obj, dict):
+            children = current_obj.values()
+        elif hasattr(current_obj, "__dict__"):
+            children = current_obj.__dict__.values()
+
+        # Traverse children
+        for child in children:
+            if _should_traverse(child):
+                _walk(child)
+
+    _walk(obj)
+
+
 @lru_cache(maxsize=2048)
 def compile_glob_cached(pattern: str) -> re.Pattern:
     """Compile an extended-glob pattern via wcmatch to a fullmatch-ready regex.

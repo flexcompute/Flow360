@@ -56,7 +56,7 @@ from flow360.component.simulation.validation.validation_context import (
     get_validation_levels,
 )
 from flow360.component.simulation.validation.validation_utils import (
-    check_deleted_surface_in_entity_list,
+    validate_entity_list_surface_existence,
 )
 from flow360.component.types import Axis
 
@@ -332,9 +332,7 @@ class SurfaceOutput(_AnimationAndFileFormatSettings):
     @classmethod
     def ensure_surface_existence(cls, value, param_info: ParamsValidationInfo):
         """Ensure all boundaries will be present after mesher"""
-        expanded = param_info.expand_entity_list(value)
-        check_deleted_surface_in_entity_list(expanded, param_info)
-        return value
+        return validate_entity_list_surface_existence(value, param_info)
 
 
 class TimeAverageSurfaceOutput(SurfaceOutput):
@@ -662,9 +660,7 @@ class SurfaceIntegralOutput(_OutputBase):
     @classmethod
     def ensure_surface_existence(cls, value, param_info: ParamsValidationInfo):
         """Ensure all boundaries will be present after mesher"""
-        expanded = param_info.expand_entity_list(value)
-        check_deleted_surface_in_entity_list(expanded, param_info)
-        return value
+        return validate_entity_list_surface_existence(value, param_info)
 
     @contextual_field_validator("entities", mode="after")
     @classmethod
@@ -815,9 +811,7 @@ class SurfaceProbeOutput(_OutputBase):
     @classmethod
     def ensure_surface_existence(cls, value, param_info: ParamsValidationInfo):
         """Ensure all boundaries will be present after mesher"""
-        expanded = param_info.expand_entity_list(value)
-        check_deleted_surface_in_entity_list(expanded, param_info)
-        return value
+        return validate_entity_list_surface_existence(value, param_info)
 
 
 class SurfaceSliceOutput(_AnimationAndFileFormatSettings):
@@ -846,9 +840,7 @@ class SurfaceSliceOutput(_AnimationAndFileFormatSettings):
     @classmethod
     def ensure_surface_existence(cls, value, param_info: ParamsValidationInfo):
         """Ensure all boundaries will be present after mesher"""
-        expanded = param_info.expand_entity_list(value)
-        check_deleted_surface_in_entity_list(expanded, param_info)
-        return value
+        return validate_entity_list_surface_existence(value, param_info)
 
 
 class TimeAverageProbeOutput(ProbeOutput):
@@ -1160,11 +1152,7 @@ class AeroAcousticOutput(Flow360BaseModel):
     @classmethod
     def ensure_surface_existence(cls, value, param_info: ParamsValidationInfo):
         """Ensure all boundaries will be present after mesher"""
-        if value is None:
-            return value
-        expanded = param_info.expand_entity_list(value)
-        check_deleted_surface_in_entity_list(expanded, param_info)
-        return value
+        return validate_entity_list_surface_existence(value, param_info)
 
 
 class StreamlineOutput(_OutputBase):

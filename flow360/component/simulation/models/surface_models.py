@@ -47,10 +47,10 @@ from flow360.component.simulation.validation.validation_context import (
     contextual_model_validator,
 )
 from flow360.component.simulation.validation.validation_utils import (
-    check_deleted_surface_in_entity_list,
     check_deleted_surface_pair,
     check_symmetric_boundary_existence,
     check_user_defined_farfield_symmetry_existence,
+    validate_entity_list_surface_existence,
 )
 
 # pylint: disable=fixme
@@ -86,9 +86,7 @@ class BoundaryBase(Flow360BaseModel, metaclass=ABCMeta):
         """Ensure all boundaries will be present after mesher"""
         # pylint: disable=fixme
         # TODO: This should have been moved to EntityListAllowingGhost?
-        expanded = param_info.expand_entity_list(value)
-        check_deleted_surface_in_entity_list(expanded, param_info)
-        return value
+        return validate_entity_list_surface_existence(value, param_info)
 
 
 class BoundaryBaseWithTurbulenceQuantities(BoundaryBase, metaclass=ABCMeta):

@@ -728,12 +728,26 @@ def test_BC_geometry():
 
 def test_incomplete_BC_volume_mesh():
     ##:: Construct a dummy asset cache
-    wall_1 = Surface(name="wall_1", private_attribute_is_interface=False)
-    periodic_1 = Surface(name="periodic_1", private_attribute_is_interface=False)
-    periodic_2 = Surface(name="periodic_2", private_attribute_is_interface=False)
-    i_exist = Surface(name="i_exist", private_attribute_is_interface=False)
-    no_bc = Surface(name="no_bc", private_attribute_is_interface=False)
-    some_interface = Surface(name="some_interface", private_attribute_is_interface=True)
+    wall_1 = Surface(
+        name="wall_1", private_attribute_is_interface=False, private_attribute_id="wall_1"
+    )
+    periodic_1 = Surface(
+        name="periodic_1", private_attribute_is_interface=False, private_attribute_id="periodic_1"
+    )
+    periodic_2 = Surface(
+        name="periodic_2", private_attribute_is_interface=False, private_attribute_id="periodic_2"
+    )
+    i_exist = Surface(
+        name="i_exist", private_attribute_is_interface=False, private_attribute_id="i_exist"
+    )
+    no_bc = Surface(
+        name="no_bc", private_attribute_is_interface=False, private_attribute_id="no_bc"
+    )
+    some_interface = Surface(
+        name="some_interface",
+        private_attribute_is_interface=True,
+        private_attribute_id="some_interface",
+    )
 
     asset_cache = AssetCache(
         project_length_unit="inch",
@@ -2381,8 +2395,8 @@ def test_check_custom_volume_in_volume_zones():
 
 def test_ghost_surface_pair_requires_quasi_3d_periodic_farfield():
     # Create two dummy ghost surfaces (Python workflow)
-    periodic_1 = GhostSurface(name="periodic_1")
-    periodic_2 = GhostSurface(name="periodic_2")
+    periodic_1 = GhostSurface(name="periodic_1", private_attribute_id="periodic_1")
+    periodic_2 = GhostSurface(name="periodic_2", private_attribute_id="periodic_2")
 
     # Case 1: Farfield method NOT "quasi-3d-periodic" → should raise ValueError
     with SI_unit_system, ValidationContext(CASE, quasi_3d_farfield_context), pytest.raises(
@@ -2395,8 +2409,8 @@ def test_ghost_surface_pair_requires_quasi_3d_periodic_farfield():
         Periodic(surface_pairs=(periodic_1, periodic_2), spec=Translational())
 
     # Create two dummy ghost circular plane (Web UI workflow)
-    periodic_1 = GhostCircularPlane(name="periodic_1")
-    periodic_2 = GhostCircularPlane(name="periodic_2")
+    periodic_1 = GhostCircularPlane(name="periodic_1", private_attribute_id="periodic_1")
+    periodic_2 = GhostCircularPlane(name="periodic_2", private_attribute_id="periodic_2")
 
     # Case 3: Farfield method NOT "quasi-3d-periodic" → should raise ValueError
     with SI_unit_system, ValidationContext(CASE, quasi_3d_farfield_context), pytest.raises(

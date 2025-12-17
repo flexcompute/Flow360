@@ -6,6 +6,9 @@ from flow360.component.simulation.framework.entity_expansion_utils import (
     get_registry_from_params,
 )
 from flow360.component.simulation.framework.entity_selector import _process_selectors
+from flow360.component.simulation.framework.entity_utils import (
+    walk_object_tree_with_cycle_detection,
+)
 
 
 def strip_selector_matches_inplace(params) -> Any:
@@ -51,14 +54,11 @@ def strip_selector_matches_inplace(params) -> Any:
                 keys.add(_extract_entity_key(entity))
         return keys
 
-    visited: set[int] = set()
-
-    def _visit(obj) -> None:
-        obj_id = id(obj)
-        if obj_id in visited:
-            return
-        visited.add(obj_id)
-
+    def _strip_selector_matches(obj) -> bool:
+        """
+        Strip entities matched by selectors from EntityList's stored_entities.
+        Returns True to continue traversing, False to stop.
+        """
         selectors_list = getattr(obj, "selectors", None)
         stored_entities = getattr(obj, "stored_entities", None)
         if isinstance(selectors_list, list) and selectors_list:
@@ -69,18 +69,8 @@ def strip_selector_matches_inplace(params) -> Any:
                     for item in stored_entities
                     if _extract_entity_key(item) not in matched_keys
                 ]
-            return
+            return False  # Don't traverse into EntityList internals
+        return True  # Continue traversing
 
-        if isinstance(obj, (list, tuple)):
-            for item in obj:
-                if isinstance(item, (list, tuple)) or hasattr(item, "__dict__"):
-                    _visit(item)
-            return
-
-        if hasattr(obj, "__dict__"):
-            for field_value in obj.__dict__.values():
-                if isinstance(field_value, (list, tuple)) or hasattr(field_value, "__dict__"):
-                    _visit(field_value)
-
-    _visit(params)
+    walk_object_tree_with_cycle_detection(params, _strip_selector_matches, check_dict=False)
     return params

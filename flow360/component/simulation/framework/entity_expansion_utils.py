@@ -7,6 +7,9 @@ from typing import TYPE_CHECKING, Any, List, Literal, Union
 from flow360.component.simulation.framework.entity_materializer import (
     materialize_entities_and_selectors_in_place,
 )
+from flow360.component.simulation.framework.entity_utils import (
+    walk_object_tree_with_cycle_detection,
+)
 from flow360.exceptions import Flow360ValueError
 
 if TYPE_CHECKING:
@@ -129,14 +132,8 @@ def expand_all_entity_lists_in_place(
     registry = get_registry_from_params(params)
     selector_cache: dict = {}
 
-    visited: set[int] = set()
-
-    def _walk(obj):
-        obj_id = id(obj)
-        if obj_id in visited:
-            return
-        visited.add(obj_id)
-
+    def _process_entity_list(obj):
+        """Process EntityList objects by expanding their selectors."""
         if isinstance(obj, EntityList):
             expand_entity_list_selectors_in_place(
                 registry,
@@ -144,20 +141,10 @@ def expand_all_entity_lists_in_place(
                 selector_cache=selector_cache,
                 merge_mode=merge_mode,
             )
-            return
+            return False  # Don't traverse into EntityList internals
+        return True  # Continue traversing other objects
 
-        if isinstance(obj, (list, tuple)):
-            for item in obj:
-                if isinstance(item, (dict, list, tuple)) or hasattr(item, "__dict__"):
-                    _walk(item)
-            return
-
-        if hasattr(obj, "__dict__"):
-            for field_value in obj.__dict__.values():
-                if isinstance(field_value, (dict, list, tuple)) or hasattr(field_value, "__dict__"):
-                    _walk(field_value)
-
-    _walk(params)
+    walk_object_tree_with_cycle_detection(params, _process_entity_list, check_dict=True)
 
 
 def get_entity_info_and_registry_from_dict(params_as_dict: dict) -> tuple:

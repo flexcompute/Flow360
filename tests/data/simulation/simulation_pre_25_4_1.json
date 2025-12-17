@@ -222,6 +222,7 @@
 					{
 						"private_attribute_registry_bucket_name": "SurfaceEntityType",
 						"private_attribute_entity_type_name": "GhostSphere",
+						"private_attribute_id": "farfield",
 						"name": "farfield"
 					}
 				]
