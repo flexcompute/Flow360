@@ -111,6 +111,7 @@ from flow360.component.simulation.validation.validation_simulation_params import
     _check_numerical_dissipation_factor_output,
     _check_parent_volume_is_rotating,
     _check_time_average_output,
+    _check_unique_selector_names,
     _check_unsteadiness_to_use_hybrid_model,
     _check_valid_models_for_liquid,
 )
@@ -555,6 +556,11 @@ class SimulationParams(_ParamModelBase):
     def check_duplicate_entities_in_models(self, param_info: ParamsValidationInfo):
         """Only allow each Surface/Volume entity to appear once in the Surface/Volume model"""
         return _check_duplicate_entities_in_models(self, param_info)
+
+    @contextual_model_validator(mode="after")
+    def check_unique_selector_names(self):
+        """Ensure all EntitySelector names are unique"""
+        return _check_unique_selector_names(self)
 
     @pd.model_validator(mode="after")
     def check_numerical_dissipation_factor_output(self):
