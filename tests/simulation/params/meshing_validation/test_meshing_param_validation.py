@@ -1210,10 +1210,10 @@ def test_resolve_face_boundary_only_in_gai_mesher():
 
 
 def test_surface_refinement_in_gai_mesher():
-    # raise when GAI is off
+    # raise when both GAI and beta mesher are off
     with pytest.raises(
         pd.ValidationError,
-        match=r"curvature_resolution_angle is only supported when geometry AI is used",
+        match=r"curvature_resolution_angle is only supported by the beta mesher or when geometry AI is enabled",
     ):
         with ValidationContext(SURFACE_MESH, non_gai_context):
             with CGS_unit_system:
@@ -1236,6 +1236,52 @@ def test_surface_refinement_in_gai_mesher():
         with ValidationContext(SURFACE_MESH, non_gai_context):
             with CGS_unit_system:
                 SurfaceRefinement(entities=Surface(name="testFace"))
+
+
+def test_curvature_resolution_angle_requires_geometry_ai_or_beta_mesher():
+    """Test that curvature_resolution_angle is supported when either geometry AI or beta mesher is enabled."""
+    # Test 1: When both GAI and beta mesher are off, should raise
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"curvature_resolution_angle is only supported by the beta mesher or when geometry AI is enabled",
+    ):
+        with ValidationContext(SURFACE_MESH, non_gai_context):
+            with CGS_unit_system:
+                SurfaceRefinement(
+                    entities=Surface(name="testFace"),
+                    curvature_resolution_angle=15 * u.deg,
+                )
+
+    # Test 2: When curvature_resolution_angle is None, should not raise even if both are off
+    with ValidationContext(SURFACE_MESH, non_gai_context):
+        with CGS_unit_system:
+            surface_ref = SurfaceRefinement(
+                entities=Surface(name="testFace"),
+                max_edge_length=0.1,
+                curvature_resolution_angle=None,
+            )
+            assert surface_ref.curvature_resolution_angle is None
+
+    # Test 3: When GAI is enabled, should work
+    gai_context = ParamsValidationInfo({}, [])
+    gai_context.use_geometry_AI = True
+
+    with ValidationContext(SURFACE_MESH, gai_context):
+        with CGS_unit_system:
+            surface_ref = SurfaceRefinement(
+                entities=Surface(name="testFace"),
+                curvature_resolution_angle=20 * u.deg,
+            )
+            assert surface_ref.curvature_resolution_angle == 20 * u.deg
+
+    # Test 4: When beta mesher is enabled, should work
+    with ValidationContext(SURFACE_MESH, beta_mesher_context):
+        with CGS_unit_system:
+            surface_ref = SurfaceRefinement(
+                entities=Surface(name="testFace"),
+                curvature_resolution_angle=25 * u.deg,
+            )
+            assert surface_ref.curvature_resolution_angle == 25 * u.deg
 
 
 def test_wind_tunnel_invalid_dimensions():
