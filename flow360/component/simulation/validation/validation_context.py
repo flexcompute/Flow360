@@ -770,7 +770,9 @@ def contextual_field_validator(*fields, mode="after", required_context=None, **k
             # Check if required context attributes are available
             if required_context:
                 for attr_name in required_context:
-                    if not hasattr(param_info, attr_name) or getattr(param_info, attr_name) is None:
+                    if not hasattr(param_info, attr_name):
+                        raise ValueError(f"Invalid validation context attribute: {attr_name}")
+                    if getattr(param_info, attr_name) is None:
                         # Required context attribute is None, skip validation
                         if not args:
                             return None
