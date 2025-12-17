@@ -28,7 +28,7 @@ from flow360.exceptions import Flow360TranslationError
 
 
 # pylint: disable=too-many-arguments
-def _expand_selectors_for_translation(input_params: SimulationParams):
+def expand_selectors_for_translation(input_params: SimulationParams):
     """
     Expand entity selectors in-place for translation.
 
@@ -54,6 +54,7 @@ def preprocess_input(func):
 
     @functools.wraps(func)
     def wrapper(input_params, mesh_unit, *args, **kwargs):
+        skip_selector_expansion = kwargs.pop("skip_selector_expansion", False)
         # pylint: disable=no-member
         if func.__name__ == "get_solver_json":
             preprocess_exclude = ["meshing"]
@@ -71,10 +72,10 @@ def preprocess_input(func):
         validated_mesh_unit = LengthType.validate(mesh_unit)
         processed_input = preprocess_param(input_params, validated_mesh_unit, preprocess_exclude)
 
-        # Expand entity selectors in-place before translation (Stage 4)
-        # This ensures selectors work for all translators (solver, surface mesh, volume mesh)
-        # pylint: disable=import-outside-toplevel
-        _expand_selectors_for_translation(processed_input)
+        if not skip_selector_expansion:
+            # Expand entity selectors in-place before translation (Stage 4)
+            # This ensures selectors work for all translators (solver, surface mesh, volume mesh)
+            expand_selectors_for_translation(processed_input)
 
         return func(processed_input, validated_mesh_unit, *args, **kwargs)
 

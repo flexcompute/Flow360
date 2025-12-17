@@ -559,6 +559,57 @@ def test_simulation_to_case_json():
         simulation_to_case_json(param_data, None)
 
 
+def test_simulation_to_case_json_skip_selector_expansion(monkeypatch):
+    from flow360.component.simulation.translator import utils as translator_utils
+
+    def raise_if_called(_input_params):
+        raise RuntimeError("expand_selectors_for_translation should have been skipped")
+
+    monkeypatch.setattr(translator_utils, "expand_selectors_for_translation", raise_if_called)
+
+    with SI_unit_system:
+        meshing = MeshingParams(
+            defaults=MeshingDefaults(
+                surface_edge_growth_rate=1.5,
+                boundary_layer_first_layer_thickness=0.001,
+                curvature_resolution_angle=10 * u.deg,
+                surface_max_edge_length=15 * u.cm,
+            ),
+            refinements=[],
+            volume_zones=[AutomatedFarfield()],
+        )
+        params = SimulationParams(
+            meshing=meshing,
+            reference_geometry=ReferenceGeometry(
+                moment_center=(1, 2, 3), moment_length=1.0 * u.m, area=1.0 * u.cm**2
+            ),
+            operating_condition=AerospaceCondition(velocity_magnitude=100),
+            models=[
+                Fluid(),
+                Wall(
+                    name="wall0",
+                    entities=[Surface.match("wing*", name="wing_selector")],
+                ),
+                Freestream(entities=[Surface(name="farfield")]),
+            ],
+            private_attribute_asset_cache=AssetCache(
+                project_entity_info=GeometryEntityInfo(
+                    face_group_tag="not_used",
+                    face_ids=["face_x"],
+                    face_attribute_names=["not_used"],
+                )
+            ),
+        )
+
+    case_json, case_hash = simulation_to_case_json(
+        params,
+        {"value": 100.0, "units": "cm"},
+        skip_selector_expansion=True,
+    )
+    assert case_json
+    assert case_hash
+
+
 def test_simulation_to_all_translation():
     with SI_unit_system:
         meshing = MeshingParams(
