@@ -412,3 +412,61 @@ def test_materialize_selector_token_missing_definition_raises():
 
     with pytest.raises(ValueError, match=r"Selector token not found.*sel-missing"):
         materialize_entities_and_selectors_in_place(copy.deepcopy(params))
+
+
+def test_materialize_idempotent_with_already_materialized_selectors():
+    """Test that calling materialize_entities_and_selectors_in_place twice is idempotent."""
+    selector_dict = {
+        "target_class": "Surface",
+        "name": "test-selector",
+        "selector_id": "sel-123",
+        "logic": "AND",
+        "children": [
+            {
+                "attribute": "name",
+                "operator": "matches",
+                "value": "surface*",
+                "non_glob_syntax": None,
+            }
+        ],
+    }
+    params = {
+        "private_attribute_asset_cache": {"used_selectors": [selector_dict]},
+        "node1": {"selectors": ["sel-123"]},
+        "node2": {"selectors": ["sel-123"]},
+    }
+
+    # First materialization
+    out1 = materialize_entities_and_selectors_in_place(params)
+
+    # Verify selectors are materialized
+    used_selectors_1 = out1["private_attribute_asset_cache"]["used_selectors"]
+    assert isinstance(used_selectors_1[0], EntitySelector)
+    node1_selectors_1 = out1["node1"]["selectors"]
+    assert isinstance(node1_selectors_1[0], EntitySelector)
+    node2_selectors_1 = out1["node2"]["selectors"]
+    assert isinstance(node2_selectors_1[0], EntitySelector)
+
+    # Store object ids for identity checks
+    selector_obj_id = id(node1_selectors_1[0])
+
+    # Second materialization on the same params dict (already materialized)
+    # This should NOT raise TypeError and should be a no-op
+    out2 = materialize_entities_and_selectors_in_place(out1)
+
+    # Verify selectors remain EntitySelector objects
+    used_selectors_2 = out2["private_attribute_asset_cache"]["used_selectors"]
+    assert isinstance(used_selectors_2[0], EntitySelector)
+    node1_selectors_2 = out2["node1"]["selectors"]
+    assert isinstance(node1_selectors_2[0], EntitySelector)
+    node2_selectors_2 = out2["node2"]["selectors"]
+    assert isinstance(node2_selectors_2[0], EntitySelector)
+
+    # Verify object identity is preserved (no unnecessary re-instantiation)
+    assert id(node1_selectors_2[0]) == selector_obj_id
+    assert node1_selectors_2[0] is node2_selectors_2[0]
+
+    # Verify the selector still has the expected attributes
+    assert node1_selectors_2[0].selector_id == "sel-123"
+    assert node1_selectors_2[0].name == "test-selector"
+    assert node1_selectors_2[0].target_class == "Surface"

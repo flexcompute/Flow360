@@ -287,10 +287,16 @@ def _materialize_selectors_list_in_node(
             # At local validaiton, `selector_lookup` is empty.
             # Since it is presubmit, no need to "materialize", "deserialize" is fine.
             materialized_selectors.append(EntitySelector.model_validate(selector_item))
+        elif isinstance(selector_item, EntitySelector):
+            # ==== Already materialized EntitySelector ====
+            # When materialize_entities_and_selectors_in_place is called multiple times
+            # on the same params dict (e.g., repeated validation or upload after preprocessing),
+            # selectors may already be EntitySelector objects. Pass through unchanged.
+            materialized_selectors.append(selector_item)
         else:
             raise TypeError(
                 "[Internal] Unsupported selector item type in selectors list. "
-                "Expected selector tokens (str/dict). Got: "
+                "Expected selector tokens (str/dict) or EntitySelector instances. Got: "
                 f"{type(selector_item)}"
             )
     node["selectors"] = materialized_selectors
