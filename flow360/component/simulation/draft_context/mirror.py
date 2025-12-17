@@ -435,7 +435,14 @@ class MirrorManager:
                 f"`mirror_plane` must be a MirrorPlane entity. Instead received: {type(mirror_plane).__name__}."
             )
 
-        # 3. [Restriction] Each GeometryBodyGroup entity can only be mirrored once.
+        # 3. [Validation] Ensure the surface-to-body-group mapping is available.
+        if self._face_group_to_body_group is None:
+            raise Flow360RuntimeError(
+                "Mirroring is not available because the surface-to-body-group mapping could not be derived. "
+                "This typically happens when face groupings span across multiple body groups."
+            )
+
+        # 4. [Restriction] Each GeometryBodyGroup entity can only be mirrored once.
         #                  If a duplicate request is made, reset to the new one with a warning.
         for body_group in normalized_entities:
             body_group_id = body_group.private_attribute_id
@@ -445,7 +452,7 @@ class MirrorManager:
                     body_group.name,
                 )
 
-        # 4. [Validation] Ensure mirror plane has a unique name if it's a new plane.
+        # 5. [Validation] Ensure mirror plane has a unique name if it's a new plane.
         existing_plane_ids = {plane.private_attribute_id for plane in self._mirror_planes}
         if mirror_plane.private_attribute_id not in existing_plane_ids:
             # This is a new plane - validate the name is unique.
@@ -455,14 +462,14 @@ class MirrorManager:
                 )
             self._mirror_planes.append(mirror_plane)
 
-        # 5. Create/Update the self._body_group_id_to_mirror_id
+        # 6. Create/Update the self._body_group_id_to_mirror_id
         body_group_id_to_mirror_id_update: Dict[str, str] = {}
         for body_group in normalized_entities:
             body_group_id = body_group.private_attribute_id
             body_group_id_to_mirror_id_update[body_group_id] = mirror_plane.private_attribute_id
             self._body_group_id_to_mirror_id[body_group_id] = mirror_plane.private_attribute_id
 
-        # 6. Derive the generated mirrored entities (MirroredGeometryBodyGroup + MirroredSurface)
+        # 7. Derive the generated mirrored entities (MirroredGeometryBodyGroup + MirroredSurface)
         #    and return to user as tokens of use.
         return _derive_mirrored_entities_from_actions(
             body_group_id_to_mirror_id=body_group_id_to_mirror_id_update,

@@ -162,7 +162,9 @@ def apply_and_inform_grouping_selections(
     face_tag = applied_grouping.get("face")
     edge_tag = applied_grouping.get("edge")
 
-    assert edge_tag is not None and face_tag is not None, print(
+    # edge_tag can be None if the geometry asset created with surface mesh
+
+    assert face_tag is not None, print(
         "[Internal] Default should have already been set, applied_grouping: ", applied_grouping
     )
     ##########################################
@@ -170,7 +172,7 @@ def apply_and_inform_grouping_selections(
     # 1. Print out the grouping used for user's convenience.
 
     log.info(
-        "Creating draft with geometry grouping:\n" "  faces: %s\n" "  edges: %s\n",
+        "Creating draft with geometry grouping:\n  faces: %s\n  edges: %s\n",
         face_tag,
         edge_tag,
     )

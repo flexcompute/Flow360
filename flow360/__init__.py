@@ -10,6 +10,8 @@ from flow360.component.geometry import Geometry
 from flow360.component.project import Project, create_draft
 from flow360.component.simulation import migration, services
 from flow360.component.simulation import units as u
+from flow360.component.simulation.draft_context.mirror import MirrorPlane
+from flow360.component.simulation.entity_operation import CoordinateSystem
 from flow360.component.simulation.folder import Folder
 from flow360.component.simulation.meshing_param import snappy
 from flow360.component.simulation.meshing_param.edge_params import (
@@ -200,6 +202,8 @@ __all__ = [
     "Env",
     "Case",
     "create_draft",
+    "CoordinateSystem",
+    "MirrorPlane",
     "AngleBasedRefinement",
     "AspectRatioBasedRefinement",
     "ProjectAnisoSpacing",

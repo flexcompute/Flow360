@@ -75,6 +75,25 @@ class AssetCache(Flow360BaseModel):
             return None
         return self.project_entity_info.get_boundaries()
 
+    @pd.model_validator(mode="after")
+    def _validate_mirror_status_compatible_with_geometry(self):
+        """Raise if mirror_status has mirroring but geometry doesn't support face-to-body-group mapping."""
+        if self.mirror_status is None:
+            return self
+        if not self.mirror_status.mirrored_geometry_body_groups:
+            return self
+        if not isinstance(self.project_entity_info, GeometryEntityInfo):
+            return self
+
+        try:
+            self.project_entity_info.get_face_group_to_body_group_id_map()
+        except ValueError as exc:
+            raise ValueError(
+                "Mirroring is requested but the geometry's face groupings span across body groups. "
+                f"Mirroring cannot be performed: {exc}"
+            ) from exc
+        return self
+
     def preprocess(
         self,
         *,

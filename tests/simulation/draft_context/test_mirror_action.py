@@ -1,5 +1,6 @@
 import json
 import os
+from unittest.mock import MagicMock, PropertyMock, patch
 
 import pytest
 from pydantic import ValidationError
@@ -11,10 +12,15 @@ from flow360.component.project_utils import set_up_params_for_uploading
 from flow360.component.resource_base import local_metadata_builder
 from flow360.component.simulation.draft_context.context import DraftContext
 from flow360.component.simulation.draft_context.mirror import (
+    MirroredGeometryBodyGroup,
+    MirrorManager,
     MirrorPlane,
     MirrorStatus,
     _derive_mirrored_entities_from_actions,
 )
+from flow360.component.simulation.entity_info import GeometryEntityInfo
+from flow360.component.simulation.framework.param_utils import AssetCache
+from flow360.component.simulation.primitives import GeometryBodyGroup
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.exceptions import Flow360RuntimeError
 
@@ -382,3 +388,202 @@ def test_remove_mirror_of_accepts_list_of_entities(mock_geometry):
         # Verify all mirrors were removed
         for body_group in entities_to_mirror:
             assert body_group.private_attribute_id not in draft.mirror._body_group_id_to_mirror_id
+
+
+# --------------------------------------------------------------------------------------
+# Tests for mirror validation when face groupings span across body groups
+# --------------------------------------------------------------------------------------
+
+
+def test_mirror_create_raises_when_face_group_to_body_group_is_none(mock_geometry):
+    """Test that create_mirror_of raises when face_group_to_body_group mapping is unavailable."""
+    with create_draft(new_run_from=mock_geometry) as draft:
+        body_groups = list(draft.body_groups)
+        assert body_groups, "Test requires at least one body group."
+
+        body_group = body_groups[0]
+
+        # Create a MirrorManager with face_group_to_body_group=None (simulating the case
+        # where face groupings span across body groups)
+        mirror_manager = MirrorManager(
+            face_group_to_body_group=None,  # This simulates the failure case
+            body_groups=[body_group],
+            surfaces=[],
+        )
+
+        mirror_plane = MirrorPlane(
+            name="mirrorX",
+            normal=(1, 0, 0),
+            center=(0, 0, 0) * u.m,
+        )
+
+        with pytest.raises(
+            Flow360RuntimeError,
+            match="Mirroring is not available because the surface-to-body-group mapping could not be derived",
+        ):
+            mirror_manager.create_mirror_of(entities=body_group, mirror_plane=mirror_plane)
+
+
+def test_asset_cache_validator_raises_when_mirror_status_conflicts_with_geometry():
+    """Test that AssetCache validator raises when mirror_status has mirrorings but geometry doesn't support it."""
+    # Create a mock GeometryEntityInfo that raises ValueError when get_face_group_to_body_group_id_map() is called
+    mock_entity_info = MagicMock(spec=GeometryEntityInfo)
+    mock_entity_info.get_face_group_to_body_group_id_map.side_effect = ValueError(
+        "Face group 'test_face' contains faces belonging to multiple body groups"
+    )
+
+    # Create a MirrorStatus with meaningful mirrorings
+    mirror_plane = MirrorPlane(
+        name="mirrorX",
+        normal=(1, 0, 0),
+        center=(0, 0, 0) * u.m,
+    )
+    mirrored_body_group = MirroredGeometryBodyGroup(
+        name="test_body_group_<mirror>",
+        geometry_body_group_id="test-body-group-id",
+        mirror_plane_id=mirror_plane.private_attribute_id,
+    )
+    mirror_status = MirrorStatus(
+        mirror_planes=[mirror_plane],
+        mirrored_geometry_body_groups=[mirrored_body_group],
+        mirrored_surfaces=[],
+    )
+
+    # Use model_construct to bypass field validation and directly set values
+    # Then call the validator method directly
+    asset_cache = AssetCache.model_construct(
+        project_entity_info=mock_entity_info,
+        mirror_status=mirror_status,
+    )
+
+    # Call the validator directly - it should raise ValueError
+    with pytest.raises(
+        ValueError,
+        match="Mirroring is requested but the geometry's face groupings span across body groups",
+    ):
+        asset_cache._validate_mirror_status_compatible_with_geometry()
+
+
+def test_asset_cache_validator_passes_when_no_mirror_status():
+    """Test that AssetCache validator passes when mirror_status is None."""
+    # Create a mock GeometryEntityInfo that would raise if called
+    mock_entity_info = MagicMock(spec=GeometryEntityInfo)
+    mock_entity_info.get_face_group_to_body_group_id_map.side_effect = ValueError(
+        "This should not be called"
+    )
+
+    # Use model_construct to bypass field validation
+    asset_cache = AssetCache.model_construct(
+        project_entity_info=mock_entity_info,
+        mirror_status=None,
+    )
+
+    # Validator should pass and return self
+    result = asset_cache._validate_mirror_status_compatible_with_geometry()
+    assert result is asset_cache
+    # Verify the method was never called
+    mock_entity_info.get_face_group_to_body_group_id_map.assert_not_called()
+
+
+def test_asset_cache_validator_passes_when_empty_mirrored_body_groups():
+    """Test that AssetCache validator passes when mirror_status has no mirrored body groups."""
+    mock_entity_info = MagicMock(spec=GeometryEntityInfo)
+    mock_entity_info.get_face_group_to_body_group_id_map.side_effect = ValueError(
+        "This should not be called"
+    )
+
+    # MirrorStatus with empty mirrored_geometry_body_groups should not trigger validation
+    mirror_status = MirrorStatus(
+        mirror_planes=[],
+        mirrored_geometry_body_groups=[],
+        mirrored_surfaces=[],
+    )
+
+    # Use model_construct to bypass field validation
+    asset_cache = AssetCache.model_construct(
+        project_entity_info=mock_entity_info,
+        mirror_status=mirror_status,
+    )
+
+    # Validator should pass and return self
+    result = asset_cache._validate_mirror_status_compatible_with_geometry()
+    assert result is asset_cache
+    # Verify the method was never called
+    mock_entity_info.get_face_group_to_body_group_id_map.assert_not_called()
+
+
+def test_asset_cache_validator_passes_when_geometry_supports_mirroring():
+    """Test that AssetCache validator passes when geometry supports mirroring."""
+    # Create a mock GeometryEntityInfo that returns valid mapping
+    mock_entity_info = MagicMock(spec=GeometryEntityInfo)
+    mock_entity_info.get_face_group_to_body_group_id_map.return_value = {
+        "surface1": "body_group_1",
+        "surface2": "body_group_1",
+    }
+
+    # Create a MirrorStatus with meaningful mirrorings
+    mirror_plane = MirrorPlane(
+        name="mirrorX",
+        normal=(1, 0, 0),
+        center=(0, 0, 0) * u.m,
+    )
+    mirrored_body_group = MirroredGeometryBodyGroup(
+        name="test_body_group_<mirror>",
+        geometry_body_group_id="test-body-group-id",
+        mirror_plane_id=mirror_plane.private_attribute_id,
+    )
+    mirror_status = MirrorStatus(
+        mirror_planes=[mirror_plane],
+        mirrored_geometry_body_groups=[mirrored_body_group],
+        mirrored_surfaces=[],
+    )
+
+    # Use model_construct to bypass field validation
+    asset_cache = AssetCache.model_construct(
+        project_entity_info=mock_entity_info,
+        mirror_status=mirror_status,
+    )
+
+    # Validator should pass and return self
+    result = asset_cache._validate_mirror_status_compatible_with_geometry()
+    assert result is asset_cache
+    # Verify the method was called
+    mock_entity_info.get_face_group_to_body_group_id_map.assert_called_once()
+
+
+def test_asset_cache_validator_skips_non_geometry_entity_info():
+    """Test that AssetCache validator skips validation when entity_info is not GeometryEntityInfo."""
+    # Use a mock that doesn't have isinstance(x, GeometryEntityInfo) returning True
+    mock_entity_info = MagicMock()  # Not spec=GeometryEntityInfo
+    mock_entity_info.get_face_group_to_body_group_id_map.side_effect = ValueError(
+        "This should not be called"
+    )
+
+    # Create a MirrorStatus with meaningful mirrorings
+    mirror_plane = MirrorPlane(
+        name="mirrorX",
+        normal=(1, 0, 0),
+        center=(0, 0, 0) * u.m,
+    )
+    mirrored_body_group = MirroredGeometryBodyGroup(
+        name="test_body_group_<mirror>",
+        geometry_body_group_id="test-body-group-id",
+        mirror_plane_id=mirror_plane.private_attribute_id,
+    )
+    mirror_status = MirrorStatus(
+        mirror_planes=[mirror_plane],
+        mirrored_geometry_body_groups=[mirrored_body_group],
+        mirrored_surfaces=[],
+    )
+
+    # Use model_construct to bypass field validation
+    asset_cache = AssetCache.model_construct(
+        project_entity_info=mock_entity_info,
+        mirror_status=mirror_status,
+    )
+
+    # Validator should pass because entity_info is not GeometryEntityInfo
+    result = asset_cache._validate_mirror_status_compatible_with_geometry()
+    assert result is asset_cache
+    # Verify the method was never called because isinstance check should fail
+    mock_entity_info.get_face_group_to_body_group_id_map.assert_not_called()
