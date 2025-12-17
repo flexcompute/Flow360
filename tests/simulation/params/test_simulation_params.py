@@ -719,10 +719,14 @@ def test_transformation_matrix(mock_geometry):
     assert isinstance(target_body_group_dict, dict)
 
     # All bodies in the selected grouping must have an explicit matrix payload.
+    # The transformation object should only contain private_attribute_matrix (no redundant fields).
     for body_group_dict in selected_group:
         transformation = body_group_dict.get("transformation")
         assert isinstance(transformation, dict)
-        assert transformation.get("type_name") == "BodyGroupTransformation"
+        assert list(transformation.keys()) == ["private_attribute_matrix"], (
+            f"Expected transformation to only contain 'private_attribute_matrix', "
+            f"but got keys: {list(transformation.keys())}"
+        )
         assert isinstance(transformation.get("private_attribute_matrix"), list)
         assert len(transformation["private_attribute_matrix"]) == 12
 

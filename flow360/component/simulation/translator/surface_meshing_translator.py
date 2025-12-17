@@ -683,7 +683,7 @@ def _traverse_and_filter(data, whitelist):
 
 
 def _inject_body_group_transformations_for_mesher(
-    *, json_data: dict, input_params: SimulationParams, mesh_unit
+    *, json_data: dict, input_params: SimulationParams, mesh_unit  # pylint: disable=unused-argument
 ) -> None:
     """
     Inject body-group transformation payload expected by the mesher.
@@ -691,6 +691,9 @@ def _inject_body_group_transformations_for_mesher(
     The user-facing `GeometryBodyGroup.transformation` field has been removed. Mesher translation
     still needs per-body-group 3x4 transformation matrices; those are now sourced from coordinate
     system assignments.
+
+    Only the `private_attribute_matrix` field is injected - the mesher only needs the final
+    transformation matrix, not the intermediate parameters (origin, axis_of_rotation, etc.).
     """
     # pylint: disable=import-outside-toplevel
     from flow360.component.simulation.draft_context.coordinate_system_manager import (
@@ -711,27 +714,6 @@ def _inject_body_group_transformations_for_mesher(
     grouped_bodies = entity_info_dict.get("grouped_bodies", None)
     if not isinstance(grouped_bodies, list):
         return
-
-    # Build a default transformation payload that matches the translator's preprocessed
-    # unit serialization format, without relying on model preprocessing.
-    try:
-        unit_scale = float(mesh_unit.value)
-    except Exception:  # pylint: disable=broad-exception-caught
-        unit_scale = 1.0
-    try:
-        unit_name = str(mesh_unit.units)
-    except Exception:  # pylint: disable=broad-exception-caught
-        unit_name = "m"
-    length_unit_string = f"{unit_scale}*{unit_name}"
-
-    default_transformation = {
-        "type_name": "BodyGroupTransformation",
-        "origin": {"value": [0.0, 0.0, 0.0], "units": length_unit_string},
-        "axis_of_rotation": [1.0, 0.0, 0.0],
-        "angle_of_rotation": {"value": 0.0, "units": "rad"},
-        "scale": [1.0, 1.0, 1.0],
-        "translation": {"value": [0.0, 0.0, 0.0], "units": length_unit_string},
-    }
 
     body_group_tag = entity_info_dict.get("body_group_tag") or project_entity_info.body_group_tag
     body_attribute_names = (
@@ -771,11 +753,11 @@ def _inject_body_group_transformations_for_mesher(
             if not isinstance(body_group, dict):
                 continue
 
-            # Always include a legacy `transformation` object (without matrix by default).
-            body_group["transformation"] = dict(default_transformation)
-
-            # For the selected grouping, always provide an explicit matrix (identity by default).
+            # For the selected grouping, inject only the transformation matrix.
+            # The mesher only needs the final 3x4 matrix, not the intermediate parameters.
             if selected_group_index is None or i_group != selected_group_index:
+                # For non-selected groupings, remove any existing transformation data
+                body_group.pop("transformation", None)
                 continue
 
             entity_type = body_group.get("private_attribute_entity_type_name")
@@ -789,9 +771,10 @@ def _inject_body_group_transformations_for_mesher(
                 if matrix_nd is not None:
                     matrix = matrix_nd.flatten().tolist()
 
-            body_group["transformation"]["private_attribute_matrix"] = (
-                identity_matrix_row_major if matrix is None else matrix
-            )
+            # Only include the matrix - no redundant transformation parameters
+            body_group["transformation"] = {
+                "private_attribute_matrix": identity_matrix_row_major if matrix is None else matrix
+            }
 
 
 def filter_simulation_json(input_params: SimulationParams, mesh_units):
