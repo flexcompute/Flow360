@@ -282,7 +282,7 @@ def _find_rotating_boundary_name(
             return boundary_name
     return None
 
-
+# pylint: disable=too-many-arguments, disable=too-many-locals
 def _update_enclosed_entity_to_rotating(
     rotation_volume: RotationVolume,
     enclosed_entity: Surface,
@@ -294,12 +294,6 @@ def _update_enclosed_entity_to_rotating(
 ) -> None:
     """Update an enclosed entity to point to __rotating patch and handle stationary entities."""
     original_boundary_name = enclosed_entity.full_name
-    base_boundary_name = (
-        original_boundary_name.split("/", 1)[1]
-        if "/" in original_boundary_name
-        else original_boundary_name
-    )
-
     rotating_base_name = (
         rotating_boundary_name.split("/")[-1]
         if "/" in rotating_boundary_name
