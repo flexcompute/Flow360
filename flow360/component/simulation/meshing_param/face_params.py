@@ -69,10 +69,12 @@ class SurfaceRefinement(Flow360BaseModel):
     @classmethod
     def ensure_surface_existence(cls, value, param_info: ParamsValidationInfo):
         """Ensure all boundaries will be present after mesher"""
+        expanded = param_info.expand_entity_list(value)
         check_ghost_surface_usage_policy_for_face_refinements(
-            value.stored_entities, feature_name="SurfaceRefinement", param_info=param_info
+            expanded, feature_name="SurfaceRefinement", param_info=param_info
         )
-        return check_deleted_surface_in_entity_list(value, param_info)
+        check_deleted_surface_in_entity_list(expanded, param_info)
+        return value
 
     @contextual_field_validator("curvature_resolution_angle", mode="after")
     @classmethod
@@ -188,10 +190,12 @@ class PassiveSpacing(Flow360BaseModel):
     @classmethod
     def ensure_surface_existence(cls, value, param_info: ParamsValidationInfo):
         """Ensure all boundaries will be present after mesher"""
+        expanded = param_info.expand_entity_list(value)
         check_ghost_surface_usage_policy_for_face_refinements(
-            value.stored_entities, feature_name="PassiveSpacing", param_info=param_info
+            expanded, feature_name="PassiveSpacing", param_info=param_info
         )
-        return check_deleted_surface_in_entity_list(value, param_info)
+        check_deleted_surface_in_entity_list(expanded, param_info)
+        return value
 
 
 class BoundaryLayer(Flow360BaseModel):
@@ -230,7 +234,9 @@ class BoundaryLayer(Flow360BaseModel):
     @classmethod
     def ensure_surface_existence(cls, value, param_info: ParamsValidationInfo):
         """Ensure all boundaries will be present after mesher"""
-        return check_deleted_surface_in_entity_list(value, param_info)
+        expanded = param_info.expand_entity_list(value)
+        check_deleted_surface_in_entity_list(expanded, param_info)
+        return value
 
     @contextual_field_validator("growth_rate", mode="after")
     @classmethod

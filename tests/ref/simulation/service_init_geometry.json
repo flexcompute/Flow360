@@ -175,7 +175,8 @@
                 "stored_entities": [
                     {
                         "private_attribute_entity_type_name": "GhostSurface",
-                        "name": "farfield"
+                        "name": "farfield",
+                        "private_attribute_id": "farfield"
                     }
                 ]
             },
@@ -264,7 +265,7 @@
             "transition_model_solver": {
                 "type_name": "None"
             },
-            "interface_interpolation_tolerance" : 0.2
+            "interface_interpolation_tolerance": 0.2
         }
     ],
     "time_stepping": {

@@ -175,7 +175,8 @@
                 "stored_entities": [
                     {
                         "private_attribute_entity_type_name": "GhostSurface",
-                        "name": "farfield"
+                        "name": "farfield",
+                        "private_attribute_id": "farfield"
                     }
                 ]
             },

@@ -42,6 +42,7 @@ from flow360.component.simulation.utils import is_exact_instance
 from flow360.component.simulation.validation.validation_context import (
     ALL,
     CASE,
+    ParamsValidationInfo,
     get_validation_levels,
 )
 from flow360.component.simulation.validation.validation_utils import EntityUsageMap
@@ -75,7 +76,7 @@ def _check_consistency_wall_function_and_surface_output(v):
     return v
 
 
-def _check_duplicate_entities_in_models(params):
+def _check_duplicate_entities_in_models(params, param_info: ParamsValidationInfo):
     if not params.models:
         return params
 
@@ -84,8 +85,15 @@ def _check_duplicate_entities_in_models(params):
 
     for model in models:
         if hasattr(model, "entities"):
-            expanded_entities = model.entities.stored_entities
+            expanded_entities = param_info.expand_entity_list(model.entities)
+            # seen_entity_hashes: set[str] = set()
             for entity in expanded_entities:
+                # # pylint: disable=protected-access
+                # entity_hash = entity._get_hash()
+                # if entity_hash in seen_entity_hashes:
+                #     continue
+                # if entity_hash is not None:
+                #     seen_entity_hashes.add(entity_hash)
                 usage.add_entity_usage(entity, model.type)
 
     error_msg = ""
@@ -395,7 +403,8 @@ def _check_complete_boundary_condition_and_unknown_surface(
                 continue
             for custom_volume in zones.entities.stored_entities:
                 if isinstance(custom_volume, CustomVolume):
-                    for boundary in custom_volume.boundaries.stored_entities:
+                    expanded = param_info.expand_entity_list(custom_volume.boundaries)
+                    for boundary in expanded:
                         potential_zone_zone_interfaces.add(boundary.name)
                 if isinstance(custom_volume, SeedpointVolume):
                     ## disable missing boundaries with snappy multizone
@@ -420,7 +429,7 @@ def _check_complete_boundary_condition_and_unknown_surface(
         entities = []
         # pylint: disable=protected-access
         if hasattr(model, "entities"):
-            entities = model.entities.stored_entities
+            entities = param_info.expand_entity_list(model.entities)
         elif hasattr(model, "entity_pairs"):  # Periodic BC
             entities = [
                 pair for surface_pair in model.entity_pairs.items for pair in surface_pair.pair
@@ -450,7 +459,7 @@ def _check_complete_boundary_condition_and_unknown_surface(
     return params
 
 
-def _check_parent_volume_is_rotating(models):
+def _check_parent_volume_is_rotating(models, param_info: ParamsValidationInfo):
 
     current_lvls = get_validation_levels() if get_validation_levels() else []
     if all(level not in current_lvls for level in (ALL, CASE)):
@@ -460,7 +469,7 @@ def _check_parent_volume_is_rotating(models):
         entity.name
         for model in models
         if isinstance(model, Rotation)
-        for entity in model.entities.stored_entities
+        for entity in (param_info.expand_entity_list(model.entities))
     }
 
     for model_index, model in enumerate(models):
@@ -566,7 +575,7 @@ def _check_duplicate_isosurface_names(outputs):
     return outputs
 
 
-def _check_duplicate_surface_usage(outputs):
+def _check_duplicate_surface_usage(outputs, param_info: ParamsValidationInfo):
     if outputs is None:
         return outputs
 
@@ -577,7 +586,7 @@ def _check_duplicate_surface_usage(outputs):
         for output in outputs:
             if not is_exact_instance(output, output_type):
                 continue
-            for entity in output.entities.stored_entities:
+            for entity in param_info.expand_entity_list(output.entities):
                 if entity.name in surface_names:
                     raise ValueError(
                         f"The same surface `{entity.name}` is used in multiple `{output_type.__name__}`s."
@@ -591,7 +600,7 @@ def _check_duplicate_surface_usage(outputs):
     return outputs
 
 
-def _check_duplicate_actuator_disk_cylinder_names(models):
+def _check_duplicate_actuator_disk_cylinder_names(models, param_info: ParamsValidationInfo):
     if not models:
         return models
 
@@ -601,7 +610,7 @@ def _check_duplicate_actuator_disk_cylinder_names(models):
             if not isinstance(model, ActuatorDisk):
                 continue
 
-            for entity_index, entity in enumerate(model.entities.stored_entities):
+            for entity_index, entity in enumerate(param_info.expand_entity_list(model.entities)):
                 if entity.name in actuator_disk_names:
                     raise ValueError(
                         f"The ActuatorDisk cylinder name `{entity.name}` at index {entity_index}"

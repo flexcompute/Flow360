@@ -7,9 +7,7 @@ Pydantic model instances and perform per-list deduplication.
 
 from __future__ import annotations
 
-import hashlib
-import json
-from typing import TYPE_CHECKING, Any, Callable, Optional
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
 
 import pydantic as pd
 
@@ -18,6 +16,12 @@ from flow360.component.simulation.framework.entity_materialization_context impor
     get_entity_builder,
     get_entity_cache,
     get_entity_registry,
+)
+from flow360.component.simulation.framework.entity_selector import EntitySelector
+from flow360.component.simulation.framework.entity_utils import (
+    DEFAULT_NOT_MERGED_TYPES,
+    deduplicate_entities,
+    get_entity_key,
 )
 from flow360.component.simulation.outputs.output_entities import (
     Point,
@@ -67,32 +71,6 @@ ENTITY_TYPE_MAP = {
     "SnappyBody": SnappyBody,
     "WindTunnelGhostSurface": WindTunnelGhostSurface,
 }
-
-
-def _stable_entity_key_from_dict(d: dict) -> tuple:
-    """Return a stable deduplication key for an entity dict.
-
-    Prefer (type, private_attribute_id);
-    if missing, hash a sanitized JSON-dumped copy (excluding volatile fields like private_attribute_input_cache).
-    """
-    t = d.get("private_attribute_entity_type_name")
-    pid = d.get("private_attribute_id")
-    if pid:
-        return (t, pid)
-    # Fallback mode, possibly because:
-    # 1. Test does not set private_attribute_id.
-    # 2. Very legacy JSON where private_attribute_id was not even defined back then.
-    # 3. Ghost entities (we should have enforced private_attribute_id required for all entities)
-    # All production persistent data should have private_attribute_id set.
-    data = {k: v for k, v in d.items() if k not in ("private_attribute_input_cache",)}
-    return (t, hashlib.sha256(json.dumps(data, sort_keys=True).encode("utf-8")).hexdigest())
-
-
-def _stable_entity_key_from_obj(o: Any) -> tuple:
-    """Return a stable deduplication key for an entity object instance."""
-    t = getattr(o, "private_attribute_entity_type_name", type(o).__name__)
-    pid = getattr(o, "private_attribute_id", None)
-    return (t, pid) if pid else (t, id(o))
 
 
 def _build_entity_instance(entity_dict: dict):
@@ -193,7 +171,7 @@ def _build_entity_from_dict(entity_dict: dict, cache: Optional[dict], builder: C
     Any
         Entity instance.
     """
-    key = _stable_entity_key_from_dict(entity_dict)
+    key = get_entity_key(entity_dict)
     obj = cache.get(key) if (cache and key in cache) else builder(entity_dict)
     if cache is not None and key not in cache:
         cache[key] = obj
@@ -233,98 +211,107 @@ def _convert_entity_dict_to_object(
     else:
         # Mode 1: Create and cache within params
         obj = _build_entity_from_dict(item, cache, builder)
-        key = _stable_entity_key_from_dict(item)
+        key = get_entity_key(item)
 
     return obj, key
 
 
-def _get_entity_key_from_object(obj: Any) -> tuple:
-    """Extract stable key from already-materialized entity object.
+def _deserialize_used_selectors_and_build_lookup(params_as_dict: dict) -> Dict[str, EntitySelector]:
+    """Deserialize asset_cache.used_selectors in-place and build selector_id -> selector lookup."""
+    asset_cache = params_as_dict.get("private_attribute_asset_cache")
+    if not isinstance(asset_cache, dict):
+        return {}
 
-    Parameters
-    ----------
-    obj : Any
-        Entity object instance.
+    raw_used_selectors = asset_cache.get("used_selectors")
+    if not isinstance(raw_used_selectors, list) or not raw_used_selectors:
+        return {}
 
-    Returns
-    -------
-    tuple
-        Stable key (type_name, id).
-    """
-    # Optimized: direct key extraction without temporary dict
-    entity_type = getattr(obj, "private_attribute_entity_type_name", type(obj).__name__)
-    entity_id = getattr(obj, "private_attribute_id", None)
+    selector_list = pd.TypeAdapter(List[EntitySelector]).validate_python(raw_used_selectors)
+    selector_lookup = {selector.selector_id: selector for selector in selector_list}
 
-    if entity_id:
-        return (entity_type, entity_id)
-
-    # Fallback: use object identity if no ID (rare case)
-    return (entity_type, id(obj))
+    # Keep used_selectors as a list, but ensure it contains deserialized EntitySelector instances.
+    asset_cache["used_selectors"] = selector_list
+    return selector_lookup
 
 
-def _process_stored_entities_list(
-    stored_entities: list,
-    not_merged_types: set[str],
+def _materialize_stored_entities_list_in_node(
+    node: dict,
+    *,
     is_registry_mode: bool,
     cache: Optional[dict],
     builder: Optional[Callable],
-) -> list:
-    """Process stored_entities list: materialize and deduplicate.
+    not_merged_types: set[str],
+) -> None:
+    """Materialize node['stored_entities'] in-place if present."""
+    stored_entities = node.get("stored_entities")
+    if not isinstance(stored_entities, list):
+        return
 
-    Parameters
-    ----------
-    stored_entities : list
-        List of entity dicts or objects.
-    not_merged_types : set[str]
-        Entity types to skip deduplication.
-    is_registry_mode : bool
-        True if using EntityRegistry mode.
-    cache : Optional[dict]
-        Cache for entity lookups/storage.
-    builder : Optional[Callable]
-        Builder function for Mode 1.
-
-    Returns
-    -------
-    list
-        Processed list with materialized and deduplicated entities.
-    """
-    new_list = []
-    seen = set()
-
-    for item in stored_entities:
-        # Convert to object instance
+    def processor(item):
         if isinstance(item, dict):
-            obj, key = _convert_entity_dict_to_object(item, is_registry_mode, cache, builder)
+            return _convert_entity_dict_to_object(item, is_registry_mode, cache, builder)
+        # Already materialized
+        return item, get_entity_key(item)
+
+    node["stored_entities"] = deduplicate_entities(
+        stored_entities,
+        processor=processor,
+        not_merged_types=not_merged_types,
+    )
+
+
+def _materialize_selectors_list_in_node(
+    node: dict, selector_lookup: Dict[str, EntitySelector]
+) -> None:
+    """Replace selector tokens in node['selectors'] with shared EntitySelector instances."""
+    selectors = node.get("selectors")
+    if not isinstance(selectors, list) or not selectors:
+        return
+
+    materialized_selectors: List[EntitySelector] = []
+    for selector_item in selectors:
+        if isinstance(selector_item, str):
+            # ==== Selector token (str) ====
+            selector_object = selector_lookup.get(selector_item)
+            if selector_object is None:
+                raise ValueError(
+                    "[Internal] Selector token not found in "
+                    "private_attribute_asset_cache.used_selectors: "
+                    f"{selector_item}"
+                )
+            materialized_selectors.append(selector_object)
+        elif isinstance(selector_item, dict):
+            # ==== Inline selector definition (dict, pre-submit JSON) ====
+            # Cloud/Production JSON data will only contain selector tokens (str).
+            # Local pre-upload JSON (from model_dump) will contain inline selector definitions (dict).
+            # At local validaiton, `selector_lookup` is empty.
+            # Since it is presubmit, no need to "materialize", "deserialize" is fine.
+            materialized_selectors.append(EntitySelector.model_validate(selector_item))
+        elif isinstance(selector_item, EntitySelector):
+            # ==== Already materialized EntitySelector ====
+            # When materialize_entities_and_selectors_in_place is called multiple times
+            # on the same params dict (e.g., repeated validation or upload after preprocessing),
+            # selectors may already be EntitySelector objects. Pass through unchanged.
+            materialized_selectors.append(selector_item)
         else:
-            # Already materialized (re-entrant call), passthrough
-            obj = item
-            key = _get_entity_key_from_object(obj)
-
-        # Apply deduplication logic
-        entity_type = getattr(obj, "private_attribute_entity_type_name", None)
-        if entity_type in not_merged_types:
-            # Skip deduplication for these types
-            new_list.append(obj)
-            continue
-
-        if key in seen:
-            # Duplicate, skip
-            continue
-
-        seen.add(key)
-        new_list.append(obj)
-
-    return new_list
+            raise TypeError(
+                "[Internal] Unsupported selector item type in selectors list. "
+                "Expected selector tokens (str/dict) or EntitySelector instances. Got: "
+                f"{type(selector_item)}"
+            )
+    node["selectors"] = materialized_selectors
 
 
-def materialize_entities_in_place(
+def materialize_entities_and_selectors_in_place(
     params_as_dict: dict,
     *,
-    not_merged_types: set[str] = frozenset({"Point"}),
+    not_merged_types: set[str] = DEFAULT_NOT_MERGED_TYPES,
     entity_registry: Optional[EntityRegistry] = None,
 ) -> dict:
-    """Materialize entity dicts to shared instances and dedupe per list in-place.
+    """
+    From raw dict simulation params:
+    1. Materialize `stored_entities` dicts to shared instances and dedupe per list in-place.
+    2. Materialize `selectors` list to shared EntitySelector instances.
 
     Two operation modes:
 
@@ -338,15 +325,10 @@ def materialize_entities_in_place(
         - Replaces entity dicts with references to registry instances
         - Errors if an entity is not found in the registry
         - No new entity instances are created
-        # NOTE: Possibly unnecessary:
-        This function as of now is mostly used by the validate_model().
-        The slot for entity_registry was reserved for the entity registry coming from draft context.
-        However the only scenario where validate_model() will be called within the draft context,
-        is when the user eventually submits the simulation json.
-        Due to set_up_params_for_uploading(), The entity_info before validation has already been replaced by the
-        entity info from the draft context. So enforcing the entity registry here does not provide any benefit.
-        Because at this point user has finished all the editing and it's not beneficial to ensure the entity
-        deserialized by validate_model() has to be the same object as the one in draft context entity registry.
+
+        When called by validate_model(), the entity_registry can be provided by ParamsValidationInfo.
+        BLOCKED: This require all entities to have private_attribute_id set
+                 Which due to legacy reasons is not the case for all entities.
 
     Parameters
     ----------
@@ -358,6 +340,8 @@ def materialize_entities_in_place(
         EntityRegistry containing canonical entity instances.
         When provided, all entities must exist in registry (Mode 2).
     """
+
+    selector_lookup = _deserialize_used_selectors_and_build_lookup(params_as_dict)
 
     with EntityMaterializationContext(
         builder=_build_entity_instance, entity_registry=entity_registry
@@ -375,11 +359,15 @@ def materialize_entities_in_place(
 
         def visit(node):
             if isinstance(node, dict):
-                stored_entities = node.get("stored_entities", None)
-                if isinstance(stored_entities, list):
-                    node["stored_entities"] = _process_stored_entities_list(
-                        stored_entities, not_merged_types, is_registry_mode, cache, builder
-                    )
+                _materialize_stored_entities_list_in_node(
+                    node,
+                    is_registry_mode=is_registry_mode,
+                    cache=cache,
+                    builder=builder,
+                    not_merged_types=not_merged_types,
+                )
+                _materialize_selectors_list_in_node(node, selector_lookup)
+
                 for v in node.values():
                     visit(v)
             elif isinstance(node, list):
