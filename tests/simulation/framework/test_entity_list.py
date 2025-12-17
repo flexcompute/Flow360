@@ -8,6 +8,7 @@ import flow360 as fl
 from flow360.component.simulation.entity_info import SurfaceMeshEntityInfo
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityBase, EntityList
+from flow360.component.simulation.framework.entity_selector import SurfaceSelector
 from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.primitives import GenericVolume, Surface
 
@@ -50,7 +51,7 @@ def test_entity_list_deserializer_handles_mixed_types_and_selectors():
     - Verifies that the types are validated against the EntityList's generic parameters.
     """
     with fl.SI_unit_system:
-        selector = Surface.match("*", name="all_surfaces")
+        selector = SurfaceSelector(name="all_surfaces").match("*")
         surface_entity = Surface(name="my_surface")
         temp_surface_entity = TempSurface(name="my_temp_surface")
         # This entity should be filtered out as it's not a valid type for this list
@@ -66,7 +67,10 @@ def test_entity_list_deserializer_handles_mixed_types_and_selectors():
     assert entity_list.stored_entities[1] == temp_surface_entity
 
     assert len(entity_list.selectors) == 1
-    assert entity_list.selectors[0] == selector
+    # Selector is deserialized as EntitySelector (base class), check attributes instead
+    assert entity_list.selectors[0].name == selector.name
+    assert entity_list.selectors[0].target_class == selector.target_class
+    assert entity_list.selectors[0].logic == selector.logic
 
 
 def test_entity_list_discrimination():
@@ -173,7 +177,7 @@ def test_entity_list_invalid_inputs():
 
 def test_preview_selection_returns_names_by_default():
     boundaries, params_stub = _build_preview_context(["tail", "wing_leading", "wing_trailing"])
-    selector = Surface.match("wing*", name="wing_surfaces")
+    selector = SurfaceSelector(name="wing_surfaces").match("wing*")
 
     entity_list = EntityList[Surface].model_validate([boundaries[0], selector])
 
@@ -184,7 +188,7 @@ def test_preview_selection_returns_names_by_default():
 
 def test_preview_selection_returns_instances_when_requested():
     boundaries, params_stub = _build_preview_context(["body00001", "body00002"])
-    selector = Surface.match("body00002", name="second_body")
+    selector = SurfaceSelector(name="second_body").match("body00002")
 
     entity_list = EntityList[Surface].model_validate([selector])
     entity_list.stored_entities = [boundaries[0].model_dump(mode="json", exclude_none=True)]

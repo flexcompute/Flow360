@@ -18,7 +18,6 @@ from flow360.component.simulation.entity_operation import (
 )
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityBase, EntityList
-from flow360.component.simulation.framework.entity_selector import SelectorFactory
 from flow360.component.simulation.framework.entity_utils import generate_uuid
 from flow360.component.simulation.framework.multi_constructor_model_base import (
     MultiConstructorBaseModel,
@@ -146,7 +145,7 @@ class ReferenceGeometry(Flow360BaseModel):
         return cls(area=area, moment_center=moment_center, moment_length=moment_length)
 
 
-class GeometryBodyGroup(EntityBase, SelectorFactory):
+class GeometryBodyGroup(EntityBase):
     """
     :class:`GeometryBodyGroup` represents a collection of bodies that are grouped for transformation.
     """
@@ -250,7 +249,7 @@ class _SurfaceEntityBase(EntityBase, metaclass=ABCMeta):
 
 
 @final
-class Edge(EntityBase, SelectorFactory):
+class Edge(EntityBase):
     """
     Edge which contains a set of grouped edges from geometry.
     """
@@ -266,7 +265,7 @@ class Edge(EntityBase, SelectorFactory):
 
 
 @final
-class GenericVolume(_VolumeEntityBase, SelectorFactory):
+class GenericVolume(_VolumeEntityBase):
     """
     Do not expose.
     This type of entity will get auto-constructed by assets when loading metadata.
@@ -524,7 +523,7 @@ class SurfacePrivateAttributes(Flow360BaseModel):
 
 
 @final
-class Surface(_SurfaceEntityBase, SelectorFactory):
+class Surface(_SurfaceEntityBase):
     """
     :class:`Surface` represents a boundary surface in three-dimensional space.
     """
