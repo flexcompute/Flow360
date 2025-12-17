@@ -630,7 +630,8 @@ class SlipWall(BoundaryBase):
     Example
     -------
 
-    - Define :code:`SlipWall` boundary condition for entities with the naming pattern
+    Define :code:`SlipWall` boundary condition for entities with the naming pattern:
+
     :code:`"*/slipWall"` in the volume mesh.
 
       >>> fl.SlipWall(entities=volume_mesh["*/slipWall"]

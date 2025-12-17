@@ -456,18 +456,11 @@ class ProjectTree(pd.BaseModel):
 class Project(pd.BaseModel):
     """
     Project class containing the interface for creating and running simulations.
-
-    Attributes
-    ----------
-    metadata : ProjectMeta
-        Metadata of the project.
-    solver_version : str
-        Version of the solver being used.
     """
 
-    metadata: ProjectMeta = pd.Field()
+    metadata: ProjectMeta = pd.Field(description="Metadata of the project.")
     project_tree: ProjectTree = pd.Field()
-    solver_version: str = pd.Field(frozen=True)
+    solver_version: str = pd.Field(frozen=True, description="Version of the solver being used.")
 
     _root_asset: Union[Geometry, SurfaceMeshV2, VolumeMeshV2] = pd.PrivateAttr(None)
 
