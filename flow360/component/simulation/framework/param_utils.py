@@ -282,6 +282,7 @@ def _find_rotating_boundary_name(
             return boundary_name
     return None
 
+
 # pylint: disable=too-many-arguments, disable=too-many-locals
 def _update_enclosed_entity_to_rotating(
     rotation_volume: RotationVolume,
