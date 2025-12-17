@@ -348,7 +348,7 @@ def _check_complete_boundary_condition_and_unknown_surface(
         volume_zones = params.meshing.zones
 
     if farfield_method:
-        if param_info.at_least_one_body_transformed:
+        if param_info.entity_transformation_detected:
             # If transformed then `_will_be_deleted_by_mesher()` will no longer be accurate
             # since we do not know the final bounding box for each surface and global model.
             return params
@@ -358,7 +358,7 @@ def _check_complete_boundary_condition_and_unknown_surface(
             item
             for item in asset_boundary_entities
             if item._will_be_deleted_by_mesher(
-                at_least_one_body_transformed=param_info.at_least_one_body_transformed,
+                entity_transformation_detected=param_info.entity_transformation_detected,
                 farfield_method=farfield_method,
                 global_bounding_box=param_info.global_bounding_box,
                 planar_face_tolerance=param_info.planar_face_tolerance,

@@ -123,7 +123,7 @@ def check_deleted_surface_in_entity_list(expanded_entities: list, param_info) ->
         if isinstance(
             surface, Surface
         ) and surface._will_be_deleted_by_mesher(  # pylint:disable=protected-access
-            at_least_one_body_transformed=param_info.at_least_one_body_transformed,
+            entity_transformation_detected=param_info.entity_transformation_detected,
             farfield_method=param_info.farfield_method,
             global_bounding_box=param_info.global_bounding_box,
             planar_face_tolerance=param_info.planar_face_tolerance,
@@ -184,7 +184,7 @@ def check_deleted_surface_pair(value, param_info):
         if isinstance(
             surface, Surface
         ) and surface._will_be_deleted_by_mesher(  # pylint:disable=protected-access
-            at_least_one_body_transformed=param_info.at_least_one_body_transformed,
+            entity_transformation_detected=param_info.entity_transformation_detected,
             farfield_method=param_info.farfield_method,
             global_bounding_box=param_info.global_bounding_box,
             planar_face_tolerance=param_info.planar_face_tolerance,

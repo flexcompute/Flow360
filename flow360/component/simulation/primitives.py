@@ -580,7 +580,7 @@ class Surface(_SurfaceEntityBase, SelectorFactory):
     def _will_be_deleted_by_mesher(
         # pylint: disable=too-many-arguments, too-many-return-statements, too-many-branches
         self,
-        at_least_one_body_transformed: bool,
+        entity_transformation_detected: bool,
         farfield_method: Optional[
             Literal["auto", "quasi-3d", "quasi-3d-periodic", "user-defined", "wind-tunnel"]
         ],
@@ -594,7 +594,7 @@ class Surface(_SurfaceEntityBase, SelectorFactory):
         Check against the automated farfield method and
         determine if the current `Surface` will be deleted by the mesher.
         """
-        if at_least_one_body_transformed:
+        if entity_transformation_detected:
             # If transformed then the following check will no longer be accurate
             # since we do not know the final bounding box for each surface and global model.
             return False
