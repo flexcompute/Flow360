@@ -12,6 +12,12 @@ from flow360.component.simulation import migration, services
 from flow360.component.simulation import units as u
 from flow360.component.simulation.entity_operation import Transformation
 from flow360.component.simulation.folder import Folder
+from flow360.component.simulation.framework.entity_selector import (
+    BodyGroupSelector,
+    EdgeSelector,
+    SurfaceSelector,
+    VolumeSelector,
+)
 from flow360.component.simulation.meshing_param import snappy
 from flow360.component.simulation.meshing_param.edge_params import (
     AngleBasedRefinement,
@@ -201,6 +207,10 @@ __all__ = [
     "Env",
     "Case",
     "create_draft",
+    "SurfaceSelector",
+    "EdgeSelector",
+    "VolumeSelector",
+    "BodyGroupSelector",
     "AngleBasedRefinement",
     "AspectRatioBasedRefinement",
     "ProjectAnisoSpacing",

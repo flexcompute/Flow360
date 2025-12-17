@@ -8,6 +8,7 @@ from flow360.component.project_utils import (
     set_up_params_for_uploading,
     validate_params_with_context,
 )
+from flow360.component.simulation.framework.entity_selector import SurfaceSelector
 from flow360.component.simulation.meshing_param.meshing_specs import MeshingDefaults
 from flow360.component.simulation.meshing_param.params import MeshingParams
 from flow360.component.simulation.meshing_param.volume_params import UniformRefinement
@@ -63,7 +64,7 @@ def test_draft_end_to_end_selector_and_draft_entity_roundtrip(mock_surface_mesh,
     with create_draft(new_run_from=mock_surface_mesh) as draft:
         with SI_unit_system:
             # Shared selector reused in multiple places (same selector_id).
-            shared_selector = Surface.match("fuselage", name="sel_shared_fuselage")
+            shared_selector = SurfaceSelector(name="sel_shared_fuselage").match("fuselage")
             selector_id = shared_selector.selector_id
 
             # Persistent entity picked explicitly to create overlap with selector selection.

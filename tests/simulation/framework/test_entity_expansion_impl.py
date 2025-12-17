@@ -7,6 +7,8 @@ from flow360.component.simulation.framework.entity_expansion_utils import (
 )
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
 from flow360.component.simulation.framework.entity_selector import (
+    EntitySelector,
+    SurfaceSelector,
     compile_glob_cached,
     expand_entity_list_selectors_in_place,
 )
@@ -58,22 +60,37 @@ def test_operator_and_syntax_coverage():
     ]
     registry = _make_registry(surfaces=_mk_pool(pool_names, "Surface"))
 
-    # Build selectors that cover operators和regex/glob
+    # Build selectors that cover operators and patterns
     entity_list = _EntityListStub(
         stored_entities=[],
         selectors=[
             # any_of(["tail"]) -> ["tail"]
-            Surface.any_of(["tail"], name="sel_any_tail"),
+            SurfaceSelector(name="sel_any_tail").any_of(["tail"]),
             # not_any_of(["wing"]) -> ["wingtip","wing-root","wind","tail","tailplane","fuselage","body","leading-wing","my_wing","hinge"]
-            Surface.not_any_of(["wing"], name="sel_not_any_wing"),
+            SurfaceSelector(name="sel_not_any_wing").not_any_of(["wing"]),
             # any_of(["wing","fuselage"]) -> ["wing","fuselage"]
-            Surface.any_of(["wing", "fuselage"], name="sel_any_wing_fuselage"),
+            SurfaceSelector(name="sel_any_wing_fuselage").any_of(["wing", "fuselage"]),
             # not_any_of(["tail","hinge"]) -> ["wing","wingtip","wing-root","wind","tailplane","fuselage","body","leading-wing","my_wing"]
-            Surface.not_any_of(["tail", "hinge"], name="sel_not_any_tail_hinge"),
+            SurfaceSelector(name="sel_not_any_tail_hinge").not_any_of(["tail", "hinge"]),
             # matches("wing*") -> ["wing","wingtip","wing-root"]
-            Surface.match("wing*", name="sel_match_wing_glob"),
+            SurfaceSelector(name="sel_match_wing_glob").match("wing*"),
             # not_matches("^wing$", regex) -> ["wingtip","wing-root","wind","tail","tailplane","fuselage","body","leading-wing","my_wing","hinge"]
-            Surface.not_match("^wing$", name="sel_not_match_exact_wing_regex", syntax="regex"),
+            # Use model_validate for regex since it's not exposed in fluent API
+            EntitySelector.model_validate(
+                {
+                    "name": "sel_not_match_exact_wing_regex",
+                    "target_class": "Surface",
+                    "logic": "AND",
+                    "children": [
+                        {
+                            "attribute": "name",
+                            "operator": "not_matches",
+                            "value": "^wing$",
+                            "non_glob_syntax": "regex",
+                        }
+                    ],
+                }
+            ),
         ],
     )
 
@@ -133,9 +150,11 @@ def test_combined_predicates_and_or():
     entity_list = _EntityListStub(
         stored_entities=[],
         selectors=[
-            Surface.match("wing*", name="sel_and_wing_not_wing", logic="AND").not_any_of(["wing"]),
-            Surface.any_of(["s1"], name="sel_or_s1_tail", logic="OR").any_of(["tail"]),
-            Surface.any_of(["wing", "wing-root"], name="sel_any_wing_or_root"),
+            SurfaceSelector(name="sel_and_wing_not_wing", logic="AND")
+            .match("wing*")
+            .not_any_of(["wing"]),
+            SurfaceSelector(name="sel_or_s1_tail", logic="OR").any_of(["s1"]).any_of(["tail"]),
+            SurfaceSelector(name="sel_any_wing_or_root").any_of(["wing", "wing-root"]),
         ],
     )
 

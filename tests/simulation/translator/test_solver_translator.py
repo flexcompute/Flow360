@@ -13,6 +13,7 @@ from flow360.component.simulation.entity_info import (
     GeometryEntityInfo,
     SurfaceMeshEntityInfo,
 )
+from flow360.component.simulation.framework.entity_selector import SurfaceSelector
 from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.meshing_param.meshing_specs import MeshingDefaults
 from flow360.component.simulation.meshing_param.params import MeshingParams
@@ -166,6 +167,7 @@ from tests.simulation.translator.utils.XV15HoverMRF_param_generator import (
 assertions = unittest.TestCase("__init__")
 
 import flow360.component.simulation.user_code.core.context as context
+from flow360.component.simulation.framework.entity_selector import SurfaceSelector
 from flow360.component.simulation.framework.updater_utils import compare_values
 from flow360.component.simulation.models.volume_models import (
     AngleExpression,
@@ -259,7 +261,7 @@ def get_om6Wing_tutorial_param():
                 # Stage 1.5: Mix selector with explicit entities in SurfaceOutput
                 SurfaceOutput(
                     entities=[
-                        Surface.match("[12]", name="walls_and_symmetry"),
+                        SurfaceSelector(name="walls_and_symmetry").match("[12]"),
                         my_freestream,
                     ],
                     output_format="paraview",
