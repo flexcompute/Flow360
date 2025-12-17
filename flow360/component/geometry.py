@@ -14,6 +14,7 @@ import pydantic as pd
 from flow360.cloud.flow360_requests import (
     GeometryFileMeta,
     LengthUnitType,
+    NewGeometryDependencyRequest,
     NewGeometryRequest,
 )
 from flow360.cloud.heartbeat import post_upload_heartbeat
@@ -23,6 +24,7 @@ from flow360.component.resource_base import (
     AssetMetaBaseModelV2,
     Flow360Resource,
     ResourceDraft,
+    SubmissionMode,
 )
 from flow360.component.simulation.entity_info import GeometryEntityInfo
 from flow360.component.simulation.folder import Folder
@@ -77,36 +79,82 @@ class GeometryMeta(AssetMetaBaseModelV2):
     """
 
     status: GeometryStatus = pd.Field()  # Overshadowing to ensure correct is_final() method
+    dependency: Optional[bool] = pd.Field(False)
 
 
 class GeometryDraft(ResourceDraft):
     """
-    Geometry Draft component
+    Unified Geometry Draft component for uploading geometry files.
+
+    This class handles both:
+    - Creating a new project with geometry as the root asset
+    - Adding geometry as a dependency to an existing project
+
+    The submission mode is determined by how the draft is created (via factory methods
+    on the Geometry class) and affects the behavior of the submit() method.
+
+    All geometries are conceptually equivalent - they are components that can be used
+    to create the final geometry for simulation. The distinction between "root" and
+    "dependency" is only about where the geometry is uploaded (new project vs existing
+    project), not about any fundamental difference in the geometry itself.
     """
 
     # pylint: disable=too-many-arguments
     def __init__(
         self,
         file_names: Union[List[str], str],
-        project_name: str = None,
-        solver_version: str = None,
         length_unit: LengthUnitType = "m",
         tags: List[str] = None,
+        # Project root context (for backward compatibility with existing API)
+        project_name: str = None,
+        solver_version: str = None,
         folder: Optional[Folder] = None,
     ):
+        """
+        Initialize a GeometryDraft with common attributes.
+
+        For creating a new project (root geometry):
+            Use Geometry.from_file() which sets project_name, solver_version, folder
+
+        For adding to existing project (dependency geometry):
+            Use Geometry.from_file_for_project() which sets the dependency context
+
+        Parameters
+        ----------
+        file_names : Union[List[str], str]
+            Path(s) to the geometry file(s)
+        length_unit : LengthUnitType, optional
+            Unit of length (default is "m")
+        tags : List[str], optional
+            Tags to assign to the geometry (default is None)
+        project_name : str, optional
+            Name of the project (for project root mode)
+        solver_version : str, optional
+            Solver version (for project root mode)
+        folder : Optional[Folder], optional
+            Parent folder (for project root mode)
+        """
         self._file_names = file_names
-        self.project_name = project_name
         self.tags = tags if tags is not None else []
         self.length_unit = length_unit
-        self.solver_version = solver_version
-        self.folder = folder
-        self._validate()
+
+        # Submission context - determines behavior of submit()
+        self._submission_mode: Optional[SubmissionMode] = None
+        self._submission_context: dict = {}
+
+        # For backward compatibility: if project root params are provided, set context
+        if project_name is not None or solver_version is not None:
+            self.set_project_root_context(
+                project_name=project_name,
+                solver_version=solver_version,
+                folder=folder,
+            )
+
+        self._validate_geometry()
         ResourceDraft.__init__(self)
 
-    def _validate(self):
-        self._validate_geometry()
-
     def _validate_geometry(self):
+        """Validate geometry files and length unit."""
         if not isinstance(self.file_names, list) or len(self.file_names) == 0:
             raise Flow360FileError("file_names field has to be a non-empty list.")
 
@@ -119,54 +167,70 @@ class GeometryDraft(ResourceDraft):
             if not os.path.exists(geometry_file):
                 raise Flow360FileError(f"{geometry_file} not found.")
 
-        if self.project_name is None:
-            self.project_name = os.path.splitext(os.path.basename(self.file_names[0]))[0]
-            log.warning(
-                "`project_name` is not provided. "
-                f"Using the first geometry file name {self.project_name} as project name."
-            )
-
         if self.length_unit not in LengthUnitType.__args__:
             raise Flow360ValueError(
                 f"specified length_unit : {self.length_unit} is invalid. "
                 f"Valid options are: {list(LengthUnitType.__args__)}"
             )
 
-        if self.solver_version is None:
-            raise Flow360ValueError("solver_version field is required.")
-
     @property
     def file_names(self) -> List[str]:
-        """geometry file"""
+        """Geometry file paths as a list."""
         if isinstance(self._file_names, str):
             return [self._file_names]
         return self._file_names
 
-    # pylint: disable=protected-access
-    # pylint: disable=duplicate-code
-    def submit(self, description="", progress_callback=None, run_async=False) -> Geometry:
+    def set_project_root_context(
+        self,
+        project_name: str,
+        solver_version: str,
+        folder: Optional[Folder] = None,
+    ) -> None:
         """
-        Submit geometry to cloud and create a new project
+        Configure this draft to create a new project with geometry as root.
 
-        Parameters
-        ----------
-        description : str, optional
-            description of the project, by default ""
-        progress_callback : callback, optional
-            Use for custom progress bar, by default None
-        run_async : bool, optional
-            Whether to submit Geometry asynchronously (default is False).
-
-        Returns
-        -------
-        Geometry
-            Geometry object with id
+        Called internally by Geometry.from_file().
         """
+        self._submission_mode = SubmissionMode.PROJECT_ROOT
+        self._submission_context = {
+            "project_name": project_name,
+            "solver_version": solver_version,
+            "folder": folder,
+        }
 
-        self._validate()
+    def set_dependency_context(
+        self,
+        name: str,
+        project_id: str,
+    ) -> None:
+        """
+        Configure this draft to add geometry to an existing project.
 
-        if not shared_account_confirm_proceed():
-            raise Flow360ValueError("User aborted resource submit.")
+        Called internally by Geometry.from_file_for_project().
+        """
+        self._submission_mode = SubmissionMode.PROJECT_DEPENDENCY
+        self._submission_context = {
+            "name": name,
+            "project_id": project_id,
+        }
+
+    def _validate_project_root_context(self):
+        """Validate context for project root submission."""
+        project_name = self._submission_context.get("project_name")
+        solver_version = self._submission_context.get("solver_version")
+
+        if project_name is None:
+            project_name = os.path.splitext(os.path.basename(self.file_names[0]))[0]
+            self._submission_context["project_name"] = project_name
+            log.warning(
+                "`project_name` is not provided. "
+                f"Using the first geometry file name {project_name} as project name."
+            )
+        if solver_version is None:
+            raise Flow360ValueError("solver_version field is required.")
+
+    def _preprocess_mapbc_files(self) -> List[str]:
+        """Find and return associated mapbc files for UGRID geometry files."""
         mapbc_files = []
         for file_path in self.file_names:
             mesh_parser = MeshNameParser(file_path)
@@ -175,12 +239,19 @@ class GeometryDraft(ResourceDraft):
             ):
                 file_name_mapbc = mesh_parser.get_associated_mapbc_filename()
                 mapbc_files.append(file_name_mapbc)
+        return mapbc_files
 
-        # Files with 'main' type are treated as MASTER_FILES and are processed after uploading
-        # 'dependency' type files are uploaded only but not processed.
+    def _create_project_root_resource(
+        self, mapbc_files: List[str], description: str = ""
+    ) -> GeometryMeta:
+        """Create a new geometry resource that will be the root of a new project."""
+        project_name = self._submission_context["project_name"]
+        solver_version = self._submission_context["solver_version"]
+        folder = self._submission_context.get("folder")
+
         req = NewGeometryRequest(
-            name=self.project_name,
-            solver_version=self.solver_version,
+            name=project_name,
+            solver_version=solver_version,
             tags=self.tags,
             files=[
                 GeometryFileMeta(
@@ -189,38 +260,149 @@ class GeometryDraft(ResourceDraft):
                 )
                 for file_path in self.file_names + mapbc_files
             ],
-            parent_folder_id=self.folder.id if self.folder else "ROOT.FLOW360",
+            parent_folder_id=folder.id if folder else "ROOT.FLOW360",
             length_unit=self.length_unit,
             description=description,
         )
 
-        ##:: Create new Geometry resource and project
         resp = RestApi(GeometryInterface.endpoint).post(req.dict())
-        info = GeometryMeta(**resp)
+        return GeometryMeta(**resp)
 
-        ##:: upload geometry files
+    def _create_dependency_resource(
+        self, mapbc_files: List[str], description: str = "", draft_id: str = "", icon: str = ""
+    ) -> GeometryMeta:
+        """Create a geometry resource as a dependency in an existing project."""
+        name = self._submission_context["name"]
+        project_id = self._submission_context["project_id"]
+
+        req = NewGeometryDependencyRequest(
+            name=name,
+            project_id=project_id,
+            draft_id=draft_id,
+            files=[
+                GeometryFileMeta(
+                    name=os.path.basename(file_path),
+                    type="main",
+                )
+                for file_path in self.file_names + mapbc_files
+            ],
+            length_unit=self.length_unit,
+            tags=self.tags,
+            description=description,
+            icon=icon,
+        )
+
+        resp = RestApi(GeometryInterface.endpoint).post(req.dict(), method="dependency")
+        return GeometryMeta(**resp)
+
+    def _upload_files(
+        self,
+        info: GeometryMeta,
+        mapbc_files: List[str],
+        progress_callback=None,
+    ) -> Geometry:
+        """Upload geometry files to the cloud."""
+        # pylint: disable=protected-access
         geometry = Geometry(info.id)
         heartbeat_info = {"resourceId": info.id, "resourceType": "Geometry", "stop": False}
+
         # Keep posting the heartbeat to keep server patient about uploading.
         heartbeat_thread = threading.Thread(target=post_upload_heartbeat, args=(heartbeat_info,))
         heartbeat_thread.start()
-        for file_path in self.file_names + mapbc_files:
-            geometry._webapi._upload_file(
-                remote_file_name=os.path.basename(file_path),
-                file_name=file_path,
-                progress_callback=progress_callback,
-            )
-        heartbeat_info["stop"] = True
-        heartbeat_thread.join()
-        ##:: kick off pipeline
+
+        try:
+            for file_path in self.file_names + mapbc_files:
+                geometry._webapi._upload_file(
+                    remote_file_name=os.path.basename(file_path),
+                    file_name=file_path,
+                    progress_callback=progress_callback,
+                )
+        finally:
+            heartbeat_info["stop"] = True
+            heartbeat_thread.join()
+
+        # Kick off pipeline
         geometry._webapi._complete_upload()
-        log.info(f"Geometry successfully submitted: {geometry.short_description()}")
-        # setting _id will disable "WARNING: You have not submitted..." warning message
+
+        # Setting _id will disable "WARNING: You have not submitted..." warning message
         self._id = info.id
+
+        return geometry
+
+    # pylint: disable=duplicate-code
+    def submit(
+        self,
+        description: str = "",
+        progress_callback=None,
+        run_async: bool = False,
+        draft_id: str = "",
+        icon: str = "",
+    ) -> Geometry:
+        """
+        Submit geometry to cloud.
+
+        The behavior depends on how this draft was created:
+        - If created via Geometry.from_file(): Creates a new project with this geometry as root
+        - If created via Geometry.from_file_for_project(): Adds geometry to an existing project
+
+        Parameters
+        ----------
+        description : str, optional
+            Description of the geometry/project (default is "")
+        progress_callback : callback, optional
+            Use for custom progress bar (default is None)
+        run_async : bool, optional
+            Whether to return immediately after upload without waiting for processing
+            (default is False)
+        draft_id : str, optional
+            ID of the draft to add geometry to (only used for dependency mode, default is "")
+        icon : str, optional
+            Icon for the geometry (only used for dependency mode, default is "")
+
+        Returns
+        -------
+        Geometry
+            Geometry object with id
+
+        Raises
+        ------
+        Flow360ValueError
+            If submission context is not set or user aborts
+        """
+        if self._submission_mode is None:
+            raise Flow360ValueError(
+                "Submission context not set. Use Geometry.from_file() or "
+                "Geometry.from_file_for_project() to create a properly configured draft."
+            )
+
+        self._validate_geometry()
+
+        # Validate project root context if applicable
+        if self._submission_mode == SubmissionMode.PROJECT_ROOT:
+            self._validate_project_root_context()
+
+        if not shared_account_confirm_proceed():
+            raise Flow360ValueError("User aborted resource submit.")
+
+        mapbc_files = self._preprocess_mapbc_files()
+
+        # Create the geometry resource based on submission mode
+        if self._submission_mode == SubmissionMode.PROJECT_ROOT:
+            info = self._create_project_root_resource(mapbc_files, description)
+            log_message = "Geometry successfully submitted"
+        else:
+            info = self._create_dependency_resource(mapbc_files, description, draft_id, icon)
+            log_message = "Supplementary geometry resources successfully submitted"
+
+        # Upload files
+        geometry = self._upload_files(info, mapbc_files, progress_callback)
+
+        log.info(f"{log_message}: {geometry.short_description()}")
+
         if run_async:
             return geometry
+
         log.info("Waiting for geometry to be processed.")
-        # uses from_cloud to ensure all metadata is ready before yielding the object
         return Geometry.from_cloud(info.id)
 
 
@@ -320,6 +502,48 @@ class Geometry(AssetBase):
         return super().from_file(
             file_names, project_name, solver_version, length_unit, tags, folder=folder
         )
+
+    @classmethod
+    # pylint: disable=too-many-arguments
+    def from_file_for_project(
+        cls,
+        name: str,
+        file_names: Union[List[str], str],
+        project_id: str,
+        length_unit: LengthUnitType = "m",
+        tags: List[str] = None,
+    ) -> GeometryDraft:
+        """
+        Create a geometry draft for adding to an existing project.
+
+        This creates a geometry that will be added as a supplementary component
+        (dependency) to an existing project, rather than creating a new project.
+
+        Parameters
+        ----------
+        name : str
+            Name for the geometry component
+        file_names : Union[List[str], str]
+            Path(s) to the geometry file(s)
+        project_id : str
+            ID of the existing project to add this geometry to
+        length_unit : LengthUnitType, optional
+            Unit of length (default is "m")
+        tags : List[str], optional
+            Tags to assign to the geometry (default is None)
+
+        Returns
+        -------
+        GeometryDraft
+            A draft configured for submission to an existing project
+        """
+        draft = GeometryDraft(
+            file_names=file_names,
+            length_unit=length_unit,
+            tags=tags,
+        )
+        draft.set_dependency_context(name=name, project_id=project_id)
+        return draft
 
     def show_available_groupings(self, verbose_mode: bool = False):
         """Display all the possible groupings for faces and edges"""

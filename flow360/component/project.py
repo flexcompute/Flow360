@@ -1157,6 +1157,82 @@ class Project(pd.BaseModel):
             run_async=run_async,
         )
 
+    def _import_dependency_resource_from_file(
+        self,
+        *,
+        files: Union[GeometryFiles, SurfaceMeshFile],
+        name: str = None,
+        length_unit: LengthUnitType = "m",
+        tags: List[str] = None,
+        run_async: bool = False,
+    ):
+        # pylint:disable = protected-access
+        files._check_files_existence()
+
+        if isinstance(files, GeometryFiles):
+            draft = Geometry.from_file_for_project(
+                name=name,
+                file_names=files.file_names,
+                project_id=self.id,
+                length_unit=length_unit,
+                tags=tags,
+            )
+        else:
+            draft = None
+
+        dependency_resource = draft.submit(run_async=run_async)
+        return dependency_resource
+
+    def import_geometry_dependency_from_file(
+        self,
+        file: Union[str, list[str]],
+        /,
+        name: str = None,
+        length_unit: LengthUnitType = "m",
+        tags: List[str] = None,
+        run_async: bool = False,
+    ):
+        """
+        Imports a geometry dependency resource from local geometry files into the project.
+
+        Parameters
+        ----------
+        file : Union[str, list[str]] (positional argument only)
+            Geometry file paths.
+        name : str, optional
+            Name of the geometry dependency resource (default is None).
+        length_unit : LengthUnitType, optional
+            Unit of length (default is "m").
+        tags : list of str, optional
+            Tags to assign to the geometry dependency resource (default is None).
+        run_async : bool, optional
+            Whether to create the geometry dependency resource asynchronously (default is False).
+
+        Returns
+        -------
+        Geometry
+            An instance of the geometry resource added to the project.
+
+        Raises
+        ------
+        Flow360FileError
+            If the geometry dependency resource cannot be initialized from the file.
+        """
+
+        try:
+            validated_files = GeometryFiles(file_names=file)
+        except pd.ValidationError as err:
+            # pylint:disable = raise-missing-from
+            raise Flow360FileError(f"Geometry file error: {str(err)}")
+
+        return self._import_dependency_resource_from_file(
+            files=validated_files,
+            name=name,
+            length_unit=length_unit,
+            tags=tags,
+            run_async=run_async,
+        )
+
     @classmethod
     def _get_user_requested_entity_info(
         cls,

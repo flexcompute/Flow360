@@ -171,7 +171,19 @@ class AssetBase(metaclass=ABCMeta):
         ##>> Check if the current asset is project's root item.
         ##>> If so then we need to wait for its pipeline to finish generating the simulation json.
         _resp = RestApi(ProjectInterface.endpoint, id=asset.project_id).get()
-        if asset.id == _resp["rootItemId"]:
+        dependency_ids = []
+        # pylint: disable=protected-access
+        if asset._cloud_resource_type_name in ["Geometry", "SurfaceMesh"]:
+            _resp_dependency = RestApi(ProjectInterface.endpoint, id=asset.project_id).get(
+                method="dependency"
+            )
+            _dependency_resources = (
+                _resp_dependency["geometryDependencyResources"]
+                if asset._cloud_resource_type_name == "Geometry"
+                else _resp_dependency["surfaceMeshDependencyResources"]
+            )
+            dependency_ids = [_item["id"] for _item in _dependency_resources]
+        if asset.id == _resp["rootItemId"] or asset.id in dependency_ids:
             log.debug("Current asset is project's root item. Waiting for pipeline to finish.")
             # pylint: disable=protected-access
             asset.wait()
