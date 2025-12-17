@@ -61,6 +61,7 @@ from flow360.component.simulation.validation.validation_context import (
     ParamsValidationInfo,
     TimeSteppingType,
     contextual_field_validator,
+    contextual_model_validator,
     get_validation_levels,
 )
 from flow360.component.simulation.validation.validation_utils import (
@@ -736,10 +737,11 @@ class RenderOutputGroup(Flow360BaseModel):
         """Ensure all boundaries will be present after mesher"""
         return validate_entity_list_surface_existence(value, param_info)
 
-    @pd.model_validator(mode="after")
-    def check_not_empty(self):
+    @contextual_model_validator(mode="after")
+    def check_not_empty(self, param_info: ParamsValidationInfo):
         """Verify the render group has at least one entity assigned to it"""
-        if not self.surfaces and not self.slices and not self.isosurfaces:
+        expanded_surfaces = param_info.expand_entity_list(self.surfaces)
+        if not expanded_surfaces and not self.slices and not self.isosurfaces:
             raise ValueError(
                 "Render group should include at least one entity (surface, slice or isosurface)"
             )
