@@ -628,7 +628,6 @@ class Surface(_SurfaceEntityBase):
 class ImportedSurface(EntityBase):
     """ImportedSurface for post-processing"""
 
-    private_attribute_registry_bucket_name: Literal["SurfaceEntityType"] = "SurfaceEntityType"
     private_attribute_entity_type_name: Literal["ImportedSurface"] = pd.Field(
         "ImportedSurface", frozen=True
     )
