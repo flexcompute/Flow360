@@ -43,6 +43,7 @@ from flow360.component.simulation.draft_context.context import (
 )
 from flow360.component.simulation.entity_info import GeometryEntityInfo
 from flow360.component.simulation.folder import Folder
+from flow360.component.simulation.primitives import ImportedSurface
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.web.asset_base import AssetBase
@@ -1161,7 +1162,7 @@ class Project(pd.BaseModel):
         self,
         *,
         files: Union[GeometryFiles, SurfaceMeshFile],
-        name: str = None,
+        name: str,
         length_unit: LengthUnitType = "m",
         tags: List[str] = None,
         run_async: bool = False,
@@ -1177,8 +1178,16 @@ class Project(pd.BaseModel):
                 length_unit=length_unit,
                 tags=tags,
             )
+        elif isinstance(files, SurfaceMeshFile):
+            draft = SurfaceMeshV2.from_file_for_project(
+                name=name,
+                file_name=files.file_names,
+                project_id=self.id,
+                length_unit=length_unit,
+                tags=tags,
+            )
         else:
-            draft = None
+            raise Flow360ValueError(f"Unsupported file type: {type(files)}")
 
         dependency_resource = draft.submit(run_async=run_async)
         return dependency_resource
@@ -1187,7 +1196,7 @@ class Project(pd.BaseModel):
         self,
         file: Union[str, list[str]],
         /,
-        name: str = None,
+        name: str,
         length_unit: LengthUnitType = "m",
         tags: List[str] = None,
         run_async: bool = False,
@@ -1199,8 +1208,8 @@ class Project(pd.BaseModel):
         ----------
         file : Union[str, list[str]] (positional argument only)
             Geometry file paths.
-        name : str, optional
-            Name of the geometry dependency resource (default is None).
+        name : str
+            Name of the geometry dependency resource.
         length_unit : LengthUnitType, optional
             Unit of length (default is "m").
         tags : list of str, optional
@@ -1232,6 +1241,67 @@ class Project(pd.BaseModel):
             tags=tags,
             run_async=run_async,
         )
+
+    def import_surface_mesh_dependency_from_file(
+        self,
+        file: str,
+        /,
+        name: str,
+        length_unit: LengthUnitType = "m",
+        tags: List[str] = None,
+        run_async: bool = False,
+    ) -> ImportedSurface:
+        """
+        Imports a surface mesh dependency resource from a local surface mesh file into the project.
+
+        Parameters
+        ----------
+        file : str (positional argument only)
+            Surface mesh file path.
+        name : str
+            Name of the surface mesh dependency resource.
+        length_unit : LengthUnitType, optional
+            Unit of length (default is "m").
+        tags : list of str, optional
+            Tags to assign to the surface mesh dependency resource (default is None).
+        run_async : bool, optional
+            Whether to create the surface mesh dependency resource asynchronously (default is False).
+
+        Returns
+        -------
+        ImportedSurface
+            An ImportedSurface object with the file name and surface mesh ID.
+
+        Raises
+        ------
+        Flow360FileError
+            If the surface mesh dependency resource cannot be initialized from the file.
+        """
+
+        try:
+            validated_files = SurfaceMeshFile(file_names=file)
+        except pd.ValidationError as err:
+            # pylint:disable = raise-missing-from
+            raise Flow360FileError(f"Surface mesh file error: {str(err)}")
+
+        surface_mesh = self._import_dependency_resource_from_file(
+            files=validated_files,
+            name=name,
+            length_unit=length_unit,
+            tags=tags,
+            run_async=run_async,
+        )
+
+        # Return an ImportedSurface object instead of SurfaceMeshV2
+        # The name should be the same as the input file name
+        # The surface_mesh_id should be the ID of the surface mesh returned from the API
+        imported_surface = ImportedSurface(
+            name=name,
+            file_name=file,
+            surface_mesh_id=surface_mesh.id,
+        )
+
+        return imported_surface
 
     @classmethod
     def _get_user_requested_entity_info(

@@ -11,7 +11,11 @@ from typing import Any, List, Optional
 
 import pydantic as pd
 
-from flow360.cloud.flow360_requests import LengthUnitType, NewSurfaceMeshRequestV2
+from flow360.cloud.flow360_requests import (
+    LengthUnitType,
+    NewSurfaceMeshDependencyRequest,
+    NewSurfaceMeshRequestV2,
+)
 from flow360.cloud.heartbeat import post_upload_heartbeat
 from flow360.cloud.rest_api import RestApi
 from flow360.component.interfaces import SurfaceMeshInterfaceV2
@@ -19,6 +23,7 @@ from flow360.component.resource_base import (
     AssetMetaBaseModelV2,
     Flow360Resource,
     ResourceDraft,
+    SubmissionMode,
 )
 from flow360.component.simulation.entity_info import SurfaceMeshEntityInfo
 from flow360.component.simulation.folder import Folder
@@ -76,48 +81,87 @@ class SurfaceMeshMetaV2(AssetMetaBaseModelV2):
 
     file_name: Optional[str] = pd.Field(None, alias="fileName")
     status: SurfaceMeshStatusV2 = pd.Field()  # Overshadowing to ensure correct is_final() method
+    dependency: Optional[bool] = pd.Field(False)
 
 
 class SurfaceMeshDraftV2(ResourceDraft):
     """
-    Surface mesh Draft component
+    Unified Surface Mesh Draft component for uploading surface mesh files.
+
+    This class handles both:
+    - Creating a new project with surface mesh as the root asset
+    - Adding surface mesh as a dependency to an existing project
+
+    The submission mode is determined by how the draft is created (via factory methods
+    on the SurfaceMeshV2 class) and affects the behavior of the submit() method.
+
+    All surface meshes are conceptually equivalent - they are components that can be used
+    to create the final mesh for simulation. The distinction between "root" and
+    "dependency" is only about where the surface mesh is uploaded (new project vs existing
+    project), not about any fundamental difference in the surface mesh itself.
     """
 
     # pylint: disable=too-many-arguments
     def __init__(
         self,
         file_names: str,
-        project_name: str = None,
-        solver_version: str = None,
         length_unit: LengthUnitType = "m",
         tags: List[str] = None,
+        # Project root context (for backward compatibility with existing API)
+        project_name: str = None,
+        solver_version: str = None,
         folder: Optional[Folder] = None,
     ):
+        """
+        Initialize a SurfaceMeshDraftV2 with common attributes.
+
+        For creating a new project (root surface mesh):
+            Use SurfaceMeshV2.from_file() which sets project_name, solver_version, folder
+
+        For adding to existing project (dependency surface mesh):
+            Use SurfaceMeshV2.from_file_for_project() which sets the dependency context
+
+        Parameters
+        ----------
+        file_names : str
+            Path to the surface mesh file
+        length_unit : LengthUnitType, optional
+            Unit of length (default is "m")
+        tags : List[str], optional
+            Tags to assign to the surface mesh (default is None)
+        project_name : str, optional
+            Name of the project (for project root mode)
+        solver_version : str, optional
+            Solver version (for project root mode)
+        folder : Optional[Folder], optional
+            Parent folder (for project root mode)
+        """
         self._file_name = file_names
-        self.project_name = project_name
         self.tags = tags if tags is not None else []
         self.length_unit = length_unit
-        self.solver_version = solver_version
-        self.folder = folder
-        self._validate()
+
+        # Submission context - determines behavior of submit()
+        self._submission_mode: Optional[SubmissionMode] = None
+        self._submission_context: dict = {}
+
+        # For backward compatibility: if project root params are provided, set context
+        if project_name is not None or solver_version is not None:
+            self.set_project_root_context(
+                project_name=project_name,
+                solver_version=solver_version,
+                folder=folder,
+            )
+
+        self._validate_surface_mesh()
         ResourceDraft.__init__(self)
 
-    def _validate(self):
-        self._validate_surface_mesh()
-
     def _validate_surface_mesh(self):
+        """Validate surface mesh file and length unit."""
         if self._file_name is not None:
             try:
                 SurfaceMeshFile(file_names=self._file_name)
             except pd.ValidationError as e:
                 raise Flow360FileError(str(e)) from e
-
-        if self.project_name is None:
-            self.project_name = os.path.splitext(os.path.basename(self._file_name))[0]
-            log.warning(
-                "`project_name` is not provided. "
-                f"Using the file name {self.project_name} as project name."
-            )
 
         if self.length_unit not in LengthUnitType.__args__:
             raise Flow360ValueError(
@@ -125,89 +169,216 @@ class SurfaceMeshDraftV2(ResourceDraft):
                 f"Valid options are: {list(LengthUnitType.__args__)}"
             )
 
-        if self.solver_version is None:
+    def set_project_root_context(
+        self,
+        project_name: str,
+        solver_version: str,
+        folder: Optional[Folder] = None,
+    ) -> None:
+        """
+        Configure this draft to create a new project with surface mesh as root.
+
+        Called internally by SurfaceMeshV2.from_file().
+        """
+        self._submission_mode = SubmissionMode.PROJECT_ROOT
+        self._submission_context = {
+            "project_name": project_name,
+            "solver_version": solver_version,
+            "folder": folder,
+        }
+
+    def set_dependency_context(
+        self,
+        name: str,
+        project_id: str,
+    ) -> None:
+        """
+        Configure this draft to add surface mesh to an existing project.
+
+        Called internally by SurfaceMeshV2.from_file_for_project().
+        """
+        self._submission_mode = SubmissionMode.PROJECT_DEPENDENCY
+        self._submission_context = {
+            "name": name,
+            "project_id": project_id,
+        }
+
+    def _validate_project_root_context(self):
+        """Validate context for project root submission."""
+        project_name = self._submission_context.get("project_name")
+        solver_version = self._submission_context.get("solver_version")
+
+        if project_name is None:
+            project_name = os.path.splitext(os.path.basename(self._file_name))[0]
+            self._submission_context["project_name"] = project_name
+            log.warning(
+                "`project_name` is not provided. "
+                f"Using the file name {project_name} as project name."
+            )
+        if solver_version is None:
             raise Flow360ValueError("solver_version field is required.")
+
+    def _create_project_root_resource(self, description: str = "") -> SurfaceMeshMetaV2:
+        """Create a new surface mesh resource that will be the root of a new project."""
+        project_name = self._submission_context["project_name"]
+        solver_version = self._submission_context["solver_version"]
+        folder = self._submission_context.get("folder")
+
+        req = NewSurfaceMeshRequestV2(
+            name=project_name,
+            solver_version=solver_version,
+            tags=self.tags,
+            file_name=self._file_name,
+            parent_folder_id=folder.id if folder else "ROOT.FLOW360",
+            length_unit=self.length_unit,
+            description=description,
+        )
+
+        resp = RestApi(SurfaceMeshInterfaceV2.endpoint).post(req.dict())
+        return SurfaceMeshMetaV2(**resp)
+
+    def _create_dependency_resource(
+        self, description: str = "", draft_id: str = "", icon: str = ""
+    ) -> SurfaceMeshMetaV2:
+        """Create a surface mesh resource as a dependency in an existing project."""
+        name = self._submission_context["name"]
+        project_id = self._submission_context["project_id"]
+
+        req = NewSurfaceMeshDependencyRequest(
+            name=name,
+            project_id=project_id,
+            draft_id=draft_id,
+            file_name=self._file_name,
+            length_unit=self.length_unit,
+            tags=self.tags,
+            description=description,
+            icon=icon,
+        )
+
+        resp = RestApi(SurfaceMeshInterfaceV2.endpoint).post(req.dict(), method="dependency")
+        return SurfaceMeshMetaV2(**resp)
+
+    def _upload_files(
+        self,
+        info: SurfaceMeshMetaV2,
+        progress_callback=None,
+    ) -> SurfaceMeshV2:
+        """Upload surface mesh files to the cloud."""
+        # pylint: disable=protected-access
+        surface_mesh = SurfaceMeshV2(info.id)
+        heartbeat_info = {"resourceId": info.id, "resourceType": "SurfaceMesh", "stop": False}
+
+        # Keep posting the heartbeat to keep server patient about uploading.
+        heartbeat_thread = threading.Thread(target=post_upload_heartbeat, args=(heartbeat_info,))
+        heartbeat_thread.start()
+
+        try:
+            surface_mesh._webapi._upload_file(
+                remote_file_name=info.file_name,
+                file_name=self._file_name,
+                progress_callback=progress_callback,
+            )
+
+            mesh_parser = MeshNameParser(self._file_name)
+            remote_mesh_parser = MeshNameParser(info.file_name)
+            if mesh_parser.is_ugrid():
+                # Upload the mapbc file too.
+                expected_local_mapbc_file = mesh_parser.get_associated_mapbc_filename()
+                if os.path.isfile(expected_local_mapbc_file):
+                    surface_mesh._webapi._upload_file(
+                        remote_file_name=remote_mesh_parser.get_associated_mapbc_filename(),
+                        file_name=mesh_parser.get_associated_mapbc_filename(),
+                        progress_callback=progress_callback,
+                    )
+                else:
+                    log.warning(
+                        f"The expected mapbc file {expected_local_mapbc_file} specifying "
+                        "user-specified boundary names doesn't exist."
+                    )
+        finally:
+            heartbeat_info["stop"] = True
+            heartbeat_thread.join()
+
+        # Kick off pipeline
+        surface_mesh._webapi._complete_upload()
+
+        # Setting _id will disable "WARNING: You have not submitted..." warning message
+        self._id = info.id
+
+        return surface_mesh
 
     # pylint: disable=protected-access
     # pylint: disable=duplicate-code
-    def submit(self, description="", progress_callback=None, run_async=False) -> SurfaceMeshV2:
+    def submit(
+        self,
+        description: str = "",
+        progress_callback=None,
+        run_async: bool = False,
+        draft_id: str = "",
+        icon: str = "",
+    ) -> SurfaceMeshV2:
         """
-        Submit surface mesh file to cloud and create a new project
+        Submit surface mesh to cloud.
+
+        The behavior depends on how this draft was created:
+        - If created via SurfaceMeshV2.from_file(): Creates a new project with this surface mesh as root
+        - If created via SurfaceMeshV2.from_file_for_project(): Adds surface mesh to an existing project
 
         Parameters
         ----------
         description : str, optional
-            description of the project, by default ""
+            Description of the surface mesh/project (default is "")
         progress_callback : callback, optional
-            Use for custom progress bar, by default None
+            Use for custom progress bar (default is None)
         run_async : bool, optional
-            Whether to submit surface mesh asynchronously (default is False).
+            Whether to return immediately after upload without waiting for processing
+            (default is False)
+        draft_id : str, optional
+            ID of the draft to add surface mesh to (only used for dependency mode, default is "")
+        icon : str, optional
+            Icon for the surface mesh (only used for dependency mode, default is "")
 
         Returns
         -------
         SurfaceMeshV2
             SurfaceMeshV2 object with id
-        """
 
-        self._validate()
+        Raises
+        ------
+        Flow360ValueError
+            If submission context is not set or user aborts
+        """
+        if self._submission_mode is None:
+            raise Flow360ValueError(
+                "Submission context not set. Use SurfaceMeshV2.from_file() or "
+                "SurfaceMeshV2.from_file_for_project() to create a properly configured draft."
+            )
+
+        self._validate_surface_mesh()
+
+        # Validate project root context if applicable
+        if self._submission_mode == SubmissionMode.PROJECT_ROOT:
+            self._validate_project_root_context()
 
         if not shared_account_confirm_proceed():
             raise Flow360ValueError("User aborted resource submit.")
 
-        # The first geometry is assumed to be the main one.
-        req = NewSurfaceMeshRequestV2(
-            name=self.project_name,
-            solver_version=self.solver_version,
-            tags=self.tags,
-            file_name=self._file_name,
-            parent_folder_id=self.folder.id if self.folder else "ROOT.FLOW360",
-            length_unit=self.length_unit,
-            description=description,
-        )
+        # Create the surface mesh resource based on submission mode
+        if self._submission_mode == SubmissionMode.PROJECT_ROOT:
+            info = self._create_project_root_resource(description)
+            log_message = "Surface mesh successfully submitted"
+        else:
+            info = self._create_dependency_resource(description, draft_id, icon)
+            log_message = "Supplementary surface mesh resources successfully submitted"
 
-        ##:: Create new Geometry resource and project
-        resp = RestApi(SurfaceMeshInterfaceV2.endpoint).post(req.dict())
-        info = SurfaceMeshMetaV2(**resp)
+        # Upload files
+        surface_mesh = self._upload_files(info, progress_callback)
 
-        ##:: upload surface mesh file
-        surface_mesh = SurfaceMeshV2(info.id)
-        heartbeat_info = {"resourceId": info.id, "resourceType": "SurfaceMesh", "stop": False}
-        # Keep posting the heartbeat to keep server patient about uploading.
-        heartbeat_thread = threading.Thread(target=post_upload_heartbeat, args=(heartbeat_info,))
-        heartbeat_thread.start()
+        log.info(f"{log_message}: {surface_mesh.short_description()}")
 
-        surface_mesh._webapi._upload_file(
-            remote_file_name=info.file_name,
-            file_name=self._file_name,
-            progress_callback=progress_callback,
-        )
-
-        mesh_parser = MeshNameParser(self._file_name)
-        remote_mesh_parser = MeshNameParser(info.file_name)
-        if mesh_parser.is_ugrid():
-            # Upload the mapbc file too.
-            expected_local_mapbc_file = mesh_parser.get_associated_mapbc_filename()
-            if os.path.isfile(expected_local_mapbc_file):
-                surface_mesh._webapi._upload_file(
-                    remote_file_name=remote_mesh_parser.get_associated_mapbc_filename(),
-                    file_name=mesh_parser.get_associated_mapbc_filename(),
-                    progress_callback=progress_callback,
-                )
-            else:
-                log.warning(
-                    f"The expected mapbc file {expected_local_mapbc_file} specifying "
-                    "user-specified boundary names doesn't exist."
-                )
-
-        heartbeat_info["stop"] = True
-        heartbeat_thread.join()
-        ##:: kick off pipeline
-        surface_mesh._webapi._complete_upload()
-        log.info(f"Surface mesh successfully submitted: {surface_mesh.short_description()}")
-        # setting _id will disable "WARNING: You have not submitted..." warning message
-        self._id = info.id
         if run_async:
             return surface_mesh
+
         log.info("Waiting for surface mesh to be processed.")
         surface_mesh._webapi.get_info()
         # uses from_cloud to ensure all metadata is ready before yielding the object
@@ -310,6 +481,48 @@ class SurfaceMeshV2(AssetBase):
             tags=tags,
             folder=folder,
         )
+
+    @classmethod
+    # pylint: disable=too-many-arguments
+    def from_file_for_project(
+        cls,
+        name: str,
+        file_name: str,
+        project_id: str,
+        length_unit: LengthUnitType = "m",
+        tags: List[str] = None,
+    ) -> SurfaceMeshDraftV2:
+        """
+        Create a surface mesh draft for adding to an existing project.
+
+        This creates a surface mesh that will be added as a supplementary component
+        (dependency) to an existing project, rather than creating a new project.
+
+        Parameters
+        ----------
+        name : str
+            Name for the surface mesh component
+        file_name : str
+            Path to the surface mesh file (*.cgns, *.ugrid)
+        project_id : str
+            ID of the existing project to add this surface mesh to
+        length_unit : LengthUnitType, optional
+            Unit of length (default is "m")
+        tags : List[str], optional
+            Tags to assign to the surface mesh (default is None)
+
+        Returns
+        -------
+        SurfaceMeshDraftV2
+            A draft configured for submission to an existing project
+        """
+        draft = SurfaceMeshDraftV2(
+            file_names=file_name,
+            length_unit=length_unit,
+            tags=tags,
+        )
+        draft.set_dependency_context(name=name, project_id=project_id)
+        return draft
 
     # pylint: disable=useless-parent-delegation
     def get_dynamic_default_settings(self, simulation_dict: dict):
