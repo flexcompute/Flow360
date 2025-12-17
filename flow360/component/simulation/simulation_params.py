@@ -439,11 +439,11 @@ class SimulationParams(_ParamModelBase):
             v.append(Fluid(private_attribute_id="__default_fluid"))
         return v
 
-    @pd.field_validator("models", mode="after")
+    @contextual_field_validator("models", mode="after")
     @classmethod
-    def check_parent_volume_is_rotating(cls, models):
+    def check_parent_volume_is_rotating(cls, models, param_info: ParamsValidationInfo):
         """Ensure that all the parent volumes listed in the `Rotation` model are not static"""
-        return _check_parent_volume_is_rotating(models)
+        return _check_parent_volume_is_rotating(models, param_info)
 
     @contextual_field_validator("models", mode="after")
     @classmethod
@@ -451,11 +451,11 @@ class SimulationParams(_ParamModelBase):
         """Ensure that all the boundary conditions used are valid."""
         return _check_valid_models_for_liquid(models, param_info)
 
-    @pd.field_validator("models", mode="after")
+    @contextual_field_validator("models", mode="after")
     @classmethod
-    def check_duplicate_actuator_disk_cylinder_names(cls, models):
+    def check_duplicate_actuator_disk_cylinder_names(cls, models, param_info: ParamsValidationInfo):
         """Ensure that all the cylinder names used in ActuatorDisks are unique."""
-        return _check_duplicate_actuator_disk_cylinder_names(models)
+        return _check_duplicate_actuator_disk_cylinder_names(models, param_info)
 
     @contextual_field_validator("user_defined_fields", mode="after")
     @classmethod
@@ -480,11 +480,11 @@ class SimulationParams(_ParamModelBase):
         """Check if we have isosurfaces with a duplicate name"""
         return _check_duplicate_isosurface_names(outputs)
 
-    @pd.field_validator("outputs", mode="after")
+    @contextual_field_validator("outputs", mode="after")
     @classmethod
-    def check_duplicate_surface_usage(cls, outputs):
+    def check_duplicate_surface_usage(cls, outputs, param_info: ParamsValidationInfo):
         """Disallow the same boundary/surface being used in multiple outputs"""
-        return _check_duplicate_surface_usage(outputs)
+        return _check_duplicate_surface_usage(outputs, param_info)
 
     @pd.field_validator("user_defined_fields", mode="after")
     @classmethod
@@ -546,6 +546,7 @@ class SimulationParams(_ParamModelBase):
     @contextual_model_validator(mode="after")
     def check_unique_surface_volume_probe_entity_names(self):
         """Only allow unique probe entity names"""
+        # Note: Probes are not covered by Selectors so no need to expand them here.
         return _check_unique_surface_volume_probe_entity_names(self)
 
     @pd.model_validator(mode="after")
@@ -554,9 +555,9 @@ class SimulationParams(_ParamModelBase):
         return _check_unique_force_distribution_output_names(self)
 
     @contextual_model_validator(mode="after")
-    def check_duplicate_entities_in_models(self):
+    def check_duplicate_entities_in_models(self, param_info: ParamsValidationInfo):
         """Only allow each Surface/Volume entity to appear once in the Surface/Volume model"""
-        return _check_duplicate_entities_in_models(self)
+        return _check_duplicate_entities_in_models(self, param_info)
 
     @pd.model_validator(mode="after")
     def check_numerical_dissipation_factor_output(self):
@@ -749,6 +750,8 @@ class SimulationParams(_ParamModelBase):
 
         # Hint:
         Used by _set_up_params_non_persistent_entity_info & _update_param_with_actual_volume_mesh_meta
+
+        # TODO: With the change of entity selector expansion, this no longer captures all non-draft entities.
         """
         registry = EntityRegistry()
         registry = self._register_assigned_entities(registry)

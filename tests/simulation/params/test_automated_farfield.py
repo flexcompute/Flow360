@@ -295,11 +295,13 @@ def test_user_defined_farfield_symmetry_plane_requires_half_domain(surface_mesh)
             ),
             models=[
                 Wall(surfaces=surface_mesh["*"]),
-                SymmetryPlane(surfaces=GhostSurface(name="symmetric")),
+                SymmetryPlane(
+                    surfaces=GhostSurface(name="symmetric", private_attribute_id="symmetric")
+                ),
             ],
         )
     errors = _run_validation(params, surface_mesh, use_beta_mesher=True, use_geometry_AI=True)
-    assert errors[0]["loc"] == ("models", 1, "entities", "stored_entities")
+    assert errors[0]["loc"] == ("models", 1, "entities")
     assert (
         errors[0]["msg"]
         == "Value error, Symmetry plane of user defined farfield is only supported for half body domains."
@@ -492,7 +494,7 @@ def test_domain_type_bounding_box_check():
     # y range [1, 10]
     # Request half_body_positive_y -> Should pass (aligned)
 
-    dummy_boundary = Surface(name="dummy")
+    dummy_boundary = Surface(name="dummy", private_attribute_id="test-dummy-surface-id")
 
     asset_cache_positive = AssetCache(
         project_length_unit="m",
