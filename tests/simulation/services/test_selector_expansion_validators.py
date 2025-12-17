@@ -44,7 +44,13 @@ def _load_mock_volume_mesh_with_single_zone():
     """Load a local volume mesh asset that contains a GenericVolume zone named blk-1."""
     return VolumeMeshV2.from_local_storage(
         mesh_id="vm-93a5dad9-a54c-4db9-a8ab-e22a976bb27a",
-        local_storage_path="/disk2/ben/Flow360/tests/data/vm-93a5dad9-a54c-4db9-a8ab-e22a976bb27a",
+        local_storage_path=os.path.join(
+            os.path.dirname(__file__),
+            "..",
+            "..",
+            "data",
+            "vm-93a5dad9-a54c-4db9-a8ab-e22a976bb27a",
+        ),
         meta_data=VolumeMeshMetaV2(
             **local_metadata_builder(
                 id="vm-93a5dad9-a54c-4db9-a8ab-e22a976bb27a",
