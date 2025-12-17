@@ -100,7 +100,6 @@ from flow360.component.simulation.primitives import (
 )
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
-from flow360.component.simulation.outputs.render_config import FieldMaterial
 from flow360.component.simulation.translator.user_expression_utils import (
     udf_prepending_code,
 )
@@ -608,14 +607,6 @@ def translate_render_output(
         elif camera_dict["projection"]["typeName"] == "PerspectiveProjection":
             camera_dict["projection"]["type"] = "perspective"
 
-        for render_group_dict in render_dict["groups"]:
-            material_dict = render_group_dict["material"]
-            if (
-                "outputField" in material_dict
-                and material_dict["outputField"] not in render.output_fields
-            ):
-                render_dict["outputFields"]["items"].append(material_dict["outputField"])
-
         render_dict = remove_keys(render_dict, "typeName")
 
         translated_output = {
@@ -626,12 +617,11 @@ def translate_render_output(
             "camera": render_dict["camera"],
             "lighting": render_dict["lighting"],
             "environment": render_dict["environment"],
-            "outputFields": render_dict["outputFields"]["items"],
         }
 
         for render_group in render.groups:
             material = render_group.material
-            
+
             material_dict = dump_dict(material)
             material_dict = inline_expressions_in_dict(material_dict, input_params)
             material_dict = remove_units_in_dict(material_dict)

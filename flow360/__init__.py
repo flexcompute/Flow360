@@ -357,6 +357,7 @@ __all__ = [
     "show_available_examples",
     "RenderOutput",
     "RenderOutputGroup",
+    "render_config",
 ]
 
 _warn_prerelease()

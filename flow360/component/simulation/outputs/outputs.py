@@ -235,7 +235,7 @@ class _OutputBase(Flow360BaseModel):
         return value
 
 
-class _AnimationSettings(_OutputBase):
+class _AnimationSettings(Flow360BaseModel):
     """
     Controls how frequently the output files are generated.
     """
@@ -279,7 +279,7 @@ class _AnimationAndFileFormatSettings(_AnimationSettings):
     )
 
 
-class SurfaceOutput(_AnimationAndFileFormatSettings):
+class SurfaceOutput(_AnimationAndFileFormatSettings, _OutputBase):
     """
 
     :class:`SurfaceOutput` class for surface output settings.
@@ -381,7 +381,7 @@ class TimeAverageSurfaceOutput(SurfaceOutput):
     )
 
 
-class VolumeOutput(_AnimationAndFileFormatSettings):
+class VolumeOutput(_AnimationAndFileFormatSettings, _OutputBase):
     """
     :class:`VolumeOutput` class for volume output settings.
 
@@ -438,7 +438,7 @@ class TimeAverageVolumeOutput(VolumeOutput):
     )
 
 
-class SliceOutput(_AnimationAndFileFormatSettings):
+class SliceOutput(_AnimationAndFileFormatSettings, _OutputBase):
     """
     :class:`SliceOutput` class for slice output settings.
 
@@ -510,7 +510,7 @@ class TimeAverageSliceOutput(SliceOutput):
     output_type: Literal["TimeAverageSliceOutput"] = pd.Field("TimeAverageSliceOutput", frozen=True)
 
 
-class IsosurfaceOutput(_AnimationAndFileFormatSettings):
+class IsosurfaceOutput(_AnimationAndFileFormatSettings, _OutputBase):
     """
 
     :class:`IsosurfaceOutput` class for isosurface output settings.
@@ -734,10 +734,7 @@ class RenderOutputGroup(Flow360BaseModel):
     @classmethod
     def ensure_surface_existence(cls, value, param_info: ParamsValidationInfo):
         """Ensure all boundaries will be present after mesher"""
-        if value is not None:
-            return check_deleted_surface_in_entity_list(value, param_info)
-        return value
-        
+        return validate_entity_list_surface_existence(value, param_info)
 
     @pd.model_validator(mode="after")
     def check_not_empty(self):
@@ -780,9 +777,6 @@ class RenderOutput(_AnimationSettings):
 
     name: str = pd.Field("Render output", description="Name of the `RenderOutput`.")
     groups: List[RenderOutputGroup] = pd.Field([])
-    output_fields: UniqueItemList[Union[CommonFieldNames, str, UserVariable]] = pd.Field(
-        [], description="List of output variables (inferred from material info)"
-    )
     camera: Camera = pd.Field(description="Camera settings", default_factory=Camera.orthographic)
     lighting: Lighting = pd.Field(description="Lighting settings", default_factory=Lighting.default)
     environment: Environment = pd.Field(
@@ -937,7 +931,7 @@ class SurfaceProbeOutput(_OutputBase):
         return validate_entity_list_surface_existence(value, param_info)
 
 
-class SurfaceSliceOutput(_AnimationAndFileFormatSettings):
+class SurfaceSliceOutput(_AnimationAndFileFormatSettings, _OutputBase):
     """
     Surface slice settings.
     """

@@ -165,7 +165,10 @@ def remove_units_in_dict(input_dict, skip_keys: list[str] = None):
         new_dict = {}
         if _is_unyt_or_unyt_like_obj(input_dict):
             new_dict = input_dict["value"]
-            if input_dict["units"] is not None and input_dict["units"].startswith("flow360_") is False:
+            if (
+                input_dict["units"] is not None
+                and input_dict["units"].startswith("flow360_") is False
+            ):
                 raise ValueError(
                     f"[Internal Error] Unit {new_dict['units']} is not non-dimensionalized."
                 )
