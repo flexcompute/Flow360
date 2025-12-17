@@ -76,9 +76,17 @@ class SurfaceRefinement(Flow360BaseModel):
         check_deleted_surface_in_entity_list(expanded, param_info)
         return value
 
-    @contextual_field_validator(
-        "curvature_resolution_angle", "resolve_face_boundaries", mode="after"
-    )
+    @contextual_field_validator("curvature_resolution_angle", mode="after")
+    @classmethod
+    def ensure_geometry_ai_or_beta_mesher(cls, value, param_info: ParamsValidationInfo):
+        """Ensure curvature resolution angle is specified only when beta mesher or geometry AI is used"""
+        if value is not None and not (param_info.is_beta_mesher or param_info.use_geometry_AI):
+            raise ValueError(
+                "curvature_resolution_angle is only supported by the beta mesher or when geometry AI is enabled"
+            )
+        return value
+
+    @contextual_field_validator("resolve_face_boundaries", mode="after")
     @classmethod
     def ensure_geometry_ai_features(cls, value, info, param_info: ParamsValidationInfo):
         """Validate that the feature is only used when Geometry AI is enabled."""
