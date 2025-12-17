@@ -123,6 +123,7 @@ from flow360.component.simulation.operating_condition.operating_condition import
     LiquidOperatingCondition,
     ThermalState,
 )
+from flow360.component.simulation.outputs import render_config
 from flow360.component.simulation.outputs.output_entities import (
     Isosurface,
     Point,
@@ -137,6 +138,8 @@ from flow360.component.simulation.outputs.outputs import (
     MovingStatistic,
     Observer,
     ProbeOutput,
+    RenderOutput,
+    RenderOutputGroup,
     SliceOutput,
     StreamlineOutput,
     SurfaceIntegralOutput,
@@ -352,6 +355,9 @@ __all__ = [
     "CentralBelt",
     "WheelBelts",
     "show_available_examples",
+    "RenderOutput",
+    "RenderOutputGroup",
+    "render_config",
 ]
 
 _warn_prerelease()
