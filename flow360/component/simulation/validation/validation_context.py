@@ -142,6 +142,10 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         "at_least_one_body_transformed",
         "to_be_generated_custom_volumes",
         "root_asset_type",
+        # Entity expansion support
+        "_entity_info",  # Owns the entities (keeps them alive), initialized eagerly
+        "_entity_registry",  # References entities from _entity_info, initialized eagerly
+        "_selector_cache",  # Lazy, populated as selectors are expanded
     ]
 
     @classmethod
@@ -447,6 +451,14 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         )
         self.root_asset_type = self._get_root_asset_type(param_as_dict=param_as_dict)
 
+        # Entity expansion support
+        # Eagerly deserialize entity_info and build registry (needed for selector expansion)
+        self._entity_info, self._entity_registry = self._build_entity_info_and_registry(
+            param_as_dict
+        )
+        # Lazy initialization for selector-specific data
+        self._selector_cache = None
+
     def will_generate_forced_symmetry_plane(self) -> bool:
         """
         Check if the forced symmetry plane will be generated.
@@ -455,6 +467,95 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
             self.use_geometry_AI
             and self.is_beta_mesher
             and self.farfield_domain_type in ("half_body_positive_y", "half_body_negative_y")
+        )
+
+    @classmethod
+    def _build_entity_info_and_registry(cls, param_as_dict: dict):
+        """Build entity_info and entity_registry from param_as_dict.
+
+        The entity_info owns the deserialized entities, and entity_registry
+        holds references to them.
+
+        Returns
+        -------
+        tuple[EntityInfo, EntityRegistry] or (None, None)
+            The deserialized entity_info and registry, or (None, None) if not available.
+        """
+        # pylint: disable=import-outside-toplevel
+        from flow360.component.simulation.framework.entity_expansion_utils import (
+            get_entity_info_and_registry_from_dict,
+        )
+
+        try:
+            return get_entity_info_and_registry_from_dict(param_as_dict)
+        except (KeyError, ValueError):
+            return None, None
+
+    def _ensure_selector_cache(self):
+        """Lazily initialize selector cache."""
+        if self._selector_cache is None:
+            self._selector_cache = {}
+
+    def get_entity_info(self):
+        """Get the deserialized entity_info.
+
+        This allows reusing the already-deserialized entity_info in the
+        SimulationParams constructor to avoid double deserialization.
+
+        Returns
+        -------
+        EntityInfo or None
+            The deserialized entity_info, or None if not available.
+        """
+        return self._entity_info
+
+    def get_entity_registry(self):
+        """Get the entity_registry.
+
+        Returns
+        -------
+        EntityRegistry or None
+            The entity_registry, or None if not available.
+        """
+        return self._entity_registry
+
+    def expand_entity_list(self, entity_list) -> list:
+        """
+        Expand selectors in an EntityList and return the combined list of entities.
+
+        This method performs on-demand expansion without modifying the original input.
+        Results are cached per selector to avoid recomputation across multiple validator calls.
+
+        Parameters
+        ----------
+        entity_list : EntityList
+            A deserialized EntityList object with `stored_entities` and `selectors` attributes.
+
+        Returns
+        -------
+        list
+            Combined list of stored_entities and selector-matched entities.
+            Returns stored_entities directly if no selectors present.
+        """
+        stored_entities = list(entity_list.stored_entities or [])
+        raw_selectors = entity_list.selectors or []
+
+        # Fast path: no selectors or no registry available
+        if not raw_selectors or self._entity_registry is None:
+            return stored_entities
+
+        # Lazily initialize selector-specific infrastructure
+        self._ensure_selector_cache()
+        # pylint: disable=import-outside-toplevel
+        from flow360.component.simulation.framework.entity_selector import (
+            expand_entity_list_selectors,
+        )
+
+        return expand_entity_list_selectors(
+            self._entity_registry,
+            entity_list,
+            selector_cache=self._selector_cache,
+            merge_mode="merge",
         )
 
 

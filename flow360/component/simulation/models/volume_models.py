@@ -396,7 +396,8 @@ class Solid(PDEModelBase):
         """
         Check if the CustomVolume object was meshed with tetrahedra-only elements.
         """
-        for entity in getattr(v, "stored_entities", []):
+        expanded = param_info.expand_entity_list(v)
+        for entity in expanded:
             if not isinstance(entity, CustomVolume):
                 continue
 
@@ -1277,10 +1278,12 @@ class Rotation(Flow360BaseModel):
 
     @contextual_field_validator("entities", mode="after")
     @classmethod
-    def _ensure_entities_have_sufficient_attributes(cls, value: EntityList):
+    def _ensure_entities_have_sufficient_attributes(
+        cls, value: EntityList, param_info: ParamsValidationInfo
+    ):
         """Ensure entities have sufficient attributes."""
-
-        for entity in value.stored_entities:
+        expanded = param_info.expand_entity_list(value)
+        for entity in expanded:
             if entity.axis is None:
                 raise ValueError(
                     f"Entity '{entity.name}' must specify `axis` to be used under `Rotation`."
@@ -1382,10 +1385,12 @@ class PorousMedium(Flow360BaseModel):
 
     @contextual_field_validator("entities", mode="after")
     @classmethod
-    def _ensure_entities_have_sufficient_attributes(cls, value: EntityList):
+    def _ensure_entities_have_sufficient_attributes(
+        cls, value: EntityList, param_info: ParamsValidationInfo
+    ):
         """Ensure entities have sufficient attributes."""
-
-        for entity in value.stored_entities:
+        expanded = param_info.expand_entity_list(value)
+        for entity in expanded:
             if entity.axes is None:
                 raise ValueError(
                     f"Entity '{entity.name}' must specify `axes` to be used under `PorousMedium`."

@@ -10,6 +10,9 @@ from flow360.component.simulation.entity_info import (
     SurfaceMeshEntityInfo,
     VolumeMeshEntityInfo,
 )
+from flow360.component.simulation.framework.entity_selector import (
+    collect_and_tokenize_selectors_in_place,
+)
 from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.meshing_param.edge_params import (
     HeightBasedRefinement,
@@ -725,12 +728,26 @@ def test_BC_geometry():
 
 def test_incomplete_BC_volume_mesh():
     ##:: Construct a dummy asset cache
-    wall_1 = Surface(name="wall_1", private_attribute_is_interface=False)
-    periodic_1 = Surface(name="periodic_1", private_attribute_is_interface=False)
-    periodic_2 = Surface(name="periodic_2", private_attribute_is_interface=False)
-    i_exist = Surface(name="i_exist", private_attribute_is_interface=False)
-    no_bc = Surface(name="no_bc", private_attribute_is_interface=False)
-    some_interface = Surface(name="some_interface", private_attribute_is_interface=True)
+    wall_1 = Surface(
+        name="wall_1", private_attribute_is_interface=False, private_attribute_id="wall_1"
+    )
+    periodic_1 = Surface(
+        name="periodic_1", private_attribute_is_interface=False, private_attribute_id="periodic_1"
+    )
+    periodic_2 = Surface(
+        name="periodic_2", private_attribute_is_interface=False, private_attribute_id="periodic_2"
+    )
+    i_exist = Surface(
+        name="i_exist", private_attribute_is_interface=False, private_attribute_id="i_exist"
+    )
+    no_bc = Surface(
+        name="no_bc", private_attribute_is_interface=False, private_attribute_id="no_bc"
+    )
+    some_interface = Surface(
+        name="some_interface",
+        private_attribute_is_interface=True,
+        private_attribute_id="some_interface",
+    )
 
     asset_cache = AssetCache(
         project_length_unit="inch",
@@ -749,14 +766,19 @@ def test_incomplete_BC_volume_mesh():
             ),
             models=[
                 Fluid(),
-                Wall(entities=wall_1),
+                # Stage 1.5: Use selector instead of explicit entity to test BC validation
+                Wall(entities=[Surface.match("wall_*", name="wall_selector")]),
                 Periodic(surface_pairs=(periodic_1, periodic_2), spec=Translational()),
                 SlipWall(entities=[i_exist]),
             ],
             private_attribute_asset_cache=asset_cache,
         )
+
+    submission_ready_dict = collect_and_tokenize_selectors_in_place(
+        params.model_dump(mode="json", exclude_none=True)
+    )
     params, errors, _ = validate_model(
-        params_as_dict=params.model_dump(mode="json", exclude_none=True),
+        params_as_dict=submission_ready_dict,
         validated_by=ValidationCalledBy.LOCAL,
         root_item_type="VolumeMesh",
         validation_level="All",
@@ -777,15 +799,18 @@ def test_incomplete_BC_volume_mesh():
             ),
             models=[
                 Fluid(),
-                Wall(entities=[wall_1]),
+                # Stage 1.5: Mix selector with explicit entity
+                Wall(entities=[Surface.match("wall_*", name="wall_selector"), i_exist]),
                 Periodic(surface_pairs=(periodic_1, periodic_2), spec=Translational()),
-                SlipWall(entities=[i_exist]),
                 SlipWall(entities=[Surface(name="plz_dont_do_this"), no_bc]),
             ],
             private_attribute_asset_cache=asset_cache,
         )
+    submission_ready_dict = collect_and_tokenize_selectors_in_place(
+        params.model_dump(mode="json", exclude_none=True)
+    )
     params, errors, _ = validate_model(
-        params_as_dict=params.model_dump(mode="json", exclude_none=True),
+        params_as_dict=submission_ready_dict,
         validated_by=ValidationCalledBy.LOCAL,
         root_item_type="VolumeMesh",
         validation_level="All",
@@ -838,7 +863,8 @@ def test_incomplete_BC_surface_mesh():
             ),
             models=[
                 Fluid(),
-                Wall(entities=wall_1),
+                # Stage 1.5: Use selector instead of explicit entity
+                Wall(entities=[Surface.match("wall_*", name="wall_selector")]),
                 Periodic(surface_pairs=(periodic_1, periodic_2), spec=Translational()),
                 SlipWall(entities=[i_exist]),
                 SlipWall(entities=[no_bc]),
@@ -871,7 +897,8 @@ def test_incomplete_BC_surface_mesh():
             ),
             models=[
                 Fluid(),
-                Wall(entities=wall_1),
+                # Stage 1.5: Use selector for wall
+                Wall(entities=[Surface.match("wall_*", name="wall_selector")]),
                 Periodic(surface_pairs=(periodic_1, periodic_2), spec=Translational()),
                 SlipWall(entities=[auto_farfield.symmetry_planes]),
                 SlipWall(entities=[i_exist]),
@@ -1291,7 +1318,7 @@ def test_output_fields_with_user_defined_fields():
             )
 
 
-def test_rotation_parent_volumes():
+def test_rotation_parent_volumes(mock_case_validation_context):
 
     c_1 = Cylinder(
         name="inner_rotating_cylinder",
@@ -1321,15 +1348,14 @@ def test_rotation_parent_volumes():
 
     msg = "For model #1, the parent rotating volume (stationary_cylinder) is not "
     "used in any other `Rotation` model's `volumes`."
-    with pytest.raises(ValueError, match=re.escape(msg)):
-        with ValidationContext(CASE):
-            with SI_unit_system:
-                SimulationParams(
-                    models=[
-                        Fluid(),
-                        Rotation(entities=[c_1], spec=AngleExpression("1+2"), parent_volume=c_3),
-                    ]
-                )
+    with mock_case_validation_context, pytest.raises(ValueError, match=re.escape(msg)):
+        with SI_unit_system:
+            SimulationParams(
+                models=[
+                    Fluid(),
+                    Rotation(entities=[c_1], spec=AngleExpression("1+2"), parent_volume=c_3),
+                ]
+            )
 
     with ValidationContext(CASE):
         with SI_unit_system:
@@ -2261,7 +2287,7 @@ def test_check_custom_volume_in_volume_zones():
     assert errors[0]["msg"] == (
         "Value error, CustomVolume zone2 is not listed under meshing->volume_zones(or zones)->CustomZones."
     )
-    assert errors[0]["loc"] == ("models", 0, "entities", "stored_entities")
+    assert errors[0]["loc"] == ("models", 0, "entities")
 
     zone_3 = CustomVolume(name="zone3", boundaries=[Surface(name="face3")])
     zone_3.axis = (1, 0, 0)
@@ -2309,12 +2335,12 @@ def test_check_custom_volume_in_volume_zones():
     assert errors[0]["msg"] == (
         "Value error, CustomVolume zone2 is not listed under meshing->volume_zones(or zones)->CustomZones."
     )
-    assert errors[0]["loc"] == ("models", 0, "entities", "stored_entities")
+    assert errors[0]["loc"] == ("models", 0, "entities")
 
     assert errors[1]["msg"] == (
         "Value error, CustomVolume zone3 is not listed under meshing->volume_zones(or zones)->CustomZones."
     )
-    assert errors[1]["loc"] == ("models", 1, "entities", "stored_entities")
+    assert errors[1]["loc"] == ("models", 1, "entities")
 
     zone2prim = SeedpointVolume(name="zone2", point_in_mesh=(0, 0, 0) * u.mm)
     zone2prim.axes = [(1, 0, 0), (0, 1, 0)]
@@ -2364,13 +2390,13 @@ def test_check_custom_volume_in_volume_zones():
     assert errors[0]["msg"] == (
         "Value error, SeedpointVolume zone2 is not listed under meshing->volume_zones(or zones)->CustomZones."
     )
-    assert errors[0]["loc"] == ("models", 0, "entities", "stored_entities")
+    assert errors[0]["loc"] == ("models", 0, "entities")
 
 
 def test_ghost_surface_pair_requires_quasi_3d_periodic_farfield():
     # Create two dummy ghost surfaces (Python workflow)
-    periodic_1 = GhostSurface(name="periodic_1")
-    periodic_2 = GhostSurface(name="periodic_2")
+    periodic_1 = GhostSurface(name="periodic_1", private_attribute_id="periodic_1")
+    periodic_2 = GhostSurface(name="periodic_2", private_attribute_id="periodic_2")
 
     # Case 1: Farfield method NOT "quasi-3d-periodic" → should raise ValueError
     with SI_unit_system, ValidationContext(CASE, quasi_3d_farfield_context), pytest.raises(
@@ -2383,8 +2409,8 @@ def test_ghost_surface_pair_requires_quasi_3d_periodic_farfield():
         Periodic(surface_pairs=(periodic_1, periodic_2), spec=Translational())
 
     # Create two dummy ghost circular plane (Web UI workflow)
-    periodic_1 = GhostCircularPlane(name="periodic_1")
-    periodic_2 = GhostCircularPlane(name="periodic_2")
+    periodic_1 = GhostCircularPlane(name="periodic_1", private_attribute_id="periodic_1")
+    periodic_2 = GhostCircularPlane(name="periodic_2", private_attribute_id="periodic_2")
 
     # Case 3: Farfield method NOT "quasi-3d-periodic" → should raise ValueError
     with SI_unit_system, ValidationContext(CASE, quasi_3d_farfield_context), pytest.raises(

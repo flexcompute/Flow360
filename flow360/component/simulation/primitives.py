@@ -883,7 +883,7 @@ class CustomVolume(_VolumeEntityBase):
     private_attribute_entity_type_name: Literal["CustomVolume"] = pd.Field(
         "CustomVolume", frozen=True
     )
-    boundaries: EntityList[Surface] = pd.Field(
+    boundaries: EntityList[Surface, WindTunnelGhostSurface] = pd.Field(
         description="The surfaces that define the boundaries of the custom volume."
     )
     private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
@@ -895,9 +895,10 @@ class CustomVolume(_VolumeEntityBase):
 
     @contextual_field_validator("boundaries", mode="after")
     @classmethod
-    def ensure_unique_boundary_names(cls, v):
+    def ensure_unique_boundary_names(cls, v, param_info: ParamsValidationInfo):
         """Check if the boundaries have different names within a CustomVolume."""
-        if len(v.stored_entities) != len({boundary.name for boundary in v.stored_entities}):
+        expanded = param_info.expand_entity_list(v)
+        if len(expanded) != len({boundary.name for boundary in expanded}):
             raise ValueError("The boundaries of a CustomVolume must have different names.")
         return v
 
@@ -927,8 +928,9 @@ def check_custom_volume_creation(value, param_info: ParamsValidationInfo):
 class EntityListWithCustomVolume(EntityList):
     """Entity list with customized validators for CustomVolume"""
 
-    @contextual_field_validator("stored_entities", mode="after")
-    @classmethod
-    def custom_volume_validator(cls, value, param_info: ParamsValidationInfo):
+    @contextual_model_validator(mode="after")
+    def custom_volume_validator(self, param_info: ParamsValidationInfo):
         """Run all validators"""
-        return check_custom_volume_creation(value, param_info)
+        expanded = param_info.expand_entity_list(self)
+        check_custom_volume_creation(expanded, param_info)
+        return self

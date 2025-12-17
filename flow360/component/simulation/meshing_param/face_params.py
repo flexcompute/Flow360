@@ -11,6 +11,7 @@ from flow360.component.simulation.primitives import (
     GhostCircularPlane,
     GhostSurface,
     Surface,
+    WindTunnelGhostSurface,
 )
 from flow360.component.simulation.unit_system import AngleType, LengthType
 from flow360.component.simulation.validation.validation_context import (
@@ -42,9 +43,9 @@ class SurfaceRefinement(Flow360BaseModel):
 
     name: Optional[str] = pd.Field("Surface refinement")
     refinement_type: Literal["SurfaceRefinement"] = pd.Field("SurfaceRefinement", frozen=True)
-    entities: EntityListAllowingGhost[Surface, GhostSurface, GhostCircularPlane] = pd.Field(
-        alias="faces"
-    )
+    entities: EntityListAllowingGhost[
+        Surface, WindTunnelGhostSurface, GhostSurface, GhostCircularPlane
+    ] = pd.Field(alias="faces")
     # pylint: disable=no-member
     max_edge_length: Optional[LengthType.Positive] = pd.Field(
         None, description="Maximum edge length of surface cells."
@@ -68,14 +69,24 @@ class SurfaceRefinement(Flow360BaseModel):
     @classmethod
     def ensure_surface_existence(cls, value, param_info: ParamsValidationInfo):
         """Ensure all boundaries will be present after mesher"""
+        expanded = param_info.expand_entity_list(value)
         check_ghost_surface_usage_policy_for_face_refinements(
-            value.stored_entities, feature_name="SurfaceRefinement", param_info=param_info
+            expanded, feature_name="SurfaceRefinement", param_info=param_info
         )
-        return check_deleted_surface_in_entity_list(value, param_info)
+        check_deleted_surface_in_entity_list(expanded, param_info)
+        return value
 
-    @contextual_field_validator(
-        "curvature_resolution_angle", "resolve_face_boundaries", mode="after"
-    )
+    @contextual_field_validator("curvature_resolution_angle", mode="after")
+    @classmethod
+    def ensure_geometry_ai_or_beta_mesher(cls, value, param_info: ParamsValidationInfo):
+        """Ensure curvature resolution angle is specified only when beta mesher or geometry AI is used"""
+        if value is not None and not (param_info.is_beta_mesher or param_info.use_geometry_AI):
+            raise ValueError(
+                "curvature_resolution_angle is only supported by the beta mesher or when geometry AI is enabled"
+            )
+        return value
+
+    @contextual_field_validator("resolve_face_boundaries", mode="after")
     @classmethod
     def ensure_geometry_ai_features(cls, value, info, param_info: ParamsValidationInfo):
         """Validate that the feature is only used when Geometry AI is enabled."""
@@ -115,7 +126,7 @@ class GeometryRefinement(Flow360BaseModel):
 
     name: Optional[str] = pd.Field("Geometry refinement")
     refinement_type: Literal["GeometryRefinement"] = pd.Field("GeometryRefinement", frozen=True)
-    entities: EntityList[Surface] = pd.Field(alias="faces")
+    entities: EntityList[Surface, WindTunnelGhostSurface] = pd.Field(alias="faces")
     # pylint: disable=no-member
 
     geometry_accuracy: Optional[LengthType.Positive] = pd.Field(
@@ -171,18 +182,20 @@ class PassiveSpacing(Flow360BaseModel):
         """
     )
     refinement_type: Literal["PassiveSpacing"] = pd.Field("PassiveSpacing", frozen=True)
-    entities: EntityListAllowingGhost[Surface, GhostSurface, GhostCircularPlane] = pd.Field(
-        alias="faces"
-    )
+    entities: EntityListAllowingGhost[
+        Surface, WindTunnelGhostSurface, GhostSurface, GhostCircularPlane
+    ] = pd.Field(alias="faces")
 
     @contextual_field_validator("entities", mode="after")
     @classmethod
     def ensure_surface_existence(cls, value, param_info: ParamsValidationInfo):
         """Ensure all boundaries will be present after mesher"""
+        expanded = param_info.expand_entity_list(value)
         check_ghost_surface_usage_policy_for_face_refinements(
-            value.stored_entities, feature_name="PassiveSpacing", param_info=param_info
+            expanded, feature_name="PassiveSpacing", param_info=param_info
         )
-        return check_deleted_surface_in_entity_list(value, param_info)
+        check_deleted_surface_in_entity_list(expanded, param_info)
+        return value
 
 
 class BoundaryLayer(Flow360BaseModel):
@@ -203,7 +216,7 @@ class BoundaryLayer(Flow360BaseModel):
 
     name: Optional[str] = pd.Field("Boundary layer refinement")
     refinement_type: Literal["BoundaryLayer"] = pd.Field("BoundaryLayer", frozen=True)
-    entities: EntityList[Surface] = pd.Field(alias="faces")
+    entities: EntityList[Surface, WindTunnelGhostSurface] = pd.Field(alias="faces")
     # pylint: disable=no-member
     first_layer_thickness: Optional[LengthType.Positive] = pd.Field(
         None,
@@ -221,7 +234,9 @@ class BoundaryLayer(Flow360BaseModel):
     @classmethod
     def ensure_surface_existence(cls, value, param_info: ParamsValidationInfo):
         """Ensure all boundaries will be present after mesher"""
-        return check_deleted_surface_in_entity_list(value, param_info)
+        expanded = param_info.expand_entity_list(value)
+        check_deleted_surface_in_entity_list(expanded, param_info)
+        return value
 
     @contextual_field_validator("growth_rate", mode="after")
     @classmethod

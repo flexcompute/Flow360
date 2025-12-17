@@ -16,6 +16,7 @@ from flow360.component.simulation.entity_info import (
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityBase, EntityList
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
+from flow360.component.simulation.framework.entity_selector import EntitySelector
 from flow360.component.simulation.framework.unique_list import UniqueStringList
 from flow360.component.simulation.primitives import (
     _SurfaceEntityBase,
@@ -54,7 +55,7 @@ class AssetCache(Flow360BaseModel):
     variable_context: Optional[VariableContextList] = pd.Field(
         None, description="List of user variables that are used in all the `Expression` instances."
     )
-    used_selectors: Optional[List[dict]] = pd.Field(
+    used_selectors: Optional[List[EntitySelector]] = pd.Field(
         None,
         description="Collected entity selectors for token reference.",
     )
