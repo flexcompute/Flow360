@@ -1292,16 +1292,67 @@ class Project(pd.BaseModel):
             run_async=run_async,
         )
 
-        # Return an ImportedSurface object instead of SurfaceMeshV2
-        # The name should be the same as the input file name
-        # The surface_mesh_id should be the ID of the surface mesh returned from the API
-        imported_surface = ImportedSurface(
+        return ImportedSurface(
             name=name,
-            file_name=file,
             surface_mesh_id=surface_mesh.id,
         )
 
-        return imported_surface
+    def _get_imported_depedency_resources_from_cloud(
+        self, resource_type: Literal["Geometry", "SurfaceMesh"]
+    ):
+        """
+        Get all imported dependency resources of a given type in the project.
+
+        Parameters
+        ----------
+        resource_type : Literal["Geometry", "SurfaceMesh"]
+            The type of dependency resource to retrieve.
+
+        """
+
+        resp = self._project_webapi.get(method="dependency")
+        if resource_type == "Geometry":
+            imported_resources = [
+                Geometry.from_cloud(item["id"]) for item in resp["geometryDependencyResources"]
+            ]
+        elif resource_type == "SurfaceMesh":
+            imported_resources = [
+                ImportedSurface(
+                    name=item["name"],
+                    surface_mesh_id=item["id"],
+                )
+                for item in resp["surfaceMeshDependencyResources"]
+            ]
+        else:
+            raise Flow360ValueError(f"Unsupported imported resource type: {resource_type}")
+
+        return imported_resources
+
+    @property
+    def imported_geometry_dependencies(self) -> List[Geometry]:
+        """
+        Get all imported geometry dependency resources in the project.
+
+        Returns
+        -------
+        List[Geometry]
+            A list of Geometry objects representing the imported geometry dependencies.
+        """
+
+        return self._get_imported_depedency_resources_from_cloud(resource_type="Geometry")
+
+    @property
+    def imported_surface_mesh_dependencies(self) -> List[ImportedSurface]:
+        """
+        Get all imported surface mesh dependency resources in the project.
+
+        Returns
+        -------
+        List[ImportedSurface]
+            A list of ImportedSurface objects representing the imported surface mesh dependencies.
+        """
+
+        return self._get_imported_depedency_resources_from_cloud(resource_type="SurfaceMesh")
 
     @classmethod
     def _get_user_requested_entity_info(
