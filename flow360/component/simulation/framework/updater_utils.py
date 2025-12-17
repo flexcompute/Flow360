@@ -60,6 +60,13 @@ def compare_values(value1, value2, atol=1e-15, rtol=1e-10, ignore_keys=None):
     if isinstance(value1, Number) and isinstance(value2, Number):
         return np.isclose(value1, value2, rtol, atol)
 
+    # Tuples get converted to lists when writing the JSON file
+    if isinstance(value1, tuple):
+        value1 = list(value1)
+
+    if isinstance(value2, tuple):
+        value2 = list(value2)
+
     # Handle type mismatches for non-numerical types
     if type(value1) != type(value2):
         return False
