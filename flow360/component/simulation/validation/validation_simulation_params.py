@@ -622,3 +622,32 @@ def _check_duplicate_actuator_disk_cylinder_names(models, param_info: ParamsVali
     _check_actuator_disk_names(models)
 
     return models
+
+
+def _check_unique_selector_names(params):
+    """Check that all EntitySelector names are unique across the entire SimulationParams.
+
+    This validator checks the asset_cache.used_selectors field, which is populated
+    during the tokenization process in set_up_params_for_uploading().
+    """
+    asset_cache = getattr(params, "private_attribute_asset_cache", None)
+    if asset_cache is None:
+        return params
+
+    used_selectors = getattr(asset_cache, "used_selectors", None)
+    if not used_selectors:
+        return params
+
+    selector_names: set[str] = set()  # name -> first occurrence info
+
+    for selector in used_selectors:
+        selector_name = selector.name
+        if selector_name in selector_names:
+            raise ValueError(
+                f"Duplicate selector name '{selector_name}' found. "
+                f"Each selector must have a unique name."
+            )
+        # Store location info for better error messages
+        selector_names.add(selector_name)
+
+    return params
