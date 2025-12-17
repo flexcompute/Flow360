@@ -11,6 +11,7 @@ from flow360.component.simulation.entity_info import (
     VolumeMeshEntityInfo,
 )
 from flow360.component.simulation.framework.entity_selector import (
+    SurfaceSelector,
     collect_and_tokenize_selectors_in_place,
 )
 from flow360.component.simulation.framework.param_utils import AssetCache
@@ -767,7 +768,7 @@ def test_incomplete_BC_volume_mesh():
             models=[
                 Fluid(),
                 # Stage 1.5: Use selector instead of explicit entity to test BC validation
-                Wall(entities=[Surface.match("wall_*", name="wall_selector")]),
+                Wall(entities=[SurfaceSelector(name="wall_selector").match("wall_*")]),
                 Periodic(surface_pairs=(periodic_1, periodic_2), spec=Translational()),
                 SlipWall(entities=[i_exist]),
             ],
@@ -800,7 +801,7 @@ def test_incomplete_BC_volume_mesh():
             models=[
                 Fluid(),
                 # Stage 1.5: Mix selector with explicit entity
-                Wall(entities=[Surface.match("wall_*", name="wall_selector"), i_exist]),
+                Wall(entities=[SurfaceSelector(name="wall_selector").match("wall_*"), i_exist]),
                 Periodic(surface_pairs=(periodic_1, periodic_2), spec=Translational()),
                 SlipWall(entities=[Surface(name="plz_dont_do_this"), no_bc]),
             ],
@@ -864,7 +865,7 @@ def test_incomplete_BC_surface_mesh():
             models=[
                 Fluid(),
                 # Stage 1.5: Use selector instead of explicit entity
-                Wall(entities=[Surface.match("wall_*", name="wall_selector")]),
+                Wall(entities=[SurfaceSelector(name="wall_selector").match("wall_*")]),
                 Periodic(surface_pairs=(periodic_1, periodic_2), spec=Translational()),
                 SlipWall(entities=[i_exist]),
                 SlipWall(entities=[no_bc]),
@@ -898,7 +899,7 @@ def test_incomplete_BC_surface_mesh():
             models=[
                 Fluid(),
                 # Stage 1.5: Use selector for wall
-                Wall(entities=[Surface.match("wall_*", name="wall_selector")]),
+                Wall(entities=[SurfaceSelector(name="wall_selector").match("wall_*")]),
                 Periodic(surface_pairs=(periodic_1, periodic_2), spec=Translational()),
                 SlipWall(entities=[auto_farfield.symmetry_planes]),
                 SlipWall(entities=[i_exist]),
@@ -2576,3 +2577,94 @@ def test_deleted_surfaces_domain_type():
 
     assert len(errors) == 1
     assert "Boundary `pos_surf` will likely be deleted" in errors[0]["msg"]
+
+
+def test_unique_selector_names():
+    """Test that duplicate selector names are detected and raise an error."""
+    from flow360.component.simulation.framework.entity_selector import (
+        SurfaceSelector,
+        collect_and_tokenize_selectors_in_place,
+    )
+    from flow360.component.simulation.models.surface_models import Wall
+    from flow360.component.simulation.primitives import Surface
+
+    # Create actual Surface entities to avoid selector expansion issues
+    surface1 = Surface(name="surface1")
+    surface2 = Surface(name="surface2")
+
+    # Create selectors with duplicate names
+    selector1 = SurfaceSelector(name="duplicate_name").match("wing*")
+    selector2 = SurfaceSelector(name="duplicate_name").match("tail*")
+
+    # Test duplicate selector names in different EntityLists (different Wall models)
+    with SI_unit_system:
+        params = SimulationParams(
+            models=[
+                Wall(entities=[surface1, selector1]),
+                Wall(entities=[surface2, selector2]),
+            ],
+        )
+
+    # Tokenize selectors to populate used_selectors (simulating what happens in set_up_params_for_uploading)
+    params_dict = params.model_dump(mode="json", exclude_none=True)
+    params_dict = collect_and_tokenize_selectors_in_place(params_dict)
+
+    # Now validate using validate_model which will materialize and validate
+    _, errors, _ = validate_model(
+        params_as_dict=params_dict,
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type=None,
+        validation_level=None,
+    )
+
+    assert errors is not None
+    assert len(errors) == 1
+    assert "Duplicate selector name 'duplicate_name'" in errors[0]["msg"]
+
+    # Test duplicate selector names in the same EntityList
+    with SI_unit_system:
+        params2 = SimulationParams(
+            models=[
+                Wall(entities=[surface1, selector1, selector2]),
+            ],
+        )
+
+    params_dict2 = params2.model_dump(mode="json", exclude_none=True)
+    params_dict2 = collect_and_tokenize_selectors_in_place(params_dict2)
+
+    _, errors2, _ = validate_model(
+        params_as_dict=params_dict2,
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type=None,
+        validation_level=None,
+    )
+
+    assert errors2 is not None
+    assert len(errors2) == 1
+    assert "Duplicate selector name 'duplicate_name'" in errors2[0]["msg"]
+
+    # Test that unique selector names work fine
+    selector3 = SurfaceSelector(name="unique_name_1").match("wing*")
+    selector4 = SurfaceSelector(name="unique_name_2").match("tail*")
+
+    with SI_unit_system:
+        params3 = SimulationParams(
+            models=[
+                Wall(entities=[surface1, selector3]),
+                Wall(entities=[surface2, selector4]),
+            ],
+        )
+
+    params_dict3 = params3.model_dump(mode="json", exclude_none=True)
+    params_dict3 = collect_and_tokenize_selectors_in_place(params_dict3)
+
+    validated_params, errors3, _ = validate_model(
+        params_as_dict=params_dict3,
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type=None,
+        validation_level=None,
+    )
+
+    # Should not have errors for unique names
+    assert errors3 is None or len(errors3) == 0
+    assert validated_params is not None

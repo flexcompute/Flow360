@@ -8,6 +8,7 @@ from collections import OrderedDict
 from typing import Union
 
 import numpy as np
+import pydantic as pd
 import unyt as u
 
 from flow360.component.simulation.framework.base_model_config import snake_to_camel
@@ -28,7 +29,7 @@ from flow360.exceptions import Flow360TranslationError
 
 
 # pylint: disable=too-many-arguments
-def _expand_selectors_for_translation(input_params: SimulationParams):
+def expand_selectors_for_translation(input_params: SimulationParams):
     """
     Expand entity selectors in-place for translation.
 
@@ -54,6 +55,7 @@ def preprocess_input(func):
 
     @functools.wraps(func)
     def wrapper(input_params, mesh_unit, *args, **kwargs):
+        skip_selector_expansion = kwargs.pop("skip_selector_expansion", False)
         # pylint: disable=no-member
         if func.__name__ == "get_solver_json":
             preprocess_exclude = ["meshing"]
@@ -71,10 +73,10 @@ def preprocess_input(func):
         validated_mesh_unit = LengthType.validate(mesh_unit)
         processed_input = preprocess_param(input_params, validated_mesh_unit, preprocess_exclude)
 
-        # Expand entity selectors in-place before translation (Stage 4)
-        # This ensures selectors work for all translators (solver, surface mesh, volume mesh)
-        # pylint: disable=import-outside-toplevel
-        _expand_selectors_for_translation(processed_input)
+        if not skip_selector_expansion:
+            # Expand entity selectors in-place before translation (Stage 4)
+            # This ensures selectors work for all translators (solver, surface mesh, volume mesh)
+            expand_selectors_for_translation(processed_input)
 
         return func(processed_input, validated_mesh_unit, *args, **kwargs)
 
@@ -163,7 +165,10 @@ def remove_units_in_dict(input_dict, skip_keys: list[str] = None):
         new_dict = {}
         if _is_unyt_or_unyt_like_obj(input_dict):
             new_dict = input_dict["value"]
-            if input_dict["units"].startswith("flow360_") is False:
+            if (
+                input_dict["units"] is not None
+                and input_dict["units"].startswith("flow360_") is False
+            ):
                 raise ValueError(
                     f"[Internal Error] Unit {new_dict['units']} is not non-dimensionalized."
                 )
@@ -199,12 +204,17 @@ def inline_expressions_in_dict(input_dict, input_params):
     """Inline all client-time evaluable expressions in the provided dict to their evaluated values"""
     if isinstance(input_dict, dict):
         new_dict = {}
-        if "type_name" in input_dict.keys() and input_dict["type_name"] == "Expression":
-            expression = Expression(expression=input_dict["expression"])
-            evaluated = expression.evaluate(raise_on_non_evaluable=False)
-            converted = evaluated.in_base(unit_system=input_params.flow360_unit_system).v
-            new_dict = converted
-            return new_dict
+        if "typeName" in input_dict.keys():
+            if input_dict["typeName"] == "expression":
+                expression = Expression(expression=input_dict["expression"])
+                evaluated = expression.evaluate(raise_on_non_evaluable=False)
+                converted = evaluated.in_base(unit_system=input_params.flow360_unit_system).v
+                new_dict = converted
+                return new_dict
+            # Handle non-dimensional number fields - unit removal does not handle them later on
+            if "units" not in input_dict.keys() and input_dict["typeName"] == "number":
+                new_dict = input_dict["value"]
+                return new_dict
         for key, value in input_dict.items():
             # For number-type fields the schema should match dimensioned unit fields
             # so remove_units_in_dict should handle them correctly...
@@ -246,6 +256,18 @@ def getattr_by_path(obj, path: Union[str, list], *args):
         obj = getattr(obj, attr)
 
     return obj
+
+
+def get_all_entries_of_type(obj_list: list, class_type: type[pd.BaseModel]):
+    """Get all entries matching the exact class_type in the obj_list"""
+    entries = []
+
+    if obj_list is not None:
+        for obj in obj_list:
+            if is_exact_instance(obj, class_type):
+                entries.append(obj)
+
+    return entries
 
 
 def get_global_setting_from_first_instance(
@@ -294,7 +316,7 @@ def _get_key_name(entity: EntityBase):
 def translate_setting_and_apply_to_all_entities(
     obj_list: list,
     class_type,
-    translation_func,
+    translation_func=lambda x, **kwargs: {},
     to_list: bool = False,
     entity_injection_func=lambda x, **kwargs: {},
     pass_translated_setting_to_entity_injection=False,
@@ -303,6 +325,7 @@ def translate_setting_and_apply_to_all_entities(
     use_instance_name_as_key=False,
     use_sub_item_as_key=False,
     entity_type_to_include=None,
+    entity_list_field_name="entities",
     **kwargs,
 ):
     """
@@ -385,23 +408,23 @@ def translate_setting_and_apply_to_all_entities(
     # pylint: disable=too-many-nested-blocks
     for obj in obj_list:
         if class_type and is_exact_instance(obj, class_type):
-
             list_of_entities = []
-            if "entities" in obj.__class__.model_fields:
-                if obj.entities is None or (
-                    "stored_entities" in obj.entities.__class__.model_fields
-                    and obj.entities.stored_entities is None
+            if entity_list_field_name in obj.__class__.model_fields:
+                entity_list = getattr(obj, entity_list_field_name)
+                if entity_list is None or (
+                    "stored_entities" in entity_list.__class__.model_fields
+                    and entity_list.stored_entities is None
                 ):  # unique item list does not allow None "items" for now.
                     continue
-                if isinstance(obj.entities, EntityList):
+                if isinstance(entity_list, EntityList):
                     list_of_entities = (
-                        obj.entities.stored_entities
+                        entity_list.stored_entities
                         if lump_list_of_entities is False
-                        else [obj.entities]
+                        else [entity_list]
                     )
-                elif isinstance(obj.entities, UniqueItemList):
+                elif isinstance(entity_list, UniqueItemList):
                     list_of_entities = (
-                        obj.entities.items if lump_list_of_entities is False else [obj.entities]
+                        entity_list.items if lump_list_of_entities is False else [entity_list]
                     )
             elif "entity_pairs" in obj.__class__.model_fields:
                 # Note: This is only used in Periodic BC and lump_list_of_entities is not relavant
@@ -496,3 +519,12 @@ def using_snappy(input_params: SimulationParams):
     return isinstance(input_params.meshing, ModularMeshingWorkflow) and isinstance(
         input_params.meshing.surface_meshing, snappy.SurfaceMeshingParams
     )
+
+
+def remove_keys(obj, key_to_remove):
+    """Remove all keys recursively from the input dict"""
+    if isinstance(obj, dict):
+        return {k: remove_keys(v, key_to_remove) for k, v in obj.items() if k != key_to_remove}
+    if isinstance(obj, list):
+        return [remove_keys(item, key_to_remove) for item in obj]
+    return obj

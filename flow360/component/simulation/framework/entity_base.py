@@ -400,7 +400,7 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
 
         Parameters
         ----------
-        params :
+        params : # TODO: Replace as draft. And move to selector method instead.
             SimulationParams (or compatible object) that contains the asset cache context.
         return_names : bool, default True
             When True, returns a list of entity names instead of entity instances.

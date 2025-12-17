@@ -33,6 +33,14 @@ from flow360.component.simulation.outputs.output_fields import (
     VolumeFieldNames,
     get_field_values,
 )
+from flow360.component.simulation.outputs.render_config import (
+    Camera,
+    Environment,
+    FieldMaterial,
+    Lighting,
+    PBRMaterial,
+    SceneTransform,
+)
 from flow360.component.simulation.primitives import (
     GhostCircularPlane,
     GhostSphere,
@@ -53,6 +61,7 @@ from flow360.component.simulation.validation.validation_context import (
     ParamsValidationInfo,
     TimeSteppingType,
     contextual_field_validator,
+    contextual_model_validator,
     get_validation_levels,
 )
 from flow360.component.simulation.validation.validation_utils import (
@@ -227,7 +236,7 @@ class _OutputBase(Flow360BaseModel):
         return value
 
 
-class _AnimationSettings(_OutputBase):
+class _AnimationSettings(Flow360BaseModel):
     """
     Controls how frequently the output files are generated.
     """
@@ -271,7 +280,7 @@ class _AnimationAndFileFormatSettings(_AnimationSettings):
     )
 
 
-class SurfaceOutput(_AnimationAndFileFormatSettings):
+class SurfaceOutput(_AnimationAndFileFormatSettings, _OutputBase):
     """
 
     :class:`SurfaceOutput` class for surface output settings.
@@ -373,7 +382,7 @@ class TimeAverageSurfaceOutput(SurfaceOutput):
     )
 
 
-class VolumeOutput(_AnimationAndFileFormatSettings):
+class VolumeOutput(_AnimationAndFileFormatSettings, _OutputBase):
     """
     :class:`VolumeOutput` class for volume output settings.
 
@@ -430,7 +439,7 @@ class TimeAverageVolumeOutput(VolumeOutput):
     )
 
 
-class SliceOutput(_AnimationAndFileFormatSettings):
+class SliceOutput(_AnimationAndFileFormatSettings, _OutputBase):
     """
     :class:`SliceOutput` class for slice output settings.
 
@@ -502,7 +511,7 @@ class TimeAverageSliceOutput(SliceOutput):
     output_type: Literal["TimeAverageSliceOutput"] = pd.Field("TimeAverageSliceOutput", frozen=True)
 
 
-class IsosurfaceOutput(_AnimationAndFileFormatSettings):
+class IsosurfaceOutput(_AnimationAndFileFormatSettings, _OutputBase):
     """
 
     :class:`IsosurfaceOutput` class for isosurface output settings.
@@ -679,6 +688,116 @@ class SurfaceIntegralOutput(_OutputBase):
         return value
 
 
+class RenderOutputGroup(Flow360BaseModel):
+    """
+
+    :class:`RenderOutputGroup` for defining a render output group - i.e. a set of
+    entities sharing a common material (display options) settings.
+
+    Example
+    -------
+    Define two :class:`RenderOutputGroup` objects, one assigning all boundaries of the
+    uploaded geometry to a flat metallic material, and another assigning a slice and an
+    isosurface to a material which will display a scalar field on the surface of the
+    entity.
+
+    >>> fl.RenderOutputGroup(
+    ...     surfaces=geometry["*"],
+    ...     material=fl.PBRMaterial.metal(shine=0.8)
+    ... ),
+    ... fl.RenderOutputGroup(
+    ...     slices=[
+    ...         fl.Slice(name="Example slice", normal=(0, 1, 0), origin=(0, 0, 0))
+    ...     ],
+    ...     isosurfaces=[
+    ...         fl.Isosurface(name="Example isosurface", iso_value=0.1, field="T")
+    ...     ],
+    ...     material=fl.FieldMaterial.rainbow(field="T", min_value=0, max_value=1, alpha=0.4)
+    ... )
+    ====
+
+    """
+
+    surfaces: Optional[EntityList[Surface]] = pd.Field(
+        None, description="List of of :class:`~flow360.Surface` entities."
+    )
+    slices: Optional[EntityList[Slice]] = pd.Field(
+        None, description="List of of :class:`~flow360.Slice` entities."
+    )
+    isosurfaces: Optional[UniqueItemList[Isosurface]] = pd.Field(
+        None, description="List of :class:`~flow360.Isosurface` entities."
+    )
+    material: Union[PBRMaterial, FieldMaterial] = pd.Field(
+        description="Materials settings (color, surface field, roughness etc..) to be applied to the entire group"
+    )
+
+    @contextual_field_validator("surfaces", mode="after")
+    @classmethod
+    def ensure_surface_existence(cls, value, param_info: ParamsValidationInfo):
+        """Ensure all boundaries will be present after mesher"""
+        return validate_entity_list_surface_existence(value, param_info)
+
+    @contextual_model_validator(mode="after")
+    def check_not_empty(self, param_info: ParamsValidationInfo):
+        """Verify the render group has at least one entity assigned to it"""
+        expanded_surfaces = param_info.expand_entity_list(self.surfaces)
+        if not expanded_surfaces and not self.slices and not self.isosurfaces:
+            raise ValueError(
+                "Render group should include at least one entity (surface, slice or isosurface)"
+            )
+        return self
+
+
+class RenderOutput(_AnimationSettings):
+    """
+
+    :class:`RenderOutput` class for backend rendered output settings.
+
+    Example
+    -------
+
+    Define the :class:`RenderOutput` that outputs a basic image - boundaries and a Y-slice:
+
+    >>> fl.RenderOutput(
+    ...     name="Example render",
+    ...     groups=[
+    ...         fl.RenderOutputGroup(
+    ...             surfaces=geometry["*"],
+    ...             material=fl.render.PBRMaterial.metal(shine=0.8)
+    ...         ),
+    ...         fl.RenderOutputGroup(
+    ...             slices=[
+    ...                 fl.Slice(name="Example slice", normal=(0, 1, 0), origin=(0, 0, 0))
+    ...             ],
+    ...             material=fl.render.FieldMaterial.rainbow(field="T", min_value=0, max_value=1, alpha=0.4)
+    ...         )
+    ...     ],
+    ...     camera=fl.render.Camera.orthographic(scale=5, view=fl.Viewpoint.TOP + fl.Viewpoint.LEFT)
+    ... )
+    ====
+    """
+
+    name: str = pd.Field("Render output", description="Name of the `RenderOutput`.")
+    groups: List[RenderOutputGroup] = pd.Field([])
+    camera: Camera = pd.Field(description="Camera settings", default_factory=Camera.orthographic)
+    lighting: Lighting = pd.Field(description="Lighting settings", default_factory=Lighting.default)
+    environment: Environment = pd.Field(
+        description="Environment settings", default_factory=Environment.simple
+    )
+    transform: Optional[SceneTransform] = pd.Field(
+        None, description="Optional model transform to apply to all entities"
+    )
+    output_type: Literal["RenderOutput"] = pd.Field("RenderOutput", frozen=True)
+
+    @pd.field_validator("groups", mode="after")
+    @classmethod
+    def check_has_output_groups(cls, value):
+        """Verify the render output has at least one group to render"""
+        if len(value) < 1:
+            raise ValueError("Render output requires at least one output group to be defined")
+        return value
+
+
 class ProbeOutput(_OutputBase):
     """
     :class:`ProbeOutput` class for setting output data probed at monitor points.
@@ -814,7 +933,7 @@ class SurfaceProbeOutput(_OutputBase):
         return validate_entity_list_surface_existence(value, param_info)
 
 
-class SurfaceSliceOutput(_AnimationAndFileFormatSettings):
+class SurfaceSliceOutput(_AnimationAndFileFormatSettings, _OutputBase):
     """
     Surface slice settings.
     """
@@ -1369,6 +1488,7 @@ OutputTypes = Annotated[
         TimeAverageStreamlineOutput,
         ForceDistributionOutput,
         TimeAverageForceDistributionOutput,
+        RenderOutput,
     ],
     pd.Field(discriminator="output_type"),
 ]
