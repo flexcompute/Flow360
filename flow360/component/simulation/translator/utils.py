@@ -165,7 +165,7 @@ def remove_units_in_dict(input_dict, skip_keys: list[str] = None):
         new_dict = {}
         if _is_unyt_or_unyt_like_obj(input_dict):
             new_dict = input_dict["value"]
-            if input_dict["units"].startswith("flow360_") is False:
+            if input_dict["units"] is not None and input_dict["units"].startswith("flow360_") is False:
                 raise ValueError(
                     f"[Internal Error] Unit {new_dict['units']} is not non-dimensionalized."
                 )
@@ -201,12 +201,17 @@ def inline_expressions_in_dict(input_dict, input_params):
     """Inline all client-time evaluable expressions in the provided dict to their evaluated values"""
     if isinstance(input_dict, dict):
         new_dict = {}
-        if "type_name" in input_dict.keys() and input_dict["type_name"] == "Expression":
-            expression = Expression(expression=input_dict["expression"])
-            evaluated = expression.evaluate(raise_on_non_evaluable=False)
-            converted = evaluated.in_base(unit_system=input_params.flow360_unit_system).v
-            new_dict = converted
-            return new_dict
+        if "typeName" in input_dict.keys():
+            if input_dict["typeName"] == "expression":
+                expression = Expression(expression=input_dict["expression"])
+                evaluated = expression.evaluate(raise_on_non_evaluable=False)
+                converted = evaluated.in_base(unit_system=input_params.flow360_unit_system).v
+                new_dict = converted
+                return new_dict
+            # Handle non-dimensional number fields - unit removal does not handle them later on
+            if "units" not in input_dict.keys() and input_dict["typeName"] == "number":
+                new_dict = input_dict["value"]
+                return new_dict
         for key, value in input_dict.items():
             # For number-type fields the schema should match dimensioned unit fields
             # so remove_units_in_dict should handle them correctly...

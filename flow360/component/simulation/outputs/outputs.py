@@ -734,7 +734,10 @@ class RenderOutputGroup(Flow360BaseModel):
     @classmethod
     def ensure_surface_existence(cls, value, param_info: ParamsValidationInfo):
         """Ensure all boundaries will be present after mesher"""
-        return check_deleted_surface_in_entity_list(value, param_info)
+        if value is not None:
+            return check_deleted_surface_in_entity_list(value, param_info)
+        return value
+        
 
     @pd.model_validator(mode="after")
     def check_not_empty(self):

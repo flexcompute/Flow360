@@ -100,6 +100,7 @@ from flow360.component.simulation.primitives import (
 )
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
+from flow360.component.simulation.outputs.render_config import FieldMaterial
 from flow360.component.simulation.translator.user_expression_utils import (
     udf_prepending_code,
 )
@@ -135,10 +136,10 @@ from flow360.component.simulation.utils import (
 from flow360.exceptions import Flow360TranslationError
 
 
-def dump_dict(input_params):
+def dump_dict(input_params, exclude_none=True):
     """Dumping param/model to dictionary."""
 
-    result = input_params.model_dump(by_alias=True, exclude_none=True)
+    result = input_params.model_dump(by_alias=True, exclude_none=exclude_none)
     if result.pop("privateAttributeDict", None) is not None:
         result.update(input_params.private_attribute_dict)
     return result
@@ -629,12 +630,18 @@ def translate_render_output(
         }
 
         for render_group in render.groups:
-            material_dict = dump_dict(render_group.material)
+            material = render_group.material
+            
+            material_dict = dump_dict(material)
+            material_dict = inline_expressions_in_dict(material_dict, input_params)
+            material_dict = remove_units_in_dict(material_dict)
 
             if material_dict["typeName"] == "PBRMaterial":
                 material_dict["type"] = "pbr"
             elif material_dict["typeName"] == "FieldMaterial":
                 material_dict["type"] = "field"
+
+            material_dict = remove_keys(material_dict, "typeName")
 
             translated_output["groups"].append(
                 {
