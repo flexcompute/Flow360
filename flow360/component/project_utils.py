@@ -180,7 +180,7 @@ def apply_and_inform_grouping_selections(
     missing_groupings = []
     if face_grouping is None:
         missing_groupings.append("face_grouping")
-    if edge_grouping is None:
+    if edge_grouping is None and entity_info.edge_attribute_names:
         missing_groupings.append("edge_grouping")
 
     if missing_groupings:

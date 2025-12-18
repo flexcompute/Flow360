@@ -128,7 +128,7 @@ def test_automated_farfield_surface_usage():
         with pytest.raises(
             ValueError,
             match=re.escape(
-                "Can not find any valid entity of type ['Surface', 'WindTunnelGhostSurface'] from the input."
+                "Can not find any valid entity of type ['Surface', 'MirroredSurface', 'WindTunnelGhostSurface'] from the input."
             ),
         ):
             _ = SimulationParams(

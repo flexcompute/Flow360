@@ -95,6 +95,7 @@ from flow360.component.simulation.primitives import (
     GhostSurface,
     GhostSurfacePair,
     ImportedSurface,
+    MirroredSurface,
     Surface,
     SurfacePair,
 )
@@ -525,7 +526,13 @@ def translate_surface_output(
         surface_output_class,
         translation_func=translate_output_fields,
         to_list=False,
-        entity_type_to_include=(Surface, GhostSurface, GhostSphere, GhostCircularPlane),
+        entity_type_to_include=(
+            Surface,
+            GhostSurface,
+            GhostSphere,
+            GhostCircularPlane,
+            MirroredSurface,
+        ),
     )
     surface_output["writeSingleFile"] = get_global_setting_from_first_instance(
         output_params,
@@ -639,7 +646,7 @@ def translate_render_output(
                         [render_group],
                         RenderOutputGroup,
                         to_list=False,
-                        entity_type_to_include=Surface,
+                        entity_type_to_include=(Surface, MirroredSurface),
                         entity_list_field_name="surfaces",
                     ),
                     "slices": translate_setting_and_apply_to_all_entities(
@@ -709,7 +716,7 @@ def translate_monitor_output(
         lump_list_of_entities=True,
         use_instance_name_as_key=True,
         entity_type_to_include=(
-            (Surface, GhostSurface, GhostSphere, GhostCircularPlane)
+            (Surface, GhostSurface, GhostSphere, GhostCircularPlane, MirroredSurface)
             if monitor_type is SurfaceIntegralOutput
             else None
         ),

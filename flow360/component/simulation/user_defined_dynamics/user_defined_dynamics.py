@@ -11,6 +11,7 @@ from flow360.component.simulation.primitives import (
     CustomVolume,
     Cylinder,
     GenericVolume,
+    MirroredSurface,
     SeedpointVolume,
     Surface,
 )
@@ -96,7 +97,7 @@ class UserDefinedDynamic(Flow360BaseModel):
         + ":code:`state[0]`, :code:`state[1]`, ..., respectively. These expressions follows similar guidelines as "
         + ":ref:`user Defined Expressions<userDefinedExpressionsKnowledgeBase>`."
     )
-    input_boundary_patches: Optional[EntityList[Surface]] = pd.Field(
+    input_boundary_patches: Optional[EntityList[Surface, MirroredSurface]] = pd.Field(
         None,
         description="The list of :class:`~flow360.Surface` entities to which the input variables belongs. "
         + "If multiple boundaries are specified then the summation over the boundaries are used as the input. "

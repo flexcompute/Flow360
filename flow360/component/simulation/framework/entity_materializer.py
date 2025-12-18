@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
 
 import pydantic as pd
 
+from flow360.component.simulation.draft_context.mirror import MirrorPlane
 from flow360.component.simulation.framework.entity_materialization_context import (
     EntityMaterializationContext,
     get_entity_builder,
@@ -41,6 +42,8 @@ from flow360.component.simulation.primitives import (
     GhostSphere,
     GhostSurface,
     ImportedSurface,
+    MirroredGeometryBodyGroup,
+    MirroredSurface,
     SeedpointVolume,
     SnappyBody,
     Surface,
@@ -70,6 +73,9 @@ ENTITY_TYPE_MAP = {
     "SeedpointVolume": SeedpointVolume,
     "SnappyBody": SnappyBody,
     "WindTunnelGhostSurface": WindTunnelGhostSurface,
+    "MirroredSurface": MirroredSurface,
+    "MirroredGeometryBodyGroup": MirroredGeometryBodyGroup,
+    "MirrorPlane": MirrorPlane,
 }
 
 

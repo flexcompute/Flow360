@@ -12,7 +12,6 @@ from flow360.component.project_utils import set_up_params_for_uploading
 from flow360.component.resource_base import local_metadata_builder
 from flow360.component.simulation.draft_context.context import DraftContext
 from flow360.component.simulation.draft_context.mirror import (
-    MirroredGeometryBodyGroup,
     MirrorManager,
     MirrorPlane,
     MirrorStatus,
@@ -20,7 +19,7 @@ from flow360.component.simulation.draft_context.mirror import (
 )
 from flow360.component.simulation.entity_info import GeometryEntityInfo
 from flow360.component.simulation.framework.param_utils import AssetCache
-from flow360.component.simulation.primitives import GeometryBodyGroup
+from flow360.component.simulation.primitives import MirroredGeometryBodyGroup
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.exceptions import Flow360RuntimeError
 
@@ -283,9 +282,7 @@ def test_mirror_from_status_rejects_duplicate_plane_names(mock_geometry):
         plane2 = MirrorPlane(name="duplicate", normal=(0, 1, 0), center=(0, 0, 0) * u.m)
 
         # Build a MirrorStatus with duplicate plane names - should fail during construction.
-        from flow360.component.simulation.draft_context.mirror import (
-            MirroredGeometryBodyGroup,
-        )
+        from flow360.component.simulation.primitives import MirroredGeometryBodyGroup
 
         with pytest.raises(ValidationError, match="Duplicate mirror plane name 'duplicate'"):
             MirrorStatus(

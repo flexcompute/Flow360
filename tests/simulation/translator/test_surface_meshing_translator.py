@@ -56,6 +56,8 @@ from flow360.component.simulation.primitives import (
     Box,
     Cylinder,
     Edge,
+    MirroredGeometryBodyGroup,
+    MirroredSurface,
     SeedpointVolume,
     Surface,
 )
@@ -987,7 +989,7 @@ def _translate_and_compare(param, mesh_unit, ref_json_file: str, atol=1e-15):
     # It is important that the list in the configs are sorted beforehand
     # as the hash values for reuse resource rely on that
 
-    # check if everything is seriazable
+    # check if everything is serializable
     json.dumps(translated)
     assert compare_values(ref_dict, translated, atol=atol)
 
@@ -1370,8 +1372,6 @@ def test_gai_mirror_status_translation():
     2. All dimensional values (e.g., MirrorPlane.center) are serialized with proper units
     """
     from flow360.component.simulation.draft_context.mirror import (
-        MirroredGeometryBodyGroup,
-        MirroredSurface,
         MirrorPlane,
         MirrorStatus,
     )

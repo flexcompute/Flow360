@@ -1,6 +1,6 @@
 """Mirror plane, mirrored entities and helpers."""
 
-from typing import ClassVar, Dict, List, Literal, Optional, Tuple, Union
+from typing import Dict, List, Literal, Optional, Tuple, Union
 
 import pydantic as pd
 
@@ -8,7 +8,12 @@ from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityBase
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
 from flow360.component.simulation.framework.entity_utils import generate_uuid
-from flow360.component.simulation.primitives import GeometryBodyGroup, Surface
+from flow360.component.simulation.primitives import (
+    GeometryBodyGroup,
+    MirroredGeometryBodyGroup,
+    MirroredSurface,
+    Surface,
+)
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.utils import is_exact_instance
 from flow360.component.types import Axis
@@ -38,43 +43,6 @@ class MirrorPlane(EntityBase):
     private_attribute_entity_type_name: Literal["MirrorPlane"] = pd.Field(
         "MirrorPlane", frozen=True
     )
-    entity_bucket: ClassVar[str] = "MirrorPlaneType"
-    private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
-
-
-class MirroredGeometryBodyGroup(EntityBase):
-    """
-    :class:`MirroredGeometryBodyGroup` class for representing a mirrored geometry body group.
-    """
-
-    name: str = pd.Field()
-    geometry_body_group_id: str = pd.Field(description="ID of the geometry body group to mirror.")
-    mirror_plane_id: str = pd.Field(
-        description="ID of the mirror plane to mirror the geometry body group."
-    )
-
-    private_attribute_entity_type_name: Literal["MirroredGeometryBodyGroup"] = pd.Field(
-        "MirroredGeometryBodyGroup", frozen=True
-    )
-    entity_bucket: ClassVar[str] = "MirroredGeometryBodyGroupType"
-    private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
-
-
-class MirroredSurface(EntityBase):
-    """
-    :class:`MirroredSurface` class for representing a mirrored surface.
-    """
-
-    name: str = pd.Field()
-    surface_id: str = pd.Field(
-        description="ID of the original surface being mirrored.", frozen=True
-    )
-    mirror_plane_id: str = pd.Field(description="ID of the mirror plane to mirror the surface.")
-
-    private_attribute_entity_type_name: Literal["MirroredSurface"] = pd.Field(
-        "MirroredSurface", frozen=True
-    )
-    entity_bucket: ClassVar[str] = "MirroredSurfaceType"
     private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
 
 

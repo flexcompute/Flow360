@@ -10,6 +10,7 @@ from flow360.component.simulation.models.surface_models import EntityListAllowin
 from flow360.component.simulation.primitives import (
     GhostCircularPlane,
     GhostSurface,
+    MirroredSurface,
     Surface,
     WindTunnelGhostSurface,
 )
@@ -44,7 +45,7 @@ class SurfaceRefinement(Flow360BaseModel):
     name: Optional[str] = pd.Field("Surface refinement")
     refinement_type: Literal["SurfaceRefinement"] = pd.Field("SurfaceRefinement", frozen=True)
     entities: EntityListAllowingGhost[
-        Surface, WindTunnelGhostSurface, GhostSurface, GhostCircularPlane
+        Surface, MirroredSurface, WindTunnelGhostSurface, GhostSurface, GhostCircularPlane
     ] = pd.Field(alias="faces")
     # pylint: disable=no-member
     max_edge_length: Optional[LengthType.Positive] = pd.Field(
@@ -126,7 +127,7 @@ class GeometryRefinement(Flow360BaseModel):
 
     name: Optional[str] = pd.Field("Geometry refinement")
     refinement_type: Literal["GeometryRefinement"] = pd.Field("GeometryRefinement", frozen=True)
-    entities: EntityList[Surface, WindTunnelGhostSurface] = pd.Field(alias="faces")
+    entities: EntityList[Surface, MirroredSurface, WindTunnelGhostSurface] = pd.Field(alias="faces")
     # pylint: disable=no-member
 
     geometry_accuracy: Optional[LengthType.Positive] = pd.Field(
@@ -216,7 +217,7 @@ class BoundaryLayer(Flow360BaseModel):
 
     name: Optional[str] = pd.Field("Boundary layer refinement")
     refinement_type: Literal["BoundaryLayer"] = pd.Field("BoundaryLayer", frozen=True)
-    entities: EntityList[Surface, WindTunnelGhostSurface] = pd.Field(alias="faces")
+    entities: EntityList[Surface, MirroredSurface, WindTunnelGhostSurface] = pd.Field(alias="faces")
     # pylint: disable=no-member
     first_layer_thickness: Optional[LengthType.Positive] = pd.Field(
         None,

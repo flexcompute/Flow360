@@ -4,7 +4,17 @@ Primitive type definitions for simulation entities.
 
 import re
 from abc import ABCMeta
-from typing import Annotated, ClassVar, List, Literal, Optional, Tuple, Union, final
+from typing import (
+    Annotated,
+    ClassVar,
+    List,
+    Literal,
+    Optional,
+    Tuple,
+    TypeAlias,
+    Union,
+    final,
+)
 
 import numpy as np
 import pydantic as pd
@@ -933,3 +943,49 @@ class EntityListWithCustomVolume(EntityList):
         expanded = param_info.expand_entity_list(self)
         check_custom_volume_creation(expanded, param_info)
         return self
+
+
+class MirroredSurface(_SurfaceEntityBase):
+    """
+    :class:`MirroredSurface` class for representing a mirrored surface.
+    """
+
+    name: str = pd.Field()
+    surface_id: str = pd.Field(
+        description="ID of the original surface being mirrored.", frozen=True
+    )
+    mirror_plane_id: str = pd.Field(description="ID of the mirror plane to mirror the surface.")
+
+    private_attribute_entity_type_name: Literal["MirroredSurface"] = pd.Field(
+        "MirroredSurface", frozen=True
+    )
+    private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
+
+
+class MirroredGeometryBodyGroup(EntityBase):
+    """
+    :class:`MirroredGeometryBodyGroup` class for representing a mirrored geometry body group.
+    """
+
+    name: str = pd.Field()
+    geometry_body_group_id: str = pd.Field(description="ID of the geometry body group to mirror.")
+    mirror_plane_id: str = pd.Field(
+        description="ID of the mirror plane to mirror the geometry body group."
+    )
+
+    private_attribute_entity_type_name: Literal["MirroredGeometryBodyGroup"] = pd.Field(
+        "MirroredGeometryBodyGroup", frozen=True
+    )
+    private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
+
+
+# Type alias for surface entity lists used in outputs and models
+SurfaceEntityListType: TypeAlias = EntityList[
+    Surface,
+    MirroredSurface,
+    GhostSurface,
+    WindTunnelGhostSurface,
+    GhostCircularPlane,
+    GhostSphere,
+    ImportedSurface,
+]

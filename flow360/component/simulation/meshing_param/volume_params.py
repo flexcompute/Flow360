@@ -21,6 +21,7 @@ from flow360.component.simulation.primitives import (
     Cylinder,
     GenericVolume,
     GhostSurface,
+    MirroredSurface,
     SeedpointVolume,
     Surface,
     WindTunnelGhostSurface,
@@ -236,14 +237,16 @@ class RotationVolume(AxisymmetricRefinementBase):
     type: Literal["RotationVolume"] = pd.Field("RotationVolume", frozen=True)
     name: Optional[str] = pd.Field("Rotation Volume", description="Name to display in the GUI.")
     entities: EntityList[Cylinder, AxisymmetricBody] = pd.Field()
-    enclosed_entities: Optional[EntityList[Cylinder, Surface, AxisymmetricBody, Box]] = pd.Field(
+    enclosed_entities: Optional[
+        EntityList[Cylinder, Surface, MirroredSurface, AxisymmetricBody, Box]
+    ] = pd.Field(
         None,
         description="Entities enclosed by :class:`RotationVolume`. "
         "Can be `Surface` and/or other :class:`~flow360.Cylinder`(s)"
         "and/or other :class:`~flow360.AxisymmetricBody`(s)"
         "and/or other :class:`~flow360.Box`(s)",
     )
-    stationary_enclosed_entities: Optional[EntityList[Surface]] = pd.Field(
+    stationary_enclosed_entities: Optional[EntityList[Surface, MirroredSurface]] = pd.Field(
         None,
         description=(
             "Surface entities included in `enclosed_entities` which should remain stationary "
