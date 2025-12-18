@@ -788,6 +788,7 @@ class RenderOutput(_AnimationSettings):
         None, description="Optional model transform to apply to all entities"
     )
     output_type: Literal["RenderOutput"] = pd.Field("RenderOutput", frozen=True)
+    private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
 
     @pd.field_validator("groups", mode="after")
     @classmethod
