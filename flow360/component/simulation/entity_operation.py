@@ -101,6 +101,137 @@ def _compose_transformation_matrices(parent: np.ndarray, child: np.ndarray) -> n
     return np.hstack([combined_rotation, combined_translation[:, np.newaxis]])
 
 
+def _transform_point(point: np.ndarray, matrix: np.ndarray) -> np.ndarray:
+    """
+    Transform a 3D point using a 3x4 transformation matrix.
+
+    Args:
+        point: 3D point as numpy array [x, y, z]
+        matrix: 3x4 transformation matrix
+
+    Returns:
+        Transformed point as numpy array [x', y', z']
+    """
+    rotation_scale = matrix[:, :3]
+    translation = matrix[:, 3]
+    return rotation_scale @ point + translation
+
+
+def _transform_direction(vector: np.ndarray, matrix: np.ndarray) -> np.ndarray:
+    """
+    Transform a direction vector using only the rotation part of a transformation matrix.
+    Does not apply translation (directions are independent of position).
+
+    Args:
+        vector: 3D direction vector as numpy array [x, y, z]
+        matrix: 3x4 transformation matrix
+
+    Returns:
+        Transformed direction vector as numpy array [x', y', z']
+    """
+    rotation_scale = matrix[:, :3]
+    return rotation_scale @ vector
+
+
+def _extract_scale_from_matrix(matrix: np.ndarray) -> np.ndarray:
+    """
+    Extract scale factors from a 3x4 transformation matrix.
+
+    Args:
+        matrix: 3x4 transformation matrix
+
+    Returns:
+        Scale factors as numpy array [sx, sy, sz]
+    """
+    rotation_scale = matrix[:, :3]
+    # Scale factors are the norms of the column vectors
+    return np.linalg.norm(rotation_scale, axis=0)
+
+
+def _is_uniform_scale(matrix: np.ndarray, rtol: float = 1e-5) -> bool:
+    """
+    Check if a transformation matrix represents uniform scaling.
+
+    Args:
+        matrix: 3x4 transformation matrix
+        rtol: Relative tolerance for comparison
+
+    Returns:
+        True if the matrix has uniform scaling (sx = sy = sz), False otherwise
+    """
+    scale_factors = _extract_scale_from_matrix(matrix)
+    return np.allclose(scale_factors, scale_factors[0], rtol=rtol)
+
+
+def _extract_rotation_matrix(matrix: np.ndarray) -> np.ndarray:
+    """
+    Extract the pure rotation matrix from a 3x4 transformation matrix,
+    removing any scaling component.
+
+    Args:
+        matrix: 3x4 transformation matrix
+
+    Returns:
+        Pure 3x3 rotation matrix (orthonormal)
+    """
+    rotation_scale = matrix[:, :3]
+    scale_factors = _extract_scale_from_matrix(matrix)
+
+    # Divide each column by its scale factor to remove scaling
+    rotation_matrix = rotation_scale / scale_factors
+    return rotation_matrix
+
+
+def _rotation_matrix_to_axis_angle(rotation_matrix: np.ndarray) -> Tuple[np.ndarray, float]:
+    """
+    Extract axis-angle representation from a 3x3 rotation matrix.
+    This is the inverse operation of rotation_matrix_from_axis_and_angle.
+
+    Args:
+        rotation_matrix: 3x3 rotation matrix
+
+    Returns:
+        Tuple of (axis, angle) where:
+            - axis: 3D unit vector as numpy array [x, y, z]
+            - angle: rotation angle in radians
+    """
+    # Check for identity matrix (no rotation)
+    if np.allclose(rotation_matrix, np.eye(3)):
+        return np.array([1.0, 0.0, 0.0]), 0.0
+
+    # Compute the rotation angle from the trace
+    trace = np.trace(rotation_matrix)
+    angle = np.arccos(np.clip((trace - 1) / 2, -1.0, 1.0))
+
+    # Check for 180-degree rotation (special case)
+    if np.abs(angle - np.pi) < 1e-10:
+        # For 180-degree rotation, the axis is the eigenvector with eigenvalue 1
+        # Find the column with the largest diagonal element
+        diag = np.diag(rotation_matrix)
+        k = np.argmax(diag)
+
+        # Extract axis from the matrix
+        axis = np.zeros(3)
+        axis[k] = np.sqrt((rotation_matrix[k, k] + 1) / 2)
+
+        for i in range(3):
+            if i != k:
+                axis[i] = rotation_matrix[k, i] / (2 * axis[k])
+
+        axis = axis / np.linalg.norm(axis)
+        return axis, angle
+
+    # General case: extract axis from skew-symmetric part
+    axis = np.array([
+        rotation_matrix[2, 1] - rotation_matrix[1, 2],
+        rotation_matrix[0, 2] - rotation_matrix[2, 0],
+        rotation_matrix[1, 0] - rotation_matrix[0, 1]
+    ])
+
+    axis = axis / np.linalg.norm(axis)
+    return axis, angle
+
+
 class Transformation(Flow360BaseModel):
     """[Deprecating] Transformation that will be applied to a body group."""
 
