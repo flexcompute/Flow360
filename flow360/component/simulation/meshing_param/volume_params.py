@@ -240,9 +240,9 @@ class RotationVolume(AxisymmetricRefinementBase):
         None,
         description=(
             "Entities enclosed by :class:`RotationVolume`. "
-            "Can be :class:`~flow360.Surface` and/or other :class:`~flow360.Cylinder`\ (s) "
-            "and/or other :class:`~flow360.AxisymmetricBody`\ (s) "
-            "and/or other :class:`~flow360.Box`\ (s)"
+            "Can be :class:`~flow360.Surface` and/or other :class:`~flow360.Cylinder`"
+            "and/or other :class:`~flow360.AxisymmetricBody`"
+            "and/or other :class:`~flow360.Box`"
         ),
     )
     stationary_enclosed_entities: Optional[EntityList[Surface]] = pd.Field(

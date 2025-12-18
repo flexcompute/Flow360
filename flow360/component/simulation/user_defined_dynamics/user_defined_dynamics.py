@@ -26,7 +26,8 @@ from flow360.component.simulation.validation.validation_utils import (
 class UserDefinedDynamic(Flow360BaseModel):
     """
     :class:`UserDefinedDynamic` class for defining the user defined dynamics inputs.
-    Please refer to :doc:`this example </python_api/example_library/notebooks/udd_alpha_controller>` for an implementation example.
+    Please refer to :doc:`this example </python_api/example_library/notebooks/udd_alpha_controller>`
+    for an implementation example.
 
     Example
     -------

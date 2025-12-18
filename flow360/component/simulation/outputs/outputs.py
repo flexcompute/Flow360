@@ -619,8 +619,8 @@ class SurfaceIntegralOutput(_OutputBase):
     Note
     ----
     :class:`SurfaceIntegralOutput` can only be used with :class:`UserDefinedField`.
-    See :doc:`User Defined Postprocessing Tutorial </python_api/example_library/notebooks/hinge_torques>` for more details
-    about how to set up :class:`UserDefinedField`.
+    See :doc:`User Defined Postprocessing Tutorial </python_api/example_library/notebooks/hinge_torques>`
+    for more details about how to set up :class:`UserDefinedField`.
 
     Example
     -------
