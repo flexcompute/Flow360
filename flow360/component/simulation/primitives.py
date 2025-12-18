@@ -4,17 +4,7 @@ Primitive type definitions for simulation entities.
 
 import re
 from abc import ABCMeta
-from typing import (
-    Annotated,
-    ClassVar,
-    List,
-    Literal,
-    Optional,
-    Tuple,
-    TypeAlias,
-    Union,
-    final,
-)
+from typing import Annotated, ClassVar, List, Literal, Optional, Tuple, Union, final
 
 import numpy as np
 import pydantic as pd
@@ -977,15 +967,3 @@ class MirroredGeometryBodyGroup(EntityBase):
         "MirroredGeometryBodyGroup", frozen=True
     )
     private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
-
-
-# Type alias for surface entity lists used in outputs and models
-SurfaceEntityListType: TypeAlias = EntityList[
-    Surface,
-    MirroredSurface,
-    GhostSurface,
-    WindTunnelGhostSurface,
-    GhostCircularPlane,
-    GhostSphere,
-    ImportedSurface,
-]

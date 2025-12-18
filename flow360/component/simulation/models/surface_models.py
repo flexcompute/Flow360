@@ -496,7 +496,7 @@ class Freestream(BoundaryBaseWithTurbulenceQuantities):
         WindTunnelGhostSurface,
         GhostSphere,
         GhostCircularPlane,
-    ] = pd.Field(
+    ] = pd.Field(  # pylint: disable=duplicate-code
         alias="surfaces",
         description="List of boundaries with the `Freestream` boundary condition imposed.",
     )

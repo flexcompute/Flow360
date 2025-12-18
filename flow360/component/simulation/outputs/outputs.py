@@ -48,7 +48,6 @@ from flow360.component.simulation.primitives import (
     ImportedSurface,
     MirroredSurface,
     Surface,
-    SurfaceEntityListType,
     WindTunnelGhostSurface,
 )
 from flow360.component.simulation.unit_system import LengthType, TimeType
@@ -315,7 +314,15 @@ class SurfaceOutput(_AnimationAndFileFormatSettings, _OutputBase):
     # TODO: entities is None --> use all surfaces. This is not implemented yet.
 
     name: Optional[str] = pd.Field("Surface output", description="Name of the `SurfaceOutput`.")
-    entities: SurfaceEntityListType = pd.Field(
+    entities: EntityListAllowingGhost[  # pylint: disable=duplicate-code
+        Surface,
+        MirroredSurface,
+        GhostSurface,
+        WindTunnelGhostSurface,
+        GhostCircularPlane,
+        GhostSphere,
+        ImportedSurface,
+    ] = pd.Field(
         alias="surfaces",
         description="List of boundaries where output is generated.",
     )
@@ -641,7 +648,15 @@ class SurfaceIntegralOutput(_OutputBase):
     """
 
     name: str = pd.Field("Surface integral output", description="Name of integral.")
-    entities: SurfaceEntityListType = pd.Field(
+    entities: EntityListAllowingGhost[  # pylint: disable=duplicate-code
+        Surface,
+        MirroredSurface,
+        GhostSurface,
+        WindTunnelGhostSurface,
+        GhostCircularPlane,
+        GhostSphere,
+        ImportedSurface,
+    ] = pd.Field(
         alias="surfaces",
         description="List of boundaries where the surface integral will be calculated.",
     )
