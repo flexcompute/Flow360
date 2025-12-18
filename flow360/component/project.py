@@ -93,6 +93,22 @@ class RootType(Enum):
     VOLUME_MESH = "VolumeMesh"
 
 
+class ProjectResourceType(Enum):
+    """
+    Enum for dependency resource types in the project.
+
+    Attributes
+    ----------
+    GEOMETRY : str
+        Represents a geometry dependency resource.
+    SURFACE_MESH : str
+        Represents a surface mesh dependency resource.
+    """
+
+    GEOMETRY = "Geometry"
+    SURFACE_MESH = "SurfaceMesh"
+
+
 def create_draft(
     *,
     new_run_from: Union[Geometry, SurfaceMeshV2, VolumeMeshV2],
@@ -1158,6 +1174,22 @@ class Project(pd.BaseModel):
             run_async=run_async,
         )
 
+    def _check_conflicts_with_existing_dependency_resources(
+        self, name: str, resource_type: ProjectResourceType
+    ):
+        resp = self._project_webapi.post(method="dependency/namecheck", json={"name": name})
+        if (
+            resource_type == ProjectResourceType.GEOMETRY
+            and resp["conflictResourceId"].startswith("geo")
+        ) or (
+            resource_type == ProjectResourceType.SURFACE_MESH
+            and resp["conflictResourceId"].startswith("sm")
+        ):
+            raise Flow360ValueError(
+                f"A {resource_type.value} with the name '{name}' already exists in the project. "
+                "Please use a different name."
+            )
+
     def _import_dependency_resource_from_file(
         self,
         *,
@@ -1171,6 +1203,9 @@ class Project(pd.BaseModel):
         files._check_files_existence()
 
         if isinstance(files, GeometryFiles):
+            self._check_conflicts_with_existing_dependency_resources(
+                name=name, resource_type=ProjectResourceType.GEOMETRY
+            )
             draft = Geometry.from_file_for_project(
                 name=name,
                 file_names=files.file_names,
@@ -1179,6 +1214,9 @@ class Project(pd.BaseModel):
                 tags=tags,
             )
         elif isinstance(files, SurfaceMeshFile):
+            self._check_conflicts_with_existing_dependency_resources(
+                name=name, resource_type=ProjectResourceType.SURFACE_MESH
+            )
             draft = SurfaceMeshV2.from_file_for_project(
                 name=name,
                 file_name=files.file_names,
@@ -1297,25 +1335,23 @@ class Project(pd.BaseModel):
             surface_mesh_id=surface_mesh.id,
         )
 
-    def _get_imported_depedency_resources_from_cloud(
-        self, resource_type: Literal["Geometry", "SurfaceMesh"]
-    ):
+    def _get_imported_depedency_resources_from_cloud(self, resource_type: ProjectResourceType):
         """
         Get all imported dependency resources of a given type in the project.
 
         Parameters
         ----------
-        resource_type : Literal["Geometry", "SurfaceMesh"]
+        resource_type : ProjectResourceType
             The type of dependency resource to retrieve.
 
         """
 
         resp = self._project_webapi.get(method="dependency")
-        if resource_type == "Geometry":
+        if resource_type == ProjectResourceType.GEOMETRY:
             imported_resources = [
                 Geometry.from_cloud(item["id"]) for item in resp["geometryDependencyResources"]
             ]
-        elif resource_type == "SurfaceMesh":
+        elif resource_type == ProjectResourceType.SURFACE_MESH:
             imported_resources = [
                 ImportedSurface(
                     name=item["name"],
