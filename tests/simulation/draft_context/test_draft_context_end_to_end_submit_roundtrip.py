@@ -176,7 +176,13 @@ def test_draft_end_to_end_selector_and_draft_entity_roundtrip(mock_surface_mesh,
 
         # Validate expansion works (a successful validate_model is usually sufficient; we still assert names).
         wall_model_v2 = next(m for m in validated.models if isinstance(m, Wall))
-        selected_names = wall_model_v2.entities.preview_selection(validated, return_names=True)
+        # Create a DraftContext from validated params to test selector preview
+        from flow360.component.simulation.draft_context import DraftContext
+
+        entity_info = validated.private_attribute_asset_cache.project_entity_info
+        temp_draft = DraftContext(entity_info=entity_info)
+        wall_selector = wall_model_v2.entities.selectors[0]
+        selected_names = temp_draft.preview_selector(wall_selector, return_names=True)
         assert selected_names == ["fuselage"]
 
         # Assert selector materialization links instances across references (same object).
