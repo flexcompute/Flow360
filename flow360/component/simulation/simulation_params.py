@@ -115,6 +115,10 @@ from flow360.component.simulation.validation.validation_simulation_params import
     _check_unsteadiness_to_use_hybrid_model,
     _check_valid_models_for_liquid,
 )
+from flow360.component.simulation.validation.validation_utils import (
+    has_coordinate_system_usage,
+    has_mirroring_usage,
+)
 from flow360.error_messages import (
     unit_system_inconsistent_msg,
     use_unit_system_for_simulation_msg,
@@ -604,6 +608,22 @@ class SimulationParams(_ParamModelBase):
     def check_time_average_output(params):
         """Only allow TimeAverage output field in the unsteady simulations"""
         return _check_time_average_output(params)
+
+    @contextual_model_validator(mode="after")
+    def _validate_coordinate_system_requires_geometry_ai(self, param_info: ParamsValidationInfo):
+        """Ensure CoordinateSystem is only used when GeometryAI is enabled."""
+        if has_coordinate_system_usage(self.private_attribute_asset_cache):
+            if not param_info.use_geometry_AI:
+                raise ValueError("Coordinate system is only supported when Geometry AI is enabled.")
+        return self
+
+    @contextual_model_validator(mode="after")
+    def _validate_mirroring_requires_geometry_ai(self, param_info: ParamsValidationInfo):
+        """Ensure mirroring is only used when GeometryAI is enabled."""
+        if has_mirroring_usage(self.private_attribute_asset_cache):
+            if not param_info.use_geometry_AI:
+                raise ValueError("Mirroring is only supported when Geometry AI is enabled.")
+        return self
 
     def _register_assigned_entities(self, registry: EntityRegistry) -> EntityRegistry:
         """Recursively register all entities listed in EntityList to the asset cache."""

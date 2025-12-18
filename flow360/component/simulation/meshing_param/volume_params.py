@@ -957,6 +957,13 @@ class WindTunnelFarfield(_FarfieldBase):
                 )
         return self
 
+    @contextual_model_validator(mode="after")
+    def _validate_requires_geometry_ai(self, param_info: ParamsValidationInfo):
+        """Ensure WindTunnelFarfield is only used when GeometryAI is enabled."""
+        if not param_info.use_geometry_AI:
+            raise ValueError("WindTunnelFarfield is only supported when Geometry AI is enabled.")
+        return self
+
 
 class MeshSliceOutput(Flow360BaseModel):
     """

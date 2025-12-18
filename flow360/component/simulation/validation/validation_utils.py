@@ -399,3 +399,24 @@ def check_geometry_ai_features(cls, value, info, param_info):
         raise ValueError(f"{info.field_name} is only supported when geometry AI is used.")
 
     return value
+
+
+def has_coordinate_system_usage(asset_cache) -> bool:
+    """Check if coordinate system feature is being used."""
+    if asset_cache is None:
+        return False
+    coordinate_system_status = asset_cache.coordinate_system_status
+    if coordinate_system_status and coordinate_system_status.assignments:
+        return True
+    return False
+
+
+def has_mirroring_usage(asset_cache) -> bool:
+    """Check if mirroring feature is being used."""
+    if asset_cache is None:
+        return False
+    mirror_status = asset_cache.mirror_status
+    if mirror_status:
+        if mirror_status.mirrored_geometry_body_groups or mirror_status.mirrored_surfaces:
+            return True
+    return False

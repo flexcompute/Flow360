@@ -1442,3 +1442,24 @@ def test_central_belt_width_validation():
             rear_wheel_belt_x_range=(260, 380),
             rear_wheel_belt_y_range=(80, 190),  # Inner edge is 80, 2×80 = 160 > 100
         )
+
+
+def test_wind_tunnel_farfield_requires_geometry_ai():
+    """Test that WindTunnelFarfield is only supported when Geometry AI is enabled."""
+    # Test: When GAI is disabled, should raise error
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"WindTunnelFarfield is only supported when Geometry AI is enabled.",
+    ):
+        with ValidationContext(VOLUME_MESH, non_gai_context):
+            with CGS_unit_system:
+                WindTunnelFarfield()
+
+    # Test: When GAI is enabled, should work
+    gai_context = ParamsValidationInfo({}, [])
+    gai_context.use_geometry_AI = True
+
+    with ValidationContext(VOLUME_MESH, gai_context):
+        with CGS_unit_system:
+            farfield = WindTunnelFarfield()
+            assert farfield.type == "WindTunnelFarfield"
