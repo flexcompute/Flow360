@@ -619,13 +619,12 @@ class SurfaceIntegralOutput(_OutputBase):
     Note
     ----
     :class:`SurfaceIntegralOutput` can only be used with :class:`UserDefinedField`.
-    See :ref:`User Defined Postprocessing Tutorial <UserDefinedPostprocessing>` for more details
+    See :doc:`User Defined Postprocessing Tutorial </python_api/example_library/notebooks/hinge_torques>` for more details
     about how to set up :class:`UserDefinedField`.
 
     Example
     -------
-    Define :class:`SurfaceIntegralOutput` of :code:`PressureForce` as set up in this
-    :ref:`User Defined Postprocessing Tutorial Case <UDFSurfIntegral>`.
+    Define :class:`SurfaceIntegralOutput` of :code:`PressureForce`.
 
     >>> fl.SurfaceIntegralOutput(
     ...     name="surface_integral",

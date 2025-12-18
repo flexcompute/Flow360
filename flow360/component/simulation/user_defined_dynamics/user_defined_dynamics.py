@@ -26,11 +26,10 @@ from flow360.component.simulation.validation.validation_utils import (
 class UserDefinedDynamic(Flow360BaseModel):
     """
     :class:`UserDefinedDynamic` class for defining the user defined dynamics inputs.
+    Please refer to :doc:`this example </python_api/example_library/notebooks/udd_alpha_controller>` for an implementation example.
 
     Example
     -------
-    The following example comes from the :ref:`User Defined Dynamics Tutorial Case <UDDGridRotation>`.
-    Please refer to :ref:`this tutorial<userDefinedDynamics>` for more details about the User Defined Dynamics.
 
     >>> fl.UserDefinedDynamic(
     ...    name="dynamicTheta",
