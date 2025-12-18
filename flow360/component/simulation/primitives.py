@@ -13,6 +13,12 @@ from typing_extensions import Self
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.entity_operation import (
+    _extract_rotation_matrix,
+    _extract_scale_from_matrix,
+    _is_uniform_scale,
+    _rotation_matrix_to_axis_angle,
+    _transform_direction,
+    _transform_point,
     rotation_matrix_from_axis_and_angle,
 )
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
@@ -32,7 +38,7 @@ from flow360.component.simulation.validation.validation_context import (
 )
 from flow360.component.types import Axis
 from flow360.component.utils import _naming_pattern_handler
-from flow360.exceptions import Flow360DeprecationError
+from flow360.exceptions import Flow360DeprecationError, Flow360ValueError
 
 BOUNDARY_FULL_NAME_WHEN_NOT_FOUND = "This boundary does not exist!!!"
 
@@ -428,6 +434,51 @@ class Box(MultiConstructorBaseModel, _VolumeEntityBase):
         setattr(info.data["private_attribute_input_cache"], info.field_name, value)
         return value
 
+    def _apply_transformation(self, matrix: np.ndarray) -> "Box":
+        """Apply 3x4 transformation matrix with uniform scale validation and rotation composition."""
+        # Validate uniform scaling
+        if not _is_uniform_scale(matrix):
+            scale_factors = _extract_scale_from_matrix(matrix)
+            raise Flow360ValueError(
+                f"Box only supports uniform scaling. " f"Detected scale factors: {scale_factors}"
+            )
+
+        # Extract uniform scale factor
+        uniform_scale = _extract_scale_from_matrix(matrix)[0]
+
+        # Transform center
+        center_array = np.asarray(self.center.value)
+        new_center_array = _transform_point(center_array, matrix)
+        new_center = type(self.center)(new_center_array, self.center.units)
+
+        # Combine rotations: existing rotation + transformation rotation
+        # Step 1: Get existing rotation matrix from axis-angle
+        existing_axis = np.asarray(self.axis_of_rotation, dtype=np.float64)
+        existing_axis = existing_axis / np.linalg.norm(existing_axis)
+        existing_angle = self.angle_of_rotation.to("rad").v.item()
+        R_existing = rotation_matrix_from_axis_and_angle(existing_axis, existing_angle)
+
+        # Step 2: Extract pure rotation from transformation matrix
+        R_transform = _extract_rotation_matrix(matrix)
+
+        # Step 3: Combine rotations (apply transformation rotation to existing)
+        R_combined = R_transform @ R_existing
+
+        # Step 4: Extract new axis-angle from combined rotation
+        new_axis, new_angle = _rotation_matrix_to_axis_angle(R_combined)
+
+        # Scale size uniformly
+        new_size = self.size * uniform_scale
+
+        return self.model_copy(
+            update={
+                "center": new_center,
+                "axis_of_rotation": tuple(new_axis),
+                "angle_of_rotation": new_angle * u.rad,
+                "size": new_size,
+            }
+        )
+
 
 @final
 class Cylinder(_VolumeEntityBase):
@@ -465,6 +516,46 @@ class Cylinder(_VolumeEntityBase):
                 f"Cylinder inner radius ({self.inner_radius}) must be less than outer radius ({self.outer_radius})."
             )
         return self
+
+    def _apply_transformation(self, matrix: np.ndarray) -> "Cylinder":
+        """Apply 3x4 transformation matrix with uniform scale validation."""
+        # Validate uniform scaling
+        if not _is_uniform_scale(matrix):
+            scale_factors = _extract_scale_from_matrix(matrix)
+            raise Flow360ValueError(
+                f"Cylinder only supports uniform scaling. "
+                f"Detected scale factors: {scale_factors}"
+            )
+
+        # Extract uniform scale factor
+        uniform_scale = _extract_scale_from_matrix(matrix)[0]
+
+        # Transform center
+        center_array = np.asarray(self.center.value)
+        new_center_array = _transform_point(center_array, matrix)
+        new_center = type(self.center)(new_center_array, self.center.units)
+
+        # Rotate axis
+        axis_array = np.asarray(self.axis)
+        transformed_axis = _transform_direction(axis_array, matrix)
+        new_axis = tuple(transformed_axis / np.linalg.norm(transformed_axis))
+
+        # Scale dimensions uniformly
+        new_height = self.height * uniform_scale
+        new_outer_radius = self.outer_radius * uniform_scale
+        new_inner_radius = (
+            self.inner_radius * uniform_scale if self.inner_radius is not None else None
+        )
+
+        return self.model_copy(
+            update={
+                "center": new_center,
+                "axis": new_axis,
+                "height": new_height,
+                "outer_radius": new_outer_radius,
+                "inner_radius": new_inner_radius,
+            }
+        )
 
 
 @final
@@ -521,6 +612,44 @@ class AxisymmetricBody(_VolumeEntityBase):
                 )
 
         return curve
+
+    def _apply_transformation(self, matrix: np.ndarray) -> "AxisymmetricBody":
+        """Apply 3x4 transformation matrix with uniform scale validation."""
+        # Validate uniform scaling
+        if not _is_uniform_scale(matrix):
+            scale_factors = _extract_scale_from_matrix(matrix)
+            raise Flow360ValueError(
+                f"AxisymmetricBody only supports uniform scaling. "
+                f"Detected scale factors: {scale_factors}"
+            )
+
+        # Extract uniform scale factor
+        uniform_scale = _extract_scale_from_matrix(matrix)[0]
+
+        # Transform center
+        center_array = np.asarray(self.center.value)
+        new_center_array = _transform_point(center_array, matrix)
+        new_center = type(self.center)(new_center_array, self.center.units)
+
+        # Rotate axis
+        axis_array = np.asarray(self.axis)
+        transformed_axis = _transform_direction(axis_array, matrix)
+        new_axis = tuple(transformed_axis / np.linalg.norm(transformed_axis))
+
+        # Scale profile curve uniformly
+        new_profile_curve = []
+        for point in self.profile_curve:
+            point_array = np.asarray(point.value)
+            scaled_point_array = point_array * uniform_scale
+            new_profile_curve.append(type(point)(scaled_point_array, point.units))
+
+        return self.model_copy(
+            update={
+                "center": new_center,
+                "axis": new_axis,
+                "profile_curve": new_profile_curve,
+            }
+        )
 
 
 class SurfacePrivateAttributes(Flow360BaseModel):
@@ -909,6 +1038,26 @@ class CustomVolume(_VolumeEntityBase):
         raise ValueError(
             "CustomVolume is only supported when beta mesher and user defined farfield are enabled."
         )
+
+    def _apply_transformation(self, matrix: np.ndarray) -> "CustomVolume":
+        """Apply rotation from transformation matrix to axes only (no translation or scaling)."""
+        if self.axes is None:
+            # No axes to transform
+            return self
+
+        # Extract pure rotation matrix (ignore translation and scaling)
+        rotation_matrix = _extract_rotation_matrix(matrix)
+
+        # Rotate both axes
+        x_axis_array = np.asarray(self.axes[0])
+        y_axis_array = np.asarray(self.axes[1])
+
+        new_x_axis = rotation_matrix @ x_axis_array
+        new_y_axis = rotation_matrix @ y_axis_array
+
+        new_axes = (tuple(new_x_axis), tuple(new_y_axis))
+
+        return self.model_copy(update={"axes": new_axes})
 
 
 def check_custom_volume_creation(value, param_info: ParamsValidationInfo):
