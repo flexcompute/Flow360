@@ -2,8 +2,13 @@
 
 from typing import Dict, List, Literal, Optional, Tuple, Union
 
+import numpy as np
 import pydantic as pd
 
+from flow360.component.simulation.entity_operation import (
+    _transform_direction,
+    _transform_point,
+)
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityBase
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
@@ -44,6 +49,20 @@ class MirrorPlane(EntityBase):
         "MirrorPlane", frozen=True
     )
     private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
+
+    def _apply_transformation(self, matrix: np.ndarray) -> "MirrorPlane":
+        """Apply 3x4 transformation matrix, returning new transformed instance."""
+        # Transform the center point
+        center_array = np.asarray(self.center.value)
+        new_center_array = _transform_point(center_array, matrix)
+        new_center = type(self.center)(new_center_array, self.center.units)
+
+        # Transform and normalize the normal direction
+        normal_array = np.asarray(self.normal)
+        transformed_normal = _transform_direction(normal_array, matrix)
+        new_normal = tuple(transformed_normal / np.linalg.norm(transformed_normal))
+
+        return self.model_copy(update={"center": new_center, "normal": new_normal})
 
 
 # region -----------------------------Internal Model Below-------------------------------------

@@ -222,11 +222,13 @@ def _rotation_matrix_to_axis_angle(rotation_matrix: np.ndarray) -> Tuple[np.ndar
         return axis, angle
 
     # General case: extract axis from skew-symmetric part
-    axis = np.array([
-        rotation_matrix[2, 1] - rotation_matrix[1, 2],
-        rotation_matrix[0, 2] - rotation_matrix[2, 0],
-        rotation_matrix[1, 0] - rotation_matrix[0, 1]
-    ])
+    axis = np.array(
+        [
+            rotation_matrix[2, 1] - rotation_matrix[1, 2],
+            rotation_matrix[0, 2] - rotation_matrix[2, 0],
+            rotation_matrix[1, 0] - rotation_matrix[0, 1],
+        ]
+    )
 
     axis = axis / np.linalg.norm(axis)
     return axis, angle
