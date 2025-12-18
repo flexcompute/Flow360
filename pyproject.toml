@@ -104,7 +104,8 @@ docs = [
     "sphinx_toolbox",
     "sphinx_paramlinks",
     "numpydoc",
-    "sphinxcontrib-mermaid"
+    "sphinxcontrib-mermaid",
+    "codespell"
 ]
 
 [tool.isort]
