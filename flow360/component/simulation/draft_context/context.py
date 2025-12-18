@@ -12,13 +12,14 @@ from flow360.component.simulation.framework.entity_registry import (
     EntityRegistry,
     EntityRegistryView,
 )
+from flow360.component.simulation.framework.entity_selector import EntitySelector
 from flow360.component.simulation.primitives import (
     Edge,
     GenericVolume,
     GeometryBodyGroup,
     Surface,
 )
-from flow360.exceptions import Flow360RuntimeError
+from flow360.exceptions import Flow360RuntimeError, Flow360ValueError
 
 __all__ = [
     "DraftContext",
@@ -161,5 +162,66 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
         from flow360.component.simulation.primitives import Cylinder
 
         return self._entity_registry.view(Cylinder)
+
+    def preview_selector(self, selector: "EntitySelector", *, return_names: bool = True):
+        """
+        Preview which entities a selector would match in this draft context.
+
+        Parameters
+        ----------
+        selector : EntitySelector
+            The selector to preview (SurfaceSelector, EdgeSelector, VolumeSelector, or BodyGroupSelector).
+        return_names : bool, default True
+            When True, returns entity names. When False, returns entity instances.
+
+        Returns
+        -------
+        list[str] | list[EntityBase]
+            Matched entity names or instances depending on ``return_names``.
+
+        Example
+        -------
+        >>> import flow360 as fl
+        >>> geometry = fl.Geometry.from_cloud(id="...")
+        >>> with fl.create_draft(new_run_from=geometry) as draft:
+        ...     selector = fl.SurfaceSelector(name="wing_surfaces").match("wing*")
+        ...     matched = draft.preview_selector(selector)
+        ...     print(matched)  # ['wing_upper', 'wing_lower', ...]
+
+        ====
+        """
+        # pylint: disable=import-outside-toplevel
+
+        from flow360.component.simulation.framework.entity_selector import (
+            _apply_single_selector,
+        )
+        from flow360.log import log
+
+        if not isinstance(selector, EntitySelector):
+            raise Flow360ValueError(
+                f"Expected EntitySelector, got {type(selector).__name__}. "
+                "Use fl.SurfaceSelector, fl.EdgeSelector, fl.VolumeSelector, or fl.BodyGroupSelector."
+            )
+
+        # Find entities by target_class
+        entities = self._entity_registry.find_by_type_name(selector.target_class)
+
+        if not entities:
+            log.warning(
+                "No entities of type '%s' found in the draft context.",
+                selector.target_class,
+            )
+            return []
+
+        # Apply the selector to get matched entities
+        matched_entities = _apply_single_selector(entities, selector)
+
+        if not matched_entities:
+            return []
+
+        # Return names or instances based on return_names
+        if return_names:
+            return [entity.name for entity in matched_entities]
+        return matched_entities
 
     # endregion ------------------------------------------------------------------------------------
