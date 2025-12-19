@@ -1,15 +1,15 @@
 {
-  "faces": {},
-  "farfield": {
-    "type": "wind-tunnel"
-  },
-  "refinementFactor": 1.0,
-  "volume": {
-    "firstLayerThickness": 0.0001,
-    "gapTreatmentStrength": 1.0,
-    "growthRate": 1.2,
-    "numBoundaryLayers": -1,
-    "planarFaceTolerance": 1e-06,
-    "slidingInterfaceTolerance": 0.01
-  }
+    "faces": {},
+    "farfield": {
+        "type": "wind-tunnel"
+    },
+    "refinementFactor": 1.0,
+    "volume": {
+        "firstLayerThickness": 0.0001,
+        "gapTreatmentStrength": 1.0,
+        "growthRate": 1.2,
+        "numBoundaryLayers": -1,
+        "planarFaceTolerance": 1e-06,
+        "slidingInterfaceTolerance": 0.01
+    }
 }

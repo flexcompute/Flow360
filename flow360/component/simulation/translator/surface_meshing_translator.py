@@ -597,6 +597,84 @@ def _get_volume_zones(volume_zones_list: list[dict]):
     ]
 
 
+def _filter_mirror_status(data):
+    """Process mirror_status to ensure idempotency while preserving mirroring relationships.
+
+    Strategy:
+    - For mirror planes: Replace UUID-based private_attribute_id with deterministic "mirror-{name}"
+    - For mirrored entities: Strip their own private_attribute_id, but keep mirror_plane_id
+      and update it to match the deterministic format
+
+    This preserves the relationship between mirrored entities and their mirror planes
+    while ensuring the translation is idempotent.
+    """
+    if not isinstance(data, dict):
+        return data
+
+    result = {}
+    uuid_to_deterministic = {}
+
+    # Process mirror_planes: replace private_attribute_id with deterministic ID
+    if "mirror_planes" in data:
+        result["mirror_planes"] = []
+        for plane in data["mirror_planes"]:
+            if not isinstance(plane, dict):
+                result["mirror_planes"].append(plane)
+                continue
+
+            plane_copy = plane.copy()
+            old_id = plane_copy.get("private_attribute_id")
+            name = plane_copy.get("name")
+
+            if old_id and name:
+                new_id = f"mirror-{name}"
+                uuid_to_deterministic[old_id] = new_id
+                plane_copy["private_attribute_id"] = new_id
+
+            result["mirror_planes"].append(plane_copy)
+
+    # Process mirrored_geometry_body_groups: remove private_attribute_id, update mirror_plane_id
+    if "mirrored_geometry_body_groups" in data:
+        result["mirrored_geometry_body_groups"] = []
+        for entity in data["mirrored_geometry_body_groups"]:
+            if not isinstance(entity, dict):
+                result["mirrored_geometry_body_groups"].append(entity)
+                continue
+
+            entity_copy = {k: v for k, v in entity.items() if k != "private_attribute_id"}
+            if "mirror_plane_id" in entity_copy:
+                old_plane_id = entity_copy["mirror_plane_id"]
+                entity_copy["mirror_plane_id"] = uuid_to_deterministic.get(
+                    old_plane_id, old_plane_id
+                )
+
+            result["mirrored_geometry_body_groups"].append(entity_copy)
+
+    # Process mirrored_surfaces: remove private_attribute_id, update mirror_plane_id
+    if "mirrored_surfaces" in data:
+        result["mirrored_surfaces"] = []
+        for entity in data["mirrored_surfaces"]:
+            if not isinstance(entity, dict):
+                result["mirrored_surfaces"].append(entity)
+                continue
+
+            entity_copy = {k: v for k, v in entity.items() if k != "private_attribute_id"}
+            if "mirror_plane_id" in entity_copy:
+                old_plane_id = entity_copy["mirror_plane_id"]
+                entity_copy["mirror_plane_id"] = uuid_to_deterministic.get(
+                    old_plane_id, old_plane_id
+                )
+
+            result["mirrored_surfaces"].append(entity_copy)
+
+    # Copy over any other keys that might exist
+    for k, v in data.items():
+        if k not in result:
+            result[k] = v
+
+    return result
+
+
 def _get_gai_setting_whitelist(input_params: SimulationParams) -> dict:
     """
     Generate GAI whitelist with conditional fields based on simulation context.
@@ -649,7 +727,7 @@ def _get_gai_setting_whitelist(input_params: SimulationParams) -> dict:
                 "body_attribute_names": None,
                 "grouped_bodies": None,
             },
-            "mirror_status": None,
+            "mirror_status": _filter_mirror_status,
         },
     }
 

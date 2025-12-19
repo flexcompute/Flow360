@@ -1,312 +1,308 @@
 {
-  "meshing": {
-    "defaults": {
-      "curvature_resolution_angle": {
-        "units": "rad",
-        "value": 0.2617993877991494
-      },
-      "geometry_accuracy": {
-        "units": "1.0*m",
-        "value": 0.01
-      },
-      "planar_face_tolerance": 1e-06,
-      "preserve_thin_geometry": false,
-      "remove_non_manifold_faces": false,
-      "resolve_face_boundaries": false,
-      "sealing_size": {
-        "units": "1.0*m",
-        "value": 0.0
-      },
-      "surface_edge_growth_rate": 1.2,
-      "surface_max_adaptation_iterations": 50,
-      "surface_max_aspect_ratio": 10.0,
-      "surface_max_edge_length": {
-        "units": "1.0*m",
-        "value": 0.2
-      }
-    },
-    "refinements": [],
-    "volume_zones": [
-      {
-        "floor_type": {
-          "central_belt_width": {
-            "units": "1.0*m",
-            "value": 1.2
-          },
-          "central_belt_x_range": {
-            "units": "1.0*m",
-            "value": [
-              -1.0,
-              6.0
-            ]
-          },
-          "front_wheel_belt_x_range": {
-            "units": "1.0*m",
-            "value": [
-              -0.3,
-              0.5
-            ]
-          },
-          "front_wheel_belt_y_range": {
-            "units": "1.0*m",
-            "value": [
-              0.7,
-              1.2
-            ]
-          },
-          "rear_wheel_belt_x_range": {
-            "units": "1.0*m",
-            "value": [
-              2.6,
-              3.8
-            ]
-          },
-          "rear_wheel_belt_y_range": {
-            "units": "1.0*m",
-            "value": [
-              0.7,
-              1.2
-            ]
-          },
-          "type_name": "WheelBelts"
-        },
-        "floor_z_position": {
-          "units": "1.0*m",
-          "value": 0.0
-        },
-        "height": {
-          "units": "1.0*m",
-          "value": 10.0
-        },
-        "inlet_x_position": {
-          "units": "1.0*m",
-          "value": -5.0
-        },
-        "name": "Wind Tunnel Farfield",
-        "outlet_x_position": {
-          "units": "1.0*m",
-          "value": 15.0
-        },
-        "type": "WindTunnelFarfield",
-        "width": {
-          "units": "1.0*m",
-          "value": 10.0
-        }
-      }
-    ]
-  },
-  "private_attribute_asset_cache": {
-    "mirror_status": {
-      "mirror_planes": [
-        {
-          "center": {
-            "units": "1.0*m",
-            "value": [
-              1.6,
-              0.0,
-              0.0
-            ]
-          },
-          "name": "mirror_local",
-          "normal": [
-            1.0,
-            0.0,
-            0.0
-          ],
-          "private_attribute_entity_type_name": "MirrorPlane",
-          "private_attribute_id": "mirror-plane-test-001"
-        }
-      ],
-      "mirrored_geometry_body_groups": [
-        {
-          "geometry_body_group_id": "cylinder.lb8.ugrid",
-          "mirror_plane_id": "mirror-plane-test-001",
-          "name": "cylinder.lb8.ugrid_<mirror>",
-          "private_attribute_entity_type_name": "MirroredGeometryBodyGroup",
-          "private_attribute_id": "e9f942f7-3152-4f4e-a68c-32280465cb77"
-        }
-      ],
-      "mirrored_surfaces": [
-        {
-          "mirror_plane_id": "mirror-plane-test-001",
-          "name": "Curved_<mirror>",
-          "private_attribute_entity_type_name": "MirroredSurface",
-          "private_attribute_id": "b163c172-3262-4a31-964a-d0df1b7f99b2",
-          "surface_id": "Curved"
-        },
-        {
-          "mirror_plane_id": "mirror-plane-test-001",
-          "name": "TopCap_<mirror>",
-          "private_attribute_entity_type_name": "MirroredSurface",
-          "private_attribute_id": "8fcbb564-6ed3-4f70-b8ce-3e2cccd944cb",
-          "surface_id": "TopCap"
-        },
-        {
-          "mirror_plane_id": "mirror-plane-test-001",
-          "name": "BottomCap_<mirror>",
-          "private_attribute_entity_type_name": "MirroredSurface",
-          "private_attribute_id": "0169a66a-1e49-45db-8ac4-717eb2e63600",
-          "surface_id": "BottomCap"
-        }
-      ]
-    },
-    "project_entity_info": {
-      "body_attribute_names": [
-        "bodyId",
-        "groupByFile"
-      ],
-      "body_group_tag": "groupByFile",
-      "face_attribute_names": [
-        "groupByBodyId",
-        "faceId"
-      ],
-      "face_group_tag": "faceId",
-      "grouped_bodies": [
-        [
-          {
-            "mesh_exterior": true,
-            "name": "cylinder.lb8.ugrid",
-            "private_attribute_entity_type_name": "GeometryBodyGroup",
-            "private_attribute_id": "cylinder.lb8.ugrid",
-            "private_attribute_sub_components": [
-              "cylinder.lb8.ugrid"
-            ],
-            "private_attribute_tag_key": "bodyId"
-          }
-        ],
-        [
-          {
-            "mesh_exterior": true,
-            "name": "cylinder.lb8.ugrid",
-            "private_attribute_entity_type_name": "GeometryBodyGroup",
-            "private_attribute_id": "cylinder.lb8.ugrid",
-            "private_attribute_sub_components": [
-              "cylinder.lb8.ugrid"
-            ],
-            "private_attribute_tag_key": "groupByFile",
-            "transformation": {
-              "private_attribute_matrix": [
-                1.0,
-                0.0,
-                0.0,
-                0.067,
-                0.0,
-                1.0,
-                0.0,
-                -0.933,
-                0.0,
-                0.0,
-                1.0,
-                0.0
-              ]
+    "meshing": {
+        "defaults": {
+            "curvature_resolution_angle": {
+                "units": "rad",
+                "value": 0.2617993877991494
+            },
+            "geometry_accuracy": {
+                "units": "1.0*m",
+                "value": 0.01
+            },
+            "planar_face_tolerance": 1e-06,
+            "preserve_thin_geometry": false,
+            "remove_non_manifold_faces": false,
+            "resolve_face_boundaries": false,
+            "sealing_size": {
+                "units": "1.0*m",
+                "value": 0.0
+            },
+            "surface_edge_growth_rate": 1.2,
+            "surface_max_adaptation_iterations": 50,
+            "surface_max_aspect_ratio": 10.0,
+            "surface_max_edge_length": {
+                "units": "1.0*m",
+                "value": 0.2
             }
-          }
+        },
+        "refinements": [],
+        "volume_zones": [
+            {
+                "floor_type": {
+                    "central_belt_width": {
+                        "units": "1.0*m",
+                        "value": 1.2
+                    },
+                    "central_belt_x_range": {
+                        "units": "1.0*m",
+                        "value": [
+                            -1.0,
+                            6.0
+                        ]
+                    },
+                    "front_wheel_belt_x_range": {
+                        "units": "1.0*m",
+                        "value": [
+                            -0.3,
+                            0.5
+                        ]
+                    },
+                    "front_wheel_belt_y_range": {
+                        "units": "1.0*m",
+                        "value": [
+                            0.7,
+                            1.2
+                        ]
+                    },
+                    "rear_wheel_belt_x_range": {
+                        "units": "1.0*m",
+                        "value": [
+                            2.6,
+                            3.8
+                        ]
+                    },
+                    "rear_wheel_belt_y_range": {
+                        "units": "1.0*m",
+                        "value": [
+                            0.7,
+                            1.2
+                        ]
+                    },
+                    "type_name": "WheelBelts"
+                },
+                "floor_z_position": {
+                    "units": "1.0*m",
+                    "value": 0.0
+                },
+                "height": {
+                    "units": "1.0*m",
+                    "value": 10.0
+                },
+                "inlet_x_position": {
+                    "units": "1.0*m",
+                    "value": -5.0
+                },
+                "name": "Wind Tunnel Farfield",
+                "outlet_x_position": {
+                    "units": "1.0*m",
+                    "value": 15.0
+                },
+                "type": "WindTunnelFarfield",
+                "width": {
+                    "units": "1.0*m",
+                    "value": 10.0
+                }
+            }
         ]
-      ],
-      "grouped_faces": [
-        [
-          {
-            "name": "cylinder.lb8.ugrid",
-            "private_attribute_entity_type_name": "Surface",
-            "private_attribute_id": "cylinder.lb8.ugrid",
-            "private_attribute_sub_components": [
-              "BottomCap",
-              "Curved",
-              "TopCap"
+    },
+    "private_attribute_asset_cache": {
+        "mirror_status": {
+            "mirror_planes": [
+                {
+                    "center": {
+                        "units": "1.0*m",
+                        "value": [
+                            1.6,
+                            0.0,
+                            0.0
+                        ]
+                    },
+                    "name": "mirror_local",
+                    "normal": [
+                        1.0,
+                        0.0,
+                        0.0
+                    ],
+                    "private_attribute_entity_type_name": "MirrorPlane",
+                    "private_attribute_id": "mirror-mirror_local"
+                }
             ],
-            "private_attribute_tag_key": "groupByBodyId",
-            "private_attributes": {
-              "bounding_box": [
+            "mirrored_geometry_body_groups": [
+                {
+                    "geometry_body_group_id": "cylinder.lb8.ugrid",
+                    "mirror_plane_id": "mirror-mirror_local",
+                    "name": "cylinder.lb8.ugrid_<mirror>",
+                    "private_attribute_entity_type_name": "MirroredGeometryBodyGroup"
+                }
+            ],
+            "mirrored_surfaces": [
+                {
+                    "mirror_plane_id": "mirror-mirror_local",
+                    "name": "Curved_<mirror>",
+                    "private_attribute_entity_type_name": "MirroredSurface",
+                    "surface_id": "Curved"
+                },
+                {
+                    "mirror_plane_id": "mirror-mirror_local",
+                    "name": "TopCap_<mirror>",
+                    "private_attribute_entity_type_name": "MirroredSurface",
+                    "surface_id": "TopCap"
+                },
+                {
+                    "mirror_plane_id": "mirror-mirror_local",
+                    "name": "BottomCap_<mirror>",
+                    "private_attribute_entity_type_name": "MirroredSurface",
+                    "surface_id": "BottomCap"
+                }
+            ]
+        },
+        "project_entity_info": {
+            "body_attribute_names": [
+                "bodyId",
+                "groupByFile"
+            ],
+            "body_group_tag": "groupByFile",
+            "face_attribute_names": [
+                "groupByBodyId",
+                "faceId"
+            ],
+            "face_group_tag": "faceId",
+            "grouped_bodies": [
                 [
-                  -0.35,
-                  -0.12500000000000003,
-                  -5.551115123125783e-17
+                    {
+                        "mesh_exterior": true,
+                        "name": "cylinder.lb8.ugrid",
+                        "private_attribute_entity_type_name": "GeometryBodyGroup",
+                        "private_attribute_id": "cylinder.lb8.ugrid",
+                        "private_attribute_sub_components": [
+                            "cylinder.lb8.ugrid"
+                        ],
+                        "private_attribute_tag_key": "bodyId"
+                    }
                 ],
                 [
-                  0.35,
-                  0.12500000000000003,
-                  0.7
+                    {
+                        "mesh_exterior": true,
+                        "name": "cylinder.lb8.ugrid",
+                        "private_attribute_entity_type_name": "GeometryBodyGroup",
+                        "private_attribute_id": "cylinder.lb8.ugrid",
+                        "private_attribute_sub_components": [
+                            "cylinder.lb8.ugrid"
+                        ],
+                        "private_attribute_tag_key": "groupByFile",
+                        "transformation": {
+                            "private_attribute_matrix": [
+                                1.0,
+                                0.0,
+                                0.0,
+                                0.067,
+                                0.0,
+                                1.0,
+                                0.0,
+                                -0.933,
+                                0.0,
+                                0.0,
+                                1.0,
+                                0.0
+                            ]
+                        }
+                    }
                 ]
-              ],
-              "type_name": "SurfacePrivateAttributes"
-            }
-          }
-        ],
-        [
-          {
-            "name": "Curved",
-            "private_attribute_entity_type_name": "Surface",
-            "private_attribute_id": "Curved",
-            "private_attribute_sub_components": [
-              "Curved"
             ],
-            "private_attribute_tag_key": "faceId",
-            "private_attributes": {
-              "bounding_box": [
+            "grouped_faces": [
                 [
-                  -0.35,
-                  -0.12500000000000003,
-                  -5.551115123125783e-17
+                    {
+                        "name": "cylinder.lb8.ugrid",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "cylinder.lb8.ugrid",
+                        "private_attribute_sub_components": [
+                            "BottomCap",
+                            "Curved",
+                            "TopCap"
+                        ],
+                        "private_attribute_tag_key": "groupByBodyId",
+                        "private_attributes": {
+                            "bounding_box": [
+                                [
+                                    -0.35,
+                                    -0.12500000000000003,
+                                    -5.551115123125783e-17
+                                ],
+                                [
+                                    0.35,
+                                    0.12500000000000003,
+                                    0.7
+                                ]
+                            ],
+                            "type_name": "SurfacePrivateAttributes"
+                        }
+                    }
                 ],
                 [
-                  0.35,
-                  0.12500000000000003,
-                  0.7
+                    {
+                        "name": "Curved",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "Curved",
+                        "private_attribute_sub_components": [
+                            "Curved"
+                        ],
+                        "private_attribute_tag_key": "faceId",
+                        "private_attributes": {
+                            "bounding_box": [
+                                [
+                                    -0.35,
+                                    -0.12500000000000003,
+                                    -5.551115123125783e-17
+                                ],
+                                [
+                                    0.35,
+                                    0.12500000000000003,
+                                    0.7
+                                ]
+                            ],
+                            "type_name": "SurfacePrivateAttributes"
+                        }
+                    },
+                    {
+                        "name": "TopCap",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "TopCap",
+                        "private_attribute_sub_components": [
+                            "TopCap"
+                        ],
+                        "private_attribute_tag_key": "faceId",
+                        "private_attributes": {
+                            "bounding_box": [
+                                [
+                                    -0.3499999999999999,
+                                    0.12499999999999997,
+                                    0.0
+                                ],
+                                [
+                                    0.3499999999999999,
+                                    0.12500000000000003,
+                                    0.7
+                                ]
+                            ],
+                            "type_name": "SurfacePrivateAttributes"
+                        }
+                    },
+                    {
+                        "name": "BottomCap",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "BottomCap",
+                        "private_attribute_sub_components": [
+                            "BottomCap"
+                        ],
+                        "private_attribute_tag_key": "faceId",
+                        "private_attributes": {
+                            "bounding_box": [
+                                [
+                                    -0.3499999999999999,
+                                    -0.12500000000000003,
+                                    0.0
+                                ],
+                                [
+                                    0.3499999999999999,
+                                    -0.12499999999999997,
+                                    0.7
+                                ]
+                            ],
+                            "type_name": "SurfacePrivateAttributes"
+                        }
+                    }
                 ]
-              ],
-              "type_name": "SurfacePrivateAttributes"
-            }
-          },
-          {
-            "name": "TopCap",
-            "private_attribute_entity_type_name": "Surface",
-            "private_attribute_id": "TopCap",
-            "private_attribute_sub_components": [
-              "TopCap"
-            ],
-            "private_attribute_tag_key": "faceId",
-            "private_attributes": {
-              "bounding_box": [
-                [
-                  -0.3499999999999999,
-                  0.12499999999999997,
-                  0.0
-                ],
-                [
-                  0.3499999999999999,
-                  0.12500000000000003,
-                  0.7
-                ]
-              ],
-              "type_name": "SurfacePrivateAttributes"
-            }
-          },
-          {
-            "name": "BottomCap",
-            "private_attribute_entity_type_name": "Surface",
-            "private_attribute_id": "BottomCap",
-            "private_attribute_sub_components": [
-              "BottomCap"
-            ],
-            "private_attribute_tag_key": "faceId",
-            "private_attributes": {
-              "bounding_box": [
-                [
-                  -0.3499999999999999,
-                  -0.12500000000000003,
-                  0.0
-                ],
-                [
-                  0.3499999999999999,
-                  -0.12499999999999997,
-                  0.7
-                ]
-              ],
-              "type_name": "SurfacePrivateAttributes"
-            }
-          }
-        ]
-      ]
+            ]
+        }
     }
-  }
 }
