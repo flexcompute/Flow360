@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 """
 Primitive type definitions for simulation entities.
 """
@@ -456,16 +457,16 @@ class Box(MultiConstructorBaseModel, _VolumeEntityBase):
         existing_axis = np.asarray(self.axis_of_rotation, dtype=np.float64)
         existing_axis = existing_axis / np.linalg.norm(existing_axis)
         existing_angle = self.angle_of_rotation.to("rad").v.item()
-        R_existing = rotation_matrix_from_axis_and_angle(existing_axis, existing_angle)
+        rot_existing = rotation_matrix_from_axis_and_angle(existing_axis, existing_angle)
 
         # Step 2: Extract pure rotation from transformation matrix
-        R_transform = _extract_rotation_matrix(matrix)
+        rot_transform = _extract_rotation_matrix(matrix)
 
         # Step 3: Combine rotations (apply transformation rotation to existing)
-        R_combined = R_transform @ R_existing
+        rot_combined = rot_transform @ rot_existing
 
         # Step 4: Extract new axis-angle from combined rotation
-        new_axis, new_angle = _rotation_matrix_to_axis_angle(R_combined)
+        new_axis, new_angle = _rotation_matrix_to_axis_angle(rot_combined)
 
         # Scale size uniformly
         new_size = self.size * uniform_scale

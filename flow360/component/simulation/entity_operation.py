@@ -287,10 +287,6 @@ class CoordinateSystem(Flow360BaseModel):
     scale: Tuple[PositiveFloat, PositiveFloat, PositiveFloat] = pd.Field((1, 1, 1))
 
     translation: LengthType.Point = pd.Field((0, 0, 0) * u.m)  # pylint:disable=no-member
-
-    private_attribute_matrix: Optional[list[float]] = pd.Field(
-        None, description="Optional precomputed 3x4 transformation matrix in row-major order."
-    )
     private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
 
     def _get_local_matrix(self) -> np.ndarray:
@@ -301,7 +297,6 @@ class CoordinateSystem(Flow360BaseModel):
             angle_of_rotation=self.angle_of_rotation,
             scale=self.scale,
             translation=self.translation,
-            private_attribute_matrix=self.private_attribute_matrix,
         )
 
     def get_transformation_matrix(self) -> np.ndarray:

@@ -13,7 +13,6 @@ from flow360.component.simulation.entity_operation import (
 )
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityBase
-from flow360.component.simulation.framework.entity_registry import EntityRegistry
 from flow360.component.simulation.utils import is_exact_instance
 from flow360.exceptions import Flow360RuntimeError
 from flow360.log import log
@@ -334,54 +333,23 @@ class CoordinateSystemManager:
         return self._get_coordinate_system_matrix(coordinate_system=cs)
 
     # Serialization ----------------------------------------------------------------
-    def _to_status(self, *, entity_registry: EntityRegistry) -> CoordinateSystemStatus:
+    def _to_status(self) -> CoordinateSystemStatus:
         """Build a serializable status snapshot.
 
-        Parameters
-        ----------
-        entity_registry : EntityRegistry
-            The entity registry to validate entity references against.
+
 
         Returns
         -------
         CoordinateSystemStatus
             The serialized status.
-
-        Raises
-        ------
-        Flow360RuntimeError
-            If any assigned entity is not in the registry.
         """
         parents = [
             CoordinateSystemParent(coordinate_system_id=cs_id, parent_id=parent_id)
             for cs_id, parent_id in self._coordinate_system_parents.items()
         ]
 
-        # Validate entity existence before serialization.
-        # Build a set of all existing entity keys in the registry for efficient lookup.
-        existing_entity_keys = set()
-        for entity_list in entity_registry.internal_registry.values():
-            for entity in entity_list:
-                existing_entity_keys.add(
-                    (entity.private_attribute_entity_type_name, entity.private_attribute_id)
-                )
-
         grouped: Dict[str, List[CoordinateSystemEntityRef]] = {}
         for (entity_type, entity_id), cs_id in self._entity_key_to_coordinate_system_id.items():
-            # Check if entity exists in registry.
-            # A missing entity is possible if the entity was removed from the draft context.
-            # For example by deleting a geometry body group.
-            entity_key = (entity_type, entity_id)
-            if entity_key not in existing_entity_keys:
-                log.debug(
-                    "Entity '%s:%s' assigned to coordinate system '%s' is not in the draft registry; "
-                    "skipping this assignment.",
-                    entity_type,
-                    entity_id,
-                    cs_id,
-                )
-                continue
-
             grouped.setdefault(cs_id, []).append(
                 CoordinateSystemEntityRef(entity_type=entity_type, entity_id=entity_id)
             )

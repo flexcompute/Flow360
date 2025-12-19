@@ -1716,7 +1716,7 @@ def test_imported_surface_with_coordinate_system_transformation():
         manager.assign(entities=imported_surface_1, coordinate_system=cs)
 
         # Create coordinate system status
-        cs_status = manager._to_status(entity_registry=entity_registry)
+        cs_status = manager._to_status()
 
         # Create a user variable for SurfaceIntegralOutput
         mass_flux_var = UserVariable(name="TestSurfaceIntegral", value=solution.velocity)
@@ -1814,7 +1814,7 @@ def test_imported_surface_with_rotation_and_translation():
         manager.add(coordinate_system=cs)
         manager.assign(entities=imported_surface, coordinate_system=cs)
 
-        cs_status = manager._to_status(entity_registry=entity_registry)
+        cs_status = manager._to_status()
 
         # Create SimulationParams
         param = SimulationParams(

@@ -11,6 +11,9 @@ import numpy as np
 import pydantic as pd
 import unyt as u
 
+from flow360.component.simulation.draft_context.coordinate_system_manager import (
+    CoordinateSystemManager,
+)
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.base_model_config import snake_to_camel
 from flow360.component.simulation.framework.entity_base import EntityBase, EntityList
@@ -56,15 +59,41 @@ def apply_coordinate_system_transformations(params: SimulationParams) -> Simulat
         return params
 
     # Rebuild coordinate system manager from cached status
-    # pylint: disable=import-outside-toplevel
-    from flow360.component.simulation.draft_context.coordinate_system_manager import (
-        CoordinateSystemManager,
-    )
 
-    manager = CoordinateSystemManager._from_status(status=coord_status)
+    manager = CoordinateSystemManager._from_status(  # pylint: disable=protected-access
+        status=coord_status
+    )
     _apply_transformations_to_model(params, manager)
 
     return params
+
+
+def _transform_single_entity(entity: EntityBase, manager: CoordinateSystemManager) -> EntityBase:
+    """Transform a single entity if it has a coordinate system assignment."""
+    matrix = manager._get_matrix_for_entity(entity=entity)  # pylint: disable=protected-access
+    if matrix is not None and hasattr(entity, "_apply_transformation"):
+        return entity._apply_transformation(matrix)  # pylint: disable=protected-access
+    return entity
+
+
+def _transform_entity_list(entity_list: EntityList, manager: CoordinateSystemManager) -> EntityList:
+    """Transform all entities in an EntityList."""
+    if not entity_list.stored_entities:
+        return entity_list
+
+    transformed_entities = [
+        _transform_single_entity(entity, manager) for entity in entity_list.stored_entities
+    ]
+    return entity_list.model_copy(update={"stored_entities": transformed_entities})
+
+
+def _transform_sequence_item(item, manager: CoordinateSystemManager):
+    """Transform a single item from a list or tuple."""
+    if isinstance(item, EntityBase):
+        return _transform_single_entity(item, manager)
+    if isinstance(item, Flow360BaseModel):
+        _apply_transformations_to_model(item, manager)
+    return item
 
 
 def _apply_transformations_to_model(
@@ -80,55 +109,25 @@ def _apply_transformations_to_model(
         manager: The coordinate system manager with transformation matrices
     """
     for field_name, field_value in model.__dict__.items():
-        # Skip the AssetCache to avoid modifying cached status
         if isinstance(field_value, AssetCache):
             continue
 
         if isinstance(field_value, EntityBase):
-            # Single entity: check if it has a coordinate system assignment
-            matrix = manager._get_matrix_for_entity(entity=field_value)
-            if matrix is not None and hasattr(field_value, "_apply_transformation"):
-                # Apply transformation and replace the entity
-                transformed = field_value._apply_transformation(matrix)
+            transformed = _transform_single_entity(field_value, manager)
+            if transformed is not field_value:
                 setattr(model, field_name, transformed)
 
         elif isinstance(field_value, EntityList):
-            # EntityList: transform entities in stored_entities
-            if field_value.stored_entities:
-                transformed_entities = []
-                for entity in field_value.stored_entities:
-                    matrix = manager._get_matrix_for_entity(entity=entity)
-                    if matrix is not None and hasattr(entity, "_apply_transformation"):
-                        transformed_entities.append(entity._apply_transformation(matrix))
-                    else:
-                        transformed_entities.append(entity)
-                field_value.stored_entities = transformed_entities
+            new_entity_list = _transform_entity_list(field_value, manager)
+            if new_entity_list is not field_value:
+                setattr(model, field_name, new_entity_list)
 
         elif isinstance(field_value, (list, tuple)):
-            # List/tuple: may contain entities or nested models
-            new_items = []
-            for item in field_value:
-                if isinstance(item, EntityBase):
-                    matrix = manager._get_matrix_for_entity(entity=item)
-                    if matrix is not None and hasattr(item, "_apply_transformation"):
-                        new_items.append(item._apply_transformation(matrix))
-                    else:
-                        new_items.append(item)
-                elif isinstance(item, Flow360BaseModel):
-                    # Recursively process nested models
-                    _apply_transformations_to_model(item, manager)
-                    new_items.append(item)
-                else:
-                    new_items.append(item)
-
-            # Replace list or tuple with transformed items
-            if isinstance(field_value, list):
-                setattr(model, field_name, new_items)
-            else:
-                setattr(model, field_name, tuple(new_items))
+            new_items = [_transform_sequence_item(item, manager) for item in field_value]
+            new_value = new_items if isinstance(field_value, list) else tuple(new_items)
+            setattr(model, field_name, new_value)
 
         elif isinstance(field_value, Flow360BaseModel):
-            # Recursively process nested models
             _apply_transformations_to_model(field_value, manager)
 
 

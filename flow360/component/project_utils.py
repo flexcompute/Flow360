@@ -627,9 +627,7 @@ def set_up_params_for_uploading(  # pylint: disable=too-many-arguments
             params.private_attribute_asset_cache, "coordinate_system_status"
         ):
             params.private_attribute_asset_cache.coordinate_system_status = (
-                active_draft.coordinate_systems._to_status(
-                    entity_registry=active_draft._entity_registry
-                )
+                active_draft.coordinate_systems._to_status()
             )
     else:
         # Legacy workflow (without DraftContext): use root_asset.entity_info

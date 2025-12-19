@@ -454,7 +454,9 @@ def _get_coordinate_system_manager_from_params(input_params: "SimulationParams")
         CoordinateSystemManager,
     )
 
-    return CoordinateSystemManager._from_status(status=coord_status)
+    return CoordinateSystemManager._from_status(  # pylint: disable=protected-access
+        status=coord_status
+    )
 
 
 def inject_imported_surface_info(entity: ImportedSurface, coordinate_system_manager=None):
@@ -465,7 +467,11 @@ def inject_imported_surface_info(entity: ImportedSurface, coordinate_system_mana
 
     # Add transformation matrix if entity has coordinate system assignment
     if coordinate_system_manager is not None:
-        matrix = coordinate_system_manager._get_matrix_for_entity(entity=entity)
+        matrix = (
+            coordinate_system_manager._get_matrix_for_entity(  # pylint: disable=protected-access
+                entity=entity
+            )
+        )
         if matrix is not None:
             # Convert 3x4 numpy array to list for JSON serialization
             result["transformationMatrix"] = matrix.tolist()

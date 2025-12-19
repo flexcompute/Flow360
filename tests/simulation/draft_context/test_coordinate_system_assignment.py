@@ -218,9 +218,7 @@ def test_to_status_and_from_status_round_trip(mock_geometry):
         )
         draft.coordinate_systems.assign(entities=body_group, coordinate_system=cs_child)
 
-        status = draft.coordinate_systems._to_status(
-            entity_registry=draft._entity_registry  # pylint:disable=protected-access
-        )
+        status = draft.coordinate_systems._to_status()
 
         restored = CoordinateSystemManager._from_status(status=status)
 
