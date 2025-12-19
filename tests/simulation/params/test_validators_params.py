@@ -2717,7 +2717,9 @@ def test_coordinate_system_requires_geometry_ai():
 
     assert errors is not None
     assert any(
-        "Coordinate system is only supported when Geometry AI is enabled" in str(e) for e in errors
+        "Coordinate system assignment to GeometryBodyGroup" in str(e)
+        and "Geometry AI is enabled" in str(e)
+        for e in errors
     )
 
     # Test with GAI enabled - should pass
