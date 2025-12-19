@@ -743,7 +743,9 @@ class RenderOutputGroup(Flow360BaseModel):
     @contextual_model_validator(mode="after")
     def check_not_empty(self, param_info: ParamsValidationInfo):
         """Verify the render group has at least one entity assigned to it"""
-        expanded_surfaces = param_info.expand_entity_list(self.surfaces)
+        expanded_surfaces = (
+            param_info.expand_entity_list(self.surfaces) if self.surfaces is not None else None
+        )
         if not expanded_surfaces and not self.slices and not self.isosurfaces:
             raise ValueError(
                 "Render group should include at least one entity (surface, slice or isosurface)"
@@ -791,6 +793,7 @@ class RenderOutput(_AnimationSettings):
         None, description="Optional model transform to apply to all entities"
     )
     output_type: Literal["RenderOutput"] = pd.Field("RenderOutput", frozen=True)
+    private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
 
     @pd.field_validator("groups", mode="after")
     @classmethod
