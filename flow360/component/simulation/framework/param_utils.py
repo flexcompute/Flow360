@@ -102,6 +102,11 @@ class AssetCache(Flow360BaseModel):
         required_by: List[str] = None,
         flow360_unit_system=None,
     ) -> Flow360BaseModel:
+        # Exclude variable_context and selectors from preprocessing.
+        # NOTE: coordinate_system_status is NOT excluded, which means it will be
+        # recursively preprocessed. This is CRITICAL because CoordinateSystem objects
+        # contain LengthType fields (origin, translation) that must be nondimensionalized
+        # before transformation matrices are computed in the translator.
         exclude_asset_cache = exclude + ["variable_context", "selectors"]
         return super().preprocess(
             params=params,

@@ -11,8 +11,10 @@ import numpy as np
 import pydantic as pd
 import unyt as u
 
+from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.base_model_config import snake_to_camel
 from flow360.component.simulation.framework.entity_base import EntityBase, EntityList
+from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.framework.unique_list import UniqueItemList
 from flow360.component.simulation.meshing_param import snappy
 from flow360.component.simulation.meshing_param.params import ModularMeshingWorkflow
@@ -29,6 +31,107 @@ from flow360.exceptions import Flow360TranslationError
 
 
 # pylint: disable=too-many-arguments
+def apply_coordinate_system_transformations(params: SimulationParams) -> SimulationParams:
+    """
+    Apply coordinate system transformations to entities before translation.
+
+    For each entity with a coordinate system assignment:
+    1. Get the combined transformation matrix from CoordinateSystemManager
+    2. Call entity._apply_transformation(matrix)
+    3. Replace the original entity with the transformed version in-place
+
+    Args:
+        params: The simulation parameters with potential coordinate system assignments
+
+    Returns:
+        The simulation parameters with transformed entities (modified in-place)
+    """
+    # Check if coordinate system status exists
+    if params.private_attribute_asset_cache is None:
+        return params
+
+    coord_status = params.private_attribute_asset_cache.coordinate_system_status
+    if coord_status is None or not coord_status.assignments:
+        # No coordinate systems or assignments, nothing to transform
+        return params
+
+    # Rebuild coordinate system manager from cached status
+    # pylint: disable=import-outside-toplevel
+    from flow360.component.simulation.draft_context.coordinate_system_manager import (
+        CoordinateSystemManager,
+    )
+
+    manager = CoordinateSystemManager._from_status(status=coord_status)
+    _apply_transformations_to_model(params, manager)
+
+    return params
+
+
+def _apply_transformations_to_model(
+    model: Flow360BaseModel, manager: "CoordinateSystemManager"
+) -> None:
+    """
+    Recursively apply coordinate system transformations to all entities in a model.
+
+    Modifies entities in-place by replacing them with transformed versions.
+
+    Args:
+        model: The model containing entities to transform
+        manager: The coordinate system manager with transformation matrices
+    """
+    for field_name, field_value in model.__dict__.items():
+        # Skip the AssetCache to avoid modifying cached status
+        if isinstance(field_value, AssetCache):
+            continue
+
+        if isinstance(field_value, EntityBase):
+            # Single entity: check if it has a coordinate system assignment
+            matrix = manager._get_matrix_for_entity(entity=field_value)
+            if matrix is not None and hasattr(field_value, "_apply_transformation"):
+                # Apply transformation and replace the entity
+                transformed = field_value._apply_transformation(matrix)
+                setattr(model, field_name, transformed)
+
+        elif isinstance(field_value, EntityList):
+            # EntityList: transform entities in stored_entities
+            if field_value.stored_entities:
+                transformed_entities = []
+                for entity in field_value.stored_entities:
+                    matrix = manager._get_matrix_for_entity(entity=entity)
+                    if matrix is not None and hasattr(entity, "_apply_transformation"):
+                        transformed_entities.append(entity._apply_transformation(matrix))
+                    else:
+                        transformed_entities.append(entity)
+                field_value.stored_entities = transformed_entities
+
+        elif isinstance(field_value, (list, tuple)):
+            # List/tuple: may contain entities or nested models
+            new_items = []
+            for item in field_value:
+                if isinstance(item, EntityBase):
+                    matrix = manager._get_matrix_for_entity(entity=item)
+                    if matrix is not None and hasattr(item, "_apply_transformation"):
+                        new_items.append(item._apply_transformation(matrix))
+                    else:
+                        new_items.append(item)
+                elif isinstance(item, Flow360BaseModel):
+                    # Recursively process nested models
+                    _apply_transformations_to_model(item, manager)
+                    new_items.append(item)
+                else:
+                    new_items.append(item)
+
+            # Replace list or tuple with transformed items
+            if isinstance(field_value, list):
+                setattr(model, field_name, new_items)
+            else:
+                setattr(model, field_name, tuple(new_items))
+
+        elif isinstance(field_value, Flow360BaseModel):
+            # Recursively process nested models
+            _apply_transformations_to_model(field_value, manager)
+
+
 def expand_selectors_for_translation(input_params: SimulationParams):
     """
     Expand entity selectors in-place for translation.
@@ -72,6 +175,8 @@ def preprocess_input(func):
             preprocess_exclude = []
         validated_mesh_unit = LengthType.validate(mesh_unit)
         processed_input = preprocess_param(input_params, validated_mesh_unit, preprocess_exclude)
+
+        apply_coordinate_system_transformations(processed_input)
 
         if not skip_selector_expansion:
             # Expand entity selectors in-place before translation (Stage 4)
