@@ -184,7 +184,7 @@ class PassiveSpacing(Flow360BaseModel):
     )
     refinement_type: Literal["PassiveSpacing"] = pd.Field("PassiveSpacing", frozen=True)
     entities: EntityListAllowingGhost[
-        Surface, WindTunnelGhostSurface, GhostSurface, GhostCircularPlane
+        Surface, MirroredSurface, WindTunnelGhostSurface, GhostSurface, GhostCircularPlane
     ] = pd.Field(alias="faces")
 
     @contextual_field_validator("entities", mode="after")
