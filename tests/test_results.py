@@ -28,10 +28,7 @@ from flow360.component.simulation.framework.entity_selector import (
     EntitySelector,
     expand_entity_list_selectors,
 )
-from flow360.component.simulation.framework.updater_utils import (
-    compare_dicts,
-    compare_values,
-)
+from flow360.component.simulation.framework.updater_utils import compare_values
 from flow360.component.simulation.models.surface_models import BoundaryBase
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,

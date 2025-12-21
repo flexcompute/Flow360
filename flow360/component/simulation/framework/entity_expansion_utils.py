@@ -82,9 +82,12 @@ def expand_entity_list_in_context(
                 {"stored_entities": stored_entities}
             )
             stored_entities = validated_list.stored_entities
-        except pd.ValidationError:  # pylint: disable=broad-exception-caught
-            # If validation fails, fall back to unfiltered list for backward compatibility
-            pass
+        except pd.ValidationError as exc:
+            raise Flow360ValueError(
+                "Failed to find any valid entities in the input. "
+                "Has the simulationParams been manually edited since loading from the cloud "
+                "or have you changed the cloud resource for which the SimulationParams is being used?"
+                ) from exc
 
     if return_names:
         return [entity.name for entity in stored_entities]

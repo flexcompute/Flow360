@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 from abc import ABCMeta
 from collections import defaultdict
-from typing import Annotated, List, Optional, Union, get_args, get_origin
+from typing import Annotated, Any, List, Optional, Union, get_args, get_origin
 
 import pydantic as pd
 
@@ -184,27 +184,6 @@ class _EntityListMeta(_CombinedMeta):
         return new_cls
 
 
-def _remove_duplicate_entities(expanded_entities: List[EntityBase]):
-    """
-    Removing completely identical entities which may result from usage like:
-    ```python
-        MyModel(entities=[my_vm["*"], my_vm["wing*"]])
-    ```
-    """
-
-    entity_name_to_hash = defaultdict(set)
-    deduplicated_entities = []
-    # pylint: disable=protected-access
-    for entity in expanded_entities:
-        entity_hash = entity._get_hash()
-        if entity_hash in entity_name_to_hash[entity.name]:
-            # Exact same entity found, ignore it.
-            continue
-        entity_name_to_hash[entity.name].add(entity_hash)
-        deduplicated_entities.append(entity)
-    return deduplicated_entities
-
-
 class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
     """
     The type accepting a list of entities or selectors.
@@ -333,17 +312,6 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
         raise TypeError("Cannot extract valid entity types.")
 
     @classmethod
-    def _valid_individual_input(cls, input_data):
-        """Validate each individual element in a list or as standalone entity."""
-        if isinstance(input_data, EntityBase):
-            return input_data
-
-        raise ValueError(
-            f"Type({type(input_data)}) of input to `entities` ({input_data}) is not valid. "
-            "Expected entity instance."
-        )
-
-    @classmethod
     def _process_selector(cls, selector: EntitySelector, valid_type_names: List[str]) -> dict:
         """Process and validate an EntitySelector object."""
         if selector.target_class not in valid_type_names:
@@ -354,10 +322,15 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
         return selector.model_dump()
 
     @classmethod
-    def _process_entity(cls, entity: EntityBase) -> EntityBase:
+    def _process_entity(cls, entity: Union[EntityBase, Any]) -> EntityBase:
         """Process and validate an entity object."""
-        cls._valid_individual_input(entity)
-        return entity
+        if isinstance(entity, EntityBase):
+            return entity
+
+        raise ValueError(
+            f"Type({type(entity)}) of input to `entities` ({entity}) is not valid. "
+            "Expected entity instance."
+        )
 
     @classmethod
     def _build_result(
