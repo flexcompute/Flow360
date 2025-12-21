@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import hashlib
 from abc import ABCMeta
-from collections import defaultdict
 from typing import Annotated, Any, List, Optional, Union, get_args, get_origin
 
 import pydantic as pd
