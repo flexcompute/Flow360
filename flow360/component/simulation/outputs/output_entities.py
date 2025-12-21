@@ -2,8 +2,13 @@
 
 from typing import Literal, Optional, Union
 
+import numpy as np
 import pydantic as pd
 
+from flow360.component.simulation.entity_operation import (
+    _transform_direction,
+    _transform_point,
+)
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityBase
 from flow360.component.simulation.framework.entity_utils import generate_uuid
@@ -65,6 +70,20 @@ class Slice(EntityBase):
     normal: Axis = pd.Field(description="Normal direction of the slice.")
     # pylint: disable=no-member
     origin: LengthType.Point = pd.Field(description="A single point on the slice.")
+
+    def _apply_transformation(self, matrix: np.ndarray) -> "Slice":
+        """Apply 3x4 transformation matrix, returning new transformed instance."""
+        # Transform the origin point
+        origin_array = np.asarray(self.origin.value)
+        new_origin_array = _transform_point(origin_array, matrix)
+        new_origin = type(self.origin)(new_origin_array, self.origin.units)
+
+        # Transform and normalize the normal direction
+        normal_array = np.asarray(self.normal)
+        transformed_normal = _transform_direction(normal_array, matrix)
+        new_normal = tuple(transformed_normal / np.linalg.norm(transformed_normal))
+
+        return self.model_copy(update={"origin": new_origin, "normal": new_normal})
 
 
 class Isosurface(_OutputItemBase):
@@ -215,6 +234,13 @@ class Point(EntityBase):
     # pylint: disable=no-member
     location: LengthType.Point = pd.Field(description="The coordinate of the point.")
 
+    def _apply_transformation(self, matrix: np.ndarray) -> "Point":
+        """Apply 3x4 transformation matrix, returning new transformed instance."""
+        location_array = np.asarray(self.location.value)
+        new_location_array = _transform_point(location_array, matrix)
+        new_location = type(self.location)(new_location_array, self.location.units)
+        return self.model_copy(update={"location": new_location})
+
 
 class PointArray(EntityBase):
     """
@@ -242,6 +268,19 @@ class PointArray(EntityBase):
     start: LengthType.Point = pd.Field(description="The starting point of the line.")
     end: LengthType.Point = pd.Field(description="The end point of the line.")
     number_of_points: int = pd.Field(ge=2, description="Number of points along the line.")
+
+    def _apply_transformation(self, matrix: np.ndarray) -> "PointArray":
+        """Apply 3x4 transformation matrix, returning new transformed instance."""
+        start_array = np.asarray(self.start.value)
+        end_array = np.asarray(self.end.value)
+
+        new_start_array = _transform_point(start_array, matrix)
+        new_end_array = _transform_point(end_array, matrix)
+
+        new_start = type(self.start)(new_start_array, self.start.units)
+        new_end = type(self.end)(new_end_array, self.end.units)
+
+        return self.model_copy(update={"start": new_start, "end": new_end})
 
 
 class PointArray2D(EntityBase):
@@ -281,3 +320,24 @@ class PointArray2D(EntityBase):
     v_axis_vector: LengthType.Axis = pd.Field(description="The scaled v-axis of the parallelogram.")
     u_number_of_points: int = pd.Field(ge=2, description="The number of points along the u axis.")
     v_number_of_points: int = pd.Field(ge=2, description="The number of points along the v axis.")
+
+    def _apply_transformation(self, matrix: np.ndarray) -> "PointArray2D":
+        """Apply 3x4 transformation matrix, returning new transformed instance."""
+        # Transform the origin point
+        origin_array = np.asarray(self.origin.value)
+        new_origin_array = _transform_point(origin_array, matrix)
+        new_origin = type(self.origin)(new_origin_array, self.origin.units)
+
+        # Transform the u and v axis vectors (these are scaled directions, not unit vectors)
+        u_axis_array = np.asarray(self.u_axis_vector.value)
+        v_axis_array = np.asarray(self.v_axis_vector.value)
+
+        new_u_axis_array = _transform_direction(u_axis_array, matrix)
+        new_v_axis_array = _transform_direction(v_axis_array, matrix)
+
+        new_u_axis = type(self.u_axis_vector)(new_u_axis_array, self.u_axis_vector.units)
+        new_v_axis = type(self.v_axis_vector)(new_v_axis_array, self.v_axis_vector.units)
+
+        return self.model_copy(
+            update={"origin": new_origin, "u_axis_vector": new_u_axis, "v_axis_vector": new_v_axis}
+        )

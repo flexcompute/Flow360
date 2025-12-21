@@ -194,7 +194,7 @@
     },
     "private_attribute_asset_cache": {
         "project_entity_info": {
-            "face_group_tag": "groupByBodyId",
+            "face_group_tag": "faceId",
             "face_attribute_names": [
                 "groupByBodyId",
                 "faceId"
@@ -374,39 +374,6 @@
                         "private_attribute_sub_components": [
                             "body00001"
                         ],
-                        "transformation": {
-                            "type_name": "BodyGroupTransformation",
-                            "origin": {
-                                "value": [
-                                    0.0,
-                                    0.0,
-                                    0.0
-                                ],
-                                "units": "1.0*m"
-                            },
-                            "axis_of_rotation": [
-                                1.0,
-                                0.0,
-                                0.0
-                            ],
-                            "angle_of_rotation": {
-                                "value": 0.0,
-                                "units": "rad"
-                            },
-                            "scale": [
-                                1.0,
-                                1.0,
-                                1.0
-                            ],
-                            "translation": {
-                                "value": [
-                                    0.0,
-                                    0.0,
-                                    0.0
-                                ],
-                                "units": "1.0*m"
-                            }
-                        },
                         "mesh_exterior": true
                     },
                     {
@@ -417,39 +384,6 @@
                         "private_attribute_sub_components": [
                             "body00002"
                         ],
-                        "transformation": {
-                            "type_name": "BodyGroupTransformation",
-                            "origin": {
-                                "value": [
-                                    0.0,
-                                    0.0,
-                                    0.0
-                                ],
-                                "units": "1.0*m"
-                            },
-                            "axis_of_rotation": [
-                                1.0,
-                                0.0,
-                                0.0
-                            ],
-                            "angle_of_rotation": {
-                                "value": 0.0,
-                                "units": "rad"
-                            },
-                            "scale": [
-                                1.0,
-                                1.0,
-                                1.0
-                            ],
-                            "translation": {
-                                "value": [
-                                    0.0,
-                                    0.0,
-                                    0.0
-                                ],
-                                "units": "1.0*m"
-                            }
-                        },
                         "mesh_exterior": true
                     },
                     {
@@ -460,39 +394,6 @@
                         "private_attribute_sub_components": [
                             "cylinder.stl"
                         ],
-                        "transformation": {
-                            "type_name": "BodyGroupTransformation",
-                            "origin": {
-                                "value": [
-                                    0.0,
-                                    0.0,
-                                    0.0
-                                ],
-                                "units": "1.0*m"
-                            },
-                            "axis_of_rotation": [
-                                1.0,
-                                0.0,
-                                0.0
-                            ],
-                            "angle_of_rotation": {
-                                "value": 0.0,
-                                "units": "rad"
-                            },
-                            "scale": [
-                                1.0,
-                                1.0,
-                                1.0
-                            ],
-                            "translation": {
-                                "value": [
-                                    0.0,
-                                    0.0,
-                                    0.0
-                                ],
-                                "units": "1.0*m"
-                            }
-                        },
                         "mesh_exterior": true
                     }
                 ],
@@ -507,50 +408,19 @@
                             "body00002"
                         ],
                         "transformation": {
-                            "type_name": "BodyGroupTransformation",
-                            "origin": {
-                                "value": [
-                                    0.0,
-                                    0.0,
-                                    0.0
-                                ],
-                                "units": "1.0*m"
-                            },
-                            "axis_of_rotation": [
-                                1.0,
-                                0.0,
-                                0.0
-                            ],
-                            "angle_of_rotation": {
-                                "value": 0.0,
-                                "units": "rad"
-                            },
-                            "scale": [
-                                1.0,
-                                1.0,
-                                1.0
-                            ],
-                            "translation": {
-                                "value": [
-                                    0.0,
-                                    0.0,
-                                    0.0
-                                ],
-                                "units": "1.0*m"
-                            },
                             "private_attribute_matrix": [
                                 1.0,
                                 0.0,
                                 0.0,
+                                10.0,
+                                0.0,
+                                1.0,
+                                0.0,
+                                20.0,
                                 0.0,
                                 0.0,
                                 1.0,
-                                0.0,
-                                0.0,
-                                0.0,
-                                0.0,
-                                1.0,
-                                0.0
+                                30.0
                             ]
                         },
                         "mesh_exterior": true
@@ -564,50 +434,19 @@
                             "cylinder.stl"
                         ],
                         "transformation": {
-                            "type_name": "BodyGroupTransformation",
-                            "origin": {
-                                "value": [
-                                    0.0,
-                                    0.0,
-                                    0.0
-                                ],
-                                "units": "1.0*m"
-                            },
-                            "axis_of_rotation": [
-                                1.0,
-                                0.0,
-                                0.0
-                            ],
-                            "angle_of_rotation": {
-                                "value": 0.0,
-                                "units": "rad"
-                            },
-                            "scale": [
-                                1.0,
-                                1.0,
-                                1.0
-                            ],
-                            "translation": {
-                                "value": [
-                                    0.0,
-                                    0.0,
-                                    0.0
-                                ],
-                                "units": "1.0*m"
-                            },
                             "private_attribute_matrix": [
                                 1.0,
                                 0.0,
                                 0.0,
+                                10.0,
+                                0.0,
+                                1.0,
+                                0.0,
+                                20.0,
                                 0.0,
                                 0.0,
                                 1.0,
-                                0.0,
-                                0.0,
-                                0.0,
-                                0.0,
-                                1.0,
-                                0.0
+                                30.0
                             ]
                         },
                         "mesh_exterior": true

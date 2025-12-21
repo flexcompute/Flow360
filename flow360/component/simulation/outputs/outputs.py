@@ -46,6 +46,7 @@ from flow360.component.simulation.primitives import (
     GhostSphere,
     GhostSurface,
     ImportedSurface,
+    MirroredSurface,
     Surface,
     WindTunnelGhostSurface,
 )
@@ -313,8 +314,9 @@ class SurfaceOutput(_AnimationAndFileFormatSettings, _OutputBase):
     # TODO: entities is None --> use all surfaces. This is not implemented yet.
 
     name: Optional[str] = pd.Field("Surface output", description="Name of the `SurfaceOutput`.")
-    entities: EntityListAllowingGhost[
+    entities: EntityListAllowingGhost[  # pylint: disable=duplicate-code
         Surface,
+        MirroredSurface,
         GhostSurface,
         WindTunnelGhostSurface,
         GhostCircularPlane,
@@ -646,8 +648,9 @@ class SurfaceIntegralOutput(_OutputBase):
     """
 
     name: str = pd.Field("Surface integral output", description="Name of integral.")
-    entities: EntityListAllowingGhost[
+    entities: EntityListAllowingGhost[  # pylint: disable=duplicate-code
         Surface,
+        MirroredSurface,
         GhostSurface,
         WindTunnelGhostSurface,
         GhostCircularPlane,
@@ -718,7 +721,7 @@ class RenderOutputGroup(Flow360BaseModel):
 
     """
 
-    surfaces: Optional[EntityList[Surface]] = pd.Field(
+    surfaces: Optional[EntityList[Surface, MirroredSurface]] = pd.Field(
         None, description="List of of :class:`~flow360.Surface` entities."
     )
     slices: Optional[EntityList[Slice]] = pd.Field(
@@ -915,7 +918,7 @@ class SurfaceProbeOutput(_OutputBase):
         + "is used to define monitored points along a line.",
     )
     # Maybe add preprocess for this and by default add all Surfaces?
-    target_surfaces: EntityList[Surface, WindTunnelGhostSurface] = pd.Field(
+    target_surfaces: EntityList[Surface, MirroredSurface, WindTunnelGhostSurface] = pd.Field(
         description="List of :class:`~flow360.component.simulation.primitives.Surface` "
         + "entities belonging to this monitor group."
     )
@@ -946,7 +949,7 @@ class SurfaceSliceOutput(_AnimationAndFileFormatSettings, _OutputBase):
         alias="slices", description="List of :class:`Slice` entities."
     )
     # Maybe add preprocess for this and by default add all Surfaces?
-    target_surfaces: EntityList[Surface, WindTunnelGhostSurface] = pd.Field(
+    target_surfaces: EntityList[Surface, MirroredSurface, WindTunnelGhostSurface] = pd.Field(
         description="List of :class:`Surface` entities on which the slice will cut through."
     )
 

@@ -534,7 +534,7 @@ class UserVariable(Variable):
 
     @pd.field_validator("name", mode="after")
     @classmethod
-    @deprecation_reminder("25.8.0")
+    @deprecation_reminder("26.2.0")
     def check_value_is_not_legacy_variable(cls, v):
         """Check that the value is not a legacy variable"""
         # pylint:disable=import-outside-toplevel
@@ -1286,7 +1286,7 @@ class ValueOrExpression(Expression, Generic[T]):
                         {"expression": value.expression, "output_units": value.output_units}
                     )
 
-            @deprecation_reminder("25.8.0")
+            @deprecation_reminder("26.2.0")
             def _handle_legacy_unyt_values(value):
                 """Handle {"units":..., "value":...} from legacy input. This is much easier than writing the updater."""
                 if isinstance(value, dict) and "units" in value and "value" in value:

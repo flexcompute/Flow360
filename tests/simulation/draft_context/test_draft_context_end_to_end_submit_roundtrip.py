@@ -122,7 +122,6 @@ def test_draft_end_to_end_selector_and_draft_entity_roundtrip(mock_surface_mesh,
             length_unit=1 * u.m,
             use_beta_mesher=False,
             use_geometry_AI=False,
-            draft_entity_info=draft._entity_info,
         )
         wall_model = next(m for m in params.models if isinstance(m, Wall))
         assert wall_model.entities.stored_entities == []

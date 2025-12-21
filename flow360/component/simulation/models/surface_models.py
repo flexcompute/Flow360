@@ -27,6 +27,7 @@ from flow360.component.simulation.primitives import (
     GhostSphere,
     GhostSurface,
     GhostSurfacePair,
+    MirroredSurface,
     Surface,
     SurfacePair,
     WindTunnelGhostSurface,
@@ -74,7 +75,7 @@ class BoundaryBase(Flow360BaseModel, metaclass=ABCMeta):
     """Boundary base"""
 
     type: str = pd.Field()
-    entities: EntityList[Surface] = pd.Field(
+    entities: EntityList[Surface, MirroredSurface] = pd.Field(
         alias="surfaces",
         description="List of boundaries with boundary condition imposed.",
     )
@@ -406,7 +407,7 @@ class Wall(BoundaryBase):
     )
     private_attribute_dict: Optional[Dict] = pd.Field(None)
 
-    entities: EntityList[Surface, WindTunnelGhostSurface] = pd.Field(
+    entities: EntityList[Surface, MirroredSurface, WindTunnelGhostSurface] = pd.Field(
         alias="surfaces",
         description="List of boundaries with the `Wall` boundary condition imposed.",
     )
@@ -489,8 +490,13 @@ class Freestream(BoundaryBaseWithTurbulenceQuantities):
         + "Optionally, an expression for each of the velocity components can be specified.",
     )
     entities: EntityListAllowingGhost[
-        Surface, GhostSurface, WindTunnelGhostSurface, GhostSphere, GhostCircularPlane
-    ] = pd.Field(
+        Surface,
+        MirroredSurface,
+        GhostSurface,
+        WindTunnelGhostSurface,
+        GhostSphere,
+        GhostCircularPlane,
+    ] = pd.Field(  # pylint: disable=duplicate-code
         alias="surfaces",
         description="List of boundaries with the `Freestream` boundary condition imposed.",
     )
@@ -552,7 +558,7 @@ class Outflow(BoundaryBase):
         description="Specify the static pressure, mass flow rate, or Mach number parameters at"
         + " the `Outflow` boundary.",
     )
-    entities: EntityList[Surface, WindTunnelGhostSurface] = pd.Field(
+    entities: EntityList[Surface, MirroredSurface, WindTunnelGhostSurface] = pd.Field(
         alias="surfaces",
         description="List of boundaries with the `Outflow` boundary condition imposed.",
     )
@@ -618,7 +624,7 @@ class Inflow(BoundaryBaseWithTurbulenceQuantities):
         description="Direction of the incoming flow. Must be a unit vector pointing "
         + "into the volume. If unspecified, the direction will be normal to the surface.",
     )
-    entities: EntityList[Surface, WindTunnelGhostSurface] = pd.Field(
+    entities: EntityList[Surface, MirroredSurface, WindTunnelGhostSurface] = pd.Field(
         alias="surfaces",
         description="List of boundaries with the `Inflow` boundary condition imposed.",
     )
@@ -653,7 +659,7 @@ class SlipWall(BoundaryBase):
     )
     type: Literal["SlipWall"] = pd.Field("SlipWall", frozen=True)
     entities: EntityListAllowingGhost[
-        Surface, GhostSurface, WindTunnelGhostSurface, GhostCircularPlane
+        Surface, MirroredSurface, GhostSurface, WindTunnelGhostSurface, GhostCircularPlane
     ] = pd.Field(
         alias="surfaces",
         description="List of boundaries with the :code:`SlipWall` boundary condition imposed.",
@@ -685,7 +691,9 @@ class SymmetryPlane(BoundaryBase):
         "Symmetry", description="Name of the `SymmetryPlane` boundary condition."
     )
     type: Literal["SymmetryPlane"] = pd.Field("SymmetryPlane", frozen=True)
-    entities: EntityListAllowingGhost[Surface, GhostSurface, GhostCircularPlane] = pd.Field(
+    entities: EntityListAllowingGhost[
+        Surface, MirroredSurface, GhostSurface, GhostCircularPlane
+    ] = pd.Field(
         alias="surfaces",
         description="List of boundaries with the `SymmetryPlane` boundary condition imposed.",
     )

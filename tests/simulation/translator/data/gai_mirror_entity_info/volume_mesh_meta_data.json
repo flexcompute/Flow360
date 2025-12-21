@@ -1,0 +1,26 @@
+{
+    "zones": {
+        "farfield": {
+            "boundaryNames": [
+                "farfield/BottomCap",
+                "farfield/BottomCap_<mirror>",
+                "farfield/Curved",
+                "farfield/Curved_<mirror>",
+                "farfield/TopCap",
+                "farfield/TopCap_<mirror>",
+                "farfield/windTunnelCeiling",
+                "farfield/windTunnelCentralBelt",
+                "farfield/windTunnelFloor",
+                "farfield/windTunnelFrontWheelBelt",
+                "farfield/windTunnelInlet",
+                "farfield/windTunnelLeft",
+                "farfield/windTunnelOutlet",
+                "farfield/windTunnelRearWheelBelt",
+                "farfield/windTunnelRight"
+            ],
+            "donorInterfaceNames": [],
+            "donorZoneNames": [],
+            "receiverInterfaceNames": []
+        }
+    }
+}

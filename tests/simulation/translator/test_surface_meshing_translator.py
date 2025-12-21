@@ -5,10 +5,19 @@ import pytest
 
 import flow360.component.simulation.units as u
 from flow360.component.geometry import Geometry, GeometryMeta
-from flow360.component.project_utils import validate_params_with_context
+from flow360.component.project import create_draft
+from flow360.component.project_utils import (
+    set_up_params_for_uploading,
+    validate_params_with_context,
+)
 from flow360.component.resource_base import local_metadata_builder
+from flow360.component.simulation.draft_context.coordinate_system_manager import (
+    CoordinateSystemAssignmentGroup,
+    CoordinateSystemEntityRef,
+    CoordinateSystemStatus,
+)
 from flow360.component.simulation.entity_info import GeometryEntityInfo
-from flow360.component.simulation.entity_operation import Transformation
+from flow360.component.simulation.entity_operation import CoordinateSystem
 from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.framework.updater_utils import compare_values
 from flow360.component.simulation.meshing_param import snappy
@@ -47,6 +56,8 @@ from flow360.component.simulation.primitives import (
     Box,
     Cylinder,
     Edge,
+    MirroredGeometryBodyGroup,
+    MirroredSurface,
     SeedpointVolume,
     Surface,
 )
@@ -978,7 +989,7 @@ def _translate_and_compare(param, mesh_unit, ref_json_file: str, atol=1e-15):
     # It is important that the list in the configs are sorted beforehand
     # as the hash values for reuse resource rely on that
 
-    # check if everything is seriazable
+    # check if everything is serializable
     json.dumps(translated)
     assert compare_values(ref_dict, translated, atol=atol)
 
@@ -1090,56 +1101,64 @@ def test_gai_surface_mesher_refinements():
     geometry.group_edges_by_tag("edgeId")
     geometry.group_bodies_by_tag("groupByFile")
 
-    with open(
-        os.path.join(
-            os.path.dirname(__file__), "data", "gai_geometry_entity_info", "simulation.json"
-        ),
-        "r",
-    ) as fh:
-        asset_cache = AssetCache.model_validate(json.load(fh).pop("private_attribute_asset_cache"))
+    with create_draft(new_run_from=geometry) as draft:
+        with SI_unit_system:
+            # Coordinate systems replace body-group transformations.
+            coordinate_system = CoordinateSystem(
+                name="body_group_cs",
+                origin=[0, 0, 0] * u.m,
+                axis_of_rotation=(0, 0, 1),
+                angle_of_rotation=0 * u.deg,
+                scale=(1.0, 1.0, 1.0),
+                translation=[10, 20, 30] * u.m,
+            )
 
-    with SI_unit_system:
-        # Rotate around z-axis for 90 deg, and scale in 3 axes
-        transformation = Transformation(
-            origin=[0, 0, 0] * u.m,
-            axis_of_rotation=(0, 0, 1),
-            angle_of_rotation=90 * u.deg,
-            scale=(4.0, 3.0, 2.0),
-            translation=[0, 0, 0] * u.m,
-        )
-        geometry["cube-holes.egads"].transformation = transformation
-        geometry["cylinder.stl"].transformation = transformation
-        farfield = AutomatedFarfield(domain_type="half_body_positive_y")
-        params = SimulationParams(
-            meshing=MeshingParams(
-                defaults=MeshingDefaults(
-                    geometry_accuracy=0.05 * u.m,  # GAI only setting
-                    surface_max_edge_length=0.2,
-                    boundary_layer_first_layer_thickness=0.01,
-                    surface_max_aspect_ratio=0.01,
-                    surface_max_adaptation_iterations=19,
-                ),
-                volume_zones=[farfield],
-                refinements=[
-                    SurfaceRefinement(
-                        name="renamed_surface",
-                        max_edge_length=0.1,
-                        faces=[geometry["*"]],
-                        curvature_resolution_angle=5.0 * u.deg,  # GAI only setting
-                        resolve_face_boundaries=True,  # GAI only setting
-                    ),
-                    GeometryRefinement(
-                        name="Local_override",
-                        geometry_accuracy=0.05 * u.m,
-                        faces=[geometry["body00001_face00001"]],
-                    ),
+            draft.coordinate_systems.assign(
+                entities=[
+                    draft.body_groups["cube-holes.egads"],
+                    draft.body_groups["cylinder.stl"],
                 ],
-            ),
-            operating_condition=AerospaceCondition(
-                velocity_magnitude=10 * u.m / u.s,
-            ),
-            private_attribute_asset_cache=asset_cache,
-        )
+                coordinate_system=coordinate_system,
+            )
+
+            farfield = AutomatedFarfield(domain_type="half_body_positive_y")
+            params = SimulationParams(
+                meshing=MeshingParams(
+                    defaults=MeshingDefaults(
+                        geometry_accuracy=0.05 * u.m,  # GAI only setting
+                        surface_max_edge_length=0.2,
+                        boundary_layer_first_layer_thickness=0.01,
+                        surface_max_aspect_ratio=0.01,
+                        surface_max_adaptation_iterations=19,
+                    ),
+                    volume_zones=[farfield],
+                    refinements=[
+                        SurfaceRefinement(
+                            name="renamed_surface",
+                            max_edge_length=0.1,
+                            faces=[geometry["*"]],
+                            curvature_resolution_angle=5.0 * u.deg,  # GAI only setting
+                            resolve_face_boundaries=True,  # GAI only setting
+                        ),
+                        GeometryRefinement(
+                            name="Local_override",
+                            geometry_accuracy=0.05 * u.m,
+                            faces=[geometry["body00001_face00001"]],
+                        ),
+                    ],
+                ),
+                operating_condition=AerospaceCondition(
+                    velocity_magnitude=10 * u.m / u.s,
+                ),
+            )
+
+            params = set_up_params_for_uploading(
+                root_asset=geometry,
+                length_unit=1 * u.m,
+                params=params,
+                use_beta_mesher=True,
+                use_geometry_AI=True,
+            )
 
     _translate_and_compare(
         params,
@@ -1343,3 +1362,288 @@ def test_sliding_interface_tolerance_gai():
         "spacing_radial": {"units": "1.0*m", "value": 0.1},
         "type": "RotationVolume",
     }
+
+
+def test_gai_mirror_status_translation():
+    """Test that mirror_status is properly translated into GAI surface meshing JSON.
+
+    This test verifies:
+    1. mirror_status is included in the translated JSON
+    2. All dimensional values (e.g., MirrorPlane.center) are serialized with proper units
+    """
+    from flow360.component.simulation.draft_context.mirror import (
+        MirrorPlane,
+        MirrorStatus,
+    )
+
+    geometry = Geometry.from_local_storage(
+        geometry_id="geo-e5c01a98-2180-449e-b255-d60162854a83",
+        local_storage_path=os.path.join(
+            os.path.dirname(__file__), "data", "gai_geometry_entity_info"
+        ),
+        meta_data=GeometryMeta(
+            **local_metadata_builder(
+                id="geo-e5c01a98-2180-449e-b255-d60162854a83",
+                name="mirror_test",
+                cloud_path_prefix="mirror_test",
+                status="processed",
+            )
+        ),
+    )
+    geometry.group_faces_by_tag("faceId")
+    geometry.group_edges_by_tag("edgeId")
+    geometry.group_bodies_by_tag("groupByFile")
+
+    with open(
+        os.path.join(
+            os.path.dirname(__file__), "data", "gai_geometry_entity_info", "simulation.json"
+        ),
+        "r",
+    ) as fh:
+        asset_cache_dict = json.load(fh).pop("private_attribute_asset_cache")
+
+    # Create mirror status with dimensional values
+    # Use fixed IDs to ensure reproducibility
+    mirror_plane = MirrorPlane(
+        name="y_symmetry_plane",
+        normal=(0, 1, 0),
+        center=[0.5, 0, 0.25] * u.m,
+        private_attribute_id="mirror-plane-test-id-001",
+    )
+
+    mirrored_body_group = MirroredGeometryBodyGroup(
+        name="cube-holes.egads_<mirror>",
+        geometry_body_group_id="cube-holes.egads",
+        mirror_plane_id="mirror-plane-test-id-001",
+        private_attribute_id="mirrored-body-group-test-id-001",
+    )
+
+    mirrored_surface = MirroredSurface(
+        name="body00001_face00001_<mirror>",
+        surface_id="body00001_face00001",
+        mirror_plane_id="mirror-plane-test-id-001",
+        private_attribute_id="mirrored-surface-test-id-001",
+    )
+
+    mirror_status = MirrorStatus(
+        mirror_planes=[mirror_plane],
+        mirrored_geometry_body_groups=[mirrored_body_group],
+        mirrored_surfaces=[mirrored_surface],
+    )
+
+    # Add mirror_status to asset_cache
+    asset_cache_dict["mirror_status"] = mirror_status.model_dump(mode="json")
+    asset_cache = AssetCache.model_validate(asset_cache_dict)
+
+    with SI_unit_system:
+        farfield = AutomatedFarfield(domain_type="half_body_positive_y")
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    geometry_accuracy=0.05 * u.m,
+                    surface_max_edge_length=0.2,
+                ),
+                volume_zones=[farfield],
+            ),
+            private_attribute_asset_cache=asset_cache,
+        )
+
+    _, err = validate_params_with_context(params, "Geometry", "SurfaceMesh")
+    assert err is None, f"Validation error: {err}"
+
+    translated = get_surface_meshing_json(params, mesh_unit=1 * u.m)
+
+    # Verify the JSON is serializable
+    json.dumps(translated)
+
+    # Assert mirror_status is in the translated JSON
+    assert "private_attribute_asset_cache" in translated
+    assert "mirror_status" in translated["private_attribute_asset_cache"]
+
+    mirror_status_json = translated["private_attribute_asset_cache"]["mirror_status"]
+
+    # Assert mirror_planes is present and has expected structure
+    assert "mirror_planes" in mirror_status_json
+    assert len(mirror_status_json["mirror_planes"]) == 1
+
+    plane_json = mirror_status_json["mirror_planes"][0]
+
+    # Verify plane name and normal
+    assert plane_json["name"] == "y_symmetry_plane"
+    assert plane_json["normal"] == [0.0, 1.0, 0.0]
+
+    # KEY ASSERTION: Verify dimensional value (center) has proper units format
+    assert "center" in plane_json
+    center = plane_json["center"]
+    assert isinstance(center, dict), "center should be a dict with value and units"
+    assert "value" in center, "center must have 'value' key"
+    assert "units" in center, "center must have 'units' key"
+
+    # Verify the values are correct (converted to Flow360 units - meters)
+    assert center["value"] == [0.5, 0.0, 0.25], f"Expected [0.5, 0.0, 0.25], got {center['value']}"
+    # Units should be in meter format (could be "m" or "1.0*m" depending on serialization)
+    assert "m" in center["units"], f"Expected meter units, got {center['units']}"
+
+    # Assert mirrored entities are present
+    assert "mirrored_geometry_body_groups" in mirror_status_json
+    assert len(mirror_status_json["mirrored_geometry_body_groups"]) == 1
+    assert (
+        mirror_status_json["mirrored_geometry_body_groups"][0]["name"]
+        == "cube-holes.egads_<mirror>"
+    )
+
+    assert "mirrored_surfaces" in mirror_status_json
+    assert len(mirror_status_json["mirrored_surfaces"]) == 1
+    assert mirror_status_json["mirrored_surfaces"][0]["name"] == "body00001_face00001_<mirror>"
+
+
+def test_gai_mirror_status_translation_idempotency():
+    """Test that mirror_status translation is idempotent.
+
+    This test verifies that translating the same configuration twice produces
+    identical JSON output, even though the entities have different UUIDs each time.
+    The private_attribute_id fields should be stripped from the output.
+    """
+    from flow360.component.simulation.draft_context.mirror import (
+        MirrorPlane,
+        MirrorStatus,
+    )
+
+    translated_jsons = []
+
+    for _ in range(2):
+        geometry = Geometry.from_local_storage(
+            geometry_id="geo-e5c01a98-2180-449e-b255-d60162854a83",
+            local_storage_path=os.path.join(
+                os.path.dirname(__file__), "data", "gai_geometry_entity_info"
+            ),
+            meta_data=GeometryMeta(
+                **local_metadata_builder(
+                    id="geo-e5c01a98-2180-449e-b255-d60162854a83",
+                    name="idempotency_test",
+                    cloud_path_prefix="idempotency_test",
+                    status="processed",
+                )
+            ),
+        )
+        geometry.group_faces_by_tag("faceId")
+        geometry.group_edges_by_tag("edgeId")
+        geometry.group_bodies_by_tag("groupByFile")
+
+        with open(
+            os.path.join(
+                os.path.dirname(__file__), "data", "gai_geometry_entity_info", "simulation.json"
+            ),
+            "r",
+        ) as fh:
+            asset_cache_dict = json.load(fh).pop("private_attribute_asset_cache")
+
+        # Create mirror status - each iteration generates new UUIDs
+        # because we don't specify private_attribute_id
+        mirror_plane = MirrorPlane(
+            name="test_mirror_plane",
+            normal=(1, 0, 0),
+            center=[0, 0, 0] * u.m,
+        )
+
+        mirrored_body_group = MirroredGeometryBodyGroup(
+            name="cube-holes.egads_<mirror>",
+            geometry_body_group_id="cube-holes.egads",
+            mirror_plane_id=mirror_plane.private_attribute_id,
+        )
+
+        mirrored_surface = MirroredSurface(
+            name="body00001_face00001_<mirror>",
+            surface_id="body00001_face00001",
+            mirror_plane_id=mirror_plane.private_attribute_id,
+        )
+
+        mirror_status = MirrorStatus(
+            mirror_planes=[mirror_plane],
+            mirrored_geometry_body_groups=[mirrored_body_group],
+            mirrored_surfaces=[mirrored_surface],
+        )
+
+        asset_cache_dict["mirror_status"] = mirror_status.model_dump(mode="json")
+        asset_cache = AssetCache.model_validate(asset_cache_dict)
+
+        with SI_unit_system:
+            farfield = AutomatedFarfield(domain_type="half_body_positive_y")
+            params = SimulationParams(
+                meshing=MeshingParams(
+                    defaults=MeshingDefaults(
+                        geometry_accuracy=0.05 * u.m,
+                        surface_max_edge_length=0.2,
+                    ),
+                    volume_zones=[farfield],
+                ),
+                private_attribute_asset_cache=asset_cache,
+            )
+
+        _, err = validate_params_with_context(params, "Geometry", "SurfaceMesh")
+        assert err is None, f"Validation error: {err}"
+
+        translated = get_surface_meshing_json(params, mesh_unit=1 * u.m)
+        translated_jsons.append(translated)
+
+    # Convert both to JSON strings for comparison
+    json_str_0 = json.dumps(translated_jsons[0], sort_keys=True)
+    json_str_1 = json.dumps(translated_jsons[1], sort_keys=True)
+
+    # The two translations should be identical (idempotent)
+    assert json_str_0 == json_str_1, (
+        "Translated JSONs should be identical (idempotent) despite different UUIDs.\n"
+        f"First translation:\n{json.dumps(translated_jsons[0], indent=2)}\n"
+        f"Second translation:\n{json.dumps(translated_jsons[1], indent=2)}"
+    )
+
+    # Verify that no UUID-style IDs remain in mirror_status
+    # (deterministic IDs like "mirror-{name}" are expected and should be present)
+    mirror_status_json = translated_jsons[0]["private_attribute_asset_cache"]["mirror_status"]
+
+    def check_no_uuids(obj, path=""):
+        """Check that no UUID-style strings (with hyphens and hex chars) are present."""
+        if isinstance(obj, dict):
+            for k, v in obj.items():
+                if isinstance(v, str) and len(v) == 36 and v.count("-") == 4:
+                    # Looks like a UUID (e.g., "e9f942f7-3152-4f4e-a68c-32280465cb77")
+                    assert False, f"UUID-style string '{v}' found at {path}.{k}"
+                check_no_uuids(v, f"{path}.{k}")
+        elif isinstance(obj, list):
+            for i, item in enumerate(obj):
+                check_no_uuids(item, f"{path}[{i}]")
+
+    check_no_uuids(mirror_status_json, "mirror_status")
+
+    # Verify that mirroring relationships are preserved with deterministic IDs
+    mirror_planes = mirror_status_json.get("mirror_planes", [])
+    mirrored_body_groups = mirror_status_json.get("mirrored_geometry_body_groups", [])
+    mirrored_surfaces = mirror_status_json.get("mirrored_surfaces", [])
+
+    # Check that mirror planes have deterministic IDs
+    assert len(mirror_planes) == 1, "Expected one mirror plane"
+    plane = mirror_planes[0]
+    expected_plane_id = f"mirror-{plane['name']}"
+    assert (
+        plane["private_attribute_id"] == expected_plane_id
+    ), f"Mirror plane should have deterministic ID 'mirror-{{name}}', got {plane['private_attribute_id']}"
+
+    # Check that mirrored body groups reference the correct mirror plane
+    assert len(mirrored_body_groups) == 1, "Expected one mirrored body group"
+    body_group = mirrored_body_groups[0]
+    assert (
+        "private_attribute_id" not in body_group
+    ), "Mirrored body group should not have private_attribute_id"
+    assert (
+        body_group["mirror_plane_id"] == expected_plane_id
+    ), f"Mirrored body group should reference mirror plane '{expected_plane_id}'"
+
+    # Check that mirrored surfaces reference the correct mirror plane
+    assert len(mirrored_surfaces) == 1, "Expected one mirrored surface"
+    surface = mirrored_surfaces[0]
+    assert (
+        "private_attribute_id" not in surface
+    ), "Mirrored surface should not have private_attribute_id"
+    assert (
+        surface["mirror_plane_id"] == expected_plane_id
+    ), f"Mirrored surface should reference mirror plane '{expected_plane_id}'"

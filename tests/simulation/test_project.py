@@ -169,12 +169,14 @@ def test_conflicting_entity_grouping_tags(mock_response, capsys):
     ) as f:
         params_as_dict = json.load(f)
 
-    params, _, _ = validate_model(
+    params, errors, _ = validate_model(
         params_as_dict=params_as_dict,
         validated_by=ValidationCalledBy.LOCAL,
         root_item_type="Geometry",
         validation_level=None,
     )
+
+    assert params is not None, print(">>> errors:", errors)
 
     assert params.private_attribute_asset_cache.project_entity_info.face_group_tag == "faceId"
     assert params.private_attribute_asset_cache.project_entity_info.edge_group_tag == "edgeId"
@@ -266,7 +268,7 @@ def test_interpolate_to_mesh_uses_vm_project_root_asset(mock_response):
     captured_root_asset = None
 
     def mock_set_up_params_for_uploading(
-        params, root_asset, length_unit, use_beta_mesher, use_geometry_AI, draft_entity_info=None
+        params, root_asset, length_unit, use_beta_mesher, use_geometry_AI
     ):
         nonlocal captured_root_asset
         captured_root_asset = root_asset
@@ -276,7 +278,6 @@ def test_interpolate_to_mesh_uses_vm_project_root_asset(mock_response):
             params=params,
             use_beta_mesher=use_beta_mesher,
             use_geometry_AI=use_geometry_AI,
-            draft_entity_info=draft_entity_info,
         )
 
     with patch(
