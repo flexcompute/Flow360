@@ -87,7 +87,7 @@ def expand_entity_list_in_context(
                 "Failed to find any valid entities in the input. "
                 "Has the simulationParams been manually edited since loading from the cloud "
                 "or have you changed the cloud resource for which the SimulationParams is being used?"
-                ) from exc
+            ) from exc
 
     if return_names:
         return [entity.name for entity in stored_entities]
