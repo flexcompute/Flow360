@@ -705,7 +705,11 @@ def test_surface_forces_result(mock_id, mock_response):
                         {
                             "attribute": "name",
                             "operator": "any_of",
-                            "value": ["body00001", "body00002"],
+                            "value": [
+                                "body00001",
+                                "body00002",
+                                "farfield",  # farfield to ensure auto filtering
+                            ],
                         }
                     ],
                 )
@@ -725,7 +729,10 @@ def test_surface_forces_result(mock_id, mock_response):
     expanded_names = expand_entity_list_in_context(
         selector_model.entities, params_with_selectors, return_names=True
     )
-    assert expanded_names == ["body00001", "body00002"]
+    assert expanded_names == [
+        "body00001",
+        "body00002",
+    ]  # farfield got filtered out by `Wall`'s EntityList
 
     serialized_params = params_with_selectors.model_dump(mode="json", exclude_none=True)
     _, registry = get_entity_info_and_registry_from_dict(serialized_params)
@@ -736,7 +743,7 @@ def test_surface_forces_result(mock_id, mock_response):
         merge_mode="merge",
     )
     dict_names = [entity.name for entity in expanded_entities_via_registry]
-    assert dict_names == expanded_names
+    assert dict_names == expanded_names + ["farfield"]
 
 
 @pytest.mark.usefixtures("s3_download_override")

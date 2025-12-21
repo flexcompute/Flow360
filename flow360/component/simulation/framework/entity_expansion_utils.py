@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, List, Literal, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Union
+
+import pydantic as pd
 
 from flow360.component.simulation.framework.entity_materializer import (
     materialize_entities_and_selectors_in_place,
@@ -71,6 +73,19 @@ def expand_entity_list_in_context(
         materialize_entities_and_selectors_in_place(wrapper)
         stored_entities = wrapper.get("stored_entities", [])
 
+    # Trigger field validator to filter invalid entity types
+    # This ensures consistency with the centralized filtering architecture
+    if stored_entities:
+        try:
+            # Use model_validate to trigger field validator which filters by type
+            validated_list = entity_list.__class__.model_validate(
+                {"stored_entities": stored_entities}
+            )
+            stored_entities = validated_list.stored_entities
+        except pd.ValidationError:  # pylint: disable=broad-exception-caught
+            # If validation fails, fall back to unfiltered list for backward compatibility
+            pass
+
     if return_names:
         return [entity.name for entity in stored_entities]
     return stored_entities
@@ -110,12 +125,18 @@ def get_registry_from_params(params) -> EntityRegistry:
 
 
 def expand_all_entity_lists_in_place(
-    params, *, merge_mode: Literal["merge", "replace"] = "merge"
+    params,
+    *,
+    merge_mode: Literal["merge", "replace"] = "merge",
+    expansion_map: Optional[Dict[str, List[str]]] = None,
 ) -> None:
     """
     Expand selectors for all EntityList objects under params in-place.
 
     This is intended for translation-time expansion where mutating the params object is safe.
+
+    Parameters:
+        expansion_map: Optional type expansion mapping for selectors.
     """
     # pylint: disable=import-outside-toplevel
     from flow360.component.simulation.framework.entity_base import EntityList
@@ -140,6 +161,7 @@ def expand_all_entity_lists_in_place(
                 obj,
                 selector_cache=selector_cache,
                 merge_mode=merge_mode,
+                expansion_map=expansion_map,
             )
             return False  # Don't traverse into EntityList internals
         return True  # Continue traversing other objects
