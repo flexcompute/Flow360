@@ -453,6 +453,8 @@ def _update_rotating_models_with_metadata(
         Mapping of original_boundary_name -> rotating_boundary_name for all entities with __rotating patches.
     stationary_boundaries : set
         Set of rotating_boundary_name values that are in stationary_enclosed_entities.
+    rotating_boundary_to_entity_map : dict
+        Mapping of rotating_boundary_name -> Surface (or boundary) entity instance used for the rotating patches.
     """
     if params.models is None or len(original_to_rotating_map) == 0:
         return
