@@ -1178,6 +1178,8 @@ class Project(pd.BaseModel):
         self, name: str, resource_type: ProjectResourceType
     ):
         resp = self._project_webapi.post(method="dependency/namecheck", json={"name": name})
+        if resp.get("status") == "success":
+            return
         if (
             resource_type == ProjectResourceType.GEOMETRY
             and resp["conflictResourceId"].startswith("geo")
