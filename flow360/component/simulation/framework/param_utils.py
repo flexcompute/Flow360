@@ -409,7 +409,8 @@ def _update_rotating_entity_names_with_metadata(
 
         # Process enclosed_entities
         if rotation_volume.enclosed_entities is not None:
-            for enclosed_entity in rotation_volume.enclosed_entities.stored_entities:
+            # Iterate over a copy to avoid modifying the list while iterating
+            for enclosed_entity in list(rotation_volume.enclosed_entities.stored_entities):
                 if not isinstance(enclosed_entity, Surface):
                     continue
 

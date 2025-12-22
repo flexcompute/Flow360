@@ -6,7 +6,7 @@ from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     RotationVolume,
 )
-from flow360.component.simulation.models.surface_models import Wall
+from flow360.component.simulation.models.surface_models import Wall, WallRotation
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
 )
@@ -233,3 +233,320 @@ def test_update_rotating_boundaries_with_stationary_entities():
         assert rotating_wall is not None
         # Verify velocity is set to zero for stationary entities (as string expressions)
         assert rotating_wall.velocity == ("0", "0", "0")
+
+
+def test_multiple_entities_partial_rotating_patches():
+    """Test multiple entities in enclosed_entities where only some have __rotating patches."""
+    volume_mesh_meta_data = {
+        "zones": {
+            "farfield": {
+                "boundaryNames": [
+                    "farfield/farfield",
+                    "farfield/slidingInterface-intersectingCylinder",
+                    "farfield/sphere.lb8.ugrid",
+                    "farfield/other_surface",
+                ],
+            },
+            "intersectingCylinder": {
+                "boundaryNames": [
+                    "intersectingCylinder/inverted-intersectingCylinder",
+                    "intersectingCylinder/sphere.lb8.ugrid__rotating_intersectingCylinder",
+                    # Note: other_surface does NOT have a __rotating patch
+                ],
+            },
+        }
+    }
+
+    with SI_unit_system:
+        # Create entities
+        cylinder = Cylinder(
+            name="intersectingCylinder",
+            center=(0, 0, 0) * u.m,
+            outer_radius=1 * u.m,
+            height=2 * u.m,
+            axis=(0, 0, 1),
+        )
+        sphere_surface = Surface(name="sphere.lb8.ugrid")
+        other_surface = Surface(name="other_surface")
+
+        # Create RotationVolume with multiple enclosed_entities
+        rotation_volume = RotationVolume(
+            name="RotationVolume",
+            spacing_axial=0.5 * u.m,
+            spacing_circumferential=0.3 * u.m,
+            spacing_radial=1.5 * u.m,
+            entities=[cylinder],
+            enclosed_entities=[sphere_surface, other_surface],
+        )
+
+        # Create meshing params
+        meshing = MeshingParams(
+            volume_zones=[
+                AutomatedFarfield(name="Farfield"),
+                rotation_volume,
+            ]
+        )
+
+        # Create operating condition
+        op = AerospaceCondition(velocity_magnitude=10)
+
+        # Create Wall models for both surfaces
+        wall_model_sphere = Wall(entities=[sphere_surface], velocity=[1, 0, 0])
+        wall_model_other = Wall(entities=[other_surface], velocity=[0, 1, 0])
+
+        # Create simulation params
+        params = SimulationParams(
+            meshing=meshing,
+            operating_condition=op,
+            models=[wall_model_sphere, wall_model_other],
+        )
+
+        # Update entity full names first
+        from flow360.component.simulation.framework.param_utils import (
+            _update_entity_full_name,
+            _update_rotating_boundaries_with_metadata,
+        )
+        from flow360.component.simulation.primitives import (
+            _SurfaceEntityBase,
+            _VolumeEntityBase,
+        )
+
+        _update_entity_full_name(params, _VolumeEntityBase, volume_mesh_meta_data)
+        _update_entity_full_name(params, _SurfaceEntityBase, volume_mesh_meta_data)
+
+        # Call the function to update rotating boundaries
+        _update_rotating_boundaries_with_metadata(params, volume_mesh_meta_data)
+
+        # Verify that only sphere_surface was updated (has __rotating patch)
+        updated_entities = rotation_volume.enclosed_entities.stored_entities
+        sphere_updated = None
+        other_updated = None
+
+        for entity in updated_entities:
+            if entity.name == "sphere.lb8.ugrid__rotating_intersectingCylinder":
+                sphere_updated = entity
+            elif entity.name == "other_surface":
+                other_updated = entity
+
+        assert sphere_updated is not None
+        assert (
+            sphere_updated.full_name
+            == "intersectingCylinder/sphere.lb8.ugrid__rotating_intersectingCylinder"
+        )
+
+        # other_surface should remain unchanged (no __rotating patch found)
+        assert other_updated is not None
+        assert other_updated.full_name == "farfield/other_surface"
+        assert other_updated.name == "other_surface"
+
+        # Verify that only one new Wall model was created (for sphere, not other_surface)
+        wall_models = [m for m in params.models if isinstance(m, Wall)]
+        rotating_walls = [
+            m
+            for m in wall_models
+            if m.entities
+            and m.entities.stored_entities
+            and "__rotating" in m.entities.stored_entities[0].full_name
+        ]
+        assert len(rotating_walls) == 1
+        assert (
+            rotating_walls[0].entities.stored_entities[0].full_name
+            == "intersectingCylinder/sphere.lb8.ugrid__rotating_intersectingCylinder"
+        )
+
+
+def test_no_wall_model_for_entity():
+    """Test that entities without Wall models are handled correctly."""
+    volume_mesh_meta_data = {
+        "zones": {
+            "farfield": {
+                "boundaryNames": [
+                    "farfield/farfield",
+                    "farfield/slidingInterface-intersectingCylinder",
+                    "farfield/sphere.lb8.ugrid",
+                ],
+            },
+            "intersectingCylinder": {
+                "boundaryNames": [
+                    "intersectingCylinder/inverted-intersectingCylinder",
+                    "intersectingCylinder/sphere.lb8.ugrid__rotating_intersectingCylinder",
+                ],
+            },
+        }
+    }
+
+    with SI_unit_system:
+        # Create entities
+        cylinder = Cylinder(
+            name="intersectingCylinder",
+            center=(0, 0, 0) * u.m,
+            outer_radius=1 * u.m,
+            height=2 * u.m,
+            axis=(0, 0, 1),
+        )
+        sphere_surface = Surface(name="sphere.lb8.ugrid")
+
+        # Create RotationVolume with enclosed_entities
+        rotation_volume = RotationVolume(
+            name="RotationVolume",
+            spacing_axial=0.5 * u.m,
+            spacing_circumferential=0.3 * u.m,
+            spacing_radial=1.5 * u.m,
+            entities=[cylinder],
+            enclosed_entities=[sphere_surface],
+        )
+
+        # Create meshing params
+        meshing = MeshingParams(
+            volume_zones=[
+                AutomatedFarfield(name="Farfield"),
+                rotation_volume,
+            ]
+        )
+
+        # Create operating condition
+        op = AerospaceCondition(velocity_magnitude=10)
+
+        # Create simulation params WITHOUT any Wall models
+        params = SimulationParams(
+            meshing=meshing,
+            operating_condition=op,
+            models=[],  # No Wall models
+        )
+
+        # Update entity full names first
+        from flow360.component.simulation.framework.param_utils import (
+            _update_entity_full_name,
+            _update_rotating_boundaries_with_metadata,
+        )
+        from flow360.component.simulation.primitives import (
+            _SurfaceEntityBase,
+            _VolumeEntityBase,
+        )
+
+        _update_entity_full_name(params, _VolumeEntityBase, volume_mesh_meta_data)
+        _update_entity_full_name(params, _SurfaceEntityBase, volume_mesh_meta_data)
+
+        # Call the function to update rotating boundaries
+        # This should not raise an error even though there's no Wall model
+        _update_rotating_boundaries_with_metadata(params, volume_mesh_meta_data)
+
+        # Verify that the enclosed_entity was still updated to point to __rotating patch
+        updated_entity = rotation_volume.enclosed_entities.stored_entities[0]
+        assert (
+            updated_entity.full_name
+            == "intersectingCylinder/sphere.lb8.ugrid__rotating_intersectingCylinder"
+        )
+
+        # Verify that no new Wall models were created (since there were none to begin with)
+        wall_models = [m for m in params.models if isinstance(m, Wall)]
+        assert len(wall_models) == 0
+
+
+def test_wall_model_with_wall_rotation():
+    """Test Wall model with WallRotation velocity instead of a simple velocity vector."""
+    volume_mesh_meta_data = {
+        "zones": {
+            "farfield": {
+                "boundaryNames": [
+                    "farfield/farfield",
+                    "farfield/slidingInterface-intersectingCylinder",
+                    "farfield/sphere.lb8.ugrid",
+                ],
+            },
+            "intersectingCylinder": {
+                "boundaryNames": [
+                    "intersectingCylinder/inverted-intersectingCylinder",
+                    "intersectingCylinder/sphere.lb8.ugrid__rotating_intersectingCylinder",
+                ],
+            },
+        }
+    }
+
+    with SI_unit_system:
+        # Create entities
+        cylinder = Cylinder(
+            name="intersectingCylinder",
+            center=(0, 0, 0) * u.m,
+            outer_radius=1 * u.m,
+            height=2 * u.m,
+            axis=(0, 0, 1),
+        )
+        sphere_surface = Surface(name="sphere.lb8.ugrid")
+
+        # Create RotationVolume with enclosed_entities
+        rotation_volume = RotationVolume(
+            name="RotationVolume",
+            spacing_axial=0.5 * u.m,
+            spacing_circumferential=0.3 * u.m,
+            spacing_radial=1.5 * u.m,
+            entities=[cylinder],
+            enclosed_entities=[sphere_surface],
+        )
+
+        # Create meshing params
+        meshing = MeshingParams(
+            volume_zones=[
+                AutomatedFarfield(name="Farfield"),
+                rotation_volume,
+            ]
+        )
+
+        # Create operating condition
+        op = AerospaceCondition(velocity_magnitude=10)
+
+        # Create Wall model with WallRotation velocity
+        wall_rotation = WallRotation(
+            axis=(0, 0, 1),
+            center=(0, 0, 0) * u.m,
+            angular_velocity=100 * u.rpm,
+        )
+        wall_model = Wall(
+            entities=[sphere_surface],
+            velocity=wall_rotation,
+        )
+
+        # Create simulation params
+        params = SimulationParams(
+            meshing=meshing,
+            operating_condition=op,
+            models=[wall_model],
+        )
+
+        # Update entity full names first
+        from flow360.component.simulation.framework.param_utils import (
+            _update_entity_full_name,
+            _update_rotating_boundaries_with_metadata,
+        )
+        from flow360.component.simulation.primitives import (
+            _SurfaceEntityBase,
+            _VolumeEntityBase,
+        )
+
+        _update_entity_full_name(params, _VolumeEntityBase, volume_mesh_meta_data)
+        _update_entity_full_name(params, _SurfaceEntityBase, volume_mesh_meta_data)
+
+        # Call the function to update rotating boundaries
+        _update_rotating_boundaries_with_metadata(params, volume_mesh_meta_data)
+
+        # Verify that a new Wall model was created for the __rotating patch
+        wall_models = [m for m in params.models if isinstance(m, Wall)]
+        rotating_wall = None
+        for model in wall_models:
+            if model.entities and model.entities.stored_entities:
+                entity_full_name = model.entities.stored_entities[0].full_name
+                if "__rotating" in entity_full_name:
+                    rotating_wall = model
+                    break
+
+        assert rotating_wall is not None
+        assert (
+            rotating_wall.entities.stored_entities[0].full_name
+            == "intersectingCylinder/sphere.lb8.ugrid__rotating_intersectingCylinder"
+        )
+
+        # Verify that WallRotation velocity is preserved (not converted to tuple)
+        assert isinstance(rotating_wall.velocity, WallRotation)
+        assert rotating_wall.velocity.axis == (0, 0, 1)
+        assert all(rotating_wall.velocity.center == (0, 0, 0) * u.m)
+        assert rotating_wall.velocity.angular_velocity == 100 * u.rpm
