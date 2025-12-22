@@ -57,7 +57,8 @@ class QualityMetrics(Flow360BaseModel):
     min_pyramid_cell_volume: Union[float, Literal[False]] = pd.Field(
         default=1e-15,
         alias="min_vol",
-        description="Minimum cell pyramid volume [mesh_unit³]. Set to False to disable this metric (uses -1e30 internally).",
+        description="Minimum cell pyramid volume [mesh_unit³]. "
+        + "Set to False to disable this metric (uses -1e30 internally).",
     )
     min_tetrahedron_quality: Union[float, Literal[False]] = pd.Field(
         default=1e-9,
