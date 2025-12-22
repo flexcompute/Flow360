@@ -260,9 +260,23 @@ def _find_zone_name_for_rotation_volume(
         return None
 
     entity_name = rotation_volume.entities.stored_entities[0].name
-    for candidate_zone_name in volume_mesh_meta_data.get("zones", {}).keys():
-        if entity_name in candidate_zone_name:
-            return candidate_zone_name
+    zones = volume_mesh_meta_data.get("zones", {}) or {}
+
+    # First, try to find an exact match for the entity name.
+    if entity_name in zones:
+        return entity_name
+
+    # If there is no exact match, fall back to substring matching, but only if it is unambiguous.
+    matching_zone_names = [
+        candidate_zone_name
+        for candidate_zone_name in zones.keys()
+        if entity_name in candidate_zone_name
+    ]
+
+    if len(matching_zone_names) == 1:
+        return matching_zone_names[0]
+
+    # Ambiguous or no match found
     return None
 
 
