@@ -493,8 +493,14 @@ def _update_rotating_models_with_metadata(
             if entity_full_name in original_to_rotating_map:
                 rotating_boundary_name = original_to_rotating_map[entity_full_name]
                 # Reuse the updated entity from enclosed_entities if available, otherwise create new
-                assert rotating_boundary_name in rotating_boundary_to_entity_map
-                rotating_surface = rotating_boundary_to_entity_map[rotating_boundary_name]
+                try:
+                    rotating_surface = rotating_boundary_to_entity_map[rotating_boundary_name]
+                except KeyError as exc:
+                    raise KeyError(
+                        f"Rotating boundary '{rotating_boundary_name}' not found in "
+                        "rotating_boundary_to_entity_map. This indicates inconsistent "
+                        "volume mesh metadata for rotating boundaries."
+                    ) from exc
 
                 # Separate into stationary and non-stationary
                 if rotating_boundary_name in stationary_boundaries:
