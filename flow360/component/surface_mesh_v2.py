@@ -101,15 +101,14 @@ class SurfaceMeshDraftV2(ResourceDraft):
     project), not about any fundamental difference in the surface mesh itself.
     """
 
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments, too-many-instance-attributes
     def __init__(
         self,
         file_names: str,
-        length_unit: LengthUnitType = "m",
-        tags: List[str] = None,
-        # Project root context (for backward compatibility with existing API)
         project_name: str = None,
         solver_version: str = None,
+        length_unit: LengthUnitType = "m",
+        tags: List[str] = None,
         folder: Optional[Folder] = None,
     ):
         """
@@ -137,22 +136,18 @@ class SurfaceMeshDraftV2(ResourceDraft):
             Parent folder (for project root mode)
         """
         self._file_name = file_names
+        self.project_name = project_name
         self.tags = tags if tags is not None else []
         self.length_unit = length_unit
+        self.solver_version = solver_version
+        self.folder = folder
 
-        # Submission context - determines behavior of submit()
-        self._submission_mode: Optional[SubmissionMode] = None
-        self._submission_context: dict = {}
-
-        # For backward compatibility: if project root params are provided, set context
-        if project_name is not None or solver_version is not None:
-            self.set_project_root_context(
-                project_name=project_name,
-                solver_version=solver_version,
-                folder=folder,
-            )
+        self.dependency_name = None
+        self.dependency_project_id = None
+        self._submission_mode: SubmissionMode = SubmissionMode.PROJECT_ROOT
 
         self._validate_surface_mesh()
+        self._set_default_project_name()
         ResourceDraft.__init__(self)
 
     def _validate_surface_mesh(self):
@@ -169,23 +164,29 @@ class SurfaceMeshDraftV2(ResourceDraft):
                 f"Valid options are: {list(LengthUnitType.__args__)}"
             )
 
-    def set_project_root_context(
-        self,
-        project_name: str,
-        solver_version: str,
-        folder: Optional[Folder] = None,
-    ) -> None:
-        """
-        Configure this draft to create a new project with surface mesh as root.
+    def _set_default_project_name(self):
+        """Set default project name if not provided for project creation."""
+        if self.project_name is None:
+            self.project_name = os.path.splitext(os.path.basename(self._file_name))[0]
+            log.warning(
+                "`project_name` is not provided. "
+                f"Using the file name {self.project_name} as project name."
+            )
 
-        Called internally by SurfaceMeshV2.from_file().
-        """
-        self._submission_mode = SubmissionMode.PROJECT_ROOT
-        self._submission_context = {
-            "project_name": project_name,
-            "solver_version": solver_version,
-            "folder": folder,
-        }
+    def _validate_submission_context(self):
+        """Validate context for submission based on mode."""
+        if self._submission_mode is None:
+            raise Flow360ValueError(
+                "Submission context not set. Use SurfaceMeshV2.from_file() or "
+                "SurfaceMeshV2.from_file_for_project() to create a properly configured draft."
+            )
+        if self._submission_mode == SubmissionMode.PROJECT_ROOT and self.solver_version is None:
+            raise Flow360ValueError("solver_version field is required.")
+        if self._submission_mode == SubmissionMode.PROJECT_DEPENDENCY:
+            if self.dependency_name is None or self.dependency_project_id is None:
+                raise Flow360ValueError(
+                    "Dependency name and project ID must be set for surface mesh dependency submission."
+                )
 
     def set_dependency_context(
         self,
@@ -198,38 +199,18 @@ class SurfaceMeshDraftV2(ResourceDraft):
         Called internally by SurfaceMeshV2.from_file_for_project().
         """
         self._submission_mode = SubmissionMode.PROJECT_DEPENDENCY
-        self._submission_context = {
-            "name": name,
-            "project_id": project_id,
-        }
-
-    def _validate_project_root_context(self):
-        """Validate context for project root submission."""
-        project_name = self._submission_context.get("project_name")
-        solver_version = self._submission_context.get("solver_version")
-
-        if project_name is None:
-            project_name = os.path.splitext(os.path.basename(self._file_name))[0]
-            self._submission_context["project_name"] = project_name
-            log.warning(
-                "`project_name` is not provided. "
-                f"Using the file name {project_name} as project name."
-            )
-        if solver_version is None:
-            raise Flow360ValueError("solver_version field is required.")
+        self.dependency_name = name
+        self.dependency_project_id = project_id
 
     def _create_project_root_resource(self, description: str = "") -> SurfaceMeshMetaV2:
         """Create a new surface mesh resource that will be the root of a new project."""
-        project_name = self._submission_context["project_name"]
-        solver_version = self._submission_context["solver_version"]
-        folder = self._submission_context.get("folder")
 
         req = NewSurfaceMeshRequestV2(
-            name=project_name,
-            solver_version=solver_version,
+            name=self.project_name,
+            solver_version=self.solver_version,
             tags=self.tags,
             file_name=self._file_name,
-            parent_folder_id=folder.id if folder else "ROOT.FLOW360",
+            parent_folder_id=self.folder.id if self.folder else "ROOT.FLOW360",
             length_unit=self.length_unit,
             description=description,
         )
@@ -241,12 +222,10 @@ class SurfaceMeshDraftV2(ResourceDraft):
         self, description: str = "", draft_id: str = "", icon: str = ""
     ) -> SurfaceMeshMetaV2:
         """Create a surface mesh resource as a dependency in an existing project."""
-        name = self._submission_context["name"]
-        project_id = self._submission_context["project_id"]
 
         req = NewSurfaceMeshDependencyRequest(
-            name=name,
-            project_id=project_id,
+            name=self.dependency_name,
+            project_id=self.dependency_project_id,
             draft_id=draft_id,
             file_name=self._file_name,
             length_unit=self.length_unit,
@@ -348,17 +327,9 @@ class SurfaceMeshDraftV2(ResourceDraft):
         Flow360ValueError
             If submission context is not set or user aborts
         """
-        if self._submission_mode is None:
-            raise Flow360ValueError(
-                "Submission context not set. Use SurfaceMeshV2.from_file() or "
-                "SurfaceMeshV2.from_file_for_project() to create a properly configured draft."
-            )
 
         self._validate_surface_mesh()
-
-        # Validate project root context if applicable
-        if self._submission_mode == SubmissionMode.PROJECT_ROOT:
-            self._validate_project_root_context()
+        self._validate_submission_context()
 
         if not shared_account_confirm_proceed():
             raise Flow360ValueError("User aborted resource submit.")

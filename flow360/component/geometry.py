@@ -99,15 +99,14 @@ class GeometryDraft(ResourceDraft):
     project), not about any fundamental difference in the geometry itself.
     """
 
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments, too-many-instance-attributes
     def __init__(
         self,
         file_names: Union[List[str], str],
-        length_unit: LengthUnitType = "m",
-        tags: List[str] = None,
-        # Project root context (for backward compatibility with existing API)
         project_name: str = None,
         solver_version: str = None,
+        length_unit: LengthUnitType = "m",
+        tags: List[str] = None,
         folder: Optional[Folder] = None,
     ):
         """
@@ -135,22 +134,18 @@ class GeometryDraft(ResourceDraft):
             Parent folder (for project root mode)
         """
         self._file_names = file_names
+        self.project_name = project_name
         self.tags = tags if tags is not None else []
         self.length_unit = length_unit
+        self.solver_version = solver_version
+        self.folder = folder
 
-        # Submission context - determines behavior of submit()
-        self._submission_mode: Optional[SubmissionMode] = None
-        self._submission_context: dict = {}
-
-        # For backward compatibility: if project root params are provided, set context
-        if project_name is not None or solver_version is not None:
-            self.set_project_root_context(
-                project_name=project_name,
-                solver_version=solver_version,
-                folder=folder,
-            )
+        self.dependency_name = None
+        self.dependency_project_id = None
+        self._submission_mode: SubmissionMode = SubmissionMode.PROJECT_ROOT
 
         self._validate_geometry()
+        self._set_default_project_name()
         ResourceDraft.__init__(self)
 
     def _validate_geometry(self):
@@ -173,30 +168,36 @@ class GeometryDraft(ResourceDraft):
                 f"Valid options are: {list(LengthUnitType.__args__)}"
             )
 
+    def _set_default_project_name(self):
+        """Set default project name if not provided for project creation."""
+        if self.project_name is None:
+            self.project_name = os.path.splitext(os.path.basename(self.file_names[0]))[0]
+            log.warning(
+                "`project_name` is not provided. "
+                f"Using the first geometry file name {self.project_name} as project name."
+            )
+
+    def _validate_submission_context(self):
+        """Validate context for submission based on mode."""
+        if self._submission_mode is None:
+            raise Flow360ValueError(
+                "Submission context not set. Use Geometry.from_file() or "
+                "Geometry.from_file_for_project() to create a properly configured draft."
+            )
+        if self._submission_mode == SubmissionMode.PROJECT_ROOT and self.solver_version is None:
+            raise Flow360ValueError("solver_version field is required.")
+        if self._submission_mode == SubmissionMode.PROJECT_DEPENDENCY:
+            if self.dependency_name is None or self.dependency_project_id is None:
+                raise Flow360ValueError(
+                    "Dependency name and project ID must be set for geometry dependency submission."
+                )
+
     @property
     def file_names(self) -> List[str]:
         """Geometry file paths as a list."""
         if isinstance(self._file_names, str):
             return [self._file_names]
         return self._file_names
-
-    def set_project_root_context(
-        self,
-        project_name: str,
-        solver_version: str,
-        folder: Optional[Folder] = None,
-    ) -> None:
-        """
-        Configure this draft to create a new project with geometry as root.
-
-        Called internally by Geometry.from_file().
-        """
-        self._submission_mode = SubmissionMode.PROJECT_ROOT
-        self._submission_context = {
-            "project_name": project_name,
-            "solver_version": solver_version,
-            "folder": folder,
-        }
 
     def set_dependency_context(
         self,
@@ -209,25 +210,8 @@ class GeometryDraft(ResourceDraft):
         Called internally by Geometry.from_file_for_project().
         """
         self._submission_mode = SubmissionMode.PROJECT_DEPENDENCY
-        self._submission_context = {
-            "name": name,
-            "project_id": project_id,
-        }
-
-    def _validate_project_root_context(self):
-        """Validate context for project root submission."""
-        project_name = self._submission_context.get("project_name")
-        solver_version = self._submission_context.get("solver_version")
-
-        if project_name is None:
-            project_name = os.path.splitext(os.path.basename(self.file_names[0]))[0]
-            self._submission_context["project_name"] = project_name
-            log.warning(
-                "`project_name` is not provided. "
-                f"Using the first geometry file name {project_name} as project name."
-            )
-        if solver_version is None:
-            raise Flow360ValueError("solver_version field is required.")
+        self.dependency_name = name
+        self.dependency_project_id = project_id
 
     def _preprocess_mapbc_files(self) -> List[str]:
         """Find and return associated mapbc files for UGRID geometry files."""
@@ -245,13 +229,9 @@ class GeometryDraft(ResourceDraft):
         self, mapbc_files: List[str], description: str = ""
     ) -> GeometryMeta:
         """Create a new geometry resource that will be the root of a new project."""
-        project_name = self._submission_context["project_name"]
-        solver_version = self._submission_context["solver_version"]
-        folder = self._submission_context.get("folder")
-
         req = NewGeometryRequest(
-            name=project_name,
-            solver_version=solver_version,
+            name=self.project_name,
+            solver_version=self.solver_version,
             tags=self.tags,
             files=[
                 GeometryFileMeta(
@@ -260,7 +240,7 @@ class GeometryDraft(ResourceDraft):
                 )
                 for file_path in self.file_names + mapbc_files
             ],
-            parent_folder_id=folder.id if folder else "ROOT.FLOW360",
+            parent_folder_id=self.folder.id if self.folder else "ROOT.FLOW360",
             length_unit=self.length_unit,
             description=description,
         )
@@ -272,12 +252,10 @@ class GeometryDraft(ResourceDraft):
         self, mapbc_files: List[str], description: str = "", draft_id: str = "", icon: str = ""
     ) -> GeometryMeta:
         """Create a geometry resource as a dependency in an existing project."""
-        name = self._submission_context["name"]
-        project_id = self._submission_context["project_id"]
 
         req = NewGeometryDependencyRequest(
-            name=name,
-            project_id=project_id,
+            name=self.dependency_name,
+            project_id=self.dependency_project_id,
             draft_id=draft_id,
             files=[
                 GeometryFileMeta(
@@ -369,17 +347,9 @@ class GeometryDraft(ResourceDraft):
         Flow360ValueError
             If submission context is not set or user aborts
         """
-        if self._submission_mode is None:
-            raise Flow360ValueError(
-                "Submission context not set. Use Geometry.from_file() or "
-                "Geometry.from_file_for_project() to create a properly configured draft."
-            )
 
         self._validate_geometry()
-
-        # Validate project root context if applicable
-        if self._submission_mode == SubmissionMode.PROJECT_ROOT:
-            self._validate_project_root_context()
+        self._validate_submission_context()
 
         if not shared_account_confirm_proceed():
             raise Flow360ValueError("User aborted resource submit.")
