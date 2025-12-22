@@ -47,18 +47,36 @@ def apply_geometry_grouping_overrides(
 ) -> dict[str, Optional[str]]:
     """Apply explicit face/edge grouping overrides onto geometry entity info."""
 
-    def _validate_tag(tag: str, available: list[str], kind: str) -> str:
-        if available and tag not in available:  # pylint:disable=unsupported-membership-test
+    def _validate_tag(new_tag: str, current_tag: str, available: list[str], kind: str) -> str:
+
+        if not available:
+            raise Flow360ValueError(
+                f"The updated geometry does not have any {kind} groupings. Please check geometry components."
+            )
+
+        override = False if new_tag is not None else False
+        tag = new_tag if new_tag is not None else current_tag
+
+        if not override and (tag is None or tag not in available):
+            raise Flow360ValueError(
+                f"The current {kind} grouping '{tag}' is not valid in the updated geometry. "
+                f"Please specify a {kind}_grouping when creating draft. "
+                f"Available tags: {available}."
+            )
+        if override and tag not in available:  # pylint:disable=unsupported-membership-test
             raise Flow360ValueError(
                 f"Invalid {kind} grouping tag '{tag}'. Available tags: {available}."
             )
         return tag
 
-    if face_grouping is not None:
-        face_tag = _validate_tag(face_grouping, entity_info.face_attribute_names, "face")
-        entity_info._group_entity_by_tag("face", face_tag)  # pylint:disable=protected-access
-    if edge_grouping is not None and entity_info.edge_attribute_names:
-        edge_tag = _validate_tag(edge_grouping, entity_info.edge_attribute_names, "edge")
+    face_tag = _validate_tag(
+        face_grouping, entity_info.face_group_tag, entity_info.face_attribute_names, "face"
+    )
+    entity_info._group_entity_by_tag("face", face_tag)  # pylint:disable=protected-access
+    if entity_info.edge_attribute_names:
+        edge_tag = _validate_tag(
+            edge_grouping, entity_info.edge_group_tag, entity_info.edge_attribute_names, "edge"
+        )
         entity_info._group_entity_by_tag("edge", edge_tag)  # pylint:disable=protected-access
 
     return {
