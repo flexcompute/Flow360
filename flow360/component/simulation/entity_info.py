@@ -199,7 +199,8 @@ class GeometryEntityInfo(EntityInfoModel):
             return [
                 edge_id
                 for body_component_info in self.bodies_face_edge_ids.values()
-                for edge_id in body_component_info.edge_ids
+                # edge_ids can be None for surface-only geometry; treat it as an empty list.
+                for edge_id in (body_component_info.edge_ids or [])
             ]
         return self.edge_ids
 
