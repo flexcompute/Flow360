@@ -292,7 +292,7 @@ def snappy_mesher_json(input_params: SimulationParams):
 
     # extract geometry information in body: {patch0, ...} format
     bodies = {}
-    for face_id in input_params.private_attribute_asset_cache.project_entity_info.face_ids:
+    for face_id in input_params.private_attribute_asset_cache.project_entity_info.all_face_ids:
         solid = face_id.split("::")
         if solid[0] not in bodies:
             bodies[solid[0]] = set()
@@ -549,7 +549,7 @@ def legacy_mesher_json(input_params: SimulationParams):
         input_params.private_attribute_asset_cache.project_entity_info, GeometryEntityInfo
     )
 
-    for face_id in input_params.private_attribute_asset_cache.project_entity_info.face_ids:
+    for face_id in input_params.private_attribute_asset_cache.project_entity_info.all_face_ids:
         if face_id not in face_config:
             face_config[face_id] = {"maxEdgeLength": default_max_edge_length}
 
