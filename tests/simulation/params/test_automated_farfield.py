@@ -5,10 +5,12 @@ import pytest
 import unyt as u
 
 from flow360.component.geometry import Geometry, GeometryMeta
+from flow360.component.project import create_draft
 from flow360.component.project_utils import set_up_params_for_uploading
 from flow360.component.resource_base import local_metadata_builder
 from flow360.component.simulation import services
 from flow360.component.simulation.entity_info import SurfaceMeshEntityInfo
+from flow360.component.simulation.entity_operation import CoordinateSystem
 from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.meshing_param.face_params import SurfaceRefinement
 from flow360.component.simulation.meshing_param.params import (
@@ -126,7 +128,7 @@ def test_automated_farfield_surface_usage():
         with pytest.raises(
             ValueError,
             match=re.escape(
-                "Can not find any valid entity of type ['Surface', 'WindTunnelGhostSurface'] from the input."
+                "Can not find any valid entity of type ['Surface', 'MirroredSurface', 'WindTunnelGhostSurface'] from the input."
             ),
         ):
             _ = SimulationParams(
@@ -453,36 +455,50 @@ def test_rotated_symmetric_existence():
         in errors_3[0]["msg"]
     )
 
-    geometry[body_name].transformation.angle_of_rotation = 90 * u.deg
-
-    errors_1, errors_2, errors_3 = _test_and_show_errors(geometry)
-
-    assert errors_1 is None
-    assert errors_2 is None
-    assert errors_3 is None
-
-    geometry[body_name].transformation.angle_of_rotation = 0 * u.deg
-    geometry[body_name].transformation.translation = [0, 0, 1e-9] * u.m
-
-    errors_1, errors_2, errors_3 = _test_and_show_errors(geometry)
+    with create_draft(new_run_from=geometry) as draft:
+        cs = CoordinateSystem(
+            name="rotated",
+            axis_of_rotation=(1.0, 0.0, 0.0),
+            angle_of_rotation=90 * u.deg,
+        )
+        draft.coordinate_systems.assign(entities=draft.body_groups[body_name], coordinate_system=cs)
+        errors_1, errors_2, errors_3 = _test_and_show_errors(geometry)
 
     assert errors_1 is None
     assert errors_2 is None
     assert errors_3 is None
 
-    geometry[body_name].transformation.angle_of_rotation = 0 * u.deg
-    geometry[body_name].transformation.translation = [0, 0, 1e-9] * u.m
-
-    errors_1, errors_2, errors_3 = _test_and_show_errors(geometry)
+    with create_draft(new_run_from=geometry) as draft:
+        cs = CoordinateSystem(
+            name="translated_small",
+            translation=[0, 0, 1e-9] * u.m,
+        )
+        draft.coordinate_systems.assign(entities=draft.body_groups[body_name], coordinate_system=cs)
+        errors_1, errors_2, errors_3 = _test_and_show_errors(geometry)
 
     assert errors_1 is None
     assert errors_2 is None
     assert errors_3 is None
 
-    geometry[body_name].transformation.translation = [0, 0, 0] * u.m
-    geometry[body_name].transformation.scale = [0.5, 0.5, 1e-9]
+    with create_draft(new_run_from=geometry) as draft:
+        cs = CoordinateSystem(
+            name="translated_small_repeat",
+            translation=[0, 0, 1e-9] * u.m,
+        )
+        draft.coordinate_systems.assign(entities=draft.body_groups[body_name], coordinate_system=cs)
+        errors_1, errors_2, errors_3 = _test_and_show_errors(geometry)
 
-    errors_1, errors_2, errors_3 = _test_and_show_errors(geometry)
+    assert errors_1 is None
+    assert errors_2 is None
+    assert errors_3 is None
+
+    with create_draft(new_run_from=geometry) as draft:
+        cs = CoordinateSystem(
+            name="scaled",
+            scale=(0.5, 0.5, 1e-9),
+        )
+        draft.coordinate_systems.assign(entities=draft.body_groups[body_name], coordinate_system=cs)
+        errors_1, errors_2, errors_3 = _test_and_show_errors(geometry)
 
     assert errors_1 is None
     assert errors_2 is None

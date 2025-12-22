@@ -11,6 +11,7 @@ from flow360.component.simulation.entity_info import SurfaceMeshEntityInfo
 from flow360.component.simulation.framework.entity_selector import (
     EntitySelector,
     Predicate,
+    SurfaceSelector,
 )
 from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.framework.updater_utils import compare_values
@@ -64,8 +65,8 @@ def test_validate_model_keeps_selectors_unexpanded():
     vm.internal_registry = vm._entity_info.get_persistent_entity_registry(vm.internal_registry)
 
     with fl.SI_unit_system:
-        all_wings_selector = Surface.match("*Wing", name="all_wings")
-        fuselage_selector = Surface.match("flu*fuselage", name="fuselage")
+        all_wings_selector = SurfaceSelector(name="all_wings").match("*Wing")
+        fuselage_selector = SurfaceSelector(name="fuselage").match("flu*fuselage")
         wall_with_mixed_entities = Wall(entities=[all_wings_selector, vm["fluid/leftWing"]])
         wall_with_only_selectors = Wall(entities=[fuselage_selector])
         freestream = fl.Freestream(entities=[vm["fluid/farfield"]])
@@ -100,8 +101,14 @@ def test_validate_model_keeps_selectors_unexpanded():
     ), "stored_entities should be empty when only selectors are used"
 
     # Verify selectors are preserved for future expansion (e.g., translation)
-    assert validated.models[0].entities.selectors == [all_wings_selector]
-    assert validated.models[1].entities.selectors == [fuselage_selector]
+    # Selectors are deserialized as EntitySelector (base class), check attributes instead
+    assert len(validated.models[0].entities.selectors) == 1
+    assert validated.models[0].entities.selectors[0].name == "all_wings"
+    assert validated.models[0].entities.selectors[0].target_class == "Surface"
+
+    assert len(validated.models[1].entities.selectors) == 1
+    assert validated.models[1].entities.selectors[0].name == "fuselage"
+    assert validated.models[1].entities.selectors[0].target_class == "Surface"
 
     # Verify idempotency
     validated_dict = validated.model_dump(mode="json", exclude_none=True)
@@ -225,7 +232,7 @@ def test_strip_selector_matches_removes_selector_overlap():
                     entities=[
                         Surface(name="front", private_attribute_id="s-1"),
                         Surface(name="rear", private_attribute_id="s-2"),
-                        Surface.any_of(["front"], name="front_selector"),
+                        SurfaceSelector(name="front_selector").any_of(["front"]),
                     ],
                 )
             ],

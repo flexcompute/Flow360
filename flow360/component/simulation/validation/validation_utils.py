@@ -123,7 +123,7 @@ def check_deleted_surface_in_entity_list(expanded_entities: list, param_info) ->
         if isinstance(
             surface, Surface
         ) and surface._will_be_deleted_by_mesher(  # pylint:disable=protected-access
-            at_least_one_body_transformed=param_info.at_least_one_body_transformed,
+            entity_transformation_detected=param_info.entity_transformation_detected,
             farfield_method=param_info.farfield_method,
             global_bounding_box=param_info.global_bounding_box,
             planar_face_tolerance=param_info.planar_face_tolerance,
@@ -184,7 +184,7 @@ def check_deleted_surface_pair(value, param_info):
         if isinstance(
             surface, Surface
         ) and surface._will_be_deleted_by_mesher(  # pylint:disable=protected-access
-            at_least_one_body_transformed=param_info.at_least_one_body_transformed,
+            entity_transformation_detected=param_info.entity_transformation_detected,
             farfield_method=param_info.farfield_method,
             global_bounding_box=param_info.global_bounding_box,
             planar_face_tolerance=param_info.planar_face_tolerance,
@@ -399,3 +399,24 @@ def check_geometry_ai_features(cls, value, info, param_info):
         raise ValueError(f"{info.field_name} is only supported when geometry AI is used.")
 
     return value
+
+
+def has_coordinate_system_usage(asset_cache) -> bool:
+    """Check if coordinate system feature is being used."""
+    if asset_cache is None:
+        return False
+    coordinate_system_status = asset_cache.coordinate_system_status
+    if coordinate_system_status and coordinate_system_status.assignments:
+        return True
+    return False
+
+
+def has_mirroring_usage(asset_cache) -> bool:
+    """Check if mirroring feature is being used."""
+    if asset_cache is None:
+        return False
+    mirror_status = asset_cache.mirror_status
+    if mirror_status:
+        if mirror_status.mirrored_geometry_body_groups or mirror_status.mirrored_surfaces:
+            return True
+    return False

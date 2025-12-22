@@ -9,7 +9,7 @@ from abc import ABCMeta
 from enum import Enum
 from numbers import Number
 from operator import add, sub
-from threading import Lock
+from threading import RLock
 from typing import Annotated, Any, Collection, List, Literal, Union
 
 import annotated_types
@@ -1525,7 +1525,7 @@ def is_flow360_unit(value):
     raise ValueError(f"Expected a dimensioned value, but {value} provided.")
 
 
-_lock = Lock()
+_lock = RLock()
 
 
 # pylint: disable=too-few-public-methods

@@ -1240,3 +1240,116 @@ def test_complex_three_layer_multiple_error_scenarios():
     assert config.config_version == 1
     assert len(config.groups) == 2
     assert len(config.groups[0].metrics) == 2
+
+
+# ============================================================================
+# Test Cases - GAI Feature Usage Helper Functions
+# ============================================================================
+
+
+def test_has_coordinate_system_usage():
+    """Test the has_coordinate_system_usage helper function."""
+    from flow360.component.simulation.draft_context.coordinate_system_manager import (
+        CoordinateSystemAssignmentGroup,
+        CoordinateSystemEntityRef,
+        CoordinateSystemStatus,
+    )
+    from flow360.component.simulation.entity_operation import CoordinateSystem
+    from flow360.component.simulation.framework.param_utils import AssetCache
+    from flow360.component.simulation.validation.validation_utils import (
+        has_coordinate_system_usage,
+    )
+
+    # Test with None asset_cache
+    assert has_coordinate_system_usage(None) is False
+
+    # Test with no coordinate_system_status
+    asset_cache = AssetCache(use_inhouse_mesher=False, use_geometry_AI=False)
+    assert has_coordinate_system_usage(asset_cache) is False
+
+    # Test with empty assignments
+    cs = CoordinateSystem(name="test_cs")
+    cs_status = CoordinateSystemStatus(
+        coordinate_systems=[cs],
+        parents=[],
+        assignments=[],
+    )
+    asset_cache = AssetCache(
+        use_inhouse_mesher=False,
+        use_geometry_AI=False,
+        coordinate_system_status=cs_status,
+    )
+    assert has_coordinate_system_usage(asset_cache) is False
+
+    # Test with non-empty assignments
+    cs_status_with_assignments = CoordinateSystemStatus(
+        coordinate_systems=[cs],
+        parents=[],
+        assignments=[
+            CoordinateSystemAssignmentGroup(
+                coordinate_system_id=cs.private_attribute_id,
+                entities=[
+                    CoordinateSystemEntityRef(entity_type="GeometryBodyGroup", entity_id="test-id")
+                ],
+            )
+        ],
+    )
+    asset_cache = AssetCache(
+        use_inhouse_mesher=False,
+        use_geometry_AI=False,
+        coordinate_system_status=cs_status_with_assignments,
+    )
+    assert has_coordinate_system_usage(asset_cache) is True
+
+
+def test_has_mirroring_usage():
+    """Test the has_mirroring_usage helper function."""
+    import flow360.component.simulation.units as u
+    from flow360.component.simulation.draft_context.mirror import (
+        MirrorPlane,
+        MirrorStatus,
+    )
+    from flow360.component.simulation.framework.param_utils import AssetCache
+    from flow360.component.simulation.primitives import MirroredGeometryBodyGroup
+    from flow360.component.simulation.validation.validation_utils import (
+        has_mirroring_usage,
+    )
+
+    # Test with None asset_cache
+    assert has_mirroring_usage(None) is False
+
+    # Test with no mirror_status
+    asset_cache = AssetCache(use_inhouse_mesher=False, use_geometry_AI=False)
+    assert has_mirroring_usage(asset_cache) is False
+
+    # Test with empty mirrored lists
+    plane = MirrorPlane(name="test", normal=(0, 1, 0), center=[0, 0, 0] * u.m)
+    mirror_status = MirrorStatus(
+        mirror_planes=[plane],
+        mirrored_geometry_body_groups=[],
+        mirrored_surfaces=[],
+    )
+    asset_cache = AssetCache(
+        use_inhouse_mesher=False,
+        use_geometry_AI=False,
+        mirror_status=mirror_status,
+    )
+    assert has_mirroring_usage(asset_cache) is False
+
+    # Test with non-empty mirrored_geometry_body_groups
+    mirrored_group = MirroredGeometryBodyGroup(
+        name="test_<mirror>",
+        geometry_body_group_id="test-id",
+        mirror_plane_id=plane.private_attribute_id,
+    )
+    mirror_status = MirrorStatus(
+        mirror_planes=[plane],
+        mirrored_geometry_body_groups=[mirrored_group],
+        mirrored_surfaces=[],
+    )
+    asset_cache = AssetCache(
+        use_inhouse_mesher=False,
+        use_geometry_AI=False,
+        mirror_status=mirror_status,
+    )
+    assert has_mirroring_usage(asset_cache) is True
