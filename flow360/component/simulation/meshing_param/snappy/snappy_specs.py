@@ -1,6 +1,6 @@
 """Setting groups for meshing using snappy"""
 
-from typing import Literal, Union
+from typing import Literal, Optional, Union
 
 import pydantic as pd
 from typing_extensions import Self
@@ -55,17 +55,19 @@ class QualityMetrics(Flow360BaseModel):
         description="Maximum cell concavity. Set to False to disable this metric.",
     )
     min_pyramid_cell_volume: Union[float, Literal[False]] = pd.Field(
-        default=False,
+        default=1e-15,
         alias="min_vol",
-        description="Minimum cell pyramid volume [m³]. Set to False to disable this metric (uses -1e30 internally).",
+        description="Minimum cell pyramid volume [mesh_unit³]. Set to False to disable this metric (uses -1e30 internally).",
     )
     min_tetrahedron_quality: Union[float, Literal[False]] = pd.Field(
-        default=False,
+        default=1e-9,
         alias="min_tet_quality",
         description="Minimum tetrahedron quality. Set to False to disable this metric (uses -1e30 internally).",
     )
-    min_face_area: Union[AreaType.Positive, Literal[False]] = pd.Field(
-        default=False, alias="min_area", description="Minimum face area. Set to False to disable."
+    min_face_area: Optional[Union[AreaType.Positive, Literal[False]]] = pd.Field(
+        default=None,
+        alias="min_area",
+        description="Minimum face area. Set to False to disable. Defaults to 1e-12 of mesh unit.",
     )
     min_twist: Union[float, Literal[False]] = pd.Field(
         default=False,
