@@ -1232,7 +1232,7 @@ class Project(pd.BaseModel):
         dependency_resource = draft.submit(run_async=run_async)
         return dependency_resource
 
-    def import_geometry_dependency_from_file(
+    def import_geometry_from_file(
         self,
         file: Union[str, list[str]],
         /,
@@ -1282,7 +1282,7 @@ class Project(pd.BaseModel):
             run_async=run_async,
         )
 
-    def import_surface_mesh_dependency_from_file(
+    def import_surface_mesh_from_file(
         self,
         file: str,
         /,
@@ -1337,7 +1337,7 @@ class Project(pd.BaseModel):
             surface_mesh_id=surface_mesh.id,
         )
 
-    def _get_imported_depedency_resources_from_cloud(self, resource_type: ProjectResourceType):
+    def _get_dependency_resources_from_cloud(self, resource_type: ProjectResourceType):
         """
         Get all imported dependency resources of a given type in the project.
 
@@ -1367,30 +1367,32 @@ class Project(pd.BaseModel):
         return imported_resources
 
     @property
-    def imported_geometry_dependencies(self) -> List[Geometry]:
+    def imported_geometry_components(self) -> List[Geometry]:
         """
-        Get all imported geometry dependency resources in the project.
+        Get all imported geometry components in the project.
 
         Returns
         -------
         List[Geometry]
-            A list of Geometry objects representing the imported geometry dependencies.
+            A list of Geometry objects representing the imported geometry components.
         """
 
-        return self._get_imported_depedency_resources_from_cloud(resource_type="Geometry")
+        return self._get_dependency_resources_from_cloud(resource_type=ProjectResourceType.GEOMETRY)
 
     @property
-    def imported_surface_mesh_dependencies(self) -> List[ImportedSurface]:
+    def imported_surface_components(self) -> List[ImportedSurface]:
         """
-        Get all imported surface mesh dependency resources in the project.
+        Get all imported surface components in the project.
 
         Returns
         -------
         List[ImportedSurface]
-            A list of ImportedSurface objects representing the imported surface mesh dependencies.
+            A list of ImportedSurface objects representing the imported surface components.
         """
 
-        return self._get_imported_depedency_resources_from_cloud(resource_type="SurfaceMesh")
+        return self._get_dependency_resources_from_cloud(
+            resource_type=ProjectResourceType.SURFACE_MESH
+        )
 
     @classmethod
     def _get_user_requested_entity_info(
