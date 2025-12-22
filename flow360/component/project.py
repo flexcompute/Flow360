@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import json
 from enum import Enum
-from typing import Iterable, List, Literal, Optional, Union
+from typing import Dict, Iterable, List, Literal, Optional, Union
 
 import pydantic as pd
 import typing_extensions
@@ -33,7 +33,6 @@ from flow360.component.project_utils import (
     get_project_records,
     set_up_params_for_uploading,
     show_projects_with_keyword_filter,
-    upload_imported_surfaces_to_draft,
     validate_params_with_context,
 )
 from flow360.component.resource_base import Flow360Resource
@@ -41,7 +40,10 @@ from flow360.component.simulation.draft_context.context import (
     DraftContext,
     get_active_draft,
 )
-from flow360.component.simulation.entity_info import GeometryEntityInfo
+from flow360.component.simulation.entity_info import (
+    GeometryEntityInfo,
+    update_geometry_entity_info,
+)
 from flow360.component.simulation.folder import Folder
 from flow360.component.simulation.primitives import ImportedSurface
 from flow360.component.simulation.simulation_params import SimulationParams
@@ -109,11 +111,15 @@ class ProjectResourceType(Enum):
     SURFACE_MESH = "SurfaceMesh"
 
 
+# pylint: disable=too-many-arguments
 def create_draft(
     *,
     new_run_from: Union[Geometry, SurfaceMeshV2, VolumeMeshV2],
     face_grouping: Optional[str] = None,
     edge_grouping: Optional[str] = None,
+    include_geometries: Optional[List[Geometry]] = None,
+    exclude_geometries: Optional[List[Geometry]] = None,
+    imported_surface_components: Optional[List[ImportedSurface]] = None,
 ) -> DraftContext:
     """Factory helper used by end users (`with fl.create_draft() as draft`).
 
@@ -169,6 +175,61 @@ def create_draft(
                 "Grouping override ignored: only geometry assets support face/edge/body regrouping."
             )
 
+    def _resolve_imported_geometry_components(
+        entity_info,
+        current_geometry_dependencies: Optional[List] = None,
+        include_geometries: Optional[List[Geometry]] = None,
+        exclude_geometries: Optional[List[Geometry]] = None,
+    ) -> Dict[str, Geometry]:
+        if not isinstance(entity_info, GeometryEntityInfo):
+            if include_geometries or exclude_geometries:
+                log.warning(
+                    "Editting geometry components ignored: "
+                    "only project with a non-geometry root asset supports this feature."
+                )
+            return {}
+        current_imported_geometry_components = (
+            {
+                geometry_dependency["id"]: Geometry.from_cloud(geometry_dependency["id"])
+                for geometry_dependency in current_geometry_dependencies
+            }
+            if current_geometry_dependencies
+            else {}
+        )
+
+        if include_geometries:
+            for geometry in include_geometries:
+                if geometry.id not in current_imported_geometry_components:
+                    current_imported_geometry_components[geometry.id] = geometry
+
+        if exclude_geometries:
+            for geometry in exclude_geometries:
+                excluded_geometry = current_imported_geometry_components.pop(geometry.id, None)
+                if excluded_geometry is None:
+                    log.warning(
+                        f"Geometry {geometry.name} not found among current dependencies. Ignoring its exclusion."
+                    )
+
+        return current_imported_geometry_components
+
+    def _update_geometry_entity_info(
+        entity_info, new_run_from, imported_geometry_components: Dict[str, Geometry]
+    ):
+        """Update the geometry entity info based on the root and imported geometries."""
+        if not isinstance(entity_info, GeometryEntityInfo):
+            return entity_info
+        project = Project.from_cloud(new_run_from.info.project_id)
+        root_geometry = project.geometry
+        all_geometry_components = {**imported_geometry_components, root_geometry.id: root_geometry}
+        entity_info_components = [
+            geometry.entity_info for geometry in all_geometry_components.values()
+        ]
+        updated_entity_info = update_geometry_entity_info(
+            current_entity_info=entity_info,
+            entity_info_components=entity_info_components,
+        )
+        return updated_entity_info
+
     # endregion ------------------------------------------------------------------------------------
 
     if not isinstance(new_run_from, AssetBase):
@@ -177,11 +238,26 @@ def create_draft(
     # Deep copy entity_info for draft isolation
     entity_info_copy = _deep_copy_entity_info(new_run_from.entity_info)
 
+    imported_geometry_components = _resolve_imported_geometry_components(
+        entity_info=entity_info_copy,
+        current_geometry_dependencies=new_run_from.info.geometry_dependencies,
+        include_geometries=include_geometries,
+        exclude_geometries=exclude_geometries,
+    )
+
+    entity_info_copy = _update_geometry_entity_info(
+        entity_info=entity_info_copy,
+        new_run_from=new_run_from,
+        imported_geometry_components=imported_geometry_components,
+    )
+
     # Apply grouping overrides to the copy (not the original)
     _inform_grouping_selections(entity_info_copy)
 
     return DraftContext(
         entity_info=entity_info_copy,
+        imported_surface_components=imported_surface_components,
+        imported_geometry_components=imported_geometry_components,
     )
 
 

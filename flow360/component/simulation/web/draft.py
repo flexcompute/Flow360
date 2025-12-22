@@ -148,9 +148,9 @@ class Draft(Flow360Resource):
 
         geometry_dependencies = []
         surface_mesh_dependencies = []
-        for geometry in active_draft.imported_geometry_components.values():
+        for geometry in active_draft.imported_geometry_components:
             geometry_dependencies.append(geometry.id)
-        for surface in active_draft.imported_surface_components.values():
+        for surface in active_draft.imported_surface_components:
             surface_mesh_dependencies.append(surface.surface_mesh_id)
 
         self.put(
