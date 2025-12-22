@@ -6,7 +6,19 @@ from contextlib import AbstractContextManager
 from contextvars import ContextVar, Token
 from typing import Optional, get_args
 
-from flow360.component.simulation.entity_info import DraftEntityTypes, EntityInfoModel
+from flow360.component.simulation.draft_context.coordinate_system_manager import (
+    CoordinateSystemManager,
+    CoordinateSystemStatus,
+)
+from flow360.component.simulation.draft_context.mirror import (
+    MirrorManager,
+    MirrorStatus,
+)
+from flow360.component.simulation.entity_info import (
+    DraftEntityTypes,
+    EntityInfoModel,
+    GeometryEntityInfo,
+)
 from flow360.component.simulation.framework.entity_base import EntityBase
 from flow360.component.simulation.framework.entity_registry import (
     EntityRegistry,
@@ -20,6 +32,7 @@ from flow360.component.simulation.primitives import (
     Surface,
 )
 from flow360.exceptions import Flow360RuntimeError, Flow360ValueError
+from flow360.log import log
 
 __all__ = [
     "DraftContext",
@@ -50,6 +63,8 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
     __slots__ = (
         "_entity_info",
         "_entity_registry",
+        "_mirror_manager",
+        "_coordinate_system_manager",
         "_token",
     )
 
@@ -57,6 +72,8 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
         self,
         *,
         entity_info: EntityInfoModel,
+        mirror_status: Optional[MirrorStatus] = None,
+        coordinate_system_status: Optional[CoordinateSystemStatus] = None,
     ) -> None:
         """
         Data members:
@@ -82,6 +99,32 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
         # Use EntityRegistry.from_entity_info() for the new DraftContext workflow.
         # This builds the registry by referencing entities from our copied entity_info.
         self._entity_registry: EntityRegistry = EntityRegistry.from_entity_info(entity_info)
+
+        # Pre-compute face_group_to_body_group map for mirror operations.
+        # This is only available for GeometryEntityInfo.
+        face_group_to_body_group = None
+
+        if isinstance(self._entity_info, GeometryEntityInfo):
+            try:
+                face_group_to_body_group = self._entity_info.get_face_group_to_body_group_id_map()
+            except ValueError as exc:
+                # Face grouping spans across body groups.
+                log.warning(
+                    "Failed to derive surface-to-body-group mapping for mirroring: %s. "
+                    "Mirroring will be disabled.",
+                    exc,
+                )
+
+        self._mirror_manager = MirrorManager._from_status(
+            status=mirror_status,
+            face_group_to_body_group=face_group_to_body_group,
+            body_groups=self._entity_registry.view(GeometryBodyGroup)._entities,
+            surfaces=self._entity_registry.view(Surface)._entities,
+        )
+
+        self._coordinate_system_manager = CoordinateSystemManager._from_status(
+            status=coordinate_system_status,
+        )
 
     def __enter__(self) -> DraftContext:
         if get_active_draft() is not None:
@@ -163,6 +206,16 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
 
         return self._entity_registry.view(Cylinder)
 
+    @property
+    def coordinate_systems(self) -> CoordinateSystemManager:
+        """Coordinate system manager."""
+        return self._coordinate_system_manager
+
+    @property
+    def mirror(self) -> MirrorManager:
+        """Mirror manager."""
+        return self._mirror_manager
+
     def preview_selector(self, selector: "EntitySelector", *, return_names: bool = True):
         """
         Preview which entities a selector would match in this draft context.
@@ -195,7 +248,6 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
         from flow360.component.simulation.framework.entity_selector import (
             _apply_single_selector,
         )
-        from flow360.log import log
 
         if not isinstance(selector, EntitySelector):
             raise Flow360ValueError(

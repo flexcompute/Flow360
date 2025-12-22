@@ -1,5 +1,5 @@
 {
-    "version": "25.8.0b5",
+    "version": "25.8.1b1",
     "unit_system": {
         "name": "SI"
     },
@@ -1152,40 +1152,6 @@
                             "body00001"
                         ],
                         "private_attribute_color": null,
-                        "transformation": {
-                            "type_name": "BodyGroupTransformation",
-                            "origin": {
-                                "value": [
-                                    0.0,
-                                    0.0,
-                                    0.0
-                                ],
-                                "units": "m"
-                            },
-                            "axis_of_rotation": [
-                                1.0,
-                                0.0,
-                                0.0
-                            ],
-                            "angle_of_rotation": {
-                                "value": 0.0,
-                                "units": "degree"
-                            },
-                            "scale": [
-                                1.0,
-                                1.0,
-                                1.0
-                            ],
-                            "translation": {
-                                "value": [
-                                    0.0,
-                                    0.0,
-                                    0.0
-                                ],
-                                "units": "m"
-                            },
-                            "private_attribute_matrix": null
-                        },
                         "mesh_exterior": true
                     }
                 ],
@@ -1199,40 +1165,6 @@
                             "body00001"
                         ],
                         "private_attribute_color": null,
-                        "transformation": {
-                            "type_name": "BodyGroupTransformation",
-                            "origin": {
-                                "value": [
-                                    0.0,
-                                    0.0,
-                                    0.0
-                                ],
-                                "units": "m"
-                            },
-                            "axis_of_rotation": [
-                                1.0,
-                                0.0,
-                                0.0
-                            ],
-                            "angle_of_rotation": {
-                                "value": 0.0,
-                                "units": "degree"
-                            },
-                            "scale": [
-                                1.0,
-                                1.0,
-                                1.0
-                            ],
-                            "translation": {
-                                "value": [
-                                    0.0,
-                                    0.0,
-                                    0.0
-                                ],
-                                "units": "m"
-                            },
-                            "private_attribute_matrix": null
-                        },
                         "mesh_exterior": true
                     }
                 ]

@@ -1155,3 +1155,56 @@ def test_updater_to_25_8_0_add_meshing_type_name():
 
     assert "type_name" in params_new["meshing"]
     assert params_new["meshing"]["type_name"] == "MeshingParams"
+
+
+def test_updater_to_25_8_1_remove_transformation_key():
+    params_as_dict = {
+        "version": "25.8.0",
+        "unit_system": {"name": "SI"},
+        # Top-level key to be removed
+        "transformation": {"should_be_removed": True},
+        # Nested key to be removed inside a likely real subtree
+        "private_attribute_asset_cache": {
+            "project_entity_info": {
+                "draft_entities": [
+                    {
+                        "name": "cs-1",
+                        "private_attribute_entity_type_name": "CoordinateSystem",
+                        "transformation": {"matrix": [[1, 0, 0], [0, 1, 0], [0, 0, 1]]},
+                        # Ensure other unrelated keys are not affected
+                        "other_key": {"keep_me": True},
+                    }
+                ]
+            }
+        },
+        # List nesting
+        "outputs": [
+            {
+                "output_type": "VolumeOutput",
+                "output_fields": {"items": ["Mach"]},
+                "metadata": [{"transformation": 123}],
+            }
+        ],
+    }
+
+    params_new = updater(
+        version_from="25.8.0",
+        version_to="25.8.1",
+        params_as_dict=params_as_dict,
+    )
+
+    assert params_new["version"] == "25.8.1"
+    assert "transformation" not in params_new
+    assert (
+        "transformation"
+        not in params_new["private_attribute_asset_cache"]["project_entity_info"]["draft_entities"][
+            0
+        ]
+    )
+    assert (
+        params_new["private_attribute_asset_cache"]["project_entity_info"]["draft_entities"][0][
+            "other_key"
+        ]["keep_me"]
+        is True
+    )
+    assert "transformation" not in params_new["outputs"][0]["metadata"][0]

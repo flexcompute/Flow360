@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import json
 import os
 import time
@@ -322,7 +323,9 @@ class AssetBase(metaclass=ABCMeta):
         asset_obj = cls._from_supplied_simulation_dict(params_dict, cls(asset_id))
         asset_obj.get_dynamic_default_settings(params_dict)
 
-        # pylint: disable=protected-access
+        # _simulation_dict_cache_for_local_mode for local mode to avoid hitting cloud APIs.
+        # pylint: disable=attribute-defined-outside-init
+        asset_obj._simulation_dict_cache_for_local_mode = copy.deepcopy(params_dict)
         if not hasattr(asset_obj, "_webapi"):
             # Handle local test case execution which has no valid ID
             return asset_obj

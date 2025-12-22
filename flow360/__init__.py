@@ -10,7 +10,8 @@ from flow360.component.geometry import Geometry
 from flow360.component.project import Project, create_draft
 from flow360.component.simulation import migration, services
 from flow360.component.simulation import units as u
-from flow360.component.simulation.entity_operation import Transformation
+from flow360.component.simulation.draft_context.mirror import MirrorPlane
+from flow360.component.simulation.entity_operation import CoordinateSystem
 from flow360.component.simulation.folder import Folder
 from flow360.component.simulation.framework.entity_selector import (
     BodyGroupSelector,
@@ -210,6 +211,8 @@ __all__ = [
     "Env",
     "Case",
     "create_draft",
+    "CoordinateSystem",
+    "MirrorPlane",
     "SurfaceSelector",
     "EdgeSelector",
     "VolumeSelector",
@@ -340,7 +343,6 @@ __all__ = [
     "migration",
     "Water",
     "PointArray2D",
-    "Transformation",
     "WallRotation",
     "UserVariable",
     "math",

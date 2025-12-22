@@ -23,7 +23,7 @@
                 "units": "1.0*m"
             },
             "remove_non_manifold_faces": false,
-            "planar_face_tolerance": 1e-3
+            "planar_face_tolerance": 0.001
         },
         "refinements": [],
         "volume_zones": [
@@ -221,39 +221,6 @@
                         "private_attribute_sub_components": [
                             "cylinder.lb8.ugrid"
                         ],
-                        "transformation": {
-                            "type_name": "BodyGroupTransformation",
-                            "origin": {
-                                "value": [
-                                    0.0,
-                                    0.0,
-                                    0.0
-                                ],
-                                "units": "1.0*m"
-                            },
-                            "axis_of_rotation": [
-                                1.0,
-                                0.0,
-                                0.0
-                            ],
-                            "angle_of_rotation": {
-                                "value": 0.0,
-                                "units": "rad"
-                            },
-                            "scale": [
-                                1.0,
-                                1.0,
-                                1.0
-                            ],
-                            "translation": {
-                                "value": [
-                                    0.0,
-                                    0.0,
-                                    0.0
-                                ],
-                                "units": "1.0*m"
-                            }
-                        },
                         "mesh_exterior": true
                     }
                 ],
@@ -267,37 +234,6 @@
                             "cylinder.lb8.ugrid"
                         ],
                         "transformation": {
-                            "type_name": "BodyGroupTransformation",
-                            "origin": {
-                                "value": [
-                                    0.0,
-                                    0.0,
-                                    0.0
-                                ],
-                                "units": "1.0*m"
-                            },
-                            "axis_of_rotation": [
-                                1.0,
-                                0.0,
-                                0.0
-                            ],
-                            "angle_of_rotation": {
-                                "value": 0.0,
-                                "units": "rad"
-                            },
-                            "scale": [
-                                1.0,
-                                1.0,
-                                1.0
-                            ],
-                            "translation": {
-                                "value": [
-                                    0.0,
-                                    0.0,
-                                    0.0
-                                ],
-                                "units": "1.0*m"
-                            },
                             "private_attribute_matrix": [
                                 1.0,
                                 0.0,

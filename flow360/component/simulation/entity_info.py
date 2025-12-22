@@ -444,28 +444,6 @@ class GeometryEntityInfo(EntityInfoModel):
                 )
         return internal_registry
 
-    def compute_transformation_matrices(self):
-        """
-        Computes the transformation matrices for the **selected** body group and store
-        matrices under `private_attribute_matrix`.
-        Won't compute for any `GeometryBodyGroup` that is not asked by the user to save expense.
-        """
-        assert self.body_group_tag is not None, "[Internal] no body grouping specified."
-        assert (
-            self.body_group_tag
-            in self.body_attribute_names  # pylint:disable=unsupported-membership-test
-        ), f"[Internal] invalid body grouping. {self.body_attribute_names} allowed but got {self.body_group_tag}."
-
-        i_body_group = self.body_attribute_names.index(  # pylint:disable=no-member
-            self.body_group_tag
-        )
-        for body_group in self.grouped_bodies[  # pylint:disable=unsubscriptable-object
-            i_body_group
-        ]:
-            body_group.transformation.private_attribute_matrix = (
-                body_group.transformation.get_transformation_matrix().flatten().tolist()
-            )
-
     def get_body_group_to_face_group_name_map(self) -> dict[str, list[str]]:
         """
         Returns bodyId to file name mapping.
@@ -484,6 +462,14 @@ class GeometryEntityInfo(EntityInfoModel):
         boundary_to_face = create_group_to_sub_component_mapping(
             self._get_list_of_entities(entity_type_name="face", attribute_name=self.face_group_tag)
         )
+
+        if "groupByBodyId" not in self.face_attribute_names:
+            # This likely means the geometry asset is pre-25.5.
+            raise ValueError(
+                "Geometry cloud resource is too old."
+                " Please consider re-uploading the geometry with newer solver version."
+            )
+
         face_group_by_body_id_to_face = create_group_to_sub_component_mapping(
             self._get_list_of_entities(entity_type_name="face", attribute_name="groupByBodyId")
         )
@@ -520,6 +506,29 @@ class GeometryEntityInfo(EntityInfoModel):
             body_group_to_boundary[owning_body].append(boundary_name)
 
         return body_group_to_boundary
+
+    def get_face_group_to_body_group_id_map(self) -> dict[str, str]:
+        """
+        Returns a mapping from face group (Surface) name to the owning body group ID.
+
+        This is the inverse of :meth:`get_body_group_to_face_group_name_map` and uses the
+        same underlying assumptions and validations about the grouping tags.
+        """
+
+        body_group_to_boundary = self.get_body_group_to_face_group_name_map()
+
+        face_group_to_body_group: dict[str, str] = {}
+        for body_group_id, boundary_names in body_group_to_boundary.items():
+            for boundary_name in boundary_names:
+                existing_owner = face_group_to_body_group.get(boundary_name)
+                if existing_owner is not None and existing_owner != body_group_id:
+                    raise ValueError(
+                        f"[Internal] Face group '{boundary_name}' is mapped to multiple body groups: "
+                        f"{existing_owner}, {body_group_id}. Data is likely corrupted."
+                    )
+                face_group_to_body_group[boundary_name] = body_group_id
+
+        return face_group_to_body_group
 
 
 class VolumeMeshEntityInfo(EntityInfoModel):

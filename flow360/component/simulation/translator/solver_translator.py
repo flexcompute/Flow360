@@ -95,6 +95,7 @@ from flow360.component.simulation.primitives import (
     GhostSurface,
     GhostSurfacePair,
     ImportedSurface,
+    MirroredSurface,
     Surface,
     SurfacePair,
 )
@@ -428,21 +429,66 @@ def inject_surface_list_info(entity: EntityList):
     }
 
 
-def inject_imported_surface_info(entity: ImportedSurface):
+def _get_coordinate_system_manager_from_params(input_params: "SimulationParams"):
+    """Extract and rebuild CoordinateSystemManager from SimulationParams asset cache.
+
+    Parameters
+    ----------
+    input_params : SimulationParams
+        The simulation parameters containing coordinate system status.
+
+    Returns
+    -------
+    CoordinateSystemManager or None
+        The reconstructed manager, or None if no coordinate system info is available.
+    """
+    if not input_params or not input_params.private_attribute_asset_cache:
+        return None
+
+    coord_status = input_params.private_attribute_asset_cache.coordinate_system_status
+    if not coord_status:
+        return None
+
+    # pylint: disable=import-outside-toplevel
+    from flow360.component.simulation.draft_context.coordinate_system_manager import (
+        CoordinateSystemManager,
+    )
+
+    return CoordinateSystemManager._from_status(  # pylint: disable=protected-access
+        status=coord_status
+    )
+
+
+def inject_imported_surface_info(entity: ImportedSurface, coordinate_system_manager=None):
     """inject entity info"""
-    return {
+    result = {
         "meshFile": entity.file_name,
     }
+
+    # Add transformation matrix if entity has coordinate system assignment
+    if coordinate_system_manager is not None:
+        matrix = (
+            coordinate_system_manager._get_matrix_for_entity(  # pylint: disable=protected-access
+                entity=entity
+            )
+        )
+        if matrix is not None:
+            # Convert 3x4 numpy array to list for JSON serialization
+            result["transformationMatrix"] = matrix.tolist()
+
+    return result
 
 
 def translate_imported_surface_integral_output(
     output_params: list,
+    coordinate_system_manager=None,
 ):
     """Translate imported surface integral output settings."""
     translated_output = {
         "animationFrequency": -1,
         "animationFrequencyOffset": 0,
     }
+
     translated_output["surfaces"] = translate_setting_and_apply_to_all_entities(
         output_params,
         SurfaceIntegralOutput,
@@ -450,6 +496,7 @@ def translate_imported_surface_integral_output(
         entity_injection_func=inject_imported_surface_info,
         to_list=False,
         entity_type_to_include=ImportedSurface,
+        entity_injection_coordinate_system_manager=coordinate_system_manager,
     )
 
     return translated_output
@@ -487,6 +534,7 @@ def translate_volume_output(
 def translate_imported_surface_output(
     output_params: list,
     surface_output_class: Union[SurfaceOutput, TimeAverageSurfaceOutput],
+    coordinate_system_manager=None,
 ):
     """Translate imported surface output settings."""
 
@@ -495,6 +543,7 @@ def translate_imported_surface_output(
         surface_output_class,
         is_average=surface_output_class is TimeAverageSurfaceOutput,
     )
+
     imported_surface_output["surfaces"] = translate_setting_and_apply_to_all_entities(
         output_params,
         surface_output_class,
@@ -502,6 +551,7 @@ def translate_imported_surface_output(
         entity_injection_func=inject_imported_surface_info,
         to_list=False,
         entity_type_to_include=ImportedSurface,
+        entity_injection_coordinate_system_manager=coordinate_system_manager,
     )
     return imported_surface_output
 
@@ -525,7 +575,13 @@ def translate_surface_output(
         surface_output_class,
         translation_func=translate_output_fields,
         to_list=False,
-        entity_type_to_include=(Surface, GhostSurface, GhostSphere, GhostCircularPlane),
+        entity_type_to_include=(
+            Surface,
+            GhostSurface,
+            GhostSphere,
+            GhostCircularPlane,
+            MirroredSurface,
+        ),
     )
     surface_output["writeSingleFile"] = get_global_setting_from_first_instance(
         output_params,
@@ -639,7 +695,7 @@ def translate_render_output(
                         [render_group],
                         RenderOutputGroup,
                         to_list=False,
-                        entity_type_to_include=Surface,
+                        entity_type_to_include=(Surface, MirroredSurface),
                         entity_list_field_name="surfaces",
                     ),
                     "slices": translate_setting_and_apply_to_all_entities(
@@ -709,7 +765,7 @@ def translate_monitor_output(
         lump_list_of_entities=True,
         use_instance_name_as_key=True,
         entity_type_to_include=(
-            (Surface, GhostSurface, GhostSphere, GhostCircularPlane)
+            (Surface, GhostSurface, GhostSphere, GhostCircularPlane, MirroredSurface)
             if monitor_type is SurfaceIntegralOutput
             else None
         ),
@@ -994,6 +1050,9 @@ def translate_output(input_params: SimulationParams, translated: dict):
 
     if outputs is None:
         return translated
+
+    # Extract coordinate system manager once for reuse across all output translations
+    coordinate_system_manager = _get_coordinate_system_manager_from_params(input_params)
     ##:: Step1: Get translated["volumeOutput"/"timeAverageVolumeOutput"]
     volume_output_configs = [
         (VolumeOutput, "volumeOutput"),
@@ -1044,6 +1103,7 @@ def translate_output(input_params: SimulationParams, translated: dict):
         imported_surface_output_configs = translate_imported_surface_output(
             outputs,
             SurfaceOutput,
+            coordinate_system_manager,
         )
         if imported_surface_output_configs["surfaces"]:
             translated["importedSurfaceOutput"] = imported_surface_output_configs
@@ -1051,6 +1111,7 @@ def translate_output(input_params: SimulationParams, translated: dict):
         imported_surface_output_configs = translate_imported_surface_output(
             outputs,
             TimeAverageSurfaceOutput,
+            coordinate_system_manager,
         )
         if imported_surface_output_configs["surfaces"]:
             translated["timeAverageImportedSurfaceOutput"] = imported_surface_output_configs
@@ -1128,6 +1189,7 @@ def translate_output(input_params: SimulationParams, translated: dict):
     if has_instance_in_list(outputs, SurfaceIntegralOutput):
         imported_surface_integral_output_configs = translate_imported_surface_integral_output(
             outputs,
+            coordinate_system_manager,
         )
         if imported_surface_integral_output_configs["surfaces"]:
             translated["importedSurfaceIntegralOutput"] = imported_surface_integral_output_configs

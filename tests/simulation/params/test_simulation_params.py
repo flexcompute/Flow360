@@ -5,14 +5,16 @@ import numpy as np
 import pytest
 
 import flow360.component.simulation.units as u
+from flow360.component.project import create_draft
+from flow360.component.project_utils import set_up_params_for_uploading
 from flow360.component.simulation import services
 from flow360.component.simulation.conversion import LIQUID_IMAGINARY_FREESTREAM_MACH
 from flow360.component.simulation.entity_info import (
     GeometryEntityInfo,
     VolumeMeshEntityInfo,
 )
+from flow360.component.simulation.entity_operation import CoordinateSystem
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
-from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.meshing_param import snappy
 from flow360.component.simulation.meshing_param.params import (
     MeshingDefaults,
@@ -63,6 +65,9 @@ from flow360.component.simulation.primitives import (
 )
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import Unsteady
+from flow360.component.simulation.translator.surface_meshing_translator import (
+    _inject_body_group_transformations_for_mesher,
+)
 from flow360.component.simulation.unit_system import CGS_unit_system, SI_unit_system
 from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
     UserDefinedDynamic,
@@ -618,55 +623,136 @@ def test_geometry_entity_info_get_body_group_to_face_group_name_map():
     )
 
 
-def test_transformation_matrix():
-    with open("./data/geometry_metadata_asset_cache_mixed_file.json", "r") as fp:
-        geometry_entity_info_dict = json.load(fp)
-        geometry_entity_info = GeometryEntityInfo.model_validate(geometry_entity_info_dict)
+def test_transformation_matrix(mock_geometry):
+    """
+    End-to-end test: DraftContext coordinate system assignment -> params setup -> mesher JSON injection.
+    """
 
-    with SI_unit_system:
-        params = SimulationParams(
-            operating_condition=AerospaceCondition(),
-            private_attribute_asset_cache=AssetCache(
-                project_entity_info=geometry_entity_info,
-            ),
+    def _get_selected_grouped_bodies(entity_info_dict: dict) -> list[dict]:
+        grouped_bodies = entity_info_dict.get("grouped_bodies", None)
+        assert isinstance(grouped_bodies, list)
+
+        body_group_tag = entity_info_dict.get("body_group_tag")
+        body_attribute_names = entity_info_dict.get("body_attribute_names")
+        assert isinstance(body_group_tag, str)
+        assert isinstance(body_attribute_names, list)
+        assert body_group_tag in body_attribute_names
+
+        selected_group_index = body_attribute_names.index(body_group_tag)
+        selected_group = grouped_bodies[selected_group_index]
+        assert isinstance(selected_group, list)
+        assert selected_group
+        return selected_group
+
+    # Prefer a body grouping that yields multiple GeometryBodyGroup entities (if available),
+    # so we can validate identity matrices for unassigned body groups too.
+    entity_info = mock_geometry.entity_info
+    candidate_body_group_tag = None
+    if getattr(entity_info, "body_attribute_names", None):
+        for tag in ("groupByBodyId", "bodyId"):
+            if tag in entity_info.body_attribute_names:
+                candidate_body_group_tag = tag
+                break
+    if candidate_body_group_tag is not None:
+        with model_attribute_unlock(entity_info, "body_group_tag"):
+            entity_info.body_group_tag = candidate_body_group_tag
+
+    with create_draft(new_run_from=mock_geometry) as draft:
+        body_groups = list(draft.body_groups)
+        target_body_group = body_groups[0]
+
+        with SI_unit_system:
+            # Nested coordinate system test:
+            # Parent: Translate [10, 0, 0]
+            # Child: Parent + Translate [0, 5, 0] -> Total [10, 5, 0]
+            cs_parent = CoordinateSystem(name="parent", translation=[10, 0, 0] * u.m)
+            cs_child = CoordinateSystem(name="child", translation=[0, 5, 0] * u.m)
+
+        cs_parent = draft.coordinate_systems.add(coordinate_system=cs_parent)
+        cs_child = draft.coordinate_systems.add(coordinate_system=cs_child, parent=cs_parent)
+        draft.coordinate_systems.assign(entities=target_body_group, coordinate_system=cs_child)
+
+        with SI_unit_system:
+            params = SimulationParams(operating_condition=AerospaceCondition())
+
+        processed_params = set_up_params_for_uploading(
+            root_asset=mock_geometry,
+            length_unit=1 * u.m,
+            params=params,
+            use_beta_mesher=False,
+            use_geometry_AI=False,
         )
-    nondim_params = params._preprocess(mesh_unit=2 * u.m)
-    transformation_matrix = (
-        nondim_params.private_attribute_asset_cache.project_entity_info.grouped_bodies[0][
-            0
-        ].transformation.get_transformation_matrix()
+
+    json_data = processed_params.model_dump(mode="json", exclude_none=True)
+    _inject_body_group_transformations_for_mesher(
+        json_data=json_data, input_params=processed_params, mesh_unit=1 * u.m
     )
 
-    assert np.isclose(transformation_matrix @ np.array([6, 5, 4, 2]), np.array([16, 105, 9])).all()
-    assert np.isclose(transformation_matrix @ np.array([7, 6, 5, 2]), np.array([17, 107, 12])).all()
-    assert np.isclose(
-        transformation_matrix @ np.array([8, 4.5, 4, 2]),
-        np.array([16.80178373, 106.60356745, 7.66369379]),
-    ).all()
+    entity_info_dict = json_data["private_attribute_asset_cache"]["project_entity_info"]
+    selected_group = _get_selected_grouped_bodies(entity_info_dict=entity_info_dict)
 
-    # Test compute_transformation_matrices
-    with model_attribute_unlock(
-        nondim_params.private_attribute_asset_cache.project_entity_info, "body_group_tag"
-    ):
-        nondim_params.private_attribute_asset_cache.project_entity_info.body_group_tag = "FCsource"
-
-    nondim_params.private_attribute_asset_cache.project_entity_info.compute_transformation_matrices()
-    assert nondim_params.private_attribute_asset_cache.project_entity_info.grouped_bodies[0][
-        0
-    ].transformation.private_attribute_matrix == [
-        0.07142857142857151,
-        -1.3178531657602606,
-        2.2464245943316894,
-        6.587498011451558,
-        0.9446408685944161,
-        0.5714285714285716,
-        0.48393055997701245,
-        47.269644845691296,
-        -0.3202367695391345,
-        1.3916653409677058,
-        1.9285714285714284,
-        -1.8755959009447176,
+    expected_child_matrix = [
+        1.0,
+        0.0,
+        0.0,
+        10.0,
+        0.0,
+        1.0,
+        0.0,
+        5.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
     ]
+
+    target_body_group_dict = None
+    for body_group_dict in selected_group:
+        if (
+            body_group_dict.get("private_attribute_entity_type_name")
+            == target_body_group.private_attribute_entity_type_name
+            and body_group_dict.get("private_attribute_id")
+            == target_body_group.private_attribute_id
+        ):
+            target_body_group_dict = body_group_dict
+
+    assert isinstance(target_body_group_dict, dict)
+
+    # All bodies in the selected grouping must have an explicit matrix payload.
+    # The transformation object should only contain private_attribute_matrix (no redundant fields).
+    for body_group_dict in selected_group:
+        transformation = body_group_dict.get("transformation")
+        assert isinstance(transformation, dict)
+        assert list(transformation.keys()) == ["private_attribute_matrix"], (
+            f"Expected transformation to only contain 'private_attribute_matrix', "
+            f"but got keys: {list(transformation.keys())}"
+        )
+        assert isinstance(transformation.get("private_attribute_matrix"), list)
+        assert len(transformation["private_attribute_matrix"]) == 12
+
+    assert (
+        target_body_group_dict["transformation"]["private_attribute_matrix"]
+        == expected_child_matrix
+    )
+
+    # Unassigned body groups (if any) default to identity.
+    for body_group_dict in selected_group:
+        if body_group_dict is target_body_group_dict:
+            continue
+        assert body_group_dict["transformation"]["private_attribute_matrix"] == [
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+        ]
 
 
 def test_default_params_for_local_test():
