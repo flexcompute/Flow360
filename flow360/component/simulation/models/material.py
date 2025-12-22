@@ -1,6 +1,6 @@
 """Material classes for the simulation framework."""
 
-from typing import Literal, Optional, Union
+from typing import List, Literal, Optional, Union
 
 import pydantic as pd
 from numpy import sqrt
@@ -26,6 +26,126 @@ class MaterialBase(Flow360BaseModel):
 
     type: str = pd.Field()
     name: str = pd.Field()
+
+
+class NASA9CoefficientSet(Flow360BaseModel):
+    """
+    Represents a set of 9 NASA polynomial coefficients for a specific temperature range.
+
+    The NASA 9-coefficient polynomial (McBride et al., 2002) computes thermodynamic
+    properties as:
+
+    cp/R = a0*T^-2 + a1*T^-1 + a2 + a3*T + a4*T^2 + a5*T^3 + a6*T^4
+
+    h/RT = -a0*T^-2 + a1*ln(T)/T + a2 + (a3/2)*T + (a4/3)*T^2 + (a5/4)*T^3 + (a6/5)*T^4 + a7/T
+
+    s/R = -(a0/2)*T^-2 - a1*T^-1 + a2*ln(T) + a3*T + (a4/2)*T^2 + (a5/3)*T^3 + (a6/4)*T^4 + a8
+
+    Coefficients:
+    - a0-a6: cp polynomial coefficients
+    - a7: enthalpy integration constant
+    - a8: entropy integration constant
+
+    Example
+    -------
+
+    >>> fl.NASA9CoefficientSet(
+    ...     temperature_range_min=200.0 * fl.u.K,
+    ...     temperature_range_max=1000.0 * fl.u.K,
+    ...     coefficients=[0.0, 0.0, 3.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    ... )
+
+    ====
+    """
+
+    temperature_range_min: AbsoluteTemperatureType = pd.Field(
+        description="Minimum temperature for which this coefficient set is valid."
+    )
+    temperature_range_max: AbsoluteTemperatureType = pd.Field(
+        description="Maximum temperature for which this coefficient set is valid."
+    )
+    coefficients: List[float] = pd.Field(
+        description="Nine NASA polynomial coefficients [a0, a1, a2, a3, a4, a5, a6, a7, a8]. "
+        "a0-a6 are cp/R polynomial coefficients, a7 is the enthalpy integration constant, "
+        "and a8 is the entropy integration constant."
+    )
+
+    @pd.model_validator(mode="after")
+    def validate_coefficients(self):
+        """Validate that exactly 9 coefficients are provided."""
+        if len(self.coefficients) != 9:
+            raise ValueError(
+                f"NASA 9-coefficient polynomial requires exactly 9 coefficients, "
+                f"got {len(self.coefficients)}"
+            )
+        return self
+
+
+class NASA9Coefficients(Flow360BaseModel):
+    """
+    NASA 9-coefficient polynomial coefficients for computing temperature-dependent thermodynamic properties.
+
+    Supports 1-5 temperature ranges with continuous boundaries. Defaults to a single temperature range.
+
+    Example
+    -------
+
+    Single temperature range (default):
+
+    >>> fl.NASA9Coefficients(
+    ...     temperature_ranges=[
+    ...         fl.NASA9CoefficientSet(
+    ...             temperature_range_min=200.0 * fl.u.K,
+    ...             temperature_range_max=6000.0 * fl.u.K,
+    ...             coefficients=[0.0, 0.0, 3.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    ...         )
+    ...     ]
+    ... )
+
+    Multiple temperature ranges:
+
+    >>> fl.NASA9Coefficients(
+    ...     temperature_ranges=[
+    ...         fl.NASA9CoefficientSet(
+    ...             temperature_range_min=200.0 * fl.u.K,
+    ...             temperature_range_max=1000.0 * fl.u.K,
+    ...             coefficients=[0.0, 0.0, 3.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    ...         ),
+    ...         fl.NASA9CoefficientSet(
+    ...             temperature_range_min=1000.0 * fl.u.K,
+    ...             temperature_range_max=6000.0 * fl.u.K,
+    ...             coefficients=[0.0, 0.0, 3.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    ...         )
+    ...     ]
+    ... )
+
+    ====
+    """
+
+    temperature_ranges: List[NASA9CoefficientSet] = pd.Field(
+        min_length=1,
+        max_length=5,
+        description="List of NASA 9-coefficient sets for different temperature ranges. "
+        "Must be ordered by increasing temperature and be continuous. Maximum 5 ranges supported."
+    )
+
+    @pd.model_validator(mode="after")
+    def validate_temperature_continuity(self):
+        """Validate that temperature ranges are continuous and non-overlapping."""
+        for i in range(len(self.temperature_ranges) - 1):
+            current_max = self.temperature_ranges[i].temperature_range_max
+            next_min = self.temperature_ranges[i + 1].temperature_range_min
+            if current_max != next_min:
+                raise ValueError(
+                    f"Temperature ranges must be continuous: range {i} max "
+                    f"({current_max}) must equal range {i+1} min ({next_min})"
+                )
+        return self
+
+
+# Legacy aliases for backward compatibility during transition
+NASAPolynomialCoefficientSet = NASA9CoefficientSet
+NASAPolynomialCoefficients = NASA9Coefficients
 
 
 class Sutherland(Flow360BaseModel):
@@ -88,11 +208,29 @@ class Air(MaterialBase):
     This sets specific material properties for air,
     including dynamic viscosity, specific heat ratio, gas constant, and Prandtl number.
 
+    The thermodynamic properties can be specified using NASA 9-coefficient polynomials
+    for temperature-dependent specific heats. By default, coefficients are set to
+    reproduce a constant gamma=1.4 (calorically perfect gas).
+
     Example
     -------
 
     >>> fl.Air(
     ...     dynamic_viscosity=1.063e-05 * fl.u.Pa * fl.u.s
+    ... )
+
+    With custom NASA 9-coefficient polynomial:
+
+    >>> fl.Air(
+    ...     nasa_9_coefficients=fl.NASA9Coefficients(
+    ...         temperature_ranges=[
+    ...             fl.NASA9CoefficientSet(
+    ...                 temperature_range_min=200.0 * fl.u.K,
+    ...                 temperature_range_max=6000.0 * fl.u.K,
+    ...                 coefficients=[0.0, 0.0, 3.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    ...             )
+    ...         ]
+    ...     )
     ... )
 
     ====
@@ -111,6 +249,26 @@ class Air(MaterialBase):
         description=(
             "The dynamic viscosity model or value for air. Defaults to a `Sutherland` "
             "model with standard atmospheric conditions."
+        ),
+    )
+    nasa_9_coefficients: NASA9Coefficients = pd.Field(
+        default_factory=lambda: NASA9Coefficients(
+            temperature_ranges=[
+                NASA9CoefficientSet(
+                    temperature_range_min=200.0 * u.K,
+                    temperature_range_max=6000.0 * u.K,
+                    # For constant gamma=1.4: cp/R = gamma/(gamma-1) = 1.4/0.4 = 3.5
+                    # In NASA9 format, constant cp/R is the a2 coefficient (index 2)
+                    # All other coefficients (inverse T terms, positive T terms, integration constants) are zero
+                    coefficients=[0.0, 0.0, 3.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                ),
+            ]
+        ),
+        description=(
+            "NASA 9-coefficient polynomial coefficients for computing temperature-dependent "
+            "thermodynamic properties (cp, enthalpy, entropy). Defaults to a single temperature "
+            "range with coefficients that reproduce constant gamma=1.4 (calorically perfect gas). "
+            "For air with gamma=1.4: cp/R = 3.5 (stored in a2)."
         ),
     )
 

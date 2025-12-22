@@ -12,7 +12,11 @@ from flow360.component.simulation.conversion import (
     compute_udf_dimensionalization_factor,
 )
 from flow360.component.simulation.framework.entity_base import EntityList
-from flow360.component.simulation.models.material import Sutherland
+from flow360.component.simulation.models.material import (
+    Air,
+    NASA9Coefficients,
+    Sutherland,
+)
 from flow360.component.simulation.models.solver_numerics import NoneSolver
 from flow360.component.simulation.models.surface_models import (
     Freestream,
@@ -1692,6 +1696,90 @@ def calculate_monitor_semaphore_hash(params: SimulationParams):
     return hasher.hexdigest()
 
 
+def translate_nasa9_coefficients(
+    nasa_coeffs: NASA9Coefficients,
+    reference_temperature,
+):
+    """
+    Translate and non-dimensionalize NASA 9-coefficient polynomial coefficients.
+
+    The NASA 9-coefficient format (McBride et al., 2002):
+        cp/R = a0*T^-2 + a1*T^-1 + a2 + a3*T + a4*T^2 + a5*T^3 + a6*T^4
+        h/RT = -a0*T^-2 + a1*ln(T)/T + a2 + (a3/2)*T + (a4/3)*T^2 + (a5/4)*T^3 + (a6/5)*T^4 + a7/T
+        s/R = -(a0/2)*T^-2 - a1*T^-1 + a2*ln(T) + a3*T + (a4/2)*T^2 + (a5/3)*T^3 + (a6/4)*T^4 + a8
+
+    Coefficients: [a0, a1, a2, a3, a4, a5, a6, a7, a8]
+        - a0-a6: cp polynomial coefficients
+        - a7: enthalpy integration constant
+        - a8: entropy integration constant
+
+    In the C++ solver, the internal non-dimensional temperature is computed as:
+        T_internal = p / (R* * rho) where R* = 1/gamma_ref
+    This gives: T_internal = gamma_ref * T_dim / T_ref
+
+    Non-dimensionalization transformations (where t_scale = T_ref / gamma_ref):
+        - a0 (T^-2): a0_nd = a0 * (gamma_ref / T_ref)^2
+        - a1 (T^-1): a1_nd = a1 * (gamma_ref / T_ref)
+        - a2 (T^0):  a2_nd = a2 (unchanged)
+        - a3 (T^1):  a3_nd = a3 * t_scale
+        - a4 (T^2):  a4_nd = a4 * t_scale^2
+        - a5 (T^3):  a5_nd = a5 * t_scale^3
+        - a6 (T^4):  a6_nd = a6 * t_scale^4
+        - a7 (1/T):  a7_nd = a7 * (gamma_ref / T_ref)
+        - a8 (const): a8_nd = a8 (unchanged)
+
+    Parameters
+    ----------
+    nasa_coeffs : NASA9Coefficients
+        NASA 9-coefficient polynomial coefficients with temperature ranges
+    reference_temperature : float
+        Reference temperature for non-dimensionalization (in K)
+
+    Returns
+    -------
+    dict
+        Non-dimensionalized NASA 9-coefficient data for Flow360.json
+    """
+
+    # Reference gamma used in Flow360 non-dimensionalization
+    gamma_ref = 1.4
+
+    # Scaling factors
+    t_scale = reference_temperature / gamma_ref  # For positive powers of T
+    t_scale_inv = gamma_ref / reference_temperature  # For negative powers of T
+
+    temperature_ranges = []
+    for coeff_set in nasa_coeffs.temperature_ranges:
+        # Temperature ranges need to be scaled by gamma_ref (T_internal = gamma_ref * T_dim / T_ref)
+        t_min_nd = gamma_ref * coeff_set.temperature_range_min.to("K").v.item() / reference_temperature
+        t_max_nd = gamma_ref * coeff_set.temperature_range_max.to("K").v.item() / reference_temperature
+
+        coeffs = coeff_set.coefficients
+
+        # Transform coefficients for T_internal = gamma*T_dim/T_ref
+        coeffs_nd = [
+            coeffs[0] * t_scale_inv**2,  # a0 (T^-2): scale by (gamma/T_ref)^2
+            coeffs[1] * t_scale_inv,  # a1 (T^-1): scale by (gamma/T_ref)
+            coeffs[2],  # a2 (constant): no scaling
+            coeffs[3] * t_scale,  # a3 (T^1): scale by (T_ref/gamma)
+            coeffs[4] * t_scale**2,  # a4 (T^2): scale by (T_ref/gamma)^2
+            coeffs[5] * t_scale**3,  # a5 (T^3): scale by (T_ref/gamma)^3
+            coeffs[6] * t_scale**4,  # a6 (T^4): scale by (T_ref/gamma)^4
+            coeffs[7] * t_scale_inv,  # a7 (enthalpy, 1/T): scale by (gamma/T_ref)
+            coeffs[8],  # a8 (entropy, constant): no scaling
+        ]
+
+        temperature_ranges.append(
+            {
+                "temperatureRangeMin": t_min_nd,
+                "temperatureRangeMax": t_max_nd,
+                "coefficients": coeffs_nd,
+            }
+        )
+
+    return {"temperatureRanges": temperature_ranges}
+
+
 # pylint: disable=too-many-statements
 # pylint: disable=too-many-branches
 # pylint: disable=too-many-locals
@@ -1743,6 +1831,16 @@ def get_solver_json(
             else op.material.dynamic_viscosity.in_base(input_params.flow360_unit_system).v.item()
         ),
     }
+    
+    ##:: Step 2.5: Get NASA 9-coefficient polynomial for gas model (if Air material)
+    if not isinstance(op, LiquidOperatingCondition) and isinstance(op.thermal_state.material, Air):
+        # Get reference temperature for non-dimensionalization (freestream temperature)
+        reference_temperature = op.thermal_state.temperature.to("K").v.item()
+
+        translated["thermallyPerfectGasModel"] = translate_nasa9_coefficients(
+            op.thermal_state.material.nasa_9_coefficients,
+            reference_temperature,
+        )
     if (
         "reference_velocity_magnitude" in op.__class__.model_fields.keys()
         and op.reference_velocity_magnitude
