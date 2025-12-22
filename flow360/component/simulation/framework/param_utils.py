@@ -375,10 +375,7 @@ def _update_rotating_entity_names_with_metadata(
     volume_zones = None
     if isinstance(params.meshing, MeshingParams):
         volume_zones = params.meshing.volume_zones
-    elif (
-        isinstance(params.meshing, ModularMeshingWorkflow)
-        and params.meshing.volume_meshing is not None
-    ):
+    elif isinstance(params.meshing, ModularMeshingWorkflow):
         volume_zones = params.meshing.zones
 
     if volume_zones is None:
