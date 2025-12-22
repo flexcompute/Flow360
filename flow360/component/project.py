@@ -1825,7 +1825,7 @@ class Project(pd.BaseModel):
 
         params.pre_submit_summary()
 
-        upload_imported_surfaces_to_draft(params, draft, fork_from)
+        draft.enable_dependency_resources(active_draft)
         draft.update_simulation_params(params)
 
         if draft_only:
