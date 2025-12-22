@@ -417,7 +417,7 @@ def snappy_mesher_json(input_params: SimulationParams):
             "minArea": (
                 quality_settings.min_face_area.value.item()
                 if quality_settings.min_face_area
-                else -1
+                else (1e-12 if quality_settings.min_face_area is None else -1)
             ),
             "minTwist": (quality_settings.min_twist if quality_settings.min_twist else -2),
             "minDeterminant": (
