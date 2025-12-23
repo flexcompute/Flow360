@@ -10,6 +10,7 @@ from flow360.component.simulation.models.surface_models import Wall, WallRotatio
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
 )
+from flow360.component.simulation.outputs.outputs import SurfaceOutput
 from flow360.component.simulation.primitives import Cylinder, Surface
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import SI_unit_system
@@ -85,21 +86,8 @@ def test_update_rotating_boundaries_with_metadata():
             models=[wall_model],
         )
 
-        # Update entity full names first (simulating what happens before this function)
-        from flow360.component.simulation.framework.param_utils import (
-            _update_entity_full_name,
-            _update_rotating_boundaries_with_metadata,
-        )
-        from flow360.component.simulation.primitives import (
-            _SurfaceEntityBase,
-            _VolumeEntityBase,
-        )
-
-        _update_entity_full_name(params, _VolumeEntityBase, volume_mesh_meta_data)
-        _update_entity_full_name(params, _SurfaceEntityBase, volume_mesh_meta_data)
-
-        # Call the function to update rotating boundaries
-        _update_rotating_boundaries_with_metadata(params, volume_mesh_meta_data)
+        # Update using the unified volume mesh metadata API
+        params._update_param_with_actual_volume_mesh_meta(volume_mesh_meta_data)
 
         # Verify that the enclosed_entity was updated to point to __rotating patch
         updated_entity = rotation_volume.enclosed_entities.stored_entities[0]
@@ -197,21 +185,8 @@ def test_update_rotating_boundaries_with_stationary_entities():
             models=[wall_model],
         )
 
-        # Update entity full names first
-        from flow360.component.simulation.framework.param_utils import (
-            _update_entity_full_name,
-            _update_rotating_boundaries_with_metadata,
-        )
-        from flow360.component.simulation.primitives import (
-            _SurfaceEntityBase,
-            _VolumeEntityBase,
-        )
-
-        _update_entity_full_name(params, _VolumeEntityBase, volume_mesh_meta_data)
-        _update_entity_full_name(params, _SurfaceEntityBase, volume_mesh_meta_data)
-
-        # Call the function to update rotating boundaries
-        _update_rotating_boundaries_with_metadata(params, volume_mesh_meta_data)
+        # Update using the unified volume mesh metadata API
+        params._update_param_with_actual_volume_mesh_meta(volume_mesh_meta_data)
 
         # Verify that the stationary_enclosed_entity was updated
         updated_stationary_entity = rotation_volume.stationary_enclosed_entities.stored_entities[0]
@@ -301,21 +276,8 @@ def test_multiple_entities_partial_rotating_patches():
             models=[wall_model_sphere, wall_model_other],
         )
 
-        # Update entity full names first
-        from flow360.component.simulation.framework.param_utils import (
-            _update_entity_full_name,
-            _update_rotating_boundaries_with_metadata,
-        )
-        from flow360.component.simulation.primitives import (
-            _SurfaceEntityBase,
-            _VolumeEntityBase,
-        )
-
-        _update_entity_full_name(params, _VolumeEntityBase, volume_mesh_meta_data)
-        _update_entity_full_name(params, _SurfaceEntityBase, volume_mesh_meta_data)
-
-        # Call the function to update rotating boundaries
-        _update_rotating_boundaries_with_metadata(params, volume_mesh_meta_data)
+        # Update using the unified volume mesh metadata API
+        params._update_param_with_actual_volume_mesh_meta(volume_mesh_meta_data)
 
         # Verify that only sphere_surface was updated (has __rotating patch)
         updated_entities = rotation_volume.enclosed_entities.stored_entities
@@ -414,22 +376,9 @@ def test_no_wall_model_for_entity():
             models=[],  # No Wall models
         )
 
-        # Update entity full names first
-        from flow360.component.simulation.framework.param_utils import (
-            _update_entity_full_name,
-            _update_rotating_boundaries_with_metadata,
-        )
-        from flow360.component.simulation.primitives import (
-            _SurfaceEntityBase,
-            _VolumeEntityBase,
-        )
-
-        _update_entity_full_name(params, _VolumeEntityBase, volume_mesh_meta_data)
-        _update_entity_full_name(params, _SurfaceEntityBase, volume_mesh_meta_data)
-
-        # Call the function to update rotating boundaries
+        # Update using the unified volume mesh metadata API
         # This should not raise an error even though there's no Wall model
-        _update_rotating_boundaries_with_metadata(params, volume_mesh_meta_data)
+        params._update_param_with_actual_volume_mesh_meta(volume_mesh_meta_data)
 
         # Verify that the enclosed_entity was still updated to point to __rotating patch
         updated_entity = rotation_volume.enclosed_entities.stored_entities[0]
@@ -513,21 +462,8 @@ def test_wall_model_with_wall_rotation():
             models=[wall_model],
         )
 
-        # Update entity full names first
-        from flow360.component.simulation.framework.param_utils import (
-            _update_entity_full_name,
-            _update_rotating_boundaries_with_metadata,
-        )
-        from flow360.component.simulation.primitives import (
-            _SurfaceEntityBase,
-            _VolumeEntityBase,
-        )
-
-        _update_entity_full_name(params, _VolumeEntityBase, volume_mesh_meta_data)
-        _update_entity_full_name(params, _SurfaceEntityBase, volume_mesh_meta_data)
-
-        # Call the function to update rotating boundaries
-        _update_rotating_boundaries_with_metadata(params, volume_mesh_meta_data)
+        # Update using the unified volume mesh metadata API
+        params._update_param_with_actual_volume_mesh_meta(volume_mesh_meta_data)
 
         # Verify that a new Wall model was created for the __rotating patch
         wall_models = [m for m in params.models if isinstance(m, Wall)]
@@ -550,3 +486,99 @@ def test_wall_model_with_wall_rotation():
         assert rotating_wall.velocity.axis == (0, 0, 1)
         assert all(rotating_wall.velocity.center == (0, 0, 0) * u.m)
         assert rotating_wall.velocity.angular_velocity == 100 * u.rpm
+
+
+def test_surface_output_expanded_while_rotation_volume_filtered():
+    """
+    Test that SurfaceOutput entities are expanded to include all split versions,
+    while RotationVolume.enclosed_entities are filtered to only keep __rotating patches.
+
+    This verifies the key behavior difference:
+    - SurfaceOutput: expands to include BOTH farfield/surface AND zone/__rotating versions
+    - RotationVolume.enclosed_entities: filtered to ONLY keep __rotating version
+    """
+    volume_mesh_meta_data = {
+        "zones": {
+            "farfield": {
+                "boundaryNames": [
+                    "farfield/farfield",
+                    "farfield/slidingInterface-intersectingCylinder",
+                    "farfield/blade",  # Original surface in farfield zone
+                ],
+            },
+            "intersectingCylinder": {
+                "boundaryNames": [
+                    "intersectingCylinder/inverted-intersectingCylinder",
+                    "intersectingCylinder/blade__rotating_intersectingCylinder",  # __rotating patch
+                ],
+            },
+        }
+    }
+
+    with SI_unit_system:
+        # Create entities
+        cylinder = Cylinder(
+            name="intersectingCylinder",
+            center=(0, 0, 0) * u.m,
+            outer_radius=1 * u.m,
+            height=2 * u.m,
+            axis=(0, 0, 1),
+        )
+        blade_surface = Surface(name="blade")
+
+        # Create RotationVolume with enclosed_entities
+        rotation_volume = RotationVolume(
+            name="RotationVolume",
+            spacing_axial=0.5 * u.m,
+            spacing_circumferential=0.3 * u.m,
+            spacing_radial=1.5 * u.m,
+            entities=[cylinder],
+            enclosed_entities=[blade_surface],
+        )
+
+        # Create meshing params
+        meshing = MeshingParams(
+            volume_zones=[
+                AutomatedFarfield(name="Farfield"),
+                rotation_volume,
+            ]
+        )
+
+        # Create operating condition
+        op = AerospaceCondition(velocity_magnitude=10)
+
+        # Create SurfaceOutput for the same blade surface
+        surface_output = SurfaceOutput(
+            entities=[blade_surface],
+            output_fields=["Cp", "Cf"],
+        )
+
+        # Create simulation params
+        params = SimulationParams(
+            meshing=meshing,
+            operating_condition=op,
+            outputs=[surface_output],
+        )
+
+        # Update using the unified volume mesh metadata API
+        params._update_param_with_actual_volume_mesh_meta(volume_mesh_meta_data)
+
+        # === Verify RotationVolume.enclosed_entities is FILTERED ===
+        # Should only have the __rotating version
+        enclosed_entities = rotation_volume.enclosed_entities.stored_entities
+        assert len(enclosed_entities) == 1
+        assert (
+            enclosed_entities[0].full_name
+            == "intersectingCylinder/blade__rotating_intersectingCylinder"
+        )
+        assert enclosed_entities[0].name == "blade__rotating_intersectingCylinder"
+
+        # === Verify SurfaceOutput.entities is EXPANDED ===
+        # Should have BOTH the farfield version AND the __rotating version
+        output_entities = surface_output.entities.stored_entities
+        assert len(output_entities) == 2
+
+        # Collect full_names for verification
+        output_full_names = {e.full_name for e in output_entities}
+        assert "farfield/blade" in output_full_names
+        assert "intersectingCylinder/blade__rotating_intersectingCylinder" in output_full_names

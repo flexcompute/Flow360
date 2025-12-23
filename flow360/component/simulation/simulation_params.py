@@ -14,12 +14,17 @@ from flow360.component.simulation.conversion import (
     unit_converter,
 )
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
+from flow360.component.simulation.framework.boundary_split import (
+    BoundaryNameLookupTable,
+    post_process_rotation_volume_entities,
+    post_process_wall_models_for_rotating,
+    update_entities_in_model,
+)
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
 from flow360.component.simulation.framework.param_utils import (
     AssetCache,
     _set_boundary_full_name_with_zone_name,
     _update_entity_full_name,
-    _update_rotating_boundaries_with_metadata,
     _update_zone_boundaries_with_metadata,
     register_entity_list,
 )
@@ -786,12 +791,20 @@ class SimulationParams(_ParamModelBase):
         Some thoughts:
         Do we also need to update the params when the **surface meshing** is done?
         """
-        # Below includes the Ghost entities.
-        _update_entity_full_name(self, _SurfaceEntityBase, volume_mesh_meta_data)
+        # Build lookup table for surface entity name mapping (base_name -> full_name)
+        lookup_table = BoundaryNameLookupTable.from_params(volume_mesh_meta_data, params=self)
+
+        # Update surface entities using the lookup table
+        update_entities_in_model(self, lookup_table, _SurfaceEntityBase)
+
+        # Update volume entities
         _update_entity_full_name(self, _VolumeEntityBase, volume_mesh_meta_data)
         _update_zone_boundaries_with_metadata(self.used_entity_registry, volume_mesh_meta_data)
 
-        _update_rotating_boundaries_with_metadata(self, volume_mesh_meta_data)
+        # Post-processing hooks for RotationVolume-specific logic
+        post_process_rotation_volume_entities(self, lookup_table)
+        post_process_wall_models_for_rotating(self, lookup_table)
+
         return self
 
     def is_steady(self):
