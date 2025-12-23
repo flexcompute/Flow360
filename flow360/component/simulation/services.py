@@ -710,6 +710,7 @@ def _translate_simulation_json(
     mesh_unit,
     target_name: str = None,
     translation_func=None,
+    **kwargs,
 ):
     """
     Get JSON for surface meshing from a given simulation JSON.
@@ -724,7 +725,7 @@ def _translate_simulation_json(
         )
 
     try:
-        translated_dict = translation_func(input_params, mesh_unit)
+        translated_dict = translation_func(input_params, mesh_unit, **kwargs)
     except Flow360TranslationError as err:
         raise ValueError(str(err)) from err
     except Exception as err:  # translation itself is not supposed to raise any other exception
@@ -760,13 +761,16 @@ def simulation_to_volume_meshing_json(input_params: SimulationParams, mesh_unit)
     )
 
 
-def simulation_to_case_json(input_params: SimulationParams, mesh_unit):
+def simulation_to_case_json(
+    input_params: SimulationParams, mesh_unit, *, skip_selector_expansion: bool = False
+):
     """Get JSON for case from a given simulation JSON."""
     return _translate_simulation_json(
         input_params,
         mesh_unit,
         "case",
         get_solver_json,
+        skip_selector_expansion=skip_selector_expansion,
     )
 
 

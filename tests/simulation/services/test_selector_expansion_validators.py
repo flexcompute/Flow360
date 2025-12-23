@@ -5,7 +5,10 @@ import pytest
 import flow360 as fl
 from flow360.component.project_utils import set_up_params_for_uploading
 from flow360.component.resource_base import local_metadata_builder
-from flow360.component.simulation.framework.entity_selector import Predicate
+from flow360.component.simulation.framework.entity_selector import (
+    SurfaceSelector,
+    VolumeSelector,
+)
 from flow360.component.simulation.models.surface_models import Wall
 from flow360.component.simulation.models.volume_models import (
     ActuatorDisk,
@@ -71,8 +74,8 @@ def test_duplicate_entities_in_models_detects_selector_overlap():
     vm.internal_registry = vm._entity_info.get_persistent_entity_registry(vm.internal_registry)
 
     with fl.SI_unit_system:
-        all_surfaces = Surface.match("*", name="all_surfaces")
-        wings = Surface.match("*Wing", name="wings")
+        all_surfaces = SurfaceSelector(name="all_surfaces").match("*")
+        wings = SurfaceSelector(name="wings").match("*Wing")
         params = fl.SimulationParams(
             models=[Wall(name="wallAll", entities=[all_surfaces]), Wall(entities=[wings])]
         )
@@ -97,12 +100,13 @@ def test_duplicate_surface_usage_detects_selector_overlap():
     vm.internal_registry = vm._entity_info.get_persistent_entity_registry(vm.internal_registry)
 
     with fl.SI_unit_system:
-        wall_all = Wall(entities=[Surface.match("*", name="all_boundaries")])
+        wall_all = Wall(entities=[SurfaceSelector(name="all_boundaries").match("*")])
         output_1 = fl.SurfaceOutput(
-            output_fields=["Cp"], entities=[Surface.match("*Wing", name="wings")]
+            output_fields=["Cp"], entities=[SurfaceSelector(name="wings").match("*Wing")]
         )
         output_2 = fl.SurfaceOutput(
-            output_fields=["Cp"], entities=[Surface.match("fluid/leftWing", name="leftWing")]
+            output_fields=["Cp"],
+            entities=[SurfaceSelector(name="leftWing").match("fluid/leftWing")],
         )
         params = fl.SimulationParams(models=[wall_all], outputs=[output_1, output_2])
 
@@ -137,7 +141,7 @@ def test_parent_volume_is_rotating_allows_selector_based_volume_sets():
         vm["blk-1"].center = (0, 0, 0) * fl.u.m
 
         outer_rotation = Rotation(
-            volumes=[GenericVolume.match("blk-1", name="outer_zone_selector")],
+            volumes=[VolumeSelector(name="outer_zone_selector").match("blk-1")],
             spec=fl.AngleExpression("sin(t)"),
             name="outerRotation",
         )

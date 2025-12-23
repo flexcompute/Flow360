@@ -66,6 +66,7 @@ def _check_output_fields(params):
             "StreamlineOutput",
             "ForceDistributionOutput",
             "TimeAverageForceDistributionOutput",
+            "RenderOutput",
         ):
             continue
         # Get allowed output fields items:
@@ -123,6 +124,7 @@ def _check_output_fields_valid_given_turbulence_model(params):
             "StreamlineOutput",
             "ForceDistributionOutput",
             "TimeAverageForceDistributionOutput",
+            "RenderOutput",
         ):
             continue
         for item in output.output_fields.items:
@@ -172,6 +174,7 @@ def _check_output_fields_valid_given_transition_model(params):
             "StreamlineOutput",
             "ForceDistributionOutput",
             "TimeAverageForceDistributionOutput",
+            "RenderOutput",
         ):
             continue
         for item in output.output_fields.items:

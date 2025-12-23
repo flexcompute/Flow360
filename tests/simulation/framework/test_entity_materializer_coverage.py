@@ -1,5 +1,6 @@
 import inspect
 
+import flow360.component.simulation.draft_context.mirror as mirror
 import flow360.component.simulation.outputs.output_entities as output_entities
 import flow360.component.simulation.primitives as primitives
 from flow360.component.simulation.framework.entity_materializer import ENTITY_TYPE_MAP
@@ -11,7 +12,7 @@ def test_entity_type_map_completeness():
     'private_attribute_entity_type_name' are registered in ENTITY_TYPE_MAP.
     """
 
-    modules_to_check = [primitives, output_entities]
+    modules_to_check = [primitives, output_entities, mirror]
 
     missing_entities = []
 

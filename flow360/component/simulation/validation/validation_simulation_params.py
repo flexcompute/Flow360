@@ -4,6 +4,13 @@ validation for SimulationParams
 
 from typing import Type, Union, get_args
 
+from flow360.component.simulation.draft_context.coordinate_system_manager import (
+    CoordinateSystemManager,
+)
+from flow360.component.simulation.entity_operation import (
+    _extract_scale_from_matrix,
+    _is_uniform_scale,
+)
 from flow360.component.simulation.meshing_param.params import (
     MeshingParams,
     ModularMeshingWorkflow,
@@ -348,7 +355,7 @@ def _check_complete_boundary_condition_and_unknown_surface(
         volume_zones = params.meshing.zones
 
     if farfield_method:
-        if param_info.at_least_one_body_transformed:
+        if param_info.entity_transformation_detected:
             # If transformed then `_will_be_deleted_by_mesher()` will no longer be accurate
             # since we do not know the final bounding box for each surface and global model.
             return params
@@ -358,7 +365,7 @@ def _check_complete_boundary_condition_and_unknown_surface(
             item
             for item in asset_boundary_entities
             if item._will_be_deleted_by_mesher(
-                at_least_one_body_transformed=param_info.at_least_one_body_transformed,
+                entity_transformation_detected=param_info.entity_transformation_detected,
                 farfield_method=farfield_method,
                 global_bounding_box=param_info.global_bounding_box,
                 planar_face_tolerance=param_info.planar_face_tolerance,
@@ -622,3 +629,104 @@ def _check_duplicate_actuator_disk_cylinder_names(models, param_info: ParamsVali
     _check_actuator_disk_names(models)
 
     return models
+
+
+def _check_unique_selector_names(params):
+    """Check that all EntitySelector names are unique across the entire SimulationParams.
+
+    This validator checks the asset_cache.used_selectors field, which is populated
+    during the tokenization process in set_up_params_for_uploading().
+    """
+    asset_cache = getattr(params, "private_attribute_asset_cache", None)
+    if asset_cache is None:
+        return params
+
+    used_selectors = getattr(asset_cache, "used_selectors", None)
+    if not used_selectors:
+        return params
+
+    selector_names: set[str] = set()  # name -> first occurrence info
+
+    for selector in used_selectors:
+        selector_name = selector.name
+        if selector_name in selector_names:
+            raise ValueError(
+                f"Duplicate selector name '{selector_name}' found. "
+                f"Each selector must have a unique name."
+            )
+        # Store location info for better error messages
+        selector_names.add(selector_name)
+
+    return params
+
+
+def _check_coordinate_system_constraints(params, param_info: ParamsValidationInfo):
+    """Validate coordinate system usage constraints.
+
+    1. GeometryBodyGroup assignments require GeometryAI to be enabled.
+    2. Entities requiring uniform scaling (Box, Cylinder, AxisymmetricBody)
+       must not be assigned to coordinate systems with non-uniform scaling.
+    """
+    coord_status = params.private_attribute_asset_cache.coordinate_system_status
+
+    # No coordinate systems in use
+    if coord_status is None or not coord_status.assignments:
+        return params
+
+    # Entity types requiring uniform scaling
+    uniform_scale_required_types = {"Box", "Cylinder", "AxisymmetricBody"}
+
+    # Check 1: GAI requirement only for GeometryBodyGroup
+    has_geometry_body_group_assignment = False
+    for assignment_group in coord_status.assignments:
+        for entity_ref in assignment_group.entities:
+            if entity_ref.entity_type == "GeometryBodyGroup":
+                has_geometry_body_group_assignment = True
+                break
+        if has_geometry_body_group_assignment:
+            break
+
+    if has_geometry_body_group_assignment and not param_info.use_geometry_AI:
+        raise ValueError(
+            "Coordinate system assignment to GeometryBodyGroup "
+            "is only supported when Geometry AI is enabled."
+        )
+
+    # Check 2: Early validation of uniform scaling for entities that require it
+    manager = CoordinateSystemManager._from_status(  # pylint: disable=protected-access
+        status=coord_status
+    )
+
+    for assignment_group in coord_status.assignments:
+        # Get entities that require uniform scaling in this assignment
+        entities_requiring_uniform = [
+            entity_ref
+            for entity_ref in assignment_group.entities
+            if entity_ref.entity_type in uniform_scale_required_types
+        ]
+
+        if not entities_requiring_uniform:
+            continue
+
+        # Get the coordinate system and its composed matrix
+        coord_sys = manager._get_coordinate_system_by_id(  # pylint: disable=protected-access
+            assignment_group.coordinate_system_id
+        )
+        if coord_sys is None:
+            continue  # Should not happen if status is valid
+
+        matrix = manager._get_coordinate_system_matrix(  # pylint: disable=protected-access
+            coordinate_system=coord_sys
+        )
+
+        if not _is_uniform_scale(matrix):
+            scale_factors = _extract_scale_from_matrix(matrix)
+            entity_names = [f"{e.entity_type}:{e.entity_id}" for e in entities_requiring_uniform]
+            raise ValueError(
+                f"Coordinate system '{coord_sys.name}' has non-uniform scaling "
+                f"{scale_factors.tolist()}, which is incompatible with entities: "
+                f"{entity_names}. Box, Cylinder, and AxisymmetricBody only support "
+                f"uniform scaling."
+            )
+
+    return params

@@ -11,6 +11,7 @@ from flow360.component.simulation.primitives import (
     CustomVolume,
     Cylinder,
     GenericVolume,
+    MirroredSurface,
     SeedpointVolume,
     Surface,
 )
@@ -96,7 +97,7 @@ class UserDefinedDynamic(Flow360BaseModel):
         + ":code:`state[0]`, :code:`state[1]`, ..., respectively. These expressions follows similar guidelines as "
         + ":ref:`user Defined Expressions<UserDefinedExpressions>`."
     )
-    input_boundary_patches: Optional[EntityList[Surface]] = pd.Field(
+    input_boundary_patches: Optional[EntityList[Surface, MirroredSurface]] = pd.Field(
         None,
         description="The list of :class:`~flow360.Surface` entities to which the input variables belongs. "
         + "If multiple boundaries are specified then the summation over the boundaries are used as the input. "
@@ -126,7 +127,7 @@ class UserDefinedDynamic(Flow360BaseModel):
         # TODO: And therefore no need for duplicate-code override.
         # pylint: disable=protected-access
         if isinstance(value, Surface) and value._will_be_deleted_by_mesher(
-            at_least_one_body_transformed=param_info.at_least_one_body_transformed,
+            entity_transformation_detected=param_info.entity_transformation_detected,
             farfield_method=param_info.farfield_method,
             global_bounding_box=param_info.global_bounding_box,
             planar_face_tolerance=param_info.planar_face_tolerance,

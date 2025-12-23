@@ -10,8 +10,15 @@ from flow360.component.geometry import Geometry
 from flow360.component.project import Project, create_draft
 from flow360.component.simulation import migration, services
 from flow360.component.simulation import units as u
-from flow360.component.simulation.entity_operation import Transformation
+from flow360.component.simulation.draft_context.mirror import MirrorPlane
+from flow360.component.simulation.entity_operation import CoordinateSystem
 from flow360.component.simulation.folder import Folder
+from flow360.component.simulation.framework.entity_selector import (
+    BodyGroupSelector,
+    EdgeSelector,
+    SurfaceSelector,
+    VolumeSelector,
+)
 from flow360.component.simulation.meshing_param import snappy
 from flow360.component.simulation.meshing_param.edge_params import (
     AngleBasedRefinement,
@@ -123,6 +130,7 @@ from flow360.component.simulation.operating_condition.operating_condition import
     LiquidOperatingCondition,
     ThermalState,
 )
+from flow360.component.simulation.outputs import render_config
 from flow360.component.simulation.outputs.output_entities import (
     Isosurface,
     Point,
@@ -137,6 +145,8 @@ from flow360.component.simulation.outputs.outputs import (
     MovingStatistic,
     Observer,
     ProbeOutput,
+    RenderOutput,
+    RenderOutputGroup,
     SliceOutput,
     StreamlineOutput,
     SurfaceIntegralOutput,
@@ -201,6 +211,12 @@ __all__ = [
     "Env",
     "Case",
     "create_draft",
+    "CoordinateSystem",
+    "MirrorPlane",
+    "SurfaceSelector",
+    "EdgeSelector",
+    "VolumeSelector",
+    "BodyGroupSelector",
     "AngleBasedRefinement",
     "AspectRatioBasedRefinement",
     "ProjectAnisoSpacing",
@@ -327,7 +343,6 @@ __all__ = [
     "migration",
     "Water",
     "PointArray2D",
-    "Transformation",
     "WallRotation",
     "UserVariable",
     "math",
@@ -352,6 +367,9 @@ __all__ = [
     "CentralBelt",
     "WheelBelts",
     "show_available_examples",
+    "RenderOutput",
+    "RenderOutputGroup",
+    "render_config",
 ]
 
 _warn_prerelease()
