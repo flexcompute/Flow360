@@ -3,7 +3,6 @@ Support class and functions for project interface.
 """
 
 import datetime
-import os
 from typing import List, Literal, Optional, Type, TypeVar, get_args
 
 import pydantic as pd
@@ -57,37 +56,54 @@ def _apply_geometry_grouping_overrides(
 ) -> dict[str, Optional[str]]:
     """Apply explicit face/edge grouping overrides onto geometry entity info."""
 
-    def _validate_tag(new_tag: str, current_tag: str, available: list[str], kind: str) -> str:
+    # >>> 1. Select groupings to use, either from overrides or entity_info defaults.
 
+    def _select_tag(new_tag, default_tag, kind):
+        if new_tag is not None:
+            tag = new_tag
+        else:
+            log.info(
+                f"No {kind} grouping specified when creating draft; "
+                f"using {kind} grouping: {default_tag} from `new_run_from`."
+            )
+            tag = default_tag
+        return tag
+
+    face_tag = _select_tag(face_grouping, entity_info.face_group_tag, "face")
+    edge_tag = _select_tag(edge_grouping, entity_info.edge_group_tag, "edge")
+    body_group_tag = (
+        "groupByFile"
+        if "groupByFile" in entity_info.body_attribute_names
+        else entity_info.body_group_tag
+    )
+
+    # >>> 2. Validate groupings
+    def _validate_tag(tag, available: list[str], kind: str) -> str:
         if not available:
             raise Flow360ValueError(
-                f"The updated geometry does not have any {kind} groupings. Please check geometry components."
+                f"The geometry does not have any {kind} groupings. Please check geometry components."
             )
-
-        override = False if new_tag is not None else False
-        tag = new_tag if new_tag is not None else current_tag
-
-        if not override and (tag is None or tag not in available):
+        if tag not in available:
             raise Flow360ValueError(
-                f"The current {kind} grouping '{tag}' is not valid in the updated geometry. "
+                f"The current {kind} grouping '{tag}' is not valid in the geometry. "
                 f"Please specify a {kind}_grouping when creating draft. "
                 f"Available tags: {available}."
             )
-        if override and tag not in available:  # pylint:disable=unsupported-membership-test
-            raise Flow360ValueError(
-                f"Invalid {kind} grouping tag '{tag}'. Available tags: {available}."
-            )
         return tag
 
-    face_tag = _validate_tag(
-        face_grouping, entity_info.face_group_tag, entity_info.face_attribute_names, "face"
+    face_tag = _validate_tag(face_tag, entity_info.face_attribute_names, "face")
+    # face_tag must be specified either from override or entity_info default
+    assert face_tag is not None, print(
+        "[Internal] Default face grouping should be set, face tag to be applied: ", face_tag
     )
-    entity_info._group_entity_by_tag("face", face_tag)  # pylint:disable=protected-access
+    # edge_tag can be None if the geometry asset created with surface mesh
     if entity_info.edge_attribute_names:
-        edge_tag = _validate_tag(
-            edge_grouping, entity_info.edge_group_tag, entity_info.edge_attribute_names, "edge"
-        )
-        entity_info._group_entity_by_tag("edge", edge_tag)  # pylint:disable=protected-access
+        edge_tag = _validate_tag(edge_tag, entity_info.edge_attribute_names, "edge")
+
+    # >>> 3. Apply groupings
+    entity_info._group_entity_by_tag("face", face_tag)  # pylint:disable=protected-access
+    entity_info._group_entity_by_tag("edge", edge_tag)  # pylint:disable=protected-access
+    entity_info._group_entity_by_tag("body", body_group_tag)  # pylint:disable=protected-access
 
     return {
         "face": entity_info.face_group_tag,
@@ -174,25 +190,14 @@ def apply_and_inform_grouping_selections(
         return
 
     applied_grouping = _apply_geometry_grouping_overrides(entity_info, face_grouping, edge_grouping)
-    #
-    # pylint:disable = protected-access
-    ############## DEBUG only ##############
-    face_tag = applied_grouping.get("face")
-    edge_tag = applied_grouping.get("edge")
-
-    # edge_tag can be None if the geometry asset created with surface mesh
-
-    assert face_tag is not None, print(
-        "[Internal] Default should have already been set, applied_grouping: ", applied_grouping
-    )
-    ##########################################
 
     # 1. Print out the grouping used for user's convenience.
 
     log.info(
-        "Creating draft with geometry grouping:\n  faces: %s\n  edges: %s\n",
-        face_tag,
-        edge_tag,
+        "Creating draft with geometry grouping:\n  faces: %s\n  edges: %s\n  bodies: %s\n",
+        applied_grouping.get("face"),
+        applied_grouping.get("edge"),
+        applied_grouping.get("body"),
     )
 
     missing_groupings = []

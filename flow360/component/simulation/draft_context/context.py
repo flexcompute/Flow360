@@ -71,6 +71,7 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
         "_token",
     )
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         *,
