@@ -347,7 +347,7 @@ class Lighting(Flow360BaseModel):
     )
 
     @classmethod
-    def default(cls):
+    def default(cls, direction=(-1.0, -1.0, -1.0)):
         """
         Returns the default lighting configuration.
 
@@ -357,9 +357,7 @@ class Lighting(Flow360BaseModel):
         """
         return Lighting(
             ambient=AmbientLight(intensity=0.4, color=(255, 255, 255)),
-            directional=DirectionalLight(
-                intensity=1.0, color=(255, 255, 255), direction=(-1.0, -1.0, -1.0)
-            ),
+            directional=DirectionalLight(intensity=1.0, color=(255, 255, 255), direction=direction),
         )
 
 
@@ -482,7 +480,7 @@ class PBRMaterial(MaterialBase):
     color: Color = pd.Field(
         default=[255, 255, 255], description="Basic diffuse color of the material (base color)"
     )
-    alpha: float = pd.Field(
+    opacity: float = pd.Field(
         default=1,
         ge=0,
         le=1,
@@ -500,7 +498,7 @@ class PBRMaterial(MaterialBase):
     )
 
     @classmethod
-    def metal(cls, shine=0.5, alpha=1.0):
+    def metal(cls, shine=0.5, opacity=1.0):
         """
         Create a metallic PBR material.
 
@@ -509,11 +507,11 @@ class PBRMaterial(MaterialBase):
         >>> PBRMaterial.metal(shine=0.8)
         """
         return PBRMaterial(
-            color=(255, 255, 255), alpha=alpha, roughness=1 - shine, f0=(0.56, 0.56, 0.56)
+            color=(255, 255, 255), opacity=opacity, roughness=1 - shine, f0=(0.56, 0.56, 0.56)
         )
 
     @classmethod
-    def plastic(cls, shine=0.5, alpha=1.0):
+    def plastic(cls, shine=0.5, opacity=1.0):
         """
         Create a plastic PBR material.
 
@@ -522,7 +520,7 @@ class PBRMaterial(MaterialBase):
         >>> PBRMaterial.plastic(shine=0.2)
         """
         return PBRMaterial(
-            color=(255, 255, 255), alpha=alpha, roughness=1 - shine, f0=(0.03, 0.03, 0.03)
+            color=(255, 255, 255), opacity=opacity, roughness=1 - shine, f0=(0.03, 0.03, 0.03)
         )
 
 
@@ -536,7 +534,7 @@ class FieldMaterial(MaterialBase):
     """
 
     type_name: Literal["FieldMaterial"] = pd.Field("FieldMaterial", frozen=True)
-    alpha: float = pd.Field(
+    opacity: float = pd.Field(
         default=1,
         ge=0,
         le=1,
@@ -564,14 +562,6 @@ class FieldMaterial(MaterialBase):
                 "please define a UserVariable first."
             )
         return solver_variable_to_user_variable(value)
-
-    @pd.field_validator("output_field", mode="after")
-    @classmethod
-    def check_expression_length(cls, v):
-        """Ensure the output field is a scalar."""
-        if isinstance(v, UserVariable) and len(v) != 0:
-            raise ValueError(f"The output field ({v}) must be defined with a scalar variable.")
-        return v
 
     @pd.field_validator("output_field", mode="after")
     @classmethod
@@ -648,7 +638,7 @@ class FieldMaterial(MaterialBase):
         return v
 
     @classmethod
-    def rainbow(cls, field, min_value, max_value, alpha=1):
+    def rainbow(cls, field, min_value, max_value, opacity=1):
         """
         Create a rainbow-style colormap for scalar fields.
 
@@ -669,11 +659,11 @@ class FieldMaterial(MaterialBase):
 
         # Approximated from TS rainbowGradient sampling
         return FieldMaterial(
-            alpha=alpha, output_field=field, min=min_value, max=max_value, colormap=colormap
+            opacity=opacity, output_field=field, min=min_value, max=max_value, colormap=colormap
         )
 
     @classmethod
-    def orizon(cls, field, min_value, max_value, alpha=1):
+    def orizon(cls, field, min_value, max_value, opacity=1):
         """
         Create an Orizon-style (blue–orange) colormap.
 
@@ -694,11 +684,11 @@ class FieldMaterial(MaterialBase):
 
         # Approximated from TS orizonGradient sampling
         return FieldMaterial(
-            alpha=alpha, output_field=field, min=min_value, max=max_value, colormap=colormap
+            opacity=opacity, output_field=field, min=min_value, max=max_value, colormap=colormap
         )
 
     @classmethod
-    def viridis(cls, field, min_value, max_value, alpha=1):
+    def viridis(cls, field, min_value, max_value, opacity=1):
         """
         Create a Viridis colormap.
 
@@ -707,7 +697,7 @@ class FieldMaterial(MaterialBase):
         >>> FieldMaterial.viridis("vorticity")
         """
         return FieldMaterial(
-            alpha=alpha,
+            opacity=opacity,
             output_field=field,
             min=min_value,
             max=max_value,
@@ -722,7 +712,7 @@ class FieldMaterial(MaterialBase):
         )
 
     @classmethod
-    def magma(cls, field, min_value, max_value, alpha=1):
+    def magma(cls, field, min_value, max_value, opacity=1):
         """
         Create a Magma colormap.
 
@@ -731,7 +721,7 @@ class FieldMaterial(MaterialBase):
         >>> FieldMaterial.magma("density")
         """
         return FieldMaterial(
-            alpha=alpha,
+            opacity=opacity,
             output_field=field,
             min=min_value,
             max=max_value,
@@ -745,7 +735,7 @@ class FieldMaterial(MaterialBase):
         )
 
     @classmethod
-    def airflow(cls, field, min_value, max_value, alpha=1):
+    def airflow(cls, field, min_value, max_value, opacity=1):
         """
         Create an Airflow-style visualization colormap.
 
@@ -754,7 +744,7 @@ class FieldMaterial(MaterialBase):
         >>> FieldMaterial.airflow("pressure_coefficient")
         """
         return FieldMaterial(
-            alpha=alpha,
+            opacity=opacity,
             output_field=field,
             min=min_value,
             max=max_value,
