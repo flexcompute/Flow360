@@ -397,7 +397,7 @@ def _replace_with_actual_entities(
             parts.append(
                 original.copy(
                     update={
-                        "name": base_name,
+                        "name": info.full_name,
                         "private_attribute_full_name": info.full_name,
                     }
                 )
