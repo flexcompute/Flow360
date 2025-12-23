@@ -95,7 +95,10 @@ def test_update_rotating_boundaries_with_metadata():
             updated_entity.full_name
             == "intersectingCylinder/sphere.lb8.ugrid__rotating_intersectingCylinder"
         )
-        assert updated_entity.name == "sphere.lb8.ugrid__rotating_intersectingCylinder"
+        assert (
+            updated_entity.name
+            == "intersectingCylinder/sphere.lb8.ugrid__rotating_intersectingCylinder"
+        )
 
         # Verify that a new Wall model was created for the __rotating patch
         # Original model should still exist
@@ -285,7 +288,10 @@ def test_multiple_entities_partial_rotating_patches():
         other_updated = None
 
         for entity in updated_entities:
-            if entity.name == "sphere.lb8.ugrid__rotating_intersectingCylinder":
+            if (
+                entity.name
+                == "intersectingCylinder/sphere.lb8.ugrid__rotating_intersectingCylinder"
+            ):
                 sphere_updated = entity
             elif entity.name == "other_surface":
                 other_updated = entity
@@ -571,7 +577,9 @@ def test_surface_output_expanded_while_rotation_volume_filtered():
             enclosed_entities[0].full_name
             == "intersectingCylinder/blade__rotating_intersectingCylinder"
         )
-        assert enclosed_entities[0].name == "blade__rotating_intersectingCylinder"
+        assert (
+            enclosed_entities[0].name == "intersectingCylinder/blade__rotating_intersectingCylinder"
+        )
 
         # === Verify SurfaceOutput.entities is EXPANDED ===
         # Should have BOTH the farfield version AND the __rotating version
