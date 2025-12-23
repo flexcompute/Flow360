@@ -15,10 +15,13 @@ DEFAULT_TARGET_CLASS_EXPANSION_MAP: TargetClassExpansionMap = {
     "Surface": [
         "Surface",
         "MirroredSurface",
-        "GhostSurface",
-        "WindTunnelGhostSurface",
-        "GhostSphere",
-        "GhostCircularPlane",
+        # * The following types are commented out because it is easier to add more types (which does not
+        # * even trigger compatibility issue since they overwrite the stored_entities anyway) than add then remove.
+        # * We can add with front end (webUI) later if requested.
+        # "GhostSurface",
+        # "WindTunnelGhostSurface",
+        # "GhostSphere",
+        # "GhostCircularPlane",
         # Note: ImportedSurface is excluded - it's only used for post-processing
     ],
     "Edge": ["Edge"],

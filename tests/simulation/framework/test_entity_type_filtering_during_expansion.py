@@ -103,12 +103,16 @@ def test_selector_expansion_with_all_invalid_types_raises_error():
     registry = EntityRegistry()
     ghost_sphere = GhostSphere(name="ghost_sphere")
     volume = GenericVolume(name="fluid")  # Not a surface type at all
+    mirrored_surface = MirroredSurface(
+        name="Some random mirrored surface", surface_id="surface1", mirror_plane_id="plane1"
+    )  # Not a surface type at all
 
     registry.register(ghost_sphere)
     registry.register(volume)
+    registry.register(mirrored_surface)
 
     # Create EntityList[Surface] with selector matching all
-    # Selector will match GhostSphere via expansion map
+    # Selector will match mirrored_surface via expansion map
     # but EntityList[Surface] only accepts Surface
     selector = SurfaceSelector(name="all_surfaces").match("*")
 
