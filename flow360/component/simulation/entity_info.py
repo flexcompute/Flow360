@@ -730,11 +730,13 @@ def update_geometry_entity_info(
     all_body_ids = set()
     all_face_ids = set()
     all_edge_ids = set()
+    all_bodies_face_edge_ids = {}
 
     for entity_info in entity_info_components:
         all_body_ids.update(entity_info.body_ids)
         all_face_ids.update(entity_info.face_ids)
         all_edge_ids.update(entity_info.edge_ids)
+        all_bodies_face_edge_ids.update(entity_info.bodies_face_edge_ids or {})
 
     # 2. Compute intersection of attribute names from entity_info_components
     body_attr_sets = [set(ei.body_attribute_names) for ei in entity_info_components]
@@ -793,12 +795,15 @@ def update_geometry_entity_info(
                 result_bounding_box = result_bounding_box.expand(entity_info.global_bounding_box)
 
     # Build mapping of body group ID to mesh_exterior from current_entity_info
-    current_body_mesh_exterior_map = {}
+    current_body_user_settings_map = {}
     for body_group_idx, body_group_name in enumerate(current_entity_info.body_attribute_names):
-        current_body_mesh_exterior_map[body_group_name] = {}
+        current_body_user_settings_map[body_group_name] = {}
         for body in current_entity_info.grouped_bodies[body_group_idx]:
             body_id = body.private_attribute_id
-            current_body_mesh_exterior_map[body_group_name][body_id] = body.mesh_exterior
+            current_body_user_settings_map[body_group_name][body_id] = {
+                "mesh_exterior": body.mesh_exterior,
+                "name": body.name,
+            }
 
     # 5. Merge grouped entities from entity_info_components
     def merge_grouped_entities(
@@ -843,14 +848,17 @@ def update_geometry_entity_info(
                         # For bodies, check if we need to preserve mesh_exterior
                         if (
                             entity_type == "body"
-                            and attr_name in current_body_mesh_exterior_map
-                            and entity_id in current_body_mesh_exterior_map[attr_name]
+                            and attr_name in current_body_user_settings_map
+                            and entity_id in current_body_user_settings_map[attr_name]
                         ):
                             # Create a copy with preserved mesh_exterior
                             entity_data = entity.model_dump()
-                            entity_data["mesh_exterior"] = current_body_mesh_exterior_map[
+                            entity_data["mesh_exterior"] = current_body_user_settings_map[
                                 attr_name
-                            ][entity_id]
+                            ][entity_id]["mesh_exterior"]
+                            entity_data["name"] = current_body_user_settings_map[attr_name][
+                                entity_id
+                            ]["name"]
                             entity_map[entity_id] = GeometryBodyGroup.model_validate(entity_data)
                         else:
                             entity_map[entity_id] = entity
@@ -869,6 +877,7 @@ def update_geometry_entity_info(
 
     # Create the result GeometryEntityInfo
     result = GeometryEntityInfo(
+        bodies_face_edge_ids=all_bodies_face_edge_ids,
         body_ids=sorted(all_body_ids),
         body_attribute_names=result_body_attribute_names,
         grouped_bodies=result_grouped_bodies,
