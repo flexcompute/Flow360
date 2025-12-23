@@ -257,7 +257,7 @@ def create_draft(
     return DraftContext(
         entity_info=entity_info_copy,
         imported_surface_components=imported_surface_components,
-        imported_geometry_components=imported_geometry_components,
+        imported_geometry_components=list(imported_geometry_components.values()),
     )
 
 

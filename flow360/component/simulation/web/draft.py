@@ -146,12 +146,13 @@ class Draft(Flow360Resource):
     def enable_dependency_resources(self, active_draft):
         """Enable dependency resources for the draft"""
 
-        geometry_dependencies = []
-        surface_mesh_dependencies = []
-        for geometry in active_draft.imported_geometry_components:
-            geometry_dependencies.append(geometry.id)
-        for surface in active_draft.imported_surface_components:
-            surface_mesh_dependencies.append(surface.surface_mesh_id)
+        geometry_dependencies = [
+            geometry.id for geometry in active_draft.imported_geometry_components
+        ]
+
+        surface_mesh_dependencies = [
+            surface.surface_mesh_id for surface in active_draft.imported_surface_components
+        ]
 
         self.put(
             json={

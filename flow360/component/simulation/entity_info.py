@@ -771,8 +771,6 @@ def update_geometry_entity_info(
                 for entity in entity_groups[idx]:
                     # Use private_attribute_id as the unique identifier
                     entity_id = entity.private_attribute_id
-                    if entity_type == "body":
-                        print(entity_id)
                     if entity_id not in entity_map:
                         # For bodies, check if we need to preserve mesh_exterior
                         if (

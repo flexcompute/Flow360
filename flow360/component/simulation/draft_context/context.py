@@ -87,13 +87,17 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
         # This builds the registry by referencing entities from our copied entity_info.
         self._entity_registry: EntityRegistry = EntityRegistry.from_entity_info(entity_info)
 
-        self._imported_surface_components = imported_surface_components
+        self._imported_surface_components: List = (
+            imported_surface_components if imported_surface_components else []
+        )
         known_frozen_hashes = set()
         for imported_surface in self._imported_surface_components:
             known_frozen_hashes = self._entity_registry.fast_register(
                 imported_surface, known_frozen_hashes
             )
-        self._imported_geometry_components = imported_geometry_components
+        self._imported_geometry_components: List = (
+            imported_geometry_components if imported_geometry_components else []
+        )
 
     def __enter__(self) -> DraftContext:
         if get_active_draft() is not None:
