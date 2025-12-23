@@ -46,6 +46,7 @@ from flow360.component.simulation.primitives import (
     GhostSphere,
     GhostSurface,
     ImportedSurface,
+    MirroredSurface,
     Surface,
     WindTunnelGhostSurface,
 )
@@ -313,8 +314,9 @@ class SurfaceOutput(_AnimationAndFileFormatSettings, _OutputBase):
     # TODO: entities is None --> use all surfaces. This is not implemented yet.
 
     name: Optional[str] = pd.Field("Surface output", description="Name of the `SurfaceOutput`.")
-    entities: EntityListAllowingGhost[
+    entities: EntityListAllowingGhost[  # pylint: disable=duplicate-code
         Surface,
+        MirroredSurface,
         GhostSurface,
         WindTunnelGhostSurface,
         GhostCircularPlane,
@@ -628,13 +630,12 @@ class SurfaceIntegralOutput(_OutputBase):
     Note
     ----
     :class:`SurfaceIntegralOutput` can only be used with :class:`UserDefinedField`.
-    See :ref:`User Defined Postprocessing Tutorial <UserDefinedPostprocessing>` for more details
-    about how to set up :class:`UserDefinedField`.
+    See :doc:`User Defined Postprocessing Tutorial </python_api/example_library/notebooks/hinge_torques>`
+    for more details about how to set up :class:`UserDefinedField`.
 
     Example
     -------
-    Define :class:`SurfaceIntegralOutput` of :code:`PressureForce` as set up in this
-    :ref:`User Defined Postprocessing Tutorial Case <UDFSurfIntegral>`.
+    Define :class:`SurfaceIntegralOutput` of :code:`PressureForce`.
 
     >>> fl.SurfaceIntegralOutput(
     ...     name="surface_integral",
@@ -646,8 +647,9 @@ class SurfaceIntegralOutput(_OutputBase):
     """
 
     name: str = pd.Field("Surface integral output", description="Name of integral.")
-    entities: EntityListAllowingGhost[
+    entities: EntityListAllowingGhost[  # pylint: disable=duplicate-code
         Surface,
+        MirroredSurface,
         GhostSurface,
         WindTunnelGhostSurface,
         GhostCircularPlane,
@@ -718,7 +720,7 @@ class RenderOutputGroup(Flow360BaseModel):
 
     """
 
-    surfaces: Optional[EntityList[Surface]] = pd.Field(
+    surfaces: Optional[EntityList[Surface, MirroredSurface]] = pd.Field(
         None, description="List of of :class:`~flow360.Surface` entities."
     )
     slices: Optional[EntityList[Slice]] = pd.Field(
@@ -740,7 +742,9 @@ class RenderOutputGroup(Flow360BaseModel):
     @contextual_model_validator(mode="after")
     def check_not_empty(self, param_info: ParamsValidationInfo):
         """Verify the render group has at least one entity assigned to it"""
-        expanded_surfaces = param_info.expand_entity_list(self.surfaces)
+        expanded_surfaces = (
+            param_info.expand_entity_list(self.surfaces) if self.surfaces is not None else None
+        )
         if not expanded_surfaces and not self.slices and not self.isosurfaces:
             raise ValueError(
                 "Render group should include at least one entity (surface, slice or isosurface)"
@@ -788,6 +792,7 @@ class RenderOutput(_AnimationSettings):
         None, description="Optional model transform to apply to all entities"
     )
     output_type: Literal["RenderOutput"] = pd.Field("RenderOutput", frozen=True)
+    private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
 
     @pd.field_validator("groups", mode="after")
     @classmethod
@@ -912,7 +917,7 @@ class SurfaceProbeOutput(_OutputBase):
         + "is used to define monitored points along a line.",
     )
     # Maybe add preprocess for this and by default add all Surfaces?
-    target_surfaces: EntityList[Surface, WindTunnelGhostSurface] = pd.Field(
+    target_surfaces: EntityList[Surface, MirroredSurface, WindTunnelGhostSurface] = pd.Field(
         description="List of :class:`~flow360.component.simulation.primitives.Surface` "
         + "entities belonging to this monitor group."
     )
@@ -943,7 +948,7 @@ class SurfaceSliceOutput(_AnimationAndFileFormatSettings, _OutputBase):
         alias="slices", description="List of :class:`Slice` entities."
     )
     # Maybe add preprocess for this and by default add all Surfaces?
-    target_surfaces: EntityList[Surface, WindTunnelGhostSurface] = pd.Field(
+    target_surfaces: EntityList[Surface, MirroredSurface, WindTunnelGhostSurface] = pd.Field(
         description="List of :class:`Surface` entities on which the slice will cut through."
     )
 

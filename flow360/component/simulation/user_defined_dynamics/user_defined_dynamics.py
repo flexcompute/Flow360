@@ -11,6 +11,7 @@ from flow360.component.simulation.primitives import (
     CustomVolume,
     Cylinder,
     GenericVolume,
+    MirroredSurface,
     SeedpointVolume,
     Surface,
 )
@@ -26,11 +27,11 @@ from flow360.component.simulation.validation.validation_utils import (
 class UserDefinedDynamic(Flow360BaseModel):
     """
     :class:`UserDefinedDynamic` class for defining the user defined dynamics inputs.
+    Please refer to :doc:`this example </python_api/example_library/notebooks/udd_alpha_controller>`
+    for an implementation example.
 
     Example
     -------
-    The following example comes from the :ref:`User Defined Dynamics Tutorial Case <UDDGridRotation>`.
-    Please refer to :ref:`this tutorial<userDefinedDynamics>` for more details about the User Defined Dynamics.
 
     >>> fl.UserDefinedDynamic(
     ...    name="dynamicTheta",
@@ -83,7 +84,7 @@ class UserDefinedDynamic(Flow360BaseModel):
         + "velocity/acceleration in radians for sliding interfaces). For a full list of supported variable, see "
         + ":ref:`here <SupportedVariablesInUserExpression_>`. Please exercise caution when choosing output "
         + "variables, as any modifications to their values will be directly mirrored in the solver. Expressions "
-        + "follows similar guidelines as :ref:`User Defined Expressions<userDefinedExpressionsKnowledgeBase>`.",
+        + "follows similar guidelines as :ref:`User Defined Expressions<UserDefinedExpressions>`.",
     )
     state_vars_initial_value: List[StringExpression] = pd.Field(
         description="The initial value of state variables are specified here. The entries could be either values "
@@ -94,9 +95,9 @@ class UserDefinedDynamic(Flow360BaseModel):
     update_law: List[StringExpression] = pd.Field(
         "List of expressions for updating state variables. The list entries correspond to the update laws for "
         + ":code:`state[0]`, :code:`state[1]`, ..., respectively. These expressions follows similar guidelines as "
-        + ":ref:`user Defined Expressions<userDefinedExpressionsKnowledgeBase>`."
+        + ":ref:`user Defined Expressions<UserDefinedExpressions>`."
     )
-    input_boundary_patches: Optional[EntityList[Surface]] = pd.Field(
+    input_boundary_patches: Optional[EntityList[Surface, MirroredSurface]] = pd.Field(
         None,
         description="The list of :class:`~flow360.Surface` entities to which the input variables belongs. "
         + "If multiple boundaries are specified then the summation over the boundaries are used as the input. "
@@ -126,7 +127,7 @@ class UserDefinedDynamic(Flow360BaseModel):
         # TODO: And therefore no need for duplicate-code override.
         # pylint: disable=protected-access
         if isinstance(value, Surface) and value._will_be_deleted_by_mesher(
-            at_least_one_body_transformed=param_info.at_least_one_body_transformed,
+            entity_transformation_detected=param_info.entity_transformation_detected,
             farfield_method=param_info.farfield_method,
             global_bounding_box=param_info.global_bounding_box,
             planar_face_tolerance=param_info.planar_face_tolerance,

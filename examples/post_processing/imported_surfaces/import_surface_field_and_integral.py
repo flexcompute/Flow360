@@ -4,7 +4,8 @@ from flow360.examples import ObliqueChannel
 ObliqueChannel.get_files()
 
 project = fl.Project.from_volume_mesh(
-    ObliqueChannel.mesh_filename, name="Cartesian channel mesh",
+    ObliqueChannel.mesh_filename,
+    name="Cartesian channel mesh",
 )
 
 volume_mesh = project.volume_mesh

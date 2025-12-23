@@ -102,6 +102,7 @@ from flow360.component.simulation.validation.validation_simulation_params import
     _check_complete_boundary_condition_and_unknown_surface,
     _check_consistency_hybrid_model_volume_output,
     _check_consistency_wall_function_and_surface_output,
+    _check_coordinate_system_constraints,
     _check_duplicate_actuator_disk_cylinder_names,
     _check_duplicate_entities_in_models,
     _check_duplicate_isosurface_names,
@@ -115,6 +116,7 @@ from flow360.component.simulation.validation.validation_simulation_params import
     _check_unsteadiness_to_use_hybrid_model,
     _check_valid_models_for_liquid,
 )
+from flow360.component.simulation.validation.validation_utils import has_mirroring_usage
 from flow360.error_messages import (
     unit_system_inconsistent_msg,
     use_unit_system_for_simulation_msg,
@@ -604,6 +606,19 @@ class SimulationParams(_ParamModelBase):
     def check_time_average_output(params):
         """Only allow TimeAverage output field in the unsteady simulations"""
         return _check_time_average_output(params)
+
+    @contextual_model_validator(mode="after")
+    def _validate_coordinate_system_constraints(self, param_info: ParamsValidationInfo):
+        """Validate coordinate system usage constraints."""
+        return _check_coordinate_system_constraints(self, param_info)
+
+    @contextual_model_validator(mode="after")
+    def _validate_mirroring_requires_geometry_ai(self, param_info: ParamsValidationInfo):
+        """Ensure mirroring is only used when GeometryAI is enabled."""
+        if has_mirroring_usage(self.private_attribute_asset_cache):
+            if not param_info.use_geometry_AI:
+                raise ValueError("Mirroring is only supported when Geometry AI is enabled.")
+        return self
 
     def _register_assigned_entities(self, registry: EntityRegistry) -> EntityRegistry:
         """Recursively register all entities listed in EntityList to the asset cache."""

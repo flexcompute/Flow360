@@ -292,7 +292,7 @@ def snappy_mesher_json(input_params: SimulationParams):
 
     # extract geometry information in body: {patch0, ...} format
     bodies = {}
-    for face_id in input_params.private_attribute_asset_cache.project_entity_info.face_ids:
+    for face_id in input_params.private_attribute_asset_cache.project_entity_info.all_face_ids:
         solid = face_id.split("::")
         if solid[0] not in bodies:
             bodies[solid[0]] = set()
@@ -417,7 +417,7 @@ def snappy_mesher_json(input_params: SimulationParams):
             "minArea": (
                 quality_settings.min_face_area.value.item()
                 if quality_settings.min_face_area
-                else -1
+                else (1e-12 if quality_settings.min_face_area is None else -1)
             ),
             "minTwist": (quality_settings.min_twist if quality_settings.min_twist else -2),
             "minDeterminant": (
@@ -549,7 +549,7 @@ def legacy_mesher_json(input_params: SimulationParams):
         input_params.private_attribute_asset_cache.project_entity_info, GeometryEntityInfo
     )
 
-    for face_id in input_params.private_attribute_asset_cache.project_entity_info.face_ids:
+    for face_id in input_params.private_attribute_asset_cache.project_entity_info.all_face_ids:
         if face_id not in face_config:
             face_config[face_id] = {"maxEdgeLength": default_max_edge_length}
 
@@ -595,6 +595,84 @@ def _get_volume_zones(volume_zones_list: list[dict]):
             "RotationVolume",
         )
     ]
+
+
+def _filter_mirror_status(data):
+    """Process mirror_status to ensure idempotency while preserving mirroring relationships.
+
+    Strategy:
+    - For mirror planes: Replace UUID-based private_attribute_id with deterministic "mirror-{name}"
+    - For mirrored entities: Strip their own private_attribute_id, but keep mirror_plane_id
+      and update it to match the deterministic format
+
+    This preserves the relationship between mirrored entities and their mirror planes
+    while ensuring the translation is idempotent.
+    """
+    if not isinstance(data, dict):
+        return data
+
+    result = {}
+    uuid_to_deterministic = {}
+
+    # Process mirror_planes: replace private_attribute_id with deterministic ID
+    if "mirror_planes" in data:
+        result["mirror_planes"] = []
+        for plane in data["mirror_planes"]:
+            if not isinstance(plane, dict):
+                result["mirror_planes"].append(plane)
+                continue
+
+            plane_copy = plane.copy()
+            old_id = plane_copy.get("private_attribute_id")
+            name = plane_copy.get("name")
+
+            if old_id and name:
+                new_id = f"mirror-{name}"
+                uuid_to_deterministic[old_id] = new_id
+                plane_copy["private_attribute_id"] = new_id
+
+            result["mirror_planes"].append(plane_copy)
+
+    # Process mirrored_geometry_body_groups: remove private_attribute_id, update mirror_plane_id
+    if "mirrored_geometry_body_groups" in data:
+        result["mirrored_geometry_body_groups"] = []
+        for entity in data["mirrored_geometry_body_groups"]:
+            if not isinstance(entity, dict):
+                result["mirrored_geometry_body_groups"].append(entity)
+                continue
+
+            entity_copy = {k: v for k, v in entity.items() if k != "private_attribute_id"}
+            if "mirror_plane_id" in entity_copy:
+                old_plane_id = entity_copy["mirror_plane_id"]
+                entity_copy["mirror_plane_id"] = uuid_to_deterministic.get(
+                    old_plane_id, old_plane_id
+                )
+
+            result["mirrored_geometry_body_groups"].append(entity_copy)
+
+    # Process mirrored_surfaces: remove private_attribute_id, update mirror_plane_id
+    if "mirrored_surfaces" in data:
+        result["mirrored_surfaces"] = []
+        for entity in data["mirrored_surfaces"]:
+            if not isinstance(entity, dict):
+                result["mirrored_surfaces"].append(entity)
+                continue
+
+            entity_copy = {k: v for k, v in entity.items() if k != "private_attribute_id"}
+            if "mirror_plane_id" in entity_copy:
+                old_plane_id = entity_copy["mirror_plane_id"]
+                entity_copy["mirror_plane_id"] = uuid_to_deterministic.get(
+                    old_plane_id, old_plane_id
+                )
+
+            result["mirrored_surfaces"].append(entity_copy)
+
+    # Copy over any other keys that might exist
+    for k, v in data.items():
+        if k not in result:
+            result[k] = v
+
+    return result
 
 
 def _get_gai_setting_whitelist(input_params: SimulationParams) -> dict:
@@ -648,7 +726,8 @@ def _get_gai_setting_whitelist(input_params: SimulationParams) -> dict:
                 "body_group_tag": None,
                 "body_attribute_names": None,
                 "grouped_bodies": None,
-            }
+            },
+            "mirror_status": _filter_mirror_status,
         },
     }
 
@@ -681,13 +760,112 @@ def _traverse_and_filter(data, whitelist):
     return data
 
 
-def filter_simulation_json(input_params: SimulationParams):
+def _inject_body_group_transformations_for_mesher(
+    *, json_data: dict, input_params: SimulationParams, mesh_unit  # pylint: disable=unused-argument
+) -> None:
+    """
+    Inject body-group transformation payload expected by the mesher.
+
+    The user-facing `GeometryBodyGroup.transformation` field has been removed. Mesher translation
+    still needs per-body-group 3x4 transformation matrices; those are now sourced from coordinate
+    system assignments.
+
+    Only the `private_attribute_matrix` field is injected - the mesher only needs the final
+    transformation matrix, not the intermediate parameters (origin, axis_of_rotation, etc.).
+    """
+    # pylint: disable=import-outside-toplevel
+    from flow360.component.simulation.draft_context.coordinate_system_manager import (
+        CoordinateSystemManager,
+    )
+
+    asset_cache = input_params.private_attribute_asset_cache
+    project_entity_info = asset_cache.project_entity_info
+    if project_entity_info is None or not isinstance(project_entity_info, GeometryEntityInfo):
+        return
+
+    entity_info_dict = json_data.get("private_attribute_asset_cache", {}).get(
+        "project_entity_info", None
+    )
+    if not isinstance(entity_info_dict, dict):
+        return
+
+    grouped_bodies = entity_info_dict.get("grouped_bodies", None)
+    if not isinstance(grouped_bodies, list):
+        return
+
+    body_group_tag = entity_info_dict.get("body_group_tag") or project_entity_info.body_group_tag
+    body_attribute_names = (
+        entity_info_dict.get("body_attribute_names") or project_entity_info.body_attribute_names
+    )
+    selected_group_index = None
+    if (
+        isinstance(body_group_tag, str)
+        and isinstance(body_attribute_names, list)
+        and body_group_tag in body_attribute_names
+    ):
+        selected_group_index = body_attribute_names.index(body_group_tag)
+
+    cs_mgr = CoordinateSystemManager._from_status(  # pylint: disable=protected-access
+        status=asset_cache.coordinate_system_status
+    )
+
+    identity_matrix_row_major = [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+    ]
+
+    for i_group, body_groups in enumerate(grouped_bodies):
+        if not isinstance(body_groups, list):
+            continue
+        for body_group in body_groups:
+            if not isinstance(body_group, dict):
+                continue
+
+            # For the selected grouping, inject only the transformation matrix.
+            # The mesher only needs the final 3x4 matrix, not the intermediate parameters.
+            if selected_group_index is None or i_group != selected_group_index:
+                # For non-selected groupings, remove any existing transformation data
+                body_group.pop("transformation", None)
+                continue
+
+            entity_type = body_group.get("private_attribute_entity_type_name")
+            entity_id = body_group.get("private_attribute_id")
+
+            matrix = None
+            if isinstance(entity_type, str) and isinstance(entity_id, str):
+                matrix_nd = cs_mgr._get_matrix_for_entity_key(  # pylint: disable=protected-access
+                    entity_type=entity_type, entity_id=entity_id
+                )
+                if matrix_nd is not None:
+                    matrix = matrix_nd.flatten().tolist()
+
+            # Only include the matrix - no redundant transformation parameters
+            body_group["transformation"] = {
+                "private_attribute_matrix": identity_matrix_row_major if matrix is None else matrix
+            }
+
+
+def filter_simulation_json(input_params: SimulationParams, mesh_units):
     """
     Filter the simulation JSON to only include the GAI surface meshing parameters.
     """
 
     # Get the JSON from the input_params
     json_data = input_params.model_dump(mode="json", exclude_none=True)
+
+    _inject_body_group_transformations_for_mesher(
+        json_data=json_data, input_params=input_params, mesh_unit=mesh_units
+    )
 
     # Generate whitelist based on simulation context
     whitelist = _get_gai_setting_whitelist(input_params)
@@ -717,6 +895,5 @@ def get_surface_meshing_json(input_params: SimulationParams, mesh_units):
         )
 
     # === GAI mode ===
-    input_params.private_attribute_asset_cache.project_entity_info.compute_transformation_matrices()
     # Just do a filtering of the input_params's JSON
-    return filter_simulation_json(input_params)
+    return filter_simulation_json(input_params, mesh_units)
