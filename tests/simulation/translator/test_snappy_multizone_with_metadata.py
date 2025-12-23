@@ -126,4 +126,3 @@ def test_snappy_boundary_breaking_into_multiple_pieces_translation():
                 f"Expected (from prime '{boundary_name}'): {expected_value}\n"
                 f"Got: {translated_boundaries[translated_boundary_name]}"
             )
-    
