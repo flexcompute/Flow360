@@ -3,7 +3,6 @@ Support class and functions for project interface.
 """
 
 import datetime
-import os
 from typing import List, Literal, Optional, get_args
 
 import pydantic as pd
@@ -36,7 +35,6 @@ from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.user_code.core.types import save_user_variables
 from flow360.component.simulation.utils import model_attribute_unlock
-from flow360.component.surface_mesh_v2 import SurfaceMeshV2
 from flow360.component.utils import parse_datetime
 from flow360.exceptions import Flow360ConfigurationError, Flow360ValueError
 from flow360.log import log
@@ -49,18 +47,36 @@ def apply_geometry_grouping_overrides(
 ) -> dict[str, Optional[str]]:
     """Apply explicit face/edge grouping overrides onto geometry entity info."""
 
-    def _validate_tag(tag: str, available: list[str], kind: str) -> str:
-        if available and tag not in available:  # pylint:disable=unsupported-membership-test
+    def _validate_tag(new_tag: str, current_tag: str, available: list[str], kind: str) -> str:
+
+        if not available:
+            raise Flow360ValueError(
+                f"The updated geometry does not have any {kind} groupings. Please check geometry components."
+            )
+
+        override = False if new_tag is not None else False
+        tag = new_tag if new_tag is not None else current_tag
+
+        if not override and (tag is None or tag not in available):
+            raise Flow360ValueError(
+                f"The current {kind} grouping '{tag}' is not valid in the updated geometry. "
+                f"Please specify a {kind}_grouping when creating draft. "
+                f"Available tags: {available}."
+            )
+        if override and tag not in available:  # pylint:disable=unsupported-membership-test
             raise Flow360ValueError(
                 f"Invalid {kind} grouping tag '{tag}'. Available tags: {available}."
             )
         return tag
 
-    if face_grouping is not None:
-        face_tag = _validate_tag(face_grouping, entity_info.face_attribute_names, "face")
-        entity_info._group_entity_by_tag("face", face_tag)  # pylint:disable=protected-access
-    if edge_grouping is not None and entity_info.edge_attribute_names:
-        edge_tag = _validate_tag(edge_grouping, entity_info.edge_attribute_names, "edge")
+    face_tag = _validate_tag(
+        face_grouping, entity_info.face_group_tag, entity_info.face_attribute_names, "face"
+    )
+    entity_info._group_entity_by_tag("face", face_tag)  # pylint:disable=protected-access
+    if entity_info.edge_attribute_names:
+        edge_tag = _validate_tag(
+            edge_grouping, entity_info.edge_group_tag, entity_info.edge_attribute_names, "edge"
+        )
         entity_info._group_entity_by_tag("edge", edge_tag)  # pylint:disable=protected-access
 
     return {
@@ -273,6 +289,30 @@ def _set_up_params_non_persistent_entity_info(entity_info, params: SimulationPar
             if draft_entity not in entity_info.draft_entities:
                 entity_info.draft_entities.append(draft_entity)
     return entity_info
+
+
+def _set_up_params_imported_surfaces(params: SimulationParams):
+    """
+    Setting up imported_surfaces in params.
+    Add the ones used to the outputs.
+    """
+
+    if not params.outputs:
+        return params
+
+    imported_surfaces = {}
+
+    for output in params.outputs:
+        if not isinstance(output, (SurfaceOutput, SurfaceIntegralOutput)):
+            continue
+        for surface in output.entities.stored_entities:
+            if isinstance(surface, ImportedSurface) and surface.name not in imported_surfaces:
+                imported_surfaces[surface.name] = surface
+
+    with model_attribute_unlock(params.private_attribute_asset_cache, "imported_surfaces"):
+        params.private_attribute_asset_cache.imported_surfaces = list(imported_surfaces.values())
+
+    return params
 
 
 def _merge_draft_entities_from_params(
@@ -526,6 +566,9 @@ def set_up_params_for_uploading(  # pylint: disable=too-many-arguments
     # Convert all reference of UserVariables to VariableToken
     params = save_user_variables(params)
 
+    # Set up imported surfaces in params
+    params = _set_up_params_imported_surfaces(params)
+
     # Strip selector-matched entities from stored_entities before upload so that hand-picked
     # entities remain distinguishable on the UI side.
     strip_selector_matches_inplace(params)
@@ -549,96 +592,3 @@ def validate_params_with_context(params, root_item_type, up_to):
     )
 
     return params, errors
-
-
-def _get_imported_surface_file_names(params, basename_only=False):
-    if params is None or params.outputs is None:
-        return []
-    imported_surface_files = []
-    for output in params.outputs:
-        if isinstance(output, (SurfaceOutput, SurfaceIntegralOutput)):
-            for surface in output.entities.stored_entities:
-                if isinstance(surface, ImportedSurface):
-                    if basename_only:
-                        imported_surface_files.append(os.path.basename(surface.file_name))
-                    else:
-                        imported_surface_files.append(surface.file_name)
-    return imported_surface_files
-
-
-def upload_imported_surfaces_to_draft(params, draft, parent_case):
-    """
-    Upload imported surfaces to draft, excluding duplicates from parent case.
-
-    Note:
-        - If parent_case is None, all surfaces from params will be uploaded.
-        - Only surfaces not present in the parent case are uploaded.
-    """
-
-    parent_existing_imported_file_basenames = []
-    if parent_case is not None:
-        parent_existing_imported_file_basenames = _get_imported_surface_file_names(
-            parent_case.params, basename_only=True
-        )
-    current_draft_surface_file_paths_to_import = _get_imported_surface_file_names(params)
-    deduplicated_surface_file_paths_to_import = []
-    for file_path_to_import in current_draft_surface_file_paths_to_import:
-        file_basename = os.path.basename(file_path_to_import)
-        if file_basename not in parent_existing_imported_file_basenames:
-            deduplicated_surface_file_paths_to_import.append(
-                {"path": file_path_to_import, "basename": file_basename}
-            )
-
-    if not deduplicated_surface_file_paths_to_import:
-        _normalize_imported_surface_entities(params)
-        return
-
-    response = draft.post(
-        json={
-            "filenames": [entry["basename"] for entry in deduplicated_surface_file_paths_to_import]
-        },
-        method="imported-surfaces",
-    )
-
-    basename_to_surface_mesh_ids: dict[str, list[str]] = {}
-    for entry, resp in zip(deduplicated_surface_file_paths_to_import, response):
-        surface_mesh_id = resp.get("surfaceMeshId")
-        _upload_surface_mesh_resource(
-            surface_mesh_id=surface_mesh_id,
-            local_file_path=entry["path"],
-        )
-        basename_to_surface_mesh_ids.setdefault(entry["basename"], []).append(surface_mesh_id)
-
-    _normalize_imported_surface_entities(params, basename_to_surface_mesh_ids)
-
-
-def _upload_surface_mesh_resource(surface_mesh_id: str, local_file_path: str):
-    if not surface_mesh_id:
-        raise Flow360ConfigurationError("Surface mesh metadata missing for imported surface upload.")
-    surface_mesh = SurfaceMeshV2(surface_mesh_id)
-    remote_file_name = surface_mesh.info.file_name
-    surface_mesh._webapi._upload_file(remote_file_name=remote_file_name, file_name=local_file_path)
-    surface_mesh._webapi._complete_upload()
-
-
-def _normalize_imported_surface_entities(
-    params: SimulationParams, basename_to_surface_mesh_ids: dict[str, list[str]] | None = None
-):
-    if params is None or params.outputs is None:
-        return
-
-    basename_to_iter = {}
-    if basename_to_surface_mesh_ids:
-        basename_to_iter = {
-            basename: iter(mesh_ids) for basename, mesh_ids in basename_to_surface_mesh_ids.items()
-        }
-
-    for output in params.outputs:
-        if isinstance(output, (SurfaceOutput, SurfaceIntegralOutput)):
-            for surface in output.entities.stored_entities:
-                if isinstance(surface, ImportedSurface):
-                    file_basename = os.path.basename(surface.file_name)
-                    surface.file_name = file_basename
-                    iterator = basename_to_iter.get(file_basename)
-                    if iterator is not None:
-                        surface.surface_mesh_id = next(iterator, surface.surface_mesh_id)

@@ -155,7 +155,6 @@ class GeometryEntityInfo(EntityInfoModel):
         description="The default value based on uploaded geometry for geometry_accuracy.",
     )
 
-
     def group_in_registry(
         self,
         entity_type_name: Literal["face", "edge", "body", "snappy_body"],
@@ -629,3 +628,195 @@ def parse_entity_info_model(data) -> EntityInfoUnion:
     # TODO: Add a fast mode by popping entities that are not needed due to wrong grouping tags before deserialization.
     """
     return pd.TypeAdapter(EntityInfoUnion).validate_python(data)
+
+
+def update_geometry_entity_info(
+    current_entity_info: GeometryEntityInfo,
+    entity_info_components: List[GeometryEntityInfo],
+) -> GeometryEntityInfo:
+    """
+    Update a GeometryEntityInfo by including/merging data from a list of other GeometryEntityInfo objects.
+
+    Args:
+        current_entity_info: Used as reference to preserve user settings such as group tags,
+            mesh_exterior, attribute name order.
+        entity_info_components: List of GeometryEntityInfo objects that contain all data for the new entity info
+
+    Returns:
+        A new GeometryEntityInfo with merged data from entity_info_components, preserving user settings from current
+
+    The merge logic:
+    1. IDs: Union of body_ids, face_ids, edge_ids from entity_info_components
+    2. Attribute names: Intersection of attribute_names from entity_info_components
+    3. Group tags: Use tags from current_entity_info
+    4. Bounding box: Merge global bounding boxes from entity_info_components
+    5. Grouped entities: Merge from entity_info_components,
+        preserving mesh_exterior from current_entity_info for grouped_bodies
+    6. Draft and Ghost entities: Preserve from current_entity_info.
+    """
+    # pylint: disable=too-many-locals, too-many-statements
+    if not entity_info_components:
+        raise ValueError("entity_info_components cannot be empty")
+
+    # 1. Compute union of IDs from entity_info_components
+    all_body_ids = set()
+    all_face_ids = set()
+    all_edge_ids = set()
+
+    for entity_info in entity_info_components:
+        all_body_ids.update(entity_info.body_ids)
+        all_face_ids.update(entity_info.face_ids)
+        all_edge_ids.update(entity_info.edge_ids)
+
+    # 2. Compute intersection of attribute names from entity_info_components
+    body_attr_sets = [set(ei.body_attribute_names) for ei in entity_info_components]
+    face_attr_sets = [set(ei.face_attribute_names) for ei in entity_info_components]
+    edge_attr_sets = [set(ei.edge_attribute_names) for ei in entity_info_components]
+
+    body_attr_intersection = set.intersection(*body_attr_sets) if body_attr_sets else set()
+    face_attr_intersection = set.intersection(*face_attr_sets) if face_attr_sets else set()
+    edge_attr_intersection = set.intersection(*edge_attr_sets) if edge_attr_sets else set()
+
+    # Preserve order from current_entity_info, but include all attributes from intersection
+    def ordered_intersection(reference_list: List[str], intersection_set: set) -> List[str]:
+        """Return all attributes from intersection_set, preserving order from reference_list where possible."""
+        # First, add attributes that exist in reference_list (in order)
+        result = [attr for attr in reference_list if attr in intersection_set]
+        # Then, add remaining attributes from intersection_set that weren't in reference_list (sorted)
+        remaining = sorted(intersection_set - set(result))
+        return result + remaining
+
+    result_body_attribute_names = ordered_intersection(
+        current_entity_info.body_attribute_names, body_attr_intersection
+    )
+    result_face_attribute_names = ordered_intersection(
+        current_entity_info.face_attribute_names, face_attr_intersection
+    )
+    result_edge_attribute_names = ordered_intersection(
+        current_entity_info.edge_attribute_names, edge_attr_intersection
+    )
+
+    # 3. Update group tags: preserve from current if exists in intersection, otherwise use first
+    def select_tag(
+        current_tag: Optional[str], result_attrs: List[str], entity_type: str
+    ) -> Optional[str]:
+        if not result_attrs:
+            raise ValueError(f"No attribute names available to select {entity_type} group tag.")
+        log.info(f"Preserving {entity_type} group tag: {current_tag}")
+        return current_tag
+
+    result_body_group_tag = select_tag(
+        current_entity_info.body_group_tag, result_body_attribute_names, "body"
+    )
+    result_face_group_tag = select_tag(
+        current_entity_info.face_group_tag, result_face_attribute_names, "face"
+    )
+    result_edge_group_tag = select_tag(
+        current_entity_info.edge_group_tag, result_edge_attribute_names, "edge"
+    )
+
+    # 4. Merge global bounding boxes from entity_info_components
+    result_bounding_box = None
+    for entity_info in entity_info_components:
+        if entity_info.global_bounding_box is not None:
+            if result_bounding_box is None:
+                result_bounding_box = entity_info.global_bounding_box
+            else:
+                result_bounding_box = result_bounding_box.expand(entity_info.global_bounding_box)
+
+    # Build mapping of body group ID to mesh_exterior from current_entity_info
+    current_body_mesh_exterior_map = {}
+    for body_group_idx, body_group_name in enumerate(current_entity_info.body_attribute_names):
+        current_body_mesh_exterior_map[body_group_name] = {}
+        for body in current_entity_info.grouped_bodies[body_group_idx]:
+            body_id = body.private_attribute_id
+            current_body_mesh_exterior_map[body_group_name][body_id] = body.mesh_exterior
+
+    # 5. Merge grouped entities from entity_info_components
+    def merge_grouped_entities(
+        entity_type: Literal["body", "face", "edge"],
+        result_attr_names: List[str],
+    ):
+        """Helper to merge grouped entities (bodies, faces, or edges) from entity_info_components"""
+
+        # Determine which attributes to access based on entity type
+        def get_attrs(entity_info):
+            if entity_type == "body":
+                return entity_info.body_attribute_names
+            if entity_type == "face":
+                return entity_info.face_attribute_names
+            return entity_info.edge_attribute_names
+
+        def get_groups(entity_info):
+            if entity_type == "body":
+                return entity_info.grouped_bodies
+            if entity_type == "face":
+                return entity_info.grouped_faces
+            return entity_info.grouped_edges
+
+        result_grouped = []
+
+        # For each attribute name in the result intersection
+        for attr_name in result_attr_names:
+            # Dictionary to accumulate entities by their unique ID
+            entity_map = {}
+
+            # Process all include entity infos
+            for entity_info in entity_info_components:
+                entity_attrs = get_attrs(entity_info)
+                if attr_name not in entity_attrs:
+                    continue
+                idx = entity_attrs.index(attr_name)
+                entity_groups = get_groups(entity_info)
+                for entity in entity_groups[idx]:
+                    # Use private_attribute_id as the unique identifier
+                    entity_id = entity.private_attribute_id
+                    if entity_id not in entity_map:
+                        # For bodies, check if we need to preserve mesh_exterior
+                        if (
+                            entity_type == "body"
+                            and attr_name in current_body_mesh_exterior_map
+                            and entity_id in current_body_mesh_exterior_map[attr_name]
+                        ):
+                            # Create a copy with preserved mesh_exterior
+                            entity_data = entity.model_dump()
+                            entity_data["mesh_exterior"] = current_body_mesh_exterior_map[
+                                attr_name
+                            ][entity_id]
+                            entity_map[entity_id] = GeometryBodyGroup.model_validate(entity_data)
+                        else:
+                            entity_map[entity_id] = entity
+
+            # Convert map to list, maintaining a stable order (sorted by entity ID)
+            result_grouped.append(sorted(entity_map.values(), key=lambda e: e.private_attribute_id))
+
+        return result_grouped
+
+    result_grouped_bodies = merge_grouped_entities("body", result_body_attribute_names)
+    result_grouped_faces = merge_grouped_entities("face", result_face_attribute_names)
+    result_grouped_edges = merge_grouped_entities("edge", result_edge_attribute_names)
+
+    # Use default_geometry_accuracy from first include_entity_info
+    result_default_geometry_accuracy = entity_info_components[0].default_geometry_accuracy
+
+    # Create the result GeometryEntityInfo
+    result = GeometryEntityInfo(
+        body_ids=sorted(all_body_ids),
+        body_attribute_names=result_body_attribute_names,
+        grouped_bodies=result_grouped_bodies,
+        face_ids=sorted(all_face_ids),
+        face_attribute_names=result_face_attribute_names,
+        grouped_faces=result_grouped_faces,
+        edge_ids=sorted(all_edge_ids),
+        edge_attribute_names=result_edge_attribute_names,
+        grouped_edges=result_grouped_edges,
+        body_group_tag=result_body_group_tag,
+        face_group_tag=result_face_group_tag,
+        edge_group_tag=result_edge_group_tag,
+        global_bounding_box=result_bounding_box,
+        default_geometry_accuracy=result_default_geometry_accuracy,
+        draft_entities=current_entity_info.draft_entities,
+        ghost_entities=current_entity_info.ghost_entities,
+    )
+
+    return result

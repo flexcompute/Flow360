@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from contextlib import AbstractContextManager
 from contextvars import ContextVar, Token
-from typing import Optional, get_args
+from typing import List, Optional, get_args
 
 from flow360.component.simulation.entity_info import DraftEntityTypes, EntityInfoModel
 from flow360.component.simulation.framework.entity_base import EntityBase
@@ -16,6 +16,7 @@ from flow360.component.simulation.primitives import (
     Edge,
     GenericVolume,
     GeometryBodyGroup,
+    ImportedSurface,
     Surface,
 )
 from flow360.exceptions import Flow360RuntimeError
@@ -49,6 +50,8 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
     __slots__ = (
         "_entity_info",
         "_entity_registry",
+        "_imported_surface_components",
+        "_imported_geometry_components",
         "_token",
     )
 
@@ -56,6 +59,8 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
         self,
         *,
         entity_info: EntityInfoModel,
+        imported_geometry_components: List,
+        imported_surface_components: List[ImportedSurface],
     ) -> None:
         """
         Data members:
@@ -81,6 +86,18 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
         # Use EntityRegistry.from_entity_info() for the new DraftContext workflow.
         # This builds the registry by referencing entities from our copied entity_info.
         self._entity_registry: EntityRegistry = EntityRegistry.from_entity_info(entity_info)
+
+        self._imported_surface_components: List = (
+            imported_surface_components if imported_surface_components else []
+        )
+        known_frozen_hashes = set()
+        for imported_surface in self._imported_surface_components:
+            known_frozen_hashes = self._entity_registry.fast_register(
+                imported_surface, known_frozen_hashes
+            )
+        self._imported_geometry_components: List = (
+            imported_geometry_components if imported_geometry_components else []
+        )
 
     def __enter__(self) -> DraftContext:
         if get_active_draft() is not None:
@@ -161,5 +178,19 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
         from flow360.component.simulation.primitives import Cylinder
 
         return self._entity_registry.view(Cylinder)
+
+    @property
+    def imported_geometry_components(self) -> List:
+        """
+        Return the list of imported surface components in the draft.
+        """
+        return self._imported_geometry_components
+
+    @property
+    def imported_surface_components(self) -> EntityRegistryView:
+        """
+        Return the list of imported surface components in the draft.
+        """
+        return self._entity_registry.view(ImportedSurface)
 
     # endregion ------------------------------------------------------------------------------------

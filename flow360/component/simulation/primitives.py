@@ -634,6 +634,7 @@ class ImportedSurface(EntityBase):
     file_name: Optional[str] = None
     surface_mesh_id: Optional[str] = None
 
+
 class GhostSurface(_SurfaceEntityBase):
     """
     Represents a boundary surface that may or may not be generated therefore may or may not exist.
