@@ -188,7 +188,7 @@ class NavierStokesInitialCondition(ExpressionInitialConditionBase):
     Note
     ----
     The result of the expressions will be treated as non-dimensional values.
-    Please refer to the :ref:`Units Introduction<API_units_introduction>` for more details.
+    Please refer to the :ref:`Units Introduction<python_API_units_introduction>` for more details.
 
     Example
     -------
@@ -244,7 +244,7 @@ class HeatEquationInitialCondition(ExpressionInitialConditionBase):
     Note
     ----
     The result of the expressions will be treated as non-dimensional values.
-    Please refer to the :ref:`Units Introduction<API_units_introduction>` for more details.
+    Please refer to the :ref:`Units Introduction<python_API_units_introduction>` for more details.
 
     Example
     -------
@@ -467,7 +467,7 @@ class ForcePerArea(Flow360BaseModel):
 
 class ActuatorDisk(Flow360BaseModel):
     """:class:`ActuatorDisk` class for setting up the inputs for an Actuator Disk.
-    Please refer to the :ref:`actuator disk knowledge base <knowledge_base_actuatorDisks>` for further information.
+    Please refer to the :ref:`actuator disk knowledge base <actuator_disk_knowledge_base>` for further information.
 
     Note
     ----
@@ -697,10 +697,9 @@ class BETDiskCache(Flow360BaseModel):
 
 class BETDisk(MultiConstructorBaseModel):
     """:class:`BETDisk` class for defining the Blade Element Theory (BET) model inputs.
-    For detailed information on the parameters, please refer to the :ref:`BET knowledge Base <knowledge_base_BETDisks>`.
+    For detailed information on the parameters, please refer to the :ref:`BET knowledge Base <bet_disk_knowledge_base>`.
     To generate the sectional polars the BET translators can be used which are
-    outlined :ref:`here <BET_Translators>`
-    with best-practices for the sectional polars inputs available :ref:`here <secPolars_bestPractices>`.
+    outlined :ref:`here <BET_Translators>`.
     A validation study of the XV-15 rotor using the steady BET Disk method is available
     in :ref:`Validation Studies <XV15BETDiskValidationStudy>`.
     Because a transient BET Line simulation is simply a time-accurate version of a steady-state

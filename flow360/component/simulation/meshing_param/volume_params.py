@@ -241,10 +241,12 @@ class RotationVolume(AxisymmetricRefinementBase):
         EntityList[Cylinder, Surface, MirroredSurface, AxisymmetricBody, Box]
     ] = pd.Field(
         None,
-        description="Entities enclosed by :class:`RotationVolume`. "
-        "Can be `Surface` and/or other :class:`~flow360.Cylinder`(s)"
-        "and/or other :class:`~flow360.AxisymmetricBody`(s)"
-        "and/or other :class:`~flow360.Box`(s)",
+        description=(
+            "Entities enclosed by :class:`RotationVolume`. "
+            "Can be :class:`~flow360.Surface` and/or other :class:`~flow360.Cylinder`"
+            "and/or other :class:`~flow360.AxisymmetricBody`"
+            "and/or other :class:`~flow360.Box`"
+        ),
     )
     stationary_enclosed_entities: Optional[EntityList[Surface, MirroredSurface]] = pd.Field(
         None,
@@ -530,6 +532,7 @@ class AutomatedFarfield(_FarfieldBase):
         - quasi-3d: Thin disk will be generated for quasi 3D cases.
                     Both sides of the farfield disk will be treated as "symmetric plane"
         - quasi-3d-periodic: The two sides of the quasi-3d disk will be conformal
+        
         Note: For quasi-3d, please do not group patches from both sides of the farfield disk into a single surface.
         """,
     )

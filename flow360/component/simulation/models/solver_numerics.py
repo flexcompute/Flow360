@@ -262,8 +262,8 @@ class TurbulenceModelControls(Flow360BaseModel):
 class DetachedEddySimulation(Flow360BaseModel):
     """
     :class:`DetachedEddySimulation` class is used for running hybrid RANS-LES simulations
-    "It is supported for both SpalartAllmaras and kOmegaSST turbulence models, with and"
-    "without AmplificationFactorTransport transition model enabled."
+    It is supported for both SpalartAllmaras and kOmegaSST turbulence models, with and
+    without AmplificationFactorTransport transition model enabled."
 
     Example
     -------
@@ -274,8 +274,8 @@ class DetachedEddySimulation(Flow360BaseModel):
 
     shielding_function: Literal["DDES", "ZDES"] = pd.Field(
         "DDES",
-        description="Specifies the type of shielding used for the detached eddy simulation. The allowed inputs are"
-        ":code:`DDES` (Delayed Detached Eddy Simulation proposed by Spalart 2006) and :code:`ZDES`"
+        description="Specifies the type of shielding used for the detached eddy simulation. The allowed inputs are "
+        "``DDES`` (Delayed Detached Eddy Simulation proposed by Spalart 2006) and ``ZDES`` "
         "(proposed by Deck and Renard 2020).",
     )
     grid_size_for_LES: Literal["maxEdgeLength", "meanEdgeLength"] = pd.Field(

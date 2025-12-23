@@ -479,10 +479,10 @@ def _update_entity_grouping_tags(entity_info, params: SimulationParams) -> Entit
         (Surface, "face_group_tag"),
     ]
 
-    if entity_info.edge_ids:
+    if entity_info.all_edge_ids:
         entity_types.append((Edge, "edge_group_tag"))
 
-    if entity_info.body_ids:
+    if entity_info.all_body_ids:
         entity_types.append((GeometryBodyGroup, "body_group_tag"))
 
     for entity_type, entity_grouping_tags in entity_types:
