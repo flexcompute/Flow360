@@ -496,12 +496,6 @@ class GetAttribute(GenericOperation):
     This operation extracts the attribute specified by `attr_name` from the provided data object
     using Python's built-in `getattr` function. If the attribute is not found, an `AttributeError`
     is raised, providing a clear error message.
-
-    Methods
-    -------
-    calculate(data, case, cases, variables, new_variable_name)
-        Retrieves the attribute specified by `attr_name` from the given data object.
-        Returns a tuple containing the original data, the cases list, and the extracted attribute value.
     """
 
     attr_name: str = pd.Field(
@@ -513,7 +507,8 @@ class GetAttribute(GenericOperation):
         self, data, case, cases, variables, new_variable_name
     ):  # pylint: disable=too-many-arguments
         """
-        Getting attribute on the provided data.
+        Retrieves the attribute specified by `attr_name` from the given data object.
+        Returns a tuple containing the original data, the cases list, and the extracted attribute value.
         """
 
         try:

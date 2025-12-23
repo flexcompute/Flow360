@@ -1,0 +1,47 @@
+{
+    "zones": {
+        "fluid": {
+            "boundaryNames": [
+                "fluid/box::ground",
+                "fluid/box::inlet",
+                "fluid/box::outlet",
+                "fluid/box::walls",
+                "fluid/rad::int-inlet",
+                "fluid/rad::int-outlet",
+                "fluid/tower::tunnel",
+                "fluid/tower::walls"
+            ],
+            "donorInterfaceNames": [
+                "radiator/rad::int-outlet",
+                "radiator/rad::int-inlet"
+            ],
+            "donorZoneNames": [
+                "radiator",
+                "radiator"
+            ],
+            "receiverInterfaceNames": [
+                "fluid/rad::int-outlet",
+                "fluid/rad::int-inlet"
+            ]
+        },
+        "radiator": {
+            "boundaryNames": [
+                "radiator/rad::int-inlet",
+                "radiator/rad::int-outlet",
+                "radiator/tower::tunnel"
+            ],
+            "donorInterfaceNames": [
+                "fluid/rad::int-outlet",
+                "fluid/rad::int-inlet"
+            ],
+            "donorZoneNames": [
+                "fluid",
+                "fluid"
+            ],
+            "receiverInterfaceNames": [
+                "radiator/rad::int-outlet",
+                "radiator/rad::int-inlet"
+            ]
+        }
+    }
+}

@@ -2,7 +2,7 @@
 
 from abc import ABCMeta, abstractmethod
 from collections import defaultdict
-from typing import Annotated, List, Literal, Optional, Union
+from typing import Annotated, Dict, List, Literal, Optional, Union
 
 import pydantic as pd
 
@@ -84,10 +84,30 @@ class EntityInfoModel(Flow360BaseModel, metaclass=ABCMeta):
         """
 
 
+class BodyComponentInfo(Flow360BaseModel):
+    """Data model for body component info."""
+
+    face_ids: list[str] = pd.Field(
+        description="A full list of face IDs that appear in the body.",
+    )
+    edge_ids: Optional[list[str]] = pd.Field(
+        None,
+        description="A full list of edge IDs that appear in the body. Optional for surface mesh geometry.",
+    )
+
+
 class GeometryEntityInfo(EntityInfoModel):
     """Data model for geometry entityInfo.json"""
 
     type_name: Literal["GeometryEntityInfo"] = pd.Field("GeometryEntityInfo", frozen=True)
+
+    bodies_face_edge_ids: Optional[Dict[str, BodyComponentInfo]] = pd.Field(
+        None,
+        description="Mapping from body ID to the face and edge IDs of the body.",
+    )
+    # bodies_face_edge_ids: Mostly just used by front end. On python side this
+    # is less useful as users do not operate on face/body/edge IDs directly.
+    # But at least this can replace `face_ids`, `body_ids`, and `edge_ids` since these contains less info.
 
     body_ids: list[str] = pd.Field(
         [],
@@ -154,6 +174,45 @@ class GeometryEntityInfo(EntityInfoModel):
         None,
         description="The default value based on uploaded geometry for geometry_accuracy.",
     )
+
+    @property
+    def all_face_ids(self) -> list[str]:
+        """
+        Returns a full list of face IDs that appear in the geometry.
+        Use `bodies_face_edge_ids` if available, otherwise fall back to use `face_ids`.
+        """
+        if self.bodies_face_edge_ids is not None:
+            return [
+                face_id
+                for body_component_info in self.bodies_face_edge_ids.values()
+                for face_id in body_component_info.face_ids
+            ]
+        return self.face_ids
+
+    @property
+    def all_edge_ids(self) -> list[str]:
+        """
+        Returns a full list of edge IDs that appear in the geometry.
+        Use `bodies_face_edge_ids` if available, otherwise fall back to use `edge_ids`.
+        """
+        if self.bodies_face_edge_ids is not None:
+            return [
+                edge_id
+                for body_component_info in self.bodies_face_edge_ids.values()
+                # edge_ids can be None for surface-only geometry; treat it as an empty list.
+                for edge_id in (body_component_info.edge_ids or [])
+            ]
+        return self.edge_ids
+
+    @property
+    def all_body_ids(self) -> list[str]:
+        """
+        Returns a full list of body IDs that appear in the geometry.
+        Use `bodies_face_edge_ids` if available, otherwise fall back to use `body_ids`.
+        """
+        if self.bodies_face_edge_ids is not None:
+            return list(self.bodies_face_edge_ids.keys())
+        return self.body_ids
 
     def group_in_registry(
         self,
@@ -420,7 +479,7 @@ class GeometryEntityInfo(EntityInfoModel):
                 "face", face_group_tag, registry=internal_registry
             )
 
-            if len(self.edge_ids) > 0:
+            if len(self.all_edge_ids) > 0:
                 if self.edge_group_tag is None:
                     edge_group_tag = self._get_default_grouping_tag("edge")
                     log.info(f"Using `{edge_group_tag}` as default grouping for edges.")
@@ -467,7 +526,7 @@ class GeometryEntityInfo(EntityInfoModel):
             # This likely means the geometry asset is pre-25.5.
             raise ValueError(
                 "Geometry cloud resource is too old."
-                " Please consider re-uploading the geometry with newer solver version."
+                " Please consider re-uploading the geometry with newer solver version (>25.5)."
             )
 
         face_group_by_body_id_to_face = create_group_to_sub_component_mapping(
