@@ -740,7 +740,7 @@ def test_surface_forces_result(mock_id, mock_response):
         merge_mode="merge",
     )
     dict_names = [entity.name for entity in expanded_entities_via_registry]
-    assert dict_names == expanded_names + ["farfield"]
+    assert dict_names == expanded_names
 
 
 @pytest.mark.usefixtures("s3_download_override")
