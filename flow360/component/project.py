@@ -198,17 +198,19 @@ def create_draft(
     # Deep copy entity_info for draft isolation
     entity_info_copy = deep_copy_entity_info(new_run_from.entity_info)
 
-    geometry_components = _resolve_geometry_components(
-        entity_info=entity_info_copy,
-        new_run_from=new_run_from,
-        current_geometry_dependencies=new_run_from.info.geometry_dependencies,
-        include_geometries=include_geometries,
-        exclude_geometries=exclude_geometries,
-    )
-    entity_info_copy = _update_geometry_entity_info(
-        entity_info=entity_info_copy,
-        geometry_components=geometry_components,
-    )
+    # Edit geometry dependencies if applicable
+    if new_run_from.info.geometry_dependencies or include_geometries or exclude_geometries:
+        geometry_components = _resolve_geometry_components(
+            entity_info=entity_info_copy,
+            new_run_from=new_run_from,
+            current_geometry_dependencies=new_run_from.info.geometry_dependencies,
+            include_geometries=include_geometries,
+            exclude_geometries=exclude_geometries,
+        )
+        entity_info_copy = _update_geometry_entity_info(
+            entity_info=entity_info_copy,
+            geometry_components=geometry_components,
+        )
 
     apply_and_inform_grouping_selections(
         entity_info=entity_info_copy,
