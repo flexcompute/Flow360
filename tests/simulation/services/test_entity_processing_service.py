@@ -151,7 +151,11 @@ def test_validate_model_materializes_dict_and_preserves_selectors():
     all_boundaries_selector = {
         "target_class": "Surface",
         "name": "all_boundaries",
-        "children": [{"attribute": "name", "operator": "matches", "value": "*"}],
+        "children": [
+            {"attribute": "name", "operator": "matches", "value": "*"},
+            {"attribute": "name", "operator": "not_matches", "value": "farfield"},
+            {"attribute": "name", "operator": "not_matches", "value": "symmetric"},
+        ],
     }
     params["models"].append(
         {
@@ -386,7 +390,10 @@ def test_delayed_expansion_round_trip_preserves_semantics():
     all_boundaries_selector = {
         "target_class": "Surface",
         "name": "all_boundaries",
-        "children": [{"attribute": "name", "operator": "matches", "value": "*"}],
+        "children": [
+            {"attribute": "name", "operator": "matches", "value": "*"},
+            {"attribute": "name", "operator": "not_matches", "value": "farfield"},
+        ],
     }
     params.setdefault("models", []).append(
         {

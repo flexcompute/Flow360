@@ -435,6 +435,8 @@ def _process_selectors(
     registry,
     selectors_list: list,
     selector_cache: dict,
+    *,
+    expansion_map: Optional[Dict[str, List[str]]] = None,
 ) -> tuple[dict[str, list[EntityNode]], list[str]]:
     """Process selectors and return additions grouped by class.
 
@@ -446,10 +448,20 @@ def _process_selectors(
         registry: EntityRegistry instance containing entities.
         selectors_list: List of selector definitions (materialized; no string tokens).
         selector_cache: Cache for selector results.
+        expansion_map: Optional type expansion mapping. If None, uses DEFAULT_TARGET_CLASS_EXPANSION_MAP.
 
     Returns:
         Tuple of (additions_by_class dict, ordered_target_classes list).
     """
+    # Set default expansion map
+    if expansion_map is None:
+        # pylint: disable=import-outside-toplevel
+        from flow360.component.simulation.framework.entity_expansion_config import (
+            DEFAULT_TARGET_CLASS_EXPANSION_MAP,
+        )
+
+        expansion_map = DEFAULT_TARGET_CLASS_EXPANSION_MAP
+
     additions_by_class: dict[str, list[EntityNode]] = {}
     ordered_target_classes: list[str] = []
 
@@ -460,7 +472,10 @@ def _process_selectors(
             )
         selector: EntitySelector = item
         target_class = selector.target_class
-        entities = registry.find_by_type_name(target_class)
+
+        # Use expansion map to get multiple type names
+        expanded_type_names = expansion_map.get(target_class, [target_class])
+        entities = registry.find_by_type_name(expanded_type_names)
         if not entities:
             continue
         cache_key = _get_selector_cache_key(selector)
@@ -483,7 +498,11 @@ def _merge_entities(
     merge_mode: Literal["merge", "replace"],
     not_merged_types: set[str] = DEFAULT_NOT_MERGED_TYPES,
 ) -> list[Any]:
-    """Merge existing entities with selector additions based on merge mode."""
+    """Merge existing entities with selector additions based on merge mode.
+
+    Note: Type filtering is now handled by EntityList's _filter_entities_by_valid_types
+    field validator, which runs after this function returns entities to the list.
+    """
     candidates: list[EntityNode] = []
 
     if merge_mode == "merge":  # explicit first, then selector additions
@@ -513,14 +532,20 @@ def expand_entity_list_selectors(
     *,
     selector_cache: dict = None,
     merge_mode: Literal["merge", "replace"] = "merge",
+    expansion_map: Optional[Dict[str, List[str]]] = None,
 ) -> list[EntityNode]:
     """
     Expand selectors in a single EntityList within an EntityRegistry context.
+
+    Parameters
+    ----------
+    expansion_map : Optional type expansion mapping for selectors.
 
     Notes
     -----
     - This function does NOT modify the input EntityList.
     - selector_cache can be shared across multiple calls to reuse selector results.
+    - Type filtering is now handled by EntityList's field validator.
     """
     stored_entities = list(getattr(entity_list, "stored_entities", []) or [])
     raw_selectors = list(getattr(entity_list, "selectors", []) or [])
@@ -535,6 +560,7 @@ def expand_entity_list_selectors(
         registry,
         raw_selectors,
         selector_cache,
+        expansion_map=expansion_map,
     )
     return _merge_entities(
         stored_entities,
@@ -550,6 +576,7 @@ def expand_entity_list_selectors_in_place(
     *,
     selector_cache: dict = None,
     merge_mode: Literal["merge", "replace"] = "merge",
+    expansion_map: Optional[Dict[str, List[str]]] = None,
 ) -> None:
     """
     Expand selectors in an EntityList and write results into stored_entities in-place.
@@ -561,6 +588,7 @@ def expand_entity_list_selectors_in_place(
         entity_list,
         selector_cache=selector_cache,
         merge_mode=merge_mode,
+        expansion_map=expansion_map,
     )
     entity_list.stored_entities = expanded
 
