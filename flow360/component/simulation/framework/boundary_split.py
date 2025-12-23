@@ -393,7 +393,6 @@ def _replace_with_actual_entities(
         parts = []
         for info in split_infos:
             # Extract base name from full name (e.g., "zone/boundary" -> "boundary")
-            base_name = info.full_name.split("/")[-1] if "/" in info.full_name else info.full_name
             parts.append(
                 original.copy(
                     update={
