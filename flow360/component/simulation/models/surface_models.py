@@ -380,6 +380,14 @@ class Wall(BoundaryBase):
       ...     ),
       ... )
 
+    - Define roughness height on entities
+      with the naming pattern :code:`"fluid/Roughness-*"`:
+
+      >>> fl.Wall(
+      ...     entities=volume_mesh["fluid/Roughness-*"],
+      ...     roughness_height=0.1 * fl.u.mm,
+      ... )
+
     ====
     """
 
