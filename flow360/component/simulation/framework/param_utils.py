@@ -4,6 +4,10 @@ from typing import Annotated, List, Optional, Union
 
 import pydantic as pd
 
+from flow360.component.simulation.draft_context.coordinate_system_manager import (
+    CoordinateSystemStatus,
+)
+from flow360.component.simulation.draft_context.mirror import MirrorStatus
 from flow360.component.simulation.entity_info import (
     GeometryEntityInfo,
     SurfaceMeshEntityInfo,
@@ -49,11 +53,18 @@ class AssetCache(Flow360BaseModel):
         False, description="Flag whether user requested the use of GAI."
     )
     variable_context: Optional[VariableContextList] = pd.Field(
-        None, description="List of user variables that are used in all the `Expression` instances."
+        None,
+        description="List of user variables that are used in all the `Expression` instances.",
     )
     used_selectors: Optional[List[EntitySelector]] = pd.Field(
         None,
         description="Collected entity selectors for token reference.",
+    )
+    mirror_status: Optional[MirrorStatus] = pd.Field(
+        None, description="Status of mirroring operations that are used in the simulation."
+    )
+    coordinate_system_status: Optional[CoordinateSystemStatus] = pd.Field(
+        None, description="Status of coordinate systems used in the simulation."
     )
 
     @property
@@ -65,6 +76,25 @@ class AssetCache(Flow360BaseModel):
             return None
         return self.project_entity_info.get_boundaries()
 
+    @pd.model_validator(mode="after")
+    def _validate_mirror_status_compatible_with_geometry(self):
+        """Raise if mirror_status has mirroring but geometry doesn't support face-to-body-group mapping."""
+        if self.mirror_status is None:
+            return self
+        if not self.mirror_status.mirrored_geometry_body_groups:
+            return self
+        if not isinstance(self.project_entity_info, GeometryEntityInfo):
+            return self
+
+        try:
+            self.project_entity_info.get_face_group_to_body_group_id_map()
+        except ValueError as exc:
+            raise ValueError(
+                "Mirroring is requested but the geometry's face groupings span across body groups. "
+                f"Mirroring cannot be performed: {exc}"
+            ) from exc
+        return self
+
     def preprocess(
         self,
         *,
@@ -73,6 +103,11 @@ class AssetCache(Flow360BaseModel):
         required_by: List[str] = None,
         flow360_unit_system=None,
     ) -> Flow360BaseModel:
+        # Exclude variable_context and selectors from preprocessing.
+        # NOTE: coordinate_system_status is NOT excluded, which means it will be
+        # recursively preprocessed. This is CRITICAL because CoordinateSystem objects
+        # contain LengthType fields (origin, translation) that must be nondimensionalized
+        # before transformation matrices are computed in the translator.
         exclude_asset_cache = exclude + ["variable_context", "selectors"]
         return super().preprocess(
             params=params,

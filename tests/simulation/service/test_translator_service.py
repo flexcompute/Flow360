@@ -4,6 +4,7 @@ from copy import deepcopy
 import pytest
 
 from flow360.component.simulation.entity_info import GeometryEntityInfo
+from flow360.component.simulation.framework.entity_selector import SurfaceSelector
 from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.meshing_param.face_params import (
     BoundaryLayer,
@@ -588,7 +589,7 @@ def test_simulation_to_case_json_skip_selector_expansion(monkeypatch):
                 Fluid(),
                 Wall(
                     name="wall0",
-                    entities=[Surface.match("wing*", name="wing_selector")],
+                    entities=[SurfaceSelector(name="wing_selector").match("wing*")],
                 ),
                 Freestream(entities=[Surface(name="farfield")]),
             ],

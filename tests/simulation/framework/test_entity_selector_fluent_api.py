@@ -4,6 +4,9 @@ import pytest
 
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
 from flow360.component.simulation.framework.entity_selector import (
+    EdgeSelector,
+    EntitySelector,
+    SurfaceSelector,
     expand_entity_list_selectors_in_place,
 )
 from flow360.component.simulation.primitives import Edge, Surface
@@ -48,7 +51,7 @@ def test_surface_class_match_and_chain_and():
     Test: EntitySelector fluent API with AND logic (default) and predicate chaining.
 
     Purpose:
-    - Verify that Surface.match() creates a selector with glob pattern matching
+    - Verify that SurfaceSelector().match() creates a selector with glob pattern matching
     - Verify that chaining .not_any_of() adds an exclusion predicate
     - Verify that AND logic correctly computes intersection of predicates
     - Verify that the selector expands correctly against an entity database
@@ -64,7 +67,7 @@ def test_surface_class_match_and_chain_and():
     )
 
     # AND logic by default; expect intersection of predicates
-    selector = Surface.match("wing*", name="t_and").not_any_of(["wing"])
+    selector = SurfaceSelector(name="t_and").match("wing*").not_any_of(["wing"])
     names = _expand_and_get_names(registry, selector)
     assert names == ["wing-root", "wingtip"]
 
@@ -87,7 +90,7 @@ def test_surface_class_match_or_union():
     registry = _make_registry(surfaces=_mk_pool(["s1", "s2", "tail", "wing"], "Surface"))
 
     # OR logic: union of predicates
-    selector = Surface.match("s1", name="t_or", logic="OR").any_of(["tail"])
+    selector = SurfaceSelector(name="t_or", logic="OR").match("s1").any_of(["tail"])
     names = _expand_and_get_names(registry, selector)
     # Order preserved by pool scan under OR
     assert names == ["s1", "tail"]
@@ -98,21 +101,41 @@ def test_surface_regex_and_not_match():
     Test: EntitySelector with mixed syntax (regex and glob) for pattern matching.
 
     Purpose:
-    - Verify that syntax="regex" enables regex pattern matching (fullmatch)
-    - Verify that syntax="glob" enables glob pattern matching (default)
-    - Verify that match() and not_match() predicates can be chained
+    - Verify that non_glob_syntax="regex" enables regex pattern matching (fullmatch)
+    - Verify that glob pattern matching works (default)
+    - Verify that match and not_match predicates can be combined
     - Verify that different syntax modes can be used in the same selector
 
+    Note: regex syntax is not exposed via the fluent API (UI doesn't support it),
+    so we use EntitySelector.model_validate() to test this internal capability.
+
     Expected behavior:
-    - match(r"^wing$", syntax="regex") selects: ["wing"] (exact match)
-    - not_match("*-root", syntax="glob") excludes: ["wing-root"]
+    - match(r"^wing$", non_glob_syntax="regex") selects: ["wing"] (exact match)
+    - not_match("*-root") excludes: ["wing-root"]
     - Result: ["wing"] (passed both predicates)
     """
     registry = _make_registry(surfaces=_mk_pool(["wing", "wing-root", "tail"], "Surface"))
 
-    # Regex fullmatch for exact 'wing', then exclude via not_match (glob)
-    selector = Surface.match(r"^wing$", name="t_regex", syntax="regex").not_match(
-        "*-root", syntax="glob"
+    # Use model_validate to construct selector with regex predicate (internal API)
+    selector = EntitySelector.model_validate(
+        {
+            "name": "t_regex",
+            "target_class": "Surface",
+            "logic": "AND",
+            "children": [
+                {
+                    "attribute": "name",
+                    "operator": "matches",
+                    "value": r"^wing$",
+                    "non_glob_syntax": "regex",
+                },
+                {
+                    "attribute": "name",
+                    "operator": "not_matches",
+                    "value": "*-root",
+                },
+            ],
+        }
     )
     names = _expand_and_get_names(registry, selector)
     assert names == ["wing"]
@@ -137,7 +160,7 @@ def test_in_and_not_any_of_chain():
     registry = _make_registry(surfaces=_mk_pool(["a", "b", "c", "d"], "Surface"))
 
     # AND semantics: in {a,b,c} and not_in {b}
-    selector = Surface.match("*", name="t_in").any_of(["a", "b", "c"]).not_any_of(["b"])
+    selector = SurfaceSelector(name="t_in").match("*").any_of(["a", "b", "c"]).not_any_of(["b"])
     names = _expand_and_get_names(registry, selector)
     assert names == ["a", "c"]
 
@@ -148,17 +171,17 @@ def test_edge_class_basic_match():
 
     Purpose:
     - Verify that entity selector works with different entity types (Edge vs Surface)
-    - Verify that Edge.match() creates a selector targeting Edge entities
+    - Verify that EdgeSelector().match() creates a selector targeting Edge entities
     - Verify that the entity database correctly routes to the edges pool
     - Verify that simple exact name matching works
 
     Expected behavior:
-    - Edge.match("edgeA") selects only edgeA from the edges pool
+    - EdgeSelector().match("edgeA") selects only edgeA from the edges pool
     - Edge entities are correctly filtered by target_class
     """
     registry = _make_registry(edges=_mk_pool(["edgeA", "edgeB"], "Edge"))
 
-    selector = Edge.match("edgeA", name="edge_basic")
+    selector = EdgeSelector(name="edge_basic").match("edgeA")
     entity_list = _EntityListStub(stored_entities=[], selectors=[selector])
     expand_entity_list_selectors_in_place(registry, entity_list, merge_mode="merge")
     stored = entity_list.stored_entities
@@ -167,12 +190,12 @@ def test_edge_class_basic_match():
 
 def test_selector_factory_propagates_description():
     """
-    Test: SelectorFactory methods propagate description into EntitySelector instances.
+    Test: Selector factory functions propagate description into EntitySelector instances.
 
     Expected behavior:
-    - Passing description to Surface.match() stores it on the resulting selector.
+    - Passing description to SurfaceSelector() stores it on the resulting selector.
     - model_dump() contains the provided description for serialization/round-trip.
     """
-    selector = Surface.match("*", name="desc_selector", description="Select all surfaces")
+    selector = SurfaceSelector(name="desc_selector", description="Select all surfaces").match("*")
     assert selector.description == "Select all surfaces"
     assert selector.model_dump()["description"] == "Select all surfaces"

@@ -29,19 +29,21 @@ from flow360.component.interfaces import (
     VolumeMeshInterfaceV2,
 )
 from flow360.component.project_utils import (
-    apply_geometry_grouping_overrides,
+    apply_and_inform_grouping_selections,
+    deep_copy_entity_info,
     get_project_records,
+    load_status_from_asset,
     set_up_params_for_uploading,
     show_projects_with_keyword_filter,
     upload_imported_surfaces_to_draft,
     validate_params_with_context,
 )
 from flow360.component.resource_base import Flow360Resource
-from flow360.component.simulation.draft_context.context import (
-    DraftContext,
-    get_active_draft,
+from flow360.component.simulation.draft_context.context import DraftContext
+from flow360.component.simulation.draft_context.coordinate_system_manager import (
+    CoordinateSystemStatus,
 )
-from flow360.component.simulation.entity_info import GeometryEntityInfo
+from flow360.component.simulation.draft_context.mirror import MirrorStatus
 from flow360.component.simulation.folder import Folder
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import LengthType
@@ -98,73 +100,41 @@ def create_draft(
     face_grouping: Optional[str] = None,
     edge_grouping: Optional[str] = None,
 ) -> DraftContext:
-    """Factory helper used by end users (`with fl.create_draft() as draft`).
+    """
+    Factory helper used by end users (`with fl.create_draft() as draft`).
 
     Creates a DraftContext with a deep copy of the asset's entity_info,
     providing entity isolation so modifications in the draft don't affect
     the original asset.
     """
 
-    # region -----------------------------Private implementations Below-----------------------------
-
-    def _deep_copy_entity_info(entity_info):
-        """Create a deep copy of entity_info via model_dump + model_validate.
-
-        This ensures DraftContext has an independent copy of entity_info,
-        so modifications don't affect the original asset.
-        """
-        entity_info_dict = entity_info.model_dump(mode="json")
-        return type(entity_info).model_validate(entity_info_dict)
-
-    def _inform_grouping_selections(entity_info) -> None:
-        """Inform the user about the grouping selections made on the entity provider cloud asset."""
-
-        if isinstance(entity_info, GeometryEntityInfo):
-            applied_grouping = {
-                "face": entity_info.face_group_tag,
-                "edge": entity_info.edge_group_tag,
-                "body": entity_info.body_group_tag,
-            }
-            if face_grouping is not None or edge_grouping is not None:
-                applied_grouping = apply_geometry_grouping_overrides(
-                    entity_info, face_grouping, edge_grouping
-                )
-            # If tags were None, fall back to defaults for logging purposes.
-            # pylint:disable = protected-access
-            face_tag = applied_grouping.get("face") or entity_info._get_default_grouping_tag("face")
-            edge_tag = applied_grouping.get("edge")
-            if edge_tag is None and entity_info.edge_attribute_names:
-                edge_tag = entity_info._get_default_grouping_tag("edge")
-
-            log.info(
-                "Creating draft with geometry grouping:\n"
-                "  faces: %s\n"
-                "  edges: %s\n"
-                "To change grouping, call:\n"
-                "  fl.create_draft(face_grouping='%s', edge_grouping='%s', ...)",
-                face_tag,
-                edge_tag,
-                face_tag,
-                edge_tag,
-            )
-        elif face_grouping is not None or edge_grouping is not None:
-            log.info(
-                "Grouping override ignored: only geometry assets support face/edge/body regrouping."
-            )
-
-    # endregion ------------------------------------------------------------------------------------
-
     if not isinstance(new_run_from, AssetBase):
         raise Flow360RuntimeError("create_draft expects a cloud asset instance as `new_run_from`.")
 
     # Deep copy entity_info for draft isolation
-    entity_info_copy = _deep_copy_entity_info(new_run_from.entity_info)
+    entity_info_copy = deep_copy_entity_info(new_run_from.entity_info)
 
-    # Apply grouping overrides to the copy (not the original)
-    _inform_grouping_selections(entity_info_copy)
+    apply_and_inform_grouping_selections(
+        entity_info=entity_info_copy,
+        face_grouping=face_grouping,
+        edge_grouping=edge_grouping,
+    )
+
+    mirror_status = load_status_from_asset(
+        asset=new_run_from,
+        status_class=MirrorStatus,
+        cache_key="mirror_status",
+    )
+    coordinate_system_status = load_status_from_asset(
+        asset=new_run_from,
+        status_class=CoordinateSystemStatus,
+        cache_key="coordinate_system_status",
+    )
 
     return DraftContext(
         entity_info=entity_info_copy,
+        mirror_status=mirror_status,
+        coordinate_system_status=coordinate_system_status,
     )
 
 
@@ -456,18 +426,11 @@ class ProjectTree(pd.BaseModel):
 class Project(pd.BaseModel):
     """
     Project class containing the interface for creating and running simulations.
-
-    Attributes
-    ----------
-    metadata : ProjectMeta
-        Metadata of the project.
-    solver_version : str
-        Version of the solver being used.
     """
 
-    metadata: ProjectMeta = pd.Field()
+    metadata: ProjectMeta = pd.Field(description="Metadata of the project.")
     project_tree: ProjectTree = pd.Field()
-    solver_version: str = pd.Field(frozen=True)
+    solver_version: str = pd.Field(frozen=True, description="Version of the solver being used.")
 
     _root_asset: Union[Geometry, SurfaceMeshV2, VolumeMeshV2] = pd.PrivateAttr(None)
 
@@ -1534,10 +1497,6 @@ class Project(pd.BaseModel):
         if use_geometry_AI is True and use_beta_mesher is False:
             raise Flow360ValueError("Enabling Geometry AI requires also enabling beta mesher.")
 
-        # Check if there's an active DraftContext and get its entity_info
-        active_draft = get_active_draft()
-        draft_entity_info = active_draft._entity_info if active_draft is not None else None
-
         root_asset = self._root_asset
         if interpolate_to_mesh is not None:
             project_vm = Project.from_cloud(project_id=interpolate_to_mesh.project_id)
@@ -1549,7 +1508,6 @@ class Project(pd.BaseModel):
             length_unit=self.length_unit,
             use_beta_mesher=use_beta_mesher,
             use_geometry_AI=use_geometry_AI,
-            draft_entity_info=draft_entity_info,
         )
 
         params, errors = validate_params_with_context(

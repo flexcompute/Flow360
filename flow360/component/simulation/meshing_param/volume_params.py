@@ -21,6 +21,7 @@ from flow360.component.simulation.primitives import (
     Cylinder,
     GenericVolume,
     GhostSurface,
+    MirroredSurface,
     SeedpointVolume,
     Surface,
     WindTunnelGhostSurface,
@@ -236,14 +237,18 @@ class RotationVolume(AxisymmetricRefinementBase):
     type: Literal["RotationVolume"] = pd.Field("RotationVolume", frozen=True)
     name: Optional[str] = pd.Field("Rotation Volume", description="Name to display in the GUI.")
     entities: EntityList[Cylinder, AxisymmetricBody] = pd.Field()
-    enclosed_entities: Optional[EntityList[Cylinder, Surface, AxisymmetricBody, Box]] = pd.Field(
+    enclosed_entities: Optional[
+        EntityList[Cylinder, Surface, MirroredSurface, AxisymmetricBody, Box]
+    ] = pd.Field(
         None,
-        description="Entities enclosed by :class:`RotationVolume`. "
-        "Can be `Surface` and/or other :class:`~flow360.Cylinder`(s)"
-        "and/or other :class:`~flow360.AxisymmetricBody`(s)"
-        "and/or other :class:`~flow360.Box`(s)",
+        description=(
+            "Entities enclosed by :class:`RotationVolume`. "
+            "Can be :class:`~flow360.Surface` and/or other :class:`~flow360.Cylinder`"
+            "and/or other :class:`~flow360.AxisymmetricBody`"
+            "and/or other :class:`~flow360.Box`"
+        ),
     )
-    stationary_enclosed_entities: Optional[EntityList[Surface]] = pd.Field(
+    stationary_enclosed_entities: Optional[EntityList[Surface, MirroredSurface]] = pd.Field(
         None,
         description=(
             "Surface entities included in `enclosed_entities` which should remain stationary "
@@ -527,6 +532,7 @@ class AutomatedFarfield(_FarfieldBase):
         - quasi-3d: Thin disk will be generated for quasi 3D cases.
                     Both sides of the farfield disk will be treated as "symmetric plane"
         - quasi-3d-periodic: The two sides of the quasi-3d disk will be conformal
+        
         Note: For quasi-3d, please do not group patches from both sides of the farfield disk into a single surface.
         """,
     )
@@ -952,6 +958,13 @@ class WindTunnelFarfield(_FarfieldBase):
                     f"Rear wheel maximum x ({self.floor_type.rear_wheel_belt_x_range[1]}) "
                     f"must be less than outlet x ({self.outlet_x_position})"
                 )
+        return self
+
+    @contextual_model_validator(mode="after")
+    def _validate_requires_geometry_ai(self, param_info: ParamsValidationInfo):
+        """Ensure WindTunnelFarfield is only used when GeometryAI is enabled."""
+        if not param_info.use_geometry_AI:
+            raise ValueError("WindTunnelFarfield is only supported when Geometry AI is enabled.")
         return self
 
 

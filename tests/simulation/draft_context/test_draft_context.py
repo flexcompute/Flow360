@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 import flow360 as fl
 from flow360.component.project import create_draft
 from flow360.component.project_utils import set_up_params_for_uploading
@@ -26,6 +28,67 @@ def test_create_draft_accepts_geometry_grouping_override(mock_geometry):
     assert mock_geometry.entity_info.face_group_tag == "ByBody"
     with create_draft(new_run_from=mock_geometry, face_grouping="faceId") as draft:
         assert draft._entity_info.face_group_tag == "faceId"
+
+
+def _ensure_geometry_grouping_available(geometry):
+    entity_info = geometry._entity_info
+    if entity_info.face_attribute_names:
+        geometry.group_faces_by_tag(entity_info.face_attribute_names[0])
+    if entity_info.edge_attribute_names:
+        geometry.group_edges_by_tag(entity_info.edge_attribute_names[0])
+    if entity_info.body_attribute_names:
+        geometry.group_bodies_by_tag(entity_info.body_attribute_names[0])
+
+
+def test_create_draft_warns_about_legacy_registry_grouping(mock_geometry):
+    geometry = mock_geometry
+    _ensure_geometry_grouping_available(geometry)
+
+    with patch("flow360.component.project.log.warning") as mock_warning:
+        with create_draft(new_run_from=geometry):
+            pass
+
+    # Check that a single warning was issued about both unspecified groupings
+    assert (
+        mock_warning.call_count == 1
+    ), f"Expected exactly one warning, got: {mock_warning.call_count}"
+
+    warning_message = mock_warning.call_args[0][0]
+    formatted_message = warning_message % mock_warning.call_args[0][1:]
+
+    # The warning should mention both face_grouping and edge_grouping
+    assert (
+        "face_grouping and edge_grouping" in formatted_message
+    ), f"Expected warning about 'face_grouping and edge_grouping', got: {formatted_message}"
+    assert (
+        "not specified" in formatted_message
+    ), f"Expected 'not specified' in warning, got: {formatted_message}"
+
+
+def test_create_draft_silences_warning_when_grouping_overridden(mock_geometry):
+    geometry = mock_geometry
+    _ensure_geometry_grouping_available(geometry)
+
+    entity_info = geometry._entity_info
+    face_override = entity_info.face_attribute_names[0]
+    edge_override = (
+        entity_info.edge_attribute_names[0] if entity_info.edge_attribute_names else None
+    )
+
+    draft_kwargs = {"face_grouping": face_override}
+    if edge_override is not None:
+        draft_kwargs["edge_grouping"] = edge_override
+
+    with patch("flow360.component.project.log.warning") as mock_warning:
+        with create_draft(new_run_from=geometry, **draft_kwargs):
+            pass
+
+    # Check that warnings about unspecified grouping were NOT issued
+    warning_messages = [call.args[0] for call in mock_warning.call_args_list]
+    assert not any(
+        "not specified" in msg and ("face_grouping" in msg or "edge_grouping" in msg)
+        for msg in warning_messages
+    ), "Unexpected warning about grouping when user explicitly sets both face_grouping and edge_grouping"
 
 
 # ======================= Draft Entity Isolation =======================
@@ -205,13 +268,13 @@ def test_draft_entity_modifications_flow_to_params_without_update_persistent_ent
                 outputs=[fl.SurfaceOutput(surfaces=[surface], output_fields=["Cp"])],
             )
 
+        # Call set_up_params_for_uploading with draft context
         params = set_up_params_for_uploading(
             params=params,
             root_asset=mock_geometry,
             length_unit=1 * u.m,
             use_beta_mesher=False,
             use_geometry_AI=False,
-            draft_entity_info=draft._entity_info,  # Pass draft's entity_info
         )
 
         # Verify the modification made it through to the final params
@@ -224,6 +287,38 @@ def test_draft_entity_modifications_flow_to_params_without_update_persistent_ent
                     break
         assert final_entity is not None, "Entity not found in final params"
         assert final_entity.private_attribute_color == "test_red_color"
+
+
+def test_draft_volume_zone_modifications_flow_to_params(mock_volume_mesh):
+    """
+    Test: Volume zone modifications via draft context flow through to params.
+
+    This mirrors test_persistent_entity_info_update_volume_mesh but uses
+    draft context instead of update_persistent_entities().
+    """
+    with create_draft(new_run_from=mock_volume_mesh) as draft:
+        # Modify the center of a zone
+        zone = draft.volumes["blk-1"]
+        zone.center = (1.2, 2.3, 3.4) * u.cm
+
+        # Verify change is in entity_info
+        assert all(draft._entity_info.zones[0].center == (1.2, 2.3, 3.4) * u.cm)
+
+        # Create params and go through set_up_params_for_uploading
+        with fl.SI_unit_system:
+            params = fl.SimulationParams()
+
+        params = set_up_params_for_uploading(
+            params=params,
+            root_asset=mock_volume_mesh,
+            length_unit=1 * u.m,
+            use_beta_mesher=False,
+            use_geometry_AI=False,
+        )
+
+        # Verify the modification made it through
+        final_zone = params.private_attribute_asset_cache.project_entity_info.zones[0]
+        assert all(final_zone.center == (1.2, 2.3, 3.4) * u.cm)
 
 
 def test_newly_created_draft_entities_in_params_after_set_up(mock_surface_mesh):
@@ -252,14 +347,13 @@ def test_newly_created_draft_entities_in_params_after_set_up(mock_surface_mesh):
                 )
             )
 
-        # Call set_up_params_for_uploading with draft's entity_info
+        # Call set_up_params_for_uploading with draft context
         params = set_up_params_for_uploading(
             params=params,
             root_asset=mock_surface_mesh,
             length_unit=1 * u.m,
             use_beta_mesher=False,
             use_geometry_AI=False,
-            draft_entity_info=draft._entity_info,
         )
 
         # Verify the box is in the final entity_info's draft_entities
@@ -312,7 +406,6 @@ def test_draft_entity_modifications_preserved_after_set_up(mock_surface_mesh):
             length_unit=1 * u.m,
             use_beta_mesher=False,
             use_geometry_AI=False,
-            draft_entity_info=draft._entity_info,
         )
 
         # Verify the entity_info in params is draft's entity_info (source of truth)
@@ -368,7 +461,6 @@ def test_external_draft_entities_from_copied_params_are_captured(mock_surface_me
             length_unit=1 * u.m,
             use_beta_mesher=False,
             use_geometry_AI=False,
-            draft_entity_info=draft._entity_info,
         )
 
         # Verify the imported box is captured in draft_entities
@@ -419,7 +511,6 @@ def test_draft_entity_info_is_source_of_truth_over_params(mock_surface_mesh):
             length_unit=1 * u.m,
             use_beta_mesher=False,
             use_geometry_AI=False,
-            draft_entity_info=draft._entity_info,
         )
 
         # Verify exactly one box with this ID exists (no duplicates)

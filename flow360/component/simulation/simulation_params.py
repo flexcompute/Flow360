@@ -14,6 +14,12 @@ from flow360.component.simulation.conversion import (
     unit_converter,
 )
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
+from flow360.component.simulation.framework.boundary_split import (
+    BoundaryNameLookupTable,
+    post_process_rotation_volume_entities,
+    post_process_wall_models_for_rotating,
+    update_entities_in_model,
+)
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
 from flow360.component.simulation.framework.param_utils import (
     AssetCache,
@@ -103,6 +109,7 @@ from flow360.component.simulation.validation.validation_simulation_params import
     _check_complete_boundary_condition_and_unknown_surface,
     _check_consistency_hybrid_model_volume_output,
     _check_consistency_wall_function_and_surface_output,
+    _check_coordinate_system_constraints,
     _check_duplicate_actuator_disk_cylinder_names,
     _check_duplicate_entities_in_models,
     _check_duplicate_isosurface_names,
@@ -112,10 +119,12 @@ from flow360.component.simulation.validation.validation_simulation_params import
     _check_numerical_dissipation_factor_output,
     _check_parent_volume_is_rotating,
     _check_time_average_output,
+    _check_unique_selector_names,
     _check_unsteadiness_to_use_hybrid_model,
     _check_valid_models_for_liquid,
     _populate_validated_field_to_validation_context,
 )
+from flow360.component.simulation.validation.validation_utils import has_mirroring_usage
 from flow360.error_messages import (
     unit_system_inconsistent_msg,
     use_unit_system_for_simulation_msg,
@@ -349,7 +358,9 @@ class SimulationParams(_ParamModelBase):
             # pylint: disable=not-context-manager
             with self.unit_system:
                 return super().preprocess(
-                    params=self, exclude=exclude, flow360_unit_system=self.flow360_unit_system
+                    params=self,
+                    exclude=exclude,
+                    flow360_unit_system=self.flow360_unit_system,
                 )
         return super().preprocess(
             params=self, exclude=exclude, flow360_unit_system=self.flow360_unit_system
@@ -576,6 +587,11 @@ class SimulationParams(_ParamModelBase):
         """Only allow each Surface/Volume entity to appear once in the Surface/Volume model"""
         return _check_duplicate_entities_in_models(self, param_info)
 
+    @contextual_model_validator(mode="after")
+    def check_unique_selector_names(self):
+        """Ensure all EntitySelector names are unique"""
+        return _check_unique_selector_names(self)
+
     @pd.model_validator(mode="after")
     def check_numerical_dissipation_factor_output(self):
         """Only allow numericalDissipationFactor output field when the NS solver has low numerical dissipation"""
@@ -623,6 +639,19 @@ class SimulationParams(_ParamModelBase):
     def check_moving_statistic_applicability(params):
         """Check moving statistic settings are applicable to the simulation time stepping set up."""
         return _check_moving_statistic_applicability(params)
+
+    @contextual_model_validator(mode="after")
+    def _validate_coordinate_system_constraints(self, param_info: ParamsValidationInfo):
+        """Validate coordinate system usage constraints."""
+        return _check_coordinate_system_constraints(self, param_info)
+
+    @contextual_model_validator(mode="after")
+    def _validate_mirroring_requires_geometry_ai(self, param_info: ParamsValidationInfo):
+        """Ensure mirroring is only used when GeometryAI is enabled."""
+        if has_mirroring_usage(self.private_attribute_asset_cache):
+            if not param_info.use_geometry_AI:
+                raise ValueError("Mirroring is only supported when Geometry AI is enabled.")
+        return self
 
     def _register_assigned_entities(self, registry: EntityRegistry) -> EntityRegistry:
         """Recursively register all entities listed in EntityList to the asset cache."""
@@ -787,10 +816,20 @@ class SimulationParams(_ParamModelBase):
         Some thoughts:
         Do we also need to update the params when the **surface meshing** is done?
         """
-        # Below includes the Ghost entities.
-        _update_entity_full_name(self, _SurfaceEntityBase, volume_mesh_meta_data)
+        # Build lookup table for surface entity name mapping (base_name -> full_name)
+        lookup_table = BoundaryNameLookupTable.from_params(volume_mesh_meta_data, params=self)
+
+        # Update surface entities using the lookup table
+        update_entities_in_model(self, lookup_table, _SurfaceEntityBase)
+
+        # Update volume entities
         _update_entity_full_name(self, _VolumeEntityBase, volume_mesh_meta_data)
         _update_zone_boundaries_with_metadata(self.used_entity_registry, volume_mesh_meta_data)
+
+        # Post-processing hooks for RotationVolume-specific logic
+        post_process_rotation_volume_entities(self, lookup_table)
+        post_process_wall_models_for_rotating(self, lookup_table)
+
         return self
 
     def is_steady(self):

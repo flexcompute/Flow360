@@ -7,7 +7,7 @@ Defines a minimal, stable schema for selecting entities by rules.
 import re
 from collections import deque
 from functools import lru_cache
-from typing import Any, Dict, List, Literal, Optional, Union, get_args
+from typing import Any, Dict, List, Literal, Optional, Union
 
 import pydantic as pd
 from typing_extensions import Self
@@ -76,16 +76,14 @@ class EntitySelector(Flow360BaseModel):
         pattern: str,
         *,
         attribute: Literal["name"] = "name",
-        syntax: Literal["glob", "regex"] = "glob",
     ) -> Self:
-        """Append a matches predicate and return self for chaining."""
+        """Append a matches predicate (glob pattern) and return self for chaining."""
         # pylint: disable=no-member
         self.children.append(
             Predicate(
                 attribute=attribute,
                 operator="matches",
                 value=pattern,
-                non_glob_syntax=("regex" if syntax == "regex" else None),
             )
         )
         return self
@@ -96,16 +94,14 @@ class EntitySelector(Flow360BaseModel):
         pattern: str,
         *,
         attribute: Literal["name"] = "name",
-        syntax: Literal["glob", "regex"] = "glob",
     ) -> Self:
-        """Append a notMatches predicate and return self for chaining."""
+        """Append a not-matches predicate (glob pattern) and return self for chaining."""
         # pylint: disable=no-member
         self.children.append(
             Predicate(
                 attribute=attribute,
                 operator="not_matches",
                 value=pattern,
-                non_glob_syntax=("regex" if syntax == "regex" else None),
             )
         )
         return self
@@ -125,248 +121,95 @@ class EntitySelector(Flow360BaseModel):
         return self
 
 
-########## API IMPLEMENTATION ##########
+########## SELECTOR CLASSES ##########
 
 
-def _validate_selector_factory_common(
-    method_name: str,
-    *,
-    name: str,
-    attribute: str,
-    logic: str,
-    syntax: Optional[str] = None,
-) -> None:
+class SurfaceSelector(EntitySelector):
     """
-    Validate common arguments for SelectorFactory methods.
+    Pattern-based selector for Surface entities. Stores matching rules,
+    enabling reusable SimulationParams templates.
 
-    This performs friendly, actionable validation with clear error messages.
-    """
-    # name: required and meaningful
-    if not isinstance(name, str) or not name.strip():
-        raise ValueError(
-            f"SelectorFactory.{method_name}: 'name' must be a non-empty string; "
-            "it is the selector's unique identifier."
-        )
+    Example
+    -------
+    >>> # Simple: match surfaces by glob pattern
+    >>> fl.SurfaceSelector(name="wing_surfaces").match("wing*")
+    >>> # With OR logic: match surfaces matching either pattern
+    >>> sel = fl.SurfaceSelector(
+    ...     name="wing_and_tail", logic="OR",
+    ...     description="Wing and tail surfaces"
+    ... ).match("wing*").match("tail*")
 
-    # attribute: currently only 'name' is supported
-    if attribute != "name":
-        raise ValueError(
-            f"SelectorFactory.{method_name}: attribute must be 'name'. Other attributes are not supported."
-        )
-
-    # logic
-    if logic not in ("AND", "OR"):
-        raise ValueError(
-            f"SelectorFactory.{method_name}: logic must be one of {{'AND','OR'}}. Got: {logic!r}."
-        )
-
-    # syntax (if applicable)
-    if syntax is not None and syntax not in ("glob", "regex"):
-        raise ValueError(
-            f"SelectorFactory.{method_name}: syntax must be one of {{'glob','regex'}}. Got: {syntax!r}."
-        )
-
-
-def _validate_selector_pattern(method_name: str, pattern: str) -> None:
-    """Validate the pattern argument for match/not_match."""
-    if not isinstance(pattern, str) or len(pattern) == 0:
-        raise ValueError(f"SelectorFactory.{method_name}: pattern must be a non-empty string.")
-
-
-def _validate_selector_values(method_name: str, values: list[str]) -> None:
-    """Validate values argument for any_of/not_any_of."""
-    if not isinstance(values, list) or len(values) == 0:
-        raise ValueError(
-            f"SelectorFactory.{method_name}: values must be a non-empty list of strings."
-        )
-    for i, v in enumerate(values):
-        if not isinstance(v, str) or not v:
-            raise ValueError(
-                f"SelectorFactory.{method_name}: values[{i}] must be a non-empty string."
-            )
-
-
-class SelectorFactory:
-    """
-    Mixin providing class-level helpers to build EntitySelector instances with
-    preset predicates.
+    ====
     """
 
-    @classmethod
-    # pylint: disable=too-many-arguments
-    def match(
-        cls,
-        pattern: str,
-        /,
-        *,
-        name: str,
-        attribute: Literal["name"] = "name",
-        syntax: Literal["glob", "regex"] = "glob",
-        logic: Literal["AND", "OR"] = "AND",
-        description: Optional[str] = None,
-    ) -> EntitySelector:
-        """
-        Create an EntitySelector for this class and seed it with one matches predicate.
-
-        Example
-        -------
-        >>> # Glob match on Surface names (AND logic by default)
-        >>> fl.Surface.match("wing*", name="wing_sel")
-        >>> # Regex full match
-        >>> fl.Surface.match(r"^wing$", syntax="regex", name="wing_sel")
-        >>> # Chain more predicates with AND logic
-        >>> fl.Surface.match("wing*", name="wing_sel").not_any_of(["wing"])
-        >>> # Use OR logic across predicates (short alias)
-        >>> fl.Surface.match("s1", name="s1_or", logic="OR").any_of(["tail"])
-
-        ====
-        """
-        _validate_selector_factory_common(
-            "match", name=name, attribute=attribute, logic=logic, syntax=syntax
-        )
-        _validate_selector_pattern("match", pattern)
-
-        selector = generate_entity_selector_from_class(
-            selector_name=name,
-            entity_class=cls,
-            logic=logic,
-            selector_description=description,
-        )
-        selector.match(pattern, attribute=attribute, syntax=syntax)
-        return selector
-
-    @classmethod
-    # pylint: disable=too-many-arguments
-    def not_match(
-        cls,
-        pattern: str,
-        /,
-        *,
-        name: str,
-        attribute: Literal["name"] = "name",
-        syntax: Literal["glob", "regex"] = "glob",
-        logic: Literal["AND", "OR"] = "AND",
-        description: Optional[str] = None,
-    ) -> EntitySelector:
-        """Create an EntitySelector and seed a notMatches predicate.
-
-        Example
-        -------
-        >>> # Exclude all surfaces ending with '-root'
-        >>> fl.Surface.match("*", name="exclude_root").not_match("*-root")
-        >>> # Exclude by regex
-        >>> fl.Surface.match("*").not_match(r".*-(root|tip)$", syntax="regex")
-
-        ====
-        """
-        _validate_selector_factory_common(
-            "not_match", name=name, attribute=attribute, logic=logic, syntax=syntax
-        )
-        _validate_selector_pattern("not_match", pattern)
-
-        selector = generate_entity_selector_from_class(
-            selector_name=name,
-            entity_class=cls,
-            logic=logic,
-            selector_description=description,
-        )
-        selector.not_match(pattern, attribute=attribute, syntax=syntax)
-        return selector
-
-    # pylint: disable=too-many-arguments
-    @classmethod
-    def any_of(
-        cls,
-        values: List[str],
-        /,
-        *,
-        name: str,
-        attribute: Literal["name"] = "name",
-        logic: Literal["AND", "OR"] = "AND",
-        description: Optional[str] = None,
-    ) -> EntitySelector:
-        """Create an EntitySelector and seed an in predicate.
-
-        Example
-        -------
-        >>> fl.Surface.any_of(["a", "b", "c"])
-        >>> # Equivalent alias
-        >>> fl.Surface.in_(["a", "b", "c"])
-        >>> # Combine with not_any_of to subtract
-        >>> fl.Surface.any_of(["a", "b", "c"]).not_any_of(["b"])
-
-        ====
-        """
-        _validate_selector_factory_common("any_of", name=name, attribute=attribute, logic=logic)
-        _validate_selector_values("any_of", values)
-
-        selector = generate_entity_selector_from_class(
-            selector_name=name,
-            entity_class=cls,
-            logic=logic,
-            selector_description=description,
-        )
-        selector.any_of(values, attribute=attribute)
-        return selector
-
-    # pylint: disable=too-many-arguments
-    @classmethod
-    def not_any_of(
-        cls,
-        values: List[str],
-        /,
-        *,
-        name: str,
-        attribute: Literal["name"] = "name",
-        logic: Literal["AND", "OR"] = "AND",
-        description: Optional[str] = None,
-    ) -> EntitySelector:
-        """Create an EntitySelector and seed a notIn predicate.
-
-        Example
-        -------
-        >>> # Select all except those in the set
-        >>> fl.Surface.match("*").not_any_of(["a", "b"])
-
-        ====
-        """
-        _validate_selector_factory_common("not_any_of", name=name, attribute=attribute, logic=logic)
-        _validate_selector_values("not_any_of", values)  # type: ignore[arg-type]
-
-        selector = generate_entity_selector_from_class(
-            selector_name=name,
-            entity_class=cls,
-            logic=logic,
-            selector_description=description,
-        )
-        selector.not_any_of(values, attribute=attribute)
-        return selector
+    target_class: Literal["Surface"] = pd.Field("Surface", frozen=True)
+    children: List[Predicate] = pd.Field(default_factory=list)
 
 
-def generate_entity_selector_from_class(
-    selector_name: str,
-    entity_class: type,
-    logic: Literal["AND", "OR"] = "AND",
-    selector_description: Optional[str] = None,
-) -> EntitySelector:
+class EdgeSelector(EntitySelector):
     """
-    Create a new selector for the given entity class.
+    Pattern-based selector for Edge entities. Stores matching rules,
+    enabling reusable SimulationParams templates.
 
-    entity_class should be one of the supported entity types (Surface, Edge, GenericVolume, GeometryBodyGroup).
+    Example
+    -------
+    >>> # Simple: match edges by glob pattern
+    >>> fl.EdgeSelector(name="leading_edges").match("leading_edge*")
+    >>> # With OR logic: match edges by name list
+    >>> sel = fl.EdgeSelector(
+    ...     name="selected_edges", logic="OR",
+    ...     description="Edges for refinement"
+    ... ).any_of(["edge1", "edge2"])
+
+    ====
     """
-    class_name = getattr(entity_class, "__name__", str(entity_class))
-    allowed_classes = get_args(TargetClass)
-    assert (
-        class_name in allowed_classes
-    ), f"Unknown entity class: {entity_class} for generating entity selector."
 
-    return EntitySelector(
-        name=selector_name,
-        description=selector_description,
-        target_class=class_name,
-        logic=logic,
-        children=[],
-    )
+    target_class: Literal["Edge"] = pd.Field("Edge", frozen=True)
+    children: List[Predicate] = pd.Field(default_factory=list)
+
+
+class VolumeSelector(EntitySelector):
+    """
+    Pattern-based selector for volume zone entities. Stores matching rules,
+    enabling reusable SimulationParams templates.
+
+    Example
+    -------
+    >>> # Simple: match volumes by glob pattern
+    >>> fl.VolumeSelector(name="fluid_zones").match("fluid*")
+    >>> # With OR logic: match specific zones by name
+    >>> sel = fl.VolumeSelector(
+    ...     name="porous_zones", logic="OR",
+    ...     description="Zones for porous medium"
+    ... ).any_of(["zone1", "zone2"])
+
+    ====
+    """
+
+    target_class: Literal["GenericVolume"] = pd.Field("GenericVolume", frozen=True)
+    children: List[Predicate] = pd.Field(default_factory=list)
+
+
+class BodyGroupSelector(EntitySelector):
+    """
+    Pattern-based selector for body group entities. Stores matching rules,
+    enabling reusable SimulationParams templates.
+
+    Example
+    -------
+    >>> # Simple: match body groups by glob pattern
+    >>> fl.BodyGroupSelector(name="rotor_bodies").match("rotor*")
+    >>> # With OR logic: match specific bodies by name
+    >>> sel = fl.BodyGroupSelector(
+    ...     name="rotating_bodies", logic="OR",
+    ...     description="Bodies for rotation"
+    ... ).any_of(["body1", "body2"])
+
+    ====
+    """
+
+    target_class: Literal["GeometryBodyGroup"] = pd.Field("GeometryBodyGroup", frozen=True)
+    children: List[Predicate] = pd.Field(default_factory=list)
 
 
 ########## EXPANSION IMPLEMENTATION ##########
@@ -592,6 +435,8 @@ def _process_selectors(
     registry,
     selectors_list: list,
     selector_cache: dict,
+    *,
+    expansion_map: Optional[Dict[str, List[str]]] = None,
 ) -> tuple[dict[str, list[EntityNode]], list[str]]:
     """Process selectors and return additions grouped by class.
 
@@ -603,10 +448,20 @@ def _process_selectors(
         registry: EntityRegistry instance containing entities.
         selectors_list: List of selector definitions (materialized; no string tokens).
         selector_cache: Cache for selector results.
+        expansion_map: Optional type expansion mapping. If None, uses DEFAULT_TARGET_CLASS_EXPANSION_MAP.
 
     Returns:
         Tuple of (additions_by_class dict, ordered_target_classes list).
     """
+    # Set default expansion map
+    if expansion_map is None:
+        # pylint: disable=import-outside-toplevel
+        from flow360.component.simulation.framework.entity_expansion_config import (
+            DEFAULT_TARGET_CLASS_EXPANSION_MAP,
+        )
+
+        expansion_map = DEFAULT_TARGET_CLASS_EXPANSION_MAP
+
     additions_by_class: dict[str, list[EntityNode]] = {}
     ordered_target_classes: list[str] = []
 
@@ -617,7 +472,10 @@ def _process_selectors(
             )
         selector: EntitySelector = item
         target_class = selector.target_class
-        entities = registry.find_by_type_name(target_class)
+
+        # Use expansion map to get multiple type names
+        expanded_type_names = expansion_map.get(target_class, [target_class])
+        entities = registry.find_by_type_name(expanded_type_names)
         if not entities:
             continue
         cache_key = _get_selector_cache_key(selector)
@@ -640,7 +498,11 @@ def _merge_entities(
     merge_mode: Literal["merge", "replace"],
     not_merged_types: set[str] = DEFAULT_NOT_MERGED_TYPES,
 ) -> list[Any]:
-    """Merge existing entities with selector additions based on merge mode."""
+    """Merge existing entities with selector additions based on merge mode.
+
+    Note: Type filtering is now handled by EntityList's _filter_entities_by_valid_types
+    field validator, which runs after this function returns entities to the list.
+    """
     candidates: list[EntityNode] = []
 
     if merge_mode == "merge":  # explicit first, then selector additions
@@ -670,14 +532,20 @@ def expand_entity_list_selectors(
     *,
     selector_cache: dict = None,
     merge_mode: Literal["merge", "replace"] = "merge",
+    expansion_map: Optional[Dict[str, List[str]]] = None,
 ) -> list[EntityNode]:
     """
     Expand selectors in a single EntityList within an EntityRegistry context.
+
+    Parameters
+    ----------
+    expansion_map : Optional type expansion mapping for selectors.
 
     Notes
     -----
     - This function does NOT modify the input EntityList.
     - selector_cache can be shared across multiple calls to reuse selector results.
+    - Type filtering is now handled by EntityList's field validator.
     """
     stored_entities = list(getattr(entity_list, "stored_entities", []) or [])
     raw_selectors = list(getattr(entity_list, "selectors", []) or [])
@@ -692,6 +560,7 @@ def expand_entity_list_selectors(
         registry,
         raw_selectors,
         selector_cache,
+        expansion_map=expansion_map,
     )
     return _merge_entities(
         stored_entities,
@@ -707,6 +576,7 @@ def expand_entity_list_selectors_in_place(
     *,
     selector_cache: dict = None,
     merge_mode: Literal["merge", "replace"] = "merge",
+    expansion_map: Optional[Dict[str, List[str]]] = None,
 ) -> None:
     """
     Expand selectors in an EntityList and write results into stored_entities in-place.
@@ -718,6 +588,7 @@ def expand_entity_list_selectors_in_place(
         entity_list,
         selector_cache=selector_cache,
         merge_mode=merge_mode,
+        expansion_map=expansion_map,
     )
     entity_list.stored_entities = expanded
 

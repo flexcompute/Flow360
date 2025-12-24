@@ -8,6 +8,7 @@ from flow360.component.project_utils import (
     set_up_params_for_uploading,
     validate_params_with_context,
 )
+from flow360.component.simulation.framework.entity_selector import SurfaceSelector
 from flow360.component.simulation.meshing_param.meshing_specs import MeshingDefaults
 from flow360.component.simulation.meshing_param.params import MeshingParams
 from flow360.component.simulation.meshing_param.volume_params import UniformRefinement
@@ -63,7 +64,7 @@ def test_draft_end_to_end_selector_and_draft_entity_roundtrip(mock_surface_mesh,
     with create_draft(new_run_from=mock_surface_mesh) as draft:
         with SI_unit_system:
             # Shared selector reused in multiple places (same selector_id).
-            shared_selector = Surface.match("fuselage", name="sel_shared_fuselage")
+            shared_selector = SurfaceSelector(name="sel_shared_fuselage").match("fuselage")
             selector_id = shared_selector.selector_id
 
             # Persistent entity picked explicitly to create overlap with selector selection.
@@ -121,7 +122,6 @@ def test_draft_end_to_end_selector_and_draft_entity_roundtrip(mock_surface_mesh,
             length_unit=1 * u.m,
             use_beta_mesher=False,
             use_geometry_AI=False,
-            draft_entity_info=draft._entity_info,
         )
         wall_model = next(m for m in params.models if isinstance(m, Wall))
         assert wall_model.entities.stored_entities == []
@@ -175,7 +175,13 @@ def test_draft_end_to_end_selector_and_draft_entity_roundtrip(mock_surface_mesh,
 
         # Validate expansion works (a successful validate_model is usually sufficient; we still assert names).
         wall_model_v2 = next(m for m in validated.models if isinstance(m, Wall))
-        selected_names = wall_model_v2.entities.preview_selection(validated, return_names=True)
+        # Create a DraftContext from validated params to test selector preview
+        from flow360.component.simulation.draft_context import DraftContext
+
+        entity_info = validated.private_attribute_asset_cache.project_entity_info
+        temp_draft = DraftContext(entity_info=entity_info)
+        wall_selector = wall_model_v2.entities.selectors[0]
+        selected_names = temp_draft.preview_selector(wall_selector, return_names=True)
         assert selected_names == ["fuselage"]
 
         # Assert selector materialization links instances across references (same object).

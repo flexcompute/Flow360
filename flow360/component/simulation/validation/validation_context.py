@@ -140,7 +140,7 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         "physics_model_dict",
         "half_model_symmetry_plane_center_y",
         "quasi_3d_symmetry_planes_center_y",
-        "at_least_one_body_transformed",
+        "entity_transformation_detected",
         "to_be_generated_custom_volumes",
         "root_asset_type",
         # Entity expansion support
@@ -355,35 +355,32 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         return (symmetric_1_center_y, symmetric_2_center_y)
 
     @classmethod
-    def _get_at_least_one_body_transformed(cls, param_as_dict: dict):  # pylint:disable=invalid-name
-        body_group_tag: str = get_value_with_path(
-            param_as_dict,
-            ["private_attribute_asset_cache", "project_entity_info", "body_group_tag"],
+    def _get_entity_transformation_detected(
+        cls, param_as_dict: dict
+    ):  # pylint:disable=invalid-name
+        """
+        Get the flag indicating if at least one body was transformed or mirrored.
+        This is used to skip boundary deletion/assignment checks since once translated
+        the bounding box as well as the boundary existence is no longer valid.
+        """
+        # 1. Check for coordinate system transformations
+        coordinate_system_status_dict = get_value_with_path(
+            param_as_dict, ["private_attribute_asset_cache", "coordinate_system_status"]
         )
-        body_attribute_names: list[str] = get_value_with_path(
-            param_as_dict,
-            ["private_attribute_asset_cache", "project_entity_info", "body_attribute_names"],
-        )
-        grouped_bodies: list[dict] = get_value_with_path(
-            param_as_dict,
-            ["private_attribute_asset_cache", "project_entity_info", "grouped_bodies"],
-        )
-
-        if body_group_tag is None or not body_attribute_names or not grouped_bodies:
-            return False
-
-        grouped_body_index = body_attribute_names.index(body_group_tag)
-
-        for body_group in grouped_bodies[grouped_body_index]:
-            if "transformation" not in body_group:
-                continue
-            if body_group["transformation"]["angle_of_rotation"]["value"] != 0:
+        if coordinate_system_status_dict:
+            # Check if assignments list is non-empty
+            if coordinate_system_status_dict.get("assignments"):
                 return True
 
-            if body_group["transformation"]["scale"] != [1, 1, 1]:
-                return True
-
-            if body_group["transformation"]["translation"]["value"] != [0, 0, 0]:
+        # 2. Check for mirroring
+        mirror_status_dict = get_value_with_path(
+            param_as_dict, ["private_attribute_asset_cache", "mirror_status"]
+        )
+        if mirror_status_dict:
+            # Check if either mirrored groups or surfaces list is non-empty
+            if mirror_status_dict.get("mirrored_geometry_body_groups") or mirror_status_dict.get(
+                "mirrored_surfaces"
+            ):
                 return True
 
         return False
@@ -448,7 +445,7 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         self.quasi_3d_symmetry_planes_center_y = self._get_quasi_3d_symmetry_planes_center_y(
             param_as_dict=param_as_dict
         )
-        self.at_least_one_body_transformed = self._get_at_least_one_body_transformed(
+        self.entity_transformation_detected = self._get_entity_transformation_detected(
             param_as_dict=param_as_dict
         )
         self.to_be_generated_custom_volumes = self._get_to_be_generated_custom_volumes(
