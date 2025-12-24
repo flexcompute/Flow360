@@ -68,7 +68,7 @@ class MirrorPlane(EntityBase):
 # region -----------------------------Internal Model Below-------------------------------------
 class MirrorStatus(Flow360BaseModel):
     """
-    Internal model for storing the mirror status.
+    Internal data model for storing the mirror status.
     """
 
     # Note: We can do similar thing as entityList to support mirroring with EntitySelectors.
@@ -249,7 +249,9 @@ def _derive_mirrored_entities_from_actions(
         surfaces=surfaces,
         mirror_planes_by_id=mirror_planes_by_id,
     )
-
+    # TODO: Register these to the entity registry of the draft context
+    # * (comapred to Box where the creation of it does not use any draft API so no need
+    # *  to register/update/ it to the draft context).
     return mirrored_geometry_groups, mirrored_surfaces
 
 
@@ -293,10 +295,20 @@ def _extract_body_group_id_to_mirror_id_from_status(
 
         if valid_body_group_ids is not None and body_group_id not in valid_body_group_ids:
             # Skip body groups that no longer exist.
+            log.debug(
+                "Ignoring mirroring of GeometryBodyGroup (ID:'%s') because it no longer exists.",
+                body_group_id,
+            )
             continue
 
         if mirror_plane_id not in mirror_planes_by_id:
             # Skip if the referenced mirror plane is no longer present.
+            log.debug(
+                "Ignoring mirroring of GeometryBodyGroup (ID:'%s') because the referenced"
+                " mirror plane (ID:'%s') no longer exists.",
+                body_group_id,
+                mirror_plane_id,
+            )
             continue
 
         body_group_id_to_mirror_id[body_group_id] = mirror_plane_id
@@ -340,7 +352,7 @@ class MirrorManager:
         self._surfaces = surfaces
 
     # region Public API -------------------------------------------------
-
+    # TODO: These should be hidden, Let's add mirror wrapper in the draft context and put the public API there.
     def known_mirror_plane_names(self) -> List[str]:
         """
         Return the names of all known mirror planes.
@@ -609,6 +621,8 @@ class MirrorManager:
         )
 
         mgr._body_group_id_to_mirror_id = body_group_id_to_mirror_id
+        # TODO: Replace _mirror_planes with just maybe the IDs?
+        # Entities should not be maintained and stored in the mirror manager. Or do we need this at all?
         mgr._mirror_planes = mirror_planes
 
         return mgr

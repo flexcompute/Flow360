@@ -584,3 +584,115 @@ def test_asset_cache_validator_skips_non_geometry_entity_info():
     assert result is asset_cache
     # Verify the method was never called because isinstance check should fail
     mock_entity_info.get_face_group_to_body_group_id_map.assert_not_called()
+
+
+# --------------------------------------------------------------------------------------
+# Tests for mirror status when face groupings changes
+# --------------------------------------------------------------------------------------
+
+
+def test_draft_context_mirror_status_updates_when_face_groupings_change(mock_geometry, tmp_path):
+    """Test that _mirror_status.mirrored_surfaces updates when face groupings change.
+
+    Scenario: User mirrors a body group using one face grouping tag (e.g., "ByBody").
+    The mirrored_surfaces reference the surface IDs from that grouping.
+    After switching to a different face grouping tag (e.g., "groupByBodyId") via
+    create_draft's face_grouping parameter, the surface IDs change.
+    The _mirror_status should reflect the new surface IDs.
+    """
+    # Ensure the geometry has an internal registry.
+    mock_geometry.internal_registry = mock_geometry._entity_info.get_persistent_entity_registry(
+        mock_geometry.internal_registry
+    )
+
+    # 1. Create a draft context with "ByBody" face grouping and mirror a body group.
+    #    With "ByBody" grouping, body00001's faces are grouped as surface "Box1".
+    with create_draft(new_run_from=mock_geometry, face_grouping="ByBody") as draft:
+        body_groups = list(draft.body_groups)
+        assert body_groups, "Test requires at least one body group."
+
+        # Use the first body group (body00001).
+        first_body_group = body_groups[0]
+        source_body_group_id = first_body_group.private_attribute_id
+
+        mirror_plane = MirrorPlane(
+            name="mirrorX",
+            normal=(1, 0, 0),
+            center=(0, 0, 0) * u.m,
+        )
+
+        # Mirror the body group.
+        _, original_mirrored_surfaces = draft.mirror.create_mirror_of(
+            entities=first_body_group, mirror_plane=mirror_plane
+        )
+
+        # Record the original mirrored surface IDs.
+        original_surface_ids = {ms.surface_id for ms in original_mirrored_surfaces}
+        assert original_surface_ids, "Expected mirrored surfaces to be created."
+
+        # 2. Dump the simulation params with mirror status.
+        with u.SI_unit_system:
+            params = SimulationParams()
+
+        processed_params = set_up_params_for_uploading(
+            root_asset=mock_geometry,
+            length_unit=1 * u.m,
+            params=params,
+            use_beta_mesher=False,
+            use_geometry_AI=False,
+        )
+
+        original_mirror_status = processed_params.private_attribute_asset_cache.mirror_status
+        assert original_mirror_status is not None
+        original_status_surface_ids = {
+            ms.surface_id for ms in original_mirror_status.mirrored_surfaces
+        }
+        assert original_status_surface_ids == original_surface_ids
+
+    # 3. Serialize and save the params (mirror_status is stored in asset_cache).
+    serialized_params = processed_params.model_dump(mode="json")
+    with open(os.path.join(tmp_path, "simulation.json"), "w") as f:
+        json.dump(serialized_params, f)
+
+    # Create geometry from storage (contains the original mirror_status).
+    restored_geometry = Geometry._from_local_storage(
+        asset_id="geo-restored-aaaa-aaaaaaaa",
+        local_storage_path=tmp_path,
+        meta_data=GeometryMeta(
+            **local_metadata_builder(
+                id="geo-restored-aaaa-aaaaaaaa",
+                name="RestoredGeometry",
+                cloud_path_prefix="--",
+                status="processed",
+            )
+        ),
+    )
+
+    # 4. Create a new draft with DIFFERENT face grouping ("groupByBodyId").
+    #    With "groupByBodyId", body00001's faces are grouped as surface "body00001".
+    #    The _mirror_status should have mirrored_surfaces with NEW surface IDs.
+    with create_draft(
+        new_run_from=restored_geometry, face_grouping="groupByBodyId"
+    ) as restored_draft:
+        # Body group mirroring should still exist.
+        assert source_body_group_id in restored_draft.mirror._body_group_id_to_mirror_id
+
+        # Verify the _mirror_status has updated mirrored_surfaces.
+        updated_status = restored_draft._mirror_status
+        assert updated_status is not None
+
+        updated_surface_ids = {ms.surface_id for ms in updated_status.mirrored_surfaces}
+
+        # The updated surface IDs should be different from original (due to grouping change).
+        # With "groupByBodyId", the surface for body00001 should be "body00001" instead of "Box1".
+        assert updated_surface_ids != original_surface_ids, (
+            f"Expected mirrored surface IDs to change after face grouping change. "
+            f"Original: {original_surface_ids}, Updated: {updated_surface_ids}"
+        )
+
+        # Verify the new surface IDs correspond to surfaces in the new draft.
+        current_surface_ids = {s.private_attribute_id for s in restored_draft.surfaces._entities}
+        assert updated_surface_ids.issubset(current_surface_ids), (
+            f"Mirrored surface IDs should reference valid surfaces in the new draft. "
+            f"Mirrored: {updated_surface_ids}, Available: {current_surface_ids}"
+        )

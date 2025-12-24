@@ -61,9 +61,15 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
     """
 
     __slots__ = (
+        # Persistent entities data storage.
         "_entity_info",
+        # Interface accessing ALL types of entities.
         "_entity_registry",
+        # Lightweight mirror relationships storage (compared to entity storages)
         "_mirror_manager",
+        # Internal mirror related entities data storage.
+        "_mirror_status",
+        # Lightweight coordinate system relationships storage (compared to entity storages)
         "_coordinate_system_manager",
         "_token",
     )
@@ -92,8 +98,8 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
             )
         self._token: Optional[Token] = None
 
-        # DraftContext owns a deep copy of entity_info (created by create_draft()).
-        # This ensures modifications in the draft don't affect the original asset.
+        # DraftContext owns a deep copy of entity_info and mirror_status (created by create_draft()).
+        # This signals transfer of entity ownership from the asset to the draft (context).
         self._entity_info = entity_info
 
         # Use EntityRegistry.from_entity_info() for the new DraftContext workflow.
@@ -121,6 +127,9 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
             body_groups=self._entity_registry.view(GeometryBodyGroup)._entities,
             surfaces=self._entity_registry.view(Surface)._entities,
         )
+
+        # self owns a new copy of the mirror status validated/cleared by the mirror manager.
+        self._mirror_status = self._mirror_manager._to_status(entity_registry=self._entity_registry)
 
         self._coordinate_system_manager = CoordinateSystemManager._from_status(
             status=coordinate_system_status,
