@@ -90,6 +90,14 @@ class MirrorStatus(Flow360BaseModel):
             seen_names.add(plane.name)
         return self
 
+    def is_empty(self) -> bool:
+        """Check if the mirror status is empty."""
+        return (
+            not self.mirror_planes
+            and not self.mirrored_geometry_body_groups
+            and not self.mirrored_surfaces
+        )
+
 
 # endregion -------------------------------------------------------------------------------------
 
@@ -192,8 +200,7 @@ def _derive_mirrored_entities_from_actions(
     *,
     body_group_id_to_mirror_id: Dict[str, str],
     face_group_to_body_group: Optional[Dict[str, str]],
-    body_groups: List[GeometryBodyGroup],
-    surfaces: List[Surface],
+    entity_registry: EntityRegistry,
     mirror_planes: List[MirrorPlane],
 ) -> Tuple[List[MirroredGeometryBodyGroup], List[MirroredSurface]]:
     """
@@ -210,10 +217,8 @@ def _derive_mirrored_entities_from_actions(
         Mapping from geometry body group ID to mirror plane ID.
     face_group_to_body_group : Optional[Dict[str, str]]
         Mapping from surface name to owning body group ID. If None, no surfaces will be mirrored.
-    body_groups : List[GeometryBodyGroup]
-        List of all body groups.
-    surfaces : List[Surface]
-        List of all surfaces.
+    entity_registry : EntityRegistry
+        Entity registry containing body groups and surfaces.
     mirror_planes : List[MirrorPlane]
         List of all mirror planes.
 
@@ -229,6 +234,12 @@ def _derive_mirrored_entities_from_actions(
 
     if not body_group_id_to_mirror_id:
         return [], []
+
+    # Extract body groups and surfaces from the entity registry.
+    body_groups = entity_registry.view(  # pylint: disable=protected-access
+        GeometryBodyGroup
+    )._entities
+    surfaces = entity_registry.view(Surface)._entities  # pylint: disable=protected-access
 
     # Lookup tables for body groups and mirror planes.
     body_groups_by_id: Dict[str, GeometryBodyGroup] = {
@@ -257,9 +268,9 @@ def _derive_mirrored_entities_from_actions(
 
 def _extract_body_group_id_to_mirror_id_from_status(
     *,
-    mirror_status: MirrorStatus,
+    mirror_status: Optional[MirrorStatus],
     valid_body_group_ids: Optional[set[str]],
-) -> Tuple[Dict[str, str], List[MirrorPlane]]:
+) -> Dict[str, str]:
     """
     Deserialize mirror actions from a :class:`MirrorStatus` instance.
 
@@ -273,16 +284,14 @@ def _extract_body_group_id_to_mirror_id_from_status(
 
     Returns
     -------
-    Tuple[Dict[str, str], List[MirrorPlane]]
-        A tuple of:
+    Dict[str, str]
         - ``body_group_id_to_mirror_id``: mapping from geometry body group ID to mirror plane ID.
-        - ``mirror_planes``: list of :class:`MirrorPlane` instances referenced by those actions.
     """
 
     if mirror_status is None:
         # No mirror feature used in the asset.
         log.debug("Mirror status not provided; no mirroring actions to restore.")
-        return {}, []
+        return {}
 
     mirror_planes_by_id: Dict[str, MirrorPlane] = {
         plane.private_attribute_id: plane for plane in mirror_status.mirror_planes
@@ -313,14 +322,7 @@ def _extract_body_group_id_to_mirror_id_from_status(
 
         body_group_id_to_mirror_id[body_group_id] = mirror_plane_id
 
-    used_plane_ids = set(body_group_id_to_mirror_id.values())
-    mirror_planes: List[MirrorPlane] = [
-        plane
-        for plane in mirror_status.mirror_planes
-        if plane.private_attribute_id in used_plane_ids
-    ]
-
-    return body_group_id_to_mirror_id, mirror_planes
+    return body_group_id_to_mirror_id
 
 
 # endregion -------------------------------------------------------------------------------------
@@ -330,29 +332,30 @@ class MirrorManager:
     """Encapsulates mirror plane registry and entity mirroring operations."""
 
     __slots__ = (
-        "_mirror_planes",
+        "_mirror_status",  # MirrorManager owns the single mirror status instance.
         "_body_group_id_to_mirror_id",
         "_face_group_to_body_group",
-        "_body_groups",
-        "_surfaces",
+        "_entity_registry",  # A link to the full picture.
     )
+    _mirror_status: MirrorStatus
+    _body_group_id_to_mirror_id: Dict[str, str]
+    _face_group_to_body_group: Optional[Dict[str, str]]
+    _entity_registry: EntityRegistry
 
     def __init__(
         self,
         *,
         face_group_to_body_group: Optional[Dict[str, str]],
-        body_groups: List[GeometryBodyGroup],
-        surfaces: List[Surface],
+        entity_registry: EntityRegistry,
     ) -> None:
-        self._mirror_planes: List[MirrorPlane] = []
-        self._body_group_id_to_mirror_id: Dict[str, str] = {}
+        self._body_group_id_to_mirror_id = {}
         self._face_group_to_body_group = face_group_to_body_group
-        # _body_groups and _surfaces are needed to return token entities. But I prefer not having these as members.
-        self._body_groups = body_groups
-        self._surfaces = surfaces
+        self._entity_registry = entity_registry
+        self._mirror_status = MirrorStatus(
+            mirror_planes=[], mirrored_geometry_body_groups=[], mirrored_surfaces=[]
+        )
 
     # region Public API -------------------------------------------------
-    # TODO: These should be hidden, Let's add mirror wrapper in the draft context and put the public API there.
     def known_mirror_plane_names(self) -> List[str]:
         """
         Return the names of all known mirror planes.
@@ -365,6 +368,7 @@ class MirrorManager:
         return [plane.name for plane in self._mirror_planes]
 
     def get_mirror_plane(self, name: str) -> MirrorPlane:
+        # TODO:  replace with registry view.
         """
         Retrieve a mirror plane by name.
 
@@ -459,7 +463,7 @@ class MirrorManager:
                 raise Flow360RuntimeError(
                     f"Mirror plane name '{mirror_plane.name}' already exists in the draft."
                 )
-            self._mirror_planes.append(mirror_plane)
+            self._mirror_status.mirror_planes.append(mirror_plane)
 
         # 6. Create/Update the self._body_group_id_to_mirror_id
         body_group_id_to_mirror_id_update: Dict[str, str] = {}
@@ -473,8 +477,7 @@ class MirrorManager:
         return _derive_mirrored_entities_from_actions(
             body_group_id_to_mirror_id=body_group_id_to_mirror_id_update,
             face_group_to_body_group=self._face_group_to_body_group,
-            body_groups=self._body_groups,
-            surfaces=self._surfaces,
+            entity_registry=self._entity_registry,
             mirror_planes=self._mirror_planes,
         )
 
@@ -513,8 +516,19 @@ class MirrorManager:
             self._body_group_id_to_mirror_id.pop(body_group_id, None)
 
     # endregion ------------------------------------------------------------------------------------
+    @property
+    def _mirror_planes(self) -> List[MirrorPlane]:
+        """Return the list of mirror planes."""
+        return self._mirror_status.mirror_planes
 
-    def _to_status(self, *, entity_registry: EntityRegistry) -> Optional[MirrorStatus]:
+    @_mirror_planes.setter
+    def _mirror_planes(self, *args, **kwargs):
+        """Set the list of mirror planes."""
+        raise NotImplementedError(
+            "Mirror planes are managed by the mirror manager -> _mirror_status and cannot be assigned directly."
+        )
+
+    def _to_status(self) -> MirrorStatus:
         """Build a serializable status snapshot.
 
         Parameters
@@ -527,6 +541,9 @@ class MirrorManager:
         Optional[MirrorStatus]
             The serialized mirror status, or None if no valid mirror actions exist.
         """
+
+        entity_registry = self._entity_registry
+
         # Build a set of existing GeometryBodyGroup IDs in the registry for validation.
         existing_body_group_ids = set()
         for entity in entity_registry.find_by_type(GeometryBodyGroup):
@@ -548,13 +565,14 @@ class MirrorManager:
 
         if not filtered_actions:
             # No valid mirror actions – nothing to serialize.
-            return None
+            return MirrorStatus(
+                mirror_planes=[], mirrored_geometry_body_groups=[], mirrored_surfaces=[]
+            )
 
         mirrored_geometry_groups, mirrored_surfaces = _derive_mirrored_entities_from_actions(
             body_group_id_to_mirror_id=filtered_actions,
             face_group_to_body_group=self._face_group_to_body_group,
-            body_groups=self._body_groups,
-            surfaces=self._surfaces,
+            entity_registry=entity_registry,
             mirror_planes=self._mirror_planes,
         )
 
@@ -578,13 +596,12 @@ class MirrorManager:
         )
 
     @classmethod
-    def _from_status(  # pylint: disable=too-many-arguments
+    def _from_status(
         cls,
         *,
         status: Optional[MirrorStatus],
         face_group_to_body_group: Optional[Dict[str, str]],
-        body_groups: List[GeometryBodyGroup],
-        surfaces: List[Surface],
+        entity_registry: EntityRegistry,
     ) -> "MirrorManager":
         """Restore manager from a status snapshot.
 
@@ -594,10 +611,8 @@ class MirrorManager:
             The mirror status to restore from.
         face_group_to_body_group : Optional[Dict[str, str]]
             Mapping from surface name to owning body group ID.
-        body_groups : List[GeometryBodyGroup]
-            List of all body groups.
-        surfaces : List[Surface]
-            List of all surfaces.
+        entity_registry : EntityRegistry
+            Entity registry containing body groups and surfaces.
 
         Returns
         -------
@@ -606,25 +621,26 @@ class MirrorManager:
         """
         mgr = cls(
             face_group_to_body_group=face_group_to_body_group,
-            body_groups=body_groups,
-            surfaces=surfaces,
+            entity_registry=entity_registry,
         )
 
-        if status is None:
-            return mgr
-
+        body_groups = entity_registry.view(  # pylint: disable=protected-access
+            GeometryBodyGroup
+        )._entities
         valid_body_group_ids = {body_group.private_attribute_id for body_group in body_groups}
 
-        body_group_id_to_mirror_id, mirror_planes = _extract_body_group_id_to_mirror_id_from_status(
+        body_group_id_to_mirror_id = _extract_body_group_id_to_mirror_id_from_status(
             mirror_status=status,
             valid_body_group_ids=valid_body_group_ids,
         )
 
         mgr._body_group_id_to_mirror_id = body_group_id_to_mirror_id
-        # TODO: Replace _mirror_planes with just maybe the IDs?
-        # Entities should not be maintained and stored in the mirror manager. Or do we need this at all?
-        mgr._mirror_planes = mirror_planes
 
+        # Initialize with external mirror planes.
+        # These are not tightly coupled with the persistent entities therefore can be initialized separately.
+        mgr._mirror_status.mirror_planes = status.mirror_planes if status is not None else []
+
+        mgr._mirror_status = mgr._to_status()
         return mgr
 
     # endregion ------------------------------------------------------------------------------------

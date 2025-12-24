@@ -1,6 +1,6 @@
 import json
 import os
-from unittest.mock import MagicMock, PropertyMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 from pydantic import ValidationError
@@ -106,8 +106,7 @@ def test_mirror_multiple_calls_accumulate_and_derive_from_actions(mock_geometry)
         all_mirrored_body_groups, all_mirrored_surfaces = _derive_mirrored_entities_from_actions(
             body_group_id_to_mirror_id=draft.mirror._body_group_id_to_mirror_id,
             face_group_to_body_group=face_group_to_body_group,
-            body_groups=draft.body_groups._entities,
-            surfaces=draft.surfaces._entities,
+            entity_registry=draft._entity_registry,
             mirror_planes=draft.mirror._mirror_planes,
         )
 
@@ -404,8 +403,7 @@ def test_mirror_create_raises_when_face_group_to_body_group_is_none(mock_geometr
         # where face groupings span across body groups)
         mirror_manager = MirrorManager(
             face_group_to_body_group=None,  # This simulates the failure case
-            body_groups=[body_group],
-            surfaces=[],
+            entity_registry=draft._entity_registry,
         )
 
         mirror_plane = MirrorPlane(
@@ -678,7 +676,7 @@ def test_draft_context_mirror_status_updates_when_face_groupings_change(mock_geo
         assert source_body_group_id in restored_draft.mirror._body_group_id_to_mirror_id
 
         # Verify the _mirror_status has updated mirrored_surfaces.
-        updated_status = restored_draft._mirror_status
+        updated_status = restored_draft.mirror._mirror_status
         assert updated_status is not None
 
         updated_surface_ids = {ms.surface_id for ms in updated_status.mirrored_surfaces}

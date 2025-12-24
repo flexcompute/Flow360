@@ -620,9 +620,12 @@ def set_up_params_for_uploading(  # pylint: disable=too-many-arguments
         entity_info = _update_entity_grouping_tags(entity_info, params)
 
         with model_attribute_unlock(params.private_attribute_asset_cache, "mirror_status"):
-            params.private_attribute_asset_cache.mirror_status = active_draft.mirror._to_status(
-                entity_registry=active_draft._entity_registry
-            )
+            if not active_draft.mirror._mirror_status.is_empty():
+                params.private_attribute_asset_cache.mirror_status = (
+                    active_draft.mirror._to_status()
+                )
+            else:
+                params.private_attribute_asset_cache.mirror_status = None
         with model_attribute_unlock(
             params.private_attribute_asset_cache, "coordinate_system_status"
         ):

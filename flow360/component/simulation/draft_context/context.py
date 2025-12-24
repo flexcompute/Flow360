@@ -120,16 +120,11 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
                     "Mirroring will be disabled.",
                     exc,
                 )
-
         self._mirror_manager = MirrorManager._from_status(
             status=mirror_status,
             face_group_to_body_group=face_group_to_body_group,
-            body_groups=self._entity_registry.view(GeometryBodyGroup)._entities,
-            surfaces=self._entity_registry.view(Surface)._entities,
+            entity_registry=self._entity_registry,
         )
-
-        # self owns a new copy of the mirror status validated/cleared by the mirror manager.
-        self._mirror_status = self._mirror_manager._to_status(entity_registry=self._entity_registry)
 
         self._coordinate_system_manager = CoordinateSystemManager._from_status(
             status=coordinate_system_status,
