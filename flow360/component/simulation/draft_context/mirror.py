@@ -11,7 +11,10 @@ from flow360.component.simulation.entity_operation import (
 )
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityBase
-from flow360.component.simulation.framework.entity_registry import EntityRegistry
+from flow360.component.simulation.framework.entity_registry import (
+    EntityRegistry,
+    EntityRegistryView,
+)
 from flow360.component.simulation.framework.entity_utils import generate_uuid
 from flow360.component.simulation.primitives import (
     GeometryBodyGroup,
@@ -185,13 +188,16 @@ def _build_mirrored_surfaces(
             )
             continue
 
-        mirrored_surfaces.append(
-            MirroredSurface(
-                name=f"{surface.name}{MIRROR_SUFFIX}",
-                surface_id=surface.private_attribute_id,
-                mirror_plane_id=mirror_plane_id,
-            )
+        mirrored_surface = MirroredSurface(
+            name=f"{surface.name}{MIRROR_SUFFIX}",
+            surface_id=surface.private_attribute_id,
+            mirror_plane_id=mirror_plane_id,
         )
+        # Draft-only bookkeeping: record which body group generated this mirrored surface.
+        mirrored_surface._geometry_body_group_id = (  # pylint: disable=protected-access
+            owning_body_group_id
+        )
+        mirrored_surfaces.append(mirrored_surface)
 
     return mirrored_surfaces
 
@@ -260,9 +266,7 @@ def _derive_mirrored_entities_from_actions(
         surfaces=surfaces,
         mirror_planes_by_id=mirror_planes_by_id,
     )
-    # TODO: Register these to the entity registry of the draft context
-    # * (comapred to Box where the creation of it does not use any draft API so no need
-    # *  to register/update/ it to the draft context).
+
     return mirrored_geometry_groups, mirrored_surfaces
 
 
@@ -356,43 +360,15 @@ class MirrorManager:
         )
 
     # region Public API -------------------------------------------------
-    def known_mirror_plane_names(self) -> List[str]:
+    @property
+    def mirror_planes(self) -> EntityRegistryView:
         """
-        Return the names of all known mirror planes.
-
-        Returns
-        -------
-        List[str]
-            The names of all known mirror planes.
+        Return all the available mirror planes.
+        # TODO: Some docstrings?
         """
-        return [plane.name for plane in self._mirror_planes]
+        return self._entity_registry.view(MirrorPlane)
 
-    def get_mirror_plane(self, name: str) -> MirrorPlane:
-        # TODO:  replace with registry view.
-        """
-        Retrieve a mirror plane by name.
-
-        Parameters
-        ----------
-        name : str
-            Name of the mirror plane.
-
-        Returns
-        -------
-        MirrorPlane
-            The mirror plane with the specified name.
-
-        Raises
-        ------
-        Flow360RuntimeError
-            If no mirror plane with the given name exists.
-        """
-        for plane in self._mirror_planes:
-            if plane.name == name:
-                return plane
-        raise Flow360RuntimeError(f"Mirror plane '{name}' not found in the draft.")
-
-    def create_mirror_of(
+    def create_mirror_of(  # pylint: disable=too-many-branches
         self,
         *,
         entities: Union[List[GeometryBodyGroup], GeometryBodyGroup],
@@ -455,15 +431,26 @@ class MirrorManager:
                     body_group.name,
                 )
 
-        # 5. [Validation] Ensure mirror plane has a unique name if it's a new plane.
-        existing_plane_ids = {plane.private_attribute_id for plane in self._mirror_planes}
-        if mirror_plane.private_attribute_id not in existing_plane_ids:
-            # This is a new plane - validate the name is unique.
-            if any(plane.name == mirror_plane.name for plane in self._mirror_planes):
+        # 5. [Validation] Ensure mirror plane has a unique name.
+        #
+        # Note: We do NOT rely on EntityRegistry.contains(mirror_plane) here because
+        # entity equality for registry membership can treat different plane objects
+        # with the same name as "contained". We enforce uniqueness by name + id.
+        for existing_plane in self._mirror_planes:
+            if (
+                existing_plane.name == mirror_plane.name
+                and existing_plane.private_attribute_id != mirror_plane.private_attribute_id
+            ):
                 raise Flow360RuntimeError(
                     f"Mirror plane name '{mirror_plane.name}' already exists in the draft."
                 )
-            self._mirror_status.mirror_planes.append(mirror_plane)
+
+        # Register the plane if we don't already have the same plane id.
+        if not any(
+            plane.private_attribute_id == mirror_plane.private_attribute_id
+            for plane in self._mirror_planes
+        ):
+            self._add(mirror_plane)
 
         # 6. Create/Update the self._body_group_id_to_mirror_id
         body_group_id_to_mirror_id_update: Dict[str, str] = {}
@@ -474,12 +461,21 @@ class MirrorManager:
 
         # 7. Derive the generated mirrored entities (MirroredGeometryBodyGroup + MirroredSurface)
         #    and return to user as tokens of use.
-        return _derive_mirrored_entities_from_actions(
+        mirrored_geometry_groups, mirrored_surfaces = _derive_mirrored_entities_from_actions(
             body_group_id_to_mirror_id=body_group_id_to_mirror_id_update,
             face_group_to_body_group=self._face_group_to_body_group,
             entity_registry=self._entity_registry,
-            mirror_planes=self._mirror_planes,
+            mirror_planes=self._mirror_status.mirror_planes,
         )
+
+        # * (comapred to Box where the creation of it does not use any draft API so no need
+        # *  to register/update/reflect it to the draft context).
+        for mirrored_geometry_group in mirrored_geometry_groups:
+            self._add(mirrored_geometry_group)
+        for mirrored_surface in mirrored_surfaces:
+            self._add(mirrored_surface)
+
+        return mirrored_geometry_groups, mirrored_surfaces
 
     def remove_mirror_of(
         self, *, entities: Union[List[GeometryBodyGroup], GeometryBodyGroup]
@@ -527,6 +523,48 @@ class MirrorManager:
         raise NotImplementedError(
             "Mirror planes are managed by the mirror manager -> _mirror_status and cannot be assigned directly."
         )
+
+    def _add(self, entity: Union[MirrorPlane, MirroredGeometryBodyGroup, MirroredSurface]) -> None:
+        """Add an entity to the mirror status."""
+        if self._entity_registry.contains(entity):
+            return
+
+        # pylint: disable=no-member
+        if is_exact_instance(entity, MirrorPlane):
+            self._mirror_status.mirror_planes.append(entity)
+            self._entity_registry.register(entity)
+        elif is_exact_instance(entity, MirroredGeometryBodyGroup):
+            self._mirror_status.mirrored_geometry_body_groups.append(entity)
+            self._entity_registry.register(entity)
+        elif is_exact_instance(entity, MirroredSurface):
+            self._mirror_status.mirrored_surfaces.append(entity)
+            self._entity_registry.register(entity)
+        else:
+            raise Flow360RuntimeError(
+                f"[Internal] Unsupported entity type: {type(entity).__name__}."
+            )
+
+    def _remove(self, entity: MirroredGeometryBodyGroup) -> None:
+        """Remove an MirroredGeometryBodyGroup from the mirror status."""
+        # pylint: disable=no-member
+
+        if not self._entity_registry.contains(entity):
+            return
+        self._mirror_status.mirrored_geometry_body_groups.remove(entity)
+        self._entity_registry.remove(entity)
+
+        # Now remove the mirrored surfaces that are associated with this body group.
+        body_group_id = entity.geometry_body_group_id
+
+        mirrored_surfaces_to_remove = [
+            mirrored_surface
+            for mirrored_surface in list(self._mirror_status.mirrored_surfaces)
+            if getattr(mirrored_surface, "_geometry_body_group_id", None) == body_group_id
+        ]
+        for mirrored_surface in mirrored_surfaces_to_remove:
+            if mirrored_surface in self._mirror_status.mirrored_surfaces:
+                self._mirror_status.mirrored_surfaces.remove(mirrored_surface)
+            self._entity_registry.remove(mirrored_surface)
 
     def _to_status(self) -> MirrorStatus:
         """Build a serializable status snapshot.
@@ -641,6 +679,14 @@ class MirrorManager:
         mgr._mirror_status.mirror_planes = status.mirror_planes if status is not None else []
 
         mgr._mirror_status = mgr._to_status()
+
+        for mirrored_group in mgr._mirror_status.mirrored_geometry_body_groups:
+            mgr._add(mirrored_group)
+        for mirrored_surface in mgr._mirror_status.mirrored_surfaces:
+            mgr._add(mirrored_surface)
+        for mirror_plane in mgr._mirror_status.mirror_planes:
+            mgr._add(mirror_plane)
+
         return mgr
 
     # endregion ------------------------------------------------------------------------------------
