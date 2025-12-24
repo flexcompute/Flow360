@@ -877,7 +877,7 @@ def update_geometry_entity_info(
 
     # Create the result GeometryEntityInfo
     result = GeometryEntityInfo(
-        bodies_face_edge_ids=all_bodies_face_edge_ids,
+        bodies_face_edge_ids=all_bodies_face_edge_ids if all_bodies_face_edge_ids else None,
         body_ids=sorted(all_body_ids),
         body_attribute_names=result_body_attribute_names,
         grouped_bodies=result_grouped_bodies,

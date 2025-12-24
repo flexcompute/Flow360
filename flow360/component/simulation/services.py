@@ -11,6 +11,10 @@ from pydantic_core import ErrorDetails
 
 # Required for correct global scope initialization
 from flow360.component.simulation.blueprint.core.dependency_graph import DependencyGraph
+from flow360.component.simulation.entity_info import (
+    GeometryEntityInfo,
+    update_geometry_entity_info,
+)
 from flow360.component.simulation.exposed_units import supported_units_by_front_end
 from flow360.component.simulation.framework.entity_materializer import (
     materialize_entities_and_selectors_in_place,
@@ -18,7 +22,6 @@ from flow360.component.simulation.framework.entity_materializer import (
 from flow360.component.simulation.framework.multi_constructor_model_base import (
     parse_model_dict,
 )
-from flow360.component.simulation.entity_info import update_geometry_entity_info, GeometryEntityInfo
 from flow360.component.simulation.meshing_param.params import MeshingParams
 from flow360.component.simulation.meshing_param.volume_params import AutomatedFarfield
 from flow360.component.simulation.models.bet.bet_translator_interface import (
