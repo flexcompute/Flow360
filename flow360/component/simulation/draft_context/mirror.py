@@ -431,6 +431,17 @@ class MirrorManager:
                     body_group.name,
                 )
 
+        # If we're updating an existing mirror assignment, remove any previously-derived mirrored entities
+        # so that the registry/status always reflect the latest mirror status.
+        body_group_ids_to_update = {bg.private_attribute_id for bg in normalized_entities}
+        existing_mirrored_groups = [
+            mirrored_group
+            for mirrored_group in list(self._mirror_status.mirrored_geometry_body_groups)
+            if mirrored_group.geometry_body_group_id in body_group_ids_to_update
+        ]
+        for mirrored_group in existing_mirrored_groups:
+            self._remove(mirrored_group)
+
         # 5. [Validation] Ensure mirror plane has a unique name.
         #
         # Note: We do NOT rely on EntityRegistry.contains(mirror_plane) here because
@@ -510,6 +521,13 @@ class MirrorManager:
         for body_group in normalized_entities:
             body_group_id = body_group.private_attribute_id
             self._body_group_id_to_mirror_id.pop(body_group_id, None)
+            mirrored_groups_to_remove = [
+                mirrored_group
+                for mirrored_group in list(self._mirror_status.mirrored_geometry_body_groups)
+                if mirrored_group.geometry_body_group_id == body_group_id
+            ]
+            for mirrored_group in mirrored_groups_to_remove:
+                self._remove(mirrored_group)
 
     # endregion ------------------------------------------------------------------------------------
     @property
@@ -548,9 +566,8 @@ class MirrorManager:
         """Remove an MirroredGeometryBodyGroup from the mirror status."""
         # pylint: disable=no-member
 
-        if not self._entity_registry.contains(entity):
-            return
-        self._mirror_status.mirrored_geometry_body_groups.remove(entity)
+        if entity in self._mirror_status.mirrored_geometry_body_groups:
+            self._mirror_status.mirrored_geometry_body_groups.remove(entity)
         self._entity_registry.remove(entity)
 
         # Now remove the mirrored surfaces that are associated with this body group.

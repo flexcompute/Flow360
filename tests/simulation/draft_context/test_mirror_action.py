@@ -386,6 +386,141 @@ def test_remove_mirror_of_accepts_list_of_entities(mock_geometry):
             assert body_group.private_attribute_id not in draft.mirror._body_group_id_to_mirror_id
 
 
+def test_mirror_registry_views_reflect_latest_status(mock_geometry):
+    """Ensure mirrored entity registry views always reflect the latest mirror status."""
+    with create_draft(new_run_from=mock_geometry) as draft:
+        body_groups = list(draft.body_groups)
+        assert body_groups, "Test requires at least one body group in the test geometry."
+        first_body_group = body_groups[0]
+
+        first_plane = MirrorPlane(
+            name="mirror_plane_1",
+            normal=(1, 0, 0),
+            center=(0, 0, 0) * u.m,
+        )
+        second_plane = MirrorPlane(
+            name="mirror_plane_2",
+            normal=(0, 1, 0),
+            center=(0, 0, 0) * u.m,
+        )
+
+        face_group_to_body_group = draft._entity_info.get_face_group_to_body_group_id_map()
+        surfaces_by_name = {surface.name: surface for surface in draft.surfaces._entities}
+
+        def _expected_surface_ids_for_body_group(body_group_id: str) -> set[str]:
+            return {
+                surfaces_by_name[surface_name].private_attribute_id
+                for surface_name, owning_body_group_id in face_group_to_body_group.items()
+                if owning_body_group_id == body_group_id and surface_name in surfaces_by_name
+            }
+
+        expected_first_surface_ids = _expected_surface_ids_for_body_group(
+            first_body_group.private_attribute_id
+        )
+
+        # 1) Mirror the first body group.
+        draft.mirror.create_mirror_of(entities=first_body_group, mirror_plane=first_plane)
+
+        assert len(draft.mirrored_body_groups) == 1
+        assert len(draft.mirrored_surfaces) == len(expected_first_surface_ids)
+
+        mirrored_first_group = draft.mirrored_body_groups[f"{first_body_group.name}_<mirror>"]
+        assert mirrored_first_group.geometry_body_group_id == first_body_group.private_attribute_id
+        assert mirrored_first_group.mirror_plane_id == first_plane.private_attribute_id
+
+        mirrored_surfaces = list(draft.mirrored_surfaces)
+        mirrored_surface_ids = {mirrored.surface_id for mirrored in mirrored_surfaces}
+        assert mirrored_surface_ids == expected_first_surface_ids
+        for mirrored in mirrored_surfaces:
+            assert mirrored.mirror_plane_id == first_plane.private_attribute_id
+
+        # 2) Re-mirror the first body group with a different plane; latest mirror wins.
+        draft.mirror.create_mirror_of(entities=first_body_group, mirror_plane=second_plane)
+
+        assert len(draft.mirrored_body_groups) == 1
+        mirrored_first_group = draft.mirrored_body_groups[f"{first_body_group.name}_<mirror>"]
+        assert mirrored_first_group.mirror_plane_id == second_plane.private_attribute_id
+
+        mirrored_surfaces = list(draft.mirrored_surfaces)
+        assert len(mirrored_surfaces) == len(expected_first_surface_ids)
+        for mirrored in mirrored_surfaces:
+            assert mirrored.surface_id in expected_first_surface_ids
+            assert mirrored.mirror_plane_id == second_plane.private_attribute_id
+
+
+def test_mirror_overwrite_replaces_existing_mirrored_entities_in_registry_and_status(
+    mock_geometry,
+):
+    """Regression test: re-mirroring the same body group must replace mirrored entities (not keep stale ones)."""
+    with create_draft(new_run_from=mock_geometry) as draft:
+        body_groups = list(draft.body_groups)
+        assert body_groups, "Test requires at least one body group in the test geometry."
+        body_group = body_groups[0]
+
+        first_plane = MirrorPlane(
+            name="overwrite_plane_1",
+            normal=(1, 0, 0),
+            center=(0, 0, 0) * u.m,
+        )
+        second_plane = MirrorPlane(
+            name="overwrite_plane_2",
+            normal=(0, 1, 0),
+            center=(0, 0, 0) * u.m,
+        )
+
+        face_group_to_body_group = draft._entity_info.get_face_group_to_body_group_id_map()
+        surfaces_by_name = {surface.name: surface for surface in draft.surfaces._entities}
+
+        expected_surface_ids = {
+            surfaces_by_name[surface_name].private_attribute_id
+            for surface_name, owning_body_group_id in face_group_to_body_group.items()
+            if owning_body_group_id == body_group.private_attribute_id
+            and surface_name in surfaces_by_name
+        }
+
+        mirrored_name = f"{body_group.name}_<mirror>"
+
+        # 1) First mirror call.
+        draft.mirror.create_mirror_of(entities=body_group, mirror_plane=first_plane)
+        assert len(draft.mirrored_body_groups) == 1
+        assert len(draft.mirrored_surfaces) == len(expected_surface_ids)
+
+        mirrored_from_registry = draft.mirrored_body_groups[mirrored_name]
+        assert mirrored_from_registry.mirror_plane_id == first_plane.private_attribute_id
+
+        # 2) Overwrite mirror for the same body group with a different plane.
+        draft.mirror.create_mirror_of(entities=body_group, mirror_plane=second_plane)
+
+        # Registry must reflect the latest mirror (no stale entity).
+        assert len(draft.mirrored_body_groups) == 1
+        assert len(draft.mirrored_surfaces) == len(expected_surface_ids)
+
+        mirrored_from_registry = draft.mirrored_body_groups[mirrored_name]
+        assert mirrored_from_registry.geometry_body_group_id == body_group.private_attribute_id
+        assert mirrored_from_registry.mirror_plane_id == second_plane.private_attribute_id
+
+        # Status must also reflect the latest mirror (no duplicates for this body group).
+        mirrored_groups_in_status = [
+            mirrored_group
+            for mirrored_group in draft.mirror._mirror_status.mirrored_geometry_body_groups
+            if mirrored_group.geometry_body_group_id == body_group.private_attribute_id
+        ]
+        assert len(mirrored_groups_in_status) == 1
+        assert mirrored_groups_in_status[0].mirror_plane_id == second_plane.private_attribute_id
+
+        mirrored_surfaces_in_status = [
+            mirrored_surface
+            for mirrored_surface in draft.mirror._mirror_status.mirrored_surfaces
+            if getattr(mirrored_surface, "_geometry_body_group_id", None)
+            == body_group.private_attribute_id
+        ]
+        assert {
+            mirrored.surface_id for mirrored in mirrored_surfaces_in_status
+        } == expected_surface_ids
+        for mirrored in mirrored_surfaces_in_status:
+            assert mirrored.mirror_plane_id == second_plane.private_attribute_id
+
+
 # --------------------------------------------------------------------------------------
 # Tests for mirror validation when face groupings span across body groups
 # --------------------------------------------------------------------------------------

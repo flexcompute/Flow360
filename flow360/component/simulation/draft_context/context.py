@@ -29,6 +29,8 @@ from flow360.component.simulation.primitives import (
     Edge,
     GenericVolume,
     GeometryBodyGroup,
+    MirroredGeometryBodyGroup,
+    MirroredSurface,
     Surface,
 )
 from flow360.exceptions import Flow360RuntimeError, Flow360ValueError
@@ -174,6 +176,28 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
         Return the list of surfaces in the draft.
         """
         return self._entity_registry.view(Surface)
+
+    @property
+    def mirrored_body_groups(self) -> EntityRegistryView:
+        """
+        Return the list of mirrored body groups in the draft.
+
+        Notes
+        -----
+        Mirrored entities are draft-only entities derived from mirror actions and stored in the draft registry.
+        """
+        return self._entity_registry.view(MirroredGeometryBodyGroup)
+
+    @property
+    def mirrored_surfaces(self) -> EntityRegistryView:
+        """
+        Return the list of mirrored surfaces in the draft.
+
+        Notes
+        -----
+        Mirrored entities are draft-only entities derived from mirror actions and stored in the draft registry.
+        """
+        return self._entity_registry.view(MirroredSurface)
 
     @property
     def edges(self) -> EntityRegistryView:
