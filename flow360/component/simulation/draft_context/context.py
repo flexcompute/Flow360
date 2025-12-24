@@ -76,8 +76,8 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
         self,
         *,
         entity_info: EntityInfoModel,
-        imported_geometry_components: List,
-        imported_surface_components: List[ImportedSurface],
+        imported_geometry_components: Optional[List] = None,
+        imported_surface_components: Optional[List[ImportedSurface]] = None,
         mirror_status: Optional[MirrorStatus] = None,
         coordinate_system_status: Optional[CoordinateSystemStatus] = None,
     ) -> None:

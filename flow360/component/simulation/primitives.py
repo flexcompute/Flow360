@@ -776,9 +776,7 @@ class ImportedSurface(EntityBase):
         "ImportedSurface", frozen=True
     )
 
-    private_attribute_sub_components: List[str] = pd.Field(
-        description="A list of sub components"
-    )
+    private_attribute_sub_components: List[str] = pd.Field(description="A list of sub components")
     file_name: Optional[str] = None
     surface_mesh_id: Optional[str] = None
 

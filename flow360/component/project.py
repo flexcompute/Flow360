@@ -199,6 +199,7 @@ def create_draft(
     entity_info_copy = deep_copy_entity_info(new_run_from.entity_info)
 
     # Edit geometry dependencies if applicable
+    geometry_components = {}
     if new_run_from.info.geometry_dependencies or include_geometries or exclude_geometries:
         geometry_components = _resolve_geometry_components(
             entity_info=entity_info_copy,
