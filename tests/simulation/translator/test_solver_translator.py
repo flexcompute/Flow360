@@ -1523,7 +1523,7 @@ def test_om6wing_render_output(get_om6Wing_tutorial_param):
                 groups=[
                     RenderOutputGroup(
                         surfaces=[Surface(name="1")],
-                        material=PBRMaterial.metal(shine=0.7, alpha=1.0),
+                        material=PBRMaterial.metal(shine=0.7, opacity=1.0),
                     ),
                     RenderOutputGroup(
                         slices=[
@@ -1541,7 +1541,7 @@ def test_om6wing_render_output(get_om6Wing_tutorial_param):
                             )
                         ],
                         material=FieldMaterial.rainbow(
-                            field=solution.Mach, min_value=0, max_value=0.1, alpha=1
+                            field=solution.Mach, min_value=0, max_value=0.1, opacity=1
                         ),
                     ),
                 ],
