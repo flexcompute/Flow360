@@ -1562,6 +1562,196 @@ def test_wall_deserialization():
     assert slater_bleed_wall.velocity.static_pressure == 0.1 * u.Pa
 
 
+def test_populate_validated_models_to_validation_context(mock_validation_context):
+    """Test that models are properly populated to validation context."""
+    # Create models with private_attribute_id
+    fluid_model = Fluid()
+    wall_model = Wall(
+        name="wall_bc",
+        surfaces=[Surface(name="wall_surface")],
+    )
+
+    # Before validation, physics_model_dict should be None
+    assert mock_validation_context.info.physics_model_dict is None
+
+    with SI_unit_system, mock_validation_context:
+        params = SimulationParams(
+            models=[fluid_model, wall_model],
+        )
+
+    # After validation, physics_model_dict should be populated
+    assert mock_validation_context.info.physics_model_dict is not None
+    assert isinstance(mock_validation_context.info.physics_model_dict, dict)
+
+    # Check that models are in the dict with their IDs as keys
+    assert len(mock_validation_context.info.physics_model_dict) == 2
+    assert fluid_model.private_attribute_id in mock_validation_context.info.physics_model_dict
+    assert wall_model.private_attribute_id in mock_validation_context.info.physics_model_dict
+
+    # Verify the objects are the same
+    assert (
+        mock_validation_context.info.physics_model_dict[fluid_model.private_attribute_id]
+        == fluid_model
+    )
+    assert (
+        mock_validation_context.info.physics_model_dict[wall_model.private_attribute_id]
+        == wall_model
+    )
+
+
+def test_populate_validated_outputs_to_validation_context(mock_validation_context):
+    """Test that outputs are properly populated to validation context."""
+    # Create outputs with private_attribute_id
+    probe_output = ProbeOutput(
+        name="probe1",
+        output_fields=["Cp"],
+        probe_points=[Point(name="pt1", location=(1, 2, 3) * u.m)],
+    )
+
+    surface_output = SurfaceOutput(
+        name="surface1",
+        output_fields=["Cp"],
+        entities=[Surface(name="wall")],
+    )
+
+    volume_output = VolumeOutput(
+        name="volume1",
+        output_fields=["primitiveVars"],
+    )
+
+    # Before validation, output_dict should be None
+    assert mock_validation_context.info.output_dict is None
+
+    with SI_unit_system, mock_validation_context:
+        params = SimulationParams(
+            outputs=[probe_output, surface_output, volume_output],
+        )
+
+    # After validation, output_dict should be populated
+    assert mock_validation_context.info.output_dict is not None
+    assert isinstance(mock_validation_context.info.output_dict, dict)
+
+    # Check that outputs are in the dict with their IDs as keys
+    assert len(mock_validation_context.info.output_dict) == 3
+    assert probe_output.private_attribute_id in mock_validation_context.info.output_dict
+    assert surface_output.private_attribute_id in mock_validation_context.info.output_dict
+    assert volume_output.private_attribute_id in mock_validation_context.info.output_dict
+
+    # Verify the objects are the same
+    assert (
+        mock_validation_context.info.output_dict[probe_output.private_attribute_id] == probe_output
+    )
+    assert (
+        mock_validation_context.info.output_dict[surface_output.private_attribute_id]
+        == surface_output
+    )
+    assert (
+        mock_validation_context.info.output_dict[volume_output.private_attribute_id]
+        == volume_output
+    )
+
+
+def test_populate_both_models_and_outputs_to_validation_context(mock_validation_context):
+    """Test that both models and outputs are properly populated to the same validation context."""
+    # Create models and outputs
+    fluid_model = Fluid()
+    probe_output = ProbeOutput(
+        name="probe1",
+        output_fields=["Cp"],
+        probe_points=[Point(name="pt1", location=(1, 2, 3) * u.m)],
+    )
+
+    # Before validation, both should be None
+    assert mock_validation_context.info.physics_model_dict is None
+    assert mock_validation_context.info.output_dict is None
+
+    with SI_unit_system, mock_validation_context:
+        params = SimulationParams(
+            models=[fluid_model],
+            outputs=[probe_output],
+        )
+
+    # After validation, both should be populated
+    assert mock_validation_context.info.physics_model_dict is not None
+    assert mock_validation_context.info.output_dict is not None
+
+    # Verify both dicts are populated correctly
+    assert fluid_model.private_attribute_id in mock_validation_context.info.physics_model_dict
+    assert probe_output.private_attribute_id in mock_validation_context.info.output_dict
+
+    assert (
+        mock_validation_context.info.physics_model_dict[fluid_model.private_attribute_id]
+        == fluid_model
+    )
+    assert (
+        mock_validation_context.info.output_dict[probe_output.private_attribute_id] == probe_output
+    )
+
+
+def test_populate_outputs_none_sets_empty_dict(mock_validation_context):
+    """Test that output_dict is set to {} when outputs=None.
+
+    This distinguishes successful validation with no outputs (output_dict={})
+    from validation errors (output_dict=None).
+    """
+    assert mock_validation_context.info.output_dict is None
+
+    with SI_unit_system, mock_validation_context:
+        params = SimulationParams(outputs=None)
+
+    # output_dict should be set to empty dict, not None
+    assert mock_validation_context.info.output_dict == {}
+
+
+def test_populate_outputs_empty_list_sets_empty_dict(mock_validation_context):
+    """Test that output_dict is set to {} when outputs=[]."""
+    assert mock_validation_context.info.output_dict is None
+
+    with SI_unit_system, mock_validation_context:
+        params = SimulationParams(outputs=[])
+
+    # output_dict should be set to empty dict
+    assert mock_validation_context.info.output_dict == {}
+
+
+def test_populate_models_none_sets_dict_with_default(mock_validation_context):
+    """Test that physics_model_dict is populated when models=None.
+
+    Note: SimulationParams automatically adds a default Fluid model when models=None,
+    so physics_model_dict will contain the default model, not be empty.
+    This still distinguishes successful validation from validation errors (physics_model_dict=None).
+    """
+    assert mock_validation_context.info.physics_model_dict is None
+
+    with SI_unit_system, mock_validation_context:
+        params = SimulationParams(models=None)
+
+    # physics_model_dict should be populated with default Fluid model
+    assert mock_validation_context.info.physics_model_dict is not None
+    assert isinstance(mock_validation_context.info.physics_model_dict, dict)
+    # Should contain the default fluid model
+    assert len(mock_validation_context.info.physics_model_dict) == 1
+    assert "__default_fluid" in mock_validation_context.info.physics_model_dict
+
+
+def test_populate_models_empty_list_sets_dict_with_default(mock_validation_context):
+    """Test that physics_model_dict is populated when models=[].
+
+    Note: SimulationParams automatically adds a default Fluid model when models=[],
+    so physics_model_dict will contain the default model.
+    """
+    assert mock_validation_context.info.physics_model_dict is None
+
+    with SI_unit_system, mock_validation_context:
+        params = SimulationParams(models=[])
+
+    # physics_model_dict should be populated with default Fluid model
+    assert mock_validation_context.info.physics_model_dict is not None
+    assert isinstance(mock_validation_context.info.physics_model_dict, dict)
+    assert len(mock_validation_context.info.physics_model_dict) == 1
+    assert "__default_fluid" in mock_validation_context.info.physics_model_dict
+
+
 @pytest.fixture(autouse=True)
 def change_test_dir(request, monkeypatch):
     monkeypatch.chdir(request.fspath.dirname)

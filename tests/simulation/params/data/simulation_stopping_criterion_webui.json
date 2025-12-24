@@ -458,7 +458,7 @@
             "frequency": -1,
             "frequency_offset": 0,
             "moving_statistic": {
-                "method": "std",
+                "method": "standard_deviation",
                 "moving_window_size": 10,
                 "start_step": 0,
                 "type_name": "MovingStatistic"
@@ -524,7 +524,7 @@
                 ]
             },
             "moving_statistic": {
-                "method": "deviation",
+                "method": "range",
                 "moving_window_size": 10,
                 "start_step": 0,
                 "type_name": "MovingStatistic"
