@@ -312,6 +312,11 @@ class BoundaryNameLookupTable:
                 )
                 self._mapping.setdefault(base_name, []).append(info)
 
+                # Also add full_name as key for passthrough lookup
+                # (when entity.name is already a full_name, e.g., from volume mesh)
+                if full_name != base_name:
+                    self._mapping.setdefault(full_name, []).append(info)
+
     def get_split_info(self, base_name: str) -> List[BoundarySplitInfo]:
         """Get all split info for a base boundary name."""
         return self._mapping.get(base_name, [])
