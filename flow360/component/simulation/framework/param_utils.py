@@ -54,7 +54,8 @@ class AssetCache(Flow360BaseModel):
         False, description="Flag whether user requested the use of GAI."
     )
     variable_context: Optional[VariableContextList] = pd.Field(
-        None, description="List of user variables that are used in all the `Expression` instances."
+        None,
+        description="List of user variables that are used in all the `Expression` instances.",
     )
     used_selectors: Optional[List[EntitySelector]] = pd.Field(
         None,

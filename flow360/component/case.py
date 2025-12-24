@@ -748,13 +748,11 @@ class Case(CaseBase, Flow360Resource):
         local_storage_path : str
             The path to the local storage directory.
         meta_data : CaseMeta
-            case metadata such as:
-            id : str
-                The unique identifier for the case.
-            name : str
-                The name of the case.
-            user_id : str
-                The user ID associated with the case, can be "local".
+            Case metadata containing:
+
+            - id (str): The unique identifier for the case.
+            - name (str): The name of the case.
+            - user_id (str): The user ID associated with the case, can be "local".
 
         Returns
         -------

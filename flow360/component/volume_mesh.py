@@ -1143,7 +1143,7 @@ class VolumeMeshV2(AssetBase):
         Parameters
         ----------
         file_name : str
-            The name of the input volume mesh file (*.cgns, *.ugrid)
+            The name of the input volume mesh file (``*.cgns``, ``*.ugrid``)
         project_name : str, optional
             The name of the newly created project, defaults to file name if empty
         solver_version: str
