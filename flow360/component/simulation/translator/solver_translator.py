@@ -1717,7 +1717,7 @@ def get_stop_criterion_settings(criterion: StoppingCriterion, params: Simulation
             monitored_column = f"{monitor_output.name}_{point.name}_{str(monitor_field)}"
             monitored_dataset_name = f"monitor_{monitor_output_name}"
         if isinstance(monitor_output, SurfaceIntegralOutput):
-            monitored_column = f"{str(monitor_field)}_integral"
+            monitored_column = f"{str(monitor_field)}"
             monitored_dataset_name = f"monitor_{monitor_output_name}"
         if isinstance(monitor_output, ForceOutput):
             monitored_column = f"total{monitor_field}"

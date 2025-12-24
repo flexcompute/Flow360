@@ -13,13 +13,14 @@
         }
     },
     "freestream": {
-        "Mach": 0.8399999999999999,
+        "Mach": 0.8399999999999984,
         "Temperature": 288.15,
         "alphaAngle": 3.06,
         "betaAngle": 0.0,
-        "muRef": 5.3261211651402146e-08
+        "muRef": 5.3261211651402046e-08
     },
     "geometry": {
+        "interfaceInterpolationTolerance": 0.2,
         "momentCenter": [
             0.0,
             0.0,
@@ -30,8 +31,7 @@
             0.801672958512342,
             0.801672958512342
         ],
-        "refArea": 1.1529999999999987,
-	"interfaceInterpolationTolerance" : 0.2
+        "refArea": 1.1529999999999987
     },
     "initialCondition": {
         "p": "p",
@@ -43,6 +43,18 @@
     },
     "monitorOutput": {
         "monitors": {
+            "MassFluxIntegral": {
+                "animationFrequency": 1,
+                "animationFrequencyOffset": 0,
+                "computeTimeAverages": false,
+                "outputFields": [
+                    "MassFluxProjected_integral"
+                ],
+                "surfaces": [
+                    "1"
+                ],
+                "type": "surfaceIntegral"
+            },
             "point_legacy1": {
                 "animationFrequency": 1,
                 "animationFrequencyOffset": 0,
@@ -85,7 +97,7 @@
     },
     "runControl": {
         "externalProcessMonitorOutput": true,
-        "monitorProcessorHash": "358a3ff400394b995bfcf89b31f949f232c4bea45f9cea3e11bc9a4a713c9a78",
+        "monitorProcessorHash": "bc5ac70ee2692e2a051b0867dad9c0057ac1b6d58995389d41ca850fb6c39b5b",
         "stoppingCriteria": [
             {
                 "monitoredColumn": "point_legacy1_Point1_Helicity_mean",
@@ -93,6 +105,22 @@
                 "sourceToFlow360Coefficient": 6.9594121562924376e-06,
                 "sourceToFlow360Offset": 0.0,
                 "tolerance": 0.0001298626308364169,
+                "toleranceWindowSize": null
+            },
+            {
+                "monitoredColumn": "MassFluxProjected_integral_range",
+                "monitoredDatasetName": "monitor_MassFluxIntegral_moving_statistic",
+                "sourceToFlow360Coefficient": 0.003693578219496433,
+                "sourceToFlow360Offset": 0.0,
+                "tolerance": 0.09270881330936047,
+                "toleranceWindowSize": 3
+            },
+            {
+                "monitoredColumn": "totalCL_standard_deviation",
+                "monitoredDatasetName": "force_output_force_wallBC_moving_statistic",
+                "sourceToFlow360Coefficient": 1.0,
+                "sourceToFlow360Offset": 0.0,
+                "tolerance": 0.265,
                 "toleranceWindowSize": null
             }
         ]
@@ -209,6 +237,10 @@
         {
             "expression": "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;double ___vorticity[3];___vorticity[0] = (gradPrimitive[3][1] - gradPrimitive[2][2]) * velocityScale;___vorticity[1] = (gradPrimitive[1][2] - gradPrimitive[3][0]) * velocityScale;___vorticity[2] = (gradPrimitive[2][0] - gradPrimitive[1][1]) * velocityScale;Helicity = ((((___velocity[0] * ___vorticity[0]) + (___velocity[1] * ___vorticity[1])) + (___velocity[2] * ___vorticity[2])) * 143690.29704553966);",
             "name": "Helicity"
+        },
+        {
+            "expression": "double ___density;___density = usingLiquidAsMaterial ? 1.0 : primitiveVars[0];double ___node_unit_normal[3];double ___normalMag = magnitude(nodeNormals);for (int i = 0; i < 3; i++){___node_unit_normal[i] = nodeNormals[i] / ___normalMag;}double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;MassFluxProjected_integral = ((((-1 * ___density) * (((___velocity[0] * ___node_unit_normal[0]) + (___velocity[1] * ___node_unit_normal[1])) + (___velocity[2] * ___node_unit_normal[2]))) * pow(((pow(nodeNormals[0], 2) + pow(nodeNormals[1], 2)) + pow(nodeNormals[2], 2)), 0.5)) * 270.7401713388747);",
+            "name": "MassFluxProjected_integral"
         }
     ],
     "usingLiquidAsMaterial": false,
