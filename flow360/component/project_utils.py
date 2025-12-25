@@ -21,7 +21,6 @@ from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.outputs.outputs import (
-    MonitorOutputType,
     SurfaceIntegralOutput,
     SurfaceOutput,
 )
@@ -32,7 +31,9 @@ from flow360.component.simulation.primitives import (
     ImportedSurface,
     Surface,
 )
-from flow360.component.simulation.services_utils import strip_selector_matches_inplace
+from flow360.component.simulation.services_utils import (
+    strip_selector_matches_and_broken_entities_inplace,
+)
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.user_code.core.types import save_user_variables
@@ -540,6 +541,22 @@ def _update_entity_grouping_tags(entity_info, params: SimulationParams) -> Entit
 
         used_tags = sorted(list(used_tags))
         current_tag = getattr(entity_info, entity_grouping_tags)
+
+        # If explicit entities were stripped (e.g. selector-only usage), we may have no tags
+        # discoverable from the params object. In that case, fall back to the grouping tags
+        # already recorded in the params asset cache.
+        if not used_tags:
+            asset_cache = getattr(params, "private_attribute_asset_cache", None)
+            cached_entity_info = getattr(asset_cache, "project_entity_info", None)
+            cached_tag = (
+                getattr(cached_entity_info, entity_grouping_tags, None)
+                if cached_entity_info is not None
+                and getattr(cached_entity_info, "type_name", None) == "GeometryEntityInfo"
+                else None
+            )
+            if cached_tag is not None:
+                used_tags = [cached_tag]
+
         if len(used_tags) == 1 and current_tag != used_tags[0]:
             log.warning(
                 f"Inconsistent grouping of {entity_type.__name__} between the geometry object ({current_tag})"
@@ -597,31 +614,6 @@ def _set_up_default_reference_geometry(params: SimulationParams, length_unit: Le
     return params
 
 
-def _set_up_monitor_output_from_stopping_criterion(params: SimulationParams):
-    """
-    Setting up the monitor output in the stopping criterion if not provided in params.outputs.
-    """
-    if not params.run_control:
-        return params
-    stopping_criterion = params.run_control.stopping_criteria
-    if not stopping_criterion:
-        return params
-    monitor_output_ids = []
-    if params.outputs is not None:
-        for output in params.outputs:
-            if not isinstance(output, get_args(get_args(MonitorOutputType)[0])):
-                continue
-            monitor_output_ids.append(output.private_attribute_id)
-    for criterion in stopping_criterion:
-        monitor_output = criterion.monitor_output
-        if isinstance(monitor_output, str):
-            continue
-        if monitor_output.private_attribute_id not in monitor_output_ids:
-            params.outputs.append(monitor_output)
-            monitor_output_ids.append(monitor_output.private_attribute_id)
-    return params
-
-
 def set_up_params_for_uploading(  # pylint: disable=too-many-arguments
     root_asset,
     length_unit: LengthType,
@@ -666,9 +658,11 @@ def set_up_params_for_uploading(  # pylint: disable=too-many-arguments
         entity_info = _update_entity_grouping_tags(entity_info, params)
 
         with model_attribute_unlock(params.private_attribute_asset_cache, "mirror_status"):
-            params.private_attribute_asset_cache.mirror_status = active_draft.mirror._to_status(
-                entity_registry=active_draft._entity_registry
-            )
+            mirror_status = active_draft.mirror._mirror_status
+            if not mirror_status.is_empty():
+                params.private_attribute_asset_cache.mirror_status = mirror_status
+            else:
+                params.private_attribute_asset_cache.mirror_status = None
         with model_attribute_unlock(
             params.private_attribute_asset_cache, "coordinate_system_status"
         ):
@@ -700,7 +694,6 @@ def set_up_params_for_uploading(  # pylint: disable=too-many-arguments
     params = _set_up_default_geometry_accuracy(root_asset, params, use_geometry_AI)
 
     params = _set_up_default_reference_geometry(params, length_unit)
-    params = _set_up_monitor_output_from_stopping_criterion(params=params)
 
     # Convert all reference of UserVariables to VariableToken
     params = save_user_variables(params)
@@ -710,7 +703,7 @@ def set_up_params_for_uploading(  # pylint: disable=too-many-arguments
 
     # Strip selector-matched entities from stored_entities before upload so that hand-picked
     # entities remain distinguishable on the UI side.
-    strip_selector_matches_inplace(params)
+    strip_selector_matches_and_broken_entities_inplace(params)
 
     return params
 

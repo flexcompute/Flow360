@@ -133,8 +133,7 @@
         "velocityScale": 1.0
     },
     "runControl": {
-        "externalProcessMonitorOutput": false,
-        "shouldCheckStopCriterion": false
+        "externalProcessMonitorOutput": false
     },
     "surfaceOutput": {
         "animationFrequency": -1,

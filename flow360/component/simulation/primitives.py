@@ -1105,6 +1105,9 @@ class MirroredSurface(_SurfaceEntityBase):
     )
     private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
 
+    # Private attribute used for draft-only bookkeeping. This must NOT affect schema or serialization.
+    _geometry_body_group_id: Optional[str] = pd.PrivateAttr(default=None)
+
 
 class MirroredGeometryBodyGroup(EntityBase):
     """

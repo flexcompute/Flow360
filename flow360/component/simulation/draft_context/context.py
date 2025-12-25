@@ -30,6 +30,8 @@ from flow360.component.simulation.primitives import (
     GenericVolume,
     GeometryBodyGroup,
     ImportedSurface,
+    MirroredGeometryBodyGroup,
+    MirroredSurface,
     Surface,
 )
 from flow360.exceptions import Flow360RuntimeError, Flow360ValueError
@@ -62,11 +64,17 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
     """
 
     __slots__ = (
+        # Persistent entities data storage.
         "_entity_info",
+        # Interface accessing ALL types of entities.
         "_entity_registry",
         "_imported_surface_components",
         "_imported_geometry_components",
+        # Lightweight mirror relationships storage (compared to entity storages)
         "_mirror_manager",
+        # Internal mirror related entities data storage.
+        "_mirror_status",
+        # Lightweight coordinate system relationships storage (compared to entity storages)
         "_coordinate_system_manager",
         "_token",
     )
@@ -98,8 +106,8 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
             )
         self._token: Optional[Token] = None
 
-        # DraftContext owns a deep copy of entity_info (created by create_draft()).
-        # This ensures modifications in the draft don't affect the original asset.
+        # DraftContext owns a deep copy of entity_info and mirror_status (created by create_draft()).
+        # This signals transfer of entity ownership from the asset to the draft (context).
         self._entity_info = entity_info
 
         # Use EntityRegistry.from_entity_info() for the new DraftContext workflow.
@@ -131,12 +139,10 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
                     "Mirroring will be disabled.",
                     exc,
                 )
-
         self._mirror_manager = MirrorManager._from_status(
             status=mirror_status,
             face_group_to_body_group=face_group_to_body_group,
-            body_groups=self._entity_registry.view(GeometryBodyGroup)._entities,
-            surfaces=self._entity_registry.view(Surface)._entities,
+            entity_registry=self._entity_registry,
         )
 
         self._coordinate_system_manager = CoordinateSystemManager._from_status(
@@ -187,6 +193,28 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
         Return the list of surfaces in the draft.
         """
         return self._entity_registry.view(Surface)
+
+    @property
+    def mirrored_body_groups(self) -> EntityRegistryView:
+        """
+        Return the list of mirrored body groups in the draft.
+
+        Notes
+        -----
+        Mirrored entities are draft-only entities derived from mirror actions and stored in the draft registry.
+        """
+        return self._entity_registry.view(MirroredGeometryBodyGroup)
+
+    @property
+    def mirrored_surfaces(self) -> EntityRegistryView:
+        """
+        Return the list of mirrored surfaces in the draft.
+
+        Notes
+        -----
+        Mirrored entities are draft-only entities derived from mirror actions and stored in the draft registry.
+        """
+        return self._entity_registry.view(MirroredSurface)
 
     @property
     def edges(self) -> EntityRegistryView:

@@ -47,7 +47,10 @@ from flow360.component.simulation.simulation_params import (
 )
 
 # Required for correct global scope initialization
-from flow360.component.simulation.translator.solver_translator import get_solver_json
+from flow360.component.simulation.translator.solver_translator import (
+    get_columnar_data_processor_json,
+    get_solver_json,
+)
 from flow360.component.simulation.translator.surface_meshing_translator import (
     get_surface_meshing_json,
 )
@@ -777,6 +780,16 @@ def simulation_to_case_json(
         "case",
         get_solver_json,
         skip_selector_expansion=skip_selector_expansion,
+    )
+
+
+def simulation_to_columnar_data_processor_json(input_params: SimulationParams, mesh_unit):
+    """Get JSON for case postprocessing from a given simulation JSON."""
+    return _translate_simulation_json(
+        input_params,
+        mesh_unit,
+        "case postprocessing",
+        get_columnar_data_processor_json,
     )
 
 

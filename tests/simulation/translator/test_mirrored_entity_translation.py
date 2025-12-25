@@ -76,27 +76,15 @@ def test_mirrored_surface_translation():
             entities=body_group, mirror_plane=plane
         )
 
-        # Create mirrored surfaces with fixed IDs for test reproducibility
+        # Use the mirrored surfaces owned by the draft's mirror_status/registry.
+        # This avoids introducing foreign mirrored entities that are not tracked by the draft.
+        expected_mirrored_names = {"Curved_<mirror>", "TopCap_<mirror>", "BottomCap_<mirror>"}
         mirrored_surfaces = [
-            MirroredSurface(
-                name="Curved_<mirror>",
-                surface_id="Curved",
-                mirror_plane_id=mirror_plane_id,
-                private_attribute_id="mirrored-surface-curved-001",
-            ),
-            MirroredSurface(
-                name="TopCap_<mirror>",
-                surface_id="TopCap",
-                mirror_plane_id=mirror_plane_id,
-                private_attribute_id="mirrored-surface-topcap-001",
-            ),
-            MirroredSurface(
-                name="BottomCap_<mirror>",
-                surface_id="BottomCap",
-                mirror_plane_id=mirror_plane_id,
-                private_attribute_id="mirrored-surface-bottomcap-001",
-            ),
+            mirrored
+            for mirrored in draft_mirrored_surfaces
+            if mirrored.name in expected_mirrored_names
         ]
+        assert {m.name for m in mirrored_surfaces} == expected_mirrored_names
 
         wind_tunnel = fl.WindTunnelFarfield(
             width=10 * mesh_unit,

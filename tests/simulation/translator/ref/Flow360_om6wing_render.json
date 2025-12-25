@@ -286,8 +286,7 @@
         }
     ],
     "runControl": {
-        "externalProcessMonitorOutput": false,
-        "shouldCheckStopCriterion": false
+        "externalProcessMonitorOutput": false
     },
     "sliceOutput": {
         "animationFrequency": -1,

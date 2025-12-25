@@ -222,20 +222,19 @@ def _get_custom_volumes(volume_zones: list):
     custom_volumes = []
     for zone in volume_zones:
         if isinstance(zone, CustomZones):
-            # Extract CustomVolume from CustomZones (base branch: no tetrahedra enforcement output)
+            # Extract CustomVolume and SeedpointVolume from CustomZones
+            enforce_tetrahedral = getattr(zone, "element_type") == "tetrahedra"
             for custom_volume in zone.entities.stored_entities:
                 if isinstance(custom_volume, CustomVolume):
-                    custom_volumes.append(
-                        {
-                            "name": custom_volume.name,
-                            "patches": sorted(
-                                [
-                                    surface.name
-                                    for surface in custom_volume.boundaries.stored_entities
-                                ]
-                            ),
-                        }
-                    )
+                    volume_dict = {
+                        "name": custom_volume.name,
+                        "patches": sorted(
+                            [surface.name for surface in custom_volume.boundaries.stored_entities]
+                        ),
+                    }
+                    if enforce_tetrahedral:
+                        volume_dict["enforceTetrahedralElements"] = True
+                    custom_volumes.append(volume_dict)
 
                 if isinstance(custom_volume, SeedpointVolume):
                     custom_volumes.append(

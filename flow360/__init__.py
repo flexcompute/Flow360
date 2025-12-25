@@ -141,6 +141,7 @@ from flow360.component.simulation.outputs.output_entities import (
 from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
     ForceDistributionOutput,
+    ForceOutput,
     IsosurfaceOutput,
     MovingStatistic,
     Observer,
@@ -367,6 +368,7 @@ __all__ = [
     "CentralBelt",
     "WheelBelts",
     "show_available_examples",
+    "ForceOutput",
     "RenderOutput",
     "RenderOutputGroup",
     "render_config",
