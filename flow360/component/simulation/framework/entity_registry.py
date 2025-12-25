@@ -171,6 +171,16 @@ class EntityRegistry(Flow360BaseModel):
         # pylint: disable=unsubscriptable-object
         self.internal_registry[entity_type].append(entity)
 
+    def remove(self, entity: EntityBase) -> None:
+        """Remove an entity from the registry."""
+        entity_type = type(entity)
+        if (
+            entity_type not in self.internal_registry
+            or entity not in self.internal_registry[entity_type]
+        ):
+            return
+        self.internal_registry[entity_type].remove(entity)
+
     def view(self, entity_type: type[EntityBase]) -> EntityRegistryView:
         """
         Create a filtered view for a specific entity type with glob pattern support.
