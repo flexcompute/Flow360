@@ -210,10 +210,11 @@ def test_mirrored_surface_translation():
         )
 
         # Dump and compare with surface mesh ref JSON
-        surface_mesh_param, err = validate_params_with_context(
+        surface_mesh_param, err, warnings = validate_params_with_context(
             simulation_param, "Geometry", "SurfaceMesh"
         )
         assert err is None, f"Surface mesh validation error: {err}"
+        assert warnings == [], f"Unexpected warnings for surface mesh validation: {warnings}"
         surface_mesh_translated = get_surface_meshing_json(surface_mesh_param, mesh_unit=mesh_unit)
         surface_mesh_ref_file = os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
@@ -228,10 +229,11 @@ def test_mirrored_surface_translation():
         ), "Surface mesh translation does not match reference"
 
         # Dump and compare with volume mesh ref JSON
-        volume_mesh_param, err = validate_params_with_context(
+        volume_mesh_param, err, warnings = validate_params_with_context(
             simulation_param, "Geometry", "VolumeMesh"
         )
         assert err is None, f"Volume mesh validation error: {err}"
+        assert warnings == [], f"Unexpected warnings for volume mesh validation: {warnings}"
         volume_mesh_translated = get_volume_meshing_json(volume_mesh_param, mesh_unit=mesh_unit)
         volume_mesh_ref_file = os.path.join(
             os.path.dirname(os.path.abspath(__file__)),

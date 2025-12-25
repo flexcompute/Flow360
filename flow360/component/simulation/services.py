@@ -4,7 +4,17 @@
 import json
 import os
 from enum import Enum
-from typing import Any, Collection, Dict, Iterable, Literal, Optional, Tuple, Union
+from typing import (
+    Any,
+    Collection,
+    Dict,
+    Iterable,
+    List,
+    Literal,
+    Optional,
+    Tuple,
+    Union,
+)
 
 import pydantic as pd
 from pydantic_core import ErrorDetails
@@ -428,7 +438,7 @@ def validate_model(  # pylint: disable=too-many-locals
     validation_level: Union[
         Literal["SurfaceMesh", "VolumeMesh", "Case", "All"], list, None
     ] = ALL,  # Fix implicit string concatenation
-) -> Tuple[Optional[SimulationParams], Optional[list], Optional[list]]:
+) -> Tuple[Optional[SimulationParams], Optional[list], List[str]]:
     """
     Validate a params dict against the pydantic model.
 
@@ -449,8 +459,8 @@ def validate_model(  # pylint: disable=too-many-locals
         The validated parameters if successful, otherwise None.
     validation_errors : list or None
         A list of validation errors if any occurred.
-    validation_warnings : list or None
-        A list of validation warnings if any occurred.
+    validation_warnings : list
+        A list of validation warnings (empty list if no warnings were recorded).
     """
 
     def handle_multi_constructor_model(params_as_dict: dict) -> dict:
@@ -509,8 +519,9 @@ def validate_model(  # pylint: disable=too-many-locals
         return params_as_dict
 
     validation_errors = None
-    validation_warnings = None
+    validation_warnings: List[str] = []
     validated_param = None
+    validation_context: Optional[ValidationContext] = None
 
     params_as_dict = clean_unrelated_setting_from_params_dict(params_as_dict, root_item_type)
 
@@ -541,7 +552,8 @@ def validate_model(  # pylint: disable=too-many-locals
         with ValidationContext(
             levels=validation_levels_to_use,
             info=validation_info,
-        ):
+        ) as context:
+            validation_context = context
             unit_system = updated_param_as_dict.get("unit_system")
             with UnitSystem.from_dict(  # pylint: disable=not-context-manager
                 verbose=False, **unit_system
@@ -562,6 +574,9 @@ def validate_model(  # pylint: disable=too-many-locals
         validation_errors = err.errors()
     except Exception as err:  # pylint: disable=broad-exception-caught
         validation_errors = handle_generic_exception(err, validation_errors)
+    finally:
+        if validation_context is not None:
+            validation_warnings = list(validation_context.validation_warnings)
 
     if validation_errors is not None:
         validation_errors = validate_error_locations(validation_errors, params_as_dict)
