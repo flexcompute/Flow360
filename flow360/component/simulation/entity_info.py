@@ -770,7 +770,7 @@ def update_geometry_entity_info(
     def select_tag(
         current_tag: Optional[str], result_attrs: List[str], entity_type: str
     ) -> Optional[str]:
-        if not result_attrs:
+        if entity_type != "edge" and not result_attrs:
             raise ValueError(f"No attribute names available to select {entity_type} group tag.")
         log.info(f"Preserving {entity_type} group tag: {current_tag}")
         return current_tag
