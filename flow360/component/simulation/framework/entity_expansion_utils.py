@@ -18,6 +18,38 @@ if TYPE_CHECKING:
     from flow360.component.simulation.framework.entity_registry import EntityRegistry
 
 
+def _register_mirror_entities_in_registry(registry: "EntityRegistry", mirror_status: Any) -> None:
+    """Register mirror-related entities (planes + derived mirrored entities) into registry.
+
+    This helper is shared by both dict-based and params-based registry builders to ensure
+    consistent selector expansion coverage.
+    """
+    if not mirror_status:
+        return
+
+    # pylint: disable=import-outside-toplevel
+    from flow360.component.simulation.draft_context.mirror import (
+        MirrorPlane,
+        MirrorStatus,
+    )
+
+    # Dict path: deserialize to MirrorStatus
+    if isinstance(mirror_status, dict):
+        mirror_status = MirrorStatus.model_validate(mirror_status)
+
+    # Object path: MirrorStatus (or compatible) with is_empty()
+    if hasattr(mirror_status, "is_empty") and mirror_status.is_empty():
+        return
+
+    for plane in getattr(mirror_status, "mirror_planes", []) or []:
+        if isinstance(plane, MirrorPlane):
+            registry.register(plane)
+    for mirrored_group in getattr(mirror_status, "mirrored_geometry_body_groups", []) or []:
+        registry.register(mirrored_group)
+    for mirrored_surface in getattr(mirror_status, "mirrored_surfaces", []) or []:
+        registry.register(mirrored_surface)
+
+
 def expand_entity_list_in_context(
     entity_list,
     params,
@@ -129,21 +161,7 @@ def get_registry_from_params(params) -> EntityRegistry:
     # Register mirror entities from mirror_status so selector expansion can include mirrored types
     # (e.g. SurfaceSelector can expand to include MirroredSurface).
     mirror_status = getattr(asset_cache, "mirror_status", None)
-    if mirror_status is None or mirror_status.is_empty():
-        return registry
-
-    # pylint: disable=import-outside-toplevel
-    from flow360.component.simulation.draft_context.mirror import MirrorPlane
-
-    for plane in mirror_status.mirror_planes:
-        if isinstance(plane, MirrorPlane):
-            registry.register(plane)
-
-    for mirrored_group in mirror_status.mirrored_geometry_body_groups:
-        registry.register(mirrored_group)
-
-    for mirrored_surface in mirror_status.mirrored_surfaces:
-        registry.register(mirrored_surface)
+    _register_mirror_entities_in_registry(registry, mirror_status)
 
     return registry
 
@@ -226,5 +244,10 @@ def get_entity_info_and_registry_from_dict(params_as_dict: dict) -> tuple:
 
     entity_info = parse_entity_info_model(entity_info_dict)
     registry = EntityRegistry.from_entity_info(entity_info)
+
+    # Register mirror entities from mirror_status so selector expansion can include mirrored types
+    # (e.g. SurfaceSelector can expand to include MirroredSurface) during validation.
+    mirror_status_dict = asset_cache.get("mirror_status")
+    _register_mirror_entities_in_registry(registry, mirror_status_dict)
 
     return entity_info, registry

@@ -280,6 +280,8 @@ def test_expand_entity_list_in_context_includes_mirrored_entities_from_mirror_st
                 )
             ],
             private_attribute_asset_cache=AssetCache(
+                use_inhouse_mesher=True,
+                use_geometry_AI=True,
                 project_entity_info=SurfaceMeshEntityInfo(
                     boundaries=[Surface(name="front", private_attribute_id="s-1")]
                 ),
@@ -290,6 +292,17 @@ def test_expand_entity_list_in_context_includes_mirrored_entities_from_mirror_st
                 ),
             ),
         )
+
+    # Validate schema-level correctness (skip contextual validation since this test doesn't
+    # provide full Case-level required fields like meshing/models/operating_condition).
+    validated, errors, _warnings = validate_model(
+        params_as_dict=params.model_dump(exclude_none=True),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type=None,
+        validation_level=None,
+    )
+    assert errors is None
+    assert validated is not None
 
     expanded = expand_entity_list_in_context(params.outputs[0].entities, params, return_names=False)
     expanded_type_names = {entity.private_attribute_entity_type_name for entity in expanded}
