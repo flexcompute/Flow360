@@ -217,7 +217,7 @@ class _ParamModelBase(Flow360BaseModel):
 
         Clean the redundant content in the params dict from WebUI
         """
-        recursive_remove_key(model_dict, "_id")
+        recursive_remove_key(model_dict, "_id", "private_attribute_image_id")
 
         model_dict.pop("hash", None)
 

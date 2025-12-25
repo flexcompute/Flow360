@@ -3,26 +3,34 @@
 import re
 from functools import wraps
 from numbers import Number
+from typing import Tuple
 
 import numpy as np
 
 from flow360.version import __version__
 
 
-def recursive_remove_key(data, key: str):
-    """Recursively remove a key from nested dict/list structures in place.
+def recursive_remove_key(data, key: str, *additional_keys: str):
+    """Recursively remove one or more keys from nested dict/list structures in place.
 
     This function performs an in-place traversal without unnecessary allocations
     to preserve performance. It handles arbitrarily nested combinations of
     dictionaries and lists.
     """
-    if isinstance(data, dict):
-        data.pop(key, None)
-        for value in data.values():
-            recursive_remove_key(value, key)
-    elif isinstance(data, list):
-        for element in data:
-            recursive_remove_key(element, key)
+    keys: Tuple[str, ...] = (key,) + additional_keys
+
+    # Iterative traversal is typically faster than deep recursion in Python and
+    # avoids recursion depth limits for heavily nested WebUI payloads.
+    stack = [data]
+    while stack:
+        current = stack.pop()
+
+        if isinstance(current, dict):
+            for item_key in keys:
+                current.pop(item_key, None)
+            stack.extend(current.values())
+        elif isinstance(current, list):
+            stack.extend(current)
 
 
 PYTHON_API_VERSION_REGEXP = r"^(\d+)\.(\d+)\.(\d+)(?:b(\d+))?$"
