@@ -33,7 +33,9 @@ from flow360.component.simulation.primitives import (
     ImportedSurface,
     Surface,
 )
-from flow360.component.simulation.services_utils import strip_selector_matches_inplace
+from flow360.component.simulation.services_utils import (
+    strip_selector_matches_and_broken_entities_inplace,
+)
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.user_code.core.types import save_user_variables
@@ -494,6 +496,22 @@ def _update_entity_grouping_tags(entity_info, params: SimulationParams) -> Entit
 
         used_tags = sorted(list(used_tags))
         current_tag = getattr(entity_info, entity_grouping_tags)
+
+        # If explicit entities were stripped (e.g. selector-only usage), we may have no tags
+        # discoverable from the params object. In that case, fall back to the grouping tags
+        # already recorded in the params asset cache.
+        if not used_tags:
+            asset_cache = getattr(params, "private_attribute_asset_cache", None)
+            cached_entity_info = getattr(asset_cache, "project_entity_info", None)
+            cached_tag = (
+                getattr(cached_entity_info, entity_grouping_tags, None)
+                if cached_entity_info is not None
+                and getattr(cached_entity_info, "type_name", None) == "GeometryEntityInfo"
+                else None
+            )
+            if cached_tag is not None:
+                used_tags = [cached_tag]
+
         if len(used_tags) == 1 and current_tag != used_tags[0]:
             log.warning(
                 f"Inconsistent grouping of {entity_type.__name__} between the geometry object ({current_tag})"
@@ -663,7 +681,7 @@ def set_up_params_for_uploading(  # pylint: disable=too-many-arguments
 
     # Strip selector-matched entities from stored_entities before upload so that hand-picked
     # entities remain distinguishable on the UI side.
-    strip_selector_matches_inplace(params)
+    strip_selector_matches_and_broken_entities_inplace(params)
 
     return params
 

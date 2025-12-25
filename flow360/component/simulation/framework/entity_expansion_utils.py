@@ -124,7 +124,28 @@ def get_registry_from_params(params) -> EntityRegistry:
     if entity_info is None:
         raise ValueError("[Internal] SimulationParams is missing project_entity_info.")
 
-    return EntityRegistry.from_entity_info(entity_info)
+    registry = EntityRegistry.from_entity_info(entity_info)
+
+    # Register mirror entities from mirror_status so selector expansion can include mirrored types
+    # (e.g. SurfaceSelector can expand to include MirroredSurface).
+    mirror_status = getattr(asset_cache, "mirror_status", None)
+    if mirror_status is None or mirror_status.is_empty():
+        return registry
+
+    # pylint: disable=import-outside-toplevel
+    from flow360.component.simulation.draft_context.mirror import MirrorPlane
+
+    for plane in mirror_status.mirror_planes:
+        if isinstance(plane, MirrorPlane):
+            registry.register(plane)
+
+    for mirrored_group in mirror_status.mirrored_geometry_body_groups:
+        registry.register(mirrored_group)
+
+    for mirrored_surface in mirror_status.mirrored_surfaces:
+        registry.register(mirrored_surface)
+
+    return registry
 
 
 def expand_all_entity_lists_in_place(

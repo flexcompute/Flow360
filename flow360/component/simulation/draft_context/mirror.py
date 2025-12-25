@@ -368,7 +368,7 @@ class MirrorManager:
         """
         return self._entity_registry.view(MirrorPlane)
 
-    def create_mirror_of(  # pylint: disable=too-many-branches
+    def create_mirror_of(
         self,
         *,
         entities: Union[List[GeometryBodyGroup], GeometryBodyGroup],
@@ -390,8 +390,24 @@ class MirrorManager:
         tuple[List[MirroredGeometryBodyGroup], List[MirroredSurface]]
             Mirrored geometry body groups and surfaces.
         """
-        # 1. [Validation] Ensure `entities` are GeometryBodyGroup entities.
-        normalized_entities: List[GeometryBodyGroup]
+        normalized_entities = self._validate_and_normalize_create_inputs(
+            entities=entities, mirror_plane=mirror_plane
+        )
+        self._prepare_for_mirror_update(entities=normalized_entities)
+        self._ensure_mirror_plane_registered(mirror_plane=mirror_plane)
+        mirrored_geometry_groups, mirrored_surfaces = self._apply_actions_and_generate_entities(
+            entities=normalized_entities, mirror_plane=mirror_plane
+        )
+        return mirrored_geometry_groups, mirrored_surfaces
+
+    # region Internal helpers -------------------------------------------------
+    def _validate_and_normalize_create_inputs(
+        self,
+        *,
+        entities: Union[List[GeometryBodyGroup], GeometryBodyGroup],
+        mirror_plane: MirrorPlane,
+    ) -> List[GeometryBodyGroup]:
+        """Validate inputs for create_mirror_of and normalize entities to a list."""
         if isinstance(entities, GeometryBodyGroup):
             normalized_entities = [entities]
         elif isinstance(entities, list):
@@ -408,32 +424,31 @@ class MirrorManager:
                     f"Received: {type(entity).__name__}."
                 )
 
-        # 2. [Validation] Ensure `mirror_plane` is a `MirrorPlane` entity.
         if not is_exact_instance(mirror_plane, MirrorPlane):
             raise Flow360RuntimeError(
                 f"`mirror_plane` must be a MirrorPlane entity. Instead received: {type(mirror_plane).__name__}."
             )
 
-        # 3. [Validation] Ensure the surface-to-body-group mapping is available.
         if self._face_group_to_body_group is None:
             raise Flow360RuntimeError(
                 "Mirroring is not available because the surface-to-body-group mapping could not be derived. "
                 "This typically happens when face groupings span across multiple body groups."
             )
 
-        # 4. [Restriction] Each GeometryBodyGroup entity can only be mirrored once.
-        #                  If a duplicate request is made, reset to the new one with a warning.
-        for body_group in normalized_entities:
+        return normalized_entities
+
+    def _prepare_for_mirror_update(self, *, entities: List[GeometryBodyGroup]) -> None:
+        """Warn on overwrites and remove previously-derived mirrored entities for these body groups."""
+        body_group_ids_to_update = set()
+        for body_group in entities:
             body_group_id = body_group.private_attribute_id
+            body_group_ids_to_update.add(body_group_id)
             if body_group_id in self._body_group_id_to_mirror_id:
                 log.warning(
                     "GeometryBodyGroup `%s` was already mirrored; resetting to the latest mirror plane request.",
                     body_group.name,
                 )
 
-        # If we're updating an existing mirror assignment, remove any previously-derived mirrored entities
-        # so that the registry/status always reflect the latest mirror status.
-        body_group_ids_to_update = {bg.private_attribute_id for bg in normalized_entities}
         existing_mirrored_groups = [
             mirrored_group
             for mirrored_group in list(self._mirror_status.mirrored_geometry_body_groups)
@@ -442,11 +457,8 @@ class MirrorManager:
         for mirrored_group in existing_mirrored_groups:
             self._remove(mirrored_group)
 
-        # 5. [Validation] Ensure mirror plane has a unique name.
-        #
-        # Note: We do NOT rely on EntityRegistry.contains(mirror_plane) here because
-        # entity equality for registry membership can treat different plane objects
-        # with the same name as "contained". We enforce uniqueness by name + id.
+    def _ensure_mirror_plane_registered(self, *, mirror_plane: MirrorPlane) -> None:
+        """Validate mirror plane name uniqueness and register the plane if needed."""
         for existing_plane in self._mirror_planes:
             if (
                 existing_plane.name == mirror_plane.name
@@ -456,22 +468,27 @@ class MirrorManager:
                     f"Mirror plane name '{mirror_plane.name}' already exists in the draft."
                 )
 
-        # Register the plane if we don't already have the same plane id.
-        if not any(
+        if any(
             plane.private_attribute_id == mirror_plane.private_attribute_id
             for plane in self._mirror_planes
         ):
-            self._add(mirror_plane)
+            return
+        self._add(mirror_plane)
 
-        # 6. Create/Update the self._body_group_id_to_mirror_id
+    def _apply_actions_and_generate_entities(
+        self,
+        *,
+        entities: List[GeometryBodyGroup],
+        mirror_plane: MirrorPlane,
+    ) -> Tuple[List[MirroredGeometryBodyGroup], List[MirroredSurface]]:
+        """Update actions for the given entities and generate/register derived mirrored entities."""
+        mirror_plane_id = mirror_plane.private_attribute_id
         body_group_id_to_mirror_id_update: Dict[str, str] = {}
-        for body_group in normalized_entities:
+        for body_group in entities:
             body_group_id = body_group.private_attribute_id
-            body_group_id_to_mirror_id_update[body_group_id] = mirror_plane.private_attribute_id
-            self._body_group_id_to_mirror_id[body_group_id] = mirror_plane.private_attribute_id
+            body_group_id_to_mirror_id_update[body_group_id] = mirror_plane_id
+            self._body_group_id_to_mirror_id[body_group_id] = mirror_plane_id
 
-        # 7. Derive the generated mirrored entities (MirroredGeometryBodyGroup + MirroredSurface)
-        #    and return to user as tokens of use.
         mirrored_geometry_groups, mirrored_surfaces = _derive_mirrored_entities_from_actions(
             body_group_id_to_mirror_id=body_group_id_to_mirror_id_update,
             face_group_to_body_group=self._face_group_to_body_group,
@@ -479,14 +496,14 @@ class MirrorManager:
             mirror_planes=self._mirror_status.mirror_planes,
         )
 
-        # * (comapred to Box where the creation of it does not use any draft API so no need
-        # *  to register/update/reflect it to the draft context).
         for mirrored_geometry_group in mirrored_geometry_groups:
             self._add(mirrored_geometry_group)
         for mirrored_surface in mirrored_surfaces:
             self._add(mirrored_surface)
 
         return mirrored_geometry_groups, mirrored_surfaces
+
+    # endregion --------------------------------------------------------------
 
     def remove_mirror_of(
         self, *, entities: Union[List[GeometryBodyGroup], GeometryBodyGroup]
