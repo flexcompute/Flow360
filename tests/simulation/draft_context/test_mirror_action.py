@@ -239,6 +239,22 @@ def test_mirror_status_round_trip_through_asset_cache(mock_geometry, tmp_path):
         }
         assert restored_plane_ids == expected_plane_ids
 
+        # Regression: restoring from status must not introduce duplicates in mirror status lists.
+        restored_planes = restored.mirror._mirror_status.mirror_planes
+        assert len(restored_planes) == len(
+            {plane.private_attribute_id for plane in restored_planes}
+        )
+
+        restored_mirrored_groups = restored.mirror._mirror_status.mirrored_geometry_body_groups
+        assert len(restored_mirrored_groups) == len(
+            {group.private_attribute_id for group in restored_mirrored_groups}
+        )
+
+        restored_mirrored_surfaces = restored.mirror._mirror_status.mirrored_surfaces
+        assert len(restored_mirrored_surfaces) == len(
+            {surface.private_attribute_id for surface in restored_mirrored_surfaces}
+        )
+
 
 def test_mirror_create_rejects_duplicate_plane_name(mock_geometry):
     """Test that creating a mirror with a duplicate plane name raises an error."""

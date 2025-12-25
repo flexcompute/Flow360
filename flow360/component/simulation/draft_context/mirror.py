@@ -714,12 +714,14 @@ class MirrorManager:
 
         mgr._mirror_status = mgr._to_status()
 
-        for mirrored_group in mgr._mirror_status.mirrored_geometry_body_groups:
-            mgr._add(mirrored_group)
-        for mirrored_surface in mgr._mirror_status.mirrored_surfaces:
-            mgr._add(mirrored_surface)
-        for mirror_plane in mgr._mirror_status.mirror_planes:
-            mgr._add(mirror_plane)
+        # Register restored entities in the entity registry without mutating the same
+        # MirrorStatus lists while iterating.
+        for mirrored_group in list(mgr._mirror_status.mirrored_geometry_body_groups):
+            mgr._entity_registry.register(mirrored_group)
+        for mirrored_surface in list(mgr._mirror_status.mirrored_surfaces):
+            mgr._entity_registry.register(mirrored_surface)
+        for mirror_plane in list(mgr._mirror_status.mirror_planes):
+            mgr._entity_registry.register(mirror_plane)
 
         return mgr
 
