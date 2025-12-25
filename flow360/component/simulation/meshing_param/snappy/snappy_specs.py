@@ -99,6 +99,15 @@ class QualityMetrics(Flow360BaseModel):
         le=1,
         description="Error reduction factor. Used in combination with n_smooth_scale. Must be between 0 and 1.",
     )
+    zmetric_threshold: pd.NonNegativeFloat = pd.Field(
+        alias="zfactor_threshold",
+        default=0.8,
+        description="Threshold for z-factor limiting during mesh quality checks and smoothing.",
+    )
+    feature_edge_deduplication_tolerance: pd.NonNegativeFloat = pd.Field(
+        default=0.2,
+        description="Relative tolerance to deduplicate feature edges when snapping and smoothing.",
+    )
     min_volume_collapse_ratio: Union[float, Literal[False]] = pd.Field(
         default=0,
         alias="min_vol_collapse_ratio",

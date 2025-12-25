@@ -878,6 +878,8 @@ def snappy_settings():
                 min_triangle_twist=0.1,
                 n_smooth_scale=6,
                 error_reduction=0.4,
+                zmetric_threshold=0.9,
+                feature_edge_deduplication_tolerance=0.25,
                 min_volume_collapse_ratio=0.5,
             ),
             snap_controls=snappy.SnapControls(
