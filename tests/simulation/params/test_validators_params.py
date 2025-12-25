@@ -111,6 +111,7 @@ from flow360.component.simulation.primitives import (
     GhostSphere,
     GhostSurface,
     MirroredGeometryBodyGroup,
+    MirroredSurface,
     SeedpointVolume,
     Surface,
     SurfacePrivateAttributes,
@@ -3000,3 +3001,145 @@ def test_mirroring_requires_geometry_ai():
 
     # No error about mirroring
     assert errors is None or not any("Mirroring" in str(e) for e in errors)
+
+
+def test_mirror_missing_boundary_condition_downgraded_to_warning():
+    """Missing BCs should be downgraded to warnings when mirroring/transformations are detected."""
+    mirror_plane = MirrorPlane(
+        name="test_plane",
+        normal=(0, 1, 0),
+        center=[0, 0, 0] * u.m,
+        private_attribute_id="mp-1",
+    )
+
+    front = Surface(name="front", private_attribute_is_interface=False, private_attribute_id="s-1")
+    mirrored_front = MirroredSurface(
+        name="front_<mirror>",
+        surface_id="s-1",
+        mirror_plane_id="mp-1",
+        private_attribute_id="ms-1",
+    )
+
+    asset_cache = AssetCache(
+        project_length_unit="m",
+        use_inhouse_mesher=True,
+        use_geometry_AI=True,
+        project_entity_info=VolumeMeshEntityInfo(boundaries=[front]),
+        mirror_status=MirrorStatus(
+            mirror_planes=[mirror_plane],
+            mirrored_geometry_body_groups=[],
+            mirrored_surfaces=[mirrored_front],
+        ),
+    )
+
+    with SI_unit_system:
+        params = SimulationParams(
+            models=[Fluid(), Wall(entities=[front])],
+            private_attribute_asset_cache=asset_cache,
+        )
+
+    _validated, errors, warnings = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="VolumeMesh",
+        validation_level="All",
+    )
+
+    assert errors is None
+    assert any("front_<mirror>" in w for w in warnings), warnings
+
+
+def test_mirror_unknown_boundary_still_raises_error():
+    """Unknown boundary names should remain hard errors even when mirroring is detected."""
+    mirror_plane = MirrorPlane(
+        name="test_plane",
+        normal=(0, 1, 0),
+        center=[0, 0, 0] * u.m,
+        private_attribute_id="mp-1",
+    )
+
+    front = Surface(name="front", private_attribute_is_interface=False, private_attribute_id="s-1")
+    mirrored_front = MirroredSurface(
+        name="front_<mirror>",
+        surface_id="s-1",
+        mirror_plane_id="mp-1",
+        private_attribute_id="ms-1",
+    )
+
+    asset_cache = AssetCache(
+        project_length_unit="m",
+        use_inhouse_mesher=True,
+        use_geometry_AI=True,
+        project_entity_info=VolumeMeshEntityInfo(boundaries=[front]),
+        mirror_status=MirrorStatus(
+            mirror_planes=[mirror_plane],
+            mirrored_geometry_body_groups=[],
+            mirrored_surfaces=[mirrored_front],
+        ),
+    )
+
+    with SI_unit_system:
+        params = SimulationParams(
+            models=[
+                Fluid(),
+                # Use mirrored surface (should be known once we include it in the valid boundary pool)
+                Wall(entities=[mirrored_front, Surface(name="typo_surface")]),
+            ],
+            private_attribute_asset_cache=asset_cache,
+        )
+
+    _validated, errors, _warnings = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="VolumeMesh",
+        validation_level="All",
+    )
+
+    assert errors is not None
+    assert any("typo_surface" in str(e) for e in errors)
+
+
+def test_domain_type_bbox_mismatch_downgraded_to_warning_when_transformed():
+    """domain_type bbox mismatch should be a warning when transformations are detected."""
+    cs_status = CoordinateSystemStatus(
+        coordinate_systems=[CoordinateSystem(name="cs", private_attribute_id="cs-1")],
+        parents=[],
+        assignments=[CoordinateSystemAssignmentGroup(coordinate_system_id="cs-1", entities=[])],
+    )
+
+    # Global bbox fully on -Y side; choosing half_body_positive_y should normally raise.
+    asset_cache = AssetCache(
+        project_length_unit="m",
+        use_inhouse_mesher=True,
+        use_geometry_AI=True,
+        project_entity_info=SurfaceMeshEntityInfo(
+            boundaries=[],
+            global_bounding_box=[[-1, -10, -1], [1, -5, 1]],
+        ),
+        coordinate_system_status=cs_status,
+    )
+
+    auto_farfield = AutomatedFarfield(name="my_farfield", domain_type="half_body_positive_y")
+
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-10,
+                    geometry_accuracy=1e-10 * u.m,
+                    surface_max_edge_length=1e-10,
+                ),
+                volume_zones=[auto_farfield],
+            ),
+            private_attribute_asset_cache=asset_cache,
+        )
+
+    _validated, errors, warnings = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type=None,
+        validation_level=None,
+    )
+
+    assert errors is None
+    assert any("domain_type" in w or "symmetry plane" in w for w in warnings), warnings
