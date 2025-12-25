@@ -146,6 +146,9 @@ class Draft(Flow360Resource):
     def enable_dependency_resources(self, active_draft):
         """Enable dependency resources for the draft"""
 
+        if active_draft is None:
+            return
+
         geometry_dependencies = [
             geometry.id for geometry in active_draft.imported_geometry_components
         ]
