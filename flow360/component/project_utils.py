@@ -96,13 +96,12 @@ def _apply_geometry_grouping_overrides(
     assert face_tag is not None, print(
         "[Internal] Default face grouping should be set, face tag to be applied: ", face_tag
     )
-    # edge_tag can be None if the geometry asset created with surface mesh
-    if entity_info.edge_attribute_names:
-        edge_tag = _validate_tag(edge_tag, entity_info.edge_attribute_names, "edge")
-
-    # >>> 3. Apply groupings
     entity_info._group_entity_by_tag("face", face_tag)  # pylint:disable=protected-access
-    entity_info._group_entity_by_tag("edge", edge_tag)  # pylint:disable=protected-access
+    # edge_tag can be None if the geometry asset created with surface mesh
+    if edge_grouping is not None and entity_info.edge_attribute_names:
+        edge_tag = _validate_tag(edge_tag, entity_info.edge_attribute_names, "edge")
+        entity_info._group_entity_by_tag("edge", edge_tag)  # pylint:disable=protected-access
+
     entity_info._group_entity_by_tag("body", body_group_tag)  # pylint:disable=protected-access
 
     return {
