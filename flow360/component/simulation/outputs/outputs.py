@@ -67,6 +67,7 @@ from flow360.component.simulation.validation.validation_context import (
 )
 from flow360.component.simulation.validation.validation_utils import (
     validate_entity_list_surface_existence,
+    validate_improper_surface_field_usage_for_imported_surface,
 )
 from flow360.component.types import Axis
 
@@ -344,6 +345,15 @@ class SurfaceOutput(_AnimationAndFileFormatSettings, _OutputBase):
     def ensure_surface_existence(cls, value, param_info: ParamsValidationInfo):
         """Ensure all boundaries will be present after mesher"""
         return validate_entity_list_surface_existence(value, param_info)
+
+    @contextual_model_validator(mode="after")
+    def validate_imported_surface_output_fields(self, param_info: ParamsValidationInfo):
+        """Validate output fields when using imported surfaces"""
+        expanded_entities = param_info.expand_entity_list(self.entities)
+        validate_improper_surface_field_usage_for_imported_surface(
+            expanded_entities, self.output_fields
+        )
+        return self
 
 
 class TimeAverageSurfaceOutput(SurfaceOutput):
@@ -688,6 +698,15 @@ class SurfaceIntegralOutput(_OutputBase):
                     " Please assign them to separate outputs."
                 )
         return value
+
+    @contextual_model_validator(mode="after")
+    def validate_imported_surface_output_fields(self, param_info: ParamsValidationInfo):
+        """Validate output fields when using imported surfaces"""
+        expanded_entities = param_info.expand_entity_list(self.entities)
+        validate_improper_surface_field_usage_for_imported_surface(
+            expanded_entities, self.output_fields
+        )
+        return self
 
 
 class RenderOutputGroup(Flow360BaseModel):
