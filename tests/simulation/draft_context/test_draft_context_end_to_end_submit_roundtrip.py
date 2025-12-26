@@ -127,10 +127,11 @@ def test_draft_end_to_end_selector_and_draft_entity_roundtrip(mock_surface_mesh,
         assert wall_model.entities.stored_entities == []
 
         # Local validation stage (validate_model should pass).
-        params, errors = validate_params_with_context(
+        params, errors, warnings = validate_params_with_context(
             params=params, root_item_type="SurfaceMesh", up_to="VolumeMesh"
         )
         assert errors is None
+        assert warnings == []
 
         # Mimic upload by calling Draft.update_simulation_params() but without any Draft submit API.
         uploaded_payload: dict = {}

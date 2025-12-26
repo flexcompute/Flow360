@@ -29,6 +29,7 @@ from flow360.component.simulation.primitives import (
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.validation.validation_context import (
     ParamsValidationInfo,
+    add_validation_warning,
     contextual_field_validator,
     contextual_model_validator,
     get_validation_info,
@@ -468,6 +469,7 @@ class _FarfieldBase(Flow360BaseModel):
         if (
             value not in ("half_body_positive_y", "half_body_negative_y")
             or validation_info.global_bounding_box is None
+            or validation_info.planar_face_tolerance is None
         ):
             return value
 
@@ -500,11 +502,15 @@ class _FarfieldBase(Flow360BaseModel):
             if y_max <= tolerance:
                 return value
 
-        raise ValueError(
+        message = (
             f"The model does not cross the symmetry plane (Y=0) with tolerance {tolerance:.2g}. "
             f"Model Y range: [{y_min:.2g}, {y_max:.2g}]. "
             "Please check if `domain_type` is set correctly."
         )
+        if getattr(validation_info, "entity_transformation_detected", False):
+            add_validation_warning(message)
+            return value
+        raise ValueError(message)
 
 
 class AutomatedFarfield(_FarfieldBase):

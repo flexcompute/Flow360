@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 """
 Utility functions
 """
@@ -982,6 +983,33 @@ def formatting_validation_errors(errors):
         if error.get("ctx") and error["ctx"].get("relevant_for"):
             error_msg += f" | Relevant for: {error['ctx']['relevant_for']}"
     return error_msg
+
+
+def formatting_validation_warnings(warnings: List) -> str:
+    """
+    Format validation warnings to a human readable string.
+
+    Parameters
+    ----------
+    warnings : List
+        Collection of warning entries. Each entry can be a string message or a dict
+        with keys: loc/msg/type/ctx.
+
+    Returns
+    -------
+    str
+        Formatted warning output with numbering per line.
+    """
+    if not warnings:
+        return ""
+
+    warning_msg = ""
+    for idx, warning in enumerate(warnings, start=1):
+        if isinstance(warning, dict):
+            warning_msg += f"\n\t({idx}) {warning.get('msg', str(warning))}"
+        else:
+            warning_msg += f"\n\t({idx}) {warning}"
+    return warning_msg
 
 
 def check_existence_of_one_file(file_path: str):
