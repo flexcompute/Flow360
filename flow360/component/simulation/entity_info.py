@@ -2,7 +2,7 @@
 
 from abc import ABCMeta, abstractmethod
 from collections import defaultdict
-from typing import Annotated, Dict, List, Literal, Optional, Union
+from typing import Annotated, Any, Dict, List, Literal, Optional, Union
 
 import pydantic as pd
 
@@ -723,6 +723,7 @@ def update_geometry_entity_info(
     6. Draft and Ghost entities: Preserve from current_entity_info.
     """
     # pylint: disable=too-many-locals, too-many-statements
+
     if not entity_info_components:
         raise ValueError("entity_info_components cannot be empty")
 
@@ -794,18 +795,82 @@ def update_geometry_entity_info(
             else:
                 result_bounding_box = result_bounding_box.expand(entity_info.global_bounding_box)
 
-    # Build mapping of body group ID to mesh_exterior from current_entity_info
-    current_body_user_settings_map = {}
-    for body_group_idx, body_group_name in enumerate(current_entity_info.body_attribute_names):
-        current_body_user_settings_map[body_group_name] = {}
-        for body in current_entity_info.grouped_bodies[body_group_idx]:
-            body_id = body.private_attribute_id
-            current_body_user_settings_map[body_group_name][body_id] = {
-                "mesh_exterior": body.mesh_exterior,
-                "name": body.name,
-            }
+    # 5. Get current user settings from body group and face
+    def get_current_user_settings_map(
+        entity_info: GeometryEntityInfo,
+        entity_type: Literal["body", "face"],
+    ) -> Dict[str, Dict[str, Dict[str, Any]]]:
+        """
+        Extract user settings (like mesh_exterior, name) from entity_info.
 
-    # 5. Merge grouped entities from entity_info_components
+        Args:
+            entity_info: The GeometryEntityInfo to extract settings from
+            entity_type: Either "body" or "face"
+
+        Returns:
+            A nested dictionary: {attribute_name: {entity_id: {setting_key: setting_value}}}
+        """
+        user_settings_map = {}
+
+        if entity_type == "body":
+            attribute_names = entity_info.body_attribute_names
+            grouped_entities = entity_info.grouped_bodies
+            settings_keys = ["mesh_exterior", "name"]
+        elif entity_type == "face":
+            attribute_names = entity_info.face_attribute_names
+            grouped_entities = entity_info.grouped_faces
+            settings_keys = ["name"]
+        else:
+            raise ValueError(f"Invalid entity_type: {entity_type}. Must be 'body' or 'face'.")
+
+        for group_idx, group_name in enumerate(attribute_names):
+            user_settings_map[group_name] = {}
+            for entity in grouped_entities[group_idx]:
+                entity_id = entity.private_attribute_id
+                user_settings_map[group_name][entity_id] = {
+                    key: getattr(entity, key) for key in settings_keys
+                }
+
+        return user_settings_map
+
+    current_body_user_settings_map = get_current_user_settings_map(
+        current_entity_info, entity_type="body"
+    )
+    current_face_user_settings_map = get_current_user_settings_map(
+        current_entity_info, entity_type="face"
+    )
+
+    # 6. Merge grouped entities from entity_info_components
+    def apply_user_settings_to_entity(
+        entity: Union[GeometryBodyGroup, Surface, Edge],
+        attr_name: str,
+        user_settings_map: Optional[Dict[str, Dict[str, Dict[str, Any]]]],
+    ) -> Union[GeometryBodyGroup, Surface, Edge]:
+        """
+        Apply user settings to an entity if available in the user_settings_map.
+
+        Args:
+            entity: The entity to apply settings to
+            attr_name: The attribute name (group name) for this entity
+            user_settings_map: The user settings map from get_current_user_settings_map()
+
+        Returns:
+            The entity with user settings applied, or the original entity if no settings found
+        """
+        if user_settings_map is None:
+            return entity
+
+        entity_id = entity.private_attribute_id
+
+        # Check if we have user settings for this entity
+        if attr_name in user_settings_map and entity_id in user_settings_map[attr_name]:
+            # Create a copy with updated user settings
+            entity_data = entity.model_dump()
+            entity_data.update(user_settings_map[attr_name][entity_id])
+            return entity.__class__.model_validate(entity_data)
+
+        return entity
+
     def merge_grouped_entities(
         entity_type: Literal["body", "face", "edge"],
         result_attr_names: List[str],
@@ -844,24 +909,17 @@ def update_geometry_entity_info(
                 for entity in entity_groups[idx]:
                     # Use private_attribute_id as the unique identifier
                     entity_id = entity.private_attribute_id
-                    if entity_id not in entity_map:
-                        # For bodies, check if we need to preserve mesh_exterior
-                        if (
-                            entity_type == "body"
-                            and attr_name in current_body_user_settings_map
-                            and entity_id in current_body_user_settings_map[attr_name]
-                        ):
-                            # Create a copy with preserved mesh_exterior
-                            entity_data = entity.model_dump()
-                            entity_data["mesh_exterior"] = current_body_user_settings_map[
-                                attr_name
-                            ][entity_id]["mesh_exterior"]
-                            entity_data["name"] = current_body_user_settings_map[attr_name][
-                                entity_id
-                            ]["name"]
-                            entity_map[entity_id] = GeometryBodyGroup.model_validate(entity_data)
-                        else:
-                            entity_map[entity_id] = entity
+                    if entity_id in entity_map:
+                        continue
+                    # Apply user settings if available
+                    user_settings_map = (
+                        current_body_user_settings_map
+                        if entity_type == "body"
+                        else current_face_user_settings_map if entity_type == "face" else None
+                    )
+                    entity_map[entity_id] = apply_user_settings_to_entity(
+                        entity, attr_name, user_settings_map
+                    )
 
             # Convert map to list, maintaining a stable order (sorted by entity ID)
             result_grouped.append(sorted(entity_map.values(), key=lambda e: e.private_attribute_id))
