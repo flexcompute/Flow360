@@ -646,10 +646,16 @@ def add_validation_warning(message: str) -> None:
     warnings_list = _validation_warnings_ctx.get()
     if warnings_list is None:
         return
+    message_str = str(message)
+    if any(
+        isinstance(existing, dict) and existing.get("msg") == message_str
+        for existing in warnings_list
+    ):
+        return
     warnings_list.append(
         {
             "loc": (),
-            "msg": str(message),
+            "msg": message_str,
             "type": "value_error",
             "ctx": {},
         }
