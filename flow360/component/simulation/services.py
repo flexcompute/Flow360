@@ -438,7 +438,7 @@ def validate_model(  # pylint: disable=too-many-locals
     validation_level: Union[
         Literal["SurfaceMesh", "VolumeMesh", "Case", "All"], list, None
     ] = ALL,  # Fix implicit string concatenation
-) -> Tuple[Optional[SimulationParams], Optional[list], List[str]]:
+) -> Tuple[Optional[SimulationParams], Optional[list], List[Dict[str, Any]]]:
     """
     Validate a params dict against the pydantic model.
 
@@ -519,7 +519,7 @@ def validate_model(  # pylint: disable=too-many-locals
         return params_as_dict
 
     validation_errors = None
-    validation_warnings: List[str] = []
+    validation_warnings: List[Dict[str, Any]] = []
     validated_param = None
     validation_context: Optional[ValidationContext] = None
 

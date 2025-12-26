@@ -646,7 +646,14 @@ def add_validation_warning(message: str) -> None:
     warnings_list = _validation_warnings_ctx.get()
     if warnings_list is None:
         return
-    warnings_list.append(str(message))
+    warnings_list.append(
+        {
+            "loc": (),
+            "msg": str(message),
+            "type": "value_error",
+            "ctx": {},
+        }
+    )
 
 
 # pylint: disable=invalid-name

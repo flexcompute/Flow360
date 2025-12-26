@@ -219,7 +219,9 @@ def test_add_validation_warning_collects_messages_without_errors():
     with SI_unit_system, mock_context:
         WarningModel(value=1)
 
-    assert mock_context.validation_warnings == ["value inspected"]
+    assert mock_context.validation_warnings == [
+        {"loc": (), "msg": "value inspected", "type": "value_error", "ctx": {}}
+    ]
 
 
 def test_add_validation_warning_preserves_messages_on_error():
@@ -242,4 +244,6 @@ def test_add_validation_warning_preserves_messages_on_error():
         with pytest.raises(ValidationError):
             WarningModel(value=-1)
 
-    assert mock_context.validation_warnings == ["value invalid"]
+    assert mock_context.validation_warnings == [
+        {"loc": (), "msg": "value invalid", "type": "value_error", "ctx": {}}
+    ]

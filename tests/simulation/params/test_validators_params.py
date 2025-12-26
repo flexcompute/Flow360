@@ -3046,7 +3046,7 @@ def test_mirror_missing_boundary_condition_downgraded_to_warning():
     )
 
     assert errors is None
-    assert any("front_<mirror>" in w for w in warnings), warnings
+    assert any("front_<mirror>" in w.get("msg", "") for w in warnings), warnings
 
 
 def test_mirror_unknown_boundary_still_raises_error():
@@ -3142,4 +3142,6 @@ def test_domain_type_bbox_mismatch_downgraded_to_warning_when_transformed():
     )
 
     assert errors is None
-    assert any("domain_type" in w or "symmetry plane" in w for w in warnings), warnings
+    assert any(
+        "domain_type" in w.get("msg", "") or "symmetry plane" in w.get("msg", "") for w in warnings
+    ), warnings

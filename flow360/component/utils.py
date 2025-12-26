@@ -985,14 +985,15 @@ def formatting_validation_errors(errors):
     return error_msg
 
 
-def formatting_validation_warnings(warnings: List[str]) -> str:
+def formatting_validation_warnings(warnings: List) -> str:
     """
     Format validation warnings to a human readable string.
 
     Parameters
     ----------
-    warnings : List[str]
-        Collection of warning messages.
+    warnings : List
+        Collection of warning entries. Each entry can be a string message or a dict
+        with keys: loc/msg/type/ctx.
 
     Returns
     -------
@@ -1004,7 +1005,10 @@ def formatting_validation_warnings(warnings: List[str]) -> str:
 
     warning_msg = ""
     for idx, warning in enumerate(warnings, start=1):
-        warning_msg += f"\n\t({idx}) {warning}"
+        if isinstance(warning, dict):
+            warning_msg += f"\n\t({idx}) {warning.get('msg', str(warning))}"
+        else:
+            warning_msg += f"\n\t({idx}) {warning}"
     return warning_msg
 
 
