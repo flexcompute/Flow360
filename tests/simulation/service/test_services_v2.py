@@ -6,6 +6,7 @@ from unyt import Unit
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation import services
+from flow360.component.simulation.entity_info import GeometryEntityInfo
 from flow360.component.simulation.exposed_units import supported_units_by_front_end
 from flow360.component.simulation.framework.updater_utils import compare_values
 from flow360.component.simulation.unit_system import _PredefinedUnitSystem
@@ -1349,3 +1350,184 @@ def test_get_default_report_config_json():
     with open("ref/default_report_config.json", "r") as fp:
         ref_dict = json.load(fp)
     assert compare_values(report_config_dict, ref_dict, ignore_keys=["formatter"])
+
+
+def test_merge_geometry_entity_info():
+    """
+    Test the merge_geometry_entity_info function to ensure proper merging of geometry entity information.
+
+    Test scenarios:
+    1. Merge root geometry with one dependency geometry, should preserve mesh_exterior and name settings
+       of geometryBodyGroup in root geometry.
+    2. Start from result of (1), replace the dependency with another dependency geometry, should check:
+       a. the preservation of mesh_exterior and name settings of geometryBodyGroup in new_draft_param_as_dict
+       b. the new dependency geometry should have replaced the old dependency geometry in the new_draft_param_as_dict
+    """
+    import copy
+
+    def check_setting_preserved(
+        result_entity_info: GeometryEntityInfo,
+        reference_entity_infos: list[GeometryEntityInfo],
+        entity_type: str,
+        setting_name: str,
+    ):
+        """
+        Check that a specific setting is preserved from reference entity infos.
+
+        Args:
+            result_entity_info: The merged entity info to verify
+            reference_entity_infos: List of reference entity infos to check against
+            entity_type: Either "body" or "face"
+            setting_name: The setting to check (e.g., "mesh_exterior", "name")
+        """
+        if entity_type == "body":
+            group_tag = result_entity_info.body_group_tag
+            attribute_names = result_entity_info.body_attribute_names
+            grouped_entities = result_entity_info.grouped_bodies
+        elif entity_type == "face":
+            group_tag = result_entity_info.face_group_tag
+            attribute_names = result_entity_info.face_attribute_names
+            grouped_entities = result_entity_info.grouped_faces
+        else:
+            raise ValueError(f"Invalid entity_type: {entity_type}")
+
+        group_index_result = attribute_names.index(group_tag)
+
+        for entity in grouped_entities[group_index_result]:
+            found = False
+            for reference_info in reference_entity_infos:
+                if entity_type == "body":
+                    ref_attribute_names = reference_info.body_attribute_names
+                    ref_grouped_entities = reference_info.grouped_bodies
+                else:  # face
+                    ref_attribute_names = reference_info.face_attribute_names
+                    ref_grouped_entities = reference_info.grouped_faces
+
+                group_index_ref = ref_attribute_names.index(group_tag)
+
+                for ref_entity in ref_grouped_entities[group_index_ref]:
+                    if entity.private_attribute_id == ref_entity.private_attribute_id:
+                        result_value = getattr(entity, setting_name)
+                        ref_value = getattr(ref_entity, setting_name)
+                        assert result_value == ref_value, (
+                            f"{setting_name} mismatch for {entity_type} "
+                            f"'{entity.name}' (id: {entity.private_attribute_id}): "
+                            f"expected {ref_value}, got {result_value}"
+                        )
+                        found = True
+                        break
+                if found:
+                    break
+            assert found, (
+                f"{entity_type.capitalize()} '{entity.name}' (id: {entity.private_attribute_id}) "
+                f"not found in any reference entity info"
+            )
+
+    # Load test data
+    with open("data/root_geometry_cube_simulation.json", "r") as f:
+        root_cube_simulation_dict = json.load(f)
+        root_cube_entity_info = GeometryEntityInfo.model_validate(
+            root_cube_simulation_dict["private_attribute_asset_cache"]["project_entity_info"]
+        )
+    with open("data/dependency_geometry_sphere1_simulation.json", "r") as f:
+        dependency_sphere1_simulation_dict = json.load(f)
+        dependency_sphere1_entity_info = GeometryEntityInfo.model_validate(
+            dependency_sphere1_simulation_dict["private_attribute_asset_cache"][
+                "project_entity_info"
+            ]
+        )
+    with open("data/dependency_geometry_sphere2_simulation.json", "r") as f:
+        dependency_sphere2_simulation_dict = json.load(f)
+        dependency_sphere2_entity_info = GeometryEntityInfo.model_validate(
+            dependency_sphere2_simulation_dict["private_attribute_asset_cache"][
+                "project_entity_info"
+            ]
+        )
+
+    # Test 1: Merge root geometry and one dependency geometry
+    # Should preserve mesh_exterior and name settings of geometryBodyGroup in root geometry
+    result_entity_info_dict1 = services.merge_geometry_entity_info(
+        draft_param_as_dict=root_cube_simulation_dict,
+        geometry_dependencies_param_as_dict=[
+            root_cube_simulation_dict,
+            dependency_sphere1_simulation_dict,
+        ],
+    )
+    result_entity_info1 = GeometryEntityInfo.model_validate(result_entity_info_dict1)
+
+    # Load expected result for test 1
+    with open("data/result_merged_geometry_entity_info1.json", "r") as f:
+        expected_result1 = json.load(f)
+
+    # Compare results
+    assert compare_values(
+        result_entity_info_dict1, expected_result1
+    ), "Test 1 failed: Merged entity info does not match expected result"
+
+    # Verify key properties are preserved using helper function
+    check_setting_preserved(
+        result_entity_info1,
+        [root_cube_entity_info, dependency_sphere1_entity_info],
+        entity_type="body",
+        setting_name="mesh_exterior",
+    )
+    check_setting_preserved(
+        result_entity_info1,
+        [root_cube_entity_info, dependency_sphere1_entity_info],
+        entity_type="body",
+        setting_name="name",
+    )
+    check_setting_preserved(
+        result_entity_info1,
+        [root_cube_entity_info, dependency_sphere1_entity_info],
+        entity_type="face",
+        setting_name="name",
+    )
+
+    # Test 2: Start from result of (1), replace the dependency with another dependency geometry
+    # Should check:
+    #  a. the preservation of mesh_exterior and name settings of geometryBodyGroup in new_draft_param_as_dict
+    #  b. the new dependency geometry should have replaced the old dependency geometry
+    new_draft_param_as_dict = copy.deepcopy(root_cube_simulation_dict)
+    new_draft_param_as_dict["private_attribute_asset_cache"]["project_entity_info"] = copy.deepcopy(
+        result_entity_info_dict1
+    )
+
+    result_entity_info_dict2 = services.merge_geometry_entity_info(
+        draft_param_as_dict=new_draft_param_as_dict,
+        geometry_dependencies_param_as_dict=[
+            root_cube_simulation_dict,
+            dependency_sphere2_simulation_dict,
+        ],
+    )
+
+    # Load expected result for test 2
+    with open("data/result_merged_geometry_entity_info2.json", "r") as f:
+        expected_result2 = json.load(f)
+
+    # Compare results
+    assert compare_values(
+        result_entity_info_dict2, expected_result2
+    ), "Test 2 failed: Merged entity info with replaced dependency does not match expected result"
+
+    result_entity_info2 = GeometryEntityInfo.model_validate(result_entity_info_dict2)
+
+    # Verify key properties are preserved using helper function
+    check_setting_preserved(
+        result_entity_info2,
+        [root_cube_entity_info, dependency_sphere2_entity_info],
+        entity_type="body",
+        setting_name="mesh_exterior",
+    )
+    check_setting_preserved(
+        result_entity_info2,
+        [root_cube_entity_info, dependency_sphere2_entity_info],
+        entity_type="body",
+        setting_name="name",
+    )
+    check_setting_preserved(
+        result_entity_info2,
+        [root_cube_entity_info, dependency_sphere2_entity_info],
+        entity_type="face",
+        setting_name="name",
+    )

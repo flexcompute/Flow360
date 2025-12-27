@@ -289,6 +289,19 @@ class MockResponseProjectTree(MockResponse):
         return res
 
 
+class MockResponseProjectEmptyDependency(MockResponse):
+    """response for Project.from_cloud(id="prj-41d2333b-85fd-4bed-ae13-15dcb6da519e")'s meta json"""
+
+    @staticmethod
+    def json():
+        return {
+            "data": {
+                "geometryDependencyResources": [],
+                "surfaceMeshDependencyResources": [],
+            }
+        }
+
+
 class MockResponseProjectFromVMTree(MockResponse):
     """response for Project.from_cloud(id="prj-99cc6f96-15d3-4170-973c-a0cced6bf36b")'s tree json"""
 
@@ -541,6 +554,7 @@ GET_RESPONSE_MAP = {
     "/volumemeshes/00000000-0000-0000-0000-000000000000": MockResponseVolumeMesh,
     "/v2/geometries/00000000-0000-0000-0000-000000000000": MockResponseGeometryV2,
     "/v2/projects/prj-29e35434-2148-47c8-b548-58b479c37b99": MockResponseGeometryProjectV2,
+    "/v2/projects/prj-29e35434-2148-47c8-b548-58b479c37b99/dependency": MockResponseProjectEmptyDependency,
     "/v2/geometries/00000000-0000-0000-0000-000000000000/simulation/file": MockResponseGeometrySimConfigV2,
     "/cases/00000000-0000-0000-0000-000000000000/runtimeParams": MockResponseCaseRuntimeParams,
     "/v2/cases/00000000-0000-0000-0000-000000000000/file?filename=simulation.json": MockResponseSimulationJsonFile,
@@ -553,7 +567,9 @@ GET_RESPONSE_MAP = {
     "/folders/items/folder-3834758b-3d39-4a4a-ad85-710b7652267c/metadata": MockResponseFolderRootMetadata,
     "/folders/items/folder-4da3cdd0-c5b6-4130-9ca1-196237322ab9/metadata": MockResponseFolderNestedMetadata,
     "/v2/projects/prj-41d2333b-85fd-4bed-ae13-15dcb6da519e": MockResponseProject,
+    "/v2/projects/prj-41d2333b-85fd-4bed-ae13-15dcb6da519e/dependency": MockResponseProjectEmptyDependency,
     "/v2/projects/prj-99cc6f96-15d3-4170-973c-a0cced6bf36b": MockResponseProjectFromVM,
+    "/v2/projects/prj-99cc6f96-15d3-4170-973c-a0cced6bf36b/dependency": MockResponseProjectEmptyDependency,
     "/v2/projects/prj-41d2333b-85fd-4bed-ae13-15dcb6da519e/tree": MockResponseProjectTree,
     "/v2/projects/prj-99cc6f96-15d3-4170-973c-a0cced6bf36b/tree": MockResponseProjectFromVMTree,
     "/v2/geometries/geo-2877e124-96ff-473d-864b-11eec8648d42": MockResponseProjectGeometry,
@@ -562,6 +578,7 @@ GET_RESPONSE_MAP = {
     "/v2/surface-meshes/sm-1f1f2753-fe31-47ea-b3ab-efb2313ab65a/simulation/file": MockResponseProjectSurfaceMeshSimConfig,
     "/v2/volume-meshes/vm-7c3681cd-8c6c-4db7-a62c-1742d825e9d3": MockResponseProjectVolumeMesh,
     "/v2/volume-meshes/vm-7c3681cd-8c6c-4db7-a62c-1742d825e9d3/simulation/file": MockResponseProjectVolumeMeshSimConfig,
+    "/v2/drafts/vm-7c3681cd-8c6c-4db7-a62c-1742d825e9d3": MockResponseProjectVolumeMesh,
     "/v2/volume-meshes/vm-bff35714-41b1-4251-ac74-46a40b95a330": MockResponseProjectFromVMVolumeMeshMeta,
     "/v2/volume-meshes/vm-bff35714-41b1-4251-ac74-46a40b95a330/simulation/file": MockResponseProjectFromVMVolumeMeshSimConfig,
     "/cases/case-69b8c249-fce5-412a-9927-6a79049deebb": MockResponseProjectCase,

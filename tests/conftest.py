@@ -90,13 +90,14 @@ def mock_geometry():
 def mock_surface_mesh():
     surface_data = Path(__file__).parent / "simulation" / "service" / "data"
     surface_meta = local_metadata_builder(
-        id="surface-mesh",
+        id="sm-11111111-1111-1111-1111-111111111111",
         name="surface-mesh",
         cloud_path_prefix="--",
         status="processed",
     )
 
     surface_mesh = SurfaceMeshV2.from_local_storage(
+        mesh_id=surface_meta["id"],
         local_storage_path=surface_data,
         meta_data=SurfaceMeshMetaV2(**surface_meta),
     )
@@ -114,6 +115,7 @@ def mock_volume_mesh():
         cloud_path_prefix="--",
     )
     volume_mesh = VolumeMeshV2.from_local_storage(
+        mesh_id=volume_meta["id"],
         local_storage_path=data_root / volume_meta["id"],
         meta_data=VolumeMeshMetaV2(**volume_meta),
     )
