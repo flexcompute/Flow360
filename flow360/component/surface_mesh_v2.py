@@ -147,7 +147,6 @@ class SurfaceMeshDraftV2(ResourceDraft):
         self._submission_mode: SubmissionMode = SubmissionMode.PROJECT_ROOT
 
         self._validate_surface_mesh()
-        self._set_default_project_name()
         ResourceDraft.__init__(self)
 
     def _validate_surface_mesh(self):
@@ -205,6 +204,7 @@ class SurfaceMeshDraftV2(ResourceDraft):
     def _create_project_root_resource(self, description: str = "") -> SurfaceMeshMetaV2:
         """Create a new surface mesh resource that will be the root of a new project."""
 
+        self._set_default_project_name()
         req = NewSurfaceMeshRequestV2(
             name=self.project_name,
             solver_version=self.solver_version,
@@ -340,7 +340,7 @@ class SurfaceMeshDraftV2(ResourceDraft):
             log_message = "Surface mesh successfully submitted"
         else:
             info = self._create_dependency_resource(description, draft_id, icon)
-            log_message = "Supplementary surface mesh resources successfully submitted"
+            log_message = "New surface mesh successfully submitted to the project"
 
         # Upload files
         surface_mesh = self._upload_files(info, progress_callback)

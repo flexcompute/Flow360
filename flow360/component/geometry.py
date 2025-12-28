@@ -145,7 +145,6 @@ class GeometryDraft(ResourceDraft):
         self._submission_mode: SubmissionMode = SubmissionMode.PROJECT_ROOT
 
         self._validate_geometry()
-        self._set_default_project_name()
         ResourceDraft.__init__(self)
 
     def _validate_geometry(self):
@@ -229,6 +228,7 @@ class GeometryDraft(ResourceDraft):
         self, mapbc_files: List[str], description: str = ""
     ) -> GeometryMeta:
         """Create a new geometry resource that will be the root of a new project."""
+        self._set_default_project_name()
         req = NewGeometryRequest(
             name=self.project_name,
             solver_version=self.solver_version,
@@ -362,7 +362,7 @@ class GeometryDraft(ResourceDraft):
             log_message = "Geometry successfully submitted"
         else:
             info = self._create_dependency_resource(mapbc_files, description, draft_id, icon)
-            log_message = "Supplementary geometry resources successfully submitted"
+            log_message = "New geometry successfully submitted to the project"
 
         # Upload files
         geometry = self._upload_files(info, mapbc_files, progress_callback)
