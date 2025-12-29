@@ -533,8 +533,8 @@ class GeometryEntityInfo(EntityInfoModel):
             )
 
         face_group_by_body_id_to_face = create_group_to_sub_component_mapping(
-            self._get_list_of_entities(entity_type_name="face", attribute_name="groupByBodyId"), 
-            use_name_as_key=True
+            self._get_list_of_entities(entity_type_name="face", attribute_name="groupByBodyId"),
+            use_name_as_key=True,
         )
 
         body_group_to_face = defaultdict(list)
