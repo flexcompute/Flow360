@@ -509,10 +509,13 @@ class GeometryEntityInfo(EntityInfoModel):
         """
 
         # pylint: disable=too-many-locals
-        def create_group_to_sub_component_mapping(group):
+        def create_group_to_sub_component_mapping(group, use_name_as_key=False):
             mapping = defaultdict(list)
             for item in group:
-                mapping[item.private_attribute_id].extend(item.private_attribute_sub_components)
+                if use_name_as_key:
+                    mapping[item.name].extend(item.private_attribute_sub_components)
+                else:
+                    mapping[item.private_attribute_id].extend(item.private_attribute_sub_components)
             return mapping
 
         body_group_to_body = create_group_to_sub_component_mapping(
@@ -530,7 +533,8 @@ class GeometryEntityInfo(EntityInfoModel):
             )
 
         face_group_by_body_id_to_face = create_group_to_sub_component_mapping(
-            self._get_list_of_entities(entity_type_name="face", attribute_name="groupByBodyId")
+            self._get_list_of_entities(entity_type_name="face", attribute_name="groupByBodyId"), 
+            use_name_as_key=True
         )
 
         body_group_to_face = defaultdict(list)
