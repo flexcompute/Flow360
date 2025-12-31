@@ -159,9 +159,7 @@ def _build_mirrored_surfaces(
     if not body_group_id_to_mirror_id or face_group_to_body_group is None:
         return []
 
-    surfaces_by_name: Dict[str, Surface] = {
-        surface.private_attribute_id: surface for surface in surfaces
-    }
+    surfaces_by_name: Dict[str, Surface] = {surface.name: surface for surface in surfaces}
     requested_body_group_ids = set(body_group_id_to_mirror_id.keys())
     mirrored_surfaces: List[MirroredSurface] = []
 

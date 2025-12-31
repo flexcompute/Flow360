@@ -509,20 +509,35 @@ class GeometryEntityInfo(EntityInfoModel):
         """
 
         # pylint: disable=too-many-locals
-        def create_group_to_sub_component_mapping(group, use_name_as_key=False):
+        def create_group_to_sub_component_mapping(group, id_to_private_id):
             mapping = defaultdict(list)
             for item in group:
-                if use_name_as_key:
-                    mapping[item.name].extend(item.private_attribute_sub_components)
-                else:
-                    mapping[item.private_attribute_id].extend(item.private_attribute_sub_components)
+                mapping[item.name].extend(
+                    [
+                        id_to_private_id[component]
+                        for component in item.private_attribute_sub_components
+                    ]
+                )
             return mapping
 
+        body_id_to_private_id = {
+            body.name: body.private_attribute_id
+            for body in self._get_list_of_entities(entity_type_name="body", attribute_name="bodyId")
+        }
+        face_id_to_private_id = {
+            face.name: face.private_attribute_id
+            for face in self._get_list_of_entities(entity_type_name="face", attribute_name="faceId")
+        }
+
+        # body group name to body private id mapping
         body_group_to_body = create_group_to_sub_component_mapping(
-            self._get_list_of_entities(entity_type_name="body", attribute_name=self.body_group_tag)
+            self._get_list_of_entities(entity_type_name="body", attribute_name=self.body_group_tag),
+            body_id_to_private_id,
         )
+        # face group name to face private id mapping
         boundary_to_face = create_group_to_sub_component_mapping(
-            self._get_list_of_entities(entity_type_name="face", attribute_name=self.face_group_tag)
+            self._get_list_of_entities(entity_type_name="face", attribute_name=self.face_group_tag),
+            face_id_to_private_id,
         )
 
         if "groupByBodyId" not in self.face_attribute_names:
@@ -534,13 +549,18 @@ class GeometryEntityInfo(EntityInfoModel):
 
         face_group_by_body_id_to_face = create_group_to_sub_component_mapping(
             self._get_list_of_entities(entity_type_name="face", attribute_name="groupByBodyId"),
-            use_name_as_key=True,
+            face_id_to_private_id,
         )
+        # body private id to face private id mapping
+        body_to_face = {
+            body_id_to_private_id[key]: value
+            for key, value in face_group_by_body_id_to_face.items()
+        }
 
         body_group_to_face = defaultdict(list)
         for body_group, body_ids in body_group_to_body.items():
             for body_id in body_ids:
-                body_group_to_face[body_group].extend(face_group_by_body_id_to_face[body_id])
+                body_group_to_face[body_group].extend(body_to_face[body_id])
 
         face_to_body_group = {}
         for body_group_name, face_ids in body_group_to_face.items():
@@ -579,9 +599,16 @@ class GeometryEntityInfo(EntityInfoModel):
         """
 
         body_group_to_boundary = self.get_body_group_to_face_group_name_map()
+        body_group_name_to_id = {
+            body.name: body.private_attribute_id
+            for body in self._get_list_of_entities(
+                entity_type_name="body", attribute_name=self.body_group_tag
+            )
+        }
 
         face_group_to_body_group: dict[str, str] = {}
-        for body_group_id, boundary_names in body_group_to_boundary.items():
+        for body_group_name, boundary_names in body_group_to_boundary.items():
+            body_group_id = body_group_name_to_id[body_group_name]
             for boundary_name in boundary_names:
                 existing_owner = face_group_to_body_group.get(boundary_name)
                 if existing_owner is not None and existing_owner != body_group_id:
