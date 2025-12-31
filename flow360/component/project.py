@@ -48,7 +48,7 @@ from flow360.component.simulation.draft_context.coordinate_system_manager import
 from flow360.component.simulation.draft_context.mirror import MirrorStatus
 from flow360.component.simulation.entity_info import (
     GeometryEntityInfo,
-    update_geometry_entity_info,
+    merge_geometry_entity_info,
 )
 from flow360.component.simulation.folder import Folder
 from flow360.component.simulation.primitives import ImportedSurface
@@ -101,7 +101,7 @@ class RootType(Enum):
     VOLUME_MESH = "VolumeMesh"
 
 
-class ProjectResourceType(Enum):
+class ProjectDependencyType(Enum):
     """
     Enum for dependency resource types in the project.
 
@@ -125,7 +125,7 @@ def create_draft(
     edge_grouping: Optional[str] = None,
     include_geometries: Optional[List[Geometry]] = None,
     exclude_geometries: Optional[List[Geometry]] = None,
-    imported_surface_components: Optional[List[ImportedSurface]] = None,
+    imported_surfaces: Optional[List[ImportedSurface]] = None,
 ) -> DraftContext:
     """
     Factory helper used by end users (`with fl.create_draft() as draft`).
@@ -137,21 +137,12 @@ def create_draft(
 
     # region -----------------------------Private implementations Below-----------------------------
 
-    def _resolve_geometry_components(
-        entity_info,
-        new_run_from,
-        current_geometry_dependencies: Optional[List] = None,
-        include_geometries: Optional[List[Geometry]] = None,
-        exclude_geometries: Optional[List[Geometry]] = None,
+    def _resolve_active_geometry_dependencies(
+        current_geometry_dependencies: List,
+        include_geometries: List[Geometry],
+        exclude_geometries: List[Geometry],
     ) -> Dict[str, Geometry]:
-        if not isinstance(entity_info, GeometryEntityInfo):
-            if include_geometries or exclude_geometries:
-                log.warning(
-                    "Editing geometry components ignored: "
-                    "only project with a non-geometry root asset supports this feature."
-                )
-            return {}
-        current_geometry_components = (
+        active_geometry_dependencies = (
             {
                 geometry_dependency["id"]: Geometry.from_cloud(geometry_dependency["id"])
                 for geometry_dependency in current_geometry_dependencies
@@ -159,58 +150,66 @@ def create_draft(
             if current_geometry_dependencies
             else {}
         )
-        project = Project.from_cloud(new_run_from.info.project_id)
-        root_geometry = project.geometry
-        current_geometry_components.update({root_geometry.id: root_geometry})
-
         if include_geometries:
             for geometry in include_geometries:
-                if geometry.id not in current_geometry_components:
-                    current_geometry_components[geometry.id] = geometry
+                if geometry.id not in active_geometry_dependencies:
+                    active_geometry_dependencies[geometry.id] = geometry
 
         if exclude_geometries:
             for geometry in exclude_geometries:
-                excluded_geometry = current_geometry_components.pop(geometry.id, None)
+                excluded_geometry = active_geometry_dependencies.pop(geometry.id, None)
                 if excluded_geometry is None:
                     log.warning(
                         f"Geometry {geometry.name} not found among current dependencies. Ignoring its exclusion."
                     )
+        return active_geometry_dependencies
 
-        return current_geometry_components
-
-    def _update_geometry_entity_info(entity_info, geometry_components: Dict[str, Geometry]):
-        """Update the geometry entity info based on the root and imported geometries."""
-        if not isinstance(entity_info, GeometryEntityInfo):
+    def _merge_geometry_entity_info(
+        new_run_from, entity_info, active_geometry_dependencies: Dict[str, Geometry]
+    ):
+        """Merge the geometry entity info based on the root and imported geometries."""
+        if not active_geometry_dependencies:
             return entity_info
-        updated_entity_info = update_geometry_entity_info(
+        # Add root geometry to components to be merged
+        project = Project.from_cloud(new_run_from.info.project_id)
+        root_geometry = project.geometry
+        active_geometry_dependencies.update({root_geometry.id: root_geometry})
+        merged_entity_info = merge_geometry_entity_info(
             current_entity_info=entity_info,
             entity_info_components=[
-                geometry.entity_info for geometry in geometry_components.values()
+                geometry.entity_info for geometry in active_geometry_dependencies.values()
             ],
         )
-        return updated_entity_info
+        return merged_entity_info
 
     # endregion ------------------------------------------------------------------------------------
 
     if not isinstance(new_run_from, AssetBase):
         raise Flow360RuntimeError("create_draft expects a cloud asset instance as `new_run_from`.")
 
+    if not isinstance(new_run_from.entity_info, GeometryEntityInfo) and (
+        include_geometries or exclude_geometries
+    ):
+        raise Flow360ValueError(
+            "Only project with a geometry root asset supports editing geometry components."
+            "Please use create_draft without `include_geometries` and `exclude_geometries`."
+        )
+
     # Deep copy entity_info for draft isolation
     entity_info_copy = deep_copy_entity_info(new_run_from.entity_info)
 
-    # Edit geometry dependencies if applicable
-    geometry_components = {}
-    if new_run_from.info.geometry_dependencies or include_geometries or exclude_geometries:
-        geometry_components = _resolve_geometry_components(
-            entity_info=entity_info_copy,
-            new_run_from=new_run_from,
+    # Resolve geometry components and merge entity info if applicable
+    active_geometry_dependencies = {}
+    if isinstance(new_run_from.entity_info, GeometryEntityInfo):
+        active_geometry_dependencies = _resolve_active_geometry_dependencies(
             current_geometry_dependencies=new_run_from.info.geometry_dependencies,
             include_geometries=include_geometries,
             exclude_geometries=exclude_geometries,
         )
-        entity_info_copy = _update_geometry_entity_info(
+        entity_info_copy = _merge_geometry_entity_info(
+            new_run_from=new_run_from,
             entity_info=entity_info_copy,
-            geometry_components=geometry_components,
+            active_geometry_dependencies=active_geometry_dependencies,
         )
 
     apply_and_inform_grouping_selections(
@@ -234,8 +233,8 @@ def create_draft(
         entity_info=entity_info_copy,
         mirror_status=mirror_status,
         coordinate_system_status=coordinate_system_status,
-        imported_surface_components=imported_surface_components,
-        imported_geometry_components=list(geometry_components.values()),
+        imported_surfaces=imported_surfaces,
+        imported_geometries=list(active_geometry_dependencies.values()),
     )
 
 
@@ -1222,16 +1221,16 @@ class Project(pd.BaseModel):
         )
 
     def _check_conflicts_with_existing_dependency_resources(
-        self, name: str, resource_type: ProjectResourceType
+        self, name: str, resource_type: ProjectDependencyType
     ):
         resp = self._project_webapi.post(method="dependency/namecheck", json={"name": name})
         if resp.get("status") == "success":
             return
         if (
-            resource_type == ProjectResourceType.GEOMETRY
+            resource_type == ProjectDependencyType.GEOMETRY
             and resp["conflictResourceId"].startswith("geo")
         ) or (
-            resource_type == ProjectResourceType.SURFACE_MESH
+            resource_type == ProjectDependencyType.SURFACE_MESH
             and resp["conflictResourceId"].startswith("sm")
         ):
             raise Flow360ValueError(
@@ -1253,9 +1252,9 @@ class Project(pd.BaseModel):
 
         if isinstance(files, GeometryFiles):
             self._check_conflicts_with_existing_dependency_resources(
-                name=name, resource_type=ProjectResourceType.GEOMETRY
+                name=name, resource_type=ProjectDependencyType.GEOMETRY
             )
-            draft = Geometry.from_file_for_project(
+            draft = Geometry.import_to_project(
                 name=name,
                 file_names=files.file_names,
                 project_id=self.id,
@@ -1264,9 +1263,9 @@ class Project(pd.BaseModel):
             )
         elif isinstance(files, SurfaceMeshFile):
             self._check_conflicts_with_existing_dependency_resources(
-                name=name, resource_type=ProjectResourceType.SURFACE_MESH
+                name=name, resource_type=ProjectDependencyType.SURFACE_MESH
             )
-            draft = SurfaceMeshV2.from_file_for_project(
+            draft = SurfaceMeshV2.import_to_project(
                 name=name,
                 file_name=files.file_names,
                 project_id=self.id,
@@ -1279,7 +1278,7 @@ class Project(pd.BaseModel):
         dependency_resource = draft.submit(run_async=run_async)
         return dependency_resource
 
-    def import_geometry_from_file(
+    def import_geometry(
         self,
         file: Union[str, list[str]],
         /,
@@ -1329,7 +1328,7 @@ class Project(pd.BaseModel):
             run_async=run_async,
         )
 
-    def import_surface_mesh_from_file(
+    def import_surface(
         self,
         file: str,
         /,
@@ -1384,23 +1383,23 @@ class Project(pd.BaseModel):
             surface_mesh_id=surface_mesh.id,
         )
 
-    def _get_dependency_resources_from_cloud(self, resource_type: ProjectResourceType):
+    def _get_dependency_resources_from_cloud(self, resource_type: ProjectDependencyType):
         """
         Get all imported dependency resources of a given type in the project.
 
         Parameters
         ----------
-        resource_type : ProjectResourceType
+        resource_type : ProjectDependencyType
             The type of dependency resource to retrieve.
 
         """
 
         resp = self._project_webapi.get(method="dependency")
-        if resource_type == ProjectResourceType.GEOMETRY:
+        if resource_type == ProjectDependencyType.GEOMETRY:
             imported_resources = [
                 Geometry.from_cloud(item["id"]) for item in resp["geometryDependencyResources"]
             ]
-        elif resource_type == ProjectResourceType.SURFACE_MESH:
+        elif resource_type == ProjectDependencyType.SURFACE_MESH:
             imported_resources = [
                 ImportedSurface(
                     name=item["name"],
@@ -1414,7 +1413,7 @@ class Project(pd.BaseModel):
         return imported_resources
 
     @property
-    def imported_geometry_components(self) -> List[Geometry]:
+    def imported_geometries(self) -> List[Geometry]:
         """
         Get all imported geometry components in the project.
 
@@ -1424,10 +1423,12 @@ class Project(pd.BaseModel):
             A list of Geometry objects representing the imported geometry components.
         """
 
-        return self._get_dependency_resources_from_cloud(resource_type=ProjectResourceType.GEOMETRY)
+        return self._get_dependency_resources_from_cloud(
+            resource_type=ProjectDependencyType.GEOMETRY
+        )
 
     @property
-    def imported_surface_components(self) -> List[ImportedSurface]:
+    def imported_surfaces(self) -> List[ImportedSurface]:
         """
         Get all imported surface components in the project.
 
@@ -1438,7 +1439,7 @@ class Project(pd.BaseModel):
         """
 
         return self._get_dependency_resources_from_cloud(
-            resource_type=ProjectResourceType.SURFACE_MESH
+            resource_type=ProjectDependencyType.SURFACE_MESH
         )
 
     @classmethod
@@ -1870,7 +1871,7 @@ class Project(pd.BaseModel):
         params.pre_submit_summary()
 
         active_draft = get_active_draft()
-        draft.enable_dependency_resources(active_draft)
+        draft.activate_dependencies(active_draft)
         draft.update_simulation_params(params)
 
         if draft_only:

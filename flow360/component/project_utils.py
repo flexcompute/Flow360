@@ -63,7 +63,7 @@ def _apply_geometry_grouping_overrides(
         if new_tag is not None:
             tag = new_tag
         else:
-            log.info(
+            log.debug(
                 f"No {kind} grouping specified when creating draft; "
                 f"using {kind} grouping: {default_tag} from `new_run_from`."
             )
@@ -82,19 +82,20 @@ def _apply_geometry_grouping_overrides(
     def _validate_tag(tag, available: list[str], kind: str) -> str:
         if not available:
             raise Flow360ValueError(
-                f"The geometry does not have any {kind} groupings. Please check geometry components."
+                f"The geometry does not have any {kind} groupings. "
+                f"Please check the activated geometries in the draft."
             )
         if tag not in available:
             raise Flow360ValueError(
                 f"The current {kind} grouping '{tag}' is not valid in the geometry. "
-                f"Please specify a {kind}_grouping when creating draft. "
+                f"Please specify a valid {kind} grouping via `fl.create_draft({kind}_grouping=...)`. "
                 f"Available tags: {available}."
             )
         return tag
 
     face_tag = _validate_tag(face_tag, entity_info.face_attribute_names, "face")
     # face_tag must be specified either from override or entity_info default
-    assert face_tag is not None, print(
+    assert face_tag is not None, log.debug(
         "[Internal] Default face grouping should be set, face tag to be applied: ", face_tag
     )
     entity_info._group_entity_by_tag("face", face_tag)  # pylint:disable=protected-access

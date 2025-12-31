@@ -81,7 +81,7 @@ class SurfaceMeshMetaV2(AssetMetaBaseModelV2):
 
     file_name: Optional[str] = pd.Field(None, alias="fileName")
     status: SurfaceMeshStatusV2 = pd.Field()  # Overshadowing to ensure correct is_final() method
-    dependency: Optional[bool] = pd.Field(False)
+    dependency: bool = pd.Field(False)
 
 
 class SurfaceMeshDraftV2(ResourceDraft):
@@ -118,7 +118,7 @@ class SurfaceMeshDraftV2(ResourceDraft):
             Use SurfaceMeshV2.from_file() which sets project_name, solver_version, folder
 
         For adding to existing project (dependency surface mesh):
-            Use SurfaceMeshV2.from_file_for_project() which sets the dependency context
+            Use SurfaceMeshV2.import_to_project() which sets the dependency context
 
         Parameters
         ----------
@@ -142,6 +142,8 @@ class SurfaceMeshDraftV2(ResourceDraft):
         self.solver_version = solver_version
         self.folder = folder
 
+        # pylint: disable=fixme
+        # TODO: create a DependableResourceDraft for GeometryDraft and SurfaceMeshDraft
         self.dependency_name = None
         self.dependency_project_id = None
         self._submission_mode: SubmissionMode = SubmissionMode.PROJECT_ROOT
@@ -175,16 +177,13 @@ class SurfaceMeshDraftV2(ResourceDraft):
     def _validate_submission_context(self):
         """Validate context for submission based on mode."""
         if self._submission_mode is None:
-            raise Flow360ValueError(
-                "Submission context not set. Use SurfaceMeshV2.from_file() or "
-                "SurfaceMeshV2.from_file_for_project() to create a properly configured draft."
-            )
+            raise ValueError("[Internal] Surface Mesh Submission context not set.")
         if self._submission_mode == SubmissionMode.PROJECT_ROOT and self.solver_version is None:
             raise Flow360ValueError("solver_version field is required.")
         if self._submission_mode == SubmissionMode.PROJECT_DEPENDENCY:
             if self.dependency_name is None or self.dependency_project_id is None:
-                raise Flow360ValueError(
-                    "Dependency name and project ID must be set for surface mesh dependency submission."
+                raise ValueError(
+                    "[Internal] Dependency name and project ID must be set for surface mesh dependency submission."
                 )
 
     def set_dependency_context(
@@ -195,7 +194,7 @@ class SurfaceMeshDraftV2(ResourceDraft):
         """
         Configure this draft to add surface mesh to an existing project.
 
-        Called internally by SurfaceMeshV2.from_file_for_project().
+        Called internally by SurfaceMeshV2.import_to_project().
         """
         self._submission_mode = SubmissionMode.PROJECT_DEPENDENCY
         self.dependency_name = name
@@ -301,7 +300,7 @@ class SurfaceMeshDraftV2(ResourceDraft):
 
         The behavior depends on how this draft was created:
         - If created via SurfaceMeshV2.from_file(): Creates a new project with this surface mesh as root
-        - If created via SurfaceMeshV2.from_file_for_project(): Adds surface mesh to an existing project
+        - If created via SurfaceMeshV2.import_to_project(): Adds surface mesh to an existing project
 
         Parameters
         ----------
@@ -455,7 +454,7 @@ class SurfaceMeshV2(AssetBase):
 
     @classmethod
     # pylint: disable=too-many-arguments
-    def from_file_for_project(
+    def import_to_project(
         cls,
         name: str,
         file_name: str,

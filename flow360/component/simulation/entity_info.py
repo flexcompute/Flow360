@@ -729,7 +729,7 @@ def parse_entity_info_model(data) -> EntityInfoUnion:
     return pd.TypeAdapter(EntityInfoUnion).validate_python(data)
 
 
-def update_geometry_entity_info(
+def merge_geometry_entity_info(
     current_entity_info: GeometryEntityInfo,
     entity_info_components: List[GeometryEntityInfo],
 ) -> GeometryEntityInfo:

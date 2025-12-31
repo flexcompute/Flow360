@@ -143,18 +143,16 @@ class Draft(Flow360Resource):
             method="simulation/file",
         )
 
-    def enable_dependency_resources(self, active_draft):
+    def activate_dependencies(self, active_draft):
         """Enable dependency resources for the draft"""
 
         if active_draft is None:
             return
 
-        geometry_dependencies = [
-            geometry.id for geometry in active_draft.imported_geometry_components
-        ]
+        geometry_dependencies = [geometry.id for geometry in active_draft.imported_geometries]
 
         surface_mesh_dependencies = [
-            surface.surface_mesh_id for surface in active_draft.imported_surface_components
+            surface.surface_mesh_id for surface in active_draft.imported_surfaces
         ]
 
         self.put(

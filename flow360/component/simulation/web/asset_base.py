@@ -169,7 +169,7 @@ class AssetBase(metaclass=ABCMeta):
     @classmethod
     def _get_simulation_json(cls, asset: AssetBase, clean_front_end_keys: bool = False) -> dict:
         """Get the simulation json AKA birth setting of the asset. Do we want to cache it in the asset object?"""
-        ##>> Check if the current asset is project's root item.
+        ##>> Check if the current asset is project's root item or the dependency assets is still processing
         ##>> If so then we need to wait for its pipeline to finish generating the simulation json.
         _resp = RestApi(ProjectInterface.endpoint, id=asset.project_id).get()
         dependency_ids = []
@@ -185,7 +185,9 @@ class AssetBase(metaclass=ABCMeta):
             )
             dependency_ids = [_item["id"] for _item in _dependency_resources]
         if asset.id == _resp["rootItemId"] or asset.id in dependency_ids:
-            log.debug("Current asset is project's root item. Waiting for pipeline to finish.")
+            log.debug(
+                "Current asset is project's root/dependency item. Waiting for pipeline to finish."
+            )
             # pylint: disable=protected-access
             asset.wait()
 

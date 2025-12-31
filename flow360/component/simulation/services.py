@@ -11,9 +11,9 @@ from pydantic_core import ErrorDetails
 
 # Required for correct global scope initialization
 from flow360.component.simulation.blueprint.core.dependency_graph import DependencyGraph
+from flow360.component.simulation.entity_info import GeometryEntityInfo
 from flow360.component.simulation.entity_info import (
-    GeometryEntityInfo,
-    update_geometry_entity_info,
+    merge_geometry_entity_info as merge_geometry_entity_info_obj,
 )
 from flow360.component.simulation.exposed_units import supported_units_by_front_end
 from flow360.component.simulation.framework.entity_materializer import (
@@ -1235,7 +1235,7 @@ def merge_geometry_entity_info(
             GeometryEntityInfo.model_validate(dependency_entity_info_dict)
         )
 
-    merged_entity_info = update_geometry_entity_info(
+    merged_entity_info = merge_geometry_entity_info_obj(
         current_entity_info=current_entity_info,
         entity_info_components=entity_info_components,
     )
