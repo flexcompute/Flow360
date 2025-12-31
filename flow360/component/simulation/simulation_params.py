@@ -745,9 +745,14 @@ class SimulationParams(_ParamModelBase):
         So we need to find the `reference velocity`.
         `reference_velocity_magnitude` takes precedence, consistent with how "velocityScale" is computed.
         """
-        # pylint:disable=no-member
-        if self.operating_condition.reference_velocity_magnitude is not None:
-            reference_velocity = (self.operating_condition.reference_velocity_magnitude).to("m/s")
+        # NOTE: GenericReferenceCondition does not define `reference_velocity_magnitude`.
+        # For GenericReferenceCondition, reference velocity is just `velocity_magnitude`.
+        reference_velocity_magnitude = getattr(
+            self.operating_condition, "reference_velocity_magnitude", None
+        )
+        # pylint: disable=no-member
+        if reference_velocity_magnitude is not None:
+            reference_velocity = reference_velocity_magnitude.to("m/s")
         elif self.operating_condition.type_name == "LiquidOperatingCondition":
             reference_velocity = self.base_velocity.to("m/s") * LIQUID_IMAGINARY_FREESTREAM_MACH
         else:
