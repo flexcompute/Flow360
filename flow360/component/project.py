@@ -56,6 +56,7 @@ from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.web.asset_base import AssetBase
 from flow360.component.simulation.web.draft import Draft
+from flow360.component.simulation.web.utils import get_project_dependency_resources_raw
 from flow360.component.surface_mesh_v2 import SurfaceMeshV2
 from flow360.component.utils import (
     AssetShortID,
@@ -1394,18 +1395,19 @@ class Project(pd.BaseModel):
 
         """
 
-        resp = self._project_webapi.get(method="dependency")
+        raw_resources = get_project_dependency_resources_raw(
+            project_id=self.id, resource_type=resource_type.value
+        )
+
         if resource_type == ProjectDependencyType.GEOMETRY:
-            imported_resources = [
-                Geometry.from_cloud(item["id"]) for item in resp["geometryDependencyResources"]
-            ]
+            imported_resources = [Geometry.from_cloud(item["id"]) for item in raw_resources]
         elif resource_type == ProjectDependencyType.SURFACE_MESH:
             imported_resources = [
                 ImportedSurface(
                     name=item["name"],
                     surface_mesh_id=item["id"],
                 )
-                for item in resp["surfaceMeshDependencyResources"]
+                for item in raw_resources
             ]
         else:
             raise Flow360ValueError(f"Unsupported imported resource type: {resource_type}")

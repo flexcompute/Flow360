@@ -27,6 +27,7 @@ from flow360.component.simulation.entity_info import (
 )
 from flow360.component.simulation.folder import Folder
 from flow360.component.simulation.simulation_params import SimulationParams
+from flow360.component.simulation.web.utils import get_project_dependency_resources_raw
 from flow360.component.utils import (
     _local_download_overwrite,
     formatting_validation_errors,
@@ -175,13 +176,8 @@ class AssetBase(metaclass=ABCMeta):
         dependency_ids = []
         # pylint: disable=protected-access
         if asset._cloud_resource_type_name in ["Geometry", "SurfaceMesh"]:
-            _resp_dependency = RestApi(ProjectInterface.endpoint, id=asset.project_id).get(
-                method="dependency"
-            )
-            _dependency_resources = (
-                _resp_dependency["geometryDependencyResources"]
-                if asset._cloud_resource_type_name == "Geometry"
-                else _resp_dependency["surfaceMeshDependencyResources"]
+            _dependency_resources = get_project_dependency_resources_raw(
+                project_id=asset.project_id, resource_type=asset._cloud_resource_type_name
             )
             dependency_ids = [_item["id"] for _item in _dependency_resources]
         if asset.id == _resp["rootItemId"] or asset.id in dependency_ids:
