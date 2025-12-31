@@ -27,6 +27,23 @@ from flow360.exceptions import Flow360RuntimeError
 from flow360.log import LogLevel, log
 
 
+class SubmissionMode(Enum):
+    """
+    Enum to identify the submission mode for asset drafts (Geometry, SurfaceMesh, etc.).
+
+    This is used to determine whether a draft should create a new project (as root asset)
+    or be added to an existing project (as a dependency/component).
+
+    All assets are conceptually equivalent - they are components that can be used
+    to create the final simulation setup. The distinction between "root" and
+    "dependency" is only about where the asset is uploaded (new project vs existing
+    project), not about any fundamental difference in the asset itself.
+    """
+
+    PROJECT_ROOT = "project_root"  # Creates a new project with this asset as root
+    PROJECT_DEPENDENCY = "project_dependency"  # Adds asset to an existing project
+
+
 # pylint: disable=R0801
 class Flow360Status(Enum):
     """
@@ -138,6 +155,8 @@ class AssetMetaBaseModelV2(pd_v2.BaseModel):
     updated_by: Optional[str] = pd_v2.Field(None, alias="updatedBy")
     deleted: bool
     cloud_path_prefix: Optional[str] = None
+    geometry_dependencies: Optional[List] = pd_v2.Field(None, alias="geometryDependencies")
+    surface_mesh_dependencies: Optional[List] = pd_v2.Field(None, alias="surfaceMeshDependencies")
 
     model_config = pd_v2.ConfigDict(extra="allow", frozen=True, populate_by_name=True)
 

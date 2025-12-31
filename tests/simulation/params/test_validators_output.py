@@ -928,6 +928,208 @@ def test_surface_integral_entity_types(mock_validation_context):
             )
 
 
+def test_imported_surface_output_fields_validation(mock_validation_context):
+    """Test that imported surfaces only allow CommonFieldNames and Volume solver variables"""
+    imported_surface = ImportedSurface(name="imported", file_name="imported.stl")
+    surface = Surface(name="fluid/body")
+
+    # Test 1: Surface-specific field name (not in CommonFieldNames) should fail with imported surface
+    with mock_validation_context, pytest.raises(
+        ValueError,
+        match=re.escape(
+            "Output field 'Cf' is not allowed for imported surfaces. "
+            "Only non-Surface field names are allowed for string format output fields when using imported surfaces."
+        ),
+    ):
+        with imperial_unit_system:
+            SimulationParams(
+                outputs=[
+                    SurfaceOutput(
+                        entities=imported_surface,
+                        output_fields=["Cf"],  # Cf is surface-specific, not in CommonFieldNames
+                    )
+                ],
+            )
+
+    # Test 2: UserVariable with Surface solver variables should fail with imported surface
+    uv_surface = UserVariable(name="uv_surface", value=math.dot(solution.velocity, solution.CfVec))
+    with mock_validation_context, pytest.raises(
+        ValueError,
+        match=re.escape(
+            "Variable `uv_surface` cannot be used with imported surfaces "
+            "since it contains Surface type solver variable(s): solution.CfVec. "
+            "Only Volume type solver variables and 'solution.node_unit_normal' are allowed."
+        ),
+    ):
+        with imperial_unit_system:
+            SimulationParams(
+                outputs=[
+                    SurfaceOutput(
+                        entities=imported_surface,
+                        output_fields=[uv_surface],
+                    )
+                ],
+            )
+
+    # Test 3: Multiple Surface solver variables in UserVariable should fail with imported surface
+    uv_multiple_surface = UserVariable(
+        name="uv_multiple",
+        value=solution.node_forces_per_unit_area[0] * solution.Cp * solution.Cf,
+    )
+    with mock_validation_context, pytest.raises(
+        ValueError,
+        match=re.escape(
+            "Variable `uv_multiple` cannot be used with imported surfaces "
+            "since it contains Surface type solver variable(s): solution.Cf, solution.node_forces_per_unit_area. "
+            "Only Volume type solver variables and 'solution.node_unit_normal' are allowed."
+        ),
+    ):
+        with imperial_unit_system:
+            SimulationParams(
+                outputs=[
+                    SurfaceOutput(
+                        entities=imported_surface,
+                        output_fields=[uv_multiple_surface],
+                    )
+                ],
+            )
+
+    # Test 4: CommonFieldNames should work with imported surface
+    with mock_validation_context, imperial_unit_system:
+        SimulationParams(
+            outputs=[
+                SurfaceOutput(
+                    entities=imported_surface,
+                    output_fields=["Cp", "Mach"],  # These are CommonFieldNames
+                )
+            ],
+        )
+
+    # Test 5: UserVariable with only Volume solver variables should work with imported surface
+    uv_volume = UserVariable(
+        name="uv_volume", value=math.dot(solution.velocity, solution.vorticity)
+    )
+    with mock_validation_context, imperial_unit_system:
+        SimulationParams(
+            outputs=[
+                SurfaceOutput(
+                    entities=imported_surface,
+                    output_fields=[uv_volume],
+                )
+            ],
+        )
+    # Test 5.5: UserVariable with node_unit_normal should work with imported surface
+    uv_node_normal = UserVariable(
+        name="uv_node_normal", value=math.dot(solution.velocity, solution.node_unit_normal)
+    )
+    with mock_validation_context, imperial_unit_system:
+        SimulationParams(
+            outputs=[
+                SurfaceOutput(
+                    entities=imported_surface,
+                    output_fields=[uv_node_normal],
+                )
+            ],
+        )
+
+    # Test 6: Regular surfaces should not be affected - surface-specific fields should work
+    with mock_validation_context, imperial_unit_system:
+        SimulationParams(
+            outputs=[
+                SurfaceOutput(
+                    entities=surface,
+                    output_fields=[
+                        "Cf"
+                    ],  # Surface-specific fields should work for regular surfaces
+                )
+            ],
+        )
+
+    # Test 7: Mixed entities (imported + regular surfaces) should trigger validation
+    with mock_validation_context, pytest.raises(
+        ValueError,
+        match=re.escape(
+            "Output field 'Cf' is not allowed for imported surfaces. "
+            "Only non-Surface field names are allowed for string format output fields when using imported surfaces."
+        ),
+    ):
+        with imperial_unit_system:
+            SimulationParams(
+                outputs=[
+                    SurfaceOutput(
+                        entities=[surface, imported_surface],
+                        output_fields=["Cf"],
+                    )
+                ],
+            )
+
+
+def test_imported_surface_output_fields_validation_surface_integral(mock_validation_context):
+    """Test that imported surfaces in SurfaceIntegralOutput only allow CommonFieldNames and Volume solver variables"""
+    imported_surface = ImportedSurface(name="imported", file_name="imported.stl")
+    surface = Surface(name="fluid/body")
+
+    # Test 1: UserVariable with Surface solver variables should fail with imported surface
+    uv_surface = UserVariable(name="uv_surface", value=math.dot(solution.velocity, solution.CfVec))
+    with mock_validation_context, pytest.raises(
+        ValueError,
+        match=re.escape(
+            "Variable `uv_surface` cannot be used with imported surfaces "
+            "since it contains Surface type solver variable(s): solution.CfVec. "
+            "Only Volume type solver variables and 'solution.node_unit_normal' are allowed."
+        ),
+    ):
+        with imperial_unit_system:
+            SimulationParams(
+                outputs=[
+                    SurfaceIntegralOutput(
+                        entities=imported_surface,
+                        output_fields=[uv_surface],
+                    )
+                ],
+            )
+
+    # Test 2: UserVariable with only Volume solver variables should work with imported surface
+    uv_volume = UserVariable(
+        name="uv_volume", value=math.dot(solution.velocity, solution.vorticity)
+    )
+    with mock_validation_context, imperial_unit_system:
+        SimulationParams(
+            outputs=[
+                SurfaceIntegralOutput(
+                    entities=imported_surface,
+                    output_fields=[uv_volume],
+                )
+            ],
+        )
+
+    # Test 2.5: UserVariable with node_unit_normal should work with imported surface (MassFluxProjected use case)
+    uv_mass_flux_projected = UserVariable(
+        name="MassFluxProjected",
+        value=math.dot(solution.density * solution.velocity, solution.node_unit_normal),
+    )
+    with mock_validation_context, imperial_unit_system:
+        SimulationParams(
+            outputs=[
+                SurfaceIntegralOutput(
+                    entities=imported_surface,
+                    output_fields=[uv_mass_flux_projected],
+                )
+            ],
+        )
+
+    # Test 3: Regular surfaces should not be affected - surface variables should work
+    with mock_validation_context, imperial_unit_system:
+        SimulationParams(
+            outputs=[
+                SurfaceIntegralOutput(
+                    entities=surface,
+                    output_fields=[uv_surface],
+                )
+            ],
+        )
+
+
 def test_output_frequency_settings_in_steady_simulation():
     volume_mesh = VolumeMeshV2.from_local_storage(
         mesh_id=None,

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from contextlib import AbstractContextManager
 from contextvars import ContextVar, Token
-from typing import Optional, get_args
+from typing import List, Optional, get_args
 
 from flow360.component.simulation.draft_context.coordinate_system_manager import (
     CoordinateSystemManager,
@@ -29,6 +29,7 @@ from flow360.component.simulation.primitives import (
     Edge,
     GenericVolume,
     GeometryBodyGroup,
+    ImportedSurface,
     MirroredGeometryBodyGroup,
     MirroredSurface,
     Surface,
@@ -67,6 +68,8 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
         "_entity_info",
         # Interface accessing ALL types of entities.
         "_entity_registry",
+        "_imported_surfaces",
+        "_imported_geometries",
         # Lightweight mirror relationships storage (compared to entity storages)
         "_mirror_manager",
         # Internal mirror related entities data storage.
@@ -76,10 +79,13 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
         "_token",
     )
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         *,
         entity_info: EntityInfoModel,
+        imported_geometries: Optional[List] = None,
+        imported_surfaces: Optional[List[ImportedSurface]] = None,
         mirror_status: Optional[MirrorStatus] = None,
         coordinate_system_status: Optional[CoordinateSystemStatus] = None,
     ) -> None:
@@ -108,6 +114,13 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
         # This builds the registry by referencing entities from our copied entity_info.
         self._entity_registry: EntityRegistry = EntityRegistry.from_entity_info(entity_info)
 
+        self._imported_surfaces: List = imported_surfaces or []
+        known_frozen_hashes = set()
+        for imported_surface in self._imported_surfaces:
+            known_frozen_hashes = self._entity_registry.fast_register(
+                imported_surface, known_frozen_hashes
+            )
+        self._imported_geometries: List = imported_geometries if imported_geometries else []
         # Pre-compute face_group_to_body_group map for mirror operations.
         # This is only available for GeometryEntityInfo.
         face_group_to_body_group = None
@@ -233,6 +246,20 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
         from flow360.component.simulation.primitives import Cylinder
 
         return self._entity_registry.view(Cylinder)
+
+    @property
+    def imported_geometries(self) -> List:
+        """
+        Return the list of imported geometries in the draft.
+        """
+        return self._imported_geometries
+
+    @property
+    def imported_surfaces(self) -> EntityRegistryView:
+        """
+        Return the list of imported surfaces in the draft.
+        """
+        return self._entity_registry.view(ImportedSurface)
 
     @property
     def coordinate_systems(self) -> CoordinateSystemManager:

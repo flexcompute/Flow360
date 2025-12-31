@@ -11,6 +11,10 @@ from pydantic_core import ErrorDetails
 
 # Required for correct global scope initialization
 from flow360.component.simulation.blueprint.core.dependency_graph import DependencyGraph
+from flow360.component.simulation.entity_info import GeometryEntityInfo
+from flow360.component.simulation.entity_info import (
+    merge_geometry_entity_info as merge_geometry_entity_info_obj,
+)
 from flow360.component.simulation.exposed_units import supported_units_by_front_end
 from flow360.component.simulation.framework.entity_materializer import (
     materialize_entities_and_selectors_in_place,
@@ -207,6 +211,7 @@ def get_default_params(
         params = _store_project_length_unit(project_length_unit, params)
 
         return params.model_dump(
+            mode="json",
             exclude_none=True,
             exclude={
                 "operating_condition": {"velocity_magnitude": True},
@@ -238,6 +243,7 @@ def get_default_params(
         params = _store_project_length_unit(project_length_unit, params)
 
         return params.model_dump(
+            mode="json",
             exclude_none=True,
             exclude={
                 "operating_condition": {"velocity_magnitude": True},
@@ -1190,3 +1196,49 @@ def _parse_root_item_type_from_simulation_json(*, param_as_dict: dict):
     except KeyError:
         # pylint:disable = raise-missing-from
         raise ValueError("[INTERNAL] Failed to get the root item from the simulation.json!!!")
+
+
+def merge_geometry_entity_info(
+    draft_param_as_dict: dict, geometry_dependencies_param_as_dict: list[dict]
+):
+    """
+    Merge the geometry entity info from geometry dependencies into the draft simulation param dict.
+
+    Parameters
+    ----------
+    draft_param_as_dict : dict
+        The draft simulation parameters dictionary.
+    geometry_dependencies_param_as_dict : list of dict
+        The list of geometry dependencies simulation parameters dictionaries.
+
+    Returns
+    -------
+    dict
+        The updated draft simulation parameters dictionary with merged geometry entity info.
+    """
+    draft_param_entity_info_dict = draft_param_as_dict.get("private_attribute_asset_cache", {}).get(
+        "project_entity_info", {}
+    )
+    if draft_param_entity_info_dict.get("type_name") != "GeometryEntityInfo":
+        return draft_param_as_dict
+
+    current_entity_info = GeometryEntityInfo.model_validate(draft_param_entity_info_dict)
+
+    entity_info_components = []
+    for geometry_param_as_dict in geometry_dependencies_param_as_dict:
+        dependency_entity_info_dict = geometry_param_as_dict.get(
+            "private_attribute_asset_cache", {}
+        ).get("project_entity_info", {})
+        if dependency_entity_info_dict.get("type_name") != "GeometryEntityInfo":
+            continue
+        entity_info_components.append(
+            GeometryEntityInfo.model_validate(dependency_entity_info_dict)
+        )
+
+    merged_entity_info = merge_geometry_entity_info_obj(
+        current_entity_info=current_entity_info,
+        entity_info_components=entity_info_components,
+    )
+    merged_entity_info_dict = merged_entity_info.model_dump(mode="json", exclude_none=True)
+
+    return merged_entity_info_dict
