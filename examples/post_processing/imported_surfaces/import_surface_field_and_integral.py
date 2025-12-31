@@ -3,23 +3,21 @@ from flow360.examples import ObliqueChannel
 
 ObliqueChannel.get_files()
 
-project = fl.Project.from_volume_mesh(
-    ObliqueChannel.mesh_filename, name="Cartesian channel mesh", solver_version=solver_version
-)
+project = fl.Project.from_volume_mesh(ObliqueChannel.mesh_filename, name="Cartesian channel mesh")
 
 volume_mesh = project.volume_mesh
 
-normal_imported_surface = project.import_surface_mesh_from_file(
+normal_imported_surface = project.import_surface(
     ObliqueChannel.extra["rectangle_normal"], name="normal"
 )
-oblique_imported_surface = project.import_surface_mesh_from_file(
+oblique_imported_surface = project.import_surface(
     ObliqueChannel.extra["rectangle_oblique"], name="oblique"
 )
-imported_surface_components = [normal_imported_surface, oblique_imported_surface]
+imported_surfaces = [normal_imported_surface, oblique_imported_surface]
 
 with fl.create_draft(
     new_run_from=volume_mesh,
-    imported_surface_components=imported_surface_components,
+    imported_surfaces=imported_surfaces,
 ) as draft:
     with fl.SI_unit_system:
         op = fl.GenericReferenceCondition.from_mach(
@@ -34,7 +32,7 @@ with fl.create_draft(
         massFlowRateIntegral = fl.SurfaceIntegralOutput(
             name="MassFluxIntegral",
             output_fields=[massFlowRate],
-            surfaces=volume_mesh["VOLUME/LEFT"],
+            surfaces=draft.surfaces["VOLUME/LEFT"],
         )
         params = fl.SimulationParams(
             operating_condition=op,
@@ -44,7 +42,7 @@ with fl.create_draft(
                     turbulence_model_solver=fl.NoneSolver(),
                 ),
                 fl.Inflow(
-                    entities=[volume_mesh["VOLUME/LEFT"]],
+                    entities=[draft.surfaces["VOLUME/LEFT"]],
                     total_temperature=op.thermal_state.temperature * 1.018,
                     velocity_direction=(1.0, 0.0, 0.0),
                     spec=fl.MassFlowRate(
@@ -52,15 +50,15 @@ with fl.create_draft(
                     ),
                 ),
                 fl.Outflow(
-                    entities=[volume_mesh["VOLUME/RIGHT"]],
+                    entities=[draft.surfaces["VOLUME/RIGHT"]],
                     spec=fl.Pressure(op.thermal_state.pressure),
                 ),
                 fl.SlipWall(
                     entities=[
-                        volume_mesh["VOLUME/FRONT"],
-                        volume_mesh["VOLUME/BACK"],
-                        volume_mesh["VOLUME/TOP"],
-                        volume_mesh["VOLUME/BOTTOM"],
+                        draft.surfaces["VOLUME/FRONT"],
+                        draft.surfaces["VOLUME/BACK"],
+                        draft.surfaces["VOLUME/TOP"],
+                        draft.surfaces["VOLUME/BOTTOM"],
                     ]
                 ),
             ],
@@ -76,19 +74,17 @@ with fl.create_draft(
                         fl.solution.Cp,
                     ],
                     surfaces=[
-                        volume_mesh["VOLUME/FRONT"],
-                        draft.imported_surface_components["normal"],
-                        normal_imported_surface,
-                        oblique_imported_surface,
+                        draft.surfaces["VOLUME/FRONT"],
+                        draft.imported_surfaces["normal"],
+                        draft.imported_surfaces["oblique"],
                     ],
                 ),
                 fl.SurfaceIntegralOutput(
                     name="MassFlowRateImportedSurface",
                     output_fields=[massFlowRate],
                     surfaces=[
-                        draft.imported_surface_components["normal"],
-                        normal_imported_surface,
-                        oblique_imported_surface,
+                        draft.imported_surfaces["normal"],
+                        draft.imported_surfaces["oblique"],
                     ],
                 ),
             ],
