@@ -27,6 +27,7 @@ from flow360.component.simulation.entity_info import (
 )
 from flow360.component.simulation.folder import Folder
 from flow360.component.simulation.simulation_params import SimulationParams
+from flow360.component.simulation.web.utils import get_project_dependency_resources_raw
 from flow360.component.utils import (
     _local_download_overwrite,
     formatting_validation_errors,
@@ -169,11 +170,20 @@ class AssetBase(metaclass=ABCMeta):
     @classmethod
     def _get_simulation_json(cls, asset: AssetBase, clean_front_end_keys: bool = False) -> dict:
         """Get the simulation json AKA birth setting of the asset. Do we want to cache it in the asset object?"""
-        ##>> Check if the current asset is project's root item.
+        ##>> Check if the current asset is project's root item or the dependency assets is still processing
         ##>> If so then we need to wait for its pipeline to finish generating the simulation json.
         _resp = RestApi(ProjectInterface.endpoint, id=asset.project_id).get()
-        if asset.id == _resp["rootItemId"]:
-            log.debug("Current asset is project's root item. Waiting for pipeline to finish.")
+        dependency_ids = []
+        # pylint: disable=protected-access
+        if asset._cloud_resource_type_name in ["Geometry", "SurfaceMesh"]:
+            _dependency_resources = get_project_dependency_resources_raw(
+                project_id=asset.project_id, resource_type=asset._cloud_resource_type_name
+            )
+            dependency_ids = [_item["id"] for _item in _dependency_resources]
+        if asset.id == _resp["rootItemId"] or asset.id in dependency_ids:
+            log.debug(
+                "Current asset is project's root/dependency item. Waiting for pipeline to finish."
+            )
             # pylint: disable=protected-access
             asset.wait()
 

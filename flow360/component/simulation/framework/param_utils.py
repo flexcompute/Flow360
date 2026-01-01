@@ -19,6 +19,7 @@ from flow360.component.simulation.framework.entity_registry import EntityRegistr
 from flow360.component.simulation.framework.entity_selector import EntitySelector
 from flow360.component.simulation.framework.unique_list import UniqueStringList
 from flow360.component.simulation.primitives import (
+    ImportedSurface,
     _SurfaceEntityBase,
     _VolumeEntityBase,
 )
@@ -59,6 +60,9 @@ class AssetCache(Flow360BaseModel):
     used_selectors: Optional[List[EntitySelector]] = pd.Field(
         None,
         description="Collected entity selectors for token reference.",
+    )
+    imported_surfaces: Optional[List[ImportedSurface]] = pd.Field(
+        None, description="List of imported surface meshes for post-processing."
     )
     mirror_status: Optional[MirrorStatus] = pd.Field(
         None, description="Status of mirroring operations that are used in the simulation."

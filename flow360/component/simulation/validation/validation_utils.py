@@ -9,11 +9,14 @@ from pydantic import ValidationError
 from pydantic_core import InitErrorDetails
 
 from flow360.component.simulation.entity_info import DraftEntityTypes
+from flow360.component.simulation.outputs.output_fields import CommonFieldNames
 from flow360.component.simulation.primitives import (
+    ImportedSurface,
     Surface,
     _SurfaceEntityBase,
     _VolumeEntityBase,
 )
+from flow360.component.simulation.user_code.core.types import Expression, UserVariable
 
 
 def _validator_append_instance_name(func):
@@ -420,3 +423,62 @@ def has_mirroring_usage(asset_cache) -> bool:
         if mirror_status.mirrored_geometry_body_groups or mirror_status.mirrored_surfaces:
             return True
     return False
+
+
+def validate_improper_surface_field_usage_for_imported_surface(
+    expanded_entities: list, output_fields
+):
+    """
+    Validate output fields when using imported surfaces.
+    Ensures that:
+    - String format output fields are only CommonFieldNames
+    - UserVariable expressions only contain Volume type solver variables
+
+    Parameters
+    ----------
+    expanded_entities : list
+        List of expanded entities (surfaces)
+    output_fields : UniqueItemList
+        List of output fields to validate
+
+    Raises
+    ------
+    ValueError
+        If any output field is not compatible with imported surfaces
+    """
+
+    # Check if any entity is an ImportedSurface
+    has_imported_surface = any(isinstance(entity, ImportedSurface) for entity in expanded_entities)
+
+    if not has_imported_surface:
+        return
+
+    # Get valid common field names
+    valid_common_fields = get_args(CommonFieldNames)
+
+    # Validate each output field
+    for output_item in output_fields.items:
+        # Check string fields
+        if isinstance(output_item, str):
+            if output_item not in valid_common_fields:
+                raise ValueError(
+                    f"Output field '{output_item}' is not allowed for imported surfaces. "
+                    "Only non-Surface field names are allowed for string format output fields "
+                    "when using imported surfaces."
+                )
+        # Check UserVariable fields
+        elif isinstance(output_item, UserVariable) and isinstance(output_item.value, Expression):
+            surface_solver_variable_names = output_item.value.solver_variable_names(
+                recursive=True, variable_type="Surface"
+            )
+            # Allow node_unit_normal surface variable for imported surfaces
+            disallowed_surface_vars = [
+                var for var in surface_solver_variable_names if var != "solution.node_unit_normal"
+            ]
+            if len(disallowed_surface_vars) > 0:
+                raise ValueError(
+                    f"Variable `{output_item}` cannot be used with imported surfaces "
+                    f"since it contains Surface type solver variable(s): "
+                    f"{', '.join(sorted(disallowed_surface_vars))}. "
+                    "Only Volume type solver variables and 'solution.node_unit_normal' are allowed."
+                )

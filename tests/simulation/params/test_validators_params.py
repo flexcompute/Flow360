@@ -116,7 +116,11 @@ from flow360.component.simulation.primitives import (
     Surface,
     SurfacePrivateAttributes,
 )
-from flow360.component.simulation.services import ValidationCalledBy, validate_model
+from flow360.component.simulation.services import (
+    ValidationCalledBy,
+    clear_context,
+    validate_model,
+)
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
 from flow360.component.simulation.unit_system import SI_unit_system
@@ -140,6 +144,11 @@ quasi_3d_periodic_farfield_context = ParamsValidationInfo({}, [])
 quasi_3d_periodic_farfield_context.farfield_method = "quasi-3d-periodic"
 
 assertions = unittest.TestCase("__init__")
+
+
+@pytest.fixture(autouse=True)
+def reset_context():
+    clear_context()
 
 
 @pytest.fixture()
