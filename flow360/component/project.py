@@ -64,6 +64,7 @@ from flow360.component.utils import (
     SurfaceMeshFile,
     VolumeMeshFile,
     formatting_validation_errors,
+    formatting_validation_warnings,
     get_short_asset_id,
     parse_datetime,
     wrapstring,
@@ -1834,11 +1835,17 @@ class Project(pd.BaseModel):
             use_geometry_AI=use_geometry_AI,
         )
 
-        params, errors = validate_params_with_context(
+        params, errors, warnings = validate_params_with_context(
             params=params,
             root_item_type=self.metadata.root_item_type.value,
             up_to=target._cloud_resource_type_name,
         )
+
+        if warnings:
+            log.warning(
+                f"Validation warnings found during local validation: "
+                f"{formatting_validation_warnings(warnings=warnings)}"
+            )
 
         if errors is not None:
             log.error(

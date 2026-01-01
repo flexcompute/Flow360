@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 """
 Module for validation context handling in the simulation component of Flow360.
 
@@ -104,6 +105,7 @@ class FeatureUsageInfo:
 
 _validation_level_ctx = contextvars.ContextVar("validation_levels", default=None)
 _validation_info_ctx = contextvars.ContextVar("validation_info", default=None)
+_validation_warnings_ctx = contextvars.ContextVar("validation_warnings", default=None)
 
 
 class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-instance-attributes
@@ -587,20 +589,25 @@ class ValidationContext:
         ):
             self.levels = levels
             self.level_token = None
+            self.validation_warnings = []
         else:
             raise ValueError(f"Invalid validation level: {levels}")
 
         self.info = info
         self.info_token = None
+        self.warnings_token = None
 
     def __enter__(self):
         self.level_token = _validation_level_ctx.set(self.levels)
         self.info_token = _validation_info_ctx.set(self.info)
+        self.warnings_token = _validation_warnings_ctx.set(self.validation_warnings)
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         _validation_level_ctx.reset(self.level_token)
         _validation_info_ctx.reset(self.info_token)
+        if self.warnings_token is not None:
+            _validation_warnings_ctx.reset(self.warnings_token)
 
 
 def get_validation_levels() -> list:
@@ -621,6 +628,38 @@ def get_validation_info() -> ParamsValidationInfo:
         The validation info, which can influence validation behavior.
     """
     return _validation_info_ctx.get()
+
+
+def add_validation_warning(message: str) -> None:
+    """
+    Append a validation warning message to the active ValidationContext.
+
+    Parameters
+    ----------
+    message : str
+        Warning message to record. Converted to string if needed.
+
+    Notes
+    -----
+    No action is taken if there is no active ValidationContext.
+    """
+    warnings_list = _validation_warnings_ctx.get()
+    if warnings_list is None:
+        return
+    message_str = str(message)
+    if any(
+        isinstance(existing, dict) and existing.get("msg") == message_str
+        for existing in warnings_list
+    ):
+        return
+    warnings_list.append(
+        {
+            "loc": (),
+            "msg": message_str,
+            "type": "value_error",
+            "ctx": {},
+        }
+    )
 
 
 # pylint: disable=invalid-name

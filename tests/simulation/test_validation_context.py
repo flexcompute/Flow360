@@ -6,13 +6,14 @@ particularly the required_context parameter validation.
 """
 
 import pytest
-from pydantic import ValidationError
+from pydantic import ValidationError, field_validator
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.unit_system import SI_unit_system
 from flow360.component.simulation.validation.validation_context import (
     ParamsValidationInfo,
     ValidationContext,
+    add_validation_warning,
     contextual_field_validator,
 )
 
@@ -197,3 +198,52 @@ class TestParamsValidationInfo:
         }
         info = ParamsValidationInfo(param_dict, referenced_expressions=[])
         assert info.entity_transformation_detected is True
+
+
+def test_add_validation_warning_collects_messages_without_errors():
+    """Ensures validation warnings are recorded when no validation errors occur."""
+
+    class WarningModel(Flow360BaseModel):
+        value: int
+
+        @field_validator("value")
+        @classmethod
+        def _warn(cls, value):
+            add_validation_warning("value inspected")
+            return value
+
+    mock_context = ValidationContext(
+        levels=None, info=ParamsValidationInfo(param_as_dict={}, referenced_expressions=[])
+    )
+
+    with SI_unit_system, mock_context:
+        WarningModel(value=1)
+
+    assert mock_context.validation_warnings == [
+        {"loc": (), "msg": "value inspected", "type": "value_error", "ctx": {}}
+    ]
+
+
+def test_add_validation_warning_preserves_messages_on_error():
+    """Ensures warnings raised prior to a validation error are retained."""
+
+    class WarningModel(Flow360BaseModel):
+        value: int
+
+        @field_validator("value")
+        @classmethod
+        def _warn(cls, value):
+            add_validation_warning("value invalid")
+            raise ValueError("boom")
+
+    mock_context = ValidationContext(
+        levels=None, info=ParamsValidationInfo(param_as_dict={}, referenced_expressions=[])
+    )
+
+    with SI_unit_system, mock_context:
+        with pytest.raises(ValidationError):
+            WarningModel(value=-1)
+
+    assert mock_context.validation_warnings == [
+        {"loc": (), "msg": "value invalid", "type": "value_error", "ctx": {}}
+    ]

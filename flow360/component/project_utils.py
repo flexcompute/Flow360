@@ -717,11 +717,13 @@ def validate_params_with_context(params, root_item_type, up_to):
         root_item_type=root_item_type, up_to=up_to
     )
 
-    params, errors, _ = services.validate_model(
-        params_as_dict=params.model_dump(mode="json", exclude_none=True),
+    params_as_dict = params.model_dump(mode="json", exclude_none=True)
+
+    params, errors, warnings = services.validate_model(
+        params_as_dict=params_as_dict,
         validated_by=services.ValidationCalledBy.LOCAL,
         root_item_type=root_item_type,
         validation_level=validation_level,
     )
 
-    return params, errors
+    return params, errors, warnings
