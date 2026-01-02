@@ -187,6 +187,9 @@ def create_draft(
     if isinstance(new_run_from, Geometry) and new_run_from.info.dependency:
         raise Flow360ValueError("Draft creation from an imported Geometry is not supported.")
 
+    if isinstance(new_run_from, Case):
+        raise Flow360ValueError("Draft creation from a Case is not supported.")
+
     if not isinstance(new_run_from.entity_info, GeometryEntityInfo) and (
         include_geometries or exclude_geometries
     ):
