@@ -143,6 +143,7 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
 
         self._coordinate_system_manager = CoordinateSystemManager._from_status(
             status=coordinate_system_status,
+            entity_registry=self._entity_registry,
         )
 
     def __enter__(self) -> DraftContext:
