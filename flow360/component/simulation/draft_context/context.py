@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from contextlib import AbstractContextManager
 from contextvars import ContextVar, Token
+from dataclasses import dataclass
 from typing import List, Optional, get_args
 
 from flow360.component.simulation.draft_context.coordinate_system_manager import (
@@ -302,7 +303,7 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
         # pylint: disable=import-outside-toplevel
 
         from flow360.component.simulation.framework.entity_selector import (
-            _apply_single_selector,
+            expand_entity_list_selectors,
         )
 
         if not isinstance(selector, EntitySelector):
@@ -311,18 +312,16 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
                 "Use fl.SurfaceSelector, fl.EdgeSelector, fl.VolumeSelector, or fl.BodyGroupSelector."
             )
 
-        # Find entities by target_class
-        entities = self._entity_registry.find_by_type_name(selector.target_class)
+        @dataclass
+        class MockEntityList:
+            """Temporary mock for EntityList to avoid metaclass constraints."""
 
-        if not entities:
-            log.warning(
-                "No entities of type '%s' found in the draft context.",
-                selector.target_class,
-            )
-            return []
+            selectors: List[EntitySelector]
 
-        # Apply the selector to get matched entities
-        matched_entities = _apply_single_selector(entities, selector)
+        matched_entities = expand_entity_list_selectors(
+            registry=self._entity_registry,
+            entity_list=MockEntityList(selectors=[selector]),
+        )
 
         if not matched_entities:
             return []

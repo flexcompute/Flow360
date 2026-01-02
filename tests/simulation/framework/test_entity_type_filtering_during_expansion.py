@@ -11,6 +11,8 @@ import os
 
 import pytest
 
+from flow360.component.simulation.draft_context import DraftContext
+from flow360.component.simulation.entity_info import SurfaceMeshEntityInfo
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
 from flow360.component.simulation.framework.entity_selector import (
@@ -91,6 +93,28 @@ def test_selector_expansion_filters_invalid_types_silently():
     }, f"Only Surface and MirroredSurface should be present, got {entity_types}"
 
     print(f"\n✓ Test passed: Invalid type (GhostSphere) was silently filtered out")
+
+
+def test_preview_selector_matches_mirrored_entities():
+    """Test that DraftContext.preview_selector can match mirrored entities."""
+    registry = EntityRegistry()
+    surface = Surface(name="wing")
+    mirrored_surface = MirroredSurface(
+        name="wing_mirrored", surface_id="surface1", mirror_plane_id="plane1"
+    )
+
+    registry.register(surface)
+    registry.register(mirrored_surface)
+
+    # Build a draft context that has a populated entity_info, then inject mirrored entities
+    # into the draft registry so the selector expansion can see them.
+    draft = DraftContext(entity_info=SurfaceMeshEntityInfo(boundaries=[surface]))
+    draft._entity_registry.register(mirrored_surface)  # pylint: disable=protected-access
+
+    previewed_names = draft.preview_selector(
+        SurfaceSelector(name="mirrored").match("*mirrored"), return_names=True
+    )
+    assert previewed_names == ["wing_mirrored"]
 
 
 def test_selector_expansion_with_all_invalid_types_raises_error():
