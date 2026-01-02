@@ -14,6 +14,7 @@ from flow360.component.simulation.entity_operation import (
 )
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityBase
+from flow360.component.simulation.framework.entity_registry import EntityRegistry
 from flow360.component.simulation.utils import is_exact_instance
 from flow360.exceptions import Flow360RuntimeError
 from flow360.log import log
@@ -383,14 +384,20 @@ class CoordinateSystemManager:
         )
 
     @classmethod
-    def _from_status(cls, *, status: CoordinateSystemStatus | None) -> "CoordinateSystemManager":
+    def _from_status(
+        cls,
+        *,
+        status: Optional[CoordinateSystemStatus],
+        entity_registry: Optional[EntityRegistry] = None,
+    ) -> CoordinateSystemManager:
         """Restore manager from a status snapshot.
 
         Parameters
         ----------
         status : CoordinateSystemStatus | None
             The status to restore from.
-
+        entity_registry : EntityRegistry | None
+            Entity registry containing entities to validate against. If None, no validation is performed.
         Returns
         -------
         CoordinateSystemManager
@@ -425,6 +432,24 @@ class CoordinateSystemManager:
                 )
             for entity in assignment.entities:
                 key = (entity.entity_type, entity.entity_id)
+                # Sanitize invalid assignments due to entity not being in scope anymore.
+                if (
+                    entity_registry  # entity_registry None indicates that no validation is needed
+                    and (
+                        entity_registry.find_by_type_name_and_id(
+                            entity_type=entity.entity_type, entity_id=entity.entity_id
+                        )
+                        is None
+                    )
+                ):
+                    log.warning(
+                        "Entity '%s:%s' assigned to coordinate system '%s' is not in the draft registry; "
+                        "skipping this coordinate system assignment.",
+                        entity.entity_type,
+                        entity.entity_id,
+                        assignment.coordinate_system_id,
+                    )
+                    continue
                 if key in seen_entity_keys:
                     raise Flow360RuntimeError(
                         f"Duplicate entity assignment for entity '{entity.entity_type}:{entity.entity_id}'."
