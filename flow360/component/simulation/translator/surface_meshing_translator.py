@@ -603,8 +603,7 @@ def _get_volume_zones(volume_zones_list: list[dict]):
             "RotationVolume",
             "RotationCylinder",
         ):
-            if "stationary_enclosed_entities" in item:
-                del item["stationary_enclosed_entities"]
+            item.pop("stationary_enclosed_entities")
             volume_zones_translated.append(item)
 
     return volume_zones_translated
