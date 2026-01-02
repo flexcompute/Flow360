@@ -48,7 +48,11 @@ def SurfaceEdgeRefinement_to_edges(obj: SurfaceEdgeRefinement):
         }
 
     if obj.method.type == "height":
-        return {"type": "aniso", "method": "height", "value": obj.method.value.value.item()}
+        return {
+            "type": "aniso",
+            "method": "height",
+            "value": obj.method.value.value.item(),
+        }
 
     if obj.method.type == "aspectRatio":
         return {"type": "aniso", "method": "aspectRatio", "value": obj.method.value}
@@ -146,7 +150,10 @@ def get_applicable_regions_dict(refinement_regions):
 
 
 def apply_SnappySurfaceEdgeRefinement(
-    refinement: snappy.SurfaceEdgeRefinement, translated, defaults, spacing_system: OctreeSpacing
+    refinement: snappy.SurfaceEdgeRefinement,
+    translated,
+    defaults,
+    spacing_system: OctreeSpacing,
 ):
     """
     Translate SnappySurfaceEdgeRefinement to bodies and regions.
@@ -546,7 +553,8 @@ def legacy_mesher_json(input_params: SimulationParams):
     ##:: >> Step 5.1: Apply default_max_edge_length to faces that are not explicitly specified
     assert input_params.private_attribute_asset_cache.project_entity_info is not None
     assert isinstance(
-        input_params.private_attribute_asset_cache.project_entity_info, GeometryEntityInfo
+        input_params.private_attribute_asset_cache.project_entity_info,
+        GeometryEntityInfo,
     )
 
     for face_id in input_params.private_attribute_asset_cache.project_entity_info.all_face_ids:
@@ -583,18 +591,23 @@ def _get_volume_zones(volume_zones_list: list[dict]):
     """
     Get the volume zones from the input_params.
     """
-    return [
-        item
-        for item in volume_zones_list
-        if item["type"]
-        in (
+    volume_zones_translated = []
+    for item in volume_zones_list:
+        if item["type"] in (
             "AutomatedFarfield",
             "UserDefinedFarfield",
             "WindTunnelFarfield",
-            "RotationCylinder",
+        ):
+            volume_zones_translated.append(item)
+        elif item["type"] in (
             "RotationVolume",
-        )
-    ]
+            "RotationCylinder",
+        ):
+            if "stationary_enclosed_entities" in item:
+                del item["stationary_enclosed_entities"]
+            volume_zones_translated.append(item)
+
+    return volume_zones_translated
 
 
 def _filter_mirror_status(data):
@@ -761,7 +774,10 @@ def _traverse_and_filter(data, whitelist):
 
 
 def _inject_body_group_transformations_for_mesher(
-    *, json_data: dict, input_params: SimulationParams, mesh_unit  # pylint: disable=unused-argument
+    *,
+    json_data: dict,
+    input_params: SimulationParams,
+    mesh_unit,  # pylint: disable=unused-argument
 ) -> None:
     """
     Inject body-group transformation payload expected by the mesher.
@@ -883,6 +899,7 @@ def get_surface_meshing_json(input_params: SimulationParams, mesh_units):
     Get JSON for surface meshing.
     """
     ensure_meshing_is_specified(input_params)
+
     if not input_params.private_attribute_asset_cache.use_geometry_AI:
         if using_snappy(input_params):
             return snappy_mesher_json(input_params)
