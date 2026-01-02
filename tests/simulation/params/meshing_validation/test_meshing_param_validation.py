@@ -983,11 +983,18 @@ def test_snappy_quality_metrics_validation():
     with SI_unit_system, pytest.raises(pd.ValidationError):
         snappy.QualityMetrics(max_internal_skewness=-2 * u.deg)
 
-    snappy.QualityMetrics(max_boundary_skewness=23 * u.deg, max_internal_skewness=89 * u.deg)
+    snappy.QualityMetrics(
+        max_boundary_skewness=23 * u.deg,
+        max_internal_skewness=89 * u.deg,
+        zmetric_threshold=0.9,
+        feature_edge_deduplication_tolerance=0.1,
+    )
     with pytest.raises(pd.ValidationError):
         snappy.QualityMetrics(zmetric_threshold=-0.1)
     with pytest.raises(pd.ValidationError):
         snappy.QualityMetrics(feature_edge_deduplication_tolerance=-0.1)
+
+    snappy.QualityMetrics(zmetric_threshold=False, feature_edge_deduplication_tolerance=False)
 
 
 def test_modular_workflow_zones_validation():

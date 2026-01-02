@@ -939,6 +939,8 @@ def snappy_settings_off_position():
                 min_vol_ratio=False,
                 min_face_weight=False,
                 min_triangle_twist=False,
+                zmetric_threshold=False,
+                feature_edge_deduplication_tolerance=False,
                 min_vol_collapse_ratio=False,
             ),
             snap_controls=snappy.SnapControls(
