@@ -1,6 +1,7 @@
 """Utility functions for web/cloud resource operations."""
 
-from typing import List, Literal
+import re
+from typing import List, Literal, Tuple
 
 import pydantic as pd
 
@@ -9,13 +10,41 @@ from flow360.component.interfaces import ProjectInterface
 from flow360.exceptions import Flow360ValueError
 
 
+def _get_pydantic_major_minor_version() -> Tuple[int, int]:
+    """Extract Pydantic (major, minor) from the installed version string."""
+
+    pydantic_version_module = getattr(pd, "version", None)
+    version_string = getattr(pydantic_version_module, "VERSION", None)
+    if version_string is None:
+        version_string = getattr(pd, "__version__", "")
+
+    match = re.match(r"^\s*(\d+)\.(\d+)", str(version_string))
+    if match is None:
+        return (0, 0)
+
+    return (int(match.group(1)), int(match.group(2)))
+
+
+def _is_pydantic_version_greater_or_equal_to_2_11() -> bool:
+    """Return True if current pydantic version is >= 2.11 (major/minor)."""
+
+    return _get_pydantic_major_minor_version() >= (2, 11)
+
+
+_PROJECT_DEPENDENCY_METADATA_CONFIG_KWARGS = {"extra": "ignore"}
+if _is_pydantic_version_greater_or_equal_to_2_11():
+    _PROJECT_DEPENDENCY_METADATA_CONFIG_KWARGS["validate_by_alias"] = True
+else:
+    _PROJECT_DEPENDENCY_METADATA_CONFIG_KWARGS["populate_by_name"] = True
+
+
 class ProjectDependencyMetadata(pd.BaseModel):
     """Metadata of a project dependency resource."""
 
     resource_id: str = pd.Field(alias="id")
     name: str = pd.Field(alias="name")
 
-    model_config = pd.ConfigDict(extra="ignore", validate_by_alias=True)
+    model_config = pd.ConfigDict(**_PROJECT_DEPENDENCY_METADATA_CONFIG_KWARGS)
 
 
 def get_project_dependency_resource_metadata(
