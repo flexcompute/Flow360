@@ -10,6 +10,8 @@ from flow360.exceptions import Flow360ValueError
 
 
 class ProjectDependencyMetadata(pd.BaseModel):
+    """Metadata of a project dependency resource."""
+
     resource_id: str = pd.Field(alias="id")
     name: str = pd.Field(alias="name")
 
