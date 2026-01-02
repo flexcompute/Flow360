@@ -75,16 +75,26 @@ def test_assign_will_register_when_parent_known(mock_geometry):
         )
 
 
-def test_assign_coordinate_system_rejects_missing_parent(mock_geometry):
+def test_add_auto_registers_missing_parent(mock_geometry):
+    """Test that add() auto-registers a missing parent as root."""
     with create_draft(new_run_from=mock_geometry) as draft:
-        with pytest.raises(
-            Flow360RuntimeError,
-            match="Parent coordinate system must be registered in the draft before being referenced",
-        ):
-            draft.coordinate_systems.add(
-                coordinate_system=CoordinateSystem(name="orphan"),
-                parent=CoordinateSystem(name="ghost"),
-            )
+        parent = CoordinateSystem(name="ghost")
+        child = draft.coordinate_systems.add(
+            coordinate_system=CoordinateSystem(name="orphan"),
+            parent=parent,
+        )
+        # Parent should be auto-registered as root
+        assert parent in draft.coordinate_systems._coordinate_systems
+        assert child in draft.coordinate_systems._coordinate_systems
+        # Parent should have no parent (root)
+        assert (
+            draft.coordinate_systems._coordinate_system_parents[parent.private_attribute_id] is None
+        )
+        # Child should have parent as its parent
+        assert (
+            draft.coordinate_systems._coordinate_system_parents[child.private_attribute_id]
+            == parent.private_attribute_id
+        )
 
 
 def test_assign_coordinate_system_rejects_cycle(mock_geometry):
@@ -137,7 +147,8 @@ def test_get_coordinate_system_by_name(mock_geometry):
             draft.coordinate_systems.get_by_name("missing")
 
 
-def test_update_parent_requires_registered_entities(mock_geometry):
+def test_update_parent_requires_registered_coordinate_system(mock_geometry):
+    """Test that update_parent requires the coordinate system itself to be registered."""
     with create_draft(new_run_from=mock_geometry) as draft:
         cs = CoordinateSystem(name="standalone")
         with pytest.raises(
@@ -146,17 +157,33 @@ def test_update_parent_requires_registered_entities(mock_geometry):
         ):
             draft.coordinate_systems.update_parent(coordinate_system=cs, parent=None)
 
+
+def test_update_parent_auto_registers_missing_parent(mock_geometry):
+    """Test that update_parent auto-registers an unregistered parent as root."""
+    with create_draft(new_run_from=mock_geometry) as draft:
         registered = draft.coordinate_systems.add(
             coordinate_system=CoordinateSystem(name="registered")
         )
         unregistered_parent = CoordinateSystem(name="unregistered-parent")
-        with pytest.raises(
-            Flow360RuntimeError,
-            match="Parent coordinate system must be registered in the draft before being referenced.",
-        ):
-            draft.coordinate_systems.update_parent(
-                coordinate_system=registered, parent=unregistered_parent
-            )
+
+        # Should auto-register the parent
+        draft.coordinate_systems.update_parent(
+            coordinate_system=registered, parent=unregistered_parent
+        )
+
+        # Parent should now be registered as root
+        assert unregistered_parent in draft.coordinate_systems._coordinate_systems
+        assert (
+            draft.coordinate_systems._coordinate_system_parents[
+                unregistered_parent.private_attribute_id
+            ]
+            is None
+        )
+        # registered should now have unregistered_parent as its parent
+        assert (
+            draft.coordinate_systems._coordinate_system_parents[registered.private_attribute_id]
+            == unregistered_parent.private_attribute_id
+        )
 
 
 def test_remove_coordinate_system_errors(mock_geometry):
