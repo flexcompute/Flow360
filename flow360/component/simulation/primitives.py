@@ -772,11 +772,15 @@ class Surface(_SurfaceEntityBase):
 class ImportedSurface(EntityBase):
     """ImportedSurface for post-processing"""
 
-    private_attribute_registry_bucket_name: Literal["SurfaceEntityType"] = "SurfaceEntityType"
     private_attribute_entity_type_name: Literal["ImportedSurface"] = pd.Field(
         "ImportedSurface", frozen=True
     )
-    file_name: str
+
+    private_attribute_sub_components: Optional[List[str]] = pd.Field(
+        None, description="A list of sub components"
+    )
+    file_name: Optional[str] = None
+    surface_mesh_id: Optional[str] = None
 
 
 class GhostSurface(_SurfaceEntityBase):
@@ -1100,6 +1104,9 @@ class MirroredSurface(_SurfaceEntityBase):
         "MirroredSurface", frozen=True
     )
     private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
+
+    # Private attribute used for draft-only bookkeeping. This must NOT affect schema or serialization.
+    _geometry_body_group_id: Optional[str] = pd.PrivateAttr(default=None)
 
 
 class MirroredGeometryBodyGroup(EntityBase):

@@ -775,7 +775,7 @@ class PorousJump(Flow360BaseModel):
     Example
     -------
 
-    - Define a porous jump condition:
+    Define a porous jump condition:
 
       >>> fl.PorousJump(
       ...     surface_pairs=[
@@ -786,6 +786,7 @@ class PorousJump(Flow360BaseModel):
       ...    forchheimer_coefficient = 1 / fl.u.m,
       ...    thickness = 1 * fl.u.m,
       ... )
+
     ====
     """
 

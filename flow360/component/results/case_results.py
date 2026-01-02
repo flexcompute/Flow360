@@ -7,7 +7,7 @@ from __future__ import annotations
 import re
 from enum import Enum
 from pathlib import Path
-from typing import Callable, Dict, List, Optional
+from typing import Callable, Dict, List, Optional, get_args
 
 import numpy as np
 import pydantic as pd
@@ -23,43 +23,22 @@ from flow360.component.results.base_results import (
     ResultTarGZModel,
 )
 from flow360.component.results.results_utils import (
-    _CD,
+    BETDiskCSVHeaderOperation,
+    DiskCoefficientsComputation,
+    PorousMediumCoefficientsComputation,
+)
+from flow360.component.simulation.conversion import unit_converter as unit_converter_v2
+from flow360.component.simulation.outputs.output_fields import (
     _CD_PER_STRIP,
-    _CD_PRESSURE,
-    _CD_SKIN_FRICTION,
-    _CL,
-    _CL_PRESSURE,
-    _CL_SKIN_FRICTION,
     _CUMULATIVE_CD_CURVE,
     _HEAT_FLUX,
     _X,
     _Y,
-    BETDiskCSVHeaderOperation,
-    DiskCoefficientsComputation,
-    PorousMediumCoefficientsComputation,
-    _CFx,
+    ForceOutputCoefficientNames,
     _CFx_PER_SPAN,
-    _CFx_PRESSURE,
-    _CFx_SKIN_FRICTION,
-    _CFy,
-    _CFy_PRESSURE,
-    _CFy_SKIN_FRICTION,
-    _CFz,
     _CFz_PER_SPAN,
-    _CFz_PRESSURE,
-    _CFz_SKIN_FRICTION,
-    _CMx,
-    _CMx_PRESSURE,
-    _CMx_SKIN_FRICTION,
-    _CMy,
     _CMy_PER_SPAN,
-    _CMy_PRESSURE,
-    _CMy_SKIN_FRICTION,
-    _CMz,
-    _CMz_PRESSURE,
-    _CMz_SKIN_FRICTION,
 )
-from flow360.component.simulation.conversion import unit_converter as unit_converter_v2
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import (
     Flow360UnitSystem,
@@ -185,32 +164,7 @@ class SurfaceForcesResultCSVModel(PerEntityResultCSVModel, TimeSeriesResultCSVMo
 
     remote_file_name: str = pd.Field(CaseDownloadable.SURFACE_FORCES.value, frozen=True)
 
-    _variables: List[str] = [
-        _CL,
-        _CD,
-        _CFx,
-        _CFy,
-        _CFz,
-        _CMx,
-        _CMy,
-        _CMz,
-        _CL_PRESSURE,
-        _CD_PRESSURE,
-        _CFx_PRESSURE,
-        _CFy_PRESSURE,
-        _CFz_PRESSURE,
-        _CMx_PRESSURE,
-        _CMy_PRESSURE,
-        _CMz_PRESSURE,
-        _CL_SKIN_FRICTION,
-        _CD_SKIN_FRICTION,
-        _CFx_SKIN_FRICTION,
-        _CFy_SKIN_FRICTION,
-        _CFz_SKIN_FRICTION,
-        _CMx_SKIN_FRICTION,
-        _CMy_SKIN_FRICTION,
-        _CMz_SKIN_FRICTION,
-    ]
+    _variables: List[str] = list(get_args(ForceOutputCoefficientNames))
 
     def _preprocess(self, filter_physical_steps_only: bool = True, include_time: bool = True):
         """
@@ -705,7 +659,7 @@ class ActuatorDiskResultCSVModel(OptionallyDownloadableResultCSVModel):
 class ActuatorDiskCoefficientsCSVModel(ResultCSVModel):
     """CSV model for actuator disk coefficients output."""
 
-    remote_file_name: str = pd.Field("actuator_disk_coefficients_v2.csv", frozen=True)
+    remote_file_name: str = pd.Field("actuatorDisk_force_coefficients_v2.csv", frozen=True)
 
 
 class _BETDiskResults(_DimensionedCSVResultModel):
@@ -900,7 +854,7 @@ class BETForcesResultCSVModel(OptionallyDownloadableResultCSVModel):
 class BETDiskCoefficientsCSVModel(ResultCSVModel):
     """CSV model for BET disk coefficients output."""
 
-    remote_file_name: str = pd.Field("bet_disk_coefficients_v2.csv", frozen=True)
+    remote_file_name: str = pd.Field("bet_force_coefficients_v2.csv", frozen=True)
 
     def format_headers(
         self, params: SimulationParams, pattern: str = "$BETName_$CylinderName"
@@ -984,7 +938,7 @@ class PorousMediumResultCSVModel(OptionallyDownloadableResultCSVModel):
 class PorousMediumCoefficientsCSVModel(ResultCSVModel):
     """CSV model for porous medium coefficients output."""
 
-    remote_file_name: str = pd.Field("porous_medium_coefficients_v2.csv", frozen=True)
+    remote_file_name: str = pd.Field("porous_media_force_coefficients_v2.csv", frozen=True)
 
 
 class BETForcesRadialDistributionResultCSVModel(OptionallyDownloadableResultCSVModel):

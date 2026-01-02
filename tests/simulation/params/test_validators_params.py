@@ -111,11 +111,16 @@ from flow360.component.simulation.primitives import (
     GhostSphere,
     GhostSurface,
     MirroredGeometryBodyGroup,
+    MirroredSurface,
     SeedpointVolume,
     Surface,
     SurfacePrivateAttributes,
 )
-from flow360.component.simulation.services import ValidationCalledBy, validate_model
+from flow360.component.simulation.services import (
+    ValidationCalledBy,
+    clear_context,
+    validate_model,
+)
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
 from flow360.component.simulation.unit_system import SI_unit_system
@@ -139,6 +144,11 @@ quasi_3d_periodic_farfield_context = ParamsValidationInfo({}, [])
 quasi_3d_periodic_farfield_context.farfield_method = "quasi-3d-periodic"
 
 assertions = unittest.TestCase("__init__")
+
+
+@pytest.fixture(autouse=True)
+def reset_context():
+    clear_context()
 
 
 @pytest.fixture()
@@ -1562,6 +1572,196 @@ def test_wall_deserialization():
     assert slater_bleed_wall.velocity.static_pressure == 0.1 * u.Pa
 
 
+def test_populate_validated_models_to_validation_context(mock_validation_context):
+    """Test that models are properly populated to validation context."""
+    # Create models with private_attribute_id
+    fluid_model = Fluid()
+    wall_model = Wall(
+        name="wall_bc",
+        surfaces=[Surface(name="wall_surface")],
+    )
+
+    # Before validation, physics_model_dict should be None
+    assert mock_validation_context.info.physics_model_dict is None
+
+    with SI_unit_system, mock_validation_context:
+        params = SimulationParams(
+            models=[fluid_model, wall_model],
+        )
+
+    # After validation, physics_model_dict should be populated
+    assert mock_validation_context.info.physics_model_dict is not None
+    assert isinstance(mock_validation_context.info.physics_model_dict, dict)
+
+    # Check that models are in the dict with their IDs as keys
+    assert len(mock_validation_context.info.physics_model_dict) == 2
+    assert fluid_model.private_attribute_id in mock_validation_context.info.physics_model_dict
+    assert wall_model.private_attribute_id in mock_validation_context.info.physics_model_dict
+
+    # Verify the objects are the same
+    assert (
+        mock_validation_context.info.physics_model_dict[fluid_model.private_attribute_id]
+        == fluid_model
+    )
+    assert (
+        mock_validation_context.info.physics_model_dict[wall_model.private_attribute_id]
+        == wall_model
+    )
+
+
+def test_populate_validated_outputs_to_validation_context(mock_validation_context):
+    """Test that outputs are properly populated to validation context."""
+    # Create outputs with private_attribute_id
+    probe_output = ProbeOutput(
+        name="probe1",
+        output_fields=["Cp"],
+        probe_points=[Point(name="pt1", location=(1, 2, 3) * u.m)],
+    )
+
+    surface_output = SurfaceOutput(
+        name="surface1",
+        output_fields=["Cp"],
+        entities=[Surface(name="wall")],
+    )
+
+    volume_output = VolumeOutput(
+        name="volume1",
+        output_fields=["primitiveVars"],
+    )
+
+    # Before validation, output_dict should be None
+    assert mock_validation_context.info.output_dict is None
+
+    with SI_unit_system, mock_validation_context:
+        params = SimulationParams(
+            outputs=[probe_output, surface_output, volume_output],
+        )
+
+    # After validation, output_dict should be populated
+    assert mock_validation_context.info.output_dict is not None
+    assert isinstance(mock_validation_context.info.output_dict, dict)
+
+    # Check that outputs are in the dict with their IDs as keys
+    assert len(mock_validation_context.info.output_dict) == 3
+    assert probe_output.private_attribute_id in mock_validation_context.info.output_dict
+    assert surface_output.private_attribute_id in mock_validation_context.info.output_dict
+    assert volume_output.private_attribute_id in mock_validation_context.info.output_dict
+
+    # Verify the objects are the same
+    assert (
+        mock_validation_context.info.output_dict[probe_output.private_attribute_id] == probe_output
+    )
+    assert (
+        mock_validation_context.info.output_dict[surface_output.private_attribute_id]
+        == surface_output
+    )
+    assert (
+        mock_validation_context.info.output_dict[volume_output.private_attribute_id]
+        == volume_output
+    )
+
+
+def test_populate_both_models_and_outputs_to_validation_context(mock_validation_context):
+    """Test that both models and outputs are properly populated to the same validation context."""
+    # Create models and outputs
+    fluid_model = Fluid()
+    probe_output = ProbeOutput(
+        name="probe1",
+        output_fields=["Cp"],
+        probe_points=[Point(name="pt1", location=(1, 2, 3) * u.m)],
+    )
+
+    # Before validation, both should be None
+    assert mock_validation_context.info.physics_model_dict is None
+    assert mock_validation_context.info.output_dict is None
+
+    with SI_unit_system, mock_validation_context:
+        params = SimulationParams(
+            models=[fluid_model],
+            outputs=[probe_output],
+        )
+
+    # After validation, both should be populated
+    assert mock_validation_context.info.physics_model_dict is not None
+    assert mock_validation_context.info.output_dict is not None
+
+    # Verify both dicts are populated correctly
+    assert fluid_model.private_attribute_id in mock_validation_context.info.physics_model_dict
+    assert probe_output.private_attribute_id in mock_validation_context.info.output_dict
+
+    assert (
+        mock_validation_context.info.physics_model_dict[fluid_model.private_attribute_id]
+        == fluid_model
+    )
+    assert (
+        mock_validation_context.info.output_dict[probe_output.private_attribute_id] == probe_output
+    )
+
+
+def test_populate_outputs_none_sets_empty_dict(mock_validation_context):
+    """Test that output_dict is set to {} when outputs=None.
+
+    This distinguishes successful validation with no outputs (output_dict={})
+    from validation errors (output_dict=None).
+    """
+    assert mock_validation_context.info.output_dict is None
+
+    with SI_unit_system, mock_validation_context:
+        params = SimulationParams(outputs=None)
+
+    # output_dict should be set to empty dict, not None
+    assert mock_validation_context.info.output_dict == {}
+
+
+def test_populate_outputs_empty_list_sets_empty_dict(mock_validation_context):
+    """Test that output_dict is set to {} when outputs=[]."""
+    assert mock_validation_context.info.output_dict is None
+
+    with SI_unit_system, mock_validation_context:
+        params = SimulationParams(outputs=[])
+
+    # output_dict should be set to empty dict
+    assert mock_validation_context.info.output_dict == {}
+
+
+def test_populate_models_none_sets_dict_with_default(mock_validation_context):
+    """Test that physics_model_dict is populated when models=None.
+
+    Note: SimulationParams automatically adds a default Fluid model when models=None,
+    so physics_model_dict will contain the default model, not be empty.
+    This still distinguishes successful validation from validation errors (physics_model_dict=None).
+    """
+    assert mock_validation_context.info.physics_model_dict is None
+
+    with SI_unit_system, mock_validation_context:
+        params = SimulationParams(models=None)
+
+    # physics_model_dict should be populated with default Fluid model
+    assert mock_validation_context.info.physics_model_dict is not None
+    assert isinstance(mock_validation_context.info.physics_model_dict, dict)
+    # Should contain the default fluid model
+    assert len(mock_validation_context.info.physics_model_dict) == 1
+    assert "__default_fluid" in mock_validation_context.info.physics_model_dict
+
+
+def test_populate_models_empty_list_sets_dict_with_default(mock_validation_context):
+    """Test that physics_model_dict is populated when models=[].
+
+    Note: SimulationParams automatically adds a default Fluid model when models=[],
+    so physics_model_dict will contain the default model.
+    """
+    assert mock_validation_context.info.physics_model_dict is None
+
+    with SI_unit_system, mock_validation_context:
+        params = SimulationParams(models=[])
+
+    # physics_model_dict should be populated with default Fluid model
+    assert mock_validation_context.info.physics_model_dict is not None
+    assert isinstance(mock_validation_context.info.physics_model_dict, dict)
+    assert len(mock_validation_context.info.physics_model_dict) == 1
+    assert "__default_fluid" in mock_validation_context.info.physics_model_dict
+
+
 @pytest.fixture(autouse=True)
 def change_test_dir(request, monkeypatch):
     monkeypatch.chdir(request.fspath.dirname)
@@ -2810,3 +3010,147 @@ def test_mirroring_requires_geometry_ai():
 
     # No error about mirroring
     assert errors is None or not any("Mirroring" in str(e) for e in errors)
+
+
+def test_mirror_missing_boundary_condition_downgraded_to_warning():
+    """Missing BCs should be downgraded to warnings when mirroring/transformations are detected."""
+    mirror_plane = MirrorPlane(
+        name="test_plane",
+        normal=(0, 1, 0),
+        center=[0, 0, 0] * u.m,
+        private_attribute_id="mp-1",
+    )
+
+    front = Surface(name="front", private_attribute_is_interface=False, private_attribute_id="s-1")
+    mirrored_front = MirroredSurface(
+        name="front_<mirror>",
+        surface_id="s-1",
+        mirror_plane_id="mp-1",
+        private_attribute_id="ms-1",
+    )
+
+    asset_cache = AssetCache(
+        project_length_unit="m",
+        use_inhouse_mesher=True,
+        use_geometry_AI=True,
+        project_entity_info=VolumeMeshEntityInfo(boundaries=[front]),
+        mirror_status=MirrorStatus(
+            mirror_planes=[mirror_plane],
+            mirrored_geometry_body_groups=[],
+            mirrored_surfaces=[mirrored_front],
+        ),
+    )
+
+    with SI_unit_system:
+        params = SimulationParams(
+            models=[Fluid(), Wall(entities=[front])],
+            private_attribute_asset_cache=asset_cache,
+        )
+
+    _validated, errors, warnings = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="VolumeMesh",
+        validation_level="All",
+    )
+
+    assert errors is None
+    assert any("front_<mirror>" in w.get("msg", "") for w in warnings), warnings
+
+
+def test_mirror_unknown_boundary_still_raises_error():
+    """Unknown boundary names should remain hard errors even when mirroring is detected."""
+    mirror_plane = MirrorPlane(
+        name="test_plane",
+        normal=(0, 1, 0),
+        center=[0, 0, 0] * u.m,
+        private_attribute_id="mp-1",
+    )
+
+    front = Surface(name="front", private_attribute_is_interface=False, private_attribute_id="s-1")
+    mirrored_front = MirroredSurface(
+        name="front_<mirror>",
+        surface_id="s-1",
+        mirror_plane_id="mp-1",
+        private_attribute_id="ms-1",
+    )
+
+    asset_cache = AssetCache(
+        project_length_unit="m",
+        use_inhouse_mesher=True,
+        use_geometry_AI=True,
+        project_entity_info=VolumeMeshEntityInfo(boundaries=[front]),
+        mirror_status=MirrorStatus(
+            mirror_planes=[mirror_plane],
+            mirrored_geometry_body_groups=[],
+            mirrored_surfaces=[mirrored_front],
+        ),
+    )
+
+    with SI_unit_system:
+        params = SimulationParams(
+            models=[
+                Fluid(),
+                # Use mirrored surface (should be known once we include it in the valid boundary pool)
+                Wall(entities=[mirrored_front, Surface(name="typo_surface")]),
+            ],
+            private_attribute_asset_cache=asset_cache,
+        )
+
+    _validated, errors, _warnings = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="VolumeMesh",
+        validation_level="All",
+    )
+
+    assert errors is not None
+    assert any("typo_surface" in str(e) for e in errors)
+
+
+def test_domain_type_bbox_mismatch_downgraded_to_warning_when_transformed():
+    """domain_type bbox mismatch should be a warning when transformations are detected."""
+    cs_status = CoordinateSystemStatus(
+        coordinate_systems=[CoordinateSystem(name="cs", private_attribute_id="cs-1")],
+        parents=[],
+        assignments=[CoordinateSystemAssignmentGroup(coordinate_system_id="cs-1", entities=[])],
+    )
+
+    # Global bbox fully on -Y side; choosing half_body_positive_y should normally raise.
+    asset_cache = AssetCache(
+        project_length_unit="m",
+        use_inhouse_mesher=True,
+        use_geometry_AI=True,
+        project_entity_info=SurfaceMeshEntityInfo(
+            boundaries=[],
+            global_bounding_box=[[-1, -10, -1], [1, -5, 1]],
+        ),
+        coordinate_system_status=cs_status,
+    )
+
+    auto_farfield = AutomatedFarfield(name="my_farfield", domain_type="half_body_positive_y")
+
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-10,
+                    geometry_accuracy=1e-10 * u.m,
+                    surface_max_edge_length=1e-10,
+                ),
+                volume_zones=[auto_farfield],
+            ),
+            private_attribute_asset_cache=asset_cache,
+        )
+
+    _validated, errors, warnings = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type=None,
+        validation_level=None,
+    )
+
+    assert errors is None
+    assert any(
+        "domain_type" in w.get("msg", "") or "symmetry plane" in w.get("msg", "") for w in warnings
+    ), warnings

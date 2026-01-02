@@ -195,7 +195,6 @@
     ],
     "usingLiquidAsMaterial": false,
     "runControl": {
-        "shouldCheckStopCriterion": false,
         "externalProcessMonitorOutput": false
     }
 }

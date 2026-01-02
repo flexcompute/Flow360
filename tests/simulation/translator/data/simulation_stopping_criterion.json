@@ -217,7 +217,8 @@
             "roughness_height": {
                 "value": 0.0,
                 "units": "m"
-            }
+            },
+            "private_attribute_id": "wallBC"
         },
         {
             "type": "SlipWall",
@@ -391,6 +392,55 @@
                 "type_name": "MovingStatistic"
             },
             "output_type": "ProbeOutput"
+        },
+        {
+            "output_fields": {
+                "items": [
+                    {
+                        "name": "MassFluxProjected",
+                        "type_name": "UserVariable"
+                    }
+                ]
+            },
+            "private_attribute_id": "22222",
+            "name": "MassFluxIntegral",
+            "entities": {
+                "stored_entities": [
+                    {
+                        "private_attribute_entity_type_name": "Surface",
+                        "name": "1",
+                        "private_attribute_sub_components": []
+                    }
+                ]
+            },
+            "moving_statistic": {
+                "moving_window_size": 3,
+                "method": "range",
+                "start_step": 394,
+                "type_name": "MovingStatistic"
+            },
+            "output_type": "SurfaceIntegralOutput"
+        },
+        {
+            "output_fields": {
+                "items": [
+                    "CL",
+                    "CFx",
+                    "CFySkinFriction"
+                ]
+            },
+            "private_attribute_id": "33333",
+            "name": "force_wallBC",
+            "models": [
+                "wallBC"
+            ],
+            "moving_statistic": {
+                "moving_window_size": 10,
+                "method": "standard_deviation",
+                "start_step": 0,
+                "type_name": "MovingStatistic"
+            },
+            "output_type": "ForceOutput"
         }
     ],
     "private_attribute_asset_cache": {
@@ -403,6 +453,14 @@
                     "type_name": "expression",
                     "expression": "solution.velocity[0] * solution.vorticity[0] + solution.velocity[1] * solution.vorticity[1] + solution.velocity[2] * solution.vorticity[2]"
                 }
+            },
+            {
+                "name": "MassFluxProjected",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "-1 * solution.density * (solution.velocity[0] * solution.node_unit_normal[0] + solution.velocity[1] * solution.node_unit_normal[1] + solution.velocity[2] * solution.node_unit_normal[2])"
+                },
+                "post_processing": true
             }
         ]
     },
@@ -418,7 +476,32 @@
                 "tolerance": {
                     "type_name": "number",
                     "value": 18.66,
-                    "units": "SI_unit_system"
+                    "units": "m/s**2"
+                },
+                "type_name": "StoppingCriterion"
+            },
+            {
+                "name": "Criterion_MassFlux",
+                "monitor_field": {
+                    "name": "MassFluxProjected",
+                    "type_name": "UserVariable"
+                },
+                "monitor_output": "22222",
+                "tolerance": {
+                    "type_name": "number",
+                    "value": 25.1,
+                    "units": "kg/s"
+                },
+                "tolerance_window_size": 3,
+                "type_name": "StoppingCriterion"
+            },
+            {
+                "name": "Criterion_ForceOutput",
+                "monitor_field": "CL",
+                "monitor_output": "33333",
+                "tolerance": {
+                    "type_name": "number",
+                    "value": 0.265
                 },
                 "type_name": "StoppingCriterion"
             }

@@ -1,6 +1,6 @@
 """Registry for managing and storing instances of various entity types."""
 
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 import pydantic as pd
 
@@ -170,6 +170,16 @@ class EntityRegistry(Flow360BaseModel):
 
         # pylint: disable=unsubscriptable-object
         self.internal_registry[entity_type].append(entity)
+
+    def remove(self, entity: EntityBase) -> None:
+        """Remove an entity from the registry."""
+        entity_type = type(entity)
+        if (
+            entity_type not in self.internal_registry
+            or entity not in self.internal_registry[entity_type]
+        ):
+            return
+        self.internal_registry[entity_type].remove(entity)
 
     def view(self, entity_type: type[EntityBase]) -> EntityRegistryView:
         """
@@ -369,22 +379,31 @@ class EntityRegistry(Flow360BaseModel):
                 matched_entities.extend(entity_list)
         return matched_entities
 
-    def find_by_type_name(self, type_name: str) -> list[EntityBase]:
-        """Find all registered entities with a given private_attribute_entity_type_name.
+    def find_by_type_name(self, type_name: Union[str, List[str]]) -> list[EntityBase]:
+        """Find all registered entities with matching private_attribute_entity_type_name.
 
         This is useful for matching entities by their serialized type name (e.g., "Surface", "Edge").
+        Supports both single type name and multiple type names for efficient batch lookup.
 
         Parameters:
-            type_name (str): The entity type name to search for.
+            type_name: Single type name string or list of type name strings to search for.
 
         Returns:
-            list[EntityBase]: All entities with matching type name.
+            list[EntityBase]: All entities with matching type names.
+
+        Examples:
+            >>> registry.find_by_type_name("Surface")
+            >>> registry.find_by_type_name(["Surface", "MirroredSurface"])
         """
+        # Normalize to list for consistent handling
+        type_names_to_find = [type_name] if isinstance(type_name, str) else type_name
+        type_name_set = set(type_names_to_find)  # O(1) lookup optimization
+
         matched_entities = []
         # pylint: disable=no-member
         for entity_list in self.internal_registry.values():
             for entity in entity_list:
-                if entity.private_attribute_entity_type_name == type_name:
+                if entity.private_attribute_entity_type_name in type_name_set:
                     matched_entities.append(entity)
         return matched_entities
 

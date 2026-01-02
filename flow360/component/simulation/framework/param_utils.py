@@ -19,6 +19,7 @@ from flow360.component.simulation.framework.entity_registry import EntityRegistr
 from flow360.component.simulation.framework.entity_selector import EntitySelector
 from flow360.component.simulation.framework.unique_list import UniqueStringList
 from flow360.component.simulation.primitives import (
+    ImportedSurface,
     _SurfaceEntityBase,
     _VolumeEntityBase,
 )
@@ -53,11 +54,15 @@ class AssetCache(Flow360BaseModel):
         False, description="Flag whether user requested the use of GAI."
     )
     variable_context: Optional[VariableContextList] = pd.Field(
-        None, description="List of user variables that are used in all the `Expression` instances."
+        None,
+        description="List of user variables that are used in all the `Expression` instances.",
     )
     used_selectors: Optional[List[EntitySelector]] = pd.Field(
         None,
         description="Collected entity selectors for token reference.",
+    )
+    imported_surfaces: Optional[List[ImportedSurface]] = pd.Field(
+        None, description="List of imported surface meshes for post-processing."
     )
     mirror_status: Optional[MirrorStatus] = pd.Field(
         None, description="Status of mirroring operations that are used in the simulation."
@@ -272,3 +277,10 @@ def _set_boundary_full_name_with_zone_name(
                 continue
             with model_attribute_unlock(surface, "private_attribute_full_name"):
                 surface.private_attribute_full_name = f"{give_zone_name}/{surface.name}"
+
+
+def serialize_model_obj_to_id(model_obj: Flow360BaseModel) -> str:
+    """Serialize a model object to its id."""
+    if hasattr(model_obj, "private_attribute_id"):
+        return model_obj.private_attribute_id
+    raise ValueError(f"The model object {model_obj} cannot be serialized to id.")

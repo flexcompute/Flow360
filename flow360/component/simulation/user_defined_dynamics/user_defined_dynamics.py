@@ -84,7 +84,7 @@ class UserDefinedDynamic(Flow360BaseModel):
         + "velocity/acceleration in radians for sliding interfaces). For a full list of supported variable, see "
         + ":ref:`here <SupportedVariablesInUserExpression_>`. Please exercise caution when choosing output "
         + "variables, as any modifications to their values will be directly mirrored in the solver. Expressions "
-        + "follows similar guidelines as :ref:`User Defined Expressions<UserDefinedExpressions>`.",
+        + "follows similar guidelines as :ref:`Legacy Expressions<expressions_legacy_user_guide>`.",
     )
     state_vars_initial_value: List[StringExpression] = pd.Field(
         description="The initial value of state variables are specified here. The entries could be either values "

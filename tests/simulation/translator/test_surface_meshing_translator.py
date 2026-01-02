@@ -980,8 +980,9 @@ def snappy_settings_off_position():
 
 
 def _translate_and_compare(param, mesh_unit, ref_json_file: str, atol=1e-15):
-    param, err = validate_params_with_context(param, "Geometry", "SurfaceMesh")
+    param, err, warnings = validate_params_with_context(param, "Geometry", "SurfaceMesh")
     assert err is None, f"Validation error: {err}"
+    assert warnings == [], f"Unexpected warnings during validation: {warnings}"
     translated = get_surface_meshing_json(param, mesh_unit=mesh_unit)
     with open(
         os.path.join(
@@ -1334,8 +1335,9 @@ def test_sliding_interface_tolerance_gai():
             private_attribute_asset_cache=asset_cache,
         )
 
-    _, err = validate_params_with_context(params, "Geometry", "SurfaceMesh")
+    _, err, warnings = validate_params_with_context(params, "Geometry", "SurfaceMesh")
     assert err is None, f"Validation error: {err}"
+    assert warnings == [], f"Unexpected warnings during validation: {warnings}"
     translated = get_surface_meshing_json(params, mesh_unit=1 * u.m)
 
     # Verify sliding_interface_tolerance is in the translated JSON
@@ -1452,8 +1454,9 @@ def test_gai_mirror_status_translation():
             private_attribute_asset_cache=asset_cache,
         )
 
-    _, err = validate_params_with_context(params, "Geometry", "SurfaceMesh")
+    _, err, warnings = validate_params_with_context(params, "Geometry", "SurfaceMesh")
     assert err is None, f"Validation error: {err}"
+    assert warnings == [], f"Unexpected warnings during validation: {warnings}"
 
     translated = get_surface_meshing_json(params, mesh_unit=1 * u.m)
 
@@ -1584,8 +1587,9 @@ def test_gai_mirror_status_translation_idempotency():
                 private_attribute_asset_cache=asset_cache,
             )
 
-        _, err = validate_params_with_context(params, "Geometry", "SurfaceMesh")
+        _, err, warnings = validate_params_with_context(params, "Geometry", "SurfaceMesh")
         assert err is None, f"Validation error: {err}"
+        assert warnings == [], f"Unexpected warnings during validation: {warnings}"
 
         translated = get_surface_meshing_json(params, mesh_unit=1 * u.m)
         translated_jsons.append(translated)

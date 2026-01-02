@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 """
 Module for validation context handling in the simulation component of Flow360.
 
@@ -104,6 +105,7 @@ class FeatureUsageInfo:
 
 _validation_level_ctx = contextvars.ContextVar("validation_levels", default=None)
 _validation_info_ctx = contextvars.ContextVar("validation_info", default=None)
+_validation_warnings_ctx = contextvars.ContextVar("validation_warnings", default=None)
 
 
 class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-instance-attributes
@@ -137,6 +139,7 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         "global_bounding_box",
         "planar_face_tolerance",
         "output_dict",
+        "physics_model_dict",
         "half_model_symmetry_plane_center_y",
         "quasi_3d_symmetry_planes_center_y",
         "entity_transformation_detected",
@@ -318,16 +321,6 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         return None
 
     @classmethod
-    def _get_output_dict(cls, param_as_dict: dict):
-        if param_as_dict.get("outputs") is None:
-            return None
-        return {
-            output["private_attribute_id"]: output
-            for output in param_as_dict["outputs"]
-            if output.get("private_attribute_id") is not None
-        }
-
-    @classmethod
     def _get_half_model_symmetry_plane_center_y(cls, param_as_dict: dict):
         ghost_entities = get_value_with_path(
             param_as_dict,
@@ -442,7 +435,12 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         self.project_length_unit = self._get_project_length_unit_(param_as_dict=param_as_dict)
         self.global_bounding_box = self._get_global_bounding_box(param_as_dict=param_as_dict)
         self.planar_face_tolerance = self._get_planar_face_tolerance(param_as_dict=param_as_dict)
-        self.output_dict = self._get_output_dict(param_as_dict=param_as_dict)
+        # Initialized as None. When SimulationParams field validation succeeds, the
+        # field validators will populate these with validated objects.
+        # None = validation not yet complete (or failed)
+        # {} or {id: obj} = validation succeeded
+        self.output_dict = None
+        self.physics_model_dict = None
         self.half_model_symmetry_plane_center_y = self._get_half_model_symmetry_plane_center_y(
             param_as_dict=param_as_dict
         )
@@ -591,20 +589,25 @@ class ValidationContext:
         ):
             self.levels = levels
             self.level_token = None
+            self.validation_warnings = []
         else:
             raise ValueError(f"Invalid validation level: {levels}")
 
         self.info = info
         self.info_token = None
+        self.warnings_token = None
 
     def __enter__(self):
         self.level_token = _validation_level_ctx.set(self.levels)
         self.info_token = _validation_info_ctx.set(self.info)
+        self.warnings_token = _validation_warnings_ctx.set(self.validation_warnings)
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         _validation_level_ctx.reset(self.level_token)
         _validation_info_ctx.reset(self.info_token)
+        if self.warnings_token is not None:
+            _validation_warnings_ctx.reset(self.warnings_token)
 
 
 def get_validation_levels() -> list:
@@ -625,6 +628,38 @@ def get_validation_info() -> ParamsValidationInfo:
         The validation info, which can influence validation behavior.
     """
     return _validation_info_ctx.get()
+
+
+def add_validation_warning(message: str) -> None:
+    """
+    Append a validation warning message to the active ValidationContext.
+
+    Parameters
+    ----------
+    message : str
+        Warning message to record. Converted to string if needed.
+
+    Notes
+    -----
+    No action is taken if there is no active ValidationContext.
+    """
+    warnings_list = _validation_warnings_ctx.get()
+    if warnings_list is None:
+        return
+    message_str = str(message)
+    if any(
+        isinstance(existing, dict) and existing.get("msg") == message_str
+        for existing in warnings_list
+    ):
+        return
+    warnings_list.append(
+        {
+            "loc": (),
+            "msg": message_str,
+            "type": "value_error",
+            "ctx": {},
+        }
+    )
 
 
 # pylint: disable=invalid-name
@@ -764,14 +799,15 @@ def context_validator(context: Literal["SurfaceMesh", "VolumeMesh", "Case"]):
 
 
 # pylint: disable=invalid-name
-def contextual_field_validator(*fields, mode="after", **kwargs):
+def contextual_field_validator(*fields, mode="after", required_context=None, **kwargs):
     """
     Wrapper around pydantic.field_validator that automatically skips validation
-    if get_validation_info() returns None.
+    if get_validation_info() returns None or if required param_info attributes are None.
 
     This function accepts the same parameters as pydantic.field_validator and
     returns a decorator that wraps the validator function. The validator will
-    be skipped if validation_info is not available.
+    be skipped if validation_info is not available or if any required attributes
+    in param_info are None.
 
     Parameters
     ----------
@@ -779,6 +815,10 @@ def contextual_field_validator(*fields, mode="after", **kwargs):
         Field names to validate (same as pydantic.field_validator)
     mode : str, optional
         Validation mode: "before", "after", "wrap" (default: "after")
+    required_context : list of str, optional
+        List of ParamsValidationInfo attribute names that must be not None for validation to run.
+        If any of these attributes is None, the validator returns early without running.
+        Common values: ["output_dict"], ["physics_model_dict"], ["output_dict", "physics_model_dict"]
     **kwargs : dict
         Additional keyword arguments passed to pydantic.field_validator
 
@@ -789,6 +829,7 @@ def contextual_field_validator(*fields, mode="after", **kwargs):
 
     Usage
     -----
+    # Basic usage without requirements
     @contextual_field_validator("volume_zones", mode="after")
     @classmethod
     def _check_volume_zones_have_unique_names(cls, v):
@@ -796,13 +837,34 @@ def contextual_field_validator(*fields, mode="after", **kwargs):
         # Validation logic here
         return v
 
+    # With required context attributes
+    @contextual_field_validator("monitor_output", mode="after", required_context=["output_dict"])
+    @classmethod
+    def _check_monitor_exists_in_output_list(cls, v, param_info: ParamsValidationInfo):
+        # No need to manually check if output_dict is None
+        # param_info.output_dict is guaranteed to be not None here
+        if param_info.output_dict.get(v) is None:
+            raise ValueError("The monitor output does not exist in the outputs list.")
+        return v
+
+    # With multiple required context attributes
+    @contextual_field_validator("models", mode="after", required_context=["output_dict", "physics_model_dict"])
+    @classmethod
+    def _check_models_with_outputs(cls, v, param_info: ParamsValidationInfo):
+        # Both output_dict and physics_model_dict are guaranteed to be not None
+        # Validation logic here
+        return v
+
     Notes
     -----
-    This is equivalent to using pd.field_validator with a manual check:
+    This is equivalent to using pd.field_validator with manual checks:
     @pd.field_validator("volume_zones", mode="after")
     @classmethod
-    def _check_volume_zones_have_unique_names(cls, v):
-        if get_validation_info() is None:
+    def _check_volume_zones_have_unique_names(cls, v, param_info: ParamsValidationInfo):
+        param_info = get_validation_info()
+        if param_info is None:
+            return v
+        if param_info.output_dict is None:
             return v
         # Validation logic here
         return v
@@ -841,6 +903,18 @@ def contextual_field_validator(*fields, mode="after", **kwargs):
                 # Determine the index of the value argument.
                 value_idx = 1 if isinstance(args[0], type) and len(args) >= 2 else 0
                 return args[value_idx]
+
+            # Check if required context attributes are available
+            if required_context:
+                for attr_name in required_context:
+                    if not hasattr(param_info, attr_name):
+                        raise ValueError(f"Invalid validation context attribute: {attr_name}")
+                    if getattr(param_info, attr_name) is None:
+                        # Required context attribute is None, skip validation
+                        if not args:
+                            return None
+                        value_idx = 1 if isinstance(args[0], type) and len(args) >= 2 else 0
+                        return args[value_idx]
 
             # Call the original function (not the classmethod/staticmethod wrapper)
             call_kwargs = dict(kwargs_inner)

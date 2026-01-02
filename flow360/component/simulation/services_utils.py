@@ -10,10 +10,15 @@ from flow360.component.simulation.framework.entity_utils import (
     walk_object_tree_with_cycle_detection,
 )
 
+_MIRRORED_ENTITY_TYPE_NAMES = ("MirroredSurface", "MirroredGeometryBodyGroup")
 
-def strip_selector_matches_inplace(params) -> Any:
+
+def strip_selector_matches_and_broken_entities_inplace(params) -> Any:
     """
-    Remove entities matched by selectors from each EntityList's stored_entities, in place.
+    In stored_entities:
+    1. Remove entities matched by selectors from each EntityList's stored_entities, in place.
+    2. Remove registry-backed entities that are not valid for the current params registry (broken/foreign),
+       in place. This primarily targets mirrored entities, but also protects against stale persistent entities.
 
     Rationale:
     - Keep user hand-picked entities distinguishable for the UI by stripping items that are
@@ -24,6 +29,8 @@ def strip_selector_matches_inplace(params) -> Any:
     - For every EntityList-like object that has a non-empty `selectors` list, compute the set
       of entities implied by those selectors over the registry, and remove those implied entities
       from its `stored_entities` list.
+    - For every EntityList-like object, check if it contains any mirror entities that no longer
+      have a corresponding geometry entity, and remove them from the list.
 
     Returns the same object for chaining.
     """
@@ -35,6 +42,11 @@ def strip_selector_matches_inplace(params) -> Any:
 
     selector_cache: dict = {}
     registry = get_registry_from_params(params)
+
+    valid_mirrored_registry_keys = {
+        (entity.private_attribute_entity_type_name, entity.private_attribute_id)
+        for entity in registry.find_by_type_name(list(_MIRRORED_ENTITY_TYPE_NAMES))
+    }
 
     def _extract_entity_key(item) -> tuple:
         """Extract stable key from entity object."""
@@ -54,23 +66,56 @@ def strip_selector_matches_inplace(params) -> Any:
                 keys.add(_extract_entity_key(entity))
         return keys
 
-    def _strip_selector_matches(obj) -> bool:
+    def _strip_selector_matches_and_broken_entities(obj) -> bool:
         """
-        Strip entities matched by selectors from EntityList's stored_entities.
+        Strip entities matched by selectors from EntityList's stored_entities, then drop mirrored entities
+        that are not present in the current params registry.
         Returns True to continue traversing, False to stop.
         """
         selectors_list = getattr(obj, "selectors", None)
         stored_entities = getattr(obj, "stored_entities", None)
+        if not isinstance(stored_entities, list):
+            return True
+
+        if not stored_entities:
+            obj.stored_entities = []
+            return False
+
+        updated_entities = stored_entities
+
         if isinstance(selectors_list, list) and selectors_list:
-            if isinstance(stored_entities, list) and stored_entities:
-                matched_keys = _matched_keyset_for_selectors(selectors_list)
-                obj.stored_entities = [
+            matched_keys = _matched_keyset_for_selectors(selectors_list)
+            if matched_keys:
+                updated_entities = [
                     item
-                    for item in stored_entities
+                    for item in updated_entities
                     if _extract_entity_key(item) not in matched_keys
                 ]
-            return False  # Don't traverse into EntityList internals
-        return True  # Continue traversing
+            if not updated_entities:
+                obj.stored_entities = []
+                return False
 
-    walk_object_tree_with_cycle_detection(params, _strip_selector_matches, check_dict=False)
+        cleaned_entities = []
+        for item in updated_entities:
+            entity_type, entity_id = _extract_entity_key(item)
+            # Keep non-entity objects (or entities without stable keys) untouched.
+            if entity_type is None or entity_id is None:
+                cleaned_entities.append(item)
+                continue
+
+            if entity_type in _MIRRORED_ENTITY_TYPE_NAMES:
+                if (entity_type, entity_id) in valid_mirrored_registry_keys:
+                    cleaned_entities.append(item)
+                continue
+
+            cleaned_entities.append(item)
+
+        obj.stored_entities = cleaned_entities
+
+        return False  # Don't traverse into EntityList internals
+        # Continue traversing
+
+    walk_object_tree_with_cycle_detection(
+        params, _strip_selector_matches_and_broken_entities, check_dict=False
+    )
     return params

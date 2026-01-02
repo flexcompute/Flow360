@@ -7,19 +7,20 @@ import pytest
 import flow360 as fl
 from flow360.component.project_utils import set_up_params_for_uploading
 from flow360.component.resource_base import local_metadata_builder
+from flow360.component.simulation.draft_context.mirror import MirrorPlane, MirrorStatus
 from flow360.component.simulation.entity_info import SurfaceMeshEntityInfo
-from flow360.component.simulation.framework.entity_selector import (
-    EntitySelector,
-    Predicate,
-    SurfaceSelector,
+from flow360.component.simulation.framework.entity_expansion_utils import (
+    expand_entity_list_in_context,
 )
+from flow360.component.simulation.framework.entity_selector import SurfaceSelector
 from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.framework.updater_utils import compare_values
 from flow360.component.simulation.models.surface_models import Wall
-from flow360.component.simulation.outputs.output_entities import Point
-from flow360.component.simulation.primitives import Surface
+from flow360.component.simulation.primitives import MirroredSurface, Surface
 from flow360.component.simulation.services import ValidationCalledBy, validate_model
-from flow360.component.simulation.services_utils import strip_selector_matches_inplace
+from flow360.component.simulation.services_utils import (
+    strip_selector_matches_and_broken_entities_inplace,
+)
 from flow360.component.volume_mesh import VolumeMeshMetaV2, VolumeMeshV2
 
 
@@ -151,7 +152,11 @@ def test_validate_model_materializes_dict_and_preserves_selectors():
     all_boundaries_selector = {
         "target_class": "Surface",
         "name": "all_boundaries",
-        "children": [{"attribute": "name", "operator": "matches", "value": "*"}],
+        "children": [
+            {"attribute": "name", "operator": "matches", "value": "*"},
+            {"attribute": "name", "operator": "not_matches", "value": "farfield"},
+            {"attribute": "name", "operator": "not_matches", "value": "symmetric"},
+        ],
     }
     params["models"].append(
         {
@@ -245,8 +250,124 @@ def test_strip_selector_matches_removes_selector_overlap():
                 )
             ),
         )
-    strip_selector_matches_inplace(params)
+    strip_selector_matches_and_broken_entities_inplace(params)
     assert [entity.name for entity in params.outputs[0].entities.stored_entities] == ["rear"]
+
+
+def test_expand_entity_list_in_context_includes_mirrored_entities_from_mirror_status():
+    """Ensure selector expansion can see mirrored entities registered from mirror_status."""
+    mirror_plane = MirrorPlane(
+        name="plane",
+        normal=(1, 0, 0),
+        center=(0, 0, 0) * fl.u.m,
+        private_attribute_id="mp-1",
+    )
+
+    mirrored_surface = MirroredSurface(
+        name="front_<mirror>",
+        surface_id="s-1",
+        mirror_plane_id="mp-1",
+        private_attribute_id="ms-1",
+    )
+
+    with fl.SI_unit_system:
+        params = fl.SimulationParams(
+            outputs=[
+                fl.SurfaceOutput(
+                    name="surface_output",
+                    output_fields=[fl.UserVariable(name="var", value=1)],
+                    entities=[SurfaceSelector(name="all").match("*")],
+                )
+            ],
+            private_attribute_asset_cache=AssetCache(
+                use_inhouse_mesher=True,
+                use_geometry_AI=True,
+                project_entity_info=SurfaceMeshEntityInfo(
+                    boundaries=[Surface(name="front", private_attribute_id="s-1")]
+                ),
+                mirror_status=MirrorStatus(
+                    mirror_planes=[mirror_plane],
+                    mirrored_geometry_body_groups=[],
+                    mirrored_surfaces=[mirrored_surface],
+                ),
+            ),
+        )
+
+    # Validate schema-level correctness (skip contextual validation since this test doesn't
+    # provide full Case-level required fields like meshing/models/operating_condition).
+    validated, errors, _warnings = validate_model(
+        params_as_dict=params.model_dump(exclude_none=True),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type=None,
+        validation_level=None,
+    )
+    assert errors is None
+    assert validated is not None
+
+    expanded = expand_entity_list_in_context(params.outputs[0].entities, params, return_names=False)
+    expanded_type_names = {entity.private_attribute_entity_type_name for entity in expanded}
+    assert "Surface" in expanded_type_names
+    assert "MirroredSurface" in expanded_type_names
+
+
+def test_strip_broken_and_foreign_mirror_entities_from_stored_entities():
+    """Ensure stored_entities drops mirrored entities that are not valid for the current params registry."""
+    mirror_plane = MirrorPlane(
+        name="plane",
+        normal=(1, 0, 0),
+        center=(0, 0, 0) * fl.u.m,
+        private_attribute_id="mp-1",
+    )
+
+    valid_mirrored_surface = MirroredSurface(
+        name="front_<mirror>",
+        surface_id="s-1",
+        mirror_plane_id="mp-1",
+        private_attribute_id="ms-valid",
+    )
+    broken_mirrored_surface = MirroredSurface(
+        name="broken_<mirror>",
+        surface_id="s-missing",
+        mirror_plane_id="mp-1",
+        private_attribute_id="ms-broken",
+    )
+    foreign_mirrored_surface = MirroredSurface(
+        name="front_<mirror>",
+        surface_id="s-1",
+        mirror_plane_id="mp-1",
+        private_attribute_id="ms-foreign",
+    )
+
+    with fl.SI_unit_system:
+        params = fl.SimulationParams(
+            outputs=[
+                fl.SurfaceOutput(
+                    name="surface_output",
+                    output_fields=[fl.UserVariable(name="var", value=1)],
+                    entities=[
+                        Surface(name="front", private_attribute_id="s-1"),
+                        Surface(name="stale", private_attribute_id="s-stale"),
+                        valid_mirrored_surface,
+                        broken_mirrored_surface,
+                        foreign_mirrored_surface,
+                    ],
+                )
+            ],
+            private_attribute_asset_cache=AssetCache(
+                project_entity_info=SurfaceMeshEntityInfo(
+                    boundaries=[Surface(name="front", private_attribute_id="s-1")]
+                ),
+                mirror_status=MirrorStatus(
+                    mirror_planes=[mirror_plane],
+                    mirrored_geometry_body_groups=[],
+                    mirrored_surfaces=[valid_mirrored_surface],
+                ),
+            ),
+        )
+
+    strip_selector_matches_and_broken_entities_inplace(params)
+    remaining_names = [entity.name for entity in params.outputs[0].entities.stored_entities]
+    assert remaining_names == ["front", "stale", "front_<mirror>"]
 
 
 def test_validate_model_does_not_deduplicate_point_entities():
@@ -386,7 +507,10 @@ def test_delayed_expansion_round_trip_preserves_semantics():
     all_boundaries_selector = {
         "target_class": "Surface",
         "name": "all_boundaries",
-        "children": [{"attribute": "name", "operator": "matches", "value": "*"}],
+        "children": [
+            {"attribute": "name", "operator": "matches", "value": "*"},
+            {"attribute": "name", "operator": "not_matches", "value": "farfield"},
+        ],
     }
     params.setdefault("models", []).append(
         {

@@ -69,6 +69,7 @@ from flow360.component.simulation.outputs.output_entities import (
     Slice,
 )
 from flow360.component.simulation.outputs.outputs import (
+    ForceOutput,
     Isosurface,
     IsosurfaceOutput,
     MovingStatistic,
@@ -447,14 +448,46 @@ def test_om6wing_with_stopping_criterion_and_moving_statistic(get_om6Wing_tutori
         moving_statistic=MovingStatistic(method="mean", moving_window_size=200),
         private_attribute_id="11111",
     )
-    criterion = StoppingCriterion(
+    criterion1 = StoppingCriterion(
         name="Criterion_Helicity",
         tolerance=18.66 * u.m / u.s**2,
         monitor_output=probe_output,
         monitor_field=monitored_variable,
     )
-    params.run_control = RunControl(stopping_criteria=[criterion])
-    params.outputs.append(probe_output)
+    mass_flow_rate = UserVariable(
+        name="MassFluxProjected",
+        value=-1 * solution.density * math.dot(solution.velocity, solution.node_unit_normal),
+    )
+    mass_flow_rate_integral = SurfaceIntegralOutput(
+        name="MassFluxIntegral",
+        output_fields=[mass_flow_rate],
+        surfaces=Surface(name="1"),
+        moving_statistic=MovingStatistic(method="range", moving_window_size=3, start_step=394),
+        private_attribute_id="22222",
+    )
+    criterion2 = StoppingCriterion(
+        name="Criterion_MassFlux",
+        tolerance=25.1 * u.kg / u.s,
+        monitor_output=mass_flow_rate_integral,
+        monitor_field=mass_flow_rate,
+        tolerance_window_size=3,
+    )
+    wallBC = Wall(name="wing", surfaces=[Surface(name="1")], private_attribute_id="wallBC")
+    force_output = ForceOutput(
+        name="force_wallBC",
+        models=[wallBC],
+        output_fields=["CL", "CFx", "CFySkinFriction"],
+        moving_statistic=(MovingStatistic(method="standard_deviation", moving_window_size=10)),
+        private_attribute_id="33333",
+    )
+    criterion3 = StoppingCriterion(
+        name="Criterion_ForceOutput",
+        tolerance=0.265,
+        monitor_output=force_output,
+        monitor_field="CL",
+    )
+    params.run_control = RunControl(stopping_criteria=[criterion1, criterion2, criterion3])
+    params.outputs.extend([probe_output, mass_flow_rate_integral, force_output])
     translate_and_compare(
         get_om6Wing_tutorial_param,
         mesh_unit=0.8059 * u.m,
@@ -1523,7 +1556,7 @@ def test_om6wing_render_output(get_om6Wing_tutorial_param):
                 groups=[
                     RenderOutputGroup(
                         surfaces=[Surface(name="1")],
-                        material=PBRMaterial.metal(shine=0.7, alpha=1.0),
+                        material=PBRMaterial.metal(shine=0.7, opacity=1.0),
                     ),
                     RenderOutputGroup(
                         slices=[
@@ -1541,7 +1574,7 @@ def test_om6wing_render_output(get_om6Wing_tutorial_param):
                             )
                         ],
                         material=FieldMaterial.rainbow(
-                            field=solution.Mach, min_value=0, max_value=0.1, alpha=1
+                            field=solution.Mach, min_value=0, max_value=0.1, opacity=1
                         ),
                     ),
                 ],
