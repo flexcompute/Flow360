@@ -191,6 +191,9 @@ def create_draft(
     if not isinstance(new_run_from, AssetBase):
         raise Flow360RuntimeError("create_draft expects a cloud asset instance as `new_run_from`.")
 
+    if isinstance(new_run_from, Geometry) and new_run_from.info.dependency:
+        raise Flow360ValueError("Draft creation from an imported Geometry is not supported.")
+
     if not isinstance(new_run_from.entity_info, GeometryEntityInfo) and (
         include_geometries or exclude_geometries
     ):
@@ -1332,7 +1335,7 @@ class Project(pd.BaseModel):
             run_async=run_async,
         )
 
-    def import_surface(
+    def import_surface_mesh(
         self,
         file: str,
         /,
