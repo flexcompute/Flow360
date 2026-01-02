@@ -2,14 +2,23 @@
 
 from typing import List, Literal
 
+import pydantic as pd
+
 from flow360.cloud.rest_api import RestApi
 from flow360.component.interfaces import ProjectInterface
 from flow360.exceptions import Flow360ValueError
 
 
-def get_project_dependency_resources_raw(
+class ProjectDependencyMetadata(pd.BaseModel):
+    resource_id: str = pd.Field(alias="id")
+    name: str = pd.Field(alias="name")
+
+    model_config = pd.ConfigDict(extra="ignore", validate_by_alias=True)
+
+
+def get_project_dependency_resource_metadata(
     project_id: str, resource_type: Literal["Geometry", "SurfaceMesh"]
-) -> List[dict]:
+) -> List[ProjectDependencyMetadata]:
     """
     Fetch raw dependency resource data from cloud API.
 
@@ -34,8 +43,10 @@ def get_project_dependency_resources_raw(
     resp = RestApi(ProjectInterface.endpoint, id=project_id).get(method="dependency")
 
     if resource_type == "Geometry":
-        return resp["geometryDependencyResources"]
+        return [ProjectDependencyMetadata(**item) for item in resp["geometryDependencyResources"]]
     if resource_type == "SurfaceMesh":
-        return resp["surfaceMeshDependencyResources"]
+        return [
+            ProjectDependencyMetadata(**item) for item in resp["surfaceMeshDependencyResources"]
+        ]
 
     raise Flow360ValueError(f"Unsupported resource type: {resource_type}")

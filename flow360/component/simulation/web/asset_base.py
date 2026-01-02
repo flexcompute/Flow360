@@ -27,7 +27,9 @@ from flow360.component.simulation.entity_info import (
 )
 from flow360.component.simulation.folder import Folder
 from flow360.component.simulation.simulation_params import SimulationParams
-from flow360.component.simulation.web.utils import get_project_dependency_resources_raw
+from flow360.component.simulation.web.utils import (
+    get_project_dependency_resource_metadata,
+)
 from flow360.component.utils import (
     _local_download_overwrite,
     formatting_validation_errors,
@@ -176,10 +178,10 @@ class AssetBase(metaclass=ABCMeta):
         dependency_ids = []
         # pylint: disable=protected-access
         if asset._cloud_resource_type_name in ["Geometry", "SurfaceMesh"]:
-            _dependency_resources = get_project_dependency_resources_raw(
+            _dependency_metadata = get_project_dependency_resource_metadata(
                 project_id=asset.project_id, resource_type=asset._cloud_resource_type_name
             )
-            dependency_ids = [_item["id"] for _item in _dependency_resources]
+            dependency_ids = [_item.resource_id for _item in _dependency_metadata]
         if asset.id == _resp["rootItemId"] or asset.id in dependency_ids:
             log.debug(
                 "Current asset is project's root/dependency item. Waiting for pipeline to finish."
