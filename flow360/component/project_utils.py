@@ -82,8 +82,8 @@ def _apply_geometry_grouping_overrides(
     def _validate_tag(tag, available: list[str], kind: str) -> str:
         if not available:
             raise Flow360ValueError(
-                f"The geometry does not have any {kind} groupings. "
-                f"Please check the activated geometries in the draft."
+                f"Unexpected {kind} grouping error: "
+                f"The activated geometries in the draft do not have any {kind} grouping in common."
             )
         if tag not in available:
             raise Flow360ValueError(

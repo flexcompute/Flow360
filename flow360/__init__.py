@@ -170,7 +170,6 @@ from flow360.component.simulation.primitives import (
     Box,
     CustomVolume,
     Cylinder,
-    ImportedSurface,
     ReferenceGeometry,
     SeedpointVolume,
 )
@@ -359,7 +358,6 @@ __all__ = [
     "remove_user_variable",
     "StoppingCriterion",
     "MovingStatistic",
-    "ImportedSurface",
     "OctreeSpacing",
     "RunControl",
     "WindTunnelFarfield",

@@ -7,10 +7,10 @@ project = fl.Project.from_volume_mesh(ObliqueChannel.mesh_filename, name="Cartes
 
 volume_mesh = project.volume_mesh
 
-normal_imported_surface = project.import_surface(
+normal_imported_surface = project.import_surface_mesh(
     ObliqueChannel.extra["rectangle_normal"], name="normal"
 )
-oblique_imported_surface = project.import_surface(
+oblique_imported_surface = project.import_surface_mesh(
     ObliqueChannel.extra["rectangle_oblique"], name="oblique"
 )
 imported_surfaces = [normal_imported_surface, oblique_imported_surface]
