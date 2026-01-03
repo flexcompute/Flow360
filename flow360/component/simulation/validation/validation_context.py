@@ -530,6 +530,10 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         This method performs on-demand expansion without modifying the original input.
         Results are cached per selector to avoid recomputation across multiple validator calls.
 
+        Why expand on-demand?
+        - This helps to avoid SimulationParams object being stateful (expanded vs not expanded)
+          With this function, we can always assume the entity_list is not expanded for all SimulationParams objects.
+
         Parameters
         ----------
         entity_list : EntityList
