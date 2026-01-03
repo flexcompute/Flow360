@@ -4,7 +4,7 @@ Primitive type definitions for simulation entities.
 """
 
 import re
-from abc import ABCMeta
+from abc import ABCMeta, abstractmethod
 from typing import Annotated, ClassVar, List, Literal, Optional, Tuple, Union, final
 
 import numpy as np
@@ -881,6 +881,19 @@ class GhostCircularPlane(_SurfaceEntityBase):
 
         return positive_half or negative_half
 
+    def _per_entity_type_validation(self, param_info: ParamsValidationInfo):
+        """Validate ghost surface existence and configuration."""
+        # pylint: disable=import-outside-toplevel
+        from flow360.component.simulation.validation.validation_utils import (
+            check_symmetric_boundary_existence,
+            check_user_defined_farfield_symmetry_existence,
+        )
+
+        # These functions expect a list, so wrap self
+        check_user_defined_farfield_symmetry_existence([self], param_info)
+        check_symmetric_boundary_existence([self], param_info)
+        return self
+
 
 class SurfacePairBase(Flow360BaseModel):
     """
@@ -973,6 +986,15 @@ class SeedpointVolume(_VolumeEntityBase):
     center: Optional[LengthType.Point] = pd.Field(None, description="")  # Rotation support
     private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
 
+    def _per_entity_type_validation(self, param_info: ParamsValidationInfo):
+        """Validate that SeedpointVolume is listed in meshing->volume_zones."""
+        if self.name not in param_info.to_be_generated_custom_volumes:
+            raise ValueError(
+                f"SeedpointVolume {self.name} is not listed under meshing->volume_zones(or zones)"
+                "->CustomZones."
+            )
+        return self
+
 
 VolumeEntityTypes = Union[GenericVolume, Cylinder, Box, str]
 
@@ -1064,32 +1086,75 @@ class CustomVolume(_VolumeEntityBase):
 
         return self.model_copy(update={"axes": new_axes})
 
-
-def check_custom_volume_creation(value, param_info: ParamsValidationInfo):
-    """Check if the custom volume is listed under meshing->volume_zones."""
-    for volume in value:
-        if not isinstance(volume, (CustomVolume, SeedpointVolume)):
-            continue
-        if volume.name not in param_info.to_be_generated_custom_volumes:
+    def _per_entity_type_validation(self, param_info: ParamsValidationInfo):
+        """Validate that CustomVolume is listed in meshing->volume_zones."""
+        if self.name not in param_info.to_be_generated_custom_volumes:
             raise ValueError(
-                f"{type(volume).__name__} {volume.name} is not listed under meshing->volume_zones(or zones)"
-                + "->CustomZones."
+                f"CustomVolume {self.name} is not listed under meshing->volume_zones(or zones)"
+                "->CustomZones."
             )
-    return value
-
-
-class EntityListWithCustomVolume(EntityList):
-    """Entity list with customized validators for CustomVolume"""
-
-    @contextual_model_validator(mode="after")
-    def custom_volume_validator(self, param_info: ParamsValidationInfo):
-        """Run all validators"""
-        expanded = param_info.expand_entity_list(self)
-        check_custom_volume_creation(expanded, param_info)
         return self
 
 
-class MirroredSurface(_SurfaceEntityBase):
+class _MirroredEntityBase(EntityBase, metaclass=ABCMeta):
+    """
+    Base class for mirrored entities (MirroredSurface, MirroredGeometryBodyGroup).
+    Provides common validation logic for checking source entity and mirror plane existence.
+    """
+
+    mirror_plane_id: str = pd.Field(description="ID of the mirror plane.")
+
+    @property
+    @abstractmethod
+    def source_entity_id_field_name(self) -> str:
+        """Return the name of the field containing the source entity ID."""
+
+    @property
+    @abstractmethod
+    def source_entity_type_name(self) -> str:
+        """Return the entity type name of the source entity."""
+
+    def _manual_assignment_validation(self, param_info: ParamsValidationInfo):
+        """Validate that source entity and mirror plane still exist."""
+        # pylint: disable=import-outside-toplevel
+        from flow360.component.simulation.validation.validation_context import (
+            add_validation_warning,
+        )
+
+        registry = param_info.get_entity_registry()
+        if registry is None:
+            return self
+
+        # Get source entity ID using the field name from subclass
+        source_entity_id = getattr(self, self.source_entity_id_field_name)
+
+        # Check if source entity exists
+        source_entity = registry.find_by_type_name_and_id(
+            entity_type=self.source_entity_type_name, entity_id=source_entity_id
+        )
+        if source_entity is None:
+            add_validation_warning(
+                f"{self.__class__.__name__} '{self.name}' references non-existent source "
+                f"{self.source_entity_type_name.lower()} (id={source_entity_id}). "
+                "This entity will be removed."
+            )
+            return None
+
+        # Check if mirror plane exists
+        mirror_plane = registry.find_by_type_name_and_id(
+            entity_type="MirrorPlane", entity_id=self.mirror_plane_id
+        )
+        if mirror_plane is None:
+            add_validation_warning(
+                f"{self.__class__.__name__} '{self.name}' references non-existent mirror plane "
+                f"(id={self.mirror_plane_id}). This entity will be removed."
+            )
+            return None
+
+        return self
+
+
+class MirroredSurface(_SurfaceEntityBase, _MirroredEntityBase):
     """
     :class:`MirroredSurface` class for representing a mirrored surface.
     """
@@ -1108,8 +1173,18 @@ class MirroredSurface(_SurfaceEntityBase):
     # Private attribute used for draft-only bookkeeping. This must NOT affect schema or serialization.
     _geometry_body_group_id: Optional[str] = pd.PrivateAttr(default=None)
 
+    @property
+    def source_entity_id_field_name(self) -> str:
+        """Return the name of the field containing the source entity ID."""
+        return "surface_id"
 
-class MirroredGeometryBodyGroup(EntityBase):
+    @property
+    def source_entity_type_name(self) -> str:
+        """Return the entity type name of the source entity."""
+        return "Surface"
+
+
+class MirroredGeometryBodyGroup(_MirroredEntityBase):
     """
     :class:`MirroredGeometryBodyGroup` class for representing a mirrored geometry body group.
     """
@@ -1124,3 +1199,13 @@ class MirroredGeometryBodyGroup(EntityBase):
         "MirroredGeometryBodyGroup", frozen=True
     )
     private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
+
+    @property
+    def source_entity_id_field_name(self) -> str:
+        """Return the name of the field containing the source entity ID."""
+        return "geometry_body_group_id"
+
+    @property
+    def source_entity_type_name(self) -> str:
+        """Return the entity type name of the source entity."""
+        return "GeometryBodyGroup"

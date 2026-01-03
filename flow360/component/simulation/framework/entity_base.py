@@ -152,6 +152,17 @@ class EntityBase(Flow360BaseModel, metaclass=ABCMeta):
         """Returns private_attribute_id of the entity."""
         return self.private_attribute_id
 
+    def _manual_assignment_validation(self, _: ParamsValidationInfo) -> EntityBase:
+        """
+        Pre-expansion contextual validation for the entity.
+        This handles validation for the entity manually assigned.
+        """
+        return self
+
+    def _per_entity_type_validation(self, _: ParamsValidationInfo) -> EntityBase:
+        """Contextual validation with validation logic bond with the specific entity type."""
+        return self
+
 
 class _CombinedMeta(type(Flow360BaseModel), type):
     pass
@@ -265,18 +276,43 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
         With delayed selector expansion, stored_entities may be empty if only selectors
         are defined.
         """
-        # If stored_entities already has entities, validation passes
-        if self.stored_entities:
-            return self
+        is_empty = True
+        # If stored_entities already has entities (user manual assignment), validation passes
+        manual_assignments: List[EntityBase] = self.stored_entities
+        # pylint: disable=protected-access
+        if manual_assignments:
+            filtered_assignments = [
+                item
+                for item in manual_assignments
+                if item._manual_assignment_validation(param_info) is not None
+            ]
+            # Use object.__setattr__ to bypass validate_on_assignment and avoid recursion
+            # TODO: Ask why this has to be this ugly.
+            object.__setattr__(
+                self,
+                "stored_entities",
+                filtered_assignments,
+            )
+
+            for item in filtered_assignments:
+                item._per_entity_type_validation(param_info)
+
+            if filtered_assignments:
+                is_empty = False
 
         # No stored_entities - check if selectors will produce any entities
         if self.selectors:
-            expanded = param_info.expand_entity_list(self)
+            expanded: List[EntityBase] = param_info.expand_entity_list(self)
             if expanded:
+                for item in expanded:
+                    item._per_entity_type_validation(param_info)
+                # Known non-empty
                 return self
 
         # Neither stored_entities nor selectors produced any entities
-        raise ValueError("No entities were selected.")
+        if is_empty:
+            raise ValueError("No entities were selected.")
+        return self
 
     @classmethod
     def _get_valid_entity_types(cls):

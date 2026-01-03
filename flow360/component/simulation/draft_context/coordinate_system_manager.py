@@ -434,7 +434,7 @@ class CoordinateSystemManager:
                 key = (entity.entity_type, entity.entity_id)
                 # Sanitize invalid assignments due to entity not being in scope anymore.
                 if (
-                    entity_registry  # entity_registry None indicates that no validation is needed
+                    entity_registry  # Fast lane: entity_registry None indicates that no validation is needed
                     and (
                         entity_registry.find_by_type_name_and_id(
                             entity_type=entity.entity_type, entity_id=entity.entity_id

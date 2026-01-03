@@ -57,7 +57,6 @@ from flow360.component.simulation.primitives import (
     Box,
     CustomVolume,
     Cylinder,
-    EntityListWithCustomVolume,
     GenericVolume,
     SeedpointVolume,
 )
@@ -367,7 +366,7 @@ class Solid(PDEModelBase):
 
     name: Optional[str] = pd.Field(None, description="Name of the `Solid` model.")
     type: Literal["Solid"] = pd.Field("Solid", frozen=True)
-    entities: EntityListWithCustomVolume[GenericVolume, CustomVolume] = pd.Field(
+    entities: EntityList[GenericVolume, CustomVolume] = pd.Field(
         alias="volumes",
         description="The list of :class:`GenericVolume` or :class:`CustomVolume` "
         + "entities on which the heat transfer equation is solved. "
@@ -1244,7 +1243,7 @@ class Rotation(Flow360BaseModel):
 
     name: Optional[str] = pd.Field("Rotation", description="Name of the `Rotation` model.")
     type: Literal["Rotation"] = pd.Field("Rotation", frozen=True)
-    entities: EntityListWithCustomVolume[
+    entities: EntityList[
         GenericVolume, Cylinder, CustomVolume, SeedpointVolume, AxisymmetricBody
     ] = pd.Field(
         alias="volumes",
@@ -1357,15 +1356,13 @@ class PorousMedium(Flow360BaseModel):
 
     name: Optional[str] = pd.Field("Porous medium", description="Name of the `PorousMedium` model.")
     type: Literal["PorousMedium"] = pd.Field("PorousMedium", frozen=True)
-    entities: EntityListWithCustomVolume[GenericVolume, Box, CustomVolume, SeedpointVolume] = (
-        pd.Field(
-            alias="volumes",
-            description="The entity list for the `PorousMedium` model. "
-            + "The entity should be defined by :class:`Box`, zones from the geometry/volume mesh or"
-            + "by :class:`SeedpointVolume` when using snappyHexMeshing."
-            + "The axes of entity must be specified to serve as the the principle axes of the "
-            + "porous medium material model.",
-        )
+    entities: EntityList[GenericVolume, Box, CustomVolume, SeedpointVolume] = pd.Field(
+        alias="volumes",
+        description="The entity list for the `PorousMedium` model. "
+        + "The entity should be defined by :class:`Box`, zones from the geometry/volume mesh or"
+        + "by :class:`SeedpointVolume` when using snappyHexMeshing."
+        + "The axes of entity must be specified to serve as the the principle axes of the "
+        + "porous medium material model.",
     )
 
     darcy_coefficient: InverseAreaType.Point = pd.Field(
