@@ -525,24 +525,23 @@ class GeometryEntityInfo(EntityInfoModel):
             self._get_list_of_entities(entity_type_name="face", attribute_name=self.face_group_tag)
         )
 
-        if "groupByBodyId" not in self.face_attribute_names:
-            # This likely means the geometry asset is pre-25.5.
-            raise ValueError(
-                "Geometry cloud resource is too old."
-                " Please consider re-uploading the geometry with newer solver version (>25.5)."
-            )
-
-        # create body id to face ids mapping using the face group:"groupByBodyId"
-        # face_group_name is body_id in this case
-        body_id_to_face_ids = {}
+        # Create body id to face ids mapping:
         if self.bodies_face_edge_ids:
+            # With bodies_face_edge_ids
             body_id_to_face_ids = {
-                body_id_to_face_ids[body_id]: body_component_info.face_ids
+                body_id: body_component_info.face_ids
                 for body_id, body_component_info in self.bodies_face_edge_ids.items()
             }
         else:
+            # Fallback: With the face group:"groupByBodyId" where face_group_name is body_id
+            if "groupByBodyId" not in self.face_attribute_names:
+                # This likely means the geometry asset is pre-25.5.
+                raise Flow360ValueError(
+                    "Geometry cloud resource is too old."
+                    " Please consider re-uploading the geometry with newer solver version (>25.5)."
+                )
             body_id_to_face_ids = {
-                body_id_to_face_ids[face_group.name]: face_group.private_attribute_sub_components
+                face_group.name: face_group.private_attribute_sub_components
                 for face_group in self._get_list_of_entities(
                     entity_type_name="face", attribute_name="groupByBodyId"
                 )

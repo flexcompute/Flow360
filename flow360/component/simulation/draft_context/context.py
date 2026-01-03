@@ -129,7 +129,7 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
         if isinstance(self._entity_info, GeometryEntityInfo):
             try:
                 face_group_to_body_group = self._entity_info.get_face_group_to_body_group_id_map()
-            except ValueError as exc:
+            except Flow360ValueError as exc:
                 # Face grouping spans across body groups.
                 log.warning(
                     "Failed to derive surface-to-body-group mapping for mirroring: %s. "
