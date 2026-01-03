@@ -287,7 +287,6 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
                 if item._manual_assignment_validation(param_info) is not None
             ]
             # Use object.__setattr__ to bypass validate_on_assignment and avoid recursion
-            # TODO: Ask why this has to be this ugly.
             object.__setattr__(
                 self,
                 "stored_entities",
