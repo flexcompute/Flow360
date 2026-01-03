@@ -447,6 +447,16 @@ def snappy_mesher_json(input_params: SimulationParams):
             "errorReduction": (
                 quality_settings.error_reduction if quality_settings.error_reduction else 0
             ),
+            "zMetricThreshold": (
+                0
+                if quality_settings.zmetric_threshold is False
+                else quality_settings.zmetric_threshold
+            ),
+            "featureEdgeDeduplicationTolerance": (
+                0
+                if quality_settings.feature_edge_deduplication_tolerance is False
+                else quality_settings.feature_edge_deduplication_tolerance
+            ),
             "minVolCollapseRatio": (
                 quality_settings.min_volume_collapse_ratio
                 if quality_settings.min_volume_collapse_ratio
