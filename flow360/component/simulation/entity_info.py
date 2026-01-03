@@ -549,7 +549,7 @@ class GeometryEntityInfo(EntityInfoModel):
 
         # face_id to (body_group_id, body_group_name) of the current body group
         face_to_body_group = {}
-        for body_group_name, (body_group_id, face_ids) in body_group_to_face.items():
+        for body_group_id, (body_group_name, face_ids) in body_group_to_face.items():
             for face_id in face_ids:
                 face_to_body_group[face_id] = (body_group_id, body_group_name)
 
@@ -604,8 +604,7 @@ class GeometryEntityInfo(EntityInfoModel):
 
         body_group_to_boundary = self.get_body_group_to_boundary_mapping()
         face_group_to_body_group: dict[str, str] = {}
-        for body_group, boundaries in body_group_to_boundary.items():
-            body_group_id = body_group[0]
+        for (body_group_id, _), boundaries in body_group_to_boundary.items():
             for _, boundary_name in boundaries:
                 existing_owner = face_group_to_body_group.get(boundary_name)
                 if existing_owner is not None and existing_owner != body_group_id:
