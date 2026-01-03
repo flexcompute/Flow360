@@ -95,11 +95,14 @@ class CoordinateSystemManager:
         """Return set of registered coordinate system IDs for O(1) lookups."""
         return {cs.private_attribute_id for cs in self._coordinate_systems}
 
+    def _contains(self, coordinate_system: CoordinateSystem) -> bool:
+        return coordinate_system.private_attribute_id in self._known_ids
+
     def _register_coordinate_system(
         self, *, coordinate_system: CoordinateSystem, parent_id: str | None
     ) -> None:
         """Internal helper to register a coordinate system without graph validation."""
-        if coordinate_system.private_attribute_id in self._known_ids:
+        if self._contains(coordinate_system):
             return  # Already registered, skip
         if any(existing.name == coordinate_system.name for existing in self._coordinate_systems):
             raise Flow360RuntimeError(
@@ -110,7 +113,7 @@ class CoordinateSystemManager:
 
     # region Registration and hierarchy -------------------------------------------------
     def add(
-        self, *, coordinate_system: CoordinateSystem, parent: CoordinateSystem | None = None
+        self, coordinate_system: CoordinateSystem, *, parent: CoordinateSystem | None = None
     ) -> CoordinateSystem:
         """Register a coordinate system and optional parent."""
         if not is_exact_instance(coordinate_system, CoordinateSystem):
@@ -123,10 +126,7 @@ class CoordinateSystemManager:
         if parent is not None:
             self._register_coordinate_system(coordinate_system=parent, parent_id=None)
 
-        if any(
-            existing.private_attribute_id == cs.private_attribute_id
-            for existing in self._coordinate_systems
-        ):
+        if self._contains(cs):
             raise Flow360RuntimeError(
                 f"Coordinate system id '{cs.private_attribute_id}' already registered."
             )
@@ -144,7 +144,7 @@ class CoordinateSystemManager:
         self, *, coordinate_system: CoordinateSystem, parent: Optional[CoordinateSystem]
     ) -> None:
         """Update parent of a registered coordinate system."""
-        if coordinate_system not in self._coordinate_systems:
+        if not self._contains(coordinate_system):
             raise Flow360RuntimeError("Coordinate system must be part of the draft to be updated.")
         # Auto-register parent as root if not already registered
         if parent is not None:
@@ -160,9 +160,9 @@ class CoordinateSystemManager:
             self._coordinate_system_parents[cs_id] = original_parent
             raise
 
-    def remove(self, *, coordinate_system: CoordinateSystem) -> None:
+    def remove(self, coordinate_system: CoordinateSystem) -> None:
         """Remove a coordinate system if no dependents reference it."""
-        if coordinate_system not in self._coordinate_systems:
+        if not self._contains(coordinate_system):
             raise Flow360RuntimeError("Coordinate system is not registered in this draft.")
 
         cs_id = coordinate_system.private_attribute_id
@@ -180,7 +180,9 @@ class CoordinateSystemManager:
             )
 
         self._coordinate_systems = [
-            cs for cs in self._coordinate_systems if cs is not coordinate_system
+            cs
+            for cs in self._coordinate_systems
+            if cs.private_attribute_id != coordinate_system.private_attribute_id
         ]
         self._coordinate_system_parents.pop(cs_id, None)
         # Drop assignments referencing this coordinate system.
@@ -239,7 +241,7 @@ class CoordinateSystemManager:
 
     def _get_coordinate_system_matrix(self, *, coordinate_system: CoordinateSystem) -> np.ndarray:
         """Return the composed matrix for a registered coordinate system (parents applied)."""
-        if coordinate_system not in self._coordinate_systems:
+        if not self._contains(coordinate_system):
             raise Flow360RuntimeError("Coordinate system must be registered to compute its matrix.")
 
         cs_id = coordinate_system.private_attribute_id
