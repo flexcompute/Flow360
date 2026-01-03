@@ -2175,6 +2175,9 @@ def test_beta_mesher_only_features(mock_validation_context):
     beta_mesher_context = ParamsValidationInfo({}, [])
     beta_mesher_context.is_beta_mesher = True
     beta_mesher_context.farfield_method = "user-defined"
+    # Needed for per-entity validation of CustomVolume/SeedpointVolume when instantiated under a
+    # manually constructed ParamsValidationInfo (i.e., outside validate_model()).
+    beta_mesher_context.to_be_generated_custom_volumes = {"zone1"}
 
     with ValidationContext(SURFACE_MESH, beta_mesher_context), pytest.raises(
         ValueError, match="Multiple CustomVolume with the same name `zone1` are not allowed."

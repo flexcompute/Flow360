@@ -493,7 +493,7 @@ def validate_model(  # pylint: disable=too-many-locals
         params_as_dict = SimulationParams._sanitize_params_dict(params_as_dict)
         params_as_dict = handle_multi_constructor_model(params_as_dict)
 
-        # Materialize stored_entities (dict -> shared instances) and per-list dedupe
+        # Materialize stored_entities (dict -> shared instances) and per-list deduplication
         # pylint: disable=fixme
         # TODO: The need for materialization on entities?
         # *  Ideally stored_entities should store entity IDs only. And we do not even need to materialize them here.

@@ -17,10 +17,7 @@ from flow360.component.simulation.framework.entity_utils import generate_uuid
 from flow360.component.simulation.framework.expressions import StringExpression
 from flow360.component.simulation.framework.param_utils import serialize_model_obj_to_id
 from flow360.component.simulation.framework.unique_list import UniqueItemList
-from flow360.component.simulation.models.surface_models import (
-    EntityListAllowingGhost,
-    Wall,
-)
+from flow360.component.simulation.models.surface_models import Wall
 from flow360.component.simulation.models.volume_models import (
     ActuatorDisk,
     BETDisk,
@@ -339,7 +336,7 @@ class SurfaceOutput(_AnimationAndFileFormatSettings, _OutputBase):
     # TODO: entities is None --> use all surfaces. This is not implemented yet.
 
     name: Optional[str] = pd.Field("Surface output", description="Name of the `SurfaceOutput`.")
-    entities: EntityListAllowingGhost[  # pylint: disable=duplicate-code
+    entities: EntityList[  # pylint: disable=duplicate-code
         Surface,
         MirroredSurface,
         GhostSurface,
@@ -681,7 +678,7 @@ class SurfaceIntegralOutput(_OutputBase):
     """
 
     name: str = pd.Field("Surface integral output", description="Name of integral.")
-    entities: EntityListAllowingGhost[  # pylint: disable=duplicate-code
+    entities: EntityList[  # pylint: disable=duplicate-code
         Surface,
         MirroredSurface,
         GhostSurface,
@@ -1336,9 +1333,7 @@ class AeroAcousticOutput(Flow360BaseModel):
         + "input.",
     )
     permeable_surfaces: Optional[
-        EntityListAllowingGhost[
-            Surface, GhostSurface, GhostCircularPlane, GhostSphere, WindTunnelGhostSurface
-        ]
+        EntityList[Surface, GhostSurface, GhostCircularPlane, GhostSphere, WindTunnelGhostSurface]
     ] = pd.Field(
         None, description="List of permeable surfaces. Left empty if `patch_type` is solid"
     )
