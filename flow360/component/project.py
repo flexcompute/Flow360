@@ -56,7 +56,9 @@ from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.web.asset_base import AssetBase
 from flow360.component.simulation.web.draft import Draft
-from flow360.component.simulation.web.utils import get_project_dependency_resources_raw
+from flow360.component.simulation.web.utils import (
+    get_project_dependency_resource_metadata,
+)
 from flow360.component.surface_mesh_v2 import SurfaceMeshV2
 from flow360.component.utils import (
     AssetShortID,
@@ -144,26 +146,19 @@ def create_draft(
         include_geometries: List[Geometry],
         exclude_geometries: List[Geometry],
     ) -> Dict[str, Geometry]:
-        active_geometry_dependencies = (
-            {
-                geometry_dependency["id"]: Geometry.from_cloud(geometry_dependency["id"])
-                for geometry_dependency in current_geometry_dependencies
-            }
-            if current_geometry_dependencies
-            else {}
-        )
-        if include_geometries:
-            for geometry in include_geometries:
-                if geometry.id not in active_geometry_dependencies:
-                    active_geometry_dependencies[geometry.id] = geometry
-
-        if exclude_geometries:
-            for geometry in exclude_geometries:
-                excluded_geometry = active_geometry_dependencies.pop(geometry.id, None)
-                if excluded_geometry is None:
-                    log.warning(
-                        f"Geometry {geometry.name} not found among current dependencies. Ignoring its exclusion."
-                    )
+        active_geometry_dependencies = {
+            geometry_dependency["id"]: Geometry.from_cloud(geometry_dependency["id"])
+            for geometry_dependency in current_geometry_dependencies
+        }
+        for geometry in include_geometries:
+            if geometry.id not in active_geometry_dependencies:
+                active_geometry_dependencies[geometry.id] = geometry
+        for geometry in exclude_geometries:
+            excluded_geometry = active_geometry_dependencies.pop(geometry.id, None)
+            if excluded_geometry is None:
+                log.warning(
+                    f"Geometry {geometry.name} not found among current dependencies. Ignoring its exclusion."
+                )
         return active_geometry_dependencies
 
     def _merge_geometry_entity_info(
@@ -189,6 +184,12 @@ def create_draft(
     if not isinstance(new_run_from, AssetBase):
         raise Flow360RuntimeError("create_draft expects a cloud asset instance as `new_run_from`.")
 
+    if isinstance(new_run_from, Geometry) and new_run_from.info.dependency:
+        raise Flow360ValueError("Draft creation from an imported Geometry is not supported.")
+
+    if isinstance(new_run_from, Case):
+        raise Flow360ValueError("Draft creation from a Case is not supported.")
+
     if not isinstance(new_run_from.entity_info, GeometryEntityInfo) and (
         include_geometries or exclude_geometries
     ):
@@ -204,9 +205,9 @@ def create_draft(
     active_geometry_dependencies = {}
     if isinstance(new_run_from.entity_info, GeometryEntityInfo):
         active_geometry_dependencies = _resolve_active_geometry_dependencies(
-            current_geometry_dependencies=new_run_from.info.geometry_dependencies,
-            include_geometries=include_geometries,
-            exclude_geometries=exclude_geometries,
+            current_geometry_dependencies=new_run_from.info.geometry_dependencies or [],
+            include_geometries=include_geometries or [],
+            exclude_geometries=exclude_geometries or [],
         )
         entity_info_copy = _merge_geometry_entity_info(
             new_run_from=new_run_from,
@@ -1330,7 +1331,7 @@ class Project(pd.BaseModel):
             run_async=run_async,
         )
 
-    def import_surface(
+    def import_surface_mesh(
         self,
         file: str,
         /,
@@ -1396,19 +1397,21 @@ class Project(pd.BaseModel):
 
         """
 
-        raw_resources = get_project_dependency_resources_raw(
+        dependency_metadata = get_project_dependency_resource_metadata(
             project_id=self.id, resource_type=resource_type.value
         )
 
         if resource_type == ProjectDependencyType.GEOMETRY:
-            imported_resources = [Geometry.from_cloud(item["id"]) for item in raw_resources]
+            imported_resources = [
+                Geometry.from_cloud(item.resource_id) for item in dependency_metadata
+            ]
         elif resource_type == ProjectDependencyType.SURFACE_MESH:
             imported_resources = [
                 ImportedSurface(
-                    name=item["name"],
-                    surface_mesh_id=item["id"],
+                    name=item.name,
+                    surface_mesh_id=item.resource_id,
                 )
-                for item in raw_resources
+                for item in dependency_metadata
             ]
         else:
             raise Flow360ValueError(f"Unsupported imported resource type: {resource_type}")

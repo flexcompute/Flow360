@@ -22,12 +22,7 @@ from flow360.component.simulation.framework.base_model import (
     Flow360BaseModel,
 )
 from flow360.component.simulation.framework.entity_base import EntityList
-from flow360.component.simulation.primitives import (
-    Box,
-    CustomVolume,
-    EntityListWithCustomVolume,
-    GenericVolume,
-)
+from flow360.component.simulation.primitives import Box, CustomVolume, GenericVolume
 
 # from .time_stepping import UnsteadyTimeStepping
 
@@ -250,7 +245,7 @@ class TurbulenceModelControls(Flow360BaseModel):
         None, description="Force RANS or LES mode in a specific control region."
     )
 
-    entities: EntityListWithCustomVolume[GenericVolume, CustomVolume, Box] = pd.Field(
+    entities: EntityList[GenericVolume, CustomVolume, Box] = pd.Field(
         alias="volumes",
         description="The entity in which to apply the `TurbulenceMOdelControls``. "
         + "The entity should be defined by :class:`Box` or zones from the geometry/volume mesh."

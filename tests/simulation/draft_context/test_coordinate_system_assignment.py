@@ -75,16 +75,26 @@ def test_assign_will_register_when_parent_known(mock_geometry):
         )
 
 
-def test_assign_coordinate_system_rejects_missing_parent(mock_geometry):
+def test_add_auto_registers_missing_parent(mock_geometry):
+    """Test that add() auto-registers a missing parent as root."""
     with create_draft(new_run_from=mock_geometry) as draft:
-        with pytest.raises(
-            Flow360RuntimeError,
-            match="Parent coordinate system must be registered in the draft before being referenced",
-        ):
-            draft.coordinate_systems.add(
-                coordinate_system=CoordinateSystem(name="orphan"),
-                parent=CoordinateSystem(name="ghost"),
-            )
+        parent = CoordinateSystem(name="ghost")
+        child = draft.coordinate_systems.add(
+            coordinate_system=CoordinateSystem(name="orphan"),
+            parent=parent,
+        )
+        # Parent should be auto-registered as root
+        assert parent in draft.coordinate_systems._coordinate_systems
+        assert child in draft.coordinate_systems._coordinate_systems
+        # Parent should have no parent (root)
+        assert (
+            draft.coordinate_systems._coordinate_system_parents[parent.private_attribute_id] is None
+        )
+        # Child should have parent as its parent
+        assert (
+            draft.coordinate_systems._coordinate_system_parents[child.private_attribute_id]
+            == parent.private_attribute_id
+        )
 
 
 def test_assign_coordinate_system_rejects_cycle(mock_geometry):
@@ -137,7 +147,8 @@ def test_get_coordinate_system_by_name(mock_geometry):
             draft.coordinate_systems.get_by_name("missing")
 
 
-def test_update_parent_requires_registered_entities(mock_geometry):
+def test_update_parent_requires_registered_coordinate_system(mock_geometry):
+    """Test that update_parent requires the coordinate system itself to be registered."""
     with create_draft(new_run_from=mock_geometry) as draft:
         cs = CoordinateSystem(name="standalone")
         with pytest.raises(
@@ -146,17 +157,33 @@ def test_update_parent_requires_registered_entities(mock_geometry):
         ):
             draft.coordinate_systems.update_parent(coordinate_system=cs, parent=None)
 
+
+def test_update_parent_auto_registers_missing_parent(mock_geometry):
+    """Test that update_parent auto-registers an unregistered parent as root."""
+    with create_draft(new_run_from=mock_geometry) as draft:
         registered = draft.coordinate_systems.add(
             coordinate_system=CoordinateSystem(name="registered")
         )
         unregistered_parent = CoordinateSystem(name="unregistered-parent")
-        with pytest.raises(
-            Flow360RuntimeError,
-            match="Parent coordinate system must be registered in the draft before being referenced.",
-        ):
-            draft.coordinate_systems.update_parent(
-                coordinate_system=registered, parent=unregistered_parent
-            )
+
+        # Should auto-register the parent
+        draft.coordinate_systems.update_parent(
+            coordinate_system=registered, parent=unregistered_parent
+        )
+
+        # Parent should now be registered as root
+        assert unregistered_parent in draft.coordinate_systems._coordinate_systems
+        assert (
+            draft.coordinate_systems._coordinate_system_parents[
+                unregistered_parent.private_attribute_id
+            ]
+            is None
+        )
+        # registered should now have unregistered_parent as its parent
+        assert (
+            draft.coordinate_systems._coordinate_system_parents[registered.private_attribute_id]
+            == unregistered_parent.private_attribute_id
+        )
 
 
 def test_remove_coordinate_system_errors(mock_geometry):
@@ -220,7 +247,10 @@ def test_to_status_and_from_status_round_trip(mock_geometry):
 
         status = draft.coordinate_systems._to_status()
 
-        restored = CoordinateSystemManager._from_status(status=status)
+        restored = CoordinateSystemManager._from_status(
+            status=status,
+            entity_registry=draft._entity_registry,  # pylint: disable=protected-access
+        )
 
         restored_child = restored.get_by_name("child")
         assert restored_child.private_attribute_id == cs_child.private_attribute_id
@@ -244,7 +274,10 @@ def test_from_status_validation_errors(mock_geometry):
             Flow360RuntimeError,
             match="Parent record references unknown coordinate system 'missing'",
         ):
-            CoordinateSystemManager._from_status(status=status)
+            CoordinateSystemManager._from_status(
+                status=status,
+                entity_registry=draft._entity_registry,  # pylint: disable=protected-access
+            )
 
 
 def test_from_status_rejects_duplicate_cs_id(mock_geometry):
@@ -298,12 +331,18 @@ def test_from_status_rejects_assignment_unknown_cs(mock_geometry):
             Flow360RuntimeError,
             match="Assignment references unknown coordinate system 'missing'",
         ):
-            CoordinateSystemManager._from_status(status=status)
+            CoordinateSystemManager._from_status(
+                status=status,
+                entity_registry=draft._entity_registry,  # pylint: disable=protected-access
+            )
 
 
 def test_from_status_rejects_duplicate_entity_assignment(mock_geometry):
     with create_draft(new_run_from=mock_geometry) as draft:
         cs = CoordinateSystem(name="cs")
+        body_group = list(draft.body_groups)[0]
+        entity_type_name = body_group.private_attribute_entity_type_name
+        entity_id = body_group.private_attribute_id
         status = CoordinateSystemStatus(
             coordinate_systems=[cs],
             parents=[],
@@ -311,17 +350,54 @@ def test_from_status_rejects_duplicate_entity_assignment(mock_geometry):
                 CoordinateSystemAssignmentGroup(
                     coordinate_system_id=cs.private_attribute_id,
                     entities=[
-                        CoordinateSystemEntityRef(entity_type="Surface", entity_id="s1"),
-                        CoordinateSystemEntityRef(entity_type="Surface", entity_id="s1"),
+                        CoordinateSystemEntityRef(
+                            entity_type=entity_type_name, entity_id=entity_id
+                        ),
+                        CoordinateSystemEntityRef(
+                            entity_type=entity_type_name, entity_id=entity_id
+                        ),
                     ],
                 )
             ],
         )
         with pytest.raises(
             Flow360RuntimeError,
-            match="Duplicate entity assignment for entity 'Surface:s1'",
+            match=f"Duplicate entity assignment for entity '{entity_type_name}:{entity_id}'",
         ):
-            CoordinateSystemManager._from_status(status=status)
+            CoordinateSystemManager._from_status(
+                status=status,
+                entity_registry=draft._entity_registry,  # pylint: disable=protected-access
+            )
+
+
+def test_from_status_filters_assignment_to_unknown_entity(mock_geometry):
+    with create_draft(new_run_from=mock_geometry) as draft:
+        cs = CoordinateSystem(name="cs")
+        body_group = list(draft.body_groups)[0]
+        entity_type_name = body_group.private_attribute_entity_type_name
+
+        status = CoordinateSystemStatus(
+            coordinate_systems=[cs],
+            parents=[],
+            assignments=[
+                CoordinateSystemAssignmentGroup(
+                    coordinate_system_id=cs.private_attribute_id,
+                    entities=[
+                        CoordinateSystemEntityRef(
+                            entity_type=entity_type_name, entity_id="missing-entity-id"
+                        )
+                    ],
+                )
+            ],
+        )
+
+        restored = CoordinateSystemManager._from_status(
+            status=status,
+            entity_registry=draft._entity_registry,  # pylint: disable=protected-access
+        )
+        assert (
+            restored._entity_key_to_coordinate_system_id == {}  # pylint: disable=protected-access
+        )
 
 
 def test_coordinate_system_status_round_trip_through_asset_cache(mock_geometry, tmp_path):

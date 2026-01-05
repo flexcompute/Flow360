@@ -336,7 +336,8 @@ class MirrorManager:
     """Encapsulates mirror plane registry and entity mirroring operations."""
 
     __slots__ = (
-        "_mirror_status",  # MirrorManager owns the single mirror status instance.
+        # MirrorManager owns the single mirror status instance. This is always validate and up to date.
+        "_mirror_status",
         "_body_group_id_to_mirror_id",
         "_face_group_to_body_group",
         "_entity_registry",  # A link to the full picture.
@@ -600,7 +601,10 @@ class MirrorManager:
                 self._mirror_status.mirrored_surfaces.remove(mirrored_surface)
             self._entity_registry.remove(mirrored_surface)
 
-    def _to_status(self) -> MirrorStatus:
+    @staticmethod
+    def _generate_mirror_status(
+        entity_registry, body_group_id_to_mirror_id, face_group_to_body_group, mirror_planes
+    ) -> MirrorStatus:
         """Build a serializable status snapshot.
 
         Parameters
@@ -614,8 +618,6 @@ class MirrorManager:
             The serialized mirror status, or None if no valid mirror actions exist.
         """
 
-        entity_registry = self._entity_registry
-
         # Build a set of existing GeometryBodyGroup IDs in the registry for validation.
         existing_body_group_ids = set()
         for entity in entity_registry.find_by_type(GeometryBodyGroup):
@@ -624,9 +626,9 @@ class MirrorManager:
 
         # Filter out actions that refer to body groups that no longer exist in the registry.
         filtered_actions: Dict[str, str] = {}
-        for body_group_id, mirror_plane_id in self._body_group_id_to_mirror_id.items():
+        for body_group_id, mirror_plane_id in body_group_id_to_mirror_id.items():
             if body_group_id not in existing_body_group_ids:
-                log.debug(
+                log.warning(
                     "GeometryBodyGroup '%s' assigned to mirror plane '%s' is not in the draft registry; "
                     "skipping this mirror action.",
                     body_group_id,
@@ -643,14 +645,14 @@ class MirrorManager:
 
         mirrored_geometry_groups, mirrored_surfaces = _derive_mirrored_entities_from_actions(
             body_group_id_to_mirror_id=filtered_actions,
-            face_group_to_body_group=self._face_group_to_body_group,
+            face_group_to_body_group=face_group_to_body_group,
             entity_registry=entity_registry,
-            mirror_planes=self._mirror_planes,
+            mirror_planes=mirror_planes,
         )
 
         # Only keep mirror planes that are actually referenced by the filtered actions.
         mirror_planes_by_id: Dict[str, MirrorPlane] = {
-            plane.private_attribute_id: plane for plane in self._mirror_planes
+            plane.private_attribute_id: plane for plane in mirror_planes
         }
         used_plane_ids = {
             mirror_plane_id
@@ -658,7 +660,7 @@ class MirrorManager:
             if mirror_plane_id in mirror_planes_by_id
         }
         mirror_planes_for_status: List[MirrorPlane] = [
-            plane for plane in self._mirror_planes if plane.private_attribute_id in used_plane_ids
+            plane for plane in mirror_planes if plane.private_attribute_id in used_plane_ids
         ]
 
         return MirrorStatus(
@@ -712,7 +714,12 @@ class MirrorManager:
         # These are not tightly coupled with the persistent entities therefore can be initialized separately.
         mgr._mirror_status.mirror_planes = status.mirror_planes if status is not None else []
 
-        mgr._mirror_status = mgr._to_status()
+        mgr._mirror_status = cls._generate_mirror_status(
+            entity_registry=entity_registry,
+            body_group_id_to_mirror_id=mgr._body_group_id_to_mirror_id,
+            face_group_to_body_group=mgr._face_group_to_body_group,
+            mirror_planes=mgr._mirror_status.mirror_planes,
+        )
 
         # Register restored entities in the entity registry without mutating the same
         # MirrorStatus lists while iterating.

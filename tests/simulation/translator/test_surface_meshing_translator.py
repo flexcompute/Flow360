@@ -1655,3 +1655,61 @@ def test_gai_mirror_status_translation_idempotency():
     assert (
         surface["mirror_plane_id"] == expected_plane_id
     ), f"Mirrored surface should reference mirror plane '{expected_plane_id}'"
+
+
+def test_gai_no_stationary_enclosed_entities():
+    param_dict = {
+        "private_attribute_asset_cache": {
+            "use_inhouse_mesher": True,
+            "use_geometry_AI": True,
+            "project_entity_info": {"type_name": "GeometryEntityInfo"},
+        },
+    }
+
+    with SI_unit_system:
+        # Create entities
+        cylinder = Cylinder(
+            name="intersectingCylinder",
+            center=(0, 0, 0) * u.m,
+            outer_radius=1 * u.m,
+            height=2 * u.m,
+            axis=(0, 0, 1),
+        )
+        sphere_surface = Surface(name="sphere.lb8.ugrid")
+
+        # Create RotationVolume with enclosed_entities
+        rotation_volume = RotationVolume(
+            name="RotationVolume",
+            spacing_axial=0.5 * u.m,
+            spacing_circumferential=0.3 * u.m,
+            spacing_radial=1.5 * u.m,
+            entities=[cylinder],
+            enclosed_entities=[sphere_surface],
+            stationary_enclosed_entities=[sphere_surface],
+        )
+
+        # Create meshing params
+        meshing = MeshingParams(
+            defaults=MeshingDefaults(
+                surface_max_edge_length=0.1,
+                geometry_accuracy=0.01,
+            ),
+            volume_zones=[
+                AutomatedFarfield(name="Farfield"),
+                rotation_volume,
+            ],
+        )
+
+        params = SimulationParams(
+            meshing=meshing,
+            private_attribute_asset_cache=AssetCache.model_validate(
+                param_dict["private_attribute_asset_cache"]
+            ),
+        )
+
+    translated_json = get_surface_meshing_json(params, 1 * u.m)
+    assert "volume_zones" in translated_json["meshing"]
+    volume_zones = translated_json["meshing"]["volume_zones"]
+    for zone in volume_zones:
+        if zone["type"] in ("RotationVolume", "RotationCylinder"):
+            assert "stationary_enclosed_entities" not in zone

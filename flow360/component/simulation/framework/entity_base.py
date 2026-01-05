@@ -152,6 +152,17 @@ class EntityBase(Flow360BaseModel, metaclass=ABCMeta):
         """Returns private_attribute_id of the entity."""
         return self.private_attribute_id
 
+    def _manual_assignment_validation(self, _: ParamsValidationInfo) -> EntityBase:
+        """
+        Pre-expansion contextual validation for the entity.
+        This handles validation for the entity manually assigned.
+        """
+        return self
+
+    def _per_entity_type_validation(self, _: ParamsValidationInfo) -> EntityBase:
+        """Contextual validation with validation logic bond with the specific entity type."""
+        return self
+
 
 class _CombinedMeta(type(Flow360BaseModel), type):
     pass
@@ -265,18 +276,42 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
         With delayed selector expansion, stored_entities may be empty if only selectors
         are defined.
         """
-        # If stored_entities already has entities, validation passes
-        if self.stored_entities:
-            return self
+        is_empty = True
+        # If stored_entities already has entities (user manual assignment), validation passes
+        manual_assignments: List[EntityBase] = self.stored_entities
+        # pylint: disable=protected-access
+        if manual_assignments:
+            filtered_assignments = [
+                item
+                for item in manual_assignments
+                if item._manual_assignment_validation(param_info) is not None
+            ]
+            # Use object.__setattr__ to bypass validate_on_assignment and avoid recursion
+            object.__setattr__(
+                self,
+                "stored_entities",
+                filtered_assignments,
+            )
+
+            for item in filtered_assignments:
+                item._per_entity_type_validation(param_info)
+
+            if filtered_assignments:
+                is_empty = False
 
         # No stored_entities - check if selectors will produce any entities
         if self.selectors:
-            expanded = param_info.expand_entity_list(self)
+            expanded: List[EntityBase] = param_info.expand_entity_list(self)
             if expanded:
+                for item in expanded:
+                    item._per_entity_type_validation(param_info)
+                # Known non-empty
                 return self
 
         # Neither stored_entities nor selectors produced any entities
-        raise ValueError("No entities were selected.")
+        if is_empty:
+            raise ValueError("No entities were selected.")
+        return self
 
     @classmethod
     def _get_valid_entity_types(cls):
@@ -311,17 +346,17 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
         raise TypeError("Cannot extract valid entity types.")
 
     @classmethod
-    def _process_selector(cls, selector: EntitySelector, valid_type_names: List[str]) -> dict:
+    def _validate_selector(cls, selector: EntitySelector, valid_type_names: List[str]) -> dict:
         """Process and validate an EntitySelector object."""
         if selector.target_class not in valid_type_names:
             raise ValueError(
                 f"Selector target_class ({selector.target_class}) is incompatible "
                 f"with EntityList types {valid_type_names}."
             )
-        return selector.model_dump()
+        return selector
 
     @classmethod
-    def _process_entity(cls, entity: Union[EntityBase, Any]) -> EntityBase:
+    def _validate_entity(cls, entity: Union[EntityBase, Any]) -> EntityBase:
         """Process and validate an entity object."""
         if isinstance(entity, EntityBase):
             return entity
@@ -333,12 +368,12 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
 
     @classmethod
     def _build_result(
-        cls, entities_to_store: List[EntityBase], entity_patterns_to_store: List[dict]
+        cls, entities_to_store: List[EntityBase], entity_selectors_to_store: List[dict]
     ) -> dict:
         """Build the final result dictionary."""
         return {
             "stored_entities": entities_to_store,
-            "selectors": entity_patterns_to_store if entity_patterns_to_store else None,
+            "selectors": entity_selectors_to_store if entity_selectors_to_store else None,
         }
 
     @classmethod
@@ -348,13 +383,13 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
         item: Union[EntityBase, EntitySelector],
         valid_type_names: List[str],
         entities_to_store: List[EntityBase],
-        entity_patterns_to_store: List[dict],
+        entity_selectors_to_store: List[dict],
     ) -> None:
         """Process a single item (entity or selector) and add to appropriate storage lists."""
         if isinstance(item, EntitySelector):
-            entity_patterns_to_store.append(cls._process_selector(item, valid_type_names))
+            entity_selectors_to_store.append(cls._validate_selector(item, valid_type_names))
         else:
-            processed_entity = cls._process_entity(item)
+            processed_entity = cls._validate_entity(item)
             entities_to_store.append(processed_entity)
 
     @pd.model_validator(mode="before")
@@ -367,7 +402,7 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
         field validator, which runs after deserialization but before discriminator validation.
         """
         entities_to_store = []
-        entity_patterns_to_store = []
+        entity_selectors_to_store = []
         valid_types = tuple(cls._get_valid_entity_types())
         valid_type_names = [t.__name__ for t in valid_types]
 
@@ -379,7 +414,7 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
             for item in input_data:
                 if isinstance(item, list):  # Nested list comes from assets __getitem__
                     # Process all entities without filtering
-                    processed_entities = [cls._process_entity(individual) for individual in item]
+                    processed_entities = [cls._validate_entity(individual) for individual in item]
                     entities_to_store.extend(processed_entities)
                 else:
                     # Single entity or selector
@@ -387,7 +422,7 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
                         item,
                         valid_type_names,
                         entities_to_store,
-                        entity_patterns_to_store,
+                        entity_selectors_to_store,
                     )
         elif isinstance(input_data, dict):  # Deserialization
             # With delayed selector expansion, stored_entities may be absent if only selectors are defined.
@@ -403,13 +438,13 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
                 input_data,
                 valid_type_names,
                 entities_to_store,
-                entity_patterns_to_store,
+                entity_selectors_to_store,
             )
 
-        if not entities_to_store and not entity_patterns_to_store:
+        if not entities_to_store and not entity_selectors_to_store:
             raise ValueError(
                 f"Can not find any valid entity of type {[valid_type.__name__ for valid_type in valid_types]}"
                 f" from the input."
             )
 
-        return cls._build_result(entities_to_store, entity_patterns_to_store)
+        return cls._build_result(entities_to_store, entity_selectors_to_store)

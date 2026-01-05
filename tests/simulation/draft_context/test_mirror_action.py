@@ -845,3 +845,131 @@ def test_draft_context_mirror_status_updates_when_face_groupings_change(mock_geo
             f"Mirrored surface IDs should reference valid surfaces in the new draft. "
             f"Mirrored: {updated_surface_ids}, Available: {current_surface_ids}"
         )
+
+
+def test_mirrored_entity_validation_warning_for_missing_source(mock_geometry):
+    """Test that validation warnings are emitted when mirrored entities reference non-existent sources."""
+    from flow360.component.simulation.framework.entity_base import EntityList
+    from flow360.component.simulation.primitives import MirroredSurface, Surface
+    from flow360.component.simulation.unit_system import SI_unit_system
+    from flow360.component.simulation.validation.validation_context import (
+        ParamsValidationInfo,
+        ValidationContext,
+    )
+
+    with create_draft(new_run_from=mock_geometry) as draft:
+        body_group = list(draft.body_groups)[0]
+        mirror_plane = MirrorPlane(
+            name="mirrorX",
+            normal=(1, 0, 0),
+            center=(0, 0, 0) * u.m,
+        )
+
+        mirrored_body_groups, mirrored_surfaces = draft.mirror.create_mirror_of(
+            entities=[body_group], mirror_plane=mirror_plane
+        )
+
+        # Get a valid mirrored surface and create a copy with non-existent source_id
+        original_mirrored_surface = mirrored_surfaces[0]
+
+        # Create a new mirrored surface with invalid source_id
+        broken_mirrored_surface = MirroredSurface(
+            name="broken_mirrored_surface",
+            surface_id="non-existent-surface-id",
+            mirror_plane_id=original_mirrored_surface.mirror_plane_id,
+        )
+
+        # Get entity_info and registry from draft for validation context
+        entity_info = draft._entity_info
+        params_dict = {
+            "private_attribute_asset_cache": {
+                "project_entity_info": entity_info.model_dump(),
+            }
+        }
+
+    # Create validation context
+    validation_info = ParamsValidationInfo(param_as_dict=params_dict, referenced_expressions=[])
+    validation_context = ValidationContext(levels=None, info=validation_info)
+
+    with SI_unit_system, validation_context:
+        # Create EntityList with the broken mirrored surface
+        # This should raise "No entities were selected." because the broken surface is filtered out
+        with pytest.raises(ValidationError) as exc_info:
+            entity_list = EntityList[Surface, MirroredSurface](
+                stored_entities=[broken_mirrored_surface]
+            )
+
+        # Verify the error message
+        assert "No entities were selected." in str(exc_info.value)
+
+    # Check that warning was emitted before the error
+    assert len(validation_context.validation_warnings) > 0
+    warning_messages = [w["msg"] for w in validation_context.validation_warnings]
+    assert any(
+        "references non-existent source surface" in msg and "will be removed" in msg
+        for msg in warning_messages
+    ), f"Expected warning about missing source surface, got: {warning_messages}"
+
+
+def test_mirrored_entity_validation_warning_for_missing_mirror_plane(mock_geometry):
+    """Test that validation warnings are emitted when mirrored entities reference non-existent mirror planes."""
+    from flow360.component.simulation.framework.entity_base import EntityList
+    from flow360.component.simulation.primitives import MirroredSurface, Surface
+    from flow360.component.simulation.unit_system import SI_unit_system
+    from flow360.component.simulation.validation.validation_context import (
+        ParamsValidationInfo,
+        ValidationContext,
+    )
+
+    with create_draft(new_run_from=mock_geometry) as draft:
+        body_group = list(draft.body_groups)[0]
+        mirror_plane = MirrorPlane(
+            name="mirrorX",
+            normal=(1, 0, 0),
+            center=(0, 0, 0) * u.m,
+        )
+
+        _, mirrored_surfaces = draft.mirror.create_mirror_of(
+            entities=[body_group], mirror_plane=mirror_plane
+        )
+
+        # Get a valid mirrored surface and create a copy with non-existent mirror_plane_id
+        original_mirrored_surface = mirrored_surfaces[0]
+
+        # Create a new mirrored surface with invalid mirror_plane_id
+        broken_mirrored_surface = MirroredSurface(
+            name="broken_mirrored_surface",
+            surface_id=original_mirrored_surface.surface_id,
+            mirror_plane_id="non-existent-mirror-plane-id",
+        )
+
+        # Get entity_info and registry from draft for validation context
+        entity_info = draft._entity_info
+        params_dict = {
+            "private_attribute_asset_cache": {
+                "project_entity_info": entity_info.model_dump(),
+            }
+        }
+
+    # Create validation context
+    validation_info = ParamsValidationInfo(param_as_dict=params_dict, referenced_expressions=[])
+    validation_context = ValidationContext(levels=None, info=validation_info)
+
+    with SI_unit_system, validation_context:
+        # Create EntityList with the broken mirrored surface
+        # This should raise "No entities were selected." because the broken surface is filtered out
+        with pytest.raises(ValidationError) as exc_info:
+            entity_list = EntityList[Surface, MirroredSurface](
+                stored_entities=[broken_mirrored_surface]
+            )
+
+        # Verify the error message
+        assert "No entities were selected." in str(exc_info.value)
+
+    # Check that warning was emitted before the error
+    assert len(validation_context.validation_warnings) > 0
+    warning_messages = [w["msg"] for w in validation_context.validation_warnings]
+    assert any(
+        "references non-existent mirror plane" in msg and "will be removed" in msg
+        for msg in warning_messages
+    ), f"Expected warning about missing mirror plane, got: {warning_messages}"
