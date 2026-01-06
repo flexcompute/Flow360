@@ -10,6 +10,7 @@ from .cylinder3D import Cylinder3D
 from .DARPA import DARPA_SUBOFF
 from .drivaer import DrivAer
 from .evtol import EVTOL
+from .f1_2025 import F1_2025
 from .isolated_propeller import IsolatedPropeller
 from .monitors import MonitorsAndSlices
 from .NLF_airfoil import NLFAirfoil2D
@@ -29,7 +30,6 @@ from .tutorial_RANS_xv15 import TutorialRANSXv15
 from .tutorial_UDD_forces_moments import TutorialUDDForcesMoments
 from .tutorial_UDD_structural import TutorialUDDStructural
 from .XV15_csm import XV15_CSM
-from .f1_2025 import F1_2025
 
 __all__ = [
     "ActuatorDisk",
