@@ -29,6 +29,7 @@ from .tutorial_RANS_xv15 import TutorialRANSXv15
 from .tutorial_UDD_forces_moments import TutorialUDDForcesMoments
 from .tutorial_UDD_structural import TutorialUDDStructural
 from .XV15_csm import XV15_CSM
+from .f1_2025 import F1_2025
 
 __all__ = [
     "ActuatorDisk",
@@ -43,6 +44,7 @@ __all__ = [
     "DARPA_SUBOFF",
     "DrivAer",
     "EVTOL",
+    "F1_2025",
     "IsolatedPropeller",
     "MonitorsAndSlices",
     "NLFAirfoil2D",
