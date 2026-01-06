@@ -76,27 +76,15 @@ def test_mirrored_surface_translation():
             entities=body_group, mirror_plane=plane
         )
 
-        # Create mirrored surfaces with fixed IDs for test reproducibility
+        # Use the mirrored surfaces owned by the draft's mirror_status/registry.
+        # This avoids introducing foreign mirrored entities that are not tracked by the draft.
+        expected_mirrored_names = {"Curved_<mirror>", "TopCap_<mirror>", "BottomCap_<mirror>"}
         mirrored_surfaces = [
-            MirroredSurface(
-                name="Curved_<mirror>",
-                surface_id="Curved",
-                mirror_plane_id=mirror_plane_id,
-                private_attribute_id="mirrored-surface-curved-001",
-            ),
-            MirroredSurface(
-                name="TopCap_<mirror>",
-                surface_id="TopCap",
-                mirror_plane_id=mirror_plane_id,
-                private_attribute_id="mirrored-surface-topcap-001",
-            ),
-            MirroredSurface(
-                name="BottomCap_<mirror>",
-                surface_id="BottomCap",
-                mirror_plane_id=mirror_plane_id,
-                private_attribute_id="mirrored-surface-bottomcap-001",
-            ),
+            mirrored
+            for mirrored in draft_mirrored_surfaces
+            if mirrored.name in expected_mirrored_names
         ]
+        assert {m.name for m in mirrored_surfaces} == expected_mirrored_names
 
         wind_tunnel = fl.WindTunnelFarfield(
             width=10 * mesh_unit,
@@ -222,10 +210,11 @@ def test_mirrored_surface_translation():
         )
 
         # Dump and compare with surface mesh ref JSON
-        surface_mesh_param, err = validate_params_with_context(
+        surface_mesh_param, err, warnings = validate_params_with_context(
             simulation_param, "Geometry", "SurfaceMesh"
         )
         assert err is None, f"Surface mesh validation error: {err}"
+        assert warnings == [], f"Unexpected warnings for surface mesh validation: {warnings}"
         surface_mesh_translated = get_surface_meshing_json(surface_mesh_param, mesh_unit=mesh_unit)
         surface_mesh_ref_file = os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
@@ -240,10 +229,11 @@ def test_mirrored_surface_translation():
         ), "Surface mesh translation does not match reference"
 
         # Dump and compare with volume mesh ref JSON
-        volume_mesh_param, err = validate_params_with_context(
+        volume_mesh_param, err, warnings = validate_params_with_context(
             simulation_param, "Geometry", "VolumeMesh"
         )
         assert err is None, f"Volume mesh validation error: {err}"
+        assert warnings == [], f"Unexpected warnings for volume mesh validation: {warnings}"
         volume_mesh_translated = get_volume_meshing_json(volume_mesh_param, mesh_unit=mesh_unit)
         volume_mesh_ref_file = os.path.join(
             os.path.dirname(os.path.abspath(__file__)),

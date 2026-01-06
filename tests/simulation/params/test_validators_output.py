@@ -2,11 +2,32 @@ import json
 import os
 import re
 
+import pydantic
 import pytest
 
 import flow360 as fl
 import flow360.component.simulation.units as u
-from flow360.component.simulation.entity_info import VolumeMeshEntityInfo
+
+
+def assert_validation_error_contains(
+    error: pydantic.ValidationError,
+    expected_loc: tuple,
+    expected_msg_contains: str,
+):
+    """Helper function to assert validation error properties for moving_statistic tests"""
+    errors = error.errors()
+    # Find the error with matching location
+    matching_errors = [e for e in errors if e["loc"] == expected_loc]
+    assert (
+        len(matching_errors) == 1
+    ), f"Expected 1 error at {expected_loc}, found {len(matching_errors)}"
+    assert expected_msg_contains in matching_errors[0]["msg"], (
+        f"Expected '{expected_msg_contains}' in error message, "
+        f"but got: '{matching_errors[0]['msg']}'"
+    )
+    assert matching_errors[0]["type"] == "value_error"
+
+
 from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.models.solver_numerics import (
     KOmegaSST,
@@ -14,7 +35,7 @@ from flow360.component.simulation.models.solver_numerics import (
     SpalartAllmaras,
 )
 from flow360.component.simulation.models.surface_models import Wall
-from flow360.component.simulation.models.volume_models import Fluid
+from flow360.component.simulation.models.volume_models import Fluid, PorousMedium
 from flow360.component.simulation.outputs.output_entities import Point
 from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
@@ -45,7 +66,17 @@ from flow360.component.simulation.unit_system import (
 from flow360.component.simulation.user_code.core.types import UserVariable
 from flow360.component.simulation.user_code.functions import math
 from flow360.component.simulation.user_code.variables import solution
+from flow360.component.simulation.validation.validation_context import (
+    CASE,
+    ParamsValidationInfo,
+    ValidationContext,
+)
 from flow360.component.volume_mesh import VolumeMeshV2
+
+
+@pytest.fixture(autouse=True)
+def change_test_dir(request, monkeypatch):
+    monkeypatch.chdir(request.fspath.dirname)
 
 
 @pytest.fixture()
@@ -322,72 +353,357 @@ def test_duplicate_surface_usage(mock_validation_context):
         )
 
 
-def test_moving_statitic_validator():
-    wall_1 = Surface(
-        name="wall_1", private_attribute_is_interface=False, private_attribute_id="test-wall-1-id"
-    )
-    asset_cache = AssetCache(
-        project_length_unit="m",
-        project_entity_info=VolumeMeshEntityInfo(boundaries=[wall_1]),
-    )
+def test_check_moving_statistic_applicability_steady_valid():
+    """Test moving_statistic with steady simulation - valid case."""
+    wall_1 = Wall(entities=Surface(name="fluid/wing"))
 
-    with SI_unit_system:
-        monitored_variable = UserVariable(
-            name="Helicity_MONITOR",
-            value=math.dot(solution.velocity, solution.vorticity),
-        )
-        params = SimulationParams(
+    # Valid: window_size=10 (becomes 100 steps) + start_step=100 (becomes 100) = 200 <= 5000
+    with imperial_unit_system:
+        SimulationParams(
+            models=[Fluid(), wall_1],
             time_stepping=Steady(max_steps=5000),
-            models=[Fluid(), Wall(entities=wall_1)],
             outputs=[
-                ProbeOutput(
-                    name="point_legacy2",
-                    output_fields=["Mach", monitored_variable],
-                    probe_points=Point(name="Point1", location=(-0.026642, 0.56614, 0) * u.m),
-                    moving_statistic=MovingStatistic(method="std", moving_window_size=15),
+                fl.ForceOutput(
+                    name="force_output",
+                    models=[wall_1],
+                    output_fields=["CL", "CD"],
+                    moving_statistic=MovingStatistic(
+                        method="mean", moving_window_size=10, start_step=100
+                    ),
                 )
             ],
-            private_attribute_asset_cache=asset_cache,
         )
 
-    params, errors, _ = validate_model(
-        validated_by=ValidationCalledBy.LOCAL,
-        params_as_dict=params.model_dump(mode="json"),
-        root_item_type="VolumeMesh",
-        validation_level="Case",
-    )
-    assert len(errors) == 1
-    assert (
-        errors[0]["msg"] == "Value error, For steady simulation, "
-        "the number of steps should be a multiple of 10."
-    )
-
-    with SI_unit_system:
-        monitored_variable = UserVariable(
-            name="Helicity_MONITOR",
-            value=math.dot(solution.velocity, solution.vorticity),
-        )
-        params = SimulationParams(
-            time_stepping=Steady(max_steps=5000),
-            models=[Fluid(), Wall(entities=wall_1)],
+    # Valid: window_size=5 (becomes 50 steps) + start_step=50 (becomes 50) = 100 <= 1000
+    with imperial_unit_system:
+        SimulationParams(
+            models=[Fluid(), wall_1],
+            time_stepping=Steady(max_steps=1000),
             outputs=[
                 ProbeOutput(
-                    name="point_legacy2",
-                    output_fields=["Mach", monitored_variable],
-                    probe_points=Point(name="Point1", location=(-0.026642, 0.56614, 0) * u.m),
-                    moving_statistic=MovingStatistic(method="std", moving_window_size=20),
+                    name="probe_output",
+                    probe_points=[Point(name="point_1", location=[1, 2, 3] * u.m)],
+                    output_fields=["Cp"],
+                    moving_statistic=MovingStatistic(
+                        method="standard_deviation", moving_window_size=5, start_step=50
+                    ),
                 )
             ],
-            private_attribute_asset_cache=asset_cache,
         )
 
-    _, errors, _ = validate_model(
-        validated_by=ValidationCalledBy.LOCAL,
-        params_as_dict=params.model_dump(mode="json"),
-        root_item_type="VolumeMesh",
-        validation_level="Case",
+
+def test_check_moving_statistic_applicability_steady_invalid():
+    """Test moving_statistic with steady simulation - invalid case."""
+    wall_1 = Wall(entities=Surface(name="fluid/wing"))
+
+    # Invalid: window_size=50 (becomes 500 steps) + start_step=4600 (becomes 4600) = 5100 > 5000
+    with pytest.raises(pydantic.ValidationError) as exc_info:
+        with imperial_unit_system:
+            SimulationParams(
+                models=[Fluid(), wall_1],
+                time_stepping=Steady(max_steps=5000),
+                outputs=[
+                    fl.ForceOutput(
+                        name="force_output",
+                        models=[wall_1],
+                        output_fields=["CL", "CD"],
+                        moving_statistic=MovingStatistic(
+                            method="mean", moving_window_size=50, start_step=4600
+                        ),
+                    )
+                ],
+            )
+
+    assert_validation_error_contains(
+        exc_info.value,
+        expected_loc=("outputs", 0, "moving_statistic"),
+        expected_msg_contains="`moving_statistic`'s moving_window_size + start_step exceeds "
+        "the total number of steps in the simulation.",
     )
-    assert errors is None
+
+    # Invalid: window_size=20 (becomes 200 steps) + start_step=850 (becomes 850) = 1060 > 1000
+    with pytest.raises(pydantic.ValidationError) as exc_info:
+        with imperial_unit_system:
+            SimulationParams(
+                models=[Fluid(), wall_1],
+                time_stepping=Steady(max_steps=1000),
+                outputs=[
+                    ProbeOutput(
+                        name="probe_output",
+                        probe_points=[Point(name="point_1", location=[1, 2, 3] * u.m)],
+                        output_fields=["Cp"],
+                        moving_statistic=MovingStatistic(
+                            method="standard_deviation", moving_window_size=20, start_step=850
+                        ),
+                    )
+                ],
+            )
+
+    assert_validation_error_contains(
+        exc_info.value,
+        expected_loc=("outputs", 0, "moving_statistic"),
+        expected_msg_contains="`moving_statistic`'s moving_window_size + start_step exceeds "
+        "the total number of steps in the simulation.",
+    )
+
+
+def test_check_moving_statistic_applicability_unsteady_valid():
+    """Test moving_statistic with unsteady simulation - valid case."""
+    wall_1 = Wall(entities=Surface(name="fluid/wing"))
+
+    # Valid: window_size=100 + start_step=200 = 300 <= 1000
+    with imperial_unit_system:
+        SimulationParams(
+            models=[Fluid(), wall_1],
+            time_stepping=Unsteady(steps=1000, step_size=1e-3),
+            outputs=[
+                fl.ForceOutput(
+                    name="force_output",
+                    models=[wall_1],
+                    output_fields=["CL", "CD"],
+                    moving_statistic=MovingStatistic(
+                        method="mean", moving_window_size=100, start_step=200
+                    ),
+                )
+            ],
+        )
+
+    # Valid: window_size=50 + start_step=50 = 100 <= 500
+    with imperial_unit_system:
+        SimulationParams(
+            models=[Fluid(), wall_1],
+            time_stepping=Unsteady(steps=500, step_size=1e-3),
+            outputs=[
+                ProbeOutput(
+                    name="probe_output",
+                    probe_points=[Point(name="point_1", location=[1, 2, 3] * u.m)],
+                    output_fields=["Cp"],
+                    moving_statistic=MovingStatistic(
+                        method="standard_deviation", moving_window_size=50, start_step=50
+                    ),
+                )
+            ],
+        )
+
+
+def test_check_moving_statistic_applicability_unsteady_invalid():
+    """Test moving_statistic with unsteady simulation - invalid case."""
+    wall_1 = Wall(entities=Surface(name="fluid/wing"))
+
+    # Invalid: window_size=500 + start_step=600 = 1100 > 1000
+    with pytest.raises(pydantic.ValidationError) as exc_info:
+        with imperial_unit_system:
+            SimulationParams(
+                models=[Fluid(), wall_1],
+                time_stepping=Unsteady(steps=1000, step_size=1e-3),
+                outputs=[
+                    fl.ForceOutput(
+                        name="force_output",
+                        models=[wall_1],
+                        output_fields=["CL", "CD"],
+                        moving_statistic=MovingStatistic(
+                            method="mean", moving_window_size=500, start_step=600
+                        ),
+                    )
+                ],
+            )
+
+    assert_validation_error_contains(
+        exc_info.value,
+        expected_loc=("outputs", 0, "moving_statistic"),
+        expected_msg_contains="`moving_statistic`'s moving_window_size + start_step exceeds "
+        "the total number of steps in the simulation.",
+    )
+
+    # Invalid: window_size=200 + start_step=350 = 550 > 500
+    with pytest.raises(pydantic.ValidationError) as exc_info:
+        with imperial_unit_system:
+            SimulationParams(
+                models=[Fluid(), wall_1],
+                time_stepping=Unsteady(steps=500, step_size=1e-3),
+                outputs=[
+                    ProbeOutput(
+                        name="probe_output",
+                        probe_points=[Point(name="point_1", location=[1, 2, 3] * u.m)],
+                        output_fields=["Cp"],
+                        moving_statistic=MovingStatistic(
+                            method="standard_deviation", moving_window_size=200, start_step=350
+                        ),
+                    )
+                ],
+            )
+
+    assert_validation_error_contains(
+        exc_info.value,
+        expected_loc=("outputs", 0, "moving_statistic"),
+        expected_msg_contains="`moving_statistic`'s moving_window_size + start_step exceeds "
+        "the total number of steps in the simulation.",
+    )
+
+
+def test_check_moving_statistic_applicability_steady_edge_cases():
+    """Test moving_statistic with steady simulation - edge cases for rounding."""
+    wall_1 = Wall(entities=Surface(name="fluid/wing"))
+
+    # Edge case: start_step=47 rounds up to 50, window_size=10 becomes 100, total=150 <= 200
+    with imperial_unit_system:
+        SimulationParams(
+            models=[Fluid(), wall_1],
+            time_stepping=Steady(max_steps=200),
+            outputs=[
+                fl.ForceOutput(
+                    name="force_output",
+                    models=[wall_1],
+                    output_fields=["CL", "CD"],
+                    moving_statistic=MovingStatistic(
+                        method="mean", moving_window_size=10, start_step=47
+                    ),
+                )
+            ],
+        )
+
+    # Edge case: start_step=99 rounds up to 100, window_size=5 becomes 50, total=150 <= 200
+    with imperial_unit_system:
+        SimulationParams(
+            models=[Fluid(), wall_1],
+            time_stepping=Steady(max_steps=200),
+            outputs=[
+                ProbeOutput(
+                    name="probe_output",
+                    probe_points=[Point(name="point_1", location=[1, 2, 3] * u.m)],
+                    output_fields=["Cp"],
+                    moving_statistic=MovingStatistic(
+                        method="standard_deviation", moving_window_size=5, start_step=99
+                    ),
+                )
+            ],
+        )
+
+    # Edge case: start_step=100 (already multiple of 10), window_size=10 becomes 100, total=200 <= 200
+    with imperial_unit_system:
+        SimulationParams(
+            models=[Fluid(), wall_1],
+            time_stepping=Steady(max_steps=200),
+            outputs=[
+                fl.ForceOutput(
+                    name="force_output",
+                    models=[wall_1],
+                    output_fields=["CL", "CD"],
+                    moving_statistic=MovingStatistic(
+                        method="mean", moving_window_size=10, start_step=100
+                    ),
+                )
+            ],
+        )
+
+
+def test_check_moving_statistic_applicability_multiple_outputs():
+    """
+    Test moving_statistic with multiple outputs - captures ALL errors from different outputs.
+
+    The validation function collects all errors from all invalid outputs and raises them together.
+    This follows Pydantic's pattern of collecting errors from list items.
+    """
+    wall_1 = Wall(entities=Surface(name="fluid/wing"))
+    uv_surface1 = UserVariable(
+        name="uv_surface1", value=math.dot(solution.velocity, solution.CfVec)
+    )
+
+    # Multiple outputs with errors - ALL errors should be collected
+    # All 4 outputs have invalid moving_statistic (500 + 600 = 1100 > 1000)
+    with pytest.raises(pydantic.ValidationError) as exc_info:
+        with imperial_unit_system:
+            SimulationParams(
+                models=[Fluid(), wall_1],
+                time_stepping=Unsteady(steps=1000, step_size=1e-3),
+                outputs=[
+                    fl.ForceOutput(
+                        name="force_output",
+                        models=[wall_1],
+                        output_fields=["CL", "CD"],
+                        moving_statistic=MovingStatistic(
+                            method="mean", moving_window_size=100, start_step=600
+                        ),
+                    ),
+                    ProbeOutput(
+                        name="probe_output",
+                        probe_points=[Point(name="point_1", location=[1, 2, 3] * u.m)],
+                        output_fields=["Cp"],
+                        moving_statistic=MovingStatistic(
+                            method="standard_deviation", moving_window_size=100, start_step=600
+                        ),
+                    ),
+                    SurfaceIntegralOutput(
+                        entities=Surface(name="fluid/wing"),
+                        output_fields=[uv_surface1],
+                        moving_statistic=MovingStatistic(
+                            method="mean", moving_window_size=500, start_step=600
+                        ),
+                    ),
+                    SurfaceProbeOutput(
+                        name="surface_probe_output",
+                        probe_points=[Point(name="point_1", location=[1, 2, 3] * u.m)],
+                        output_fields=["Cp"],
+                        target_surfaces=[Surface(name="fluid/wing")],
+                        moving_statistic=MovingStatistic(
+                            method="mean", moving_window_size=100, start_step=600
+                        ),
+                    ),
+                ],
+            )
+
+    assert len(exc_info.value.errors()) == 1
+    assert_validation_error_contains(
+        exc_info.value,
+        expected_loc=("outputs", 2, "moving_statistic"),
+        expected_msg_contains="`moving_statistic`'s moving_window_size + start_step exceeds "
+        "the total number of steps in the simulation.",
+    )
+
+
+def test_check_moving_statistic_applicability_no_moving_statistic():
+    """Test that outputs without moving_statistic are not validated."""
+    wall_1 = Wall(entities=Surface(name="fluid/wing"))
+
+    # Should pass - no moving_statistic specified
+    with imperial_unit_system:
+        SimulationParams(
+            models=[Fluid(), wall_1],
+            time_stepping=Steady(max_steps=1000),
+            outputs=[
+                fl.ForceOutput(
+                    name="force_output",
+                    models=[wall_1],
+                    output_fields=["CL", "CD"],
+                ),
+                ProbeOutput(
+                    name="probe_output",
+                    probe_points=[Point(name="point_1", location=[1, 2, 3] * u.m)],
+                    output_fields=["Cp"],
+                ),
+            ],
+        )
+
+
+def test_check_moving_statistic_applicability_no_time_stepping():
+    """Test that function returns early when no time_stepping is provided."""
+    wall_1 = Wall(entities=Surface(name="fluid/wing"))
+
+    # Should pass - no time_stepping specified
+    with imperial_unit_system:
+        SimulationParams(
+            models=[Fluid(), wall_1],
+            outputs=[
+                fl.ForceOutput(
+                    name="force_output",
+                    models=[wall_1],
+                    output_fields=["CL", "CD"],
+                    moving_statistic=MovingStatistic(
+                        method="mean", moving_window_size=100, start_step=200
+                    ),
+                )
+            ],
+        )
 
 
 def test_duplicate_probe_names():
@@ -612,6 +928,208 @@ def test_surface_integral_entity_types(mock_validation_context):
             )
 
 
+def test_imported_surface_output_fields_validation(mock_validation_context):
+    """Test that imported surfaces only allow CommonFieldNames and Volume solver variables"""
+    imported_surface = ImportedSurface(name="imported", file_name="imported.stl")
+    surface = Surface(name="fluid/body")
+
+    # Test 1: Surface-specific field name (not in CommonFieldNames) should fail with imported surface
+    with mock_validation_context, pytest.raises(
+        ValueError,
+        match=re.escape(
+            "Output field 'Cf' is not allowed for imported surfaces. "
+            "Only non-Surface field names are allowed for string format output fields when using imported surfaces."
+        ),
+    ):
+        with imperial_unit_system:
+            SimulationParams(
+                outputs=[
+                    SurfaceOutput(
+                        entities=imported_surface,
+                        output_fields=["Cf"],  # Cf is surface-specific, not in CommonFieldNames
+                    )
+                ],
+            )
+
+    # Test 2: UserVariable with Surface solver variables should fail with imported surface
+    uv_surface = UserVariable(name="uv_surface", value=math.dot(solution.velocity, solution.CfVec))
+    with mock_validation_context, pytest.raises(
+        ValueError,
+        match=re.escape(
+            "Variable `uv_surface` cannot be used with imported surfaces "
+            "since it contains Surface type solver variable(s): solution.CfVec. "
+            "Only Volume type solver variables and 'solution.node_unit_normal' are allowed."
+        ),
+    ):
+        with imperial_unit_system:
+            SimulationParams(
+                outputs=[
+                    SurfaceOutput(
+                        entities=imported_surface,
+                        output_fields=[uv_surface],
+                    )
+                ],
+            )
+
+    # Test 3: Multiple Surface solver variables in UserVariable should fail with imported surface
+    uv_multiple_surface = UserVariable(
+        name="uv_multiple",
+        value=solution.node_forces_per_unit_area[0] * solution.Cp * solution.Cf,
+    )
+    with mock_validation_context, pytest.raises(
+        ValueError,
+        match=re.escape(
+            "Variable `uv_multiple` cannot be used with imported surfaces "
+            "since it contains Surface type solver variable(s): solution.Cf, solution.node_forces_per_unit_area. "
+            "Only Volume type solver variables and 'solution.node_unit_normal' are allowed."
+        ),
+    ):
+        with imperial_unit_system:
+            SimulationParams(
+                outputs=[
+                    SurfaceOutput(
+                        entities=imported_surface,
+                        output_fields=[uv_multiple_surface],
+                    )
+                ],
+            )
+
+    # Test 4: CommonFieldNames should work with imported surface
+    with mock_validation_context, imperial_unit_system:
+        SimulationParams(
+            outputs=[
+                SurfaceOutput(
+                    entities=imported_surface,
+                    output_fields=["Cp", "Mach"],  # These are CommonFieldNames
+                )
+            ],
+        )
+
+    # Test 5: UserVariable with only Volume solver variables should work with imported surface
+    uv_volume = UserVariable(
+        name="uv_volume", value=math.dot(solution.velocity, solution.vorticity)
+    )
+    with mock_validation_context, imperial_unit_system:
+        SimulationParams(
+            outputs=[
+                SurfaceOutput(
+                    entities=imported_surface,
+                    output_fields=[uv_volume],
+                )
+            ],
+        )
+    # Test 5.5: UserVariable with node_unit_normal should work with imported surface
+    uv_node_normal = UserVariable(
+        name="uv_node_normal", value=math.dot(solution.velocity, solution.node_unit_normal)
+    )
+    with mock_validation_context, imperial_unit_system:
+        SimulationParams(
+            outputs=[
+                SurfaceOutput(
+                    entities=imported_surface,
+                    output_fields=[uv_node_normal],
+                )
+            ],
+        )
+
+    # Test 6: Regular surfaces should not be affected - surface-specific fields should work
+    with mock_validation_context, imperial_unit_system:
+        SimulationParams(
+            outputs=[
+                SurfaceOutput(
+                    entities=surface,
+                    output_fields=[
+                        "Cf"
+                    ],  # Surface-specific fields should work for regular surfaces
+                )
+            ],
+        )
+
+    # Test 7: Mixed entities (imported + regular surfaces) should trigger validation
+    with mock_validation_context, pytest.raises(
+        ValueError,
+        match=re.escape(
+            "Output field 'Cf' is not allowed for imported surfaces. "
+            "Only non-Surface field names are allowed for string format output fields when using imported surfaces."
+        ),
+    ):
+        with imperial_unit_system:
+            SimulationParams(
+                outputs=[
+                    SurfaceOutput(
+                        entities=[surface, imported_surface],
+                        output_fields=["Cf"],
+                    )
+                ],
+            )
+
+
+def test_imported_surface_output_fields_validation_surface_integral(mock_validation_context):
+    """Test that imported surfaces in SurfaceIntegralOutput only allow CommonFieldNames and Volume solver variables"""
+    imported_surface = ImportedSurface(name="imported", file_name="imported.stl")
+    surface = Surface(name="fluid/body")
+
+    # Test 1: UserVariable with Surface solver variables should fail with imported surface
+    uv_surface = UserVariable(name="uv_surface", value=math.dot(solution.velocity, solution.CfVec))
+    with mock_validation_context, pytest.raises(
+        ValueError,
+        match=re.escape(
+            "Variable `uv_surface` cannot be used with imported surfaces "
+            "since it contains Surface type solver variable(s): solution.CfVec. "
+            "Only Volume type solver variables and 'solution.node_unit_normal' are allowed."
+        ),
+    ):
+        with imperial_unit_system:
+            SimulationParams(
+                outputs=[
+                    SurfaceIntegralOutput(
+                        entities=imported_surface,
+                        output_fields=[uv_surface],
+                    )
+                ],
+            )
+
+    # Test 2: UserVariable with only Volume solver variables should work with imported surface
+    uv_volume = UserVariable(
+        name="uv_volume", value=math.dot(solution.velocity, solution.vorticity)
+    )
+    with mock_validation_context, imperial_unit_system:
+        SimulationParams(
+            outputs=[
+                SurfaceIntegralOutput(
+                    entities=imported_surface,
+                    output_fields=[uv_volume],
+                )
+            ],
+        )
+
+    # Test 2.5: UserVariable with node_unit_normal should work with imported surface (MassFluxProjected use case)
+    uv_mass_flux_projected = UserVariable(
+        name="MassFluxProjected",
+        value=math.dot(solution.density * solution.velocity, solution.node_unit_normal),
+    )
+    with mock_validation_context, imperial_unit_system:
+        SimulationParams(
+            outputs=[
+                SurfaceIntegralOutput(
+                    entities=imported_surface,
+                    output_fields=[uv_mass_flux_projected],
+                )
+            ],
+        )
+
+    # Test 3: Regular surfaces should not be affected - surface variables should work
+    with mock_validation_context, imperial_unit_system:
+        SimulationParams(
+            outputs=[
+                SurfaceIntegralOutput(
+                    entities=surface,
+                    output_fields=[uv_surface],
+                )
+            ],
+        )
+
+
 def test_output_frequency_settings_in_steady_simulation():
     volume_mesh = VolumeMeshV2.from_local_storage(
         mesh_id=None,
@@ -667,6 +1185,201 @@ def test_output_frequency_settings_in_steady_simulation():
             "ctx": {"relevant_for": ["Case"]},
         },
     ]
+
+
+def test_force_output_with_wall_models():
+    """Test ForceOutput with Wall models works correctly."""
+    wall_1 = Wall(entities=Surface(name="fluid/wing1"))
+    wall_2 = Wall(entities=Surface(name="fluid/wing2"))
+
+    with imperial_unit_system:
+        SimulationParams(
+            models=[Fluid(), wall_1, wall_2],
+            outputs=[
+                fl.ForceOutput(
+                    name="force_output",
+                    models=[wall_1, wall_2],
+                    output_fields=["CL", "CD", "CMx"],
+                )
+            ],
+        )
+
+    # Test with extended force coefficients (SkinFriction/Pressure)
+    with imperial_unit_system:
+        SimulationParams(
+            models=[Fluid(), wall_1],
+            outputs=[
+                fl.ForceOutput(
+                    name="force_output",
+                    models=[wall_1],
+                    output_fields=["CLSkinFriction", "CLPressure", "CDSkinFriction"],
+                )
+            ],
+        )
+
+
+def test_force_output_with_surface_and_volume_models(mock_validation_context):
+    """Test ForceOutput with volume models (BETDisk, ActuatorDisk, PorousMedium)."""
+    wall_1 = Wall(entities=Surface(name="fluid/wing"))
+    with imperial_unit_system:
+        fluid_model = Fluid()
+        porous_zone = fl.Box.from_principal_axes(
+            name="box",
+            axes=[[0, 1, 0], [0, 0, 1]],
+            center=[0, 0, 0] * fl.u.m,
+            size=[0.2, 0.3, 2] * fl.u.m,
+        )
+        porous_medium = PorousMedium(
+            entities=[porous_zone],
+            darcy_coefficient=[1e6, 0, 0],
+            forchheimer_coefficient=[1, 0, 0],
+            volumetric_heat_source=0,
+        )
+
+    # Valid case: only basic force coefficients
+    mock_validation_context.info.physics_model_dict = {
+        fluid_model.private_attribute_id: fluid_model,
+        wall_1.private_attribute_id: wall_1,
+        porous_medium.private_attribute_id: porous_medium,
+    }
+    with imperial_unit_system, mock_validation_context:
+        SimulationParams(
+            models=[Fluid(), wall_1, porous_medium],
+            outputs=[
+                fl.ForceOutput(
+                    name="force_output",
+                    models=[wall_1, porous_medium],
+                    output_fields=["CL", "CD", "CFx", "CFy", "CFz", "CMx", "CMy", "CMz"],
+                )
+            ],
+        )
+
+    mock_validation_context.info.physics_model_dict = {
+        fluid_model.private_attribute_id: fluid_model,
+        wall_1.private_attribute_id: wall_1,
+        porous_medium.private_attribute_id: porous_medium,
+    }
+    with mock_validation_context, pytest.raises(
+        ValueError,
+        match=re.escape(
+            "When ActuatorDisk/BETDisk/PorousMedium is specified, "
+            "only CL, CD, CFx, CFy, CFz, CMx, CMy, CMz can be set as output_fields."
+        ),
+    ):
+        with imperial_unit_system:
+            SimulationParams(
+                models=[Fluid(), wall_1, porous_medium],
+                outputs=[
+                    fl.ForceOutput(
+                        name="force_output",
+                        models=[wall_1, porous_medium],
+                        output_fields=["CL", "CLSkinFriction"],
+                    )
+                ],
+            )
+
+
+def test_force_output_duplicate_models():
+    """Test that ForceOutput rejects duplicate models."""
+    wall_1 = Wall(entities=Surface(name="fluid/wing"))
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape("Duplicate models are not allowed in the same `ForceOutput`."),
+    ):
+        with imperial_unit_system:
+            SimulationParams(
+                models=[Fluid(), wall_1],
+                outputs=[
+                    fl.ForceOutput(
+                        name="force_output",
+                        models=[wall_1, wall_1],
+                        output_fields=["CL", "CD"],
+                    )
+                ],
+            )
+
+
+def test_force_output_nonexistent_model():
+    """Test that ForceOutput rejects models not in SimulationParams' models list."""
+    wall_1 = Wall(entities=Surface(name="fluid/wing1"))
+    wall_2 = Wall(entities=Surface(name="fluid/wing2"))
+
+    non_wall2_context = ParamsValidationInfo({}, [])
+    non_wall2_context.physics_model_dict = {wall_1.private_attribute_id: wall_1.model_dump()}
+
+    with ValidationContext(CASE, non_wall2_context), pytest.raises(
+        ValueError,
+        match=re.escape("The model does not exist in simulation params' models list."),
+    ):
+        with imperial_unit_system:
+            SimulationParams(
+                models=[Fluid(), wall_1],
+                outputs=[
+                    fl.ForceOutput(
+                        name="force_output",
+                        models=[wall_2.private_attribute_id],
+                        output_fields=["CL", "CD"],
+                    )
+                ],
+            )
+
+
+def test_force_output_with_moving_statistic():
+    """Test ForceOutput with moving statistics."""
+    wall_1 = Wall(entities=Surface(name="fluid/wing"))
+
+    with imperial_unit_system:
+        SimulationParams(
+            models=[Fluid(), wall_1],
+            outputs=[
+                fl.ForceOutput(
+                    name="force_output",
+                    models=[wall_1],
+                    output_fields=["CL", "CD"],
+                    moving_statistic=fl.MovingStatistic(
+                        method="mean", moving_window_size=20, start_step=100
+                    ),
+                )
+            ],
+        )
+
+
+def test_force_output_with_model_id():
+    # [Frontend] Simulating loading a ForceOutput object with the id of models,
+    # ensure the validation for models works
+    with open("data/simulation_force_output_webui.json", "r") as fh:
+        data = json.load(fh)
+
+    _, errors, _ = validate_model(
+        params_as_dict=data, validated_by=ValidationCalledBy.LOCAL, root_item_type="VolumeMesh"
+    )
+    # Expected errors:
+    # - outputs[3,4,5] have validation errors in their models field
+    # - Since outputs field has validation errors, the output_dict is not populated
+    # - Therefore all stopping_criteria that reference outputs by ID fail with a clear error message
+    expected_errors = [
+        {
+            "type": "value_error",
+            "loc": ("outputs", 3, "models"),
+            "msg": "Value error, Duplicate models are not allowed in the same `ForceOutput`.",
+            "ctx": {"relevant_for": ["Case"]},
+        },
+        {
+            "type": "value_error",
+            "loc": ("outputs", 4, "models"),
+            "msg": "Value error, When ActuatorDisk/BETDisk/PorousMedium is specified, "
+            "only CL, CD, CFx, CFy, CFz, CMx, CMy, CMz can be set as output_fields.",
+            "ctx": {"relevant_for": ["Case"]},
+        },
+        {
+            "type": "value_error",
+            "loc": ("outputs", 5, "models"),
+            "msg": "Value error, The model does not exist in simulation params' models list.",
+            "ctx": {"relevant_for": ["Case"]},
+        },
+    ]
+
     assert len(errors) == len(expected_errors)
     for err, exp_err in zip(errors, expected_errors):
         assert err["loc"] == exp_err["loc"]

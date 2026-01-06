@@ -105,7 +105,7 @@
                 {
                     "isoSurfaces": {},
                     "material": {
-                        "alpha": 1.0,
+                        "opacity": 1.0,
                         "color": [
                             255,
                             255,
@@ -132,7 +132,7 @@
                         }
                     },
                     "material": {
-                        "alpha": 1.0,
+                        "opacity": 1.0,
                         "colormap": [
                             [
                                 0,
@@ -286,8 +286,7 @@
         }
     ],
     "runControl": {
-        "externalProcessMonitorOutput": false,
-        "shouldCheckStopCriterion": false
+        "externalProcessMonitorOutput": false
     },
     "sliceOutput": {
         "animationFrequency": -1,

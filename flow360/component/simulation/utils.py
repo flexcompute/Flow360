@@ -10,8 +10,14 @@ from pydantic_core import core_schema
 @contextmanager
 def model_attribute_unlock(model, attr: str):
     """
-    Helper function to set frozen fields of a pydantic model from internal systems
+    Helper function to:
+    1. Set frozen fields of a pydantic model from internal systems
+    2. Temporarily disable validation on assignment to avoid infinite recursion.
     """
+    # Save original state
+    original_validate_assignment = model.model_config.get("validate_assignment", True)
+    original_frozen = model.__class__.model_fields[attr].frozen
+
     try:
         # validate_assignment is set to False to allow for the attribute to be modified
         # Otherwise, the attribute will STILL be frozen and cannot be modified
@@ -19,8 +25,9 @@ def model_attribute_unlock(model, attr: str):
         model.__class__.model_fields[attr].frozen = False
         yield
     finally:
-        model.model_config["validate_assignment"] = True
-        model.__class__.model_fields[attr].frozen = True
+        # Restore original state
+        model.model_config["validate_assignment"] = original_validate_assignment
+        model.__class__.model_fields[attr].frozen = original_frozen
 
 
 def get_combined_subclasses(cls):

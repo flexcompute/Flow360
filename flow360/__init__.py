@@ -141,6 +141,7 @@ from flow360.component.simulation.outputs.output_entities import (
 from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
     ForceDistributionOutput,
+    ForceOutput,
     IsosurfaceOutput,
     MovingStatistic,
     Observer,
@@ -169,7 +170,6 @@ from flow360.component.simulation.primitives import (
     Box,
     CustomVolume,
     Cylinder,
-    ImportedSurface,
     ReferenceGeometry,
     SeedpointVolume,
 )
@@ -358,7 +358,6 @@ __all__ = [
     "remove_user_variable",
     "StoppingCriterion",
     "MovingStatistic",
-    "ImportedSurface",
     "OctreeSpacing",
     "RunControl",
     "WindTunnelFarfield",
@@ -367,6 +366,7 @@ __all__ = [
     "CentralBelt",
     "WheelBelts",
     "show_available_examples",
+    "ForceOutput",
     "RenderOutput",
     "RenderOutputGroup",
     "render_config",

@@ -96,6 +96,8 @@
             "minTriangleTwist": -1,
             "nSmoothScale": 4,
             "errorReduction": 0.75,
+            "zMetricThreshold": 0.8,
+            "featureEdgeDeduplicationTolerance": 0.2,
             "minVolCollapseRatio": 0
         }
     },

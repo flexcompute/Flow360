@@ -15,8 +15,14 @@ from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.framework.entity_utils import generate_uuid
 from flow360.component.simulation.framework.expressions import StringExpression
+from flow360.component.simulation.framework.param_utils import serialize_model_obj_to_id
 from flow360.component.simulation.framework.unique_list import UniqueItemList
-from flow360.component.simulation.models.surface_models import EntityListAllowingGhost
+from flow360.component.simulation.models.surface_models import Wall
+from flow360.component.simulation.models.volume_models import (
+    ActuatorDisk,
+    BETDisk,
+    PorousMedium,
+)
 from flow360.component.simulation.outputs.output_entities import (
     Isosurface,
     Point,
@@ -27,6 +33,7 @@ from flow360.component.simulation.outputs.output_entities import (
 from flow360.component.simulation.outputs.output_fields import (
     AllFieldNames,
     CommonFieldNames,
+    ForceOutputCoefficientNames,
     InvalidOutputFieldsForLiquid,
     SliceFieldNames,
     SurfaceFieldNames,
@@ -67,8 +74,14 @@ from flow360.component.simulation.validation.validation_context import (
 )
 from flow360.component.simulation.validation.validation_utils import (
     validate_entity_list_surface_existence,
+    validate_improper_surface_field_usage_for_imported_surface,
 )
 from flow360.component.types import Axis
+
+ForceOutputModelType = Annotated[
+    Union[Wall, BETDisk, ActuatorDisk, PorousMedium],
+    pd.Field(discriminator="type"),
+]
 
 
 class UserDefinedField(Flow360BaseModel):
@@ -133,44 +146,53 @@ class MovingStatistic(Flow360BaseModel):
     :class:`ProbeOutput`, :class:`SurfaceProbeOutput`,
     :class:`SurfaceIntegralOutput` and :class:`ForceOutput`.
 
+    Notes
+    -----
+    - The window size is defined by the number of data points recorded in the output.
+    - For steady simulations, the solver typically outputs a data point once every **10 pseudo steps**.
+      This means a :py:attr:`moving_window_size`=10 would cover 100 pseudo steps.
+      Thus, the :py:attr:`start_step` value is automatically rounded up to
+      the nearest multiple of 10 for steady simulations.
+    - For unsteady simulations, the solver outputs a data point for ** every physical step**.
+      A :py:attr:`moving_window_size`=10 would cover 10 physical steps.
+    - When :py:attr:`method` is set to "standard_deviation", the standard deviation is computed as a
+      **sample standard deviation** normalized by :math:`n-1` (Bessel's correction), where :math:`n`
+      is the number of data points in the moving window.
+    - When :py:attr:`method` is set to "range", the difference between the maximum and minimum values of
+      the monitored field in the moving window is computed.
+
     Example
     -------
 
     Define a moving statistic to compute the standard deviation in a moving window of
-    10 steps, with the initial 100 steps skipped.
+    10 data points, with the initial 100 steps skipped.
 
     >>> fl.MovingStatistic(
     ...     moving_window_size=10,
-    ...     method="std",
+    ...     method="standard_deviation",
     ...     start_step=100,
     ... )
 
     ====
     """
 
-    moving_window_size: pd.PositiveInt = pd.Field(
+    moving_window_size: pd.StrictInt = pd.Field(
         10,
-        description="The number of pseudo/physical steps to compute moving statistics. "
-        "For steady simulation, the moving_window_size should be a multiple of 10.",
+        ge=2,
+        description="The size of the moving window in data points over which the "
+        "statistic is calculated. Must be greater than or equal to 2.",
     )
-    method: Literal["mean", "min", "max", "std", "deviation"] = pd.Field(
-        "mean", description="The type of moving statistics used to monitor the output."
+    method: Literal["mean", "min", "max", "standard_deviation", "range"] = pd.Field(
+        "mean", description="The statistical method to apply to the data within the moving window."
     )
     start_step: pd.NonNegativeInt = pd.Field(
         0,
-        description="The number of pseudo/physical steps to skip before computing the moving statistics. "
-        "For steady simulation, the moving_window_size should be a multiple of 10.",
+        description="The number of steps (pseudo or physical) to skip at the beginning of the "
+        "simulation before the moving statistics calculation starts. For steady "
+        "simulations, this value is automatically rounded up to the nearest multiple of 10, "
+        "as the solver outputs data every 10 pseudo steps.",
     )
     type_name: Literal["MovingStatistic"] = pd.Field("MovingStatistic", frozen=True)
-
-    @contextual_field_validator("moving_window_size", "start_step", mode="after")
-    @classmethod
-    def _check_moving_window_for_steady_simulation(cls, value, param_info: ParamsValidationInfo):
-        if param_info.time_stepping == TimeSteppingType.STEADY and value % 10 != 0:
-            raise ValueError(
-                "For steady simulation, the number of steps should be a multiple of 10."
-            )
-        return value
 
 
 class _OutputBase(Flow360BaseModel):
@@ -314,7 +336,7 @@ class SurfaceOutput(_AnimationAndFileFormatSettings, _OutputBase):
     # TODO: entities is None --> use all surfaces. This is not implemented yet.
 
     name: Optional[str] = pd.Field("Surface output", description="Name of the `SurfaceOutput`.")
-    entities: EntityListAllowingGhost[  # pylint: disable=duplicate-code
+    entities: EntityList[  # pylint: disable=duplicate-code
         Surface,
         MirroredSurface,
         GhostSurface,
@@ -344,6 +366,15 @@ class SurfaceOutput(_AnimationAndFileFormatSettings, _OutputBase):
     def ensure_surface_existence(cls, value, param_info: ParamsValidationInfo):
         """Ensure all boundaries will be present after mesher"""
         return validate_entity_list_surface_existence(value, param_info)
+
+    @contextual_model_validator(mode="after")
+    def validate_imported_surface_output_fields(self, param_info: ParamsValidationInfo):
+        """Validate output fields when using imported surfaces"""
+        expanded_entities = param_info.expand_entity_list(self.entities)
+        validate_improper_surface_field_usage_for_imported_surface(
+            expanded_entities, self.output_fields
+        )
+        return self
 
 
 class TimeAverageSurfaceOutput(SurfaceOutput):
@@ -647,7 +678,7 @@ class SurfaceIntegralOutput(_OutputBase):
     """
 
     name: str = pd.Field("Surface integral output", description="Name of integral.")
-    entities: EntityListAllowingGhost[  # pylint: disable=duplicate-code
+    entities: EntityList[  # pylint: disable=duplicate-code
         Surface,
         MirroredSurface,
         GhostSurface,
@@ -663,7 +694,7 @@ class SurfaceIntegralOutput(_OutputBase):
         description="List of output variables, only the :class:`UserDefinedField` is allowed."
     )
     moving_statistic: Optional[MovingStatistic] = pd.Field(
-        None, description="The moving statistics used to monitor the output."
+        None, description="When specified, report moving statistics of the fields instead."
     )
     output_type: Literal["SurfaceIntegralOutput"] = pd.Field("SurfaceIntegralOutput", frozen=True)
 
@@ -688,6 +719,96 @@ class SurfaceIntegralOutput(_OutputBase):
                     " Please assign them to separate outputs."
                 )
         return value
+
+    @contextual_model_validator(mode="after")
+    def validate_imported_surface_output_fields(self, param_info: ParamsValidationInfo):
+        """Validate output fields when using imported surfaces"""
+        expanded_entities = param_info.expand_entity_list(self.entities)
+        validate_improper_surface_field_usage_for_imported_surface(
+            expanded_entities, self.output_fields
+        )
+        return self
+
+
+class ForceOutput(_OutputBase):
+    """
+    :class:`ForceOutput` class for setting total force output of specific surfaces.
+
+    Example
+    -------
+
+    Define :class:`ForceOutput` to output total CL and CD on multiple wing surfaces and a BET disk.
+
+    >>> wall = fl.Wall(name = 'wing', surfaces=[volume_mesh['1'], volume_mesh["wing2"]])
+    >>> bet_disk = fl.BETDisk(...)
+    >>> fl.ForceOutput(
+    ...     name="force_output",
+    ...     models=[wall, bet_disk],
+    ...     output_fields=["CL", "CD"]
+    ... )
+
+    ====
+    """
+
+    name: str = pd.Field("Force output", description="Name of the force output.")
+    output_fields: UniqueItemList[ForceOutputCoefficientNames] = pd.Field(
+        description="List of force coefficients. Including CL, CD, CFx, CFy, CFz, CMx, CMy, CMz. "
+        "For surface forces, their SkinFriction/Pressure is also supported, such as CLSkinFriction and CLPressure."
+    )
+    models: List[Union[ForceOutputModelType, str]] = pd.Field(
+        description="List of surface/volume models (or model ids) whose force contribution will be calculated.",
+    )
+    moving_statistic: Optional[MovingStatistic] = pd.Field(
+        None, description="When specified, report moving statistics of the fields instead."
+    )
+    output_type: Literal["ForceOutput"] = pd.Field("ForceOutput", frozen=True)
+
+    @pd.field_validator("models", mode="after")
+    @classmethod
+    def _convert_model_obj_to_id(cls, value):
+        """Validate duplicate models and convert model object to id"""
+        model_ids = set()
+        for model in value:
+            model_id = (
+                model if isinstance(model, str) else serialize_model_obj_to_id(model_obj=model)
+            )
+            if model_id in model_ids:
+                raise ValueError("Duplicate models are not allowed in the same `ForceOutput`.")
+            model_ids.add(model_id)
+        return list(model_ids)
+
+    @contextual_field_validator("models", mode="after", required_context=["physics_model_dict"])
+    @classmethod
+    def _check_model_exist_in_model_list(cls, value, param_info: ParamsValidationInfo):
+        """Ensure all models exist in SimulationParams' model list."""
+        for model_id in value:
+            model_obj = param_info.physics_model_dict.get(model_id)
+            if model_obj is None:
+                raise ValueError("The model does not exist in simulation params' models list.")
+
+        return value
+
+    @contextual_field_validator("models", mode="after", required_context=["physics_model_dict"])
+    @classmethod
+    def _check_output_fields_with_volume_models_specified(
+        cls, value, info: pd.ValidationInfo, param_info: ParamsValidationInfo
+    ):
+        """Ensure the output field exists when volume models are specified."""
+
+        model_objs = [param_info.physics_model_dict.get(model_id) for model_id in value]
+
+        if all(isinstance(model, Wall) for model in model_objs):
+            return value
+        output_fields = info.data.get("output_fields", None)
+        if all(
+            field in ["CL", "CD", "CFx", "CFy", "CFz", "CMx", "CMy", "CMz"]
+            for field in output_fields.items
+        ):
+            return value
+        raise ValueError(
+            "When ActuatorDisk/BETDisk/PorousMedium is specified, "
+            "only CL, CD, CFx, CFy, CFz, CMx, CMy, CMz can be set as output_fields."
+        )
 
 
 class RenderOutputGroup(Flow360BaseModel):
@@ -860,7 +981,7 @@ class ProbeOutput(_OutputBase):
         " and :class:`UserDefinedField`."
     )
     moving_statistic: Optional[MovingStatistic] = pd.Field(
-        None, description="The moving statistics used to monitor the output."
+        None, description="When specified, report moving statistics of the fields instead."
     )
     output_type: Literal["ProbeOutput"] = pd.Field("ProbeOutput", frozen=True)
 
@@ -927,7 +1048,7 @@ class SurfaceProbeOutput(_OutputBase):
         " :ref:`variables specific to SurfaceOutput<SurfaceSpecificVariablesV2>` and :class:`UserDefinedField`."
     )
     moving_statistic: Optional[MovingStatistic] = pd.Field(
-        None, description="The moving statistics used to monitor the output."
+        None, description="When specified, report moving statistics of the fields instead."
     )
     output_type: Literal["SurfaceProbeOutput"] = pd.Field("SurfaceProbeOutput", frozen=True)
 
@@ -1212,9 +1333,7 @@ class AeroAcousticOutput(Flow360BaseModel):
         + "input.",
     )
     permeable_surfaces: Optional[
-        EntityListAllowingGhost[
-            Surface, GhostSurface, GhostCircularPlane, GhostSphere, WindTunnelGhostSurface
-        ]
+        EntityList[Surface, GhostSurface, GhostCircularPlane, GhostSphere, WindTunnelGhostSurface]
     ] = pd.Field(
         None, description="List of permeable surfaces. Left empty if `patch_type` is solid"
     )
@@ -1493,6 +1612,7 @@ OutputTypes = Annotated[
         TimeAverageStreamlineOutput,
         ForceDistributionOutput,
         TimeAverageForceDistributionOutput,
+        ForceOutput,
         RenderOutput,
     ],
     pd.Field(discriminator="output_type"),
@@ -1510,6 +1630,6 @@ TimeAverageOutputTypes = (
 )
 
 MonitorOutputType = Annotated[
-    Union[SurfaceIntegralOutput, ProbeOutput, SurfaceProbeOutput],
+    Union[ForceOutput, SurfaceIntegralOutput, ProbeOutput, SurfaceProbeOutput],
     pd.Field(discriminator="output_type"),
 ]

@@ -1,0 +1,1026 @@
+{
+    "version": "25.7.6b0",
+    "unit_system": {
+        "name": "SI"
+    },
+    "reference_geometry": {
+        "moment_center": {
+            "value": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "units": "m"
+        },
+        "moment_length": {
+            "value": 0.6460682372650963,
+            "units": "m"
+        },
+        "area": {
+            "type_name": "number",
+            "value": 0.748844455929999,
+            "units": "m**2"
+        }
+    },
+    "operating_condition": {
+        "type_name": "AerospaceCondition",
+        "private_attribute_constructor": "from_mach",
+        "private_attribute_input_cache": {
+            "mach": 0.84,
+            "alpha": {
+                "value": 3.06,
+                "units": "degree"
+            },
+            "beta": {
+                "value": 0.0,
+                "units": "degree"
+            },
+            "thermal_state": {
+                "type_name": "ThermalState",
+                "private_attribute_constructor": "default",
+                "private_attribute_input_cache": {},
+                "temperature": {
+                    "value": 288.15,
+                    "units": "K"
+                },
+                "density": {
+                    "value": 1.225,
+                    "units": "kg/m**3"
+                },
+                "material": {
+                    "type": "air",
+                    "name": "air",
+                    "dynamic_viscosity": {
+                        "reference_viscosity": {
+                            "value": 1.9328492090409794e-05,
+                            "units": "kg/(m*s)"
+                        },
+                        "reference_temperature": {
+                            "value": 288.15,
+                            "units": "K"
+                        },
+                        "effective_temperature": {
+                            "value": 110.4,
+                            "units": "K"
+                        }
+                    }
+                }
+            }
+        },
+        "alpha": {
+            "value": 3.06,
+            "units": "degree"
+        },
+        "beta": {
+            "value": 0.0,
+            "units": "degree"
+        },
+        "velocity_magnitude": {
+            "type_name": "number",
+            "value": 285.84696487889875,
+            "units": "m/s"
+        },
+        "thermal_state": {
+            "type_name": "ThermalState",
+            "private_attribute_constructor": "default",
+            "private_attribute_input_cache": {},
+            "temperature": {
+                "value": 288.15,
+                "units": "K"
+            },
+            "density": {
+                "value": 1.225,
+                "units": "kg/m**3"
+            },
+            "material": {
+                "type": "air",
+                "name": "air",
+                "dynamic_viscosity": {
+                    "reference_viscosity": {
+                        "value": 1.9328492090409794e-05,
+                        "units": "kg/(m*s)"
+                    },
+                    "reference_temperature": {
+                        "value": 288.15,
+                        "units": "K"
+                    },
+                    "effective_temperature": {
+                        "value": 110.4,
+                        "units": "K"
+                    }
+                }
+            }
+        }
+    },
+    "models": [
+        {
+            "_id": "f94a410b-31d4-4696-97f6-db4ba8d75fcc",
+            "material": {
+                "type": "air",
+                "name": "air",
+                "dynamic_viscosity": {
+                    "reference_viscosity": {
+                        "value": 1.716e-05,
+                        "units": "Pa*s"
+                    },
+                    "reference_temperature": {
+                        "value": 273.15,
+                        "units": "K"
+                    },
+                    "effective_temperature": {
+                        "value": 110.4,
+                        "units": "K"
+                    }
+                }
+            },
+            "initial_condition": {
+                "type_name": "NavierStokesInitialCondition",
+                "rho": "rho",
+                "u": "u",
+                "v": "v",
+                "w": "w",
+                "p": "p"
+            },
+            "private_attribute_id": "f94a410b-31d4-4696-97f6-db4ba8d75fcc",
+            "type": "Fluid",
+            "navier_stokes_solver": {
+                "absolute_tolerance": 1e-09,
+                "relative_tolerance": 0.0,
+                "order_of_accuracy": 2,
+                "equation_evaluation_frequency": 1,
+                "linear_solver": {
+                    "max_iterations": 25
+                },
+                "CFL_multiplier": 1.0,
+                "kappa_MUSCL": -1.0,
+                "numerical_dissipation_factor": 1.0,
+                "limit_velocity": false,
+                "limit_pressure_density": false,
+                "type_name": "Compressible",
+                "low_mach_preconditioner": false,
+                "update_jacobian_frequency": 4,
+                "max_force_jac_update_physical_steps": 0
+            },
+            "turbulence_model_solver": {
+                "absolute_tolerance": 1e-08,
+                "relative_tolerance": 0.0,
+                "order_of_accuracy": 2,
+                "equation_evaluation_frequency": 4,
+                "linear_solver": {
+                    "max_iterations": 15
+                },
+                "CFL_multiplier": 2.0,
+                "type_name": "SpalartAllmaras",
+                "reconstruction_gradient_limiter": 0.5,
+                "quadratic_constitutive_relation": false,
+                "modeling_constants": {
+                    "type_name": "SpalartAllmarasConsts",
+                    "C_DES": 0.72,
+                    "C_d": 8.0,
+                    "C_cb1": 0.1355,
+                    "C_cb2": 0.622,
+                    "C_sigma": 0.6666666666666666,
+                    "C_v1": 7.1,
+                    "C_vonKarman": 0.41,
+                    "C_w2": 0.3,
+                    "C_w4": 0.21,
+                    "C_w5": 1.5,
+                    "C_t3": 1.2,
+                    "C_t4": 0.5,
+                    "C_min_rd": 10.0
+                },
+                "update_jacobian_frequency": 4,
+                "max_force_jac_update_physical_steps": 0,
+                "rotation_correction": false,
+                "low_reynolds_correction": false
+            },
+            "transition_model_solver": {
+                "type_name": "None"
+            }
+        },
+        {
+            "_id": "639cd8f5-79c3-4f08-a88f-b44ff8c8f43c",
+            "type": "Wall",
+            "entities": {
+                "stored_entities": [
+                    {
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "1",
+                        "name": "1",
+                        "private_attribute_full_name": "1",
+                        "private_attribute_is_interface": false,
+                        "private_attribute_sub_components": []
+                    }
+                ]
+            },
+            "private_attribute_id": "639cd8f5-79c3-4f08-a88f-b44ff8c8f43c",
+            "name": "wing",
+            "use_wall_function": false,
+            "heat_spec": {
+                "value": {
+                    "value": 0.0,
+                    "units": "W/m**2"
+                },
+                "type_name": "HeatFlux"
+            },
+            "roughness_height": {
+                "value": 0.0,
+                "units": "m"
+            }
+        },
+        {
+            "type": "SlipWall",
+            "entities": {
+                "stored_entities": [
+                    {
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "2",
+                        "name": "2",
+                        "private_attribute_full_name": "2",
+                        "private_attribute_is_interface": false,
+                        "private_attribute_sub_components": []
+                    }
+                ]
+            },
+            "private_attribute_id": "d517b40d-cab9-49df-b260-9291937bd86b",
+            "name": "symmetry"
+        },
+        {
+            "_id": "58a41587-1ad2-48d6-afbe-9e8bafc2a51d",
+            "type": "Freestream",
+            "entities": {
+                "stored_entities": [
+                    {
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "3",
+                        "name": "3",
+                        "private_attribute_full_name": "3",
+                        "private_attribute_is_interface": false,
+                        "private_attribute_sub_components": []
+                    }
+                ]
+            },
+            "private_attribute_id": "58a41587-1ad2-48d6-afbe-9e8bafc2a51d",
+            "name": "Freestream"
+        },
+        {
+            "_id": "42a99183-65eb-45eb-956a-7b41cae69efd",
+            "name": "Porous medium",
+            "type": "PorousMedium",
+            "entities": {
+                "stored_entities": [
+                    {
+                        "private_attribute_entity_type_name": "Box",
+                        "private_attribute_id": "07c017de-b078-48c6-bd65-f6bc11b321a2",
+                        "name": "box",
+                        "private_attribute_zone_boundary_names": {
+                            "items": []
+                        },
+                        "type_name": "Box",
+                        "private_attribute_constructor": "from_principal_axes",
+                        "private_attribute_input_cache": {
+                            "axes": [
+                                [
+                                    0.0,
+                                    1.0,
+                                    0.0
+                                ],
+                                [
+                                    0.0,
+                                    0.0,
+                                    1.0
+                                ]
+                            ],
+                            "center": {
+                                "value": [
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "units": "m"
+                            },
+                            "size": {
+                                "value": [
+                                    0.2,
+                                    0.3,
+                                    2.0
+                                ],
+                                "units": "m"
+                            },
+                            "name": "box"
+                        },
+                        "center": {
+                            "value": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "units": "m"
+                        },
+                        "size": {
+                            "value": [
+                                0.2,
+                                0.3,
+                                2.0
+                            ],
+                            "units": "m"
+                        },
+                        "axis_of_rotation": [
+                            -0.5773502691896256,
+                            -0.5773502691896256,
+                            -0.577350269189626
+                        ],
+                        "angle_of_rotation": {
+                            "value": -2.0943951023931953,
+                            "units": "rad"
+                        }
+                    }
+                ]
+            },
+            "darcy_coefficient": {
+                "value": [
+                    1000000.0,
+                    0.0,
+                    0.0
+                ],
+                "units": "m**(-2)"
+            },
+            "forchheimer_coefficient": {
+                "value": [
+                    1.0,
+                    0.0,
+                    0.0
+                ],
+                "units": "1/m"
+            },
+            "volumetric_heat_source": {
+                "value": 0.0,
+                "units": "kg/(m*s**3)"
+            },
+            "private_attribute_id": "42a99183-65eb-45eb-956a-7b41cae69efd"
+        },
+        {
+            "_id": "38c82a7f-b0cf-4b38-a93f-31fd1561a946",
+            "name": "BET11222",
+            "type": "BETDisk",
+            "private_attribute_constructor": "from_xrotor",
+            "rotation_direction_rule": "leftHand",
+            "number_of_blades": null,
+            "tip_gap": "inf",
+            "blade_line_chord": {
+                "value": 0,
+                "units": "m"
+            },
+            "type_name": "BETDisk",
+            "private_attribute_input_cache": {
+                "number_of_blades": 3,
+                "file": {
+                    "content": "XROTOR VERSION:  7.54\nxv15_fromXrotor\n!         Rho          Vso          Rmu           Alt\n   1.00      342.00            0.17170E-04   2000.0\n!         Rad          Vel          Adv          Rake\n  150.00       1.0            4.23765e-3       0.0000\n!         XI0          XIW\n  0.13592       0.0000\n!  Naero\n     5\n!   Xisection\n  0.09\n!       A0deg        dCLdA        CLmax         CLmin\n  -6.5           4.00       1.2500     -0.0000\n!  dCLdAstall     dCLstall      Cmconst         Mcrit\n  0.10000      0.10000     -0.10000      0.75000\n!       CDmin      CLCDmin     dCDdCL^2\n  0.075000E-01  0.00000      0.40000E-02\n!       REref        REexp\n  0.30000E+06 -0.70000\n!   Xisection\n  0.17\n!       A0deg        dCLdA        CLmax         CLmin\n      -6.0         6.0       1.300     -0.55000\n!  dCLdAstall     dCLstall      Cmconst         Mcrit\n  0.10000      0.10000     -0.10000      0.75000\n!       CDmin      CLCDmin     dCDdCL^2\n  0.075000E-01  0.10000      0.40000E-02\n!       REref        REexp\n  0.30000E+06 -0.70000\n!   Xisection\n   0.51\n!       A0deg        dCLdA        CLmax         CLmin\n-1.0       6.00                1.400     -1.4000\n!  dCLdAstall     dCLstall      Cmconst         Mcrit\n  0.10000      0.10000     -0.10000      0.75000\n!       CDmin      CLCDmin     dCDdCL^2\n  0.05000E-01  0.10000      0.40000E-02\n!       REref        REexp\n  0.30000E+06 -0.70000\n!   Xisection\n     0.8\n!       A0deg        dCLdA        CLmax         CLmin\n  -1.0      6.0       1.600     -1.500\n!  dCLdAstall     dCLstall      Cmconst         Mcrit\n    0.10000      0.10000     -0.10000      0.75000\n!       CDmin      CLCDmin     dCDdCL^2\n    0.03000E-01  0.10000      0.40000E-02\n!       REref        REexp\n    0.30000E+06 -0.70000\n!   Xisection\n      1.0\n!       A0deg        dCLdA        CLmax         CLmin\n          -1          6.0           1.0     -1.8000\n!  dCLdAstall     dCLstall      Cmconst         Mcrit\n      0.10000      0.10000     -0.10000      0.75000\n!       CDmin      CLCDmin     dCDdCL^2\n        0.04000E-01  0.10000      0.40000E-02\n!       REref        REexp\n      0.30000E+06 -0.70000\n!LVDuct  LDuct   LWind\n  T       F       F\n!   II Nblds\n    63     3\n!         r/R          C/R     Beta0deg         Ubody\n0.023003943\t0.113428403\t33.27048712\t0\n0.039116227\t0.113428403\t32.37853609\t0\n0.060384093\t0.113428403\t31.42712165\t0\n0.083584992\t0.113428403\t30.65409742\t0\n0.093024104\t0.113428403\t30.13214089\t0\n0.108253499\t0.113428403\t29.41523066\t0\n0.122239679\t0.111608996\t28.75567325\t0\n0.140577109\t0.10978959\t27.89538097\t0\n0.159536634\t0.107970183\t26.69097178\t0\n0.172590692\t0.106150776\t25.88803232\t0\n0.182536671\t0.10433137\t25.25715132\t0\n0.192482739\t0.102511963\t24.5689175\t0\n0.20305028\t0.100692556\t23.93803649\t0\n0.214861124\t0.09887315\t23.19244985\t0\n0.227293664\t0.097053743\t22.36083398\t0\n0.239415201\t0.095234336\t21.67260016\t0\n0.25153696\t0.093414933\t20.84098429\t0\n0.264591196\t0.0934138\t19.92333919\t0\n0.27609148\t0.093412667\t19.03437051\t0\n0.286348329\t0.093411533\t18.34613668\t0\n0.297848614\t0.0934104\t17.457168\t0\n0.309659147\t0.093409267\t16.91231622\t0\n0.322713117\t0.093408133\t16.16672958\t0\n0.334834565\t0.093407\t15.53584858\t0\n0.345091281\t0.093405867\t14.93364398\t0\n0.356591344\t0.093404733\t14.18805734\t0\n0.367158885\t0.0934036\t13.55717634\t0\n0.375240265\t0.093402467\t12.86894251\t0\n0.385497114\t0.093401333\t12.18070869\t0\n0.396375525\t0.0934002\t11.49247487\t0\n0.406632108\t0.093399067\t10.9762995\t0\n0.419063938\t0.093397933\t10.60350618\t0\n0.436468714\t0.0933968\t9.94394877\t0\n0.450765676\t0.093395667\t9.28439136\t0\n0.465373463\t0.093394533\t8.59615753\t0\n0.476873349\t0.0933934\t7.96527653\t0\n0.489927141\t0.093392267\t7.33439553\t0\n0.497075821\t0.093391133\t6.87557298\t0\n0.511683032\t0.09339\t6.56013248\t0\n0.529087542\t0.093388867\t6.07263352\t0\n0.544627496\t0.093387733\t5.49910533\t0\n0.557680933\t0.0933866\t5.0976356\t0\n0.569491245\t0.093385467\t4.69616587\t0\n0.585652762\t0.093384333\t4.12263769\t0\n0.596841423\t0.0933832\t3.77852078\t0\n0.609273165\t0.093382067\t3.46308028\t0\n0.628853143\t0.093380933\t2.97558132\t0\n0.664905287\t0.0933798\t2.0005834\t0\n0.686349777\t0.093378667\t1.62779008\t0\n0.69940317\t0.093377533\t1.25499676\t0\n0.711213304\t0.0933764\t0.96823267\t0\n0.726753081\t0.093375267\t0.50941012\t0\n0.745400849\t0.093374133 -0.064118065 0\n0.762805314\t0.093373 -0.522940614 0\n0.797303462\t0.093371867\t-1.44058571 0\n0.842057794\t0.093370733 -2.61631849 0\n0.877177195\t0.0933696\t-3.333228722 0\n0.91385068\t0.093368467\t-4.164844591 0\n0.936227735\t0.093367333\t-4.681019957 0\n0.957361443\t0.0933662 -5.053813278 0\n0.977873766\t0.093365067 -5.541312235 0\n0.989683856\t0.093363933 -5.799399919 0\n1\t0.0933634\t-6.1\t0\n!      URDuct\n   1.0000",
+                    "file_path": "xrotorTest.xrotor",
+                    "type_name": "XRotorFile"
+                },
+                "length_unit": {
+                    "value": 1,
+                    "units": "m"
+                },
+                "angle_unit": {
+                    "value": 1,
+                    "units": "degree"
+                },
+                "name": "BET11222",
+                "rotation_direction_rule": "leftHand",
+                "omega": {
+                    "value": 10,
+                    "units": "rad/s"
+                },
+                "chord_ref": {
+                    "value": 3,
+                    "units": "m"
+                },
+                "tip_gap": "inf",
+                "blade_line_chord": {
+                    "value": 0,
+                    "units": "m"
+                },
+                "entities": {
+                    "stored_entities": [
+                        {
+                            "private_attribute_id": "9e2d69cd-460e-456d-b0df-b232be7198a3",
+                            "name": "Cylinder",
+                            "private_attribute_entity_type_name": "Cylinder",
+                            "axis": [
+                                0,
+                                1,
+                                0
+                            ],
+                            "center": {
+                                "value": [
+                                    0,
+                                    -10,
+                                    0
+                                ],
+                                "units": "cm"
+                            },
+                            "height": {
+                                "value": 1,
+                                "units": "cm"
+                            },
+                            "inner_radius": {
+                                "value": 0,
+                                "units": "m"
+                            },
+                            "outer_radius": {
+                                "value": 1,
+                                "units": "cm"
+                            }
+                        },
+                        {
+                            "private_attribute_id": "41cc394a-0ac6-4e0f-97f9-e1971edacbe3",
+                            "name": "Cylinder3",
+                            "private_attribute_entity_type_name": "Cylinder",
+                            "axis": [
+                                0,
+                                1,
+                                0
+                            ],
+                            "center": {
+                                "value": [
+                                    0,
+                                    -8,
+                                    0
+                                ],
+                                "units": "cm"
+                            },
+                            "height": {
+                                "value": 1,
+                                "units": "cm"
+                            },
+                            "inner_radius": {
+                                "value": 0,
+                                "units": "m"
+                            },
+                            "outer_radius": {
+                                "value": 1,
+                                "units": "cm"
+                            }
+                        }
+                    ]
+                },
+                "n_loading_nodes": 3
+            },
+            "private_attribute_id": "38c82a7f-b0cf-4b38-a93f-31fd1561a946"
+        },
+        {
+            "_id": "f929834a-0adb-4b42-a880-3d034edce883",
+            "name": "Actuator disk1",
+            "type": "ActuatorDisk",
+            "force_per_area": {
+                "radius": {
+                    "value": [
+                        0,
+                        1,
+                        10
+                    ],
+                    "units": "m"
+                },
+                "thrust": {
+                    "value": [
+                        1,
+                        2,
+                        1
+                    ],
+                    "units": "N/m**2"
+                },
+                "circumferential": {
+                    "value": [
+                        0,
+                        20,
+                        1
+                    ],
+                    "units": "N/m**2"
+                }
+            },
+            "entities": {
+                "stored_entities": [
+                    {
+                        "private_attribute_id": "c007c4ff-65af-41d9-847b-e0058f31ae51",
+                        "name": "ad1",
+                        "private_attribute_entity_type_name": "Cylinder",
+                        "axis": [
+                            0,
+                            0,
+                            1
+                        ],
+                        "center": {
+                            "value": [
+                                10,
+                                0,
+                                0
+                            ],
+                            "units": "cm"
+                        },
+                        "height": {
+                            "value": 1,
+                            "units": "cm"
+                        },
+                        "inner_radius": {
+                            "value": 0,
+                            "units": "m"
+                        },
+                        "outer_radius": {
+                            "value": 1,
+                            "units": "cm"
+                        }
+                    }
+                ]
+            },
+            "private_attribute_id": "f929834a-0adb-4b42-a880-3d034edce883"
+        }
+    ],
+    "time_stepping": {
+        "type_name": "Steady",
+        "max_steps": 2000,
+        "CFL": {
+            "type": "ramp",
+            "initial": 5.0,
+            "final": 200.0,
+            "ramp_steps": 40
+        }
+    },
+    "user_defined_fields": [
+        {
+            "type_name": "UserDefinedField",
+            "name": "Sidewash",
+            "expression": "Sidewash = atan(primitiveVars[1]/abs(primitiveVars[0]))"
+        },
+        {
+            "type_name": "UserDefinedField",
+            "name": "Upwash",
+            "expression": "Upwash = atan(primitiveVars[2]/abs(primitiveVars[0]))"
+        },
+        {
+            "type_name": "UserDefinedField",
+            "name": "Helicity",
+            "expression": "double vorticity[3];vorticity[0] = gradPrimitive[3][1] - gradPrimitive[2][2];vorticity[1] = gradPrimitive[1][2] - gradPrimitive[3][0];vorticity[2] = gradPrimitive[2][0] - gradPrimitive[1][1];double velocity[3];velocity[0] = primitiveVars[1];velocity[1] = primitiveVars[2];velocity[2] = primitiveVars[3];Helicity = dot(velocity, vorticity);"
+        }
+    ],
+    "outputs": [
+        {
+            "output_fields": {
+                "items": [
+                    "primitiveVars",
+                    "residualNavierStokes",
+                    "residualTurbulence",
+                    "Mach",
+                    "Sidewash",
+                    "Upwash",
+                    "Helicity"
+                ]
+            },
+            "private_attribute_id": "84906625-9279-4cb4-8812-dafb831b2cfa",
+            "_id": "84906625-9279-4cb4-8812-dafb831b2cfa",
+            "frequency": -1,
+            "frequency_offset": 0,
+            "output_format": "paraview",
+            "name": "Volume output",
+            "output_type": "VolumeOutput"
+        },
+        {
+            "output_fields": {
+                "items": [
+                    {
+                        "name": "Helicity_user",
+                        "type_name": "UserVariable"
+                    }
+                ]
+            },
+            "private_attribute_id": "b0d034e3-87ce-4b79-8c5a-d22b7386000c",
+            "name": "point_legacy1",
+            "entities": {
+                "stored_entities": [
+                    {
+                        "private_attribute_entity_type_name": "Point",
+                        "private_attribute_id": "b4f78cfe-f42d-47c9-94f5-d7afdb616a06",
+                        "name": "Point_1",
+                        "location": {
+                            "value": [
+                                -0.026642,
+                                0.56614,
+                                0.0
+                            ],
+                            "units": "m"
+                        }
+                    }
+                ]
+            },
+            "moving_statistic": {
+                "moving_window_size": 200,
+                "method": "mean",
+                "start_step": 0,
+                "type_name": "MovingStatistic"
+            },
+            "output_type": "ProbeOutput"
+        },
+        {
+            "output_fields": {
+                "items": [
+                    {
+                        "name": "Mach_SI",
+                        "type_name": "UserVariable"
+                    }
+                ]
+            },
+            "private_attribute_id": "9c72b148-84ff-4e78-82d7-8d4c5d11ebd3",
+            "name": "point_legacy2",
+            "entities": {
+                "stored_entities": [
+                    {
+                        "private_attribute_entity_type_name": "Point",
+                        "private_attribute_id": "5d0433c0-b202-4c14-bdde-e8e993b47f9e",
+                        "name": "Point_1",
+                        "location": {
+                            "value": [
+                                -0.026642,
+                                0.56614,
+                                0.0
+                            ],
+                            "units": "m"
+                        }
+                    }
+                ]
+            },
+            "moving_statistic": {
+                "moving_window_size": 100,
+                "method": "standard_deviation",
+                "start_step": 0,
+                "type_name": "MovingStatistic"
+            },
+            "output_type": "ProbeOutput"
+        },
+        {
+            "output_fields": {
+                "items": [
+                    "CL",
+                    "CFx",
+                    "CFySkinFriction"
+                ]
+            },
+            "private_attribute_id": "61863d9a-baf6-499b-87d3-509a2cea2b56",
+            "name": "forceOutput2",
+            "models": [
+                "639cd8f5-79c3-4f08-a88f-b44ff8c8f43c",
+                "639cd8f5-79c3-4f08-a88f-b44ff8c8f43c"
+            ],
+            "moving_statistic": {
+                "moving_window_size": 100,
+                "method": "mean",
+                "start_step": 0,
+                "type_name": "MovingStatistic"
+            },
+            "output_type": "ForceOutput"
+        },
+        {
+            "output_fields": {
+                "items": [
+                    "CL",
+                    "CFx",
+                    "CFySkinFriction"
+                ]
+            },
+            "private_attribute_id": "61863d9a-baf6-499b-87d3-509a2cea2b51",
+            "name": "forceOutput",
+            "models": [
+                "639cd8f5-79c3-4f08-a88f-b44ff8c8f43c",
+                "42a99183-65eb-45eb-956a-7b41cae69efd"
+            ],
+            "output_type": "ForceOutput"
+        },
+        {
+            "output_fields": {
+                "items": [
+                    "CL",
+                    "CFx",
+                    "CFySkinFriction"
+                ]
+            },
+            "private_attribute_id": "61863d9a-baf6-499b-87d3-509a2cea2b51",
+            "name": "forceOutput",
+            "models": [
+                "639cd8f5-79c3-4f08-a88f-b44ff8c8f43c",
+                "111"
+            ],
+            "output_type": "ForceOutput"
+        },
+        {
+            "output_fields": {
+                "items": [
+                    "CL",
+                    "CFx"
+                ]
+            },
+            "private_attribute_id": "61863d9a-baf6-499b-87d3-509a2cea2b51",
+            "name": "forceOutput",
+            "models": [
+                "639cd8f5-79c3-4f08-a88f-b44ff8c8f43c",
+                "f929834a-0adb-4b42-a880-3d034edce883",
+                "38c82a7f-b0cf-4b38-a93f-31fd1561a946"
+            ],
+            "output_type": "ForceOutput"
+        }
+    ],
+    "run_control": {
+        "stopping_criteria": [
+            {
+                "name": "Criterion_Helicity",
+                "monitor_field": {
+                    "name": "Helicity_user",
+                    "type_name": "UserVariable"
+                },
+                "monitor_output": "b0d034e3-87ce-4b79-8c5a-d22b7386000c",
+                "tolerance": {
+                    "type_name": "number",
+                    "value": 0.005,
+                    "units": "cm/s**2"
+                },
+                "tolerance_window_size": 3,
+                "type_name": "StoppingCriterion"
+            },
+            {
+                "name": "Criterion_Mach",
+                "monitor_field": {
+                    "name": "Mach_SI",
+                    "type_name": "UserVariable"
+                },
+                "monitor_output": "9c72b148-84ff-4e78-82d7-8d4c5d11ebd3",
+                "tolerance": {
+                    "type_name": "number",
+                    "value": 1e-05
+                },
+                "type_name": "StoppingCriterion"
+            },
+            {
+                "name": "Criterion_ForceOutput",
+                "monitor_field": "CL",
+                "monitor_output": "61863d9a-baf6-499b-87d3-509a2cea2b56",
+                "tolerance": {
+                    "type_name": "number",
+                    "value": 0.265
+                },
+                "type_name": "StoppingCriterion"
+            }
+        ],
+        "type_name": "RunControl"
+    },
+    "private_attribute_asset_cache": {
+        "project_length_unit": {
+            "value": 0.8059,
+            "units": "m"
+        },
+        "project_entity_info": {
+            "draft_entities": [
+                {
+                    "private_attribute_entity_type_name": "Point",
+                    "private_attribute_id": "37083fc7-2aef-4d8a-aa63-e47491f334c3",
+                    "name": "point_streamline",
+                    "location": {
+                        "value": [
+                            0.0,
+                            1.0,
+                            0.04
+                        ],
+                        "units": "m"
+                    }
+                },
+                {
+                    "private_attribute_entity_type_name": "Point",
+                    "private_attribute_id": "b4f78cfe-f42d-47c9-94f5-d7afdb616a06",
+                    "name": "Point_1",
+                    "location": {
+                        "value": [
+                            -0.026642,
+                            0.56614,
+                            0.0
+                        ],
+                        "units": "m"
+                    }
+                },
+                {
+                    "private_attribute_entity_type_name": "PointArray",
+                    "private_attribute_id": "36662ed5-ce40-4456-8f91-bb8372169ce8",
+                    "name": "pointarray_streamline",
+                    "start": {
+                        "value": [
+                            0.0,
+                            0.0,
+                            0.2
+                        ],
+                        "units": "m"
+                    },
+                    "end": {
+                        "value": [
+                            0.0,
+                            1.0,
+                            0.2
+                        ],
+                        "units": "m"
+                    },
+                    "number_of_points": 20
+                },
+                {
+                    "private_attribute_entity_type_name": "PointArray2D",
+                    "private_attribute_id": "1d5db652-4fb8-4bcf-938e-ac49638e3a41",
+                    "name": "pointarray2d_streamline",
+                    "origin": {
+                        "value": [
+                            0.0,
+                            0.0,
+                            -0.2
+                        ],
+                        "units": "m"
+                    },
+                    "u_axis_vector": {
+                        "value": [
+                            0.0,
+                            1.4,
+                            0.0
+                        ],
+                        "units": "m"
+                    },
+                    "v_axis_vector": {
+                        "value": [
+                            0.0,
+                            0.0,
+                            0.4
+                        ],
+                        "units": "m"
+                    },
+                    "u_number_of_points": 10,
+                    "v_number_of_points": 10
+                },
+                {
+                    "private_attribute_entity_type_name": "Slice",
+                    "private_attribute_id": "2553b0de-97cc-481e-b9a7-05d39e57f7d8",
+                    "name": "sliceName_1",
+                    "normal": [
+                        0.0,
+                        1.0,
+                        0.0
+                    ],
+                    "origin": {
+                        "value": [
+                            0.0,
+                            0.56413,
+                            0.0
+                        ],
+                        "units": "m"
+                    }
+                },
+                {
+                    "private_attribute_entity_type_name": "Box",
+                    "private_attribute_id": "07c017de-b078-48c6-bd65-f6bc11b321a2",
+                    "name": "box",
+                    "private_attribute_zone_boundary_names": {
+                        "items": []
+                    },
+                    "type_name": "Box",
+                    "private_attribute_constructor": "from_principal_axes",
+                    "private_attribute_input_cache": {
+                        "axes": [
+                            [
+                                0.0,
+                                1.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                0.0,
+                                1.0
+                            ]
+                        ],
+                        "center": {
+                            "value": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "units": "m"
+                        },
+                        "size": {
+                            "value": [
+                                0.2,
+                                0.3,
+                                2.0
+                            ],
+                            "units": "m"
+                        },
+                        "name": "box"
+                    },
+                    "center": {
+                        "value": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "units": "m"
+                    },
+                    "size": {
+                        "value": [
+                            0.2,
+                            0.3,
+                            2.0
+                        ],
+                        "units": "m"
+                    },
+                    "axis_of_rotation": [
+                        -0.5773502691896256,
+                        -0.5773502691896256,
+                        -0.577350269189626
+                    ],
+                    "angle_of_rotation": {
+                        "value": -2.0943951023931953,
+                        "units": "rad"
+                    }
+                }
+            ],
+            "ghost_entities": [],
+            "type_name": "VolumeMeshEntityInfo",
+            "zones": [
+                {
+                    "private_attribute_entity_type_name": "GenericVolume",
+                    "private_attribute_id": "1",
+                    "name": "1",
+                    "private_attribute_zone_boundary_names": {
+                        "items": [
+                            "1",
+                            "2",
+                            "3"
+                        ]
+                    },
+                    "private_attribute_full_name": "1"
+                }
+            ],
+            "boundaries": [
+                {
+                    "private_attribute_entity_type_name": "Surface",
+                    "private_attribute_id": "3",
+                    "name": "3",
+                    "private_attribute_full_name": "3",
+                    "private_attribute_is_interface": false,
+                    "private_attribute_sub_components": []
+                },
+                {
+                    "private_attribute_entity_type_name": "Surface",
+                    "private_attribute_id": "2",
+                    "name": "2",
+                    "private_attribute_full_name": "2",
+                    "private_attribute_is_interface": false,
+                    "private_attribute_sub_components": []
+                },
+                {
+                    "private_attribute_entity_type_name": "Surface",
+                    "private_attribute_id": "1",
+                    "name": "1",
+                    "private_attribute_full_name": "1",
+                    "private_attribute_is_interface": false,
+                    "private_attribute_sub_components": []
+                }
+            ]
+        },
+        "use_inhouse_mesher": false,
+        "use_geometry_AI": false,
+        "variable_context": [
+            {
+                "name": "Helicity_user",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.velocity[0] * solution.vorticity[0] + solution.velocity[1] * solution.vorticity[1] + solution.velocity[2] * solution.vorticity[2]"
+                },
+                "post_processing": true
+            },
+            {
+                "name": "Mach_SI",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.Mach"
+                },
+                "post_processing": true
+            },
+            {
+                "name": "Cp_SI",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.Cp"
+                },
+                "post_processing": true
+            },
+            {
+                "name": "velocity_SI",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.velocity"
+                },
+                "post_processing": true
+            }
+        ]
+    }
+}

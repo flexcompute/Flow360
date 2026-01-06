@@ -153,6 +153,36 @@ class NewVolumeMeshRequestV2(Flow360RequestsV2):
     format: Literal["cgns", "aflr3"] = pd_v2.Field(description="data format")
 
 
+class NewGeometryDependencyRequest(Flow360RequestsV2):
+    """[Simulation V2] Import geometry dependency to a project's draft."""
+
+    name: str = pd_v2.Field(description="Geometry dependency name")
+    project_id: str = pd_v2.Field(alias="projectId")
+    files: List[GeometryFileMeta] = pd_v2.Field(description="list of files")
+    draft_id: str = pd_v2.Field(default="", alias="draftId")
+    tags: List[str] = pd_v2.Field(default=[], description="project tags")
+    length_unit: Literal["m", "mm", "cm", "inch", "ft"] = pd_v2.Field(
+        alias="lengthUnit", description="project length unit"
+    )
+    description: str = pd_v2.Field(default="", description="geometry dependency description")
+    icon: str = pd_v2.Field(default="", description="project description")
+
+
+class NewSurfaceMeshDependencyRequest(Flow360RequestsV2):
+    """[Simulation V2] Import surface mesh dependency to a project's draft."""
+
+    name: str = pd_v2.Field(description="Surface mesh dependency name")
+    project_id: str = pd_v2.Field(alias="projectId")
+    draft_id: str = pd_v2.Field(default="", alias="draftId")
+    tags: List[str] = pd_v2.Field(default=[], description="project tags")
+    file_name: str = pd_v2.Field(alias="fileName", description="Surface mesh file name")
+    length_unit: Literal["m", "mm", "cm", "inch", "ft"] = pd_v2.Field(
+        alias="lengthUnit", description="project length unit"
+    )
+    description: str = pd_v2.Field(default="", description="geometry dependency description")
+    icon: str = pd_v2.Field(default="", description="project description")
+
+
 class _Resource(Flow360RequestsV2):
     type: Literal["Case", "Project"]
     id: str

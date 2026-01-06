@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from contextlib import AbstractContextManager
 from contextvars import ContextVar, Token
-from typing import Optional, get_args
+from dataclasses import dataclass
+from typing import List, Optional, get_args
 
 from flow360.component.simulation.draft_context.coordinate_system_manager import (
     CoordinateSystemManager,
@@ -29,6 +30,9 @@ from flow360.component.simulation.primitives import (
     Edge,
     GenericVolume,
     GeometryBodyGroup,
+    ImportedSurface,
+    MirroredGeometryBodyGroup,
+    MirroredSurface,
     Surface,
 )
 from flow360.exceptions import Flow360RuntimeError, Flow360ValueError
@@ -61,17 +65,28 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
     """
 
     __slots__ = (
+        # Persistent entities data storage.
         "_entity_info",
+        # Interface accessing ALL types of entities.
         "_entity_registry",
+        "_imported_surfaces",
+        "_imported_geometries",
+        # Lightweight mirror relationships storage (compared to entity storages)
         "_mirror_manager",
+        # Internal mirror related entities data storage.
+        "_mirror_status",
+        # Lightweight coordinate system relationships storage (compared to entity storages)
         "_coordinate_system_manager",
         "_token",
     )
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         *,
         entity_info: EntityInfoModel,
+        imported_geometries: Optional[List] = None,
+        imported_surfaces: Optional[List[ImportedSurface]] = None,
         mirror_status: Optional[MirrorStatus] = None,
         coordinate_system_status: Optional[CoordinateSystemStatus] = None,
     ) -> None:
@@ -92,14 +107,21 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
             )
         self._token: Optional[Token] = None
 
-        # DraftContext owns a deep copy of entity_info (created by create_draft()).
-        # This ensures modifications in the draft don't affect the original asset.
+        # DraftContext owns a deep copy of entity_info and mirror_status (created by create_draft()).
+        # This signals transfer of entity ownership from the asset to the draft (context).
         self._entity_info = entity_info
 
         # Use EntityRegistry.from_entity_info() for the new DraftContext workflow.
         # This builds the registry by referencing entities from our copied entity_info.
         self._entity_registry: EntityRegistry = EntityRegistry.from_entity_info(entity_info)
 
+        self._imported_surfaces: List = imported_surfaces or []
+        known_frozen_hashes = set()
+        for imported_surface in self._imported_surfaces:
+            known_frozen_hashes = self._entity_registry.fast_register(
+                imported_surface, known_frozen_hashes
+            )
+        self._imported_geometries: List = imported_geometries if imported_geometries else []
         # Pre-compute face_group_to_body_group map for mirror operations.
         # This is only available for GeometryEntityInfo.
         face_group_to_body_group = None
@@ -107,23 +129,22 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
         if isinstance(self._entity_info, GeometryEntityInfo):
             try:
                 face_group_to_body_group = self._entity_info.get_face_group_to_body_group_id_map()
-            except ValueError as exc:
+            except Flow360ValueError as exc:
                 # Face grouping spans across body groups.
                 log.warning(
                     "Failed to derive surface-to-body-group mapping for mirroring: %s. "
                     "Mirroring will be disabled.",
                     exc,
                 )
-
         self._mirror_manager = MirrorManager._from_status(
             status=mirror_status,
             face_group_to_body_group=face_group_to_body_group,
-            body_groups=self._entity_registry.view(GeometryBodyGroup)._entities,
-            surfaces=self._entity_registry.view(Surface)._entities,
+            entity_registry=self._entity_registry,
         )
 
         self._coordinate_system_manager = CoordinateSystemManager._from_status(
             status=coordinate_system_status,
+            entity_registry=self._entity_registry,
         )
 
     def __enter__(self) -> DraftContext:
@@ -172,6 +193,28 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
         return self._entity_registry.view(Surface)
 
     @property
+    def mirrored_body_groups(self) -> EntityRegistryView:
+        """
+        Return the list of mirrored body groups in the draft.
+
+        Notes
+        -----
+        Mirrored entities are draft-only entities derived from mirror actions and stored in the draft registry.
+        """
+        return self._entity_registry.view(MirroredGeometryBodyGroup)
+
+    @property
+    def mirrored_surfaces(self) -> EntityRegistryView:
+        """
+        Return the list of mirrored surfaces in the draft.
+
+        Notes
+        -----
+        Mirrored entities are draft-only entities derived from mirror actions and stored in the draft registry.
+        """
+        return self._entity_registry.view(MirroredSurface)
+
+    @property
     def edges(self) -> EntityRegistryView:
         """
         Return the list of edges in the draft.
@@ -205,6 +248,20 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
         from flow360.component.simulation.primitives import Cylinder
 
         return self._entity_registry.view(Cylinder)
+
+    @property
+    def imported_geometries(self) -> List:
+        """
+        Return the list of imported geometries in the draft.
+        """
+        return self._imported_geometries
+
+    @property
+    def imported_surfaces(self) -> EntityRegistryView:
+        """
+        Return the list of imported surfaces in the draft.
+        """
+        return self._entity_registry.view(ImportedSurface)
 
     @property
     def coordinate_systems(self) -> CoordinateSystemManager:
@@ -246,7 +303,7 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
         # pylint: disable=import-outside-toplevel
 
         from flow360.component.simulation.framework.entity_selector import (
-            _apply_single_selector,
+            expand_entity_list_selectors,
         )
 
         if not isinstance(selector, EntitySelector):
@@ -255,18 +312,16 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
                 "Use fl.SurfaceSelector, fl.EdgeSelector, fl.VolumeSelector, or fl.BodyGroupSelector."
             )
 
-        # Find entities by target_class
-        entities = self._entity_registry.find_by_type_name(selector.target_class)
+        @dataclass
+        class MockEntityList:
+            """Temporary mock for EntityList to avoid metaclass constraints."""
 
-        if not entities:
-            log.warning(
-                "No entities of type '%s' found in the draft context.",
-                selector.target_class,
-            )
-            return []
+            selectors: List[EntitySelector]
 
-        # Apply the selector to get matched entities
-        matched_entities = _apply_single_selector(entities, selector)
+        matched_entities = expand_entity_list_selectors(
+            registry=self._entity_registry,
+            entity_list=MockEntityList(selectors=[selector]),
+        )
 
         if not matched_entities:
             return []

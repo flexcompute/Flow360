@@ -45,30 +45,15 @@ from flow360.component.simulation.unit_system import (
 from flow360.component.simulation.validation.validation_context import (
     ParamsValidationInfo,
     contextual_field_validator,
-    contextual_model_validator,
 )
 from flow360.component.simulation.validation.validation_utils import (
     check_deleted_surface_pair,
-    check_symmetric_boundary_existence,
-    check_user_defined_farfield_symmetry_existence,
     validate_entity_list_surface_existence,
 )
 
 # pylint: disable=fixme
 # TODO: Warning: Pydantic V1 import
 from flow360.component.types import Axis
-
-
-class EntityListAllowingGhost(EntityList):
-    """Entity list with customized validators for ghost entities"""
-
-    @contextual_model_validator(mode="after")
-    def ghost_entity_validator(self, param_info: ParamsValidationInfo):
-        """Run all validators"""
-        expanded = param_info.expand_entity_list(self)
-        check_user_defined_farfield_symmetry_existence(expanded, param_info)
-        check_symmetric_boundary_existence(expanded, param_info)
-        return self
 
 
 class BoundaryBase(Flow360BaseModel, metaclass=ABCMeta):
@@ -498,7 +483,7 @@ class Freestream(BoundaryBaseWithTurbulenceQuantities):
         + ":py:attr:`AerospaceCondition.alpha` and :py:attr:`AerospaceCondition.beta` angles. "
         + "Optionally, an expression for each of the velocity components can be specified.",
     )
-    entities: EntityListAllowingGhost[
+    entities: EntityList[
         Surface,
         MirroredSurface,
         GhostSurface,
@@ -668,7 +653,7 @@ class SlipWall(BoundaryBase):
         "Slip wall", description="Name of the `SlipWall` boundary condition."
     )
     type: Literal["SlipWall"] = pd.Field("SlipWall", frozen=True)
-    entities: EntityListAllowingGhost[
+    entities: EntityList[
         Surface, MirroredSurface, GhostSurface, WindTunnelGhostSurface, GhostCircularPlane
     ] = pd.Field(
         alias="surfaces",
@@ -701,9 +686,7 @@ class SymmetryPlane(BoundaryBase):
         "Symmetry", description="Name of the `SymmetryPlane` boundary condition."
     )
     type: Literal["SymmetryPlane"] = pd.Field("SymmetryPlane", frozen=True)
-    entities: EntityListAllowingGhost[
-        Surface, MirroredSurface, GhostSurface, GhostCircularPlane
-    ] = pd.Field(
+    entities: EntityList[Surface, MirroredSurface, GhostSurface, GhostCircularPlane] = pd.Field(
         alias="surfaces",
         description="List of boundaries with the `SymmetryPlane` boundary condition imposed.",
     )
@@ -784,7 +767,7 @@ class PorousJump(Flow360BaseModel):
     Example
     -------
 
-    - Define a porous jump condition:
+    Define a porous jump condition:
 
       >>> fl.PorousJump(
       ...     surface_pairs=[
@@ -795,6 +778,7 @@ class PorousJump(Flow360BaseModel):
       ...    forchheimer_coefficient = 1 / fl.u.m,
       ...    thickness = 1 * fl.u.m,
       ... )
+
     ====
     """
 

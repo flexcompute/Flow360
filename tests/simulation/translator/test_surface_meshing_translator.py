@@ -878,6 +878,8 @@ def snappy_settings():
                 min_triangle_twist=0.1,
                 n_smooth_scale=6,
                 error_reduction=0.4,
+                zmetric_threshold=0.9,
+                feature_edge_deduplication_tolerance=0.25,
                 min_volume_collapse_ratio=0.5,
             ),
             snap_controls=snappy.SnapControls(
@@ -937,6 +939,8 @@ def snappy_settings_off_position():
                 min_vol_ratio=False,
                 min_face_weight=False,
                 min_triangle_twist=False,
+                zmetric_threshold=False,
+                feature_edge_deduplication_tolerance=False,
                 min_vol_collapse_ratio=False,
             ),
             snap_controls=snappy.SnapControls(
@@ -976,8 +980,9 @@ def snappy_settings_off_position():
 
 
 def _translate_and_compare(param, mesh_unit, ref_json_file: str, atol=1e-15):
-    param, err = validate_params_with_context(param, "Geometry", "SurfaceMesh")
+    param, err, warnings = validate_params_with_context(param, "Geometry", "SurfaceMesh")
     assert err is None, f"Validation error: {err}"
+    assert warnings == [], f"Unexpected warnings during validation: {warnings}"
     translated = get_surface_meshing_json(param, mesh_unit=mesh_unit)
     with open(
         os.path.join(
@@ -1330,8 +1335,9 @@ def test_sliding_interface_tolerance_gai():
             private_attribute_asset_cache=asset_cache,
         )
 
-    _, err = validate_params_with_context(params, "Geometry", "SurfaceMesh")
+    _, err, warnings = validate_params_with_context(params, "Geometry", "SurfaceMesh")
     assert err is None, f"Validation error: {err}"
+    assert warnings == [], f"Unexpected warnings during validation: {warnings}"
     translated = get_surface_meshing_json(params, mesh_unit=1 * u.m)
 
     # Verify sliding_interface_tolerance is in the translated JSON
@@ -1448,8 +1454,9 @@ def test_gai_mirror_status_translation():
             private_attribute_asset_cache=asset_cache,
         )
 
-    _, err = validate_params_with_context(params, "Geometry", "SurfaceMesh")
+    _, err, warnings = validate_params_with_context(params, "Geometry", "SurfaceMesh")
     assert err is None, f"Validation error: {err}"
+    assert warnings == [], f"Unexpected warnings during validation: {warnings}"
 
     translated = get_surface_meshing_json(params, mesh_unit=1 * u.m)
 
@@ -1580,8 +1587,9 @@ def test_gai_mirror_status_translation_idempotency():
                 private_attribute_asset_cache=asset_cache,
             )
 
-        _, err = validate_params_with_context(params, "Geometry", "SurfaceMesh")
+        _, err, warnings = validate_params_with_context(params, "Geometry", "SurfaceMesh")
         assert err is None, f"Validation error: {err}"
+        assert warnings == [], f"Unexpected warnings during validation: {warnings}"
 
         translated = get_surface_meshing_json(params, mesh_unit=1 * u.m)
         translated_jsons.append(translated)
@@ -1647,3 +1655,61 @@ def test_gai_mirror_status_translation_idempotency():
     assert (
         surface["mirror_plane_id"] == expected_plane_id
     ), f"Mirrored surface should reference mirror plane '{expected_plane_id}'"
+
+
+def test_gai_no_stationary_enclosed_entities():
+    param_dict = {
+        "private_attribute_asset_cache": {
+            "use_inhouse_mesher": True,
+            "use_geometry_AI": True,
+            "project_entity_info": {"type_name": "GeometryEntityInfo"},
+        },
+    }
+
+    with SI_unit_system:
+        # Create entities
+        cylinder = Cylinder(
+            name="intersectingCylinder",
+            center=(0, 0, 0) * u.m,
+            outer_radius=1 * u.m,
+            height=2 * u.m,
+            axis=(0, 0, 1),
+        )
+        sphere_surface = Surface(name="sphere.lb8.ugrid")
+
+        # Create RotationVolume with enclosed_entities
+        rotation_volume = RotationVolume(
+            name="RotationVolume",
+            spacing_axial=0.5 * u.m,
+            spacing_circumferential=0.3 * u.m,
+            spacing_radial=1.5 * u.m,
+            entities=[cylinder],
+            enclosed_entities=[sphere_surface],
+            stationary_enclosed_entities=[sphere_surface],
+        )
+
+        # Create meshing params
+        meshing = MeshingParams(
+            defaults=MeshingDefaults(
+                surface_max_edge_length=0.1,
+                geometry_accuracy=0.01,
+            ),
+            volume_zones=[
+                AutomatedFarfield(name="Farfield"),
+                rotation_volume,
+            ],
+        )
+
+        params = SimulationParams(
+            meshing=meshing,
+            private_attribute_asset_cache=AssetCache.model_validate(
+                param_dict["private_attribute_asset_cache"]
+            ),
+        )
+
+    translated_json = get_surface_meshing_json(params, 1 * u.m)
+    assert "volume_zones" in translated_json["meshing"]
+    volume_zones = translated_json["meshing"]["volume_zones"]
+    for zone in volume_zones:
+        if zone["type"] in ("RotationVolume", "RotationCylinder"):
+            assert "stationary_enclosed_entities" not in zone

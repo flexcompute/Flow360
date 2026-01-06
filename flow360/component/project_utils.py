@@ -3,7 +3,6 @@ Support class and functions for project interface.
 """
 
 import datetime
-import os
 from typing import List, Literal, Optional, Type, TypeVar, get_args
 
 import pydantic as pd
@@ -22,7 +21,6 @@ from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.outputs.outputs import (
-    MonitorOutputType,
     SurfaceIntegralOutput,
     SurfaceOutput,
 )
@@ -33,7 +31,9 @@ from flow360.component.simulation.primitives import (
     ImportedSurface,
     Surface,
 )
-from flow360.component.simulation.services_utils import strip_selector_matches_inplace
+from flow360.component.simulation.services_utils import (
+    strip_selector_matches_and_broken_entities_inplace,
+)
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.user_code.core.types import save_user_variables
@@ -57,19 +57,54 @@ def _apply_geometry_grouping_overrides(
 ) -> dict[str, Optional[str]]:
     """Apply explicit face/edge grouping overrides onto geometry entity info."""
 
-    def _validate_tag(tag: str, available: list[str], kind: str) -> str:
-        if available and tag not in available:  # pylint:disable=unsupported-membership-test
+    # >>> 1. Select groupings to use, either from overrides or entity_info defaults.
+
+    def _select_tag(new_tag, default_tag, kind):
+        if new_tag is not None:
+            tag = new_tag
+        else:
+            log.debug(
+                f"No {kind} grouping specified when creating draft; "
+                f"using {kind} grouping: {default_tag} from `new_run_from`."
+            )
+            tag = default_tag
+        return tag
+
+    face_tag = _select_tag(face_grouping, entity_info.face_group_tag, "face")
+    edge_tag = _select_tag(edge_grouping, entity_info.edge_group_tag, "edge")
+    body_group_tag = (
+        "groupByFile"
+        if "groupByFile" in entity_info.body_attribute_names
+        else entity_info.body_group_tag
+    )
+
+    # >>> 2. Validate groupings
+    def _validate_tag(tag, available: list[str], kind: str) -> str:
+        if not available:
             raise Flow360ValueError(
-                f"Invalid {kind} grouping tag '{tag}'. Available tags: {available}."
+                f"Unexpected {kind} grouping error: "
+                f"The activated geometries in the draft do not have any {kind} grouping in common."
+            )
+        if tag not in available:
+            raise Flow360ValueError(
+                f"The current {kind} grouping '{tag}' is not valid in the geometry. "
+                f"Please specify a valid {kind} grouping via `fl.create_draft({kind}_grouping=...)`. "
+                f"Available tags: {available}."
             )
         return tag
 
-    if face_grouping is not None:
-        face_tag = _validate_tag(face_grouping, entity_info.face_attribute_names, "face")
-        entity_info._group_entity_by_tag("face", face_tag)  # pylint:disable=protected-access
+    face_tag = _validate_tag(face_tag, entity_info.face_attribute_names, "face")
+    # face_tag must be specified either from override or entity_info default
+    assert face_tag is not None, log.debug(
+        "[Internal] Default face grouping should be set, face tag to be applied: ", face_tag
+    )
+    entity_info._group_entity_by_tag("face", face_tag)  # pylint:disable=protected-access
+    # edge_tag can be None if the geometry asset created with surface mesh
     if edge_grouping is not None and entity_info.edge_attribute_names:
-        edge_tag = _validate_tag(edge_grouping, entity_info.edge_attribute_names, "edge")
+        edge_tag = _validate_tag(edge_tag, entity_info.edge_attribute_names, "edge")
         entity_info._group_entity_by_tag("edge", edge_tag)  # pylint:disable=protected-access
+
+    entity_info._group_entity_by_tag("body", body_group_tag)  # pylint:disable=protected-access
 
     return {
         "face": entity_info.face_group_tag,
@@ -156,25 +191,14 @@ def apply_and_inform_grouping_selections(
         return
 
     applied_grouping = _apply_geometry_grouping_overrides(entity_info, face_grouping, edge_grouping)
-    #
-    # pylint:disable = protected-access
-    ############## DEBUG only ##############
-    face_tag = applied_grouping.get("face")
-    edge_tag = applied_grouping.get("edge")
-
-    # edge_tag can be None if the geometry asset created with surface mesh
-
-    assert face_tag is not None, print(
-        "[Internal] Default should have already been set, applied_grouping: ", applied_grouping
-    )
-    ##########################################
 
     # 1. Print out the grouping used for user's convenience.
 
     log.info(
-        "Creating draft with geometry grouping:\n  faces: %s\n  edges: %s\n",
-        face_tag,
-        edge_tag,
+        "Creating draft with geometry grouping:\n  faces: %s\n  edges: %s\n  bodies: %s\n",
+        applied_grouping.get("face"),
+        applied_grouping.get("edge"),
+        applied_grouping.get("body"),
     )
 
     missing_groupings = []
@@ -398,6 +422,30 @@ def _set_up_params_non_persistent_entity_info(entity_info, params: SimulationPar
     return entity_info
 
 
+def _set_up_params_imported_surfaces(params: SimulationParams):
+    """
+    Setting up imported_surfaces in params.
+    Add the ones used to the outputs.
+    """
+
+    if not params.outputs:
+        return params
+
+    imported_surfaces = {}
+
+    for output in params.outputs:
+        if not isinstance(output, (SurfaceOutput, SurfaceIntegralOutput)):
+            continue
+        for surface in output.entities.stored_entities:
+            if isinstance(surface, ImportedSurface) and surface.name not in imported_surfaces:
+                imported_surfaces[surface.name] = surface
+
+    with model_attribute_unlock(params.private_attribute_asset_cache, "imported_surfaces"):
+        params.private_attribute_asset_cache.imported_surfaces = list(imported_surfaces.values())
+
+    return params
+
+
 def _merge_draft_entities_from_params(
     entity_info: EntityInfoModel,
     params: SimulationParams,
@@ -494,6 +542,22 @@ def _update_entity_grouping_tags(entity_info, params: SimulationParams) -> Entit
 
         used_tags = sorted(list(used_tags))
         current_tag = getattr(entity_info, entity_grouping_tags)
+
+        # If explicit entities were stripped (e.g. selector-only usage), we may have no tags
+        # discoverable from the params object. In that case, fall back to the grouping tags
+        # already recorded in the params asset cache.
+        if not used_tags:
+            asset_cache = getattr(params, "private_attribute_asset_cache", None)
+            cached_entity_info = getattr(asset_cache, "project_entity_info", None)
+            cached_tag = (
+                getattr(cached_entity_info, entity_grouping_tags, None)
+                if cached_entity_info is not None
+                and getattr(cached_entity_info, "type_name", None) == "GeometryEntityInfo"
+                else None
+            )
+            if cached_tag is not None:
+                used_tags = [cached_tag]
+
         if len(used_tags) == 1 and current_tag != used_tags[0]:
             log.warning(
                 f"Inconsistent grouping of {entity_type.__name__} between the geometry object ({current_tag})"
@@ -551,31 +615,6 @@ def _set_up_default_reference_geometry(params: SimulationParams, length_unit: Le
     return params
 
 
-def _set_up_monitor_output_from_stopping_criterion(params: SimulationParams):
-    """
-    Setting up the monitor output in the stopping criterion if not provided in params.outputs.
-    """
-    if not params.run_control:
-        return params
-    stopping_criterion = params.run_control.stopping_criteria
-    if not stopping_criterion:
-        return params
-    monitor_output_ids = []
-    if params.outputs is not None:
-        for output in params.outputs:
-            if not isinstance(output, get_args(get_args(MonitorOutputType)[0])):
-                continue
-            monitor_output_ids.append(output.private_attribute_id)
-    for criterion in stopping_criterion:
-        monitor_output = criterion.monitor_output
-        if isinstance(monitor_output, str):
-            continue
-        if monitor_output.private_attribute_id not in monitor_output_ids:
-            params.outputs.append(monitor_output)
-            monitor_output_ids.append(monitor_output.private_attribute_id)
-    return params
-
-
 def set_up_params_for_uploading(  # pylint: disable=too-many-arguments
     root_asset,
     length_unit: LengthType,
@@ -620,9 +659,11 @@ def set_up_params_for_uploading(  # pylint: disable=too-many-arguments
         entity_info = _update_entity_grouping_tags(entity_info, params)
 
         with model_attribute_unlock(params.private_attribute_asset_cache, "mirror_status"):
-            params.private_attribute_asset_cache.mirror_status = active_draft.mirror._to_status(
-                entity_registry=active_draft._entity_registry
-            )
+            mirror_status = active_draft.mirror._mirror_status
+            if not mirror_status.is_empty():
+                params.private_attribute_asset_cache.mirror_status = mirror_status
+            else:
+                params.private_attribute_asset_cache.mirror_status = None
         with model_attribute_unlock(
             params.private_attribute_asset_cache, "coordinate_system_status"
         ):
@@ -654,14 +695,16 @@ def set_up_params_for_uploading(  # pylint: disable=too-many-arguments
     params = _set_up_default_geometry_accuracy(root_asset, params, use_geometry_AI)
 
     params = _set_up_default_reference_geometry(params, length_unit)
-    params = _set_up_monitor_output_from_stopping_criterion(params=params)
 
     # Convert all reference of UserVariables to VariableToken
     params = save_user_variables(params)
 
+    # Set up imported surfaces in params
+    params = _set_up_params_imported_surfaces(params)
+
     # Strip selector-matched entities from stored_entities before upload so that hand-picked
     # entities remain distinguishable on the UI side.
-    strip_selector_matches_inplace(params)
+    strip_selector_matches_and_broken_entities_inplace(params)
 
     return params
 
@@ -674,49 +717,13 @@ def validate_params_with_context(params, root_item_type, up_to):
         root_item_type=root_item_type, up_to=up_to
     )
 
-    params, errors, _ = services.validate_model(
-        params_as_dict=params.model_dump(mode="json", exclude_none=True),
+    params_as_dict = params.model_dump(mode="json", exclude_none=True)
+
+    params, errors, warnings = services.validate_model(
+        params_as_dict=params_as_dict,
         validated_by=services.ValidationCalledBy.LOCAL,
         root_item_type=root_item_type,
         validation_level=validation_level,
     )
 
-    return params, errors
-
-
-def _get_imported_surface_file_names(params, basename_only=False):
-    if params is None or params.outputs is None:
-        return []
-    imported_surface_files = []
-    for output in params.outputs:
-        if isinstance(output, (SurfaceOutput, SurfaceIntegralOutput)):
-            for surface in output.entities.stored_entities:
-                if isinstance(surface, ImportedSurface):
-                    if basename_only:
-                        imported_surface_files.append(os.path.basename(surface.file_name))
-                    else:
-                        imported_surface_files.append(surface.file_name)
-    return imported_surface_files
-
-
-def upload_imported_surfaces_to_draft(params, draft, parent_case):
-    """
-    Upload imported surfaces to draft, excluding duplicates from parent case.
-
-    Note:
-        - If parent_case is None, all surfaces from params will be uploaded.
-        - Only surfaces not present in the parent case are uploaded.
-    """
-
-    parent_existing_imported_file_base_names = []
-    if parent_case is not None:
-        parent_existing_imported_file_base_names = _get_imported_surface_file_names(
-            parent_case.params, basename_only=True
-        )
-    current_draft_surface_file_paths_to_import = _get_imported_surface_file_names(params)
-    deduplicated_surface_file_paths_to_import = []
-    for file_path_to_import in current_draft_surface_file_paths_to_import:
-        file_basename = os.path.basename(file_path_to_import)
-        if file_basename not in parent_existing_imported_file_base_names:
-            deduplicated_surface_file_paths_to_import.append(file_path_to_import)
-    draft.upload_imported_surfaces(deduplicated_surface_file_paths_to_import)
+    return params, errors, warnings

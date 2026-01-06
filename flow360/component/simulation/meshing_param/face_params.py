@@ -6,7 +6,6 @@ import pydantic as pd
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
-from flow360.component.simulation.models.surface_models import EntityListAllowingGhost
 from flow360.component.simulation.primitives import (
     GhostCircularPlane,
     GhostSurface,
@@ -44,7 +43,7 @@ class SurfaceRefinement(Flow360BaseModel):
 
     name: Optional[str] = pd.Field("Surface refinement")
     refinement_type: Literal["SurfaceRefinement"] = pd.Field("SurfaceRefinement", frozen=True)
-    entities: EntityListAllowingGhost[
+    entities: EntityList[
         Surface, MirroredSurface, WindTunnelGhostSurface, GhostSurface, GhostCircularPlane
     ] = pd.Field(alias="faces")
     # pylint: disable=no-member
@@ -183,7 +182,7 @@ class PassiveSpacing(Flow360BaseModel):
         """
     )
     refinement_type: Literal["PassiveSpacing"] = pd.Field("PassiveSpacing", frozen=True)
-    entities: EntityListAllowingGhost[
+    entities: EntityList[
         Surface, MirroredSurface, WindTunnelGhostSurface, GhostSurface, GhostCircularPlane
     ] = pd.Field(alias="faces")
 

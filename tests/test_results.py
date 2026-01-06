@@ -28,10 +28,7 @@ from flow360.component.simulation.framework.entity_selector import (
     EntitySelector,
     expand_entity_list_selectors,
 )
-from flow360.component.simulation.framework.updater_utils import (
-    compare_dicts,
-    compare_values,
-)
+from flow360.component.simulation.framework.updater_utils import compare_values
 from flow360.component.simulation.models.surface_models import BoundaryBase
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
@@ -705,7 +702,11 @@ def test_surface_forces_result(mock_id, mock_response):
                         {
                             "attribute": "name",
                             "operator": "any_of",
-                            "value": ["body00001", "body00002"],
+                            "value": [
+                                "body00001",
+                                "body00002",
+                                "farfield",  # farfield to ensure auto filtering
+                            ],
                         }
                     ],
                 )
@@ -725,7 +726,10 @@ def test_surface_forces_result(mock_id, mock_response):
     expanded_names = expand_entity_list_in_context(
         selector_model.entities, params_with_selectors, return_names=True
     )
-    assert expanded_names == ["body00001", "body00002"]
+    assert expanded_names == [
+        "body00001",
+        "body00002",
+    ]  # farfield got filtered out by `Wall`'s EntityList
 
     serialized_params = params_with_selectors.model_dump(mode="json", exclude_none=True)
     _, registry = get_entity_info_and_registry_from_dict(serialized_params)

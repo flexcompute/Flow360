@@ -707,6 +707,75 @@ def test_custom_zones_tetrahedra(get_test_param, get_surface_mesh):
     assert all("enforceTetrahedralElements" not in z for z in translated["zones"])  # type: ignore
 
 
+def test_custom_zones_element_type_tetrahedra(get_surface_mesh):
+    """Test that element_type='tetrahedra' is correctly translated to enforceTetrahedralElements=True."""
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                refinement_factor=1.0,
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-6 * u.m,
+                    boundary_layer_growth_rate=1.2,
+                ),
+                volume_zones=[
+                    CustomZones(
+                        name="custom_zones_tetrahedral",
+                        entities=[
+                            CustomVolume(
+                                name="tetrahedral_zone",
+                                boundaries=[Surface(name="boundary1"), Surface(name="boundary2")],
+                            )
+                        ],
+                        element_type="tetrahedra",
+                    ),
+                    UserDefinedFarfield(),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+        )
+
+    translated = get_volume_meshing_json(params, get_surface_mesh.mesh_unit)
+    assert "zones" in translated
+    assert len(translated["zones"]) == 1
+    assert translated["zones"][0]["name"] == "tetrahedral_zone"
+    assert "enforceTetrahedralElements" in translated["zones"][0]
+    assert translated["zones"][0]["enforceTetrahedralElements"] is True
+
+
+def test_custom_zones_element_type_mixed(get_surface_mesh):
+    """Test that element_type='mixed' (default) does not include enforceTetrahedralElements."""
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                refinement_factor=1.0,
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-6 * u.m,
+                    boundary_layer_growth_rate=1.2,
+                ),
+                volume_zones=[
+                    CustomZones(
+                        name="custom_zones_mixed",
+                        entities=[
+                            CustomVolume(
+                                name="mixed_zone",
+                                boundaries=[Surface(name="boundary1"), Surface(name="boundary2")],
+                            )
+                        ],
+                        element_type="mixed",
+                    ),
+                    UserDefinedFarfield(),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+        )
+
+    translated = get_volume_meshing_json(params, get_surface_mesh.mesh_unit)
+    assert "zones" in translated
+    assert len(translated["zones"]) == 1
+    assert translated["zones"][0]["name"] == "mixed_zone"
+    assert "enforceTetrahedralElements" not in translated["zones"][0]
+
+
 def test_passive_spacing_with_ghost_symmetry_in_faces(get_surface_mesh):
     # PassiveSpacing using a GhostSurface (UserDefinedFarfield.symmetry_plane)
     with SI_unit_system:

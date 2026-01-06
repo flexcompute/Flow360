@@ -1,6 +1,6 @@
 """Registry for managing and storing instances of various entity types."""
 
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 import pydantic as pd
 
@@ -171,6 +171,16 @@ class EntityRegistry(Flow360BaseModel):
         # pylint: disable=unsubscriptable-object
         self.internal_registry[entity_type].append(entity)
 
+    def remove(self, entity: EntityBase) -> None:
+        """Remove an entity from the registry."""
+        entity_type = type(entity)
+        if (
+            entity_type not in self.internal_registry
+            or entity not in self.internal_registry[entity_type]
+        ):
+            return
+        self.internal_registry[entity_type].remove(entity)
+
     def view(self, entity_type: type[EntityBase]) -> EntityRegistryView:
         """
         Create a filtered view for a specific entity type with glob pattern support.
@@ -336,22 +346,6 @@ class EntityRegistry(Flow360BaseModel):
         """Return True if the registry is empty, False otherwise."""
         return not self.internal_registry
 
-    def find_by_name(self, name: str) -> Optional[EntityBase]:
-        """Find entity by exact name match.
-
-        Parameters:
-            name (str): The exact name to search for.
-
-        Returns:
-            EntityBase or None: The entity if found, None otherwise.
-        """
-        # pylint: disable=no-member
-        for entity_list in self.internal_registry.values():
-            for entity in entity_list:
-                if entity.name == name:
-                    return entity
-        return None
-
     def find_by_type(self, entity_class: type[EntityBase]) -> list[EntityBase]:
         """Find all registered entities of a given type (including subclasses).
 
@@ -369,24 +363,78 @@ class EntityRegistry(Flow360BaseModel):
                 matched_entities.extend(entity_list)
         return matched_entities
 
-    def find_by_type_name(self, type_name: str) -> list[EntityBase]:
-        """Find all registered entities with a given private_attribute_entity_type_name.
+    def find_by_type_name(self, type_name: Union[str, List[str]]) -> list[EntityBase]:
+        """Find all registered entities with matching private_attribute_entity_type_name.
 
         This is useful for matching entities by their serialized type name (e.g., "Surface", "Edge").
+        Supports both single type name and multiple type names for efficient batch lookup.
 
         Parameters:
-            type_name (str): The entity type name to search for.
+            type_name: Single type name string or list of type name strings to search for.
 
         Returns:
-            list[EntityBase]: All entities with matching type name.
+            list[EntityBase]: All entities with matching type names.
+
+        Examples:
+            >>> registry.find_by_type_name("Surface")
+            >>> registry.find_by_type_name(["Surface", "MirroredSurface"])
         """
+        # Normalize to list for consistent handling
+        type_names_to_find = [type_name] if isinstance(type_name, str) else type_name
+        type_name_set = set(type_names_to_find)  # O(1) lookup optimization
+
         matched_entities = []
         # pylint: disable=no-member
         for entity_list in self.internal_registry.values():
             for entity in entity_list:
-                if entity.private_attribute_entity_type_name == type_name:
+                if entity.private_attribute_entity_type_name in type_name_set:
                     matched_entities.append(entity)
         return matched_entities
+
+    def find_by_type_name_and_id(self, *, entity_type: str, entity_id: str) -> Optional[EntityBase]:
+        """Find entity by serialized type name and asset id.
+
+        Parameters
+        ----------
+        entity_type : str
+            Serialized type name (EntityBase.private_attribute_entity_type_name), e.g. "Surface".
+        entity_id : str
+            Asset id (EntityBase.private_attribute_id).
+
+        Returns
+        -------
+        Optional[EntityBase]
+            Matched entity if found, otherwise None.
+        """
+        if not isinstance(entity_type, str):
+            raise Flow360ValueError(
+                f"[Internal] entity_type must be a string. Received: {type(entity_type).__name__}."
+            )
+        if not isinstance(entity_id, str):
+            raise Flow360ValueError(
+                f"[Internal] entity_id must be a string. Received: {type(entity_id).__name__}."
+            )
+
+        matched_entities: list[EntityBase] = []
+        # pylint: disable=no-member
+        for entity_list in self.internal_registry.values():
+            for entity in entity_list:
+                if not isinstance(entity, EntityBase):
+                    continue
+                if (
+                    entity.private_attribute_entity_type_name == entity_type
+                    and entity.private_attribute_id == entity_id
+                ):
+                    matched_entities.append(entity)
+
+        if len(matched_entities) > 1:
+            raise ValueError(
+                f"[INTERNAL] Multiple entities with the same type/id ({entity_type}:{entity_id}) found."
+                " Data is likely corrupted."
+            )
+        if not matched_entities:
+            return None
+        return matched_entities[0]
 
     @classmethod
     def from_entity_info(cls, entity_info) -> "EntityRegistry":

@@ -2,7 +2,7 @@
 
 from abc import ABCMeta, abstractmethod
 from collections import defaultdict
-from typing import Annotated, Dict, List, Literal, Optional, Union
+from typing import Annotated, Any, Dict, List, Literal, Optional, Union
 
 import pydantic as pd
 
@@ -34,6 +34,7 @@ from flow360.component.simulation.primitives import (
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.utils import BoundingBoxType, model_attribute_unlock
 from flow360.component.utils import GeometryFiles
+from flow360.exceptions import Flow360ValueError
 from flow360.log import log
 
 DraftEntityTypes = Annotated[
@@ -503,89 +504,123 @@ class GeometryEntityInfo(EntityInfoModel):
                 )
         return internal_registry
 
-    def get_body_group_to_face_group_name_map(self) -> dict[str, list[str]]:
+    def get_body_group_to_surface_mapping(self) -> dict[str, list[str]]:
         """
-        Returns bodyId to file name mapping.
+        Return body group's (id, name) to Surfaces' (face groups') (id, name) mapping
         """
 
         # pylint: disable=too-many-locals
         def create_group_to_sub_component_mapping(group):
-            mapping = defaultdict(list)
-            for item in group:
-                mapping[item.private_attribute_id].extend(item.private_attribute_sub_components)
-            return mapping
+            return {
+                item.private_attribute_id: (item.name, item.private_attribute_sub_components)
+                for item in group
+            }
 
+        # body_group_id to (body_group_name, body_ids) of the current body group
         body_group_to_body = create_group_to_sub_component_mapping(
             self._get_list_of_entities(entity_type_name="body", attribute_name=self.body_group_tag)
         )
-        boundary_to_face = create_group_to_sub_component_mapping(
+        # surface_id to (surface_name, face_ids) of the current face group
+        surface_to_face = create_group_to_sub_component_mapping(
             self._get_list_of_entities(entity_type_name="face", attribute_name=self.face_group_tag)
         )
 
-        if "groupByBodyId" not in self.face_attribute_names:
-            # This likely means the geometry asset is pre-25.5.
-            raise ValueError(
-                "Geometry cloud resource is too old."
-                " Please consider re-uploading the geometry with newer solver version (>25.5)."
-            )
+        # Create body id to face ids mapping:
+        if self.bodies_face_edge_ids:
+            # With bodies_face_edge_ids
+            body_id_to_face_ids = {
+                body_id: body_component_info.face_ids
+                for body_id, body_component_info in self.bodies_face_edge_ids.items()
+            }
+        else:
+            # Fallback: With the face group:"groupByBodyId" where face_group_name is body_id
+            if "groupByBodyId" not in self.face_attribute_names:
+                # This likely means the geometry asset is pre-25.5.
+                raise Flow360ValueError(
+                    "Geometry cloud resource is too old."
+                    " Please consider re-uploading the geometry with newer solver version (>25.5)."
+                )
+            body_id_to_face_ids = {
+                face_group.name: face_group.private_attribute_sub_components
+                for face_group in self._get_list_of_entities(
+                    entity_type_name="face", attribute_name="groupByBodyId"
+                )
+            }
 
-        face_group_by_body_id_to_face = create_group_to_sub_component_mapping(
-            self._get_list_of_entities(entity_type_name="face", attribute_name="groupByBodyId")
-        )
-
-        body_group_to_face = defaultdict(list)
-        for body_group, body_ids in body_group_to_body.items():
+        # body_group_id to (body_group_name, face_ids) of the current body group
+        body_group_to_face = {}
+        for body_group_id, (body_group_name, body_ids) in body_group_to_body.items():
+            face_ids = []
             for body_id in body_ids:
-                body_group_to_face[body_group].extend(face_group_by_body_id_to_face[body_id])
+                face_ids.extend(body_id_to_face_ids[body_id])
+            body_group_to_face[body_group_id] = (body_group_name, face_ids)
 
+        # face_id to (body_group_id, body_group_name) of the current body group
         face_to_body_group = {}
-        for body_group_name, face_ids in body_group_to_face.items():
+        for body_group_id, (body_group_name, face_ids) in body_group_to_face.items():
             for face_id in face_ids:
-                face_to_body_group[face_id] = body_group_name
+                face_to_body_group[face_id] = (body_group_id, body_group_name)
 
-        body_group_to_boundary = defaultdict(list)
-        for boundary_name, face_ids in boundary_to_face.items():
+        # body_group (id, name) to surface (id, name)
+        body_group_to_surface = {}
+        for surface_id, (surface_name, face_ids) in surface_to_face.items():
             body_group_in_this_face_group = set()
             for face_id in face_ids:
                 owning_body = face_to_body_group.get(face_id)
                 if owning_body is None:
-                    raise ValueError(
-                        f"Face ID '{face_id}' found in face group '{boundary_name}' "
+                    raise Flow360ValueError(
+                        f"Face ID '{face_id}' found in face group '{surface_name}' "
                         "but not found in any body group."
                     )
                 body_group_in_this_face_group.add(owning_body)
             if len(body_group_in_this_face_group) > 1:
-                raise ValueError(
-                    f"Face group '{boundary_name}' contains faces belonging to multiple body groups: "
+                raise Flow360ValueError(
+                    f"Face group '{surface_name}' contains faces belonging to multiple body groups: "
                     f"{list(sorted(body_group_in_this_face_group))}. "
                     "The mapping between body and face groups cannot be created."
                 )
 
             owning_body = list(body_group_in_this_face_group)[0]
-            body_group_to_boundary[owning_body].append(boundary_name)
+            if owning_body not in body_group_to_surface:
+                body_group_to_surface[owning_body] = []
+            body_group_to_surface[owning_body].append((surface_id, surface_name))
 
-        return body_group_to_boundary
+        return body_group_to_surface
+
+    def get_body_group_to_face_group_name_map(self) -> dict[str, list[str]]:
+        """
+        Returns body group name to face group (Surface) name mapping.
+        """
+
+        body_group_to_surface = self.get_body_group_to_surface_mapping()
+        body_group_to_surface_name = defaultdict(list)
+
+        for (_, body_group_name), boundaries in body_group_to_surface.items():
+            body_group_to_surface_name[body_group_name].extend(
+                [surface_name for (_, surface_name) in boundaries]
+            )
+
+        return body_group_to_surface_name
 
     def get_face_group_to_body_group_id_map(self) -> dict[str, str]:
         """
         Returns a mapping from face group (Surface) name to the owning body group ID.
 
-        This is the inverse of :meth:`get_body_group_to_face_group_name_map` and uses the
+        This is the inverse of :meth:`get_body_group_to_surface_mapping` and uses the
         same underlying assumptions and validations about the grouping tags.
         """
 
-        body_group_to_boundary = self.get_body_group_to_face_group_name_map()
-
+        body_group_to_surface = self.get_body_group_to_surface_mapping()
         face_group_to_body_group: dict[str, str] = {}
-        for body_group_id, boundary_names in body_group_to_boundary.items():
-            for boundary_name in boundary_names:
-                existing_owner = face_group_to_body_group.get(boundary_name)
+        for (body_group_id, _), surfaces in body_group_to_surface.items():
+            for _, surface_name in surfaces:
+                existing_owner = face_group_to_body_group.get(surface_name)
                 if existing_owner is not None and existing_owner != body_group_id:
                     raise ValueError(
-                        f"[Internal] Face group '{boundary_name}' is mapped to multiple body groups: "
+                        f"[Internal] Face group '{surface_name}' is mapped to multiple body groups: "
                         f"{existing_owner}, {body_group_id}. Data is likely corrupted."
                     )
-                face_group_to_body_group[boundary_name] = body_group_id
+                face_group_to_body_group[surface_name] = body_group_id
 
         return face_group_to_body_group
 
@@ -696,3 +731,262 @@ def parse_entity_info_model(data) -> EntityInfoUnion:
     # TODO: Add a fast mode by popping entities that are not needed due to wrong grouping tags before deserialization.
     """
     return pd.TypeAdapter(EntityInfoUnion).validate_python(data)
+
+
+def merge_geometry_entity_info(
+    current_entity_info: GeometryEntityInfo,
+    entity_info_components: List[GeometryEntityInfo],
+) -> GeometryEntityInfo:
+    """
+    Update a GeometryEntityInfo by including/merging data from a list of other GeometryEntityInfo objects.
+
+    Args:
+        current_entity_info: Used as reference to preserve user settings such as group tags,
+            mesh_exterior, attribute name order.
+        entity_info_components: List of GeometryEntityInfo objects that contain all data for the new entity info
+
+    Returns:
+        A new GeometryEntityInfo with merged data from entity_info_components, preserving user settings from current
+
+    The merge logic:
+    1. IDs: Union of body_ids, face_ids, edge_ids from entity_info_components
+    2. Attribute names: Intersection of attribute_names from entity_info_components
+    3. Group tags: Use tags from current_entity_info
+    4. Bounding box: Merge global bounding boxes from entity_info_components
+    5. Grouped entities: Merge from entity_info_components,
+        preserving mesh_exterior from current_entity_info for grouped_bodies
+    6. Draft and Ghost entities: Preserve from current_entity_info.
+    """
+    # pylint: disable=too-many-locals, too-many-statements
+
+    if not entity_info_components:
+        raise ValueError("entity_info_components cannot be empty")
+
+    # 1. Compute union of IDs from entity_info_components
+    all_body_ids = set()
+    all_face_ids = set()
+    all_edge_ids = set()
+    all_bodies_face_edge_ids = {}
+
+    for entity_info in entity_info_components:
+        all_body_ids.update(entity_info.body_ids)
+        all_face_ids.update(entity_info.face_ids)
+        all_edge_ids.update(entity_info.edge_ids)
+        all_bodies_face_edge_ids.update(entity_info.bodies_face_edge_ids or {})
+
+    # 2. Compute intersection of attribute names from entity_info_components
+    body_attr_sets = [set(ei.body_attribute_names) for ei in entity_info_components]
+    face_attr_sets = [set(ei.face_attribute_names) for ei in entity_info_components]
+    edge_attr_sets = [set(ei.edge_attribute_names) for ei in entity_info_components]
+
+    body_attr_intersection = set.intersection(*body_attr_sets) if body_attr_sets else set()
+    face_attr_intersection = set.intersection(*face_attr_sets) if face_attr_sets else set()
+    edge_attr_intersection = set.intersection(*edge_attr_sets) if edge_attr_sets else set()
+
+    # Preserve order from current_entity_info, but include all attributes from intersection
+    def ordered_intersection(reference_list: List[str], intersection_set: set) -> List[str]:
+        """Return all attributes from intersection_set, preserving order from reference_list where possible."""
+        # First, add attributes that exist in reference_list (in order)
+        result = [attr for attr in reference_list if attr in intersection_set]
+        # Then, add remaining attributes from intersection_set that weren't in reference_list (sorted)
+        remaining = sorted(intersection_set - set(result))
+        return result + remaining
+
+    result_body_attribute_names = ordered_intersection(
+        current_entity_info.body_attribute_names, body_attr_intersection
+    )
+    result_face_attribute_names = ordered_intersection(
+        current_entity_info.face_attribute_names, face_attr_intersection
+    )
+    result_edge_attribute_names = ordered_intersection(
+        current_entity_info.edge_attribute_names, edge_attr_intersection
+    )
+
+    # 3. Update group tags: preserve from current if exists in intersection, otherwise use first
+    def select_tag(
+        current_tag: Optional[str], result_attrs: List[str], entity_type: str
+    ) -> Optional[str]:
+        if entity_type != "edge" and not result_attrs:
+            raise ValueError(f"No attribute names available to select {entity_type} group tag.")
+        log.info(f"Preserving {entity_type} group tag: {current_tag}")
+        return current_tag
+
+    result_body_group_tag = select_tag(
+        current_entity_info.body_group_tag, result_body_attribute_names, "body"
+    )
+    result_face_group_tag = select_tag(
+        current_entity_info.face_group_tag, result_face_attribute_names, "face"
+    )
+    result_edge_group_tag = select_tag(
+        current_entity_info.edge_group_tag, result_edge_attribute_names, "edge"
+    )
+
+    # 4. Merge global bounding boxes from entity_info_components
+    result_bounding_box = None
+    for entity_info in entity_info_components:
+        if entity_info.global_bounding_box is not None:
+            if result_bounding_box is None:
+                result_bounding_box = entity_info.global_bounding_box
+            else:
+                result_bounding_box = result_bounding_box.expand(entity_info.global_bounding_box)
+
+    # 5. Get current user settings from body group and face
+    def get_current_user_settings_map(
+        entity_info: GeometryEntityInfo,
+        entity_type: Literal["body", "face"],
+    ) -> Dict[str, Dict[str, Dict[str, Any]]]:
+        """
+        Extract user settings (like mesh_exterior, name) from entity_info.
+
+        Args:
+            entity_info: The GeometryEntityInfo to extract settings from
+            entity_type: Either "body" or "face"
+
+        Returns:
+            A nested dictionary: {attribute_name: {entity_id: {setting_key: setting_value}}}
+        """
+        user_settings_map = {}
+
+        if entity_type == "body":
+            attribute_names = entity_info.body_attribute_names
+            grouped_entities = entity_info.grouped_bodies
+            settings_keys = ["mesh_exterior", "name"]
+        elif entity_type == "face":
+            attribute_names = entity_info.face_attribute_names
+            grouped_entities = entity_info.grouped_faces
+            settings_keys = ["name"]
+        else:
+            raise ValueError(f"Invalid entity_type: {entity_type}. Must be 'body' or 'face'.")
+
+        for group_idx, group_name in enumerate(attribute_names):
+            user_settings_map[group_name] = {}
+            for entity in grouped_entities[group_idx]:
+                entity_id = entity.private_attribute_id
+                user_settings_map[group_name][entity_id] = {
+                    key: getattr(entity, key) for key in settings_keys
+                }
+
+        return user_settings_map
+
+    current_body_user_settings_map = get_current_user_settings_map(
+        current_entity_info, entity_type="body"
+    )
+    current_face_user_settings_map = get_current_user_settings_map(
+        current_entity_info, entity_type="face"
+    )
+
+    # 6. Merge grouped entities from entity_info_components
+    def apply_user_settings_to_entity(
+        entity: Union[GeometryBodyGroup, Surface, Edge],
+        attr_name: str,
+        user_settings_map: Optional[Dict[str, Dict[str, Dict[str, Any]]]],
+    ) -> Union[GeometryBodyGroup, Surface, Edge]:
+        """
+        Apply user settings to an entity if available in the user_settings_map.
+
+        Args:
+            entity: The entity to apply settings to
+            attr_name: The attribute name (group name) for this entity
+            user_settings_map: The user settings map from get_current_user_settings_map()
+
+        Returns:
+            The entity with user settings applied, or the original entity if no settings found
+        """
+        if user_settings_map is None:
+            return entity
+
+        entity_id = entity.private_attribute_id
+
+        # Check if we have user settings for this entity
+        if attr_name in user_settings_map and entity_id in user_settings_map[attr_name]:
+            # Create a copy with updated user settings
+            entity_data = entity.model_dump()
+            entity_data.update(user_settings_map[attr_name][entity_id])
+            return entity.__class__.model_validate(entity_data)
+
+        return entity
+
+    def merge_grouped_entities(
+        entity_type: Literal["body", "face", "edge"],
+        result_attr_names: List[str],
+    ):
+        """Helper to merge grouped entities (bodies, faces, or edges) from entity_info_components"""
+
+        # Determine which attributes to access based on entity type
+        def get_attrs(entity_info):
+            if entity_type == "body":
+                return entity_info.body_attribute_names
+            if entity_type == "face":
+                return entity_info.face_attribute_names
+            return entity_info.edge_attribute_names
+
+        def get_groups(entity_info):
+            if entity_type == "body":
+                return entity_info.grouped_bodies
+            if entity_type == "face":
+                return entity_info.grouped_faces
+            return entity_info.grouped_edges
+
+        result_grouped = []
+
+        # For each attribute name in the result intersection
+        for attr_name in result_attr_names:
+            # Dictionary to accumulate entities by their unique ID
+            entity_map = {}
+
+            # Process all include entity infos
+            for entity_info in entity_info_components:
+                entity_attrs = get_attrs(entity_info)
+                if attr_name not in entity_attrs:
+                    continue
+                idx = entity_attrs.index(attr_name)
+                entity_groups = get_groups(entity_info)
+                for entity in entity_groups[idx]:
+                    # Use private_attribute_id as the unique identifier
+                    entity_id = entity.private_attribute_id
+                    if entity_id in entity_map:
+                        continue
+                    # Apply user settings if available
+                    user_settings_map = (
+                        current_body_user_settings_map
+                        if entity_type == "body"
+                        else current_face_user_settings_map if entity_type == "face" else None
+                    )
+                    entity_map[entity_id] = apply_user_settings_to_entity(
+                        entity, attr_name, user_settings_map
+                    )
+
+            # Convert map to list, maintaining a stable order (sorted by entity ID)
+            result_grouped.append(sorted(entity_map.values(), key=lambda e: e.private_attribute_id))
+
+        return result_grouped
+
+    result_grouped_bodies = merge_grouped_entities("body", result_body_attribute_names)
+    result_grouped_faces = merge_grouped_entities("face", result_face_attribute_names)
+    result_grouped_edges = merge_grouped_entities("edge", result_edge_attribute_names)
+
+    # Use default_geometry_accuracy from first include_entity_info
+    result_default_geometry_accuracy = entity_info_components[0].default_geometry_accuracy
+
+    # Create the result GeometryEntityInfo
+    result = GeometryEntityInfo(
+        bodies_face_edge_ids=all_bodies_face_edge_ids if all_bodies_face_edge_ids else None,
+        body_ids=sorted(all_body_ids),
+        body_attribute_names=result_body_attribute_names,
+        grouped_bodies=result_grouped_bodies,
+        face_ids=sorted(all_face_ids),
+        face_attribute_names=result_face_attribute_names,
+        grouped_faces=result_grouped_faces,
+        edge_ids=sorted(all_edge_ids),
+        edge_attribute_names=result_edge_attribute_names,
+        grouped_edges=result_grouped_edges,
+        body_group_tag=result_body_group_tag,
+        face_group_tag=result_face_group_tag,
+        edge_group_tag=result_edge_group_tag,
+        global_bounding_box=result_bounding_box,
+        default_geometry_accuracy=result_default_geometry_accuracy,
+        draft_entities=current_entity_info.draft_entities,
+        ghost_entities=current_entity_info.ghost_entities,
+    )
+
+    return result
