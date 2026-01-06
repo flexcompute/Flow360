@@ -734,7 +734,7 @@ class SurfaceProbeOutput(_OutputBase):
     The specified monitor point will be projected to the :py:attr:`~SurfaceProbeOutput.target_surfaces`
     closest to the point. The probed results on the projected point will be dumped.
     The projection is executed at the start of the simulation. If the surface that the point was
-    casted to is moving (mesh motion), the point moves with it (it remains stationary
+    projected to is moving (mesh motion), the point moves with it (it remains stationary
     in the reference frame of the target surface).
 
     Example
