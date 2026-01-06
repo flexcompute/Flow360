@@ -132,11 +132,66 @@ def create_draft(
     imported_surfaces: Optional[List[ImportedSurface]] = None,
 ) -> DraftContext:
     """
-    Factory helper used by end users (`with fl.create_draft() as draft`).
+    Create a local draft context from a cloud asset for your run.
 
-    Creates a DraftContext with a deep copy of the asset's entity_info,
-    providing entity isolation so modifications in the draft don't affect
-    the original asset.
+    A draft is an isolated, in-memory snapshot of an asset's entity information. It lets you
+    inspect and modify entities (surfaces, edges, volumes, body groups, etc.) locally without
+    mutating the cloud asset.
+
+    Draft allows you to:
+    - Override grouping tags for faces and edges (geometry assets only).
+    - Include or exclude geometry components (projects with a geometry root asset only).
+    - Register additional imported surfaces (surface mesh dependencies in the project).
+    - Access entities in the draft via `DraftContext` properties.
+    - Manage coordinate systems and mirror actions through `draft.coordinate_systems` and
+      `draft.mirror`.
+
+    Parameters
+    ----------
+    new_run_from : Union[Geometry, SurfaceMeshV2, VolumeMeshV2]
+        The cloud asset to create the draft from.
+    face_grouping : Optional[str]
+        Face grouping tag to activate for geometry assets. When None, the draft uses the
+        default grouping stored on the geometry asset. The tag must be one of the available
+        face grouping attributes (and, when multiple geometry components are active, must be
+        available across the activated components).
+    edge_grouping : Optional[str]
+        Edge grouping tag to activate for geometry assets. When None, the draft uses the
+        default grouping stored on the geometry asset. If the activated geometry does not
+        have edge grouping attributes, this option is ignored.
+    include_geometries : Optional[List[Geometry]]
+        Additional geometry components to activate in the draft (projects with a geometry
+        root asset only). The selected geometries are merged into the draft entity info.
+    exclude_geometries : Optional[List[Geometry]]
+        Geometry components to deactivate from the draft (projects with a geometry root asset
+        only). If a geometry is not currently active, its exclusion is ignored with a
+        warning.
+    imported_surfaces : Optional[List[ImportedSurface]]
+        Imported surface meshes to register in the draft. This is commonly obtained from
+        `Project.imported_surfaces` or created via `Project.import_surface_mesh(...)`.
+
+    Returns
+    -------
+    DraftContext
+        A draft context manager. Use it with `with` to set it as the active draft context.
+
+    Raises
+    ------
+    Flow360RuntimeError
+        If `new_run_from` is not a cloud asset instance.
+    Flow360ValueError
+        If draft creation is attempted from a `Case` or an imported `Geometry`, if geometry
+        components are requested for a non-geometry-root project, or if an invalid grouping
+        tag is specified.
+
+    Example
+    -------
+    >>> import flow360 as fl
+    >>> geometry = fl.Geometry.from_cloud(id="...")
+    >>> with fl.create_draft(new_run_from=geometry, face_grouping="groupByName") as draft:
+    ...     print(draft.surfaces["wing*"])
+
+    ====
     """
 
     # region -----------------------------Private implementations Below-----------------------------
