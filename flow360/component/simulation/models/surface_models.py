@@ -317,6 +317,7 @@ WallVelocityModelTypes = Annotated[
 class Wall(BoundaryBase):
     """
     :class:`Wall` class defines the wall boundary condition based on the inputs.
+    Refer  :ref:`here <wall_formulations>` for formulation details.
 
     Example
     -------
@@ -363,6 +364,14 @@ class Wall(BoundaryBase):
       ...     velocity=fl.SlaterPorousBleed(
       ...         static_pressure=1.01e6 * fl.u.Pa, porosity=0.4, activation_step=200
       ...     ),
+      ... )
+
+    - Define roughness height on entities
+      with the naming pattern :code:`"fluid/Roughness-*"`:
+
+      >>> fl.Wall(
+      ...     entities=volume_mesh["fluid/Roughness-*"],
+      ...     roughness_height=0.1 * fl.u.mm,
       ... )
 
     ====
