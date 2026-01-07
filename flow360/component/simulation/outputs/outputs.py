@@ -666,7 +666,9 @@ class SurfaceIntegralOutput(_OutputBase):
 
 class ProbeOutput(_OutputBase):
     """
-    :class:`ProbeOutput` class for setting output data probed at monitor points.
+    :class:`ProbeOutput` class for setting output data probed at monitor points in the volume of the domain.
+    Regardless of the motion of the mesh, the points retain their positions in the
+    global reference frame during the simulation.
 
     Example
     -------
@@ -674,9 +676,9 @@ class ProbeOutput(_OutputBase):
     Define :class:`ProbeOutput` on multiple specific monitor points and monitor points along the line.
 
     - :code:`Point_1` and :code:`Point_2` are two specific points we want to monitor in this probe output group.
-    - :code:`Line_1` is from (1,0,0) * fl.u,m to (1.5,0,0) * fl.u,m and has 6 monitor points.
-    - :code:`Line_2` is from (-1,0,0) * fl.u,m to (-1.5,0,0) * fl.u,m and has 3 monitor points,
-      namely, (-1,0,0) * fl.u,m, (-1.25,0,0) * fl.u,m and (-1.5,0,0) * fl.u,m.
+    - :code:`Line_1` is from (1,0,0) * fl.u.m to (1.5,0,0) * fl.u.m and has 6 monitor points.
+    - :code:`Line_2` is from (-1,0,0) * fl.u.m to (-1.5,0,0) * fl.u.m and has 3 monitor points,
+      namely, (-1,0,0) * fl.u.m, (-1.25,0,0) * fl.u.m and (-1.5,0,0) * fl.u.m.
 
     >>> fl.ProbeOutput(
     ...     name="probe_group_points_and_lines",
@@ -731,6 +733,9 @@ class SurfaceProbeOutput(_OutputBase):
     :class:`SurfaceProbeOutput` class for setting surface output data probed at monitor points.
     The specified monitor point will be projected to the :py:attr:`~SurfaceProbeOutput.target_surfaces`
     closest to the point. The probed results on the projected point will be dumped.
+    The projection is executed at the start of the simulation. If the surface that the point was
+    projected to is moving (mesh motion), the point moves with it (it remains stationary
+    in the reference frame of the target surface).
 
     Example
     -------
@@ -831,6 +836,8 @@ class SurfaceSliceOutput(_AnimationAndFileFormatSettings):
 class TimeAverageProbeOutput(ProbeOutput):
     """
     :class:`TimeAverageProbeOutput` class for time average probe monitor output settings.
+    Regardless of the motion of the mesh, the points retain their positions in the
+    global reference frame during the simulation.
 
     Example
     -------
@@ -861,9 +868,9 @@ class TimeAverageProbeOutput(ProbeOutput):
       The results are output every 10 physical step starting from the :math:`14^{th}` physical step
       (14, 24, 34 etc.).
 
-      - :code:`Line_1` is from (1,0,0) * fl.u,m to (1.5,0,0) * fl.u,m and has 6 monitor points.
-      - :code:`Line_2` is from (-1,0,0) * fl.u,m to (-1.5,0,0) * fl.u,m and has 3 monitor points,
-        namely, (-1,0,0) * fl.u,m, (-1.25,0,0) * fl.u,m and (-1.5,0,0) * fl.u,m.
+      - :code:`Line_1` is from (1,0,0) * fl.u.m to (1.5,0,0) * fl.u.m and has 6 monitor points.
+      - :code:`Line_2` is from (-1,0,0) * fl.u.m to (-1.5,0,0) * fl.u.m and has 3 monitor points,
+        namely, (-1,0,0) * fl.u.m, (-1.25,0,0) * fl.u.m and (-1.5,0,0) * fl.u.m.
 
       >>> fl.TimeAverageProbeOutput(
       ...     name="time_average_probe_group_points",
@@ -918,6 +925,9 @@ class TimeAverageSurfaceProbeOutput(SurfaceProbeOutput):
     :class:`TimeAverageSurfaceProbeOutput` class for time average surface probe monitor output settings.
     The specified monitor point will be projected to the :py:attr:`~TimeAverageSurfaceProbeOutput.target_surfaces`
     closest to the point. The probed results on the projected point will be dumped.
+    The projection is executed at the start of the simulation. If the surface that the point was
+    projected to is moving (mesh motion), the point moves with it (it remains stationary
+    in the reference frame of the target surface).
 
     Example
     -------
@@ -949,9 +959,9 @@ class TimeAverageSurfaceProbeOutput(SurfaceProbeOutput):
       The results are output every 10 physical step starting from the :math:`14^{th}` physical step
       (14, 24, 34 etc.).
 
-      - :code:`Line_1` is from (1,0,0) * fl.u,m to (1.5,0,0) * fl.u,m and has 6 monitor points.
-      - :code:`Line_2` is from (-1,0,0) * fl.u,m to (-1.5,0,0) * fl.u,m and has 3 monitor points,
-        namely, (-1,0,0) * fl.u,m, (-1.25,0,0) * fl.u,m and (-1.5,0,0) * fl.u,m.
+      - :code:`Line_1` is from (1,0,0) * fl.u.m to (1.5,0,0) * fl.u.m and has 6 monitor points.
+      - :code:`Line_2` is from (-1,0,0) * fl.u.m to (-1.5,0,0) * fl.u.m and has 3 monitor points,
+        namely, (-1,0,0) * fl.u.m, (-1.25,0,0) * fl.u.m and (-1.5,0,0) * fl.u.m.
 
       >>> TimeAverageSurfaceProbeOutput(
       ...     name="time_average_surface_probe_group_points",
