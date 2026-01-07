@@ -926,7 +926,11 @@ class RenderOutput(_AnimationSettings):
 
 class ProbeOutput(_OutputBase):
     """
+<<<<<<< HEAD
     :class:`ProbeOutput` class for setting output data probed at monitor points in the voulume of the domain.
+=======
+    :class:`ProbeOutput` class for setting output data probed at monitor points in the volume of the domain.
+>>>>>>> 1010f65d ([HOTFIX RC-25.7] [FXC-2064] Add point motion info to probe output docstrings (#1695))
     Regardless of the motion of the mesh, the points retain their positions in the
     global reference frame during the simulation.
 
