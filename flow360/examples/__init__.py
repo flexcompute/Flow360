@@ -10,6 +10,7 @@ from .cylinder3D import Cylinder3D
 from .DARPA import DARPA_SUBOFF
 from .drivaer import DrivAer
 from .evtol import EVTOL
+from .f1_2025 import F1_2025
 from .isolated_propeller import IsolatedPropeller
 from .monitors import MonitorsAndSlices
 from .NLF_airfoil import NLFAirfoil2D
@@ -43,6 +44,7 @@ __all__ = [
     "DARPA_SUBOFF",
     "DrivAer",
     "EVTOL",
+    "F1_2025",
     "IsolatedPropeller",
     "MonitorsAndSlices",
     "NLFAirfoil2D",
