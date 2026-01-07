@@ -666,7 +666,7 @@ class SurfaceIntegralOutput(_OutputBase):
 
 class ProbeOutput(_OutputBase):
     """
-    :class:`ProbeOutput` class for setting output data probed at monitor points in the voulume of the domain.
+    :class:`ProbeOutput` class for setting output data probed at monitor points in the volume of the domain.
     Regardless of the motion of the mesh, the points retain their positions in the
     global reference frame during the simulation.
 
