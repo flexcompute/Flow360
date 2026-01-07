@@ -44,14 +44,14 @@ __all__ = [
 ]
 
 
-_ACTIVE_DRAFT: ContextVar[DraftContext | None] = ContextVar("_ACTIVE_DRAFT", default=None)
+_ACTIVE_DRAFT: ContextVar[Optional["DraftContext"]] = ContextVar("_ACTIVE_DRAFT", default=None)
 
 _DRAFT_ENTITY_TYPE_TUPLE: tuple[type[EntityBase], ...] = tuple(
     get_args(get_args(DraftEntityTypes)[0])
 )
 
 
-def get_active_draft() -> DraftContext | None:
+def get_active_draft() -> Optional["DraftContext"]:
     """Return the current active draft context if any."""
     return _ACTIVE_DRAFT.get()
 
@@ -265,12 +265,30 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
 
     @property
     def coordinate_systems(self) -> CoordinateSystemManager:
-        """Coordinate system manager."""
+        """
+        Coordinate system manager for this draft.
+
+        This is the primary user entry point to create/remove coordinate systems, define
+        parent relationships, and assign coordinate systems to draft entities.
+
+        See Also
+        --------
+        CoordinateSystemManager
+        """
         return self._coordinate_system_manager
 
     @property
     def mirror(self) -> MirrorManager:
-        """Mirror manager."""
+        """
+        Mirror manager for this draft.
+
+        This is the primary user entry point to define mirror planes and create/remove
+        mirrored draft-only entities derived from geometry body groups.
+
+        See Also
+        --------
+        MirrorManager
+        """
         return self._mirror_manager
 
     def preview_selector(self, selector: "EntitySelector", *, return_names: bool = True):
@@ -286,7 +304,7 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
 
         Returns
         -------
-        list[str] | list[EntityBase]
+        list[str] or list[EntityBase]
             Matched entity names or instances depending on ``return_names``.
 
         Example

@@ -31,16 +31,29 @@ from flow360.log import log
 
 class MirrorPlane(EntityBase):
     """
-    :class:`MirrorPlane` class for defining a mirror plane for mirroring entities.
+    Define a mirror plane used by `MirrorManager` to create mirrored draft entities.
 
-     Example
-     -------
+    A `MirrorPlane` is a draft entity representing an infinite plane defined by a center point
+    and a normal direction. Mirror operations use this plane to derive mirrored entities.
 
-     >>> fl.MirrorPlane(
-     ...     name="MirrorPlane",
-     ...     normal=(0, 1, 0),
-     ...     center=(0, 0, 0)*fl.u.m
-     ... )
+    Parameters
+    ----------
+    name : str
+        Mirror plane name. Must be unique within the draft.
+    normal : Axis
+        Normal direction of the mirror plane.
+    center : LengthType.Point
+        Center point of the mirror plane.
+
+    Example
+    -------
+
+    >>> import flow360 as fl
+    >>> plane = fl.MirrorPlane(
+    ...     name="MirrorPlane",
+    ...     normal=(0, 1, 0),
+    ...     center=(0, 0, 0) * fl.u.m,
+    ... )
     """
 
     name: str = pd.Field()
@@ -71,7 +84,16 @@ class MirrorPlane(EntityBase):
 # region -----------------------------Internal Model Below-------------------------------------
 class MirrorStatus(Flow360BaseModel):
     """
-    Internal data model for storing the mirror status.
+    Serializable snapshot of mirror state stored in the asset cache.
+
+    Notes
+    -----
+    This status stores both:
+    - User-authored inputs: `mirror_planes`
+    - Derived draft-only entities: `mirrored_geometry_body_groups` and `mirrored_surfaces`
+
+    The derived entities are generated from mirror actions and are registered into the draft's
+    entity registry when a draft is created/restored.
     """
 
     # Note: We can do similar thing as entityList to support mirroring with EntitySelectors.
@@ -94,7 +116,14 @@ class MirrorStatus(Flow360BaseModel):
         return self
 
     def is_empty(self) -> bool:
-        """Check if the mirror status is empty."""
+        """
+        Return True if no mirror planes or mirrored entities exist in this status.
+
+        Returns
+        -------
+        bool
+            True when no mirroring is configured.
+        """
         return (
             not self.mirror_planes
             and not self.mirrored_geometry_body_groups
@@ -333,7 +362,21 @@ def _extract_body_group_id_to_mirror_id_from_status(
 
 
 class MirrorManager:
-    """Encapsulates mirror plane registry and entity mirroring operations."""
+    """
+    Manage mirror planes and mirrored draft entities inside a `DraftContext`.
+
+    This manager provides:
+    - Storage/registration of `MirrorPlane` entities.
+    - Creation/removal of mirror actions for `GeometryBodyGroup` entities.
+    - Derivation and registration of draft-only entities:
+      `MirroredGeometryBodyGroup` and (when possible) `MirroredSurface`.
+
+    Notes
+    -----
+    Surface mirroring requires a surface-to-body-group mapping derived from `GeometryEntityInfo`.
+    If that mapping cannot be derived (e.g. face grouping spans multiple body groups), mirroring
+    is disabled and mirror operations will raise.
+    """
 
     __slots__ = (
         # MirrorManager owns the single mirror status instance. This is always validate and up to date.
@@ -365,7 +408,11 @@ class MirrorManager:
     def mirror_planes(self) -> EntityRegistryView:
         """
         Return all the available mirror planes.
-        # TODO: Some docstrings?
+
+        Returns
+        -------
+        EntityRegistryView
+            A registry view of `MirrorPlane` entities available in this draft.
         """
         return self._entity_registry.view(MirrorPlane)
 
@@ -376,8 +423,15 @@ class MirrorManager:
         mirror_plane: MirrorPlane,
     ) -> tuple[List[MirroredGeometryBodyGroup], List[MirroredSurface]]:
         """
-        Create mirrored GeometryBodyGroup (and its associated surfaces) for the given `MirrorPlane`.
-        New entities will have "_<mirror>" in the name as suffix.
+        Create mirrored entities for one or more geometry body groups.
+
+        This registers mirror actions for the requested body groups and then derives/creates
+        draft-only entities:
+        - `MirroredGeometryBodyGroup` for each body group
+        - `MirroredSurface` for each surface belonging to those body groups (when surface ownership
+          mapping is available)
+
+        Newly created mirrored entities use `MIRROR_SUFFIX` (``"_<mirror>"``) as a name suffix.
 
         Parameters
         ----------
@@ -390,6 +444,18 @@ class MirrorManager:
         -------
         tuple[List[MirroredGeometryBodyGroup], List[MirroredSurface]]
             Mirrored geometry body groups and surfaces.
+
+        Raises
+        ------
+        Flow360RuntimeError
+            If inputs are of incorrect types, if the mirror plane name conflicts with an existing
+            plane in the draft, or if mirroring is unavailable due to missing surface ownership
+            mapping.
+
+        Notes
+        -----
+        If a body group was previously mirrored, its existing derived mirrored entities are removed
+        and replaced with the latest mirror plane request (a warning is logged).
         """
         normalized_entities = self._validate_and_normalize_create_inputs(
             entities=entities, mirror_plane=mirror_plane
@@ -516,6 +582,11 @@ class MirrorManager:
         ----------
         entities : Union[List[GeometryBodyGroup], GeometryBodyGroup]
             One or more geometry body groups to remove mirroring from.
+
+        Raises
+        ------
+        Flow360RuntimeError
+            If `entities` is not a `GeometryBodyGroup` or a list of `GeometryBodyGroup` instances.
         """
         # 1. [Validation] Ensure `entities` are GeometryBodyGroup entities.
         normalized_entities: List[GeometryBodyGroup]
