@@ -473,7 +473,7 @@ class SurfaceMeshV2(AssetBase):
         name : str
             Name for the surface mesh component
         file_name : str
-            Path to the surface mesh file (*.cgns, *.ugrid)
+            Path to the surface mesh file (``*.cgns``, ``*.ugrid``)
         project_id : str
             ID of the existing project to add this surface mesh to
         length_unit : LengthUnitType, optional
