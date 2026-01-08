@@ -264,7 +264,7 @@ class _AnimationSettings(Flow360BaseModel):
     Controls how frequently the output files are generated.
     """
 
-    frequency: Union[pd.NonNegativeInt, Literal[-1]] = pd.Field(
+    frequency: Union[pd.PositiveInt, Literal[-1]] = pd.Field(
         default=-1,
         description="Frequency (in number of physical time steps) at which output is saved. "
         + "-1 is at end of simulation. Important for child cases - this parameter refers to the "
@@ -1182,7 +1182,7 @@ class TimeAverageProbeOutput(ProbeOutput):
         "Time average probe output", description="Name of the `TimeAverageProbeOutput`."
     )
     # pylint: disable=abstract-method
-    frequency: Union[pd.NonNegativeInt, Literal[-1]] = pd.Field(
+    frequency: Union[pd.PositiveInt, Literal[-1]] = pd.Field(
         default=1,
         description="Frequency (in number of physical time steps) at which output is saved. "
         + "-1 is at end of simulation. Important for child cases - this parameter refers to the "
@@ -1288,7 +1288,7 @@ class TimeAverageSurfaceProbeOutput(SurfaceProbeOutput):
         description="Name of the `TimeAverageSurfaceProbeOutput`.",
     )
     # pylint: disable=abstract-method
-    frequency: Union[pd.NonNegativeInt, Literal[-1]] = pd.Field(
+    frequency: Union[pd.PositiveInt, Literal[-1]] = pd.Field(
         default=1,
         description="Frequency (in number of physical time steps) at which output is saved. "
         + "-1 is at end of simulation. Important for child cases - this parameter refers to the "
