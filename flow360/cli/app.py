@@ -134,11 +134,12 @@ def show_projects(keyword, env: str):
 def version():  # pylint: disable=too-many-locals
     """
     Display the version of the flow360 client,
-    plus the latest stable and beta versions available on PyPI,
-    including their release dates, in a formatted table with the stable row highlighted.
+    plus available versions for each solver release.
     """
     # Fetch PyPI data
     # pylint: disable=import-outside-toplevel
+    from collections import defaultdict
+
     from requests import RequestException, get
 
     try:
@@ -147,6 +148,8 @@ def version():  # pylint: disable=too-many-locals
         data = resp.json()
     except RequestException:
         click.echo("Failed to fetch PyPI data.")
+        click.echo(f"Installed version: {__version__}")
+        click.echo(f"Default solver version: {__solver_version__}")
         return
 
     # Parse versions
@@ -156,9 +159,18 @@ def version():  # pylint: disable=too-many-locals
             parsed.append(Version(version_string))
         except InvalidVersion:
             continue
-    parsed.sort(reverse=True)
-    latest_stable = next((v for v in parsed if not v.is_prerelease), None)
-    latest_beta = next((v for v in parsed if v.is_prerelease), None)
+
+    # Group by solver version (major.minor)
+    versions_by_solver = defaultdict(list)
+    for v in parsed:
+        solver_key = f"release-{v.major}.{v.minor}"
+        versions_by_solver[solver_key].append(v)
+
+    sorted_solver_keys = sorted(
+        versions_by_solver.keys(),
+        key=lambda s: [int(x) for x in s.replace("release-", "").split(".")],
+        reverse=True,
+    )
 
     def get_release_date(ver: Version) -> str:
         releases = data["releases"].get(str(ver), [])
@@ -170,40 +182,65 @@ def version():  # pylint: disable=too-many-locals
         if not times:
             return "-"
         dates = [datetime.fromisoformat(t.replace("Z", "+00:00")) for t in times]
-        return min(dates).date().isoformat()
+        d = min(dates).date()
+        return f"{d.strftime('%b')} {d.day:>2}, {d.year}"
 
-    # Prepare rows
-    rows = [
-        ("Installed", str(__version__), "-"),
-        (
-            "Latest Stable",
-            str(latest_stable or "-"),
-            get_release_date(latest_stable) if latest_stable else "-",
-        ),
-        (
-            "Latest Beta",
-            str(latest_beta or "-"),
-            get_release_date(latest_beta) if latest_beta else "-",
-        ),
-    ]
+    # Prepare table
+    headers = ("Solver Version", "Installed", "Latest Stable", "Released", "Latest Beta (Unstable)")
+    rows = []
+
+    blacklist = ["release-25.4"]
+
+    for solver_ver in sorted_solver_keys:
+        # Internal filter: only show 24.11+
+        parts = [int(x) for x in solver_ver.replace("release-", "").split(".")]
+        if parts < [24, 11]:
+            continue
+
+        if solver_ver in blacklist:
+            continue
+
+        versions = versions_by_solver[solver_ver]
+
+        stables = [v for v in versions if not v.is_prerelease]
+        betas = [v for v in versions if v.is_prerelease]
+
+        latest_stable = max(stables) if stables else None
+        latest_beta = max(betas) if betas else None
+
+        # If beta is older than stable, don't show it
+        if latest_stable and latest_beta and latest_beta < latest_stable:
+            latest_beta = None
+
+        # Only show release date for stable versions
+        release_date = get_release_date(latest_stable) if latest_stable else "-"
+
+        installed_str = str(__version__) if solver_ver == __solver_version__ else "-"
+        stable_str = str(latest_stable) if latest_stable else "-"
+        beta_str = str(latest_beta) if latest_beta else "-"
+
+        rows.append((solver_ver, installed_str, stable_str, release_date, beta_str))
+
     # Compute column widths
-    w1 = max(len(r[0]) for r in rows)
-    w2 = max(len(r[1]) for r in rows)
-    w3 = max(len(r[2]) for r in rows)
+    w1 = max(len(r[0]) for r in rows + [headers])
+    w2 = max(len(r[1]) for r in rows + [headers])
+    w3 = max(len(r[2]) for r in rows + [headers])
+    w4 = max(len(r[3]) for r in rows + [headers])
+    w5 = max(len(r[4]) for r in rows + [headers])
 
     # Print header
-    click.echo(f"{'Python client'.ljust(w1)}  {'Version'.ljust(w2)}  {'Released'.ljust(w3)}")
-    click.echo(f"{'-'*w1}  {'-'*w2}  {'-'*w3}")
+    click.echo(
+        f"{headers[0].ljust(w1)}  {headers[1].ljust(w2)}  {headers[2].ljust(w3)}  {headers[3].ljust(w4)}  {headers[4].ljust(w5)}"
+    )
+    click.echo(f"{'-'*w1}  {'-'*w2}  {'-'*w3}  {'-'*w4}  {'-'*w5}")
 
-    # Print data rows, highlighting the stable one
-    for label, ver, date in rows:
-        line = f"{label.ljust(w1)}  {ver.ljust(w2)}  {date.ljust(w3)}"
-        if label == "Latest Stable":
+    # Print data rows
+    for sv, inst, stable, date, beta in rows:
+        line = f"{sv.ljust(w1)}  {inst.ljust(w2)}  {stable.ljust(w3)}  {date.ljust(w4)}  {beta.ljust(w5)}"
+        if sv == __solver_version__:
             click.echo(click.style(line, fg="green", bold=True))
         else:
             click.echo(line)
-
-    click.echo(f"\nDefault solver version for project creation: {__solver_version__}")
 
 
 flow360.add_command(configure)
