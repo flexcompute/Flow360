@@ -130,6 +130,7 @@ from flow360.component.simulation.user_code.core.types import (
     Expression,
     UserVariable,
     _convert_numeric,
+    compute_surface_integral_unit,
 )
 from flow360.component.simulation.user_code.functions import math
 from flow360.component.simulation.user_code.variables import solution
@@ -1014,7 +1015,7 @@ def translate_streamline_output(output_params: list, streamline_class):
     return streamline_output
 
 
-def process_output_field_for_integral(output_field):
+def process_output_field_for_integral(output_field, input_params):
     """Multiply UserVariable by area for surface integrals"""
     if isinstance(output_field, UserVariable):
         expression = Expression.model_validate(output_field.value)
@@ -1025,15 +1026,19 @@ def process_output_field_for_integral(output_field):
                 expression[i] * math.magnitude(solution.node_area_vector)
                 for i in range(expression.length)
             ]
-        return UserVariable(
+        new_unit = compute_surface_integral_unit(output_field, input_params)
+        user_variable = UserVariable(
             name=output_field.name + "_integral",
             value=expression_processed,
         )
+        user_variable.value.output_units = new_unit
+        return user_variable
     return output_field
 
 
 def process_user_variables_for_integral(
     outputs,
+    input_params,
 ):
     """Process UserVariable output fields for surface integrals."""
     for output in outputs:
@@ -1042,7 +1047,9 @@ def process_user_variables_for_integral(
         output_fields_processed = []
         for output_field in output.output_fields.items:
             output_fields_processed.append(
-                process_output_field_for_integral(output_field=output_field)
+                process_output_field_for_integral(
+                    output_field=output_field, input_params=input_params
+                )
             )
         output.output_fields.items = output_fields_processed
 
@@ -1138,7 +1145,7 @@ def translate_output(input_params: SimulationParams, translated: dict):
         )
 
     if has_instance_in_list(outputs, SurfaceIntegralOutput):
-        process_user_variables_for_integral(outputs)
+        process_user_variables_for_integral(outputs, input_params)
         integral_output = translate_monitor_output(
             outputs, SurfaceIntegralOutput, inject_surface_list_info
         )
@@ -1756,7 +1763,7 @@ def get_stop_criterion_settings(criterion: StoppingCriterion, params: Simulation
             break
 
     criterion_monitor_field = (
-        process_output_field_for_integral(criterion.monitor_field)
+        process_output_field_for_integral(criterion.monitor_field, params)
         if isinstance(criterion_monitor_output, SurfaceIntegralOutput)
         else criterion.monitor_field
     )

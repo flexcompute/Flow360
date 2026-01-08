@@ -47,7 +47,7 @@ def compare_dicts(dict1, dict2, atol=1e-15, rtol=1e-10, ignore_keys=None):
 
     if dict1_filtered.keys() != dict2_filtered.keys():
         print(
-            f"dict keys not equal, dict1 {sorted(dict1_filtered.keys())}, dict2 {sorted(dict2_filtered.keys())}"
+            f"dict keys not equal:\n dict1 {sorted(dict1_filtered.keys())}\n dict2 {sorted(dict2_filtered.keys())}"
         )
         return False
 
@@ -56,7 +56,7 @@ def compare_dicts(dict1, dict2, atol=1e-15, rtol=1e-10, ignore_keys=None):
         value2 = dict2_filtered[key]
 
         if not compare_values(value1, value2, atol, rtol, ignore_keys):
-            print(f"dict value of key {key} not equal dict1 {dict1[key]}, dict2 {dict2[key]}")
+            print(f"dict value of key {key} not equal:\n dict1 {dict1[key]}\n dict2 {dict2[key]}")
             return False
 
     return True
@@ -102,7 +102,7 @@ def compare_lists(list1, list2, atol=1e-15, rtol=1e-10, ignore_keys=None):
 
     for item1, item2 in zip(list1, list2):
         if not compare_values(item1, item2, atol, rtol, ignore_keys):
-            print(f"list value not equal list1 {item1}, list2 {item2}")
+            print(f"list value not equal:\n list1 {item1}\n list2 {item2}")
             return False
 
     return True

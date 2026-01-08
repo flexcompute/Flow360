@@ -85,7 +85,9 @@ from flow360.component.simulation.unit_system import (
     unyt_quantity,
 )
 from flow360.component.simulation.user_code.core.types import (
+    UserVariable,
     batch_get_user_variable_units,
+    compute_surface_integral_unit,
     get_post_processing_variables,
 )
 from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
@@ -927,6 +929,13 @@ class SimulationParams(_ParamModelBase):
         # Sort for consistent behavior
         post_processing_variables = sorted(post_processing_variables)
         name_units_pair = batch_get_user_variable_units(post_processing_variables, self)
+
+        for output in self.outputs:
+            if isinstance(output, SurfaceIntegralOutput):
+                for field in output.output_fields.items:
+                    if isinstance(field, UserVariable):
+                        unit = compute_surface_integral_unit(field, self)
+                        name_units_pair[f"{field.name} (Surface integral)"] = unit
 
         if not name_units_pair:
             return

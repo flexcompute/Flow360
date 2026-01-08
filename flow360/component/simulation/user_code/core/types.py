@@ -1627,3 +1627,30 @@ def infer_units_by_unit_system(value: dict, unit_system: str, value_dimensions):
     if unit_system == "CGS_unit_system":
         value["units"] = u.unit_systems.cgs_unit_system[value_dimensions]
     return value
+
+
+def compute_surface_integral_unit(variable: UserVariable, params) -> str:
+    """
+    Compute the unit of the surface integral of a UserVariable over a surface.
+    """
+    base_unit = None
+    if isinstance(variable.value, Expression):
+        base_unit = variable.value.get_output_units(params)
+    else:
+        val = variable.value
+        if hasattr(val, "get_output_units"):
+            base_unit = val.get_output_units(params)
+        elif isinstance(val, (unyt_array, unyt_quantity)):
+            base_unit = val.units
+        elif isinstance(val, Number):
+            base_unit = u.Unit("dimensionless")
+        else:
+            base_unit = u.Unit("dimensionless")
+
+    if base_unit is None:
+        # Fallback if output_units is not set for expression or if it is a number
+        base_unit = u.Unit("dimensionless")
+
+    area_unit = params.unit_system["area"].units
+    result_unit = base_unit * area_unit
+    return str(result_unit)
