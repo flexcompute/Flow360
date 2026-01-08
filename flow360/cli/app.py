@@ -131,7 +131,7 @@ def show_projects(keyword, env: str):
 
 
 @click.command("version")
-def version():  # pylint: disable=too-many-locals
+def version():  # pylint: disable=too-many-locals, too-many-statements
     """
     Display the version of the flow360 client,
     plus available versions for each solver release.
@@ -229,9 +229,11 @@ def version():  # pylint: disable=too-many-locals
     w5 = max(len(r[4]) for r in rows + [headers])
 
     # Print header
-    click.echo(
-        f"{headers[0].ljust(w1)}  {headers[1].ljust(w2)}  {headers[2].ljust(w3)}  {headers[3].ljust(w4)}  {headers[4].ljust(w5)}"
+    header_line = (
+        f"{headers[0].ljust(w1)}  {headers[1].ljust(w2)}  {headers[2].ljust(w3)}  "
+        f"{headers[3].ljust(w4)}  {headers[4].ljust(w5)}"
     )
+    click.echo(header_line)
     click.echo(f"{'-'*w1}  {'-'*w2}  {'-'*w3}  {'-'*w4}  {'-'*w5}")
 
     # Print data rows
