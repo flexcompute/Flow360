@@ -142,7 +142,7 @@ class UserDefinedField(Flow360BaseModel):
         return value
 
     @contextual_model_validator(mode="after")
-    def _deprecation_warning(self, _):
+    def _deprecation_warning(self):
         add_validation_warning(
             "The `UserDefinedField` class is deprecated! Please use `UserVariable` instead "
             "which provides the same functionality but with better interface."
