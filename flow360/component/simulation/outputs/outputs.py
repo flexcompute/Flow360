@@ -264,17 +264,25 @@ class _AnimationSettings(Flow360BaseModel):
     Controls how frequently the output files are generated.
     """
 
-    frequency: int = pd.Field(
+    frequency: Union[pd.NonNegativeInt, Literal[-1]] = pd.Field(
         default=-1,
-        ge=-1,
         description="Frequency (in number of physical time steps) at which output is saved. "
-        + "-1 is at end of simulation.",
+        + "-1 is at end of simulation. Important for child cases - this parameter refers to the "
+        + "**global** time step, which gets transferred from the parent case. Example: if the parent "
+        + "case finished at time_step=174, the child case will start from time_step=175. If "
+        + "frequency=100 (child case), the output will be saved at time steps 200 (25 time steps of "
+        + "the child simulation), 300 (125 time steps of the child simulation), etc. "
+        + "This setting is NOT applicable for steady cases.",
     )
     frequency_offset: int = pd.Field(
         default=0,
         ge=0,
-        description="Offset (in number of physical time steps) at which output animation is started."
-        + " 0 is at beginning of simulation.",
+        description="Offset (in number of physical time steps) at which output is started to be saved."
+        + " 0 is at beginning of simulation. Important for child cases - this parameter refers to the "
+        + "**global** time step, which gets transferred from the parent case (see `frequency` "
+        + "parameter for an example). Example: if an output has a frequency of 100 and a "
+        + "frequency_offset of 10, the output will be saved at **global** time step 10, 110, 210, "
+        + "etc. This setting is NOT applicable for steady cases.",
     )
 
     @contextual_field_validator("frequency", "frequency_offset", mode="after")
@@ -408,7 +416,10 @@ class TimeAverageSurfaceOutput(SurfaceOutput):
     )
 
     start_step: Union[pd.NonNegativeInt, Literal[-1]] = pd.Field(
-        default=-1, description="Physical time step to start calculating averaging."
+        default=-1,
+        description="Physical time step to start calculating averaging. Important for child cases "
+        + "- this parameter refers to the **global** time step, which gets transferred from the "
+        + "parent case (see `frequency` parameter for an example).",
     )
     output_type: Literal["TimeAverageSurfaceOutput"] = pd.Field(
         "TimeAverageSurfaceOutput", frozen=True
@@ -465,7 +476,10 @@ class TimeAverageVolumeOutput(VolumeOutput):
         "Time average volume output", description="Name of the `TimeAverageVolumeOutput`."
     )
     start_step: Union[pd.NonNegativeInt, Literal[-1]] = pd.Field(
-        default=-1, description="Physical time step to start calculating averaging."
+        default=-1,
+        description="Physical time step to start calculating averaging. Important for child cases "
+        + "- this parameter refers to the **global** time step, which gets transferred from the "
+        + "parent case (see `frequency` parameter for an example).",
     )
     output_type: Literal["TimeAverageVolumeOutput"] = pd.Field(
         "TimeAverageVolumeOutput", frozen=True
@@ -539,7 +553,10 @@ class TimeAverageSliceOutput(SliceOutput):
         "Time average slice output", description="Name of the `TimeAverageSliceOutput`."
     )
     start_step: Union[pd.NonNegativeInt, Literal[-1]] = pd.Field(
-        default=-1, description="Physical time step to start calculating averaging."
+        default=-1,
+        description="Physical time step to start calculating averaging. Important for child cases "
+        + "- this parameter refers to the **global** time step, which gets transferred from the "
+        + "parent case (see `frequency` parameter for an example).",
     )
     output_type: Literal["TimeAverageSliceOutput"] = pd.Field("TimeAverageSliceOutput", frozen=True)
 
@@ -646,7 +663,10 @@ class TimeAverageIsosurfaceOutput(IsosurfaceOutput):
         "Time Average Isosurface output", description="Name of `TimeAverageIsosurfaceOutput`."
     )
     start_step: Union[pd.NonNegativeInt, Literal[-1]] = pd.Field(
-        default=-1, description="Physical time step to start calculating averaging."
+        default=-1,
+        description="Physical time step to start calculating averaging. Important for child cases "
+        + "- this parameter refers to the **global** time step, which gets transferred from the "
+        + "parent case (see `frequency` parameter for an example).",
     )
     output_type: Literal["TimeAverageIsosurfaceOutput"] = pd.Field(
         "TimeAverageIsosurfaceOutput", frozen=True
@@ -1162,20 +1182,31 @@ class TimeAverageProbeOutput(ProbeOutput):
         "Time average probe output", description="Name of the `TimeAverageProbeOutput`."
     )
     # pylint: disable=abstract-method
-    frequency: int = pd.Field(
+    frequency: Union[pd.NonNegativeInt, Literal[-1]] = pd.Field(
         default=1,
-        ge=-1,
         description="Frequency (in number of physical time steps) at which output is saved. "
-        + "-1 is at end of simulation.",
+        + "-1 is at end of simulation. Important for child cases - this parameter refers to the "
+        + "**global** time step, which gets transferred from the parent case. Example: if the parent "
+        + "case finished at time_step=174, the child case will start from time_step=175. If "
+        + "frequency=100 (child case), the output will be saved at time steps 200 (25 time steps of "
+        + "the child simulation), 300 (125 time steps of the child simulation), etc. "
+        + "This setting is NOT applicable for steady cases.",
     )
     frequency_offset: int = pd.Field(
         default=0,
         ge=0,
-        description="Offset (in number of physical time steps) at which output animation is started."
-        + " 0 is at beginning of simulation.",
+        description="Offset (in number of physical time steps) at which output is started to be saved."
+        + " 0 is at beginning of simulation. Important for child cases - this parameter refers to the "
+        + "**global** time step, which gets transferred from the parent case (see `frequency` "
+        + "parameter for an example). Example: if an output has a frequency of 100 and a "
+        + "frequency_offset of 10, the output will be saved at **global** time step 10, 110, 210, "
+        + "etc. This setting is NOT applicable for steady cases.",
     )
     start_step: Union[pd.NonNegativeInt, Literal[-1]] = pd.Field(
-        default=-1, description="Physical time step to start calculating averaging"
+        default=-1,
+        description="Physical time step to start calculating averaging. Important for child cases "
+        + "- this parameter refers to the **global** time step, which gets transferred from the "
+        + "parent case (see `frequency` parameter for an example).",
     )
     output_type: Literal["TimeAverageProbeOutput"] = pd.Field("TimeAverageProbeOutput", frozen=True)
 
@@ -1257,20 +1288,31 @@ class TimeAverageSurfaceProbeOutput(SurfaceProbeOutput):
         description="Name of the `TimeAverageSurfaceProbeOutput`.",
     )
     # pylint: disable=abstract-method
-    frequency: int = pd.Field(
+    frequency: Union[pd.NonNegativeInt, Literal[-1]] = pd.Field(
         default=1,
-        ge=-1,
         description="Frequency (in number of physical time steps) at which output is saved. "
-        + "-1 is at end of simulation.",
+        + "-1 is at end of simulation. Important for child cases - this parameter refers to the "
+        + "**global** time step, which gets transferred from the parent case. Example: if the parent "
+        + "case finished at time_step=174, the child case will start from time_step=175. If "
+        + "frequency=100 (child case), the output will be saved at time steps 200 (25 time steps of "
+        + "the child simulation), 300 (125 time steps of the child simulation), etc. "
+        + "This setting is NOT applicable for steady cases.",
     )
     frequency_offset: int = pd.Field(
         default=0,
         ge=0,
-        description="Offset (in number of physical time steps) at which output animation is started."
-        + " 0 is at beginning of simulation.",
+        description="Offset (in number of physical time steps) at which output is started to be saved."
+        + " 0 is at beginning of simulation. Important for child cases - this parameter refers to the "
+        + "**global** time step, which gets transferred from the parent case (see `frequency` "
+        + "parameter for an example). Example: if an output has a frequency of 100 and a "
+        + "frequency_offset of 10, the output will be saved at **global** time step 10, 110, 210, "
+        + "etc. This setting is NOT applicable for steady cases.",
     )
     start_step: Union[pd.NonNegativeInt, Literal[-1]] = pd.Field(
-        default=-1, description="Physical time step to start calculating averaging"
+        default=-1,
+        description="Physical time step to start calculating averaging. Important for child cases "
+        + "- this parameter refers to the **global** time step, which gets transferred from the "
+        + "parent case (see `frequency` parameter for an example).",
     )
     output_type: Literal["TimeAverageSurfaceProbeOutput"] = pd.Field(
         "TimeAverageSurfaceProbeOutput", frozen=True
@@ -1533,7 +1575,10 @@ class TimeAverageStreamlineOutput(StreamlineOutput):
     )
 
     start_step: Union[pd.NonNegativeInt, Literal[-1]] = pd.Field(
-        default=-1, description="Physical time step to start calculating averaging."
+        default=-1,
+        description="Physical time step to start calculating averaging. Important for child cases "
+        + "- this parameter refers to the **global** time step, which gets transferred from the "
+        + "parent case (see `frequency` parameter for an example).",
     )
 
     output_type: Literal["TimeAverageStreamlineOutput"] = pd.Field(
@@ -1594,7 +1639,10 @@ class TimeAverageForceDistributionOutput(ForceDistributionOutput):
         description="Name of the `TimeAverageForceDistributionOutput`.",
     )
     start_step: Union[pd.NonNegativeInt, Literal[-1]] = pd.Field(
-        default=-1, description="Physical time step to start calculating averaging."
+        default=-1,
+        description="Physical time step to start calculating averaging. Important for child cases "
+        + "- this parameter refers to the **global** time step, which gets transferred from the "
+        + "parent case (see `frequency` parameter for an example).",
     )
     output_type: Literal["TimeAverageForceDistributionOutput"] = pd.Field(
         "TimeAverageForceDistributionOutput", frozen=True
