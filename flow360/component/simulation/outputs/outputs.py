@@ -9,6 +9,7 @@ Caveats:
 from typing import Annotated, List, Literal, Optional, Union, get_args
 
 import pydantic as pd
+from typing_extensions import deprecated
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
@@ -68,6 +69,7 @@ from flow360.component.simulation.validation.validation_context import (
     CASE,
     ParamsValidationInfo,
     TimeSteppingType,
+    add_validation_warning,
     contextual_field_validator,
     contextual_model_validator,
     get_validation_levels,
@@ -84,6 +86,7 @@ ForceOutputModelType = Annotated[
 ]
 
 
+@deprecated("The `UserDefinedField` class is deprecated! Use `UserVariable` instead.")
 class UserDefinedField(Flow360BaseModel):
     """
 
@@ -137,6 +140,14 @@ class UserDefinedField(Flow360BaseModel):
                 " Please consider renaming this user defined field variable."
             )
         return value
+
+    @contextual_model_validator(mode="after")
+    def _deprecation_warning(self, _):
+        add_validation_warning(
+            "The `UserDefinedField` class is deprecated! Please use `UserVariable` instead "
+            "which provides the same functionality but with better interface."
+        )
+        return self
 
 
 class MovingStatistic(Flow360BaseModel):
