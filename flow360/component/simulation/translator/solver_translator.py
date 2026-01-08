@@ -1030,8 +1030,7 @@ def process_output_field_for_integral(output_field, input_params):
         user_variable = UserVariable(
             name=output_field.name + "_integral",
             value=expression_processed,
-        )
-        user_variable.value.output_units = new_unit
+        ).in_units(new_unit)
         return user_variable
     return output_field
 

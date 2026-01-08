@@ -769,6 +769,8 @@ class Expression(Flow360BaseModel, Evaluable):
                 output_units = value.value.output_units
         elif isinstance(value, list):
             expression = f"[{','.join([_convert_argument(item)[0] for item in value])}]"
+        elif isinstance(value, (Number, u.unyt_array, u.unyt_quantity)):
+            expression = _convert_numeric(value)
         else:
             details = InitErrorDetails(
                 type="value_error", ctx={"error": f"Invalid type {type(value)}"}

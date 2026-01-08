@@ -4,6 +4,9 @@ import pytest
 import unyt as u
 
 from flow360.component.simulation.services import clear_context
+from flow360.component.simulation.translator.solver_translator import (
+    process_output_field_for_integral,
+)
 from flow360.component.simulation.user_code.core.types import (
     Expression,
     UserVariable,
@@ -92,3 +95,28 @@ def test_compute_surface_integral_unit_fallback(mock_params_si):
     var = UserVariable(name="var", value=Expression(expression="10"))
     unit = compute_surface_integral_unit(var, mock_params_si)
     assert u.Unit(unit) == u.m**2
+
+
+def test_process_output_field_for_integral_vector(mock_params_si):
+    # Test vector variable integration logic
+    # Mock node_area_vector for this test as it's used in process_output_field_for_integral
+    with mock.patch(
+        "flow360.component.simulation.translator.solver_translator.solution"
+    ) as mock_sol:
+        # Mock magnitude call
+        with mock.patch(
+            "flow360.component.simulation.translator.solver_translator.math"
+        ) as mock_math:
+            mock_math.magnitude.return_value = Expression(expression="1.0 * u.m**2")
+
+            # Create a vector variable
+            # UserVariable automatically wraps list in Expression
+            var = UserVariable(name="vec", value=[10 * u.Pa, 20 * u.Pa, 30 * u.Pa])
+
+            # This should not raise AttributeError now
+            processed_var = process_output_field_for_integral(var, mock_params_si)
+
+            # Check if the processed variable value is an Expression
+            assert isinstance(processed_var.value, Expression)
+            # Ensure output_units is set on the Expression
+            assert u.Unit(processed_var.value.output_units) == u.N
