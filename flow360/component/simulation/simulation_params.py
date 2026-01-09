@@ -633,20 +633,23 @@ class SimulationParams(_ParamModelBase):
         registry = self._update_entity_private_attrs(registry)
         return registry
 
-    def _update_param_with_actual_volume_mesh_meta(self, volume_mesh_meta_data: dict):
+    def _update_param_with_actual_volume_mesh_meta(self, volume_mesh_meta_data: dict) -> list[str]:
         """
         Update the zone info from the actual volume mesh before solver execution.
         Will be executed in the casePipeline as part of preprocessing.
         Some thoughts:
         Do we also need to update the params when the **surface meshing** is done?
+
+        Returns a list of warning messages for entities that could not be found in metadata.
         """
         # pylint:disable=no-member
         used_entity_registry = self.used_entity_registry
         # Below includes the Ghost entities.
-        _update_entity_full_name(self, _SurfaceEntityBase, volume_mesh_meta_data)
-        _update_entity_full_name(self, _VolumeEntityBase, volume_mesh_meta_data)
+        warnings = []
+        warnings.extend(_update_entity_full_name(self, _SurfaceEntityBase, volume_mesh_meta_data))
+        warnings.extend(_update_entity_full_name(self, _VolumeEntityBase, volume_mesh_meta_data))
         _update_zone_boundaries_with_metadata(used_entity_registry, volume_mesh_meta_data)
-        return self
+        return warnings
 
     def is_steady(self):
         """

@@ -156,10 +156,13 @@ def _update_entity_full_name(
     model: Flow360BaseModel,
     target_entity_type: Union[type[_SurfaceEntityBase], type[_VolumeEntityBase]],
     volume_mesh_meta_data: dict,
-):
+) -> List[str]:
     """
     Update Surface/Boundary with zone name from volume mesh metadata.
+
+    Returns a list of warning messages for entities that could not be found.
     """
+    warnings = []
     for field in model.__dict__.values():
         # Skip the AssetCache since updating there makes no difference
         if isinstance(field, AssetCache):
@@ -167,25 +170,39 @@ def _update_entity_full_name(
 
         if isinstance(field, target_entity_type):
             # pylint: disable=protected-access
-            field._update_entity_info_with_metadata(volume_mesh_meta_data)
+            warning = field._update_entity_info_with_metadata(volume_mesh_meta_data)
+            if warning is not None:
+                warnings.append(warning)
 
         if isinstance(field, EntityList):
             for entity in field.stored_entities:
                 if isinstance(entity, target_entity_type):
                     # pylint: disable=protected-access
-                    entity._update_entity_info_with_metadata(volume_mesh_meta_data)
+                    warning = entity._update_entity_info_with_metadata(volume_mesh_meta_data)
+                    if warning is not None:
+                        warnings.append(warning)
 
         elif isinstance(field, (list, tuple)):
             for item in field:
                 if isinstance(item, target_entity_type):
-                    item._update_entity_info_with_metadata(  # pylint: disable=protected-access
-                        volume_mesh_meta_data
+                    warning = (
+                        item._update_entity_info_with_metadata(  # pylint: disable=protected-access
+                            volume_mesh_meta_data
+                        )
                     )
+                    if warning is not None:
+                        warnings.append(warning)
                 elif isinstance(item, Flow360BaseModel):
-                    _update_entity_full_name(item, target_entity_type, volume_mesh_meta_data)
+                    warnings.extend(
+                        _update_entity_full_name(item, target_entity_type, volume_mesh_meta_data)
+                    )
 
         elif isinstance(field, Flow360BaseModel):
-            _update_entity_full_name(field, target_entity_type, volume_mesh_meta_data)
+            warnings.extend(
+                _update_entity_full_name(field, target_entity_type, volume_mesh_meta_data)
+            )
+
+    return warnings
 
 
 def _update_zone_boundaries_with_metadata(

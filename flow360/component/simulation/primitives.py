@@ -23,11 +23,14 @@ from flow360.component.simulation.unit_system import AngleType, AreaType, Length
 from flow360.component.simulation.user_code.core.types import ValueOrExpression
 from flow360.component.simulation.utils import BoundingBoxType, model_attribute_unlock
 from flow360.component.types import Axis
-from flow360.exceptions import Flow360BoundaryMissingError
 
 
-def _get_boundary_full_name(surface_name: str, volume_mesh_meta: dict[str, dict]) -> str:
-    """Ideally volume_mesh_meta should be a pydantic model.
+def _get_boundary_full_name(
+    surface_name: str, volume_mesh_meta: dict[str, dict]
+) -> tuple[str | None, str | None]:
+    """Return (full_name, warning_message).
+
+    Ideally volume_mesh_meta should be a pydantic model.
 
     TODO:  Note that the same surface_name may appear in different blocks. E.g.
     `farFieldBlock/slipWall`, and `plateBlock/slipWall`. Currently the mesher does not support splitting boundary into
@@ -40,16 +43,18 @@ def _get_boundary_full_name(surface_name: str, volume_mesh_meta: dict[str, dict]
             if (
                 match is not None and match.group(1) == surface_name
             ) or existing_boundary_name == surface_name:
-                return existing_boundary_name
+                return (existing_boundary_name, None)
     if surface_name == "symmetric":
         # Provides more info when the symmetric boundary is not auto generated.
-        raise Flow360BoundaryMissingError(
+        return (
+            None,
             f"Parent zone not found for boundary: {surface_name}. "
-            "It is likely that it was never auto generated because the condition is not met."
+            "It is likely that it was never auto generated because the condition is not met.",
         )
-    raise Flow360BoundaryMissingError(
+    return (
+        None,
         f"Parent zone not found for surface {surface_name}. "
-        "It may have been deleted due to overlapping with generated symmetry plane."
+        "It may have been deleted due to overlapping with generated symmetry plane.",
     )
 
 
@@ -217,14 +222,18 @@ class _SurfaceEntityBase(EntityBase, metaclass=ABCMeta):
     private_attribute_registry_bucket_name: Literal["SurfaceEntityType"] = "SurfaceEntityType"
     private_attribute_full_name: Optional[str] = pd.Field(None, frozen=True)
 
-    def _update_entity_info_with_metadata(self, volume_mesh_meta_data: dict) -> None:
+    def _update_entity_info_with_metadata(self, volume_mesh_meta_data: dict) -> str | None:
         """
         Update parent zone name once the volume mesh is done.
+
+        Returns warning message if boundary not found, None otherwise.
         """
+        full_name, warning = _get_boundary_full_name(self.name, volume_mesh_meta_data)
+        if warning is not None:
+            return warning
         with model_attribute_unlock(self, "private_attribute_full_name"):
-            self.private_attribute_full_name = _get_boundary_full_name(
-                self.name, volume_mesh_meta_data
-            )
+            self.private_attribute_full_name = full_name
+        return None
 
     @property
     def full_name(self):
