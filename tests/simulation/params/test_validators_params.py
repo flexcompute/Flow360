@@ -549,6 +549,11 @@ def test_BC_geometry():
     with open("./data/geometry_metadata_asset_cache_quasi3D.json") as fp:
         data = json.load(fp)
         data["private_attribute_asset_cache"]["project_entity_info"]["face_group_tag"] = "groupName"
+        # Mock private_attributes for all boundaries
+        for group in data["private_attribute_asset_cache"]["project_entity_info"]["grouped_faces"]:
+            for face in group:
+                if "private_attributes" not in face:
+                    face["private_attributes"] = {"bounding_box": [[0, 0, 0], [1, 1, 1]]}
         asset_cache = AssetCache(**data["private_attribute_asset_cache"])
 
     symmetry_boundary_1 = [item for item in asset_cache.boundaries if item.name == "symmetry11"][0]
@@ -769,11 +774,22 @@ def test_incomplete_BC_volume_mesh():
 
 def test_incomplete_BC_surface_mesh():
     ##:: Construct a dummy asset cache
-    wall_1 = Surface(name="wall_1", private_attribute_is_interface=False)
-    periodic_1 = Surface(name="periodic_1", private_attribute_is_interface=False)
-    periodic_2 = Surface(name="periodic_2", private_attribute_is_interface=False)
-    i_exist = Surface(name="i_exist", private_attribute_is_interface=False)
-    no_bc = Surface(name="no_bc", private_attribute_is_interface=False)
+    dummy_attrs = SurfacePrivateAttributes(bounding_box=[[0, 0, 0], [1, 1, 1]])
+    wall_1 = Surface(
+        name="wall_1", private_attribute_is_interface=False, private_attributes=dummy_attrs
+    )
+    periodic_1 = Surface(
+        name="periodic_1", private_attribute_is_interface=False, private_attributes=dummy_attrs
+    )
+    periodic_2 = Surface(
+        name="periodic_2", private_attribute_is_interface=False, private_attributes=dummy_attrs
+    )
+    i_exist = Surface(
+        name="i_exist", private_attribute_is_interface=False, private_attributes=dummy_attrs
+    )
+    no_bc = Surface(
+        name="no_bc", private_attribute_is_interface=False, private_attributes=dummy_attrs
+    )
     i_will_be_deleted = Surface(
         name="sym_boundary",
         private_attribute_is_interface=False,
