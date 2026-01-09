@@ -323,6 +323,11 @@ def _check_complete_boundary_condition_and_unknown_surface(
     # Filter out the ones that will be deleted by mesher
     automated_farfield_method = params.meshing.automated_farfield_method if params.meshing else None
 
+    for item in asset_boundary_entities:
+        if item.private_attributes is None:
+            # Legacy cloud asset that does not have bounding box information. Just skip the check.
+            return params
+
     if automated_farfield_method:
         # pylint:disable=protected-access
         asset_boundary_entities = [
