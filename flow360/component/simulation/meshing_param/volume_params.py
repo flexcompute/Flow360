@@ -1003,7 +1003,7 @@ class MeshSliceOutput(Flow360BaseModel):
         default=False,
         description="Generate crinkled slices in addition to flat slices.",
     )
-    cutoff_radius: Optional[pd.PositiveFloat] = pd.Field(
+    cutoff_radius: Optional[LengthType.Positive] = pd.Field(
         default=None,
         description="Cutoff radius of the slice output. If not specified, "
         "the slice extends to the boundaries of the volume mesh.",

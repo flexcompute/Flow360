@@ -259,7 +259,7 @@ def translate_mesh_slice_fields(
     mesh_slice_fields = {}
     mesh_slice_fields["crinkled"] = model.include_crinkled_slices
     if model.cutoff_radius is not None:
-        mesh_slice_fields["cutoffRadius"] = model.cutoff_radius
+        mesh_slice_fields["cutoffRadius"] = model.cutoff_radius.value.item()
     return mesh_slice_fields
 
 
