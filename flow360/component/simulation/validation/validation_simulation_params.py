@@ -386,9 +386,20 @@ def _collect_asset_boundary_entities(params, param_info: ParamsValidationInfo) -
     if not farfield_method:
         return asset_boundary_entities
 
+<<<<<<< HEAD
     # Filter out the ones that will be deleted by mesher (only when reliable)
     if not param_info.entity_transformation_detected:
         # pylint:disable=protected-access,duplicate-code
+=======
+        # If transformed then `_will_be_deleted_by_mesher()` will no longer be accurate
+        # since we do not know the final bounding box for each surface and global model.
+    if farfield_method:
+        for item in asset_boundary_entities:
+            if item.private_attributes is None:
+                # Legacy cloud asset that does not have bounding box information. Just skip the check.
+                return params
+        # pylint:disable=protected-access
+>>>>>>> d8f7632d ([Hotfix 25.7]: fix(): Added a check to skip validation for legacy cloud assets without bounding box information in the simulation parameters validation function. (#1711))
         asset_boundary_entities = [
             item
             for item in asset_boundary_entities
