@@ -29,8 +29,8 @@ from .tutorial_periodic_BC import TutorialPeriodicBC
 from .tutorial_RANS_xv15 import TutorialRANSXv15
 from .tutorial_UDD_forces_moments import TutorialUDDForcesMoments
 from .tutorial_UDD_structural import TutorialUDDStructural
-from .XV15_csm import XV15_CSM
 from .windsor import Windsor
+from .XV15_csm import XV15_CSM
 
 __all__ = [
     "ActuatorDisk",

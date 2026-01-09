@@ -9,5 +9,5 @@ class Windsor(BaseTestCase):
     name = "Windsor"
 
     class url:
-        wheel = "https://simcloud-public-1.s3.amazonaws.com/windsor/wheel.stl"
-        body = "https://simcloud-public-1.s3.amazonaws.com/windsor/windsorBody.stp"
+        geometry = "https://simcloud-public-1.s3.amazonaws.com/windsor/windsorBody.stp"
+        extra = {"wheel": "https://simcloud-public-1.s3.amazonaws.com/windsor/wheel.stl"}
