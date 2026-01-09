@@ -152,7 +152,7 @@ def register_entity_list(model: Flow360BaseModel, registry: EntityRegistry) -> N
             register_entity_list(field, registry)
 
 
-def _update_entity_full_name(
+def _update_entity_full_name(  # pylint:disable=too-many-branches
     model: Flow360BaseModel,
     target_entity_type: Union[type[_SurfaceEntityBase], type[_VolumeEntityBase]],
     volume_mesh_meta_data: dict,

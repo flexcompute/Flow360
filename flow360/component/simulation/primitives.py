@@ -27,7 +27,7 @@ from flow360.component.types import Axis
 
 def _get_boundary_full_name(
     surface_name: str, volume_mesh_meta: dict[str, dict]
-) -> tuple[str | None, str | None]:
+) -> tuple[Union[str, None], Union[str, None]]:
     """Return (full_name, warning_message).
 
     Ideally volume_mesh_meta should be a pydantic model.
@@ -222,7 +222,7 @@ class _SurfaceEntityBase(EntityBase, metaclass=ABCMeta):
     private_attribute_registry_bucket_name: Literal["SurfaceEntityType"] = "SurfaceEntityType"
     private_attribute_full_name: Optional[str] = pd.Field(None, frozen=True)
 
-    def _update_entity_info_with_metadata(self, volume_mesh_meta_data: dict) -> str | None:
+    def _update_entity_info_with_metadata(self, volume_mesh_meta_data: dict) -> Optional[str]:
         """
         Update parent zone name once the volume mesh is done.
 
