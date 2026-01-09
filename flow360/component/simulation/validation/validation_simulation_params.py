@@ -4,11 +4,21 @@ validation for SimulationParams
 
 from typing import Type, Union, get_args
 
+from flow360.component.simulation.draft_context.coordinate_system_manager import (
+    CoordinateSystemManager,
+)
+from flow360.component.simulation.entity_operation import (
+    _extract_scale_from_matrix,
+    _is_uniform_scale,
+)
 from flow360.component.simulation.meshing_param.params import (
     MeshingParams,
     ModularMeshingWorkflow,
 )
-from flow360.component.simulation.meshing_param.volume_params import CustomZones
+from flow360.component.simulation.meshing_param.volume_params import (
+    CustomZones,
+    WindTunnelFarfield,
+)
 from flow360.component.simulation.models.solver_numerics import NoneSolver
 from flow360.component.simulation.models.surface_models import (
     Inflow,
@@ -39,10 +49,33 @@ from flow360.component.simulation.utils import is_exact_instance
 from flow360.component.simulation.validation.validation_context import (
     ALL,
     CASE,
-    get_validation_info,
+    ParamsValidationInfo,
+    add_validation_warning,
     get_validation_levels,
 )
 from flow360.component.simulation.validation.validation_utils import EntityUsageMap
+
+
+def _populate_validated_field_to_validation_context(v, param_info, attribute_name):
+    """Populate validated objects to validation context.
+
+    Sets the attribute to an empty dict {} when v is None or empty list,
+    distinguishing successful validation with no items from validation errors
+    (which leave the attribute as None).
+    """
+    if v is None or len(v) == 0:
+        setattr(param_info, attribute_name, {})
+        return v
+    setattr(
+        param_info,
+        attribute_name,
+        {
+            obj.private_attribute_id: obj
+            for obj in v
+            if hasattr(obj, "private_attribute_id") and obj.private_attribute_id is not None
+        },
+    )
+    return v
 
 
 def _check_consistency_wall_function_and_surface_output(v):
@@ -73,7 +106,7 @@ def _check_consistency_wall_function_and_surface_output(v):
     return v
 
 
-def _check_duplicate_entities_in_models(params):
+def _check_duplicate_entities_in_models(params, param_info: ParamsValidationInfo):
     if not params.models:
         return params
 
@@ -82,9 +115,15 @@ def _check_duplicate_entities_in_models(params):
 
     for model in models:
         if hasattr(model, "entities"):
-            # pylint: disable = protected-access
-            expanded_entities = model.entities._get_expanded_entities(create_hard_copy=False)
+            expanded_entities = param_info.expand_entity_list(model.entities)
+            # seen_entity_hashes: set[str] = set()
             for entity in expanded_entities:
+                # # pylint: disable=protected-access
+                # entity_hash = entity._get_hash()
+                # if entity_hash in seen_entity_hashes:
+                #     continue
+                # if entity_hash is not None:
+                #     seen_entity_hashes.add(entity_hash)
                 usage.add_entity_usage(entity, model.type)
 
     error_msg = ""
@@ -320,95 +359,113 @@ def _validate_cht_has_heat_transfer(params):
     return params
 
 
-def _check_complete_boundary_condition_and_unknown_surface(
-    params,
-):  # pylint:disable=too-many-branches, too-many-locals,too-many-statements
-    ## Step 1: Get all boundaries patches from asset cache
-    current_lvls = get_validation_levels() if get_validation_levels() else []
-    if all(level not in current_lvls for level in (ALL, CASE)):
-        return params
-
-    validation_info = get_validation_info()
-
-    if not validation_info:
-        return params
-
-    asset_boundary_entities = params.private_attribute_asset_cache.boundaries  # Persistent ones
-
-    # Filter out the ones that will be deleted by mesher
-    farfield_method = params.meshing.farfield_method if params.meshing else None
-    volume_zones = []
+def _collect_volume_zones(params) -> list:
+    """Collect volume zones from meshing config in a schema-compatible way."""
     if isinstance(params.meshing, MeshingParams):
-        volume_zones = params.meshing.volume_zones
+        return params.meshing.volume_zones or []
     if isinstance(params.meshing, ModularMeshingWorkflow):
-        volume_zones = params.meshing.zones
+        return params.meshing.zones or []
+    return []
 
-    if farfield_method:
-        if validation_info.at_least_one_body_transformed:
-            # If transformed then `_will_be_deleted_by_mesher()` will no longer be accurate
-            # since we do not know the final bounding box for each surface and global model.
-            return params
 
-        # If transformed then `_will_be_deleted_by_mesher()` will no longer be accurate
-        # since we do not know the final bounding box for each surface and global model.
-        # pylint:disable=protected-access
+def _collect_asset_boundary_entities(params, param_info: ParamsValidationInfo) -> list:
+    """Collect boundary entities that should be considered valid for BC completeness checks.
+
+    This includes:
+    - Persistent boundaries from asset cache
+    - Farfield-related ghost boundaries, conditional on farfield method
+    - Wind tunnel ghost surfaces (when applicable)
+    """
+    # IMPORTANT:
+    # AssetCache.boundaries may return a direct reference into EntityInfo internal lists
+    # (e.g. GeometryEntityInfo.grouped_faces[*]). Always copy before appending to avoid
+    # mutating entity_info and corrupting subsequent serialization/validation.
+    asset_boundary_entities = list(params.private_attribute_asset_cache.boundaries or [])
+    farfield_method = params.meshing.farfield_method if params.meshing else None
+
+    if not farfield_method:
+        return asset_boundary_entities
+
+    # Filter out the ones that will be deleted by mesher (only when reliable)
+    if not param_info.entity_transformation_detected:
+        # pylint:disable=protected-access,duplicate-code
         asset_boundary_entities = [
             item
             for item in asset_boundary_entities
             if item._will_be_deleted_by_mesher(
-                at_least_one_body_transformed=validation_info.at_least_one_body_transformed,
+                entity_transformation_detected=param_info.entity_transformation_detected,
                 farfield_method=farfield_method,
-                global_bounding_box=validation_info.global_bounding_box,
-                planar_face_tolerance=validation_info.planar_face_tolerance,
-                half_model_symmetry_plane_center_y=validation_info.half_model_symmetry_plane_center_y,
-                quasi_3d_symmetry_planes_center_y=validation_info.quasi_3d_symmetry_planes_center_y,
+                global_bounding_box=param_info.global_bounding_box,
+                planar_face_tolerance=param_info.planar_face_tolerance,
+                half_model_symmetry_plane_center_y=param_info.half_model_symmetry_plane_center_y,
+                quasi_3d_symmetry_planes_center_y=param_info.quasi_3d_symmetry_planes_center_y,
+                farfield_domain_type=param_info.farfield_domain_type,
             )
             is False
         ]
-        if farfield_method == "auto":
-            asset_boundary_entities += [
-                item
-                for item in params.private_attribute_asset_cache.project_entity_info.ghost_entities
-                if item.name not in ("symmetric-1", "symmetric-2") and item.exists(validation_info)
-            ]
-        elif farfield_method in ("quasi-3d", "quasi-3d-periodic"):
-            asset_boundary_entities += [
-                item
-                for item in params.private_attribute_asset_cache.project_entity_info.ghost_entities
-                if item.name != "symmetric"
-            ]
-        elif farfield_method == "user-defined":
-            if validation_info.will_generate_forced_symmetry_plane():
-                asset_boundary_entities += [
-                    item
-                    for item in params.private_attribute_asset_cache.project_entity_info.ghost_entities
-                    if item.name == "symmetric"
-                ]
 
+    ghost_entities = getattr(
+        params.private_attribute_asset_cache.project_entity_info, "ghost_entities", []
+    )
+
+    if farfield_method == "auto":
+        asset_boundary_entities += [
+            item
+            for item in ghost_entities
+            if item.name in ("farfield", "symmetric")
+            and (param_info.entity_transformation_detected or item.exists(param_info))
+        ]
+    elif farfield_method in ("quasi-3d", "quasi-3d-periodic"):
+        asset_boundary_entities += [
+            item
+            for item in ghost_entities
+            if item.name in ("farfield", "symmetric-1", "symmetric-2")
+        ]
+    elif farfield_method in ("user-defined", "wind-tunnel"):
+        if param_info.will_generate_forced_symmetry_plane():
+            asset_boundary_entities += [item for item in ghost_entities if item.name == "symmetric"]
+        if farfield_method == "wind-tunnel":
+            # pylint: disable=protected-access
+            asset_boundary_entities += WindTunnelFarfield._get_valid_ghost_surfaces(
+                params.meshing.volume_zones[0].floor_type.type_name,
+                params.meshing.volume_zones[0].domain_type,
+            )
+
+    return asset_boundary_entities
+
+
+def _collect_zone_zone_interfaces(
+    *, param_info: ParamsValidationInfo, volume_zones: list
+) -> tuple[set, bool]:
+    """Collect potential zone-zone interfaces and snappy multizone flag."""
     snappy_multizone = False
-    potential_zone_zone_interfaces = set()
-    if validation_info.farfield_method == "user-defined":
-        for zones in volume_zones:
-            # Support new CustomZones container
-            if not isinstance(zones, CustomZones):
-                continue
-            for custom_volume in zones.entities.stored_entities:
-                if isinstance(custom_volume, CustomVolume):
-                    for boundary in custom_volume.boundaries.stored_entities:
-                        potential_zone_zone_interfaces.add(boundary.name)
-                if isinstance(custom_volume, SeedpointVolume):
-                    ## disable missing boundaries with snappy multizone
-                    snappy_multizone = True
+    potential_zone_zone_interfaces: set[str] = set()
 
-    if asset_boundary_entities is None or asset_boundary_entities == []:
-        raise ValueError("[Internal] Failed to retrieve asset boundaries")
+    if param_info.farfield_method != "user-defined":
+        return potential_zone_zone_interfaces, snappy_multizone
 
-    asset_boundaries = {boundary.name for boundary in asset_boundary_entities}
-    ## Step 2: Collect all used boundaries from the models
+    for zones in volume_zones:
+        # Support new CustomZones container
+        if not isinstance(zones, CustomZones):
+            continue
+        for custom_volume in zones.entities.stored_entities:
+            if isinstance(custom_volume, CustomVolume):
+                expanded = param_info.expand_entity_list(custom_volume.boundaries)
+                for boundary in expanded:
+                    potential_zone_zone_interfaces.add(boundary.name)
+            if isinstance(custom_volume, SeedpointVolume):
+                # Disable missing boundaries with snappy multizone
+                snappy_multizone = True
+
+    return potential_zone_zone_interfaces, snappy_multizone
+
+
+def _collect_used_boundary_names(params, param_info: ParamsValidationInfo) -> set:
+    """Collect all boundary names referenced in Surface BC models."""
     if len(params.models) == 1 and isinstance(params.models[0], Fluid):
         raise ValueError("No boundary conditions are defined in the `models` section.")
 
-    used_boundaries = set()
+    used_boundaries: set[str] = set()
 
     for model in params.models:
         if not isinstance(model, get_args(SurfaceModelTypes)):
@@ -416,28 +473,44 @@ def _check_complete_boundary_condition_and_unknown_surface(
         if isinstance(model, PorousJump):
             continue
 
-        entities = []
         # pylint: disable=protected-access
         if hasattr(model, "entities"):
-            entities = model.entities._get_expanded_entities(create_hard_copy=False)
+            entities = param_info.expand_entity_list(model.entities)
         elif hasattr(model, "entity_pairs"):  # Periodic BC
             entities = [
                 pair for surface_pair in model.entity_pairs.items for pair in surface_pair.pair
             ]
+        else:
+            entities = []
 
         for entity in entities:
             used_boundaries.add(entity.name)
 
-    ## Step 3: Use set operations to find missing and unknown boundaries
+    return used_boundaries
+
+
+def _validate_boundary_completeness(
+    *,
+    asset_boundaries: set,
+    used_boundaries: set,
+    potential_zone_zone_interfaces: set,
+    snappy_multizone: bool,
+    entity_transformation_detected: bool,
+) -> None:
+    """Validate missing/unknown boundary references with error/warning policy."""
     missing_boundaries = asset_boundaries - used_boundaries - potential_zone_zone_interfaces
     unknown_boundaries = used_boundaries - asset_boundaries
 
     if missing_boundaries and not snappy_multizone:
         missing_list = ", ".join(sorted(missing_boundaries))
-        raise ValueError(
+        message = (
             f"The following boundaries do not have a boundary condition: {missing_list}. "
             "Please add them to a boundary condition model in the `models` section."
         )
+        if entity_transformation_detected:
+            add_validation_warning(message)
+        else:
+            raise ValueError(message)
 
     if unknown_boundaries:
         unknown_list = ", ".join(sorted(unknown_boundaries))
@@ -446,10 +519,45 @@ def _check_complete_boundary_condition_and_unknown_surface(
             f"entities but appear in the `models` section: {unknown_list}."
         )
 
+
+def _check_complete_boundary_condition_and_unknown_surface(
+    params, param_info
+):  # pylint:disable=too-many-branches, too-many-locals,too-many-statements
+    # Step 1: Determine whether this check should run
+    current_lvls = get_validation_levels() if get_validation_levels() else []
+    if all(level not in current_lvls for level in (ALL, CASE)):
+        return params
+
+    # Step 2: Collect asset boundaries
+    asset_boundary_entities = _collect_asset_boundary_entities(params, param_info)
+    if asset_boundary_entities is None or asset_boundary_entities == []:
+        raise ValueError("[Internal] Failed to retrieve asset boundaries")
+
+    asset_boundaries = {boundary.name for boundary in asset_boundary_entities}
+    mirror_status = getattr(params.private_attribute_asset_cache, "mirror_status", None)
+    if mirror_status is not None and getattr(mirror_status, "mirrored_surfaces", None):
+        asset_boundaries |= {entity.name for entity in mirror_status.mirrored_surfaces}
+
+    # Step 3: Compute special-case interfaces and used boundaries
+    volume_zones = _collect_volume_zones(params)
+    potential_zone_zone_interfaces, snappy_multizone = _collect_zone_zone_interfaces(
+        param_info=param_info, volume_zones=volume_zones
+    )
+    used_boundaries = _collect_used_boundary_names(params, param_info)
+
+    # Step 4: Validate set differences with policy
+    _validate_boundary_completeness(
+        asset_boundaries=asset_boundaries,
+        used_boundaries=used_boundaries,
+        potential_zone_zone_interfaces=potential_zone_zone_interfaces,
+        snappy_multizone=snappy_multizone,
+        entity_transformation_detected=param_info.entity_transformation_detected,
+    )
+
     return params
 
 
-def _check_parent_volume_is_rotating(models):
+def _check_parent_volume_is_rotating(models, param_info: ParamsValidationInfo):
 
     current_lvls = get_validation_levels() if get_validation_levels() else []
     if all(level not in current_lvls for level in (ALL, CASE)):
@@ -459,7 +567,7 @@ def _check_parent_volume_is_rotating(models):
         entity.name
         for model in models
         if isinstance(model, Rotation)
-        for entity in model.entities.stored_entities
+        for entity in (param_info.expand_entity_list(model.entities))
     }
 
     for model_index, model in enumerate(models):
@@ -521,11 +629,10 @@ def _check_time_average_output(params):
     return params
 
 
-def _check_valid_models_for_liquid(models):
+def _check_valid_models_for_liquid(models, param_info):
     if not models:
         return models
-    validation_info = get_validation_info()
-    if validation_info is None or validation_info.using_liquid_as_material is False:
+    if param_info.using_liquid_as_material is False:
         return models
     for model in models:
         if isinstance(model, (Inflow, Outflow, Solid)):
@@ -566,7 +673,7 @@ def _check_duplicate_isosurface_names(outputs):
     return outputs
 
 
-def _check_duplicate_surface_usage(outputs):
+def _check_duplicate_surface_usage(outputs, param_info: ParamsValidationInfo):
     if outputs is None:
         return outputs
 
@@ -577,7 +684,7 @@ def _check_duplicate_surface_usage(outputs):
         for output in outputs:
             if not is_exact_instance(output, output_type):
                 continue
-            for entity in output.entities.stored_entities:
+            for entity in param_info.expand_entity_list(output.entities):
                 if entity.name in surface_names:
                     raise ValueError(
                         f"The same surface `{entity.name}` is used in multiple `{output_type.__name__}`s."
@@ -591,7 +698,7 @@ def _check_duplicate_surface_usage(outputs):
     return outputs
 
 
-def _check_duplicate_actuator_disk_cylinder_names(models):
+def _check_duplicate_actuator_disk_cylinder_names(models, param_info: ParamsValidationInfo):
     if not models:
         return models
 
@@ -601,7 +708,7 @@ def _check_duplicate_actuator_disk_cylinder_names(models):
             if not isinstance(model, ActuatorDisk):
                 continue
 
-            for entity_index, entity in enumerate(model.entities.stored_entities):
+            for entity_index, entity in enumerate(param_info.expand_entity_list(model.entities)):
                 if entity.name in actuator_disk_names:
                     raise ValueError(
                         f"The ActuatorDisk cylinder name `{entity.name}` at index {entity_index}"
@@ -613,3 +720,104 @@ def _check_duplicate_actuator_disk_cylinder_names(models):
     _check_actuator_disk_names(models)
 
     return models
+
+
+def _check_unique_selector_names(params):
+    """Check that all EntitySelector names are unique across the entire SimulationParams.
+
+    This validator checks the asset_cache.used_selectors field, which is populated
+    during the tokenization process in set_up_params_for_uploading().
+    """
+    asset_cache = getattr(params, "private_attribute_asset_cache", None)
+    if asset_cache is None:
+        return params
+
+    used_selectors = getattr(asset_cache, "used_selectors", None)
+    if not used_selectors:
+        return params
+
+    selector_names: set[str] = set()  # name -> first occurrence info
+
+    for selector in used_selectors:
+        selector_name = selector.name
+        if selector_name in selector_names:
+            raise ValueError(
+                f"Duplicate selector name '{selector_name}' found. "
+                f"Each selector must have a unique name."
+            )
+        # Store location info for better error messages
+        selector_names.add(selector_name)
+
+    return params
+
+
+def _check_coordinate_system_constraints(params, param_info: ParamsValidationInfo):
+    """Validate coordinate system usage constraints.
+
+    1. GeometryBodyGroup assignments require GeometryAI to be enabled.
+    2. Entities requiring uniform scaling (Box, Cylinder, AxisymmetricBody)
+       must not be assigned to coordinate systems with non-uniform scaling.
+    """
+    coord_status = params.private_attribute_asset_cache.coordinate_system_status
+
+    # No coordinate systems in use
+    if coord_status is None or not coord_status.assignments:
+        return params
+
+    # Entity types requiring uniform scaling
+    uniform_scale_required_types = {"Box", "Cylinder", "AxisymmetricBody"}
+
+    # Check 1: GAI requirement only for GeometryBodyGroup
+    has_geometry_body_group_assignment = False
+    for assignment_group in coord_status.assignments:
+        for entity_ref in assignment_group.entities:
+            if entity_ref.entity_type == "GeometryBodyGroup":
+                has_geometry_body_group_assignment = True
+                break
+        if has_geometry_body_group_assignment:
+            break
+
+    if has_geometry_body_group_assignment and not param_info.use_geometry_AI:
+        raise ValueError(
+            "Coordinate system assignment to GeometryBodyGroup "
+            "is only supported when Geometry AI is enabled."
+        )
+
+    # Check 2: Early validation of uniform scaling for entities that require it
+    manager = CoordinateSystemManager._from_status(  # pylint: disable=protected-access
+        status=coord_status
+    )
+
+    for assignment_group in coord_status.assignments:
+        # Get entities that require uniform scaling in this assignment
+        entities_requiring_uniform = [
+            entity_ref
+            for entity_ref in assignment_group.entities
+            if entity_ref.entity_type in uniform_scale_required_types
+        ]
+
+        if not entities_requiring_uniform:
+            continue
+
+        # Get the coordinate system and its composed matrix
+        coord_sys = manager._get_coordinate_system_by_id(  # pylint: disable=protected-access
+            assignment_group.coordinate_system_id
+        )
+        if coord_sys is None:
+            continue  # Should not happen if status is valid
+
+        matrix = manager._get_coordinate_system_matrix(  # pylint: disable=protected-access
+            coordinate_system=coord_sys
+        )
+
+        if not _is_uniform_scale(matrix):
+            scale_factors = _extract_scale_from_matrix(matrix)
+            entity_names = [f"{e.entity_type}:{e.entity_id}" for e in entities_requiring_uniform]
+            raise ValueError(
+                f"Coordinate system '{coord_sys.name}' has non-uniform scaling "
+                f"{scale_factors.tolist()}, which is incompatible with entities: "
+                f"{entity_names}. Box, Cylinder, and AxisymmetricBody only support "
+                f"uniform scaling."
+            )
+
+    return params

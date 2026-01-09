@@ -1,4 +1,15 @@
 import os
+from pathlib import Path
+
+from flow360.component.geometry import Geometry, GeometryMeta
+from flow360.component.resource_base import local_metadata_builder
+from flow360.component.simulation.validation.validation_context import (
+    CASE,
+    ParamsValidationInfo,
+    ValidationContext,
+)
+from flow360.component.surface_mesh_v2 import SurfaceMeshMetaV2, SurfaceMeshV2
+from flow360.component.volume_mesh import VolumeMeshMetaV2, VolumeMeshV2
 
 os.environ["MPLBACKEND"] = "Agg"
 
@@ -41,3 +52,71 @@ def before_log_test(request):
 def after_log_test():
     yield
     set_logging_file(pytest.tmp_log_file, level="DEBUG")
+
+
+@pytest.fixture
+def mock_validation_context():
+    return ValidationContext(
+        levels=None, info=ParamsValidationInfo(param_as_dict={}, referenced_expressions=[])
+    )
+
+
+@pytest.fixture
+def mock_case_validation_context():
+    return ValidationContext(
+        levels=CASE, info=ParamsValidationInfo(param_as_dict={}, referenced_expressions=[])
+    )
+
+
+@pytest.fixture
+def mock_geometry():
+    data_root = Path(__file__).parent / "data"
+    geometry_meta = local_metadata_builder(
+        id="geo-entity-provider",
+        name="three-boxes",
+        cloud_path_prefix="--",
+        status="processed",
+    )
+
+    geometry = Geometry.from_local_storage(
+        geometry_id=geometry_meta["id"],
+        local_storage_path=data_root / geometry_meta["id"],
+        meta_data=GeometryMeta(**geometry_meta),
+    )
+    return geometry
+
+
+@pytest.fixture
+def mock_surface_mesh():
+    surface_data = Path(__file__).parent / "simulation" / "service" / "data"
+    surface_meta = local_metadata_builder(
+        id="sm-11111111-1111-1111-1111-111111111111",
+        name="surface-mesh",
+        cloud_path_prefix="--",
+        status="processed",
+    )
+
+    surface_mesh = SurfaceMeshV2.from_local_storage(
+        mesh_id=surface_meta["id"],
+        local_storage_path=surface_data,
+        meta_data=SurfaceMeshMetaV2(**surface_meta),
+    )
+    assert surface_mesh._entity_info.type_name == "SurfaceMeshEntityInfo"
+    return surface_mesh
+
+
+@pytest.fixture
+def mock_volume_mesh():
+    data_root = Path(__file__).parent / "data"
+
+    volume_meta = local_metadata_builder(
+        id="vm-93a5dad9-a54c-4db9-a8ab-e22a976bb27a",
+        name="VolumeMesh_v1",
+        cloud_path_prefix="--",
+    )
+    volume_mesh = VolumeMeshV2.from_local_storage(
+        mesh_id=volume_meta["id"],
+        local_storage_path=data_root / volume_meta["id"],
+        meta_data=VolumeMeshMetaV2(**volume_meta),
+    )
+    return volume_mesh

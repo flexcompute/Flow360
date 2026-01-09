@@ -2,6 +2,7 @@
 Validation for output parameters
 """
 
+import math
 from typing import List, Literal, Union, get_args, get_origin
 
 from flow360.component.simulation.models.volume_models import Fluid
@@ -11,9 +12,13 @@ from flow360.component.simulation.outputs.outputs import (
     ProbeOutput,
     SurfaceIntegralOutput,
     SurfaceProbeOutput,
+    TimeAverageForceDistributionOutput,
 )
 from flow360.component.simulation.time_stepping.time_stepping import Steady
 from flow360.component.simulation.user_code.core.types import Expression
+from flow360.component.simulation.validation.validation_utils import (
+    customize_model_validator_error,
+)
 
 
 def _check_output_fields(params):
@@ -64,6 +69,8 @@ def _check_output_fields(params):
             "AeroAcousticOutput",
             "StreamlineOutput",
             "ForceDistributionOutput",
+            "TimeAverageForceDistributionOutput",
+            "RenderOutput",
         ):
             continue
         # Get allowed output fields items:
@@ -120,6 +127,8 @@ def _check_output_fields_valid_given_turbulence_model(params):
             "AeroAcousticOutput",
             "StreamlineOutput",
             "ForceDistributionOutput",
+            "TimeAverageForceDistributionOutput",
+            "RenderOutput",
         ):
             continue
         for item in output.output_fields.items:
@@ -168,6 +177,8 @@ def _check_output_fields_valid_given_transition_model(params):
             "AeroAcousticOutput",
             "StreamlineOutput",
             "ForceDistributionOutput",
+            "TimeAverageForceDistributionOutput",
+            "RenderOutput",
         ):
             continue
         for item in output.output_fields.items:
@@ -246,7 +257,7 @@ def _check_unique_force_distribution_output_names(params):
     active_names = set()
 
     for output_index, output in enumerate(params.outputs):
-        if isinstance(output, ForceDistributionOutput):
+        if isinstance(output, (ForceDistributionOutput, TimeAverageForceDistributionOutput)):
             if output.name in active_names:
                 raise ValueError(
                     f"In `outputs`[{output_index}] {output.output_type}: "
@@ -274,5 +285,41 @@ def _check_unique_surface_volume_probe_entity_names(params):
                         f"same `{output.output_type}`. Entity names must be unique."
                     )
                 active_entity_names.add(entity.name)
+
+    return params
+
+
+def _check_moving_statistic_applicability(params):
+
+    if not params.time_stepping:
+        return params
+
+    if not params.outputs:
+        return params
+
+    is_steady = isinstance(params.time_stepping, Steady)
+    max_steps = params.time_stepping.max_steps if is_steady else params.time_stepping.steps
+
+    for output_index, output in enumerate(params.outputs):
+        if not hasattr(output, "moving_statistic") or output.moving_statistic is None:
+            continue
+        moving_window_size_in_step = (
+            output.moving_statistic.moving_window_size * 10
+            if is_steady
+            else output.moving_statistic.moving_window_size
+        )
+        start_step = (
+            math.ceil(output.moving_statistic.start_step / 10) * 10
+            if is_steady
+            else output.moving_statistic.start_step
+        )
+        if moving_window_size_in_step + start_step > max_steps:
+            raise customize_model_validator_error(
+                model_instance=params,
+                relative_location=("outputs", output_index, "moving_statistic"),
+                message="`moving_statistic`'s moving_window_size + start_step exceeds "
+                "the total number of steps in the simulation.",
+                input_value=output.moving_statistic.model_dump(),
+            )
 
     return params

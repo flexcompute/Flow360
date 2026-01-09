@@ -1,0 +1,352 @@
+"""Draft context manager for local entity sandboxing."""
+
+from __future__ import annotations
+
+from contextlib import AbstractContextManager
+from contextvars import ContextVar, Token
+from dataclasses import dataclass
+from typing import List, Optional, get_args
+
+from flow360.component.simulation.draft_context.coordinate_system_manager import (
+    CoordinateSystemManager,
+    CoordinateSystemStatus,
+)
+from flow360.component.simulation.draft_context.mirror import (
+    MirrorManager,
+    MirrorStatus,
+)
+from flow360.component.simulation.entity_info import (
+    DraftEntityTypes,
+    EntityInfoModel,
+    GeometryEntityInfo,
+)
+from flow360.component.simulation.framework.entity_base import EntityBase
+from flow360.component.simulation.framework.entity_registry import (
+    EntityRegistry,
+    EntityRegistryView,
+)
+from flow360.component.simulation.framework.entity_selector import EntitySelector
+from flow360.component.simulation.primitives import (
+    Edge,
+    GenericVolume,
+    GeometryBodyGroup,
+    ImportedSurface,
+    MirroredGeometryBodyGroup,
+    MirroredSurface,
+    Surface,
+)
+from flow360.exceptions import Flow360RuntimeError, Flow360ValueError
+from flow360.log import log
+
+__all__ = [
+    "DraftContext",
+    "get_active_draft",
+]
+
+
+_ACTIVE_DRAFT: ContextVar[Optional["DraftContext"]] = ContextVar("_ACTIVE_DRAFT", default=None)
+
+_DRAFT_ENTITY_TYPE_TUPLE: tuple[type[EntityBase], ...] = tuple(
+    get_args(get_args(DraftEntityTypes)[0])
+)
+
+
+def get_active_draft() -> Optional["DraftContext"]:
+    """Return the current active draft context if any."""
+    return _ACTIVE_DRAFT.get()
+
+
+class DraftContext(  # pylint: disable=too-many-instance-attributes
+    AbstractContextManager["DraftContext"]
+):
+    """
+    Context manager that tracks locally modified simulation entities/status.
+    This should (eventually, not right now) be replacement of accessing entities directly from assets.
+    """
+
+    __slots__ = (
+        # Persistent entities data storage.
+        "_entity_info",
+        # Interface accessing ALL types of entities.
+        "_entity_registry",
+        "_imported_surfaces",
+        "_imported_geometries",
+        # Lightweight mirror relationships storage (compared to entity storages)
+        "_mirror_manager",
+        # Internal mirror related entities data storage.
+        "_mirror_status",
+        # Lightweight coordinate system relationships storage (compared to entity storages)
+        "_coordinate_system_manager",
+        "_token",
+    )
+
+    # pylint: disable=too-many-arguments
+    def __init__(
+        self,
+        *,
+        entity_info: EntityInfoModel,
+        imported_geometries: Optional[List] = None,
+        imported_surfaces: Optional[List[ImportedSurface]] = None,
+        mirror_status: Optional[MirrorStatus] = None,
+        coordinate_system_status: Optional[CoordinateSystemStatus] = None,
+    ) -> None:
+        """
+        Data members:
+        - _token: Token to track the active draft context.
+
+        - _mirror_manager: Manager for mirror planes and mirrored entities.
+
+        - _entity_registry: Registry of entities of self._entity_info.
+                            This provides interface for user to access the entities in the draft.
+
+        """
+
+        if entity_info is None:
+            raise Flow360RuntimeError(
+                "[Internal] DraftContext requires `entity_info` to initialize."
+            )
+        self._token: Optional[Token] = None
+
+        # DraftContext owns a deep copy of entity_info and mirror_status (created by create_draft()).
+        # This signals transfer of entity ownership from the asset to the draft (context).
+        self._entity_info = entity_info
+
+        # Use EntityRegistry.from_entity_info() for the new DraftContext workflow.
+        # This builds the registry by referencing entities from our copied entity_info.
+        self._entity_registry: EntityRegistry = EntityRegistry.from_entity_info(entity_info)
+
+        self._imported_surfaces: List = imported_surfaces or []
+        known_frozen_hashes = set()
+        for imported_surface in self._imported_surfaces:
+            known_frozen_hashes = self._entity_registry.fast_register(
+                imported_surface, known_frozen_hashes
+            )
+        self._imported_geometries: List = imported_geometries if imported_geometries else []
+        # Pre-compute face_group_to_body_group map for mirror operations.
+        # This is only available for GeometryEntityInfo.
+        face_group_to_body_group = None
+
+        if isinstance(self._entity_info, GeometryEntityInfo):
+            try:
+                face_group_to_body_group = self._entity_info.get_face_group_to_body_group_id_map()
+            except Flow360ValueError as exc:
+                # Face grouping spans across body groups.
+                log.warning(
+                    "Failed to derive surface-to-body-group mapping for mirroring: %s. "
+                    "Mirroring will be disabled.",
+                    exc,
+                )
+        self._mirror_manager = MirrorManager._from_status(
+            status=mirror_status,
+            face_group_to_body_group=face_group_to_body_group,
+            entity_registry=self._entity_registry,
+        )
+
+        self._coordinate_system_manager = CoordinateSystemManager._from_status(
+            status=coordinate_system_status,
+            entity_registry=self._entity_registry,
+        )
+
+    def __enter__(self) -> DraftContext:
+        if get_active_draft() is not None:
+            raise Flow360RuntimeError("Nested draft contexts are not allowed.")
+        self._token = _ACTIVE_DRAFT.set(self)
+        return self
+
+    def __exit__(self, exc_type, exc, exc_tb) -> None:
+        if self._token is None:
+            raise Flow360RuntimeError(
+                "[Internal] DraftContext exit called without a matching enter."
+            )
+        _ACTIVE_DRAFT.reset(self._token)
+        self._token = None
+        return False
+
+    # region -----------------------------Private implementations Below-----------------------------
+
+    # endregion ------------------------------------------------------------------------------------
+
+    # region -----------------------------Public properties Below-------------------------------------
+
+    # Persistent entities
+    @property
+    def body_groups(self) -> EntityRegistryView:
+        """
+        Return the list of body groups in the draft.
+
+
+        Example
+        -------
+          >>> with fl.create_draft(new_run_from=geometry) as draft:
+          >>>     draft.body_groups["body_group_1"]
+          >>>     draft.body_groups["body_group*"]
+
+        ====
+        """
+        return self._entity_registry.view(GeometryBodyGroup)
+
+    @property
+    def surfaces(self) -> EntityRegistryView:
+        """
+        Return the list of surfaces in the draft.
+        """
+        return self._entity_registry.view(Surface)
+
+    @property
+    def mirrored_body_groups(self) -> EntityRegistryView:
+        """
+        Return the list of mirrored body groups in the draft.
+
+        Notes
+        -----
+        Mirrored entities are draft-only entities derived from mirror actions and stored in the draft registry.
+        """
+        return self._entity_registry.view(MirroredGeometryBodyGroup)
+
+    @property
+    def mirrored_surfaces(self) -> EntityRegistryView:
+        """
+        Return the list of mirrored surfaces in the draft.
+
+        Notes
+        -----
+        Mirrored entities are draft-only entities derived from mirror actions and stored in the draft registry.
+        """
+        return self._entity_registry.view(MirroredSurface)
+
+    @property
+    def edges(self) -> EntityRegistryView:
+        """
+        Return the list of edges in the draft.
+        """
+        return self._entity_registry.view(Edge)
+
+    @property
+    def volumes(self) -> EntityRegistryView:
+        """
+        Return the list of volumes (volume zones) in the draft.
+        """
+        return self._entity_registry.view(GenericVolume)
+
+    # Non-persistent entities
+    @property
+    def boxes(self) -> EntityRegistryView:
+        """
+        Return the list of boxes in the draft.
+        """
+        # pylint: disable=import-outside-toplevel
+        from flow360.component.simulation.primitives import Box
+
+        return self._entity_registry.view(Box)
+
+    @property
+    def cylinders(self) -> EntityRegistryView:
+        """
+        Return the list of cylinders in the draft.
+        """
+        # pylint: disable=import-outside-toplevel
+        from flow360.component.simulation.primitives import Cylinder
+
+        return self._entity_registry.view(Cylinder)
+
+    @property
+    def imported_geometries(self) -> List:
+        """
+        Return the list of imported geometries in the draft.
+        """
+        return self._imported_geometries
+
+    @property
+    def imported_surfaces(self) -> EntityRegistryView:
+        """
+        Return the list of imported surfaces in the draft.
+        """
+        return self._entity_registry.view(ImportedSurface)
+
+    @property
+    def coordinate_systems(self) -> CoordinateSystemManager:
+        """
+        Coordinate system manager for this draft.
+
+        This is the primary user entry point to create/remove coordinate systems, define
+        parent relationships, and assign coordinate systems to draft entities.
+
+        See Also
+        --------
+        CoordinateSystemManager
+        """
+        return self._coordinate_system_manager
+
+    @property
+    def mirror(self) -> MirrorManager:
+        """
+        Mirror manager for this draft.
+
+        This is the primary user entry point to define mirror planes and create/remove
+        mirrored draft-only entities derived from geometry body groups.
+
+        See Also
+        --------
+        MirrorManager
+        """
+        return self._mirror_manager
+
+    def preview_selector(self, selector: "EntitySelector", *, return_names: bool = True):
+        """
+        Preview which entities a selector would match in this draft context.
+
+        Parameters
+        ----------
+        selector : EntitySelector
+            The selector to preview (SurfaceSelector, EdgeSelector, VolumeSelector, or BodyGroupSelector).
+        return_names : bool, default True
+            When True, returns entity names. When False, returns entity instances.
+
+        Returns
+        -------
+        list[str] or list[EntityBase]
+            Matched entity names or instances depending on ``return_names``.
+
+        Example
+        -------
+        >>> import flow360 as fl
+        >>> geometry = fl.Geometry.from_cloud(id="...")
+        >>> with fl.create_draft(new_run_from=geometry) as draft:
+        ...     selector = fl.SurfaceSelector(name="wing_surfaces").match("wing*")
+        ...     matched = draft.preview_selector(selector)
+        ...     print(matched)  # ['wing_upper', 'wing_lower', ...]
+
+        ====
+        """
+        # pylint: disable=import-outside-toplevel
+
+        from flow360.component.simulation.framework.entity_selector import (
+            expand_entity_list_selectors,
+        )
+
+        if not isinstance(selector, EntitySelector):
+            raise Flow360ValueError(
+                f"Expected EntitySelector, got {type(selector).__name__}. "
+                "Use fl.SurfaceSelector, fl.EdgeSelector, fl.VolumeSelector, or fl.BodyGroupSelector."
+            )
+
+        @dataclass
+        class MockEntityList:
+            """Temporary mock for EntityList to avoid metaclass constraints."""
+
+            selectors: List[EntitySelector]
+
+        matched_entities = expand_entity_list_selectors(
+            registry=self._entity_registry,
+            entity_list=MockEntityList(selectors=[selector]),
+        )
+
+        if not matched_entities:
+            return []
+
+        # Return names or instances based on return_names
+        if return_names:
+            return [entity.name for entity in matched_entities]
+        return matched_entities
+
+    # endregion ------------------------------------------------------------------------------------

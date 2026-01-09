@@ -6,7 +6,10 @@ import pydantic as pd
 from typing_extensions import Self
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.simulation.framework.updater import DEFAULT_PLANAR_FACE_TOLERANCE
+from flow360.component.simulation.framework.updater import (
+    DEFAULT_PLANAR_FACE_TOLERANCE,
+    DEFAULT_SLIDING_INTERFACE_TOLERANCE,
+)
 from flow360.component.simulation.meshing_param import snappy
 from flow360.component.simulation.meshing_param.edge_params import SurfaceEdgeRefinement
 from flow360.component.simulation.meshing_param.face_params import (
@@ -30,12 +33,15 @@ from flow360.component.simulation.meshing_param.volume_params import (
     StructuredBoxRefinement,
     UniformRefinement,
     UserDefinedFarfield,
+    WindTunnelFarfield,
 )
 from flow360.component.simulation.primitives import SeedpointVolume
 from flow360.component.simulation.validation.validation_context import (
     SURFACE_MESH,
     VOLUME_MESH,
     ContextField,
+    contextual_field_validator,
+    contextual_model_validator,
 )
 from flow360.component.simulation.validation.validation_utils import EntityUsageMap
 
@@ -60,6 +66,7 @@ VolumeZonesTypes = Annotated[
         AutomatedFarfield,
         UserDefinedFarfield,
         CustomZones,
+        WindTunnelFarfield,
     ],
     pd.Field(discriminator="type"),
 ]
@@ -128,13 +135,14 @@ class MeshingParams(Flow360BaseModel):
 
     # pylint: disable=duplicate-code
     gap_treatment_strength: Optional[float] = ContextField(
-        default=0,
+        default=None,
         ge=0,
         le=1,
         description="Narrow gap treatment strength used when two surfaces are in close proximity."
         " Use a value between 0 and 1, where 0 is no treatment and 1 is the most conservative treatment."
         " This parameter has a global impact where the anisotropic transition into the isotropic mesh."
-        " However the impact on regions without close proximity is negligible.",
+        " However the impact on regions without close proximity is negligible."
+        " The beta mesher uses a conservative default value of 1.0.",
         context=VOLUME_MESH,
     )
 
@@ -162,13 +170,17 @@ class MeshingParams(Flow360BaseModel):
 
     @pd.field_validator("volume_zones", mode="after")
     @classmethod
-    def _check_volume_zones_has_farfied(cls, v):
+    def _check_volume_zones_has_farfield(cls, v):
         if v is None:
             # User did not put anything in volume_zones so may not want to use volume meshing
             return v
 
         total_farfield = sum(
-            isinstance(volume_zone, (AutomatedFarfield, UserDefinedFarfield)) for volume_zone in v
+            isinstance(
+                volume_zone,
+                (AutomatedFarfield, WindTunnelFarfield, UserDefinedFarfield),
+            )
+            for volume_zone in v
         )
         if total_farfield == 0:
             raise ValueError("Farfield zone is required in `volume_zones`.")
@@ -178,7 +190,7 @@ class MeshingParams(Flow360BaseModel):
 
         return v
 
-    @pd.field_validator("volume_zones", mode="after")
+    @contextual_field_validator("volume_zones", mode="after")
     @classmethod
     def _check_volume_zones_have_unique_names(cls, v):
         """Ensure there won't be duplicated volume zone names."""
@@ -200,7 +212,7 @@ class MeshingParams(Flow360BaseModel):
 
         return v
 
-    @pd.model_validator(mode="after")
+    @contextual_model_validator(mode="after")
     def _check_no_reused_volume_entities(self) -> Self:
         """
         Meshing entities reuse check.
@@ -231,7 +243,7 @@ class MeshingParams(Flow360BaseModel):
                 # pylint: disable=protected-access
                 _ = [
                     usage.add_entity_usage(item, volume_zone.type)
-                    for item in volume_zone.entities._get_expanded_entities(create_hard_copy=False)
+                    for item in volume_zone.entities.stored_entities
                 ]
 
         for refinement in self.refinements if self.refinements is not None else []:
@@ -242,7 +254,7 @@ class MeshingParams(Flow360BaseModel):
                 # pylint: disable=protected-access
                 _ = [
                     usage.add_entity_usage(item, refinement.refinement_type)
-                    for item in refinement.entities._get_expanded_entities(create_hard_copy=False)
+                    for item in refinement.entities.stored_entities
                 ]
 
         error_msg = ""
@@ -275,11 +287,13 @@ class MeshingParams(Flow360BaseModel):
 
     @property
     def farfield_method(self):
-        """Returns the  farfield method used."""
+        """Returns the farfield method used."""
         if self.volume_zones:
             for zone in self.volume_zones:  # pylint: disable=not-an-iterable
                 if isinstance(zone, AutomatedFarfield):
                     return zone.method
+                if isinstance(zone, WindTunnelFarfield):
+                    return "wind-tunnel"
                 if isinstance(zone, UserDefinedFarfield):
                     return "user-defined"
         return None
@@ -314,13 +328,23 @@ class VolumeMeshingParams(Flow360BaseModel):
     )
 
     gap_treatment_strength: Optional[float] = pd.Field(
-        default=0,
+        default=None,
         ge=0,
         le=1,
         description="Narrow gap treatment strength used when two surfaces are in close proximity."
         " Use a value between 0 and 1, where 0 is no treatment and 1 is the most conservative treatment."
         " This parameter has a global impact where the anisotropic transition into the isotropic mesh."
-        " However the impact on regions without close proximity is negligible.",
+        " However the impact on regions without close proximity is negligible."
+        " The beta mesher uses a conservative default value of 1.0.",
+    )
+
+    sliding_interface_tolerance: pd.NonNegativeFloat = pd.Field(
+        DEFAULT_SLIDING_INTERFACE_TOLERANCE,
+        strict=True,
+        description="Tolerance used for detecting / creating curves in the input surface mesh / geometry lying on"
+        " sliding interfaces. This tolerance is non-dimensional, and represents a distance"
+        " relative to the smallest radius of all sliding interfaces specified in meshing parameters."
+        " This cannot be overridden per sliding interface.",
     )
 
 
@@ -350,7 +374,6 @@ class ModularMeshingWorkflow(Flow360BaseModel):
     @pd.field_validator("zones", mode="after")
     @classmethod
     def _check_volume_zones_has_farfield(cls, v):
-
         total_automated_farfield = sum(
             isinstance(volume_zone, AutomatedFarfield) for volume_zone in v
         )
@@ -429,7 +452,7 @@ class ModularMeshingWorkflow(Flow360BaseModel):
 
         return self
 
-    @pd.model_validator(mode="after")
+    @contextual_model_validator(mode="after")
     def _check_no_reused_volume_entities(self) -> Self:
         """
         Meshing entities reuse check.
@@ -457,10 +480,9 @@ class ModularMeshingWorkflow(Flow360BaseModel):
 
         for volume_zone in self.zones if self.zones is not None else []:
             if isinstance(volume_zone, RotationVolume):
-                # pylint: disable=protected-access
                 _ = [
                     usage.add_entity_usage(item, volume_zone.type)
-                    for item in volume_zone.entities._get_expanded_entities(create_hard_copy=False)
+                    for item in volume_zone.entities.stored_entities
                 ]
         # pylint: disable=no-member
         for refinement in (
@@ -472,10 +494,9 @@ class ModularMeshingWorkflow(Flow360BaseModel):
                 refinement,
                 (UniformRefinement, AxisymmetricRefinement, StructuredBoxRefinement),
             ):
-                # pylint: disable=protected-access
                 _ = [
                     usage.add_entity_usage(item, refinement.refinement_type)
-                    for item in refinement.entities._get_expanded_entities(create_hard_copy=False)
+                    for item in refinement.entities.stored_entities
                 ]
 
         error_msg = ""

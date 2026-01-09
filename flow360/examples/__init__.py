@@ -7,10 +7,14 @@ from .convergence import Convergence
 from .cube import Cube
 from .cylinder2D import Cylinder2D
 from .cylinder3D import Cylinder3D
+from .DARPA import DARPA_SUBOFF
 from .drivaer import DrivAer
 from .evtol import EVTOL
+from .f1_2025 import F1_2025
 from .isolated_propeller import IsolatedPropeller
 from .monitors import MonitorsAndSlices
+from .NLF_airfoil import NLFAirfoil2D
+from .oblique_channel import ObliqueChannel
 from .om6wing import OM6wing
 from .quadcopter import Quadcopter
 from .rotating_spheres import RotatingSpheres
@@ -24,6 +28,9 @@ from .tutorial_dynamic_derivatives import TutorialDynamicDerivatives
 from .tutorial_periodic_BC import TutorialPeriodicBC
 from .tutorial_RANS_xv15 import TutorialRANSXv15
 from .tutorial_UDD_forces_moments import TutorialUDDForcesMoments
+from .tutorial_UDD_structural import TutorialUDDStructural
+from .windsor import Windsor
+from .XV15_csm import XV15_CSM
 
 __all__ = [
     "ActuatorDisk",
@@ -35,10 +42,13 @@ __all__ = [
     "Cube",
     "Cylinder2D",
     "Cylinder3D",
+    "DARPA_SUBOFF",
     "DrivAer",
     "EVTOL",
+    "F1_2025",
     "IsolatedPropeller",
     "MonitorsAndSlices",
+    "NLFAirfoil2D",
     "OM6wing",
     "RotatingSpheres",
     "Tutorial2DCRM",
@@ -51,5 +61,9 @@ __all__ = [
     "TutorialDynamicDerivatives",
     "TutorialRANSXv15",
     "TutorialUDDForcesMoments",
+    "TutorialUDDStructural",
     "Quadcopter",
+    "XV15_CSM",
+    "ObliqueChannel",
+    "Windsor",
 ]

@@ -31,6 +31,8 @@ from flow360.component.simulation.meshing_param.volume_params import (
     StructuredBoxRefinement,
     UniformRefinement,
     UserDefinedFarfield,
+    WheelBelts,
+    WindTunnelFarfield,
 )
 from flow360.component.simulation.outputs.outputs import Slice
 from flow360.component.simulation.primitives import (
@@ -653,8 +655,9 @@ def test_seedpoint_zones(get_test_param_w_seedpoints, get_surface_mesh):
         "volume": {
             "firstLayerThickness": 1.35e-06,
             "growthRate": 1.04,
-            "gapTreatmentStrength": 0.0,
+            "gapTreatmentStrength": 1.0,
             "planarFaceTolerance": 1e-6,
+            "slidingInterfaceTolerance": 1e-2,
             "numBoundaryLayers": -1,
         },
         "faces": {},
@@ -702,6 +705,75 @@ def test_custom_zones_tetrahedra(get_test_param, get_surface_mesh):
     translated = get_volume_meshing_json(params, get_surface_mesh.mesh_unit)
     assert "zones" in translated and len(translated["zones"]) > 0
     assert all("enforceTetrahedralElements" not in z for z in translated["zones"])  # type: ignore
+
+
+def test_custom_zones_element_type_tetrahedra(get_surface_mesh):
+    """Test that element_type='tetrahedra' is correctly translated to enforceTetrahedralElements=True."""
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                refinement_factor=1.0,
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-6 * u.m,
+                    boundary_layer_growth_rate=1.2,
+                ),
+                volume_zones=[
+                    CustomZones(
+                        name="custom_zones_tetrahedral",
+                        entities=[
+                            CustomVolume(
+                                name="tetrahedral_zone",
+                                boundaries=[Surface(name="boundary1"), Surface(name="boundary2")],
+                            )
+                        ],
+                        element_type="tetrahedra",
+                    ),
+                    UserDefinedFarfield(),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+        )
+
+    translated = get_volume_meshing_json(params, get_surface_mesh.mesh_unit)
+    assert "zones" in translated
+    assert len(translated["zones"]) == 1
+    assert translated["zones"][0]["name"] == "tetrahedral_zone"
+    assert "enforceTetrahedralElements" in translated["zones"][0]
+    assert translated["zones"][0]["enforceTetrahedralElements"] is True
+
+
+def test_custom_zones_element_type_mixed(get_surface_mesh):
+    """Test that element_type='mixed' (default) does not include enforceTetrahedralElements."""
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                refinement_factor=1.0,
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-6 * u.m,
+                    boundary_layer_growth_rate=1.2,
+                ),
+                volume_zones=[
+                    CustomZones(
+                        name="custom_zones_mixed",
+                        entities=[
+                            CustomVolume(
+                                name="mixed_zone",
+                                boundaries=[Surface(name="boundary1"), Surface(name="boundary2")],
+                            )
+                        ],
+                        element_type="mixed",
+                    ),
+                    UserDefinedFarfield(),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+        )
+
+    translated = get_volume_meshing_json(params, get_surface_mesh.mesh_unit)
+    assert "zones" in translated
+    assert len(translated["zones"]) == 1
+    assert translated["zones"][0]["name"] == "mixed_zone"
+    assert "enforceTetrahedralElements" not in translated["zones"][0]
 
 
 def test_passive_spacing_with_ghost_symmetry_in_faces(get_surface_mesh):
@@ -937,3 +1009,136 @@ def test_farfield_relative_size():
     with open(ref_path, "r") as fh:
         ref_dict = json.load(fh)
     assert compare_values(translated, ref_dict)
+
+
+def test_analytic_wind_tunnel_farfield():
+    with SI_unit_system:
+        wind_tunnel = WindTunnelFarfield(
+            width=10,
+            height=10,
+            inlet_x_position=-5,
+            outlet_x_position=15,
+            floor_z_position=0,
+            floor_type=WheelBelts(
+                central_belt_x_range=(-1, 6),
+                central_belt_width=1.2,
+                front_wheel_belt_x_range=(-0.3, 0.5),
+                front_wheel_belt_y_range=(0.7, 1.2),
+                rear_wheel_belt_x_range=(2.6, 3.8),
+                rear_wheel_belt_y_range=(0.7, 1.2),
+            ),
+        )
+        meshing_params = MeshingParams(
+            defaults=MeshingDefaults(
+                surface_max_aspect_ratio=10,
+                curvature_resolution_angle=15 * u.deg,
+                geometry_accuracy=1e-2,
+                boundary_layer_first_layer_thickness=1e-4,
+                boundary_layer_growth_rate=1.2,
+                planar_face_tolerance=1e-3,
+            ),
+            volume_zones=[wind_tunnel],
+        )
+        param = SimulationParams(meshing=meshing_params)
+
+    translated = get_volume_meshing_json(param, u.m)
+    ref_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "ref",
+        "volume_meshing",
+        "ref_param_to_json_wind_tunnel.json",
+    )
+    with open(ref_path, "r") as fh:
+        ref_dict = json.load(fh)
+    assert compare_values(translated, ref_dict)
+
+
+def test_sliding_interface_tolerance_meshing_params(get_surface_mesh):
+    """Test that sliding_interface_tolerance is translated correctly in MeshingParams."""
+    with SI_unit_system:
+        param = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-3,
+                    boundary_layer_growth_rate=1.2,
+                    sliding_interface_tolerance=5e-3,
+                ),
+                volume_zones=[AutomatedFarfield()],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+        )
+    translated = get_volume_meshing_json(param, get_surface_mesh.mesh_unit)
+    assert "volume" in translated
+    assert "slidingInterfaceTolerance" in translated["volume"]
+    assert translated["volume"]["slidingInterfaceTolerance"] == 5e-3
+
+
+def test_sliding_interface_tolerance_modular_workflow(get_surface_mesh):
+    """Test that sliding_interface_tolerance is translated correctly in ModularMeshingWorkflow."""
+    with SI_unit_system:
+        param = SimulationParams(
+            meshing=ModularMeshingWorkflow(
+                volume_meshing=VolumeMeshingParams(
+                    defaults=VolumeMeshingDefaults(
+                        boundary_layer_first_layer_thickness=1e-3,
+                        boundary_layer_growth_rate=1.2,
+                    ),
+                    sliding_interface_tolerance=2e-3,
+                ),
+                zones=[AutomatedFarfield()],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+        )
+    translated = get_volume_meshing_json(param, get_surface_mesh.mesh_unit)
+    assert "volume" in translated
+    assert "slidingInterfaceTolerance" in translated["volume"]
+    assert translated["volume"]["slidingInterfaceTolerance"] == 2e-3
+
+
+def test_sliding_interface_tolerance_default_value(get_surface_mesh):
+    """Test that default sliding_interface_tolerance value is used when not specified."""
+    with SI_unit_system:
+        param = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-3,
+                    boundary_layer_growth_rate=1.2,
+                ),
+                volume_zones=[AutomatedFarfield()],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+        )
+    translated = get_volume_meshing_json(param, get_surface_mesh.mesh_unit)
+    assert "volume" in translated
+    assert "slidingInterfaceTolerance" in translated["volume"]
+    # Default value is 1e-2 from DEFAULT_SLIDING_INTERFACE_TOLERANCE
+    assert translated["volume"]["slidingInterfaceTolerance"] == 1e-2
+
+
+def test_windtunnel_ghost_surface_supported_in_volume_face_refinements(get_surface_mesh):
+    with SI_unit_system:
+        wind_tunnel = WindTunnelFarfield()
+        param = SimulationParams(
+            meshing=MeshingParams(
+                refinement_factor=1.1,
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-3,
+                    boundary_layer_growth_rate=1.2,
+                ),
+                volume_zones=[wind_tunnel],
+                refinements=[
+                    BoundaryLayer(
+                        entities=[wind_tunnel.floor],
+                        first_layer_thickness=1e-3 * u.m,
+                        growth_rate=1.2,
+                    ),
+                    PassiveSpacing(entities=[wind_tunnel.inlet], type="projected"),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+        )
+
+    translated = get_volume_meshing_json(param, get_surface_mesh.mesh_unit)
+    assert "faces" in translated
+    assert translated["faces"]["windTunnelFloor"]["type"] == "aniso"
+    assert translated["faces"]["windTunnelInlet"]["type"] == "projectAnisoSpacing"

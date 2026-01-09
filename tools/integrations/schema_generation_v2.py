@@ -314,6 +314,7 @@ with SI_unit_system:
         ],
     )
 
+write_schemas(SimulationParams, "simulation_params", "all_in_one")
 write_example(param, "simulation_params", "example-1")
 
 with SI_unit_system:

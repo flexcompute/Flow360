@@ -1,8 +1,15 @@
 import json
 
+import numpy as np
 import pytest
 
 import flow360.component.simulation.units as u
+from flow360.component.simulation.draft_context.coordinate_system_manager import (
+    CoordinateSystemManager,
+)
+from flow360.component.simulation.entity_operation import CoordinateSystem
+from flow360.component.simulation.framework.entity_registry import EntityRegistry
+from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.framework.updater_utils import compare_values
 from flow360.component.simulation.models.material import Water
 from flow360.component.simulation.operating_condition.operating_condition import (
@@ -28,6 +35,7 @@ from flow360.component.simulation.outputs.outputs import (
     SurfaceOutput,
     SurfaceProbeOutput,
     SurfaceSliceOutput,
+    TimeAverageForceDistributionOutput,
     TimeAverageIsosurfaceOutput,
     TimeAverageProbeOutput,
     TimeAverageSurfaceOutput,
@@ -1216,6 +1224,45 @@ def test_force_distribution_output():
     assert compare_values(param_with_ref[1], translated["forceDistributionOutput"])
 
 
+def test_time_averaged_force_distribution_output():
+    param_with_ref = (
+        [
+            TimeAverageForceDistributionOutput(
+                name="test_name",
+                distribution_direction=[0.1, 0.9, 0.0],
+            ),
+            TimeAverageForceDistributionOutput(
+                name="test_name2",
+                distribution_direction=[1.0, 0.0, 0.0],
+                distribution_type="cumulative",
+                start_step=5,
+            ),
+        ],
+        {
+            "test_name": {
+                "direction": [0.11043152607484655, 0.9938837346736189, 0.0],
+                "type": "incremental",
+                "startAverageIntegrationStep": -1,
+            },
+            "test_name2": {
+                "direction": [1.0, 0.0, 0.0],
+                "type": "cumulative",
+                "startAverageIntegrationStep": 5,
+            },
+        },
+    )
+
+    with SI_unit_system:
+        param = SimulationParams(
+            outputs=param_with_ref[0], time_stepping=Unsteady(steps=1, step_size=0.1)
+        )
+    param = param._preprocess(mesh_unit=1.0 * u.m, exclude=["models"])
+
+    translated = {}
+    translated = translate_output(param, translated)
+    assert compare_values(param_with_ref[1], translated["timeAveragedForceDistributionOutput"])
+
+
 def test_surface_slice_output(vel_in_km_per_hr):
     param_with_ref = (
         [
@@ -1638,4 +1685,166 @@ def test_imported_surface_output(
     assert compare_values(
         time_average_imported_surface_output_config[1],
         translated["timeAverageImportedSurfaceOutput"],
+    )
+
+
+def test_imported_surface_with_coordinate_system_transformation():
+    """Test that ImportedSurface with coordinate system assignment includes transformation matrix in output JSON."""
+    with SI_unit_system:
+        # Create ImportedSurface entities with explicit IDs
+        imported_surface_1 = ImportedSurface(
+            name="surface1", file_name="surface1.cgns", private_attribute_id="surface1_id"
+        )
+        imported_surface_2 = ImportedSurface(
+            name="surface2", file_name="surface2.cgns", private_attribute_id="surface2_id"
+        )
+
+        # Create coordinate system with simple translation
+        cs = CoordinateSystem(
+            name="test_frame",
+            translation=(10, 20, 30) * u.m,
+        )
+
+        # Create entity registry and register entities
+        entity_registry = EntityRegistry()
+        entity_registry.register(imported_surface_1)
+        entity_registry.register(imported_surface_2)
+
+        # Create CoordinateSystemManager and assign coordinate system to first surface
+        manager = CoordinateSystemManager()
+        manager.add(coordinate_system=cs)
+        manager.assign(entities=imported_surface_1, coordinate_system=cs)
+
+        # Create coordinate system status
+        cs_status = manager._to_status()
+
+        # Create a user variable for SurfaceIntegralOutput
+        mass_flux_var = UserVariable(name="TestSurfaceIntegral", value=solution.velocity)
+
+        # Create SimulationParams with ImportedSurface outputs and coordinate system status
+        param = SimulationParams(
+            operating_condition=AerospaceCondition(),
+            outputs=[
+                SurfaceOutput(
+                    output_fields=["velocity"],
+                    surfaces=[imported_surface_1, imported_surface_2],
+                ),
+                SurfaceIntegralOutput(
+                    name="ImportedSurfaceIntegral",
+                    output_fields=[mass_flux_var],
+                    surfaces=[imported_surface_1, imported_surface_2],
+                ),
+            ],
+            time_stepping=Unsteady(step_size=0.1 * u.s, steps=100),
+            private_attribute_asset_cache=AssetCache(coordinate_system_status=cs_status),
+        )
+
+    # Preprocess and translate
+    translated = {"boundaries": {}}
+    param = param._preprocess(mesh_unit=1 * u.m, exclude=["models"])
+    translated = translate_output(param, translated)
+
+    # Verify the output structure
+    assert "importedSurfaceOutput" in translated
+    assert "surfaces" in translated["importedSurfaceOutput"]
+
+    # Check surface1 (with coordinate system) has transformation matrix
+    surface1_output = translated["importedSurfaceOutput"]["surfaces"]["surface1"]
+    assert "meshFile" in surface1_output
+    assert surface1_output["meshFile"] == "surface1.cgns"
+    assert "transformationMatrix" in surface1_output
+
+    # Verify the transformation matrix is correct (identity rotation + translation [10, 20, 30])
+    expected_matrix = np.array(
+        [[1, 0, 0, 10], [0, 1, 0, 20], [0, 0, 1, 30]], dtype=np.float64
+    ).tolist()
+    np.testing.assert_allclose(
+        surface1_output["transformationMatrix"],
+        expected_matrix,
+        atol=1e-10,
+        err_msg="Transformation matrix does not match expected translation",
+    )
+
+    # Check surface2 (without coordinate system) has NO transformation matrix
+    surface2_output = translated["importedSurfaceOutput"]["surfaces"]["surface2"]
+    assert "meshFile" in surface2_output
+    assert surface2_output["meshFile"] == "surface2.cgns"
+    assert "transformationMatrix" not in surface2_output
+
+    # Verify the same for importedSurfaceIntegralOutput
+    assert "importedSurfaceIntegralOutput" in translated
+    assert "surfaces" in translated["importedSurfaceIntegralOutput"]
+
+    surface1_integral_output = translated["importedSurfaceIntegralOutput"]["surfaces"]["surface1"]
+    assert "transformationMatrix" in surface1_integral_output
+    np.testing.assert_allclose(
+        surface1_integral_output["transformationMatrix"],
+        expected_matrix,
+        atol=1e-10,
+    )
+
+    surface2_integral_output = translated["importedSurfaceIntegralOutput"]["surfaces"]["surface2"]
+    assert "transformationMatrix" not in surface2_integral_output
+
+
+def test_imported_surface_with_rotation_and_translation():
+    """Test that ImportedSurface with coordinate system including rotation outputs correct matrix."""
+    with SI_unit_system:
+        # Create ImportedSurface entity with explicit ID
+        imported_surface = ImportedSurface(
+            name="rotated_surface",
+            file_name="rotated.cgns",
+            private_attribute_id="rotated_surface_id",
+        )
+
+        # Create coordinate system with 90 degree rotation around Z and translation
+        cs = CoordinateSystem(
+            name="rotated_frame",
+            axis_of_rotation=(0, 0, 1),
+            angle_of_rotation=90 * u.deg,
+            translation=(5, 10, 15) * u.m,
+        )
+
+        # Create entity registry and register entity
+        entity_registry = EntityRegistry()
+        entity_registry.register(imported_surface)
+
+        # Create CoordinateSystemManager and assign
+        manager = CoordinateSystemManager()
+        manager.add(coordinate_system=cs)
+        manager.assign(entities=imported_surface, coordinate_system=cs)
+
+        cs_status = manager._to_status()
+
+        # Create SimulationParams
+        param = SimulationParams(
+            operating_condition=AerospaceCondition(),
+            outputs=[
+                SurfaceOutput(
+                    output_fields=["velocity"],
+                    surfaces=[imported_surface],
+                ),
+            ],
+            time_stepping=Unsteady(step_size=0.1 * u.s, steps=100),
+            private_attribute_asset_cache=AssetCache(coordinate_system_status=cs_status),
+        )
+
+    # Translate
+    translated = {"boundaries": {}}
+    param = param._preprocess(mesh_unit=1 * u.m, exclude=["models"])
+    translated = translate_output(param, translated)
+
+    # Verify the transformation matrix
+    surface_output = translated["importedSurfaceOutput"]["surfaces"]["rotated_surface"]
+    assert "transformationMatrix" in surface_output
+
+    # Expected: 90 degree rotation around Z + translation [5, 10, 15]
+    # Rotation matrix for 90 deg around Z: [[0, -1, 0], [1, 0, 0], [0, 0, 1]]
+    expected_matrix = np.array([[0, -1, 0, 5], [1, 0, 0, 10], [0, 0, 1, 15]], dtype=np.float64)
+
+    np.testing.assert_allclose(
+        surface_output["transformationMatrix"],
+        expected_matrix.tolist(),
+        atol=1e-10,
+        err_msg="Transformation matrix with rotation does not match expected",
     )

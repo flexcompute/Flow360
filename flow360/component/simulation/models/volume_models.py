@@ -10,7 +10,8 @@ import pydantic as pd
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.simulation.framework.entity_base import EntityList, generate_uuid
+from flow360.component.simulation.framework.entity_base import EntityList
+from flow360.component.simulation.framework.entity_utils import generate_uuid
 from flow360.component.simulation.framework.expressions import (
     StringExpression,
     validate_angle_expression_of_t_seconds,
@@ -56,7 +57,6 @@ from flow360.component.simulation.primitives import (
     Box,
     CustomVolume,
     Cylinder,
-    EntityListWithCustomVolume,
     GenericVolume,
     SeedpointVolume,
 )
@@ -72,7 +72,8 @@ from flow360.component.simulation.unit_system import (
 )
 from flow360.component.simulation.user_code.core.types import ValueOrExpression
 from flow360.component.simulation.validation.validation_context import (
-    get_validation_info,
+    ParamsValidationInfo,
+    contextual_field_validator,
 )
 from flow360.component.simulation.validation.validation_utils import (
     _validator_append_instance_name,
@@ -186,7 +187,7 @@ class NavierStokesInitialCondition(ExpressionInitialConditionBase):
     Note
     ----
     The result of the expressions will be treated as non-dimensional values.
-    Please refer to the :ref:`Units Introduction<API_units_introduction>` for more details.
+    Please refer to the :ref:`Units Introduction<python_API_units_introduction>` for more details.
 
     Example
     -------
@@ -211,11 +212,15 @@ class NavierStokesInitialCondition(ExpressionInitialConditionBase):
     w: StringExpression = pd.Field("w", description="Z-direction velocity")
     p: StringExpression = pd.Field("p", description="Pressure")
 
-    @pd.field_validator("rho", "u", "v", "w", "p", mode="after")
+    @contextual_field_validator("rho", "u", "v", "w", "p", mode="after")
     @classmethod
-    def _disable_expression_for_liquid(cls, value, info: pd.ValidationInfo):
-        validation_info = get_validation_info()
-        if validation_info is None or validation_info.using_liquid_as_material is False:
+    def _disable_expression_for_liquid(
+        cls,
+        value,
+        info: pd.ValidationInfo,
+        param_info: ParamsValidationInfo,
+    ):
+        if param_info.using_liquid_as_material is False:
             return value
 
         # pylint:disable = unsubscriptable-object
@@ -238,7 +243,7 @@ class HeatEquationInitialCondition(ExpressionInitialConditionBase):
     Note
     ----
     The result of the expressions will be treated as non-dimensional values.
-    Please refer to the :ref:`Units Introduction<API_units_introduction>` for more details.
+    Please refer to the :ref:`Units Introduction<python_API_units_introduction>` for more details.
 
     Example
     -------
@@ -361,7 +366,7 @@ class Solid(PDEModelBase):
 
     name: Optional[str] = pd.Field(None, description="Name of the `Solid` model.")
     type: Literal["Solid"] = pd.Field("Solid", frozen=True)
-    entities: EntityListWithCustomVolume[GenericVolume, CustomVolume] = pd.Field(
+    entities: EntityList[GenericVolume, CustomVolume] = pd.Field(
         alias="volumes",
         description="The list of :class:`GenericVolume` or :class:`CustomVolume` "
         + "entities on which the heat transfer equation is solved. "
@@ -384,21 +389,18 @@ class Solid(PDEModelBase):
         None, description="The initial condition of the heat equation solver."
     )
 
-    @pd.field_validator("entities", mode="after")
+    @contextual_field_validator("entities", mode="after")
     @classmethod
-    def ensure_custom_volume_has_tets_only(cls, v):
+    def ensure_custom_volume_has_tets_only(cls, v, param_info: ParamsValidationInfo):
         """
         Check if the CustomVolume object was meshed with tetrahedra-only elements.
         """
-        validation_info = get_validation_info()
-        if validation_info is None:
-            return v
-
-        for entity in getattr(v, "stored_entities", []):
+        expanded = param_info.expand_entity_list(v)
+        for entity in expanded:
             if not isinstance(entity, CustomVolume):
                 continue
 
-            enforce_map = getattr(validation_info, "to_be_generated_custom_volumes", {})
+            enforce_map = getattr(param_info, "to_be_generated_custom_volumes", {})
             if not isinstance(enforce_map, dict):
                 continue
 
@@ -464,7 +466,7 @@ class ForcePerArea(Flow360BaseModel):
 
 class ActuatorDisk(Flow360BaseModel):
     """:class:`ActuatorDisk` class for setting up the inputs for an Actuator Disk.
-    Please refer to the :ref:`actuator disk knowledge base <knowledge_base_actuatorDisks>` for further information.
+    Please refer to the :ref:`actuator disk knowledge base <actuator_disk_knowledge_base>` for further information.
 
     Note
     ----
@@ -694,10 +696,9 @@ class BETDiskCache(Flow360BaseModel):
 
 class BETDisk(MultiConstructorBaseModel):
     """:class:`BETDisk` class for defining the Blade Element Theory (BET) model inputs.
-    For detailed information on the parameters, please refer to the :ref:`BET knowledge Base <knowledge_base_BETDisks>`.
+    For detailed information on the parameters, please refer to the :ref:`BET knowledge Base <bet_disk_knowledge_base>`.
     To generate the sectional polars the BET translators can be used which are
-    outlined :ref:`here <BET_Translators>`
-    with best-practices for the sectional polars inputs available :ref:`here <secPolars_bestPractices>`.
+    outlined :ref:`here <BET_Translators>`.
     A validation study of the XV-15 rotor using the steady BET Disk method is available
     in :ref:`Validation Studies <XV15BETDiskValidationStudy>`.
     Because a transient BET Line simulation is simply a time-accurate version of a steady-state
@@ -857,6 +858,7 @@ class BETDisk(MultiConstructorBaseModel):
     )
     @classmethod
     def _update_input_cache(cls, value, info: pd.ValidationInfo):
+        # BETDisk input cache does not currently support EntityList with selectors.
         setattr(
             info.data["private_attribute_input_cache"],
             info.field_name,
@@ -920,7 +922,7 @@ class BETDisk(MultiConstructorBaseModel):
         --------
         Create a BET disk with an C81 file.
 
-        >>> param = fl.BETDisk.from_xrotor(
+        >>> param = fl.BETDisk.from_c81(
         ...     file=fl.C81File(file_path="c81_xv15.csv")),
         ...     rotation_direction_rule="leftHand",
         ...     omega=0.0046 * fl.u.deg / fl.u.s,
@@ -1241,7 +1243,7 @@ class Rotation(Flow360BaseModel):
 
     name: Optional[str] = pd.Field("Rotation", description="Name of the `Rotation` model.")
     type: Literal["Rotation"] = pd.Field("Rotation", frozen=True)
-    entities: EntityListWithCustomVolume[
+    entities: EntityList[
         GenericVolume, Cylinder, CustomVolume, SeedpointVolume, AxisymmetricBody
     ] = pd.Field(
         alias="volumes",
@@ -1272,12 +1274,14 @@ class Rotation(Flow360BaseModel):
     )
     private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
 
-    @pd.field_validator("entities", mode="after")
+    @contextual_field_validator("entities", mode="after")
     @classmethod
-    def _ensure_entities_have_sufficient_attributes(cls, value: EntityList):
+    def _ensure_entities_have_sufficient_attributes(
+        cls, value: EntityList, param_info: ParamsValidationInfo
+    ):
         """Ensure entities have sufficient attributes."""
-
-        for entity in value.stored_entities:
+        expanded = param_info.expand_entity_list(value)
+        for entity in expanded:
             if entity.axis is None:
                 raise ValueError(
                     f"Entity '{entity.name}' must specify `axis` to be used under `Rotation`."
@@ -1288,19 +1292,19 @@ class Rotation(Flow360BaseModel):
                 )
         return value
 
-    @pd.field_validator("parent_volume", mode="after")
+    @contextual_field_validator("parent_volume", mode="after")
     @classmethod
     def _ensure_custom_volume_is_valid(
         cls,
         value: Optional[Union[GenericVolume, Cylinder, CustomVolume, SeedpointVolume]],
+        param_info: ParamsValidationInfo,
     ):
         """Ensure parent volume is a custom volume."""
         if value is None:
             return value
-        validation_info = get_validation_info()
-        if validation_info is None or not isinstance(value, (CustomVolume, SeedpointVolume)):
+        if not isinstance(value, (CustomVolume, SeedpointVolume)):
             return value
-        if value.name not in validation_info.to_be_generated_custom_volumes:
+        if value.name not in param_info.to_be_generated_custom_volumes:
             raise ValueError(
                 f"Parent {type(value).__name__} {value.name} is not listed under meshing->volume_zones(or zones)"
                 + "->CustomZones."
@@ -1352,15 +1356,13 @@ class PorousMedium(Flow360BaseModel):
 
     name: Optional[str] = pd.Field("Porous medium", description="Name of the `PorousMedium` model.")
     type: Literal["PorousMedium"] = pd.Field("PorousMedium", frozen=True)
-    entities: EntityListWithCustomVolume[GenericVolume, Box, CustomVolume, SeedpointVolume] = (
-        pd.Field(
-            alias="volumes",
-            description="The entity list for the `PorousMedium` model. "
-            + "The entity should be defined by :class:`Box`, zones from the geometry/volume mesh or"
-            + "by :class:`SeedpointZone` when using snappyHexMeshing."
-            + "The axes of entity must be specified to serve as the the principle axes of the "
-            + "porous medium material model.",
-        )
+    entities: EntityList[GenericVolume, Box, CustomVolume, SeedpointVolume] = pd.Field(
+        alias="volumes",
+        description="The entity list for the `PorousMedium` model. "
+        + "The entity should be defined by :class:`Box`, zones from the geometry/volume mesh or"
+        + "by :class:`SeedpointVolume` when using snappyHexMeshing."
+        + "The axes of entity must be specified to serve as the the principle axes of the "
+        + "porous medium material model.",
     )
 
     darcy_coefficient: InverseAreaType.Point = pd.Field(
@@ -1377,26 +1379,29 @@ class PorousMedium(Flow360BaseModel):
     )
     private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
 
-    @pd.field_validator("entities", mode="after")
+    @contextual_field_validator("entities", mode="after")
     @classmethod
-    def _ensure_entities_have_sufficient_attributes(cls, value: EntityList):
+    def _ensure_entities_have_sufficient_attributes(
+        cls, value: EntityList, param_info: ParamsValidationInfo
+    ):
         """Ensure entities have sufficient attributes."""
-
-        for entity in value.stored_entities:
+        expanded = param_info.expand_entity_list(value)
+        for entity in expanded:
             if entity.axes is None:
                 raise ValueError(
                     f"Entity '{entity.name}' must specify `axes` to be used under `PorousMedium`."
                 )
         return value
 
-    @pd.field_validator("volumetric_heat_source", mode="after")
+    @contextual_field_validator("volumetric_heat_source", mode="after")
     @classmethod
     def _validate_volumetric_heat_source_for_liquid(
-        cls, value: Optional[Union[StringExpression, HeatSourceType]]
+        cls,
+        value: Optional[Union[StringExpression, HeatSourceType]],
+        param_info: ParamsValidationInfo,
     ):
         """Disable the volumetric_heat_source when liquid operating condition is used"""
-        validation_info = get_validation_info()
-        if validation_info is None or validation_info.using_liquid_as_material is False:
+        if param_info.using_liquid_as_material is False:
             return value
         if value is not None:
             raise ValueError(

@@ -11,25 +11,27 @@ from flow360.component.simulation.primitives import (
     CustomVolume,
     Cylinder,
     GenericVolume,
+    MirroredSurface,
     SeedpointVolume,
     Surface,
 )
 from flow360.component.simulation.validation.validation_context import (
-    get_validation_info,
+    ParamsValidationInfo,
+    contextual_field_validator,
 )
 from flow360.component.simulation.validation.validation_utils import (
-    check_deleted_surface_in_entity_list,
+    validate_entity_list_surface_existence,
 )
 
 
 class UserDefinedDynamic(Flow360BaseModel):
     """
     :class:`UserDefinedDynamic` class for defining the user defined dynamics inputs.
+    Please refer to :doc:`this example </python_api/example_library/notebooks/udd_alpha_controller>`
+    for an implementation example.
 
     Example
     -------
-    The following example comes from the :ref:`User Defined Dynamics Tutorial Case <UDDGridRotation>`.
-    Please refer to :ref:`this tutorial<userDefinedDynamics>` for more details about the User Defined Dynamics.
 
     >>> fl.UserDefinedDynamic(
     ...    name="dynamicTheta",
@@ -82,7 +84,7 @@ class UserDefinedDynamic(Flow360BaseModel):
         + "velocity/acceleration in radians for sliding interfaces). For a full list of supported variable, see "
         + ":ref:`here <SupportedVariablesInUserExpression_>`. Please exercise caution when choosing output "
         + "variables, as any modifications to their values will be directly mirrored in the solver. Expressions "
-        + "follows similar guidelines as :ref:`User Defined Expressions<userDefinedExpressionsKnowledgeBase>`.",
+        + "follows similar guidelines as :ref:`Legacy Expressions<expressions_legacy_user_guide>`.",
     )
     state_vars_initial_value: List[StringExpression] = pd.Field(
         description="The initial value of state variables are specified here. The entries could be either values "
@@ -93,9 +95,9 @@ class UserDefinedDynamic(Flow360BaseModel):
     update_law: List[StringExpression] = pd.Field(
         "List of expressions for updating state variables. The list entries correspond to the update laws for "
         + ":code:`state[0]`, :code:`state[1]`, ..., respectively. These expressions follows similar guidelines as "
-        + ":ref:`user Defined Expressions<userDefinedExpressionsKnowledgeBase>`."
+        + ":ref:`user Defined Expressions<UserDefinedExpressions>`."
     )
-    input_boundary_patches: Optional[EntityList[Surface]] = pd.Field(
+    input_boundary_patches: Optional[EntityList[Surface, MirroredSurface]] = pd.Field(
         None,
         description="The list of :class:`~flow360.Surface` entities to which the input variables belongs. "
         + "If multiple boundaries are specified then the summation over the boundaries are used as the input. "
@@ -109,53 +111,48 @@ class UserDefinedDynamic(Flow360BaseModel):
         + ":class:`~flow360.Cylinder` entity is supported as target for now.",
     )  # Limited to `Cylinder` for now as we have only tested using UDD to control rotation.
 
-    @pd.field_validator("input_boundary_patches", mode="after")
+    @contextual_field_validator("input_boundary_patches", mode="after")
     @classmethod
-    def ensure_surface_existence(cls, value):
+    def ensure_surface_existence(cls, value, param_info: ParamsValidationInfo):
         """Ensure all boundaries will be present after mesher"""
-        if value is None:
-            return value
-        return check_deleted_surface_in_entity_list(value)
+        return validate_entity_list_surface_existence(value, param_info)
 
-    @pd.field_validator("output_target", mode="after")
+    @contextual_field_validator("output_target", mode="after")
     @classmethod
-    def ensure_output_surface_existence(cls, value):
+    def ensure_output_surface_existence(cls, value, param_info: ParamsValidationInfo):
         """Ensure that the output target surface is not a deleted surface"""
-
-        validation_info = get_validation_info()
-        if validation_info is None:
-            return value
 
         # pylint: disable=fixme, duplicate-code
         # TODO: We can make this a Surface's after model validator once entity info is separated from params.
         # TODO: And therefore no need for duplicate-code override.
         # pylint: disable=protected-access
         if isinstance(value, Surface) and value._will_be_deleted_by_mesher(
-            at_least_one_body_transformed=validation_info.at_least_one_body_transformed,
-            farfield_method=validation_info.farfield_method,
-            global_bounding_box=validation_info.global_bounding_box,
-            planar_face_tolerance=validation_info.planar_face_tolerance,
-            half_model_symmetry_plane_center_y=validation_info.half_model_symmetry_plane_center_y,
-            quasi_3d_symmetry_planes_center_y=validation_info.quasi_3d_symmetry_planes_center_y,
+            entity_transformation_detected=param_info.entity_transformation_detected,
+            farfield_method=param_info.farfield_method,
+            global_bounding_box=param_info.global_bounding_box,
+            planar_face_tolerance=param_info.planar_face_tolerance,
+            half_model_symmetry_plane_center_y=param_info.half_model_symmetry_plane_center_y,
+            quasi_3d_symmetry_planes_center_y=param_info.quasi_3d_symmetry_planes_center_y,
+            farfield_domain_type=param_info.farfield_domain_type,
         ):
             raise ValueError(
                 f"Boundary `{value.name}` will likely be deleted after mesh generation. Therefore it cannot be used."
             )
         return value
 
-    @pd.field_validator("output_target", mode="after")
+    @contextual_field_validator("output_target", mode="after")
     @classmethod
     def _ensure_custom_volume_is_valid(
         cls,
         value: Optional[Union[GenericVolume, Cylinder, CustomVolume, SeedpointVolume]],
+        param_info: ParamsValidationInfo,
     ):
         """Ensure parent volume is a custom volume."""
         if value is None:
             return value
-        validation_info = get_validation_info()
-        if validation_info is None or not isinstance(value, (CustomVolume, SeedpointVolume)):
+        if not isinstance(value, (CustomVolume, SeedpointVolume)):
             return value
-        if value.name not in validation_info.to_be_generated_custom_volumes:
+        if value.name not in param_info.to_be_generated_custom_volumes:
             raise ValueError(
                 f"Parent {type(value).__name__} {value.name} is not listed under meshing->volume_zones(or zones)"
                 + "->CustomZones."

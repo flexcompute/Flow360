@@ -9,14 +9,14 @@ from pydantic import ValidationError
 from pydantic_core import InitErrorDetails
 
 from flow360.component.simulation.entity_info import DraftEntityTypes
+from flow360.component.simulation.outputs.output_fields import CommonFieldNames
 from flow360.component.simulation.primitives import (
+    ImportedSurface,
     Surface,
     _SurfaceEntityBase,
     _VolumeEntityBase,
 )
-from flow360.component.simulation.validation.validation_context import (
-    get_validation_info,
-)
+from flow360.component.simulation.user_code.core.types import Expression, UserVariable
 
 
 def _validator_append_instance_name(func):
@@ -114,68 +114,101 @@ def customize_model_validator_error(
     )
 
 
-def check_deleted_surface_in_entity_list(value):
+def check_deleted_surface_in_entity_list(expanded_entities: list, param_info) -> None:
     """
     Check if any boundary is meant to be deleted
     value--> EntityList
     """
-    validation_info = get_validation_info()
-    if validation_info is None:
-        # validation not necessary now.
-        return value
 
     # - Check if the surfaces are deleted.
-    for surface in value.stored_entities:
+    deleted_boundaries = []
+    for surface in expanded_entities:
         if isinstance(
             surface, Surface
         ) and surface._will_be_deleted_by_mesher(  # pylint:disable=protected-access
-            at_least_one_body_transformed=validation_info.at_least_one_body_transformed,
-            farfield_method=validation_info.farfield_method,
-            global_bounding_box=validation_info.global_bounding_box,
-            planar_face_tolerance=validation_info.planar_face_tolerance,
-            half_model_symmetry_plane_center_y=validation_info.half_model_symmetry_plane_center_y,
-            quasi_3d_symmetry_planes_center_y=validation_info.quasi_3d_symmetry_planes_center_y,
+            entity_transformation_detected=param_info.entity_transformation_detected,
+            farfield_method=param_info.farfield_method,
+            global_bounding_box=param_info.global_bounding_box,
+            planar_face_tolerance=param_info.planar_face_tolerance,
+            half_model_symmetry_plane_center_y=param_info.half_model_symmetry_plane_center_y,
+            quasi_3d_symmetry_planes_center_y=param_info.quasi_3d_symmetry_planes_center_y,
+            farfield_domain_type=param_info.farfield_domain_type,
         ):
-            raise ValueError(
-                f"Boundary `{surface.name}` will likely be deleted after mesh generation. "
-                "Therefore it cannot be used."
-            )
+            deleted_boundaries.append(surface.name)
 
+    if deleted_boundaries:
+        boundary_list = ", ".join(f"`{name}`" for name in deleted_boundaries)
+        plural = "Boundaries" if len(deleted_boundaries) > 1 else "Boundary"
+        raise ValueError(
+            f"{plural} {boundary_list} will likely be deleted after mesh generation. "
+            f"Therefore {'they' if len(deleted_boundaries) > 1 else 'it'} cannot be used."
+        )
+
+
+def validate_entity_list_surface_existence(value, param_info):
+    """
+    Reusable validator to ensure all boundaries in an EntityList will be present after mesher.
+
+    This function can be used in contextual_field_validator decorators to check that
+    surfaces in an entity list are not deleted by the mesher.
+
+    Parameters
+    ----------
+    value : EntityList or None
+        The entity list to validate
+    param_info : ParamsValidationInfo
+        Validation info containing entity expansion and mesher info
+
+    Returns
+    -------
+    The original value unchanged
+
+    Raises
+    ------
+    ValueError
+        If any surface in the list will be deleted by the mesher
+    """
+    if value is None:
+        return value
+    expanded = param_info.expand_entity_list(value)
+    check_deleted_surface_in_entity_list(expanded, param_info)
     return value
 
 
-def check_deleted_surface_pair(value):
+def check_deleted_surface_pair(value, param_info):
     """
     Check if any boundary is meant to be deleted
     value--> SurfacePair
     """
 
-    validation_info = get_validation_info()
-    if validation_info is None:
-        # validation not necessary now.
-        return value
-
     # - Check if the surfaces are deleted.
+    deleted_boundaries = []
     for surface in value.pair:
         if isinstance(
             surface, Surface
         ) and surface._will_be_deleted_by_mesher(  # pylint:disable=protected-access
-            at_least_one_body_transformed=validation_info.at_least_one_body_transformed,
-            farfield_method=validation_info.farfield_method,
-            global_bounding_box=validation_info.global_bounding_box,
-            planar_face_tolerance=validation_info.planar_face_tolerance,
-            half_model_symmetry_plane_center_y=validation_info.half_model_symmetry_plane_center_y,
-            quasi_3d_symmetry_planes_center_y=validation_info.quasi_3d_symmetry_planes_center_y,
+            entity_transformation_detected=param_info.entity_transformation_detected,
+            farfield_method=param_info.farfield_method,
+            global_bounding_box=param_info.global_bounding_box,
+            planar_face_tolerance=param_info.planar_face_tolerance,
+            half_model_symmetry_plane_center_y=param_info.half_model_symmetry_plane_center_y,
+            quasi_3d_symmetry_planes_center_y=param_info.quasi_3d_symmetry_planes_center_y,
+            farfield_domain_type=param_info.farfield_domain_type,
         ):
-            raise ValueError(
-                f"Boundary `{surface.name}` will likely be deleted after mesh generation. "
-                "Therefore it cannot be used."
-            )
+            deleted_boundaries.append(surface.name)
+
+    if deleted_boundaries:
+        boundary_list = ", ".join(f"`{name}`" for name in deleted_boundaries)
+        plural = "Boundaries" if len(deleted_boundaries) > 1 else "Boundary"
+        raise ValueError(
+            f"{plural} {boundary_list} will likely be deleted after mesh generation. "
+            f"Therefore {'they' if len(deleted_boundaries) > 1 else 'it'} cannot be used."
+        )
 
     return value
 
 
-def check_user_defined_farfield_symmetry_existence(stored_entities):
+def check_user_defined_farfield_symmetry_existence(stored_entities, param_info):
     """
     Ensure that when:
     1. UserDefinedFarfield is used
@@ -185,12 +218,8 @@ def check_user_defined_farfield_symmetry_existence(stored_entities):
     1. GAI and beta mesher is used.
     2. Domain type is half_body_positive_y or half_body_negative_y
     """
-    validation_info = get_validation_info()
 
-    if validation_info is None:
-        return stored_entities
-
-    if validation_info.farfield_method != "user-defined":
+    if param_info.farfield_method != "user-defined":
         return stored_entities
 
     for item in stored_entities:
@@ -199,11 +228,11 @@ def check_user_defined_farfield_symmetry_existence(stored_entities):
             or item.name != "symmetric"
         ):
             continue
-        if not validation_info.use_geometry_AI or not validation_info.is_beta_mesher:
+        if not param_info.use_geometry_AI or not param_info.is_beta_mesher:
             raise ValueError(
                 "Symmetry plane of user defined farfield will only be generated when both GAI and beta mesher are used."
             )
-        if validation_info.farfield_domain_type not in (
+        if param_info.farfield_domain_type not in (
             "half_body_positive_y",
             "half_body_negative_y",
         ):
@@ -213,26 +242,25 @@ def check_user_defined_farfield_symmetry_existence(stored_entities):
     return stored_entities
 
 
-def check_symmetric_boundary_existence(stored_entities):
+def check_symmetric_boundary_existence(stored_entities, param_info):
     """For automated farfield, check according to the criteria if the symmetric plane exists."""
-    validation_info = get_validation_info()
-
-    if validation_info is None:
-        return stored_entities
-
     for item in stored_entities:
         if item.private_attribute_entity_type_name != "GhostCircularPlane":
             continue
 
-        if not item.exists(validation_info):
+        if param_info.farfield_domain_type in (
+            "half_body_positive_y",
+            "half_body_negative_y",
+        ):
+            continue
+
+        if not item.exists(param_info):
             # pylint: disable=protected-access
-            y_min, y_max, tolerance, largest_dimension = item._get_existence_dependency(
-                validation_info
-            )
+            y_min, y_max, tolerance, largest_dimension = item._get_existence_dependency(param_info)
             error_msg = (
                 "`symmetric` boundary will not be generated: "
                 + f"model spans: [{y_min:.2g}, {y_max:.2g}], "
-                + f"tolerance = {validation_info.planar_face_tolerance:.2g} x {largest_dimension:.2g}"
+                + f"tolerance = {param_info.planar_face_tolerance:.2g} x {largest_dimension:.2g}"
                 + f" = {tolerance:.2g}."
             )
 
@@ -251,7 +279,9 @@ def _ghost_surface_names(stored_entities) -> list[str]:
     return names
 
 
-def check_ghost_surface_usage_policy_for_face_refinements(stored_entities, *, feature_name: str):
+def check_ghost_surface_usage_policy_for_face_refinements(
+    stored_entities, *, feature_name: str, param_info
+):
     """
     Enforce GhostSurface usage policy for face-based refinements (SurfaceRefinement, PassiveSpacing).
 
@@ -263,10 +293,6 @@ def check_ghost_surface_usage_policy_for_face_refinements(stored_entities, *, fe
         - Automated farfield: allow GhostSurface for PassiveSpacing only.
         - User-defined farfield: do not allow any GhostSurface.
     """
-    validation_info = get_validation_info()
-    if validation_info is None:
-        return stored_entities
-
     if not stored_entities:
         return stored_entities
 
@@ -274,10 +300,10 @@ def check_ghost_surface_usage_policy_for_face_refinements(stored_entities, *, fe
     if not ghost_names:
         return stored_entities
 
-    root_asset_type = getattr(validation_info, "root_asset_type", None)
-    farfield_method = validation_info.farfield_method
-    use_beta = validation_info.is_beta_mesher
-    use_gai = validation_info.use_geometry_AI
+    root_asset_type = param_info.root_asset_type
+    farfield_method = param_info.farfield_method
+    use_beta = param_info.is_beta_mesher
+    use_gai = param_info.use_geometry_AI
 
     # Default error messages
     def _err(msg):
@@ -368,16 +394,91 @@ class EntityUsageMap:  # pylint:disable=too-few-public-methods
         self.dict_entity[entity_type][entity_key] = entity_log
 
 
-def check_geometry_ai_features(cls, value, info):
+def check_geometry_ai_features(cls, value, info, param_info):
     """Ensure GAI features are not specified when GAI is not used"""
-    validation_info = get_validation_info()
-
-    if validation_info is None:
-        return value
-
     # pylint: disable=unsubscriptable-object
     default_value = cls.model_fields[info.field_name].default
-    if value != default_value and not validation_info.use_geometry_AI:
+    if value != default_value and not param_info.use_geometry_AI:
         raise ValueError(f"{info.field_name} is only supported when geometry AI is used.")
 
     return value
+
+
+def has_coordinate_system_usage(asset_cache) -> bool:
+    """Check if coordinate system feature is being used."""
+    if asset_cache is None:
+        return False
+    coordinate_system_status = asset_cache.coordinate_system_status
+    if coordinate_system_status and coordinate_system_status.assignments:
+        return True
+    return False
+
+
+def has_mirroring_usage(asset_cache) -> bool:
+    """Check if mirroring feature is being used."""
+    if asset_cache is None:
+        return False
+    mirror_status = asset_cache.mirror_status
+    if mirror_status:
+        if mirror_status.mirrored_geometry_body_groups or mirror_status.mirrored_surfaces:
+            return True
+    return False
+
+
+def validate_improper_surface_field_usage_for_imported_surface(
+    expanded_entities: list, output_fields
+):
+    """
+    Validate output fields when using imported surfaces.
+    Ensures that:
+    - String format output fields are only CommonFieldNames
+    - UserVariable expressions only contain Volume type solver variables
+
+    Parameters
+    ----------
+    expanded_entities : list
+        List of expanded entities (surfaces)
+    output_fields : UniqueItemList
+        List of output fields to validate
+
+    Raises
+    ------
+    ValueError
+        If any output field is not compatible with imported surfaces
+    """
+
+    # Check if any entity is an ImportedSurface
+    has_imported_surface = any(isinstance(entity, ImportedSurface) for entity in expanded_entities)
+
+    if not has_imported_surface:
+        return
+
+    # Get valid common field names
+    valid_common_fields = get_args(CommonFieldNames)
+
+    # Validate each output field
+    for output_item in output_fields.items:
+        # Check string fields
+        if isinstance(output_item, str):
+            if output_item not in valid_common_fields:
+                raise ValueError(
+                    f"Output field '{output_item}' is not allowed for imported surfaces. "
+                    "Only non-Surface field names are allowed for string format output fields "
+                    "when using imported surfaces."
+                )
+        # Check UserVariable fields
+        elif isinstance(output_item, UserVariable) and isinstance(output_item.value, Expression):
+            surface_solver_variable_names = output_item.value.solver_variable_names(
+                recursive=True, variable_type="Surface"
+            )
+            # Allow node_unit_normal surface variable for imported surfaces
+            disallowed_surface_vars = [
+                var for var in surface_solver_variable_names if var != "solution.node_unit_normal"
+            ]
+            if len(disallowed_surface_vars) > 0:
+                raise ValueError(
+                    f"Variable `{output_item}` cannot be used with imported surfaces "
+                    f"since it contains Surface type solver variable(s): "
+                    f"{', '.join(sorted(disallowed_surface_vars))}. "
+                    "Only Volume type solver variables and 'solution.node_unit_normal' are allowed."
+                )

@@ -6,9 +6,20 @@ import pydantic as pd
 import pytest
 
 import flow360.component.simulation.units as u
+from flow360.component.simulation.draft_context.coordinate_system_manager import (
+    CoordinateSystemAssignmentGroup,
+    CoordinateSystemEntityRef,
+    CoordinateSystemStatus,
+)
+from flow360.component.simulation.draft_context.mirror import MirrorPlane, MirrorStatus
 from flow360.component.simulation.entity_info import (
     SurfaceMeshEntityInfo,
     VolumeMeshEntityInfo,
+)
+from flow360.component.simulation.entity_operation import CoordinateSystem
+from flow360.component.simulation.framework.entity_selector import (
+    SurfaceSelector,
+    collect_and_tokenize_selectors_in_place,
 )
 from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.meshing_param.edge_params import (
@@ -99,11 +110,17 @@ from flow360.component.simulation.primitives import (
     GhostCircularPlane,
     GhostSphere,
     GhostSurface,
+    MirroredGeometryBodyGroup,
+    MirroredSurface,
     SeedpointVolume,
     Surface,
     SurfacePrivateAttributes,
 )
-from flow360.component.simulation.services import ValidationCalledBy, validate_model
+from flow360.component.simulation.services import (
+    ValidationCalledBy,
+    clear_context,
+    validate_model,
+)
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
 from flow360.component.simulation.unit_system import SI_unit_system
@@ -115,6 +132,7 @@ from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics im
 )
 from flow360.component.simulation.validation.validation_context import (
     CASE,
+    SURFACE_MESH,
     VOLUME_MESH,
     ParamsValidationInfo,
     ValidationContext,
@@ -126,6 +144,11 @@ quasi_3d_periodic_farfield_context = ParamsValidationInfo({}, [])
 quasi_3d_periodic_farfield_context.farfield_method = "quasi-3d-periodic"
 
 assertions = unittest.TestCase("__init__")
+
+
+@pytest.fixture(autouse=True)
+def reset_context():
+    clear_context()
 
 
 @pytest.fixture()
@@ -724,12 +747,26 @@ def test_BC_geometry():
 
 def test_incomplete_BC_volume_mesh():
     ##:: Construct a dummy asset cache
-    wall_1 = Surface(name="wall_1", private_attribute_is_interface=False)
-    periodic_1 = Surface(name="periodic_1", private_attribute_is_interface=False)
-    periodic_2 = Surface(name="periodic_2", private_attribute_is_interface=False)
-    i_exist = Surface(name="i_exist", private_attribute_is_interface=False)
-    no_bc = Surface(name="no_bc", private_attribute_is_interface=False)
-    some_interface = Surface(name="some_interface", private_attribute_is_interface=True)
+    wall_1 = Surface(
+        name="wall_1", private_attribute_is_interface=False, private_attribute_id="wall_1"
+    )
+    periodic_1 = Surface(
+        name="periodic_1", private_attribute_is_interface=False, private_attribute_id="periodic_1"
+    )
+    periodic_2 = Surface(
+        name="periodic_2", private_attribute_is_interface=False, private_attribute_id="periodic_2"
+    )
+    i_exist = Surface(
+        name="i_exist", private_attribute_is_interface=False, private_attribute_id="i_exist"
+    )
+    no_bc = Surface(
+        name="no_bc", private_attribute_is_interface=False, private_attribute_id="no_bc"
+    )
+    some_interface = Surface(
+        name="some_interface",
+        private_attribute_is_interface=True,
+        private_attribute_id="some_interface",
+    )
 
     asset_cache = AssetCache(
         project_length_unit="inch",
@@ -748,14 +785,19 @@ def test_incomplete_BC_volume_mesh():
             ),
             models=[
                 Fluid(),
-                Wall(entities=wall_1),
+                # Stage 1.5: Use selector instead of explicit entity to test BC validation
+                Wall(entities=[SurfaceSelector(name="wall_selector").match("wall_*")]),
                 Periodic(surface_pairs=(periodic_1, periodic_2), spec=Translational()),
                 SlipWall(entities=[i_exist]),
             ],
             private_attribute_asset_cache=asset_cache,
         )
+
+    submission_ready_dict = collect_and_tokenize_selectors_in_place(
+        params.model_dump(mode="json", exclude_none=True)
+    )
     params, errors, _ = validate_model(
-        params_as_dict=params.model_dump(mode="json", exclude_none=True),
+        params_as_dict=submission_ready_dict,
         validated_by=ValidationCalledBy.LOCAL,
         root_item_type="VolumeMesh",
         validation_level="All",
@@ -776,15 +818,18 @@ def test_incomplete_BC_volume_mesh():
             ),
             models=[
                 Fluid(),
-                Wall(entities=[wall_1]),
+                # Stage 1.5: Mix selector with explicit entity
+                Wall(entities=[SurfaceSelector(name="wall_selector").match("wall_*"), i_exist]),
                 Periodic(surface_pairs=(periodic_1, periodic_2), spec=Translational()),
-                SlipWall(entities=[i_exist]),
                 SlipWall(entities=[Surface(name="plz_dont_do_this"), no_bc]),
             ],
             private_attribute_asset_cache=asset_cache,
         )
+    submission_ready_dict = collect_and_tokenize_selectors_in_place(
+        params.model_dump(mode="json", exclude_none=True)
+    )
     params, errors, _ = validate_model(
-        params_as_dict=params.model_dump(mode="json", exclude_none=True),
+        params_as_dict=submission_ready_dict,
         validated_by=ValidationCalledBy.LOCAL,
         root_item_type="VolumeMesh",
         validation_level="All",
@@ -837,7 +882,8 @@ def test_incomplete_BC_surface_mesh():
             ),
             models=[
                 Fluid(),
-                Wall(entities=wall_1),
+                # Stage 1.5: Use selector instead of explicit entity
+                Wall(entities=[SurfaceSelector(name="wall_selector").match("wall_*")]),
                 Periodic(surface_pairs=(periodic_1, periodic_2), spec=Translational()),
                 SlipWall(entities=[i_exist]),
                 SlipWall(entities=[no_bc]),
@@ -870,7 +916,8 @@ def test_incomplete_BC_surface_mesh():
             ),
             models=[
                 Fluid(),
-                Wall(entities=wall_1),
+                # Stage 1.5: Use selector for wall
+                Wall(entities=[SurfaceSelector(name="wall_selector").match("wall_*")]),
                 Periodic(surface_pairs=(periodic_1, periodic_2), spec=Translational()),
                 SlipWall(entities=[auto_farfield.symmetry_planes]),
                 SlipWall(entities=[i_exist]),
@@ -924,28 +971,28 @@ def test_incomplete_BC_surface_mesh():
     )
 
 
-def test_porousJump_entities_is_interface():
+def test_porousJump_entities_is_interface(mock_validation_context):
     surface_1_is_interface = Surface(name="Surface-1", private_attribute_is_interface=True)
     surface_2_is_not_interface = Surface(name="Surface-2", private_attribute_is_interface=False)
     surface_3_is_interface = Surface(name="Surface-3", private_attribute_is_interface=True)
     error_message = "Boundary `Surface-2` is not an interface"
-    with pytest.raises(ValueError, match=re.escape(error_message)):
-        porousJump = PorousJump(
+    with mock_validation_context, pytest.raises(ValueError, match=re.escape(error_message)):
+        PorousJump(
             entity_pairs=[(surface_1_is_interface, surface_2_is_not_interface)],
             darcy_coefficient=1e6 / (u.m * u.m),
             forchheimer_coefficient=1e3 / u.m,
             thickness=0.01 * u.m,
         )
 
-    with pytest.raises(ValueError, match=re.escape(error_message)):
-        porousJump = PorousJump(
+    with mock_validation_context, pytest.raises(ValueError, match=re.escape(error_message)):
+        PorousJump(
             entity_pairs=[(surface_2_is_not_interface, surface_1_is_interface)],
             darcy_coefficient=1e6,
             forchheimer_coefficient=1e3,
             thickness=0.01,
         )
 
-    porousJump = PorousJump(
+    PorousJump(
         entity_pairs=[(surface_1_is_interface, surface_3_is_interface)],
         darcy_coefficient=1e6 / (u.m * u.m),
         forchheimer_coefficient=1e3 / u.m,
@@ -1034,8 +1081,11 @@ def test_duplicate_entities_in_models():
         f"Volume entity `{entity_generic_volume.name}` appears multiple times in `{volume_model1.type}` model.\n"
     )
 
+    mock_context = ValidationContext(
+        levels=None, info=ParamsValidationInfo(param_as_dict={}, referenced_expressions=[])
+    )
     # Invalid simulation params
-    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+    with SI_unit_system, mock_context, pytest.raises(ValueError, match=re.escape(message)):
         _ = SimulationParams(
             models=[volume_model1, volume_model2, surface_model1, surface_model2, surface_model3],
         )
@@ -1043,7 +1093,7 @@ def test_duplicate_entities_in_models():
     message = f"Volume entity `{entity_cylinder.name}` appears multiple times in `{rotation_model1.type}` model.\n"
 
     # Invalid simulation params (Draft Entity)
-    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+    with SI_unit_system, mock_context, pytest.raises(ValueError, match=re.escape(message)):
         _ = SimulationParams(
             models=[rotation_model1, rotation_model2],
         )
@@ -1287,7 +1337,7 @@ def test_output_fields_with_user_defined_fields():
             )
 
 
-def test_rotation_parent_volumes():
+def test_rotation_parent_volumes(mock_case_validation_context):
 
     c_1 = Cylinder(
         name="inner_rotating_cylinder",
@@ -1317,15 +1367,14 @@ def test_rotation_parent_volumes():
 
     msg = "For model #1, the parent rotating volume (stationary_cylinder) is not "
     "used in any other `Rotation` model's `volumes`."
-    with pytest.raises(ValueError, match=re.escape(msg)):
-        with ValidationContext(CASE):
-            with SI_unit_system:
-                SimulationParams(
-                    models=[
-                        Fluid(),
-                        Rotation(entities=[c_1], spec=AngleExpression("1+2"), parent_volume=c_3),
-                    ]
-                )
+    with mock_case_validation_context, pytest.raises(ValueError, match=re.escape(msg)):
+        with SI_unit_system:
+            SimulationParams(
+                models=[
+                    Fluid(),
+                    Rotation(entities=[c_1], spec=AngleExpression("1+2"), parent_volume=c_3),
+                ]
+            )
 
     with ValidationContext(CASE):
         with SI_unit_system:
@@ -1523,6 +1572,196 @@ def test_wall_deserialization():
     assert slater_bleed_wall.velocity.static_pressure == 0.1 * u.Pa
 
 
+def test_populate_validated_models_to_validation_context(mock_validation_context):
+    """Test that models are properly populated to validation context."""
+    # Create models with private_attribute_id
+    fluid_model = Fluid()
+    wall_model = Wall(
+        name="wall_bc",
+        surfaces=[Surface(name="wall_surface")],
+    )
+
+    # Before validation, physics_model_dict should be None
+    assert mock_validation_context.info.physics_model_dict is None
+
+    with SI_unit_system, mock_validation_context:
+        params = SimulationParams(
+            models=[fluid_model, wall_model],
+        )
+
+    # After validation, physics_model_dict should be populated
+    assert mock_validation_context.info.physics_model_dict is not None
+    assert isinstance(mock_validation_context.info.physics_model_dict, dict)
+
+    # Check that models are in the dict with their IDs as keys
+    assert len(mock_validation_context.info.physics_model_dict) == 2
+    assert fluid_model.private_attribute_id in mock_validation_context.info.physics_model_dict
+    assert wall_model.private_attribute_id in mock_validation_context.info.physics_model_dict
+
+    # Verify the objects are the same
+    assert (
+        mock_validation_context.info.physics_model_dict[fluid_model.private_attribute_id]
+        == fluid_model
+    )
+    assert (
+        mock_validation_context.info.physics_model_dict[wall_model.private_attribute_id]
+        == wall_model
+    )
+
+
+def test_populate_validated_outputs_to_validation_context(mock_validation_context):
+    """Test that outputs are properly populated to validation context."""
+    # Create outputs with private_attribute_id
+    probe_output = ProbeOutput(
+        name="probe1",
+        output_fields=["Cp"],
+        probe_points=[Point(name="pt1", location=(1, 2, 3) * u.m)],
+    )
+
+    surface_output = SurfaceOutput(
+        name="surface1",
+        output_fields=["Cp"],
+        entities=[Surface(name="wall")],
+    )
+
+    volume_output = VolumeOutput(
+        name="volume1",
+        output_fields=["primitiveVars"],
+    )
+
+    # Before validation, output_dict should be None
+    assert mock_validation_context.info.output_dict is None
+
+    with SI_unit_system, mock_validation_context:
+        params = SimulationParams(
+            outputs=[probe_output, surface_output, volume_output],
+        )
+
+    # After validation, output_dict should be populated
+    assert mock_validation_context.info.output_dict is not None
+    assert isinstance(mock_validation_context.info.output_dict, dict)
+
+    # Check that outputs are in the dict with their IDs as keys
+    assert len(mock_validation_context.info.output_dict) == 3
+    assert probe_output.private_attribute_id in mock_validation_context.info.output_dict
+    assert surface_output.private_attribute_id in mock_validation_context.info.output_dict
+    assert volume_output.private_attribute_id in mock_validation_context.info.output_dict
+
+    # Verify the objects are the same
+    assert (
+        mock_validation_context.info.output_dict[probe_output.private_attribute_id] == probe_output
+    )
+    assert (
+        mock_validation_context.info.output_dict[surface_output.private_attribute_id]
+        == surface_output
+    )
+    assert (
+        mock_validation_context.info.output_dict[volume_output.private_attribute_id]
+        == volume_output
+    )
+
+
+def test_populate_both_models_and_outputs_to_validation_context(mock_validation_context):
+    """Test that both models and outputs are properly populated to the same validation context."""
+    # Create models and outputs
+    fluid_model = Fluid()
+    probe_output = ProbeOutput(
+        name="probe1",
+        output_fields=["Cp"],
+        probe_points=[Point(name="pt1", location=(1, 2, 3) * u.m)],
+    )
+
+    # Before validation, both should be None
+    assert mock_validation_context.info.physics_model_dict is None
+    assert mock_validation_context.info.output_dict is None
+
+    with SI_unit_system, mock_validation_context:
+        params = SimulationParams(
+            models=[fluid_model],
+            outputs=[probe_output],
+        )
+
+    # After validation, both should be populated
+    assert mock_validation_context.info.physics_model_dict is not None
+    assert mock_validation_context.info.output_dict is not None
+
+    # Verify both dicts are populated correctly
+    assert fluid_model.private_attribute_id in mock_validation_context.info.physics_model_dict
+    assert probe_output.private_attribute_id in mock_validation_context.info.output_dict
+
+    assert (
+        mock_validation_context.info.physics_model_dict[fluid_model.private_attribute_id]
+        == fluid_model
+    )
+    assert (
+        mock_validation_context.info.output_dict[probe_output.private_attribute_id] == probe_output
+    )
+
+
+def test_populate_outputs_none_sets_empty_dict(mock_validation_context):
+    """Test that output_dict is set to {} when outputs=None.
+
+    This distinguishes successful validation with no outputs (output_dict={})
+    from validation errors (output_dict=None).
+    """
+    assert mock_validation_context.info.output_dict is None
+
+    with SI_unit_system, mock_validation_context:
+        params = SimulationParams(outputs=None)
+
+    # output_dict should be set to empty dict, not None
+    assert mock_validation_context.info.output_dict == {}
+
+
+def test_populate_outputs_empty_list_sets_empty_dict(mock_validation_context):
+    """Test that output_dict is set to {} when outputs=[]."""
+    assert mock_validation_context.info.output_dict is None
+
+    with SI_unit_system, mock_validation_context:
+        params = SimulationParams(outputs=[])
+
+    # output_dict should be set to empty dict
+    assert mock_validation_context.info.output_dict == {}
+
+
+def test_populate_models_none_sets_dict_with_default(mock_validation_context):
+    """Test that physics_model_dict is populated when models=None.
+
+    Note: SimulationParams automatically adds a default Fluid model when models=None,
+    so physics_model_dict will contain the default model, not be empty.
+    This still distinguishes successful validation from validation errors (physics_model_dict=None).
+    """
+    assert mock_validation_context.info.physics_model_dict is None
+
+    with SI_unit_system, mock_validation_context:
+        params = SimulationParams(models=None)
+
+    # physics_model_dict should be populated with default Fluid model
+    assert mock_validation_context.info.physics_model_dict is not None
+    assert isinstance(mock_validation_context.info.physics_model_dict, dict)
+    # Should contain the default fluid model
+    assert len(mock_validation_context.info.physics_model_dict) == 1
+    assert "__default_fluid" in mock_validation_context.info.physics_model_dict
+
+
+def test_populate_models_empty_list_sets_dict_with_default(mock_validation_context):
+    """Test that physics_model_dict is populated when models=[].
+
+    Note: SimulationParams automatically adds a default Fluid model when models=[],
+    so physics_model_dict will contain the default model.
+    """
+    assert mock_validation_context.info.physics_model_dict is None
+
+    with SI_unit_system, mock_validation_context:
+        params = SimulationParams(models=[])
+
+    # physics_model_dict should be populated with default Fluid model
+    assert mock_validation_context.info.physics_model_dict is not None
+    assert isinstance(mock_validation_context.info.physics_model_dict, dict)
+    assert len(mock_validation_context.info.physics_model_dict) == 1
+    assert "__default_fluid" in mock_validation_context.info.physics_model_dict
+
+
 @pytest.fixture(autouse=True)
 def change_test_dir(request, monkeypatch):
     monkeypatch.chdir(request.fspath.dirname)
@@ -1598,8 +1837,9 @@ def test_deleted_surfaces():
     )
     assert len(errors) == 1
     assert (
-        errors[0]["msg"] == "Value error, Boundary `body0001_face0004` will likely"
-        " be deleted after mesh generation. Therefore it cannot be used."
+        errors[0]["msg"]
+        == "Value error, Boundaries `body0001_face0004`, `body0001_face0003` will likely "
+        + "be deleted after mesh generation. Therefore they cannot be used."
     )
     assert errors[0]["loc"] == ("models", 2, "entity_pairs")
 
@@ -1793,7 +2033,7 @@ def test_validate_liquid_operating_condition():
     assert errors[0]["loc"] == ("models",)
 
 
-def test_beta_mesher_only_features():
+def test_beta_mesher_only_features(mock_validation_context):
     with SI_unit_system:
         params = SimulationParams(
             meshing=MeshingParams(
@@ -1932,7 +2172,14 @@ def test_beta_mesher_only_features():
     )
 
     # Unique volume zone names
-    with pytest.raises(
+    beta_mesher_context = ParamsValidationInfo({}, [])
+    beta_mesher_context.is_beta_mesher = True
+    beta_mesher_context.farfield_method = "user-defined"
+    # Needed for per-entity validation of CustomVolume/SeedpointVolume when instantiated under a
+    # manually constructed ParamsValidationInfo (i.e., outside validate_model()).
+    beta_mesher_context.to_be_generated_custom_volumes = {"zone1"}
+
+    with ValidationContext(SURFACE_MESH, beta_mesher_context), pytest.raises(
         ValueError, match="Multiple CustomVolume with the same name `zone1` are not allowed."
     ):
         with SI_unit_system:
@@ -1941,6 +2188,7 @@ def test_beta_mesher_only_features():
                     defaults=MeshingDefaults(
                         boundary_layer_first_layer_thickness=1e-4,
                         planar_face_tolerance=1e-4,
+                        surface_max_edge_length=1e-5,
                     ),
                     volume_zones=[
                         CustomZones(
@@ -1963,7 +2211,7 @@ def test_beta_mesher_only_features():
             )
 
     # Unique interface names
-    with pytest.raises(
+    with mock_validation_context, pytest.raises(
         ValueError, match="The boundaries of a CustomVolume must have different names."
     ):
         with SI_unit_system:
@@ -2251,7 +2499,7 @@ def test_check_custom_volume_in_volume_zones():
     assert errors[0]["msg"] == (
         "Value error, CustomVolume zone2 is not listed under meshing->volume_zones(or zones)->CustomZones."
     )
-    assert errors[0]["loc"] == ("models", 0, "entities", "stored_entities")
+    assert errors[0]["loc"] == ("models", 0, "entities")
 
     zone_3 = CustomVolume(name="zone3", boundaries=[Surface(name="face3")])
     zone_3.axis = (1, 0, 0)
@@ -2299,12 +2547,12 @@ def test_check_custom_volume_in_volume_zones():
     assert errors[0]["msg"] == (
         "Value error, CustomVolume zone2 is not listed under meshing->volume_zones(or zones)->CustomZones."
     )
-    assert errors[0]["loc"] == ("models", 0, "entities", "stored_entities")
+    assert errors[0]["loc"] == ("models", 0, "entities")
 
     assert errors[1]["msg"] == (
         "Value error, CustomVolume zone3 is not listed under meshing->volume_zones(or zones)->CustomZones."
     )
-    assert errors[1]["loc"] == ("models", 1, "entities", "stored_entities")
+    assert errors[1]["loc"] == ("models", 1, "entities")
 
     zone2prim = SeedpointVolume(name="zone2", point_in_mesh=(0, 0, 0) * u.mm)
     zone2prim.axes = [(1, 0, 0), (0, 1, 0)]
@@ -2354,13 +2602,13 @@ def test_check_custom_volume_in_volume_zones():
     assert errors[0]["msg"] == (
         "Value error, SeedpointVolume zone2 is not listed under meshing->volume_zones(or zones)->CustomZones."
     )
-    assert errors[0]["loc"] == ("models", 0, "entities", "stored_entities")
+    assert errors[0]["loc"] == ("models", 0, "entities")
 
 
 def test_ghost_surface_pair_requires_quasi_3d_periodic_farfield():
     # Create two dummy ghost surfaces (Python workflow)
-    periodic_1 = GhostSurface(name="periodic_1")
-    periodic_2 = GhostSurface(name="periodic_2")
+    periodic_1 = GhostSurface(name="periodic_1", private_attribute_id="periodic_1")
+    periodic_2 = GhostSurface(name="periodic_2", private_attribute_id="periodic_2")
 
     # Case 1: Farfield method NOT "quasi-3d-periodic" → should raise ValueError
     with SI_unit_system, ValidationContext(CASE, quasi_3d_farfield_context), pytest.raises(
@@ -2373,8 +2621,8 @@ def test_ghost_surface_pair_requires_quasi_3d_periodic_farfield():
         Periodic(surface_pairs=(periodic_1, periodic_2), spec=Translational())
 
     # Create two dummy ghost circular plane (Web UI workflow)
-    periodic_1 = GhostCircularPlane(name="periodic_1")
-    periodic_2 = GhostCircularPlane(name="periodic_2")
+    periodic_1 = GhostCircularPlane(name="periodic_1", private_attribute_id="periodic_1")
+    periodic_2 = GhostCircularPlane(name="periodic_2", private_attribute_id="periodic_2")
 
     # Case 3: Farfield method NOT "quasi-3d-periodic" → should raise ValueError
     with SI_unit_system, ValidationContext(CASE, quasi_3d_farfield_context), pytest.raises(
@@ -2422,7 +2670,15 @@ def test_seedpoint_zone_based_params():
                 velocity_magnitude=40 * u.m / u.s,
             ),
             time_stepping=Steady(),
-            models=[Wall(surfaces=[Surface(name="face1")])],
+            models=[
+                Wall(surfaces=[Surface(name="face1")]),
+                PorousMedium(
+                    entities=[radiator_zone],
+                    darcy_coefficient=(1, 0, 0) / u.m**2,
+                    forchheimer_coefficient=(1, 0, 0) / u.m,
+                    volumetric_heat_source=1.0 * u.W / u.m**3,
+                ),
+            ],
             private_attribute_asset_cache=AssetCache(
                 use_inhouse_mesher=True,
                 project_entity_info=SurfaceMeshEntityInfo(
@@ -2442,3 +2698,462 @@ def test_seedpoint_zone_based_params():
     )
 
     assert errors is None
+
+
+def test_deleted_surfaces_domain_type():
+    # Mock Asset Cache
+    surface_pos = Surface(
+        name="pos_surf",
+        private_attributes=SurfacePrivateAttributes(bounding_box=[[0, 1, 0], [1, 2, 1]]),
+    )
+    surface_neg = Surface(
+        name="neg_surf",
+        private_attributes=SurfacePrivateAttributes(bounding_box=[[0, -2, 0], [1, -1, 1]]),
+    )
+    surface_cross = Surface(
+        name="cross_surf",
+        private_attributes=SurfacePrivateAttributes(
+            bounding_box=[[0, -0.000001, 0], [1, 0.000001, 1]]
+        ),
+    )
+
+    asset_cache = AssetCache(
+        project_length_unit="m",
+        use_inhouse_mesher=True,
+        use_geometry_AI=True,
+        project_entity_info=SurfaceMeshEntityInfo(
+            global_bounding_box=[[0, -2, 0], [1, 2, 1]],  # Crosses Y=0
+            boundaries=[surface_pos, surface_neg, surface_cross],
+        ),
+    )
+
+    # Test half_body_positive_y -> keeps positive, deletes negative
+    farfield = UserDefinedFarfield(domain_type="half_body_positive_y")
+
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    planar_face_tolerance=1e-4,
+                    geometry_accuracy=1e-5,
+                    boundary_layer_first_layer_thickness=1e-3,
+                ),
+                volume_zones=[farfield],
+            ),
+            models=[
+                Wall(entities=[surface_pos]),  # OK
+                Wall(entities=[surface_neg]),  # Error
+                Wall(entities=[surface_cross]),  # OK (touches 0)
+            ],
+            private_attribute_asset_cache=asset_cache,
+        )
+
+    _, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="SurfaceMesh",
+        validation_level="All",
+    )
+
+    assert len(errors) == 1
+    assert "Boundary `neg_surf` will likely be deleted" in errors[0]["msg"]
+
+    # Test half_body_negative_y -> keeps negative, deletes positive
+    farfield_neg = UserDefinedFarfield(domain_type="half_body_negative_y")
+
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    planar_face_tolerance=1e-4,
+                    geometry_accuracy=1e-5,
+                    boundary_layer_first_layer_thickness=1e-3,
+                ),
+                volume_zones=[farfield_neg],
+            ),
+            models=[
+                Wall(entities=[surface_pos]),  # Error
+                Wall(entities=[surface_neg]),  # OK
+                Wall(entities=[surface_cross]),  # OK
+            ],
+            private_attribute_asset_cache=asset_cache,
+        )
+
+    _, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="SurfaceMesh",
+        validation_level="All",
+    )
+
+    assert len(errors) == 1
+    assert "Boundary `pos_surf` will likely be deleted" in errors[0]["msg"]
+
+
+def test_unique_selector_names():
+    """Test that duplicate selector names are detected and raise an error."""
+    from flow360.component.simulation.framework.entity_selector import (
+        SurfaceSelector,
+        collect_and_tokenize_selectors_in_place,
+    )
+    from flow360.component.simulation.models.surface_models import Wall
+    from flow360.component.simulation.primitives import Surface
+
+    # Create actual Surface entities to avoid selector expansion issues
+    surface1 = Surface(name="surface1")
+    surface2 = Surface(name="surface2")
+
+    # Create selectors with duplicate names
+    selector1 = SurfaceSelector(name="duplicate_name").match("wing*")
+    selector2 = SurfaceSelector(name="duplicate_name").match("tail*")
+
+    # Test duplicate selector names in different EntityLists (different Wall models)
+    with SI_unit_system:
+        params = SimulationParams(
+            models=[
+                Wall(entities=[surface1, selector1]),
+                Wall(entities=[surface2, selector2]),
+            ],
+        )
+
+    # Tokenize selectors to populate used_selectors (simulating what happens in set_up_params_for_uploading)
+    params_dict = params.model_dump(mode="json", exclude_none=True)
+    params_dict = collect_and_tokenize_selectors_in_place(params_dict)
+
+    # Now validate using validate_model which will materialize and validate
+    _, errors, _ = validate_model(
+        params_as_dict=params_dict,
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type=None,
+        validation_level=None,
+    )
+
+    assert errors is not None
+    assert len(errors) == 1
+    assert "Duplicate selector name 'duplicate_name'" in errors[0]["msg"]
+
+    # Test duplicate selector names in the same EntityList
+    with SI_unit_system:
+        params2 = SimulationParams(
+            models=[
+                Wall(entities=[surface1, selector1, selector2]),
+            ],
+        )
+
+    params_dict2 = params2.model_dump(mode="json", exclude_none=True)
+    params_dict2 = collect_and_tokenize_selectors_in_place(params_dict2)
+
+    _, errors2, _ = validate_model(
+        params_as_dict=params_dict2,
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type=None,
+        validation_level=None,
+    )
+
+    assert errors2 is not None
+    assert len(errors2) == 1
+    assert "Duplicate selector name 'duplicate_name'" in errors2[0]["msg"]
+
+    # Test that unique selector names work fine
+    selector3 = SurfaceSelector(name="unique_name_1").match("wing*")
+    selector4 = SurfaceSelector(name="unique_name_2").match("tail*")
+
+    with SI_unit_system:
+        params3 = SimulationParams(
+            models=[
+                Wall(entities=[surface1, selector3]),
+                Wall(entities=[surface2, selector4]),
+            ],
+        )
+
+    params_dict3 = params3.model_dump(mode="json", exclude_none=True)
+    params_dict3 = collect_and_tokenize_selectors_in_place(params_dict3)
+
+    validated_params, errors3, _ = validate_model(
+        params_as_dict=params_dict3,
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type=None,
+        validation_level=None,
+    )
+
+    # Should not have errors for unique names
+    assert errors3 is None or len(errors3) == 0
+    assert validated_params is not None
+
+
+def test_coordinate_system_requires_geometry_ai():
+    """Test that CoordinateSystem is only supported when Geometry AI is enabled."""
+    # Create a CoordinateSystemStatus with assignments
+    cs = CoordinateSystem(name="test_cs")
+    cs_status = CoordinateSystemStatus(
+        coordinate_systems=[cs],
+        parents=[],
+        assignments=[
+            CoordinateSystemAssignmentGroup(
+                coordinate_system_id=cs.private_attribute_id,
+                entities=[
+                    CoordinateSystemEntityRef(entity_type="GeometryBodyGroup", entity_id="test-id")
+                ],
+            )
+        ],
+    )
+
+    # Asset cache with GAI disabled but coordinate system used
+    asset_cache_no_gai = AssetCache(
+        project_length_unit="m",
+        use_inhouse_mesher=True,
+        use_geometry_AI=False,
+        coordinate_system_status=cs_status,
+    )
+
+    with SI_unit_system:
+        params = SimulationParams(
+            private_attribute_asset_cache=asset_cache_no_gai,
+        )
+
+    _, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type=None,
+        validation_level=None,
+    )
+
+    assert errors is not None
+    assert any(
+        "Coordinate system assignment to GeometryBodyGroup" in str(e)
+        and "Geometry AI is enabled" in str(e)
+        for e in errors
+    )
+
+    # Test with GAI enabled - should pass
+    asset_cache_with_gai = AssetCache(
+        project_length_unit="m",
+        use_inhouse_mesher=True,
+        use_geometry_AI=True,
+        coordinate_system_status=cs_status,
+    )
+
+    with SI_unit_system:
+        params = SimulationParams(
+            private_attribute_asset_cache=asset_cache_with_gai,
+        )
+
+    _, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type=None,
+        validation_level=None,
+    )
+
+    # No error about coordinate system
+    assert errors is None or not any("CoordinateSystem" in str(e) for e in errors)
+
+
+def test_mirroring_requires_geometry_ai():
+    """Test that mirroring is only supported when Geometry AI is enabled."""
+    # Create a MirrorStatus with mirrored entities
+    mirror_plane = MirrorPlane(
+        name="test_plane",
+        normal=(0, 1, 0),
+        center=[0, 0, 0] * u.m,
+    )
+    mirrored_group = MirroredGeometryBodyGroup(
+        name="test_<mirror>",
+        geometry_body_group_id="test-body-group",
+        mirror_plane_id=mirror_plane.private_attribute_id,
+    )
+    mirror_status = MirrorStatus(
+        mirror_planes=[mirror_plane],
+        mirrored_geometry_body_groups=[mirrored_group],
+        mirrored_surfaces=[],
+    )
+
+    # Asset cache with GAI disabled but mirroring used
+    asset_cache_no_gai = AssetCache(
+        project_length_unit="m",
+        use_inhouse_mesher=True,
+        use_geometry_AI=False,
+        mirror_status=mirror_status,
+    )
+
+    with SI_unit_system:
+        params = SimulationParams(
+            private_attribute_asset_cache=asset_cache_no_gai,
+        )
+
+    _, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type=None,
+        validation_level=None,
+    )
+
+    assert errors is not None
+    assert any("Mirroring is only supported when Geometry AI is enabled" in str(e) for e in errors)
+
+    # Test with GAI enabled - should pass
+    asset_cache_with_gai = AssetCache(
+        project_length_unit="m",
+        use_inhouse_mesher=True,
+        use_geometry_AI=True,
+        mirror_status=mirror_status,
+    )
+
+    with SI_unit_system:
+        params = SimulationParams(
+            private_attribute_asset_cache=asset_cache_with_gai,
+        )
+
+    _, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type=None,
+        validation_level=None,
+    )
+
+    # No error about mirroring
+    assert errors is None or not any("Mirroring" in str(e) for e in errors)
+
+
+def test_mirror_missing_boundary_condition_downgraded_to_warning():
+    """Missing BCs should be downgraded to warnings when mirroring/transformations are detected."""
+    mirror_plane = MirrorPlane(
+        name="test_plane",
+        normal=(0, 1, 0),
+        center=[0, 0, 0] * u.m,
+        private_attribute_id="mp-1",
+    )
+
+    front = Surface(name="front", private_attribute_is_interface=False, private_attribute_id="s-1")
+    mirrored_front = MirroredSurface(
+        name="front_<mirror>",
+        surface_id="s-1",
+        mirror_plane_id="mp-1",
+        private_attribute_id="ms-1",
+    )
+
+    asset_cache = AssetCache(
+        project_length_unit="m",
+        use_inhouse_mesher=True,
+        use_geometry_AI=True,
+        project_entity_info=VolumeMeshEntityInfo(boundaries=[front]),
+        mirror_status=MirrorStatus(
+            mirror_planes=[mirror_plane],
+            mirrored_geometry_body_groups=[],
+            mirrored_surfaces=[mirrored_front],
+        ),
+    )
+
+    with SI_unit_system:
+        params = SimulationParams(
+            models=[Fluid(), Wall(entities=[front])],
+            private_attribute_asset_cache=asset_cache,
+        )
+
+    _validated, errors, warnings = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="VolumeMesh",
+        validation_level="All",
+    )
+
+    assert errors is None
+    assert any("front_<mirror>" in w.get("msg", "") for w in warnings), warnings
+
+
+def test_mirror_unknown_boundary_still_raises_error():
+    """Unknown boundary names should remain hard errors even when mirroring is detected."""
+    mirror_plane = MirrorPlane(
+        name="test_plane",
+        normal=(0, 1, 0),
+        center=[0, 0, 0] * u.m,
+        private_attribute_id="mp-1",
+    )
+
+    front = Surface(name="front", private_attribute_is_interface=False, private_attribute_id="s-1")
+    mirrored_front = MirroredSurface(
+        name="front_<mirror>",
+        surface_id="s-1",
+        mirror_plane_id="mp-1",
+        private_attribute_id="ms-1",
+    )
+
+    asset_cache = AssetCache(
+        project_length_unit="m",
+        use_inhouse_mesher=True,
+        use_geometry_AI=True,
+        project_entity_info=VolumeMeshEntityInfo(boundaries=[front]),
+        mirror_status=MirrorStatus(
+            mirror_planes=[mirror_plane],
+            mirrored_geometry_body_groups=[],
+            mirrored_surfaces=[mirrored_front],
+        ),
+    )
+
+    with SI_unit_system:
+        params = SimulationParams(
+            models=[
+                Fluid(),
+                # Use mirrored surface (should be known once we include it in the valid boundary pool)
+                Wall(entities=[mirrored_front, Surface(name="typo_surface")]),
+            ],
+            private_attribute_asset_cache=asset_cache,
+        )
+
+    _validated, errors, _warnings = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="VolumeMesh",
+        validation_level="All",
+    )
+
+    assert errors is not None
+    assert any("typo_surface" in str(e) for e in errors)
+
+
+def test_domain_type_bbox_mismatch_downgraded_to_warning_when_transformed():
+    """domain_type bbox mismatch should be a warning when transformations are detected."""
+    cs_status = CoordinateSystemStatus(
+        coordinate_systems=[CoordinateSystem(name="cs", private_attribute_id="cs-1")],
+        parents=[],
+        assignments=[CoordinateSystemAssignmentGroup(coordinate_system_id="cs-1", entities=[])],
+    )
+
+    # Global bbox fully on -Y side; choosing half_body_positive_y should normally raise.
+    asset_cache = AssetCache(
+        project_length_unit="m",
+        use_inhouse_mesher=True,
+        use_geometry_AI=True,
+        project_entity_info=SurfaceMeshEntityInfo(
+            boundaries=[],
+            global_bounding_box=[[-1, -10, -1], [1, -5, 1]],
+        ),
+        coordinate_system_status=cs_status,
+    )
+
+    auto_farfield = AutomatedFarfield(name="my_farfield", domain_type="half_body_positive_y")
+
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-10,
+                    geometry_accuracy=1e-10 * u.m,
+                    surface_max_edge_length=1e-10,
+                ),
+                volume_zones=[auto_farfield],
+            ),
+            private_attribute_asset_cache=asset_cache,
+        )
+
+    _validated, errors, warnings = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type=None,
+        validation_level=None,
+    )
+
+    assert errors is None
+    assert any(
+        "domain_type" in w.get("msg", "") or "symmetry plane" in w.get("msg", "") for w in warnings
+    ), warnings

@@ -14,54 +14,20 @@ from flow360.component.results.base_results import (
     ResultCSVModel,
 )
 from flow360.component.simulation.models.volume_models import BETDisk
+from flow360.component.simulation.outputs.output_fields import (
+    _CD,
+    _CL,
+    _CFx,
+    _CFy,
+    _CFz,
+    _CMx,
+    _CMy,
+    _CMz,
+)
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.user_code.core.types import Expression
 from flow360.exceptions import Flow360ValueError
 from flow360.log import log
-
-# pylint:disable=invalid-name
-_CL = "CL"
-_CD = "CD"
-_CFx = "CFx"
-_CFy = "CFy"
-_CFz = "CFz"
-_CMx = "CMx"
-_CMy = "CMy"
-_CMz = "CMz"
-_CL_PRESSURE = "CLPressure"
-_CD_PRESSURE = "CDPressure"
-_CFx_PRESSURE = "CFxPressure"
-_CFy_PRESSURE = "CFyPressure"
-_CFz_PRESSURE = "CFzPressure"
-_CMx_PRESSURE = "CMxPressure"
-_CMy_PRESSURE = "CMyPressure"
-_CMz_PRESSURE = "CMzPressure"
-_CL_SKIN_FRICTION = "CLSkinFriction"
-_CD_SKIN_FRICTION = "CDSkinFriction"
-_CFx_SKIN_FRICTION = "CFxSkinFriction"
-_CFy_SKIN_FRICTION = "CFySkinFriction"
-_CFz_SKIN_FRICTION = "CFzSkinFriction"
-_CMx_SKIN_FRICTION = "CMxSkinFriction"
-_CMy_SKIN_FRICTION = "CMySkinFriction"
-_CMz_SKIN_FRICTION = "CMzSkinFriction"
-_CL_VISCOUS = "CLViscous"
-_CD_VISCOUS = "CDViscous"
-_CFx_VISCOUS = "CFxViscous"
-_CFy_VISCOUS = "CFyViscous"
-_CFz_VISCOUS = "CFzViscous"
-_CMx_VISCOUS = "CMxViscous"
-_CMy_VISCOUS = "CMyViscous"
-_CMz_VISCOUS = "CMzViscous"
-_HEAT_TRANSFER = "HeatTransfer"
-_HEAT_FLUX = "HeatFlux"
-_X = "X"
-_Y = "Y"
-_CUMULATIVE_CD_CURVE = "Cumulative_CD_Curve"
-_CD_PER_STRIP = "CD_per_strip"
-_CFx_PER_SPAN = "CFx_per_span"
-_CFz_PER_SPAN = "CFz_per_span"
-_CMy_PER_SPAN = "CMy_per_span"
-
 
 # Static utilities for aerodynamic coefficient computations.
 
@@ -161,7 +127,7 @@ def _get_lift_drag_direction(params: SimulationParams):
 
 
 def _get_dynamic_pressure_in_flow360_unit(params: SimulationParams):
-    # pylint:disable=protected-access
+    # pylint:disable=protected-access,invalid-name
 
     v_ref = params.reference_velocity
 
@@ -189,8 +155,10 @@ def _build_coeff_env(params) -> Dict[str, Any]:
 
 def _copy_time_columns(src: Dict[str, list]) -> Dict[str, list]:
     out: Dict[str, list] = {}
-    out[_PSEUDO_STEP] = src[_PSEUDO_STEP]
-    out[_PHYSICAL_STEP] = src[_PHYSICAL_STEP]
+    for key in src.keys():
+        if key in [_PSEUDO_STEP, _PHYSICAL_STEP]:
+            out[key] = src[key]
+            continue
     return out
 
 
@@ -218,6 +186,7 @@ def _collect_disk_axes_and_centers(
     for model in params.models:
         if model.type != model_type:
             continue
+        # No draft entity (cylinder) selector so it is fine.
         for cyl in model.entities.stored_entities:
             # Axis is assumed normalized by the inputs
             # pylint:disable=protected-access
@@ -339,13 +308,6 @@ class PorousMediumCoefficientsComputation:
     """Static utilities for porous medium coefficient computations."""
 
     @staticmethod
-    def _copy_time_columns(src: Dict[str, list]) -> Dict[str, list]:
-        out: Dict[str, list] = {}
-        out[_PSEUDO_STEP] = src[_PSEUDO_STEP]
-        out[_PHYSICAL_STEP] = src[_PHYSICAL_STEP]
-        return out
-
-    @staticmethod
     def _iter_zones(values: Dict[str, list]):
         # Support both default "zone_<idx>_<...>" and arbitrary GenericVolume-style names
         # such as "blk-2_Force_x" by extracting the prefix before Force/Moment components.
@@ -413,6 +375,7 @@ class PorousMediumCoefficientsComputation:
 
         for zone_name in PorousMediumCoefficientsComputation._iter_zones(values):
             PorousMediumCoefficientsComputation._init_zone_output(out, zone_name)
+            # pylint: disable=invalid-name
             for CF, CM, CL_val, CD_val in iterate_step_values_func(zone_name, {}, env, values):
                 out[f"{zone_name}_{_CFx}"].append(CF[0])
                 out[f"{zone_name}_{_CFy}"].append(CF[1])
@@ -437,7 +400,7 @@ class BETDiskCSVHeaderOperation:
 
     @staticmethod
     def format_headers(
-        BETCSVModel: ResultCSVModel,
+        BETCSVModel: ResultCSVModel,  # pylint: disable=invalid-name
         params: SimulationParams,
         pattern: str = "$BETName_$CylinderName",
     ) -> LocalResultCSVModel:
@@ -473,15 +436,16 @@ class BETDiskCSVHeaderOperation:
 
         disk_rename_map = {}
 
-        diskCount = 0
+        disk_count = 0
         for disk in bet_disks:
+            # No draft entity (cylinder) selector so it is fine.
             for disk_local_index, cylinder in enumerate(disk.entities.stored_entities):
                 new_name = pattern.replace("$BETName", disk.name)
                 new_name = new_name.replace("$CylinderName", cylinder.name)
                 new_name = new_name.replace("$DiskLocalIndex", str(disk_local_index))
-                new_name = new_name.replace("$DiskGlobalIndex", str(diskCount))
-                disk_rename_map[f"Disk{diskCount}"] = new_name
-                diskCount = diskCount + 1
+                new_name = new_name.replace("$DiskGlobalIndex", str(disk_count))
+                disk_rename_map[f"Disk{disk_count}"] = new_name
+                disk_count = disk_count + 1
 
         for header, values in csv_data.items():
             matched = False
@@ -492,5 +456,5 @@ class BETDiskCSVHeaderOperation:
                     break
             if not matched:
                 new_csv[header] = values
-        newModel = LocalResultCSVModel().from_dict(new_csv)
-        return newModel
+        new_model = LocalResultCSVModel().from_dict(new_csv)
+        return new_model

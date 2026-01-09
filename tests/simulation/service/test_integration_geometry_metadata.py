@@ -3,6 +3,7 @@ import os
 import pytest
 
 from flow360.component.geometry import Geometry
+from flow360.component.simulation.framework.entity_registry import EntityRegistryView
 from flow360.component.simulation.primitives import Edge, Surface
 from flow360.log import set_logging_level
 
@@ -31,6 +32,10 @@ set_logging_level("DEBUG")
 # attribute RandomName $IamIsolated
 
 
+def _get_property_values(view: EntityRegistryView, property_name: str) -> list[str]:
+    return [entity.__getattribute__(property_name) for entity in view._entities]
+
+
 @pytest.mark.usefixtures("s3_download_override")
 def test_multi_body_geometry(mock_id, mock_response):
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
@@ -39,10 +44,10 @@ def test_multi_body_geometry(mock_id, mock_response):
     # Test grouping both edge and face at the same time.
     geometry.group_faces_by_tag(tag_name="ByTheType")
     geometry.group_edges_by_tag(tag_name="ByTheType")
-    surface_bucket = geometry.internal_registry.get_bucket(Surface)
-    edge_bucket = geometry.internal_registry.get_bucket(Edge)
-    assert surface_bucket._get_property_values("name") == ["IamFaces"]
-    assert set(surface_bucket._get_property_values("private_attribute_sub_components")[0]) == {
+    surface_bucket = geometry.internal_registry.view(Surface)
+    edge_bucket = geometry.internal_registry.view(Edge)
+    assert _get_property_values(surface_bucket, "name") == ["IamFaces"]
+    assert set(_get_property_values(surface_bucket, "private_attribute_sub_components")[0]) == {
         "body01_face0002",
         "body02_face0004",
         "body02_face0006",
@@ -56,8 +61,8 @@ def test_multi_body_geometry(mock_id, mock_response):
         "body01_face0003",
         "body01_face0001",
     }
-    assert edge_bucket._get_property_values("name") == ["IamEdges"]
-    assert set(edge_bucket._get_property_values("private_attribute_sub_components")[0]) == {
+    assert _get_property_values(edge_bucket, "name") == ["IamEdges"]
+    assert set(_get_property_values(edge_bucket, "private_attribute_sub_components")[0]) == {
         "body01_edge0001",
         "body01_edge0002",
         "body01_edge0003",
@@ -89,11 +94,11 @@ def test_multi_body_geometry(mock_id, mock_response):
     geometry.reset_edge_grouping()
     geometry.group_faces_by_tag(tag_name="ByBody")
     geometry.group_edges_by_tag(tag_name="ByBody")
-    surface_bucket = geometry.internal_registry.get_bucket(Surface)
-    edge_bucket = geometry.internal_registry.get_bucket(Edge)
+    surface_bucket = geometry.internal_registry.view(Surface)
+    edge_bucket = geometry.internal_registry.view(Edge)
 
-    assert set(surface_bucket._get_property_values("name")) == {"Box1", "Box2"}
-    assert set(surface_bucket._get_property_values("private_attribute_sub_components")[0]) == {
+    assert set(_get_property_values(surface_bucket, "name")) == {"Box1", "Box2"}
+    assert set(_get_property_values(surface_bucket, "private_attribute_sub_components")[0]) == {
         "body01_face0005",
         "body01_face0002",
         "body01_face0003",
@@ -101,7 +106,7 @@ def test_multi_body_geometry(mock_id, mock_response):
         "body01_face0001",
         "body01_face0004",
     }
-    assert set(surface_bucket._get_property_values("private_attribute_sub_components")[1]) == {
+    assert set(_get_property_values(surface_bucket, "private_attribute_sub_components")[1]) == {
         "body02_face0004",
         "body02_face0005",
         "body02_face0002",
@@ -109,8 +114,8 @@ def test_multi_body_geometry(mock_id, mock_response):
         "body02_face0006",
         "body02_face0001",
     }
-    assert set(edge_bucket._get_property_values("name")) == {"Box1", "Box2"}
-    assert set(edge_bucket._get_property_values("private_attribute_sub_components")[0]) == {
+    assert set(_get_property_values(edge_bucket, "name")) == {"Box1", "Box2"}
+    assert set(_get_property_values(edge_bucket, "private_attribute_sub_components")[0]) == {
         "body01_edge0001",
         "body01_edge0002",
         "body01_edge0003",
@@ -124,7 +129,7 @@ def test_multi_body_geometry(mock_id, mock_response):
         "body01_edge0011",
         "body01_edge0012",
     }
-    assert set(edge_bucket._get_property_values("private_attribute_sub_components")[1]) == {
+    assert set(_get_property_values(edge_bucket, "private_attribute_sub_components")[1]) == {
         "body02_edge0001",
         "body02_edge0002",
         "body02_edge0003",
@@ -142,8 +147,8 @@ def test_multi_body_geometry(mock_id, mock_response):
     geometry.reset_face_grouping()
     geometry.reset_edge_grouping()
     geometry.group_faces_by_tag(tag_name="RandomName")
-    surface_bucket = geometry.internal_registry.get_bucket(Surface)
-    assert set(surface_bucket._get_property_values("name")) == {
+    surface_bucket = geometry.internal_registry.view(Surface)
+    assert set(_get_property_values(surface_bucket, "name")) == {
         "IamIsolated",
         "body01_face0001",
         "body01_face0002",

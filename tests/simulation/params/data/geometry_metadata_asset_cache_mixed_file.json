@@ -69,41 +69,7 @@
                 "private_attribute_sub_components": [
                     "body00001"
                 ],
-                "private_attribute_color": null,
-                "transformation": {
-                    "type_name": "BodyGroupTransformation",
-                    "axis_of_rotation": [
-                        1.0,
-                        2.0,
-                        3.0
-                    ],
-                    "angle_of_rotation": {
-                        "value": 90.0,
-                        "units": "degree"
-                    },
-                    "origin": {
-                        "value": [
-                            6,
-                            5,
-                            4
-                        ],
-                        "units": "m"
-                    },
-                    "scale": [
-                        1.0,
-                        2.0,
-                        3.0
-                    ],
-                    "translation": {
-                        "value": [
-                            10,
-                            100,
-                            5
-                        ],
-                        "units": "m"
-                    },
-                    "private_attribute_matrix": null
-                }
+                "private_attribute_color": null
             },
             {
                 "private_attribute_entity_type_name": "GeometryBodyGroup",
@@ -113,41 +79,7 @@
                 "private_attribute_sub_components": [
                     "airplane_translate_in_z_-5.stl"
                 ],
-                "private_attribute_color": null,
-                "transformation": {
-                    "type_name": "BodyGroupTransformation",
-                    "axis_of_rotation": [
-                        1.0,
-                        0.0,
-                        0.0
-                    ],
-                    "angle_of_rotation": {
-                        "value": 0.0,
-                        "units": "degree"
-                    },
-                    "origin": {
-                        "value": [
-                            0,
-                            0,
-                            0
-                        ],
-                        "units": "m"
-                    },
-                    "scale": [
-                        1.0,
-                        1.0,
-                        1.0
-                    ],
-                    "translation": {
-                        "value": [
-                            0,
-                            0,
-                            0
-                        ],
-                        "units": "m"
-                    },
-                    "private_attribute_matrix": null
-                }
+                "private_attribute_color": null
             },
             {
                 "private_attribute_entity_type_name": "GeometryBodyGroup",
@@ -157,41 +89,7 @@
                 "private_attribute_sub_components": [
                     "farfield_only_sphere_volume_mesh.lb8.ugrid"
                 ],
-                "private_attribute_color": null,
-                "transformation": {
-                    "type_name": "BodyGroupTransformation",
-                    "axis_of_rotation": [
-                        1.0,
-                        0.0,
-                        0.0
-                    ],
-                    "angle_of_rotation": {
-                        "value": 0.0,
-                        "units": "degree"
-                    },
-                    "origin": {
-                        "value": [
-                            0,
-                            0,
-                            0
-                        ],
-                        "units": "m"
-                    },
-                    "scale": [
-                        1.0,
-                        1.0,
-                        1.0
-                    ],
-                    "translation": {
-                        "value": [
-                            0,
-                            0,
-                            0
-                        ],
-                        "units": "m"
-                    },
-                    "private_attribute_matrix": null
-                }
+                "private_attribute_color": null
             }
         ],
         [
@@ -203,41 +101,7 @@
                 "private_attribute_sub_components": [
                     "body00001"
                 ],
-                "private_attribute_color": null,
-                "transformation": {
-                    "type_name": "BodyGroupTransformation",
-                    "axis_of_rotation": [
-                        1.0,
-                        0.0,
-                        0.0
-                    ],
-                    "angle_of_rotation": {
-                        "value": 0.0,
-                        "units": "degree"
-                    },
-                    "origin": {
-                        "value": [
-                            0,
-                            0,
-                            0
-                        ],
-                        "units": "m"
-                    },
-                    "scale": [
-                        1.0,
-                        1.0,
-                        1.0
-                    ],
-                    "translation": {
-                        "value": [
-                            0,
-                            0,
-                            0
-                        ],
-                        "units": "m"
-                    },
-                    "private_attribute_matrix": null
-                }
+                "private_attribute_color": null
             },
             {
                 "private_attribute_entity_type_name": "GeometryBodyGroup",
@@ -247,41 +111,7 @@
                 "private_attribute_sub_components": [
                     "airplane_translate_in_z_-5.stl"
                 ],
-                "private_attribute_color": null,
-                "transformation": {
-                    "type_name": "BodyGroupTransformation",
-                    "axis_of_rotation": [
-                        1.0,
-                        0.0,
-                        0.0
-                    ],
-                    "angle_of_rotation": {
-                        "value": 0.0,
-                        "units": "degree"
-                    },
-                    "origin": {
-                        "value": [
-                            0,
-                            0,
-                            0
-                        ],
-                        "units": "m"
-                    },
-                    "scale": [
-                        1.0,
-                        1.0,
-                        1.0
-                    ],
-                    "translation": {
-                        "value": [
-                            0,
-                            0,
-                            0
-                        ],
-                        "units": "m"
-                    },
-                    "private_attribute_matrix": null
-                }
+                "private_attribute_color": null
             },
             {
                 "private_attribute_entity_type_name": "GeometryBodyGroup",
@@ -291,41 +121,7 @@
                 "private_attribute_sub_components": [
                     "farfield_only_sphere_volume_mesh.lb8.ugrid"
                 ],
-                "private_attribute_color": null,
-                "transformation": {
-                    "type_name": "BodyGroupTransformation",
-                    "axis_of_rotation": [
-                        1.0,
-                        0.0,
-                        0.0
-                    ],
-                    "angle_of_rotation": {
-                        "value": 0.0,
-                        "units": "degree"
-                    },
-                    "origin": {
-                        "value": [
-                            0,
-                            0,
-                            0
-                        ],
-                        "units": "m"
-                    },
-                    "scale": [
-                        1.0,
-                        1.0,
-                        1.0
-                    ],
-                    "translation": {
-                        "value": [
-                            0,
-                            0,
-                            0
-                        ],
-                        "units": "m"
-                    },
-                    "private_attribute_matrix": null
-                }
+                "private_attribute_color": null
             }
         ],
         [
@@ -337,41 +133,7 @@
                 "private_attribute_sub_components": [
                     "body00001"
                 ],
-                "private_attribute_color": null,
-                "transformation": {
-                    "type_name": "BodyGroupTransformation",
-                    "axis_of_rotation": [
-                        1.0,
-                        0.0,
-                        0.0
-                    ],
-                    "angle_of_rotation": {
-                        "value": 0.0,
-                        "units": "degree"
-                    },
-                    "origin": {
-                        "value": [
-                            0,
-                            0,
-                            0
-                        ],
-                        "units": "m"
-                    },
-                    "scale": [
-                        1.0,
-                        1.0,
-                        1.0
-                    ],
-                    "translation": {
-                        "value": [
-                            0,
-                            0,
-                            0
-                        ],
-                        "units": "m"
-                    },
-                    "private_attribute_matrix": null
-                }
+                "private_attribute_color": null
             },
             {
                 "private_attribute_entity_type_name": "GeometryBodyGroup",
@@ -381,41 +143,7 @@
                 "private_attribute_sub_components": [
                     "airplane_translate_in_z_-5.stl"
                 ],
-                "private_attribute_color": null,
-                "transformation": {
-                    "type_name": "BodyGroupTransformation",
-                    "axis_of_rotation": [
-                        1.0,
-                        0.0,
-                        0.0
-                    ],
-                    "angle_of_rotation": {
-                        "value": 0.0,
-                        "units": "degree"
-                    },
-                    "origin": {
-                        "value": [
-                            0,
-                            0,
-                            0
-                        ],
-                        "units": "m"
-                    },
-                    "scale": [
-                        1.0,
-                        1.0,
-                        1.0
-                    ],
-                    "translation": {
-                        "value": [
-                            0,
-                            0,
-                            0
-                        ],
-                        "units": "m"
-                    },
-                    "private_attribute_matrix": null
-                }
+                "private_attribute_color": null
             },
             {
                 "private_attribute_entity_type_name": "GeometryBodyGroup",
@@ -425,41 +153,7 @@
                 "private_attribute_sub_components": [
                     "farfield_only_sphere_volume_mesh.lb8.ugrid"
                 ],
-                "private_attribute_color": null,
-                "transformation": {
-                    "type_name": "BodyGroupTransformation",
-                    "axis_of_rotation": [
-                        1.0,
-                        0.0,
-                        0.0
-                    ],
-                    "angle_of_rotation": {
-                        "value": 0.0,
-                        "units": "degree"
-                    },
-                    "origin": {
-                        "value": [
-                            0,
-                            0,
-                            0
-                        ],
-                        "units": "m"
-                    },
-                    "scale": [
-                        1.0,
-                        1.0,
-                        1.0
-                    ],
-                    "translation": {
-                        "value": [
-                            0,
-                            0,
-                            0
-                        ],
-                        "units": "m"
-                    },
-                    "private_attribute_matrix": null
-                }
+                "private_attribute_color": null
             }
         ],
         [
@@ -471,41 +165,7 @@
                 "private_attribute_sub_components": [
                     "body00001"
                 ],
-                "private_attribute_color": null,
-                "transformation": {
-                    "type_name": "BodyGroupTransformation",
-                    "axis_of_rotation": [
-                        1.0,
-                        0.0,
-                        0.0
-                    ],
-                    "angle_of_rotation": {
-                        "value": 0.0,
-                        "units": "degree"
-                    },
-                    "origin": {
-                        "value": [
-                            0,
-                            0,
-                            0
-                        ],
-                        "units": "m"
-                    },
-                    "scale": [
-                        1.0,
-                        1.0,
-                        1.0
-                    ],
-                    "translation": {
-                        "value": [
-                            0,
-                            0,
-                            0
-                        ],
-                        "units": "m"
-                    },
-                    "private_attribute_matrix": null
-                }
+                "private_attribute_color": null
             },
             {
                 "private_attribute_entity_type_name": "GeometryBodyGroup",
@@ -515,41 +175,7 @@
                 "private_attribute_sub_components": [
                     "airplane_translate_in_z_-5.stl"
                 ],
-                "private_attribute_color": null,
-                "transformation": {
-                    "type_name": "BodyGroupTransformation",
-                    "axis_of_rotation": [
-                        1.0,
-                        0.0,
-                        0.0
-                    ],
-                    "angle_of_rotation": {
-                        "value": 0.0,
-                        "units": "degree"
-                    },
-                    "origin": {
-                        "value": [
-                            0,
-                            0,
-                            0
-                        ],
-                        "units": "m"
-                    },
-                    "scale": [
-                        1.0,
-                        1.0,
-                        1.0
-                    ],
-                    "translation": {
-                        "value": [
-                            0,
-                            0,
-                            0
-                        ],
-                        "units": "m"
-                    },
-                    "private_attribute_matrix": null
-                }
+                "private_attribute_color": null
             },
             {
                 "private_attribute_entity_type_name": "GeometryBodyGroup",
@@ -559,41 +185,7 @@
                 "private_attribute_sub_components": [
                     "farfield_only_sphere_volume_mesh.lb8.ugrid"
                 ],
-                "private_attribute_color": null,
-                "transformation": {
-                    "type_name": "BodyGroupTransformation",
-                    "axis_of_rotation": [
-                        1.0,
-                        0.0,
-                        0.0
-                    ],
-                    "angle_of_rotation": {
-                        "value": 0.0,
-                        "units": "degree"
-                    },
-                    "origin": {
-                        "value": [
-                            0,
-                            0,
-                            0
-                        ],
-                        "units": "m"
-                    },
-                    "scale": [
-                        1.0,
-                        1.0,
-                        1.0
-                    ],
-                    "translation": {
-                        "value": [
-                            0,
-                            0,
-                            0
-                        ],
-                        "units": "m"
-                    },
-                    "private_attribute_matrix": null
-                }
+                "private_attribute_color": null
             }
         ]
     ],

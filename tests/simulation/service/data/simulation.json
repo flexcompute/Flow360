@@ -780,7 +780,6 @@
                 {
                     "private_attribute_id": "48ff9fab-afbd-4957-b5d3-3c52e7ab2fae",
                     "name": "Axisymmetric volume1",
-                    "private_attribute_registry_bucket_name": "VolumetricEntityType",
                     "private_attribute_entity_type_name": "AxisymmetricBody",
                     "axis": [
                         0,
@@ -795,23 +794,36 @@
                         ],
                         "units": "m"
                     },
-                    "profile_curve": {
-                        "value": [
-                            [
-                                0,
-                                0
+                    "profile_curve": [
+                        {
+                            "value": [
+                                -1.0,
+                                0.0
                             ],
-                            [
-                                0,
-                                1
+                            "units": "m"
+                        },
+                        {
+                            "value": [
+                                -1.0,
+                                1.0
                             ],
-                            [
-                                1,
-                                0
-                            ]
-                        ],
-                        "units": "m"
-                    }
+                            "units": "m"
+                        },
+                        {
+                            "value": [
+                                1.0,
+                                2.0
+                            ],
+                            "units": "m"
+                        },
+                        {
+                            "value": [
+                                1.0,
+                                0.0
+                            ],
+                            "units": "m"
+                        }
+                    ]
                 }
             ]
         },

@@ -9,7 +9,8 @@ import pydantic as pd
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.simulation.framework.entity_base import EntityList, generate_uuid
+from flow360.component.simulation.framework.entity_base import EntityList
+from flow360.component.simulation.framework.entity_utils import generate_uuid
 from flow360.component.simulation.framework.expressions import StringExpression
 from flow360.component.simulation.framework.single_attribute_base import (
     SingleAttributeModel,
@@ -26,8 +27,10 @@ from flow360.component.simulation.primitives import (
     GhostSphere,
     GhostSurface,
     GhostSurfacePair,
+    MirroredSurface,
     Surface,
     SurfacePair,
+    WindTunnelGhostSurface,
 )
 from flow360.component.simulation.unit_system import (
     AbsoluteTemperatureType,
@@ -40,13 +43,12 @@ from flow360.component.simulation.unit_system import (
     PressureType,
 )
 from flow360.component.simulation.validation.validation_context import (
-    get_validation_info,
+    ParamsValidationInfo,
+    contextual_field_validator,
 )
 from flow360.component.simulation.validation.validation_utils import (
-    check_deleted_surface_in_entity_list,
     check_deleted_surface_pair,
-    check_symmetric_boundary_existence,
-    check_user_defined_farfield_symmetry_existence,
+    validate_entity_list_surface_existence,
 )
 
 # pylint: disable=fixme
@@ -54,34 +56,23 @@ from flow360.component.simulation.validation.validation_utils import (
 from flow360.component.types import Axis
 
 
-class EntityListAllowingGhost(EntityList):
-    """Entity list with customized validators for ghost entities"""
-
-    @pd.field_validator("stored_entities", mode="after")
-    @classmethod
-    def ghost_entity_validator(cls, value):
-        """Run all validators"""
-        check_user_defined_farfield_symmetry_existence(value)
-        return check_symmetric_boundary_existence(value)
-
-
 class BoundaryBase(Flow360BaseModel, metaclass=ABCMeta):
     """Boundary base"""
 
     type: str = pd.Field()
-    entities: EntityList[Surface] = pd.Field(
+    entities: EntityList[Surface, MirroredSurface] = pd.Field(
         alias="surfaces",
         description="List of boundaries with boundary condition imposed.",
     )
     private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
 
-    @pd.field_validator("entities", mode="after")
+    @contextual_field_validator("entities", mode="after")
     @classmethod
-    def ensure_surface_existence(cls, value):
+    def ensure_surface_existence(cls, value, param_info: ParamsValidationInfo):
         """Ensure all boundaries will be present after mesher"""
         # pylint: disable=fixme
         # TODO: This should have been moved to EntityListAllowingGhost?
-        return check_deleted_surface_in_entity_list(value)
+        return validate_entity_list_surface_existence(value, param_info)
 
 
 class BoundaryBaseWithTurbulenceQuantities(BoundaryBase, metaclass=ABCMeta):
@@ -326,6 +317,7 @@ WallVelocityModelTypes = Annotated[
 class Wall(BoundaryBase):
     """
     :class:`Wall` class defines the wall boundary condition based on the inputs.
+    Refer  :ref:`here <wall_formulations>` for formulation details.
 
     Example
     -------
@@ -374,6 +366,14 @@ class Wall(BoundaryBase):
       ...     ),
       ... )
 
+    - Define roughness height on entities
+      with the naming pattern :code:`"fluid/Roughness-*"`:
+
+      >>> fl.Wall(
+      ...     entities=volume_mesh["fluid/Roughness-*"],
+      ...     roughness_height=0.1 * fl.u.mm,
+      ... )
+
     ====
     """
 
@@ -401,6 +401,11 @@ class Wall(BoundaryBase):
     )
     private_attribute_dict: Optional[Dict] = pd.Field(None)
 
+    entities: EntityList[Surface, MirroredSurface, WindTunnelGhostSurface] = pd.Field(
+        alias="surfaces",
+        description="List of boundaries with the `Wall` boundary condition imposed.",
+    )
+
     @pd.model_validator(mode="after")
     def check_wall_function_conflict(self):
         """Check no setting is conflicting with the usage of wall function"""
@@ -412,22 +417,20 @@ class Wall(BoundaryBase):
             )
         return self
 
-    @pd.field_validator("heat_spec", mode="after")
+    @contextual_field_validator("heat_spec", mode="after")
     @classmethod
-    def _ensure_adiabatic_wall_for_liquid(cls, value):
+    def _ensure_adiabatic_wall_for_liquid(cls, value, param_info: ParamsValidationInfo):
         """Allow only adiabatic wall when liquid operating condition is used"""
-        validation_info = get_validation_info()
-        if validation_info is None or validation_info.using_liquid_as_material is False:
+        if param_info.using_liquid_as_material is False:
             return value
         if isinstance(value, HeatFlux) and value.value == 0 * u.W / u.m**2:
             return value
         raise ValueError("Only adiabatic wall is allowed when using liquid as simulation material.")
 
-    @pd.field_validator("velocity", mode="after")
+    @contextual_field_validator("velocity", mode="after")
     @classmethod
-    def _disable_expression_for_liquid(cls, value):
-        validation_info = get_validation_info()
-        if validation_info is None or validation_info.using_liquid_as_material is False:
+    def _disable_expression_for_liquid(cls, value, param_info: ParamsValidationInfo):
+        if param_info.using_liquid_as_material is False:
             return value
 
         if isinstance(value, tuple):
@@ -480,18 +483,22 @@ class Freestream(BoundaryBaseWithTurbulenceQuantities):
         + ":py:attr:`AerospaceCondition.alpha` and :py:attr:`AerospaceCondition.beta` angles. "
         + "Optionally, an expression for each of the velocity components can be specified.",
     )
-    entities: EntityListAllowingGhost[Surface, GhostSurface, GhostSphere, GhostCircularPlane] = (
-        pd.Field(
-            alias="surfaces",
-            description="List of boundaries with the `Freestream` boundary condition imposed.",
-        )
+    entities: EntityList[
+        Surface,
+        MirroredSurface,
+        GhostSurface,
+        WindTunnelGhostSurface,
+        GhostSphere,
+        GhostCircularPlane,
+    ] = pd.Field(  # pylint: disable=duplicate-code
+        alias="surfaces",
+        description="List of boundaries with the `Freestream` boundary condition imposed.",
     )
 
-    @pd.field_validator("velocity", mode="after")
+    @contextual_field_validator("velocity", mode="after")
     @classmethod
-    def _disable_expression_for_liquid(cls, value):
-        validation_info = get_validation_info()
-        if validation_info is None or validation_info.using_liquid_as_material is False:
+    def _disable_expression_for_liquid(cls, value, param_info: ParamsValidationInfo):
+        if param_info.using_liquid_as_material is False:
             return value
 
         if isinstance(value, tuple):
@@ -544,6 +551,10 @@ class Outflow(BoundaryBase):
         discriminator="type_name",
         description="Specify the static pressure, mass flow rate, or Mach number parameters at"
         + " the `Outflow` boundary.",
+    )
+    entities: EntityList[Surface, MirroredSurface, WindTunnelGhostSurface] = pd.Field(
+        alias="surfaces",
+        description="List of boundaries with the `Outflow` boundary condition imposed.",
     )
 
 
@@ -607,6 +618,10 @@ class Inflow(BoundaryBaseWithTurbulenceQuantities):
         description="Direction of the incoming flow. Must be a unit vector pointing "
         + "into the volume. If unspecified, the direction will be normal to the surface.",
     )
+    entities: EntityList[Surface, MirroredSurface, WindTunnelGhostSurface] = pd.Field(
+        alias="surfaces",
+        description="List of boundaries with the `Inflow` boundary condition imposed.",
+    )
 
 
 class SlipWall(BoundaryBase):
@@ -615,7 +630,8 @@ class SlipWall(BoundaryBase):
     Example
     -------
 
-    - Define :code:`SlipWall` boundary condition for entities with the naming pattern
+    Define :code:`SlipWall` boundary condition for entities with the naming pattern:
+
     :code:`"*/slipWall"` in the volume mesh.
 
       >>> fl.SlipWall(entities=volume_mesh["*/slipWall"]
@@ -637,7 +653,9 @@ class SlipWall(BoundaryBase):
         "Slip wall", description="Name of the `SlipWall` boundary condition."
     )
     type: Literal["SlipWall"] = pd.Field("SlipWall", frozen=True)
-    entities: EntityListAllowingGhost[Surface, GhostSurface, GhostCircularPlane] = pd.Field(
+    entities: EntityList[
+        Surface, MirroredSurface, GhostSurface, WindTunnelGhostSurface, GhostCircularPlane
+    ] = pd.Field(
         alias="surfaces",
         description="List of boundaries with the :code:`SlipWall` boundary condition imposed.",
     )
@@ -668,7 +686,7 @@ class SymmetryPlane(BoundaryBase):
         "Symmetry", description="Name of the `SymmetryPlane` boundary condition."
     )
     type: Literal["SymmetryPlane"] = pd.Field("SymmetryPlane", frozen=True)
-    entities: EntityListAllowingGhost[Surface, GhostSurface, GhostCircularPlane] = pd.Field(
+    entities: EntityList[Surface, MirroredSurface, GhostSurface, GhostCircularPlane] = pd.Field(
         alias="surfaces",
         description="List of boundaries with the `SymmetryPlane` boundary condition imposed.",
     )
@@ -717,27 +735,25 @@ class Periodic(Flow360BaseModel):
     )
     private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
 
-    @pd.field_validator("entity_pairs", mode="after")
+    @contextual_field_validator("entity_pairs", mode="after")
     @classmethod
-    def ensure_surface_existence(cls, value):
+    def ensure_surface_existence(cls, value, param_info: ParamsValidationInfo):
         """Ensure all boundaries will be present after mesher"""
         for surface_pair in value.items:
-            check_deleted_surface_pair(surface_pair)
+            check_deleted_surface_pair(surface_pair, param_info)
         return value
 
-    @pd.field_validator("entity_pairs", mode="after")
+    @contextual_field_validator("entity_pairs", mode="after")
     @classmethod
-    def _ensure_quasi_3d_periodic_when_using_ghost_surface(cls, value):
+    def _ensure_quasi_3d_periodic_when_using_ghost_surface(
+        cls, value, param_info: ParamsValidationInfo
+    ):
         """
         When using ghost surface pairs, ensure the farfield type is quasi-3d-periodic.
         """
-        validation_info = get_validation_info()
-        if validation_info is None:
-            return value
-
         for surface_pair in value.items:
             if isinstance(surface_pair, GhostSurfacePair):
-                if validation_info.farfield_method != "quasi-3d-periodic":
+                if param_info.farfield_method != "quasi-3d-periodic":
                     raise ValueError(
                         "Farfield type must be 'quasi-3d-periodic' when using GhostSurfacePair."
                     )
@@ -751,7 +767,7 @@ class PorousJump(Flow360BaseModel):
     Example
     -------
 
-    - Define a porous jump condition:
+    Define a porous jump condition:
 
       >>> fl.PorousJump(
       ...     surface_pairs=[
@@ -762,6 +778,7 @@ class PorousJump(Flow360BaseModel):
       ...    forchheimer_coefficient = 1 / fl.u.m,
       ...    thickness = 1 * fl.u.m,
       ... )
+
     ====
     """
 
@@ -786,12 +803,12 @@ class PorousJump(Flow360BaseModel):
     )
     private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
 
-    @pd.field_validator("entity_pairs", mode="after")
+    @contextual_field_validator("entity_pairs", mode="after")
     @classmethod
-    def ensure_surface_existence(cls, value):
+    def ensure_surface_existence(cls, value, param_info: ParamsValidationInfo):
         """Ensure all boundaries will be present after mesher and all entities are surfaces"""
         for surface_pair in value.items:
-            check_deleted_surface_pair(surface_pair)
+            check_deleted_surface_pair(surface_pair, param_info)
             for surface in surface_pair.pair:
                 if not surface.private_attribute_is_interface:
                     raise ValueError(f"Boundary `{surface.name}` is not an interface")

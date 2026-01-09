@@ -5,6 +5,7 @@ import hashlib
 import json
 from typing import Type, Union, get_args
 
+import numpy as np
 import unyt as u
 
 from flow360.component.simulation.conversion import (
@@ -63,10 +64,13 @@ from flow360.component.simulation.outputs.output_fields import (
 from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
     ForceDistributionOutput,
+    ForceOutput,
     Isosurface,
     IsosurfaceOutput,
     MonitorOutputType,
     ProbeOutput,
+    RenderOutput,
+    RenderOutputGroup,
     Slice,
     SliceOutput,
     StreamlineOutput,
@@ -74,6 +78,7 @@ from flow360.component.simulation.outputs.outputs import (
     SurfaceOutput,
     SurfaceProbeOutput,
     SurfaceSliceOutput,
+    TimeAverageForceDistributionOutput,
     TimeAverageIsosurfaceOutput,
     TimeAverageProbeOutput,
     TimeAverageSliceOutput,
@@ -92,8 +97,12 @@ from flow360.component.simulation.primitives import (
     GhostSurface,
     GhostSurfacePair,
     ImportedSurface,
+    MirroredSurface,
     Surface,
     SurfacePair,
+)
+from flow360.component.simulation.run_control.stopping_criterion import (
+    StoppingCriterion,
 )
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
@@ -103,10 +112,14 @@ from flow360.component.simulation.translator.user_expression_utils import (
 from flow360.component.simulation.translator.utils import (
     _get_key_name,
     convert_tuples_to_lists,
+    convert_value_to_units,
+    get_all_entries_of_type,
     get_global_setting_from_first_instance,
+    get_units_from_field,
     has_instance_in_list,
     inline_expressions_in_dict,
     preprocess_input,
+    remove_keys,
     remove_units_in_dict,
     replace_dict_key,
     translate_setting_and_apply_to_all_entities,
@@ -117,6 +130,7 @@ from flow360.component.simulation.user_code.core.types import (
     Expression,
     UserVariable,
     _convert_numeric,
+    compute_surface_integral_unit,
 )
 from flow360.component.simulation.user_code.functions import math
 from flow360.component.simulation.user_code.variables import solution
@@ -130,10 +144,10 @@ from flow360.component.simulation.utils import (
 from flow360.exceptions import Flow360TranslationError
 
 
-def dump_dict(input_params):
+def dump_dict(input_params, exclude_none=True):
     """Dumping param/model to dictionary."""
 
-    result = input_params.model_dump(by_alias=True, exclude_none=True)
+    result = input_params.model_dump(by_alias=True, exclude_none=exclude_none)
     if result.pop("privateAttributeDict", None) is not None:
         result.update(input_params.private_attribute_dict)
     return result
@@ -344,17 +358,11 @@ def inject_surface_slice_info(entity: Slice):
 def inject_isosurface_info(entity: Isosurface, input_params: SimulationParams):
     """inject entity info"""
 
-    if isinstance(entity.field, UserVariable):
-        units = entity.field.value.get_output_units(input_params=input_params)
-        surface_field = entity.field.name
-        surface_magnitude = (
-            entity.iso_value.to(units).v.item()
-            if not isinstance(entity.iso_value, float)
-            else entity.iso_value
-        )
-    else:
-        surface_field = entity.field
-        surface_magnitude = entity.iso_value
+    surface_field = entity.field.name if isinstance(entity.field, UserVariable) else entity.field
+    surface_magnitude = convert_value_to_units(
+        value=entity.iso_value, units=get_units_from_field(entity.field, input_params)
+    )
+
     return_dict = {
         "surfaceField": surface_field,
         "surfaceFieldMagnitude": surface_magnitude,
@@ -381,6 +389,14 @@ def get_monitor_locations(entities: EntityList):
                 monitor_locations[point_name] = point_location.tolist()
 
     return monitor_locations
+
+
+def inject_render_info(entity: Isosurface):
+    """inject entity info"""
+    return {
+        "surfaceField": entity.field,
+        "surfaceFieldMagnitude": entity.iso_value,
+    }
 
 
 def inject_probe_info(entity: EntityList):
@@ -415,21 +431,66 @@ def inject_surface_list_info(entity: EntityList):
     }
 
 
-def inject_imported_surface_info(entity: ImportedSurface):
+def _get_coordinate_system_manager_from_params(input_params: "SimulationParams"):
+    """Extract and rebuild CoordinateSystemManager from SimulationParams asset cache.
+
+    Parameters
+    ----------
+    input_params : SimulationParams
+        The simulation parameters containing coordinate system status.
+
+    Returns
+    -------
+    CoordinateSystemManager or None
+        The reconstructed manager, or None if no coordinate system info is available.
+    """
+    if not input_params or not input_params.private_attribute_asset_cache:
+        return None
+
+    coord_status = input_params.private_attribute_asset_cache.coordinate_system_status
+    if not coord_status:
+        return None
+
+    # pylint: disable=import-outside-toplevel
+    from flow360.component.simulation.draft_context.coordinate_system_manager import (
+        CoordinateSystemManager,
+    )
+
+    return CoordinateSystemManager._from_status(  # pylint: disable=protected-access
+        status=coord_status
+    )
+
+
+def inject_imported_surface_info(entity: ImportedSurface, coordinate_system_manager=None):
     """inject entity info"""
-    return {
+    result = {
         "meshFile": entity.file_name,
     }
+
+    # Add transformation matrix if entity has coordinate system assignment
+    if coordinate_system_manager is not None:
+        matrix = (
+            coordinate_system_manager._get_matrix_for_entity(  # pylint: disable=protected-access
+                entity=entity
+            )
+        )
+        if matrix is not None:
+            # Convert 3x4 numpy array to list for JSON serialization
+            result["transformationMatrix"] = matrix.tolist()
+
+    return result
 
 
 def translate_imported_surface_integral_output(
     output_params: list,
+    coordinate_system_manager=None,
 ):
     """Translate imported surface integral output settings."""
     translated_output = {
         "animationFrequency": -1,
         "animationFrequencyOffset": 0,
     }
+
     translated_output["surfaces"] = translate_setting_and_apply_to_all_entities(
         output_params,
         SurfaceIntegralOutput,
@@ -437,6 +498,7 @@ def translate_imported_surface_integral_output(
         entity_injection_func=inject_imported_surface_info,
         to_list=False,
         entity_type_to_include=ImportedSurface,
+        entity_injection_coordinate_system_manager=coordinate_system_manager,
     )
 
     return translated_output
@@ -474,6 +536,7 @@ def translate_volume_output(
 def translate_imported_surface_output(
     output_params: list,
     surface_output_class: Union[SurfaceOutput, TimeAverageSurfaceOutput],
+    coordinate_system_manager=None,
 ):
     """Translate imported surface output settings."""
 
@@ -482,6 +545,7 @@ def translate_imported_surface_output(
         surface_output_class,
         is_average=surface_output_class is TimeAverageSurfaceOutput,
     )
+
     imported_surface_output["surfaces"] = translate_setting_and_apply_to_all_entities(
         output_params,
         surface_output_class,
@@ -489,6 +553,7 @@ def translate_imported_surface_output(
         entity_injection_func=inject_imported_surface_info,
         to_list=False,
         entity_type_to_include=ImportedSurface,
+        entity_injection_coordinate_system_manager=coordinate_system_manager,
     )
     return imported_surface_output
 
@@ -512,7 +577,13 @@ def translate_surface_output(
         surface_output_class,
         translation_func=translate_output_fields,
         to_list=False,
-        entity_type_to_include=(Surface, GhostSurface, GhostSphere, GhostCircularPlane),
+        entity_type_to_include=(
+            Surface,
+            GhostSurface,
+            GhostSphere,
+            GhostCircularPlane,
+            MirroredSurface,
+        ),
     )
     surface_output["writeSingleFile"] = get_global_setting_from_first_instance(
         output_params,
@@ -566,6 +637,98 @@ def translate_isosurface_output(
     return translated_output
 
 
+def translate_render_output(
+    input_params: SimulationParams,
+    output_params: list,
+    isosurface_injection_function,
+    slice_injection_function,
+):
+    """Translate render output settings."""
+
+    renders = get_all_entries_of_type(output_params, RenderOutput)
+
+    translated_outputs = []
+
+    for render in renders:
+        render_dict = dump_dict(render)
+        render_dict = remove_units_in_dict(render_dict)
+
+        environment_dict = render_dict["environment"]
+        if environment_dict["background"]["typeName"] == "SkyboxBackground":
+            environment_dict["background"]["type"] = "skybox"
+        elif environment_dict["background"]["typeName"] == "SolidBackground":
+            environment_dict["background"]["type"] = "solid"
+
+        camera_dict = render_dict["camera"]
+        if camera_dict["projection"]["typeName"] == "OrthographicProjection":
+            camera_dict["projection"]["type"] = "orthographic"
+        elif camera_dict["projection"]["typeName"] == "PerspectiveProjection":
+            camera_dict["projection"]["type"] = "perspective"
+
+        render_dict = remove_keys(render_dict, "typeName")
+
+        translated_output = {
+            "name": render.name,
+            "animationFrequency": render.frequency,
+            "animationFrequencyOffset": render.frequency_offset,
+            "groups": [],
+            "camera": render_dict["camera"],
+            "lighting": render_dict["lighting"],
+            "environment": render_dict["environment"],
+        }
+
+        for render_group in render.groups:
+            material = render_group.material
+
+            material_dict = dump_dict(material)
+            material_dict = inline_expressions_in_dict(material_dict, input_params)
+            material_dict = remove_units_in_dict(material_dict)
+
+            if material_dict["typeName"] == "PBRMaterial":
+                material_dict["type"] = "pbr"
+            elif material_dict["typeName"] == "FieldMaterial":
+                material_dict["type"] = "field"
+
+            material_dict = remove_keys(material_dict, "typeName")
+
+            translated_output["groups"].append(
+                {
+                    "surfaces": translate_setting_and_apply_to_all_entities(
+                        [render_group],
+                        RenderOutputGroup,
+                        to_list=False,
+                        entity_type_to_include=(Surface, MirroredSurface),
+                        entity_list_field_name="surfaces",
+                    ),
+                    "slices": translate_setting_and_apply_to_all_entities(
+                        [render_group],
+                        RenderOutputGroup,
+                        to_list=False,
+                        entity_injection_func=slice_injection_function,
+                        entity_type_to_include=Slice,
+                        entity_list_field_name="slices",
+                    ),
+                    "isoSurfaces": translate_setting_and_apply_to_all_entities(
+                        [render_group],
+                        RenderOutputGroup,
+                        to_list=False,
+                        entity_injection_func=isosurface_injection_function,
+                        entity_type_to_include=Isosurface,
+                        entity_list_field_name="isosurfaces",
+                        entity_injection_input_params=input_params,
+                    ),
+                    "material": remove_units_in_dict(material_dict),
+                }
+            )
+        if render.transform:
+            transform = dump_dict(render.transform)
+            translated_output["transform"] = remove_units_in_dict(transform)
+
+        translated_outputs.append(translated_output)
+
+    return translated_outputs
+
+
 def translate_surface_slice_output(
     output_params: list,
     output_class: Union[SurfaceSliceOutput],
@@ -604,7 +767,7 @@ def translate_monitor_output(
         lump_list_of_entities=True,
         use_instance_name_as_key=True,
         entity_type_to_include=(
-            (Surface, GhostSurface, GhostSphere, GhostCircularPlane)
+            (Surface, GhostSurface, GhostSphere, GhostCircularPlane, MirroredSurface)
             if monitor_type is SurfaceIntegralOutput
             else None
         ),
@@ -655,12 +818,25 @@ def translate_force_distribution_output(output_params: list):
     """Translate force distribution output settings."""
     force_distribution_output = {}
     for output in output_params:
-        if isinstance(output, ForceDistributionOutput):
+        if is_exact_instance(output, ForceDistributionOutput):
             force_distribution_output[output.name] = {
                 "direction": list(output.distribution_direction),
                 "type": output.distribution_type,
             }
     return force_distribution_output
+
+
+def translate_time_averaged_force_distribution_output(output_params: list):
+    """Translate time-averaged force distribution output settings."""
+    time_averaged_force_distribution_output = {}
+    for output in output_params:
+        if isinstance(output, TimeAverageForceDistributionOutput):
+            time_averaged_force_distribution_output[output.name] = {
+                "direction": list(output.distribution_direction),
+                "type": output.distribution_type,
+                "startAverageIntegrationStep": output.start_step,
+            }
+    return time_averaged_force_distribution_output
 
 
 def user_variable_to_udf(
@@ -839,33 +1015,41 @@ def translate_streamline_output(output_params: list, streamline_class):
     return streamline_output
 
 
+def process_output_field_for_integral(output_field, input_params):
+    """Multiply UserVariable by area for surface integrals"""
+    if isinstance(output_field, UserVariable):
+        expression = Expression.model_validate(output_field.value)
+        if expression.length == 0:
+            expression_processed = expression * math.magnitude(solution.node_area_vector)
+        else:
+            expression_processed = [
+                expression[i] * math.magnitude(solution.node_area_vector)
+                for i in range(expression.length)
+            ]
+        new_unit = compute_surface_integral_unit(output_field, input_params)
+        user_variable = UserVariable(
+            name=output_field.name + "_integral",
+            value=expression_processed,
+        ).in_units(new_unit)
+        return user_variable
+    return output_field
+
+
 def process_user_variables_for_integral(
     outputs,
+    input_params,
 ):
-    """Multiply UserVariable by area for surface integrals."""
+    """Process UserVariable output fields for surface integrals."""
     for output in outputs:
         if not isinstance(output, SurfaceIntegralOutput):
             continue
         output_fields_processed = []
         for output_field in output.output_fields.items:
-            if isinstance(output_field, UserVariable):
-                expression = Expression.model_validate(output_field.value)
-                if expression.length == 0:
-                    expression_processed = expression * math.magnitude(solution.node_area_vector)
-                else:
-                    expression_processed = [
-                        expression[i] * math.magnitude(solution.node_area_vector)
-                        for i in range(expression.length)
-                    ]
-
-                output_fields_processed.append(
-                    UserVariable(
-                        name=output_field.name + "_integral",
-                        value=expression_processed,
-                    )
+            output_fields_processed.append(
+                process_output_field_for_integral(
+                    output_field=output_field, input_params=input_params
                 )
-            else:
-                output_fields_processed.append(output_field)
+            )
         output.output_fields.items = output_fields_processed
 
 
@@ -876,6 +1060,9 @@ def translate_output(input_params: SimulationParams, translated: dict):
 
     if outputs is None:
         return translated
+
+    # Extract coordinate system manager once for reuse across all output translations
+    coordinate_system_manager = _get_coordinate_system_manager_from_params(input_params)
     ##:: Step1: Get translated["volumeOutput"/"timeAverageVolumeOutput"]
     volume_output_configs = [
         (VolumeOutput, "volumeOutput"),
@@ -926,6 +1113,7 @@ def translate_output(input_params: SimulationParams, translated: dict):
         imported_surface_output_configs = translate_imported_surface_output(
             outputs,
             SurfaceOutput,
+            coordinate_system_manager,
         )
         if imported_surface_output_configs["surfaces"]:
             translated["importedSurfaceOutput"] = imported_surface_output_configs
@@ -933,11 +1121,18 @@ def translate_output(input_params: SimulationParams, translated: dict):
         imported_surface_output_configs = translate_imported_surface_output(
             outputs,
             TimeAverageSurfaceOutput,
+            coordinate_system_manager,
         )
         if imported_surface_output_configs["surfaces"]:
             translated["timeAverageImportedSurfaceOutput"] = imported_surface_output_configs
 
-    ##:: Step6: Get translated["monitorOutput"]
+    ##:: Step6: Get translated["renderOutput"]
+    if has_instance_in_list(outputs, RenderOutput):
+        translated["renderOutput"] = translate_render_output(
+            input_params, outputs, inject_isosurface_info, inject_slice_info
+        )
+
+    ##:: Step7: Get translated["monitorOutput"]
     probe_output = {}
     probe_output_average = {}
     integral_output = {}
@@ -949,7 +1144,7 @@ def translate_output(input_params: SimulationParams, translated: dict):
         )
 
     if has_instance_in_list(outputs, SurfaceIntegralOutput):
-        process_user_variables_for_integral(outputs)
+        process_user_variables_for_integral(outputs, input_params)
         integral_output = translate_monitor_output(
             outputs, SurfaceIntegralOutput, inject_surface_list_info
         )
@@ -959,7 +1154,7 @@ def translate_output(input_params: SimulationParams, translated: dict):
     if probe_output or integral_output:
         translated["monitorOutput"] = merge_monitor_output(probe_output, integral_output)
 
-    ##:: Step6.1: Get translated["surfaceMonitorOutput"]
+    ##:: Step7.1: Get translated["surfaceMonitorOutput"]
     surface_monitor_output = {}
     surface_monitor_output_average = {}
     if has_instance_in_list(outputs, SurfaceProbeOutput):
@@ -981,17 +1176,17 @@ def translate_output(input_params: SimulationParams, translated: dict):
             surface_monitor_output, surface_monitor_output_average
         )
 
-    ##:: Step6: Get translated["surfaceSliceOutput"]
+    ##:: Step8: Get translated["surfaceSliceOutput"]
     surface_slice_output = {}
     if has_instance_in_list(outputs, SurfaceSliceOutput):
         surface_slice_output = translate_surface_slice_output(outputs, SurfaceSliceOutput)
         translated["surfaceSliceOutput"] = surface_slice_output
 
-    ##:: Step7: Get translated["aeroacousticOutput"]
+    ##:: Step9: Get translated["aeroacousticOutput"]
     if has_instance_in_list(outputs, AeroAcousticOutput):
         translated["aeroacousticOutput"] = translate_acoustic_output(outputs)
 
-    ##:: Step8: Get translated["streamlineOutput"]
+    ##:: Step10: Get translated["streamlineOutput"]
     if has_instance_in_list(outputs, StreamlineOutput):
         translated["streamlineOutput"] = translate_streamline_output(outputs, StreamlineOutput)
 
@@ -1000,10 +1195,11 @@ def translate_output(input_params: SimulationParams, translated: dict):
             outputs, TimeAverageStreamlineOutput
         )
 
-    ##:: Step9: Get translated["importedSurfaceIntegralOutput"]
+    ##:: Step11: Get translated["importedSurfaceIntegralOutput"]
     if has_instance_in_list(outputs, SurfaceIntegralOutput):
         imported_surface_integral_output_configs = translate_imported_surface_integral_output(
             outputs,
+            coordinate_system_manager,
         )
         if imported_surface_integral_output_configs["surfaces"]:
             translated["importedSurfaceIntegralOutput"] = imported_surface_integral_output_configs
@@ -1011,6 +1207,12 @@ def translate_output(input_params: SimulationParams, translated: dict):
     ##:: Step10: Get translated["forceDistributionOutput"]
     if has_instance_in_list(outputs, ForceDistributionOutput):
         translated["forceDistributionOutput"] = translate_force_distribution_output(outputs)
+
+    ##:: Step10b: Get translated["timeAveragedForceDistributionOutput"]
+    if has_instance_in_list(outputs, TimeAverageForceDistributionOutput):
+        translated["timeAveragedForceDistributionOutput"] = (
+            translate_time_averaged_force_distribution_output(outputs)
+        )
 
     ##:: Step11: Sort all "output_fields" everywhere
     # Recursively sort all "outputFields" lists in the translated dict
@@ -1461,24 +1663,32 @@ def update_controls_modeling_constants(controls, translated):
             control["modelConstants"] = control.pop("modelingConstants")
 
 
-def check_moving_statistic_existence(params: SimulationParams):
-    """Check if moving statistic exists in the monitor outputs"""
-    if not params.outputs:
-        return False
-    for output in params.outputs:
-        if not isinstance(output, get_args(get_args(MonitorOutputType)[0])):
-            continue
-        if output.moving_statistic is None:
-            continue
-        return True
+def require_external_postprocessing(params: SimulationParams):
+    """Check if external postprocessing needed."""
+    if params.models:
+        for model in params.models:
+            if isinstance(model, (BETDisk, ActuatorDisk, PorousMedium)):
+                return True
+    if params.outputs:
+        for output in params.outputs:
+            if not isinstance(output, get_args(get_args(MonitorOutputType)[0])):
+                continue
+            if (
+                isinstance(output, (ProbeOutput, SurfaceProbeOutput))
+                and output.moving_statistic is None
+            ):
+                continue
+            if (
+                isinstance(output, SurfaceIntegralOutput)
+                and output.moving_statistic is None
+                and all(
+                    not isinstance(surface, ImportedSurface)
+                    for surface in output.entities.stored_entities
+                )
+            ):
+                continue
+            return True
     return False
-
-
-def check_stopping_criterion_existence(params: SimulationParams):
-    """Check if stopping criterion exists in the Fluid model"""
-    if not params.run_control:
-        return False
-    return bool(params.run_control.stopping_criteria)
 
 
 def calculate_monitor_semaphore_hash(params: SimulationParams):
@@ -1488,16 +1698,94 @@ def calculate_monitor_semaphore_hash(params: SimulationParams):
         for output in params.outputs:
             if not isinstance(output, get_args(get_args(MonitorOutputType)[0])):
                 continue
-            if output.moving_statistic is None:
-                continue
-            json_string_list.append(json.dumps(dump_dict(output.moving_statistic)))
-    if params.run_control and params.run_control.stopping_criteria:
-        for criterion in params.run_control.stopping_criteria:
-            json_string_list.append(json.dumps(dump_dict(criterion)))
+            if isinstance(output, ForceOutput):
+                json_string_list.extend(list(sorted(output.models)))
+                json_string_list.extend(output.output_fields.items)
+            if output.moving_statistic is not None:
+                json_string_list.append(json.dumps(dump_dict(output.moving_statistic)))
     combined_string = "".join(sorted(json_string_list))
     hasher = hashlib.sha256()
     hasher.update(combined_string.encode("utf-8"))
     return hasher.hexdigest()
+
+
+def get_stop_criterion_settings(criterion: StoppingCriterion, params: SimulationParams):
+    """Get the stop criterion settings"""
+
+    def get_criterion_monitored_file_info(monitor_output, monitor_field):
+        # pylint: disable=fixme
+        # TODO: Add instance function to control the output metadata generation for each output type.
+        monitor_output_name = monitor_output.name.replace("/", "_")
+        monitored_column = None
+        monitored_dataset_name = None
+        if isinstance(monitor_output, (ProbeOutput, SurfaceProbeOutput)):
+            point = monitor_output.entities.stored_entities[0]
+            monitored_column = f"{monitor_output.name}_{point.name}_{str(monitor_field)}"
+            monitored_dataset_name = f"monitor_{monitor_output_name}"
+        if isinstance(monitor_output, SurfaceIntegralOutput):
+            monitored_column = f"{str(monitor_field)}"
+            monitored_dataset_name = f"monitor_{monitor_output_name}"
+        if isinstance(monitor_output, ForceOutput):
+            monitored_column = f"total{monitor_field}"
+            monitored_dataset_name = f"force_output_{monitor_output_name}"
+
+        if monitor_output.moving_statistic is not None:
+            monitored_column += f"_{monitor_output.moving_statistic.method}"
+            monitored_dataset_name += "_moving_statistic"
+        return monitored_dataset_name, monitored_column
+
+    def get_criterion_tolerance_info(criterion_tolerance, monitor_field, params):
+        source_units = get_units_from_field(monitor_field, params)
+        flow360_unit_system = params.flow360_unit_system
+        if source_units.dimensions == u.dimensions.angle:
+            flow360_unit_system["angle"] = source_units.units
+        flow360_units = source_units.get_base_equivalent(flow360_unit_system)
+
+        criterion_tolerance_nondim = convert_value_to_units(
+            value=criterion_tolerance, units=flow360_units
+        )
+        source_to_flow360_coeff, source_to_flow360_offset = source_units.get_conversion_factor(
+            flow360_units, dtype=np.float64
+        )
+        source_to_flow360_offset = (
+            0.0
+            if source_to_flow360_offset is None
+            else -source_to_flow360_offset / source_to_flow360_coeff
+        )
+
+        return criterion_tolerance_nondim, source_to_flow360_coeff, source_to_flow360_offset
+
+    criterion_monitor_output = None
+    for output in params.outputs:
+        if output.private_attribute_id == criterion.monitor_output:
+            criterion_monitor_output = output
+            break
+
+    criterion_monitor_field = (
+        process_output_field_for_integral(criterion.monitor_field, params)
+        if isinstance(criterion_monitor_output, SurfaceIntegralOutput)
+        else criterion.monitor_field
+    )
+
+    criterion_dataset_name, criterion_column = get_criterion_monitored_file_info(
+        monitor_output=criterion_monitor_output, monitor_field=criterion_monitor_field
+    )
+    criterion_tolerance_nondim, source_to_flow360_coeff, source_to_flow360_offset = (
+        get_criterion_tolerance_info(
+            criterion_tolerance=criterion.tolerance,
+            monitor_field=criterion_monitor_field,
+            params=params,
+        )
+    )
+
+    return {
+        "monitoredColumn": criterion_column,
+        "monitoredDatasetName": criterion_dataset_name,
+        "tolerance": criterion_tolerance_nondim,
+        "toleranceWindowSize": criterion.tolerance_window_size,
+        "sourceToFlow360Coefficient": source_to_flow360_coeff,
+        "sourceToFlow360Offset": source_to_flow360_offset,
+    }
 
 
 # pylint: disable=too-many-statements
@@ -1881,16 +2169,18 @@ def get_solver_json(
 
     ##:: Step 11: Get run control settings
     translated["runControl"] = {}
-    translated["runControl"]["shouldCheckStopCriterion"] = check_stopping_criterion_existence(
+    translated["runControl"]["externalProcessMonitorOutput"] = require_external_postprocessing(
         input_params
     )
-    translated["runControl"]["externalProcessMonitorOutput"] = check_moving_statistic_existence(
-        input_params
-    ) or check_stopping_criterion_existence(input_params)
     if translated["runControl"]["externalProcessMonitorOutput"]:
         translated["runControl"]["monitorProcessorHash"] = calculate_monitor_semaphore_hash(
             input_params
         )
+    stopping_criteria = []
+    if input_params.run_control and input_params.run_control.stopping_criteria:
+        for criterion in input_params.run_control.stopping_criteria:
+            stopping_criteria.append(get_stop_criterion_settings(criterion, input_params))
+        translated["runControl"]["stoppingCriteria"] = stopping_criteria
 
     translated["usingLiquidAsMaterial"] = isinstance(
         input_params.operating_condition, LiquidOperatingCondition
@@ -1905,4 +2195,41 @@ def get_solver_json(
     if input_params.private_attribute_dict is not None:
         translated.update(input_params.private_attribute_dict)
 
+    return translated
+
+
+@preprocess_input
+def get_columnar_data_processor_json(
+    input_params: SimulationParams,
+    # pylint: disable=no-member,unused-argument
+    mesh_unit: LengthType.Positive,
+):
+    """
+    Get the columnar data processor json from the simulation parameters.
+    """
+    translated = {"outputs": []}
+    if not input_params.outputs:
+        return translated
+    for output in input_params.outputs:
+        if not isinstance(output, get_args(get_args(MonitorOutputType)[0])):
+            continue
+        if (
+            isinstance(output, (ProbeOutput, SurfaceProbeOutput))
+            and output.moving_statistic is None
+        ):
+            continue
+        if (
+            isinstance(output, SurfaceIntegralOutput)
+            and output.moving_statistic is None
+            and all(
+                not isinstance(surface, ImportedSurface)
+                for surface in output.entities.stored_entities
+            )
+        ):
+            continue
+        output_dict = output.model_dump(
+            exclude_none=True,
+            context={"columnar_data_processor": True},
+        )
+        translated["outputs"].append(output_dict)
     return translated

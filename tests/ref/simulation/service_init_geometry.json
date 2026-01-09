@@ -1,12 +1,11 @@
 {
-    "version": "25.8.0b5",
+    "version": "25.8.2b1",
     "unit_system": {
         "name": "SI"
     },
     "meshing": {
         "type_name": "MeshingParams",
         "refinement_factor": 1.0,
-        "gap_treatment_strength": 0.0,
         "defaults": {
             "surface_edge_growth_rate": 1.2,
             "boundary_layer_growth_rate": 1.2,
@@ -23,6 +22,7 @@
                 "value": 0.0,
                 "units": "m"
             },
+            "sliding_interface_tolerance": 0.01,
             "remove_non_manifold_faces": false
         },
         "outputs": [],
@@ -175,7 +175,8 @@
                 "stored_entities": [
                     {
                         "private_attribute_entity_type_name": "GhostSurface",
-                        "name": "farfield"
+                        "name": "farfield",
+                        "private_attribute_id": "farfield"
                     }
                 ]
             },
@@ -208,8 +209,8 @@
                 "w": "w",
                 "p": "p"
             },
-            "type": "Fluid",
             "private_attribute_id": "__default_fluid",
+            "type": "Fluid",
             "navier_stokes_solver": {
                 "absolute_tolerance": 1e-10,
                 "relative_tolerance": 0.0,
@@ -264,7 +265,7 @@
             "transition_model_solver": {
                 "type_name": "None"
             },
-            "interface_interpolation_tolerance" : 0.2
+            "interface_interpolation_tolerance": 0.2
         }
     ],
     "time_stepping": {

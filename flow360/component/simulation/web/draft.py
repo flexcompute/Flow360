@@ -4,9 +4,8 @@ from __future__ import annotations
 
 import ast
 import json
-import os
 from functools import cached_property
-from typing import List, Literal, Union
+from typing import Literal, Union
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -19,12 +18,10 @@ from flow360.cloud.flow360_requests import (
 from flow360.cloud.rest_api import RestApi
 from flow360.component.interfaces import DraftInterface
 from flow360.component.resource_base import Flow360Resource, ResourceDraft
-from flow360.component.utils import (
-    check_existence_of_one_file,
-    check_read_access_of_one_file,
-    formatting_validation_errors,
-    validate_type,
+from flow360.component.simulation.framework.entity_selector import (
+    collect_and_tokenize_selectors_in_place,
 )
+from flow360.component.utils import formatting_validation_errors, validate_type
 from flow360.environment import Env
 from flow360.exceptions import Flow360RuntimeError, Flow360WebError
 from flow360.log import log
@@ -134,32 +131,37 @@ class Draft(Flow360Resource):
 
     def update_simulation_params(self, params):
         """update the SimulationParams of the draft"""
+        params_dict = params.model_dump(mode="json", exclude_none=True)
+        params_dict = collect_and_tokenize_selectors_in_place(params_dict)
 
         self.post(
             json={
-                "data": params.model_dump_json(exclude_none=True),
+                "data": json.dumps(params_dict),
                 "type": "simulation",
                 "version": "",
             },
             method="simulation/file",
         )
 
-    def upload_imported_surfaces(self, file_paths):
-        """upload imported surfaces to draft"""
+    def activate_dependencies(self, active_draft):
+        """Enable dependency resources for the draft"""
 
-        if len(file_paths) == 0:
+        if active_draft is None:
             return
-        file_names = []
-        for file_path in file_paths:
-            file_names.append(os.path.basename(file_path))
-        resp: List = self.post(
-            json={"filenames": file_names},
-            method="imported-surfaces",
+
+        geometry_dependencies = [geometry.id for geometry in active_draft.imported_geometries]
+
+        surface_mesh_dependencies = [
+            surface.surface_mesh_id for surface in active_draft.imported_surfaces
+        ]
+
+        self.put(
+            json={
+                "geometryDependencies": geometry_dependencies,
+                "surfaceMeshDependencies": surface_mesh_dependencies,
+            },
+            method="dependency-resource",
         )
-        for index, local_file_path in enumerate(file_paths):
-            check_existence_of_one_file(local_file_path)
-            check_read_access_of_one_file(local_file_path)
-            self._upload_file(resp[index]["filename"], local_file_path)
 
     def get_simulation_dict(self) -> dict:
         """retrieve the SimulationParams of the draft"""

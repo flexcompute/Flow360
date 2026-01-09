@@ -9,7 +9,11 @@ import flow360.component.simulation.units as u
 from flow360.component.geometry import Geometry, GeometryMeta
 from flow360.component.project_utils import set_up_params_for_uploading
 from flow360.component.resource_base import local_metadata_builder
-from flow360.component.simulation.entity_info import SurfaceMeshEntityInfo
+from flow360.component.simulation.entity_info import (
+    GeometryEntityInfo,
+    SurfaceMeshEntityInfo,
+)
+from flow360.component.simulation.framework.entity_selector import SurfaceSelector
 from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.meshing_param.meshing_specs import MeshingDefaults
 from flow360.component.simulation.meshing_param.params import MeshingParams
@@ -58,16 +62,20 @@ from flow360.component.simulation.operating_condition.operating_condition import
     ThermalState,
 )
 from flow360.component.simulation.outputs.output_entities import (
+    Isosurface,
     Point,
     PointArray,
     PointArray2D,
     Slice,
 )
 from flow360.component.simulation.outputs.outputs import (
+    ForceOutput,
     Isosurface,
     IsosurfaceOutput,
     MovingStatistic,
     ProbeOutput,
+    RenderOutput,
+    RenderOutputGroup,
     SliceOutput,
     StreamlineOutput,
     SurfaceIntegralOutput,
@@ -75,6 +83,15 @@ from flow360.component.simulation.outputs.outputs import (
     TimeAverageStreamlineOutput,
     UserDefinedField,
     VolumeOutput,
+)
+from flow360.component.simulation.outputs.render_config import (
+    AmbientLight,
+    Camera,
+    Environment,
+    FieldMaterial,
+    Lighting,
+    PBRMaterial,
+    Viewpoint,
 )
 from flow360.component.simulation.primitives import (
     CustomVolume,
@@ -102,6 +119,9 @@ from flow360.component.simulation.user_code.variables import solution
 from flow360.component.simulation.utils import model_attribute_unlock
 from tests.simulation.translator.utils.actuator_disk_param_generator import (
     actuator_disk_create_param,
+)
+from tests.simulation.translator.utils.analytic_windtunnel_param_generator import (
+    create_windtunnel_params,
 )
 from tests.simulation.translator.utils.CHTThreeCylinders_param_generator import (
     create_conjugate_heat_transfer_param,
@@ -160,6 +180,7 @@ from tests.simulation.translator.utils.XV15HoverMRF_param_generator import (
 assertions = unittest.TestCase("__init__")
 
 import flow360.component.simulation.user_code.core.context as context
+from flow360.component.simulation.framework.entity_selector import SurfaceSelector
 from flow360.component.simulation.framework.updater_utils import compare_values
 from flow360.component.simulation.models.volume_models import (
     AngleExpression,
@@ -178,9 +199,20 @@ def reset_context():
 
 @pytest.fixture()
 def get_om6Wing_tutorial_param():
-    my_wall = Surface(name="1")
-    my_symmetry_plane = Surface(name="2")
-    my_freestream = Surface(name="3")
+    my_wall = Surface(name="1", private_attribute_sub_components=["body01_face001"])
+    my_symmetry_plane = Surface(name="2", private_attribute_sub_components=["body01_face002"])
+    my_freestream = Surface(name="3", private_attribute_sub_components=["body01_face003"])
+    my_isosurface = Isosurface(name="iso", field="Mach", iso_value=0.5)
+
+    # Create entity_info so selectors can be expanded
+    entity_info = GeometryEntityInfo(
+        face_ids=["body01_face001", "body01_face002", "body01_face003"],
+        face_attribute_names=["default"],
+        face_group_tag="default",
+        grouped_faces=[[my_wall, my_symmetry_plane, my_freestream]],
+    )
+    asset_cache = AssetCache(project_entity_info=entity_info, project_length_unit="m")
+
     with SI_unit_system:
         param = SimulationParams(
             reference_geometry=ReferenceGeometry(
@@ -188,6 +220,7 @@ def get_om6Wing_tutorial_param():
                 moment_length=0.6460682372650963,
                 moment_center=(0, 0, 0),
             ),
+            private_attribute_asset_cache=asset_cache,
             operating_condition=AerospaceCondition.from_mach(
                 mach=0.84,
                 alpha=3.06 * u.degree,
@@ -239,8 +272,12 @@ def get_om6Wing_tutorial_param():
                         "Mach",
                     ],
                 ),
+                # Stage 1.5: Mix selector with explicit entities in SurfaceOutput
                 SurfaceOutput(
-                    entities=[my_wall, my_symmetry_plane, my_freestream],
+                    entities=[
+                        SurfaceSelector(name="walls_and_symmetry").match("[12]"),
+                        my_freestream,
+                    ],
                     output_format="paraview",
                     output_fields=["Cp"],
                 ),
@@ -266,7 +303,7 @@ def test_om6wing_tutorial(get_om6Wing_tutorial_param):
         get_om6Wing_tutorial_param,
         mesh_unit=0.8059 * u.m,
         ref_json_file="Flow360_om6Wing.json",
-        debug=True,
+        debug=False,
     )
 
 
@@ -275,7 +312,7 @@ def test_porous_jump(create_porous_jump_zone_param):
         create_porous_jump_zone_param,
         mesh_unit=1 * u.m,
         ref_json_file="Flow360_porous_jump.json",
-        debug=True,
+        debug=False,
     )
 
 
@@ -411,19 +448,51 @@ def test_om6wing_with_stopping_criterion_and_moving_statistic(get_om6Wing_tutori
         moving_statistic=MovingStatistic(method="mean", moving_window_size=200),
         private_attribute_id="11111",
     )
-    criterion = StoppingCriterion(
+    criterion1 = StoppingCriterion(
         name="Criterion_Helicity",
         tolerance=18.66 * u.m / u.s**2,
         monitor_output=probe_output,
         monitor_field=monitored_variable,
     )
-    params.run_control = RunControl(stopping_criteria=[criterion])
-    params.outputs.append(probe_output)
+    mass_flow_rate = UserVariable(
+        name="MassFluxProjected",
+        value=-1 * solution.density * math.dot(solution.velocity, solution.node_unit_normal),
+    )
+    mass_flow_rate_integral = SurfaceIntegralOutput(
+        name="MassFluxIntegral",
+        output_fields=[mass_flow_rate],
+        surfaces=Surface(name="1"),
+        moving_statistic=MovingStatistic(method="range", moving_window_size=3, start_step=394),
+        private_attribute_id="22222",
+    )
+    criterion2 = StoppingCriterion(
+        name="Criterion_MassFlux",
+        tolerance=25.1 * u.kg / u.s,
+        monitor_output=mass_flow_rate_integral,
+        monitor_field=mass_flow_rate,
+        tolerance_window_size=3,
+    )
+    wallBC = Wall(name="wing", surfaces=[Surface(name="1")], private_attribute_id="wallBC")
+    force_output = ForceOutput(
+        name="force_wallBC",
+        models=[wallBC],
+        output_fields=["CL", "CFx", "CFySkinFriction"],
+        moving_statistic=(MovingStatistic(method="standard_deviation", moving_window_size=10)),
+        private_attribute_id="33333",
+    )
+    criterion3 = StoppingCriterion(
+        name="Criterion_ForceOutput",
+        tolerance=0.265,
+        monitor_output=force_output,
+        monitor_field="CL",
+    )
+    params.run_control = RunControl(stopping_criteria=[criterion1, criterion2, criterion3])
+    params.outputs.extend([probe_output, mass_flow_rate_integral, force_output])
     translate_and_compare(
         get_om6Wing_tutorial_param,
         mesh_unit=0.8059 * u.m,
         ref_json_file="Flow360_om6wing_stopping_criterion_and_moving_statistic.json",
-        debug=True,
+        debug=False,
     )
 
 
@@ -452,7 +521,7 @@ def test_stopping_criterion_tolerance_in_unit_system():
         params_validated,
         mesh_unit=0.8059 * u.m,
         ref_json_file="Flow360_om6wing_stopping_criterion_and_moving_statistic.json",
-        debug=True,
+        debug=False,
     )
 
 
@@ -661,7 +730,7 @@ def test_initial_condition_and_restart():
             ],
         )
     translate_and_compare(
-        param, mesh_unit=1 * u.m, ref_json_file="Flow360_restart_manipulation_v2.json", debug=True
+        param, mesh_unit=1 * u.m, ref_json_file="Flow360_restart_manipulation_v2.json", debug=False
     )
 
 
@@ -843,7 +912,7 @@ def test_liquid_simulation_translation():
         # Flow360 time to seconds = 1m/(200m/s) = 0.005 s
         # t_seconds = (0.005 s * t)
     translate_and_compare(
-        param, mesh_unit=1 * u.m, ref_json_file="Flow360_liquid_rotation_dd.json", debug=True
+        param, mesh_unit=1 * u.m, ref_json_file="Flow360_liquid_rotation_dd.json", debug=False
     )
 
     with model_attribute_unlock(param.operating_condition, "reference_velocity_magnitude"):
@@ -852,7 +921,7 @@ def test_liquid_simulation_translation():
         param,
         mesh_unit=1 * u.m,
         ref_json_file="Flow360_liquid_rotation_dd_with_ref_vel.json",
-        debug=True,
+        debug=False,
     )
 
 
@@ -1055,7 +1124,7 @@ def test_param_with_user_variables():
 
     assert params_validated
     translate_and_compare(
-        params_validated, mesh_unit=1 * u.m, ref_json_file="Flow360_user_variable.json", debug=True
+        params_validated, mesh_unit=1 * u.m, ref_json_file="Flow360_user_variable.json", debug=False
     )
 
     with SI_unit_system:
@@ -1124,7 +1193,7 @@ def test_isosurface_iso_value_in_unit_system():
         params_validated,
         mesh_unit=1 * u.m,
         ref_json_file="Flow360_user_variable_isosurface.json",
-        debug=True,
+        debug=False,
     )
 
     with open(
@@ -1418,7 +1487,7 @@ def test_custom_volume_translation():
         params,
         mesh_unit=1 * u.m,
         ref_json_file="Flow360_custom_volume_translation.json",
-        debug=True,
+        debug=False,
     )
 
 
@@ -1464,5 +1533,60 @@ def test_ghost_periodic():
         )
     processed_params = set_up_params_for_uploading(geometry, 1 * u.m, params, False, False)
     translate_and_compare(
-        processed_params, mesh_unit=1 * u.m, ref_json_file="Flow360_ghost_periodic.json", debug=True
+        processed_params,
+        mesh_unit=1 * u.m,
+        ref_json_file="Flow360_ghost_periodic.json",
+        debug=False,
+    )
+
+
+def test_analytic_windtunnel(create_windtunnel_params):
+    translate_and_compare(
+        create_windtunnel_params,
+        mesh_unit=1 * u.m,
+        ref_json_file="Flow360_windtunnel.json",
+    )
+
+
+def test_om6wing_render_output(get_om6Wing_tutorial_param):
+    with SI_unit_system:
+        params = get_om6Wing_tutorial_param
+        params.outputs.append(
+            RenderOutput(
+                groups=[
+                    RenderOutputGroup(
+                        surfaces=[Surface(name="1")],
+                        material=PBRMaterial.metal(shine=0.7, opacity=1.0),
+                    ),
+                    RenderOutputGroup(
+                        slices=[
+                            Slice(
+                                name="Example slice",
+                                normal=(0, 1, 0),
+                                origin=(0, 0.56413, 0) * u.m,
+                            )
+                        ],
+                        isosurfaces=[
+                            Isosurface(
+                                name="Q Criterion",
+                                field=solution.qcriterion,
+                                iso_value=0.0004128 / u.s**2,
+                            )
+                        ],
+                        material=FieldMaterial.rainbow(
+                            field=solution.Mach, min_value=0, max_value=0.1, opacity=1
+                        ),
+                    ),
+                ],
+                lighting=Lighting.default(),
+                camera=Camera.orthographic(view=Viewpoint.TOP + Viewpoint.LEFT),
+                environment=Environment.simple(),
+            )
+        )
+
+    translate_and_compare(
+        get_om6Wing_tutorial_param,
+        mesh_unit=0.8059 * u.m,
+        ref_json_file="Flow360_om6wing_render.json",
+        debug=False,
     )

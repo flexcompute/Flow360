@@ -100,6 +100,65 @@ def test_porous_medium_simple_coefficients():
     assert np.isclose(CM[0] / CM[2], 2.0, rtol=1e-6, atol=1e-12)
 
 
+def test_porous_medium_simple_coefficients_with_generic_reference_condition():
+    # Prepare a simple porous medium CSV with one timestep
+    csv_path = os.path.join(
+        os.path.dirname(__file__),
+        os.path.pardir,
+        "data",
+        "coeff_simple",
+        "results",
+        "porous_media_output_v2.csv",
+    )
+    csv_path = os.path.abspath(csv_path)
+
+    # Generic reference condition has no alpha/beta. In coefficient computations we assume:
+    # lift direction = (0, 0, 1), drag direction = (1, 0, 0)
+    with fl.SI_unit_system:
+        params = fl.SimulationParams(
+            reference_geometry=fl.ReferenceGeometry(
+                moment_center=(0, 0, 0) * fl.u.m,
+                moment_length=1 * fl.u.m,
+                area=2.0 * fl.u.m**2,
+            ),
+            operating_condition=fl.GenericReferenceCondition(
+                velocity_magnitude=10 * fl.u.m / fl.u.s
+            ),
+            models=[
+                fl.PorousMedium(
+                    entities=[
+                        fl.Box.from_principal_axes(
+                            name="porous_zone",
+                            axes=[(1, 0, 0), (0, 1, 0)],
+                            center=(0, 0, 0) * fl.u.m,
+                            size=(0.2, 0.3, 2) * fl.u.m,
+                        )
+                    ],
+                    darcy_coefficient=(1e6, 0, 0) / fl.u.m**2,
+                    forchheimer_coefficient=(1, 0, 0) / fl.u.m,
+                )
+            ],
+            private_attribute_asset_cache=AssetCache(project_length_unit=1 * fl.u.m),
+        )
+
+    model = PorousMediumResultCSVModel()
+    model.load_from_local(csv_path)
+    coeffs = model.compute_coefficients(params=params)
+
+    data = coeffs.as_dict()
+    CF = np.array(
+        [data["zone_0_CFx"][0], data["zone_0_CFy"][0], data["zone_0_CFz"][0]], dtype=float
+    )
+
+    # Drag/lift projections use default axes for GenericReferenceCondition
+    drag_dir = np.array([1.0, 0.0, 0.0], dtype=float)
+    lift_dir = np.array([0.0, 0.0, 1.0], dtype=float)
+    CD = float(data["zone_0_CD"][0])
+    CL = float(data["zone_0_CL"][0])
+    assert np.isclose(CD, float(np.dot(CF, drag_dir)), rtol=1e-6, atol=1e-12)
+    assert np.isclose(CL, float(np.dot(CF, lift_dir)), rtol=1e-6, atol=1e-12)
+
+
 def test_porous_medium_real_case_coefficients():
     """
     Test PorousMedium coefficient computation with real case data.

@@ -2,22 +2,19 @@
 
 from __future__ import annotations
 
-import copy
 import hashlib
-import uuid
 from abc import ABCMeta
-from collections import defaultdict
-from typing import Annotated, ClassVar, List, Optional, Union, get_args, get_origin
+from typing import Annotated, Any, List, Optional, Union, get_args, get_origin
 
 import pydantic as pd
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.simulation.utils import is_exact_instance
-
-
-def generate_uuid():
-    """generate a unique identifier for non-persistent entities. Required by front end."""
-    return str(uuid.uuid4())
+from flow360.component.simulation.framework.entity_selector import EntitySelector
+from flow360.component.simulation.validation.validation_context import (
+    ParamsValidationInfo,
+    contextual_model_validator,
+)
+from flow360.log import log
 
 
 class EntityBase(Flow360BaseModel, metaclass=ABCMeta):
@@ -25,21 +22,18 @@ class EntityBase(Flow360BaseModel, metaclass=ABCMeta):
     Base class for dynamic entity types.
 
     Attributes:
-        private_attribute_registry_bucket_name (str):
+        private_attribute_entity_type_name (str):
             A string representing the specific type of the entity.
             This should be set in subclasses to differentiate between entity types.
-            Warning:
-            This controls the granularity of the registry and must be unique for each entity type
-            and it is **strongly recommended NOT** to change it as it will bring up compatibility problems.
 
         name (str):
             The name of the entity instance, used for identification and retrieval.
     """
 
-    # Class-level bucket identifier; not serialized
-    entity_bucket: ClassVar[str] = "Invalid"
     private_attribute_entity_type_name: str = "Invalid"
     private_attribute_id: Optional[str] = pd.Field(
+        # pylint: disable=fixme
+        # TODO: This should not have default value. Everyone is supposed to set it.
         None,
         frozen=True,
         description="Unique identifier for the entity. Used by front end to track entities and enable auto update etc.",
@@ -58,7 +52,6 @@ class EntityBase(Flow360BaseModel, metaclass=ABCMeta):
         This avoids per-instance checks and catches misconfigured subclasses early.
 
         Rules:
-        - Every subclass must define a non-"Invalid" `entity_bucket` (class var).
         - If a subclass explicitly defines `private_attribute_entity_type_name` in its own
           class body, it must also be non-"Invalid". Intermediate abstract bases that do not
           set an entity type are allowed.
@@ -66,18 +59,6 @@ class EntityBase(Flow360BaseModel, metaclass=ABCMeta):
         super().__init_subclass__(**kwargs)
         if cls is EntityBase:
             return
-
-        def _resolve_class_attr(attr_name: str):
-            for base in cls.__mro__:
-                if attr_name in getattr(base, "__dict__", {}):
-                    return getattr(base, attr_name)
-            return None
-
-        bucket_value = _resolve_class_attr("entity_bucket")
-        if bucket_value is None or bucket_value == "Invalid":
-            raise NotImplementedError(
-                f"entity_bucket is not defined in the entity class: {cls.__name__}."
-            )
 
         # Only enforce entity type when the subclass explicitly sets it.
         if "private_attribute_entity_type_name" in cls.__dict__:
@@ -126,16 +107,6 @@ class EntityBase(Flow360BaseModel, metaclass=ABCMeta):
         return False
 
     @property
-    def entity_bucket(self) -> str:
-        """returns the bucket to which the entity belongs (class-level)."""
-        return type(self).entity_bucket
-
-    @entity_bucket.setter
-    def entity_bucket(self, value: str):
-        """disallow modification of the bucket to which the entity belongs."""
-        raise AttributeError("Cannot modify the bucket to which the entity belongs.")
-
-    @property
     def entity_type(self) -> str:
         """returns the entity class name."""
         return self.private_attribute_entity_type_name
@@ -181,6 +152,17 @@ class EntityBase(Flow360BaseModel, metaclass=ABCMeta):
         """Returns private_attribute_id of the entity."""
         return self.private_attribute_id
 
+    def _manual_assignment_validation(self, _: ParamsValidationInfo) -> EntityBase:
+        """
+        Pre-expansion contextual validation for the entity.
+        This handles validation for the entity manually assigned.
+        """
+        return self
+
+    def _per_entity_type_validation(self, _: ParamsValidationInfo) -> EntityBase:
+        """Contextual validation with validation logic bond with the specific entity type."""
+        return self
+
 
 class _CombinedMeta(type(Flow360BaseModel), type):
     pass
@@ -212,47 +194,124 @@ class _EntityListMeta(_CombinedMeta):
         return new_cls
 
 
-def _remove_duplicate_entities(expanded_entities: List[EntityBase]):
-    """
-    Removing completely identical entities which may result from usage like:
-    ```python
-        MyModel(entities=[my_vm["*"], my_vm["wing*"]])
-    ```
-    """
-
-    entity_name_to_hash = defaultdict(set)
-    deduplicated_entities = []
-    # pylint: disable=protected-access
-    for entity in expanded_entities:
-        entity_hash = entity._get_hash()
-        if entity_hash in entity_name_to_hash[entity.name]:
-            # Exact same entity found, ignore it.
-            continue
-        entity_name_to_hash[entity.name].add(entity_hash)
-        deduplicated_entities.append(entity)
-    return deduplicated_entities
-
-
 class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
     """
-    The type accepting a list of entities or (name, registry) pair.
+    The type accepting a list of entities or selectors.
 
     Attributes:
         stored_entities (List[Union[EntityBase, Tuple[str, registry]]]): List of stored entities, which can be
             instances of `Box`, `Cylinder`, or strings representing naming patterns.
-
-    Methods:
-        _format_input_to_list(cls, input: List) -> dict: Class method that formats the input to a
-            dictionary with the key 'stored_entities'.
-        _check_duplicate_entity_in_list(cls, values): Class method that checks for duplicate entities
-            in the list of stored entities.
-        _get_expanded_entities(self): Method that processes the stored entities to resolve any naming
-            patterns into actual entity references, expanding and filtering based on the defined
-            entity types.
-
     """
 
-    stored_entities: List = pd.Field()
+    stored_entities: List = pd.Field(
+        description="List of manually picked entities in addition to the ones selected by selectors."
+    )
+    selectors: Optional[List[EntitySelector]] = pd.Field(
+        None, description="Selectors on persistent entities for rule-based selection."
+    )
+
+    @pd.field_validator("stored_entities", mode="before")
+    @classmethod
+    def _filter_entities_by_valid_types(cls, value):
+        """
+        Centralized entity type filtering.
+
+        This validator runs before discriminator validation and filters out entities
+        whose types are not in the EntityList's valid types. This centralizes filtering
+        logic that was previously split between the deserializer and selector expansion.
+        """
+        if not value:
+            return value
+
+        # Extract valid entity type names from class annotation
+        try:
+            valid_types = cls._get_valid_entity_types()
+            valid_type_names = set()
+            for valid_type in valid_types:
+                field = valid_type.model_fields.get("private_attribute_entity_type_name")
+                if field and field.default:
+                    valid_type_names.add(field.default)
+        except (TypeError, AttributeError, KeyError):
+            # If we can't extract valid types, skip filtering
+            return value
+
+        if not valid_type_names:
+            return value
+
+        # Filter entities to only include valid types
+        filtered_entities = []
+        entity_count = 0
+        for entity in value:
+            if not isinstance(entity, EntityBase):
+                # Not an entity object, keep it (might be dict for deserialization)
+                filtered_entities.append(entity)
+                continue
+
+            entity_count += 1
+            entity_type_name = getattr(entity, "private_attribute_entity_type_name", None)
+            if entity_type_name in valid_type_names:
+                filtered_entities.append(entity)
+            else:
+                log.debug(
+                    "Entity '%s' (type=%s) filtered out: not in EntityList valid types %s",
+                    getattr(entity, "name", "<unknown>"),
+                    entity_type_name,
+                    valid_type_names,
+                )
+
+        # If all entity objects were filtered out, raise an error
+        if entity_count > 0 and not any(isinstance(e, EntityBase) for e in filtered_entities):
+            valid_type_name_list = [vt.__name__ for vt in valid_types]
+            raise ValueError(
+                f"Can not find any valid entity of type {valid_type_name_list} from the input."
+            )
+
+        return filtered_entities
+
+    @contextual_model_validator(mode="after")
+    def _ensure_entities_after_expansion(self, param_info: ParamsValidationInfo):
+        """
+        Ensure entity selections yielded at least one entity once selectors are expanded.
+
+        With delayed selector expansion, stored_entities may be empty if only selectors
+        are defined.
+        """
+        is_empty = True
+        # If stored_entities already has entities (user manual assignment), validation passes
+        manual_assignments: List[EntityBase] = self.stored_entities
+        # pylint: disable=protected-access
+        if manual_assignments:
+            filtered_assignments = [
+                item
+                for item in manual_assignments
+                if item._manual_assignment_validation(param_info) is not None
+            ]
+            # Use object.__setattr__ to bypass validate_on_assignment and avoid recursion
+            object.__setattr__(
+                self,
+                "stored_entities",
+                filtered_assignments,
+            )
+
+            for item in filtered_assignments:
+                item._per_entity_type_validation(param_info)
+
+            if filtered_assignments:
+                is_empty = False
+
+        # No stored_entities - check if selectors will produce any entities
+        if self.selectors:
+            expanded: List[EntityBase] = param_info.expand_entity_list(self)
+            if expanded:
+                for item in expanded:
+                    item._per_entity_type_validation(param_info)
+                # Known non-empty
+                return self
+
+        # Neither stored_entities nor selectors produced any entities
+        if is_empty:
+            raise ValueError("No entities were selected.")
+        return self
 
     @classmethod
     def _get_valid_entity_types(cls):
@@ -287,122 +346,105 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
         raise TypeError("Cannot extract valid entity types.")
 
     @classmethod
-    def _valid_individual_input(cls, input_data):
-        """Validate each individual element in a list or as standalone entity."""
-        if isinstance(input_data, (str, EntityBase)):
-            return input_data
+    def _validate_selector(cls, selector: EntitySelector, valid_type_names: List[str]) -> dict:
+        """Process and validate an EntitySelector object."""
+        if selector.target_class not in valid_type_names:
+            raise ValueError(
+                f"Selector target_class ({selector.target_class}) is incompatible "
+                f"with EntityList types {valid_type_names}."
+            )
+        return selector
+
+    @classmethod
+    def _validate_entity(cls, entity: Union[EntityBase, Any]) -> EntityBase:
+        """Process and validate an entity object."""
+        if isinstance(entity, EntityBase):
+            return entity
 
         raise ValueError(
-            f"Type({type(input_data)}) of input to `entities` ({input_data}) is not valid. "
+            f"Type({type(entity)}) of input to `entities` ({entity}) is not valid. "
             "Expected entity instance."
         )
 
+    @classmethod
+    def _build_result(
+        cls, entities_to_store: List[EntityBase], entity_selectors_to_store: List[dict]
+    ) -> dict:
+        """Build the final result dictionary."""
+        return {
+            "stored_entities": entities_to_store,
+            "selectors": entity_selectors_to_store if entity_selectors_to_store else None,
+        }
+
+    @classmethod
+    # pylint: disable=too-many-arguments
+    def _process_single_item(
+        cls,
+        item: Union[EntityBase, EntitySelector],
+        valid_type_names: List[str],
+        entities_to_store: List[EntityBase],
+        entity_selectors_to_store: List[dict],
+    ) -> None:
+        """Process a single item (entity or selector) and add to appropriate storage lists."""
+        if isinstance(item, EntitySelector):
+            entity_selectors_to_store.append(cls._validate_selector(item, valid_type_names))
+        else:
+            processed_entity = cls._validate_entity(item)
+            entities_to_store.append(processed_entity)
+
     @pd.model_validator(mode="before")
     @classmethod
-    def _format_input_to_list(cls, input_data: Union[dict, list]):
+    def deserializer(cls, input_data: Union[dict, list, EntityBase, EntitySelector]):
         """
         Flatten List[EntityBase] and put into stored_entities.
+
+        Note: Type filtering is now handled by the _filter_entities_by_valid_types
+        field validator, which runs after deserialization but before discriminator validation.
         """
         entities_to_store = []
-        valid_types = cls._get_valid_entity_types()
+        entity_selectors_to_store = []
+        valid_types = tuple(cls._get_valid_entity_types())
+        valid_type_names = [t.__name__ for t in valid_types]
 
-        if isinstance(input_data, list):  # A list of entities
+        if isinstance(input_data, list):
+            # -- User input mode. --
+            # List content might be entity Python objects or selector Python objects
             if input_data == []:
                 raise ValueError("Invalid input type to `entities`, list is empty.")
             for item in input_data:
-                if isinstance(item, list):  # Nested list comes from assets
-                    _ = [cls._valid_individual_input(individual) for individual in item]
-                    # pylint: disable=fixme
-                    # TODO: Give notice when some of the entities are not selected due to `valid_types`?
-                    entities_to_store.extend(
-                        [
-                            individual
-                            for individual in item
-                            if is_exact_instance(individual, tuple(valid_types))
-                        ]
-                    )
+                if isinstance(item, list):  # Nested list comes from assets __getitem__
+                    # Process all entities without filtering
+                    processed_entities = [cls._validate_entity(individual) for individual in item]
+                    entities_to_store.extend(processed_entities)
                 else:
-                    cls._valid_individual_input(item)
-                    if is_exact_instance(item, tuple(valid_types)):
-                        entities_to_store.append(item)
+                    # Single entity or selector
+                    cls._process_single_item(
+                        item,
+                        valid_type_names,
+                        entities_to_store,
+                        entity_selectors_to_store,
+                    )
         elif isinstance(input_data, dict):  # Deserialization
-            if "stored_entities" not in input_data:
-                raise KeyError(
-                    f"Invalid input type to `entities`, dict {input_data} is missing the key 'stored_entities'."
-                )
-            return {"stored_entities": input_data["stored_entities"]}
-        # pylint: disable=no-else-return
-        else:  # Single entity
+            # With delayed selector expansion, stored_entities may be absent if only selectors are defined.
+            # We allow empty stored_entities + empty/None selectors here - the model_validator
+            # (_ensure_entities_after_expansion) will raise a proper error if no entities are selected.
+            stored_entities = input_data.get("stored_entities", [])
+            selectors = input_data.get("selectors", [])
+            return cls._build_result(stored_entities, selectors)
+        else:  # Single entity or selector
             if input_data is None:
-                return {"stored_entities": None}
-            else:
-                cls._valid_individual_input(input_data)
-                if is_exact_instance(input_data, tuple(valid_types)):
-                    entities_to_store.append(input_data)
+                return cls._build_result(None, [])
+            cls._process_single_item(
+                input_data,
+                valid_type_names,
+                entities_to_store,
+                entity_selectors_to_store,
+            )
 
-        if not entities_to_store:
+        if not entities_to_store and not entity_selectors_to_store:
             raise ValueError(
                 f"Can not find any valid entity of type {[valid_type.__name__ for valid_type in valid_types]}"
                 f" from the input."
             )
 
-        return {"stored_entities": entities_to_store}
-
-    def _get_expanded_entities(
-        self,
-        *,
-        create_hard_copy: bool,
-    ) -> List[EntityBase]:
-        """
-        Processes `stored_entities` to remove duplicate entities and raise error if conflicting entities are found.
-
-        Possible future upgrade includes expanding `TokenEntity` (naming pattern, enabling compact data storage
-        like MatrixType and also templating SimulationParams which is planned when importing JSON as setting template)
-
-        Raises:
-            TypeError: If an entity does not match the expected type.
-        Returns:
-            Expanded entities list.
-        """
-
-        entities = getattr(self, "stored_entities", [])
-
-        expanded_entities = []
-        # Note: Points need to skip deduplication bc:
-        # 1. Performance of deduplication is slow when Point count is high.
-        not_merged_entity_types_name = [
-            "Point"
-        ]  # Entity types that need skipping deduplication (hacky)
-        not_merged_entities = []
-
-        # pylint: disable=not-an-iterable
-        for entity in entities:
-            if entity.private_attribute_entity_type_name in not_merged_entity_types_name:
-                not_merged_entities.append(entity)
-                continue
-            # if entity not in expanded_entities:
-            expanded_entities.append(entity)
-
-        expanded_entities = _remove_duplicate_entities(expanded_entities)
-        expanded_entities += not_merged_entities
-
-        if not expanded_entities:
-            raise ValueError(
-                f"Failed to find any matching entity with {entities}. Please check the input to entities."
-            )
-        # pylint: disable=fixme
-        # TODO: As suggested by Runda. We better prompt user what entities are actually used/expanded to
-        # TODO: avoid user input error. We need a switch to turn it on or off.
-        if create_hard_copy is True:
-            return copy.deepcopy(expanded_entities)
-        return expanded_entities
-
-    # pylint: disable=arguments-differ
-    def preprocess(self, **kwargs):
-        """
-        Expand and overwrite self.stored_entities in preparation for submission/serialization.
-        Should only be called as late as possible to incorporate all possible changes.
-        """
-        # WARNING: this is very expensive all for long lists as it is quadratic
-        self.stored_entities = self._get_expanded_entities(create_hard_copy=False)
-        return super().preprocess(**kwargs)
+        return cls._build_result(entities_to_store, entity_selectors_to_store)

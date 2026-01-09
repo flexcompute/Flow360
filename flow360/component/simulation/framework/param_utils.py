@@ -4,6 +4,10 @@ from typing import Annotated, List, Optional, Union
 
 import pydantic as pd
 
+from flow360.component.simulation.draft_context.coordinate_system_manager import (
+    CoordinateSystemStatus,
+)
+from flow360.component.simulation.draft_context.mirror import MirrorStatus
 from flow360.component.simulation.entity_info import (
     GeometryEntityInfo,
     SurfaceMeshEntityInfo,
@@ -12,8 +16,10 @@ from flow360.component.simulation.entity_info import (
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityBase, EntityList
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
+from flow360.component.simulation.framework.entity_selector import EntitySelector
 from flow360.component.simulation.framework.unique_list import UniqueStringList
 from flow360.component.simulation.primitives import (
+    ImportedSurface,
     _SurfaceEntityBase,
     _VolumeEntityBase,
 )
@@ -48,7 +54,21 @@ class AssetCache(Flow360BaseModel):
         False, description="Flag whether user requested the use of GAI."
     )
     variable_context: Optional[VariableContextList] = pd.Field(
-        None, description="List of user variables that are used in all the `Expression` instances."
+        None,
+        description="List of user variables that are used in all the `Expression` instances.",
+    )
+    used_selectors: Optional[List[EntitySelector]] = pd.Field(
+        None,
+        description="Collected entity selectors for token reference.",
+    )
+    imported_surfaces: Optional[List[ImportedSurface]] = pd.Field(
+        None, description="List of imported surface meshes for post-processing."
+    )
+    mirror_status: Optional[MirrorStatus] = pd.Field(
+        None, description="Status of mirroring operations that are used in the simulation."
+    )
+    coordinate_system_status: Optional[CoordinateSystemStatus] = pd.Field(
+        None, description="Status of coordinate systems used in the simulation."
     )
 
     @property
@@ -60,6 +80,25 @@ class AssetCache(Flow360BaseModel):
             return None
         return self.project_entity_info.get_boundaries()
 
+    @pd.model_validator(mode="after")
+    def _validate_mirror_status_compatible_with_geometry(self):
+        """Raise if mirror_status has mirroring but geometry doesn't support face-to-body-group mapping."""
+        if self.mirror_status is None:
+            return self
+        if not self.mirror_status.mirrored_geometry_body_groups:
+            return self
+        if not isinstance(self.project_entity_info, GeometryEntityInfo):
+            return self
+
+        try:
+            self.project_entity_info.get_face_group_to_body_group_id_map()
+        except ValueError as exc:
+            raise ValueError(
+                "Mirroring is requested but the geometry's face groupings span across body groups. "
+                f"Mirroring cannot be performed: {exc}"
+            ) from exc
+        return self
+
     def preprocess(
         self,
         *,
@@ -68,7 +107,12 @@ class AssetCache(Flow360BaseModel):
         required_by: List[str] = None,
         flow360_unit_system=None,
     ) -> Flow360BaseModel:
-        exclude_asset_cache = exclude + ["variable_context"]
+        # Exclude variable_context and selectors from preprocessing.
+        # NOTE: coordinate_system_status is NOT excluded, which means it will be
+        # recursively preprocessed. This is CRITICAL because CoordinateSystem objects
+        # contain LengthType fields (origin, translation) that must be nondimensionalized
+        # before transformation matrices are computed in the translator.
+        exclude_asset_cache = exclude + ["variable_context", "selectors"]
         return super().preprocess(
             params=params,
             exclude=exclude_asset_cache,
@@ -135,9 +179,7 @@ def register_entity_list(model: Flow360BaseModel, registry: EntityRegistry) -> N
             known_frozen_hashes = registry.fast_register(field, known_frozen_hashes)
 
         if isinstance(field, EntityList):
-            # pylint: disable=protected-access
-            expanded_entities = field._get_expanded_entities(create_hard_copy=False)
-            for entity in expanded_entities if expanded_entities else []:
+            for entity in field.stored_entities if field.stored_entities else []:
                 known_frozen_hashes = registry.fast_register(entity, known_frozen_hashes)
 
         elif isinstance(field, (list, tuple)):
@@ -206,7 +248,12 @@ def _update_zone_boundaries_with_metadata(
     registry: EntityRegistry, volume_mesh_meta_data: dict
 ) -> None:
     """Update zone boundaries with volume mesh metadata."""
-    for volume_entity in registry.get_bucket(by_type=_VolumeEntityBase).entities:
+    for volume_entity in [
+        # pylint: disable=protected-access
+        entity
+        for view in registry.view_subclasses(_VolumeEntityBase)
+        for entity in view._entities
+    ]:
         if volume_entity.name in volume_mesh_meta_data["zones"]:
             with model_attribute_unlock(volume_entity, "private_attribute_zone_boundary_names"):
                 volume_entity.private_attribute_zone_boundary_names = UniqueStringList(
@@ -230,3 +277,10 @@ def _set_boundary_full_name_with_zone_name(
                 continue
             with model_attribute_unlock(surface, "private_attribute_full_name"):
                 surface.private_attribute_full_name = f"{give_zone_name}/{surface.name}"
+
+
+def serialize_model_obj_to_id(model_obj: Flow360BaseModel) -> str:
+    """Serialize a model object to its id."""
+    if hasattr(model_obj, "private_attribute_id"):
+        return model_obj.private_attribute_id
+    raise ValueError(f"The model object {model_obj} cannot be serialized to id.")

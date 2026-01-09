@@ -20,10 +20,16 @@ from flow360.component.results.base_results import (
 )
 from flow360.component.results.case_results import PerEntityResultCSVModel
 from flow360.component.simulation import units as u2
-from flow360.component.simulation.framework.updater_utils import (
-    compare_dicts,
-    compare_values,
+from flow360.component.simulation.framework.entity_expansion_utils import (
+    expand_entity_list_in_context,
+    get_entity_info_and_registry_from_dict,
 )
+from flow360.component.simulation.framework.entity_selector import (
+    EntitySelector,
+    expand_entity_list_selectors,
+)
+from flow360.component.simulation.framework.updater_utils import compare_values
+from flow360.component.simulation.models.surface_models import BoundaryBase
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
 )
@@ -671,6 +677,70 @@ def test_surface_forces_result(mock_id, mock_response):
         flat_boundary_list=("body00001", "body00002", "body00003"),
         valid_names=("geo-11321727-9bb1-4fd5-b88d-19f360fb2149_box.csm"),
     )
+
+    params_with_dict_entities = deepcopy(params)
+    for model in params_with_dict_entities.models:
+        if isinstance(model, BoundaryBase):
+            model.entities.stored_entities = [
+                entity.model_dump() for entity in model.entities.stored_entities
+            ]
+    grouped_with_unexpanded_entities = surface_forces.by_boundary_condition(
+        params=params_with_dict_entities
+    )
+    assert grouped_with_unexpanded_entities._entity_groups == ref_entity_group_by_boundary
+
+    params_with_selectors = deepcopy(params)
+    for model in params_with_selectors.models:
+        if isinstance(model, BoundaryBase) and model.name == "Wall body 1 and 2":
+            model.entities.stored_entities = []
+            model.entities.selectors = [
+                EntitySelector(
+                    target_class="Surface",
+                    name="select_wall_bodies",
+                    logic="AND",
+                    children=[
+                        {
+                            "attribute": "name",
+                            "operator": "any_of",
+                            "value": [
+                                "body00001",
+                                "body00002",
+                                "farfield",  # farfield to ensure auto filtering
+                            ],
+                        }
+                    ],
+                )
+            ]
+    grouped_with_selectors = surface_forces.by_boundary_condition(params=params_with_selectors)
+    assert grouped_with_selectors._entity_groups == ref_entity_group_by_boundary
+
+    selector_model = next(
+        model
+        for model in params_with_selectors.models
+        if isinstance(model, BoundaryBase) and model.name == "Wall body 1 and 2"
+    )
+    expanded_entities = expand_entity_list_in_context(
+        selector_model.entities, params_with_selectors
+    )
+    assert {entity.name for entity in expanded_entities} == {"body00001", "body00002"}
+    expanded_names = expand_entity_list_in_context(
+        selector_model.entities, params_with_selectors, return_names=True
+    )
+    assert expanded_names == [
+        "body00001",
+        "body00002",
+    ]  # farfield got filtered out by `Wall`'s EntityList
+
+    serialized_params = params_with_selectors.model_dump(mode="json", exclude_none=True)
+    _, registry = get_entity_info_and_registry_from_dict(serialized_params)
+    expanded_entities_via_registry = expand_entity_list_selectors(
+        registry,
+        selector_model.entities,
+        selector_cache={},
+        merge_mode="merge",
+    )
+    dict_names = [entity.name for entity in expanded_entities_via_registry]
+    assert dict_names == expanded_names
 
 
 @pytest.mark.usefixtures("s3_download_override")

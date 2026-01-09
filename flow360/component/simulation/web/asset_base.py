@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import json
 import os
 import time
@@ -26,6 +27,9 @@ from flow360.component.simulation.entity_info import (
 )
 from flow360.component.simulation.folder import Folder
 from flow360.component.simulation.simulation_params import SimulationParams
+from flow360.component.simulation.web.utils import (
+    get_project_dependency_resource_metadata,
+)
 from flow360.component.utils import (
     _local_download_overwrite,
     formatting_validation_errors,
@@ -126,7 +130,7 @@ class AssetBase(metaclass=ABCMeta):
         return self.info.name
 
     @classmethod
-    def _from_supplied_entity_info(
+    def _from_supplied_simulation_dict(
         cls,
         simulation_dict: dict,
         asset_obj: AssetBase,
@@ -166,13 +170,22 @@ class AssetBase(metaclass=ABCMeta):
         return asset_obj
 
     @classmethod
-    def _get_simulation_json(cls, asset: AssetBase) -> dict:
+    def _get_simulation_json(cls, asset: AssetBase, clean_front_end_keys: bool = False) -> dict:
         """Get the simulation json AKA birth setting of the asset. Do we want to cache it in the asset object?"""
-        ##>> Check if the current asset is project's root item.
+        ##>> Check if the current asset is project's root item or the dependency assets is still processing
         ##>> If so then we need to wait for its pipeline to finish generating the simulation json.
         _resp = RestApi(ProjectInterface.endpoint, id=asset.project_id).get()
-        if asset.id == _resp["rootItemId"]:
-            log.debug("Current asset is project's root item. Waiting for pipeline to finish.")
+        dependency_ids = []
+        # pylint: disable=protected-access
+        if asset._cloud_resource_type_name in ["Geometry", "SurfaceMesh"]:
+            _dependency_metadata = get_project_dependency_resource_metadata(
+                project_id=asset.project_id, resource_type=asset._cloud_resource_type_name
+            )
+            dependency_ids = [_item.resource_id for _item in _dependency_metadata]
+        if asset.id == _resp["rootItemId"] or asset.id in dependency_ids:
+            log.debug(
+                "Current asset is project's root/dependency item. Waiting for pipeline to finish."
+            )
             # pylint: disable=protected-access
             asset.wait()
 
@@ -188,6 +201,8 @@ class AssetBase(metaclass=ABCMeta):
             )
 
         updated_params_as_dict, _ = SimulationParams._update_param_dict(json.loads(simulation_json))
+        if clean_front_end_keys:
+            updated_params_as_dict = SimulationParams._sanitize_params_dict(updated_params_as_dict)
         return updated_params_as_dict
 
     @property
@@ -256,7 +271,7 @@ class AssetBase(metaclass=ABCMeta):
         # Get the json from bucket, same as before.
         asset_simulation_dict = cls._get_simulation_json(asset_obj)
 
-        asset_obj = cls._from_supplied_entity_info(
+        asset_obj = cls._from_supplied_simulation_dict(
             entity_info_supplier_dict if entity_info_supplier_dict else asset_simulation_dict,
             asset_obj,
         )
@@ -266,7 +281,7 @@ class AssetBase(metaclass=ABCMeta):
 
         # Attempting constructing entity registry.
         # This ensure that once from_cloud() returns, the entity_registry will be available.
-        asset_obj.internal_registry = asset_obj._entity_info.get_registry(
+        asset_obj.internal_registry = asset_obj._entity_info.get_persistent_entity_registry(
             asset_obj.internal_registry
         )
         return asset_obj
@@ -316,10 +331,13 @@ class AssetBase(metaclass=ABCMeta):
         with open(os.path.join(local_storage_path, "simulation.json"), encoding="utf-8") as f:
             params_dict = json.load(f)
 
-        asset_obj = cls._from_supplied_entity_info(params_dict, cls(asset_id))
+        # pylint: disable=protected-access
+        asset_obj = cls._from_supplied_simulation_dict(params_dict, cls(asset_id))
         asset_obj.get_dynamic_default_settings(params_dict)
 
-        # pylint: disable=protected-access
+        # _simulation_dict_cache_for_local_mode for local mode to avoid hitting cloud APIs.
+        # pylint: disable=attribute-defined-outside-init
+        asset_obj._simulation_dict_cache_for_local_mode = copy.deepcopy(params_dict)
         if not hasattr(asset_obj, "_webapi"):
             # Handle local test case execution which has no valid ID
             return asset_obj

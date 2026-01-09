@@ -22,6 +22,7 @@ from flow360.component.simulation.meshing_param.volume_params import (
     StructuredBoxRefinement,
     UniformRefinement,
     UserDefinedFarfield,
+    WindTunnelFarfield,
 )
 from flow360.component.simulation.primitives import (
     AxisymmetricBody,
@@ -117,11 +118,11 @@ def rotation_volume_translator(obj: RotationVolume, rotor_disk_names: list):
             if is_exact_instance(entity, Cylinder):
                 if entity.name in rotor_disk_names:
                     # Current sliding interface encloses a rotor disk
-                    # Then we append the interace name which is hardcoded "rotorDisk-<name>""
+                    # Then we append the interface name which is hardcoded "rotorDisk-<name>""
                     setting["enclosedObjects"].append("rotorDisk-" + entity.name)
                 else:
                     # Current sliding interface encloses another sliding interface
-                    # Then we append the interace name which is hardcoded "slidingInterface-<name>""
+                    # Then we append the interface name which is hardcoded "slidingInterface-<name>""
                     setting["enclosedObjects"].append("slidingInterface-" + entity.name)
             elif is_exact_instance(entity, AxisymmetricBody):
                 setting["enclosedObjects"].append("slidingInterface-" + entity.name)
@@ -221,20 +222,19 @@ def _get_custom_volumes(volume_zones: list):
     custom_volumes = []
     for zone in volume_zones:
         if isinstance(zone, CustomZones):
-            # Extract CustomVolume from CustomZones (base branch: no tetrahedra enforcement output)
+            # Extract CustomVolume and SeedpointVolume from CustomZones
+            enforce_tetrahedral = getattr(zone, "element_type") == "tetrahedra"
             for custom_volume in zone.entities.stored_entities:
                 if isinstance(custom_volume, CustomVolume):
-                    custom_volumes.append(
-                        {
-                            "name": custom_volume.name,
-                            "patches": sorted(
-                                [
-                                    surface.name
-                                    for surface in custom_volume.boundaries.stored_entities
-                                ]
-                            ),
-                        }
-                    )
+                    volume_dict = {
+                        "name": custom_volume.name,
+                        "patches": sorted(
+                            [surface.name for surface in custom_volume.boundaries.stored_entities]
+                        ),
+                    }
+                    if enforce_tetrahedral:
+                        volume_dict["enforceTetrahedralElements"] = True
+                    custom_volumes.append(volume_dict)
 
                 if isinstance(custom_volume, SeedpointVolume):
                     custom_volumes.append(
@@ -312,6 +312,8 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
     refinement_factor = None
     defaults = None
     gap_treatment_strength = None
+    sliding_interface_tolerance = None
+    planar_face_tolerance = None
 
     translated = {}
 
@@ -325,7 +327,10 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
         refinement_factor = input_params.meshing.volume_meshing.refinement_factor
         defaults = input_params.meshing.volume_meshing.defaults
         gap_treatment_strength = input_params.meshing.volume_meshing.gap_treatment_strength
-        planar_tolerance = input_params.meshing.volume_meshing.planar_face_tolerance
+        planar_face_tolerance = input_params.meshing.volume_meshing.planar_face_tolerance
+        sliding_interface_tolerance = (
+            input_params.meshing.volume_meshing.sliding_interface_tolerance
+        )
 
     if isinstance(input_params.meshing, MeshingParams):
         volume_zones = input_params.meshing.volume_zones
@@ -333,7 +338,8 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
         refinement_factor = input_params.meshing.refinement_factor
         defaults = input_params.meshing.defaults
         gap_treatment_strength = input_params.meshing.gap_treatment_strength
-        planar_tolerance = input_params.meshing.defaults.planar_face_tolerance
+        planar_face_tolerance = input_params.meshing.defaults.planar_face_tolerance
+        sliding_interface_tolerance = input_params.meshing.defaults.sliding_interface_tolerance
 
     outputs = input_params.meshing.outputs
 
@@ -367,10 +373,16 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
             if hasattr(zone, "domain_type") and zone.domain_type is not None:
                 translated["farfield"]["domainType"] = zone.domain_type
 
+        if isinstance(zone, WindTunnelFarfield):
+            translated["farfield"] = {"type": "wind-tunnel"}
+            if zone.domain_type is not None:
+                translated["farfield"]["domainType"] = zone.domain_type
+            break
+
         if isinstance(zone, AutomatedFarfield):
             translated["farfield"] = {
-                "planarFaceTolerance": planar_tolerance,
-                "relativeSize": zone.relative_size,
+                "planarFaceTolerance": planar_face_tolerance,
+                "relativeSize": float(zone.relative_size),
             }
             if zone.method == "quasi-3d-periodic":
                 translated["farfield"]["type"] = "quasi-3d"
@@ -408,6 +420,11 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
     # growthRate can only be global
     translated["volume"]["growthRate"] = defaults.boundary_layer_growth_rate
 
+    if gap_treatment_strength is None:
+        if input_params.private_attribute_asset_cache.use_inhouse_mesher:
+            gap_treatment_strength = 1.0  # Conservative default for inhouse mesher
+        else:
+            gap_treatment_strength = 0.0
     translated["volume"]["gapTreatmentStrength"] = gap_treatment_strength
 
     if input_params.private_attribute_asset_cache.use_inhouse_mesher:
@@ -416,7 +433,11 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
             number_of_boundary_layers if number_of_boundary_layers is not None else -1
         )
 
-        translated["volume"]["planarFaceTolerance"] = planar_tolerance
+        if planar_face_tolerance is not None:
+            translated["volume"]["planarFaceTolerance"] = planar_face_tolerance
+
+        if sliding_interface_tolerance is not None:
+            translated["volume"]["slidingInterfaceTolerance"] = sliding_interface_tolerance
 
     ##::  Step 4: Get volume refinements (uniform + rotorDisks)
     uniform_refinement_list = translate_setting_and_apply_to_all_entities(

@@ -1,0 +1,415 @@
+{
+    "boundaries": {
+        "1": {
+            "heatFlux": 0.0,
+            "roughnessHeight": 0.0,
+            "type": "NoSlipWall"
+        },
+        "2": {
+            "type": "SlipWall"
+        },
+        "3": {
+            "type": "Freestream"
+        }
+    },
+    "freestream": {
+        "Mach": 0.8399999999999984,
+        "Temperature": 288.15,
+        "alphaAngle": 3.06,
+        "betaAngle": 0.0,
+        "muRef": 5.3261211651402046e-08
+    },
+    "geometry": {
+        "interfaceInterpolationTolerance": 0.2,
+        "momentCenter": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "momentLength": [
+            0.801672958512342,
+            0.801672958512342,
+            0.801672958512342
+        ],
+        "refArea": 1.1529999999999987
+    },
+    "initialCondition": {
+        "p": "p",
+        "rho": "rho",
+        "type": "initialCondition",
+        "u": "u",
+        "v": "v",
+        "w": "w"
+    },
+    "navierStokesSolver": {
+        "CFLMultiplier": 1.0,
+        "absoluteTolerance": 1e-10,
+        "equationEvalFrequency": 1,
+        "kappaMUSCL": -1.0,
+        "limitPressureDensity": false,
+        "limitVelocity": false,
+        "linearSolver": {
+            "maxIterations": 25
+        },
+        "lowMachPreconditioner": false,
+        "maxForceJacUpdatePhysicalSteps": 0,
+        "modelType": "Compressible",
+        "numericalDissipationFactor": 1.0,
+        "orderOfAccuracy": 2,
+        "relativeTolerance": 0.0,
+        "updateJacobianFrequency": 4
+    },
+    "outputRescale": {
+        "velocityScale": 1.0
+    },
+    "renderOutput": [
+        {
+            "animationFrequency": -1,
+            "animationFrequencyOffset": 0,
+            "camera": {
+                "projection": {
+                    "far": 62.04243702692642,
+                    "near": 0.012408487405385285,
+                    "type": "orthographic",
+                    "width": 1.2408487405385284
+                },
+                "view": {
+                    "position": [
+                        0.0,
+                        1.2408487405385284,
+                        1.2408487405385284
+                    ],
+                    "target": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "up": [
+                        0,
+                        0,
+                        1
+                    ]
+                }
+            },
+            "environment": {
+                "background": {
+                    "color": [
+                        207,
+                        226,
+                        230
+                    ],
+                    "type": "solid"
+                }
+            },
+            "groups": [
+                {
+                    "isoSurfaces": {},
+                    "material": {
+                        "opacity": 1.0,
+                        "color": [
+                            255,
+                            255,
+                            255
+                        ],
+                        "f0": [
+                            0.56,
+                            0.56,
+                            0.56
+                        ],
+                        "roughness": 0.30000000000000004,
+                        "type": "pbr"
+                    },
+                    "slices": {},
+                    "surfaces": {
+                        "1": {}
+                    }
+                },
+                {
+                    "isoSurfaces": {
+                        "Q Criterion": {
+                            "surfaceField": "qcriterion_SI",
+                            "surfaceFieldMagnitude": 0.0004128
+                        }
+                    },
+                    "material": {
+                        "opacity": 1.0,
+                        "colormap": [
+                            [
+                                0,
+                                0,
+                                255
+                            ],
+                            [
+                                0,
+                                54,
+                                255
+                            ],
+                            [
+                                0,
+                                107,
+                                255
+                            ],
+                            [
+                                0,
+                                161,
+                                255
+                            ],
+                            [
+                                0,
+                                215,
+                                255
+                            ],
+                            [
+                                0,
+                                255,
+                                242
+                            ],
+                            [
+                                0,
+                                255,
+                                188
+                            ],
+                            [
+                                0,
+                                255,
+                                134
+                            ],
+                            [
+                                0,
+                                255,
+                                81
+                            ],
+                            [
+                                0,
+                                255,
+                                27
+                            ],
+                            [
+                                27,
+                                255,
+                                0
+                            ],
+                            [
+                                81,
+                                255,
+                                0
+                            ],
+                            [
+                                134,
+                                255,
+                                0
+                            ],
+                            [
+                                188,
+                                255,
+                                0
+                            ],
+                            [
+                                242,
+                                255,
+                                0
+                            ],
+                            [
+                                255,
+                                215,
+                                0
+                            ],
+                            [
+                                255,
+                                161,
+                                0
+                            ],
+                            [
+                                255,
+                                107,
+                                0
+                            ],
+                            [
+                                255,
+                                54,
+                                0
+                            ],
+                            [
+                                255,
+                                0,
+                                0
+                            ]
+                        ],
+                        "max": 0.1,
+                        "min": 0.0,
+                        "outputField": {
+                            "name": "Mach_SI"
+                        },
+                        "type": "field"
+                    },
+                    "slices": {
+                        "Example slice": {
+                            "sliceNormal": [
+                                0.0,
+                                1.0,
+                                0.0
+                            ],
+                            "sliceOrigin": [
+                                0.0,
+                                0.7000000000000001,
+                                0.0
+                            ]
+                        }
+                    },
+                    "surfaces": {}
+                }
+            ],
+            "lighting": {
+                "ambient": {
+                    "color": [
+                        255,
+                        255,
+                        255
+                    ],
+                    "intensity": 0.4
+                },
+                "directional": {
+                    "color": [
+                        255,
+                        255,
+                        255
+                    ],
+                    "direction": [
+                        -0.5773502691896258,
+                        -0.5773502691896258,
+                        -0.5773502691896258
+                    ],
+                    "intensity": 1.0
+                }
+            },
+            "name": "Render output"
+        }
+    ],
+    "runControl": {
+        "externalProcessMonitorOutput": false
+    },
+    "sliceOutput": {
+        "animationFrequency": -1,
+        "animationFrequencyOffset": 0,
+        "animationFrequencyTimeAverage": -1,
+        "animationFrequencyTimeAverageOffset": 0,
+        "outputFields": [],
+        "outputFormat": "tecplot",
+        "slices": {
+            "sliceName_1": {
+                "outputFields": [
+                    "Cp",
+                    "Mach",
+                    "T",
+                    "mut",
+                    "mutRatio",
+                    "primitiveVars",
+                    "s",
+                    "vorticity",
+                    "vorticityMagnitude"
+                ],
+                "sliceNormal": [
+                    0.0,
+                    1.0,
+                    0.0
+                ],
+                "sliceOrigin": [
+                    0.0,
+                    0.7000000000000001,
+                    0.0
+                ]
+            }
+        },
+        "startAverageIntegrationStep": -1
+    },
+    "surfaceOutput": {
+        "animationFrequency": -1,
+        "animationFrequencyOffset": 0,
+        "animationFrequencyTimeAverage": -1,
+        "animationFrequencyTimeAverageOffset": 0,
+        "outputFields": [],
+        "outputFormat": "paraview",
+        "startAverageIntegrationStep": -1,
+        "surfaces": {
+            "1": {
+                "outputFields": [
+                    "Cp"
+                ]
+            },
+            "2": {
+                "outputFields": [
+                    "Cp"
+                ]
+            },
+            "3": {
+                "outputFields": [
+                    "Cp"
+                ]
+            }
+        },
+        "writeSingleFile": false
+    },
+    "timeStepping": {
+        "CFL": {
+            "final": 200.0,
+            "initial": 5.0,
+            "rampSteps": 40,
+            "type": "ramp"
+        },
+        "maxPseudoSteps": 2000,
+        "orderOfAccuracy": 2,
+        "physicalSteps": 1,
+        "timeStepSize": "inf"
+    },
+    "turbulenceModelSolver": {
+        "CFLMultiplier": 2.0,
+        "DDES": false,
+        "ZDES": false,
+        "absoluteTolerance": 1e-08,
+        "equationEvalFrequency": 4,
+        "gridSizeForLES": "maxEdgeLength",
+        "linearSolver": {
+            "maxIterations": 15
+        },
+        "lowReynoldsCorrection": false,
+        "maxForceJacUpdatePhysicalSteps": 0,
+        "modelConstants": {
+            "C_DES": 0.72,
+            "C_cb1": 0.1355,
+            "C_cb2": 0.622,
+            "C_d": 8.0,
+            "C_min_rd": 10.0,
+            "C_sigma": 0.6666666666666666,
+            "C_t3": 1.2,
+            "C_t4": 0.5,
+            "C_v1": 7.1,
+            "C_vonKarman": 0.41,
+            "C_w2": 0.3,
+            "C_w4": 0.21,
+            "C_w5": 1.5
+        },
+        "modelType": "SpalartAllmaras",
+        "orderOfAccuracy": 2,
+        "quadraticConstitutiveRelation": false,
+        "reconstructionGradientLimiter": 0.5,
+        "relativeTolerance": 0.0,
+        "rotationCorrection": false,
+        "updateJacobianFrequency": 4
+    },
+    "userDefinedFields": [],
+    "usingLiquidAsMaterial": false,
+    "volumeOutput": {
+        "animationFrequency": -1,
+        "animationFrequencyOffset": 0,
+        "animationFrequencyTimeAverage": -1,
+        "animationFrequencyTimeAverageOffset": 0,
+        "outputFields": [
+            "Mach",
+            "primitiveVars",
+            "residualNavierStokes",
+            "residualTurbulence"
+        ],
+        "outputFormat": "paraview",
+        "startAverageIntegrationStep": -1
+    }
+}
