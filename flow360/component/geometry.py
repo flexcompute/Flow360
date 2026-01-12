@@ -595,7 +595,17 @@ class Geometry(AssetBase):
 
     def group_faces_by_tag(self, tag_name: str) -> None:
         """
-        Group faces by tag name
+        Group faces by tag name.
+
+        Parameters
+        ----------
+        tag_name : str
+            The tag name to group faces by. Possible values:
+            - "_color": Groups faces based on a specified color from the CAD creation tool.
+            - "builtinName": Groups faces by built-in name.
+            - "faceName": Groups faces by the name given from the geometry file.
+            - "groupByBodId": Groups all faces with the same body ID in their name.
+            - "faceId": Groups all faces with the same face ID.
         """
         # pylint: disable=protected-access,no-member
         self.internal_registry = self._entity_info._group_entity_by_tag(
@@ -604,7 +614,14 @@ class Geometry(AssetBase):
 
     def group_edges_by_tag(self, tag_name: str) -> None:
         """
-        Group edges by tag name
+        Group edges by tag name.
+
+        Parameters
+        ----------
+        tag_name : str
+            The tag name to group edges by. Possible values:
+            - "edgeName": Groups edges by the name given from the geometry file.
+            - "edgeId": Groups all edges with the same edge ID.
         """
         # pylint: disable=protected-access,no-member
         self.internal_registry = self._entity_info._group_entity_by_tag(
