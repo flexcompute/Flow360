@@ -1,7 +1,6 @@
 """Volume models for the simulation framework."""
 
 # pylint: disable=too-many-lines
-import json
 import os
 import re
 from abc import ABCMeta
