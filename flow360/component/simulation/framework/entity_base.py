@@ -97,6 +97,7 @@ class EntityBase(Flow360BaseModel, metaclass=ABCMeta):
                 "Please provide a new name in the update dictionary."
             )
         kwargs.pop("private_attribute_id", None)
+        update.pop("private_attribute_id", None)
         return super().copy(update=update, **kwargs)
 
     def __eq__(self, other):
