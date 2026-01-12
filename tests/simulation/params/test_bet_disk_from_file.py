@@ -21,7 +21,7 @@ def test_bet_disk_updater_and_override(tmp_path):
                 {
                     "private_attribute_entity_type_name": "Cylinder",
                     "private_attribute_id": "77a28c82-1dfd-40fd-bf3b-1a8385aa10e0",
-                    "private_attribute_bucket_name": "DraftEntities",
+                    "private_attribute_registry_bucket_name": "DraftEntities",
                     "name": "BET 5",
                     "axis": [0, 0, 1],
                     "center": {"value": [2.7, -6, 1.06], "units": "m"},
@@ -31,7 +31,7 @@ def test_bet_disk_updater_and_override(tmp_path):
                 {
                     "private_attribute_entity_type_name": "Cylinder",
                     "private_attribute_id": "4a28e9b9-4124-489c-a86a-2eabb02fa6c9",
-                    "private_attribute_bucket_name": "DraftEntities",
+                    "private_attribute_registry_bucket_name": "DraftEntities",
                     "name": "BET 7",
                     "axis": [0, 0, 1],
                     "center": {"value": [2.7, 2.65, 1.06], "units": "m"},

@@ -1,6 +1,7 @@
 """Volume models for the simulation framework."""
 
 # pylint: disable=too-many-lines
+import json
 import os
 import re
 from abc import ABCMeta
@@ -899,6 +900,8 @@ class BETDisk(MultiConstructorBaseModel):
         model_dict = cls._dict_from_file(filename=filename)
 
         # Handle version migration if needed
+        model_dict = sanitize_params_dict(model_dict)
+
         version_from = model_dict.pop("version", None)
         if version_from is not None:
             if Flow360Version(version_from) < Flow360Version(__version__):
@@ -910,8 +913,6 @@ class BETDisk(MultiConstructorBaseModel):
                 )
                 # Unwrap the updated model
                 model_dict = wrapped_dict["models"][0]
-
-        model_dict = sanitize_params_dict(model_dict)
 
         # Clean any extra fields that might remain from the file load (like internal IDs)
         # We only keep fields that are part of the model definition or valid aliases
@@ -931,11 +932,6 @@ class BETDisk(MultiConstructorBaseModel):
             raise Flow360FileError(
                 f"Unknown fields found in input file for {cls.__name__}: {unknown_fields}"
             )
-
-        # Filter model_dict to remove unknown fields (like _id, etc from DB exports)
-        model_dict = {
-            k: v for k, v in model_dict.items() if k in valid_fields or k in valid_aliases
-        }
 
         # Validate kwargs keys
         invalid_keys = [k for k in kwargs if k not in valid_fields and k not in valid_aliases]
