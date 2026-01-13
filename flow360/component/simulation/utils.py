@@ -6,6 +6,21 @@ from typing import Annotated, Union, get_args, get_origin
 import pydantic as pd
 from pydantic_core import core_schema
 
+from flow360.component.simulation.framework.updater_utils import recursive_remove_key
+
+
+def sanitize_params_dict(model_dict):
+    """
+    !!!WARNING!!!: This function changes the input dict in place!!!
+
+    Clean the redundant content in the params dict from WebUI
+    """
+    recursive_remove_key(model_dict, "_id", "private_attribute_image_id")
+
+    model_dict.pop("hash", None)
+
+    return model_dict
+
 
 @contextmanager
 def model_attribute_unlock(model, attr: str):

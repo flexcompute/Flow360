@@ -29,10 +29,7 @@ from flow360.component.simulation.framework.param_utils import (
     register_entity_list,
 )
 from flow360.component.simulation.framework.updater import updater
-from flow360.component.simulation.framework.updater_utils import (
-    Flow360Version,
-    recursive_remove_key,
-)
+from flow360.component.simulation.framework.updater_utils import Flow360Version
 from flow360.component.simulation.meshing_param.params import (
     MeshingParams,
     ModularMeshingWorkflow,
@@ -93,7 +90,10 @@ from flow360.component.simulation.user_code.core.types import (
 from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
     UserDefinedDynamic,
 )
-from flow360.component.simulation.utils import model_attribute_unlock
+from flow360.component.simulation.utils import (
+    model_attribute_unlock,
+    sanitize_params_dict,
+)
 from flow360.component.simulation.validation.validation_output import (
     _check_aero_acoustics_observer_time_step_size,
     _check_moving_statistic_applicability,
@@ -219,11 +219,7 @@ class _ParamModelBase(Flow360BaseModel):
 
         Clean the redundant content in the params dict from WebUI
         """
-        recursive_remove_key(model_dict, "_id", "private_attribute_image_id")
-
-        model_dict.pop("hash", None)
-
-        return model_dict
+        return sanitize_params_dict(model_dict)
 
     def _init_no_unit_context(self, filename, file_content, **kwargs):
         """
