@@ -2285,9 +2285,24 @@ def test_beta_mesher_only_features(mock_validation_context):
                 use_inhouse_mesher=True,
                 project_entity_info=SurfaceMeshEntityInfo(
                     boundaries=[
-                        Surface(name="face1"),
-                        Surface(name="face2"),
-                        Surface(name="face3"),
+                        Surface(
+                            name="face1",
+                            private_attributes=SurfacePrivateAttributes(
+                                bounding_box=[[0, 0, 0], [1, 1, 1]]
+                            ),
+                        ),
+                        Surface(
+                            name="face2",
+                            private_attributes=SurfacePrivateAttributes(
+                                bounding_box=[[0, 0, 0], [1, 1, 1]]
+                            ),
+                        ),
+                        Surface(
+                            name="face3",
+                            private_attributes=SurfacePrivateAttributes(
+                                bounding_box=[[0, 0, 0], [1, 1, 1]]
+                            ),
+                        ),
                     ]
                 ),
             ),

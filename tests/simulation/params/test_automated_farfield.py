@@ -581,3 +581,63 @@ def test_domain_type_bounding_box_check():
     assert errors is not None
     domain_errors = [e for e in errors if "The model does not cross the symmetry plane" in e["msg"]]
     assert len(domain_errors) == 1
+
+
+def test_legacy_asset_missing_private_attributes():
+    """Test that missing BCs are downgraded to warnings for legacy assets without private_attributes."""
+    # Create surfaces without private_attributes to simulate legacy cloud assets
+    wall_surface = Surface(name="wall", private_attribute_id="wall-1")
+    farfield_surface = Surface(name="farfield_boundary", private_attribute_id="farfield-1")
+    missing_surface = Surface(name="missing_bc", private_attribute_id="missing-1")
+
+    # Explicitly set to None to simulate legacy assets
+    wall_surface.private_attributes = None
+    farfield_surface.private_attributes = None
+    missing_surface.private_attributes = None
+
+    asset_cache = AssetCache(
+        project_length_unit="m",
+        use_inhouse_mesher=True,
+        use_geometry_AI=False,
+        project_entity_info=SurfaceMeshEntityInfo(
+            boundaries=[wall_surface, farfield_surface, missing_surface],
+        ),
+    )
+
+    farfield = AutomatedFarfield()
+    with SI_unit_system:
+        params = SimulationParams(
+            operating_condition=AerospaceCondition(velocity_magnitude=1000),
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=0.001,
+                    boundary_layer_growth_rate=1.1,
+                ),
+                volume_zones=[farfield],
+            ),
+            models=[
+                Wall(surfaces=[wall_surface]),  # Only assign BC to wall
+                Freestream(
+                    surfaces=[farfield_surface]
+                ),  # Assign to farfield_boundary, not missing_bc
+            ],
+            private_attribute_asset_cache=asset_cache,
+        )
+
+    # Validate directly without set_up_params_for_uploading to preserve our None values
+    _, errors, warnings = services.validate_model(
+        params_as_dict=params.model_dump(mode="json", exclude_none=True),
+        validated_by=services.ValidationCalledBy.LOCAL,
+        root_item_type="SurfaceMesh",
+        validation_level="All",
+    )
+
+    # Should get warnings, not errors (missing_bc has no BC assigned)
+    assert errors is None, f"Expected no errors but got: {errors}"
+    assert warnings is not None
+    assert any(
+        "missing_bc" in w.get("msg", "") for w in warnings
+    ), f"Expected warning about missing_bc, got: {warnings}"
+    assert any(
+        "If these boundaries are valid" in w.get("msg", "") for w in warnings
+    ), f"Expected specific warning message, got: {warnings}"
