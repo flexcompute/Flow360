@@ -1208,3 +1208,131 @@ def test_updater_to_25_8_1_remove_transformation_key():
         is True
     )
     assert "transformation" not in params_new["outputs"][0]["metadata"][0]
+
+
+def test_updater_to_25_8_3_rename_origin_to_reference_point():
+    """Test updater for version 25.8.3 which renames 'origin' to 'reference_point' in CoordinateSystem"""
+
+    params_as_dict = {
+        "version": "25.8.2",
+        "unit_system": {"name": "SI"},
+        "private_attribute_asset_cache": {
+            "coordinate_system_status": {
+                "coordinate_systems": [
+                    {
+                        "name": "frame1",
+                        "type_name": "CoordinateSystem",
+                        "origin": {"value": [1.0, 2.0, 3.0], "units": "m"},
+                        "axis_of_rotation": [0, 0, 1],
+                        "angle_of_rotation": {"value": 90, "units": "degree"},
+                        "scale": [1, 1, 1],
+                        "translation": {"value": [0, 0, 0], "units": "m"},
+                        "private_attribute_id": "cs-1",
+                    },
+                    {
+                        "name": "frame2",
+                        "type_name": "CoordinateSystem",
+                        "origin": {"value": [5.0, 6.0, 7.0], "units": "m"},
+                        "axis_of_rotation": [1, 0, 0],
+                        "angle_of_rotation": {"value": 45, "units": "degree"},
+                        "scale": [2, 2, 2],
+                        "translation": {"value": [1, 1, 1], "units": "m"},
+                        "private_attribute_id": "cs-2",
+                    },
+                ]
+            }
+        },
+    }
+
+    params_new = updater(
+        version_from="25.8.2",
+        version_to="25.8.3",
+        params_as_dict=params_as_dict,
+    )
+
+    assert params_new["version"] == "25.8.3"
+
+    # Verify 'origin' is renamed to 'reference_point' in all coordinate systems
+    coord_systems = params_new["private_attribute_asset_cache"]["coordinate_system_status"][
+        "coordinate_systems"
+    ]
+
+    assert len(coord_systems) == 2
+
+    # Check first coordinate system
+    assert "origin" not in coord_systems[0], "'origin' should be removed from frame1"
+    assert "reference_point" in coord_systems[0], "'reference_point' should exist in frame1"
+    assert coord_systems[0]["reference_point"] == {
+        "value": [1.0, 2.0, 3.0],
+        "units": "m",
+    }, "reference_point should have the old origin value"
+
+    # Check second coordinate system
+    assert "origin" not in coord_systems[1], "'origin' should be removed from frame2"
+    assert "reference_point" in coord_systems[1], "'reference_point' should exist in frame2"
+    assert coord_systems[1]["reference_point"] == {
+        "value": [5.0, 6.0, 7.0],
+        "units": "m",
+    }, "reference_point should have the old origin value"
+
+    # Verify other fields remain unchanged
+    assert coord_systems[0]["name"] == "frame1"
+    assert coord_systems[0]["axis_of_rotation"] == [0, 0, 1]
+    assert coord_systems[1]["name"] == "frame2"
+    assert coord_systems[1]["scale"] == [2, 2, 2]
+
+
+def test_updater_to_25_8_3_no_coordinate_systems():
+    """Test updater handles cases where coordinate_system_status is missing or empty"""
+
+    # Case 1: No asset_cache
+    params_as_dict_1 = {
+        "version": "25.8.2",
+        "unit_system": {"name": "SI"},
+    }
+
+    params_new_1 = updater(
+        version_from="25.8.2",
+        version_to="25.8.3",
+        params_as_dict=params_as_dict_1,
+    )
+
+    assert params_new_1["version"] == "25.8.3"
+    assert "private_attribute_asset_cache" not in params_new_1
+
+    # Case 2: No coordinate_system_status
+    params_as_dict_2 = {
+        "version": "25.8.2",
+        "unit_system": {"name": "SI"},
+        "private_attribute_asset_cache": {},
+    }
+
+    params_new_2 = updater(
+        version_from="25.8.2",
+        version_to="25.8.3",
+        params_as_dict=params_as_dict_2,
+    )
+
+    assert params_new_2["version"] == "25.8.3"
+    assert params_new_2["private_attribute_asset_cache"] == {}
+
+    # Case 3: Empty coordinate_systems list
+    params_as_dict_3 = {
+        "version": "25.8.2",
+        "unit_system": {"name": "SI"},
+        "private_attribute_asset_cache": {"coordinate_system_status": {"coordinate_systems": []}},
+    }
+
+    params_new_3 = updater(
+        version_from="25.8.2",
+        version_to="25.8.3",
+        params_as_dict=params_as_dict_3,
+    )
+
+    assert params_new_3["version"] == "25.8.3"
+    assert (
+        params_new_3["private_attribute_asset_cache"]["coordinate_system_status"][
+            "coordinate_systems"
+        ]
+        == []
+    )

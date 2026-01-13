@@ -464,6 +464,34 @@ def _to_25_8_1(params_as_dict):
     return params_as_dict
 
 
+def _to_25_8_3(params_as_dict):
+    def rename_origin_to_reference_point(params_as_dict):
+        """
+        For all CoordinateSystem instances under asset_cache->coordinate_system_status->coordinate_systems,
+        Rename the legacy "origin" key to "reference_point"
+        """
+        if params_as_dict.get("private_attribute_asset_cache") is None:
+            return params_as_dict
+
+        asset_cache = params_as_dict["private_attribute_asset_cache"]
+        coordinate_system_status = asset_cache.get("coordinate_system_status")
+
+        if coordinate_system_status is None:
+            return params_as_dict
+
+        coordinate_systems = coordinate_system_status.get("coordinate_systems", [])
+
+        for cs in coordinate_systems:
+            # Rename "origin" to "reference_point" if it exists
+            if "origin" in cs:
+                cs["reference_point"] = cs.pop("origin")
+
+        return params_as_dict
+
+    rename_origin_to_reference_point(params_as_dict)
+    return params_as_dict
+
+
 VERSION_MILESTONES = [
     (Flow360Version("24.11.1"), _to_24_11_1),
     (Flow360Version("24.11.7"), _to_24_11_7),
@@ -481,6 +509,7 @@ VERSION_MILESTONES = [
     (Flow360Version("25.7.7"), _to_25_7_7),
     (Flow360Version("25.8.0b4"), _to_25_8_0),
     (Flow360Version("25.8.1"), _to_25_8_1),
+    (Flow360Version("25.8.3"), _to_25_8_3),
 ]  # A list of the Python API version tuple with there corresponding updaters.
 
 
