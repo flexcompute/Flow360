@@ -1345,13 +1345,6 @@ def test_unit_conversion_front_end_compatibility():
             )
 
 
-def test_get_default_report_config_json():
-    report_config_dict = services.get_default_report_config()
-    with open("ref/default_report_config.json", "r") as fp:
-        ref_dict = json.load(fp)
-    assert compare_values(report_config_dict, ref_dict, ignore_keys=["formatter"])
-
-
 def test_merge_geometry_entity_info():
     """
     Test the merge_geometry_entity_info function to ensure proper merging of geometry entity information.

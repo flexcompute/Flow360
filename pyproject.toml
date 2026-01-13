@@ -59,7 +59,6 @@ sphinx_paramlinks = {version="*", optional = true}
 numpydoc = "^1.8.0"
 numexpr = "^2.10.1"
 sphinxcontrib-mermaid = {version="*", optional = true}
-pylatex = "^1.4.2"
 prettyprinttree = "^2.0.1"
 
 

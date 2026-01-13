@@ -8,11 +8,9 @@ from numbers import Number
 import numpy as np
 import pytest
 import unyt
-from pylatex import Document
 
 from flow360.cloud.rest_api import RestApi
 from flow360.cloud.s3_utils import S3TransferType, get_local_filename_and_create_folders
-from flow360.plugins.report import report_doc
 
 here = os.path.dirname(os.path.abspath(__file__))
 
@@ -183,20 +181,3 @@ def generate_mock_webapi_data_one_case_params():
 
     with open("case_params.json", "w") as fh:
         json.dump({"data": resp}, fh, indent=4)
-
-
-@pytest.fixture()
-def generate_pdf(monkeypatch):
-    def mock_generate_pdf(*args, **kwargs):
-        print("MOCK generate_pdf!!!")
-
-    monkeypatch.setattr(Document, "generate_pdf", mock_generate_pdf)
-
-
-@pytest.fixture
-def mock_detect_latex_compiler(monkeypatch):
-    def _mock(*args, **kwargs):
-        print("MOCK detect_latex_compiler called!")
-        return ("xelatex", [])
-
-    monkeypatch.setattr(report_doc, "detect_latex_compiler", _mock)
