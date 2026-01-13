@@ -1,6 +1,16 @@
 import flow360 as fl
 from flow360 import u
 from flow360.examples import TutorialCHTSolver
+from flow360.plugins.report.report import ReportTemplate
+from flow360.plugins.report.report_items import (
+    Camera,
+    Chart3D,
+    FrontCamera,
+    Inputs,
+    LeftCamera,
+    Settings,
+    Summary,
+)
 
 TutorialCHTSolver.get_files()
 
@@ -105,4 +115,61 @@ results = case.results
 surface_heat_transfer = results.surface_heat_transfer.as_dataframe()
 print(surface_heat_transfer)
 
-# Report generation utilities now live in the external `flow360-report` package.
+cases = [case]
+
+exclude = ["fluid/farfield", "solid/interface_fluid", "solid/adiabatic"]
+
+front_camera_slice = FrontCamera(dimension=1, dimension_dir="width")
+side_camera_slice = LeftCamera(pan_target=(0.35, 0, 0), dimension=2, dimension_dir="width")
+front_right_top_camera = Camera(
+    position=(-1, -1, 1), look_at=(0.35, 0, 0), dimension=1, dimension_dir="width"
+)
+
+x_slice_screenshot = Chart3D(
+    section_title="Slice temperature at x=0.35",
+    items_in_row=2,
+    force_new_page=True,
+    show="slices",
+    include=["slice_x"],
+    field="T",
+    limits=(285 * u.K, 395 * u.K),
+    camera=front_camera_slice,
+    fig_name="slice_x",
+)
+
+y_slice_screenshot = Chart3D(
+    section_title="Slice temperature at y=0",
+    items_in_row=2,
+    force_new_page=True,
+    show="slices",
+    include=["slice_y"],
+    field="T",
+    limits=(285 * u.K, 395 * u.K),
+    camera=side_camera_slice,
+    fig_name="slice_y",
+)
+
+surface_screenshot = Chart3D(
+    section_title="Surface temperature",
+    items_in_row=2,
+    force_new_page=True,
+    show="boundaries",
+    field="T",
+    limits=(285 * u.K, 395 * u.K),
+    exclude=exclude,
+    camera=front_right_top_camera,
+)
+
+report = ReportTemplate(
+    title="CHT results screenshots",
+    items=[Summary(), Inputs(), x_slice_screenshot, y_slice_screenshot, surface_screenshot],
+    settings=Settings(dpi=150),
+)
+
+report = report.create_in_cloud(
+    "CHT, dpi=default",
+    cases,
+)
+
+report.wait()
+report.download("report.pdf")
