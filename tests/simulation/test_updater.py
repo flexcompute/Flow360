@@ -1320,9 +1320,7 @@ def test_updater_to_25_8_3_no_coordinate_systems():
     params_as_dict_3 = {
         "version": "25.8.2",
         "unit_system": {"name": "SI"},
-        "private_attribute_asset_cache": {
-            "coordinate_system_status": {"coordinate_systems": []}
-        },
+        "private_attribute_asset_cache": {"coordinate_system_status": {"coordinate_systems": []}},
     }
 
     params_new_3 = updater(
