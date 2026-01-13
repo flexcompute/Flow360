@@ -270,15 +270,46 @@ class Transformation(Flow360BaseModel):
 
 
 class CoordinateSystem(Flow360BaseModel):
-    """Coordinate system using geometric transformation primitives."""
+    """
+    Coordinate system using geometric transformation primitives.
+
+    The transformation is applied in the following order:
+
+    1. **Scale**: Apply scaling factors (sx, sy, sz) about the reference_point
+    2. **Rotate**: Rotate by angle_of_rotation about axis_of_rotation through the reference_point
+    3. **Translate**: Apply translation vector to the result
+
+    Mathematically, for a point P, the transformation is:
+        P' = R * S * (P - reference_point) + reference_point + translation
+
+    where:
+        - S is the scaling matrix with diagonal (sx, sy, sz)
+        - R is the rotation matrix derived from axis_of_rotation and angle_of_rotation
+        - reference_point is the origin for scale and rotation operations
+        - translation is the final displacement vector
+
+    Examples
+    --------
+    Create a coordinate system that scales by 2x, rotates 90° about Z-axis, then translates:
+
+    >>> import flow360 as fl
+    >>> cs = fl.CoordinateSystem(
+    ...     name="my_frame",
+    ...     reference_point=(0, 0, 0) * fl.u.m,
+    ...     axis_of_rotation=(0, 0, 1),
+    ...     angle_of_rotation=90 * fl.u.deg,
+    ...     scale=(2, 2, 2),
+    ...     translation=(1, 0, 0) * fl.u.m
+    ... )
+    """
 
     type_name: Literal["CoordinateSystem"] = pd.Field("CoordinateSystem", frozen=True)
 
     name: str = pd.Field(description="Name of the coordinate system.")
-    origin: LengthType.Point = pd.Field(  # pylint:disable=no-member
+    reference_point: LengthType.Point = pd.Field(  # pylint:disable=no-member
         (0, 0, 0) * u.m,  # pylint:disable=no-member
-        description="The origin for geometry transformation in the order of scale,"
-        " rotation and translation.",
+        description="Reference point about which scaling and rotation are performed. "
+        "Translation is applied after scale and rotation.",
     )
 
     axis_of_rotation: Axis = pd.Field((1, 0, 0))
@@ -292,7 +323,7 @@ class CoordinateSystem(Flow360BaseModel):
     def _get_local_matrix(self) -> np.ndarray:
         """Local transformation without applying inheritance."""
         return _resolve_transformation_matrix(
-            origin=self.origin,
+            origin=self.reference_point,
             axis_of_rotation=self.axis_of_rotation,
             angle_of_rotation=self.angle_of_rotation,
             scale=self.scale,

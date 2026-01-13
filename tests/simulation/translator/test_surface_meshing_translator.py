@@ -1111,7 +1111,7 @@ def test_gai_surface_mesher_refinements():
             # Coordinate systems replace body-group transformations.
             coordinate_system = CoordinateSystem(
                 name="body_group_cs",
-                origin=[0, 0, 0] * u.m,
+                reference_point=[0, 0, 0] * u.m,
                 axis_of_rotation=(0, 0, 1),
                 angle_of_rotation=0 * u.deg,
                 scale=(1.0, 1.0, 1.0),
