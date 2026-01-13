@@ -80,7 +80,7 @@ def test_coordinate_system_transformation_in_gai_translated_json(mock_geometry):
             # - 90 degree rotation around Z axis
             coordinate_system = CoordinateSystem(
                 name="test_vehicle_frame",
-                origin=[0, 0, 0] * u.m,
+                reference_point=[0, 0, 0] * u.m,
                 axis_of_rotation=(0, 0, 1),
                 angle_of_rotation=90 * u.deg,
                 scale=(1.0, 1.0, 1.0),
