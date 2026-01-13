@@ -183,6 +183,20 @@ class NewSurfaceMeshDependencyRequest(Flow360RequestsV2):
     icon: str = pd_v2.Field(default="", description="project description")
 
 
+class _Resource(Flow360RequestsV2):
+    type: Literal["Case", "Project"]
+    id: str
+
+
+class NewReportRequest(Flow360RequestsV2):
+    "New report request"
+
+    name: str
+    resources: List[_Resource]
+    config_json: str
+    solver_version: str
+
+
 class DraftCreateRequest(Flow360RequestsV2):
     """Data model for draft create request"""
 

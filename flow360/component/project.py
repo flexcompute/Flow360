@@ -80,6 +80,7 @@ from flow360.exceptions import (
     Flow360WebError,
 )
 from flow360.log import log
+from flow360.plugins.report.report import get_default_report_summary_template
 from flow360.version import __solver_version__
 
 AssetOrResource = Union[type[AssetBase], type[Flow360Resource]]
@@ -2215,4 +2216,10 @@ class Project(pd.BaseModel):
             draft = case_or_draft
             return draft
         case = case_or_draft
+        report_template = get_default_report_summary_template()
+        report_template.create_in_cloud(
+            name=f"{name}-summary",
+            cases=[case],
+            solver_version=solver_version if solver_version else self.solver_version,
+        )
         return case
