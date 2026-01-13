@@ -96,8 +96,6 @@ class EntityBase(Flow360BaseModel, metaclass=ABCMeta):
                 "Copying an entity requires a new name to be specified. "
                 "Please provide a new name in the update dictionary."
             )
-        kwargs.pop("private_attribute_id", None)
-        update.pop("private_attribute_id", None)
         return super().copy(update=update, **kwargs)
 
     def __eq__(self, other):
