@@ -19,6 +19,9 @@ import pydantic as pd
 
 from flow360.cloud.s3_utils import get_local_filename_and_create_folders
 from flow360.component.simulation.entity_info import GeometryEntityInfo
+from flow360.component.simulation.framework.entity_expansion_utils import (
+    expand_entity_list_in_context,
+)
 from flow360.component.simulation.models.surface_models import BoundaryBase
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.v1.flow360_params import Flow360Params
@@ -673,7 +676,6 @@ class PerEntityResultCSVModel(ResultCSVModel):
             return rf"^(?:{re.escape(word)}|[^/]+/{re.escape(word)})$"
 
         self.reload_data()  # Remove all the imposed filters
-        print(">> _x_columns =", self._x_columns)
         raw_values = {}
         for x_column in self._x_columns:
             raw_values[x_column] = np.array(self.raw_values[x_column])
@@ -712,9 +714,8 @@ class PerEntityResultCSVModel(ResultCSVModel):
             if not isinstance(model, BoundaryBase):
                 continue
             boundary_name = model.name if model.name is not None else model.type
-            entity_groups[boundary_name].extend(
-                [entity.name for entity in model.entities.stored_entities]
-            )
+            entity_names = expand_entity_list_in_context(model.entities, params, return_names=True)
+            entity_groups[boundary_name].extend(entity_names)
         self_copy = copy.deepcopy(self)  # Shield from modifying the current instance
         # pylint: disable=protected-access
         return self_copy._create_forces_group(entity_groups=entity_groups)

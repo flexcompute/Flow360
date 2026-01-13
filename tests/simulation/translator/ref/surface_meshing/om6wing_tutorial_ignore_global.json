@@ -21,7 +21,8 @@
     },
     "faces": {
         "body01_face001": {
-            "maxEdgeLength": 0.14
+            "maxEdgeLength": 0.14,
+            "curvatureResolutionAngle": 10
         }
     },
     "boundaries": {

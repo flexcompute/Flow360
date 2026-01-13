@@ -11,7 +11,7 @@ import copy
 import re
 from typing import Any
 
-from flow360.component.simulation.framework.entity_base import generate_uuid
+from flow360.component.simulation.framework.entity_utils import generate_uuid
 from flow360.component.simulation.framework.updater_functions import (
     fix_ghost_sphere_schema,
     populate_entity_id_with_name,
@@ -21,11 +21,13 @@ from flow360.component.simulation.framework.updater_functions import (
 from flow360.component.simulation.framework.updater_utils import (
     Flow360Version,
     compare_dicts,
+    recursive_remove_key,
 )
 from flow360.log import log
 from flow360.version import __version__
 
 DEFAULT_PLANAR_FACE_TOLERANCE = 1e-6
+DEFAULT_SLIDING_INTERFACE_TOLERANCE = 1e-2
 
 
 def _to_24_11_1(params_as_dict):
@@ -457,6 +459,11 @@ def _to_25_8_0(params_as_dict):
     return params_as_dict
 
 
+def _to_25_8_1(params_as_dict):
+    recursive_remove_key(params_as_dict, "transformation")
+    return params_as_dict
+
+
 VERSION_MILESTONES = [
     (Flow360Version("24.11.1"), _to_24_11_1),
     (Flow360Version("24.11.7"), _to_24_11_7),
@@ -473,6 +480,7 @@ VERSION_MILESTONES = [
     (Flow360Version("25.7.6"), _to_25_7_6),
     (Flow360Version("25.7.7"), _to_25_7_7),
     (Flow360Version("25.8.0b4"), _to_25_8_0),
+    (Flow360Version("25.8.1"), _to_25_8_1),
 ]  # A list of the Python API version tuple with there corresponding updaters.
 
 

@@ -15,6 +15,7 @@ from flow360.component.simulation.outputs.outputs import (
     SurfaceProbeOutput,
 )
 from flow360.component.simulation.primitives import Surface
+from flow360.component.simulation.run_control.run_control import RunControl
 from flow360.component.simulation.run_control.stopping_criterion import (
     StoppingCriterion,
 )
@@ -133,7 +134,7 @@ def test_criterion_single_point_probe_validation(
             monitor_output=single_point_probe_output,
             tolerance=0.01 * u.kg / u.m**3,
         )
-    assert criterion.monitor_output == single_point_probe_output
+    assert criterion.monitor_output == single_point_probe_output.private_attribute_id
 
     with SI_unit_system:
         criterion = StoppingCriterion(
@@ -141,13 +142,14 @@ def test_criterion_single_point_probe_validation(
             monitor_output=single_point_surface_probe_output,
             tolerance=0.01 * u.kg / u.m**3,
         )
-    assert criterion.monitor_output == single_point_surface_probe_output
+    assert criterion.monitor_output == single_point_surface_probe_output.private_attribute_id
 
 
 def test_criterion_multi_entities_probe_validation_fails(
     scalar_user_variable_density,
     single_point_probe_output,
     single_point_surface_probe_output,
+    mock_validation_context,
 ):
     """Test that multi-entity ProbeOutput is rejected."""
     message = (
@@ -159,7 +161,10 @@ def test_criterion_multi_entities_probe_validation_fails(
     multi_point_probe_output.entities.stored_entities.append(
         Point(name="pt2", location=(1, 1, 1) * u.m)
     )
-    with SI_unit_system, pytest.raises(ValueError, match=message):
+    mock_validation_context.info.output_dict = {
+        multi_point_probe_output.private_attribute_id: multi_point_probe_output
+    }
+    with SI_unit_system, mock_validation_context, pytest.raises(ValueError, match=message):
         StoppingCriterion(
             monitor_field=scalar_user_variable_density,
             monitor_output=multi_point_probe_output,
@@ -175,7 +180,10 @@ def test_criterion_multi_entities_probe_validation_fails(
             number_of_points=2,
         ),
     ]
-    with SI_unit_system, pytest.raises(ValueError, match=message):
+    mock_validation_context.info.output_dict = {
+        point_array_surface_probe_output.private_attribute_id: point_array_surface_probe_output
+    }
+    with SI_unit_system, mock_validation_context, pytest.raises(ValueError, match=message):
         StoppingCriterion(
             monitor_field=scalar_user_variable_density,
             monitor_output=point_array_surface_probe_output,
@@ -183,12 +191,17 @@ def test_criterion_multi_entities_probe_validation_fails(
         )
 
 
-def test_criterion_field_exists_in_output_validation(single_point_probe_output):
+def test_criterion_field_exists_in_output_validation(
+    single_point_probe_output, mock_validation_context
+):
     """Test that monitor field must exist in monitor output."""
     scalar_field = UserVariable(name="test_field", value=solution.pressure)
     message = "The monitor field does not exist in the monitor output."
 
-    with SI_unit_system, pytest.raises(ValueError, match=message):
+    mock_validation_context.info.output_dict = {
+        single_point_probe_output.private_attribute_id: single_point_probe_output
+    }
+    with SI_unit_system, mock_validation_context, pytest.raises(ValueError, match=message):
         criterion = StoppingCriterion(
             monitor_field=scalar_field,
             monitor_output=single_point_probe_output,
@@ -229,10 +242,17 @@ def test_criterion_string_field_tolerance_validation(single_point_probe_output):
 
 
 def test_criterion_dimension_matching_validation(
-    scalar_user_variable_density, single_point_probe_output, surface_integral_output
+    scalar_user_variable_density,
+    single_point_probe_output,
+    surface_integral_output,
+    mock_validation_context,
 ):
     """Test that monitor field and tolerance dimensions must match."""
-    with SI_unit_system:
+    message = "The dimensions of monitor field and tolerance do not match."
+    mock_validation_context.info.output_dict = {
+        single_point_probe_output.private_attribute_id: single_point_probe_output
+    }
+    with SI_unit_system, mock_validation_context:
         criterion = StoppingCriterion(
             monitor_field=scalar_user_variable_density,
             monitor_output=single_point_probe_output,
@@ -240,8 +260,18 @@ def test_criterion_dimension_matching_validation(
         )
     assert criterion.tolerance == 0.01 * u.kg / u.m**3
 
+    with SI_unit_system, mock_validation_context, pytest.raises(ValueError, match=message):
+        StoppingCriterion(
+            monitor_field=scalar_user_variable_density,
+            monitor_output=single_point_probe_output,
+            tolerance=0.01,  # Dimensionless tolerance for dimensional field
+        )
+
     # Valid case: surface integral tolerance's dimenision should match with field_dimensions * (length)**2
-    with SI_unit_system:
+    mock_validation_context.info.output_dict = {
+        surface_integral_output.private_attribute_id: surface_integral_output
+    }
+    with SI_unit_system, mock_validation_context:
         criterion = StoppingCriterion(
             monitor_field=scalar_user_variable_density,
             monitor_output=surface_integral_output,
@@ -249,17 +279,7 @@ def test_criterion_dimension_matching_validation(
         )
     assert criterion.tolerance == 0.01 * u.kg / u.m
 
-    # Invalid case: mismatched dimensions
-    message = "The dimensions of monitor field and tolerance do not match."
-
-    with SI_unit_system, pytest.raises(ValueError, match=message):
-        StoppingCriterion(
-            monitor_field=scalar_user_variable_density,
-            monitor_output=single_point_probe_output,
-            tolerance=0.01,  # Dimensionless tolerance for dimensional field
-        )
-
-    with SI_unit_system, pytest.raises(ValueError, match=message):
+    with SI_unit_system, mock_validation_context, pytest.raises(ValueError, match=message):
         criterion = StoppingCriterion(
             monitor_field=scalar_user_variable_density,
             monitor_output=surface_integral_output,
@@ -290,23 +310,32 @@ def test_tolerance_window_size_validation(scalar_user_variable_density, single_p
         )
 
 
-def test_criterion_with_moving_statistic(scalar_user_variable_density, single_point_probe_output):
+def test_criterion_with_moving_statistic(
+    scalar_user_variable_density, single_point_probe_output, mock_validation_context
+):
     """Test StoppingCriterion with MovingStatistic in output."""
 
     single_point_probe_output.moving_statistic = MovingStatistic(
-        method="deviation", moving_window_size=10
+        method="range", moving_window_size=10
     )
-    with SI_unit_system:
+    with SI_unit_system, mock_validation_context:
         criterion = StoppingCriterion(
             name="Criterion_1",
             monitor_output=single_point_probe_output,
             monitor_field=scalar_user_variable_density,
             tolerance=0.01 * u.kg / u.m**3,
         )
+        SimulationParams(
+            outputs=[single_point_probe_output],
+            run_control=RunControl(stopping_criteria=[criterion]),
+        )
 
     assert criterion.name == "Criterion_1"
-    assert criterion.monitor_output.moving_statistic.method == "deviation"
-    assert criterion.monitor_output.moving_statistic.moving_window_size == 10
+    criterion_monitor_output = mock_validation_context.info.output_dict.get(
+        criterion.monitor_output
+    )
+    assert criterion_monitor_output.moving_statistic.method == "range"
+    assert criterion_monitor_output.moving_statistic.moving_window_size == 10
 
 
 def test_criterion_default_values(scalar_user_variable_density, single_point_probe_output):
@@ -322,6 +351,79 @@ def test_criterion_default_values(scalar_user_variable_density, single_point_pro
     assert criterion.name == "StoppingCriterion"
     assert criterion.tolerance_window_size is None
     assert criterion.type_name == "StoppingCriterion"
+
+
+def test_criterion_monitor_exists_in_outputs_validation(
+    scalar_user_variable_density, mock_validation_context
+):
+    """Test that monitor output must exist in SimulationParams outputs list.
+
+    This tests the _check_monitor_exists_in_output_list validator which ensures
+    that the monitor_output referenced in a StoppingCriterion exists in the
+    SimulationParams outputs list.
+
+    """
+
+    # Create a probe output that will be in the outputs list
+    probe_in_list = ProbeOutput(
+        name="probe_in_list",
+        output_fields=[scalar_user_variable_density],
+        probe_points=[Point(name="pt1", location=(0, 0, 0) * u.m)],
+    )
+    mock_validation_context.info.output_dict = {probe_in_list.private_attribute_id: probe_in_list}
+    # Success case: monitor_output exists in outputs list
+    # When validating SimulationParams, the outputs list is used to build an output_dict.
+    # The _check_monitor_exists_in_output_lists validator checks that the
+    # monitor_output's private_attribute_id exists in this output_dict.
+    with SI_unit_system, mock_validation_context:
+        params = SimulationParams(
+            models=[Fluid()],
+            outputs=[probe_in_list],
+            run_control=RunControl(
+                stopping_criteria=[
+                    StoppingCriterion(
+                        monitor_field=scalar_user_variable_density,
+                        monitor_output=probe_in_list,
+                        tolerance=0.01 * u.kg / u.m**3,
+                    )
+                ]
+            ),
+        )
+
+    # Verify the criterion was created successfully
+    assert len(params.run_control.stopping_criteria) == 1
+
+    # Verify the monitor_output is stored as id
+    assert (
+        params.run_control.stopping_criteria[0].monitor_output == probe_in_list.private_attribute_id
+    )
+
+    message = "The monitor output does not exist in the outputs list."
+    probe_in_list2 = ProbeOutput(
+        name="probe_in_list2",
+        output_fields=[scalar_user_variable_density],
+        probe_points=[Point(name="pt1", location=(0, 0, 1) * u.m)],
+    )
+    mock_validation_context.info.output_dict = {probe_in_list2.private_attribute_id: probe_in_list2}
+    with SI_unit_system, mock_validation_context, pytest.raises(ValueError, match=message):
+        StoppingCriterion(
+            monitor_field=scalar_user_variable_density,
+            monitor_output=probe_in_list,
+            tolerance=0.01 * u.kg / u.m**3,
+        )
+
+    message = "The monitor output does not exist in the outputs list."
+    mock_validation_context.info.output_dict = None
+    with SI_unit_system, mock_validation_context:
+        params = SimulationParams(
+            models=[Fluid()],
+        )
+    with SI_unit_system, mock_validation_context, pytest.raises(ValueError, match=message):
+        StoppingCriterion(
+            monitor_field=scalar_user_variable_density,
+            monitor_output=probe_in_list,
+            tolerance=0.01 * u.kg / u.m**3,
+        )
 
 
 def test_criterion_with_monitor_output_id():

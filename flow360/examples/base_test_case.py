@@ -223,3 +223,6 @@ class BaseTestCase(metaclass=ABCMeta):
             cls._get_file(cls.url.geometry, cls._geometry_filename)
         if hasattr(cls.url, "surface_json"):
             cls._get_file(cls.url.surface_json, cls._surface_json)
+        if hasattr(cls.url, "extra"):
+            for key, value in cls.url.extra.items():
+                cls._get_file(value, cls._extra[key])

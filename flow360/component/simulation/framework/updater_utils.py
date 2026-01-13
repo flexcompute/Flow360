@@ -3,26 +3,34 @@
 import re
 from functools import wraps
 from numbers import Number
+from typing import Tuple
 
 import numpy as np
 
 from flow360.version import __version__
 
 
-def recursive_remove_key(data, key: str):
-    """Recursively remove a key from nested dict/list structures in place.
+def recursive_remove_key(data, key: str, *additional_keys: str):
+    """Recursively remove one or more keys from nested dict/list structures in place.
 
     This function performs an in-place traversal without unnecessary allocations
     to preserve performance. It handles arbitrarily nested combinations of
     dictionaries and lists.
     """
-    if isinstance(data, dict):
-        data.pop(key, None)
-        for value in data.values():
-            recursive_remove_key(value, key)
-    elif isinstance(data, list):
-        for element in data:
-            recursive_remove_key(element, key)
+    keys: Tuple[str, ...] = (key,) + additional_keys
+
+    # Iterative traversal is typically faster than deep recursion in Python and
+    # avoids recursion depth limits for heavily nested WebUI payloads.
+    stack = [data]
+    while stack:
+        current = stack.pop()
+
+        if isinstance(current, dict):
+            for item_key in keys:
+                current.pop(item_key, None)
+            stack.extend(current.values())
+        elif isinstance(current, list):
+            stack.extend(current)
 
 
 PYTHON_API_VERSION_REGEXP = r"^(\d+)\.(\d+)\.(\d+)(?:b(\d+))?$"
@@ -39,7 +47,7 @@ def compare_dicts(dict1, dict2, atol=1e-15, rtol=1e-10, ignore_keys=None):
 
     if dict1_filtered.keys() != dict2_filtered.keys():
         print(
-            f"dict keys not equal, dict1 {sorted(dict1_filtered.keys())}, dict2 {sorted(dict2_filtered.keys())}"
+            f"dict keys not equal:\n dict1 {sorted(dict1_filtered.keys())}\n dict2 {sorted(dict2_filtered.keys())}"
         )
         return False
 
@@ -48,7 +56,7 @@ def compare_dicts(dict1, dict2, atol=1e-15, rtol=1e-10, ignore_keys=None):
         value2 = dict2_filtered[key]
 
         if not compare_values(value1, value2, atol, rtol, ignore_keys):
-            print(f"dict value of key {key} not equal dict1 {dict1[key]}, dict2 {dict2[key]}")
+            print(f"dict value of key {key} not equal:\n dict1 {dict1[key]}\n dict2 {dict2[key]}")
             return False
 
     return True
@@ -59,6 +67,13 @@ def compare_values(value1, value2, atol=1e-15, rtol=1e-10, ignore_keys=None):
     # Handle numerical comparisons first (including int vs float)
     if isinstance(value1, Number) and isinstance(value2, Number):
         return np.isclose(value1, value2, rtol, atol)
+
+    # Tuples get converted to lists when writing the JSON file
+    if isinstance(value1, tuple):
+        value1 = list(value1)
+
+    if isinstance(value2, tuple):
+        value2 = list(value2)
 
     # Handle type mismatches for non-numerical types
     if type(value1) != type(value2):
@@ -87,7 +102,7 @@ def compare_lists(list1, list2, atol=1e-15, rtol=1e-10, ignore_keys=None):
 
     for item1, item2 in zip(list1, list2):
         if not compare_values(item1, item2, atol, rtol, ignore_keys):
-            print(f"list value not equal list1 {item1}, list2 {item2}")
+            print(f"list value not equal:\n list1 {item1}\n list2 {item2}")
             return False
 
     return True

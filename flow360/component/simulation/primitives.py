@@ -1,9 +1,10 @@
+# pylint: disable=too-many-lines
 """
 Primitive type definitions for simulation entities.
 """
 
 import re
-from abc import ABCMeta
+from abc import ABCMeta, abstractmethod
 from typing import Annotated, ClassVar, List, Literal, Optional, Tuple, Union, final
 
 import numpy as np
@@ -13,15 +14,17 @@ from typing_extensions import Self
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.entity_operation import (
-    Transformation,
+    _extract_rotation_matrix,
+    _extract_scale_from_matrix,
+    _is_uniform_scale,
+    _rotation_matrix_to_axis_angle,
+    _transform_direction,
+    _transform_point,
     rotation_matrix_from_axis_and_angle,
 )
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.simulation.framework.entity_base import (
-    EntityBase,
-    EntityList,
-    generate_uuid,
-)
+from flow360.component.simulation.framework.entity_base import EntityBase, EntityList
+from flow360.component.simulation.framework.entity_utils import generate_uuid
 from flow360.component.simulation.framework.multi_constructor_model_base import (
     MultiConstructorBaseModel,
 )
@@ -30,10 +33,13 @@ from flow360.component.simulation.unit_system import AngleType, AreaType, Length
 from flow360.component.simulation.user_code.core.types import ValueOrExpression
 from flow360.component.simulation.utils import BoundingBoxType, model_attribute_unlock
 from flow360.component.simulation.validation.validation_context import (
-    get_validation_info,
+    ParamsValidationInfo,
+    contextual_field_validator,
+    contextual_model_validator,
 )
 from flow360.component.types import Axis
 from flow360.component.utils import _naming_pattern_handler
+from flow360.exceptions import Flow360DeprecationError, Flow360ValueError
 
 BOUNDARY_FULL_NAME_WHEN_NOT_FOUND = "This boundary does not exist!!!"
 
@@ -148,10 +154,10 @@ class ReferenceGeometry(Flow360BaseModel):
 
 class GeometryBodyGroup(EntityBase):
     """
-    :class:`GeometryBodyGroup` represents a collection of bodies that are grouped for transformation.
+    :class:`GeometryBodyGroup` represents a collection of bodies that are grouped for meshing and
+    coordinate-system-based transformation.
     """
 
-    entity_bucket: ClassVar[str] = "GeometryBodyGroupEntityType"
     private_attribute_tag_key: str = pd.Field(
         description="The tag/attribute string used to group bodies.",
     )
@@ -164,21 +170,32 @@ class GeometryBodyGroup(EntityBase):
     private_attribute_color: Optional[str] = pd.Field(
         None, description="Color used for visualization"
     )
-    transformation: Transformation = pd.Field(
-        Transformation(), description="The transformation performed on the body group"
-    )
     mesh_exterior: bool = pd.Field(
         True,
         description="Option to define whether to mesh exterior or interior of body group in geometry AI."
         "Note that this is a beta feature and the interface might change in future releases.",
     )
 
+    @property
+    def transformation(self):
+        """Deprecated property."""
+        raise Flow360DeprecationError(
+            "GeometryBodyGroup.transformation is deprecated and has been removed. "
+            "Please use CoordinateSystem for transformations instead."
+        )
+
+    @transformation.setter
+    def transformation(self, value):
+        """Deprecated property setter."""
+        raise Flow360DeprecationError(
+            "GeometryBodyGroup.transformation is deprecated and has been removed. "
+            "Please use CoordinateSystem for transformations instead."
+        )
+
 
 class _VolumeEntityBase(EntityBase, metaclass=ABCMeta):
     """All volumetric entities should inherit from this class."""
 
-    ### Warning: Please do not change this as it affects registry bucketing.
-    entity_bucket: ClassVar[str] = "VolumetricEntityType"
     private_attribute_zone_boundary_names: UniqueStringList = pd.Field(
         UniqueStringList(),
         frozen=True,
@@ -220,8 +237,6 @@ class _VolumeEntityBase(EntityBase, metaclass=ABCMeta):
 
 
 class _SurfaceEntityBase(EntityBase, metaclass=ABCMeta):
-    ### Warning: Please do not change this as it affects registry bucketing.
-    entity_bucket: ClassVar[str] = "SurfaceEntityType"
     private_attribute_full_name: Optional[str] = pd.Field(None, frozen=True)
 
     def _update_entity_info_with_metadata(self, volume_mesh_meta_data: dict) -> None:
@@ -254,19 +269,12 @@ class _SurfaceEntityBase(EntityBase, metaclass=ABCMeta):
         return self.private_attribute_full_name
 
 
-class _EdgeEntityBase(EntityBase, metaclass=ABCMeta):
-    ### Warning: Please do not change this as it affects registry bucketing.
-    entity_bucket: ClassVar[str] = "EdgeEntityType"
-
-
 @final
-class Edge(_EdgeEntityBase):
+class Edge(EntityBase):
     """
     Edge which contains a set of grouped edges from geometry.
     """
 
-    ### Warning: Please do not change this as it affects registry bucketing.
-    entity_bucket: ClassVar[str] = "EdgeEntityType"
     private_attribute_entity_type_name: Literal["Edge"] = pd.Field("Edge", frozen=True)
     private_attribute_tag_key: Optional[str] = pd.Field(
         None,
@@ -367,16 +375,14 @@ class Box(MultiConstructorBaseModel, _VolumeEntityBase):
         Construct box from principal axes
         """
 
-        from scipy.linalg import eig  # pylint: disable=import-outside-toplevel
-
         # validate
         x_axis, y_axis = np.array(axes[0]), np.array(axes[1])
         z_axis = np.cross(x_axis, y_axis)
 
         rotation_matrix = np.transpose(np.asarray([x_axis, y_axis, z_axis], dtype=np.float64))
 
-        # Calculate the rotation axis n
-        eigvals, eigvecs = eig(rotation_matrix)
+        # Calculate the rotation axis n using numpy instead of scipy
+        eigvals, eigvecs = np.linalg.eig(rotation_matrix)
         axis = np.real(eigvecs[:, np.where(np.isreal(eigvals))])
         if axis.shape[2] > 1:  # in case of 0 rotation angle
             axis = axis[:, :, 0]
@@ -429,6 +435,51 @@ class Box(MultiConstructorBaseModel, _VolumeEntityBase):
         setattr(info.data["private_attribute_input_cache"], info.field_name, value)
         return value
 
+    def _apply_transformation(self, matrix: np.ndarray) -> "Box":
+        """Apply 3x4 transformation matrix with uniform scale validation and rotation composition."""
+        # Validate uniform scaling
+        if not _is_uniform_scale(matrix):
+            scale_factors = _extract_scale_from_matrix(matrix)
+            raise Flow360ValueError(
+                f"Box only supports uniform scaling. " f"Detected scale factors: {scale_factors}"
+            )
+
+        # Extract uniform scale factor
+        uniform_scale = _extract_scale_from_matrix(matrix)[0]
+
+        # Transform center
+        center_array = np.asarray(self.center.value)
+        new_center_array = _transform_point(center_array, matrix)
+        new_center = type(self.center)(new_center_array, self.center.units)
+
+        # Combine rotations: existing rotation + transformation rotation
+        # Step 1: Get existing rotation matrix from axis-angle
+        existing_axis = np.asarray(self.axis_of_rotation, dtype=np.float64)
+        existing_axis = existing_axis / np.linalg.norm(existing_axis)
+        existing_angle = self.angle_of_rotation.to("rad").v.item()
+        rot_existing = rotation_matrix_from_axis_and_angle(existing_axis, existing_angle)
+
+        # Step 2: Extract pure rotation from transformation matrix
+        rot_transform = _extract_rotation_matrix(matrix)
+
+        # Step 3: Combine rotations (apply transformation rotation to existing)
+        rot_combined = rot_transform @ rot_existing
+
+        # Step 4: Extract new axis-angle from combined rotation
+        new_axis, new_angle = _rotation_matrix_to_axis_angle(rot_combined)
+
+        # Scale size uniformly
+        new_size = self.size * uniform_scale
+
+        return self.model_copy(
+            update={
+                "center": new_center,
+                "axis_of_rotation": tuple(new_axis),
+                "angle_of_rotation": new_angle * u.rad,
+                "size": new_size,
+            }
+        )
+
 
 @final
 class Cylinder(_VolumeEntityBase):
@@ -466,6 +517,46 @@ class Cylinder(_VolumeEntityBase):
                 f"Cylinder inner radius ({self.inner_radius}) must be less than outer radius ({self.outer_radius})."
             )
         return self
+
+    def _apply_transformation(self, matrix: np.ndarray) -> "Cylinder":
+        """Apply 3x4 transformation matrix with uniform scale validation."""
+        # Validate uniform scaling
+        if not _is_uniform_scale(matrix):
+            scale_factors = _extract_scale_from_matrix(matrix)
+            raise Flow360ValueError(
+                f"Cylinder only supports uniform scaling. "
+                f"Detected scale factors: {scale_factors}"
+            )
+
+        # Extract uniform scale factor
+        uniform_scale = _extract_scale_from_matrix(matrix)[0]
+
+        # Transform center
+        center_array = np.asarray(self.center.value)
+        new_center_array = _transform_point(center_array, matrix)
+        new_center = type(self.center)(new_center_array, self.center.units)
+
+        # Rotate axis
+        axis_array = np.asarray(self.axis)
+        transformed_axis = _transform_direction(axis_array, matrix)
+        new_axis = tuple(transformed_axis / np.linalg.norm(transformed_axis))
+
+        # Scale dimensions uniformly
+        new_height = self.height * uniform_scale
+        new_outer_radius = self.outer_radius * uniform_scale
+        new_inner_radius = (
+            self.inner_radius * uniform_scale if self.inner_radius is not None else None
+        )
+
+        return self.model_copy(
+            update={
+                "center": new_center,
+                "axis": new_axis,
+                "height": new_height,
+                "outer_radius": new_outer_radius,
+                "inner_radius": new_inner_radius,
+            }
+        )
 
 
 @final
@@ -523,6 +614,44 @@ class AxisymmetricBody(_VolumeEntityBase):
 
         return curve
 
+    def _apply_transformation(self, matrix: np.ndarray) -> "AxisymmetricBody":
+        """Apply 3x4 transformation matrix with uniform scale validation."""
+        # Validate uniform scaling
+        if not _is_uniform_scale(matrix):
+            scale_factors = _extract_scale_from_matrix(matrix)
+            raise Flow360ValueError(
+                f"AxisymmetricBody only supports uniform scaling. "
+                f"Detected scale factors: {scale_factors}"
+            )
+
+        # Extract uniform scale factor
+        uniform_scale = _extract_scale_from_matrix(matrix)[0]
+
+        # Transform center
+        center_array = np.asarray(self.center.value)
+        new_center_array = _transform_point(center_array, matrix)
+        new_center = type(self.center)(new_center_array, self.center.units)
+
+        # Rotate axis
+        axis_array = np.asarray(self.axis)
+        transformed_axis = _transform_direction(axis_array, matrix)
+        new_axis = tuple(transformed_axis / np.linalg.norm(transformed_axis))
+
+        # Scale profile curve uniformly
+        new_profile_curve = []
+        for point in self.profile_curve:
+            point_array = np.asarray(point.value)
+            scaled_point_array = point_array * uniform_scale
+            new_profile_curve.append(type(point)(scaled_point_array, point.units))
+
+        return self.model_copy(
+            update={
+                "center": new_center,
+                "axis": new_axis,
+                "profile_curve": new_profile_curve,
+            }
+        )
+
 
 class SurfacePrivateAttributes(Flow360BaseModel):
     """
@@ -578,20 +707,23 @@ class Surface(_SurfaceEntityBase):
         return True
 
     def _will_be_deleted_by_mesher(
-        # pylint: disable=too-many-arguments, too-many-return-statements
+        # pylint: disable=too-many-arguments, too-many-return-statements, too-many-branches
         self,
-        at_least_one_body_transformed: bool,
-        farfield_method: Optional[Literal["auto", "quasi-3d", "quasi-3d-periodic", "user-defined"]],
+        entity_transformation_detected: bool,
+        farfield_method: Optional[
+            Literal["auto", "quasi-3d", "quasi-3d-periodic", "user-defined", "wind-tunnel"]
+        ],
         global_bounding_box: Optional[BoundingBoxType],
         planar_face_tolerance: Optional[float],
         half_model_symmetry_plane_center_y: Optional[float],
         quasi_3d_symmetry_planes_center_y: Optional[tuple[float]],
+        farfield_domain_type: Optional[str] = None,
     ) -> bool:
         """
         Check against the automated farfield method and
         determine if the current `Surface` will be deleted by the mesher.
         """
-        if at_least_one_body_transformed:
+        if entity_transformation_detected:
             # If transformed then the following check will no longer be accurate
             # since we do not know the final bounding box for each surface and global model.
             return False
@@ -600,11 +732,23 @@ class Surface(_SurfaceEntityBase):
             # VolumeMesh or Geometry/SurfaceMesh with legacy schema.
             return False
 
-        if farfield_method == "user-defined":
-            # Not applicable to user defined farfield
-            return False
-
         length_tolerance = global_bounding_box.largest_dimension * planar_face_tolerance
+
+        if farfield_domain_type in ("half_body_positive_y", "half_body_negative_y"):
+            if self.private_attributes is not None:
+                # pylint: disable=no-member
+                y_min = self.private_attributes.bounding_box.ymin
+                y_max = self.private_attributes.bounding_box.ymax
+
+                if farfield_domain_type == "half_body_positive_y" and y_max < -length_tolerance:
+                    return True
+
+                if farfield_domain_type == "half_body_negative_y" and y_min > length_tolerance:
+                    return True
+
+        if farfield_method in ("user-defined", "wind-tunnel"):
+            # Not applicable to user defined or wind tunnel farfield
+            return False
 
         if farfield_method == "auto":
             if half_model_symmetry_plane_center_y is None:
@@ -628,11 +772,15 @@ class Surface(_SurfaceEntityBase):
 class ImportedSurface(EntityBase):
     """ImportedSurface for post-processing"""
 
-    private_attribute_registry_bucket_name: Literal["SurfaceEntityType"] = "SurfaceEntityType"
     private_attribute_entity_type_name: Literal["ImportedSurface"] = pd.Field(
         "ImportedSurface", frozen=True
     )
-    file_name: str
+
+    private_attribute_sub_components: Optional[List[str]] = pd.Field(
+        None, description="A list of sub components"
+    )
+    file_name: Optional[str] = None
+    surface_mesh_id: Optional[str] = None
 
 
 class GhostSurface(_SurfaceEntityBase):
@@ -644,9 +792,27 @@ class GhostSurface(_SurfaceEntityBase):
     All `GhostSurface` entities will be replaced with exact entity instances before simulation.json submission.
     """
 
+    name: str = pd.Field(frozen=True)
+
     private_attribute_entity_type_name: Literal["GhostSurface"] = pd.Field(
         "GhostSurface", frozen=True
     )
+
+
+class WindTunnelGhostSurface(GhostSurface):
+    """Wind tunnel boundary patches."""
+
+    private_attribute_entity_type_name: Literal["WindTunnelGhostSurface"] = pd.Field(
+        "WindTunnelGhostSurface", frozen=True
+    )
+    # For frontend: list of floor types that use this boundary patch, or ["all"]
+    used_by: List[
+        Literal["StaticFloor", "FullyMovingFloor", "CentralBelt", "WheelBelts", "all"]
+    ] = pd.Field(default_factory=lambda: ["all"], frozen=True)
+
+    def exists(self, _) -> bool:
+        """Currently, .exists() is only called on automated farfield"""
+        raise ValueError(".exists should not be called on wind tunnel farfield")
 
 
 # pylint: disable=missing-class-docstring
@@ -715,6 +881,19 @@ class GhostCircularPlane(_SurfaceEntityBase):
 
         return positive_half or negative_half
 
+    def _per_entity_type_validation(self, param_info: ParamsValidationInfo):
+        """Validate ghost surface existence and configuration."""
+        # pylint: disable=import-outside-toplevel
+        from flow360.component.simulation.validation.validation_utils import (
+            check_symmetric_boundary_existence,
+            check_user_defined_farfield_symmetry_existence,
+        )
+
+        # These functions expect a list, so wrap self
+        check_user_defined_farfield_symmetry_existence([self], param_info)
+        check_symmetric_boundary_existence([self], param_info)
+        return self
+
 
 class SurfacePairBase(Flow360BaseModel):
     """
@@ -762,7 +941,6 @@ class SnappyBody(EntityBase):
     keywords with a body::region naming scheme.
     """
 
-    entity_bucket: ClassVar[str] = "SurfaceGroupedEntityType"
     private_attribute_entity_type_name: Literal["SnappyBody"] = pd.Field("SnappyBody", frozen=True)
     private_attribute_id: str = pd.Field(
         default_factory=generate_uuid,
@@ -794,10 +972,10 @@ class SeedpointVolume(_VolumeEntityBase):
     """
 
     # pylint: disable=no-member
-    private_attribute_entity_type_name: Literal["SeedpointZone"] = pd.Field(
-        "SeedpointZone", frozen=True
+    private_attribute_entity_type_name: Literal["SeedpointVolume"] = pd.Field(
+        "SeedpointVolume", frozen=True
     )
-    type: Literal["SeedpointZone"] = pd.Field("SeedpointZone", frozen=True)
+    type: Literal["SeedpointVolume"] = pd.Field("SeedpointVolume", frozen=True)
     point_in_mesh: LengthType.Point = pd.Field(
         description="Seedpoint for a main fluid zone in snappyHexMesh."
     )
@@ -807,6 +985,15 @@ class SeedpointVolume(_VolumeEntityBase):
     axis: Optional[Axis] = pd.Field(None)  # Rotation support
     center: Optional[LengthType.Point] = pd.Field(None, description="")  # Rotation support
     private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
+
+    def _per_entity_type_validation(self, param_info: ParamsValidationInfo):
+        """Validate that SeedpointVolume is listed in meshing->volume_zones."""
+        if self.name not in param_info.to_be_generated_custom_volumes:
+            raise ValueError(
+                f"SeedpointVolume {self.name} is not listed under meshing->volume_zones(or zones)"
+                "->CustomZones."
+            )
+        return self
 
 
 VolumeEntityTypes = Union[GenericVolume, Cylinder, Box, str]
@@ -851,7 +1038,7 @@ class CustomVolume(_VolumeEntityBase):
     private_attribute_entity_type_name: Literal["CustomVolume"] = pd.Field(
         "CustomVolume", frozen=True
     )
-    boundaries: EntityList[Surface] = pd.Field(
+    boundaries: EntityList[Surface, WindTunnelGhostSurface] = pd.Field(
         description="The surfaces that define the boundaries of the custom volume."
     )
     private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
@@ -861,48 +1048,164 @@ class CustomVolume(_VolumeEntityBase):
     # pylint: disable=no-member
     center: Optional[LengthType.Point] = pd.Field(None, description="")  # Rotation support
 
-    @pd.field_validator("boundaries", mode="after")
+    @contextual_field_validator("boundaries", mode="after")
     @classmethod
-    def ensure_unique_boundary_names(cls, v):
+    def ensure_unique_boundary_names(cls, v, param_info: ParamsValidationInfo):
         """Check if the boundaries have different names within a CustomVolume."""
-        if len(v.stored_entities) != len({boundary.name for boundary in v.stored_entities}):
+        expanded = param_info.expand_entity_list(v)
+        if len(expanded) != len({boundary.name for boundary in expanded}):
             raise ValueError("The boundaries of a CustomVolume must have different names.")
         return v
 
-    @pd.model_validator(mode="after")
-    def ensure_beta_mesher_and_user_defined_farfield(self):
+    @contextual_model_validator(mode="after")
+    def ensure_beta_mesher_and_user_defined_farfield(self, param_info: ParamsValidationInfo):
         """Check if the beta mesher is enabled and that the user is using user defined farfield."""
-        validation_info = get_validation_info()
-        if validation_info is None:
-            return self
-        if validation_info.is_beta_mesher and validation_info.farfield_method == "user-defined":
+        if param_info.is_beta_mesher and param_info.farfield_method == "user-defined":
             return self
         raise ValueError(
             "CustomVolume is only supported when beta mesher and user defined farfield are enabled."
         )
 
+    def _apply_transformation(self, matrix: np.ndarray) -> "CustomVolume":
+        """Apply rotation from transformation matrix to axes only (no translation or scaling)."""
+        if self.axes is None:
+            # No axes to transform
+            return self
 
-def check_custom_volume_creation(value):
-    """Check if the custom volume is listed under meshing->volume_zones."""
-    validation_info = get_validation_info()
-    if validation_info is None:
-        return value
-    for volume in value:
-        if not isinstance(volume, (CustomVolume, SeedpointVolume)):
-            continue
-        if volume.name not in validation_info.to_be_generated_custom_volumes:
+        # Extract pure rotation matrix (ignore translation and scaling)
+        rotation_matrix = _extract_rotation_matrix(matrix)
+
+        # Rotate both axes
+        x_axis_array = np.asarray(self.axes[0])
+        y_axis_array = np.asarray(self.axes[1])
+
+        new_x_axis = rotation_matrix @ x_axis_array
+        new_y_axis = rotation_matrix @ y_axis_array
+
+        new_axes = (tuple(new_x_axis), tuple(new_y_axis))
+
+        return self.model_copy(update={"axes": new_axes})
+
+    def _per_entity_type_validation(self, param_info: ParamsValidationInfo):
+        """Validate that CustomVolume is listed in meshing->volume_zones."""
+        if self.name not in param_info.to_be_generated_custom_volumes:
             raise ValueError(
-                f"{type(volume).__name__} {volume.name} is not listed under meshing->volume_zones(or zones)"
-                + "->CustomZones."
+                f"CustomVolume {self.name} is not listed under meshing->volume_zones(or zones)"
+                "->CustomZones."
             )
-    return value
+        return self
 
 
-class EntityListWithCustomVolume(EntityList):
-    """Entity list with customized validators for CustomVolume"""
+class _MirroredEntityBase(EntityBase, metaclass=ABCMeta):
+    """
+    Base class for mirrored entities (MirroredSurface, MirroredGeometryBodyGroup).
+    Provides common validation logic for checking source entity and mirror plane existence.
+    """
 
-    @pd.field_validator("stored_entities", mode="after")
-    @classmethod
-    def custom_volume_validator(cls, value):
-        """Run all validators"""
-        return check_custom_volume_creation(value)
+    mirror_plane_id: str = pd.Field(description="ID of the mirror plane.")
+
+    @property
+    @abstractmethod
+    def source_entity_id_field_name(self) -> str:
+        """Return the name of the field containing the source entity ID."""
+
+    @property
+    @abstractmethod
+    def source_entity_type_name(self) -> str:
+        """Return the entity type name of the source entity."""
+
+    def _manual_assignment_validation(self, param_info: ParamsValidationInfo):
+        """Validate that source entity and mirror plane still exist."""
+        # pylint: disable=import-outside-toplevel
+        from flow360.component.simulation.validation.validation_context import (
+            add_validation_warning,
+        )
+
+        registry = param_info.get_entity_registry()
+        if registry is None:
+            return self
+
+        # Get source entity ID using the field name from subclass
+        source_entity_id = getattr(self, self.source_entity_id_field_name)
+
+        # Check if source entity exists
+        source_entity = registry.find_by_type_name_and_id(
+            entity_type=self.source_entity_type_name, entity_id=source_entity_id
+        )
+        if source_entity is None:
+            add_validation_warning(
+                f"{self.__class__.__name__} '{self.name}' references non-existent source "
+                f"{self.source_entity_type_name.lower()} (id={source_entity_id}). "
+                "This entity will be removed."
+            )
+            return None
+
+        # Check if mirror plane exists
+        mirror_plane = registry.find_by_type_name_and_id(
+            entity_type="MirrorPlane", entity_id=self.mirror_plane_id
+        )
+        if mirror_plane is None:
+            add_validation_warning(
+                f"{self.__class__.__name__} '{self.name}' references non-existent mirror plane "
+                f"(id={self.mirror_plane_id}). This entity will be removed."
+            )
+            return None
+
+        return self
+
+
+class MirroredSurface(_SurfaceEntityBase, _MirroredEntityBase):
+    """
+    :class:`MirroredSurface` class for representing a mirrored surface.
+    """
+
+    name: str = pd.Field()
+    surface_id: str = pd.Field(
+        description="ID of the original surface being mirrored.", frozen=True
+    )
+    mirror_plane_id: str = pd.Field(description="ID of the mirror plane to mirror the surface.")
+
+    private_attribute_entity_type_name: Literal["MirroredSurface"] = pd.Field(
+        "MirroredSurface", frozen=True
+    )
+    private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
+
+    # Private attribute used for draft-only bookkeeping. This must NOT affect schema or serialization.
+    _geometry_body_group_id: Optional[str] = pd.PrivateAttr(default=None)
+
+    @property
+    def source_entity_id_field_name(self) -> str:
+        """Return the name of the field containing the source entity ID."""
+        return "surface_id"
+
+    @property
+    def source_entity_type_name(self) -> str:
+        """Return the entity type name of the source entity."""
+        return "Surface"
+
+
+class MirroredGeometryBodyGroup(_MirroredEntityBase):
+    """
+    :class:`MirroredGeometryBodyGroup` class for representing a mirrored geometry body group.
+    """
+
+    name: str = pd.Field()
+    geometry_body_group_id: str = pd.Field(description="ID of the geometry body group to mirror.")
+    mirror_plane_id: str = pd.Field(
+        description="ID of the mirror plane to mirror the geometry body group."
+    )
+
+    private_attribute_entity_type_name: Literal["MirroredGeometryBodyGroup"] = pd.Field(
+        "MirroredGeometryBodyGroup", frozen=True
+    )
+    private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
+
+    @property
+    def source_entity_id_field_name(self) -> str:
+        """Return the name of the field containing the source entity ID."""
+        return "geometry_body_group_id"
+
+    @property
+    def source_entity_type_name(self) -> str:
+        """Return the entity type name of the source entity."""
+        return "GeometryBodyGroup"

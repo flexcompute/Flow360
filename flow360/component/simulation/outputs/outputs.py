@@ -9,13 +9,21 @@ Caveats:
 from typing import Annotated, List, Literal, Optional, Union, get_args
 
 import pydantic as pd
+from typing_extensions import deprecated
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.simulation.framework.entity_base import EntityList, generate_uuid
+from flow360.component.simulation.framework.entity_base import EntityList
+from flow360.component.simulation.framework.entity_utils import generate_uuid
 from flow360.component.simulation.framework.expressions import StringExpression
+from flow360.component.simulation.framework.param_utils import serialize_model_obj_to_id
 from flow360.component.simulation.framework.unique_list import UniqueItemList
-from flow360.component.simulation.models.surface_models import EntityListAllowingGhost
+from flow360.component.simulation.models.surface_models import Wall
+from flow360.component.simulation.models.volume_models import (
+    ActuatorDisk,
+    BETDisk,
+    PorousMedium,
+)
 from flow360.component.simulation.outputs.output_entities import (
     Isosurface,
     Point,
@@ -26,18 +34,29 @@ from flow360.component.simulation.outputs.output_entities import (
 from flow360.component.simulation.outputs.output_fields import (
     AllFieldNames,
     CommonFieldNames,
+    ForceOutputCoefficientNames,
     InvalidOutputFieldsForLiquid,
     SliceFieldNames,
     SurfaceFieldNames,
     VolumeFieldNames,
     get_field_values,
 )
+from flow360.component.simulation.outputs.render_config import (
+    Camera,
+    Environment,
+    FieldMaterial,
+    Lighting,
+    PBRMaterial,
+    SceneTransform,
+)
 from flow360.component.simulation.primitives import (
     GhostCircularPlane,
     GhostSphere,
     GhostSurface,
     ImportedSurface,
+    MirroredSurface,
     Surface,
+    WindTunnelGhostSurface,
 )
 from flow360.component.simulation.unit_system import LengthType, TimeType
 from flow360.component.simulation.user_code.core.types import (
@@ -48,16 +67,26 @@ from flow360.component.simulation.user_code.core.types import (
 from flow360.component.simulation.validation.validation_context import (
     ALL,
     CASE,
+    ParamsValidationInfo,
     TimeSteppingType,
-    get_validation_info,
+    add_validation_warning,
+    contextual_field_validator,
+    contextual_model_validator,
     get_validation_levels,
 )
 from flow360.component.simulation.validation.validation_utils import (
-    check_deleted_surface_in_entity_list,
+    validate_entity_list_surface_existence,
+    validate_improper_surface_field_usage_for_imported_surface,
 )
 from flow360.component.types import Axis
 
+ForceOutputModelType = Annotated[
+    Union[Wall, BETDisk, ActuatorDisk, PorousMedium],
+    pd.Field(discriminator="type"),
+]
 
+
+@deprecated("The `UserDefinedField` class is deprecated! Use `UserVariable` instead.")
 class UserDefinedField(Flow360BaseModel):
     """
 
@@ -112,6 +141,14 @@ class UserDefinedField(Flow360BaseModel):
             )
         return value
 
+    @contextual_model_validator(mode="after")
+    def _deprecation_warning(self):
+        add_validation_warning(
+            "The `UserDefinedField` class is deprecated! Please use `UserVariable` instead "
+            "which provides the same functionality but with better interface."
+        )
+        return self
+
 
 class MovingStatistic(Flow360BaseModel):
     """
@@ -120,49 +157,53 @@ class MovingStatistic(Flow360BaseModel):
     :class:`ProbeOutput`, :class:`SurfaceProbeOutput`,
     :class:`SurfaceIntegralOutput` and :class:`ForceOutput`.
 
+    Notes
+    -----
+    - The window size is defined by the number of data points recorded in the output.
+    - For steady simulations, the solver typically outputs a data point once every **10 pseudo steps**.
+      This means a :py:attr:`moving_window_size`=10 would cover 100 pseudo steps.
+      Thus, the :py:attr:`start_step` value is automatically rounded up to
+      the nearest multiple of 10 for steady simulations.
+    - For unsteady simulations, the solver outputs a data point for ** every physical step**.
+      A :py:attr:`moving_window_size`=10 would cover 10 physical steps.
+    - When :py:attr:`method` is set to "standard_deviation", the standard deviation is computed as a
+      **sample standard deviation** normalized by :math:`n-1` (Bessel's correction), where :math:`n`
+      is the number of data points in the moving window.
+    - When :py:attr:`method` is set to "range", the difference between the maximum and minimum values of
+      the monitored field in the moving window is computed.
+
     Example
     -------
 
     Define a moving statistic to compute the standard deviation in a moving window of
-    10 steps, with the initial 100 steps skipped.
+    10 data points, with the initial 100 steps skipped.
 
     >>> fl.MovingStatistic(
     ...     moving_window_size=10,
-    ...     method="std",
+    ...     method="standard_deviation",
     ...     start_step=100,
     ... )
 
     ====
     """
 
-    moving_window_size: pd.PositiveInt = pd.Field(
+    moving_window_size: pd.StrictInt = pd.Field(
         10,
-        description="The number of pseudo/physical steps to compute moving statistics. "
-        "For steady simulation, the moving_window_size should be a multiple of 10.",
+        ge=2,
+        description="The size of the moving window in data points over which the "
+        "statistic is calculated. Must be greater than or equal to 2.",
     )
-    method: Literal["mean", "min", "max", "std", "deviation"] = pd.Field(
-        "mean", description="The type of moving statistics used to monitor the output."
+    method: Literal["mean", "min", "max", "standard_deviation", "range"] = pd.Field(
+        "mean", description="The statistical method to apply to the data within the moving window."
     )
     start_step: pd.NonNegativeInt = pd.Field(
         0,
-        description="The number of pseudo/physical steps to skip before computing the moving statistics. "
-        "For steady simulation, the moving_window_size should be a multiple of 10.",
+        description="The number of steps (pseudo or physical) to skip at the beginning of the "
+        "simulation before the moving statistics calculation starts. For steady "
+        "simulations, this value is automatically rounded up to the nearest multiple of 10, "
+        "as the solver outputs data every 10 pseudo steps.",
     )
     type_name: Literal["MovingStatistic"] = pd.Field("MovingStatistic", frozen=True)
-
-    @pd.field_validator("moving_window_size", "start_step", mode="after")
-    @classmethod
-    def _check_moving_window_for_steady_simulation(cls, value):
-        validation_info = get_validation_info()
-        if (
-            validation_info
-            and validation_info.time_stepping == TimeSteppingType.STEADY
-            and value % 10 != 0
-        ):
-            raise ValueError(
-                "For steady simulation, the number of steps should be a multiple of 10."
-            )
-        return value
 
 
 class _OutputBase(Flow360BaseModel):
@@ -198,11 +239,12 @@ class _OutputBase(Flow360BaseModel):
                 )
         return value
 
-    @pd.field_validator("output_fields", mode="after")
+    @contextual_field_validator("output_fields", mode="after")
     @classmethod
-    def _validate_non_liquid_output_fields(cls, value: UniqueItemList):
-        validation_info = get_validation_info()
-        if validation_info is None or validation_info.using_liquid_as_material is False:
+    def _validate_non_liquid_output_fields(
+        cls, value: UniqueItemList, param_info: ParamsValidationInfo
+    ):
+        if param_info.using_liquid_as_material is False:
             return value
         for output_item in value.items:
             if output_item in get_args(InvalidOutputFieldsForLiquid):
@@ -228,30 +270,39 @@ class _OutputBase(Flow360BaseModel):
         return value
 
 
-class _AnimationSettings(_OutputBase):
+class _AnimationSettings(Flow360BaseModel):
     """
     Controls how frequently the output files are generated.
     """
 
-    frequency: int = pd.Field(
+    frequency: Union[pd.PositiveInt, Literal[-1]] = pd.Field(
         default=-1,
-        ge=-1,
         description="Frequency (in number of physical time steps) at which output is saved. "
-        + "-1 is at end of simulation.",
+        + "-1 is at end of simulation. Important for child cases - this parameter refers to the "
+        + "**global** time step, which gets transferred from the parent case. Example: if the parent "
+        + "case finished at time_step=174, the child case will start from time_step=175. If "
+        + "frequency=100 (child case), the output will be saved at time steps 200 (25 time steps of "
+        + "the child simulation), 300 (125 time steps of the child simulation), etc. "
+        + "This setting is NOT applicable for steady cases.",
     )
     frequency_offset: int = pd.Field(
         default=0,
         ge=0,
-        description="Offset (in number of physical time steps) at which output animation is started."
-        + " 0 is at beginning of simulation.",
+        description="Offset (in number of physical time steps) at which output is started to be saved."
+        + " 0 is at beginning of simulation. Important for child cases - this parameter refers to the "
+        + "**global** time step, which gets transferred from the parent case (see `frequency` "
+        + "parameter for an example). Example: if an output has a frequency of 100 and a "
+        + "frequency_offset of 10, the output will be saved at **global** time step 10, 110, 210, "
+        + "etc. This setting is NOT applicable for steady cases.",
     )
 
-    @pd.field_validator("frequency", "frequency_offset", mode="after")
+    @contextual_field_validator("frequency", "frequency_offset", mode="after")
     @classmethod
-    def disable_frequency_settings_in_steady_simulation(cls, value, info: pd.ValidationInfo):
+    def disable_frequency_settings_in_steady_simulation(
+        cls, value, info: pd.ValidationInfo, param_info: ParamsValidationInfo
+    ):
         """Disable frequency settings in a steady simulation"""
-        validation_info = get_validation_info()
-        if validation_info is None or validation_info.time_stepping != TimeSteppingType.STEADY:
+        if param_info.time_stepping != TimeSteppingType.STEADY:
             return value
         # pylint: disable=unsubscriptable-object
         if value != cls.model_fields[info.field_name].default:
@@ -271,7 +322,7 @@ class _AnimationAndFileFormatSettings(_AnimationSettings):
     )
 
 
-class SurfaceOutput(_AnimationAndFileFormatSettings):
+class SurfaceOutput(_AnimationAndFileFormatSettings, _OutputBase):
     """
 
     :class:`SurfaceOutput` class for surface output settings.
@@ -304,8 +355,14 @@ class SurfaceOutput(_AnimationAndFileFormatSettings):
     # TODO: entities is None --> use all surfaces. This is not implemented yet.
 
     name: Optional[str] = pd.Field("Surface output", description="Name of the `SurfaceOutput`.")
-    entities: EntityListAllowingGhost[
-        Surface, GhostSurface, GhostCircularPlane, GhostSphere, ImportedSurface
+    entities: EntityList[  # pylint: disable=duplicate-code
+        Surface,
+        MirroredSurface,
+        GhostSurface,
+        WindTunnelGhostSurface,
+        GhostCircularPlane,
+        GhostSphere,
+        ImportedSurface,
     ] = pd.Field(
         alias="surfaces",
         description="List of boundaries where output is generated.",
@@ -323,11 +380,20 @@ class SurfaceOutput(_AnimationAndFileFormatSettings):
     )
     output_type: Literal["SurfaceOutput"] = pd.Field("SurfaceOutput", frozen=True)
 
-    @pd.field_validator("entities", mode="after")
+    @contextual_field_validator("entities", mode="after")
     @classmethod
-    def ensure_surface_existence(cls, value):
+    def ensure_surface_existence(cls, value, param_info: ParamsValidationInfo):
         """Ensure all boundaries will be present after mesher"""
-        return check_deleted_surface_in_entity_list(value)
+        return validate_entity_list_surface_existence(value, param_info)
+
+    @contextual_model_validator(mode="after")
+    def validate_imported_surface_output_fields(self, param_info: ParamsValidationInfo):
+        """Validate output fields when using imported surfaces"""
+        expanded_entities = param_info.expand_entity_list(self.entities)
+        validate_improper_surface_field_usage_for_imported_surface(
+            expanded_entities, self.output_fields
+        )
+        return self
 
 
 class TimeAverageSurfaceOutput(SurfaceOutput):
@@ -361,14 +427,17 @@ class TimeAverageSurfaceOutput(SurfaceOutput):
     )
 
     start_step: Union[pd.NonNegativeInt, Literal[-1]] = pd.Field(
-        default=-1, description="Physical time step to start calculating averaging."
+        default=-1,
+        description="Physical time step to start calculating averaging. Important for child cases "
+        + "- this parameter refers to the **global** time step, which gets transferred from the "
+        + "parent case (see `frequency` parameter for an example).",
     )
     output_type: Literal["TimeAverageSurfaceOutput"] = pd.Field(
         "TimeAverageSurfaceOutput", frozen=True
     )
 
 
-class VolumeOutput(_AnimationAndFileFormatSettings):
+class VolumeOutput(_AnimationAndFileFormatSettings, _OutputBase):
     """
     :class:`VolumeOutput` class for volume output settings.
 
@@ -418,14 +487,17 @@ class TimeAverageVolumeOutput(VolumeOutput):
         "Time average volume output", description="Name of the `TimeAverageVolumeOutput`."
     )
     start_step: Union[pd.NonNegativeInt, Literal[-1]] = pd.Field(
-        default=-1, description="Physical time step to start calculating averaging."
+        default=-1,
+        description="Physical time step to start calculating averaging. Important for child cases "
+        + "- this parameter refers to the **global** time step, which gets transferred from the "
+        + "parent case (see `frequency` parameter for an example).",
     )
     output_type: Literal["TimeAverageVolumeOutput"] = pd.Field(
         "TimeAverageVolumeOutput", frozen=True
     )
 
 
-class SliceOutput(_AnimationAndFileFormatSettings):
+class SliceOutput(_AnimationAndFileFormatSettings, _OutputBase):
     """
     :class:`SliceOutput` class for slice output settings.
 
@@ -492,12 +564,15 @@ class TimeAverageSliceOutput(SliceOutput):
         "Time average slice output", description="Name of the `TimeAverageSliceOutput`."
     )
     start_step: Union[pd.NonNegativeInt, Literal[-1]] = pd.Field(
-        default=-1, description="Physical time step to start calculating averaging."
+        default=-1,
+        description="Physical time step to start calculating averaging. Important for child cases "
+        + "- this parameter refers to the **global** time step, which gets transferred from the "
+        + "parent case (see `frequency` parameter for an example).",
     )
     output_type: Literal["TimeAverageSliceOutput"] = pd.Field("TimeAverageSliceOutput", frozen=True)
 
 
-class IsosurfaceOutput(_AnimationAndFileFormatSettings):
+class IsosurfaceOutput(_AnimationAndFileFormatSettings, _OutputBase):
     """
 
     :class:`IsosurfaceOutput` class for isosurface output settings.
@@ -599,7 +674,10 @@ class TimeAverageIsosurfaceOutput(IsosurfaceOutput):
         "Time Average Isosurface output", description="Name of `TimeAverageIsosurfaceOutput`."
     )
     start_step: Union[pd.NonNegativeInt, Literal[-1]] = pd.Field(
-        default=-1, description="Physical time step to start calculating averaging."
+        default=-1,
+        description="Physical time step to start calculating averaging. Important for child cases "
+        + "- this parameter refers to the **global** time step, which gets transferred from the "
+        + "parent case (see `frequency` parameter for an example).",
     )
     output_type: Literal["TimeAverageIsosurfaceOutput"] = pd.Field(
         "TimeAverageIsosurfaceOutput", frozen=True
@@ -614,13 +692,12 @@ class SurfaceIntegralOutput(_OutputBase):
     Note
     ----
     :class:`SurfaceIntegralOutput` can only be used with :class:`UserDefinedField`.
-    See :ref:`User Defined Postprocessing Tutorial <UserDefinedPostprocessing>` for more details
-    about how to set up :class:`UserDefinedField`.
+    See :doc:`User Defined Postprocessing Tutorial </python_api/example_library/notebooks/hinge_torques>`
+    for more details about how to set up :class:`UserDefinedField`.
 
     Example
     -------
-    Define :class:`SurfaceIntegralOutput` of :code:`PressureForce` as set up in this
-    :ref:`User Defined Postprocessing Tutorial Case <UDFSurfIntegral>`.
+    Define :class:`SurfaceIntegralOutput` of :code:`PressureForce`.
 
     >>> fl.SurfaceIntegralOutput(
     ...     name="surface_integral",
@@ -632,8 +709,14 @@ class SurfaceIntegralOutput(_OutputBase):
     """
 
     name: str = pd.Field("Surface integral output", description="Name of integral.")
-    entities: EntityListAllowingGhost[
-        Surface, GhostSurface, GhostCircularPlane, GhostSphere, ImportedSurface
+    entities: EntityList[  # pylint: disable=duplicate-code
+        Surface,
+        MirroredSurface,
+        GhostSurface,
+        WindTunnelGhostSurface,
+        GhostCircularPlane,
+        GhostSphere,
+        ImportedSurface,
     ] = pd.Field(
         alias="surfaces",
         description="List of boundaries where the surface integral will be calculated.",
@@ -642,22 +725,25 @@ class SurfaceIntegralOutput(_OutputBase):
         description="List of output variables, only the :class:`UserDefinedField` is allowed."
     )
     moving_statistic: Optional[MovingStatistic] = pd.Field(
-        None, description="The moving statistics used to monitor the output."
+        None, description="When specified, report moving statistics of the fields instead."
     )
     output_type: Literal["SurfaceIntegralOutput"] = pd.Field("SurfaceIntegralOutput", frozen=True)
 
-    @pd.field_validator("entities", mode="after")
+    @contextual_field_validator("entities", mode="after")
     @classmethod
-    def ensure_surface_existence(cls, value):
+    def ensure_surface_existence(cls, value, param_info: ParamsValidationInfo):
         """Ensure all boundaries will be present after mesher"""
-        return check_deleted_surface_in_entity_list(value)
+        return validate_entity_list_surface_existence(value, param_info)
 
-    @pd.field_validator("entities", mode="after")
+    @contextual_field_validator("entities", mode="after")
     @classmethod
-    def allow_only_simulation_surfaces_or_imported_surfaces(cls, value):
+    def allow_only_simulation_surfaces_or_imported_surfaces(
+        cls, value, param_info: ParamsValidationInfo
+    ):
         """Support only simulation surfaces or imported surfaces in each SurfaceIntegralOutput"""
-        has_imported = isinstance(value.stored_entities[0], ImportedSurface)
-        for entity in value.stored_entities[1:]:
+        expanded = param_info.expand_entity_list(value)
+        has_imported = isinstance(expanded[0], ImportedSurface)
+        for entity in expanded[1:]:
             if has_imported != isinstance(entity, ImportedSurface):
                 raise ValueError(
                     "Imported and simulation surfaces cannot be used together in the same SurfaceIntegralOutput."
@@ -665,10 +751,215 @@ class SurfaceIntegralOutput(_OutputBase):
                 )
         return value
 
+    @contextual_model_validator(mode="after")
+    def validate_imported_surface_output_fields(self, param_info: ParamsValidationInfo):
+        """Validate output fields when using imported surfaces"""
+        expanded_entities = param_info.expand_entity_list(self.entities)
+        validate_improper_surface_field_usage_for_imported_surface(
+            expanded_entities, self.output_fields
+        )
+        return self
+
+
+class ForceOutput(_OutputBase):
+    """
+    :class:`ForceOutput` class for setting total force output of specific surfaces.
+
+    Example
+    -------
+
+    Define :class:`ForceOutput` to output total CL and CD on multiple wing surfaces and a BET disk.
+
+    >>> wall = fl.Wall(name = 'wing', surfaces=[volume_mesh['1'], volume_mesh["wing2"]])
+    >>> bet_disk = fl.BETDisk(...)
+    >>> fl.ForceOutput(
+    ...     name="force_output",
+    ...     models=[wall, bet_disk],
+    ...     output_fields=["CL", "CD"]
+    ... )
+
+    ====
+    """
+
+    name: str = pd.Field("Force output", description="Name of the force output.")
+    output_fields: UniqueItemList[ForceOutputCoefficientNames] = pd.Field(
+        description="List of force coefficients. Including CL, CD, CFx, CFy, CFz, CMx, CMy, CMz. "
+        "For surface forces, their SkinFriction/Pressure is also supported, such as CLSkinFriction and CLPressure."
+    )
+    models: List[Union[ForceOutputModelType, str]] = pd.Field(
+        description="List of surface/volume models (or model ids) whose force contribution will be calculated.",
+    )
+    moving_statistic: Optional[MovingStatistic] = pd.Field(
+        None, description="When specified, report moving statistics of the fields instead."
+    )
+    output_type: Literal["ForceOutput"] = pd.Field("ForceOutput", frozen=True)
+
+    @pd.field_validator("models", mode="after")
+    @classmethod
+    def _convert_model_obj_to_id(cls, value):
+        """Validate duplicate models and convert model object to id"""
+        model_ids = set()
+        for model in value:
+            model_id = (
+                model if isinstance(model, str) else serialize_model_obj_to_id(model_obj=model)
+            )
+            if model_id in model_ids:
+                raise ValueError("Duplicate models are not allowed in the same `ForceOutput`.")
+            model_ids.add(model_id)
+        return list(model_ids)
+
+    @contextual_field_validator("models", mode="after", required_context=["physics_model_dict"])
+    @classmethod
+    def _check_model_exist_in_model_list(cls, value, param_info: ParamsValidationInfo):
+        """Ensure all models exist in SimulationParams' model list."""
+        for model_id in value:
+            model_obj = param_info.physics_model_dict.get(model_id)
+            if model_obj is None:
+                raise ValueError("The model does not exist in simulation params' models list.")
+
+        return value
+
+    @contextual_field_validator("models", mode="after", required_context=["physics_model_dict"])
+    @classmethod
+    def _check_output_fields_with_volume_models_specified(
+        cls, value, info: pd.ValidationInfo, param_info: ParamsValidationInfo
+    ):
+        """Ensure the output field exists when volume models are specified."""
+
+        model_objs = [param_info.physics_model_dict.get(model_id) for model_id in value]
+
+        if all(isinstance(model, Wall) for model in model_objs):
+            return value
+        output_fields = info.data.get("output_fields", None)
+        if all(
+            field in ["CL", "CD", "CFx", "CFy", "CFz", "CMx", "CMy", "CMz"]
+            for field in output_fields.items
+        ):
+            return value
+        raise ValueError(
+            "When ActuatorDisk/BETDisk/PorousMedium is specified, "
+            "only CL, CD, CFx, CFy, CFz, CMx, CMy, CMz can be set as output_fields."
+        )
+
+
+class RenderOutputGroup(Flow360BaseModel):
+    """
+
+    :class:`RenderOutputGroup` for defining a render output group - i.e. a set of
+    entities sharing a common material (display options) settings.
+
+    Example
+    -------
+    Define two :class:`RenderOutputGroup` objects, one assigning all boundaries of the
+    uploaded geometry to a flat metallic material, and another assigning a slice and an
+    isosurface to a material which will display a scalar field on the surface of the
+    entity.
+
+    >>> fl.RenderOutputGroup(
+    ...     surfaces=geometry["*"],
+    ...     material=fl.PBRMaterial.metal(shine=0.8)
+    ... ),
+    ... fl.RenderOutputGroup(
+    ...     slices=[
+    ...         fl.Slice(name="Example slice", normal=(0, 1, 0), origin=(0, 0, 0))
+    ...     ],
+    ...     isosurfaces=[
+    ...         fl.Isosurface(name="Example isosurface", iso_value=0.1, field="T")
+    ...     ],
+    ...     material=fl.FieldMaterial.rainbow(field="T", min_value=0, max_value=1, alpha=0.4)
+    ... )
+    ====
+
+    """
+
+    surfaces: Optional[EntityList[Surface, MirroredSurface]] = pd.Field(
+        None, description="List of of :class:`~flow360.Surface` entities."
+    )
+    slices: Optional[EntityList[Slice]] = pd.Field(
+        None, description="List of of :class:`~flow360.Slice` entities."
+    )
+    isosurfaces: Optional[UniqueItemList[Isosurface]] = pd.Field(
+        None, description="List of :class:`~flow360.Isosurface` entities."
+    )
+    material: Union[PBRMaterial, FieldMaterial] = pd.Field(
+        description="Materials settings (color, surface field, roughness etc..) to be applied to the entire group"
+    )
+
+    @contextual_field_validator("surfaces", mode="after")
+    @classmethod
+    def ensure_surface_existence(cls, value, param_info: ParamsValidationInfo):
+        """Ensure all boundaries will be present after mesher"""
+        return validate_entity_list_surface_existence(value, param_info)
+
+    @contextual_model_validator(mode="after")
+    def check_not_empty(self, param_info: ParamsValidationInfo):
+        """Verify the render group has at least one entity assigned to it"""
+        expanded_surfaces = (
+            param_info.expand_entity_list(self.surfaces) if self.surfaces is not None else None
+        )
+        if not expanded_surfaces and not self.slices and not self.isosurfaces:
+            raise ValueError(
+                "Render group should include at least one entity (surface, slice or isosurface)"
+            )
+        return self
+
+
+class RenderOutput(_AnimationSettings):
+    """
+
+    :class:`RenderOutput` class for backend rendered output settings.
+
+    Example
+    -------
+
+    Define the :class:`RenderOutput` that outputs a basic image - boundaries and a Y-slice:
+
+    >>> fl.RenderOutput(
+    ...     name="Example render",
+    ...     groups=[
+    ...         fl.RenderOutputGroup(
+    ...             surfaces=geometry["*"],
+    ...             material=fl.render.PBRMaterial.metal(shine=0.8)
+    ...         ),
+    ...         fl.RenderOutputGroup(
+    ...             slices=[
+    ...                 fl.Slice(name="Example slice", normal=(0, 1, 0), origin=(0, 0, 0))
+    ...             ],
+    ...             material=fl.render.FieldMaterial.rainbow(field="T", min_value=0, max_value=1, alpha=0.4)
+    ...         )
+    ...     ],
+    ...     camera=fl.render.Camera.orthographic(scale=5, view=fl.Viewpoint.TOP + fl.Viewpoint.LEFT)
+    ... )
+    ====
+    """
+
+    name: str = pd.Field("Render output", description="Name of the `RenderOutput`.")
+    groups: List[RenderOutputGroup] = pd.Field([])
+    camera: Camera = pd.Field(description="Camera settings", default_factory=Camera.orthographic)
+    lighting: Lighting = pd.Field(description="Lighting settings", default_factory=Lighting.default)
+    environment: Environment = pd.Field(
+        description="Environment settings", default_factory=Environment.simple
+    )
+    transform: Optional[SceneTransform] = pd.Field(
+        None, description="Optional model transform to apply to all entities"
+    )
+    output_type: Literal["RenderOutput"] = pd.Field("RenderOutput", frozen=True)
+    private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
+
+    @pd.field_validator("groups", mode="after")
+    @classmethod
+    def check_has_output_groups(cls, value):
+        """Verify the render output has at least one group to render"""
+        if len(value) < 1:
+            raise ValueError("Render output requires at least one output group to be defined")
+        return value
+
 
 class ProbeOutput(_OutputBase):
     """
-    :class:`ProbeOutput` class for setting output data probed at monitor points.
+    :class:`ProbeOutput` class for setting output data probed at monitor points in the voulume of the domain.
+    Regardless of the motion of the mesh, the points retain their positions in the
+    global reference frame during the simulation.
 
     Example
     -------
@@ -676,9 +967,9 @@ class ProbeOutput(_OutputBase):
     Define :class:`ProbeOutput` on multiple specific monitor points and monitor points along the line.
 
     - :code:`Point_1` and :code:`Point_2` are two specific points we want to monitor in this probe output group.
-    - :code:`Line_1` is from (1,0,0) * fl.u,m to (1.5,0,0) * fl.u,m and has 6 monitor points.
-    - :code:`Line_2` is from (-1,0,0) * fl.u,m to (-1.5,0,0) * fl.u,m and has 3 monitor points,
-      namely, (-1,0,0) * fl.u,m, (-1.25,0,0) * fl.u,m and (-1.5,0,0) * fl.u,m.
+    - :code:`Line_1` is from (1,0,0) * fl.u.m to (1.5,0,0) * fl.u.m and has 6 monitor points.
+    - :code:`Line_2` is from (-1,0,0) * fl.u.m to (-1.5,0,0) * fl.u.m and has 3 monitor points,
+      namely, (-1,0,0) * fl.u.m, (-1.25,0,0) * fl.u.m and (-1.5,0,0) * fl.u.m.
 
     >>> fl.ProbeOutput(
     ...     name="probe_group_points_and_lines",
@@ -723,7 +1014,7 @@ class ProbeOutput(_OutputBase):
         " and :class:`UserDefinedField`."
     )
     moving_statistic: Optional[MovingStatistic] = pd.Field(
-        None, description="The moving statistics used to monitor the output."
+        None, description="When specified, report moving statistics of the fields instead."
     )
     output_type: Literal["ProbeOutput"] = pd.Field("ProbeOutput", frozen=True)
 
@@ -733,6 +1024,9 @@ class SurfaceProbeOutput(_OutputBase):
     :class:`SurfaceProbeOutput` class for setting surface output data probed at monitor points.
     The specified monitor point will be projected to the :py:attr:`~SurfaceProbeOutput.target_surfaces`
     closest to the point. The probed results on the projected point will be dumped.
+    The projection is executed at the start of the simulation. If the surface that the point was
+    projected to is moving (mesh motion), the point moves with it (it remains stationary
+    in the reference frame of the target surface).
 
     Example
     -------
@@ -780,7 +1074,7 @@ class SurfaceProbeOutput(_OutputBase):
         + "is used to define monitored points along a line.",
     )
     # Maybe add preprocess for this and by default add all Surfaces?
-    target_surfaces: EntityList[Surface] = pd.Field(
+    target_surfaces: EntityList[Surface, MirroredSurface, WindTunnelGhostSurface] = pd.Field(
         description="List of :class:`~flow360.component.simulation.primitives.Surface` "
         + "entities belonging to this monitor group."
     )
@@ -790,18 +1084,18 @@ class SurfaceProbeOutput(_OutputBase):
         " :ref:`variables specific to SurfaceOutput<SurfaceSpecificVariablesV2>` and :class:`UserDefinedField`."
     )
     moving_statistic: Optional[MovingStatistic] = pd.Field(
-        None, description="The moving statistics used to monitor the output."
+        None, description="When specified, report moving statistics of the fields instead."
     )
     output_type: Literal["SurfaceProbeOutput"] = pd.Field("SurfaceProbeOutput", frozen=True)
 
-    @pd.field_validator("target_surfaces", mode="after")
+    @contextual_field_validator("target_surfaces", mode="after")
     @classmethod
-    def ensure_surface_existence(cls, value):
+    def ensure_surface_existence(cls, value, param_info: ParamsValidationInfo):
         """Ensure all boundaries will be present after mesher"""
-        return check_deleted_surface_in_entity_list(value)
+        return validate_entity_list_surface_existence(value, param_info)
 
 
-class SurfaceSliceOutput(_AnimationAndFileFormatSettings):
+class SurfaceSliceOutput(_AnimationAndFileFormatSettings, _OutputBase):
     """
     Surface slice settings.
     """
@@ -811,7 +1105,7 @@ class SurfaceSliceOutput(_AnimationAndFileFormatSettings):
         alias="slices", description="List of :class:`Slice` entities."
     )
     # Maybe add preprocess for this and by default add all Surfaces?
-    target_surfaces: EntityList[Surface] = pd.Field(
+    target_surfaces: EntityList[Surface, MirroredSurface, WindTunnelGhostSurface] = pd.Field(
         description="List of :class:`Surface` entities on which the slice will cut through."
     )
 
@@ -823,16 +1117,18 @@ class SurfaceSliceOutput(_AnimationAndFileFormatSettings):
     )
     output_type: Literal["SurfaceSliceOutput"] = pd.Field("SurfaceSliceOutput", frozen=True)
 
-    @pd.field_validator("target_surfaces", mode="after")
+    @contextual_field_validator("target_surfaces", mode="after")
     @classmethod
-    def ensure_surface_existence(cls, value):
+    def ensure_surface_existence(cls, value, param_info: ParamsValidationInfo):
         """Ensure all boundaries will be present after mesher"""
-        return check_deleted_surface_in_entity_list(value)
+        return validate_entity_list_surface_existence(value, param_info)
 
 
 class TimeAverageProbeOutput(ProbeOutput):
     """
     :class:`TimeAverageProbeOutput` class for time average probe monitor output settings.
+    Regardless of the motion of the mesh, the points retain their positions in the
+    global reference frame during the simulation.
 
     Example
     -------
@@ -863,9 +1159,9 @@ class TimeAverageProbeOutput(ProbeOutput):
       The results are output every 10 physical step starting from the :math:`14^{th}` physical step
       (14, 24, 34 etc.).
 
-      - :code:`Line_1` is from (1,0,0) * fl.u,m to (1.5,0,0) * fl.u,m and has 6 monitor points.
-      - :code:`Line_2` is from (-1,0,0) * fl.u,m to (-1.5,0,0) * fl.u,m and has 3 monitor points,
-        namely, (-1,0,0) * fl.u,m, (-1.25,0,0) * fl.u,m and (-1.5,0,0) * fl.u,m.
+      - :code:`Line_1` is from (1,0,0) * fl.u.m to (1.5,0,0) * fl.u.m and has 6 monitor points.
+      - :code:`Line_2` is from (-1,0,0) * fl.u.m to (-1.5,0,0) * fl.u.m and has 3 monitor points,
+        namely, (-1,0,0) * fl.u.m, (-1.25,0,0) * fl.u.m and (-1.5,0,0) * fl.u.m.
 
       >>> fl.TimeAverageProbeOutput(
       ...     name="time_average_probe_group_points",
@@ -897,20 +1193,31 @@ class TimeAverageProbeOutput(ProbeOutput):
         "Time average probe output", description="Name of the `TimeAverageProbeOutput`."
     )
     # pylint: disable=abstract-method
-    frequency: int = pd.Field(
+    frequency: Union[pd.PositiveInt, Literal[-1]] = pd.Field(
         default=1,
-        ge=-1,
         description="Frequency (in number of physical time steps) at which output is saved. "
-        + "-1 is at end of simulation.",
+        + "-1 is at end of simulation. Important for child cases - this parameter refers to the "
+        + "**global** time step, which gets transferred from the parent case. Example: if the parent "
+        + "case finished at time_step=174, the child case will start from time_step=175. If "
+        + "frequency=100 (child case), the output will be saved at time steps 200 (25 time steps of "
+        + "the child simulation), 300 (125 time steps of the child simulation), etc. "
+        + "This setting is NOT applicable for steady cases.",
     )
     frequency_offset: int = pd.Field(
         default=0,
         ge=0,
-        description="Offset (in number of physical time steps) at which output animation is started."
-        + " 0 is at beginning of simulation.",
+        description="Offset (in number of physical time steps) at which output is started to be saved."
+        + " 0 is at beginning of simulation. Important for child cases - this parameter refers to the "
+        + "**global** time step, which gets transferred from the parent case (see `frequency` "
+        + "parameter for an example). Example: if an output has a frequency of 100 and a "
+        + "frequency_offset of 10, the output will be saved at **global** time step 10, 110, 210, "
+        + "etc. This setting is NOT applicable for steady cases.",
     )
     start_step: Union[pd.NonNegativeInt, Literal[-1]] = pd.Field(
-        default=-1, description="Physical time step to start calculating averaging"
+        default=-1,
+        description="Physical time step to start calculating averaging. Important for child cases "
+        + "- this parameter refers to the **global** time step, which gets transferred from the "
+        + "parent case (see `frequency` parameter for an example).",
     )
     output_type: Literal["TimeAverageProbeOutput"] = pd.Field("TimeAverageProbeOutput", frozen=True)
 
@@ -920,6 +1227,9 @@ class TimeAverageSurfaceProbeOutput(SurfaceProbeOutput):
     :class:`TimeAverageSurfaceProbeOutput` class for time average surface probe monitor output settings.
     The specified monitor point will be projected to the :py:attr:`~TimeAverageSurfaceProbeOutput.target_surfaces`
     closest to the point. The probed results on the projected point will be dumped.
+    The projection is executed at the start of the simulation. If the surface that the point was
+    projected to is moving (mesh motion), the point moves with it (it remains stationary
+    in the reference frame of the target surface).
 
     Example
     -------
@@ -951,9 +1261,9 @@ class TimeAverageSurfaceProbeOutput(SurfaceProbeOutput):
       The results are output every 10 physical step starting from the :math:`14^{th}` physical step
       (14, 24, 34 etc.).
 
-      - :code:`Line_1` is from (1,0,0) * fl.u,m to (1.5,0,0) * fl.u,m and has 6 monitor points.
-      - :code:`Line_2` is from (-1,0,0) * fl.u,m to (-1.5,0,0) * fl.u,m and has 3 monitor points,
-        namely, (-1,0,0) * fl.u,m, (-1.25,0,0) * fl.u,m and (-1.5,0,0) * fl.u,m.
+      - :code:`Line_1` is from (1,0,0) * fl.u.m to (1.5,0,0) * fl.u.m and has 6 monitor points.
+      - :code:`Line_2` is from (-1,0,0) * fl.u.m to (-1.5,0,0) * fl.u.m and has 3 monitor points,
+        namely, (-1,0,0) * fl.u.m, (-1.25,0,0) * fl.u.m and (-1.5,0,0) * fl.u.m.
 
       >>> TimeAverageSurfaceProbeOutput(
       ...     name="time_average_surface_probe_group_points",
@@ -989,20 +1299,31 @@ class TimeAverageSurfaceProbeOutput(SurfaceProbeOutput):
         description="Name of the `TimeAverageSurfaceProbeOutput`.",
     )
     # pylint: disable=abstract-method
-    frequency: int = pd.Field(
+    frequency: Union[pd.PositiveInt, Literal[-1]] = pd.Field(
         default=1,
-        ge=-1,
         description="Frequency (in number of physical time steps) at which output is saved. "
-        + "-1 is at end of simulation.",
+        + "-1 is at end of simulation. Important for child cases - this parameter refers to the "
+        + "**global** time step, which gets transferred from the parent case. Example: if the parent "
+        + "case finished at time_step=174, the child case will start from time_step=175. If "
+        + "frequency=100 (child case), the output will be saved at time steps 200 (25 time steps of "
+        + "the child simulation), 300 (125 time steps of the child simulation), etc. "
+        + "This setting is NOT applicable for steady cases.",
     )
     frequency_offset: int = pd.Field(
         default=0,
         ge=0,
-        description="Offset (in number of physical time steps) at which output animation is started."
-        + " 0 is at beginning of simulation.",
+        description="Offset (in number of physical time steps) at which output is started to be saved."
+        + " 0 is at beginning of simulation. Important for child cases - this parameter refers to the "
+        + "**global** time step, which gets transferred from the parent case (see `frequency` "
+        + "parameter for an example). Example: if an output has a frequency of 100 and a "
+        + "frequency_offset of 10, the output will be saved at **global** time step 10, 110, 210, "
+        + "etc. This setting is NOT applicable for steady cases.",
     )
     start_step: Union[pd.NonNegativeInt, Literal[-1]] = pd.Field(
-        default=-1, description="Physical time step to start calculating averaging"
+        default=-1,
+        description="Physical time step to start calculating averaging. Important for child cases "
+        + "- this parameter refers to the **global** time step, which gets transferred from the "
+        + "parent case (see `frequency` parameter for an example).",
     )
     output_type: Literal["TimeAverageSurfaceProbeOutput"] = pd.Field(
         "TimeAverageSurfaceProbeOutput", frozen=True
@@ -1075,7 +1396,7 @@ class AeroAcousticOutput(Flow360BaseModel):
         + "input.",
     )
     permeable_surfaces: Optional[
-        EntityListAllowingGhost[Surface, GhostSurface, GhostCircularPlane, GhostSphere]
+        EntityList[Surface, GhostSurface, GhostCircularPlane, GhostSphere, WindTunnelGhostSurface]
     ] = pd.Field(
         None, description="List of permeable surfaces. Left empty if `patch_type` is solid"
     )
@@ -1133,13 +1454,11 @@ class AeroAcousticOutput(Flow360BaseModel):
 
         return self
 
-    @pd.field_validator("permeable_surfaces", mode="after")
+    @contextual_field_validator("permeable_surfaces", mode="after")
     @classmethod
-    def ensure_surface_existence(cls, value):
+    def ensure_surface_existence(cls, value, param_info: ParamsValidationInfo):
         """Ensure all boundaries will be present after mesher"""
-        if value is None:
-            return value
-        return check_deleted_surface_in_entity_list(value)
+        return validate_entity_list_surface_existence(value, param_info)
 
 
 class StreamlineOutput(_OutputBase):
@@ -1267,7 +1586,10 @@ class TimeAverageStreamlineOutput(StreamlineOutput):
     )
 
     start_step: Union[pd.NonNegativeInt, Literal[-1]] = pd.Field(
-        default=-1, description="Physical time step to start calculating averaging."
+        default=-1,
+        description="Physical time step to start calculating averaging. Important for child cases "
+        + "- this parameter refers to the **global** time step, which gets transferred from the "
+        + "parent case (see `frequency` parameter for an example).",
     )
 
     output_type: Literal["TimeAverageStreamlineOutput"] = pd.Field(
@@ -1304,6 +1626,40 @@ class ForceDistributionOutput(Flow360BaseModel):
     )
 
 
+class TimeAverageForceDistributionOutput(ForceDistributionOutput):
+    """
+    :class:`TimeAverageForceDistributionOutput` class for time-averaged customized force and moment distribution output.
+    Axis-aligned components are output for force and moment coefficients at the end of the simulation.
+
+    Example
+    -------
+
+    Calculate the average value starting from the :math:`4^{th}` physical step.
+
+    >>> fl.TimeAverageForceDistributionOutput(
+    ...     name="spanwise",
+    ...     distribution_direction=[0.1, 0.9, 0.0],
+    ...     start_step=4,
+    ... )
+
+    ====
+    """
+
+    name: str = pd.Field(
+        "Time average force distribution output",
+        description="Name of the `TimeAverageForceDistributionOutput`.",
+    )
+    start_step: Union[pd.NonNegativeInt, Literal[-1]] = pd.Field(
+        default=-1,
+        description="Physical time step to start calculating averaging. Important for child cases "
+        + "- this parameter refers to the **global** time step, which gets transferred from the "
+        + "parent case (see `frequency` parameter for an example).",
+    )
+    output_type: Literal["TimeAverageForceDistributionOutput"] = pd.Field(
+        "TimeAverageForceDistributionOutput", frozen=True
+    )
+
+
 OutputTypes = Annotated[
     Union[
         SurfaceOutput,
@@ -1324,6 +1680,9 @@ OutputTypes = Annotated[
         StreamlineOutput,
         TimeAverageStreamlineOutput,
         ForceDistributionOutput,
+        TimeAverageForceDistributionOutput,
+        ForceOutput,
+        RenderOutput,
     ],
     pd.Field(discriminator="output_type"),
 ]
@@ -1336,9 +1695,10 @@ TimeAverageOutputTypes = (
     TimeAverageProbeOutput,
     TimeAverageSurfaceProbeOutput,
     TimeAverageStreamlineOutput,
+    TimeAverageForceDistributionOutput,
 )
 
 MonitorOutputType = Annotated[
-    Union[SurfaceIntegralOutput, ProbeOutput, SurfaceProbeOutput],
+    Union[ForceOutput, SurfaceIntegralOutput, ProbeOutput, SurfaceProbeOutput],
     pd.Field(discriminator="output_type"),
 ]

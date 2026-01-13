@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 """
 Module for validation context handling in the simulation component of Flow360.
 
@@ -15,10 +16,12 @@ Features
 """
 
 import contextvars
+import inspect
 from enum import Enum
 from functools import wraps
 from typing import Any, Callable, List, Literal, Union
 
+import pydantic as pd
 from pydantic import Field, TypeAdapter
 
 from flow360.component.simulation.unit_system import LengthType
@@ -102,6 +105,7 @@ class FeatureUsageInfo:
 
 _validation_level_ctx = contextvars.ContextVar("validation_levels", default=None)
 _validation_info_ctx = contextvars.ContextVar("validation_info", default=None)
+_validation_warnings_ctx = contextvars.ContextVar("validation_warnings", default=None)
 
 
 class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-instance-attributes
@@ -135,11 +139,16 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         "global_bounding_box",
         "planar_face_tolerance",
         "output_dict",
+        "physics_model_dict",
         "half_model_symmetry_plane_center_y",
         "quasi_3d_symmetry_planes_center_y",
-        "at_least_one_body_transformed",
+        "entity_transformation_detected",
         "to_be_generated_custom_volumes",
         "root_asset_type",
+        # Entity expansion support
+        "_entity_info",  # Owns the entities (keeps them alive), initialized eagerly
+        "_entity_registry",  # References entities from _entity_info, initialized eagerly
+        "_selector_cache",  # Lazy, populated as selectors are expanded
     ]
 
     @classmethod
@@ -161,11 +170,13 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
                     return zone["method"]
                 if zone["type"] == "UserDefinedFarfield":
                     return "user-defined"
+                if zone["type"] == "WindTunnelFarfield":
+                    return "wind-tunnel"
                 if (
                     zone["type"]
                     in [
                         "CustomZones",
-                        "SeedpointZone",
+                        "SeedpointVolume",
                     ]
                     and modular
                 ):
@@ -185,7 +196,11 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         if not volume_zones:
             return None
         for zone in volume_zones:
-            if zone.get("type") in ("AutomatedFarfield", "UserDefinedFarfield"):
+            if zone.get("type") in (
+                "AutomatedFarfield",
+                "UserDefinedFarfield",
+                "WindTunnelFarfield",
+            ):
                 return zone.get("domain_type")
         return None
 
@@ -306,16 +321,6 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         return None
 
     @classmethod
-    def _get_output_dict(cls, param_as_dict: dict):
-        if param_as_dict.get("outputs") is None:
-            return None
-        return {
-            output["private_attribute_id"]: output
-            for output in param_as_dict["outputs"]
-            if output.get("private_attribute_id") is not None
-        }
-
-    @classmethod
     def _get_half_model_symmetry_plane_center_y(cls, param_as_dict: dict):
         ghost_entities = get_value_with_path(
             param_as_dict,
@@ -352,35 +357,32 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         return (symmetric_1_center_y, symmetric_2_center_y)
 
     @classmethod
-    def _get_at_least_one_body_transformed(cls, param_as_dict: dict):  # pylint:disable=invalid-name
-        body_group_tag: str = get_value_with_path(
-            param_as_dict,
-            ["private_attribute_asset_cache", "project_entity_info", "body_group_tag"],
+    def _get_entity_transformation_detected(
+        cls, param_as_dict: dict
+    ):  # pylint:disable=invalid-name
+        """
+        Get the flag indicating if at least one body was transformed or mirrored.
+        This is used to skip boundary deletion/assignment checks since once translated
+        the bounding box as well as the boundary existence is no longer valid.
+        """
+        # 1. Check for coordinate system transformations
+        coordinate_system_status_dict = get_value_with_path(
+            param_as_dict, ["private_attribute_asset_cache", "coordinate_system_status"]
         )
-        body_attribute_names: list[str] = get_value_with_path(
-            param_as_dict,
-            ["private_attribute_asset_cache", "project_entity_info", "body_attribute_names"],
-        )
-        grouped_bodies: list[dict] = get_value_with_path(
-            param_as_dict,
-            ["private_attribute_asset_cache", "project_entity_info", "grouped_bodies"],
-        )
-
-        if body_group_tag is None or not body_attribute_names or not grouped_bodies:
-            return False
-
-        grouped_body_index = body_attribute_names.index(body_group_tag)
-
-        for body_group in grouped_bodies[grouped_body_index]:
-            if "transformation" not in body_group:
-                continue
-            if body_group["transformation"]["angle_of_rotation"]["value"] != 0:
+        if coordinate_system_status_dict:
+            # Check if assignments list is non-empty
+            if coordinate_system_status_dict.get("assignments"):
                 return True
 
-            if body_group["transformation"]["scale"] != [1, 1, 1]:
-                return True
-
-            if body_group["transformation"]["translation"]["value"] != [0, 0, 0]:
+        # 2. Check for mirroring
+        mirror_status_dict = get_value_with_path(
+            param_as_dict, ["private_attribute_asset_cache", "mirror_status"]
+        )
+        if mirror_status_dict:
+            # Check if either mirrored groups or surfaces list is non-empty
+            if mirror_status_dict.get("mirrored_geometry_body_groups") or mirror_status_dict.get(
+                "mirrored_surfaces"
+            ):
                 return True
 
         return False
@@ -412,10 +414,8 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
             entities_obj = zone.get("entities", {})
             stored_entities = entities_obj.get("stored_entities", [])
             for entity in stored_entities:
-                if isinstance(entity, dict) and entity.get(
-                    "private_attribute_entity_type_name"
-                ) in ["CustomVolume", "SeedpointVolume"]:
-                    custom_volume_info[entity["name"]] = enforce_tetrahedra
+                if entity.private_attribute_entity_type_name in ("CustomVolume", "SeedpointVolume"):
+                    custom_volume_info[entity.name] = enforce_tetrahedra
         return custom_volume_info
 
     def __init__(self, param_as_dict: dict, referenced_expressions: list):
@@ -435,20 +435,33 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         self.project_length_unit = self._get_project_length_unit_(param_as_dict=param_as_dict)
         self.global_bounding_box = self._get_global_bounding_box(param_as_dict=param_as_dict)
         self.planar_face_tolerance = self._get_planar_face_tolerance(param_as_dict=param_as_dict)
-        self.output_dict = self._get_output_dict(param_as_dict=param_as_dict)
+        # Initialized as None. When SimulationParams field validation succeeds, the
+        # field validators will populate these with validated objects.
+        # None = validation not yet complete (or failed)
+        # {} or {id: obj} = validation succeeded
+        self.output_dict = None
+        self.physics_model_dict = None
         self.half_model_symmetry_plane_center_y = self._get_half_model_symmetry_plane_center_y(
             param_as_dict=param_as_dict
         )
         self.quasi_3d_symmetry_planes_center_y = self._get_quasi_3d_symmetry_planes_center_y(
             param_as_dict=param_as_dict
         )
-        self.at_least_one_body_transformed = self._get_at_least_one_body_transformed(
+        self.entity_transformation_detected = self._get_entity_transformation_detected(
             param_as_dict=param_as_dict
         )
         self.to_be_generated_custom_volumes = self._get_to_be_generated_custom_volumes(
             param_as_dict=param_as_dict
         )
         self.root_asset_type = self._get_root_asset_type(param_as_dict=param_as_dict)
+
+        # Entity expansion support
+        # Eagerly deserialize entity_info and build registry (needed for selector expansion)
+        self._entity_info, self._entity_registry = self._build_entity_info_and_registry(
+            param_as_dict
+        )
+        # Lazy initialization for selector-specific data
+        self._selector_cache = None
 
     def will_generate_forced_symmetry_plane(self) -> bool:
         """
@@ -458,6 +471,99 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
             self.use_geometry_AI
             and self.is_beta_mesher
             and self.farfield_domain_type in ("half_body_positive_y", "half_body_negative_y")
+        )
+
+    @classmethod
+    def _build_entity_info_and_registry(cls, param_as_dict: dict):
+        """Build entity_info and entity_registry from param_as_dict.
+
+        The entity_info owns the deserialized entities, and entity_registry
+        holds references to them.
+
+        Returns
+        -------
+        tuple[EntityInfo, EntityRegistry] or (None, None)
+            The deserialized entity_info and registry, or (None, None) if not available.
+        """
+        # pylint: disable=import-outside-toplevel
+        from flow360.component.simulation.framework.entity_expansion_utils import (
+            get_entity_info_and_registry_from_dict,
+        )
+
+        try:
+            return get_entity_info_and_registry_from_dict(param_as_dict)
+        except (KeyError, ValueError):
+            return None, None
+
+    def _ensure_selector_cache(self):
+        """Lazily initialize selector cache."""
+        if self._selector_cache is None:
+            self._selector_cache = {}
+
+    def get_entity_info(self):
+        """Get the deserialized entity_info.
+
+        This allows reusing the already-deserialized entity_info in the
+        SimulationParams constructor to avoid double deserialization.
+
+        Returns
+        -------
+        EntityInfo or None
+            The deserialized entity_info, or None if not available.
+        """
+        return self._entity_info
+
+    def get_entity_registry(self):
+        """Get the entity_registry.
+
+        Returns
+        -------
+        EntityRegistry or None
+            The entity_registry, or None if not available.
+        """
+        return self._entity_registry
+
+    def expand_entity_list(self, entity_list) -> list:
+        """
+        Expand selectors in an EntityList and return the combined list of entities.
+
+        This method performs on-demand expansion without modifying the original input.
+        Results are cached per selector to avoid recomputation across multiple validator calls.
+
+        Why expand on-demand?
+        - This helps to avoid SimulationParams object being stateful (expanded vs not expanded)
+          With this function, we can always assume the entity_list is not expanded for all SimulationParams objects.
+
+        Parameters
+        ----------
+        entity_list : EntityList
+            A deserialized EntityList object with `stored_entities` and `selectors` attributes.
+
+        Returns
+        -------
+        list
+            Combined list of stored_entities and selector-matched entities.
+            Returns stored_entities directly if no selectors present.
+        """
+        stored_entities = list(entity_list.stored_entities or [])
+        raw_selectors = entity_list.selectors or []
+
+        # Fast path: no selectors or no registry available
+        if not raw_selectors or self._entity_registry is None:
+            return stored_entities
+
+        # Lazily initialize selector-specific infrastructure
+        self._ensure_selector_cache()
+        # pylint: disable=import-outside-toplevel
+        from flow360.component.simulation.framework.entity_selector import (
+            expand_entity_list_selectors,
+        )
+
+        return expand_entity_list_selectors(
+            self._entity_registry,
+            entity_list,
+            selector_cache=self._selector_cache,
+            merge_mode="merge",
         )
 
 
@@ -487,20 +593,25 @@ class ValidationContext:
         ):
             self.levels = levels
             self.level_token = None
+            self.validation_warnings = []
         else:
             raise ValueError(f"Invalid validation level: {levels}")
 
         self.info = info
         self.info_token = None
+        self.warnings_token = None
 
     def __enter__(self):
         self.level_token = _validation_level_ctx.set(self.levels)
         self.info_token = _validation_info_ctx.set(self.info)
+        self.warnings_token = _validation_warnings_ctx.set(self.validation_warnings)
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         _validation_level_ctx.reset(self.level_token)
         _validation_info_ctx.reset(self.info_token)
+        if self.warnings_token is not None:
+            _validation_warnings_ctx.reset(self.warnings_token)
 
 
 def get_validation_levels() -> list:
@@ -521,6 +632,38 @@ def get_validation_info() -> ParamsValidationInfo:
         The validation info, which can influence validation behavior.
     """
     return _validation_info_ctx.get()
+
+
+def add_validation_warning(message: str) -> None:
+    """
+    Append a validation warning message to the active ValidationContext.
+
+    Parameters
+    ----------
+    message : str
+        Warning message to record. Converted to string if needed.
+
+    Notes
+    -----
+    No action is taken if there is no active ValidationContext.
+    """
+    warnings_list = _validation_warnings_ctx.get()
+    if warnings_list is None:
+        return
+    message_str = str(message)
+    if any(
+        isinstance(existing, dict) and existing.get("msg") == message_str
+        for existing in warnings_list
+    ):
+        return
+    warnings_list.append(
+        {
+            "loc": (),
+            "msg": message_str,
+            "type": "value_error",
+            "ctx": {},
+        }
+    )
 
 
 # pylint: disable=invalid-name
@@ -655,5 +798,227 @@ def context_validator(context: Literal["SurfaceMesh", "VolumeMesh", "Case"]):
             return self
 
         return wrapper
+
+    return decorator
+
+
+# pylint: disable=invalid-name
+def contextual_field_validator(*fields, mode="after", required_context=None, **kwargs):
+    """
+    Wrapper around pydantic.field_validator that automatically skips validation
+    if get_validation_info() returns None or if required param_info attributes are None.
+
+    This function accepts the same parameters as pydantic.field_validator and
+    returns a decorator that wraps the validator function. The validator will
+    be skipped if validation_info is not available or if any required attributes
+    in param_info are None.
+
+    Parameters
+    ----------
+    *fields : str
+        Field names to validate (same as pydantic.field_validator)
+    mode : str, optional
+        Validation mode: "before", "after", "wrap" (default: "after")
+    required_context : list of str, optional
+        List of ParamsValidationInfo attribute names that must be not None for validation to run.
+        If any of these attributes is None, the validator returns early without running.
+        Common values: ["output_dict"], ["physics_model_dict"], ["output_dict", "physics_model_dict"]
+    **kwargs : dict
+        Additional keyword arguments passed to pydantic.field_validator
+
+    Returns
+    -------
+    Callable
+        A decorator that wraps the validator function
+
+    Usage
+    -----
+    # Basic usage without requirements
+    @contextual_field_validator("volume_zones", mode="after")
+    @classmethod
+    def _check_volume_zones_have_unique_names(cls, v):
+        # No need to manually check get_validation_info()
+        # Validation logic here
+        return v
+
+    # With required context attributes
+    @contextual_field_validator("monitor_output", mode="after", required_context=["output_dict"])
+    @classmethod
+    def _check_monitor_exists_in_output_list(cls, v, param_info: ParamsValidationInfo):
+        # No need to manually check if output_dict is None
+        # param_info.output_dict is guaranteed to be not None here
+        if param_info.output_dict.get(v) is None:
+            raise ValueError("The monitor output does not exist in the outputs list.")
+        return v
+
+    # With multiple required context attributes
+    @contextual_field_validator("models", mode="after", required_context=["output_dict", "physics_model_dict"])
+    @classmethod
+    def _check_models_with_outputs(cls, v, param_info: ParamsValidationInfo):
+        # Both output_dict and physics_model_dict are guaranteed to be not None
+        # Validation logic here
+        return v
+
+    Notes
+    -----
+    This is equivalent to using pd.field_validator with manual checks:
+    @pd.field_validator("volume_zones", mode="after")
+    @classmethod
+    def _check_volume_zones_have_unique_names(cls, v, param_info: ParamsValidationInfo):
+        param_info = get_validation_info()
+        if param_info is None:
+            return v
+        if param_info.output_dict is None:
+            return v
+        # Validation logic here
+        return v
+    """
+
+    def decorator(func: Callable):
+        # Handle classmethod and staticmethod
+        is_classmethod = isinstance(func, classmethod)
+        is_staticmethod = isinstance(func, staticmethod)
+
+        if is_classmethod:
+            original_func = func.__func__
+        elif is_staticmethod:
+            original_func = func.__func__
+        else:
+            original_func = func
+
+        original_sig = inspect.signature(original_func)
+        pass_param_info = "param_info" in original_sig.parameters
+        new_signature = original_sig
+        original_signature_backup = getattr(original_func, "__signature__", None)
+
+        if pass_param_info:
+            params_without = tuple(
+                param for name, param in original_sig.parameters.items() if name != "param_info"
+            )
+            new_signature = original_sig.replace(parameters=params_without)
+            original_func.__signature__ = new_signature
+
+        @wraps(original_func)
+        def wrapper(*args, **kwargs_inner):
+            param_info = get_validation_info()
+            if param_info is None:
+                if not args:
+                    return None
+                # Determine the index of the value argument.
+                value_idx = 1 if isinstance(args[0], type) and len(args) >= 2 else 0
+                return args[value_idx]
+
+            # Check if required context attributes are available
+            if required_context:
+                for attr_name in required_context:
+                    if not hasattr(param_info, attr_name):
+                        raise ValueError(f"Invalid validation context attribute: {attr_name}")
+                    if getattr(param_info, attr_name) is None:
+                        # Required context attribute is None, skip validation
+                        if not args:
+                            return None
+                        value_idx = 1 if isinstance(args[0], type) and len(args) >= 2 else 0
+                        return args[value_idx]
+
+            # Call the original function (not the classmethod/staticmethod wrapper)
+            call_kwargs = dict(kwargs_inner)
+            if pass_param_info:
+                call_kwargs["param_info"] = param_info
+            return original_func(*args, **call_kwargs)
+
+        if pass_param_info:
+            if original_signature_backup is None:
+                if hasattr(original_func, "__signature__"):
+                    del original_func.__signature__
+            else:
+                original_func.__signature__ = original_signature_backup
+
+        # If original was classmethod/staticmethod, wrap so pydantic recognizes it
+        if is_classmethod:
+            wrapped_func = classmethod(wrapper)
+        elif is_staticmethod:
+            wrapped_func = staticmethod(wrapper)
+        else:
+            wrapped_func = wrapper
+
+        return pd.field_validator(*fields, mode=mode, **kwargs)(wrapped_func)
+
+    return decorator
+
+
+# pylint: disable=invalid-name
+def contextual_model_validator(mode="after", **kwargs):
+    """
+    Wrapper around pydantic.model_validator that automatically skips validation
+    if get_validation_info() returns None.
+
+    This function accepts the same parameters as pydantic.model_validator and
+    returns a decorator that wraps the validator function. The validator will
+    be skipped if validation_info is not available.
+
+    Parameters
+    ----------
+    mode : str, optional
+        Validation mode: "before", "after", "wrap" (default: "after")
+    **kwargs : dict
+        Additional keyword arguments passed to pydantic.model_validator
+
+    Returns
+    -------
+    Callable
+        A decorator that wraps the validator function
+
+    Usage
+    -----
+    @contextual_model_validator(mode="after")
+    def _check_no_reused_volume_entities(self):
+        # No need to manually check get_validation_info()
+        # Validation logic here
+        return self
+
+    Notes
+    -----
+    This is equivalent to using pd.model_validator with a manual check:
+    @pd.model_validator(mode="after")
+    def _check_no_reused_volume_entities(self):
+        if not get_validation_info():
+            return self
+        # Validation logic here
+        return self
+    """
+
+    def decorator(func: Callable):
+        original_sig = inspect.signature(func)
+        pass_param_info = "param_info" in original_sig.parameters
+        new_signature = original_sig
+        original_signature_backup = getattr(func, "__signature__", None)
+
+        if pass_param_info:
+            params_without = tuple(
+                param for name, param in original_sig.parameters.items() if name != "param_info"
+            )
+            new_signature = original_sig.replace(parameters=params_without)
+            func.__signature__ = new_signature
+
+        @wraps(func)
+        def wrapper(*args, **kwargs_inner):
+            param_info = get_validation_info()
+            if param_info is None:
+                if args:
+                    return args[0]
+                return None
+            call_kwargs = dict(kwargs_inner)
+            if pass_param_info:
+                call_kwargs["param_info"] = param_info
+            return func(*args, **call_kwargs)
+
+        if pass_param_info:
+            if original_signature_backup is None:
+                if hasattr(func, "__signature__"):
+                    del func.__signature__
+            else:
+                func.__signature__ = original_signature_backup
+
+        return pd.model_validator(mode=mode, **kwargs)(wrapper)
 
     return decorator

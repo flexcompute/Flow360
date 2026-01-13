@@ -9,7 +9,7 @@ from abc import ABCMeta
 from enum import Enum
 from numbers import Number
 from operator import add, sub
-from threading import Lock
+from threading import RLock
 from typing import Annotated, Any, Collection, List, Literal, Union
 
 import annotated_types
@@ -515,6 +515,7 @@ class _DimensionedType(metaclass=ABCMeta):
             allow_zero_component=True,
             allow_zero_norm=True,
             allow_negative_value=True,
+            allow_decreasing=True,
             length=3,
         ):
             """Get a dynamically created metaclass representing the vector"""
@@ -558,6 +559,10 @@ class _DimensionedType(metaclass=ABCMeta):
                         raise ValueError(f"arg '{value}' cannot have zero norm")
                     if not vec_cls.allow_negative_value and any(item < 0 for item in value):
                         raise ValueError(f"arg '{value}' cannot have negative value")
+                    if not vec_cls.allow_decreasing and any(
+                        x >= y for x, y in zip(value, value[1:])
+                    ):
+                        raise ValueError(f"arg '{value}' is not strictly increasing")
 
                     if vec_cls.type.has_defaults:
                         value = _unit_inference_validator(
@@ -597,6 +602,7 @@ class _DimensionedType(metaclass=ABCMeta):
             cls_obj.allow_zero_norm = allow_zero_norm
             cls_obj.allow_zero_component = allow_zero_component
             cls_obj.allow_negative_value = allow_negative_value
+            cls_obj.allow_decreasing = allow_decreasing
             cls_obj.__get_pydantic_core_schema__ = lambda *args: __get_pydantic_core_schema__(
                 cls_obj, *args
             )
@@ -778,6 +784,22 @@ class _DimensionedType(metaclass=ABCMeta):
         """
         return self._VectorType.get_class_object(
             self, allow_zero_norm=False, allow_zero_component=False
+        )
+
+    @classproperty
+    def Range(self):
+        """
+        Array value which accepts length 2 and is strictly increasing
+        """
+        return self._VectorType.get_class_object(self, allow_decreasing=False, length=2)
+
+    @classproperty
+    def PositiveRange(self):
+        """
+        Range which contains strictly positive values
+        """
+        return self._VectorType.get_class_object(
+            self, allow_negative_value=False, allow_decreasing=False, length=2
         )
 
     @classproperty
@@ -1503,7 +1525,7 @@ def is_flow360_unit(value):
     raise ValueError(f"Expected a dimensioned value, but {value} provided.")
 
 
-_lock = Lock()
+_lock = RLock()
 
 
 # pylint: disable=too-few-public-methods
@@ -1623,8 +1645,18 @@ class UnitSystem(pd.BaseModel):
         return all(equal)
 
     @classmethod
-    def from_dict(cls, **kwargs):
-        """Construct a unit system from the provided dictionary"""
+    def from_dict(cls, verbose: bool = True, **kwargs):
+        """
+        Construct a unit system from the provided dictionary.
+
+        Parameters
+        ----------
+        verbose : bool, optional
+            If False, suppress the info logging when the unit system context
+            is entered. By default True.
+        kwargs :
+            Fields of the unit system dictionary.
+        """
 
         class _TemporaryModel(pd.BaseModel):
             unit_system: UnitSystemType = pd.Field(discriminator="name")
@@ -1632,7 +1664,10 @@ class UnitSystem(pd.BaseModel):
         params = {"unit_system": kwargs}
         model = _TemporaryModel(**params)
 
-        return model.unit_system
+        unit_system = model.unit_system
+        unit_system._verbose = verbose  # pylint: disable=protected-access
+
+        return unit_system
 
     def defaults(self):
         """

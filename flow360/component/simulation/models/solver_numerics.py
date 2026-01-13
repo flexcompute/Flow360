@@ -22,12 +22,7 @@ from flow360.component.simulation.framework.base_model import (
     Flow360BaseModel,
 )
 from flow360.component.simulation.framework.entity_base import EntityList
-from flow360.component.simulation.primitives import (
-    Box,
-    CustomVolume,
-    EntityListWithCustomVolume,
-    GenericVolume,
-)
+from flow360.component.simulation.primitives import Box, CustomVolume, GenericVolume
 
 # from .time_stepping import UnsteadyTimeStepping
 
@@ -250,7 +245,7 @@ class TurbulenceModelControls(Flow360BaseModel):
         None, description="Force RANS or LES mode in a specific control region."
     )
 
-    entities: EntityListWithCustomVolume[GenericVolume, CustomVolume, Box] = pd.Field(
+    entities: EntityList[GenericVolume, CustomVolume, Box] = pd.Field(
         alias="volumes",
         description="The entity in which to apply the `TurbulenceMOdelControls``. "
         + "The entity should be defined by :class:`Box` or zones from the geometry/volume mesh."
@@ -262,8 +257,8 @@ class TurbulenceModelControls(Flow360BaseModel):
 class DetachedEddySimulation(Flow360BaseModel):
     """
     :class:`DetachedEddySimulation` class is used for running hybrid RANS-LES simulations
-    "It is supported for both SpalartAllmaras and kOmegaSST turbulence models, with and"
-    "without AmplificationFactorTransport transition model enabled."
+    It is supported for both SpalartAllmaras and kOmegaSST turbulence models, with and
+    without AmplificationFactorTransport transition model enabled."
 
     Example
     -------
@@ -274,8 +269,8 @@ class DetachedEddySimulation(Flow360BaseModel):
 
     shielding_function: Literal["DDES", "ZDES"] = pd.Field(
         "DDES",
-        description="Specifies the type of shielding used for the detached eddy simulation. The allowed inputs are"
-        ":code:`DDES` (Delayed Detached Eddy Simulation proposed by Spalart 2006) and :code:`ZDES`"
+        description="Specifies the type of shielding used for the detached eddy simulation. The allowed inputs are "
+        "``DDES`` (Delayed Detached Eddy Simulation proposed by Spalart 2006) and ``ZDES`` "
         "(proposed by Deck and Renard 2020).",
     )
     grid_size_for_LES: Literal["maxEdgeLength", "meanEdgeLength"] = pd.Field(

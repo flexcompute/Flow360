@@ -213,6 +213,7 @@
                     {
                         "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "GhostSphere",
+                        "private_attribute_id": "farfield",
                         "name": "farfield",
                         "_id": "8ae37a4b-6970-5d88-aef5-43a1abcc845e"
                     }
@@ -457,7 +458,7 @@
             "frequency": -1,
             "frequency_offset": 0,
             "moving_statistic": {
-                "method": "std",
+                "method": "standard_deviation",
                 "moving_window_size": 10,
                 "start_step": 0,
                 "type_name": "MovingStatistic"
@@ -523,7 +524,7 @@
                 ]
             },
             "moving_statistic": {
-                "method": "deviation",
+                "method": "range",
                 "moving_window_size": 10,
                 "start_step": 0,
                 "type_name": "MovingStatistic"

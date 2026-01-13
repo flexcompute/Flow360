@@ -42,7 +42,8 @@ from flow360.component.simulation.user_code.core.utils import (
     split_keep_delimiters,
 )
 from flow360.component.simulation.validation.validation_context import (
-    get_validation_info,
+    ParamsValidationInfo,
+    contextual_model_validator,
 )
 from flow360.log import log
 
@@ -533,7 +534,7 @@ class UserVariable(Variable):
 
     @pd.field_validator("name", mode="after")
     @classmethod
-    @deprecation_reminder("25.8.0")
+    @deprecation_reminder("26.2.0")
     def check_value_is_not_legacy_variable(cls, v):
         """Check that the value is not a legacy variable"""
         # pylint:disable=import-outside-toplevel
@@ -768,6 +769,8 @@ class Expression(Flow360BaseModel, Evaluable):
                 output_units = value.value.output_units
         elif isinstance(value, list):
             expression = f"[{','.join([_convert_argument(item)[0] for item in value])}]"
+        elif isinstance(value, (Number, u.unyt_array, u.unyt_quantity)):
+            expression = _convert_numeric(value)
         else:
             details = InitErrorDetails(
                 type="value_error", ctx={"error": f"Invalid type {type(value)}"}
@@ -847,8 +850,8 @@ class Expression(Flow360BaseModel, Evaluable):
             )
         return value
 
-    @pd.model_validator(mode="after")
-    def ensure_dependent_feature_enabled(self) -> str:
+    @contextual_model_validator(mode="after")
+    def ensure_dependent_feature_enabled(self, param_info: ParamsValidationInfo) -> str:
         """
         Ensure that all dependent features are enabled for all the solver variables.
         Remaining checks:
@@ -856,14 +859,13 @@ class Expression(Flow360BaseModel, Evaluable):
         2. variable location check.
 
         """
-        validation_info = get_validation_info()
-        if validation_info is None or self.expression not in validation_info.referenced_expressions:
+        if self.expression not in param_info.referenced_expressions:
             return self
         # Setting recursive to False to avoid recursive error message.
         # All user variables will be checked anyways.
         for solver_variable_name in self.solver_variable_names(recursive=False):
             if solver_variable_name in _feature_requirement_map:
-                if not _feature_requirement_map[solver_variable_name][0](validation_info):
+                if not _feature_requirement_map[solver_variable_name][0](param_info):
                     raise ValueError(
                         f"`{solver_variable_name}` cannot be used "
                         f"because {_feature_requirement_map[solver_variable_name][1]}"
@@ -1286,7 +1288,7 @@ class ValueOrExpression(Expression, Generic[T]):
                         {"expression": value.expression, "output_units": value.output_units}
                     )
 
-            @deprecation_reminder("25.8.0")
+            @deprecation_reminder("26.2.0")
             def _handle_legacy_unyt_values(value):
                 """Handle {"units":..., "value":...} from legacy input. This is much easier than writing the updater."""
                 if isinstance(value, dict) and "units" in value and "value" in value:
@@ -1627,3 +1629,30 @@ def infer_units_by_unit_system(value: dict, unit_system: str, value_dimensions):
     if unit_system == "CGS_unit_system":
         value["units"] = u.unit_systems.cgs_unit_system[value_dimensions]
     return value
+
+
+def compute_surface_integral_unit(variable: UserVariable, params) -> str:
+    """
+    Compute the unit of the surface integral of a UserVariable over a surface.
+    """
+    base_unit = None
+    if isinstance(variable.value, Expression):
+        base_unit = variable.value.get_output_units(params)
+    else:
+        val = variable.value
+        if hasattr(val, "get_output_units"):
+            base_unit = val.get_output_units(params)
+        elif isinstance(val, (unyt_array, unyt_quantity)):
+            base_unit = val.units
+        elif isinstance(val, Number):
+            base_unit = u.Unit("dimensionless")
+        else:
+            base_unit = u.Unit("dimensionless")
+
+    if base_unit is None:
+        # Fallback if output_units is not set for expression or if it is a number
+        base_unit = u.Unit("dimensionless")
+
+    area_unit = params.unit_system["area"].units
+    result_unit = base_unit * area_unit
+    return str(result_unit)

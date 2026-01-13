@@ -14,6 +14,12 @@ from flow360.component.simulation.conversion import (
     unit_converter,
 )
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
+from flow360.component.simulation.framework.boundary_split import (
+    BoundaryNameLookupTable,
+    post_process_rotation_volume_entities,
+    post_process_wall_models_for_rotating,
+    update_entities_in_model,
+)
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
 from flow360.component.simulation.framework.param_utils import (
     AssetCache,
@@ -23,10 +29,7 @@ from flow360.component.simulation.framework.param_utils import (
     register_entity_list,
 )
 from flow360.component.simulation.framework.updater import updater
-from flow360.component.simulation.framework.updater_utils import (
-    Flow360Version,
-    recursive_remove_key,
-)
+from flow360.component.simulation.framework.updater_utils import Flow360Version
 from flow360.component.simulation.meshing_param.params import (
     MeshingParams,
     ModularMeshingWorkflow,
@@ -79,15 +82,21 @@ from flow360.component.simulation.unit_system import (
     unyt_quantity,
 )
 from flow360.component.simulation.user_code.core.types import (
+    UserVariable,
     batch_get_user_variable_units,
+    compute_surface_integral_unit,
     get_post_processing_variables,
 )
 from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
     UserDefinedDynamic,
 )
-from flow360.component.simulation.utils import model_attribute_unlock
+from flow360.component.simulation.utils import (
+    model_attribute_unlock,
+    sanitize_params_dict,
+)
 from flow360.component.simulation.validation.validation_output import (
     _check_aero_acoustics_observer_time_step_size,
+    _check_moving_statistic_applicability,
     _check_output_fields,
     _check_output_fields_valid_given_transition_model,
     _check_output_fields_valid_given_turbulence_model,
@@ -102,6 +111,7 @@ from flow360.component.simulation.validation.validation_simulation_params import
     _check_complete_boundary_condition_and_unknown_surface,
     _check_consistency_hybrid_model_volume_output,
     _check_consistency_wall_function_and_surface_output,
+    _check_coordinate_system_constraints,
     _check_duplicate_actuator_disk_cylinder_names,
     _check_duplicate_entities_in_models,
     _check_duplicate_isosurface_names,
@@ -111,9 +121,12 @@ from flow360.component.simulation.validation.validation_simulation_params import
     _check_numerical_dissipation_factor_output,
     _check_parent_volume_is_rotating,
     _check_time_average_output,
+    _check_unique_selector_names,
     _check_unsteadiness_to_use_hybrid_model,
     _check_valid_models_for_liquid,
+    _populate_validated_field_to_validation_context,
 )
+from flow360.component.simulation.validation.validation_utils import has_mirroring_usage
 from flow360.error_messages import (
     unit_system_inconsistent_msg,
     use_unit_system_for_simulation_msg,
@@ -128,8 +141,10 @@ from .validation.validation_context import (
     VOLUME_MESH,
     CaseField,
     ConditionalField,
+    ParamsValidationInfo,
     context_validator,
-    get_validation_info,
+    contextual_field_validator,
+    contextual_model_validator,
 )
 
 ModelTypes = Annotated[Union[VolumeModelTypes, SurfaceModelTypes], pd.Field(discriminator="type")]
@@ -204,9 +219,7 @@ class _ParamModelBase(Flow360BaseModel):
 
         Clean the redundant content in the params dict from WebUI
         """
-        recursive_remove_key(model_dict, "_id")
-
-        return model_dict
+        return sanitize_params_dict(model_dict)
 
     def _init_no_unit_context(self, filename, file_content, **kwargs):
         """
@@ -229,12 +242,15 @@ class _ParamModelBase(Flow360BaseModel):
 
         unit_system = model_dict.get("unit_system")
 
-        with UnitSystem.from_dict(**unit_system):  # pylint: disable=not-context-manager
+        with UnitSystem.from_dict(
+            **unit_system, verbose=False
+        ):  # pylint: disable=not-context-manager
             super().__init__(**model_dict)
 
     def _init_with_unit_context(self, **kwargs):
         """
         Initializes the simulation parameters with the given unit context.
+        This is the entry when user construct Param with Python script.
         """
         # When treating dicts the updater is skipped.
         kwargs = _ParamModelBase._init_check_unit_system(**kwargs)
@@ -340,7 +356,9 @@ class SimulationParams(_ParamModelBase):
             # pylint: disable=not-context-manager
             with self.unit_system:
                 return super().preprocess(
-                    params=self, exclude=exclude, flow360_unit_system=self.flow360_unit_system
+                    params=self,
+                    exclude=exclude,
+                    flow360_unit_system=self.flow360_unit_system,
                 )
         return super().preprocess(
             params=self, exclude=exclude, flow360_unit_system=self.flow360_unit_system
@@ -429,30 +447,44 @@ class SimulationParams(_ParamModelBase):
             v.append(Fluid(private_attribute_id="__default_fluid"))
         return v
 
-    @pd.field_validator("models", mode="after")
+    @contextual_field_validator("models", mode="after")
     @classmethod
-    def check_parent_volume_is_rotating(cls, models):
+    def check_parent_volume_is_rotating(cls, models, param_info: ParamsValidationInfo):
         """Ensure that all the parent volumes listed in the `Rotation` model are not static"""
-        return _check_parent_volume_is_rotating(models)
+        return _check_parent_volume_is_rotating(models, param_info)
 
-    @pd.field_validator("models", mode="after")
+    @contextual_field_validator("models", mode="after")
     @classmethod
-    def check_valid_models_for_liquid(cls, models):
+    def check_valid_models_for_liquid(cls, models, param_info: ParamsValidationInfo):
         """Ensure that all the boundary conditions used are valid."""
-        return _check_valid_models_for_liquid(models)
+        return _check_valid_models_for_liquid(models, param_info)
 
-    @pd.field_validator("models", mode="after")
+    @contextual_field_validator("models", mode="after")
     @classmethod
-    def check_duplicate_actuator_disk_cylinder_names(cls, models):
+    def check_duplicate_actuator_disk_cylinder_names(cls, models, param_info: ParamsValidationInfo):
         """Ensure that all the cylinder names used in ActuatorDisks are unique."""
-        return _check_duplicate_actuator_disk_cylinder_names(models)
+        return _check_duplicate_actuator_disk_cylinder_names(models, param_info)
 
-    @pd.field_validator("user_defined_fields", mode="after")
+    @contextual_field_validator("models", mode="after")
     @classmethod
-    def _disable_expression_for_liquid(cls, value, info: pd.ValidationInfo):
+    def populate_validated_models_to_validation_context(
+        cls, models, param_info: ParamsValidationInfo
+    ):
+        """After models are validated, store {id: model_obj} in validation context."""
+        return _populate_validated_field_to_validation_context(
+            models, param_info, "physics_model_dict"
+        )
+
+    @contextual_field_validator("user_defined_fields", mode="after")
+    @classmethod
+    def _disable_expression_for_liquid(
+        cls,
+        value,
+        info: pd.ValidationInfo,
+        param_info: ParamsValidationInfo,
+    ):
         """Ensure that string expressions are disabled for liquid simulation."""
-        validation_info = get_validation_info()
-        if validation_info is None or validation_info.using_liquid_as_material is False:
+        if param_info.using_liquid_as_material is False:
             return value
         if value:
             raise ValueError(
@@ -466,11 +498,19 @@ class SimulationParams(_ParamModelBase):
         """Check if we have isosurfaces with a duplicate name"""
         return _check_duplicate_isosurface_names(outputs)
 
-    @pd.field_validator("outputs", mode="after")
+    @contextual_field_validator("outputs", mode="after")
     @classmethod
-    def check_duplicate_surface_usage(cls, outputs):
+    def check_duplicate_surface_usage(cls, outputs, param_info: ParamsValidationInfo):
         """Disallow the same boundary/surface being used in multiple outputs"""
-        return _check_duplicate_surface_usage(outputs)
+        return _check_duplicate_surface_usage(outputs, param_info)
+
+    @contextual_field_validator("outputs", mode="after")
+    @classmethod
+    def populate_validated_outputs_to_validation_context(
+        cls, outputs, param_info: ParamsValidationInfo
+    ):
+        """After outputs are validated, store {id: output_obj} in validation context."""
+        return _populate_validated_field_to_validation_context(outputs, param_info, "output_dict")
 
     @pd.field_validator("user_defined_fields", mode="after")
     @classmethod
@@ -529,9 +569,10 @@ class SimulationParams(_ParamModelBase):
         """Only allow unique probe names"""
         return _check_unique_surface_volume_probe_names(self)
 
-    @pd.model_validator(mode="after")
+    @contextual_model_validator(mode="after")
     def check_unique_surface_volume_probe_entity_names(self):
         """Only allow unique probe entity names"""
+        # Note: Probes are not covered by Selectors so no need to expand them here.
         return _check_unique_surface_volume_probe_entity_names(self)
 
     @pd.model_validator(mode="after")
@@ -539,10 +580,15 @@ class SimulationParams(_ParamModelBase):
         """Only allow unique force distribution names"""
         return _check_unique_force_distribution_output_names(self)
 
-    @pd.model_validator(mode="after")
-    def check_duplicate_entities_in_models(self):
+    @contextual_model_validator(mode="after")
+    def check_duplicate_entities_in_models(self, param_info: ParamsValidationInfo):
         """Only allow each Surface/Volume entity to appear once in the Surface/Volume model"""
-        return _check_duplicate_entities_in_models(self)
+        return _check_duplicate_entities_in_models(self, param_info)
+
+    @contextual_model_validator(mode="after")
+    def check_unique_selector_names(self):
+        """Ensure all EntitySelector names are unique"""
+        return _check_unique_selector_names(self)
 
     @pd.model_validator(mode="after")
     def check_numerical_dissipation_factor_output(self):
@@ -554,11 +600,13 @@ class SimulationParams(_ParamModelBase):
         """Only allow lowMachPreconditioner output field when the lowMachPreconditioner is enabled in the NS solver"""
         return _check_low_mach_preconditioner_output(self)
 
-    @pd.model_validator(mode="after")
+    @contextual_model_validator(mode="after")
     @context_validator(context=CASE)
-    def check_complete_boundary_condition_and_unknown_surface(self):
+    def check_complete_boundary_condition_and_unknown_surface(
+        self, param_info: ParamsValidationInfo
+    ):
         """Make sure that all boundaries have been assigned with a boundary condition"""
-        return _check_complete_boundary_condition_and_unknown_surface(self)
+        return _check_complete_boundary_condition_and_unknown_surface(self, param_info)
 
     @pd.model_validator(mode="after")
     def check_output_fields(params):
@@ -584,6 +632,24 @@ class SimulationParams(_ParamModelBase):
     def check_time_average_output(params):
         """Only allow TimeAverage output field in the unsteady simulations"""
         return _check_time_average_output(params)
+
+    @pd.model_validator(mode="after")
+    def check_moving_statistic_applicability(params):
+        """Check moving statistic settings are applicable to the simulation time stepping set up."""
+        return _check_moving_statistic_applicability(params)
+
+    @contextual_model_validator(mode="after")
+    def _validate_coordinate_system_constraints(self, param_info: ParamsValidationInfo):
+        """Validate coordinate system usage constraints."""
+        return _check_coordinate_system_constraints(self, param_info)
+
+    @contextual_model_validator(mode="after")
+    def _validate_mirroring_requires_geometry_ai(self, param_info: ParamsValidationInfo):
+        """Ensure mirroring is only used when GeometryAI is enabled."""
+        if has_mirroring_usage(self.private_attribute_asset_cache):
+            if not param_info.use_geometry_AI:
+                raise ValueError("Mirroring is only supported when Geometry AI is enabled.")
+        return self
 
     def _register_assigned_entities(self, registry: EntityRegistry) -> EntityRegistry:
         """Recursively register all entities listed in EntityList to the asset cache."""
@@ -677,9 +743,14 @@ class SimulationParams(_ParamModelBase):
         So we need to find the `reference velocity`.
         `reference_velocity_magnitude` takes precedence, consistent with how "velocityScale" is computed.
         """
-        # pylint:disable=no-member
-        if self.operating_condition.reference_velocity_magnitude is not None:
-            reference_velocity = (self.operating_condition.reference_velocity_magnitude).to("m/s")
+        # NOTE: GenericReferenceCondition does not define `reference_velocity_magnitude`.
+        # For GenericReferenceCondition, reference velocity is just `velocity_magnitude`.
+        reference_velocity_magnitude = getattr(
+            self.operating_condition, "reference_velocity_magnitude", None
+        )
+        # pylint: disable=no-member
+        if reference_velocity_magnitude is not None:
+            reference_velocity = reference_velocity_magnitude.to("m/s")
         elif self.operating_condition.type_name == "LiquidOperatingCondition":
             reference_velocity = self.base_velocity.to("m/s") * LIQUID_IMAGINARY_FREESTREAM_MACH
         else:
@@ -730,6 +801,11 @@ class SimulationParams(_ParamModelBase):
         """
         Get a entity registry that collects all the entities used in the simulation.
         And also try to update the entities now that we have a global view of the simulation.
+
+        # Hint:
+        Used by _set_up_params_non_persistent_entity_info & _update_param_with_actual_volume_mesh_meta
+
+        # TODO: With the change of entity selector expansion, this no longer captures all non-draft entities.
         """
         registry = EntityRegistry()
         registry = self._register_assigned_entities(registry)
@@ -743,12 +819,20 @@ class SimulationParams(_ParamModelBase):
         Some thoughts:
         Do we also need to update the params when the **surface meshing** is done?
         """
-        # pylint:disable=no-member
-        used_entity_registry = self.used_entity_registry
-        # Below includes the Ghost entities.
-        _update_entity_full_name(self, _SurfaceEntityBase, volume_mesh_meta_data)
+        # Build lookup table for surface entity name mapping (base_name -> full_name)
+        lookup_table = BoundaryNameLookupTable.from_params(volume_mesh_meta_data, params=self)
+
+        # Update surface entities using the lookup table
+        update_entities_in_model(self, lookup_table, _SurfaceEntityBase)
+
+        # Update volume entities
         _update_entity_full_name(self, _VolumeEntityBase, volume_mesh_meta_data)
-        _update_zone_boundaries_with_metadata(used_entity_registry, volume_mesh_meta_data)
+        _update_zone_boundaries_with_metadata(self.used_entity_registry, volume_mesh_meta_data)
+
+        # Post-processing hooks for RotationVolume-specific logic
+        post_process_rotation_volume_entities(self, lookup_table)
+        post_process_wall_models_for_rotating(self, lookup_table)
+
         return self
 
     def is_steady(self):
@@ -841,6 +925,13 @@ class SimulationParams(_ParamModelBase):
         # Sort for consistent behavior
         post_processing_variables = sorted(post_processing_variables)
         name_units_pair = batch_get_user_variable_units(post_processing_variables, self)
+
+        for output in self.outputs:
+            if isinstance(output, SurfaceIntegralOutput):
+                for field in output.output_fields.items:
+                    if isinstance(field, UserVariable):
+                        unit = compute_surface_integral_unit(field, self)
+                        name_units_pair[f"{field.name} (Surface integral)"] = unit
 
         if not name_units_pair:
             return

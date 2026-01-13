@@ -4,14 +4,31 @@
 import json
 import os
 from enum import Enum
-from typing import Any, Collection, Dict, Iterable, Literal, Optional, Tuple, Union
+from typing import (
+    Any,
+    Collection,
+    Dict,
+    Iterable,
+    List,
+    Literal,
+    Optional,
+    Tuple,
+    Union,
+)
 
 import pydantic as pd
 from pydantic_core import ErrorDetails
 
 # Required for correct global scope initialization
 from flow360.component.simulation.blueprint.core.dependency_graph import DependencyGraph
+from flow360.component.simulation.entity_info import GeometryEntityInfo
+from flow360.component.simulation.entity_info import (
+    merge_geometry_entity_info as merge_geometry_entity_info_obj,
+)
 from flow360.component.simulation.exposed_units import supported_units_by_front_end
+from flow360.component.simulation.framework.entity_materializer import (
+    materialize_entities_and_selectors_in_place,
+)
 from flow360.component.simulation.framework.multi_constructor_model_base import (
     parse_model_dict,
 )
@@ -24,27 +41,26 @@ from flow360.component.simulation.models.bet.bet_translator_interface import (
 )
 from flow360.component.simulation.models.surface_models import Freestream, Wall
 
-# Following unused-import for supporting parse_model_dict
-from flow360.component.simulation.models.volume_models import (  # pylint: disable=unused-import
-    BETDisk,
-)
-
-# pylint: disable=unused-import
+# pylint: disable=unused-import # For parse_model_dict
+from flow360.component.simulation.models.volume_models import BETDisk
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
     GenericReferenceCondition,
     ThermalState,
 )
-from flow360.component.simulation.outputs.outputs import SurfaceOutput
-from flow360.component.simulation.primitives import Box  # pylint: disable=unused-import
-from flow360.component.simulation.primitives import Surface  # For parse_model_dict
+from flow360.component.simulation.primitives import Box
+
+# pylint: enable=unused-import
 from flow360.component.simulation.simulation_params import (
     ReferenceGeometry,
     SimulationParams,
 )
 
 # Required for correct global scope initialization
-from flow360.component.simulation.translator.solver_translator import get_solver_json
+from flow360.component.simulation.translator.solver_translator import (
+    get_columnar_data_processor_json,
+    get_solver_json,
+)
 from flow360.component.simulation.translator.surface_meshing_translator import (
     get_surface_meshing_json,
 )
@@ -72,7 +88,6 @@ from flow360.component.simulation.validation.validation_context import (
     ALL,
     ParamsValidationInfo,
     ValidationContext,
-    get_value_with_path,
 )
 from flow360.exceptions import (
     Flow360RuntimeError,
@@ -166,6 +181,9 @@ def get_default_params(
         Default parameters for Flow360 simulation stored in a dictionary.
 
     """
+    # pylint: disable=import-outside-toplevel
+    from flow360.component.simulation.outputs.outputs import SurfaceOutput
+    from flow360.component.simulation.primitives import Surface
 
     unit_system = init_unit_system(unit_system_name)
     dummy_value = 0.1
@@ -202,6 +220,7 @@ def get_default_params(
         params = _store_project_length_unit(project_length_unit, params)
 
         return params.model_dump(
+            mode="json",
             exclude_none=True,
             exclude={
                 "operating_condition": {"velocity_magnitude": True},
@@ -233,6 +252,7 @@ def get_default_params(
         params = _store_project_length_unit(project_length_unit, params)
 
         return params.model_dump(
+            mode="json",
             exclude_none=True,
             exclude={
                 "operating_condition": {"velocity_magnitude": True},
@@ -423,7 +443,7 @@ def validate_model(  # pylint: disable=too-many-locals
     validation_level: Union[
         Literal["SurfaceMesh", "VolumeMesh", "Case", "All"], list, None
     ] = ALL,  # Fix implicit string concatenation
-) -> Tuple[Optional[SimulationParams], Optional[list], Optional[list]]:
+) -> Tuple[Optional[SimulationParams], Optional[list], List[Dict[str, Any]]]:
     """
     Validate a params dict against the pydantic model.
 
@@ -444,12 +464,69 @@ def validate_model(  # pylint: disable=too-many-locals
         The validated parameters if successful, otherwise None.
     validation_errors : list or None
         A list of validation errors if any occurred.
-    validation_warnings : list or None
-        A list of validation warnings if any occurred.
+    validation_warnings : list
+        A list of validation warnings (empty list if no warnings were recorded).
     """
+
+    def handle_multi_constructor_model(params_as_dict: dict) -> dict:
+        """
+        Handle input cache of multi-constructor models.
+        """
+        project_length_unit_dict = params_as_dict.get("private_attribute_asset_cache", {}).get(
+            "project_length_unit", None
+        )
+        parse_model_info = ParamsValidationInfo(
+            {"private_attribute_asset_cache": {"project_length_unit": project_length_unit_dict}},
+            [],
+        )
+        with ValidationContext(levels=validation_levels_to_use, info=parse_model_info):
+            # Multi-constructor model support
+            updated_param_as_dict = parse_model_dict(params_as_dict, globals())
+        return updated_param_as_dict
+
+    def dict_preprocessing(params_as_dict: dict) -> dict:
+        """
+        Preprocess the parameters dictionary before validation.
+        """
+        # pylint: disable=protected-access
+        params_as_dict = SimulationParams._sanitize_params_dict(params_as_dict)
+        params_as_dict = handle_multi_constructor_model(params_as_dict)
+
+        # Materialize stored_entities (dict -> shared instances) and per-list deduplication
+        # pylint: disable=fixme
+        # TODO: The need for materialization on entities?
+        # *  Ideally stored_entities should store entity IDs only. And we do not even need to materialize them here.
+        # *  This change has to wait for the front end to support entity IDs.
+        # *  Although to be fair having entities esp the draft entities inlined allow copy pasting of
+        # *  the SimulationParams, otherwise user will copy a bunch of links which become stale under a new context.
+        # * Benefits:
+        # * 1. Much shorter JSON.
+        # * 2. Deserialization ALL entities just once, not just the persistent ones.
+        # * 3. Strong requirement that ALL entities must come from entity_info/registry.
+        # * 4. Data structural-wise single source of truth.
+
+        # TODO: Unifying Materialization and Entity Info?
+        # *  As of now entities will still be separate instances when being
+        # *  1. materialized here versus
+        # *  2. deserialized in the editing info.
+        # *  This impacts manually picked entities and all draft entities since they cannot be matched by Selectors.
+        # *  validate_mode() is called in 3 main places:
+        # *  1. Local validation
+        # *  2. Service validation
+        # *  3. Local deserialization of cloud simulation.json
+        # *  Only the last scenario is affected by this issue because in 1 and 2 user has done all the possible
+        # *  editing so keeping data linkage is non-beneficial.
+        # *  Although for the last scenario, if the user makes changes to the entities via create_draft(), the draft's
+        # *  entity_info will be source of truth and the changes should be reflected in
+        # *  both the assignment and the entity_info.
+
+        params_as_dict = materialize_entities_and_selectors_in_place(params_as_dict)
+        return params_as_dict
+
     validation_errors = None
-    validation_warnings = None
+    validation_warnings: List[Dict[str, Any]] = []
     validated_param = None
+    validation_context: Optional[ValidationContext] = None
 
     params_as_dict = clean_unrelated_setting_from_params_dict(params_as_dict, root_item_type)
 
@@ -459,34 +536,52 @@ def validate_model(  # pylint: disable=too-many-locals
     validation_levels_to_use = _intersect_validation_levels(validation_level, available_levels)
     forward_compatibility_mode = False
 
+    # pylint: disable=protected-access
+    # Note: Need to run updater first to accommodate possible schema change in input caches.
+    params_as_dict, forward_compatibility_mode = SimulationParams._update_param_dict(params_as_dict)
     try:
-        # pylint: disable=protected-access
-        params_as_dict = SimulationParams._sanitize_params_dict(params_as_dict)
-        # Note: Need to run updater first to accommodate possible schema change in input caches.
-        updated_param_as_dict, forward_compatibility_mode = SimulationParams._update_param_dict(
-            params_as_dict
-        )
+        updated_param_as_dict = dict_preprocessing(params_as_dict)
 
+        # Initialize variable space
         use_clear_context = validated_by == ValidationCalledBy.SERVICE
         initialize_variable_space(updated_param_as_dict, use_clear_context)
-
         referenced_expressions = get_referenced_expressions_and_user_variables(
             updated_param_as_dict
         )
 
-        additional_info = ParamsValidationInfo(
+        validation_info = ParamsValidationInfo(
             param_as_dict=updated_param_as_dict,
             referenced_expressions=referenced_expressions,
         )
 
-        with ValidationContext(levels=validation_levels_to_use, info=additional_info):
-            # Multi-constructor model support
-            updated_param_as_dict = parse_model_dict(updated_param_as_dict, globals())
-            validated_param = SimulationParams(file_content=updated_param_as_dict)
+        with ValidationContext(
+            levels=validation_levels_to_use,
+            info=validation_info,
+        ) as context:
+            validation_context = context
+            unit_system = updated_param_as_dict.get("unit_system")
+            with UnitSystem.from_dict(  # pylint: disable=not-context-manager
+                verbose=False, **unit_system
+            ):
+                # Reuse pre-deserialized entity_info to avoid double deserialization
+                pre_deserialized_entity_info = validation_info.get_entity_info()
+                if pre_deserialized_entity_info is not None:
+                    # Create shallow copy with entity_info substituted
+                    updated_param_as_dict = {**updated_param_as_dict}
+                    updated_param_as_dict["private_attribute_asset_cache"] = {
+                        **updated_param_as_dict["private_attribute_asset_cache"],
+                        "project_entity_info": pre_deserialized_entity_info,
+                    }
+
+                validated_param = SimulationParams.model_validate(updated_param_as_dict)
+
     except pd.ValidationError as err:
         validation_errors = err.errors()
     except Exception as err:  # pylint: disable=broad-exception-caught
         validation_errors = handle_generic_exception(err, validation_errors)
+    finally:
+        if validation_context is not None:
+            validation_warnings = list(validation_context.validation_warnings)
 
     if validation_errors is not None:
         validation_errors = validate_error_locations(validation_errors, params_as_dict)
@@ -638,6 +733,7 @@ def _translate_simulation_json(
     mesh_unit,
     target_name: str = None,
     translation_func=None,
+    **kwargs,
 ):
     """
     Get JSON for surface meshing from a given simulation JSON.
@@ -652,7 +748,7 @@ def _translate_simulation_json(
         )
 
     try:
-        translated_dict = translation_func(input_params, mesh_unit)
+        translated_dict = translation_func(input_params, mesh_unit, **kwargs)
     except Flow360TranslationError as err:
         raise ValueError(str(err)) from err
     except Exception as err:  # translation itself is not supposed to raise any other exception
@@ -688,13 +784,26 @@ def simulation_to_volume_meshing_json(input_params: SimulationParams, mesh_unit)
     )
 
 
-def simulation_to_case_json(input_params: SimulationParams, mesh_unit):
+def simulation_to_case_json(
+    input_params: SimulationParams, mesh_unit, *, skip_selector_expansion: bool = False
+):
     """Get JSON for case from a given simulation JSON."""
     return _translate_simulation_json(
         input_params,
         mesh_unit,
         "case",
         get_solver_json,
+        skip_selector_expansion=skip_selector_expansion,
+    )
+
+
+def simulation_to_columnar_data_processor_json(input_params: SimulationParams, mesh_unit):
+    """Get JSON for case postprocessing from a given simulation JSON."""
+    return _translate_simulation_json(
+        input_params,
+        mesh_unit,
+        "case postprocessing",
+        get_columnar_data_processor_json,
     )
 
 
@@ -777,7 +886,7 @@ def generate_process_json(
     params_as_dict = json.loads(simulation_json)
     mesh_unit = _get_mesh_unit(params_as_dict)
 
-    # Note: There should not be any validation error for params_as_dict. Here is just a deserilization of the JSON
+    # Note: There should not be any validation error for params_as_dict. Here is just a deserialization of the JSON
     params, errors, _ = validate_model(
         params_as_dict=params_as_dict,
         validated_by=ValidationCalledBy.SERVICE,  # This is called only by web service currently.
@@ -1073,7 +1182,7 @@ def translate_xfoil_c81_bet_disk(
 
 
 def _parse_root_item_type_from_simulation_json(*, param_as_dict: dict):
-    """Deduct the root item entity type from simulation.json"""
+    """[External] Deduct the root item entity type from simulation.json"""
     try:
         entity_info_type = param_as_dict["private_attribute_asset_cache"]["project_entity_info"][
             "type_name"
@@ -1088,3 +1197,49 @@ def _parse_root_item_type_from_simulation_json(*, param_as_dict: dict):
     except KeyError:
         # pylint:disable = raise-missing-from
         raise ValueError("[INTERNAL] Failed to get the root item from the simulation.json!!!")
+
+
+def merge_geometry_entity_info(
+    draft_param_as_dict: dict, geometry_dependencies_param_as_dict: list[dict]
+):
+    """
+    Merge the geometry entity info from geometry dependencies into the draft simulation param dict.
+
+    Parameters
+    ----------
+    draft_param_as_dict : dict
+        The draft simulation parameters dictionary.
+    geometry_dependencies_param_as_dict : list of dict
+        The list of geometry dependencies simulation parameters dictionaries.
+
+    Returns
+    -------
+    dict
+        The updated draft simulation parameters dictionary with merged geometry entity info.
+    """
+    draft_param_entity_info_dict = draft_param_as_dict.get("private_attribute_asset_cache", {}).get(
+        "project_entity_info", {}
+    )
+    if draft_param_entity_info_dict.get("type_name") != "GeometryEntityInfo":
+        return draft_param_as_dict
+
+    current_entity_info = GeometryEntityInfo.model_validate(draft_param_entity_info_dict)
+
+    entity_info_components = []
+    for geometry_param_as_dict in geometry_dependencies_param_as_dict:
+        dependency_entity_info_dict = geometry_param_as_dict.get(
+            "private_attribute_asset_cache", {}
+        ).get("project_entity_info", {})
+        if dependency_entity_info_dict.get("type_name") != "GeometryEntityInfo":
+            continue
+        entity_info_components.append(
+            GeometryEntityInfo.model_validate(dependency_entity_info_dict)
+        )
+
+    merged_entity_info = merge_geometry_entity_info_obj(
+        current_entity_info=current_entity_info,
+        entity_info_components=entity_info_components,
+    )
+    merged_entity_info_dict = merged_entity_info.model_dump(mode="json", exclude_none=True)
+
+    return merged_entity_info_dict

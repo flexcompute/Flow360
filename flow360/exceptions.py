@@ -16,6 +16,10 @@ class Flow360Error(Exception):
         log.error(message + " [Flow360 client version: " + __version__ + "]")
 
 
+class Flow360DeprecationError(Flow360Error):
+    """Error when a deprecated feature is used."""
+
+
 # pylint: disable=redefined-builtin
 class Flow360ValueError(Flow360Error):
     """Error with value."""

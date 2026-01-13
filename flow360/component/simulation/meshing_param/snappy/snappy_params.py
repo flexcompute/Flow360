@@ -24,7 +24,9 @@ from flow360.component.simulation.meshing_param.volume_params import UniformRefi
 from flow360.component.simulation.primitives import Box, Cylinder
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.validation.validation_context import (
-    get_validation_info,
+    ParamsValidationInfo,
+    contextual_field_validator,
+    contextual_model_validator,
 )
 from flow360.log import log
 
@@ -73,13 +75,14 @@ class SurfaceMeshingParams(Flow360BaseModel):
                     )
         return self
 
-    @pd.model_validator(mode="after")
+    @contextual_model_validator(mode="after")
     def _check_uniform_refinement_entities(self):
         # pylint: disable=no-member
         if self.refinements is None:
             return self
         for refinement in self.refinements:
             if isinstance(refinement, UniformRefinement):
+                # No expansion needed since we only allow Draft entities here.
                 for entity in refinement.entities.stored_entities:
                     if (
                         isinstance(entity, Box)
@@ -137,13 +140,12 @@ class SurfaceMeshingParams(Flow360BaseModel):
 
         return self
 
-    @pd.field_validator("base_spacing", mode="after")
+    @contextual_field_validator("base_spacing", mode="after")
     @classmethod
-    def _set_default_base_spacing(cls, base_spacing):
-        info = get_validation_info()
-        if (info is None) or (base_spacing is not None) or (info.project_length_unit is None):
+    def _set_default_base_spacing(cls, base_spacing, param_info: ParamsValidationInfo):
+        if (base_spacing is not None) or (param_info.project_length_unit is None):
             return base_spacing
 
         # pylint: disable=no-member
-        base_spacing = 1 * LengthType.validate(info.project_length_unit)
+        base_spacing = 1 * LengthType.validate(param_info.project_length_unit)
         return OctreeSpacing(base_spacing=base_spacing)

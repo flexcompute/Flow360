@@ -5,12 +5,20 @@ This module is flow360 for simulation based models
 from flow360.accounts_utils import Accounts
 from flow360.cli.api_set_func import configure_caller as configure
 from flow360.component.case import Case
+from flow360.component.cloud_examples import show_available_examples
 from flow360.component.geometry import Geometry
-from flow360.component.project import Project
+from flow360.component.project import Project, create_draft
 from flow360.component.simulation import migration, services
 from flow360.component.simulation import units as u
-from flow360.component.simulation.entity_operation import Transformation
+from flow360.component.simulation.draft_context.mirror import MirrorPlane
+from flow360.component.simulation.entity_operation import CoordinateSystem
 from flow360.component.simulation.folder import Folder
+from flow360.component.simulation.framework.entity_selector import (
+    BodyGroupSelector,
+    EdgeSelector,
+    SurfaceSelector,
+    VolumeSelector,
+)
 from flow360.component.simulation.meshing_param import snappy
 from flow360.component.simulation.meshing_param.edge_params import (
     AngleBasedRefinement,
@@ -38,13 +46,18 @@ from flow360.component.simulation.meshing_param.params import (
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     AxisymmetricRefinement,
+    CentralBelt,
     CustomZones,
+    FullyMovingFloor,
     MeshSliceOutput,
     RotationCylinder,
     RotationVolume,
+    StaticFloor,
     StructuredBoxRefinement,
     UniformRefinement,
     UserDefinedFarfield,
+    WheelBelts,
+    WindTunnelFarfield,
 )
 from flow360.component.simulation.models.material import (
     Air,
@@ -117,6 +130,7 @@ from flow360.component.simulation.operating_condition.operating_condition import
     LiquidOperatingCondition,
     ThermalState,
 )
+from flow360.component.simulation.outputs import render_config
 from flow360.component.simulation.outputs.output_entities import (
     Isosurface,
     Point,
@@ -127,16 +141,20 @@ from flow360.component.simulation.outputs.output_entities import (
 from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
     ForceDistributionOutput,
+    ForceOutput,
     IsosurfaceOutput,
     MovingStatistic,
     Observer,
     ProbeOutput,
+    RenderOutput,
+    RenderOutputGroup,
     SliceOutput,
     StreamlineOutput,
     SurfaceIntegralOutput,
     SurfaceOutput,
     SurfaceProbeOutput,
     SurfaceSliceOutput,
+    TimeAverageForceDistributionOutput,
     TimeAverageIsosurfaceOutput,
     TimeAverageProbeOutput,
     TimeAverageSliceOutput,
@@ -152,7 +170,6 @@ from flow360.component.simulation.primitives import (
     Box,
     CustomVolume,
     Cylinder,
-    ImportedSurface,
     ReferenceGeometry,
     SeedpointVolume,
 )
@@ -192,6 +209,13 @@ __all__ = [
     "GeometryRefinement",
     "Env",
     "Case",
+    "create_draft",
+    "CoordinateSystem",
+    "MirrorPlane",
+    "SurfaceSelector",
+    "EdgeSelector",
+    "VolumeSelector",
+    "BodyGroupSelector",
     "AngleBasedRefinement",
     "AspectRatioBasedRefinement",
     "ProjectAnisoSpacing",
@@ -252,6 +276,7 @@ __all__ = [
     "VolumeOutput",
     "TimeAverageVolumeOutput",
     "ForceDistributionOutput",
+    "TimeAverageForceDistributionOutput",
     "SliceOutput",
     "TimeAverageSliceOutput",
     "IsosurfaceOutput",
@@ -317,7 +342,6 @@ __all__ = [
     "migration",
     "Water",
     "PointArray2D",
-    "Transformation",
     "WallRotation",
     "UserVariable",
     "math",
@@ -332,9 +356,18 @@ __all__ = [
     "remove_user_variable",
     "StoppingCriterion",
     "MovingStatistic",
-    "ImportedSurface",
     "OctreeSpacing",
     "RunControl",
+    "WindTunnelFarfield",
+    "StaticFloor",
+    "FullyMovingFloor",
+    "CentralBelt",
+    "WheelBelts",
+    "show_available_examples",
+    "ForceOutput",
+    "RenderOutput",
+    "RenderOutputGroup",
+    "render_config",
 ]
 
 _warn_prerelease()

@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import json
 from enum import Enum
-from typing import Iterable, List, Literal, Optional, Union
+from typing import Dict, Iterable, List, Literal, Optional, Union
 
 import pydantic as pd
 import typing_extensions
@@ -16,6 +16,11 @@ from pydantic import PositiveInt
 from flow360.cloud.flow360_requests import LengthUnitType, RenameAssetRequestV2
 from flow360.cloud.rest_api import RestApi
 from flow360.component.case import Case
+from flow360.component.cloud_examples import (
+    copy_example,
+    fetch_examples,
+    find_example_by_name,
+)
 from flow360.component.geometry import Geometry
 from flow360.component.interfaces import (
     GeometryInterface,
@@ -24,18 +29,36 @@ from flow360.component.interfaces import (
     VolumeMeshInterfaceV2,
 )
 from flow360.component.project_utils import (
+    apply_and_inform_grouping_selections,
+    deep_copy_entity_info,
     get_project_records,
+    load_status_from_asset,
     set_up_params_for_uploading,
     show_projects_with_keyword_filter,
-    upload_imported_surfaces_to_draft,
     validate_params_with_context,
 )
 from flow360.component.resource_base import Flow360Resource
+from flow360.component.simulation.draft_context.context import (
+    DraftContext,
+    get_active_draft,
+)
+from flow360.component.simulation.draft_context.coordinate_system_manager import (
+    CoordinateSystemStatus,
+)
+from flow360.component.simulation.draft_context.mirror import MirrorStatus
+from flow360.component.simulation.entity_info import (
+    GeometryEntityInfo,
+    merge_geometry_entity_info,
+)
 from flow360.component.simulation.folder import Folder
+from flow360.component.simulation.primitives import ImportedSurface
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.web.asset_base import AssetBase
 from flow360.component.simulation.web.draft import Draft
+from flow360.component.simulation.web.utils import (
+    get_project_dependency_resource_metadata,
+)
 from flow360.component.surface_mesh_v2 import SurfaceMeshV2
 from flow360.component.utils import (
     AssetShortID,
@@ -43,6 +66,7 @@ from flow360.component.utils import (
     SurfaceMeshFile,
     VolumeMeshFile,
     formatting_validation_errors,
+    formatting_validation_warnings,
     get_short_asset_id,
     parse_datetime,
     wrapstring,
@@ -51,6 +75,7 @@ from flow360.component.volume_mesh import VolumeMeshV2
 from flow360.exceptions import (
     Flow360ConfigError,
     Flow360FileError,
+    Flow360RuntimeError,
     Flow360ValueError,
     Flow360WebError,
 )
@@ -77,6 +102,197 @@ class RootType(Enum):
     GEOMETRY = "Geometry"
     SURFACE_MESH = "SurfaceMesh"
     VOLUME_MESH = "VolumeMesh"
+
+
+class ProjectDependencyType(Enum):
+    """
+    Enum for dependency resource types in the project.
+
+    Attributes
+    ----------
+    GEOMETRY : str
+        Represents a geometry dependency resource.
+    SURFACE_MESH : str
+        Represents a surface mesh dependency resource.
+    """
+
+    GEOMETRY = "Geometry"
+    SURFACE_MESH = "SurfaceMesh"
+
+
+# pylint: disable=too-many-arguments
+def create_draft(
+    *,
+    new_run_from: Union[Geometry, SurfaceMeshV2, VolumeMeshV2],
+    face_grouping: Optional[str] = None,
+    edge_grouping: Optional[str] = None,
+    include_geometries: Optional[List[Geometry]] = None,
+    exclude_geometries: Optional[List[Geometry]] = None,
+    imported_surfaces: Optional[List[ImportedSurface]] = None,
+) -> DraftContext:
+    """
+    Create a local draft context from a cloud asset for your run.
+
+    A draft is an isolated, in-memory snapshot of an asset's entity information. It lets you
+    inspect and modify entities (surfaces, edges, volumes, body groups, etc.) locally without
+    mutating the cloud asset.
+
+    Draft allows you to:
+    - Override grouping tags for faces and edges (geometry assets only).
+    - Include or exclude geometry components (projects with a geometry root asset only).
+    - Register additional imported surfaces (surface mesh dependencies in the project).
+    - Access entities in the draft via `DraftContext` properties.
+    - Manage coordinate systems and mirror actions through `draft.coordinate_systems` and
+      `draft.mirror`.
+
+    Parameters
+    ----------
+    new_run_from : Union[Geometry, SurfaceMeshV2, VolumeMeshV2]
+        The cloud asset to create the draft from.
+    face_grouping : Optional[str]
+        Face grouping tag to activate for geometry assets. When None, the draft uses the
+        default grouping stored on the geometry asset. The tag must be one of the available
+        face grouping attributes (and, when multiple geometry components are active, must be
+        available across the activated components).
+    edge_grouping : Optional[str]
+        Edge grouping tag to activate for geometry assets. When None, the draft uses the
+        default grouping stored on the geometry asset. If the activated geometry does not
+        have edge grouping attributes, this option is ignored.
+    include_geometries : Optional[List[Geometry]]
+        Additional geometry components to activate in the draft (projects with a geometry
+        root asset only). The selected geometries are merged into the draft entity info.
+    exclude_geometries : Optional[List[Geometry]]
+        Geometry components to deactivate from the draft (projects with a geometry root asset
+        only). If a geometry is not currently active, its exclusion is ignored with a
+        warning.
+    imported_surfaces : Optional[List[ImportedSurface]]
+        Imported surface meshes to register in the draft. This is commonly obtained from
+        `Project.imported_surfaces` or created via `Project.import_surface_mesh(...)`.
+
+    Returns
+    -------
+    DraftContext
+        A draft context manager. Use it with `with` to set it as the active draft context.
+
+    Raises
+    ------
+    Flow360RuntimeError
+        If `new_run_from` is not a cloud asset instance.
+    Flow360ValueError
+        If draft creation is attempted from a `Case` or an imported `Geometry`, if geometry
+        components are requested for a non-geometry-root project, or if an invalid grouping
+        tag is specified.
+
+    Example
+    -------
+    >>> import flow360 as fl
+    >>> geometry = fl.Geometry.from_cloud(id="...")
+    >>> with fl.create_draft(new_run_from=geometry, face_grouping="groupByName") as draft:
+    ...     print(draft.surfaces["wing*"])
+
+    ====
+    """
+
+    # region -----------------------------Private implementations Below-----------------------------
+
+    def _resolve_active_geometry_dependencies(
+        current_geometry_dependencies: List,
+        include_geometries: List[Geometry],
+        exclude_geometries: List[Geometry],
+    ) -> Dict[str, Geometry]:
+        active_geometry_dependencies = {
+            geometry_dependency["id"]: Geometry.from_cloud(geometry_dependency["id"])
+            for geometry_dependency in current_geometry_dependencies
+        }
+        for geometry in include_geometries:
+            if geometry.id not in active_geometry_dependencies:
+                active_geometry_dependencies[geometry.id] = geometry
+        for geometry in exclude_geometries:
+            excluded_geometry = active_geometry_dependencies.pop(geometry.id, None)
+            if excluded_geometry is None:
+                log.warning(
+                    f"Geometry {geometry.name} not found among current dependencies. Ignoring its exclusion."
+                )
+        return active_geometry_dependencies
+
+    def _merge_geometry_entity_info(
+        new_run_from, entity_info, active_geometry_dependencies: Dict[str, Geometry]
+    ):
+        """Merge the geometry entity info based on the root and imported geometries."""
+        if not active_geometry_dependencies:
+            return entity_info
+        # Add root geometry to components to be merged
+        project = Project.from_cloud(new_run_from.info.project_id)
+        root_geometry = project.geometry
+        active_geometry_dependencies.update({root_geometry.id: root_geometry})
+        merged_entity_info = merge_geometry_entity_info(
+            current_entity_info=entity_info,
+            entity_info_components=[
+                geometry.entity_info for geometry in active_geometry_dependencies.values()
+            ],
+        )
+        return merged_entity_info
+
+    # endregion ------------------------------------------------------------------------------------
+
+    if not isinstance(new_run_from, AssetBase):
+        raise Flow360RuntimeError("create_draft expects a cloud asset instance as `new_run_from`.")
+
+    if isinstance(new_run_from, Geometry) and new_run_from.info.dependency:
+        raise Flow360ValueError("Draft creation from an imported Geometry is not supported.")
+
+    if isinstance(new_run_from, Case):
+        raise Flow360ValueError("Draft creation from a Case is not supported.")
+
+    if not isinstance(new_run_from.entity_info, GeometryEntityInfo) and (
+        include_geometries or exclude_geometries
+    ):
+        raise Flow360ValueError(
+            "Only project with a geometry root asset supports editing geometry components."
+            "Please use create_draft without `include_geometries` and `exclude_geometries`."
+        )
+
+    # Deep copy entity_info for draft isolation
+    entity_info_copy = deep_copy_entity_info(new_run_from.entity_info)
+
+    # Resolve geometry components and merge entity info if applicable
+    active_geometry_dependencies = {}
+    if isinstance(new_run_from.entity_info, GeometryEntityInfo):
+        active_geometry_dependencies = _resolve_active_geometry_dependencies(
+            current_geometry_dependencies=new_run_from.info.geometry_dependencies or [],
+            include_geometries=include_geometries or [],
+            exclude_geometries=exclude_geometries or [],
+        )
+        entity_info_copy = _merge_geometry_entity_info(
+            new_run_from=new_run_from,
+            entity_info=entity_info_copy,
+            active_geometry_dependencies=active_geometry_dependencies,
+        )
+
+    apply_and_inform_grouping_selections(
+        entity_info=entity_info_copy,
+        face_grouping=face_grouping,
+        edge_grouping=edge_grouping,
+    )
+
+    mirror_status = load_status_from_asset(
+        asset=new_run_from,
+        status_class=MirrorStatus,
+        cache_key="mirror_status",
+    )
+    coordinate_system_status = load_status_from_asset(
+        asset=new_run_from,
+        status_class=CoordinateSystemStatus,
+        cache_key="coordinate_system_status",
+    )
+
+    return DraftContext(
+        entity_info=entity_info_copy,
+        mirror_status=mirror_status,
+        coordinate_system_status=coordinate_system_status,
+        imported_surfaces=imported_surfaces,
+        imported_geometries=list(active_geometry_dependencies.values()),
+    )
 
 
 class ProjectMeta(pd.BaseModel, extra="allow"):
@@ -367,18 +583,11 @@ class ProjectTree(pd.BaseModel):
 class Project(pd.BaseModel):
     """
     Project class containing the interface for creating and running simulations.
-
-    Attributes
-    ----------
-    metadata : ProjectMeta
-        Metadata of the project.
-    solver_version : str
-        Version of the solver being used.
     """
 
-    metadata: ProjectMeta = pd.Field()
+    metadata: ProjectMeta = pd.Field(description="Metadata of the project.")
     project_tree: ProjectTree = pd.Field()
-    solver_version: str = pd.Field(frozen=True)
+    solver_version: str = pd.Field(frozen=True, description="Version of the solver being used.")
 
     _root_asset: Union[Geometry, SurfaceMeshV2, VolumeMeshV2] = pd.PrivateAttr(None)
 
@@ -1068,6 +1277,231 @@ class Project(pd.BaseModel):
             run_async=run_async,
         )
 
+    def _check_conflicts_with_existing_dependency_resources(
+        self, name: str, resource_type: ProjectDependencyType
+    ):
+        resp = self._project_webapi.post(method="dependency/namecheck", json={"name": name})
+        if resp.get("status") == "success":
+            return
+        if (
+            resource_type == ProjectDependencyType.GEOMETRY
+            and resp["conflictResourceId"].startswith("geo")
+        ) or (
+            resource_type == ProjectDependencyType.SURFACE_MESH
+            and resp["conflictResourceId"].startswith("sm")
+        ):
+            raise Flow360ValueError(
+                f"A {resource_type.value} with the name '{name}' already exists in the project. "
+                "Please use a different name."
+            )
+
+    def _import_dependency_resource_from_file(
+        self,
+        *,
+        files: Union[GeometryFiles, SurfaceMeshFile],
+        name: str,
+        length_unit: LengthUnitType = "m",
+        tags: List[str] = None,
+        run_async: bool = False,
+    ):
+        # pylint:disable = protected-access
+        files._check_files_existence()
+
+        if isinstance(files, GeometryFiles):
+            self._check_conflicts_with_existing_dependency_resources(
+                name=name, resource_type=ProjectDependencyType.GEOMETRY
+            )
+            draft = Geometry.import_to_project(
+                name=name,
+                file_names=files.file_names,
+                project_id=self.id,
+                length_unit=length_unit,
+                tags=tags,
+            )
+        elif isinstance(files, SurfaceMeshFile):
+            self._check_conflicts_with_existing_dependency_resources(
+                name=name, resource_type=ProjectDependencyType.SURFACE_MESH
+            )
+            draft = SurfaceMeshV2.import_to_project(
+                name=name,
+                file_name=files.file_names,
+                project_id=self.id,
+                length_unit=length_unit,
+                tags=tags,
+            )
+        else:
+            raise Flow360ValueError(f"Unsupported file type: {type(files)}")
+
+        dependency_resource = draft.submit(run_async=run_async)
+        return dependency_resource
+
+    def import_geometry(
+        self,
+        file: Union[str, list[str]],
+        /,
+        name: str,
+        length_unit: LengthUnitType = "m",
+        tags: List[str] = None,
+        run_async: bool = False,
+    ):
+        """
+        Imports a geometry dependency resource from local geometry files into the project.
+
+        Parameters
+        ----------
+        file : Union[str, list[str]] (positional argument only)
+            Geometry file paths.
+        name : str
+            Name of the geometry dependency resource.
+        length_unit : LengthUnitType, optional
+            Unit of length (default is "m").
+        tags : list of str, optional
+            Tags to assign to the geometry dependency resource (default is None).
+        run_async : bool, optional
+            Whether to create the geometry dependency resource asynchronously (default is False).
+
+        Returns
+        -------
+        Geometry
+            An instance of the geometry resource added to the project.
+
+        Raises
+        ------
+        Flow360FileError
+            If the geometry dependency resource cannot be initialized from the file.
+        """
+
+        try:
+            validated_files = GeometryFiles(file_names=file)
+        except pd.ValidationError as err:
+            # pylint:disable = raise-missing-from
+            raise Flow360FileError(f"Geometry file error: {str(err)}")
+
+        return self._import_dependency_resource_from_file(
+            files=validated_files,
+            name=name,
+            length_unit=length_unit,
+            tags=tags,
+            run_async=run_async,
+        )
+
+    def import_surface_mesh(
+        self,
+        file: str,
+        /,
+        name: str,
+        length_unit: LengthUnitType = "m",
+        tags: List[str] = None,
+        run_async: bool = False,
+    ) -> ImportedSurface:
+        """
+        Imports a surface mesh dependency resource from a local surface mesh file into the project.
+
+        Parameters
+        ----------
+        file : str (positional argument only)
+            Surface mesh file path.
+        name : str
+            Name of the surface mesh dependency resource.
+        length_unit : LengthUnitType, optional
+            Unit of length (default is "m").
+        tags : list of str, optional
+            Tags to assign to the surface mesh dependency resource (default is None).
+        run_async : bool, optional
+            Whether to create the surface mesh dependency resource asynchronously (default is False).
+
+        Returns
+        -------
+        ImportedSurface
+            An ImportedSurface object with the file name and surface mesh ID.
+
+        Raises
+        ------
+        Flow360FileError
+            If the surface mesh dependency resource cannot be initialized from the file.
+        """
+
+        try:
+            validated_files = SurfaceMeshFile(file_names=file)
+        except pd.ValidationError as err:
+            # pylint:disable = raise-missing-from
+            raise Flow360FileError(f"Surface mesh file error: {str(err)}")
+
+        surface_mesh = self._import_dependency_resource_from_file(
+            files=validated_files,
+            name=name,
+            length_unit=length_unit,
+            tags=tags,
+            run_async=run_async,
+        )
+
+        return ImportedSurface(
+            name=name,
+            surface_mesh_id=surface_mesh.id,
+        )
+
+    def _get_dependency_resources_from_cloud(self, resource_type: ProjectDependencyType):
+        """
+        Get all imported dependency resources of a given type in the project.
+
+        Parameters
+        ----------
+        resource_type : ProjectDependencyType
+            The type of dependency resource to retrieve.
+
+        """
+
+        dependency_metadata = get_project_dependency_resource_metadata(
+            project_id=self.id, resource_type=resource_type.value
+        )
+
+        if resource_type == ProjectDependencyType.GEOMETRY:
+            imported_resources = [
+                Geometry.from_cloud(item.resource_id) for item in dependency_metadata
+            ]
+        elif resource_type == ProjectDependencyType.SURFACE_MESH:
+            imported_resources = [
+                ImportedSurface(
+                    name=item.name,
+                    surface_mesh_id=item.resource_id,
+                )
+                for item in dependency_metadata
+            ]
+        else:
+            raise Flow360ValueError(f"Unsupported imported resource type: {resource_type}")
+
+        return imported_resources
+
+    @property
+    def imported_geometries(self) -> List[Geometry]:
+        """
+        Get all imported geometry components in the project.
+
+        Returns
+        -------
+        List[Geometry]
+            A list of Geometry objects representing the imported geometry components.
+        """
+
+        return self._get_dependency_resources_from_cloud(
+            resource_type=ProjectDependencyType.GEOMETRY
+        )
+
+    @property
+    def imported_surfaces(self) -> List[ImportedSurface]:
+        """
+        Get all imported surface components in the project.
+
+        Returns
+        -------
+        List[ImportedSurface]
+            A list of ImportedSurface objects representing the imported surface components.
+        """
+
+        return self._get_dependency_resources_from_cloud(
+            resource_type=ProjectDependencyType.SURFACE_MESH
+        )
+
     @classmethod
     def _get_user_requested_entity_info(
         cls,
@@ -1195,6 +1629,52 @@ class Project(pd.BaseModel):
         project._get_root_simulation_json()
         project._get_tree_from_cloud()
         return project
+
+    @classmethod
+    @pd.validate_call
+    def from_example(cls, example_id: Optional[str] = None, by_name: Optional[str] = None):
+        """
+        Creates a project from an existing example in the cloud.
+
+        Parameters
+        ----------
+        example_id : str, optional
+            ID of the example to copy. Mutually exclusive with `by_name`.
+        by_name : str, optional
+            Name of the example to copy. Uses fuzzy matching to find the best match.
+            Mutually exclusive with `example_id`.
+
+        Returns
+        -------
+        Project
+            An instance of the project created from the example.
+
+        Raises
+        ------
+        Flow360ValueError
+            If neither or both `example_id` and `by_name` are provided, or if no matching
+            example is found when using `by_name`.
+        Flow360WebError
+            If the example cannot be copied or the project cannot be loaded.
+        """
+        if example_id is None and by_name is None:
+            raise Flow360ValueError("Either 'example_id' or 'by_name' must be provided.")
+        if example_id is not None and by_name is not None:
+            raise Flow360ValueError("'example_id' and 'by_name' are mutually exclusive.")
+
+        if by_name is not None:
+            examples = fetch_examples()
+            matched_example, score = find_example_by_name(by_name, examples)
+            if score < 1.0:
+                similarity_pct = score * 100
+                log.info(
+                    f"Found closest match for '{by_name}': '{matched_example.title}' "
+                    f"(similarity: {similarity_pct:.2f} %%)"
+                )
+            example_id = matched_example.id
+
+        project_id = copy_example(example_id)
+        return cls.from_cloud(project_id)
 
     def _check_initialized(self):
         """
@@ -1388,7 +1868,7 @@ class Project(pd.BaseModel):
             root asset (Geometry or VolumeMesh) is not initialized.
         """
 
-        # pylint: disable=too-many-branches
+        # pylint: disable=too-many-branches,too-many-statements
         if use_beta_mesher is None:
             if use_geometry_AI is True:
                 log.info("Beta mesher is enabled to use Geometry AI.")
@@ -1399,19 +1879,30 @@ class Project(pd.BaseModel):
         if use_geometry_AI is True and use_beta_mesher is False:
             raise Flow360ValueError("Enabling Geometry AI requires also enabling beta mesher.")
 
+        root_asset = self._root_asset
+        if interpolate_to_mesh is not None:
+            project_vm = Project.from_cloud(project_id=interpolate_to_mesh.project_id)
+            root_asset = project_vm._root_asset
+
         params = set_up_params_for_uploading(
             params=params,
-            root_asset=self._root_asset,
+            root_asset=root_asset,
             length_unit=self.length_unit,
             use_beta_mesher=use_beta_mesher,
             use_geometry_AI=use_geometry_AI,
         )
 
-        params, errors = validate_params_with_context(
+        params, errors, warnings = validate_params_with_context(
             params=params,
             root_item_type=self.metadata.root_item_type.value,
             up_to=target._cloud_resource_type_name,
         )
+
+        if warnings:
+            log.warning(
+                f"Validation warnings found during local validation: "
+                f"{formatting_validation_warnings(warnings=warnings)}"
+            )
 
         if errors is not None:
             log.error(
@@ -1445,8 +1936,9 @@ class Project(pd.BaseModel):
 
         params.pre_submit_summary()
 
+        active_draft = get_active_draft()
+        draft.activate_dependencies(active_draft)
         draft.update_simulation_params(params)
-        upload_imported_surfaces_to_draft(params, draft, fork_from)
 
         if draft_only:
             # pylint: disable=import-outside-toplevel

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "flow360"
-version = "v25.8.0b5"
+version = "v25.8.2b1"
 description = "Flow360 Python Client"
 authors = ["Flexcompute <support@flexcompute.com>"]
 
@@ -17,9 +17,6 @@ numpy = [
     { python = "^3.10", version = ">=2.0,<3.0.0" },
     { python = "^3.11", version = ">=2.0,<3.0.0" },
     { python = "^3.12", version = ">=2.0,<3.0.0" }]
-scipy = [    
-    { python = "^3.9", version = "^1.13.0" },
-    { python = "^3.10", version = "^1.14.0" }]
 matplotlib =  [
     { python = "^3.9", version = "^3.6.2" },
     { python = "^3.10", version = "^3.6.2" }]
@@ -31,6 +28,7 @@ unyt = "^3.0.0"
 pandas = "^2.2.1"
 pylint = "^3.1.0"
 black = {extras = ["jupyter"], version = "^24.10.0"}
+wcmatch = "^10.0"
 
 # docs
 autodoc_pydantic = {version="*", optional = true}

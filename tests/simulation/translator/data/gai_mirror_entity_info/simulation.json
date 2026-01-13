@@ -1,0 +1,327 @@
+{
+    "version": "25.8.2b1",
+    "unit_system": {
+        "name": "SI"
+    },
+    "private_attribute_asset_cache": {
+        "project_length_unit": {
+            "value": 1.0,
+            "units": "m"
+        },
+        "project_entity_info": {
+            "draft_entities": [],
+            "ghost_entities": [
+                {
+                    "private_attribute_entity_type_name": "GhostSphere",
+                    "private_attribute_id": "farfield",
+                    "name": "farfield",
+                    "center": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "max_radius": 35.0
+                },
+                {
+                    "private_attribute_entity_type_name": "GhostCircularPlane",
+                    "private_attribute_id": "symmetric-1",
+                    "name": "symmetric-1",
+                    "center": [
+                        0.0,
+                        -0.12500000000000003,
+                        0.35
+                    ],
+                    "max_radius": 35.0,
+                    "normal_axis": [
+                        0,
+                        -1,
+                        0
+                    ]
+                },
+                {
+                    "private_attribute_entity_type_name": "GhostCircularPlane",
+                    "private_attribute_id": "symmetric-2",
+                    "name": "symmetric-2",
+                    "center": [
+                        0.0,
+                        0.12500000000000003,
+                        0.35
+                    ],
+                    "max_radius": 35.0,
+                    "normal_axis": [
+                        0,
+                        1,
+                        0
+                    ]
+                },
+                {
+                    "private_attribute_entity_type_name": "GhostCircularPlane",
+                    "private_attribute_id": "symmetric",
+                    "name": "symmetric",
+                    "center": [
+                        0.0,
+                        0,
+                        0.35
+                    ],
+                    "max_radius": 35.0,
+                    "normal_axis": [
+                        0,
+                        1,
+                        0
+                    ]
+                },
+                {
+                    "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                    "private_attribute_id": "windTunnelInlet",
+                    "name": "windTunnelInlet",
+                    "used_by": [
+                        "all"
+                    ]
+                },
+                {
+                    "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                    "private_attribute_id": "windTunnelOutlet",
+                    "name": "windTunnelOutlet",
+                    "used_by": [
+                        "all"
+                    ]
+                },
+                {
+                    "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                    "private_attribute_id": "windTunnelCeiling",
+                    "name": "windTunnelCeiling",
+                    "used_by": [
+                        "all"
+                    ]
+                },
+                {
+                    "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                    "private_attribute_id": "windTunnelFloor",
+                    "name": "windTunnelFloor",
+                    "used_by": [
+                        "all"
+                    ]
+                },
+                {
+                    "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                    "private_attribute_id": "windTunnelLeft",
+                    "name": "windTunnelLeft",
+                    "used_by": [
+                        "all"
+                    ]
+                },
+                {
+                    "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                    "private_attribute_id": "windTunnelRight",
+                    "name": "windTunnelRight",
+                    "used_by": [
+                        "all"
+                    ]
+                },
+                {
+                    "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                    "private_attribute_id": "windTunnelFrictionPatch",
+                    "name": "windTunnelFrictionPatch",
+                    "used_by": [
+                        "StaticFloor"
+                    ]
+                },
+                {
+                    "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                    "private_attribute_id": "windTunnelCentralBelt",
+                    "name": "windTunnelCentralBelt",
+                    "used_by": [
+                        "CentralBelt",
+                        "WheelBelts"
+                    ]
+                },
+                {
+                    "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                    "private_attribute_id": "windTunnelFrontWheelBelt",
+                    "name": "windTunnelFrontWheelBelt",
+                    "used_by": [
+                        "WheelBelts"
+                    ]
+                },
+                {
+                    "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                    "private_attribute_id": "windTunnelRearWheelBelt",
+                    "name": "windTunnelRearWheelBelt",
+                    "used_by": [
+                        "WheelBelts"
+                    ]
+                }
+            ],
+            "type_name": "GeometryEntityInfo",
+            "body_ids": [
+                "cylinder.lb8.ugrid"
+            ],
+            "body_attribute_names": [
+                "bodyId",
+                "groupByFile"
+            ],
+            "grouped_bodies": [
+                [
+                    {
+                        "private_attribute_entity_type_name": "GeometryBodyGroup",
+                        "private_attribute_id": "cylinder.lb8.ugrid",
+                        "name": "cylinder.lb8.ugrid",
+                        "private_attribute_tag_key": "bodyId",
+                        "private_attribute_sub_components": [
+                            "cylinder.lb8.ugrid"
+                        ],
+                        "mesh_exterior": true
+                    }
+                ],
+                [
+                    {
+                        "private_attribute_entity_type_name": "GeometryBodyGroup",
+                        "private_attribute_id": "cylinder.lb8.ugrid",
+                        "name": "cylinder.lb8.ugrid",
+                        "private_attribute_tag_key": "groupByFile",
+                        "private_attribute_sub_components": [
+                            "cylinder.lb8.ugrid"
+                        ],
+                        "mesh_exterior": true
+                    }
+                ]
+            ],
+            "face_ids": [
+                "BottomCap",
+                "Curved",
+                "TopCap"
+            ],
+            "face_attribute_names": [
+                "groupByBodyId",
+                "faceId"
+            ],
+            "grouped_faces": [
+                [
+                    {
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "cylinder.lb8.ugrid",
+                        "name": "cylinder.lb8.ugrid",
+                        "private_attribute_tag_key": "groupByBodyId",
+                        "private_attribute_sub_components": [
+                            "BottomCap",
+                            "Curved",
+                            "TopCap"
+                        ],
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    -0.35,
+                                    -0.12500000000000003,
+                                    -5.551115123125783e-17
+                                ],
+                                [
+                                    0.35,
+                                    0.12500000000000003,
+                                    0.7
+                                ]
+                            ]
+                        }
+                    }
+                ],
+                [
+                    {
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "Curved",
+                        "name": "Curved",
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "Curved"
+                        ],
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    -0.35,
+                                    -0.12500000000000003,
+                                    -5.551115123125783e-17
+                                ],
+                                [
+                                    0.35,
+                                    0.12500000000000003,
+                                    0.7
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "TopCap",
+                        "name": "TopCap",
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "TopCap"
+                        ],
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    -0.3499999999999999,
+                                    0.12499999999999997,
+                                    0.0
+                                ],
+                                [
+                                    0.3499999999999999,
+                                    0.12500000000000003,
+                                    0.7
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "BottomCap",
+                        "name": "BottomCap",
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "BottomCap"
+                        ],
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    -0.3499999999999999,
+                                    -0.12500000000000003,
+                                    0.0
+                                ],
+                                [
+                                    0.3499999999999999,
+                                    -0.12499999999999997,
+                                    0.7
+                                ]
+                            ]
+                        }
+                    }
+                ]
+            ],
+            "edge_ids": [],
+            "edge_attribute_names": [],
+            "grouped_edges": [],
+            "body_group_tag": "groupByFile",
+            "face_group_tag": "faceId",
+            "global_bounding_box": [
+                [
+                    -0.35,
+                    -0.12500000000000003,
+                    -5.551115123125783e-17
+                ],
+                [
+                    0.35,
+                    0.12500000000000003,
+                    0.7
+                ]
+            ],
+            "default_geometry_accuracy": {
+                "value": 0.0001,
+                "units": "m"
+            }
+        },
+        "use_inhouse_mesher": true,
+        "use_geometry_AI": true
+    }
+}

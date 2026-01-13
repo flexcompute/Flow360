@@ -20,10 +20,14 @@ from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     AxisymmetricRefinement,
     CustomZones,
+    FullyMovingFloor,
     RotationVolume,
+    StaticFloor,
     StructuredBoxRefinement,
     UniformRefinement,
     UserDefinedFarfield,
+    WheelBelts,
+    WindTunnelFarfield,
 )
 from flow360.component.simulation.primitives import (
     AxisymmetricBody,
@@ -165,8 +169,8 @@ def test_disable_invalid_axisymmetric_body_construction():
             )
 
 
-def test_disable_multiple_cylinder_in_one_rotation_volume():
-    with pytest.raises(
+def test_disable_multiple_cylinder_in_one_rotation_volume(mock_validation_context):
+    with mock_validation_context, pytest.raises(
         pd.ValidationError,
         match="Only single instance is allowed in entities for each `RotationVolume`.",
     ):
@@ -201,7 +205,7 @@ def test_disable_multiple_cylinder_in_one_rotation_volume():
                     ],
                 )
             )
-    with pytest.raises(
+    with mock_validation_context, pytest.raises(
         pd.ValidationError,
         match="Only single instance is allowed in entities for each `RotationVolume`.",
     ):
@@ -331,8 +335,8 @@ def test_limit_axisymmetric_body_in_rotation_volume():
             )
 
 
-def test_reuse_of_same_cylinder():
-    with pytest.raises(
+def test_reuse_of_same_cylinder(mock_validation_context):
+    with mock_validation_context, pytest.raises(
         pd.ValidationError,
         match=r"Using Volume entity `I am reused` in `AxisymmetricRefinement`, `RotationVolume` at the same time is not allowed.",
     ):
@@ -369,7 +373,7 @@ def test_reuse_of_same_cylinder():
                 )
             )
 
-    with pytest.raises(
+    with mock_validation_context, pytest.raises(
         pd.ValidationError,
         match=r"Using Volume entity `I am reused` in `AxisymmetricRefinement`, `RotationVolume` at the same time is not allowed.",
     ):
@@ -474,7 +478,7 @@ def test_reuse_of_same_cylinder():
             )
         )
 
-    with pytest.raises(
+    with mock_validation_context, pytest.raises(
         pd.ValidationError,
         match=r"Using Volume entity `I am reused` in `AxisymmetricRefinement`, `UniformRefinement` at the same time is not allowed.",
     ):
@@ -500,7 +504,7 @@ def test_reuse_of_same_cylinder():
                 )
             )
 
-    with pytest.raises(
+    with mock_validation_context, pytest.raises(
         pd.ValidationError,
         match=r"Using Volume entity `I am reused` in `AxisymmetricRefinement`, `UniformRefinement` at the same time is not allowed.",
     ):
@@ -530,7 +534,7 @@ def test_reuse_of_same_cylinder():
                 )
             )
 
-    with pytest.raises(
+    with mock_validation_context, pytest.raises(
         pd.ValidationError,
         match=r" Volume entity `I am reused` is used multiple times in `UniformRefinement`.",
     ):
@@ -551,7 +555,7 @@ def test_reuse_of_same_cylinder():
                 )
             )
 
-    with pytest.raises(
+    with mock_validation_context, pytest.raises(
         pd.ValidationError,
         match=r" Volume entity `I am reused` is used multiple times in `UniformRefinement`.",
     ):
@@ -815,6 +819,154 @@ def test_enclosed_entities_none_does_not_raise():
         )
 
 
+def test_stationary_enclosed_entities_only_in_beta_mesher():
+    """Test that stationary_enclosed_entities is only supported with beta mesher."""
+    # raises when beta mesher is off
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"`stationary_enclosed_entities` in `RotationVolume` is only supported with the beta mesher.",
+    ):
+        with ValidationContext(VOLUME_MESH, non_beta_mesher_context):
+            with CGS_unit_system:
+                cylinder = Cylinder(
+                    name="cylinder",
+                    outer_radius=1,
+                    height=12,
+                    axis=(0, 1, 0),
+                    center=(0, 5, 0),
+                )
+                surface1 = Surface(name="hub")
+                _ = RotationVolume(
+                    entities=[cylinder],
+                    spacing_axial=20,
+                    spacing_radial=0.2,
+                    spacing_circumferential=20,
+                    enclosed_entities=[surface1],
+                    stationary_enclosed_entities=[surface1],
+                )
+
+    # does not raise with beta mesher on
+    with ValidationContext(VOLUME_MESH, beta_mesher_context):
+        with CGS_unit_system:
+            cylinder = Cylinder(
+                name="cylinder",
+                outer_radius=1,
+                height=12,
+                axis=(0, 1, 0),
+                center=(0, 5, 0),
+            )
+            surface1 = Surface(name="hub")
+            _ = RotationVolume(
+                entities=[cylinder],
+                spacing_axial=20,
+                spacing_radial=0.2,
+                spacing_circumferential=20,
+                enclosed_entities=[surface1],
+                stationary_enclosed_entities=[surface1],
+            )
+
+
+def test_stationary_enclosed_entities_requires_enclosed_entities():
+    """Test that stationary_enclosed_entities cannot be specified when enclosed_entities is None."""
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"`stationary_enclosed_entities` cannot be specified when `enclosed_entities` is None.",
+    ):
+        with ValidationContext(VOLUME_MESH, beta_mesher_context):
+            with CGS_unit_system:
+                cylinder = Cylinder(
+                    name="cylinder",
+                    outer_radius=1,
+                    height=12,
+                    axis=(0, 1, 0),
+                    center=(0, 5, 0),
+                )
+                surface1 = Surface(name="hub")
+                _ = RotationVolume(
+                    entities=[cylinder],
+                    spacing_axial=20,
+                    spacing_radial=0.2,
+                    spacing_circumferential=20,
+                    enclosed_entities=None,
+                    stationary_enclosed_entities=[surface1],
+                )
+
+
+def test_stationary_enclosed_entities_must_be_subset():
+    """Test that stationary_enclosed_entities must be a subset of enclosed_entities."""
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"All entities in `stationary_enclosed_entities` must be present in `enclosed_entities`.",
+    ):
+        with ValidationContext(VOLUME_MESH, beta_mesher_context):
+            with CGS_unit_system:
+                cylinder = Cylinder(
+                    name="cylinder",
+                    outer_radius=1,
+                    height=12,
+                    axis=(0, 1, 0),
+                    center=(0, 5, 0),
+                )
+                surface1 = Surface(name="hub")
+                surface2 = Surface(name="shroud")
+                surface3 = Surface(name="stationary")
+                _ = RotationVolume(
+                    entities=[cylinder],
+                    spacing_axial=20,
+                    spacing_radial=0.2,
+                    spacing_circumferential=20,
+                    enclosed_entities=[surface1, surface2],
+                    stationary_enclosed_entities=[
+                        surface1,
+                        surface3,
+                    ],  # surface3 not in enclosed_entities
+                )
+
+
+def test_stationary_enclosed_entities_valid_subset():
+    """Test that stationary_enclosed_entities works correctly when it's a valid subset."""
+    with ValidationContext(VOLUME_MESH, beta_mesher_context):
+        with CGS_unit_system:
+            cylinder = Cylinder(
+                name="cylinder",
+                outer_radius=1,
+                height=12,
+                axis=(0, 1, 0),
+                center=(0, 5, 0),
+            )
+            surface1 = Surface(name="hub")
+            surface2 = Surface(name="shroud")
+            # Should not raise when stationary_enclosed_entities is a valid subset
+            _ = RotationVolume(
+                entities=[cylinder],
+                spacing_axial=20,
+                spacing_radial=0.2,
+                spacing_circumferential=20,
+                enclosed_entities=[surface1, surface2],
+                stationary_enclosed_entities=[surface1],  # Valid subset
+            )
+
+            # Should also work with all entities being stationary
+            _ = RotationVolume(
+                entities=[cylinder],
+                spacing_axial=20,
+                spacing_radial=0.2,
+                spacing_circumferential=20,
+                enclosed_entities=[surface1, surface2],
+                stationary_enclosed_entities=[surface1, surface2],  # All entities stationary
+            )
+
+            # Should work with empty stationary_enclosed_entities (None)
+            _ = RotationVolume(
+                entities=[cylinder],
+                spacing_axial=20,
+                spacing_radial=0.2,
+                spacing_circumferential=20,
+                enclosed_entities=[surface1, surface2],
+                stationary_enclosed_entities=None,
+            )
+
+
 def test_snappy_quality_metrics_validation():
     message = "Value must be less than or equal to 180 degrees."
     with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
@@ -831,7 +983,18 @@ def test_snappy_quality_metrics_validation():
     with SI_unit_system, pytest.raises(pd.ValidationError):
         snappy.QualityMetrics(max_internal_skewness=-2 * u.deg)
 
-    snappy.QualityMetrics(max_boundary_skewness=23 * u.deg, max_internal_skewness=89 * u.deg)
+    snappy.QualityMetrics(
+        max_boundary_skewness=23 * u.deg,
+        max_internal_skewness=89 * u.deg,
+        zmetric_threshold=0.9,
+        feature_edge_deduplication_tolerance=0.1,
+    )
+    with pytest.raises(pd.ValidationError):
+        snappy.QualityMetrics(zmetric_threshold=-0.1)
+    with pytest.raises(pd.ValidationError):
+        snappy.QualityMetrics(feature_edge_deduplication_tolerance=-0.1)
+
+    snappy.QualityMetrics(zmetric_threshold=False, feature_edge_deduplication_tolerance=False)
 
 
 def test_modular_workflow_zones_validation():
@@ -1058,10 +1221,10 @@ def test_resolve_face_boundary_only_in_gai_mesher():
 
 
 def test_surface_refinement_in_gai_mesher():
-    # raise when GAI is off
+    # raise when both GAI and beta mesher are off
     with pytest.raises(
         pd.ValidationError,
-        match=r"curvature_resolution_angle is only supported when geometry AI is used",
+        match=r"curvature_resolution_angle is only supported by the beta mesher or when geometry AI is enabled",
     ):
         with ValidationContext(SURFACE_MESH, non_gai_context):
             with CGS_unit_system:
@@ -1084,3 +1247,230 @@ def test_surface_refinement_in_gai_mesher():
         with ValidationContext(SURFACE_MESH, non_gai_context):
             with CGS_unit_system:
                 SurfaceRefinement(entities=Surface(name="testFace"))
+
+
+def test_curvature_resolution_angle_requires_geometry_ai_or_beta_mesher():
+    """Test that curvature_resolution_angle is supported when either geometry AI or beta mesher is enabled."""
+    # Test 1: When both GAI and beta mesher are off, should raise
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"curvature_resolution_angle is only supported by the beta mesher or when geometry AI is enabled",
+    ):
+        with ValidationContext(SURFACE_MESH, non_gai_context):
+            with CGS_unit_system:
+                SurfaceRefinement(
+                    entities=Surface(name="testFace"),
+                    curvature_resolution_angle=15 * u.deg,
+                )
+
+    # Test 2: When curvature_resolution_angle is None, should not raise even if both are off
+    with ValidationContext(SURFACE_MESH, non_gai_context):
+        with CGS_unit_system:
+            surface_ref = SurfaceRefinement(
+                entities=Surface(name="testFace"),
+                max_edge_length=0.1,
+                curvature_resolution_angle=None,
+            )
+            assert surface_ref.curvature_resolution_angle is None
+
+    # Test 3: When GAI is enabled, should work
+    gai_context = ParamsValidationInfo({}, [])
+    gai_context.use_geometry_AI = True
+
+    with ValidationContext(SURFACE_MESH, gai_context):
+        with CGS_unit_system:
+            surface_ref = SurfaceRefinement(
+                entities=Surface(name="testFace"),
+                curvature_resolution_angle=20 * u.deg,
+            )
+            assert surface_ref.curvature_resolution_angle == 20 * u.deg
+
+    # Test 4: When beta mesher is enabled, should work
+    with ValidationContext(SURFACE_MESH, beta_mesher_context):
+        with CGS_unit_system:
+            surface_ref = SurfaceRefinement(
+                entities=Surface(name="testFace"),
+                curvature_resolution_angle=25 * u.deg,
+            )
+            assert surface_ref.curvature_resolution_angle == 25 * u.deg
+
+
+def test_wind_tunnel_invalid_dimensions():
+    with CGS_unit_system:
+        # invalid floors
+        with pytest.raises(
+            pd.ValidationError,
+            match=r"is not strictly increasing",
+        ):
+            # invalid range
+            _ = StaticFloor(friction_patch_x_range=(-100, -200), friction_patch_width=42)
+
+        with pytest.raises(
+            pd.ValidationError,
+            match=r"cannot have negative value",
+        ):
+            # invalid positive range
+            _ = WheelBelts(
+                central_belt_x_range=(-200, 256),
+                central_belt_width=67,
+                front_wheel_belt_x_range=(-30, 50),
+                front_wheel_belt_y_range=(70, 120),
+                rear_wheel_belt_x_range=(260, 380),
+                rear_wheel_belt_y_range=(-5, 101),  # here
+            )
+
+        with pytest.raises(
+            pd.ValidationError,
+            match=r"must be less than rear wheel belt minimum x",
+        ):
+            # front, rear belt x ranges overlap
+            _ = WheelBelts(
+                central_belt_x_range=(-200, 256),
+                central_belt_width=67,
+                front_wheel_belt_x_range=(-30, 263),  # here
+                front_wheel_belt_y_range=(70, 120),
+                rear_wheel_belt_x_range=(260, 380),
+                rear_wheel_belt_y_range=(70, 120),
+            )
+
+        # invalid tunnels
+        with pytest.raises(
+            pd.ValidationError,
+            match=r"must be less than outlet x position",
+        ):
+            # inlet behind outlet
+            _ = WindTunnelFarfield(
+                inlet_x_position=200, outlet_x_position=182, floor_type=FullyMovingFloor()
+            )
+
+        with pytest.raises(
+            pd.ValidationError,
+            match=r"must be less than wind tunnel width",
+        ):
+            # friction patch too wide
+            _ = WindTunnelFarfield(width=2025, floor_type=StaticFloor(friction_patch_width=9001))
+
+        with pytest.raises(
+            pd.ValidationError,
+            match=r"must be greater than inlet x",
+        ):
+            # friction patch x min too small
+            _ = WindTunnelFarfield(
+                inlet_x_position=-2025, floor_type=StaticFloor(friction_patch_x_range=(-9001, 333))
+            )
+
+        with pytest.raises(
+            pd.ValidationError,
+            match=r"must be less than half of wind tunnel width",
+        ):
+            # wheel belt y outer too large
+            _ = WindTunnelFarfield(
+                width=538,
+                floor_type=WheelBelts(
+                    central_belt_x_range=(-200, 256),
+                    central_belt_width=120,
+                    front_wheel_belt_x_range=(-30, 50),
+                    front_wheel_belt_y_range=(70, 270),
+                    rear_wheel_belt_x_range=(260, 380),
+                    rear_wheel_belt_y_range=(70, 120),
+                ),
+            )
+
+        # legal, despite wheel belts being ahead/behind rather than left/right of central belt
+        _ = WindTunnelFarfield(
+            width=1024,
+            floor_type=WheelBelts(
+                central_belt_x_range=(-100, 105),
+                central_belt_width=90.1,
+                front_wheel_belt_x_range=(-30, 50),
+                front_wheel_belt_y_range=(70, 123),
+                rear_wheel_belt_x_range=(260, 380),
+                rear_wheel_belt_y_range=(70, 120),
+            ),
+        )
+
+
+def test_central_belt_width_validation():
+    with CGS_unit_system:
+        # Test central belt width larger than 2x front wheel belt inner edge
+        with pytest.raises(
+            pd.ValidationError,
+            match=r"must be less than or equal to twice the front wheel belt inner edge",
+        ):
+            _ = WheelBelts(
+                central_belt_x_range=(-200, 256),
+                central_belt_width=150,  # Width is 150
+                front_wheel_belt_x_range=(-30, 50),
+                front_wheel_belt_y_range=(70, 120),  # Inner edge is 70, 2×70 = 140 < 150
+                rear_wheel_belt_x_range=(260, 380),
+                rear_wheel_belt_y_range=(80, 170),  # Inner edge is 80, 2×80 = 160 > 150
+            )
+
+        # Test central belt width larger than 2x rear wheel belt inner edge
+        with pytest.raises(
+            pd.ValidationError,
+            match=r"must be less than or equal to twice the rear wheel belt inner edge",
+        ):
+            _ = WheelBelts(
+                central_belt_x_range=(-200, 256),
+                central_belt_width=150,  # Width is 150
+                front_wheel_belt_x_range=(-30, 50),
+                front_wheel_belt_y_range=(80, 170),  # Inner edge is 80, 2×80 = 160 > 150
+                rear_wheel_belt_x_range=(260, 380),
+                rear_wheel_belt_y_range=(70, 200),  # Inner edge is 70, 2×70 = 140 < 150
+            )
+
+        # Test central belt width larger than both inner edges
+        with pytest.raises(
+            pd.ValidationError,
+            match=r"must be less than or equal to twice the front wheel belt inner edge",
+        ):
+            _ = WheelBelts(
+                central_belt_x_range=(-200, 256),
+                central_belt_width=200,  # Width is 200
+                front_wheel_belt_x_range=(-30, 50),
+                front_wheel_belt_y_range=(90, 120),  # Inner edge is 90, 2×90 = 180 < 200
+                rear_wheel_belt_x_range=(260, 380),
+                rear_wheel_belt_y_range=(95, 140),  # Inner edge is 95, 2×95 = 190 < 200
+            )
+
+        # Legal: central belt width equal to 2x inner edges
+        _ = WheelBelts(
+            central_belt_x_range=(-200, 256),
+            central_belt_width=140,  # Width is 140
+            front_wheel_belt_x_range=(-30, 50),
+            front_wheel_belt_y_range=(70, 170),  # Inner edge is 70, 2×70 = 140
+            rear_wheel_belt_x_range=(260, 380),
+            rear_wheel_belt_y_range=(70, 170),  # Inner edge is 70, 2×70 = 140
+        )
+
+        # Legal: central belt width less than 2x inner edges
+        _ = WheelBelts(
+            central_belt_x_range=(-200, 256),
+            central_belt_width=100,  # Width is 100
+            front_wheel_belt_x_range=(-30, 50),
+            front_wheel_belt_y_range=(70, 170),  # Inner edge is 70, 2×70 = 140 > 100
+            rear_wheel_belt_x_range=(260, 380),
+            rear_wheel_belt_y_range=(80, 190),  # Inner edge is 80, 2×80 = 160 > 100
+        )
+
+
+def test_wind_tunnel_farfield_requires_geometry_ai():
+    """Test that WindTunnelFarfield is only supported when Geometry AI is enabled."""
+    # Test: When GAI is disabled, should raise error
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"WindTunnelFarfield is only supported when Geometry AI is enabled.",
+    ):
+        with ValidationContext(VOLUME_MESH, non_gai_context):
+            with CGS_unit_system:
+                WindTunnelFarfield()
+
+    # Test: When GAI is enabled, should work
+    gai_context = ParamsValidationInfo({}, [])
+    gai_context.use_geometry_AI = True
+
+    with ValidationContext(VOLUME_MESH, gai_context):
+        with CGS_unit_system:
+            farfield = WindTunnelFarfield()
+            assert farfield.type == "WindTunnelFarfield"
