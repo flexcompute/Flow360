@@ -53,7 +53,6 @@ from .resource_base import (
     ResourceDraft,
 )
 from .results.base_results import PerEntityResultCSVModel
-from .simulation.entity_info import VolumeMeshEntityInfo
 from .simulation.primitives import GenericVolume, Surface
 from .simulation.web.asset_base import AssetBase
 from .types import COMMENTS
@@ -1084,7 +1083,6 @@ class VolumeMeshV2(AssetBase):
     _meta_class = VolumeMeshMetaV2
     _draft_class = VolumeMeshDraftV2
     _web_api_class = Flow360Resource
-    _entity_info_class = VolumeMeshEntityInfo
     _mesh_stats_file = "meshStats.json"
     _cloud_resource_type_name = "VolumeMesh"
 
