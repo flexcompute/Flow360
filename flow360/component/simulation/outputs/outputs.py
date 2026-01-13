@@ -161,11 +161,11 @@ class MovingStatistic(Flow360BaseModel):
     -----
     - The window size is defined by the number of data points recorded in the output.
     - For steady simulations, the solver typically outputs a data point once every **10 pseudo steps**.
-      This means a :py:attr:`moving_window_size`=10 would cover 100 pseudo steps.
+      This means a :py:attr:`moving_window_size` = 10 would cover 100 pseudo steps.
       Thus, the :py:attr:`start_step` value is automatically rounded up to
       the nearest multiple of 10 for steady simulations.
-    - For unsteady simulations, the solver outputs a data point for ** every physical step**.
-      A :py:attr:`moving_window_size`=10 would cover 10 physical steps.
+    - For unsteady simulations, the solver outputs a data point for **every physical step**.
+      A :py:attr:`moving_window_size` = 10 would cover 10 physical steps.
     - When :py:attr:`method` is set to "standard_deviation", the standard deviation is computed as a
       **sample standard deviation** normalized by :math:`n-1` (Bessel's correction), where :math:`n`
       is the number of data points in the moving window.
