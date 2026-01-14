@@ -430,7 +430,7 @@ class MirrorManager:
         draft-only entities:
 
         - `MirroredGeometryBodyGroup` for each body group
-        - `MirroredSurface` for each surface belonging to those body groups 
+        - `MirroredSurface` for each surface belonging to those body groups
           (when surface ownership mapping is available)
 
         Newly created mirrored entities use `MIRROR_SUFFIX` (``"_<mirror>"``) as a name suffix.
