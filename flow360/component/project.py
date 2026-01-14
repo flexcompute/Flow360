@@ -2215,11 +2215,4 @@ class Project(pd.BaseModel):
         if draft_only:
             draft = case_or_draft
             return draft
-        case = case_or_draft
-        report_template = get_default_report_summary_template()
-        report_template.create_in_cloud(
-            name=f"{name}-summary",
-            cases=[case],
-            solver_version=solver_version if solver_version else self.solver_version,
-        )
-        return case
+        return case_or_draft
