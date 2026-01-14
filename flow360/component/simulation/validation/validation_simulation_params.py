@@ -393,8 +393,14 @@ def _collect_asset_boundary_entities(params, param_info: ParamsValidationInfo) -
     # Check for legacy assets missing private_attributes before farfield-related processing
     # This check is only relevant when we need bounding box information for farfield operations
     # Only flag as legacy if ALL boundaries are missing private_attributes (not just some)
-    if asset_boundary_entities and all(
-        getattr(item, "private_attributes", None) is None for item in asset_boundary_entities
+    # AND the farfield method is one that performs automatic surface deletion (auto/quasi-3d modes)
+    # For user-defined/wind-tunnel, missing BCs are always errors since no auto-deletion occurs
+    if (
+        asset_boundary_entities
+        and farfield_method in ("auto", "quasi-3d", "quasi-3d-periodic")
+        and all(
+            getattr(item, "private_attributes", None) is None for item in asset_boundary_entities
+        )
     ):
         has_missing_private_attributes = True
 
