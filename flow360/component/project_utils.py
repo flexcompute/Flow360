@@ -172,6 +172,7 @@ def apply_and_inform_grouping_selections(
     entity_info,
     face_grouping: Optional[str],
     edge_grouping: Optional[str],
+    new_run_from_geometry: bool,
 ) -> None:
     """
     Apply and emit logging messages describing which geometry grouping tags will be used.
@@ -207,8 +208,10 @@ def apply_and_inform_grouping_selections(
     if edge_grouping is None and entity_info.edge_attribute_names:
         missing_groupings.append("edge_grouping")
 
-    if missing_groupings:
+    if missing_groupings and new_run_from_geometry:
         # We had to use legacy grouping from asset metadata.
+        # Warning is only required if starting from a geometry resource, otherwise we should use the
+        # grouping encoded in the non-geometry resource.
         log.warning(
             "%s not specified when creating draft and therefore come from geometry asset object. "
             "This support will be deprecated in the future. Please specify all groupings during the draft creation"

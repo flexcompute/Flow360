@@ -57,7 +57,7 @@ def test_mirrored_surface_translation():
             entities=body_group,
             coordinate_system=fl.CoordinateSystem(
                 name="shift",
-                origin=[0, 0, 0] * mesh_unit,
+                reference_point=[0, 0, 0] * mesh_unit,
                 axis_of_rotation=(0, 0, 1),
                 angle_of_rotation=0 * fl.u.deg,
                 scale=(1.0, 1.0, 1.0),

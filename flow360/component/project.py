@@ -274,6 +274,7 @@ def create_draft(
         entity_info=entity_info_copy,
         face_grouping=face_grouping,
         edge_grouping=edge_grouping,
+        new_run_from_geometry=isinstance(new_run_from, Geometry),
     )
 
     mirror_status = load_status_from_asset(

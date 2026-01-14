@@ -605,6 +605,9 @@ class UserDefinedFarfield(_FarfieldBase):
     This means the "farfield" boundaries are coming from the supplied geometry file
     and meshing will take place inside this "geometry".
 
+    **Important:** By default, the volume mesher will grow boundary layers on :class:`~flow360.UserDefinedFarfield`.
+    Use :class:`~flow360.PassiveSpacing` to project or disable boundary layer growth.
+
     Example
     -------
 
@@ -728,6 +731,9 @@ class WindTunnelFarfield(_FarfieldBase):
     """
     Settings for analytic wind tunnel farfield generation.
     The user only needs to provide tunnel dimensions and floor type and dimensions, rather than a geometry.
+
+    **Important:** By default, the volume mesher will grow boundary layers on :class:`~flow360.WindTunnelFarfield`.
+    Use :class:`~flow360.PassiveSpacing` to project or disable boundary layer growth.
 
     Example
     -------
