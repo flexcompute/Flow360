@@ -25,7 +25,6 @@ from flow360.component.resource_base import (
     ResourceDraft,
     SubmissionMode,
 )
-from flow360.component.simulation.entity_info import SurfaceMeshEntityInfo
 from flow360.component.simulation.folder import Folder
 from flow360.component.simulation.web.asset_base import AssetBase
 from flow360.component.utils import (
@@ -364,7 +363,6 @@ class SurfaceMeshV2(AssetBase):
     _meta_class = SurfaceMeshMetaV2
     _draft_class = SurfaceMeshDraftV2
     _web_api_class = Flow360Resource
-    _entity_info_class = SurfaceMeshEntityInfo
     _cloud_resource_type_name = "SurfaceMesh"
 
     # pylint: disable=fixme

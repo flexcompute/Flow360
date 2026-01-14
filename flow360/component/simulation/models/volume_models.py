@@ -22,6 +22,8 @@ from flow360.component.simulation.framework.multi_constructor_model_base import 
 from flow360.component.simulation.framework.single_attribute_base import (
     SingleAttributeModel,
 )
+from flow360.component.simulation.framework.updater import updater
+from flow360.component.simulation.framework.updater_utils import Flow360Version
 from flow360.component.simulation.models.bet.bet_translator_interface import (
     generate_c81_bet_json,
     generate_dfdc_bet_json,
@@ -71,6 +73,7 @@ from flow360.component.simulation.unit_system import (
     u,
 )
 from flow360.component.simulation.user_code.core.types import ValueOrExpression
+from flow360.component.simulation.utils import sanitize_params_dict
 from flow360.component.simulation.validation.validation_context import (
     ParamsValidationInfo,
     contextual_field_validator,
@@ -82,6 +85,8 @@ from flow360.component.simulation.validation.validation_utils import (
 # pylint: disable=fixme
 # TODO: Warning: Pydantic V1 import
 from flow360.component.types import Axis
+from flow360.exceptions import Flow360FileError, Flow360ValueError
+from flow360.version import __version__
 
 
 class AngleExpression(SingleAttributeModel):
@@ -865,6 +870,75 @@ class BETDisk(MultiConstructorBaseModel):
             value if info.field_name != "entities" else value.stored_entities,
         )
         return value
+
+    @classmethod
+    def from_file(cls, filename: str, **kwargs) -> "BETDisk":
+        """Loads a :class:`BETDisk` from exported .json file, with optional overrides.
+
+        Parameters
+        ----------
+        filename : str
+            Full path to the .yaml or .json file to load the :class:`BETDisk` from.
+        **kwargs
+            Keyword arguments to be passed to the model to override or complete the file content.
+
+        Returns
+        -------
+        :class:`BETDisk`
+            An instance of the BETDisk component.
+
+        Example
+        -------
+        >>> params = BETDisk.from_file(
+        ...     filename='folder/bet_disk.json',
+        ...     entities=[cylinder_FL_CCW, cylinder_FR_CW, ...],
+        ...     omega=1000 * fl.u.rpm,
+        ...     name="my_disk"
+        ... )
+        """
+        model_dict = cls._dict_from_file(filename=filename)
+
+        # Handle version migration if needed
+        model_dict = sanitize_params_dict(model_dict)
+
+        version_from = model_dict.pop("version", None)
+        if version_from is not None:
+            if Flow360Version(version_from) < Flow360Version(__version__):
+                # Wrap in a simulation-params-like structure for the updater
+                # The updater expects a full simulation params dict structure
+                wrapped_dict = {"version": version_from, "models": [model_dict]}
+                wrapped_dict = updater(
+                    version_from=version_from, version_to=__version__, params_as_dict=wrapped_dict
+                )
+                # Unwrap the updated model
+                model_dict = wrapped_dict["models"][0]
+
+        # Clean any extra fields that might remain from the file load (like internal IDs)
+        # We only keep fields that are part of the model definition or valid aliases
+        valid_fields = set(cls.model_fields.keys())
+        valid_aliases = set()
+        for _, field in cls.model_fields.items():
+            if field.alias:
+                valid_aliases.add(field.alias)
+
+        # Check for unknown fields in model_dict and raise error if found,
+        # unless they are internal fields (starting with '_') or specific ignored fields
+        unknown_fields = [
+            k for k in model_dict.keys() if k not in valid_fields and k not in valid_aliases
+        ]
+
+        if unknown_fields:
+            raise Flow360FileError(
+                f"Unknown fields found in input file for {cls.__name__}: {unknown_fields}"
+            )
+
+        # Validate kwargs keys
+        invalid_keys = [k for k in kwargs if k not in valid_fields and k not in valid_aliases]
+        if invalid_keys:
+            raise Flow360ValueError(f"Invalid keyword arguments for {cls.__name__}: {invalid_keys}")
+
+        model_dict.update(kwargs)
+        return cls(**model_dict)
 
     # pylint: disable=too-many-arguments, no-self-argument, not-callable
     @MultiConstructorBaseModel.model_constructor

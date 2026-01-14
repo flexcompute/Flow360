@@ -26,7 +26,6 @@ from flow360.component.resource_base import (
     ResourceDraft,
     SubmissionMode,
 )
-from flow360.component.simulation.entity_info import GeometryEntityInfo
 from flow360.component.simulation.folder import Folder
 from flow360.component.simulation.primitives import Edge, GeometryBodyGroup, Surface
 from flow360.component.simulation.unit_system import LengthType
@@ -384,7 +383,6 @@ class Geometry(AssetBase):
     _meta_class = GeometryMeta
     _draft_class = GeometryDraft
     _web_api_class = Flow360Resource
-    _entity_info_class = GeometryEntityInfo
     _cloud_resource_type_name = "Geometry"
 
     # pylint: disable=redefined-builtin

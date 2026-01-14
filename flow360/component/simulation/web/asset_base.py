@@ -51,7 +51,6 @@ class AssetBase(metaclass=ABCMeta):
     _meta_class: type[AssetMetaBaseModelV2] = None
     _draft_class: type[ResourceDraft] = None
     _web_api_class: type[Flow360Resource] = None
-    _entity_info_class: type[EntityInfoModel] = None
     _entity_info: EntityInfoModel = None
     _cloud_resource_type_name: str = None
 
@@ -213,7 +212,7 @@ class AssetBase(metaclass=ABCMeta):
     @property
     def entity_info(self):
         """Return the entity info associated with the asset (copy to prevent unintentional overwrites)"""
-        return self._entity_info_class.model_validate(self._entity_info.model_dump())
+        return self._entity_info.model_validate(self._entity_info.model_dump())
 
     @property
     def params(self):
