@@ -1,6 +1,7 @@
 """Simulation services module."""
 
 # pylint: disable=duplicate-code, too-many-lines
+import copy
 import json
 import os
 from enum import Enum
@@ -25,10 +26,12 @@ from flow360.component.simulation.entity_info import GeometryEntityInfo
 from flow360.component.simulation.entity_info import (
     merge_geometry_entity_info as merge_geometry_entity_info_obj,
 )
+from flow360.component.simulation.entity_info import parse_entity_info_model
 from flow360.component.simulation.exposed_units import supported_units_by_front_end
 from flow360.component.simulation.framework.entity_materializer import (
     materialize_entities_and_selectors_in_place,
 )
+from flow360.component.simulation.framework.entity_registry import EntityRegistry
 from flow360.component.simulation.framework.multi_constructor_model_base import (
     parse_model_dict,
 )
@@ -1257,3 +1260,224 @@ def merge_geometry_entity_info(
     merged_entity_info_dict = merged_entity_info.model_dump(mode="json", exclude_none=True)
 
     return merged_entity_info_dict
+
+
+# Draft entity type names that should be preserved during entity replacement.
+# Draft entities (Box, Cylinder, etc.) are user-defined and not tied to uploaded files,
+# so they should be kept from the source simulation settings.
+# Ghost entities are associated with the geometry/mesh and should be replaced with target's.
+def _get_draft_entity_type_names() -> set:
+    """Extract entity type names from DraftEntityTypes in entity_info.py."""
+    # pylint: disable=import-outside-toplevel
+    from typing import get_args, get_origin
+
+    from flow360.component.simulation.entity_info import EntityInfoModel
+
+    type_names = set()
+
+    # Get draft_entities field type
+    draft_field = EntityInfoModel.model_fields[  # pylint:disable=unsubscriptable-object
+        "draft_entities"
+    ]
+    draft_annotation = draft_field.annotation
+    # Unwrap List[Annotated[Union[...], ...]] -> Union[...]
+    inner_type = get_args(draft_annotation)[0]  # Get inner type from List
+    union_args = get_args(inner_type)  # Get Annotated args
+    if union_args:
+        actual_union = union_args[0]  # First arg is the Union
+        if get_origin(actual_union) is Union:
+            for cls in get_args(actual_union):
+                type_names.add(cls.__name__)
+
+    return type_names
+
+
+DRAFT_ENTITY_TYPE_NAMES = _get_draft_entity_type_names()
+
+
+def _replace_entities_by_type_and_name(
+    template_dict: dict,
+    target_registry: EntityRegistry,
+) -> Tuple[dict, List[Dict[str, Any]]]:
+    """
+    Traverse template_dict and replace stored_entities with matching entities from target_registry.
+
+    Matching strategy:
+    - Use private_attribute_entity_type_name (e.g., "Surface", "Edge") to determine type
+    - Use name field for name matching
+    - Draft entity types (Box, Cylinder, etc.) are preserved without matching since they are
+      user-defined and not tied to uploaded files
+    - Ghost and persistent entity types are matched and replaced
+
+    Parameters
+    ----------
+    template_dict : dict
+        The simulation settings dictionary to process
+    target_registry : EntityRegistry
+        Registry containing target entities for replacement
+
+    Returns
+    -------
+    Tuple[dict, List[Dict[str, Any]]]
+        (Updated dictionary, List of warnings for unmatched entities)
+    """
+    warnings = []
+
+    # Pre-build lookup dictionary for performance: {(type_name, name): entity_dict}
+    entity_lookup: Dict[Tuple[str, str], dict] = {}
+    for entity_list in target_registry.internal_registry.values():
+        for entity in entity_list:
+            key = (entity.private_attribute_entity_type_name, entity.name)
+            entity_lookup[key] = entity.model_dump(mode="json", exclude_none=True)
+
+    def process_stored_entities(stored_entities: list) -> list:
+        """Process stored_entities list, replacing or removing entities."""
+        new_stored = []
+        for entity_dict in stored_entities:
+            entity_type_name = entity_dict.get("private_attribute_entity_type_name")
+            entity_name = entity_dict.get("name")
+
+            # Preserve Draft types directly (user-defined, not tied to uploaded files)
+            if entity_type_name in DRAFT_ENTITY_TYPE_NAMES:
+                new_stored.append(entity_dict)
+                continue
+
+            # Persistent types need matching replacement
+            key = (entity_type_name, entity_name)
+            if key in entity_lookup:
+                new_stored.append(entity_lookup[key])
+            else:
+                # Skip unmatched entities, record warning
+                warnings.append(
+                    {
+                        "type": "entity_not_found",
+                        "loc": ["stored_entities"],
+                        "msg": f"Entity '{entity_name}' (type: {entity_type_name}) not found in target entity info",
+                        "ctx": {},
+                    }
+                )
+        return new_stored
+
+    def traverse_and_replace(obj):
+        """Recursively traverse dict/list to find and process stored_entities."""
+        if isinstance(obj, dict):
+            if "stored_entities" in obj and isinstance(obj["stored_entities"], list):
+                obj["stored_entities"] = process_stored_entities(obj["stored_entities"])
+            for value in obj.values():
+                traverse_and_replace(value)
+        elif isinstance(obj, list):
+            for item in obj:
+                traverse_and_replace(item)
+
+    traverse_and_replace(template_dict)
+    return template_dict, warnings
+
+
+def apply_simulation_setting_to_entity_info(  # pylint:disable=too-many-locals
+    simulation_setting_dict: dict,
+    entity_info_dict: dict,
+):
+    """
+    Apply simulation settings from one project to another project with different entity info.
+
+    This function merges simulation settings (case/meshing configuration) from a source
+    simulation.json with the entity info from a target simulation.json. It handles entity
+    matching by type and name, preserving user-defined draft entities while replacing
+    persistent and ghost entities with those from the target.
+
+    Parameters
+    ----------
+    simulation_setting_dict : dict
+        A simulation.json dictionary that provides case/meshing settings.
+        This is the "source" that contains the settings to be applied.
+    entity_info_dict : dict
+        A simulation.json dictionary that provides the entity info (surfaces, edges, etc.).
+        This is the "target" whose entities will be used in the result.
+
+    Returns
+    -------
+    Tuple[dict, Optional[List], List[Dict[str, Any]]]
+        A tuple containing:
+        - result_dict: The merged simulation.json dictionary
+        - errors: List of validation errors, or None if validation passed
+        - warnings: List of warnings (unmatched entities + validation warnings)
+
+    Notes
+    -----
+    Entity handling:
+    - Persistent entities (Surface, Edge, GenericVolume, etc.): Matched by (type, name)
+      and replaced with target's entities. Unmatched entities are removed with warnings.
+    - Draft entities (Box, Cylinder, Point, etc.): Preserved from source without matching,
+      as they are user-defined and not tied to uploaded files.
+    - Ghost entities: Replaced with target's, as they are associated with the geometry/mesh.
+
+    For GeometryEntityInfo, grouping tags (face_group_tag, body_group_tag, edge_group_tag)
+    are inherited from the source to ensure consistent entity selection.
+    """
+    # pylint:disable=protected-access
+    # Step 1: Preprocess both input dicts
+    simulation_setting_dict = SimulationParams._sanitize_params_dict(simulation_setting_dict)
+    simulation_setting_dict, _ = SimulationParams._update_param_dict(simulation_setting_dict)
+    entity_info_dict = SimulationParams._sanitize_params_dict(entity_info_dict)
+    entity_info_dict, _ = SimulationParams._update_param_dict(entity_info_dict)
+
+    # Step 2: Extract entity_info from both dicts
+    target_entity_info_data = entity_info_dict.get("private_attribute_asset_cache", {}).get(
+        "project_entity_info", {}
+    )
+    source_entity_info = simulation_setting_dict.get("private_attribute_asset_cache", {}).get(
+        "project_entity_info", {}
+    )
+
+    # Step 3: Merge entity_info (use target's persistent entities, preserve source's draft entities)
+    merged_entity_info = copy.deepcopy(target_entity_info_data)
+    # Preserve draft entities from source (user-defined, not tied to uploaded files)
+    # Ghost entities stay from target as they are associated with the geometry/mesh
+    merged_entity_info["draft_entities"] = source_entity_info.get("draft_entities", [])
+    # Preserve grouping tags from source (only for GeometryEntityInfo)
+    # This ensures the registry is built with the correct grouping selection
+    # Only copy grouping tags if target is also GeometryEntityInfo to avoid invalid keys
+    if target_entity_info_data.get("type_name") == "GeometryEntityInfo":
+        # Map each tag to its corresponding attribute_names field
+        tag_to_attr_names = {
+            "face_group_tag": "face_attribute_names",
+            "body_group_tag": "body_attribute_names",
+            "edge_group_tag": "edge_attribute_names",
+        }
+        for tag_key, attr_names_key in tag_to_attr_names.items():
+            source_tag = source_entity_info.get(tag_key)
+            if source_tag is not None:
+                # Only use source's tag if it exists in target's attribute_names
+                # Otherwise keep target's tag to avoid empty registry
+                target_attr_names = target_entity_info_data.get(attr_names_key, [])
+                if source_tag in target_attr_names:
+                    merged_entity_info[tag_key] = source_tag
+                # else: keep target's original tag (already in merged_entity_info from deepcopy)
+
+    # Step 4: Build registry from merged entity_info (with source's grouping tags)
+    merged_entity_info_obj = parse_entity_info_model(merged_entity_info)
+    target_registry = EntityRegistry.from_entity_info(merged_entity_info_obj)
+
+    # Update simulation_setting_dict with merged entity_info
+    simulation_setting_dict["private_attribute_asset_cache"][
+        "project_entity_info"
+    ] = merged_entity_info
+
+    # Step 5: Replace entities in stored_entities
+    simulation_setting_dict, entity_warnings = _replace_entities_by_type_and_name(
+        simulation_setting_dict, target_registry
+    )
+
+    # Step 6: Validate and return results
+    root_item_type = _parse_root_item_type_from_simulation_json(
+        param_as_dict=simulation_setting_dict
+    )
+    _, errors, validation_warnings = validate_model(
+        params_as_dict=copy.deepcopy(simulation_setting_dict),
+        validated_by=ValidationCalledBy.SERVICE,
+        root_item_type=root_item_type,
+        validation_level=ALL,
+    )
+
+    all_warnings = entity_warnings + validation_warnings
+    return simulation_setting_dict, errors, all_warnings
