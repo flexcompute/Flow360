@@ -366,6 +366,7 @@ class MirrorManager:
     Manage mirror planes and mirrored draft entities inside a `DraftContext`.
 
     This manager provides:
+
     - Storage/registration of `MirrorPlane` entities.
     - Creation/removal of mirror actions for `GeometryBodyGroup` entities.
     - Derivation and registration of draft-only entities:
@@ -427,9 +428,10 @@ class MirrorManager:
 
         This registers mirror actions for the requested body groups and then derives/creates
         draft-only entities:
+
         - `MirroredGeometryBodyGroup` for each body group
-        - `MirroredSurface` for each surface belonging to those body groups (when surface ownership
-          mapping is available)
+        - `MirroredSurface` for each surface belonging to those body groups
+          (when surface ownership mapping is available)
 
         Newly created mirrored entities use `MIRROR_SUFFIX` (``"_<mirror>"``) as a name suffix.
 

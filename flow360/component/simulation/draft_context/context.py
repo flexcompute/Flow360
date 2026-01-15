@@ -177,11 +177,9 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
 
         Example
         -------
-          >>> with fl.create_draft(new_run_from=geometry) as draft:
-          >>>     draft.body_groups["body_group_1"]
-          >>>     draft.body_groups["body_group*"]
-
-        ====
+        >>> with fl.create_draft(new_run_from=geometry) as draft:
+        ...     draft.body_groups["body_group_1"]
+        ...     draft.body_groups["body_group*"]
         """
         return self._entity_registry.view(GeometryBodyGroup)
 
@@ -315,8 +313,6 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
         ...     selector = fl.SurfaceSelector(name="wing_surfaces").match("wing*")
         ...     matched = draft.preview_selector(selector)
         ...     print(matched)  # ['wing_upper', 'wing_lower', ...]
-
-        ====
         """
         # pylint: disable=import-outside-toplevel
 

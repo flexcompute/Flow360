@@ -139,12 +139,12 @@ def create_draft(
     mutating the cloud asset.
 
     Draft allows you to:
+
     - Override grouping tags for faces and edges (geometry assets only).
     - Include or exclude geometry components (projects with a geometry root asset only).
     - Register additional imported surfaces (surface mesh dependencies in the project).
     - Access entities in the draft via `DraftContext` properties.
-    - Manage coordinate systems and mirror actions through `draft.coordinate_systems` and
-      `draft.mirror`.
+    - Manage coordinate systems and mirror actions through `draft.coordinate_systems` and `draft.mirror`.
 
     Parameters
     ----------
@@ -190,8 +190,6 @@ def create_draft(
     >>> geometry = fl.Geometry.from_cloud(id="...")
     >>> with fl.create_draft(new_run_from=geometry, face_grouping="groupByName") as draft:
     ...     print(draft.surfaces["wing*"])
-
-    ====
     """
 
     # region -----------------------------Private implementations Below-----------------------------
@@ -1047,7 +1045,6 @@ class Project(pd.BaseModel):
         ...     length_unit="cm"
         ...     tags=["Quarter 1", "Revision 2"]
         ... )
-        ====
         """
         try:
             validated_files = GeometryFiles(file_names=files)
@@ -1118,7 +1115,6 @@ class Project(pd.BaseModel):
         ...     length_unit="inch"
         ...     tags=["Quarter 1", "Revision 2"]
         ... )
-        ====
         """
 
         try:
@@ -1190,7 +1186,6 @@ class Project(pd.BaseModel):
         ...     length_unit="inch"
         ...     tags=["Quarter 1", "Revision 2"]
         ... )
-        ====
         """
 
         try:

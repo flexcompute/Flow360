@@ -780,6 +780,7 @@ class BETForcesResultCSVModel(OptionallyDownloadableResultCSVModel):
         """
         Renames the header entries from Disk{i}_ to based on an input user pattern
         such as $BETName_$CylinderName
+
         Parameters
         ----------
         params : SimulationParams
@@ -787,6 +788,7 @@ class BETForcesResultCSVModel(OptionallyDownloadableResultCSVModel):
         pattern : str
             Pattern string to rename header entries. Available patterns
             [$BETName, $CylinderName, $DiskLocalIndex, $DiskGlobalIndex]
+
         Returns
         -------
         LocalResultCSVModel
@@ -862,6 +864,7 @@ class BETDiskCoefficientsCSVModel(ResultCSVModel):
         """
         Renames the header entries from Disk{i}_ to based on an input user pattern
         such as $BETName_$CylinderName
+
         Parameters
         ----------
         params : SimulationParams
@@ -869,6 +872,7 @@ class BETDiskCoefficientsCSVModel(ResultCSVModel):
         pattern : str
             Pattern string to rename header entries. Available patterns
             [$BETName, $CylinderName, $DiskLocalIndex, $DiskGlobalIndex]
+
         Returns
         -------
         LocalResultCSVModel
@@ -959,6 +963,7 @@ class BETForcesRadialDistributionResultCSVModel(OptionallyDownloadableResultCSVM
         """
         Renames the header entries from Disk{i}_ to based on an input user pattern
         such as $BETName_$CylinderName
+
         Parameters
         ----------
         params : SimulationParams
@@ -966,6 +971,7 @@ class BETForcesRadialDistributionResultCSVModel(OptionallyDownloadableResultCSVM
         pattern : str
             Pattern string to rename header entries. Available patterns
             [$BETName, $CylinderName, $DiskLocalIndex, $DiskGlobalIndex]
+
         Returns
         -------
         LocalResultCSVModel
