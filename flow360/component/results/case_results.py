@@ -289,6 +289,7 @@ class MonitorsResultModel(ResultTarGZModel):
                         self._monitors[name]._download_method = (
                             self._download_method
                         )  # pylint: disable=protected-access
+                        self._monitors[name]._get_params_method = self._get_params_method
 
         return self._monitor_names
 
@@ -369,6 +370,7 @@ class UserDefinedDynamicsResultModel(ResultBaseModel):
                         self._udds[name] = UserDefinedDynamicsCSVModel(remote_file_name=filename)
                         # pylint: disable=protected-access
                         self._udds[name]._download_method = self._download_method
+                        self._udds[name]._get_params_method = self._get_params_method
 
         return self._udd_names
 
