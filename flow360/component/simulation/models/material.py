@@ -148,6 +148,107 @@ NASAPolynomialCoefficientSet = NASA9CoefficientSet
 NASAPolynomialCoefficients = NASA9Coefficients
 
 
+class FrozenSpecies(Flow360BaseModel):
+    """
+    Represents a single gas species with NASA 9-coefficient thermodynamic properties.
+
+    Used within :class:`ThermallyPerfectGas` to define multi-species gas mixtures
+    where each species contributes to the mixture properties weighted by mass fraction.
+    The term "frozen" indicates fixed mass fractions (non-reacting flow).
+
+    Example
+    -------
+
+    >>> fl.FrozenSpecies(
+    ...     name="N2",
+    ...     nasa_9_coefficients=fl.NASA9Coefficients(
+    ...         temperature_ranges=[
+    ...             fl.NASA9CoefficientSet(
+    ...                 temperature_range_min=200.0 * fl.u.K,
+    ...                 temperature_range_max=6000.0 * fl.u.K,
+    ...                 coefficients=[0.0, 0.0, 3.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    ...             )
+    ...         ]
+    ...     ),
+    ...     mass_fraction=0.7555
+    ... )
+
+    ====
+    """
+
+    name: str = pd.Field(description="Species name (e.g., 'N2', 'O2', 'Ar')")
+    nasa_9_coefficients: NASA9Coefficients = pd.Field(
+        description="NASA 9-coefficient polynomial for this species"
+    )
+    mass_fraction: pd.PositiveFloat = pd.Field(
+        description="Mass fraction of this species (must sum to 1 across all species in mixture)"
+    )
+
+
+class ThermallyPerfectGas(Flow360BaseModel):
+    """
+    Multi-species thermally perfect gas model.
+
+    Combines NASA 9-coefficient polynomials from multiple species weighted by mass fraction.
+    All species must use the same temperature range boundaries. The mixture properties
+    are computed as mass-fraction-weighted averages of individual species properties.
+
+    This model supports temperature-dependent specific heats (cp) while maintaining
+    fixed mass fractions (non-reacting flow).
+
+    Example
+    -------
+
+    >>> fl.ThermallyPerfectGas(
+    ...     species=[
+    ...         fl.FrozenSpecies(name="N2", nasa_9_coefficients=..., mass_fraction=0.7555),
+    ...         fl.FrozenSpecies(name="O2", nasa_9_coefficients=..., mass_fraction=0.2316),
+    ...         fl.FrozenSpecies(name="Ar", nasa_9_coefficients=..., mass_fraction=0.0129),
+    ...     ]
+    ... )
+
+    ====
+    """
+
+    species: List[FrozenSpecies] = pd.Field(
+        min_length=1,
+        description="List of species with their NASA 9 coefficients and mass fractions. "
+        "Mass fractions must sum to 1.0."
+    )
+
+    @pd.model_validator(mode="after")
+    def validate_mass_fractions_sum_to_one(self):
+        """Validate that mass fractions sum to 1."""
+        total = sum(s.mass_fraction for s in self.species)
+        if not (0.999 <= total <= 1.001):  # Allow small tolerance for floating point
+            raise ValueError(f"Mass fractions must sum to 1.0, got {total}")
+        return self
+
+    @pd.model_validator(mode="after")
+    def validate_temperature_ranges_match(self):
+        """Validate all species have matching temperature range boundaries."""
+        if len(self.species) < 2:
+            return self
+        ref_ranges = self.species[0].nasa_9_coefficients.temperature_ranges
+        for species in self.species[1:]:
+            ranges = species.nasa_9_coefficients.temperature_ranges
+            if len(ranges) != len(ref_ranges):
+                raise ValueError(
+                    f"Species '{species.name}' has {len(ranges)} temperature ranges, "
+                    f"but '{self.species[0].name}' has {len(ref_ranges)}. "
+                    "All species must have the same number of temperature ranges."
+                )
+            for i, (r1, r2) in enumerate(zip(ref_ranges, ranges)):
+                if r1.temperature_range_min != r2.temperature_range_min or \
+                   r1.temperature_range_max != r2.temperature_range_max:
+                    raise ValueError(
+                        f"Temperature range {i} boundaries mismatch between species "
+                        f"'{self.species[0].name}' and '{species.name}'. "
+                        "All species must use the same temperature range boundaries."
+                    )
+        return self
+
+
 class Sutherland(Flow360BaseModel):
     """
     Represents Sutherland's law for calculating dynamic viscosity.
@@ -212,6 +313,9 @@ class Air(MaterialBase):
     for temperature-dependent specific heats. By default, coefficients are set to
     reproduce a constant gamma=1.4 (calorically perfect gas).
 
+    For multi-species gas mixtures, use the `thermally_perfect_gas` parameter which
+    combines species properties weighted by mass fraction.
+
     Example
     -------
 
@@ -229,6 +333,18 @@ class Air(MaterialBase):
     ...                 temperature_range_max=6000.0 * fl.u.K,
     ...                 coefficients=[0.0, 0.0, 3.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     ...             )
+    ...         ]
+    ...     )
+    ... )
+
+    With multi-species thermally perfect gas:
+
+    >>> fl.Air(
+    ...     thermally_perfect_gas=fl.ThermallyPerfectGas(
+    ...         species=[
+    ...             fl.FrozenSpecies(name="N2", nasa_9_coefficients=..., mass_fraction=0.7555),
+    ...             fl.FrozenSpecies(name="O2", nasa_9_coefficients=..., mass_fraction=0.2316),
+    ...             fl.FrozenSpecies(name="Ar", nasa_9_coefficients=..., mass_fraction=0.0129),
     ...         ]
     ...     )
     ... )
@@ -268,21 +384,100 @@ class Air(MaterialBase):
             "NASA 9-coefficient polynomial coefficients for computing temperature-dependent "
             "thermodynamic properties (cp, enthalpy, entropy). Defaults to a single temperature "
             "range with coefficients that reproduce constant gamma=1.4 (calorically perfect gas). "
-            "For air with gamma=1.4: cp/R = 3.5 (stored in a2)."
+            "For air with gamma=1.4: cp/R = 3.5 (stored in a2). "
+            "Note: If thermally_perfect_gas is specified, it takes precedence over this field."
+        ),
+    )
+    thermally_perfect_gas: Optional[ThermallyPerfectGas] = pd.Field(
+        default=None,
+        description=(
+            "Multi-species thermally perfect gas model. When specified, this takes precedence "
+            "over nasa_9_coefficients. Use this to define gas mixtures with multiple species, "
+            "each with their own NASA 9-coefficient polynomials and mass fractions. "
+            "The mixture properties are computed as mass-fraction-weighted averages."
         ),
     )
 
-    @property
-    def specific_heat_ratio(self) -> pd.PositiveFloat:
+    def get_specific_heat_ratio(self, temperature: AbsoluteTemperatureType) -> pd.PositiveFloat:
         """
-        Returns the specific heat ratio (gamma) for air.
+        Computes the specific heat ratio (gamma) at a given temperature from NASA polynomial.
+
+        For thermally perfect gas, gamma = cp/cv = (cp/R) / (cp/R - 1) varies with temperature.
+        The cp/R is computed from the NASA 9-coefficient polynomial:
+            cp/R = a0*T^-2 + a1*T^-1 + a2 + a3*T + a4*T^2 + a5*T^3 + a6*T^4
+
+        Parameters
+        ----------
+        temperature : AbsoluteTemperatureType
+            The temperature at which to compute gamma.
 
         Returns
         -------
         pd.PositiveFloat
-            The specific heat ratio, typically 1.4 for air.
+            The specific heat ratio at the given temperature.
         """
-        return 1.4
+        T = temperature.to("K").v.item()
+
+        # Get coefficients from the appropriate source
+        if self.thermally_perfect_gas is not None:
+            # For multi-species, combine coefficients by mass fraction
+            coeffs = [0.0] * 9
+            for species in self.thermally_perfect_gas.species:
+                # Find the temperature range that contains T
+                for coeff_set in species.nasa_9_coefficients.temperature_ranges:
+                    t_min = coeff_set.temperature_range_min.to("K").v.item()
+                    t_max = coeff_set.temperature_range_max.to("K").v.item()
+                    if t_min <= T <= t_max:
+                        for i in range(9):
+                            coeffs[i] += species.mass_fraction * coeff_set.coefficients[i]
+                        break
+        else:
+            # Single-species: find the temperature range that contains T
+            coeffs = None
+            for coeff_set in self.nasa_9_coefficients.temperature_ranges:
+                t_min = coeff_set.temperature_range_min.to("K").v.item()
+                t_max = coeff_set.temperature_range_max.to("K").v.item()
+                if t_min <= T <= t_max:
+                    coeffs = list(coeff_set.coefficients)
+                    break
+            if coeffs is None:
+                # Fallback to first range if T is out of bounds
+                coeffs = list(self.nasa_9_coefficients.temperature_ranges[0].coefficients)
+
+        # Compute cp/R from the polynomial
+        # cp/R = a0*T^-2 + a1*T^-1 + a2 + a3*T + a4*T^2 + a5*T^3 + a6*T^4
+        cp_over_R = (
+            coeffs[0] * T ** (-2)
+            + coeffs[1] * T ** (-1)
+            + coeffs[2]
+            + coeffs[3] * T
+            + coeffs[4] * T**2
+            + coeffs[5] * T**3
+            + coeffs[6] * T**4
+        )
+
+        # cv/R = cp/R - 1 (for ideal gas: cp - cv = R)
+        cv_over_R = cp_over_R - 1
+
+        # gamma = cp/cv
+        gamma = cp_over_R / cv_over_R
+
+        return gamma
+
+    @property
+    def specific_heat_ratio(self) -> pd.PositiveFloat:
+        """
+        Returns the specific heat ratio (gamma) for air at a reference temperature (298.15 K).
+
+        For temperature-dependent gamma, use `get_specific_heat_ratio(temperature)` instead.
+
+        Returns
+        -------
+        pd.PositiveFloat
+            The specific heat ratio at 298.15 K.
+        """
+        # Compute gamma at reference temperature (298.15 K)
+        return self.get_specific_heat_ratio(298.15 * u.K)
 
     @property
     def gas_constant(self) -> SpecificHeatCapacityType.Positive:
@@ -337,6 +532,8 @@ class Air(MaterialBase):
         """
         Calculates the speed of sound in air at a given temperature.
 
+        For thermally perfect gas, uses the temperature-dependent gamma from the NASA polynomial.
+
         Parameters
         ----------
         temperature : AbsoluteTemperatureType
@@ -348,7 +545,8 @@ class Air(MaterialBase):
             The speed of sound at the specified temperature.
         """
         temperature = temperature.to("K")
-        return sqrt(self.specific_heat_ratio * self.gas_constant * temperature)
+        gamma = self.get_specific_heat_ratio(temperature)
+        return sqrt(gamma * self.gas_constant * temperature)
 
     @pd.validate_call
     def get_dynamic_viscosity(

@@ -19,6 +19,7 @@ from flow360.component.simulation.meshing_param.volume_params import (
     CustomZones,
     WindTunnelFarfield,
 )
+from flow360.component.simulation.models.material import Air
 from flow360.component.simulation.models.solver_numerics import NoneSolver
 from flow360.component.simulation.models.surface_models import (
     Inflow,
@@ -847,5 +848,46 @@ def _check_coordinate_system_constraints(params, param_info: ParamsValidationInf
                 f"{entity_names}. Box, Cylinder, and AxisymmetricBody only support "
                 f"uniform scaling."
             )
+
+    return params
+
+
+def _check_tpg_not_with_isentropic_solver(params):
+    """
+    Validate that ThermallyPerfectGas model is not used with CompressibleIsentropic solver.
+
+    The CompressibleIsentropic solver (4x4 system) does not support thermally perfect gas
+    models for performance reasons. Users must use the full Compressible solver when using
+    temperature-dependent gas properties.
+    """
+    # Check if CompressibleIsentropic solver is being used
+    uses_isentropic = False
+    if params.models:
+        for model in params.models:
+            if isinstance(model, Fluid):
+                if model.navier_stokes_solver.type_name == "CompressibleIsentropic":
+                    uses_isentropic = True
+                    break
+
+    if not uses_isentropic:
+        return params
+
+    # Check if TPG model is being used (via operating condition)
+    uses_tpg = False
+    if params.operating_condition is not None:
+        op = params.operating_condition
+        if hasattr(op, "thermal_state") and op.thermal_state is not None:
+            material = op.thermal_state.material
+            if isinstance(material, Air):
+                # Air material always uses TPG (via nasa_9_coefficients or thermally_perfect_gas)
+                uses_tpg = True
+
+    if uses_tpg:
+        raise ValueError(
+            "ThermallyPerfectGas model is not supported with the CompressibleIsentropic solver. "
+            "The CompressibleIsentropic solver uses a 4x4 system that decouples the energy equation "
+            "and does not support temperature-dependent gas properties. "
+            "Please use type_name='Compressible' in NavierStokesSolver for thermally perfect gas simulations."
+        )
 
     return params
