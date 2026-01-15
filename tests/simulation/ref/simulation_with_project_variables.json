@@ -201,6 +201,14 @@
                     {
                         "name": "bbb",
                         "type_name": "UserVariable"
+                    },
+                    {
+                        "name": "ddd",
+                        "type_name": "UserVariable"
+                    },
+                    {
+                        "name": "eee",
+                        "type_name": "UserVariable"
                     }
                 ]
             },
@@ -269,6 +277,24 @@
                     "type_name": "expression",
                     "expression": "[aaa[0] + 14 * u.m / u.s, aaa[1], aaa[2]]",
                     "output_units": "km/ms"
+                },
+                "post_processing": true
+            },
+            {
+                "name": "ddd",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "12 * u.ft / u.s",
+                    "output_units": "m/s"
+                },
+                "post_processing": true
+            },
+            {
+                "name": "eee",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "1.0",
+                    "output_units": "dimensionless"
                 },
                 "post_processing": true
             }

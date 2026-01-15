@@ -373,13 +373,6 @@ class Variable(Flow360BaseModel):
             default_context.set_metadata(values["name"], "description", values["description"])
         values.pop("description", None)
 
-        # if "post_processing" in values:
-        #     # Loading from simulation.json
-        #     default_context.set_metadata(
-        #         values["name"], "post_processing", values["post_processing"]
-        #     )
-        # values.pop("post_processing", None)
-
         if values.get("metadata") is not None:
             default_context.set_metadata(values["name"], "metadata", values["metadata"])
         values.pop("metadata", None)
@@ -1390,21 +1383,30 @@ def get_post_processing_variables(params) -> set[str]:
 def save_user_variables(params):
     """
     Save user variables to the project variables.
-    Declared here since I do not want to import default_context everywhere.
     """
     # pylint:disable=protected-access
-    for name, value in default_context._values.items():
-        if "." in name:
+    post_processing_variables = get_post_processing_variables(params)
+    output_units_by_name = {}
+    if post_processing_variables:
+        # Derive output units for all post-processing variables.
+        output_units_by_name = batch_get_user_variable_units(
+            list(post_processing_variables), params
+        )
+
+    user_variable_names = default_context.user_variable_names
+    for name, value in list(default_context._values.items()):
+        if name not in user_variable_names:
             continue
 
-        # Get all output variables:
-        post_processing_variables = set()
-        for item in params.outputs if params.outputs else []:
-            if not "output_fields" in item.__class__.model_fields:
-                continue
-            for item in item.output_fields.items:
-                if isinstance(item, UserVariable):
-                    post_processing_variables.add(item.name)
+        output_unit = output_units_by_name.get(name)
+        if output_unit is not None:
+            output_unit_str = str(output_unit)
+            if isinstance(value, Expression):
+                value = value.model_copy()
+                value.output_units = output_unit_str
+            else:
+                value = VariableContextInfo.convert_number_to_expression(value)
+                value.output_units = output_unit_str
 
         if params.private_attribute_asset_cache.variable_context is None:
             params.private_attribute_asset_cache.variable_context = []
@@ -1435,7 +1437,16 @@ def save_user_variables(params):
 
 def batch_get_user_variable_units(variable_names: list[str], params):
     """
-    Get the units of a list of user variables.
+    Return output units for a list of user variable names.
+
+    For each name, the value is pulled from `default_context` and converted to a unit:
+    - Expression: `Expression.get_output_units(params)` (respects explicit output_units or
+      infers from `params.unit_system`).
+    - unyt_array/unyt_quantity: their `units`.
+    - Number: "dimensionless".
+
+    Returns a dict mapping variable name to a `unyt.Unit` (or the string "dimensionless").
+    Raises `ValueError` if a name resolves to an unsupported type.
     """
     result = {}
     for name in variable_names:

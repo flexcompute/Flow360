@@ -918,6 +918,8 @@ def test_project_variables_serialization():
     bbb = UserVariable(name="bbb", value=[aaa[0] + 14 * u.m / u.s, aaa[1], aaa[2]]).in_units(
         new_unit="km/ms",
     )
+    ddd = UserVariable(name="ddd", value=Expression(expression="12 * u.ft / u.s"))
+    eee = UserVariable(name="eee", value=1.0)
 
     with SI_unit_system:
         params = SimulationParams(
@@ -929,6 +931,8 @@ def test_project_variables_serialization():
                 VolumeOutput(
                     output_fields=[
                         bbb,
+                        ddd,
+                        eee,
                     ],
                     private_attribute_id="000",
                 ),
@@ -943,6 +947,14 @@ def test_project_variables_serialization():
         )
 
     params = save_user_variables(params)
+    params_dict = params.model_dump(mode="json", exclude_none=True)
+    variable_context = params_dict["private_attribute_asset_cache"]["variable_context"]
+    output_units_by_name = {
+        item["name"]: item["value"].get("output_units") for item in variable_context
+    }
+    assert output_units_by_name["bbb"] == "km/ms"
+    assert output_units_by_name["ddd"] == "m/s"
+    assert output_units_by_name["eee"] == "dimensionless"
 
     paramsJson = params.model_dump_json(indent=4, exclude_none=True)
     with open("ref/simulation_with_project_variables.json", "w") as f:
@@ -1041,13 +1053,37 @@ def test_project_variables_metadata():
             "post_processing": True,
         },
         {
+            "name": "ddd",
+            "value": {
+                "type_name": "expression",
+                "expression": "12 * u.ft / u.s",
+                "output_units": "m/s",
+            },
+            "post_processing": True,
+        },
+        {
+            "name": "eee",
+            "value": {
+                "type_name": "expression",
+                "expression": "1.0",
+                "output_units": "dimensionless",
+            },
+            "post_processing": True,
+        },
+        {
             "name": "a_var",
-            "value": {"type_name": "expression", "expression": "1111.0"},
+            "value": {
+                "type_name": "expression",
+                "expression": "1111.0",
+                "output_units": "dimensionless",
+            },
             "post_processing": True,
         },
     ]
     assert param_dumped["outputs"][0]["output_fields"]["items"] == [
         {"name": "bbb", "type_name": "UserVariable"},
+        {"name": "ddd", "type_name": "UserVariable"},
+        {"name": "eee", "type_name": "UserVariable"},
         {
             "name": "a_var",
             "type_name": "UserVariable",
