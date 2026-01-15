@@ -70,7 +70,7 @@ class UserDefinedDynamic(Flow360BaseModel):
         description="List of the inputs to define the user defined dynamics. Inputs can be: :code:`CL`, :code:`CD`, "
         + ":code:`bet_NUM_torque`,  :code:`bet_NUM_thrust`, (NUM is the index of the BET disk starting from 0), "
         + ":code:`momentX`, :code:`momentY`, :code:`momentZ` (X/Y/Z moments with respect to "
-        + ":py:attr:`~ReferenceGeometry.moment_center`), :code:`forceX`, :code:`forceY`, :code:`forceZ`. "
+        + ":py:attr:`~flow360.ReferenceGeometry.moment_center`), :code:`forceX`, :code:`forceY`, :code:`forceZ`. "
     )
     constants: Optional[Dict[str, float]] = pd.Field(
         None, description="A list of constants that can be used in the expressions."
