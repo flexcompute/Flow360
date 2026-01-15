@@ -83,7 +83,7 @@ class UserDefinedDynamic(Flow360BaseModel):
         + "velocity/acceleration in radians for sliding interfaces), :code:`actuatorDisk_<DISK_ENTITY_NAME>_thrustMultiplier` "
         + "and :code:`actuatorDisk_<DISK_ENTITY_NAME>_torqueMultiplier` (where <DISK_ENTITY_NAME> is the name of the "
         + "actuator disk entity). Please exercise caution when choosing output variables, as any modifications to their "
-        + "values will be directly mirrored in the solver."
+        + "values will be directly mirrored in the solver.",
     )
     state_vars_initial_value: List[StringExpression] = pd.Field(
         description="The initial value of state variables are specified here. The entries could be either values "
