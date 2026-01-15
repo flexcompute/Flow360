@@ -368,13 +368,16 @@ def _collect_volume_zones(params) -> list:
     return []
 
 
-def _collect_asset_boundary_entities(params, param_info: ParamsValidationInfo) -> list:
+def _collect_asset_boundary_entities(params, param_info: ParamsValidationInfo) -> tuple[list, bool]:
     """Collect boundary entities that should be considered valid for BC completeness checks.
 
     This includes:
     - Persistent boundaries from asset cache
     - Farfield-related ghost boundaries, conditional on farfield method
     - Wind tunnel ghost surfaces (when applicable)
+
+    Returns:
+        tuple: (asset_boundary_entities, has_missing_private_attributes)
     """
     # IMPORTANT:
     # AssetCache.boundaries may return a direct reference into EntityInfo internal lists
@@ -382,12 +385,27 @@ def _collect_asset_boundary_entities(params, param_info: ParamsValidationInfo) -
     # mutating entity_info and corrupting subsequent serialization/validation.
     asset_boundary_entities = list(params.private_attribute_asset_cache.boundaries or [])
     farfield_method = params.meshing.farfield_method if params.meshing else None
+    has_missing_private_attributes = False
 
     if not farfield_method:
-        return asset_boundary_entities
+        return asset_boundary_entities, has_missing_private_attributes
+
+    # Check for legacy assets missing private_attributes before farfield-related processing
+    # This check is only relevant when we need bounding box information for farfield operations
+    # Only flag as legacy if ALL boundaries are missing private_attributes (not just some)
+    # AND the farfield method is one that performs automatic surface deletion (auto/quasi-3d modes)
+    # For user-defined/wind-tunnel, missing BCs are always errors since no auto-deletion occurs
+    if (
+        asset_boundary_entities
+        and farfield_method in ("auto", "quasi-3d", "quasi-3d-periodic")
+        and all(
+            getattr(item, "private_attributes", None) is None for item in asset_boundary_entities
+        )
+    ):
+        has_missing_private_attributes = True
 
     # Filter out the ones that will be deleted by mesher (only when reliable)
-    if not param_info.entity_transformation_detected:
+    if not param_info.entity_transformation_detected and not has_missing_private_attributes:
         # pylint:disable=protected-access,duplicate-code
         asset_boundary_entities = [
             item
@@ -431,7 +449,7 @@ def _collect_asset_boundary_entities(params, param_info: ParamsValidationInfo) -
                 params.meshing.volume_zones[0].domain_type,
             )
 
-    return asset_boundary_entities
+    return asset_boundary_entities, has_missing_private_attributes
 
 
 def _collect_zone_zone_interfaces(
@@ -489,13 +507,14 @@ def _collect_used_boundary_names(params, param_info: ParamsValidationInfo) -> se
     return used_boundaries
 
 
-def _validate_boundary_completeness(
+def _validate_boundary_completeness(  # pylint:disable=too-many-arguments
     *,
     asset_boundaries: set,
     used_boundaries: set,
     potential_zone_zone_interfaces: set,
     snappy_multizone: bool,
     entity_transformation_detected: bool,
+    has_missing_private_attributes: bool = False,
 ) -> None:
     """Validate missing/unknown boundary references with error/warning policy."""
     missing_boundaries = asset_boundaries - used_boundaries - potential_zone_zone_interfaces
@@ -503,13 +522,17 @@ def _validate_boundary_completeness(
 
     if missing_boundaries and not snappy_multizone:
         missing_list = ", ".join(sorted(missing_boundaries))
-        message = (
-            f"The following boundaries do not have a boundary condition: {missing_list}. "
-            "Please add them to a boundary condition model in the `models` section."
-        )
-        if entity_transformation_detected:
+        if entity_transformation_detected or has_missing_private_attributes:
+            message = (
+                f"The following boundaries do not have a boundary condition: {missing_list}. "
+                "If these boundaries are valid, please add them to a boundary condition model in the `models` section."
+            )
             add_validation_warning(message)
         else:
+            message = (
+                f"The following boundaries do not have a boundary condition: {missing_list}. "
+                "Please add them to a boundary condition model in the `models` section."
+            )
             raise ValueError(message)
 
     if unknown_boundaries:
@@ -529,7 +552,9 @@ def _check_complete_boundary_condition_and_unknown_surface(
         return params
 
     # Step 2: Collect asset boundaries
-    asset_boundary_entities = _collect_asset_boundary_entities(params, param_info)
+    asset_boundary_entities, has_missing_private_attributes = _collect_asset_boundary_entities(
+        params, param_info
+    )
     if asset_boundary_entities is None or asset_boundary_entities == []:
         raise ValueError("[Internal] Failed to retrieve asset boundaries")
 
@@ -552,6 +577,7 @@ def _check_complete_boundary_condition_and_unknown_surface(
         potential_zone_zone_interfaces=potential_zone_zone_interfaces,
         snappy_multizone=snappy_multizone,
         entity_transformation_detected=param_info.entity_transformation_detected,
+        has_missing_private_attributes=has_missing_private_attributes,
     )
 
     return params
