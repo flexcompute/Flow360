@@ -60,6 +60,7 @@ from flow360.component.simulation.meshing_param.volume_params import (
 )
 from flow360.component.simulation.models.material import (
     Air,
+    FrozenSpecies,
     NASA9CoefficientSet,
     NASA9Coefficients,
     # Legacy aliases for backward compatibility
@@ -67,6 +68,7 @@ from flow360.component.simulation.models.material import (
     NASAPolynomialCoefficients,
     SolidMaterial,
     Sutherland,
+    ThermallyPerfectGas,
     Water,
 )
 from flow360.component.simulation.models.solver_numerics import (
@@ -308,7 +310,9 @@ __all__ = [
     "NASA9Coefficients",
     "NASAPolynomialCoefficientSet",
     "NASAPolynomialCoefficients",
+    "FrozenSpecies",
     "Sutherland",
+    "ThermallyPerfectGas",
     "SolidMaterial",
     "Slice",
     "Isosurface",
