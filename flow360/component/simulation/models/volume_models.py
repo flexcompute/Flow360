@@ -414,7 +414,7 @@ class Solid(PDEModelBase):
                 raise ValueError(
                     "CustomVolume '"
                     + entity.name
-                    + "' must be meshed with tetrahedra-only elements."
+                    + "' must be meshed with tetrahedra-only elements. Please adjust setting in `CustomZones`."
                 )
 
         return v

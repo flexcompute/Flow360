@@ -63,7 +63,8 @@ def test_solid_custom_volume_requires_tetrahedra_raises_on_mixed():
 
     assert errors is not None and len(errors) == 1
     assert errors[0]["msg"] == (
-        "Value error, CustomVolume 'solid_zone' must be meshed with tetrahedra-only elements."
+        "Value error, CustomVolume 'solid_zone' must be meshed with "
+        "tetrahedra-only elements. Please adjust setting in `CustomZones`."
     )
     assert errors[0]["loc"][0] == "models"
     assert errors[0]["loc"][2] == "entities"

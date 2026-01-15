@@ -344,7 +344,22 @@
                     "private_attribute_is_interface": null,
                     "private_attribute_tag_key": null,
                     "private_attribute_sub_components": [],
-                    "private_attribute_color": null
+                    "private_attribute_color": null,
+                    "private_attributes": {
+                        "type_name": "SurfacePrivateAttributes",
+                        "bounding_box": [
+                            [
+                                0,
+                                0,
+                                0
+                            ],
+                            [
+                                1,
+                                1,
+                                1
+                            ]
+                        ]
+                    }
                 },
                 {
                     "private_attribute_registry_bucket_name": "SurfaceEntityType",
@@ -355,7 +370,22 @@
                     "private_attribute_is_interface": null,
                     "private_attribute_tag_key": null,
                     "private_attribute_sub_components": [],
-                    "private_attribute_color": null
+                    "private_attribute_color": null,
+                    "private_attributes": {
+                        "type_name": "SurfacePrivateAttributes",
+                        "bounding_box": [
+                            [
+                                0,
+                                0,
+                                0
+                            ],
+                            [
+                                1,
+                                1,
+                                1
+                            ]
+                        ]
+                    }
                 },
                 {
                     "private_attribute_registry_bucket_name": "SurfaceEntityType",
@@ -366,7 +396,22 @@
                     "private_attribute_is_interface": null,
                     "private_attribute_tag_key": null,
                     "private_attribute_sub_components": [],
-                    "private_attribute_color": null
+                    "private_attribute_color": null,
+                    "private_attributes": {
+                        "type_name": "SurfacePrivateAttributes",
+                        "bounding_box": [
+                            [
+                                0,
+                                0,
+                                0
+                            ],
+                            [
+                                1,
+                                1,
+                                1
+                            ]
+                        ]
+                    }
                 },
                 {
                     "private_attribute_registry_bucket_name": "SurfaceEntityType",
@@ -377,7 +422,22 @@
                     "private_attribute_is_interface": null,
                     "private_attribute_tag_key": null,
                     "private_attribute_sub_components": [],
-                    "private_attribute_color": null
+                    "private_attribute_color": null,
+                    "private_attributes": {
+                        "type_name": "SurfacePrivateAttributes",
+                        "bounding_box": [
+                            [
+                                0,
+                                0,
+                                0
+                            ],
+                            [
+                                1,
+                                1,
+                                1
+                            ]
+                        ]
+                    }
                 },
                 {
                     "private_attribute_registry_bucket_name": "SurfaceEntityType",
@@ -388,7 +448,22 @@
                     "private_attribute_is_interface": null,
                     "private_attribute_tag_key": null,
                     "private_attribute_sub_components": [],
-                    "private_attribute_color": null
+                    "private_attribute_color": null,
+                    "private_attributes": {
+                        "type_name": "SurfacePrivateAttributes",
+                        "bounding_box": [
+                            [
+                                0,
+                                0,
+                                0
+                            ],
+                            [
+                                1,
+                                1,
+                                1
+                            ]
+                        ]
+                    }
                 },
                 {
                     "private_attribute_registry_bucket_name": "SurfaceEntityType",
@@ -399,7 +474,22 @@
                     "private_attribute_is_interface": null,
                     "private_attribute_tag_key": null,
                     "private_attribute_sub_components": [],
-                    "private_attribute_color": null
+                    "private_attribute_color": null,
+                    "private_attributes": {
+                        "type_name": "SurfacePrivateAttributes",
+                        "bounding_box": [
+                            [
+                                0,
+                                0,
+                                0
+                            ],
+                            [
+                                1,
+                                1,
+                                1
+                            ]
+                        ]
+                    }
                 },
                 {
                     "private_attribute_registry_bucket_name": "SurfaceEntityType",
@@ -410,7 +500,22 @@
                     "private_attribute_is_interface": null,
                     "private_attribute_tag_key": null,
                     "private_attribute_sub_components": [],
-                    "private_attribute_color": null
+                    "private_attribute_color": null,
+                    "private_attributes": {
+                        "type_name": "SurfacePrivateAttributes",
+                        "bounding_box": [
+                            [
+                                0,
+                                0,
+                                0
+                            ],
+                            [
+                                1,
+                                1,
+                                1
+                            ]
+                        ]
+                    }
                 },
                 {
                     "private_attribute_registry_bucket_name": "SurfaceEntityType",
@@ -421,7 +526,22 @@
                     "private_attribute_is_interface": null,
                     "private_attribute_tag_key": null,
                     "private_attribute_sub_components": [],
-                    "private_attribute_color": null
+                    "private_attribute_color": null,
+                    "private_attributes": {
+                        "type_name": "SurfacePrivateAttributes",
+                        "bounding_box": [
+                            [
+                                0,
+                                0,
+                                0
+                            ],
+                            [
+                                1,
+                                1,
+                                1
+                            ]
+                        ]
+                    }
                 },
                 {
                     "private_attribute_registry_bucket_name": "SurfaceEntityType",
@@ -432,7 +552,22 @@
                     "private_attribute_is_interface": null,
                     "private_attribute_tag_key": null,
                     "private_attribute_sub_components": [],
-                    "private_attribute_color": null
+                    "private_attribute_color": null,
+                    "private_attributes": {
+                        "type_name": "SurfacePrivateAttributes",
+                        "bounding_box": [
+                            [
+                                0,
+                                0,
+                                0
+                            ],
+                            [
+                                1,
+                                1,
+                                1
+                            ]
+                        ]
+                    }
                 },
                 {
                     "private_attribute_registry_bucket_name": "SurfaceEntityType",
@@ -443,7 +578,22 @@
                     "private_attribute_is_interface": null,
                     "private_attribute_tag_key": null,
                     "private_attribute_sub_components": [],
-                    "private_attribute_color": null
+                    "private_attribute_color": null,
+                    "private_attributes": {
+                        "type_name": "SurfacePrivateAttributes",
+                        "bounding_box": [
+                            [
+                                0,
+                                0,
+                                0
+                            ],
+                            [
+                                1,
+                                1,
+                                1
+                            ]
+                        ]
+                    }
                 },
                 {
                     "private_attribute_registry_bucket_name": "SurfaceEntityType",
@@ -454,7 +604,22 @@
                     "private_attribute_is_interface": null,
                     "private_attribute_tag_key": null,
                     "private_attribute_sub_components": [],
-                    "private_attribute_color": null
+                    "private_attribute_color": null,
+                    "private_attributes": {
+                        "type_name": "SurfacePrivateAttributes",
+                        "bounding_box": [
+                            [
+                                0,
+                                0,
+                                0
+                            ],
+                            [
+                                1,
+                                1,
+                                1
+                            ]
+                        ]
+                    }
                 },
                 {
                     "private_attribute_registry_bucket_name": "SurfaceEntityType",
@@ -465,7 +630,22 @@
                     "private_attribute_is_interface": null,
                     "private_attribute_tag_key": null,
                     "private_attribute_sub_components": [],
-                    "private_attribute_color": null
+                    "private_attribute_color": null,
+                    "private_attributes": {
+                        "type_name": "SurfacePrivateAttributes",
+                        "bounding_box": [
+                            [
+                                0,
+                                0,
+                                0
+                            ],
+                            [
+                                1,
+                                1,
+                                1
+                            ]
+                        ]
+                    }
                 },
                 {
                     "private_attribute_registry_bucket_name": "SurfaceEntityType",
@@ -476,7 +656,22 @@
                     "private_attribute_is_interface": null,
                     "private_attribute_tag_key": null,
                     "private_attribute_sub_components": [],
-                    "private_attribute_color": null
+                    "private_attribute_color": null,
+                    "private_attributes": {
+                        "type_name": "SurfacePrivateAttributes",
+                        "bounding_box": [
+                            [
+                                0,
+                                0,
+                                0
+                            ],
+                            [
+                                1,
+                                1,
+                                1
+                            ]
+                        ]
+                    }
                 },
                 {
                     "private_attribute_registry_bucket_name": "SurfaceEntityType",
@@ -487,7 +682,22 @@
                     "private_attribute_is_interface": null,
                     "private_attribute_tag_key": null,
                     "private_attribute_sub_components": [],
-                    "private_attribute_color": null
+                    "private_attribute_color": null,
+                    "private_attributes": {
+                        "type_name": "SurfacePrivateAttributes",
+                        "bounding_box": [
+                            [
+                                0,
+                                0,
+                                0
+                            ],
+                            [
+                                1,
+                                1,
+                                1
+                            ]
+                        ]
+                    }
                 }
             ],
             "global_bounding_box": [
