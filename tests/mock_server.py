@@ -549,6 +549,16 @@ class MockResponseReportSubmit(MockResponse):
         return res
 
 
+class MockResponseCaseFiles(MockResponse):
+    """response for Case.from_cloud(id="case-666666666-66666666-666-6666666666666")'s files json"""
+
+    @staticmethod
+    def json():
+        with open(os.path.join(here, "data/mock_webapi/case_files_mock_response.json")) as fh:
+            res = json.load(fh)
+        return res
+
+
 GET_RESPONSE_MAP = {
     "/volumemeshes/00112233-4455-6677-8899-aabbccddeeff": MockResponseVolumeMesh,
     "/volumemeshes/00000000-0000-0000-0000-000000000000": MockResponseVolumeMesh,
@@ -587,6 +597,7 @@ GET_RESPONSE_MAP = {
     "/cases/case-84d4604e-f3cd-4c6b-8517-92a80a3346d3": MockResponseProjectCaseFork,
     "/v2/cases/case-84d4604e-f3cd-4c6b-8517-92a80a3346d3/simulation/file": MockResponseProjectCaseForkSimConfig,
     "/v2/projects": MockResponseAllProjects,
+    "/cases/case-666666666-66666666-666-6666666666666/files": MockResponseCaseFiles,
 }
 
 PUT_RESPONSE_MAP = {

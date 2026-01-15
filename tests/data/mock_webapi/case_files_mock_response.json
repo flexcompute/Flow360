@@ -1,0 +1,45 @@
+{
+    "data": [
+        {
+            "fileName": "results/monitor_massFluxExhaust_v2.csv",
+            "filePath": "results/monitor_massFluxExhaust_v2.csv",
+            "length": 2479,
+            "fileType": ".csv",
+            "storageClass": null,
+            "updatedAt": null
+        },
+        {
+            "fileName": "results/monitor_massFluxIntake_v2.csv",
+            "filePath": "results/monitor_massFluxIntake_v2.csv",
+            "length": 2479,
+            "fileType": ".csv",
+            "storageClass": null,
+            "updatedAt": null
+        },
+        {
+            "fileName": "results/udd_massInflowController_Exhaust_v2.csv",
+            "filePath": "results/udd_massInflowController_Exhaust_v2.csv",
+            "length": 2479,
+            "fileType": ".csv",
+            "storageClass": null,
+            "updatedAt": null
+        },
+        {
+            "fileName": "results/udd_massInflowController_Intake_v2.csv",
+            "filePath": "results/udd_massInflowController_Intake_v2.csv",
+            "length": 2479,
+            "fileType": ".csv",
+            "storageClass": null,
+            "updatedAt": null
+        },
+        {
+            "fileName": "simulation.json",
+            "filePath": "simulation.json",
+            "length": 36806,
+            "fileType": ".json",
+            "storageClass": null,
+            "updatedAt": null
+        }
+    ],
+    "warning": null
+}

@@ -854,3 +854,15 @@ def test_force_distribution_result(mock_id, mock_response, data_path):
         y_force_dist_by_body.as_dataframe(),
         ref_y_force_dist_by_body_df,
     )
+
+
+@pytest.mark.usefixtures("s3_download_override")
+def test_udd_monitors_get_params_method(mock_id, mock_response, data_path):
+    case = fl.Case(id="case-666666666-66666666-666-6666666666666")
+    params = case.params
+
+    udd = case.results.user_defined_dynamics["massInflowController_Exhaust"]
+    assert udd._get_params_method() == params
+
+    monitor = case.results.monitors["massFluxIntake"]
+    assert monitor._get_params_method() == params
