@@ -304,42 +304,63 @@ class TestApplySimulationSettingCrossEntityInfoType:
 class TestApplySimulationSettingGroupingTags:
     """Tests for grouping tag inheritance from source."""
 
-    def test_grouping_tags_inherited_from_source(self):
-        """Test that face/body/edge_group_tag are inherited from source simulation."""
-        # Source with specific grouping tags
+    def test_grouping_tags_inherited_from_source_when_available_in_target(self):
+        """Test that grouping tags are inherited from source when they exist in target's attribute_names."""
+        # Source uses "groupA" for all groupings
         source_dict = _create_base_simulation_dict(entity_info_type="GeometryEntityInfo")
         source_dict["private_attribute_asset_cache"]["project_entity_info"][
             "face_group_tag"
-        ] = "source_face_grouping"
+        ] = "groupA"
         source_dict["private_attribute_asset_cache"]["project_entity_info"][
             "body_group_tag"
-        ] = "source_body_grouping"
+        ] = "groupA"
         source_dict["private_attribute_asset_cache"]["project_entity_info"][
             "edge_group_tag"
-        ] = "source_edge_grouping"
+        ] = "groupA"
+        source_dict["private_attribute_asset_cache"]["project_entity_info"][
+            "face_attribute_names"
+        ] = ["groupA", "groupB"]
+        source_dict["private_attribute_asset_cache"]["project_entity_info"][
+            "body_attribute_names"
+        ] = ["groupA", "groupB"]
+        source_dict["private_attribute_asset_cache"]["project_entity_info"][
+            "edge_attribute_names"
+        ] = ["groupA", "groupB"]
 
-        # Target with different grouping tags
+        # Target has both groupA and groupB, but uses groupB by default
         target_dict = _create_base_simulation_dict(entity_info_type="GeometryEntityInfo")
         target_dict["private_attribute_asset_cache"]["project_entity_info"][
             "face_group_tag"
-        ] = "target_face_grouping"
+        ] = "groupB"
         target_dict["private_attribute_asset_cache"]["project_entity_info"][
             "body_group_tag"
-        ] = "target_body_grouping"
+        ] = "groupB"
         target_dict["private_attribute_asset_cache"]["project_entity_info"][
             "edge_group_tag"
-        ] = "target_edge_grouping"
+        ] = "groupB"
+        target_dict["private_attribute_asset_cache"]["project_entity_info"][
+            "face_attribute_names"
+        ] = [
+            "groupA",
+            "groupB",
+        ]  # Target has groupA available
+        target_dict["private_attribute_asset_cache"]["project_entity_info"][
+            "body_attribute_names"
+        ] = ["groupA", "groupB"]
+        target_dict["private_attribute_asset_cache"]["project_entity_info"][
+            "edge_attribute_names"
+        ] = ["groupA", "groupB"]
 
         result_dict, errors, warnings = services.apply_simulation_setting_to_entity_info(
             simulation_setting_dict=copy.deepcopy(source_dict),
             entity_info_dict=copy.deepcopy(target_dict),
         )
 
-        # Verify: grouping tags should be from source
+        # Verify: grouping tags should be from source since "groupA" exists in target's attribute_names
         result_entity_info = result_dict["private_attribute_asset_cache"]["project_entity_info"]
-        assert result_entity_info["face_group_tag"] == "source_face_grouping"
-        assert result_entity_info["body_group_tag"] == "source_body_grouping"
-        assert result_entity_info["edge_group_tag"] == "source_edge_grouping"
+        assert result_entity_info["face_group_tag"] == "groupA"
+        assert result_entity_info["body_group_tag"] == "groupA"
+        assert result_entity_info["edge_group_tag"] == "groupA"
 
     def test_grouping_tags_use_target_when_source_is_none(self):
         """Test that target's grouping tags are used when source has None."""
@@ -418,3 +439,50 @@ class TestApplySimulationSettingGroupingTags:
         # Verify: face_group_tag in result should be from source
         result_entity_info = result_dict["private_attribute_asset_cache"]["project_entity_info"]
         assert result_entity_info["face_group_tag"] == "groupA"
+
+    def test_source_grouping_tag_not_in_target_falls_back_to_target_tag(self):
+        """Test that when source's grouping tag doesn't exist in target, target's tag is used."""
+        # Source uses "groupA" which target doesn't have
+        source_dict = _create_base_simulation_dict(entity_info_type="GeometryEntityInfo")
+        source_dict["private_attribute_asset_cache"]["project_entity_info"]["grouped_faces"] = [
+            [_create_surface_entity("wing", "source_wing_id")],
+        ]
+        source_dict["private_attribute_asset_cache"]["project_entity_info"][
+            "face_attribute_names"
+        ] = ["groupA"]
+        source_dict["private_attribute_asset_cache"]["project_entity_info"][
+            "face_group_tag"
+        ] = "groupA"
+        source_dict["models"] = [
+            {
+                "type": "Wall",
+                "entities": {"stored_entities": [_create_surface_entity("wing", "source_wing_id")]},
+                "use_wall_function": False,
+            }
+        ]
+
+        # Target only has "groupB" (no "groupA")
+        target_dict = _create_base_simulation_dict(entity_info_type="GeometryEntityInfo")
+        target_dict["private_attribute_asset_cache"]["project_entity_info"]["grouped_faces"] = [
+            [_create_surface_entity("wing", "target_wing_id")],
+        ]
+        target_dict["private_attribute_asset_cache"]["project_entity_info"][
+            "face_attribute_names"
+        ] = ["groupB"]
+        target_dict["private_attribute_asset_cache"]["project_entity_info"][
+            "face_group_tag"
+        ] = "groupB"
+
+        result_dict, errors, warnings = services.apply_simulation_setting_to_entity_info(
+            simulation_setting_dict=copy.deepcopy(source_dict),
+            entity_info_dict=copy.deepcopy(target_dict),
+        )
+
+        # Verify: face_group_tag should fall back to target's "groupB" since "groupA" doesn't exist
+        result_entity_info = result_dict["private_attribute_asset_cache"]["project_entity_info"]
+        assert result_entity_info["face_group_tag"] == "groupB"
+
+        # Verify: entity should still be matched using target's grouping
+        stored = result_dict["models"][0]["entities"]["stored_entities"]
+        assert len(stored) == 1
+        assert stored[0]["private_attribute_id"] == "target_wing_id"

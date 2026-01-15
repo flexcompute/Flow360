@@ -1276,9 +1276,9 @@ def _get_draft_entity_type_names() -> set:
     type_names = set()
 
     # Get draft_entities field type
-    draft_field = EntityInfoModel.model_fields[
+    draft_field = EntityInfoModel.model_fields[  # pylint:disable=unsubscriptable-object
         "draft_entities"
-    ]  # pylint:disable=unsubscriptable-object
+    ]
     draft_annotation = draft_field.annotation
     # Unwrap List[Annotated[Union[...], ...]] -> Union[...]
     inner_type = get_args(draft_annotation)[0]  # Get inner type from List
@@ -1373,7 +1373,7 @@ def _replace_entities_by_type_and_name(
     return template_dict, warnings
 
 
-def apply_simulation_setting_to_entity_info(
+def apply_simulation_setting_to_entity_info(  # pylint:disable=too-many-locals
     simulation_setting_dict: dict,
     entity_info_dict: dict,
 ):
@@ -1438,9 +1438,21 @@ def apply_simulation_setting_to_entity_info(
     # This ensures the registry is built with the correct grouping selection
     # Only copy grouping tags if target is also GeometryEntityInfo to avoid invalid keys
     if target_entity_info_data.get("type_name") == "GeometryEntityInfo":
-        for tag_key in ["face_group_tag", "body_group_tag", "edge_group_tag"]:
-            if tag_key in source_entity_info and source_entity_info[tag_key] is not None:
-                merged_entity_info[tag_key] = source_entity_info[tag_key]
+        # Map each tag to its corresponding attribute_names field
+        tag_to_attr_names = {
+            "face_group_tag": "face_attribute_names",
+            "body_group_tag": "body_attribute_names",
+            "edge_group_tag": "edge_attribute_names",
+        }
+        for tag_key, attr_names_key in tag_to_attr_names.items():
+            source_tag = source_entity_info.get(tag_key)
+            if source_tag is not None:
+                # Only use source's tag if it exists in target's attribute_names
+                # Otherwise keep target's tag to avoid empty registry
+                target_attr_names = target_entity_info_data.get(attr_names_key, [])
+                if source_tag in target_attr_names:
+                    merged_entity_info[tag_key] = source_tag
+                # else: keep target's original tag (already in merged_entity_info from deepcopy)
 
     # Step 4: Build registry from merged entity_info (with source's grouping tags)
     merged_entity_info_obj = parse_entity_info_model(merged_entity_info)
