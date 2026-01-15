@@ -67,11 +67,10 @@ class UserDefinedDynamic(Flow360BaseModel):
         "User defined dynamics", description="Name of the dynamics defined by the user."
     )
     input_vars: List[str] = pd.Field(
-        description="List of the inputs to define the user defined dynamics. For example :code:`CL`, :code:`CD`, "
+        description="List of the inputs to define the user defined dynamics. Inputs can be: :code:`CL`, :code:`CD`, "
         + ":code:`bet_NUM_torque`,  :code:`bet_NUM_thrust`, (NUM is the index of the BET disk starting from 0), "
         + ":code:`momentX`, :code:`momentY`, :code:`momentZ` (X/Y/Z moments with respect to "
         + ":py:attr:`~ReferenceGeometry.moment_center`), :code:`forceX`, :code:`forceY`, :code:`forceZ`. "
-        + "For a full list of supported variable, see :ref:`here <SupportedVariablesInUserExpression_>`."
     )
     constants: Optional[Dict[str, float]] = pd.Field(
         None, description="A list of constants that can be used in the expressions."
@@ -79,12 +78,12 @@ class UserDefinedDynamic(Flow360BaseModel):
     output_vars: Optional[Dict[str, StringExpression]] = pd.Field(
         None,
         description="Name of the output variables and the expression for the output variables using state "
-        + "variables. For example :code:`alphaAngle`, :code:`betaAngle`, :code:`bet_NUM_omega` (NUM is the index "
+        + "variables. Outputs can be: :code:`alphaAngle`, :code:`betaAngle`, :code:`bet_NUM_omega` (NUM is the index "
         + "of the BET disk starting from 0), :code:`theta`, :code:`omega` and  :code:`omegaDot` (rotation angle/"
-        + "velocity/acceleration in radians for sliding interfaces). For a full list of supported variable, see "
-        + ":ref:`here <SupportedVariablesInUserExpression_>`. Please exercise caution when choosing output "
-        + "variables, as any modifications to their values will be directly mirrored in the solver. Expressions "
-        + "follows similar guidelines as :ref:`Legacy Expressions<expressions_legacy_user_guide>`.",
+        + "velocity/acceleration in radians for sliding interfaces), :code:`actuatorDisk_<DISK_ENTITY_NAME>_thrustMultiplier` "
+        + "and :code:`actuatorDisk_<DISK_ENTITY_NAME>_torqueMultiplier` (where <DISK_ENTITY_NAME> is the name of the "
+        + "actuator disk entity). Please exercise caution when choosing output variables, as any modifications to their "
+        + "values will be directly mirrored in the solver."
     )
     state_vars_initial_value: List[StringExpression] = pd.Field(
         description="The initial value of state variables are specified here. The entries could be either values "
