@@ -777,7 +777,10 @@ def merge_geometry_entity_info(
     # 2. Compute intersection of attribute names from entity_info_components
     body_attr_sets = [set(ei.body_attribute_names) for ei in entity_info_components]
     face_attr_sets = [set(ei.face_attribute_names) for ei in entity_info_components]
-    edge_attr_sets = [set(ei.edge_attribute_names) for ei in entity_info_components]
+    # Ignore the Geometry resource created from surface mesh that does not have any edge group
+    edge_attr_sets = [
+        set(ei.edge_attribute_names) for ei in entity_info_components if ei.edge_attribute_names
+    ]
 
     body_attr_intersection = set.intersection(*body_attr_sets) if body_attr_sets else set()
     face_attr_intersection = set.intersection(*face_attr_sets) if face_attr_sets else set()
