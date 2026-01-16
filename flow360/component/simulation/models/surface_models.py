@@ -131,9 +131,17 @@ class TotalPressure(Flow360BaseModel):
     Example
     -------
 
-    >>> fl.TotalPressure(
-    ...     value = 1.04e6 * fl.u.Pa,
-    ... )
+    - Using a constant value:
+
+      >>> fl.TotalPressure(
+      ...     value = 1.04e6 * fl.u.Pa,
+      ... )
+
+    - Using an expression (nondimensionalized by operating condition pressure):
+
+      >>> fl.TotalPressure(
+      ...     value = "pow(1.0+0.2*pow(0.1*(1.0-y*y),2.0),1.4/0.4)",
+      ... )
 
     ====
     """
@@ -596,6 +604,17 @@ class Inflow(BoundaryBaseWithTurbulenceQuantities):
       ...         turbulent_kinetic_energy=2.312e-3 * fl.u.m **2 / fl.u.s**2,
       ...         specific_dissipation_rate= 1020 / fl.u.s,
       ...     )
+      ... )
+
+    - Define inflow boundary condition with expressions for spatially varying total temperature and total pressure:
+
+      >>> fl.Inflow(
+      ...     entities=[volumeMesh["fluid/inflow"]],
+      ...     total_temperature="1.0+0.2*pow(0.1*(1.0-y*y),2.0)",
+      ...     velocity_direction=(1.0, 0.0, 0.0),
+      ...     spec=fl.TotalPressure(
+      ...         value="pow(1.0+0.2*pow(0.1*(1.0-y*y),2.0),1.4/0.4)",
+      ...     ),
       ... )
 
     ====
