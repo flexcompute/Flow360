@@ -6,6 +6,7 @@ Caveats:
 """
 
 # pylint: disable=too-many-lines
+import re
 from typing import Annotated, List, Literal, Optional, Union, get_args
 
 import pydantic as pd
@@ -79,6 +80,58 @@ from flow360.component.simulation.validation.validation_utils import (
     validate_improper_surface_field_usage_for_imported_surface,
 )
 from flow360.component.types import Axis
+
+# Invalid characters for Linux filenames: / is path separator, \0 is null terminator
+_INVALID_FILENAME_CHARS_PATTERN = re.compile(r"[/\0]")
+
+
+def _validate_filename_string(value: str) -> str:
+    """
+    Validate that a string is a valid Linux filename.
+
+    Args:
+        value: The string to validate
+
+    Returns:
+        The validated string
+
+    Raises:
+        ValueError: If the string is not a valid filename
+
+    Notes:
+        - Disallows forward slash (/) - path separator
+        - Disallows null byte (\\0)
+        - Disallows empty strings
+        - Disallows reserved names (. and ..)
+    """
+    if not value:
+        raise ValueError("Filename cannot be empty")
+
+    # Check for reserved names
+    if value in (".", ".."):
+        raise ValueError(f"Filename cannot be '{value}' (reserved name)")
+
+    # Check for invalid characters
+    invalid_chars = _INVALID_FILENAME_CHARS_PATTERN.findall(value)
+    if invalid_chars:
+        # Show unique invalid characters found
+        unique_chars = sorted(set(invalid_chars))
+        char_display = ", ".join(repr(c) for c in unique_chars)
+        raise ValueError(
+            f"Filename contains invalid characters: {char_display}. "
+            f"Linux filenames cannot contain '/' or null bytes. "
+            f"Got: '{value}'"
+        )
+
+    return value
+
+
+# Type alias for a validated filename string
+FileNameString = Annotated[
+    str,
+    pd.AfterValidator(_validate_filename_string),
+]
+
 
 ForceOutputModelType = Annotated[
     Union[Wall, BETDisk, ActuatorDisk, PorousMedium],
@@ -708,7 +761,10 @@ class SurfaceIntegralOutput(_OutputBase):
     ====
     """
 
-    name: str = pd.Field("Surface integral output", description="Name of integral.")
+    name: FileNameString = pd.Field(
+        "Surface integral output",
+        description="Name of integral. Must be a valid Linux filename (no slashes or null bytes).",
+    )
     entities: EntityList[  # pylint: disable=duplicate-code
         Surface,
         MirroredSurface,
