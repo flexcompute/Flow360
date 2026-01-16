@@ -1164,6 +1164,39 @@ def test_output_units_dimensions():
         a.in_units(new_unit="ms")
 
 
+def test_dimensions_with_numpy_array_result():
+    """Test that expressions returning numpy arrays can have their dimensions queried.
+
+    This is a regression test for the case where math functions on solver variables
+    return plain numpy arrays instead of unyt arrays, which should be treated as
+    dimensionless.
+    """
+    # Test 1: Direct solver variable access returns unyt_quantity
+    expr1 = Expression(expression="solution.CfVec[0]")
+    dims1 = expr1.dimensions
+    assert dims1 == u.dimensionless.dimensions
+
+    # Test 2: Math function on solver variable returns numpy.ndarray
+    # This used to fail with AssertionError before the fix
+    expr2 = Expression(expression="math.exp(solution.CfVec[0])")
+    dims2 = expr2.dimensions
+    assert dims2 == u.dimensionless.dimensions
+
+    # Test 3: Setting output_units should work for both cases
+    expr1_copy = expr1.model_copy()
+    expr1_copy.output_units = "dimensionless"
+    assert expr1_copy.output_units == "dimensionless"
+
+    expr2_copy = expr2.model_copy()
+    expr2_copy.output_units = "dimensionless"
+    assert expr2_copy.output_units == "dimensionless"
+
+    # Test 4: Plain numbers should also work
+    expr3 = Expression(expression="42")
+    dims3 = expr3.dimensions
+    assert dims3 == u.dimensionless.dimensions
+
+
 def test_whitelisted_callables():
     def get_user_variable_names(module):
         return [attr for attr in dir(module) if isinstance(getattr(module, attr), SolverVariable)]

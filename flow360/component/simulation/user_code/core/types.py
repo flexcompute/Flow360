@@ -1126,15 +1126,17 @@ class Expression(Flow360BaseModel, Evaluable):
     def dimensions(self):
         """The physical dimensions of the expression."""
         value = self.evaluate(raise_on_non_evaluable=False, force_evaluate=True)
-        assert isinstance(
-            value, (unyt_array, unyt_quantity, list, Number)
-        ), "Non unyt array so no dimensions"
         if isinstance(value, (unyt_array, unyt_quantity)):
             return value.units.dimensions
         if isinstance(value, list):
             _check_list_items_are_same_dimensions(value)
             return value[0].units.dimensions
-        return u.Unit("dimensionless").dimensions
+        if isinstance(value, (Number, np.ndarray)):
+            # Plain numbers or numpy arrays without units are dimensionless
+            return u.Unit("dimensionless").dimensions
+        raise ValueError(
+            f"Cannot determine dimensions for expression with type {type(value).__name__}: {value}"
+        )
 
     @property
     def length(self):
