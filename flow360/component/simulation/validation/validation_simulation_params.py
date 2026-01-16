@@ -515,6 +515,7 @@ def _validate_boundary_completeness(  # pylint:disable=too-many-arguments
     snappy_multizone: bool,
     entity_transformation_detected: bool,
     has_missing_private_attributes: bool = False,
+    use_geometry_AI: bool = False,
 ) -> None:
     """Validate missing/unknown boundary references with error/warning policy."""
     missing_boundaries = asset_boundaries - used_boundaries - potential_zone_zone_interfaces
@@ -522,7 +523,7 @@ def _validate_boundary_completeness(  # pylint:disable=too-many-arguments
 
     if missing_boundaries and not snappy_multizone:
         missing_list = ", ".join(sorted(missing_boundaries))
-        if entity_transformation_detected or has_missing_private_attributes:
+        if entity_transformation_detected or has_missing_private_attributes or use_geometry_AI:
             message = (
                 f"The following boundaries do not have a boundary condition: {missing_list}. "
                 "If these boundaries are valid, please add them to a boundary condition model in the `models` section."
@@ -578,6 +579,7 @@ def _check_complete_boundary_condition_and_unknown_surface(
         snappy_multizone=snappy_multizone,
         entity_transformation_detected=param_info.entity_transformation_detected,
         has_missing_private_attributes=has_missing_private_attributes,
+        use_geometry_AI=param_info.use_geometry_AI,
     )
 
     return params

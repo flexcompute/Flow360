@@ -3188,3 +3188,94 @@ def test_domain_type_bbox_mismatch_downgraded_to_warning_when_transformed():
     assert any(
         "domain_type" in w.get("msg", "") or "symmetry plane" in w.get("msg", "") for w in warnings
     ), warnings
+
+
+def test_incomplete_BC_with_geometry_AI():
+    """Test that missing boundary conditions produce warnings (not errors) when using Geometry AI."""
+    # Construct a dummy asset cache with GAI enabled
+    wall = Surface(name="wall", private_attribute_is_interface=False, private_attribute_id="wall")
+    no_bc = Surface(
+        name="no_bc", private_attribute_is_interface=False, private_attribute_id="no_bc"
+    )
+
+    asset_cache = AssetCache(
+        project_length_unit="m",
+        project_entity_info=VolumeMeshEntityInfo(boundaries=[wall, no_bc]),
+        use_geometry_AI=True,  # Enable GAI
+    )
+
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-10,
+                    surface_max_edge_length=1e-10,
+                )
+            ),
+            models=[
+                Fluid(),
+                Wall(entities=[wall]),
+                # no_bc is intentionally missing
+            ],
+            private_attribute_asset_cache=asset_cache,
+        )
+
+    params, errors, warnings = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="VolumeMesh",
+        validation_level="All",
+    )
+
+    # Should not have errors, only warnings
+    assert errors is None or len(errors) == 0
+    assert len(warnings) > 0
+    assert any(
+        "no_bc" in w.get("msg", "") and "do not have a boundary condition" in w.get("msg", "")
+        for w in warnings
+    ), f"Expected warning about missing boundary condition for 'no_bc', got: {warnings}"
+
+
+def test_incomplete_BC_without_geometry_AI():
+    """Test that missing boundary conditions produce errors when NOT using Geometry AI."""
+    # Construct a dummy asset cache without GAI
+    wall = Surface(name="wall", private_attribute_is_interface=False, private_attribute_id="wall")
+    no_bc = Surface(
+        name="no_bc", private_attribute_is_interface=False, private_attribute_id="no_bc"
+    )
+
+    asset_cache = AssetCache(
+        project_length_unit="m",
+        project_entity_info=VolumeMeshEntityInfo(boundaries=[wall, no_bc]),
+        use_geometry_AI=False,  # Disable GAI
+    )
+
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-10,
+                    surface_max_edge_length=1e-10,
+                )
+            ),
+            models=[
+                Fluid(),
+                Wall(entities=[wall]),
+                # no_bc is intentionally missing
+            ],
+            private_attribute_asset_cache=asset_cache,
+        )
+
+    params, errors, warnings = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="VolumeMesh",
+        validation_level="All",
+    )
+
+    # Should have errors
+    assert len(errors) == 1
+    assert errors[0]["msg"] == (
+        "Value error, The following boundaries do not have a boundary condition: no_bc. "
+        "Please add them to a boundary condition model in the `models` section."
+    )

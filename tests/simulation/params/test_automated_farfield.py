@@ -357,7 +357,7 @@ def test_rotated_symmetric_existence():
 
             processed_params = set_up_params_for_uploading(geometry, 1 * u.m, params, True, True)
 
-        _, errors_1, _ = services.validate_model(
+        _, errors_1, warnings_1 = services.validate_model(
             params_as_dict=processed_params.model_dump(mode="json", exclude_none=True),
             validated_by=services.ValidationCalledBy.LOCAL,
             root_item_type="Geometry",
@@ -393,7 +393,7 @@ def test_rotated_symmetric_existence():
 
         processed_params = set_up_params_for_uploading(geometry, 1 * u.m, params, True, True)
 
-        _, errors_2, _ = services.validate_model(
+        _, errors_2, warnings_2 = services.validate_model(
             params_as_dict=processed_params.model_dump(mode="json", exclude_none=True),
             validated_by=services.ValidationCalledBy.LOCAL,
             root_item_type="Geometry",
@@ -433,20 +433,24 @@ def test_rotated_symmetric_existence():
             validation_level="All",
         )
 
-        return errors_1, errors_2, errors_3
+        return errors_1, errors_2, errors_3, warnings_1, warnings_2
 
-    errors_1, errors_2, errors_3 = _test_and_show_errors(geometry)
+    errors_1, errors_2, errors_3, warnings_1, warnings_2 = _test_and_show_errors(geometry)
 
-    assert len(errors_1) == 1
-    assert (
-        "The following boundaries do not have a boundary condition: symmetric."
-        in errors_1[0]["msg"]
+    # With GAI enabled, missing BCs produce warnings instead of errors
+    assert errors_1 is None or len(errors_1) == 0
+    assert len(warnings_1) >= 1
+    assert any(
+        "The following boundaries do not have a boundary condition: symmetric." in w.get("msg", "")
+        for w in warnings_1
     )
 
-    assert len(errors_2) == 1
-    assert (
+    assert errors_2 is None or len(errors_2) == 0
+    assert len(warnings_2) >= 1
+    assert any(
         "The following boundaries do not have a boundary condition: body00001_face00001."
-        in errors_2[0]["msg"]
+        in w.get("msg", "")
+        for w in warnings_2
     )
 
     assert len(errors_3) == 1
@@ -462,7 +466,7 @@ def test_rotated_symmetric_existence():
             angle_of_rotation=90 * u.deg,
         )
         draft.coordinate_systems.assign(entities=draft.body_groups[body_name], coordinate_system=cs)
-        errors_1, errors_2, errors_3 = _test_and_show_errors(geometry)
+        errors_1, errors_2, errors_3, warnings_1, warnings_2 = _test_and_show_errors(geometry)
 
     assert errors_1 is None
     assert errors_2 is None
@@ -474,7 +478,7 @@ def test_rotated_symmetric_existence():
             translation=[0, 0, 1e-9] * u.m,
         )
         draft.coordinate_systems.assign(entities=draft.body_groups[body_name], coordinate_system=cs)
-        errors_1, errors_2, errors_3 = _test_and_show_errors(geometry)
+        errors_1, errors_2, errors_3, warnings_1, warnings_2 = _test_and_show_errors(geometry)
 
     assert errors_1 is None
     assert errors_2 is None
@@ -486,7 +490,7 @@ def test_rotated_symmetric_existence():
             translation=[0, 0, 1e-9] * u.m,
         )
         draft.coordinate_systems.assign(entities=draft.body_groups[body_name], coordinate_system=cs)
-        errors_1, errors_2, errors_3 = _test_and_show_errors(geometry)
+        errors_1, errors_2, errors_3, warnings_1, warnings_2 = _test_and_show_errors(geometry)
 
     assert errors_1 is None
     assert errors_2 is None
@@ -498,7 +502,7 @@ def test_rotated_symmetric_existence():
             scale=(0.5, 0.5, 1e-9),
         )
         draft.coordinate_systems.assign(entities=draft.body_groups[body_name], coordinate_system=cs)
-        errors_1, errors_2, errors_3 = _test_and_show_errors(geometry)
+        errors_1, errors_2, errors_3, warnings_1, warnings_2 = _test_and_show_errors(geometry)
 
     assert errors_1 is None
     assert errors_2 is None
