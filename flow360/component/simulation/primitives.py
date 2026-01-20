@@ -1060,10 +1060,13 @@ class CustomVolume(_VolumeEntityBase):
     @contextual_model_validator(mode="after")
     def ensure_beta_mesher_and_user_defined_farfield(self, param_info: ParamsValidationInfo):
         """Check if the beta mesher is enabled and that the user is using user defined farfield."""
-        if param_info.is_beta_mesher and param_info.farfield_method == "user-defined":
+        if param_info.is_beta_mesher and param_info.farfield_method in (
+            "user-defined",
+            "wind-tunnel",
+        ):
             return self
         raise ValueError(
-            "CustomVolume is only supported when beta mesher and user defined farfield are enabled."
+            "CustomVolume is only supported when beta mesher and user defined or wind tunnel farfield are enabled."
         )
 
     def _apply_transformation(self, matrix: np.ndarray) -> "CustomVolume":
