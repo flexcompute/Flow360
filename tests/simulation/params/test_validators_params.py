@@ -43,7 +43,9 @@ from flow360.component.simulation.meshing_param.params import (
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     CustomZones,
+    FullyMovingFloor,
     UserDefinedFarfield,
+    WindTunnelFarfield,
 )
 from flow360.component.simulation.models.material import SolidMaterial, aluminum
 from flow360.component.simulation.models.solver_numerics import (
@@ -2116,7 +2118,74 @@ def test_beta_mesher_only_features(mock_validation_context):
     )
     assert errors is None
 
-    # Using CustomZones without UserDefinedFarfield
+    # Using CustomZones with all three farfield types
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    geometry_accuracy=1e-4,
+                    boundary_layer_first_layer_thickness=1e-4,
+                    planar_face_tolerance=1e-4,
+                ),
+                volume_zones=[
+                    CustomZones(
+                        name="custom_zones",
+                        entities=[
+                            CustomVolume(
+                                name="zone1",
+                                boundaries=[Surface(name="face1"), Surface(name="face2")],
+                            )
+                        ],
+                    ),
+                    WindTunnelFarfield(name="wind tunnel", floor_type=FullyMovingFloor()),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True, use_geometry_AI=True),
+        )
+    params, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="SurfaceMesh",
+        validation_level="VolumeMesh",
+    )
+    assert errors is None
+
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-4,
+                    planar_face_tolerance=1e-4,
+                ),
+                volume_zones=[
+                    CustomZones(
+                        name="custom_zones",
+                        entities=[
+                            CustomVolume(
+                                name="zone1",
+                                boundaries=[Surface(name="face1"), Surface(name="face2")],
+                            )
+                        ],
+                    ),
+                    WindTunnelFarfield(name="wind tunnel", floor_type=FullyMovingFloor()),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(
+                use_inhouse_mesher=True, use_geometry_AI=False
+            ),
+        )
+    params, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="SurfaceMesh",
+        validation_level="VolumeMesh",
+    )
+    assert len(errors) == 1
+    assert (
+        errors[0]["msg"]
+        == "Value error, WindTunnelFarfield is only supported when Geometry AI is enabled."
+    )
+
     with SI_unit_system:
         params = SimulationParams(
             meshing=MeshingParams(
@@ -2148,8 +2217,8 @@ def test_beta_mesher_only_features(mock_validation_context):
     assert len(errors) == 1
     assert (
         errors[0]["msg"]
-        == "Value error, CustomVolume is only supported when "
-        + "beta mesher and user defined farfield are enabled."
+        == "Value error, CustomVolume is supported only when the beta mesher is enabled "
+        + "and either a user-defined farfield or a wind tunnel farfield is enabled."
     )
 
     with SI_unit_system:
@@ -2183,8 +2252,8 @@ def test_beta_mesher_only_features(mock_validation_context):
     assert len(errors) == 1
     assert (
         errors[0]["msg"]
-        == "Value error, CustomVolume is only supported when "
-        + "beta mesher and user defined farfield are enabled."
+        == "Value error, CustomVolume is supported only when the beta mesher is enabled "
+        + "and either a user-defined farfield or a wind tunnel farfield is enabled."
     )
 
     # Unique volume zone names
