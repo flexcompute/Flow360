@@ -1020,23 +1020,28 @@ def test_porousJump_entities_is_interface(mock_validation_context):
 
 def test_porousJump_cross_custom_volume_interface(mock_validation_context):
     """Test that PorousJump allows non-interface surfaces when they belong to different CustomVolumes."""
-    # Create surfaces that are NOT interfaces
-    surface_cv1 = Surface(name="Surface-CV1", private_attribute_is_interface=False)
-    surface_cv2 = Surface(name="Surface-CV2", private_attribute_is_interface=False)
-    surface_cv1_another = Surface(name="Surface-CV1-Another", private_attribute_is_interface=False)
+    # Create surfaces that are NOT interfaces, with explicit IDs for tracking
+    surface_cv1 = Surface(
+        name="Surface-CV1", private_attribute_is_interface=False, private_attribute_id="cv1-surf-1"
+    )
+    surface_cv2 = Surface(
+        name="Surface-CV2", private_attribute_is_interface=False, private_attribute_id="cv2-surf-1"
+    )
+    surface_cv1_another = Surface(
+        name="Surface-CV1-Another",
+        private_attribute_is_interface=False,
+        private_attribute_id="cv1-surf-2",
+    )
 
     # Set up to_be_generated_custom_volumes with two CustomVolumes having different boundaries
     mock_validation_context.info.to_be_generated_custom_volumes = {
         "CustomVolume1": {
             "enforce_tetrahedra": False,
-            "boundary_surface_ids": {
-                surface_cv1.private_attribute_id,
-                surface_cv1_another.private_attribute_id,
-            },
+            "boundary_surface_ids": {"cv1-surf-1", "cv1-surf-2"},
         },
         "CustomVolume2": {
             "enforce_tetrahedra": False,
-            "boundary_surface_ids": {surface_cv2.private_attribute_id},
+            "boundary_surface_ids": {"cv2-surf-1"},
         },
     }
 
