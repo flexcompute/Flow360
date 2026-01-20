@@ -2184,7 +2184,7 @@ def test_beta_mesher_only_features(mock_validation_context):
     assert (
         errors[0]["msg"]
         == "Value error, CustomVolume is only supported when "
-        + "beta mesher and user defined farfield are enabled."
+        + "beta mesher and user defined or wind tunnel farfield are enabled."
     )
 
     # Unique volume zone names
