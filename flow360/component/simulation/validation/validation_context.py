@@ -388,6 +388,16 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         return False
 
     @classmethod
+    def _get_boundary_surface_ids(cls, entity) -> set:
+        """Extract boundary surface IDs from a CustomVolume entity."""
+        if entity.private_attribute_entity_type_name != "CustomVolume":
+            return set()
+        boundaries = getattr(entity, "boundaries", None)
+        if not boundaries:
+            return set()
+        return {surface.private_attribute_id for surface in boundaries.stored_entities}
+
+    @classmethod
     def _get_to_be_generated_custom_volumes(cls, param_as_dict: dict):
         volume_zones = get_value_with_path(
             param_as_dict,
@@ -403,19 +413,24 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         if not volume_zones:
             return {}
 
-        # Return a mapping: { custom_volume_name: enforce_tetrahedra_boolean }
+        # Return a mapping: { custom_volume_name: {enforce_tetrahedra, boundary_surface_ids} }
         custom_volume_info = {}
         for zone in volume_zones:
             if zone.get("type") != "CustomZones":
                 continue
-            element_type = zone.get("element_type")
-            enforce_tetrahedra = element_type == "tetrahedra"
+            enforce_tetrahedra = zone.get("element_type") == "tetrahedra"
+            stored_entities = zone.get("entities", {}).get("stored_entities", [])
 
-            entities_obj = zone.get("entities", {})
-            stored_entities = entities_obj.get("stored_entities", [])
             for entity in stored_entities:
-                if entity.private_attribute_entity_type_name in ("CustomVolume", "SeedpointVolume"):
-                    custom_volume_info[entity.name] = enforce_tetrahedra
+                if entity.private_attribute_entity_type_name not in (
+                    "CustomVolume",
+                    "SeedpointVolume",
+                ):
+                    continue
+                custom_volume_info[entity.name] = {
+                    "enforce_tetrahedra": enforce_tetrahedra,
+                    "boundary_surface_ids": cls._get_boundary_surface_ids(entity),
+                }
         return custom_volume_info
 
     def __init__(self, param_as_dict: dict, referenced_expressions: list):

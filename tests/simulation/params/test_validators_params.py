@@ -1018,6 +1018,48 @@ def test_porousJump_entities_is_interface(mock_validation_context):
     )
 
 
+def test_porousJump_cross_custom_volume_interface(mock_validation_context):
+    """Test that PorousJump allows non-interface surfaces when they belong to different CustomVolumes."""
+    # Create surfaces that are NOT interfaces
+    surface_cv1 = Surface(name="Surface-CV1", private_attribute_is_interface=False)
+    surface_cv2 = Surface(name="Surface-CV2", private_attribute_is_interface=False)
+    surface_cv1_another = Surface(name="Surface-CV1-Another", private_attribute_is_interface=False)
+
+    # Set up to_be_generated_custom_volumes with two CustomVolumes having different boundaries
+    mock_validation_context.info.to_be_generated_custom_volumes = {
+        "CustomVolume1": {
+            "enforce_tetrahedra": False,
+            "boundary_surface_ids": {
+                surface_cv1.private_attribute_id,
+                surface_cv1_another.private_attribute_id,
+            },
+        },
+        "CustomVolume2": {
+            "enforce_tetrahedra": False,
+            "boundary_surface_ids": {surface_cv2.private_attribute_id},
+        },
+    }
+
+    # Cross-CustomVolume case: surfaces from different CustomVolumes should pass (no error)
+    with mock_validation_context:
+        PorousJump(
+            entity_pairs=[(surface_cv1, surface_cv2)],
+            darcy_coefficient=1e6 / (u.m * u.m),
+            forchheimer_coefficient=1e3 / u.m,
+            thickness=0.01 * u.m,
+        )
+
+    # Same-CustomVolume case: surfaces from the same CustomVolume should still fail
+    error_message = "Boundary `Surface-CV1` is not an interface"
+    with mock_validation_context, pytest.raises(ValueError, match=re.escape(error_message)):
+        PorousJump(
+            entity_pairs=[(surface_cv1, surface_cv1_another)],
+            darcy_coefficient=1e6 / (u.m * u.m),
+            forchheimer_coefficient=1e3 / u.m,
+            thickness=0.01 * u.m,
+        )
+
+
 def test_duplicate_entities_in_models():
     entity_generic_volume = GenericVolume(name="Duplicate Volume")
     entity_surface = Surface(name="Duplicate Surface")
