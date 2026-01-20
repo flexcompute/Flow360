@@ -2170,7 +2170,9 @@ def test_beta_mesher_only_features(mock_validation_context):
                     WindTunnelFarfield(name="wind tunnel", floor_type=FullyMovingFloor()),
                 ],
             ),
-            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True, use_geometry_AI=False),
+            private_attribute_asset_cache=AssetCache(
+                use_inhouse_mesher=True, use_geometry_AI=False
+            ),
         )
     params, errors, _ = validate_model(
         params_as_dict=params.model_dump(mode="json"),
