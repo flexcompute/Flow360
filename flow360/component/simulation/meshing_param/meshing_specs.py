@@ -223,6 +223,15 @@ class MeshingDefaults(Flow360BaseModel):
             )
         return self
 
+    @pd.model_validator(mode="after")
+    def validate_flooding_cell_size_requires_remove_hidden_geometry(self):
+        """Ensure flooding_cell_size is only specified when remove_hidden_geometry is True."""
+        if self.flooding_cell_size is not None and not self.remove_hidden_geometry:
+            raise ValueError(
+                "'flooding_cell_size' can only be specified when 'remove_hidden_geometry' is True."
+            )
+        return self
+
 
 class VolumeMeshingDefaults(Flow360BaseModel):
     """
