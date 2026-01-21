@@ -166,13 +166,13 @@ class MeshingDefaults(Flow360BaseModel):
 
     remove_hidden_geometry: bool = pd.Field(
         False,
-        description="Flag to remove hidden geometry that is not visible from exterior.",
+        description="Flag to remove hidden geometry that is not visible to flow.",
     )
 
     flooding_cell_size: Optional[LengthType.Positive] = pd.Field(
         None,
         description="Minimum cell size used for flood-fill exterior classification. "
-        + "If not specified, the value is derived from geometry_accuracy.",
+        + "If not specified, the value is derived from geometry_accuracy and sealing_size.",
     )
 
     @contextual_field_validator("number_of_boundary_layers", mode="after")
