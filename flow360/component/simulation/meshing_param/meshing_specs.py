@@ -164,6 +164,17 @@ class MeshingDefaults(Flow360BaseModel):
         description="Flag to remove non-manifold and interior faces.",
     )
 
+    remove_hidden_geometry: bool = pd.Field(
+        False,
+        description="Flag to remove hidden geometry that is not visible from exterior.",
+    )
+
+    flooding_cell_size: Optional[LengthType.Positive] = pd.Field(
+        None,
+        description="Minimum cell size used for flood-fill exterior classification. "
+        + "If not specified, the value is derived from geometry_accuracy.",
+    )
+
     @contextual_field_validator("number_of_boundary_layers", mode="after")
     @classmethod
     def invalid_number_of_boundary_layers(cls, value, param_info: ParamsValidationInfo):
@@ -190,12 +201,24 @@ class MeshingDefaults(Flow360BaseModel):
         "preserve_thin_geometry",
         "sealing_size",
         "remove_non_manifold_faces",
+        "remove_hidden_geometry",
+        "flooding_cell_size",
         mode="after",
     )
     @classmethod
     def ensure_geometry_ai_features(cls, value, info, param_info: ParamsValidationInfo):
         """Validate that the feature is only used when Geometry AI is enabled."""
         return check_geometry_ai_features(cls, value, info, param_info)
+
+    @pd.model_validator(mode="after")
+    def validate_mutual_exclusion(self):
+        """Ensure remove_non_manifold_faces and remove_hidden_geometry are not both True."""
+        if self.remove_non_manifold_faces and self.remove_hidden_geometry:
+            raise ValueError(
+                "'remove_non_manifold_faces' and 'remove_hidden_geometry' cannot both be True. "
+                "Please enable only one of these options."
+            )
+        return self
 
 
 class VolumeMeshingDefaults(Flow360BaseModel):
