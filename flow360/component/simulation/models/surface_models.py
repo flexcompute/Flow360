@@ -832,17 +832,23 @@ class PorousJump(Flow360BaseModel):
             surface1_id = surface1.private_attribute_id
             surface2_id = surface2.private_attribute_id
 
-            cv1_name = None
-            cv2_name = None
+            cv_names_for_surface1 = set()
+            cv_names_for_surface2 = set()
 
             for cv_name, cv_info in param_info.to_be_generated_custom_volumes.items():
                 boundary_ids = cv_info.get("boundary_surface_ids", set())
                 if surface1_id in boundary_ids:
-                    cv1_name = cv_name
+                    cv_names_for_surface1.add(cv_name)
                 if surface2_id in boundary_ids:
-                    cv2_name = cv_name
+                    cv_names_for_surface2.add(cv_name)
 
-            return cv1_name is not None and cv2_name is not None and cv1_name != cv2_name
+            # Both surfaces must belong to at least one CustomVolume,
+            # and they must not share any common CustomVolume
+            return (
+                bool(cv_names_for_surface1)
+                and bool(cv_names_for_surface2)
+                and cv_names_for_surface1.isdisjoint(cv_names_for_surface2)
+            )
 
         for surface_pair in value.items:
             check_deleted_surface_pair(surface_pair, param_info)
