@@ -161,18 +161,21 @@ class MeshingDefaults(Flow360BaseModel):
 
     remove_non_manifold_faces: bool = pd.Field(
         False,
-        description="Flag to remove non-manifold and interior faces.",
+        description="Flag to remove non-manifold and interior faces. "
+        + "This option is only supported when using geometry AI.",
     )
 
     remove_hidden_geometry: bool = pd.Field(
         False,
-        description="Flag to remove hidden geometry that is not visible to flow.",
+        description="Flag to remove hidden geometry that is not visible to flow. "
+        + "This option is only supported when using geometry AI.",
     )
 
     flooding_cell_size: Optional[LengthType.Positive] = pd.Field(
         None,
         description="Minimum cell size used for flood-fill exterior classification. "
-        + "If not specified, the value is derived from geometry_accuracy and sealing_size.",
+        + "If not specified, the value is derived from geometry_accuracy and sealing_size. "
+        + "This option is only supported when using geometry AI.",
     )
 
     @contextual_field_validator("number_of_boundary_layers", mode="after")
