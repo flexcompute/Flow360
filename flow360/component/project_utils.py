@@ -593,6 +593,10 @@ def _set_up_default_geometry_accuracy(
         return params
     if not params.meshing.defaults.geometry_accuracy:
         params.meshing.defaults.geometry_accuracy = root_asset.default_settings["geometry_accuracy"]
+        log.info(
+            "Setting up default geometry accuracy for GAI as: %s",
+            str(params.meshing.defaults.geometry_accuracy),
+        )
     return params
 
 

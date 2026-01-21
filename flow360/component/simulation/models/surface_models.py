@@ -826,8 +826,39 @@ class PorousJump(Flow360BaseModel):
     @classmethod
     def ensure_surface_existence(cls, value, param_info: ParamsValidationInfo):
         """Ensure all boundaries will be present after mesher and all entities are surfaces"""
+
+        def _is_cross_custom_volume_interface(surface1, surface2) -> bool:
+            """Check if two surfaces belong to different CustomVolumes' boundaries."""
+            surface1_id = surface1.private_attribute_id
+            surface2_id = surface2.private_attribute_id
+
+            cv_names_for_surface1 = set()
+            cv_names_for_surface2 = set()
+
+            for cv_name, cv_info in param_info.to_be_generated_custom_volumes.items():
+                boundary_ids = cv_info.get("boundary_surface_ids", set())
+                if surface1_id in boundary_ids:
+                    cv_names_for_surface1.add(cv_name)
+                if surface2_id in boundary_ids:
+                    cv_names_for_surface2.add(cv_name)
+
+            # Both surfaces must belong to at least one CustomVolume,
+            # and they must not share any common CustomVolume
+            return (
+                bool(cv_names_for_surface1)
+                and bool(cv_names_for_surface2)
+                and cv_names_for_surface1.isdisjoint(cv_names_for_surface2)
+            )
+
         for surface_pair in value.items:
             check_deleted_surface_pair(surface_pair, param_info)
+
+            surface1, surface2 = surface_pair.pair
+
+            # Skip interface check for cross-CustomVolume boundaries (will become interface after meshing)
+            if _is_cross_custom_volume_interface(surface1, surface2):
+                continue
+
             for surface in surface_pair.pair:
                 if not surface.private_attribute_is_interface:
                     raise ValueError(f"Boundary `{surface.name}` is not an interface")

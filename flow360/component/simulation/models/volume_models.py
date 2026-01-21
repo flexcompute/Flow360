@@ -409,8 +409,8 @@ class Solid(PDEModelBase):
             if not isinstance(enforce_map, dict):
                 continue
 
-            enforce_tetra = enforce_map.get(entity.name)
-            if enforce_tetra is False:
+            cv_info = enforce_map.get(entity.name, {})
+            if cv_info.get("enforce_tetrahedra") is False:
                 raise ValueError(
                     "CustomVolume '"
                     + entity.name

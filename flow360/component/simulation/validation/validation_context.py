@@ -387,8 +387,18 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
 
         return False
 
-    @classmethod
-    def _get_to_be_generated_custom_volumes(cls, param_as_dict: dict):
+    def _get_boundary_surface_ids(self, entity) -> set:
+        """Extract boundary surface IDs from a CustomVolume entity, expanding selectors if needed."""
+        if entity.private_attribute_entity_type_name != "CustomVolume":
+            return set()
+        boundaries = getattr(entity, "boundaries", None)
+        if not boundaries:
+            return set()
+        # Expand selectors to get all boundary surfaces
+        expanded_boundaries = self.expand_entity_list(boundaries)
+        return {surface.private_attribute_id for surface in expanded_boundaries}
+
+    def _get_to_be_generated_custom_volumes(self, param_as_dict: dict):
         volume_zones = get_value_with_path(
             param_as_dict,
             ["meshing", "volume_zones"],
@@ -403,19 +413,24 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         if not volume_zones:
             return {}
 
-        # Return a mapping: { custom_volume_name: enforce_tetrahedra_boolean }
+        # Return a mapping: { custom_volume_name: {enforce_tetrahedra, boundary_surface_ids} }
         custom_volume_info = {}
         for zone in volume_zones:
             if zone.get("type") != "CustomZones":
                 continue
-            element_type = zone.get("element_type")
-            enforce_tetrahedra = element_type == "tetrahedra"
+            enforce_tetrahedra = zone.get("element_type") == "tetrahedra"
+            stored_entities = zone.get("entities", {}).get("stored_entities", [])
 
-            entities_obj = zone.get("entities", {})
-            stored_entities = entities_obj.get("stored_entities", [])
             for entity in stored_entities:
-                if entity.private_attribute_entity_type_name in ("CustomVolume", "SeedpointVolume"):
-                    custom_volume_info[entity.name] = enforce_tetrahedra
+                if entity.private_attribute_entity_type_name not in (
+                    "CustomVolume",
+                    "SeedpointVolume",
+                ):
+                    continue
+                custom_volume_info[entity.name] = {
+                    "enforce_tetrahedra": enforce_tetrahedra,
+                    "boundary_surface_ids": self._get_boundary_surface_ids(entity),
+                }
         return custom_volume_info
 
     def __init__(self, param_as_dict: dict, referenced_expressions: list):
@@ -450,9 +465,6 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         self.entity_transformation_detected = self._get_entity_transformation_detected(
             param_as_dict=param_as_dict
         )
-        self.to_be_generated_custom_volumes = self._get_to_be_generated_custom_volumes(
-            param_as_dict=param_as_dict
-        )
         self.root_asset_type = self._get_root_asset_type(param_as_dict=param_as_dict)
 
         # Entity expansion support
@@ -462,6 +474,11 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         )
         # Lazy initialization for selector-specific data
         self._selector_cache = None
+
+        # Must be after _entity_registry initialization (needs selector expansion)
+        self.to_be_generated_custom_volumes = self._get_to_be_generated_custom_volumes(
+            param_as_dict=param_as_dict
+        )
 
     def will_generate_forced_symmetry_plane(self) -> bool:
         """
