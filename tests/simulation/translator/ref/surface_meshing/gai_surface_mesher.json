@@ -23,6 +23,7 @@
                 "units": "1.0*m"
             },
             "remove_non_manifold_faces": false,
+            "remove_hidden_geometry": false,
             "planar_face_tolerance": 1e-06
         },
         "refinements": [
