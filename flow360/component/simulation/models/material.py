@@ -1,5 +1,6 @@
 """Material classes for the simulation framework."""
 
+import math
 from typing import List, Literal, Optional, Union
 
 import pydantic as pd
@@ -16,6 +17,93 @@ from flow360.component.simulation.unit_system import (
     VelocityType,
     ViscosityType,
 )
+
+# =============================================================================
+# NASA 9-Coefficient Polynomial Utility Functions
+# =============================================================================
+
+
+def compute_cp_over_r(coeffs, temperature):
+    """
+    Compute cp/R from NASA 9-coefficient polynomial.
+
+    cp/R = a0*T^-2 + a1*T^-1 + a2 + a3*T + a4*T^2 + a5*T^3 + a6*T^4
+
+    Parameters
+    ----------
+    coeffs : list
+        NASA 9 coefficients [a0, a1, a2, a3, a4, a5, a6, a7, a8]
+    temperature : float
+        Temperature in Kelvin
+
+    Returns
+    -------
+    float
+        Specific heat at constant pressure divided by gas constant (cp/R)
+    """
+    temp = temperature
+    return (
+        coeffs[0] * temp ** (-2)
+        + coeffs[1] * temp ** (-1)
+        + coeffs[2]
+        + coeffs[3] * temp
+        + coeffs[4] * temp**2
+        + coeffs[5] * temp**3
+        + coeffs[6] * temp**4
+    )
+
+
+def compute_gamma_from_coefficients(coeffs, temperature):
+    """
+    Compute specific heat ratio (gamma) from NASA 9-coefficient polynomial.
+
+    gamma = cp/cv = (cp/R) / (cp/R - 1)
+
+    Parameters
+    ----------
+    coeffs : list
+        NASA 9 coefficients [a0, a1, a2, a3, a4, a5, a6, a7, a8]
+    temperature : float
+        Temperature in Kelvin
+
+    Returns
+    -------
+    float
+        Specific heat ratio (gamma)
+    """
+    cp_r = compute_cp_over_r(coeffs, temperature)
+    cv_r = cp_r - 1  # cv/R = cp/R - 1 for ideal gas
+    return cp_r / cv_r
+
+
+def compute_enthalpy_no_a7(coeffs, temperature):
+    """
+    Compute h/R at given temperature without the a7 integration constant.
+
+    h/R = -a0/T + a1*ln(T) + a2*T + (a3/2)*T^2 + (a4/3)*T^3 + (a5/4)*T^4 + (a6/5)*T^5
+
+    Parameters
+    ----------
+    coeffs : list
+        NASA 9 coefficients [a0, a1, a2, a3, a4, a5, a6, a7, a8]
+    temperature : float
+        Temperature in Kelvin
+
+    Returns
+    -------
+    float
+        Enthalpy divided by gas constant (h/R) without a7 term
+    """
+    temp = temperature
+    return (
+        -coeffs[0] / temp
+        + coeffs[1] * math.log(temp)
+        + coeffs[2] * temp
+        + (coeffs[3] / 2) * temp**2
+        + (coeffs[4] / 3) * temp**3
+        + (coeffs[5] / 4) * temp**4
+        + (coeffs[6] / 5) * temp**5
+    )
 
 
 class MaterialBase(Flow360BaseModel):
@@ -126,7 +214,7 @@ class NASA9Coefficients(Flow360BaseModel):
         min_length=1,
         max_length=5,
         description="List of NASA 9-coefficient sets for different temperature ranges. "
-        "Must be ordered by increasing temperature and be continuous. Maximum 5 ranges supported."
+        "Must be ordered by increasing temperature and be continuous. Maximum 5 ranges supported.",
     )
 
     @pd.model_validator(mode="after")
@@ -213,14 +301,15 @@ class ThermallyPerfectGas(Flow360BaseModel):
     species: List[FrozenSpecies] = pd.Field(
         min_length=1,
         description="List of species with their NASA 9 coefficients and mass fractions. "
-        "Mass fractions must sum to 1.0."
+        "Mass fractions must sum to 1.0.",
     )
 
     @pd.model_validator(mode="after")
     def validate_mass_fractions_sum_to_one(self):
         """Validate that mass fractions sum to 1."""
         total = sum(s.mass_fraction for s in self.species)
-        if not (0.999 <= total <= 1.001):  # Allow small tolerance for floating point
+        tolerance = 1.0e-8
+        if abs(total - 1.0) > tolerance:
             raise ValueError(f"Mass fractions must sum to 1.0, got {total}")
         return self
 
@@ -239,8 +328,10 @@ class ThermallyPerfectGas(Flow360BaseModel):
                     "All species must have the same number of temperature ranges."
                 )
             for i, (r1, r2) in enumerate(zip(ref_ranges, ranges)):
-                if r1.temperature_range_min != r2.temperature_range_min or \
-                   r1.temperature_range_max != r2.temperature_range_max:
+                if (
+                    r1.temperature_range_min != r2.temperature_range_min
+                    or r1.temperature_range_max != r2.temperature_range_max
+                ):
                     raise ValueError(
                         f"Temperature range {i} boundaries mismatch between species "
                         f"'{self.species[0].name}' and '{species.name}'. "
@@ -451,53 +542,50 @@ class Air(MaterialBase):
         pd.PositiveFloat
             The specific heat ratio at the given temperature.
         """
-        T = temperature.to("K").v.item()
+        temp_k = temperature.to("K").v.item()
+        coeffs = self._get_coefficients_at_temperature(temp_k)
+        return compute_gamma_from_coefficients(coeffs, temp_k)
 
-        # Get coefficients from the appropriate source
+    def _get_coefficients_at_temperature(self, temp_k: float) -> list:
+        """
+        Get the NASA 9 coefficients at a given temperature.
+
+        For multi-species gas, coefficients are mass-fraction weighted.
+        For single-species, selects the appropriate temperature range.
+
+        Parameters
+        ----------
+        temp_k : float
+            Temperature in Kelvin
+
+        Returns
+        -------
+        list
+            NASA 9 coefficients [a0, a1, a2, a3, a4, a5, a6, a7, a8]
+        """
         if self.thermally_perfect_gas is not None:
             # For multi-species, combine coefficients by mass fraction
             coeffs = [0.0] * 9
             for species in self.thermally_perfect_gas.species:
-                # Find the temperature range that contains T
+                # Find the temperature range that contains temp_k
                 for coeff_set in species.nasa_9_coefficients.temperature_ranges:
                     t_min = coeff_set.temperature_range_min.to("K").v.item()
                     t_max = coeff_set.temperature_range_max.to("K").v.item()
-                    if t_min <= T <= t_max:
+                    if t_min <= temp_k <= t_max:
                         for i in range(9):
                             coeffs[i] += species.mass_fraction * coeff_set.coefficients[i]
                         break
-        else:
-            # Single-species: find the temperature range that contains T
-            coeffs = None
-            for coeff_set in self.nasa_9_coefficients.temperature_ranges:
-                t_min = coeff_set.temperature_range_min.to("K").v.item()
-                t_max = coeff_set.temperature_range_max.to("K").v.item()
-                if t_min <= T <= t_max:
-                    coeffs = list(coeff_set.coefficients)
-                    break
-            if coeffs is None:
-                # Fallback to first range if T is out of bounds
-                coeffs = list(self.nasa_9_coefficients.temperature_ranges[0].coefficients)
+            return coeffs
 
-        # Compute cp/R from the polynomial
-        # cp/R = a0*T^-2 + a1*T^-1 + a2 + a3*T + a4*T^2 + a5*T^3 + a6*T^4
-        cp_over_R = (
-            coeffs[0] * T ** (-2)
-            + coeffs[1] * T ** (-1)
-            + coeffs[2]
-            + coeffs[3] * T
-            + coeffs[4] * T**2
-            + coeffs[5] * T**3
-            + coeffs[6] * T**4
-        )
+        # Single-species: find the temperature range that contains temp_k
+        for coeff_set in self.nasa_9_coefficients.temperature_ranges:
+            t_min = coeff_set.temperature_range_min.to("K").v.item()
+            t_max = coeff_set.temperature_range_max.to("K").v.item()
+            if t_min <= temp_k <= t_max:
+                return list(coeff_set.coefficients)
 
-        # cv/R = cp/R - 1 (for ideal gas: cp - cv = R)
-        cv_over_R = cp_over_R - 1
-
-        # gamma = cp/cv
-        gamma = cp_over_R / cv_over_R
-
-        return gamma
+        # Fallback to first range if temp_k is out of bounds
+        return list(self.nasa_9_coefficients.temperature_ranges[0].coefficients)
 
     @property
     def specific_heat_ratio(self) -> pd.PositiveFloat:
