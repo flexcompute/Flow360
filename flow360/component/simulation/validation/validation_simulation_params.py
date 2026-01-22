@@ -873,6 +873,54 @@ def _is_constant_gamma_coefficients(coefficients):
     return True
 
 
+def _has_temperature_dependent_coefficients(temperature_ranges):
+    """Check if any temperature range has non-constant-gamma coefficients."""
+    for coeff_set in temperature_ranges:
+        if not _is_constant_gamma_coefficients(coeff_set.coefficients):
+            return True
+    return False
+
+
+def _uses_compressible_isentropic_solver(params):
+    """Check if CompressibleIsentropic solver is being used."""
+    if not params.models:
+        return False
+    for model in params.models:
+        if isinstance(model, Fluid):
+            if model.navier_stokes_solver.type_name == "CompressibleIsentropic":
+                return True
+    return False
+
+
+def _get_air_material(params):
+    """Get Air material from operating condition, or None if not applicable."""
+    if params.operating_condition is None:
+        return None
+    op = params.operating_condition
+    if not hasattr(op, "thermal_state") or op.thermal_state is None:
+        return None
+    material = op.thermal_state.material
+    if isinstance(material, Air):
+        return material
+    return None
+
+
+def _material_has_temperature_dependent_gas(material):
+    """Check if Air material uses temperature-dependent gas properties."""
+    if material.thermally_perfect_gas is not None:
+        # Multi-species: check each species
+        for species in material.thermally_perfect_gas.species:
+            if _has_temperature_dependent_coefficients(
+                species.nasa_9_coefficients.temperature_ranges
+            ):
+                return True
+    else:
+        # Single-species: check nasa_9_coefficients
+        if _has_temperature_dependent_coefficients(material.nasa_9_coefficients.temperature_ranges):
+            return True
+    return False
+
+
 def _check_tpg_not_with_isentropic_solver(params):
     """
     Validate that temperature-dependent ThermallyPerfectGas is not used with CompressibleIsentropic solver.
@@ -883,43 +931,14 @@ def _check_tpg_not_with_isentropic_solver(params):
 
     Users must use the full Compressible solver when using temperature-dependent gas properties.
     """
-    # Check if CompressibleIsentropic solver is being used
-    uses_isentropic = False
-    if params.models:
-        for model in params.models:
-            if isinstance(model, Fluid):
-                if model.navier_stokes_solver.type_name == "CompressibleIsentropic":
-                    uses_isentropic = True
-                    break
-
-    if not uses_isentropic:
+    if not _uses_compressible_isentropic_solver(params):
         return params
 
-    # Check if true TPG model (temperature-dependent) is being used
-    uses_temperature_dependent_gas = False
-    if params.operating_condition is not None:
-        op = params.operating_condition
-        if hasattr(op, "thermal_state") and op.thermal_state is not None:
-            material = op.thermal_state.material
-            if isinstance(material, Air):
-                # Check multi-species TPG
-                if material.thermally_perfect_gas is not None:
-                    # Multi-species: check each species
-                    for species in material.thermally_perfect_gas.species:
-                        for coeff_set in species.nasa_9_coefficients.temperature_ranges:
-                            if not _is_constant_gamma_coefficients(coeff_set.coefficients):
-                                uses_temperature_dependent_gas = True
-                                break
-                        if uses_temperature_dependent_gas:
-                            break
-                else:
-                    # Single-species: check nasa_9_coefficients
-                    for coeff_set in material.nasa_9_coefficients.temperature_ranges:
-                        if not _is_constant_gamma_coefficients(coeff_set.coefficients):
-                            uses_temperature_dependent_gas = True
-                            break
+    material = _get_air_material(params)
+    if material is None:
+        return params
 
-    if uses_temperature_dependent_gas:
+    if _material_has_temperature_dependent_gas(material):
         raise ValueError(
             "Temperature-dependent ThermallyPerfectGas model is not supported with the "
             "CompressibleIsentropic solver. The CompressibleIsentropic solver uses a 4x4 system "
