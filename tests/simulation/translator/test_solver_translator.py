@@ -1824,6 +1824,12 @@ def test_translate_thermally_perfect_gas_all_coefficients_weighted():
     # Compute expected combined coefficients (before non-dimensionalization)
     expected_combined = [y_a * coeffs_a[i] + y_b * coeffs_b[i] for i in range(9)]
 
+    # Import the a7 correction function used by the translator
+    from flow360.component.simulation.translator.solver_translator import _compute_a7_correction
+
+    # The a7 coefficient is replaced by a computed value for internal energy consistency
+    expected_combined[7] = _compute_a7_correction(expected_combined, T_ref)
+
     # Apply non-dimensionalization scaling factors
     t_scale = T_ref
     t_scale_inv = 1.0 / T_ref
@@ -1835,7 +1841,7 @@ def test_translate_thermally_perfect_gas_all_coefficients_weighted():
         expected_combined[4] * t_scale**2,  # a4 (T^2)
         expected_combined[5] * t_scale**3,  # a5 (T^3)
         expected_combined[6] * t_scale**4,  # a6 (T^4)
-        expected_combined[7] * t_scale_inv,  # a7 (enthalpy, 1/T)
+        expected_combined[7] * t_scale_inv,  # a7 (enthalpy, corrected and scaled)
         expected_combined[8],  # a8 (entropy, constant)
     ]
 

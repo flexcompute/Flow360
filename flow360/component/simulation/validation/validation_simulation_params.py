@@ -878,8 +878,8 @@ def _check_tpg_not_with_isentropic_solver(params):
         op = params.operating_condition
         if hasattr(op, "thermal_state") and op.thermal_state is not None:
             material = op.thermal_state.material
-            if isinstance(material, Air):
-                # Air material always uses TPG (via nasa_9_coefficients or thermally_perfect_gas)
+            if isinstance(material, Air) and material.uses_thermally_perfect_gas:
+                # Only consider TPG when explicitly enabled (customized nasa_9_coefficients or thermally_perfect_gas)
                 uses_tpg = True
 
     if uses_tpg:

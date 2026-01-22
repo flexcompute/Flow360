@@ -10,7 +10,7 @@
                 "name": "air",
                 "dynamic_viscosity": {
                     "reference_viscosity": {
-                        "value": 0.00001716,
+                        "value": 1.716e-05,
                         "units": "Pa*s"
                     },
                     "reference_temperature": {
@@ -21,7 +21,34 @@
                         "value": 110.4,
                         "units": "K"
                     }
-                }
+                },
+                "nasa_9_coefficients": {
+                    "temperature_ranges": [
+                        {
+                            "temperature_range_min": {
+                                "value": 200.0,
+                                "units": "K"
+                            },
+                            "temperature_range_max": {
+                                "value": 6000.0,
+                                "units": "K"
+                            },
+                            "coefficients": [
+                                0.0,
+                                0.0,
+                                3.5,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0
+                            ]
+                        }
+                    ]
+                },
+                "prandtl_number": 0.72,
+                "turbulent_prandtl_number": 0.9
             },
             "initial_condition": {
                 "type_name": "NavierStokesInitialCondition",
@@ -52,7 +79,7 @@
                 "max_force_jac_update_physical_steps": 0
             },
             "turbulence_model_solver": {
-                "absolute_tolerance": 1e-8,
+                "absolute_tolerance": 1e-08,
                 "relative_tolerance": 0.0,
                 "order_of_accuracy": 2,
                 "equation_evaluation_frequency": 4,
@@ -87,7 +114,7 @@
             "transition_model_solver": {
                 "type_name": "None"
             },
-	    "interface_interpolation_tolerance" : 0.2
+            "interface_interpolation_tolerance": 0.2
         }
     ],
     "time_stepping": {
