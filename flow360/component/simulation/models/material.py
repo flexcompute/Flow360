@@ -406,6 +406,33 @@ class Air(MaterialBase):
         description="Turbulent Prandtl number. Default is 0.9.",
     )
 
+    # Default CPG coefficients for comparison (constant gamma=1.4)
+    _CPG_COEFFICIENTS: list = [0.0, 0.0, 3.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+
+    @property
+    def uses_thermally_perfect_gas(self) -> bool:
+        """
+        Determine if thermally perfect gas model should be used.
+
+        Returns True if:
+        - thermally_perfect_gas is explicitly set (multi-species), OR
+        - nasa_9_coefficients has been customized (not the default CPG coefficients)
+
+        For backward compatibility, default Air material uses constant gamma (CPG).
+        """
+        # If multi-species TPG is explicitly set, use TPG
+        if self.thermally_perfect_gas is not None:
+            return True
+
+        # Check if nasa_9_coefficients has been customized
+        # Default is single range with CPG coefficients [0, 0, 3.5, 0, 0, 0, 0, 0, 0]
+        ranges = self.nasa_9_coefficients.temperature_ranges
+        if len(ranges) != 1:
+            return True  # Multiple ranges means customized
+
+        coeffs = list(ranges[0].coefficients)
+        return coeffs != self._CPG_COEFFICIENTS
+
     def get_specific_heat_ratio(self, temperature: AbsoluteTemperatureType) -> pd.PositiveFloat:
         """
         Computes the specific heat ratio (gamma) at a given temperature from NASA polynomial.
