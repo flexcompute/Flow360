@@ -852,13 +852,36 @@ def _check_coordinate_system_constraints(params, param_info: ParamsValidationInf
     return params
 
 
+def _is_constant_gamma_coefficients(coefficients):
+    """
+    Check if NASA 9-coefficient set represents constant gamma (calorically perfect gas).
+
+    For constant gamma with CompressibleIsentropic solver, only a2 (index 2) should be non-zero.
+    All other coefficients (a0, a1, a3-a6, a7, a8) must be zero.
+
+    cp/R = a0*T^-2 + a1*T^-1 + a2 + a3*T + a4*T^2 + a5*T^3 + a6*T^4
+
+    For constant cp compatible with the 4x4 isentropic solver, only a2 should be non-zero.
+    """
+    tolerance = 1e-10
+    # Check all coefficients except a2 (index 2) are zero
+    for i in range(9):
+        if i == 2:
+            continue  # Skip a2, which should be non-zero
+        if abs(coefficients[i]) > tolerance:
+            return False
+    return True
+
+
 def _check_tpg_not_with_isentropic_solver(params):
     """
-    Validate that ThermallyPerfectGas model is not used with CompressibleIsentropic solver.
+    Validate that temperature-dependent ThermallyPerfectGas is not used with CompressibleIsentropic solver.
 
-    The CompressibleIsentropic solver (4x4 system) does not support thermally perfect gas
-    models for performance reasons. Users must use the full Compressible solver when using
-    temperature-dependent gas properties.
+    The CompressibleIsentropic solver (4x4 system) does not support true thermally perfect gas
+    models where cp varies with temperature. However, it does support constant gamma (CPG)
+    coefficients where only the a2 term is non-zero.
+
+    Users must use the full Compressible solver when using temperature-dependent gas properties.
     """
     # Check if CompressibleIsentropic solver is being used
     uses_isentropic = False
@@ -872,21 +895,36 @@ def _check_tpg_not_with_isentropic_solver(params):
     if not uses_isentropic:
         return params
 
-    # Check if TPG model is being used (via operating condition)
-    uses_tpg = False
+    # Check if true TPG model (temperature-dependent) is being used
+    uses_temperature_dependent_gas = False
     if params.operating_condition is not None:
         op = params.operating_condition
         if hasattr(op, "thermal_state") and op.thermal_state is not None:
             material = op.thermal_state.material
-            if isinstance(material, Air) and material.uses_thermally_perfect_gas:
-                # Only consider TPG when explicitly enabled (customized nasa_9_coefficients or thermally_perfect_gas)
-                uses_tpg = True
+            if isinstance(material, Air):
+                # Check multi-species TPG
+                if material.thermally_perfect_gas is not None:
+                    # Multi-species: check each species
+                    for species in material.thermally_perfect_gas.species:
+                        for coeff_set in species.nasa_9_coefficients.temperature_ranges:
+                            if not _is_constant_gamma_coefficients(coeff_set.coefficients):
+                                uses_temperature_dependent_gas = True
+                                break
+                        if uses_temperature_dependent_gas:
+                            break
+                else:
+                    # Single-species: check nasa_9_coefficients
+                    for coeff_set in material.nasa_9_coefficients.temperature_ranges:
+                        if not _is_constant_gamma_coefficients(coeff_set.coefficients):
+                            uses_temperature_dependent_gas = True
+                            break
 
-    if uses_tpg:
+    if uses_temperature_dependent_gas:
         raise ValueError(
-            "ThermallyPerfectGas model is not supported with the CompressibleIsentropic solver. "
-            "The CompressibleIsentropic solver uses a 4x4 system that decouples the energy equation "
-            "and does not support temperature-dependent gas properties. "
+            "Temperature-dependent ThermallyPerfectGas model is not supported with the "
+            "CompressibleIsentropic solver. The CompressibleIsentropic solver uses a 4x4 system "
+            "that decouples the energy equation and requires constant gamma. "
+            "Only constant-gamma coefficients (where only a2 is non-zero) are allowed. "
             "Please use type_name='Compressible' in NavierStokesSolver for thermally perfect gas simulations."
         )
 
