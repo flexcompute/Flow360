@@ -2231,6 +2231,19 @@ def get_solver_json(
                 op.thermal_state.material.nasa_9_coefficients,
                 reference_temperature,
             )
+
+    # Export Prandtl numbers from material
+    if isinstance(op, LiquidOperatingCondition):
+        translated["fluidProperties"] = {
+            "prandtlNumber": op.material.prandtl_number,
+            "turbulentPrandtlNumber": op.material.turbulent_prandtl_number,
+        }
+    elif isinstance(op.thermal_state.material, Air):
+        translated["fluidProperties"] = {
+            "prandtlNumber": op.thermal_state.material.prandtl_number,
+            "turbulentPrandtlNumber": op.thermal_state.material.turbulent_prandtl_number,
+        }
+
     if (
         "reference_velocity_magnitude" in op.__class__.model_fields.keys()
         and op.reference_velocity_magnitude

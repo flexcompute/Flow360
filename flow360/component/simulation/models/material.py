@@ -397,6 +397,14 @@ class Air(MaterialBase):
             "The mixture properties are computed as mass-fraction-weighted averages."
         ),
     )
+    prandtl_number: pd.PositiveFloat = pd.Field(
+        0.72,
+        description="Laminar Prandtl number. Default is 0.72 for air.",
+    )
+    turbulent_prandtl_number: pd.PositiveFloat = pd.Field(
+        0.9,
+        description="Turbulent Prandtl number. Default is 0.9.",
+    )
 
     def get_specific_heat_ratio(self, temperature: AbsoluteTemperatureType) -> pd.PositiveFloat:
         """
@@ -491,19 +499,6 @@ class Air(MaterialBase):
         """
 
         return 287.0529 * u.m**2 / u.s**2 / u.K
-
-    @property
-    def prandtl_number(self) -> pd.PositiveFloat:
-        """
-        Returns the Prandtl number for air.
-
-        Returns
-        -------
-        pd.PositiveFloat
-            The Prandtl number, typically around 0.72 for air.
-        """
-
-        return 0.72
 
     @pd.validate_call
     def get_pressure(
@@ -633,6 +628,14 @@ class Water(MaterialBase):
     )
     dynamic_viscosity: ViscosityType.NonNegative = pd.Field(
         0.001002 * u.kg / u.m / u.s, frozen=True, description="Dynamic viscosity of the water."
+    )
+    prandtl_number: pd.PositiveFloat = pd.Field(
+        7.0,
+        description="Laminar Prandtl number. Default is 7.0 for water at ~20°C.",
+    )
+    turbulent_prandtl_number: pd.PositiveFloat = pd.Field(
+        0.9,
+        description="Turbulent Prandtl number. Default is 0.9.",
     )
 
 
