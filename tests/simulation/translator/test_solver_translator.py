@@ -1602,8 +1602,8 @@ def test_om6wing_render_output(get_om6Wing_tutorial_param):
 def test_translate_nasa9_coefficients_single_range():
     """Test translation of NASA9 coefficients with a single temperature range."""
     from flow360.component.simulation.models.material import (
-        NASA9CoefficientSet,
         NASA9Coefficients,
+        NASA9CoefficientSet,
     )
     from flow360.component.simulation.translator.solver_translator import (
         translate_nasa9_coefficients,
@@ -1639,8 +1639,8 @@ def test_translate_nasa9_coefficients_single_range():
 def test_translate_nasa9_coefficients_temperature_scaling():
     """Test that temperature-dependent coefficients are scaled correctly."""
     from flow360.component.simulation.models.material import (
-        NASA9CoefficientSet,
         NASA9Coefficients,
+        NASA9CoefficientSet,
     )
     from flow360.component.simulation.translator.solver_translator import (
         translate_nasa9_coefficients,
@@ -1674,8 +1674,8 @@ def test_translate_thermally_perfect_gas_single_species():
     """Test translation of TPG with a single species (should match direct NASA9 translation)."""
     from flow360.component.simulation.models.material import (
         FrozenSpecies,
-        NASA9CoefficientSet,
         NASA9Coefficients,
+        NASA9CoefficientSet,
         ThermallyPerfectGas,
     )
     from flow360.component.simulation.translator.solver_translator import (
@@ -1722,8 +1722,8 @@ def test_translate_thermally_perfect_gas_mass_fraction_weighting():
     """Test that multi-species coefficients are correctly mass-fraction weighted."""
     from flow360.component.simulation.models.material import (
         FrozenSpecies,
-        NASA9CoefficientSet,
         NASA9Coefficients,
+        NASA9CoefficientSet,
         ThermallyPerfectGas,
     )
     from flow360.component.simulation.translator.solver_translator import (
@@ -1775,8 +1775,8 @@ def test_translate_thermally_perfect_gas_all_coefficients_weighted():
     """Test that all 9 coefficients are correctly mass-fraction weighted."""
     from flow360.component.simulation.models.material import (
         FrozenSpecies,
-        NASA9CoefficientSet,
         NASA9Coefficients,
+        NASA9CoefficientSet,
         ThermallyPerfectGas,
     )
     from flow360.component.simulation.translator.solver_translator import (
@@ -1825,7 +1825,9 @@ def test_translate_thermally_perfect_gas_all_coefficients_weighted():
     expected_combined = [y_a * coeffs_a[i] + y_b * coeffs_b[i] for i in range(9)]
 
     # Import the a7 correction function used by the translator
-    from flow360.component.simulation.translator.solver_translator import _compute_a7_correction
+    from flow360.component.simulation.translator.solver_translator import (
+        _compute_a7_correction,
+    )
 
     # The a7 coefficient is replaced by a computed value for internal energy consistency
     expected_combined[7] = _compute_a7_correction(expected_combined, T_ref)
@@ -1853,8 +1855,8 @@ def test_translate_thermally_perfect_gas_multiple_temperature_ranges():
     """Test translation with multiple temperature ranges."""
     from flow360.component.simulation.models.material import (
         FrozenSpecies,
-        NASA9CoefficientSet,
         NASA9Coefficients,
+        NASA9CoefficientSet,
         ThermallyPerfectGas,
     )
     from flow360.component.simulation.translator.solver_translator import (
@@ -1925,8 +1927,8 @@ def test_nasa9_a7_correction_ensures_correct_internal_energy():
     import math
 
     from flow360.component.simulation.models.material import (
-        NASA9CoefficientSet,
         NASA9Coefficients,
+        NASA9CoefficientSet,
     )
     from flow360.component.simulation.translator.solver_translator import (
         translate_nasa9_coefficients,
@@ -2014,8 +2016,8 @@ def test_nasa9_a7_correction_with_thermally_perfect_gas():
 
     from flow360.component.simulation.models.material import (
         FrozenSpecies,
-        NASA9CoefficientSet,
         NASA9Coefficients,
+        NASA9CoefficientSet,
         ThermallyPerfectGas,
     )
     from flow360.component.simulation.translator.solver_translator import (

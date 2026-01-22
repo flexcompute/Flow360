@@ -4,13 +4,12 @@ import pytest
 
 import flow360 as fl
 from flow360.component.simulation.models.material import (
-    NASA9CoefficientSet,
-    NASA9Coefficients,
     FrozenSpecies,
+    NASA9Coefficients,
+    NASA9CoefficientSet,
     ThermallyPerfectGas,
 )
 from flow360.component.simulation.unit_system import SI_unit_system
-
 
 # =============================================================================
 # NASA9CoefficientSet Tests

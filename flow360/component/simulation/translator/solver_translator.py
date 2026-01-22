@@ -3,6 +3,7 @@
 # pylint: disable=too-many-lines
 import hashlib
 import json
+import math as stdlib_math
 from typing import Type, Union, get_args
 
 import numpy as np
@@ -19,6 +20,8 @@ from flow360.component.simulation.models.material import (
     NASA9Coefficients,
     Sutherland,
     ThermallyPerfectGas,
+    compute_enthalpy_no_a7,
+    compute_gamma_from_coefficients,
 )
 from flow360.component.simulation.models.solver_numerics import NoneSolver
 from flow360.component.simulation.models.surface_models import (
@@ -1912,43 +1915,17 @@ def _compute_a7_correction(coeffs: list, reference_temperature: float) -> float:
     float
         Corrected dimensional a7 coefficient (with ln(T_ref) term absorbed)
     """
-    import math
+    temp = reference_temperature
 
-    T = reference_temperature
+    # Compute gamma at T_ref using shared utility function
+    gamma = compute_gamma_from_coefficients(coeffs, temp)
 
-    # Compute cp/R at T_ref from the polynomial
-    # cp/R = a0*T^-2 + a1*T^-1 + a2 + a3*T + a4*T^2 + a5*T^3 + a6*T^4
-    cp_over_R = (
-        coeffs[0] * T ** (-2)
-        + coeffs[1] * T ** (-1)
-        + coeffs[2]
-        + coeffs[3] * T
-        + coeffs[4] * T**2
-        + coeffs[5] * T**3
-        + coeffs[6] * T**4
-    )
-
-    # cv/R = cp/R - 1 (for ideal gas: cp - cv = R)
-    cv_over_R = cp_over_R - 1
-
-    # gamma = cp/cv at T_ref
-    gamma = cp_over_R / cv_over_R
-
-    # Compute h/R at T_ref without the a7 term (dimensional)
-    # h/R = -a0/T + a1*ln(T) + a2*T + (a3/2)*T^2 + (a4/3)*T^3 + (a5/4)*T^4 + (a6/5)*T^5
-    h_no_a7 = (
-        -coeffs[0] / T
-        + coeffs[1] * math.log(T)
-        + coeffs[2] * T
-        + (coeffs[3] / 2) * T**2
-        + (coeffs[4] / 3) * T**3
-        + (coeffs[5] / 4) * T**4
-        + (coeffs[6] / 5) * T**5
-    )
+    # Compute h/R at T_ref without the a7 term using shared utility function
+    h_no_a7 = compute_enthalpy_no_a7(coeffs, temp)
 
     # Target h/R at T_ref for ideal gas with computed gamma
     # h/R = cp/R * T = (gamma/(gamma-1)) * T
-    h_target = (gamma / (gamma - 1)) * T
+    h_target = (gamma / (gamma - 1)) * temp
 
     # Base a7 correction ensures h_polynomial = h_target at T_ref (dimensional)
     a7_base = h_target - h_no_a7
@@ -1956,9 +1933,43 @@ def _compute_a7_correction(coeffs: list, reference_temperature: float) -> float:
     # Absorb the a1*ln(T_ref) term into a7
     # Under non-dimensionalization, ln(T) = ln(T_nd * T_ref) = ln(T_nd) + ln(T_ref)
     # At T_nd = 1, ln(T_nd) = 0, so the a1*ln(T_ref) constant must be in a7
-    a7_corrected = a7_base + coeffs[1] * math.log(T)
+    a7_corrected = a7_base + coeffs[1] * stdlib_math.log(temp)
 
     return a7_corrected
+
+
+def _nondimensionalize_coefficients(coeffs: list, reference_temperature: float) -> list:
+    """
+    Non-dimensionalize NASA 9 coefficients for Flow360.
+
+    Transforms coefficients for T_internal = T_dim / T_ref.
+
+    Parameters
+    ----------
+    coeffs : list
+        Dimensional NASA 9 coefficients [a0, a1, a2, a3, a4, a5, a6, a7, a8]
+        Note: a7 should already be corrected via _compute_a7_correction
+    reference_temperature : float
+        Reference temperature for non-dimensionalization (in K)
+
+    Returns
+    -------
+    list
+        Non-dimensionalized coefficients
+    """
+    t_ref = reference_temperature
+    t_ref_inv = 1.0 / reference_temperature
+    return [
+        coeffs[0] * t_ref_inv**2,  # a0 (T^-2): scale by (1/T_ref)^2
+        coeffs[1] * t_ref_inv,  # a1 (T^-1): scale by (1/T_ref)
+        coeffs[2],  # a2 (constant): no scaling
+        coeffs[3] * t_ref,  # a3 (T^1): scale by T_ref
+        coeffs[4] * t_ref**2,  # a4 (T^2): scale by T_ref^2
+        coeffs[5] * t_ref**3,  # a5 (T^3): scale by T_ref^3
+        coeffs[6] * t_ref**4,  # a6 (T^4): scale by T_ref^4
+        coeffs[7] * t_ref_inv,  # a7 (enthalpy const): scale by (1/T_ref)
+        coeffs[8],  # a8 (entropy, constant): no scaling
+    ]
 
 
 def translate_nasa9_coefficients(
@@ -2010,12 +2021,6 @@ def translate_nasa9_coefficients(
     dict
         Non-dimensionalized NASA 9-coefficient data for Flow360.json
     """
-
-    # Scaling factors for non-dimensionalization
-    # T_internal = T_dim / T_ref, so t_scale = T_ref
-    t_scale = reference_temperature  # For positive powers of T
-    t_scale_inv = 1.0 / reference_temperature  # For negative powers of T
-
     temperature_ranges = []
     for coeff_set in nasa_coeffs.temperature_ranges:
         # Temperature ranges: T_internal = T_dim / T_ref
@@ -2025,21 +2030,10 @@ def translate_nasa9_coefficients(
         coeffs = list(coeff_set.coefficients)
 
         # Correct a7 for Flow360 non-dimensionalization
-        # This ensures internal energy consistency with e = cv*T at T_ref
         coeffs[7] = _compute_a7_correction(coeffs, reference_temperature)
 
-        # Transform coefficients for T_internal = T_dim / T_ref
-        coeffs_nd = [
-            coeffs[0] * t_scale_inv**2,  # a0 (T^-2): scale by (1/T_ref)^2
-            coeffs[1] * t_scale_inv,  # a1 (T^-1): scale by (1/T_ref)
-            coeffs[2],  # a2 (constant): no scaling
-            coeffs[3] * t_scale,  # a3 (T^1): scale by T_ref
-            coeffs[4] * t_scale**2,  # a4 (T^2): scale by T_ref^2
-            coeffs[5] * t_scale**3,  # a5 (T^3): scale by T_ref^3
-            coeffs[6] * t_scale**4,  # a6 (T^4): scale by T_ref^4
-            coeffs[7] * t_scale_inv,  # a7 (enthalpy const): scale by (1/T_ref)
-            coeffs[8],  # a8 (entropy, constant): no scaling
-        ]
+        # Non-dimensionalize coefficients
+        coeffs_nd = _nondimensionalize_coefficients(coeffs, reference_temperature)
 
         temperature_ranges.append(
             {
@@ -2052,18 +2046,8 @@ def translate_nasa9_coefficients(
     # Compute gasConstant = 1/gamma at T_nd=1 from the first temperature range
     # This ensures correct non-dimensionalization for temperature output
     first_coeffs = temperature_ranges[0]["coefficients"]
-    T_nd = 1.0
-    cp_over_R = (
-        first_coeffs[0] * T_nd ** (-2)
-        + first_coeffs[1] * T_nd ** (-1)
-        + first_coeffs[2]
-        + first_coeffs[3] * T_nd
-        + first_coeffs[4] * T_nd**2
-        + first_coeffs[5] * T_nd**3
-        + first_coeffs[6] * T_nd**4
-    )
-    gamma_at_Tref = cp_over_R / (cp_over_R - 1.0)
-    gas_constant = 1.0 / gamma_at_Tref
+    gamma_at_tref = compute_gamma_from_coefficients(first_coeffs, 1.0)
+    gas_constant = 1.0 / gamma_at_tref
 
     return {"temperatureRanges": temperature_ranges, "gasConstant": gas_constant}
 
@@ -2102,65 +2086,35 @@ def translate_thermally_perfect_gas(
     # Use first species as template for temperature ranges (all validated to match)
     ref_ranges = tpg.species[0].nasa_9_coefficients.temperature_ranges
 
-    # Scaling factors for non-dimensionalization
-    t_scale = reference_temperature
-    t_scale_inv = 1.0 / reference_temperature
-
     temperature_ranges = []
     for range_idx, ref_range in enumerate(ref_ranges):
         # Combine coefficients weighted by mass fraction
         combined_coeffs = [0.0] * 9
         for species in tpg.species:
-            coeffs = species.nasa_9_coefficients.temperature_ranges[range_idx].coefficients
+            species_coeffs = species.nasa_9_coefficients.temperature_ranges[range_idx].coefficients
             for i in range(9):
-                combined_coeffs[i] += species.mass_fraction * coeffs[i]
+                combined_coeffs[i] += species.mass_fraction * species_coeffs[i]
 
         # Correct a7 for Flow360 non-dimensionalization
-        # This ensures internal energy consistency with e = cv*T at T_ref
         combined_coeffs[7] = _compute_a7_correction(combined_coeffs, reference_temperature)
 
-        # Non-dimensionalize (same as translate_nasa9_coefficients)
-        coeffs_nd = [
-            combined_coeffs[0] * t_scale_inv**2,  # a0 (T^-2): scale by (1/T_ref)^2
-            combined_coeffs[1] * t_scale_inv,  # a1 (T^-1): scale by (1/T_ref)
-            combined_coeffs[2],  # a2 (constant): no scaling
-            combined_coeffs[3] * t_scale,  # a3 (T^1): scale by T_ref
-            combined_coeffs[4] * t_scale**2,  # a4 (T^2): scale by T_ref^2
-            combined_coeffs[5] * t_scale**3,  # a5 (T^3): scale by T_ref^3
-            combined_coeffs[6] * t_scale**4,  # a6 (T^4): scale by T_ref^4
-            combined_coeffs[7] * t_scale_inv,  # a7 (enthalpy const): scale by (1/T_ref)
-            combined_coeffs[8],  # a8 (entropy, constant): no scaling
-        ]
-
-        # Temperature ranges: T_internal = T_dim / T_ref
-        t_min_nd = ref_range.temperature_range_min.to("K").v.item() / reference_temperature
-        t_max_nd = ref_range.temperature_range_max.to("K").v.item() / reference_temperature
-
+        # Non-dimensionalize coefficients and append to ranges
         temperature_ranges.append(
             {
-                "temperatureRangeMin": t_min_nd,
-                "temperatureRangeMax": t_max_nd,
-                "coefficients": coeffs_nd,
+                "temperatureRangeMin": ref_range.temperature_range_min.to("K").v.item()
+                / reference_temperature,
+                "temperatureRangeMax": ref_range.temperature_range_max.to("K").v.item()
+                / reference_temperature,
+                "coefficients": _nondimensionalize_coefficients(
+                    combined_coeffs, reference_temperature
+                ),
             }
         )
 
     # Compute gasConstant = 1/gamma at T_nd=1 from the first temperature range
-    # This ensures correct non-dimensionalization for temperature output
-    first_coeffs = temperature_ranges[0]["coefficients"]
-    T_nd = 1.0
-    cp_over_R = (
-        first_coeffs[0] * T_nd ** (-2)
-        + first_coeffs[1] * T_nd ** (-1)
-        + first_coeffs[2]
-        + first_coeffs[3] * T_nd
-        + first_coeffs[4] * T_nd**2
-        + first_coeffs[5] * T_nd**3
-        + first_coeffs[6] * T_nd**4
-    )
-    gamma_at_Tref = cp_over_R / (cp_over_R - 1.0)
-    gas_constant = 1.0 / gamma_at_Tref
+    gamma_at_tref = compute_gamma_from_coefficients(temperature_ranges[0]["coefficients"], 1.0)
 
-    return {"temperatureRanges": temperature_ranges, "gasConstant": gas_constant}
+    return {"temperatureRanges": temperature_ranges, "gasConstant": 1.0 / gamma_at_tref}
 
 
 # pylint: disable=too-many-statements
@@ -2214,7 +2168,7 @@ def get_solver_json(
             else op.material.dynamic_viscosity.in_base(input_params.flow360_unit_system).v.item()
         ),
     }
-    
+
     ##:: Step 2.5: Get NASA 9-coefficient polynomial for gas model (if Air material with TPG enabled)
     if not isinstance(op, LiquidOperatingCondition) and isinstance(op.thermal_state.material, Air):
         # Only output thermallyPerfectGasModel when explicitly requested
