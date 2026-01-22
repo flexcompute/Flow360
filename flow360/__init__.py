@@ -16,7 +16,6 @@ from flow360.component.simulation.folder import Folder
 from flow360.component.simulation.framework.entity_selector import (
     BodyGroupSelector,
     EdgeSelector,
-    SurfaceSelector,
     VolumeSelector,
 )
 from flow360.component.simulation.meshing_param import snappy
@@ -213,7 +212,6 @@ __all__ = [
     "create_draft",
     "CoordinateSystem",
     "MirrorPlane",
-    "SurfaceSelector",
     "EdgeSelector",
     "VolumeSelector",
     "BodyGroupSelector",

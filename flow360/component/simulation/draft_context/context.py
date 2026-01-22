@@ -315,7 +315,9 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
         ...     print(matched)  # ['wing_upper', 'wing_lower', ...]
         """
         # pylint: disable=import-outside-toplevel
-
+        log.warning(
+            "!!! This is a beta feature and may be removed or changed in future releases. !!!"
+        )
         from flow360.component.simulation.framework.entity_selector import (
             expand_entity_list_selectors,
         )
