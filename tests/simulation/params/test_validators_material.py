@@ -336,3 +336,65 @@ def test_air_with_nasa9_coefficients_valid():
         )
     assert air.nasa_9_coefficients is not None
     assert len(air.nasa_9_coefficients.temperature_ranges) == 1
+
+
+# =============================================================================
+# CompressibleIsentropic Solver with CPG Validation Tests
+# =============================================================================
+
+
+def _is_constant_gamma_coefficients(coefficients):
+    """Helper to check if coefficients represent constant gamma (only a2 non-zero)."""
+    tolerance = 1e-10
+    for i in range(9):
+        if i == 2:
+            continue  # Skip a2
+        if abs(coefficients[i]) > tolerance:
+            return False
+    return True
+
+
+def test_is_constant_gamma_coefficients_cpg():
+    """Test that CPG coefficients (only a2 non-zero) are identified as constant gamma."""
+    # Default CPG: gamma=1.4, a2=3.5
+    cpg_coeffs = [0.0, 0.0, 3.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    assert _is_constant_gamma_coefficients(cpg_coeffs) is True
+
+    # Different constant gamma (e.g., gamma=1.3)
+    cpg_coeffs_different = [0.0, 0.0, 4.333, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    assert _is_constant_gamma_coefficients(cpg_coeffs_different) is True
+
+
+def test_is_constant_gamma_coefficients_tpg():
+    """Test that TPG coefficients (temperature-dependent terms) are not constant gamma."""
+    # a3 non-zero (linear temperature dependence)
+    tpg_a3 = [0.0, 0.0, 3.5, 1e-4, 0.0, 0.0, 0.0, 0.0, 0.0]
+    assert _is_constant_gamma_coefficients(tpg_a3) is False
+
+    # a0 non-zero (inverse T^2 dependence)
+    tpg_a0 = [1e5, 0.0, 3.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    assert _is_constant_gamma_coefficients(tpg_a0) is False
+
+    # a1 non-zero (inverse T dependence)
+    tpg_a1 = [0.0, 100.0, 3.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    assert _is_constant_gamma_coefficients(tpg_a1) is False
+
+    # a4 non-zero (T^2 dependence)
+    tpg_a4 = [0.0, 0.0, 3.5, 0.0, 1e-7, 0.0, 0.0, 0.0, 0.0]
+    assert _is_constant_gamma_coefficients(tpg_a4) is False
+
+    # a5 non-zero (T^3 dependence)
+    tpg_a5 = [0.0, 0.0, 3.5, 0.0, 0.0, 1e-9, 0.0, 0.0, 0.0]
+    assert _is_constant_gamma_coefficients(tpg_a5) is False
+
+    # a6 non-zero (T^4 dependence)
+    tpg_a6 = [0.0, 0.0, 3.5, 0.0, 0.0, 0.0, 1e-9, 0.0, 0.0]
+    assert _is_constant_gamma_coefficients(tpg_a6) is False
+
+    # a7 non-zero (enthalpy integration constant)
+    tpg_a7 = [0.0, 0.0, 3.5, 0.0, 0.0, 0.0, 0.0, 1000.0, 0.0]
+    assert _is_constant_gamma_coefficients(tpg_a7) is False
+
+    # a8 non-zero (entropy integration constant)
+    tpg_a8 = [0.0, 0.0, 3.5, 0.0, 0.0, 0.0, 0.0, 0.0, 50.0]
+    assert _is_constant_gamma_coefficients(tpg_a8) is False

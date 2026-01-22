@@ -656,14 +656,6 @@ class Water(MaterialBase):
     dynamic_viscosity: ViscosityType.NonNegative = pd.Field(
         0.001002 * u.kg / u.m / u.s, frozen=True, description="Dynamic viscosity of the water."
     )
-    prandtl_number: pd.PositiveFloat = pd.Field(
-        7.0,
-        description="Laminar Prandtl number. Default is 7.0 for water at ~20°C.",
-    )
-    turbulent_prandtl_number: pd.PositiveFloat = pd.Field(
-        0.9,
-        description="Turbulent Prandtl number. Default is 0.9.",
-    )
 
 
 SolidMaterialTypes = SolidMaterial

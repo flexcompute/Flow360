@@ -2238,10 +2238,11 @@ def get_solver_json(
 
     # Export Prandtl numbers from material (only for TPG or liquid simulations)
     # For CPG simulations, solver uses default Prandtl numbers (0.72, 0.9)
+    # For liquid simulations, use default values for water (Pr=7.0, Prt=0.9)
     if isinstance(op, LiquidOperatingCondition):
         translated["fluidProperties"] = {
-            "prandtlNumber": op.material.prandtl_number,
-            "turbulentPrandtlNumber": op.material.turbulent_prandtl_number,
+            "prandtlNumber": 7.0,
+            "turbulentPrandtlNumber": 0.9,
         }
     elif (
         isinstance(op.thermal_state.material, Air)

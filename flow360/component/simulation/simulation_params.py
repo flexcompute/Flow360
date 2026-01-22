@@ -604,7 +604,10 @@ class SimulationParams(_ParamModelBase):
 
     @pd.model_validator(mode="after")
     def check_tpg_not_with_isentropic_solver(self):
-        """ThermallyPerfectGas model is not supported with the CompressibleIsentropic (4x4) solver"""
+        """Temperature-dependent gas properties are not supported with CompressibleIsentropic (4x4) solver.
+
+        Constant-gamma coefficients (only a2 non-zero) are allowed.
+        """
         return _check_tpg_not_with_isentropic_solver(self)
 
     @contextual_model_validator(mode="after")
