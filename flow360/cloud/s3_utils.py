@@ -387,8 +387,8 @@ class S3TransferType(Enum):
                 Callback=progress_callback,
             )
         else:
-            with _get_progress(_S3Action.DOWNLOADING) as progress:
-                if verbose is True:
+            if verbose is True:
+                with _get_progress(_S3Action.DOWNLOADING) as progress:
                     progress.start()
                     task_id = progress.add_task(
                         "download",
@@ -399,14 +399,18 @@ class S3TransferType(Enum):
                     def _call_back(bytes_in_chunk):
                         progress.update(task_id, advance=bytes_in_chunk)
 
-                else:
-                    _call_back = None
-
+                    client.download_file(
+                        Bucket=token.get_bucket(),
+                        Filename=to_file,
+                        Key=token.get_s3_key(),
+                        Callback=_call_back,
+                    )
+            else:
                 client.download_file(
                     Bucket=token.get_bucket(),
                     Filename=to_file,
                     Key=token.get_s3_key(),
-                    Callback=_call_back,
+                    Callback=None,
                 )
         if verbose is True:
             log.info(f"Saved to {to_file}")
