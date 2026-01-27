@@ -820,10 +820,18 @@ def translate_force_distribution_output(output_params: list):
     force_distribution_output = {}
     for output in output_params:
         if is_exact_instance(output, ForceDistributionOutput):
-            force_distribution_output[output.name] = {
+            config = {
                 "direction": list(output.distribution_direction),
                 "type": output.distribution_type,
             }
+            # Add surfaces if specified (for selective face integration)
+            if output.entities is not None:
+                surface_names = [entity.full_name for entity in output.entities.stored_entities]
+                config["surfaces"] = surface_names
+            # Add number of segments if specified
+            if output.number_of_segments is not None:
+                config["numberOfSegments"] = output.number_of_segments
+            force_distribution_output[output.name] = config
     return force_distribution_output
 
 
@@ -832,11 +840,19 @@ def translate_time_averaged_force_distribution_output(output_params: list):
     time_averaged_force_distribution_output = {}
     for output in output_params:
         if isinstance(output, TimeAverageForceDistributionOutput):
-            time_averaged_force_distribution_output[output.name] = {
+            config = {
                 "direction": list(output.distribution_direction),
                 "type": output.distribution_type,
                 "startAverageIntegrationStep": output.start_step,
             }
+            # Add surfaces if specified (for selective face integration)
+            if output.entities is not None:
+                surface_names = [entity.full_name for entity in output.entities.stored_entities]
+                config["surfaces"] = surface_names
+            # Add number of segments if specified
+            if output.number_of_segments is not None:
+                config["numberOfSegments"] = output.number_of_segments
+            time_averaged_force_distribution_output[output.name] = config
     return time_averaged_force_distribution_output
 
 

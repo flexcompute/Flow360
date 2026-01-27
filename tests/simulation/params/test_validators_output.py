@@ -1386,3 +1386,72 @@ def test_force_output_with_model_id():
         assert err["type"] == exp_err["type"]
         assert err["ctx"]["relevant_for"] == exp_err["ctx"]["relevant_for"]
         assert err["msg"] == exp_err["msg"]
+
+
+def test_force_distribution_output_entities_validation():
+    """Test ForceDistributionOutput entities validation."""
+
+    # Test 1: Valid case - ForceDistributionOutput without entities (default all walls)
+    with imperial_unit_system:
+        SimulationParams(
+            outputs=[
+                ForceDistributionOutput(
+                    name="test_default",
+                    distribution_direction=[1.0, 0.0, 0.0],
+                ),
+            ],
+        )
+
+    # Test 2: Valid case - ForceDistributionOutput with surface entities
+    with imperial_unit_system:
+        SimulationParams(
+            outputs=[
+                ForceDistributionOutput(
+                    name="test_with_surfaces",
+                    distribution_direction=[1.0, 0.0, 0.0],
+                    entities=[Surface(name="fluid/wing")],
+                ),
+            ],
+        )
+
+    # Test 3: Valid case - TimeAverageForceDistributionOutput with entities
+    with imperial_unit_system:
+        SimulationParams(
+            outputs=[
+                TimeAverageForceDistributionOutput(
+                    name="test_time_avg",
+                    distribution_direction=[0.0, 1.0, 0.0],
+                    entities=[Surface(name="fluid/body")],
+                    start_step=10,
+                ),
+            ],
+            time_stepping=Unsteady(steps=100, step_size=1e-3),
+        )
+
+    # Test 4: Valid case - ForceDistributionOutput with multiple surfaces
+    with imperial_unit_system:
+        SimulationParams(
+            outputs=[
+                ForceDistributionOutput(
+                    name="test_multiple_surfaces",
+                    distribution_direction=[0.0, 0.0, 1.0],
+                    entities=[
+                        Surface(name="fluid/wing"),
+                        Surface(name="fluid/fuselage"),
+                    ],
+                ),
+            ],
+        )
+
+    # Test 5: Valid case - ForceDistributionOutput with custom number_of_segments
+    with imperial_unit_system:
+        SimulationParams(
+            outputs=[
+                ForceDistributionOutput(
+                    name="test_custom_segments",
+                    distribution_direction=[1.0, 0.0, 0.0],
+                    entities=[Surface(name="fluid/wing")],
+                    number_of_segments=500,
+                ),
+            ],
+        )
