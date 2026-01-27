@@ -218,7 +218,7 @@
                 "value": 0.0,
                 "units": "m"
             },
-            "private_attribute_id": "wallBC"
+            "private_attribute_id": "wallBC1"
         },
         {
             "type": "SlipWall",
@@ -247,6 +247,32 @@
                 ]
             },
             "name": "Freestream"
+        },
+        {
+            "type": "Wall",
+            "entities": {
+                "stored_entities": [
+                    {
+                        "private_attribute_entity_type_name": "Surface",
+                        "name": "4",
+                        "private_attribute_sub_components": []
+                    }
+                ]
+            },
+            "private_attribute_id": "wallBC",
+            "name": "wing",
+            "use_wall_function": false,
+            "heat_spec": {
+                "value": {
+                    "value": 0.0,
+                    "units": "W/m**2"
+                },
+                "type_name": "HeatFlux"
+            },
+            "roughness_height": {
+                "value": 0.0,
+                "units": "m"
+            }
         }
     ],
     "time_stepping": {
