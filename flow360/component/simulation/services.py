@@ -22,7 +22,9 @@ from pydantic_core import ErrorDetails
 
 # Required for correct global scope initialization
 from flow360.component.simulation.blueprint.core.dependency_graph import DependencyGraph
-from flow360.component.simulation.entity_info import GeometryEntityInfo
+from flow360.component.simulation.entity_info import (
+    GeometryEntityInfo,
+)
 from flow360.component.simulation.entity_info import (
     merge_geometry_entity_info as merge_geometry_entity_info_obj,
 )

@@ -1224,6 +1224,93 @@ def test_force_distribution_output():
     assert compare_values(param_with_ref[1], translated["forceDistributionOutput"])
 
 
+def test_force_distribution_output_with_entities_and_segments():
+    """Test ForceDistributionOutput with entities (selective surfaces) and number_of_segments parameters."""
+    # Test with entities (selective surfaces)
+    param_with_entities = (
+        [
+            ForceDistributionOutput(
+                name="test_with_entities",
+                distribution_direction=[1.0, 0.0, 0.0],
+                entities=[
+                    Surface(name="wing", private_attribute_full_name="fluid/wing"),
+                    Surface(name="fuselage", private_attribute_full_name="fluid/fuselage"),
+                ],
+            ),
+        ],
+        {
+            "test_with_entities": {
+                "direction": [1.0, 0.0, 0.0],
+                "type": "incremental",
+                "surfaces": ["fluid/wing", "fluid/fuselage"],
+            },
+        },
+    )
+
+    with SI_unit_system:
+        param = SimulationParams(outputs=param_with_entities[0])
+    param = param._preprocess(mesh_unit=1.0 * u.m, exclude=["models"])
+
+    translated = {}
+    translated = translate_output(param, translated)
+    assert compare_values(param_with_entities[1], translated["forceDistributionOutput"])
+
+    # Test with number_of_segments
+    param_with_segments = (
+        [
+            ForceDistributionOutput(
+                name="test_with_segments",
+                distribution_direction=[0.0, 1.0, 0.0],
+                number_of_segments=500,
+            ),
+        ],
+        {
+            "test_with_segments": {
+                "direction": [0.0, 1.0, 0.0],
+                "type": "incremental",
+                "numberOfSegments": 500,
+            },
+        },
+    )
+
+    with SI_unit_system:
+        param = SimulationParams(outputs=param_with_segments[0])
+    param = param._preprocess(mesh_unit=1.0 * u.m, exclude=["models"])
+
+    translated = {}
+    translated = translate_output(param, translated)
+    assert compare_values(param_with_segments[1], translated["forceDistributionOutput"])
+
+    # Test with both entities and number_of_segments
+    param_with_both = (
+        [
+            ForceDistributionOutput(
+                name="test_with_both",
+                distribution_direction=[0.0, 0.0, 1.0],
+                entities=[Surface(name="body", private_attribute_full_name="fluid/body")],
+                number_of_segments=400,
+                distribution_type="cumulative",
+            ),
+        ],
+        {
+            "test_with_both": {
+                "direction": [0.0, 0.0, 1.0],
+                "type": "cumulative",
+                "surfaces": ["fluid/body"],
+                "numberOfSegments": 400,
+            },
+        },
+    )
+
+    with SI_unit_system:
+        param = SimulationParams(outputs=param_with_both[0])
+    param = param._preprocess(mesh_unit=1.0 * u.m, exclude=["models"])
+
+    translated = {}
+    translated = translate_output(param, translated)
+    assert compare_values(param_with_both[1], translated["forceDistributionOutput"])
+
+
 def test_time_averaged_force_distribution_output():
     param_with_ref = (
         [
@@ -1261,6 +1348,107 @@ def test_time_averaged_force_distribution_output():
     translated = {}
     translated = translate_output(param, translated)
     assert compare_values(param_with_ref[1], translated["timeAveragedForceDistributionOutput"])
+
+
+def test_time_averaged_force_distribution_output_with_entities_and_segments():
+    """Test TimeAverageForceDistributionOutput with entities and number_of_segments parameters."""
+    # Test with entities (selective surfaces)
+    param_with_entities = (
+        [
+            TimeAverageForceDistributionOutput(
+                name="test_time_avg_entities",
+                distribution_direction=[1.0, 0.0, 0.0],
+                entities=[
+                    Surface(name="wing", private_attribute_full_name="fluid/wing"),
+                ],
+                start_step=10,
+            ),
+        ],
+        {
+            "test_time_avg_entities": {
+                "direction": [1.0, 0.0, 0.0],
+                "type": "incremental",
+                "startAverageIntegrationStep": 10,
+                "surfaces": ["fluid/wing"],
+            },
+        },
+    )
+
+    with SI_unit_system:
+        param = SimulationParams(
+            outputs=param_with_entities[0], time_stepping=Unsteady(steps=100, step_size=0.1)
+        )
+    param = param._preprocess(mesh_unit=1.0 * u.m, exclude=["models"])
+
+    translated = {}
+    translated = translate_output(param, translated)
+    assert compare_values(param_with_entities[1], translated["timeAveragedForceDistributionOutput"])
+
+    # Test with number_of_segments
+    param_with_segments = (
+        [
+            TimeAverageForceDistributionOutput(
+                name="test_time_avg_segments",
+                distribution_direction=[0.0, 1.0, 0.0],
+                number_of_segments=600,
+                start_step=20,
+            ),
+        ],
+        {
+            "test_time_avg_segments": {
+                "direction": [0.0, 1.0, 0.0],
+                "type": "incremental",
+                "startAverageIntegrationStep": 20,
+                "numberOfSegments": 600,
+            },
+        },
+    )
+
+    with SI_unit_system:
+        param = SimulationParams(
+            outputs=param_with_segments[0], time_stepping=Unsteady(steps=100, step_size=0.1)
+        )
+    param = param._preprocess(mesh_unit=1.0 * u.m, exclude=["models"])
+
+    translated = {}
+    translated = translate_output(param, translated)
+    assert compare_values(param_with_segments[1], translated["timeAveragedForceDistributionOutput"])
+
+    # Test with both entities and number_of_segments
+    param_with_both = (
+        [
+            TimeAverageForceDistributionOutput(
+                name="test_time_avg_both",
+                distribution_direction=[0.0, 0.0, 1.0],
+                entities=[
+                    Surface(name="body", private_attribute_full_name="fluid/body"),
+                    Surface(name="tail", private_attribute_full_name="fluid/tail"),
+                ],
+                number_of_segments=350,
+                distribution_type="cumulative",
+                start_step=50,
+            ),
+        ],
+        {
+            "test_time_avg_both": {
+                "direction": [0.0, 0.0, 1.0],
+                "type": "cumulative",
+                "startAverageIntegrationStep": 50,
+                "surfaces": ["fluid/body", "fluid/tail"],
+                "numberOfSegments": 350,
+            },
+        },
+    )
+
+    with SI_unit_system:
+        param = SimulationParams(
+            outputs=param_with_both[0], time_stepping=Unsteady(steps=100, step_size=0.1)
+        )
+    param = param._preprocess(mesh_unit=1.0 * u.m, exclude=["models"])
+
+    translated = {}
+    translated = translate_output(param, translated)
+    assert compare_values(param_with_both[1], translated["timeAveragedForceDistributionOutput"])
 
 
 def test_surface_slice_output(vel_in_km_per_hr):
