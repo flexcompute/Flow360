@@ -13,6 +13,7 @@ from flow360.component.simulation.conversion import (
     compute_udf_dimensionalization_factor,
 )
 from flow360.component.simulation.framework.entity_base import EntityList
+from flow360.component.simulation.framework.updater_utils import recursive_remove_key
 from flow360.component.simulation.models.material import Sutherland
 from flow360.component.simulation.models.solver_numerics import NoneSolver
 from flow360.component.simulation.models.surface_models import (
@@ -1693,13 +1694,32 @@ def require_external_postprocessing(params: SimulationParams):
 
 def calculate_monitor_semaphore_hash(params: SimulationParams):
     """Get the hash for monitor processor's semaphore"""
+
+    def get_force_output_models(force_output: ForceOutput, params: SimulationParams):
+        force_output_model_ids = {
+            (model.private_attribute_id if hasattr(model, "private_attribute_id") else model)
+            for model in force_output.models
+        }
+        force_output_models = [
+            model for model in params.models if model.private_attribute_id in force_output_model_ids
+        ]
+        return force_output_models
+
     json_string_list = []
     if params.outputs:
         for output in params.outputs:
             if not isinstance(output, get_args(get_args(MonitorOutputType)[0])):
                 continue
             if isinstance(output, ForceOutput):
-                json_string_list.extend(list(sorted(output.models)))
+                force_output_models = get_force_output_models(output, params)
+                force_output_models_dict = []
+                for model in force_output_models:
+                    model_dict = dump_dict(model)
+                    recursive_remove_key(
+                        model_dict, "privateAttributeId", "privateAttributeInputCache"
+                    )
+                    force_output_models_dict.append(json.dumps(model_dict))
+                json_string_list.extend(force_output_models_dict)
                 json_string_list.extend(output.output_fields.items)
             if output.moving_statistic is not None:
                 json_string_list.append(json.dumps(dump_dict(output.moving_statistic)))
