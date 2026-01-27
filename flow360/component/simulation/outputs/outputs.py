@@ -1695,10 +1695,10 @@ class ForceDistributionOutput(Flow360BaseModel):
         "If not specified, all wall surfaces are included. "
         "This is useful for automotive cases to exclude road/floor surfaces.",
     )
-    number_of_segments: Optional[pd.PositiveInt] = pd.Field(
-        None,
+    number_of_segments: pd.PositiveInt = pd.Field(
+        300,
         description="Number of segments (bins) to use along the distribution direction. "
-        "If not specified, the default of 300 segments is used. "
+        "Default is 300 segments. "
         "Increasing this value provides higher resolution in the force distribution plot.",
     )
     output_type: Literal["ForceDistributionOutput"] = pd.Field(

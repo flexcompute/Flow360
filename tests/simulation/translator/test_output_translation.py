@@ -1211,6 +1211,7 @@ def test_force_distribution_output():
             "test_name": {
                 "direction": [0.11043152607484655, 0.9938837346736189, 0.0],
                 "type": "incremental",
+                "numberOfSegments": 300,
             },
         },
     )
@@ -1243,6 +1244,7 @@ def test_force_distribution_output_with_entities_and_segments():
                 "direction": [1.0, 0.0, 0.0],
                 "type": "incremental",
                 "surfaces": ["fluid/wing", "fluid/fuselage"],
+                "numberOfSegments": 300,
             },
         },
     )
@@ -1330,11 +1332,13 @@ def test_time_averaged_force_distribution_output():
                 "direction": [0.11043152607484655, 0.9938837346736189, 0.0],
                 "type": "incremental",
                 "startAverageIntegrationStep": -1,
+                "numberOfSegments": 300,
             },
             "test_name2": {
                 "direction": [1.0, 0.0, 0.0],
                 "type": "cumulative",
                 "startAverageIntegrationStep": 5,
+                "numberOfSegments": 300,
             },
         },
     )
@@ -1370,6 +1374,7 @@ def test_time_averaged_force_distribution_output_with_entities_and_segments():
                 "type": "incremental",
                 "startAverageIntegrationStep": 10,
                 "surfaces": ["fluid/wing"],
+                "numberOfSegments": 300,
             },
         },
     )
