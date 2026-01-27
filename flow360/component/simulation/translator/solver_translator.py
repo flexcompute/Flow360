@@ -827,9 +827,8 @@ def translate_force_distribution_output(output_params: list):
             if output.entities is not None:
                 surface_names = [entity.full_name for entity in output.entities.stored_entities]
                 config["surfaces"] = surface_names
-            # Add number of segments if specified
-            if output.number_of_segments is not None:
-                config["numberOfSegments"] = output.number_of_segments
+            # Add number of segments
+            config["numberOfSegments"] = output.number_of_segments
             force_distribution_output[output.name] = config
     return force_distribution_output
 
@@ -848,9 +847,8 @@ def translate_time_averaged_force_distribution_output(output_params: list):
             if output.entities is not None:
                 surface_names = [entity.full_name for entity in output.entities.stored_entities]
                 config["surfaces"] = surface_names
-            # Add number of segments if specified
-            if output.number_of_segments is not None:
-                config["numberOfSegments"] = output.number_of_segments
+            # Add number of segments
+            config["numberOfSegments"] = output.number_of_segments
             time_averaged_force_distribution_output[output.name] = config
     return time_averaged_force_distribution_output
 
