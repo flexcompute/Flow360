@@ -255,7 +255,9 @@ def TurbulenceQuantities(
     Notes
     -----
 
-    **Default Behavior**
+    The valid combinations of multiple turbulence quantities is summarized as follows,
+
+    default
         The default turbulence depends on the turbulence model.
         For SA model *without transition model* this is equivalent to set
         :code:`modified_viscosity_ratio = 3.0` (or effectively :code:`viscosity_ratio = 0.210438`).
@@ -264,66 +266,31 @@ def TurbulenceQuantities(
         :code:`viscosity_ratio = 0.01` with default :code:`specific_dissipation_rate` = :math:`MachRef/L_{box}`
         where :math:`L_{box} \triangleq exp\left(\displaystyle\sum_{i=1}^{3}log(x_{i,max}-x_{i,min}\right)`.
         :math:`x_{i,max},x_{i,min}` is the bounding box dimension for wall boundaries.
-
-    **Valid Parameter Combinations**
-
-    The following table shows which parameter combinations are valid for each turbulence model:
-
-    .. list-table:: Turbulence Quantity Compatibility
-       :header-rows: 1
-       :widths: 50 25 25
-
-       * - Parameter Combination
-         - SA Model
-         - SST Model
-       * - (default - no parameters)
-         - ✓ (default)
-         - ✓ (default)
-       * - :code:`viscosity_ratio` alone
-         - ✓ (converted to :code:`modified_viscosity_ratio`)
-         - ✓ (overrides default, keeps default :code:`specific_dissipation_rate`)
-       * - :code:`modified_viscosity` alone
-         - ✓
-         - ✗
-       * - :code:`modified_viscosity_ratio` alone
-         - ✓
-         - ✗
-       * - :code:`turbulent_kinetic_energy` alone
-         - ✗
-         - ✓ (:code:`specific_dissipation_rate` set to default)
-       * - :code:`turbulent_intensity` alone
-         - ✗
-         - ✓ (:code:`specific_dissipation_rate` set to default)
-       * - :code:`turbulent_length_scale` alone
-         - ✗
-         - ✓ (:code:`specific_dissipation_rate` set to default)
-       * - :code:`turbulent_kinetic_energy` + :code:`specific_dissipation_rate`
-         - ✗
-         - ✓
-       * - :code:`turbulent_intensity` + :code:`specific_dissipation_rate`
-         - ✗
-         - ✓
-       * - :code:`turbulent_kinetic_energy` + :code:`viscosity_ratio`
-         - ✗
-         - ✓
-       * - :code:`turbulent_intensity` + :code:`viscosity_ratio`
-         - ✗
-         - ✓
-       * - :code:`turbulent_kinetic_energy` + :code:`turbulent_length_scale`
-         - ✗
-         - ✓
-       * - :code:`turbulent_intensity` + :code:`turbulent_length_scale`
-         - ✗
-         - ✓
-       * - :code:`specific_dissipation_rate` + :code:`viscosity_ratio`
-         - ✗
-         - ✓
-       * - :code:`specific_dissipation_rate` + :code:`turbulent_length_scale`
-         - ✗
-         - ✓
-       * - :code:`viscosity_ratio` + :code:`turbulent_length_scale`
-         - ✗
-         - ✓
+    :code:`viscosity_ratio` alone
+        This applies to both SST and SA model. For SST model this is effectively
+        an override of the above default :code:`viscosity_ratio` value while keeping
+        the default specificDissipationRate. For SA model the :code:`viscosity_ratio`
+        will be converted to the :code:`modified_viscosity_ratio`.
+    :code:`turbulent_kinetic_energy` or :code:`turbulent_intensity` alone
+        For SST model only. :code:`specific_dissipation_rate` will be set to the default value.
+    :code:`turbulent_length_scale` alone
+        For SST model only. :code:`specific_dissipation_rate` will be set to the default value.
+    :code:`modified_viscosity`
+        For SA model only.
+    :code:`modified_viscosity_ratio`
+        For SA model only.
+    :code:`turbulent_kinetic_energy` or :code:`turbulent_intensity` with :code:`specific_dissipation_rate`
+        For SST model only.
+    :code:`turbulent_kinetic_energy` or :code:`turbulent_intensity` with :code:`viscosity_ratio`
+        For SST model only.
+    :code:`turbulent_kinetic_energy` or :code:`turbulent_intensity` with :code:`turbulent_length_scale`
+        For SST model only.
+    :code:`specific_dissipation_rate` with :code:`viscosity_ratio`
+        For SST model only.
+    :code:`specific_dissipation_rate` with :code:`turbulent_length_scale`
+        For SST model only.
+    :code:`viscosity_ratio` with :code:`turbulent_length_scale`
+        For SST model only.
 
     Example
     -------
