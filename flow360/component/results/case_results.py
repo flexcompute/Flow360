@@ -389,6 +389,8 @@ class UserDefinedDynamicsResultModel(ResultBaseModel):
             Flag indicating whether to overwrite existing files.
         """
 
+        _ = self.udd_names
+
         for udd in self._udds.values():
             udd.download(to_folder=to_folder, overwrite=overwrite)
 
@@ -487,6 +489,8 @@ class CustomForceResultModel(ResultBaseModel):
         overwrite : bool, optional
             Flag indicating whether to overwrite existing files.
         """
+
+        _ = self.custom_force_names
 
         for custom_force in self._custom_forces.values():
             custom_force.download(to_folder=to_folder, overwrite=overwrite)
