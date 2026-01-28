@@ -866,3 +866,136 @@ def test_udd_monitors_get_params_method(mock_id, mock_response, data_path):
 
     monitor = case.results.monitors["massFluxIntake"]
     assert monitor._get_params_method() == params
+
+
+@pytest.mark.usefixtures("s3_download_override")
+def test_custom_forces_result_model(mock_id, mock_response):
+    """Test CustomForceResultModel - get custom force names and access by name"""
+    case = fl.Case(id="case-666666666-66666666-666-6666666666666")
+
+    # Test that custom_force_names property returns correct names
+    custom_force_names = case.results.custom_forces.custom_force_names
+    assert "wing_all_planes_forces" in custom_force_names
+    assert "wing_all_planes_forces_moving_statistic" in custom_force_names
+    assert len(custom_force_names) == 2
+
+    # Test get_custom_force_by_name method
+    wing_force = case.results.custom_forces.get_custom_force_by_name("wing_all_planes_forces")
+    assert wing_force is not None
+    assert wing_force.remote_file_name == "force_output_wing_all_planes_forces_v2.csv"
+
+    moving_stats = case.results.custom_forces.get_custom_force_by_name(
+        "wing_all_planes_forces_moving_statistic"
+    )
+    assert moving_stats is not None
+    assert (
+        moving_stats.remote_file_name
+        == "force_output_wing_all_planes_forces_moving_statistic_v2.csv"
+    )
+
+
+@pytest.mark.usefixtures("s3_download_override")
+def test_custom_forces_bracket_access(mock_id, mock_response):
+    """Test CustomForceResultModel - bracket access"""
+    case = fl.Case(id="case-666666666-66666666-666-6666666666666")
+
+    # Test bracket access
+    wing_force = case.results.custom_forces["wing_all_planes_forces"]
+    assert wing_force is not None
+    assert wing_force.remote_file_name == "force_output_wing_all_planes_forces_v2.csv"
+
+
+@pytest.mark.usefixtures("s3_download_override")
+def test_custom_forces_invalid_name(mock_id, mock_response):
+    """Test CustomForceResultModel - invalid name raises error"""
+    from flow360.exceptions import Flow360ValueError
+
+    case = fl.Case(id="case-666666666-66666666-666-6666666666666")
+
+    # Test that invalid name raises Flow360ValueError
+    with pytest.raises(Flow360ValueError) as exc_info:
+        case.results.custom_forces.get_custom_force_by_name("nonExistentForce")
+
+    assert "nonExistentForce" in str(exc_info.value)
+    assert "wing_all_planes_forces" in str(exc_info.value)
+
+
+@pytest.mark.usefixtures("s3_download_override")
+def test_custom_forces_get_params_method(mock_id, mock_response):
+    """Test CustomForceResultModel - _get_params_method is passed correctly"""
+    case = fl.Case(id="case-666666666-66666666-666-6666666666666")
+    params = case.params
+
+    wing_force = case.results.custom_forces["wing_all_planes_forces"]
+    assert wing_force._get_params_method() == params
+
+
+@pytest.mark.usefixtures("s3_download_override")
+def test_custom_forces_download_method(mock_id, mock_response):
+    """Test CustomForceResultModel - _download_method is passed correctly"""
+    case = fl.Case(id="case-666666666-66666666-666-6666666666666")
+
+    wing_force = case.results.custom_forces["wing_all_planes_forces"]
+    # pylint: disable=protected-access
+    assert wing_force._download_method is not None
+    assert callable(wing_force._download_method)
+
+
+@pytest.mark.usefixtures("s3_download_override")
+def test_custom_forces_data_loading(mock_id, mock_response):
+    """Test CustomForceResultModel - data can be loaded from CSV"""
+    case = fl.Case(id="case-666666666-66666666-666-6666666666666")
+
+    wing_force = case.results.custom_forces["wing_all_planes_forces"]
+    # Load the data
+    wing_force.reload_data()
+
+    # Check that values are loaded
+    assert wing_force.values is not None
+    assert "totalCFx" in wing_force.values
+    assert "totalCFy" in wing_force.values
+    assert "totalCFz" in wing_force.values
+    assert "totalCMy" in wing_force.values
+
+    # Check specific values from the CSV
+    cfx_values = wing_force.values["totalCFx"]
+    assert len(cfx_values) > 0
+    # Verify first value matches CSV data
+    assert abs(cfx_values[0] - 0.130178023471194) < 1e-10
+
+
+@pytest.mark.usefixtures("s3_download_override")
+def test_custom_forces_moving_statistic_data_loading(mock_id, mock_response):
+    """Test CustomForceResultModel - moving statistic data can be loaded from CSV"""
+    case = fl.Case(id="case-666666666-66666666-666-6666666666666")
+
+    moving_stats = case.results.custom_forces["wing_all_planes_forces_moving_statistic"]
+    # Load the data
+    moving_stats.reload_data()
+
+    # Check that values are loaded
+    assert moving_stats.values is not None
+    assert "totalCFx_mean" in moving_stats.values
+    assert "totalCFy_mean" in moving_stats.values
+    assert "totalCFz_mean" in moving_stats.values
+    assert "totalCMy_mean" in moving_stats.values
+    assert "window_size" in moving_stats.values
+
+    # Check specific values from the CSV
+    window_sizes = moving_stats.values["window_size"]
+    assert len(window_sizes) > 0
+    assert window_sizes[0] == 20
+
+
+@pytest.mark.usefixtures("s3_download_override")
+def test_custom_forces_is_downloadable(mock_id, mock_response):
+    """Test CustomForceResultModel - _is_downloadable is set correctly"""
+    case = fl.Case(id="case-666666666-66666666-666-6666666666666")
+
+    # The _is_downloadable function should be set from has_function_map
+    # pylint: disable=protected-access
+    assert case.results.custom_forces._is_downloadable is not None
+    assert callable(case.results.custom_forces._is_downloadable)
+    # For this test case, has_custom_forces should return based on params
+    # Since simulation.json doesn't have ForceOutput, it should return False
+    assert case.results.custom_forces._is_downloadable() == case.has_custom_forces()
