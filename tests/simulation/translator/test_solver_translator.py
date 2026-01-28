@@ -1,6 +1,7 @@
 import json
 import os
 import unittest
+import uuid
 
 import numpy as np
 import pytest
@@ -472,7 +473,7 @@ def test_om6wing_with_stopping_criterion_and_moving_statistic(get_om6Wing_tutori
         monitor_field=mass_flow_rate,
         tolerance_window_size=3,
     )
-    wallBC = Wall(name="wing", surfaces=[Surface(name="1")], private_attribute_id="wallBC")
+    wallBC = Wall(name="wing", surfaces=[Surface(name="4", private_attribute_id=str(uuid.uuid4()))])
     force_output = ForceOutput(
         name="force_wallBC",
         models=[wallBC],
@@ -486,10 +487,11 @@ def test_om6wing_with_stopping_criterion_and_moving_statistic(get_om6Wing_tutori
         monitor_output=force_output,
         monitor_field="CL",
     )
+    params.models.append(wallBC)
     params.run_control = RunControl(stopping_criteria=[criterion1, criterion2, criterion3])
     params.outputs.extend([probe_output, mass_flow_rate_integral, force_output])
     translate_and_compare(
-        get_om6Wing_tutorial_param,
+        params,
         mesh_unit=0.8059 * u.m,
         ref_json_file="Flow360_om6wing_stopping_criterion_and_moving_statistic.json",
         debug=False,
