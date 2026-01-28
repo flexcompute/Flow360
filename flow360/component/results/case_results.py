@@ -86,6 +86,7 @@ class CaseDownloadable(Enum):
     # user defined:
     MONITOR_PATTERN = r"monitor_(.+)_v2.csv"
     USER_DEFINED_DYNAMICS_PATTERN = r"udd_(.+)_v2.csv"
+    CUSTOM_FORCE_PATTERN = r"force_output_(.+)_v2.csv"
 
     # others:
     AEROACOUSTICS = "total_acoustics_v3.csv"
@@ -424,6 +425,105 @@ class UserDefinedDynamicsResultModel(ResultBaseModel):
         """
 
         return self.get_udd_by_name(name)
+
+
+CustomForceCSVModel = ResultCSVModel
+
+
+class CustomForceResultModel(ResultBaseModel):
+    """
+    Model for handling results of custom force outputs.
+
+    Inherits from ResultBaseModel.
+    """
+
+    remote_file_name: str = pd.Field(None, frozen=True)
+    get_download_file_list_method: Optional[Callable] = pd.Field(lambda: None)
+
+    _custom_force_names: List[str] = pd.PrivateAttr([])
+    _custom_forces: Dict[str, CustomForceCSVModel] = pd.PrivateAttr({})
+
+    @property
+    def custom_force_names(self):
+        """
+        Get the list of custom force output names.
+
+        Returns
+        -------
+        list of str
+            List of custom force output names.
+        """
+
+        if len(self._custom_force_names) == 0:
+            pattern = CaseDownloadable.CUSTOM_FORCE_PATTERN.value
+            file_list = [
+                file["fileName"]
+                for file in self.get_download_file_list_method()  # pylint:disable=not-callable
+            ]
+            for filepath in file_list:
+                if str(Path(filepath).parent) == "results":
+                    filename = Path(filepath).name
+                    match = re.match(pattern, filename)
+                    if match:
+                        name = match.group(1)
+                        self._custom_force_names.append(name)
+                        self._custom_forces[name] = CustomForceCSVModel(remote_file_name=filename)
+                        # pylint: disable=protected-access
+                        self._custom_forces[name]._download_method = self._download_method
+                        self._custom_forces[name]._get_params_method = self._get_params_method
+
+        return self._custom_force_names
+
+    def download(
+        self, to_folder: str = ".", overwrite: bool = False
+    ):  # pylint:disable=arguments-differ
+        """
+        Download all custom force files to the specified location.
+
+        Parameters
+        ----------
+        to_folder : str, optional
+            The folder where the file will be downloaded.
+        overwrite : bool, optional
+            Flag indicating whether to overwrite existing files.
+        """
+
+        for custom_force in self._custom_forces.values():
+            custom_force.download(to_folder=to_folder, overwrite=overwrite)
+
+    def get_custom_force_by_name(self, name: str) -> CustomForceCSVModel:
+        """
+        Get custom force output by name.
+
+        Parameters
+        ----------
+        name : str
+            The name of the custom force output.
+
+        Returns
+        -------
+        CustomForceCSVModel
+            The CustomForceCSVModel corresponding to the given name.
+
+        Raises
+        ------
+        Flow360ValueError
+            If the custom force output with the provided name is not found.
+        """
+
+        if name not in self.custom_force_names:
+            raise Flow360ValueError(
+                f"Cannot find custom force output with provided name={name}, "
+                f"available custom force outputs: {self.custom_force_names}"
+            )
+        return self._custom_forces[name]
+
+    def __getitem__(self, name: str) -> CustomForceCSVModel:
+        """
+        Get a custom force output by name (supporting [] access).
+        """
+
+        return self.get_custom_force_by_name(name)
 
 
 class _DimensionedCSVResultModel(pd.BaseModel):
