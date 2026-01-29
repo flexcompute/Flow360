@@ -67,28 +67,40 @@
                             "units": "K"
                         }
                     },
-                    "nasa_9_coefficients": {
-                        "temperature_ranges": [
+                    "thermally_perfect_gas": {
+                        "type_name": "ThermallyPerfectGas",
+                        "species": [
                             {
-                                "temperature_range_min": {
-                                    "value": 200.0,
-                                    "units": "K"
+                                "type_name": "FrozenSpecies",
+                                "name": "Air",
+                                "nasa_9_coefficients": {
+                                    "type_name": "NASA9Coefficients",
+                                    "temperature_ranges": [
+                                        {
+                                            "type_name": "NASA9CoefficientSet",
+                                            "temperature_range_min": {
+                                                "value": 200.0,
+                                                "units": "K"
+                                            },
+                                            "temperature_range_max": {
+                                                "value": 6000.0,
+                                                "units": "K"
+                                            },
+                                            "coefficients": [
+                                                0.0,
+                                                0.0,
+                                                3.5,
+                                                0.0,
+                                                0.0,
+                                                0.0,
+                                                0.0,
+                                                0.0,
+                                                0.0
+                                            ]
+                                        }
+                                    ]
                                 },
-                                "temperature_range_max": {
-                                    "value": 6000.0,
-                                    "units": "K"
-                                },
-                                "coefficients": [
-                                    0.0,
-                                    0.0,
-                                    3.5,
-                                    0.0,
-                                    0.0,
-                                    0.0,
-                                    0.0,
-                                    0.0,
-                                    0.0
-                                ]
+                                "mass_fraction": 1.0
                             }
                         ]
                     },
@@ -134,28 +146,40 @@
                         "units": "K"
                     }
                 },
-                "nasa_9_coefficients": {
-                    "temperature_ranges": [
+                "thermally_perfect_gas": {
+                    "type_name": "ThermallyPerfectGas",
+                    "species": [
                         {
-                            "temperature_range_min": {
-                                "value": 200.0,
-                                "units": "K"
+                            "type_name": "FrozenSpecies",
+                            "name": "Air",
+                            "nasa_9_coefficients": {
+                                "type_name": "NASA9Coefficients",
+                                "temperature_ranges": [
+                                    {
+                                        "type_name": "NASA9CoefficientSet",
+                                        "temperature_range_min": {
+                                            "value": 200.0,
+                                            "units": "K"
+                                        },
+                                        "temperature_range_max": {
+                                            "value": 6000.0,
+                                            "units": "K"
+                                        },
+                                        "coefficients": [
+                                            0.0,
+                                            0.0,
+                                            3.5,
+                                            0.0,
+                                            0.0,
+                                            0.0,
+                                            0.0,
+                                            0.0,
+                                            0.0
+                                        ]
+                                    }
+                                ]
                             },
-                            "temperature_range_max": {
-                                "value": 6000.0,
-                                "units": "K"
-                            },
-                            "coefficients": [
-                                0.0,
-                                0.0,
-                                3.5,
-                                0.0,
-                                0.0,
-                                0.0,
-                                0.0,
-                                0.0,
-                                0.0
-                            ]
+                            "mass_fraction": 1.0
                         }
                     ]
                 },
@@ -209,28 +233,40 @@
                         "units": "K"
                     }
                 },
-                "nasa_9_coefficients": {
-                    "temperature_ranges": [
+                "thermally_perfect_gas": {
+                    "type_name": "ThermallyPerfectGas",
+                    "species": [
                         {
-                            "temperature_range_min": {
-                                "value": 200.0,
-                                "units": "K"
+                            "type_name": "FrozenSpecies",
+                            "name": "Air",
+                            "nasa_9_coefficients": {
+                                "type_name": "NASA9Coefficients",
+                                "temperature_ranges": [
+                                    {
+                                        "type_name": "NASA9CoefficientSet",
+                                        "temperature_range_min": {
+                                            "value": 200.0,
+                                            "units": "K"
+                                        },
+                                        "temperature_range_max": {
+                                            "value": 6000.0,
+                                            "units": "K"
+                                        },
+                                        "coefficients": [
+                                            0.0,
+                                            0.0,
+                                            3.5,
+                                            0.0,
+                                            0.0,
+                                            0.0,
+                                            0.0,
+                                            0.0,
+                                            0.0
+                                        ]
+                                    }
+                                ]
                             },
-                            "temperature_range_max": {
-                                "value": 6000.0,
-                                "units": "K"
-                            },
-                            "coefficients": [
-                                0.0,
-                                0.0,
-                                3.5,
-                                0.0,
-                                0.0,
-                                0.0,
-                                0.0,
-                                0.0,
-                                0.0
-                            ]
+                            "mass_fraction": 1.0
                         }
                     ]
                 },
