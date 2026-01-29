@@ -815,12 +815,23 @@ def translate_acoustic_output(output_params: list):
     return None
 
 
-def _get_wall_bc_surface_names(models: list) -> list:
+def _expand_entity_list(entity_list, input_params) -> list:
+    """Expand an entity list, handling both stored entities and selectors."""
+    # pylint: disable=import-outside-toplevel
+    from flow360.component.simulation.framework.entity_expansion_utils import (
+        expand_entity_list_in_context,
+    )
+
+    return expand_entity_list_in_context(entity_list, input_params, return_names=False)
+
+
+def _get_wall_bc_surface_names(input_params) -> list:
     """Get all surface names that have Wall boundary conditions assigned."""
     surface_names = []
-    for bc in models:
+    for bc in input_params.models:
         if isinstance(bc, Wall) and bc.entities is not None:
-            for entity in bc.entities.stored_entities:
+            expanded_entities = _expand_entity_list(bc.entities, input_params)
+            for entity in expanded_entities:
                 if hasattr(entity, "full_name"):
                     surface_names.append(entity.full_name)
                 elif hasattr(entity, "name"):
@@ -828,7 +839,7 @@ def _get_wall_bc_surface_names(models: list) -> list:
     return surface_names
 
 
-def translate_force_distribution_output(output_params: list, models: list):
+def translate_force_distribution_output(output_params: list, input_params):
     """Translate force distribution output settings."""
     force_distribution_output = {}
     for output in output_params:
@@ -839,9 +850,10 @@ def translate_force_distribution_output(output_params: list, models: list):
             }
             # Add surfaces - use specified entities or all surfaces with Wall BC
             if output.entities is not None:
-                surface_names = [entity.full_name for entity in output.entities.stored_entities]
+                expanded_entities = _expand_entity_list(output.entities, input_params)
+                surface_names = [entity.full_name for entity in expanded_entities]
             else:
-                surface_names = _get_wall_bc_surface_names(models)
+                surface_names = _get_wall_bc_surface_names(input_params)
             config["surfaces"] = surface_names
             # Add number of segments
             config["numberOfSegments"] = output.number_of_segments
@@ -849,7 +861,7 @@ def translate_force_distribution_output(output_params: list, models: list):
     return force_distribution_output
 
 
-def translate_time_averaged_force_distribution_output(output_params: list, models: list):
+def translate_time_averaged_force_distribution_output(output_params: list, input_params):
     """Translate time-averaged force distribution output settings."""
     time_averaged_force_distribution_output = {}
     for output in output_params:
@@ -861,9 +873,10 @@ def translate_time_averaged_force_distribution_output(output_params: list, model
             }
             # Add surfaces - use specified entities or all surfaces with Wall BC
             if output.entities is not None:
-                surface_names = [entity.full_name for entity in output.entities.stored_entities]
+                expanded_entities = _expand_entity_list(output.entities, input_params)
+                surface_names = [entity.full_name for entity in expanded_entities]
             else:
-                surface_names = _get_wall_bc_surface_names(models)
+                surface_names = _get_wall_bc_surface_names(input_params)
             config["surfaces"] = surface_names
             # Add number of segments
             config["numberOfSegments"] = output.number_of_segments
@@ -1239,13 +1252,13 @@ def translate_output(input_params: SimulationParams, translated: dict):
     ##:: Step10: Get translated["forceDistributionOutput"]
     if has_instance_in_list(outputs, ForceDistributionOutput):
         translated["forceDistributionOutput"] = translate_force_distribution_output(
-            outputs, input_params.models
+            outputs, input_params
         )
 
     ##:: Step10b: Get translated["timeAveragedForceDistributionOutput"]
     if has_instance_in_list(outputs, TimeAverageForceDistributionOutput):
         translated["timeAveragedForceDistributionOutput"] = (
-            translate_time_averaged_force_distribution_output(outputs, input_params.models)
+            translate_time_averaged_force_distribution_output(outputs, input_params)
         )
 
     ##:: Step11: Sort all "output_fields" everywhere
