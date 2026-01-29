@@ -832,10 +832,12 @@ def _get_wall_bc_surface_names(input_params) -> list:
         if isinstance(bc, Wall) and bc.entities is not None:
             expanded_entities = _expand_entity_list(bc.entities, input_params)
             for entity in expanded_entities:
-                if hasattr(entity, "full_name"):
-                    surface_names.append(entity.full_name)
-                elif hasattr(entity, "name"):
-                    surface_names.append(entity.name)
+                if not hasattr(entity, "full_name"):
+                    raise TypeError(
+                        f"Unsupported entity type '{type(entity).__name__}' for force distribution output. "
+                        f"Only Surface entities are supported."
+                    )
+                surface_names.append(entity.full_name)
     return surface_names
 
 
