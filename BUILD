@@ -27,6 +27,7 @@ py_library(
         "@pip//matplotlib",
         "@pip//numexpr",
         "@pip//numpy",
+        "@pip//packaging",
         "@pip//pandas",
         "@pip//pillow",
         "@pip//prettyprinttree",
