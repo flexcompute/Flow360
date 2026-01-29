@@ -1455,3 +1455,71 @@ def test_force_distribution_output_entities_validation():
                 ),
             ],
         )
+
+
+def test_force_distribution_output_requires_wall_bc(mock_validation_context):
+    """Test that ForceDistributionOutput validates surfaces have Wall BC."""
+    from flow360.component.simulation.models.surface_models import Freestream, SlipWall
+
+    wing_surface = Surface(name="fluid/wing")
+    freestream_surface = Surface(name="fluid/farfield")
+
+    # Test: Valid case - surface with Wall BC
+    with mock_validation_context, imperial_unit_system:
+        SimulationParams(
+            models=[
+                Fluid(),
+                Wall(entities=[wing_surface]),
+                Freestream(entities=[freestream_surface]),
+            ],
+            outputs=[
+                ForceDistributionOutput(
+                    name="test_valid",
+                    distribution_direction=[1.0, 0.0, 0.0],
+                    entities=[wing_surface],
+                ),
+            ],
+        )
+
+    # Test: Invalid case - surface without Wall BC (has Freestream BC)
+    with mock_validation_context, pytest.raises(
+        ValueError,
+        match=re.escape("The following surfaces do not have Wall boundary conditions assigned"),
+    ):
+        with imperial_unit_system:
+            SimulationParams(
+                models=[
+                    Fluid(),
+                    Wall(entities=[wing_surface]),
+                    Freestream(entities=[freestream_surface]),
+                ],
+                outputs=[
+                    ForceDistributionOutput(
+                        name="test_invalid",
+                        distribution_direction=[1.0, 0.0, 0.0],
+                        entities=[freestream_surface],  # This has Freestream BC, not Wall
+                    ),
+                ],
+            )
+
+    # Test: Invalid case - surface with SlipWall BC (not a no-slip Wall)
+    slipwall_surface = Surface(name="fluid/symmetry")
+    with mock_validation_context, pytest.raises(
+        ValueError,
+        match=re.escape("The following surfaces do not have Wall boundary conditions assigned"),
+    ):
+        with imperial_unit_system:
+            SimulationParams(
+                models=[
+                    Fluid(),
+                    Wall(entities=[wing_surface]),
+                    SlipWall(entities=[slipwall_surface]),
+                ],
+                outputs=[
+                    ForceDistributionOutput(
+                        name="test_slipwall",
+                        distribution_direction=[1.0, 0.0, 0.0],
+                        entities=[slipwall_surface],  # SlipWall is not Wall
+                    ),
+                ],
+            )

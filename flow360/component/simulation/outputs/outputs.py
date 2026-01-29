@@ -1711,6 +1711,44 @@ class ForceDistributionOutput(Flow360BaseModel):
         """Ensure all boundaries will be present after mesher"""
         return validate_entity_list_surface_existence(value, param_info)
 
+    @contextual_model_validator(mode="after")
+    def ensure_surfaces_have_wall_bc(self, param_info: ParamsValidationInfo):
+        """Ensure all specified surfaces have Wall boundary conditions assigned."""
+        if self.entities is None:
+            return self
+
+        # Skip validation if physics_model_dict is not yet available
+        if param_info.physics_model_dict is None:
+            return self
+
+        # Collect all surfaces that have Wall boundary conditions
+        wall_surface_names = set()
+        for model in param_info.physics_model_dict.values():
+            if isinstance(model, Wall) and model.entities is not None:
+                expanded_entities = param_info.expand_entity_list(model.entities)
+                for entity in expanded_entities:
+                    if hasattr(entity, "full_name"):
+                        wall_surface_names.add(entity.full_name)
+                    elif hasattr(entity, "name"):
+                        wall_surface_names.add(entity.name)
+
+        # Check that all specified surfaces have Wall BC
+        expanded_entities = param_info.expand_entity_list(self.entities)
+        non_wall_surfaces = []
+        for entity in expanded_entities:
+            entity_name = entity.full_name if hasattr(entity, "full_name") else entity.name
+            if entity_name not in wall_surface_names:
+                non_wall_surfaces.append(entity_name)
+
+        if non_wall_surfaces:
+            raise ValueError(
+                f"The following surfaces do not have Wall boundary conditions assigned: "
+                f"{non_wall_surfaces}. Force distribution output can only be computed on "
+                f"surfaces with Wall boundary conditions."
+            )
+
+        return self
+
 
 class TimeAverageForceDistributionOutput(ForceDistributionOutput):
     """
