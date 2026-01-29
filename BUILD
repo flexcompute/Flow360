@@ -28,6 +28,7 @@ py_library(
         "@pip//numexpr",
         "@pip//numpy",
         "@pip//pandas",
+        "@pip//pillow",
         "@pip//prettyprinttree",
         "@pip//pydantic",
         "@pip//pylatex",
@@ -41,11 +42,17 @@ py_library(
     ],
 )
 
-# CLI binary
+# CLI binary - uses generated wrapper to invoke the click entry point
+genrule(
+    name = "flow360_cli_main",
+    outs = ["flow360_cli_main.py"],
+    cmd = "echo 'from flow360.cli import flow360; flow360()' > $@",
+)
+
 py_binary(
     name = "flow360_cli",
-    srcs = ["flow360/cli/app.py"],
-    main = "flow360/cli/app.py",
+    srcs = [":flow360_cli_main"],
+    main = "flow360_cli_main.py",
     visibility = ["//visibility:public"],
     deps = [":flow360"],
 )
