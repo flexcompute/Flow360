@@ -7,7 +7,7 @@ from .convergence import Convergence
 from .cube import Cube
 from .cylinder2D import Cylinder2D
 from .cylinder3D import Cylinder3D
-from .DARPA import DARPA_SUBOFF
+from .DARPA_SUBOFF import DARPA_SUBOFF
 from .drivaer import DrivAer
 from .evtol import EVTOL
 from .f1_2025 import F1_2025
