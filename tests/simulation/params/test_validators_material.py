@@ -319,22 +319,31 @@ def test_air_with_thermally_perfect_gas_valid():
     assert len(air.thermally_perfect_gas.species) == 3
 
 
-def test_air_with_nasa9_coefficients_valid():
-    """Test creating Air material with custom NASA9 coefficients."""
+def test_air_with_custom_thermally_perfect_gas_valid():
+    """Test creating Air material with custom thermally perfect gas coefficients."""
     with SI_unit_system:
         air = fl.Air(
-            nasa_9_coefficients=NASA9Coefficients(
-                temperature_ranges=[
-                    NASA9CoefficientSet(
-                        temperature_range_min=200.0 * fl.u.K,
-                        temperature_range_max=6000.0 * fl.u.K,
-                        coefficients=[0.0, 0.0, 3.5, 1e-4, 0.0, 0.0, 0.0, 0.0, 0.0],
+            thermally_perfect_gas=ThermallyPerfectGas(
+                species=[
+                    FrozenSpecies(
+                        name="Air",
+                        nasa_9_coefficients=NASA9Coefficients(
+                            temperature_ranges=[
+                                NASA9CoefficientSet(
+                                    temperature_range_min=200.0 * fl.u.K,
+                                    temperature_range_max=6000.0 * fl.u.K,
+                                    coefficients=[0.0, 0.0, 3.5, 1e-4, 0.0, 0.0, 0.0, 0.0, 0.0],
+                                )
+                            ]
+                        ),
+                        mass_fraction=1.0,
                     )
                 ]
             )
         )
-    assert air.nasa_9_coefficients is not None
-    assert len(air.nasa_9_coefficients.temperature_ranges) == 1
+    assert air.thermally_perfect_gas is not None
+    assert len(air.thermally_perfect_gas.species) == 1
+    assert len(air.thermally_perfect_gas.species[0].nasa_9_coefficients.temperature_ranges) == 1
 
 
 # =============================================================================

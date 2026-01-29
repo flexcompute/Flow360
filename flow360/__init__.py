@@ -58,13 +58,11 @@ from flow360.component.simulation.meshing_param.volume_params import (
     WheelBelts,
     WindTunnelFarfield,
 )
-from flow360.component.simulation.models.material import (  # Legacy aliases for backward compatibility
+from flow360.component.simulation.models.material import (
     Air,
     FrozenSpecies,
     NASA9Coefficients,
     NASA9CoefficientSet,
-    NASAPolynomialCoefficients,
-    NASAPolynomialCoefficientSet,
     SolidMaterial,
     Sutherland,
     ThermallyPerfectGas,
@@ -307,8 +305,6 @@ __all__ = [
     "Air",
     "NASA9CoefficientSet",
     "NASA9Coefficients",
-    "NASAPolynomialCoefficientSet",
-    "NASAPolynomialCoefficients",
     "FrozenSpecies",
     "Sutherland",
     "ThermallyPerfectGas",
