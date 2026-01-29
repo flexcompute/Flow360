@@ -1,6 +1,5 @@
 """Material classes for the simulation framework."""
 
-import math
 from typing import List, Literal, Optional, Union
 
 import pydantic as pd
@@ -76,36 +75,6 @@ def compute_gamma_from_coefficients(coeffs, temperature):
     return cp_r / cv_r
 
 
-def compute_enthalpy_no_a7(coeffs, temperature):
-    """
-    Compute h/R at given temperature without the a7 integration constant.
-
-    h/R = -a0/T + a1*ln(T) + a2*T + (a3/2)*T^2 + (a4/3)*T^3 + (a5/4)*T^4 + (a6/5)*T^5
-
-    Parameters
-    ----------
-    coeffs : list
-        NASA 9 coefficients [a0, a1, a2, a3, a4, a5, a6, a7, a8]
-    temperature : float
-        Temperature in Kelvin
-
-    Returns
-    -------
-    float
-        Enthalpy divided by gas constant (h/R) without a7 term
-    """
-    temp = temperature
-    return (
-        -coeffs[0] / temp
-        + coeffs[1] * math.log(temp)
-        + coeffs[2] * temp
-        + (coeffs[3] / 2) * temp**2
-        + (coeffs[4] / 3) * temp**3
-        + (coeffs[5] / 4) * temp**4
-        + (coeffs[6] / 5) * temp**5
-    )
-
-
 class MaterialBase(Flow360BaseModel):
     """
     Basic properties required to define a material.
@@ -146,6 +115,7 @@ class NASA9CoefficientSet(Flow360BaseModel):
     ====
     """
 
+    type_name: Literal["NASA9CoefficientSet"] = pd.Field("NASA9CoefficientSet", frozen=True)
     temperature_range_min: AbsoluteTemperatureType = pd.Field(
         description="Minimum temperature for which this coefficient set is valid."
     )
@@ -165,6 +135,20 @@ class NASA9CoefficientSet(Flow360BaseModel):
             raise ValueError(
                 f"NASA 9-coefficient polynomial requires exactly 9 coefficients, "
                 f"got {len(self.coefficients)}"
+            )
+        return self
+
+    @pd.model_validator(mode="after")
+    def validate_temperature_range_order(self):
+        """Validate that temperature_range_min < temperature_range_max."""
+        # pylint: disable=no-member
+        t_min = self.temperature_range_min.to("K").v.item()
+        t_max = self.temperature_range_max.to("K").v.item()
+        # pylint: enable=no-member
+        if t_min >= t_max:
+            raise ValueError(
+                f"temperature_range_min ({self.temperature_range_min}) must be less than "
+                f"temperature_range_max ({self.temperature_range_max})"
             )
         return self
 
@@ -210,6 +194,7 @@ class NASA9Coefficients(Flow360BaseModel):
     ====
     """
 
+    type_name: Literal["NASA9Coefficients"] = pd.Field("NASA9Coefficients", frozen=True)
     temperature_ranges: List[NASA9CoefficientSet] = pd.Field(
         min_length=1,
         max_length=5,
@@ -230,10 +215,31 @@ class NASA9Coefficients(Flow360BaseModel):
                 )
         return self
 
+    def get_coefficients_at_temperature(self, temp_k: float) -> list:
+        """
+        Get the NASA 9 coefficients for a given temperature.
 
-# Legacy aliases for backward compatibility during transition
-NASAPolynomialCoefficientSet = NASA9CoefficientSet
-NASAPolynomialCoefficients = NASA9Coefficients
+        Finds the temperature range that contains the specified temperature
+        and returns the corresponding coefficients.
+
+        Parameters
+        ----------
+        temp_k : float
+            Temperature in Kelvin
+
+        Returns
+        -------
+        list
+            NASA 9 coefficients [a0, a1, a2, a3, a4, a5, a6, a7, a8]
+        """
+        for coeff_set in self.temperature_ranges:
+            t_min = coeff_set.temperature_range_min.to("K").v.item()
+            t_max = coeff_set.temperature_range_max.to("K").v.item()
+            if t_min <= temp_k <= t_max:
+                return list(coeff_set.coefficients)
+
+        # Fallback to first range if temp_k is out of bounds
+        return list(self.temperature_ranges[0].coefficients)
 
 
 class FrozenSpecies(Flow360BaseModel):
@@ -264,6 +270,7 @@ class FrozenSpecies(Flow360BaseModel):
     ====
     """
 
+    type_name: Literal["FrozenSpecies"] = pd.Field("FrozenSpecies", frozen=True)
     name: str = pd.Field(description="Species name (e.g., 'N2', 'O2', 'Ar')")
     nasa_9_coefficients: NASA9Coefficients = pd.Field(
         description="NASA 9-coefficient polynomial for this species"
@@ -298,6 +305,7 @@ class ThermallyPerfectGas(Flow360BaseModel):
     ====
     """
 
+    type_name: Literal["ThermallyPerfectGas"] = pd.Field("ThermallyPerfectGas", frozen=True)
     species: List[FrozenSpecies] = pd.Field(
         min_length=1,
         description="List of species with their NASA 9 coefficients and mass fractions. "
@@ -306,11 +314,24 @@ class ThermallyPerfectGas(Flow360BaseModel):
 
     @pd.model_validator(mode="after")
     def validate_mass_fractions_sum_to_one(self):
-        """Validate that mass fractions sum to 1."""
+        """Validate that mass fractions sum to 1 and re-normalize if within tolerance."""
         total = sum(s.mass_fraction for s in self.species)
-        tolerance = 1.0e-8
+        tolerance = 1.0e-3
         if abs(total - 1.0) > tolerance:
             raise ValueError(f"Mass fractions must sum to 1.0, got {total}")
+        # Re-normalize to ensure exact sum of 1.0
+        if total != 1.0:
+            for species in self.species:
+                object.__setattr__(species, "mass_fraction", species.mass_fraction / total)
+        return self
+
+    @pd.model_validator(mode="after")
+    def validate_unique_species_names(self):
+        """Validate that all species have unique names."""
+        names = [s.name for s in self.species]
+        if len(names) != len(set(names)):
+            duplicates = [name for name in names if names.count(name) > 1]
+            raise ValueError(f"Species names must be unique. Duplicates found: {set(duplicates)}")
         return self
 
     @pd.model_validator(mode="after")
@@ -400,12 +421,9 @@ class Air(MaterialBase):
     This sets specific material properties for air,
     including dynamic viscosity, specific heat ratio, gas constant, and Prandtl number.
 
-    The thermodynamic properties can be specified using NASA 9-coefficient polynomials
-    for temperature-dependent specific heats. By default, coefficients are set to
-    reproduce a constant gamma=1.4 (calorically perfect gas).
-
-    For multi-species gas mixtures, use the `thermally_perfect_gas` parameter which
-    combines species properties weighted by mass fraction.
+    The thermodynamic properties are specified using NASA 9-coefficient polynomials
+    for temperature-dependent specific heats via the `thermally_perfect_gas` parameter.
+    By default, coefficients are set to reproduce a constant gamma=1.4 (calorically perfect gas).
 
     Example
     -------
@@ -414,15 +432,28 @@ class Air(MaterialBase):
     ...     dynamic_viscosity=1.063e-05 * fl.u.Pa * fl.u.s
     ... )
 
-    With custom NASA 9-coefficient polynomial:
+    With custom NASA 9-coefficient polynomial for single species:
 
     >>> fl.Air(
-    ...     nasa_9_coefficients=fl.NASA9Coefficients(
-    ...         temperature_ranges=[
-    ...             fl.NASA9CoefficientSet(
-    ...                 temperature_range_min=200.0 * fl.u.K,
-    ...                 temperature_range_max=6000.0 * fl.u.K,
-    ...                 coefficients=[0.0, 0.0, 3.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    ...     thermally_perfect_gas=fl.ThermallyPerfectGas(
+    ...         species=[
+    ...             fl.FrozenSpecies(
+    ...                 name="Air",
+    ...                 nasa_9_coefficients=fl.NASA9Coefficients(
+    ...                     temperature_ranges=[
+    ...                         fl.NASA9CoefficientSet(
+    ...                             temperature_range_min=200.0 * fl.u.K,
+    ...                             temperature_range_max=1000.0 * fl.u.K,
+    ...                             coefficients=[...],
+    ...                         ),
+    ...                         fl.NASA9CoefficientSet(
+    ...                             temperature_range_min=1000.0 * fl.u.K,
+    ...                             temperature_range_max=6000.0 * fl.u.K,
+    ...                             coefficients=[...],
+    ...                         ),
+    ...                     ]
+    ...                 ),
+    ...                 mass_fraction=1.0,
     ...             )
     ...         ]
     ...     )
@@ -458,34 +489,32 @@ class Air(MaterialBase):
             "model with standard atmospheric conditions."
         ),
     )
-    nasa_9_coefficients: NASA9Coefficients = pd.Field(
-        default_factory=lambda: NASA9Coefficients(
-            temperature_ranges=[
-                NASA9CoefficientSet(
-                    temperature_range_min=200.0 * u.K,
-                    temperature_range_max=6000.0 * u.K,
-                    # For constant gamma=1.4: cp/R = gamma/(gamma-1) = 1.4/0.4 = 3.5
-                    # In NASA9 format, constant cp/R is the a2 coefficient (index 2)
-                    # All other coefficients (inverse T terms, positive T terms, integration constants) are zero
-                    coefficients=[0.0, 0.0, 3.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-                ),
+    thermally_perfect_gas: ThermallyPerfectGas = pd.Field(
+        default_factory=lambda: ThermallyPerfectGas(
+            species=[
+                FrozenSpecies(
+                    name="Air",
+                    nasa_9_coefficients=NASA9Coefficients(
+                        temperature_ranges=[
+                            NASA9CoefficientSet(
+                                temperature_range_min=200.0 * u.K,
+                                temperature_range_max=6000.0 * u.K,
+                                # For constant gamma=1.4: cp/R = gamma/(gamma-1) = 1.4/0.4 = 3.5
+                                # In NASA9 format, constant cp/R is the a2 coefficient (index 2)
+                                coefficients=[0.0, 0.0, 3.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                            ),
+                        ]
+                    ),
+                    mass_fraction=1.0,
+                )
             ]
         ),
         description=(
-            "NASA 9-coefficient polynomial coefficients for computing temperature-dependent "
-            "thermodynamic properties (cp, enthalpy, entropy). Defaults to a single temperature "
-            "range with coefficients that reproduce constant gamma=1.4 (calorically perfect gas). "
-            "For air with gamma=1.4: cp/R = 3.5 (stored in a2). "
-            "Note: If thermally_perfect_gas is specified, it takes precedence over this field."
-        ),
-    )
-    thermally_perfect_gas: Optional[ThermallyPerfectGas] = pd.Field(
-        default=None,
-        description=(
-            "Multi-species thermally perfect gas model. When specified, this takes precedence "
-            "over nasa_9_coefficients. Use this to define gas mixtures with multiple species, "
-            "each with their own NASA 9-coefficient polynomials and mass fractions. "
-            "The mixture properties are computed as mass-fraction-weighted averages."
+            "Thermally perfect gas model with NASA 9-coefficient polynomials for "
+            "temperature-dependent thermodynamic properties. Defaults to a single-species "
+            "'Air' with coefficients that reproduce constant gamma=1.4 (calorically perfect gas). "
+            "For multi-species gas mixtures, specify multiple FrozenSpecies with their "
+            "respective mass fractions."
         ),
     )
     prandtl_number: pd.PositiveFloat = pd.Field(
@@ -506,18 +535,21 @@ class Air(MaterialBase):
         Determine if thermally perfect gas model should be used.
 
         Returns True if:
-        - thermally_perfect_gas is explicitly set (multi-species), OR
-        - nasa_9_coefficients has been customized (not the default CPG coefficients)
+        - Multiple species are defined, OR
+        - The species coefficients differ from the default CPG coefficients
 
-        For backward compatibility, default Air material uses constant gamma (CPG).
+        For backward compatibility, default Air material (single species with CPG
+        coefficients [0, 0, 3.5, ...]) uses constant gamma (CPG).
         """
-        # If multi-species TPG is explicitly set, use TPG
-        if self.thermally_perfect_gas is not None:
+        species_list = self.thermally_perfect_gas.species
+
+        # Multi-species always uses TPG
+        if len(species_list) != 1:
             return True
 
-        # Check if nasa_9_coefficients has been customized
-        # Default is single range with CPG coefficients [0, 0, 3.5, 0, 0, 0, 0, 0, 0]
-        ranges = self.nasa_9_coefficients.temperature_ranges
+        # Single species: check if coefficients differ from CPG defaults
+        species = species_list[0]
+        ranges = species.nasa_9_coefficients.temperature_ranges
         if len(ranges) != 1:
             return True  # Multiple ranges means customized
 
@@ -550,8 +582,7 @@ class Air(MaterialBase):
         """
         Get the NASA 9 coefficients at a given temperature.
 
-        For multi-species gas, coefficients are mass-fraction weighted.
-        For single-species, selects the appropriate temperature range.
+        Coefficients are mass-fraction weighted across all species.
 
         Parameters
         ----------
@@ -563,29 +594,13 @@ class Air(MaterialBase):
         list
             NASA 9 coefficients [a0, a1, a2, a3, a4, a5, a6, a7, a8]
         """
-        if self.thermally_perfect_gas is not None:
-            # For multi-species, combine coefficients by mass fraction
-            coeffs = [0.0] * 9
-            for species in self.thermally_perfect_gas.species:
-                # Find the temperature range that contains temp_k
-                for coeff_set in species.nasa_9_coefficients.temperature_ranges:
-                    t_min = coeff_set.temperature_range_min.to("K").v.item()
-                    t_max = coeff_set.temperature_range_max.to("K").v.item()
-                    if t_min <= temp_k <= t_max:
-                        for i in range(9):
-                            coeffs[i] += species.mass_fraction * coeff_set.coefficients[i]
-                        break
-            return coeffs
-
-        # Single-species: find the temperature range that contains temp_k
-        for coeff_set in self.nasa_9_coefficients.temperature_ranges:
-            t_min = coeff_set.temperature_range_min.to("K").v.item()
-            t_max = coeff_set.temperature_range_max.to("K").v.item()
-            if t_min <= temp_k <= t_max:
-                return list(coeff_set.coefficients)
-
-        # Fallback to first range if temp_k is out of bounds
-        return list(self.nasa_9_coefficients.temperature_ranges[0].coefficients)
+        # Combine coefficients by mass fraction across species
+        coeffs = [0.0] * 9
+        for species in self.thermally_perfect_gas.species:
+            species_coeffs = species.nasa_9_coefficients.get_coefficients_at_temperature(temp_k)
+            for i in range(9):
+                coeffs[i] += species.mass_fraction * species_coeffs[i]
+        return coeffs
 
     @property
     def specific_heat_ratio(self) -> pd.PositiveFloat:

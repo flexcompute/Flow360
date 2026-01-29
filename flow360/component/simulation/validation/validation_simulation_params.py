@@ -907,16 +907,9 @@ def _get_air_material(params):
 
 def _material_has_temperature_dependent_gas(material):
     """Check if Air material uses temperature-dependent gas properties."""
-    if material.thermally_perfect_gas is not None:
-        # Multi-species: check each species
-        for species in material.thermally_perfect_gas.species:
-            if _has_temperature_dependent_coefficients(
-                species.nasa_9_coefficients.temperature_ranges
-            ):
-                return True
-    else:
-        # Single-species: check nasa_9_coefficients
-        if _has_temperature_dependent_coefficients(material.nasa_9_coefficients.temperature_ranges):
+    # Check each species in the thermally perfect gas model
+    for species in material.thermally_perfect_gas.species:
+        if _has_temperature_dependent_coefficients(species.nasa_9_coefficients.temperature_ranges):
             return True
     return False
 
