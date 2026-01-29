@@ -827,22 +827,27 @@ def _expand_entity_list(entity_list, input_params) -> list:
 
 def _get_wall_bc_surface_names(input_params) -> list:
     """Get all surface names that have Wall boundary conditions assigned."""
+    # pylint: disable=import-outside-toplevel
+    from flow360.component.simulation.validation.validation_utils import (
+        get_surface_full_name,
+    )
+
     surface_names = []
     for bc in input_params.models:
         if isinstance(bc, Wall) and bc.entities is not None:
             expanded_entities = _expand_entity_list(bc.entities, input_params)
             for entity in expanded_entities:
-                if not hasattr(entity, "full_name"):
-                    raise TypeError(
-                        f"Unsupported entity type '{type(entity).__name__}' for force distribution output. "
-                        f"Only Surface entities are supported."
-                    )
-                surface_names.append(entity.full_name)
+                surface_names.append(get_surface_full_name(entity, "force distribution output"))
     return surface_names
 
 
 def translate_force_distribution_output(output_params: list, input_params):
     """Translate force distribution output settings."""
+    # pylint: disable=import-outside-toplevel
+    from flow360.component.simulation.validation.validation_utils import (
+        get_surface_full_name,
+    )
+
     force_distribution_output = {}
     for output in output_params:
         if is_exact_instance(output, ForceDistributionOutput):
@@ -853,7 +858,10 @@ def translate_force_distribution_output(output_params: list, input_params):
             # Add surfaces - use specified entities or all surfaces with Wall BC
             if output.entities is not None:
                 expanded_entities = _expand_entity_list(output.entities, input_params)
-                surface_names = [entity.full_name for entity in expanded_entities]
+                surface_names = [
+                    get_surface_full_name(entity, "force distribution output")
+                    for entity in expanded_entities
+                ]
             else:
                 surface_names = _get_wall_bc_surface_names(input_params)
             config["surfaces"] = surface_names
@@ -865,6 +873,11 @@ def translate_force_distribution_output(output_params: list, input_params):
 
 def translate_time_averaged_force_distribution_output(output_params: list, input_params):
     """Translate time-averaged force distribution output settings."""
+    # pylint: disable=import-outside-toplevel
+    from flow360.component.simulation.validation.validation_utils import (
+        get_surface_full_name,
+    )
+
     time_averaged_force_distribution_output = {}
     for output in output_params:
         if isinstance(output, TimeAverageForceDistributionOutput):
@@ -876,7 +889,10 @@ def translate_time_averaged_force_distribution_output(output_params: list, input
             # Add surfaces - use specified entities or all surfaces with Wall BC
             if output.entities is not None:
                 expanded_entities = _expand_entity_list(output.entities, input_params)
-                surface_names = [entity.full_name for entity in expanded_entities]
+                surface_names = [
+                    get_surface_full_name(entity, "force distribution output")
+                    for entity in expanded_entities
+                ]
             else:
                 surface_names = _get_wall_bc_surface_names(input_params)
             config["surfaces"] = surface_names

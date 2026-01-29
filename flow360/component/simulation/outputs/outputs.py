@@ -76,6 +76,7 @@ from flow360.component.simulation.validation.validation_context import (
     get_validation_levels,
 )
 from flow360.component.simulation.validation.validation_utils import (
+    get_surface_full_name,
     validate_entity_list_surface_existence,
     validate_improper_surface_field_usage_for_imported_surface,
 )
@@ -1727,24 +1728,15 @@ class ForceDistributionOutput(Flow360BaseModel):
             if isinstance(model, Wall) and model.entities is not None:
                 expanded_entities = param_info.expand_entity_list(model.entities)
                 for entity in expanded_entities:
-                    if not hasattr(entity, "full_name"):
-                        raise TypeError(
-                            f"Unsupported entity type '{type(entity).__name__}' for Wall BC. "
-                            f"Only Surface entities are supported."
-                        )
-                    wall_surface_names.add(entity.full_name)
+                    wall_surface_names.add(get_surface_full_name(entity, "Wall BC"))
 
         # Check that all specified surfaces have Wall BC
         expanded_entities = param_info.expand_entity_list(self.entities)
         non_wall_surfaces = []
         for entity in expanded_entities:
-            if not hasattr(entity, "full_name"):
-                raise TypeError(
-                    f"Unsupported entity type '{type(entity).__name__}' for force distribution output. "
-                    f"Only Surface entities are supported."
-                )
-            if entity.full_name not in wall_surface_names:
-                non_wall_surfaces.append(entity.full_name)
+            full_name = get_surface_full_name(entity, "force distribution output")
+            if full_name not in wall_surface_names:
+                non_wall_surfaces.append(full_name)
 
         if non_wall_surfaces:
             raise ValueError(
