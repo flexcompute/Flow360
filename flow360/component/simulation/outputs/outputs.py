@@ -76,6 +76,7 @@ from flow360.component.simulation.validation.validation_context import (
     get_validation_levels,
 )
 from flow360.component.simulation.validation.validation_utils import (
+    get_surface_full_name,
     validate_entity_list_surface_existence,
     validate_improper_surface_field_usage_for_imported_surface,
 )
@@ -1661,10 +1662,21 @@ class ForceDistributionOutput(Flow360BaseModel):
     Example
     -------
 
+    Basic usage with default settings (all wall surfaces):
 
     >>> fl.ForceDistributionOutput(
     ...     name="spanwise",
     ...     distribution_direction=[0.1, 0.9, 0.0],
+    ... )
+
+    Specifying specific surfaces to include in the force integration (useful for automotive cases
+    to exclude road/floor surfaces):
+
+    >>> fl.ForceDistributionOutput(
+    ...     name="vehicle_x_distribution",
+    ...     distribution_direction=[1.0, 0.0, 0.0],
+    ...     entities=[volume_mesh["vehicle_body"], volume_mesh["wheels"]],
+    ...     number_of_segments=500,
     ... )
 
     ====
@@ -1677,9 +1689,63 @@ class ForceDistributionOutput(Flow360BaseModel):
     distribution_type: Literal["incremental", "cumulative"] = pd.Field(
         "incremental", description="Type of the distribution."
     )
+    entities: Optional[EntityList[Surface, MirroredSurface]] = pd.Field(
+        None,
+        alias="surfaces",
+        description="List of surfaces to include in the force integration. "
+        "If not specified, all wall surfaces are included. "
+        "This is useful for automotive cases to exclude road/floor surfaces.",
+    )
+    number_of_segments: pd.PositiveInt = pd.Field(
+        300,
+        description="Number of segments (bins) to use along the distribution direction. "
+        "Default is 300 segments. "
+        "Increasing this value provides higher resolution in the force distribution plot.",
+    )
     output_type: Literal["ForceDistributionOutput"] = pd.Field(
         "ForceDistributionOutput", frozen=True
     )
+
+    @contextual_field_validator("entities", mode="after")
+    @classmethod
+    def ensure_surface_existence(cls, value, param_info: ParamsValidationInfo):
+        """Ensure all boundaries will be present after mesher"""
+        return validate_entity_list_surface_existence(value, param_info)
+
+    @contextual_model_validator(mode="after")
+    def ensure_surfaces_have_wall_bc(self, param_info: ParamsValidationInfo):
+        """Ensure all specified surfaces have Wall boundary conditions assigned."""
+        if self.entities is None:
+            return self
+
+        # Skip validation if physics_model_dict is not yet available
+        if param_info.physics_model_dict is None:
+            return self
+
+        # Collect all surfaces that have Wall boundary conditions
+        wall_surface_names = set()
+        for model in param_info.physics_model_dict.values():
+            if isinstance(model, Wall) and model.entities is not None:
+                expanded_entities = param_info.expand_entity_list(model.entities)
+                for entity in expanded_entities:
+                    wall_surface_names.add(get_surface_full_name(entity, "Wall BC"))
+
+        # Check that all specified surfaces have Wall BC
+        expanded_entities = param_info.expand_entity_list(self.entities)
+        non_wall_surfaces = []
+        for entity in expanded_entities:
+            full_name = get_surface_full_name(entity, "force distribution output")
+            if full_name not in wall_surface_names:
+                non_wall_surfaces.append(full_name)
+
+        if non_wall_surfaces:
+            raise ValueError(
+                f"The following surfaces do not have Wall boundary conditions assigned: "
+                f"{non_wall_surfaces}. Force distribution output can only be computed on "
+                f"surfaces with Wall boundary conditions."
+            )
+
+        return self
 
 
 class TimeAverageForceDistributionOutput(ForceDistributionOutput):
@@ -1696,6 +1762,17 @@ class TimeAverageForceDistributionOutput(ForceDistributionOutput):
     ...     name="spanwise",
     ...     distribution_direction=[0.1, 0.9, 0.0],
     ...     start_step=4,
+    ... )
+
+    Specifying specific surfaces to include in the force integration (useful for automotive cases
+    to exclude road/floor surfaces):
+
+    >>> fl.TimeAverageForceDistributionOutput(
+    ...     name="vehicle_x_distribution",
+    ...     distribution_direction=[1.0, 0.0, 0.0],
+    ...     entities=[volume_mesh["vehicle_body"], volume_mesh["wheels"]],
+    ...     number_of_segments=500,
+    ...     start_step=100,
     ... )
 
     ====

@@ -482,3 +482,32 @@ def validate_improper_surface_field_usage_for_imported_surface(
                     f"{', '.join(sorted(disallowed_surface_vars))}. "
                     "Only Volume type solver variables and 'solution.node_unit_normal' are allowed."
                 )
+
+
+def get_surface_full_name(entity, context: str = "force distribution output") -> str:
+    """
+    Get the full_name from a surface entity.
+
+    Parameters
+    ----------
+    entity : Surface-like
+        An entity that should have a full_name attribute.
+    context : str
+        Description of where this is being used, for error messages.
+
+    Returns
+    -------
+    str
+        The full_name of the entity.
+
+    Raises
+    ------
+    TypeError
+        If the entity doesn't have a full_name attribute.
+    """
+    if not hasattr(entity, "full_name"):
+        raise TypeError(
+            f"Unsupported entity type '{type(entity).__name__}' for {context}. "
+            f"Only Surface entities are supported."
+        )
+    return entity.full_name
