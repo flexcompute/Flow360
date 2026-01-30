@@ -261,6 +261,27 @@ class MonitorsResultModel(ResultTarGZModel):
     _monitor_names: List[str] = pd.PrivateAttr([])
     _monitors: Dict[str, MonitorCSVModel] = pd.PrivateAttr({})
 
+    def _populate_monitors(self):
+        """
+        Populate the internal monitors dictionary and names list from the file list.
+        """
+        pattern = CaseDownloadable.MONITOR_PATTERN.value
+        file_list = [
+            file["fileName"]
+            for file in self.get_download_file_list_method()  # pylint:disable=not-callable
+        ]
+        for filepath in file_list:
+            if str(Path(filepath).parent) == "results":
+                filename = Path(filepath).name
+                match = re.match(pattern, filename)
+                if match:
+                    name = match.group(1)
+                    self._monitor_names.append(name)
+                    self._monitors[name] = MonitorCSVModel(remote_file_name=filename)
+                    # pylint: disable=protected-access
+                    self._monitors[name]._download_method = self._download_method
+                    self._monitors[name]._get_params_method = self._get_params_method
+
     @property
     def monitor_names(self):
         """
@@ -271,27 +292,8 @@ class MonitorsResultModel(ResultTarGZModel):
         list of str
             List of monitor names.
         """
-
         if len(self._monitor_names) == 0:
-            pattern = CaseDownloadable.MONITOR_PATTERN.value
-            file_list = [
-                file["fileName"]
-                for file in self.get_download_file_list_method()  # pylint:disable=not-callable
-            ]
-            for filepath in file_list:
-                if str(Path(filepath).parent) == "results":
-                    filename = Path(filepath).name
-                    match = re.match(pattern, filename)
-                    if match:
-                        name = match.group(1)
-                        self._monitor_names.append(name)
-                        self._monitors[name] = MonitorCSVModel(remote_file_name=filename)
-                        # pylint: disable=protected-access
-                        self._monitors[name]._download_method = (
-                            self._download_method
-                        )  # pylint: disable=protected-access
-                        self._monitors[name]._get_params_method = self._get_params_method
-
+            self._populate_monitors()
         return self._monitor_names
 
     def get_monitor_by_name(self, name: str) -> MonitorCSVModel:
@@ -344,6 +346,27 @@ class UserDefinedDynamicsResultModel(ResultBaseModel):
     _udd_names: List[str] = pd.PrivateAttr([])
     _udds: Dict[str, UserDefinedDynamicsCSVModel] = pd.PrivateAttr({})
 
+    def _populate_udds(self):
+        """
+        Populate the internal UDDs dictionary and names list from the file list.
+        """
+        pattern = CaseDownloadable.USER_DEFINED_DYNAMICS_PATTERN.value
+        file_list = [
+            file["fileName"]
+            for file in self.get_download_file_list_method()  # pylint:disable=not-callable
+        ]
+        for filepath in file_list:
+            if str(Path(filepath).parent) == "results":
+                filename = Path(filepath).name
+                match = re.match(pattern, filename)
+                if match:
+                    name = match.group(1)
+                    self._udd_names.append(name)
+                    self._udds[name] = UserDefinedDynamicsCSVModel(remote_file_name=filename)
+                    # pylint: disable=protected-access
+                    self._udds[name]._download_method = self._download_method
+                    self._udds[name]._get_params_method = self._get_params_method
+
     @property
     def udd_names(self):
         """
@@ -354,25 +377,8 @@ class UserDefinedDynamicsResultModel(ResultBaseModel):
         list of str
             List of user-defined dynamics names.
         """
-
         if len(self._udd_names) == 0:
-            pattern = CaseDownloadable.USER_DEFINED_DYNAMICS_PATTERN.value
-            file_list = [
-                file["fileName"]
-                for file in self.get_download_file_list_method()  # pylint:disable=not-callable
-            ]
-            for filepath in file_list:
-                if str(Path(filepath).parent) == "results":
-                    filename = Path(filepath).name
-                    match = re.match(pattern, filename)
-                    if match:
-                        name = match.group(1)
-                        self._udd_names.append(name)
-                        self._udds[name] = UserDefinedDynamicsCSVModel(remote_file_name=filename)
-                        # pylint: disable=protected-access
-                        self._udds[name]._download_method = self._download_method
-                        self._udds[name]._get_params_method = self._get_params_method
-
+            self._populate_udds()
         return self._udd_names
 
     def download(
@@ -388,9 +394,8 @@ class UserDefinedDynamicsResultModel(ResultBaseModel):
         overwrite : bool, optional
             Flag indicating whether to overwrite existing files.
         """
-
-        _ = self.udd_names
-
+        if len(self._udd_names) == 0:
+            self._populate_udds()
         for udd in self._udds.values():
             udd.download(to_folder=to_folder, overwrite=overwrite)
 
@@ -445,6 +450,27 @@ class CustomForceResultModel(ResultBaseModel):
     _custom_force_names: List[str] = pd.PrivateAttr([])
     _custom_forces: Dict[str, CustomForceCSVModel] = pd.PrivateAttr({})
 
+    def _populate_custom_forces(self):
+        """
+        Populate the internal custom forces dictionary and names list from the file list.
+        """
+        pattern = CaseDownloadable.CUSTOM_FORCE_PATTERN.value
+        file_list = [
+            file["fileName"]
+            for file in self.get_download_file_list_method()  # pylint:disable=not-callable
+        ]
+        for filepath in file_list:
+            if str(Path(filepath).parent) == "results":
+                filename = Path(filepath).name
+                match = re.match(pattern, filename)
+                if match:
+                    name = match.group(1)
+                    self._custom_force_names.append(name)
+                    self._custom_forces[name] = CustomForceCSVModel(remote_file_name=filename)
+                    # pylint: disable=protected-access
+                    self._custom_forces[name]._download_method = self._download_method
+                    self._custom_forces[name]._get_params_method = self._get_params_method
+
     @property
     def custom_force_names(self):
         """
@@ -455,25 +481,8 @@ class CustomForceResultModel(ResultBaseModel):
         list of str
             List of custom force output names.
         """
-
         if len(self._custom_force_names) == 0:
-            pattern = CaseDownloadable.CUSTOM_FORCE_PATTERN.value
-            file_list = [
-                file["fileName"]
-                for file in self.get_download_file_list_method()  # pylint:disable=not-callable
-            ]
-            for filepath in file_list:
-                if str(Path(filepath).parent) == "results":
-                    filename = Path(filepath).name
-                    match = re.match(pattern, filename)
-                    if match:
-                        name = match.group(1)
-                        self._custom_force_names.append(name)
-                        self._custom_forces[name] = CustomForceCSVModel(remote_file_name=filename)
-                        # pylint: disable=protected-access
-                        self._custom_forces[name]._download_method = self._download_method
-                        self._custom_forces[name]._get_params_method = self._get_params_method
-
+            self._populate_custom_forces()
         return self._custom_force_names
 
     def download(
@@ -489,9 +498,8 @@ class CustomForceResultModel(ResultBaseModel):
         overwrite : bool, optional
             Flag indicating whether to overwrite existing files.
         """
-
-        _ = self.custom_force_names
-
+        if len(self._custom_force_names) == 0:
+            self._populate_custom_forces()
         for custom_force in self._custom_forces.values():
             custom_force.download(to_folder=to_folder, overwrite=overwrite)
 
