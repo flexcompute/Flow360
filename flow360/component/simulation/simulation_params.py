@@ -52,6 +52,7 @@ from flow360.component.simulation.operating_condition.operating_condition import
 )
 from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
+    ForceOutput,
     IsosurfaceOutput,
     OutputTypes,
     ProbeOutput,
@@ -912,6 +913,15 @@ class SimulationParams(_ParamModelBase):
         returns True when SimulationParams has user defined dynamics
         """
         return self.user_defined_dynamics is not None and len(self.user_defined_dynamics) > 0
+
+    def has_custom_forces(self):
+        """
+        returns True when SimulationParams has any ForceOutputs
+        """
+        if self.outputs is None:
+            return False
+        # pylint: disable=not-an-iterable
+        return any(isinstance(item, ForceOutput) for item in self.outputs)
 
     def display_output_units(self) -> None:
         """

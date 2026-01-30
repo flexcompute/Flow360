@@ -46,6 +46,7 @@ from .results.case_results import (
     BETForcesResultCSVModel,
     CaseDownloadable,
     CFLResultCSVModel,
+    CustomForceResultModel,
     LegacyForceDistributionResultCSVModel,
     LinearResidualsResultCSVModel,
     MaxResidualLocationResultCSVModel,
@@ -675,6 +676,14 @@ class Case(CaseBase, Flow360Resource):
             return self.params.user_defined_dynamics is not None
         return self.params.has_user_defined_dynamics()
 
+    def has_custom_forces(self):
+        """
+        returns True when case has custom forces
+        """
+        if isinstance(self.params, Flow360Params):
+            return False
+        return self.params.has_custom_forces()
+
     def move_to_folder(self, folder: Folder):
         """
         Move the current case to the specified folder.
@@ -888,6 +897,9 @@ class CaseResultsModel(pd.BaseModel):
     user_defined_dynamics: UserDefinedDynamicsResultModel = pd.Field(
         default_factory=lambda: UserDefinedDynamicsResultModel()
     )
+    custom_forces: CustomForceResultModel = pd.Field(
+        default_factory=lambda: CustomForceResultModel()
+    )
 
     # others
     surface_heat_transfer: SurfaceHeatTransferResultCSVModel = pd.Field(
@@ -942,6 +954,7 @@ class CaseResultsModel(pd.BaseModel):
             "volumes": self.case.has_volume_output,
             "aeroacoustics": self.case.has_aeroacoustics,
             "user_defined_dynamics": self.case.has_user_defined_dynamics,
+            "custom_forces": self.case.has_custom_forces,
         }
 
         for field_name in self.__class__.model_fields:  # pylint:disable = not-an-iterable
@@ -1026,6 +1039,7 @@ class CaseResultsModel(pd.BaseModel):
         x_slicing_force_distribution: bool = None,
         y_slicing_force_distribution: bool = None,
         user_defined_dynamics: bool = None,
+        custom_forces: bool = None,
         aeroacoustics: bool = None,
         surface_heat_transfer: bool = None,
         all: bool = None,
@@ -1089,6 +1103,7 @@ class CaseResultsModel(pd.BaseModel):
         self.y_slicing_force_distribution.do_download = y_slicing_force_distribution
 
         self.user_defined_dynamics.do_download = user_defined_dynamics
+        self.custom_forces.do_download = custom_forces
         self.aeroacoustics.do_download = aeroacoustics
         self.surface_heat_transfer.do_download = surface_heat_transfer
 
