@@ -139,5 +139,9 @@
     },
     "runControl": {
         "externalProcessMonitorOutput": false
+    },
+    "fluidProperties": {
+        "prandtlNumber": 7.0,
+        "turbulentPrandtlNumber": 0.9
     }
 }
