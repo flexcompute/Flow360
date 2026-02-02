@@ -152,8 +152,8 @@ class AxisymmetricRefinementBase(Flow360BaseModel, metaclass=ABCMeta):
     spacing_radial: Optional[LengthType.Positive] = pd.Field(
         None, description="Spacing along the radial direction."
     )
-    spacing_circumferential: LengthType.Positive = pd.Field(
-        description="Spacing along the circumferential direction."
+    spacing_circumferential: Optional[LengthType.Positive] = pd.Field(
+        None, description="Spacing along the circumferential direction."
     )
 
 
@@ -186,15 +186,19 @@ class AxisymmetricRefinement(AxisymmetricRefinementBase):
     entities: EntityList[Cylinder] = pd.Field()
 
     @pd.model_validator(mode="after")
-    def _validate_axial_radial_spacing_required(self):
-        """Ensure spacing_axial and spacing_radial are provided for Cylinder entities."""
+    def _validate_all_spacings_required(self):
+        """Ensure all three spacings are provided for AxisymmetricRefinement."""
         if self.spacing_axial is None:
             raise ValueError(
-                "`spacing_axial` is required for `AxisymmetricRefinement` with `Cylinder` entities."
+                "`spacing_axial` is required for `AxisymmetricRefinement`."
             )
         if self.spacing_radial is None:
             raise ValueError(
-                "`spacing_radial` is required for `AxisymmetricRefinement` with `Cylinder` entities."
+                "`spacing_radial` is required for `AxisymmetricRefinement`."
+            )
+        if self.spacing_circumferential is None:
+            raise ValueError(
+                "`spacing_circumferential` is required for `AxisymmetricRefinement`."
             )
         return self
 
@@ -429,8 +433,8 @@ class RotationVolume(AxisymmetricRefinementBase):
     def _validate_spacing_requirements_by_entity_type(self):
         """
         Validate spacing requirements based on entity type:
-        - Sphere: only spacing_circumferential is used; spacing_axial and spacing_radial must not be specified
-        - Cylinder/AxisymmetricBody: spacing_axial and spacing_radial are required
+        - Sphere: only spacing_circumferential is required; spacing_axial and spacing_radial must not be specified
+        - Cylinder/AxisymmetricBody: all three spacings are required
         """
         # Check if entity is a Sphere
         # pylint: disable=no-member
@@ -441,6 +445,10 @@ class RotationVolume(AxisymmetricRefinementBase):
         )
 
         if has_sphere:
+            if self.spacing_circumferential is None:
+                raise ValueError(
+                    "`spacing_circumferential` is required for `Sphere` entities in `RotationVolume`."
+                )
             if self.spacing_axial is not None:
                 raise ValueError(
                     "`spacing_axial` must not be specified for `Sphere` entities. "
@@ -455,11 +463,18 @@ class RotationVolume(AxisymmetricRefinementBase):
         if has_cylinder_or_axisymmetric:
             if self.spacing_axial is None:
                 raise ValueError(
-                    "`spacing_axial` is required for `Cylinder` and `AxisymmetricBody` entities."
+                    "`spacing_axial` is required for `Cylinder` and `AxisymmetricBody` entities "
+                    "in `RotationVolume`."
                 )
             if self.spacing_radial is None:
                 raise ValueError(
-                    "`spacing_radial` is required for `Cylinder` and `AxisymmetricBody` entities."
+                    "`spacing_radial` is required for `Cylinder` and `AxisymmetricBody` entities "
+                    "in `RotationVolume`."
+                )
+            if self.spacing_circumferential is None:
+                raise ValueError(
+                    "`spacing_circumferential` is required for `Cylinder` and `AxisymmetricBody` "
+                    "entities in `RotationVolume`."
                 )
 
         return self
