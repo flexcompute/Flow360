@@ -348,14 +348,18 @@ def test_sphere_uniform_scale():
 
 
 def test_sphere_rotation():
-    """Sphere center should rotate (radius unchanged)."""
+    """Sphere center and axis should rotate (radius unchanged)."""
     with SI_unit_system:
-        sphere = Sphere(name="test_sphere", center=(1, 0, 0) * u.m, radius=5 * u.m)
+        sphere = Sphere(
+            name="test_sphere", center=(1, 0, 0) * u.m, radius=5 * u.m, axis=(1, 0, 0)
+        )
         matrix = rotation_z_90()
         transformed = sphere._apply_transformation(matrix)
 
         # Center (1,0,0) rotated 90° around Z = (0,1,0)
         np.testing.assert_allclose(transformed.center.value, [0, 1, 0], atol=1e-10)
+        # Axis (1,0,0) rotated 90° around Z = (0,1,0)
+        np.testing.assert_allclose(transformed.axis, (0, 1, 0), atol=1e-10)
         # Radius unchanged by rotation
         np.testing.assert_allclose(transformed.radius.value, 5, atol=1e-10)
 

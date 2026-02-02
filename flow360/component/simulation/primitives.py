@@ -479,6 +479,7 @@ class Sphere(_VolumeEntityBase):
     ...     name="sphere_zone",
     ...     center=(0, 0, 0) * fl.u.m,
     ...     radius=1.5 * fl.u.m,
+    ...     axis=(0, 0, 1),
     ... )
 
     ====
@@ -488,6 +489,10 @@ class Sphere(_VolumeEntityBase):
     # pylint: disable=no-member
     center: LengthType.Point = pd.Field(description="The center point of the sphere.")
     radius: LengthType.Positive = pd.Field(description="The radius of the sphere.")
+    axis: Axis = pd.Field(
+        default=(0, 0, 1),
+        description="The axis of rotation for the sphere (used in sliding interfaces).",
+    )
     private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
 
     def _apply_transformation(self, matrix: np.ndarray) -> "Sphere":
@@ -496,12 +501,18 @@ class Sphere(_VolumeEntityBase):
             matrix, self.center, "Sphere"
         )
 
+        # Rotate axis
+        axis_array = np.asarray(self.axis)
+        transformed_axis = _transform_direction(axis_array, matrix)
+        new_axis = tuple(transformed_axis / np.linalg.norm(transformed_axis))
+
         # Scale radius uniformly
         new_radius = self.radius * uniform_scale
 
         return self.model_copy(
             update={
                 "center": new_center,
+                "axis": new_axis,
                 "radius": new_radius,
             }
         )

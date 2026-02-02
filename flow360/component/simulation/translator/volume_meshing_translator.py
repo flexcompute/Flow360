@@ -30,6 +30,7 @@ from flow360.component.simulation.primitives import (
     CustomVolume,
     Cylinder,
     SeedpointVolume,
+    Sphere,
     Surface,
 )
 from flow360.component.simulation.simulation_params import SimulationParams
@@ -109,27 +110,45 @@ def passive_spacing_translator(obj: PassiveSpacing):
     }
 
 
+def spherical_refinement_translator(obj: RotationVolume):
+    """
+    Translate RotationVolume with Sphere entity.
+    Sphere only uses spacing_circumferential as maxEdgeLength.
+    """
+    return {
+        "maxEdgeLength": obj.spacing_circumferential.value.item(),
+    }
+
+
 def rotation_volume_translator(obj: RotationVolume, rotor_disk_names: list):
     """Setting translation for RotationVolume."""
-    setting = cylindrical_refinement_translator(obj)
+    # Check if the entity is a Sphere (uses different spacing fields)
+    entity = obj.entities.stored_entities[0]  # Only single entity allowed
+    if is_exact_instance(entity, Sphere):
+        setting = spherical_refinement_translator(obj)
+    else:
+        setting = cylindrical_refinement_translator(obj)
+
     setting["enclosedObjects"] = []
     if obj.enclosed_entities is not None:
-        for entity in obj.enclosed_entities.stored_entities:
-            if is_exact_instance(entity, Cylinder):
-                if entity.name in rotor_disk_names:
+        for enclosed_entity in obj.enclosed_entities.stored_entities:
+            if is_exact_instance(enclosed_entity, Cylinder):
+                if enclosed_entity.name in rotor_disk_names:
                     # Current sliding interface encloses a rotor disk
                     # Then we append the interface name which is hardcoded "rotorDisk-<name>""
-                    setting["enclosedObjects"].append("rotorDisk-" + entity.name)
+                    setting["enclosedObjects"].append("rotorDisk-" + enclosed_entity.name)
                 else:
                     # Current sliding interface encloses another sliding interface
                     # Then we append the interface name which is hardcoded "slidingInterface-<name>""
-                    setting["enclosedObjects"].append("slidingInterface-" + entity.name)
-            elif is_exact_instance(entity, AxisymmetricBody):
-                setting["enclosedObjects"].append("slidingInterface-" + entity.name)
-            elif is_exact_instance(entity, Box):
-                setting["enclosedObjects"].append("structuredBox-" + entity.name)
-            elif is_exact_instance(entity, Surface):
-                setting["enclosedObjects"].append(entity.name)
+                    setting["enclosedObjects"].append("slidingInterface-" + enclosed_entity.name)
+            elif is_exact_instance(enclosed_entity, AxisymmetricBody):
+                setting["enclosedObjects"].append("slidingInterface-" + enclosed_entity.name)
+            elif is_exact_instance(enclosed_entity, Sphere):
+                setting["enclosedObjects"].append("slidingInterface-" + enclosed_entity.name)
+            elif is_exact_instance(enclosed_entity, Box):
+                setting["enclosedObjects"].append("structuredBox-" + enclosed_entity.name)
+            elif is_exact_instance(enclosed_entity, Surface):
+                setting["enclosedObjects"].append(enclosed_entity.name)
     return setting
 
 
@@ -187,9 +206,9 @@ def rotor_disks_entity_injector(entity: Cylinder):
 
 
 def rotation_volume_entity_injector(
-    entity: Union[Cylinder, AxisymmetricBody], use_inhouse_mesher: bool
+    entity: Union[Cylinder, AxisymmetricBody, Sphere], use_inhouse_mesher: bool
 ):
-    """Injector for Cylinder entity in RotationCylinder."""
+    """Injector for Cylinder, AxisymmetricBody, or Sphere entity in RotationVolume."""
     if isinstance(entity, Cylinder):
         data = {
             "name": entity.name,
@@ -213,6 +232,18 @@ def rotation_volume_entity_injector(
         if use_inhouse_mesher:
             data["type"] = "Axisymmetric"
         return data
+
+    if isinstance(entity, Sphere):
+        data = {
+            "name": entity.name,
+            "radius": entity.radius.value.item(),
+            "axisOfRotation": list(entity.axis),
+            "center": list(entity.center.value),
+        }
+        if use_inhouse_mesher:
+            data["type"] = "Sphere"
+        return data
+
     return {}
 
 
