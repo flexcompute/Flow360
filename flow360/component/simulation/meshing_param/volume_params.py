@@ -189,17 +189,11 @@ class AxisymmetricRefinement(AxisymmetricRefinementBase):
     def _validate_all_spacings_required(self):
         """Ensure all three spacings are provided for AxisymmetricRefinement."""
         if self.spacing_axial is None:
-            raise ValueError(
-                "`spacing_axial` is required for `AxisymmetricRefinement`."
-            )
+            raise ValueError("`spacing_axial` is required for `AxisymmetricRefinement`.")
         if self.spacing_radial is None:
-            raise ValueError(
-                "`spacing_radial` is required for `AxisymmetricRefinement`."
-            )
+            raise ValueError("`spacing_radial` is required for `AxisymmetricRefinement`.")
         if self.spacing_circumferential is None:
-            raise ValueError(
-                "`spacing_circumferential` is required for `AxisymmetricRefinement`."
-            )
+            raise ValueError("`spacing_circumferential` is required for `AxisymmetricRefinement`.")
         return self
 
 

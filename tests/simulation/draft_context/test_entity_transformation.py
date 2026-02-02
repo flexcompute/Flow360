@@ -350,9 +350,7 @@ def test_sphere_uniform_scale():
 def test_sphere_rotation():
     """Sphere center and axis should rotate (radius unchanged)."""
     with SI_unit_system:
-        sphere = Sphere(
-            name="test_sphere", center=(1, 0, 0) * u.m, radius=5 * u.m, axis=(1, 0, 0)
-        )
+        sphere = Sphere(name="test_sphere", center=(1, 0, 0) * u.m, radius=5 * u.m, axis=(1, 0, 0))
         matrix = rotation_z_90()
         transformed = sphere._apply_transformation(matrix)
 
