@@ -482,6 +482,57 @@ class Box(MultiConstructorBaseModel, _VolumeEntityBase):
 
 
 @final
+class Sphere(_VolumeEntityBase):
+    """
+    :class:`Sphere` class represents a sphere in three-dimensional space.
+
+    Example
+    -------
+    >>> fl.Sphere(
+    ...     name="sphere_zone",
+    ...     center=(0, 0, 0) * fl.u.m,
+    ...     radius=1.5 * fl.u.m,
+    ... )
+
+    ====
+    """
+
+    private_attribute_entity_type_name: Literal["Sphere"] = pd.Field("Sphere", frozen=True)
+    # pylint: disable=no-member
+    center: LengthType.Point = pd.Field(description="The center point of the sphere.")
+    radius: LengthType.Positive = pd.Field(description="The radius of the sphere.")
+    private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
+
+    def _apply_transformation(self, matrix: np.ndarray) -> "Sphere":
+        """Apply 3x4 transformation matrix with uniform scale validation."""
+        # Validate uniform scaling
+        if not _is_uniform_scale(matrix):
+            scale_factors = _extract_scale_from_matrix(matrix)
+            raise Flow360ValueError(
+                f"Sphere only supports uniform scaling. "
+                f"Detected scale factors: {scale_factors}"
+            )
+
+        # Extract uniform scale factor
+        uniform_scale = _extract_scale_from_matrix(matrix)[0]
+
+        # Transform center
+        center_array = np.asarray(self.center.value)
+        new_center_array = _transform_point(center_array, matrix)
+        new_center = type(self.center)(new_center_array, self.center.units)
+
+        # Scale radius uniformly
+        new_radius = self.radius * uniform_scale
+
+        return self.model_copy(
+            update={
+                "center": new_center,
+                "radius": new_radius,
+            }
+        )
+
+
+@final
 class Cylinder(_VolumeEntityBase):
     """
     :class:`Cylinder` class represents a cylinder in three-dimensional space.
@@ -996,7 +1047,7 @@ class SeedpointVolume(_VolumeEntityBase):
         return self
 
 
-VolumeEntityTypes = Union[GenericVolume, Cylinder, Box, str]
+VolumeEntityTypes = Union[GenericVolume, Cylinder, Sphere, Box, str]
 
 
 class SurfacePair(SurfacePairBase):
