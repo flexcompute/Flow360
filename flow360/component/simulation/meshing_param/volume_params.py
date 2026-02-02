@@ -329,11 +329,9 @@ class RotationVolume(AxisymmetricRefinementBase):
 
     @contextual_field_validator("enclosed_entities", mode="after")
     @classmethod
-    def _validate_enclosed_box_only_in_beta_mesher(cls, values, param_info: ParamsValidationInfo):
+    def _validate_enclosed_entities_beta_mesher_only(cls, values, param_info: ParamsValidationInfo):
         """
-        Check the name length for the cylinder entities due to the 32-character
-        limitation of all data structure names and labels in CGNS format.
-        The current prefix is 'rotatingBlock-' with 14 characters.
+        Ensure that Box and Sphere entities in enclosed_entities are only used with the beta mesher.
         """
         if values is None:
             return values
@@ -346,14 +344,18 @@ class RotationVolume(AxisymmetricRefinementBase):
                 raise ValueError(
                     "`Box` entity in `RotationVolume.enclosed_entities` is only supported with the beta mesher."
                 )
+            if isinstance(entity, Sphere):
+                raise ValueError(
+                    "`Sphere` entity in `RotationVolume.enclosed_entities` is only supported with the beta mesher."
+                )
 
         return values
 
     @contextual_field_validator("entities", mode="after")
     @classmethod
-    def _validate_axisymmetric_only_in_beta_mesher(cls, values, param_info: ParamsValidationInfo):
+    def _validate_entities_beta_mesher_only(cls, values, param_info: ParamsValidationInfo):
         """
-        Ensure that axisymmetric RotationVolumes are only processed with the beta mesher.
+        Ensure that AxisymmetricBody and Sphere entities are only used with the beta mesher.
         """
         if param_info.is_beta_mesher:
             return values
@@ -363,18 +365,6 @@ class RotationVolume(AxisymmetricRefinementBase):
                 raise ValueError(
                     "`AxisymmetricBody` entity for `RotationVolume` is only supported with the beta mesher."
                 )
-        return values
-
-    @contextual_field_validator("entities", mode="after")
-    @classmethod
-    def _validate_sphere_only_in_beta_mesher(cls, values, param_info: ParamsValidationInfo):
-        """
-        Ensure that Sphere RotationVolumes are only processed with the beta mesher.
-        """
-        if param_info.is_beta_mesher:
-            return values
-
-        for entity in values.stored_entities:
             if isinstance(entity, Sphere):
                 raise ValueError(
                     "`Sphere` entity for `RotationVolume` is only supported with the beta mesher."

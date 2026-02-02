@@ -453,6 +453,51 @@ def test_sphere_rotation_volume_with_enclosed_entities():
             )
 
 
+def test_sphere_in_enclosed_entities_only_in_beta_mesher():
+    """Test that Sphere in enclosed_entities is only supported with the beta mesher."""
+    # raises when beta mesher is off
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"`Sphere` entity in `RotationVolume.enclosed_entities` is only supported with the beta mesher.",
+    ):
+        with ValidationContext(VOLUME_MESH, non_beta_mesher_context):
+            with CGS_unit_system:
+                cylinder = Cylinder(
+                    name="outer_cyl",
+                    center=(0, 0, 0),
+                    axis=(0, 0, 1),
+                    height=10,
+                    outer_radius=5,
+                )
+                inner_sphere = Sphere(name="inner_sphere", center=(0, 0, 0), radius=2)
+                _ = RotationVolume(
+                    entities=[cylinder],
+                    spacing_axial=0.5,
+                    spacing_radial=0.5,
+                    spacing_circumferential=0.5,
+                    enclosed_entities=[inner_sphere],
+                )
+
+    # does not raise with beta mesher on
+    with ValidationContext(VOLUME_MESH, beta_mesher_context):
+        with CGS_unit_system:
+            cylinder = Cylinder(
+                name="outer_cyl",
+                center=(0, 0, 0),
+                axis=(0, 0, 1),
+                height=10,
+                outer_radius=5,
+            )
+            inner_sphere = Sphere(name="inner_sphere", center=(0, 0, 0), radius=2)
+            _ = RotationVolume(
+                entities=[cylinder],
+                spacing_axial=0.5,
+                spacing_radial=0.5,
+                spacing_circumferential=0.5,
+                enclosed_entities=[inner_sphere],
+            )
+
+
 def test_reuse_of_same_cylinder(mock_validation_context):
     with mock_validation_context, pytest.raises(
         pd.ValidationError,
