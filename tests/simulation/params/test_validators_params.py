@@ -126,6 +126,7 @@ def surface_output_with_wall_metric():
         name="surface",
         surfaces=[Surface(name="noSlipWall")],
         write_single_file=True,
+        output_format="tecplot",
         output_fields=["wallFunctionMetric"],
     )
     return surface_output

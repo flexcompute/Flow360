@@ -336,7 +336,7 @@ class SurfaceOutput(_AnimationAndFileFormatSettings):
                 raise ValueError("write_single_file is only supported for Tecplot output format.")
             if self.output_format == "both":
                 log.warning(
-                    "write_single_file is only supported for Tecplot output format."
+                    "write_single_file is only supported for Tecplot output format. "
                     + "Paraview files will be still saved separately."
                 )
         return self
