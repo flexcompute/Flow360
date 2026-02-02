@@ -1336,3 +1336,103 @@ def test_updater_to_25_8_3_no_coordinate_systems():
         ]
         == []
     )
+
+
+def test_updater_to_25_8_4_add_wind_tunnel_ghost_surfaces():
+    """Ensures ghost_entities is populated with wind tunnel ghost surfaces"""
+
+    # from translator/data/simulation_with_auto_area.json
+    params_as_dict = {
+        "version": "25.6.6",
+        "unit_system": {"name": "CGS"},
+        "private_attribute_asset_cache": {
+            "project_entity_info": {
+                "ghost_entities": [
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "GhostSphere",
+                        "private_attribute_id": "farfield",
+                        "name": "farfield",
+                        "private_attribute_full_name": None,
+                        "center": [11, 6, 5],
+                        "max_radius": 1100.0000000000005
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "GhostCircularPlane",
+                        "private_attribute_id": "symmetric-1",
+                        "name": "symmetric-1",
+                        "private_attribute_full_name": None,
+                        "center": [11, 0, 5],
+                        "max_radius": 22.00000000000001,
+                        "normal_axis": [0, 1, 0],
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "GhostCircularPlane",
+                        "private_attribute_id": "symmetric-2",
+                        "name": "symmetric-2",
+                        "private_attribute_full_name": None,
+                        "center": [11, 12, 5],
+                        "max_radius": 22.00000000000001,
+                        "normal_axis": [0, 1, 0],
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "GhostCircularPlane",
+                        "private_attribute_id": "symmetric",
+                        "name": "symmetric",
+                        "private_attribute_full_name": None,
+                        "center": [11, 0, 5],
+                        "max_radius": 22.00000000000001,
+                        "normal_axis": [0, 1, 0],
+                    }
+                ],
+            }
+        }
+    }
+
+    # Verify no WindTunnelGhostSurface currently exists
+    ghost_entities_before = params_as_dict["private_attribute_asset_cache"]["project_entity_info"][
+        "ghost_entities"
+    ]
+    assert not any(
+        e.get("private_attribute_entity_type_name") == "WindTunnelGhostSurface"
+        for e in ghost_entities_before
+    )
+
+    # Update
+    params_new = updater(
+        version_from="25.6.6",
+        version_to="25.8.4",
+        params_as_dict=params_as_dict,
+    )
+    assert params_new["version"] == "25.8.4"
+
+    ghost_entities = params_new["private_attribute_asset_cache"]["project_entity_info"][
+        "ghost_entities"
+    ]
+
+    # Should still have original ghost entities (GhostSphere, GhostCircularPlane)
+    assert any(e["name"] == "farfield" for e in ghost_entities)
+    assert any(e["name"] == "symmetric" for e in ghost_entities)
+
+    # Should now have all 10 wind tunnel ghost surfaces
+    wind_tunnel_names = [
+        "windTunnelInlet",
+        "windTunnelOutlet",
+        "windTunnelCeiling",
+        "windTunnelFloor",
+        "windTunnelLeft",
+        "windTunnelRight",
+        "windTunnelFrictionPatch",
+        "windTunnelCentralBelt",
+        "windTunnelFrontWheelBelt",
+        "windTunnelRearWheelBelt",
+    ]
+    for name in wind_tunnel_names:
+        assert any(
+            e.get("private_attribute_entity_type_name") == "WindTunnelGhostSurface"
+            and e["name"] == name
+            for e in ghost_entities
+        ), f"Missing wind tunnel ghost surface: {name}"
