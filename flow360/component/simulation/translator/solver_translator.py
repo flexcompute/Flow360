@@ -2090,17 +2090,9 @@ def translate_nasa9_coefficients(  # pylint: disable=too-many-locals
             }
         )
 
-    # Compute gasConstant = 1/gamma at T_nd=1 using the range that contains T_nd=1
-    # This ensures correct non-dimensionalization for temperature output
-    coeffs_at_tref = temperature_ranges[0]["coefficients"]  # default to first range
-    for tr in temperature_ranges:
-        if tr["temperatureRangeMin"] <= 1.0 <= tr["temperatureRangeMax"]:
-            coeffs_at_tref = tr["coefficients"]
-            break
-    gamma_at_tref = compute_gamma_from_coefficients(coeffs_at_tref, 1.0)
-    gas_constant = 1.0 / gamma_at_tref
-
-    return {"temperatureRanges": temperature_ranges, "gasConstant": gas_constant}
+    # Note: gasConstant (R = 1/gamma_ref) is computed by the C++ solver from
+    # the coefficients at T=1, so we don't need to pass it here.
+    return {"temperatureRanges": temperature_ranges}
 
 
 def translate_thermally_perfect_gas(  # pylint: disable=too-many-locals
@@ -2191,15 +2183,9 @@ def translate_thermally_perfect_gas(  # pylint: disable=too-many-locals
             }
         )
 
-    # Compute gasConstant = 1/gamma at T_nd=1 using the range that contains T_nd=1
-    coeffs_at_tref = temperature_ranges[0]["coefficients"]  # default to first range
-    for tr in temperature_ranges:
-        if tr["temperatureRangeMin"] <= 1.0 <= tr["temperatureRangeMax"]:
-            coeffs_at_tref = tr["coefficients"]
-            break
-    gamma_at_tref = compute_gamma_from_coefficients(coeffs_at_tref, 1.0)
-
-    return {"temperatureRanges": temperature_ranges, "gasConstant": 1.0 / gamma_at_tref}
+    # Note: gasConstant (R = 1/gamma_ref) is computed by the C++ solver from
+    # the coefficients at T=1, so we don't need to pass it here.
+    return {"temperatureRanges": temperature_ranges}
 
 
 # pylint: disable=too-many-statements
@@ -2254,33 +2240,26 @@ def get_solver_json(
         ),
     }
 
-    ##:: Step 2.5: Get NASA 9-coefficient polynomial for gas model (if Air material with TPG enabled)
+    ##:: Step 2.5: Get NASA 9-coefficient polynomial for gas model (Air material)
+    # Always output thermallyPerfectGasModel for Air - even for CPG (constant gamma=1.4),
+    # which uses default NASA9 coefficients [0, 0, 3.5, 0, 0, 0, 0, 0, 0]
     if not isinstance(op, LiquidOperatingCondition) and isinstance(op.thermal_state.material, Air):
-        # Only output thermallyPerfectGasModel when explicitly requested
-        # (via thermally_perfect_gas or customized nasa_9_coefficients)
-        # Default Air material uses constant gamma (CPG) - solver handles this automatically
-        if op.thermal_state.material.uses_thermally_perfect_gas:
-            # Get reference temperature for non-dimensionalization (freestream temperature)
-            reference_temperature = op.thermal_state.temperature.to("K").v.item()
+        # Get reference temperature for non-dimensionalization (freestream temperature)
+        reference_temperature = op.thermal_state.temperature.to("K").v.item()
 
-            # Translate thermally perfect gas model
-            translated["thermallyPerfectGasModel"] = translate_thermally_perfect_gas(
-                op.thermal_state.material.thermally_perfect_gas,
-                reference_temperature,
-            )
+        # Translate thermally perfect gas model
+        translated["thermallyPerfectGasModel"] = translate_thermally_perfect_gas(
+            op.thermal_state.material.thermally_perfect_gas,
+            reference_temperature,
+        )
 
-    # Export Prandtl numbers from material (only for TPG or liquid simulations)
-    # For CPG simulations, solver uses default Prandtl numbers (0.72, 0.9)
-    # For liquid simulations, use default values for water (Pr=7.0, Prt=0.9)
+    # Export Prandtl numbers from material
     if isinstance(op, LiquidOperatingCondition):
         translated["fluidProperties"] = {
             "prandtlNumber": 7.0,
             "turbulentPrandtlNumber": 0.9,
         }
-    elif (
-        isinstance(op.thermal_state.material, Air)
-        and op.thermal_state.material.uses_thermally_perfect_gas
-    ):
+    elif isinstance(op.thermal_state.material, Air):
         translated["fluidProperties"] = {
             "prandtlNumber": op.thermal_state.material.prandtl_number,
             "turbulentPrandtlNumber": op.thermal_state.material.turbulent_prandtl_number,
