@@ -511,51 +511,61 @@ def _to_25_8_4(params_as_dict):
             {
                 "private_attribute_entity_type_name": "WindTunnelGhostSurface",
                 "name": "windTunnelInlet",
+                "private_attribute_id": "windTunnelInlet",
                 "used_by": ["all"],
             },
             {
                 "private_attribute_entity_type_name": "WindTunnelGhostSurface",
                 "name": "windTunnelOutlet",
+                "private_attribute_id": "windTunnelOutlet",
                 "used_by": ["all"],
             },
             {
                 "private_attribute_entity_type_name": "WindTunnelGhostSurface",
                 "name": "windTunnelCeiling",
+                "private_attribute_id": "windTunnelCeiling",
                 "used_by": ["all"],
             },
             {
                 "private_attribute_entity_type_name": "WindTunnelGhostSurface",
                 "name": "windTunnelFloor",
+                "private_attribute_id": "windTunnelFloor",
                 "used_by": ["all"],
             },
             {
                 "private_attribute_entity_type_name": "WindTunnelGhostSurface",
                 "name": "windTunnelLeft",
+                "private_attribute_id": "windTunnelLeft",
                 "used_by": ["all"],
             },
             {
                 "private_attribute_entity_type_name": "WindTunnelGhostSurface",
                 "name": "windTunnelRight",
+                "private_attribute_id": "windTunnelRight",
                 "used_by": ["all"],
             },
             {
                 "private_attribute_entity_type_name": "WindTunnelGhostSurface",
                 "name": "windTunnelFrictionPatch",
+                "private_attribute_id": "windTunnelFrictionPatch",
                 "used_by": ["StaticFloor"],
             },
             {
                 "private_attribute_entity_type_name": "WindTunnelGhostSurface",
                 "name": "windTunnelCentralBelt",
+                "private_attribute_id": "windTunnelCentralBelt",
                 "used_by": ["CentralBelt", "WheelBelts"],
             },
             {
                 "private_attribute_entity_type_name": "WindTunnelGhostSurface",
                 "name": "windTunnelFrontWheelBelt",
+                "private_attribute_id": "windTunnelFrontWheelBelt",
                 "used_by": ["WheelBelts"],
             },
             {
                 "private_attribute_entity_type_name": "WindTunnelGhostSurface",
                 "name": "windTunnelRearWheelBelt",
+                "private_attribute_id": "windTunnelRearWheelBelt",
                 "used_by": ["WheelBelts"],
             },
         ]
