@@ -31,6 +31,7 @@ from flow360.utils import classproperty
 udim.viscosity = udim.pressure * udim.time
 udim.kinematic_viscosity = udim.length * udim.length / udim.time
 udim.angular_velocity = udim.angle / udim.time
+udim.acceleration = udim.length / udim.time**2
 udim.heat_flux = udim.mass / udim.time**3
 udim.moment = udim.force * udim.length
 udim.heat_source = udim.mass / udim.time**3 / udim.length
@@ -916,6 +917,16 @@ class _VelocityType(_DimensionedType):
 
 
 VelocityType = Annotated[_VelocityType, PlainSerializer(_dimensioned_type_serializer)]
+
+
+class _AccelerationType(_DimensionedType):
+    """:class: AccelerationType"""
+
+    dim = udim.acceleration
+    dim_name = "acceleration"
+
+
+AccelerationType = Annotated[_AccelerationType, PlainSerializer(_dimensioned_type_serializer)]
 
 
 class _AreaType(_DimensionedType):
