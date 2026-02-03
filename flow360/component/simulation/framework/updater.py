@@ -508,16 +508,56 @@ def _to_25_8_4(params_as_dict):
     def _get_all_wind_tunnel_ghost_surfaces():
         """Return a list of all possible WindTunnelGhostSurface dicts."""
         return [
-            {"private_attribute_entity_type_name": "WindTunnelGhostSurface", "name": "windTunnelInlet", "used_by": ["all"]},
-            {"private_attribute_entity_type_name": "WindTunnelGhostSurface", "name": "windTunnelOutlet", "used_by": ["all"]},
-            {"private_attribute_entity_type_name": "WindTunnelGhostSurface", "name": "windTunnelCeiling", "used_by": ["all"]},
-            {"private_attribute_entity_type_name": "WindTunnelGhostSurface", "name": "windTunnelFloor", "used_by": ["all"]},
-            {"private_attribute_entity_type_name": "WindTunnelGhostSurface", "name": "windTunnelLeft", "used_by": ["all"]},
-            {"private_attribute_entity_type_name": "WindTunnelGhostSurface", "name": "windTunnelRight", "used_by": ["all"]},
-            {"private_attribute_entity_type_name": "WindTunnelGhostSurface", "name": "windTunnelFrictionPatch", "used_by": ["StaticFloor"]},
-            {"private_attribute_entity_type_name": "WindTunnelGhostSurface", "name": "windTunnelCentralBelt", "used_by": ["CentralBelt", "WheelBelts"]},
-            {"private_attribute_entity_type_name": "WindTunnelGhostSurface", "name": "windTunnelFrontWheelBelt", "used_by": ["WheelBelts"]},
-            {"private_attribute_entity_type_name": "WindTunnelGhostSurface", "name": "windTunnelRearWheelBelt", "used_by": ["WheelBelts"]},
+            {
+                "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                "name": "windTunnelInlet",
+                "used_by": ["all"],
+            },
+            {
+                "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                "name": "windTunnelOutlet",
+                "used_by": ["all"],
+            },
+            {
+                "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                "name": "windTunnelCeiling",
+                "used_by": ["all"],
+            },
+            {
+                "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                "name": "windTunnelFloor",
+                "used_by": ["all"],
+            },
+            {
+                "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                "name": "windTunnelLeft",
+                "used_by": ["all"],
+            },
+            {
+                "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                "name": "windTunnelRight",
+                "used_by": ["all"],
+            },
+            {
+                "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                "name": "windTunnelFrictionPatch",
+                "used_by": ["StaticFloor"],
+            },
+            {
+                "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                "name": "windTunnelCentralBelt",
+                "used_by": ["CentralBelt", "WheelBelts"],
+            },
+            {
+                "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                "name": "windTunnelFrontWheelBelt",
+                "used_by": ["WheelBelts"],
+            },
+            {
+                "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                "name": "windTunnelRearWheelBelt",
+                "used_by": ["WheelBelts"],
+            },
         ]
 
     # Get asset cache, entity info, and ghost entities

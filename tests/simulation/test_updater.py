@@ -1355,7 +1355,7 @@ def test_updater_to_25_8_4_add_wind_tunnel_ghost_surfaces():
                         "name": "farfield",
                         "private_attribute_full_name": None,
                         "center": [11, 6, 5],
-                        "max_radius": 1100.0000000000005
+                        "max_radius": 1100.0000000000005,
                     },
                     {
                         "private_attribute_registry_bucket_name": "SurfaceEntityType",
@@ -1386,10 +1386,10 @@ def test_updater_to_25_8_4_add_wind_tunnel_ghost_surfaces():
                         "center": [11, 0, 5],
                         "max_radius": 22.00000000000001,
                         "normal_axis": [0, 1, 0],
-                    }
+                    },
                 ],
             }
-        }
+        },
     }
 
     # Verify no WindTunnelGhostSurface currently exists
