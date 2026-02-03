@@ -232,7 +232,19 @@ def _deserialize_used_selectors_and_build_lookup(params_as_dict: dict) -> Dict[s
     if not isinstance(raw_used_selectors, list) or not raw_used_selectors:
         return {}
 
-    selector_list = pd.TypeAdapter(List[EntitySelector]).validate_python(raw_used_selectors)
+    try:
+        selector_list = pd.TypeAdapter(List[EntitySelector]).validate_python(raw_used_selectors)
+    except pd.ValidationError as e:
+        # Prepend the correct path to error locations so they match SimulationParams structure
+        errors_with_path = []
+        for err in e.errors():
+            new_loc = ("private_attribute_asset_cache", "used_selectors") + tuple(err["loc"])
+            errors_with_path.append({**err, "loc": new_loc})
+        raise pd.ValidationError.from_exception_data(
+            title=e.title,
+            line_errors=errors_with_path,
+        ) from None
+
     selector_lookup = {selector.selector_id: selector for selector in selector_list}
 
     # Keep used_selectors as a list, but ensure it contains deserialized EntitySelector instances.
@@ -290,9 +302,15 @@ def _materialize_selectors_list_in_node(
             # ==== Inline selector definition (dict, pre-submit JSON) ====
             # Cloud/Production JSON data will only contain selector tokens (str).
             # Local pre-upload JSON (from model_dump) will contain inline selector definitions (dict).
-            # At local validaiton, `selector_lookup` is empty.
+            # At local validation, `selector_lookup` is empty.
             # Since it is presubmit, no need to "materialize", "deserialize" is fine.
-            materialized_selectors.append(EntitySelector.model_validate(selector_item))
+            try:
+                materialized_selectors.append(EntitySelector.model_validate(selector_item))
+            except pd.ValidationError:
+                # Keep the invalid dict as-is, let SimulationParams.model_validate handle the error.
+                # This preserves the full error location path (e.g., "models.0.entities.selectors.0.children...")
+                # instead of a truncated path (e.g., "children...").
+                materialized_selectors.append(selector_item)
         elif isinstance(selector_item, EntitySelector):
             # ==== Already materialized EntitySelector ====
             # When materialize_entities_and_selectors_in_place is called multiple times
