@@ -1600,3 +1600,66 @@ KeyError: 'type_name'"""
 
     result_windows = _sanitize_stack_trace(input_windows)
     assert result_windows == expected_windows
+
+
+def test_validate_error_location_with_selector():
+    """
+    Test that validation error locations are correctly preserved when errors occur
+    within EntitySelector's children field.
+
+    This test verifies the fix for the bug where error locations were incorrectly
+    reduced to just ("children",) instead of the full path like
+    ("models", 0, "entities", "selectors", 0, "children", 0, "value").
+
+    The bug was in _traverse_error_location which used `current.get(field)` instead
+    of `field in current`, causing fields with falsy values (empty list, 0, etc.)
+    to be incorrectly filtered out.
+    """
+    params_data = {
+        "models": [
+            {
+                "type": "Wall",
+                "name": "Wall with selector",
+                "entities": {
+                    "stored_entities": [],
+                    "selectors": ["test-selector-id"],
+                },
+                "use_wall_function": False,
+            }
+        ],
+        "unit_system": {"name": "SI"},
+        "version": __version__,
+        "private_attribute_asset_cache": {
+            "project_entity_info": {
+                "type_name": "VolumeMeshEntityInfo",
+                "draft_entities": [],
+                "zones": [],
+                "boundaries": [],
+            },
+            "used_selectors": [
+                {
+                    "name": "test_selector",
+                    "target_class": "Surface",
+                    "logic": "AND",
+                    "selector_id": "test-selector-id",
+                }
+            ],
+        },
+    }
+
+    _, errors, _ = services.validate_model(
+        params_as_dict=params_data,
+        validated_by=services.ValidationCalledBy.LOCAL,
+        root_item_type="VolumeMesh",
+    )
+
+    assert errors is not None, "Expected validation errors but got None"
+    assert len(errors) == 1, f"Expected 1 error, got {len(errors)}"
+
+    # Verify the location contains the full path, not just "children"
+    loc = errors[0]["loc"]
+    assert loc == ("private_attribute_asset_cache", "used_selectors", 0, "children"), print(
+        "Wrong localtion: ", loc
+    )
+
+    # Verify key path components are present for tokenized selectors in used_selectors
