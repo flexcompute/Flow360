@@ -886,9 +886,11 @@ def _uses_compressible_isentropic_solver(params):
     if not params.models:
         return False
     for model in params.models:
-        if isinstance(model, Fluid):
-            if model.navier_stokes_solver.type_name == "CompressibleIsentropic":
-                return True
+        if (
+            isinstance(model, Fluid)
+            and model.navier_stokes_solver.type_name == "CompressibleIsentropic"
+        ):
+            return True
     return False
 
 

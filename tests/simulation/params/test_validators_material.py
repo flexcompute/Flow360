@@ -406,3 +406,58 @@ def test_is_constant_gamma_coefficients_tpg():
     # a8 non-zero (entropy integration constant)
     tpg_a8 = [0.0, 0.0, 3.5, 0.0, 0.0, 0.0, 0.0, 0.0, 50.0]
     assert _is_constant_gamma_coefficients(tpg_a8) is False
+
+
+# =============================================================================
+# Additional Validation Tests
+# =============================================================================
+
+
+def test_nasa9_coefficient_set_temperature_range_min_less_than_max():
+    """Test that temperature_range_min must be less than temperature_range_max."""
+    with SI_unit_system:
+        with pytest.raises(ValueError, match="must be less than"):
+            NASA9CoefficientSet(
+                temperature_range_min=1000.0 * fl.u.K,
+                temperature_range_max=200.0 * fl.u.K,  # max < min
+                coefficients=[0.0, 0.0, 3.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            )
+
+
+def test_nasa9_coefficient_set_temperature_range_min_equals_max_raises():
+    """Test that temperature_range_min cannot equal temperature_range_max."""
+    with SI_unit_system:
+        with pytest.raises(ValueError, match="must be less than"):
+            NASA9CoefficientSet(
+                temperature_range_min=500.0 * fl.u.K,
+                temperature_range_max=500.0 * fl.u.K,  # min == max
+                coefficients=[0.0, 0.0, 3.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            )
+
+
+def test_thermally_perfect_gas_duplicate_species_names_raises():
+    """Test that duplicate species names raise ValueError."""
+    with SI_unit_system:
+        with pytest.raises(ValueError, match="Species names must be unique"):
+            ThermallyPerfectGas(
+                species=[
+                    _make_species("N2", 0.5),
+                    _make_species("N2", 0.5),  # Duplicate name
+                ]
+            )
+
+
+def test_thermally_perfect_gas_mass_fraction_renormalization():
+    """Test that mass fractions within tolerance are renormalized to sum to exactly 1.0."""
+    with SI_unit_system:
+        # Mass fractions sum to 0.9995 (within 1e-3 tolerance)
+        tpg = ThermallyPerfectGas(
+            species=[
+                _make_species("N2", 0.7553),
+                _make_species("O2", 0.2315),
+                _make_species("Ar", 0.0127),  # Sum = 0.9995
+            ]
+        )
+    # After renormalization, mass fractions should sum to exactly 1.0
+    total = sum(s.mass_fraction for s in tpg.species)
+    assert total == pytest.approx(1.0, abs=1e-10)

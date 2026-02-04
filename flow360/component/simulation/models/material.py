@@ -128,29 +128,30 @@ class NASA9CoefficientSet(Flow360BaseModel):
         "and a8 is the entropy integration constant."
     )
 
-    @pd.model_validator(mode="after")
-    def validate_coefficients(self):
+    @pd.field_validator("coefficients", mode="after")
+    @classmethod
+    def validate_coefficients(cls, v):
         """Validate that exactly 9 coefficients are provided."""
-        if len(self.coefficients) != 9:
+        if len(v) != 9:
             raise ValueError(
-                f"NASA 9-coefficient polynomial requires exactly 9 coefficients, "
-                f"got {len(self.coefficients)}"
+                f"NASA 9-coefficient polynomial requires exactly 9 coefficients, " f"got {len(v)}"
             )
-        return self
+        return v
 
-    @pd.model_validator(mode="after")
-    def validate_temperature_range_order(self):
+    @pd.field_validator("temperature_range_max", mode="after")
+    @classmethod
+    def validate_temperature_range_order(cls, v, info):
         """Validate that temperature_range_min < temperature_range_max."""
-        # pylint: disable=no-member
-        t_min = self.temperature_range_min.to("K").v.item()
-        t_max = self.temperature_range_max.to("K").v.item()
-        # pylint: enable=no-member
-        if t_min >= t_max:
-            raise ValueError(
-                f"temperature_range_min ({self.temperature_range_min}) must be less than "
-                f"temperature_range_max ({self.temperature_range_max})"
-            )
-        return self
+        t_min = info.data.get("temperature_range_min")
+        if t_min is not None:
+            t_min_k = t_min.to("K").v.item()
+            t_max_k = v.to("K").v.item()
+            if t_min_k >= t_max_k:
+                raise ValueError(
+                    f"temperature_range_min ({t_min}) must be less than "
+                    f"temperature_range_max ({v})"
+                )
+        return v
 
 
 class NASA9Coefficients(Flow360BaseModel):
@@ -215,6 +216,7 @@ class NASA9Coefficients(Flow360BaseModel):
                 )
         return self
 
+    @pd.validate_call
     def get_coefficients_at_temperature(self, temp_k: float) -> list:
         """
         Get the NASA 9 coefficients for a given temperature.
@@ -322,7 +324,7 @@ class ThermallyPerfectGas(Flow360BaseModel):
         # Re-normalize to ensure exact sum of 1.0
         if total != 1.0:
             for species in self.species:
-                object.__setattr__(species, "mass_fraction", species.mass_fraction / total)
+                species.mass_fraction = species.mass_fraction / total
         return self
 
     @pd.model_validator(mode="after")
@@ -601,21 +603,6 @@ class Air(MaterialBase):
             for i in range(9):
                 coeffs[i] += species.mass_fraction * species_coeffs[i]
         return coeffs
-
-    @property
-    def specific_heat_ratio(self) -> pd.PositiveFloat:
-        """
-        Returns the specific heat ratio (gamma) for air at a reference temperature (298.15 K).
-
-        For temperature-dependent gamma, use `get_specific_heat_ratio(temperature)` instead.
-
-        Returns
-        -------
-        pd.PositiveFloat
-            The specific heat ratio at 298.15 K.
-        """
-        # Compute gamma at reference temperature (298.15 K)
-        return self.get_specific_heat_ratio(298.15 * u.K)
 
     @property
     def gas_constant(self) -> SpecificHeatCapacityType.Positive:

@@ -17,7 +17,6 @@ from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.framework.updater_utils import recursive_remove_key
 from flow360.component.simulation.models.material import (
     Air,
-    NASA9Coefficients,
     Sutherland,
     ThermallyPerfectGas,
     compute_gamma_from_coefficients,
@@ -1999,100 +1998,6 @@ def _nondimensionalize_coefficients(coeffs: list, reference_temperature: float) 
         coeffs[7] * t_ref_inv,  # a7 (enthalpy const): scale by (1/T_ref)
         coeffs[8],  # a8 (entropy, constant): no scaling
     ]
-
-
-def translate_nasa9_coefficients(  # pylint: disable=too-many-locals
-    nasa_coeffs: NASA9Coefficients,
-    reference_temperature,
-):
-    """
-    Translate and non-dimensionalize NASA 9-coefficient polynomial coefficients.
-
-    The NASA 9-coefficient format (McBride et al., 2002):
-        cp/R = a0*T^-2 + a1*T^-1 + a2 + a3*T + a4*T^2 + a5*T^3 + a6*T^4
-        h/R = -a0/T + a1*ln(T) + a2*T + (a3/2)*T^2 + (a4/3)*T^3 + (a5/4)*T^4 + (a6/5)*T^5 + a7
-        s/R = -(a0/2)*T^-2 - a1*T^-1 + a2*ln(T) + a3*T + (a4/2)*T^2 + (a5/3)*T^3 + (a6/4)*T^4 + a8
-
-    Coefficients: [a0, a1, a2, a3, a4, a5, a6, a7, a8]
-        - a0-a6: cp polynomial coefficients
-        - a7: enthalpy integration constant
-        - a8: entropy integration constant
-
-    IMPORTANT: The a7 coefficient is automatically corrected to ensure internal energy
-    consistency with Flow360's non-dimensionalization. The NASA polynomial a7 is
-    calibrated for absolute enthalpy, but Flow360 expects e = cv*T at T_ref.
-
-    In the C++ solver, the internal non-dimensional temperature is computed as:
-        T_internal = p* * gamma / rho* where p* = p/(rho_ref*a_ref^2), rho* = rho/rho_ref
-    Using p = rho*R*T and a_ref^2 = gamma*R*T_ref, this gives:
-        T_internal = T_dim / T_ref  (NOT gamma * T_dim / T_ref)
-
-    Non-dimensionalization transformations (where t_scale = T_ref):
-        - a0 (T^-2): a0_nd = a0 / T_ref^2
-        - a1 (T^-1): a1_nd = a1 / T_ref
-        - a2 (T^0):  a2_nd = a2 (unchanged)
-        - a3 (T^1):  a3_nd = a3 * T_ref
-        - a4 (T^2):  a4_nd = a4 * T_ref^2
-        - a5 (T^3):  a5_nd = a5 * T_ref^3
-        - a6 (T^4):  a6_nd = a6 * T_ref^4
-        - a7 (const): a7_nd = a7 / T_ref (after correction)
-        - a8 (const): a8_nd = a8 (unchanged)
-
-    Parameters
-    ----------
-    nasa_coeffs : NASA9Coefficients
-        NASA 9-coefficient polynomial coefficients with temperature ranges
-    reference_temperature : float
-        Reference temperature for non-dimensionalization (in K)
-
-    Returns
-    -------
-    dict
-        Non-dimensionalized NASA 9-coefficient data for Flow360.json
-    """
-    # Find the temperature range that contains reference_temperature and compute a7 shift
-    # Using a single global shift preserves enthalpy continuity across all ranges
-    a7_shift = None
-    for coeff_set in nasa_coeffs.temperature_ranges:
-        t_min = coeff_set.temperature_range_min.to("K").v.item()
-        t_max = coeff_set.temperature_range_max.to("K").v.item()
-        if t_min <= reference_temperature <= t_max:
-            coeffs_ref = list(coeff_set.coefficients)
-            a7_corrected = _compute_a7_correction(coeffs_ref, reference_temperature)
-            a7_shift = a7_corrected - coeffs_ref[7]
-            break
-
-    # Fallback to first range if reference_temperature is outside all ranges
-    if a7_shift is None:
-        coeffs_ref = list(nasa_coeffs.temperature_ranges[0].coefficients)
-        a7_corrected = _compute_a7_correction(coeffs_ref, reference_temperature)
-        a7_shift = a7_corrected - coeffs_ref[7]
-
-    temperature_ranges = []
-    for coeff_set in nasa_coeffs.temperature_ranges:
-        # Temperature ranges: T_internal = T_dim / T_ref
-        t_min_nd = coeff_set.temperature_range_min.to("K").v.item() / reference_temperature
-        t_max_nd = coeff_set.temperature_range_max.to("K").v.item() / reference_temperature
-
-        coeffs = list(coeff_set.coefficients)
-
-        # Apply the same a7 shift to all ranges for Flow360 non-dimensionalization
-        coeffs[7] = coeffs[7] + a7_shift
-
-        # Non-dimensionalize coefficients
-        coeffs_nd = _nondimensionalize_coefficients(coeffs, reference_temperature)
-
-        temperature_ranges.append(
-            {
-                "temperatureRangeMin": t_min_nd,
-                "temperatureRangeMax": t_max_nd,
-                "coefficients": coeffs_nd,
-            }
-        )
-
-    # Note: gasConstant (R = 1/gamma_ref) is computed by the C++ solver from
-    # the coefficients at T=1, so we don't need to pass it here.
-    return {"temperatureRanges": temperature_ranges}
 
 
 def translate_thermally_perfect_gas(  # pylint: disable=too-many-locals

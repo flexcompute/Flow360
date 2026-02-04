@@ -34,6 +34,29 @@
         "betaAngle": 0,
         "muRef": 3.999996580105659e-08
     },
+    "fluidProperties": {
+        "prandtlNumber": 0.72,
+        "turbulentPrandtlNumber": 0.9
+    },
+    "thermallyPerfectGasModel": {
+        "temperatureRanges": [
+            {
+                "temperatureRangeMin": 0.6666666666666666,
+                "temperatureRangeMax": 20.0,
+                "coefficients": [
+                    0.0,
+                    0.0,
+                    3.5,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    7.579122514774402e-16,
+                    0.0
+                ]
+            }
+        ]
+    },
     "navierStokesSolver": {
         "CFLMultiplier": 1.0,
         "absoluteTolerance": 1e-10,

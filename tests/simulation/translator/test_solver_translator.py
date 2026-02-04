@@ -1599,79 +1599,8 @@ def test_om6wing_render_output(get_om6Wing_tutorial_param):
 # =============================================================================
 
 
-def test_translate_nasa9_coefficients_single_range():
-    """Test translation of NASA9 coefficients with a single temperature range."""
-    from flow360.component.simulation.models.material import (
-        NASA9Coefficients,
-        NASA9CoefficientSet,
-    )
-    from flow360.component.simulation.translator.solver_translator import (
-        translate_nasa9_coefficients,
-    )
-
-    with SI_unit_system:
-        # Coefficients for constant gamma=1.4 (cp/R = 3.5)
-        nasa_coeffs = NASA9Coefficients(
-            temperature_ranges=[
-                NASA9CoefficientSet(
-                    temperature_range_min=200.0 * u.K,
-                    temperature_range_max=6000.0 * u.K,
-                    coefficients=[0.0, 0.0, 3.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-                )
-            ]
-        )
-
-    # Translate with reference temperature of 300 K
-    result = translate_nasa9_coefficients(nasa_coeffs, reference_temperature=300.0)
-
-    assert "temperatureRanges" in result
-    assert len(result["temperatureRanges"]) == 1
-
-    range_data = result["temperatureRanges"][0]
-    # Temperature ranges should be non-dimensionalized: T_nd = T / T_ref
-    assert range_data["temperatureRangeMin"] == pytest.approx(200.0 / 300.0)
-    assert range_data["temperatureRangeMax"] == pytest.approx(6000.0 / 300.0)
-
-    # a2 (constant term) should not change
-    assert range_data["coefficients"][2] == pytest.approx(3.5)
-
-
-def test_translate_nasa9_coefficients_temperature_scaling():
-    """Test that temperature-dependent coefficients are scaled correctly."""
-    from flow360.component.simulation.models.material import (
-        NASA9Coefficients,
-        NASA9CoefficientSet,
-    )
-    from flow360.component.simulation.translator.solver_translator import (
-        translate_nasa9_coefficients,
-    )
-
-    T_ref = 300.0
-    # cp/R = 3.5 + 0.001*T (temperature dependent)
-    with SI_unit_system:
-        nasa_coeffs = NASA9Coefficients(
-            temperature_ranges=[
-                NASA9CoefficientSet(
-                    temperature_range_min=200.0 * u.K,
-                    temperature_range_max=6000.0 * u.K,
-                    coefficients=[0.0, 0.0, 3.5, 0.001, 0.0, 0.0, 0.0, 0.0, 0.0],
-                )
-            ]
-        )
-
-    result = translate_nasa9_coefficients(nasa_coeffs, reference_temperature=T_ref)
-    coeffs = result["temperatureRanges"][0]["coefficients"]
-
-    # a2 (constant term): no scaling
-    assert coeffs[2] == pytest.approx(3.5)
-
-    # a3 (T^1 term): scale by T_ref
-    # a3_nd = a3_dim * T_ref = 0.001 * 300 = 0.3
-    assert coeffs[3] == pytest.approx(0.001 * T_ref)
-
-
 def test_translate_thermally_perfect_gas_single_species():
-    """Test translation of TPG with a single species (should match direct NASA9 translation)."""
+    """Test translation of TPG with a single species."""
     from flow360.component.simulation.models.material import (
         FrozenSpecies,
         NASA9Coefficients,
@@ -1679,10 +1608,10 @@ def test_translate_thermally_perfect_gas_single_species():
         ThermallyPerfectGas,
     )
     from flow360.component.simulation.translator.solver_translator import (
-        translate_nasa9_coefficients,
         translate_thermally_perfect_gas,
     )
 
+    T_ref = 300.0
     with SI_unit_system:
         coeffs_list = [0.0, 0.0, 3.5, 0.001, 0.0, 0.0, 0.0, 0.0, 0.0]
         nasa_coeffs = NASA9Coefficients(
@@ -1704,18 +1633,21 @@ def test_translate_thermally_perfect_gas_single_species():
             ]
         )
 
-    T_ref = 300.0
-    result_tpg = translate_thermally_perfect_gas(tpg, reference_temperature=T_ref)
-    result_single = translate_nasa9_coefficients(nasa_coeffs, reference_temperature=T_ref)
+    result = translate_thermally_perfect_gas(tpg, reference_temperature=T_ref)
 
-    # Single species with mass_fraction=1.0 should give same result as direct translation
-    assert len(result_tpg["temperatureRanges"]) == len(result_single["temperatureRanges"])
+    assert "temperatureRanges" in result
+    assert len(result["temperatureRanges"]) == 1
 
-    for i in range(len(result_tpg["temperatureRanges"])):
-        tpg_coeffs = result_tpg["temperatureRanges"][i]["coefficients"]
-        single_coeffs = result_single["temperatureRanges"][i]["coefficients"]
-        for j in range(9):
-            assert tpg_coeffs[j] == pytest.approx(single_coeffs[j])
+    range_data = result["temperatureRanges"][0]
+    # Temperature ranges should be non-dimensionalized: T_nd = T / T_ref
+    assert range_data["temperatureRangeMin"] == pytest.approx(200.0 / T_ref)
+    assert range_data["temperatureRangeMax"] == pytest.approx(6000.0 / T_ref)
+
+    coeffs = range_data["coefficients"]
+    # a2 (constant term): no scaling
+    assert coeffs[2] == pytest.approx(3.5)
+    # a3 (T^1 term): scale by T_ref -> 0.001 * 300 = 0.3
+    assert coeffs[3] == pytest.approx(0.001 * T_ref)
 
 
 def test_translate_thermally_perfect_gas_mass_fraction_weighting():
@@ -1927,11 +1859,13 @@ def test_nasa9_a7_correction_ensures_correct_internal_energy():
     import math
 
     from flow360.component.simulation.models.material import (
+        FrozenSpecies,
         NASA9Coefficients,
         NASA9CoefficientSet,
+        ThermallyPerfectGas,
     )
     from flow360.component.simulation.translator.solver_translator import (
-        translate_nasa9_coefficients,
+        translate_thermally_perfect_gas,
     )
 
     T_ref = 300.0  # K
@@ -1950,19 +1884,27 @@ def test_nasa9_a7_correction_ensures_correct_internal_energy():
         -3.57,  # a8
     ]
 
-    nasa_coeffs = NASA9Coefficients(
-        temperature_ranges=[
-            NASA9CoefficientSet(
-                temperature_range_min=200.0 * u.K,
-                temperature_range_max=6000.0 * u.K,
-                coefficients=dim_coeffs,
-            )
-        ]
-    )
-
-    # Use SI_unit_system context for the test
     with SI_unit_system:
-        result = translate_nasa9_coefficients(nasa_coeffs, T_ref)
+        nasa_coeffs = NASA9Coefficients(
+            temperature_ranges=[
+                NASA9CoefficientSet(
+                    temperature_range_min=200.0 * u.K,
+                    temperature_range_max=6000.0 * u.K,
+                    coefficients=dim_coeffs,
+                )
+            ]
+        )
+        tpg = ThermallyPerfectGas(
+            species=[
+                FrozenSpecies(
+                    name="Air",
+                    nasa_9_coefficients=nasa_coeffs,
+                    mass_fraction=1.0,
+                )
+            ]
+        )
+
+    result = translate_thermally_perfect_gas(tpg, T_ref)
 
     # Get the translated (non-dimensionalized) coefficients
     nd_coeffs = result["temperatureRanges"][0]["coefficients"]
