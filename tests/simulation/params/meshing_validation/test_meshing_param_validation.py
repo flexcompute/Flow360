@@ -414,7 +414,7 @@ def test_sphere_rotation_volume_spacing_requirements():
     # Test 4: Cylinder without spacing_axial should raise error
     with pytest.raises(
         pd.ValidationError,
-        match=r"`spacing_axial` is required for `Cylinder` and `AxisymmetricBody` entities",
+        match=r"`spacing_axial` is required for `Cylinder` or `AxisymmetricBody` entities",
     ):
         with ValidationContext(VOLUME_MESH, beta_mesher_context):
             with CGS_unit_system:
@@ -434,7 +434,7 @@ def test_sphere_rotation_volume_spacing_requirements():
     # Test 5: Cylinder without spacing_radial should raise error
     with pytest.raises(
         pd.ValidationError,
-        match=r"`spacing_radial` is required for `Cylinder` and `AxisymmetricBody` entities",
+        match=r"`spacing_radial` is required for `Cylinder` or `AxisymmetricBody` entities",
     ):
         with ValidationContext(VOLUME_MESH, beta_mesher_context):
             with CGS_unit_system:
@@ -454,7 +454,7 @@ def test_sphere_rotation_volume_spacing_requirements():
     # Test 6: Cylinder without spacing_circumferential should raise error
     with pytest.raises(
         pd.ValidationError,
-        match=r"`spacing_circumferential` is required for `Cylinder` and `AxisymmetricBody`",
+        match=r"`spacing_circumferential` is required for `Cylinder` or `AxisymmetricBody`",
     ):
         with ValidationContext(VOLUME_MESH, beta_mesher_context):
             with CGS_unit_system:

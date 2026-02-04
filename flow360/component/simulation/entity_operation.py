@@ -11,6 +11,7 @@ from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_utils import generate_uuid
 from flow360.component.simulation.unit_system import AngleType, LengthType
 from flow360.component.types import Axis
+from flow360.exceptions import Flow360ValueError
 
 
 def rotation_matrix_from_axis_and_angle(axis, angle):
@@ -185,10 +186,6 @@ def _validate_uniform_scale_and_transform_center(
     Raises:
         Flow360ValueError: If the matrix has non-uniform scaling
     """
-    # Import here to avoid circular imports
-    # pylint: disable=import-outside-toplevel
-    from flow360.exceptions import Flow360ValueError
-
     # Validate uniform scaling
     if not _is_uniform_scale(matrix):
         scale_factors = _extract_scale_from_matrix(matrix)
