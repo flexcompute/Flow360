@@ -1388,6 +1388,7 @@ def test_force_output_with_model_id():
         assert err["msg"] == exp_err["msg"]
 
 
+<<<<<<< HEAD
 def test_force_distribution_output_entities_validation():
     """Test ForceDistributionOutput entities validation."""
 
@@ -1523,3 +1524,30 @@ def test_force_distribution_output_requires_wall_bc(mock_validation_context):
                     ),
                 ],
             )
+=======
+def test_surface_output_write_single_file_validator():
+    with pytest.raises(
+        ValueError,
+        match=re.escape("write_single_file is only supported for Tecplot output format."),
+    ):
+        SurfaceOutput(
+            write_single_file=True,
+            entities=[Surface(name="noSlipWall")],
+            output_fields=["Cp"],
+            output_format="paraview",
+        )
+
+    SurfaceOutput(
+        write_single_file=True,
+        entities=[Surface(name="noSlipWall")],
+        output_fields=["Cp"],
+        output_format="tecplot",
+    )
+
+    SurfaceOutput(
+        write_single_file=True,
+        entities=[Surface(name="noSlipWall")],
+        output_fields=["Cp"],
+        output_format="both",
+    )
+>>>>>>> 2777bdea ([FXC-5244] fix(): Added validator for write_single_file to surface output (#1756))
