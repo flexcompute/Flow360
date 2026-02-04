@@ -673,6 +673,7 @@ def test_solver_translation():
         name="surface",
         surfaces=[Surface(name="noSlipWall")],
         write_single_file=True,
+        output_format="tecplot",
         output_fields=["residualHeatSolver"],
     )
     water = Water(
