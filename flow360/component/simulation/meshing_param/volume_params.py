@@ -279,16 +279,15 @@ class RotationVolume(Flow360BaseModel):
 
     @contextual_field_validator("entities", mode="after")
     @classmethod
-    def _validate_single_instance_in_entity_list(cls, values):
+    def _validate_single_instance_in_entity_list(cls, values, param_info: ParamsValidationInfo):
         """
         [CAPABILITY-LIMITATION]
-        Multiple instances in the entities is not allowed.
-        Because enclosed_entities will almost certain be different.
-        `enclosed_entities` is planned to be auto_populated in the future.
+        Only single instance is allowed in entities for each `RotationVolume`.
         """
-        # pylint: disable=protected-access
         # Note: Should be fine without expansion since we only allow Draft entities here.
-        if len(values.stored_entities) > 1:
+        # But using expand_entity_list for consistency and future-proofing.
+        expanded_entities = param_info.expand_entity_list(values)
+        if len(expanded_entities) > 1:
             raise ValueError(
                 "Only single instance is allowed in entities for each `RotationVolume`."
             )
@@ -304,11 +303,11 @@ class RotationVolume(Flow360BaseModel):
         """
         if param_info.is_beta_mesher:
             return values
-        # Note: Should be fine without expansion since we only allow Draft entities here.
 
+        expanded_entities = param_info.expand_entity_list(values)
         cgns_max_zone_name_length = 32
         max_cylinder_name_length = cgns_max_zone_name_length - len("rotatingBlock-")
-        for entity in values.stored_entities:
+        for entity in expanded_entities:
             if isinstance(entity, Cylinder) and len(entity.name) > max_cylinder_name_length:
                 raise ValueError(
                     f"The name ({entity.name}) of `Cylinder` entity in `RotationVolume` "
@@ -349,7 +348,8 @@ class RotationVolume(Flow360BaseModel):
         if param_info.is_beta_mesher:
             return values
 
-        for entity in values.stored_entities:
+        expanded_entities = param_info.expand_entity_list(values)
+        for entity in expanded_entities:
             if isinstance(entity, AxisymmetricBody):
                 raise ValueError(
                     "`AxisymmetricBody` entity for `RotationVolume` is only supported with the beta mesher."
