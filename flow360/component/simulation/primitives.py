@@ -592,6 +592,23 @@ class AxisymmetricBody(_VolumeEntityBase):
 
     @pd.field_validator("profile_curve", mode="after")
     @classmethod
+    def _check_profile_curve_is_nondegenerate(cls, curve):
+        if len(curve) < 2:
+            raise ValueError(
+                f"Profile curve requires at least 2 points, but only has {len(curve)}."
+            )
+
+        for i in range(len(curve) - 1):
+            p1, p2 = curve[i], curve[i + 1]
+            if p1[0] == p2[0] and p1[1] == p2[1]:
+                raise ValueError(
+                    f"Profile curve has duplicate consecutive points at indices {i} and {i + 1}: {str(p1)}."
+                )
+
+        return curve
+
+    @pd.field_validator("profile_curve", mode="after")
+    @classmethod
     def _check_radial_profile_is_positive(cls, curve):
         first_point = curve[0]
         if first_point[1] != 0:
