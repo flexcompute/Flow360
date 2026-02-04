@@ -80,22 +80,22 @@ class UniformRefinement(Flow360BaseModel):
 
     @contextual_model_validator(mode="after")
     def check_project_to_surface_with_snappy(self, param_info: ParamsValidationInfo):
-        """Check if project_to_surface is used only with snappy."""
+        """Check that project_to_surface is used only with snappy."""
         if not param_info.use_snappy and self.project_to_surface is not None:
             raise ValueError("project_to_surface is supported only for snappyHexMesh.")
 
         return self
 
     @contextual_model_validator(mode="after")
-    def check_axisymmetric_body_only_with_beta_mesher(self, param_info: ParamsValidationInfo):
-        """Check if AxisymmetricBody is only used with the beta mesher."""
-        if param_info.is_beta_mesher:
+    def check_axisymmetric_body_not_with_snappy(self, param_info: ParamsValidationInfo):
+        """Check that AxisymmetricBody is not used with snappy."""
+        if not param_info.use_snappy:
             return self
 
         for entity in self.entities.stored_entities:
             if isinstance(entity, AxisymmetricBody):
                 raise ValueError(
-                    "`AxisymmetricBody` entity for `UniformRefinement` is only supported with the beta mesher."
+                    "`AxisymmetricBody` entity for `UniformRefinement` is not supported with snappyHexMesh."
                 )
 
         return self
