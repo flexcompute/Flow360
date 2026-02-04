@@ -142,6 +142,18 @@ def test_disable_invalid_axisymmetric_body_construction():
 
     with pytest.raises(
         pd.ValidationError,
+        match=re.escape("Profile curve must not be empty."),
+    ):
+        with CGS_unit_system:
+            AxisymmetricBody(
+                name="1",
+                axis=(0, 0, 1),
+                center=(0, 5, 0),
+                profile_curve=[],
+            )
+
+    with pytest.raises(
+        pd.ValidationError,
         match=re.escape(
             "Expect first profile sample to be (Axial, 0.0). Found invalid point: [-1.  1.] cm."
         ),
@@ -166,6 +178,18 @@ def test_disable_invalid_axisymmetric_body_construction():
                 axis=(0, 0, 1),
                 center=(0, 5, 0),
                 profile_curve=[(-1, 0), (-1, 1), (1, 1)],
+            )
+
+    with pytest.raises(
+        pd.ValidationError,
+        match=re.escape("Profile curve has duplicate consecutive points at indices 1 and 2"),
+    ):
+        with CGS_unit_system:
+            invalid = AxisymmetricBody(
+                name="1",
+                axis=(1, 0, 0),
+                center=(0, 3, 0),
+                profile_curve=[(-1, 0), (-1, 1.23), (-1, 1.23), (1, 1), (1, 0)],
             )
 
 

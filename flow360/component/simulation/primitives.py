@@ -593,10 +593,8 @@ class AxisymmetricBody(_VolumeEntityBase):
     @pd.field_validator("profile_curve", mode="after")
     @classmethod
     def _check_profile_curve_is_nondegenerate(cls, curve):
-        if len(curve) < 2:
-            raise ValueError(
-                f"Profile curve requires at least 2 points, but only has {len(curve)}."
-            )
+        if len(curve) < 1:
+            raise ValueError("Profile curve must not be empty.")
 
         for i in range(len(curve) - 1):
             p1, p2 = curve[i], curve[i + 1]
