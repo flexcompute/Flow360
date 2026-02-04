@@ -79,10 +79,14 @@ from flow360.component.simulation.validation.validation_utils import (
     validate_entity_list_surface_existence,
     validate_improper_surface_field_usage_for_imported_surface,
 )
+<<<<<<< HEAD
 from flow360.component.types import Axis
 
 # Invalid characters for Linux filenames: / is path separator, \0 is null terminator
 _INVALID_FILENAME_CHARS_PATTERN = re.compile(r"[/\0]")
+=======
+from flow360.log import log
+>>>>>>> 2777bdea ([FXC-5244] fix(): Added validator for write_single_file to surface output (#1756))
 
 
 def _validate_filename_string(value: str) -> str:
@@ -446,6 +450,19 @@ class SurfaceOutput(_AnimationAndFileFormatSettings, _OutputBase):
         validate_improper_surface_field_usage_for_imported_surface(
             expanded_entities, self.output_fields
         )
+        return self
+
+    @pd.model_validator(mode="after")
+    def ensure_write_single_file_supported(self):
+        """Ensure write_single_file is supported for chosen output format"""
+        if self.write_single_file:
+            if self.output_format == "paraview":
+                raise ValueError("write_single_file is only supported for Tecplot output format.")
+            if self.output_format == "both":
+                log.warning(
+                    "write_single_file is only supported for Tecplot output format. "
+                    + "Paraview files will be still saved separately."
+                )
         return self
 
 
