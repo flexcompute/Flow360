@@ -605,35 +605,41 @@ def test_reuse_of_same_cylinder(mock_validation_context):
             )
 
 
-def test_axisymmetric_body_in_uniform_refinement(mock_validation_context):
+def test_axisymmetric_body_in_uniform_refinement():
     with ValidationContext(VOLUME_MESH, beta_mesher_context):
         with CGS_unit_system:
             axisymmetric_body = AxisymmetricBody(
-                name="reusable",
+                name="a",
                 axis=(0, 0, 1),
                 center=(0, 0, 0),
-                profile_curve=[(-2, 0), (-2, 1), (2, 1.2), (2, 0)],
+                profile_curve=[(-2, 0), (-2, 1), (2, 1.5), (2, 0)],
             )
-            SimulationParams(
-                meshing=MeshingParams(
-                    volume_zones=[
-                        RotationVolume(
-                            entities=[axisymmetric_body],
-                            spacing_axial=0.5,
-                            spacing_radial=0.3,
-                            spacing_circumferential=0.4,
-                            enclosed_entities=[Surface(name="inner")],
-                        ),
-                        AutomatedFarfield(),
-                    ],
-                    refinements=[
-                        UniformRefinement(
-                            entities=[axisymmetric_body],
-                            spacing=0.1,
-                        )
-                    ],
+            MeshingParams(
+                refinements=[
+                    UniformRefinement(
+                        entities=[axisymmetric_body],
+                        spacing=0.1,
+                    )
+                ],
+            )
+
+    # raises when beta mesher is off
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"`AxisymmetricBody` entity for `UniformRefinement` is only supported with the beta mesher.",
+    ):
+        with ValidationContext(VOLUME_MESH, non_beta_mesher_context):
+            with CGS_unit_system:
+                axisymmetric_body = AxisymmetricBody(
+                    name="1",
+                    axis=(0, 0, 1),
+                    center=(0, 0, 0),
+                    profile_curve=[(-1, 0), (-1, 1), (1, 1), (1, 0)],
                 )
-            )
+                UniformRefinement(
+                    entities=[axisymmetric_body],
+                    spacing=0.1,
+                )
 
 
 def test_require_mesh_zones():

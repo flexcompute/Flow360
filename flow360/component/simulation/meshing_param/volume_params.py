@@ -86,6 +86,20 @@ class UniformRefinement(Flow360BaseModel):
 
         return self
 
+    @contextual_model_validator(mode="after")
+    def check_axisymmetric_body_only_with_beta_mesher(self, param_info: ParamsValidationInfo):
+        """Check if AxisymmetricBody is only used with the beta mesher."""
+        if param_info.is_beta_mesher:
+            return self
+
+        for entity in self.entities.stored_entities:
+            if isinstance(entity, AxisymmetricBody):
+                raise ValueError(
+                    "`AxisymmetricBody` entity for `UniformRefinement` is only supported with the beta mesher."
+                )
+
+        return self
+
 
 class StructuredBoxRefinement(Flow360BaseModel):
     """
