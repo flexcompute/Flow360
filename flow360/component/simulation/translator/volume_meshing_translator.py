@@ -58,16 +58,20 @@ def uniform_refinement_translator(obj: UniformRefinement):
 def cylindrical_refinement_translator(obj: Union[AxisymmetricRefinement, RotationVolume]):
     """
     Translate AxisymmetricRefinement or RotationVolume with Cylinder/AxisymmetricBody entities.
-    
+
     Note: This should not be called for RotationVolume with Sphere entities.
     Use spherical_refinement_translator() for those cases.
     """
-    if obj.spacing_axial is None or obj.spacing_radial is None or obj.spacing_circumferential is None:
+    if (
+        obj.spacing_axial is None
+        or obj.spacing_radial is None
+        or obj.spacing_circumferential is None
+    ):
         raise ValueError(
             "cylindrical_refinement_translator requires all spacing fields to be specified. "
             "For Sphere entities in RotationVolume, use spherical_refinement_translator instead."
         )
-    
+
     return {
         "spacingAxial": obj.spacing_axial.value.item(),
         "spacingRadial": obj.spacing_radial.value.item(),

@@ -169,9 +169,7 @@ class AxisymmetricRefinement(Flow360BaseModel):
     )
     entities: EntityList[Cylinder] = pd.Field()
     # pylint: disable=no-member
-    spacing_axial: LengthType.Positive = pd.Field(
-        description="Spacing along the axial direction."
-    )
+    spacing_axial: LengthType.Positive = pd.Field(description="Spacing along the axial direction.")
     spacing_radial: LengthType.Positive = pd.Field(
         description="Spacing along the radial direction."
     )
@@ -428,8 +426,7 @@ class RotationVolume(Flow360BaseModel):
         expanded_entities = param_info.expand_entity_list(self.entities)
         has_sphere = any(isinstance(entity, Sphere) for entity in expanded_entities)
         has_cylinder_or_axisymmetric = any(
-            isinstance(entity, (Cylinder, AxisymmetricBody))
-            for entity in expanded_entities
+            isinstance(entity, (Cylinder, AxisymmetricBody)) for entity in expanded_entities
         )
 
         if has_sphere:
