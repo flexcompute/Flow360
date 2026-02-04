@@ -155,7 +155,9 @@ def refinement_entity_injector(entity_obj):
             "type": "axisymmetric_body",
             "axis": list(entity_obj.axis),
             "center": list(entity_obj.center.value),
-            "profileCurve": [list(profile_point.value) for profile_point in entity_obj.profile_curve],
+            "profileCurve": [
+                list(profile_point.value) for profile_point in entity_obj.profile_curve
+            ],
         }
     return {}
 
