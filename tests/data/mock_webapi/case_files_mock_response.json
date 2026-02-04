@@ -33,6 +33,22 @@
             "updatedAt": null
         },
         {
+            "fileName": "results/force_output_wing_all_planes_forces_v2.csv",
+            "filePath": "results/force_output_wing_all_planes_forces_v2.csv",
+            "length": 1524,
+            "fileType": ".csv",
+            "storageClass": null,
+            "updatedAt": null
+        },
+        {
+            "fileName": "results/force_output_wing_all_planes_forces_moving_statistic_v2.csv",
+            "filePath": "results/force_output_wing_all_planes_forces_moving_statistic_v2.csv",
+            "length": 1648,
+            "fileType": ".csv",
+            "storageClass": null,
+            "updatedAt": null
+        },
+        {
             "fileName": "simulation.json",
             "filePath": "simulation.json",
             "length": 36806,

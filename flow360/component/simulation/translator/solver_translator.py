@@ -13,6 +13,7 @@ from flow360.component.simulation.conversion import (
     compute_udf_dimensionalization_factor,
 )
 from flow360.component.simulation.framework.entity_base import EntityList
+from flow360.component.simulation.framework.updater_utils import recursive_remove_key
 from flow360.component.simulation.models.material import Sutherland
 from flow360.component.simulation.models.solver_numerics import NoneSolver
 from flow360.component.simulation.models.surface_models import (
@@ -814,28 +815,90 @@ def translate_acoustic_output(output_params: list):
     return None
 
 
-def translate_force_distribution_output(output_params: list):
+def _expand_entity_list(entity_list, input_params) -> list:
+    """Expand an entity list, handling both stored entities and selectors."""
+    # pylint: disable=import-outside-toplevel
+    from flow360.component.simulation.framework.entity_expansion_utils import (
+        expand_entity_list_in_context,
+    )
+
+    return expand_entity_list_in_context(entity_list, input_params, return_names=False)
+
+
+def _get_wall_bc_surface_names(input_params) -> list:
+    """Get all surface names that have Wall boundary conditions assigned."""
+    # pylint: disable=import-outside-toplevel
+    from flow360.component.simulation.validation.validation_utils import (
+        get_surface_full_name,
+    )
+
+    surface_names = []
+    for bc in input_params.models:
+        if isinstance(bc, Wall) and bc.entities is not None:
+            expanded_entities = _expand_entity_list(bc.entities, input_params)
+            for entity in expanded_entities:
+                surface_names.append(get_surface_full_name(entity, "force distribution output"))
+    return surface_names
+
+
+def translate_force_distribution_output(output_params: list, input_params):
     """Translate force distribution output settings."""
+    # pylint: disable=import-outside-toplevel
+    from flow360.component.simulation.validation.validation_utils import (
+        get_surface_full_name,
+    )
+
     force_distribution_output = {}
     for output in output_params:
         if is_exact_instance(output, ForceDistributionOutput):
-            force_distribution_output[output.name] = {
+            config = {
                 "direction": list(output.distribution_direction),
                 "type": output.distribution_type,
             }
+            # Add surfaces - use specified entities or all surfaces with Wall BC
+            if output.entities is not None:
+                expanded_entities = _expand_entity_list(output.entities, input_params)
+                surface_names = [
+                    get_surface_full_name(entity, "force distribution output")
+                    for entity in expanded_entities
+                ]
+            else:
+                surface_names = _get_wall_bc_surface_names(input_params)
+            config["surfaces"] = surface_names
+            # Add number of segments
+            config["numberOfSegments"] = output.number_of_segments
+            force_distribution_output[output.name] = config
     return force_distribution_output
 
 
-def translate_time_averaged_force_distribution_output(output_params: list):
+def translate_time_averaged_force_distribution_output(output_params: list, input_params):
     """Translate time-averaged force distribution output settings."""
+    # pylint: disable=import-outside-toplevel
+    from flow360.component.simulation.validation.validation_utils import (
+        get_surface_full_name,
+    )
+
     time_averaged_force_distribution_output = {}
     for output in output_params:
         if isinstance(output, TimeAverageForceDistributionOutput):
-            time_averaged_force_distribution_output[output.name] = {
+            config = {
                 "direction": list(output.distribution_direction),
                 "type": output.distribution_type,
                 "startAverageIntegrationStep": output.start_step,
             }
+            # Add surfaces - use specified entities or all surfaces with Wall BC
+            if output.entities is not None:
+                expanded_entities = _expand_entity_list(output.entities, input_params)
+                surface_names = [
+                    get_surface_full_name(entity, "force distribution output")
+                    for entity in expanded_entities
+                ]
+            else:
+                surface_names = _get_wall_bc_surface_names(input_params)
+            config["surfaces"] = surface_names
+            # Add number of segments
+            config["numberOfSegments"] = output.number_of_segments
+            time_averaged_force_distribution_output[output.name] = config
     return time_averaged_force_distribution_output
 
 
@@ -1206,12 +1269,14 @@ def translate_output(input_params: SimulationParams, translated: dict):
 
     ##:: Step10: Get translated["forceDistributionOutput"]
     if has_instance_in_list(outputs, ForceDistributionOutput):
-        translated["forceDistributionOutput"] = translate_force_distribution_output(outputs)
+        translated["forceDistributionOutput"] = translate_force_distribution_output(
+            outputs, input_params
+        )
 
     ##:: Step10b: Get translated["timeAveragedForceDistributionOutput"]
     if has_instance_in_list(outputs, TimeAverageForceDistributionOutput):
         translated["timeAveragedForceDistributionOutput"] = (
-            translate_time_averaged_force_distribution_output(outputs)
+            translate_time_averaged_force_distribution_output(outputs, input_params)
         )
 
     ##:: Step11: Sort all "output_fields" everywhere
@@ -1693,13 +1758,32 @@ def require_external_postprocessing(params: SimulationParams):
 
 def calculate_monitor_semaphore_hash(params: SimulationParams):
     """Get the hash for monitor processor's semaphore"""
+
+    def get_force_output_models(force_output: ForceOutput, params: SimulationParams):
+        force_output_model_ids = {
+            (model.private_attribute_id if hasattr(model, "private_attribute_id") else model)
+            for model in force_output.models
+        }
+        force_output_models = [
+            model for model in params.models if model.private_attribute_id in force_output_model_ids
+        ]
+        return force_output_models
+
     json_string_list = []
     if params.outputs:
         for output in params.outputs:
             if not isinstance(output, get_args(get_args(MonitorOutputType)[0])):
                 continue
             if isinstance(output, ForceOutput):
-                json_string_list.extend(list(sorted(output.models)))
+                force_output_models = get_force_output_models(output, params)
+                force_output_models_dict = []
+                for model in force_output_models:
+                    model_dict = dump_dict(model)
+                    recursive_remove_key(
+                        model_dict, "privateAttributeId", "privateAttributeInputCache"
+                    )
+                    force_output_models_dict.append(json.dumps(model_dict))
+                json_string_list.extend(force_output_models_dict)
                 json_string_list.extend(output.output_fields.items)
             if output.moving_statistic is not None:
                 json_string_list.append(json.dumps(dump_dict(output.moving_statistic)))

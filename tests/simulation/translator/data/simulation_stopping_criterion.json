@@ -247,6 +247,33 @@
                 ]
             },
             "name": "Freestream"
+        },
+        {
+            "type": "Wall",
+            "entities": {
+                "stored_entities": [
+                    {
+                        "private_attribute_entity_type_name": "Surface",
+                        "name": "4",
+                        "private_attribute_id": "ef389961-e941-4a0a-a910-55c6d303f7e5",
+                        "private_attribute_sub_components": []
+                    }
+                ]
+            },
+            "private_attribute_id": "209302bf-9eeb-449b-b7c4-a4e5c04a5b17",
+            "name": "wing",
+            "use_wall_function": false,
+            "heat_spec": {
+                "value": {
+                    "value": 0.0,
+                    "units": "W/m**2"
+                },
+                "type_name": "HeatFlux"
+            },
+            "roughness_height": {
+                "value": 0.0,
+                "units": "m"
+            }
         }
     ],
     "time_stepping": {
@@ -432,7 +459,7 @@
             "private_attribute_id": "33333",
             "name": "force_wallBC",
             "models": [
-                "wallBC"
+                "209302bf-9eeb-449b-b7c4-a4e5c04a5b17"
             ],
             "moving_statistic": {
                 "moving_window_size": 10,
