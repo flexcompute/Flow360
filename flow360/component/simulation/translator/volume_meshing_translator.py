@@ -50,7 +50,6 @@ from flow360.exceptions import Flow360TranslationError
 def uniform_refinement_translator(obj: UniformRefinement):
     """
     Translate UniformRefinement.
-
     """
     return {"spacing": obj.spacing.value.item()}
 
@@ -134,7 +133,7 @@ def rotation_volume_translator(obj: RotationVolume, rotor_disk_names: list):
 
 
 def refinement_entity_injector(entity_obj):
-    """Injector for UniformRefinement entity [box & cylinder]."""
+    """Injector for UniformRefinement entity [box, cylinder, or axisymmetric body]."""
     if isinstance(entity_obj, Cylinder):
         return {
             "type": "cylinder",
@@ -150,6 +149,13 @@ def refinement_entity_injector(entity_obj):
             "center": list(entity_obj.center.value),
             "axisOfRotation": list(entity_obj.axis_of_rotation),
             "angleOfRotation": entity_obj.angle_of_rotation.to("degree").value.item(),
+        }
+    if isinstance(entity_obj, AxisymmetricBody):
+        return {
+            "type": "axisymmetric_body",
+            "axis": list(entity_obj.axis),
+            "center": list(entity_obj.center.value),
+            "profileCurve": [list(profile_point.value) for profile_point in entity_obj.profile_curve],
         }
     return {}
 

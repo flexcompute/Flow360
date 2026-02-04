@@ -58,7 +58,7 @@ class UniformRefinement(Flow360BaseModel):
     -------
 
       >>> fl.UniformRefinement(
-      ...     entities=[cylinder, box],
+      ...     entities=[cylinder, box, axisymmetric_body],
       ...     spacing=1*fl.u.cm
       ... )
 
