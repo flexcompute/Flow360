@@ -58,9 +58,6 @@ beta_mesher_context = ParamsValidationInfo({}, [])
 beta_mesher_context.is_beta_mesher = True
 beta_mesher_context.project_length_unit = "mm"
 
-snappy_context = ParamsValidationInfo({}, [])
-snappy_context.use_snappy = True
-
 
 def test_structured_box_only_in_beta_mesher():
     # raises when beta mesher is off
@@ -626,12 +623,12 @@ def test_axisymmetric_body_in_uniform_refinement():
                 ],
             )
 
-    # raises when snappy is used
+    # raises without beta mesher
     with pytest.raises(
         pd.ValidationError,
         match=r"`AxisymmetricBody` entity for `UniformRefinement` is supported only with beta mesher",
     ):
-        with ValidationContext(VOLUME_MESH, snappy_context):
+        with ValidationContext(VOLUME_MESH, non_beta_mesher_context):
             with CGS_unit_system:
                 axisymmetric_body = AxisymmetricBody(
                     name="1",
