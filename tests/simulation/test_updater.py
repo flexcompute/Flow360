@@ -1336,3 +1336,149 @@ def test_updater_to_25_8_3_no_coordinate_systems():
         ]
         == []
     )
+
+
+def test_updater_to_25_8_4_fix_write_single_file_paraview():
+    """Test updater for version 25.8.4 which fixes write_single_file incompatibility with Paraview format"""
+
+    # Construct test params with write_single_file=True and various output formats
+    params_as_dict = {
+        "version": "25.8.3",
+        "unit_system": {"name": "SI"},
+        "outputs": [
+            {
+                "output_type": "SurfaceOutput",
+                "name": "Surface output paraview",
+                "write_single_file": True,
+                "output_format": "paraview",
+                "output_fields": {"items": ["Cp"]},
+                "entities": {"stored_entities": []},
+            },
+            {
+                "output_type": "TimeAverageSurfaceOutput",
+                "name": "Time average surface output paraview",
+                "write_single_file": True,
+                "output_format": "paraview",
+                "output_fields": {"items": ["Cf"]},
+                "entities": {"stored_entities": []},
+            },
+            {
+                "output_type": "SurfaceOutput",
+                "name": "Surface output both",
+                "write_single_file": True,
+                "output_format": "both",
+                "output_fields": {"items": ["Cp"]},
+                "entities": {"stored_entities": []},
+            },
+            {
+                "output_type": "SurfaceOutput",
+                "name": "Surface output tecplot",
+                "write_single_file": True,
+                "output_format": "tecplot",
+                "output_fields": {"items": ["Cp"]},
+                "entities": {"stored_entities": []},
+            },
+            {
+                "output_type": "VolumeOutput",
+                "name": "Volume output",
+                "output_format": "paraview",
+                "output_fields": {"items": ["Mach"]},
+            },
+        ],
+    }
+
+    params_new = updater(
+        version_from="25.8.3",
+        version_to="25.8.4",
+        params_as_dict=params_as_dict,
+    )
+
+    assert params_new["version"] == "25.8.4"
+
+    # Test 1: write_single_file should be reset to False for paraview format
+    assert (
+        params_new["outputs"][0]["write_single_file"] is False
+    ), "SurfaceOutput with paraview should have write_single_file=False"
+    assert (
+        params_new["outputs"][1]["write_single_file"] is False
+    ), "TimeAverageSurfaceOutput with paraview should have write_single_file=False"
+
+    # Test 2: write_single_file should NOT be changed for "both" format (only warning, not error)
+    assert (
+        params_new["outputs"][2]["write_single_file"] is True
+    ), "SurfaceOutput with 'both' format should keep write_single_file=True"
+
+    # Test 3: write_single_file should NOT be changed for tecplot format (valid)
+    assert (
+        params_new["outputs"][3]["write_single_file"] is True
+    ), "SurfaceOutput with tecplot should keep write_single_file=True"
+
+    # Test 4: Non-SurfaceOutput types should not be affected
+    assert (
+        "write_single_file" not in params_new["outputs"][4]
+    ), "VolumeOutput should not be affected"
+
+
+def test_updater_to_25_8_4_no_outputs():
+    """Test updater handles cases where outputs is missing or empty"""
+
+    # Case 1: No outputs
+    params_as_dict_1 = {
+        "version": "25.8.3",
+        "unit_system": {"name": "SI"},
+    }
+
+    params_new_1 = updater(
+        version_from="25.8.3",
+        version_to="25.8.4",
+        params_as_dict=params_as_dict_1,
+    )
+
+    assert params_new_1["version"] == "25.8.4"
+    assert "outputs" not in params_new_1
+
+    # Case 2: Empty outputs list
+    params_as_dict_2 = {
+        "version": "25.8.3",
+        "unit_system": {"name": "SI"},
+        "outputs": [],
+    }
+
+    params_new_2 = updater(
+        version_from="25.8.3",
+        version_to="25.8.4",
+        params_as_dict=params_as_dict_2,
+    )
+
+    assert params_new_2["version"] == "25.8.4"
+    assert params_new_2["outputs"] == []
+
+
+def test_updater_to_25_8_4_write_single_file_false():
+    """Test updater doesn't change outputs that already have write_single_file=False"""
+
+    params_as_dict = {
+        "version": "25.8.3",
+        "unit_system": {"name": "SI"},
+        "outputs": [
+            {
+                "output_type": "SurfaceOutput",
+                "name": "Surface output",
+                "write_single_file": False,
+                "output_format": "paraview",
+                "output_fields": {"items": ["Cp"]},
+                "entities": {"stored_entities": []},
+            },
+        ],
+    }
+
+    params_new = updater(
+        version_from="25.8.3",
+        version_to="25.8.4",
+        params_as_dict=params_as_dict,
+    )
+
+    assert params_new["version"] == "25.8.4"
+    assert (
+        params_new["outputs"][0]["write_single_file"] is False
+    ), "write_single_file should remain False"
