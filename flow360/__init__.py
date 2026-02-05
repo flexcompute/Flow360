@@ -60,8 +60,12 @@ from flow360.component.simulation.meshing_param.volume_params import (
 )
 from flow360.component.simulation.models.material import (
     Air,
+    FrozenSpecies,
+    NASA9Coefficients,
+    NASA9CoefficientSet,
     SolidMaterial,
     Sutherland,
+    ThermallyPerfectGas,
     Water,
 )
 from flow360.component.simulation.models.solver_numerics import (
@@ -301,7 +305,11 @@ __all__ = [
     "Folder",
     "ForcePerArea",
     "Air",
+    "NASA9CoefficientSet",
+    "NASA9Coefficients",
+    "FrozenSpecies",
     "Sutherland",
+    "ThermallyPerfectGas",
     "SolidMaterial",
     "Slice",
     "Isosurface",
