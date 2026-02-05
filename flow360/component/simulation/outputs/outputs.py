@@ -448,6 +448,19 @@ class SurfaceOutput(_AnimationAndFileFormatSettings, _OutputBase):
         )
         return self
 
+    @pd.model_validator(mode="after")
+    def ensure_write_single_file_supported(self):
+        """Ensure write_single_file is supported for chosen output format"""
+        if self.write_single_file:
+            if self.output_format == "paraview":
+                raise ValueError("write_single_file is only supported for Tecplot output format.")
+            if self.output_format == "both":
+                add_validation_warning(
+                    "write_single_file is only supported for Tecplot output format. "
+                    + "Paraview files will be still saved separately."
+                )
+        return self
+
 
 class TimeAverageSurfaceOutput(SurfaceOutput):
     """

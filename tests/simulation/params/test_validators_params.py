@@ -159,6 +159,7 @@ def surface_output_with_wall_metric():
         name="surface",
         surfaces=[Surface(name="noSlipWall")],
         write_single_file=True,
+        output_format="tecplot",
         output_fields=["wallFunctionMetric"],
     )
     return surface_output
@@ -182,6 +183,7 @@ def surface_output_with_low_mach_precond():
         name="surface",
         surfaces=[Surface(name="noSlipWall")],
         write_single_file=True,
+        output_format="tecplot",
         output_fields=["lowMachPreconditionerSensor"],
     )
     return surface_output
@@ -193,6 +195,7 @@ def surface_output_with_numerical_dissipation():
         name="surface",
         surfaces=[Surface(name="noSlipWall")],
         write_single_file=True,
+        output_format="tecplot",
         output_fields=["numericalDissipationFactor"],
     )
     return surface_output
@@ -495,6 +498,7 @@ def test_cht_solver_settings_validator(
         name="surface",
         surfaces=[Surface(name="noSlipWall")],
         write_single_file=True,
+        output_format="tecplot",
         output_fields=["residualHeatSolver"],
     )
 
