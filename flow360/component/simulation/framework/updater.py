@@ -501,6 +501,10 @@ def _to_25_8_4(params_as_dict):
         output_format="paraview". This is invalid because write_single_file only
         works with Tecplot format. Silently reset write_single_file to False when
         Paraview-only format is used.
+
+        Also handles the edge case where output_format is missing from JSON
+        (e.g., hand-edited files or very old JSONs), in which case we assume
+        the default value "paraview" and apply the fix.
         """
         outputs = params_as_dict.get("outputs")
         if not outputs:
@@ -517,9 +521,12 @@ def _to_25_8_4(params_as_dict):
             if not write_single_file:
                 continue
 
+            # Get output_format, default to "paraview" if missing
+            # (This handles edge cases like hand-edited JSONs or very old versions)
+            output_format = output.get("output_format", "paraview")
+
             # Only fix paraview format (which raises error)
             # "both" format only shows warning, so it's valid
-            output_format = output.get("output_format")
             if output_format == "paraview":
                 # Silently reset write_single_file to False
                 output["write_single_file"] = False
