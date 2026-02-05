@@ -1174,7 +1174,7 @@ def test_uniform_refinement_box_cylinder_axisymm_body(get_surface_mesh):
     assert box_ref["spacing"] == 0.1
 
     axisymm_ref = translated["refinement"][2]
-    assert axisymm_ref["type"] == "axisymmetric_body"
+    assert axisymm_ref["type"] == "Axisymmetric"
     assert axisymm_ref["axisOfRotation"] == [0.0, 1.0, 0.0]
     assert axisymm_ref["center"] == [5.0, 6.0, 7.0]
     assert axisymm_ref["profileCurve"] == [[0.0, 0.0], [0.0, 0.5], [1.0, 1.0], [1.0, 0.0]]
