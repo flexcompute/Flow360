@@ -80,7 +80,7 @@ class UniformRefinement(Flow360BaseModel):
 
     @contextual_field_validator("entities", mode="after")
     @classmethod
-    def check_axisymmetric_body_not_with_snappy(cls, values, param_info: ParamsValidationInfo):
+    def check_axisymmetric_body_used_with_beta_mesher(cls, values, param_info: ParamsValidationInfo):
         """Check that AxisymmetricBody is used with beta mesher."""
 
         if values is None:
