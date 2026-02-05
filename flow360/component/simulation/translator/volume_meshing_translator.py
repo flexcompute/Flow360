@@ -133,8 +133,10 @@ def rotation_volume_translator(obj: RotationVolume, rotor_disk_names: list):
 
 
 def axisymmetric_body_injector(entity: AxisymmetricBody):
+    """Reusable injector for AxisymmetricBody."""
     return {
         "name": entity.name,
+        "type": "Axisymmetric",
         "axisOfRotation": list(entity.axis),
         "center": list(entity.center.value),
         "profileCurve": [list(profile_point.value) for profile_point in entity.profile_curve],
@@ -215,8 +217,8 @@ def rotation_volume_entity_injector(
 
     if isinstance(entity, AxisymmetricBody):
         data = axisymmetric_body_injector(entity)
-        if use_inhouse_mesher:
-            data["type"] = "Axisymmetric"
+        if not use_inhouse_mesher:
+            del data["type"]
         return data
     return {}
 

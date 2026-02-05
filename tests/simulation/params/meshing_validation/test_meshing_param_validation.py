@@ -629,7 +629,7 @@ def test_axisymmetric_body_in_uniform_refinement():
     # raises when snappy is used
     with pytest.raises(
         pd.ValidationError,
-        match=r"`AxisymmetricBody` entity for `UniformRefinement` is not supported with snappyHexMesh.",
+        match=r"`AxisymmetricBody` entity for `UniformRefinement` is supported only with beta mesher",
     ):
         with ValidationContext(VOLUME_MESH, snappy_context):
             with CGS_unit_system:

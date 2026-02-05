@@ -78,15 +78,7 @@ class UniformRefinement(Flow360BaseModel):
         description="Whether to include the refinement in the surface mesh. Defaults to True when using snappy.",
     )
 
-    @contextual_model_validator(mode="after")
-    def check_project_to_surface_with_snappy(self, param_info: ParamsValidationInfo):
-        """Check that project_to_surface is used only with snappy."""
-        if not param_info.use_snappy and self.project_to_surface is not None:
-            raise ValueError("project_to_surface is supported only for snappyHexMesh.")
-
-        return self
-
-    @contextual_field_validator("enclosed_entities", mode="after")
+    @contextual_field_validator("entities", mode="after")
     @classmethod
     def check_axisymmetric_body_not_with_snappy(cls, values, param_info: ParamsValidationInfo):
         """Check that AxisymmetricBody is used with beta mesher and not snappy."""
@@ -105,6 +97,14 @@ class UniformRefinement(Flow360BaseModel):
                 )
 
         return values
+
+    @contextual_model_validator(mode="after")
+    def check_project_to_surface_with_snappy(self, param_info: ParamsValidationInfo):
+        """Check that project_to_surface is used only with snappy."""
+        if not param_info.use_snappy and self.project_to_surface is not None:
+            raise ValueError("project_to_surface is supported only for snappyHexMesh.")
+
+        return self
 
 
 class StructuredBoxRefinement(Flow360BaseModel):
