@@ -602,7 +602,12 @@ def validate_model(  # pylint: disable=too-many-locals
     except pd.ValidationError as err:
         validation_errors = err.errors()
     except Exception as err:  # pylint: disable=broad-exception-caught
-        validation_errors = handle_generic_exception(err, validation_errors)
+        import traceback  # pylint: disable=import-outside-toplevel
+
+        stack = traceback.format_exc()
+        validation_errors = handle_generic_exception(
+            err, validation_errors, loc_prefix=None, error_stack=stack
+        )
     finally:
         if validation_context is not None:
             validation_warnings = list(validation_context.validation_warnings)
@@ -645,8 +650,44 @@ def clean_unrelated_setting_from_params_dict(params: dict, root_item_type: str) 
     return params
 
 
+def _sanitize_stack_trace(stack: str) -> str:
+    """
+    Sanitize file paths in stack trace to only show paths starting from 'flow360/'.
+
+    Gracefully returns the original stack if sanitization fails.
+
+    Parameters
+    ----------
+    stack : str
+        The original stack trace string.
+
+    Returns
+    -------
+    str
+        The sanitized stack trace with shortened file paths, or the original
+        stack if sanitization fails.
+    """
+    # pylint: disable=import-outside-toplevel
+    import re
+
+    try:
+        # Remove the "Traceback (most recent call last):\n" prefix
+        stack = re.sub(r"^Traceback \(most recent call last\):\n\s*", "", stack)
+
+        # Pattern to match file paths containing 'flow360/'
+        # Captures everything before 'flow360/' and replaces with just 'flow360/'
+        pattern = r'File "[^"]*[/\\](flow360[/\\][^"]*)"'
+        replacement = r'File "\1"'
+        return re.sub(pattern, replacement, stack)
+    except Exception:  # pylint: disable=broad-exception-caught
+        return stack
+
+
 def handle_generic_exception(
-    err: Exception, validation_errors: Optional[list], loc_prefix: Optional[list[str]] = None
+    err: Exception,
+    validation_errors: Optional[list],
+    loc_prefix: Optional[list[str]] = None,
+    error_stack: Optional[str] = None,
 ) -> list:
     """
     Handles generic exceptions during validation, adding to validation errors.
@@ -659,6 +700,8 @@ def handle_generic_exception(
         Current list of validation errors, may be None.
     loc_prefix : list or None
         Prefix of the location of the generic error to help locate the issue
+    error_stack : str or None
+        The error stack trace, if available.
 
     Returns
     -------
@@ -668,14 +711,17 @@ def handle_generic_exception(
     if validation_errors is None:
         validation_errors = []
 
-    validation_errors.append(
-        {
-            "type": err.__class__.__name__.lower().replace("error", "_error"),
-            "loc": ["unknown"] if loc_prefix is None else loc_prefix,
-            "msg": str(err),
-            "ctx": {},
-        }
-    )
+    error_entry = {
+        "type": err.__class__.__name__.lower().replace("error", "_error"),
+        "loc": ["unknown"] if loc_prefix is None else loc_prefix,
+        "msg": str(err),
+        "ctx": {},
+    }
+
+    if error_stack is not None:
+        error_entry["debug"] = _sanitize_stack_trace(error_stack)
+
+    validation_errors.append(error_entry)
     return validation_errors
 
 

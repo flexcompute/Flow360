@@ -7,6 +7,29 @@
         "betaAngle": 0.0,
         "muRef": 4.292321046986499e-08
     },
+    "fluidProperties": {
+        "prandtlNumber": 0.72,
+        "turbulentPrandtlNumber": 0.9
+    },
+    "thermallyPerfectGasModel": {
+        "temperatureRanges": [
+            {
+                "temperatureRangeMin": 0.694082942911678,
+                "temperatureRangeMax": 20.82248828735034,
+                "coefficients": [
+                    0.0,
+                    0.0,
+                    3.5,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    7.890809489614162e-16,
+                    0.0
+                ]
+            }
+        ]
+    },
     "initialCondition": {
         "p": "p",
         "rho": "rho",

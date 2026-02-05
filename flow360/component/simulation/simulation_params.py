@@ -122,6 +122,7 @@ from flow360.component.simulation.validation.validation_simulation_params import
     _check_numerical_dissipation_factor_output,
     _check_parent_volume_is_rotating,
     _check_time_average_output,
+    _check_tpg_not_with_isentropic_solver,
     _check_unique_selector_names,
     _check_unsteadiness_to_use_hybrid_model,
     _check_valid_models_for_liquid,
@@ -600,6 +601,14 @@ class SimulationParams(_ParamModelBase):
     def check_low_mach_preconditioner_output(self):
         """Only allow lowMachPreconditioner output field when the lowMachPreconditioner is enabled in the NS solver"""
         return _check_low_mach_preconditioner_output(self)
+
+    @pd.model_validator(mode="after")
+    def check_tpg_not_with_isentropic_solver(self):
+        """Temperature-dependent gas properties are not supported with CompressibleIsentropic (4x4) solver.
+
+        Constant-gamma coefficients (only a2 non-zero) are allowed.
+        """
+        return _check_tpg_not_with_isentropic_solver(self)
 
     @contextual_model_validator(mode="after")
     @context_validator(context=CASE)
