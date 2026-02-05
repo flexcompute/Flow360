@@ -492,6 +492,44 @@ def _to_25_8_3(params_as_dict):
     return params_as_dict
 
 
+def _to_25_8_4(params_as_dict):
+    def fix_write_single_file_for_paraview_format(params_as_dict):
+        """
+        Fix write_single_file incompatibility with Paraview format.
+
+        Before validation was added, users could set write_single_file=True with
+        output_format="paraview". This is invalid because write_single_file only
+        works with Tecplot format. Silently reset write_single_file to False when
+        Paraview-only format is used.
+        """
+        outputs = params_as_dict.get("outputs")
+        if not outputs:
+            return params_as_dict
+
+        for output in outputs:
+            output_type = output.get("output_type")
+            # Only process SurfaceOutput and TimeAverageSurfaceOutput
+            if output_type not in ["SurfaceOutput", "TimeAverageSurfaceOutput"]:
+                continue
+
+            # Check if write_single_file is True
+            write_single_file = output.get("write_single_file")
+            if not write_single_file:
+                continue
+
+            # Only fix paraview format (which raises error)
+            # "both" format only shows warning, so it's valid
+            output_format = output.get("output_format")
+            if output_format == "paraview":
+                # Silently reset write_single_file to False
+                output["write_single_file"] = False
+
+        return params_as_dict
+
+    fix_write_single_file_for_paraview_format(params_as_dict)
+    return params_as_dict
+
+
 VERSION_MILESTONES = [
     (Flow360Version("24.11.1"), _to_24_11_1),
     (Flow360Version("24.11.7"), _to_24_11_7),
@@ -510,6 +548,7 @@ VERSION_MILESTONES = [
     (Flow360Version("25.8.0b4"), _to_25_8_0),
     (Flow360Version("25.8.1"), _to_25_8_1),
     (Flow360Version("25.8.3"), _to_25_8_3),
+    (Flow360Version("25.8.4"), _to_25_8_4),
 ]  # A list of the Python API version tuple with there corresponding updaters.
 
 
