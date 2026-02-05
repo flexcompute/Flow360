@@ -585,7 +585,7 @@ class AxisymmetricBody(_VolumeEntityBase):
     # pylint: disable=no-member
     center: LengthType.Point = pd.Field(description="The center point of the body of revolution.")
     profile_curve: List[LengthType.Pair] = pd.Field(
-        description="The (Axial, Radial) profile of the body of revolution."
+        description="The (Axial, Radial) profile of the body of revolution.", min_length=1
     )
 
     private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
@@ -593,9 +593,6 @@ class AxisymmetricBody(_VolumeEntityBase):
     @pd.field_validator("profile_curve", mode="after")
     @classmethod
     def _check_profile_curve_is_nondegenerate(cls, curve):
-        if len(curve) < 1:
-            raise ValueError("Profile curve must not be empty.")
-
         for i in range(len(curve) - 1):
             p1, p2 = curve[i], curve[i + 1]
             if p1[0] == p2[0] and p1[1] == p2[1]:

@@ -86,19 +86,25 @@ class UniformRefinement(Flow360BaseModel):
 
         return self
 
-    @contextual_model_validator(mode="after")
-    def check_axisymmetric_body_not_with_snappy(self, param_info: ParamsValidationInfo):
-        """Check that AxisymmetricBody is not used with snappy."""
-        if not param_info.use_snappy:
-            return self
+    @contextual_field_validator("enclosed_entities", mode="after")
+    @classmethod
+    def check_axisymmetric_body_not_with_snappy(cls, values, param_info: ParamsValidationInfo):
+        """Check that AxisymmetricBody is used with beta mesher and not snappy."""
 
-        for entity in self.entities.stored_entities:
+        if values is None:
+            return values
+        if param_info.is_beta_mesher and not param_info.use_snappy:
+            return values
+
+        expanded = param_info.expand_entity_list(values)
+        for entity in expanded:
             if isinstance(entity, AxisymmetricBody):
                 raise ValueError(
-                    "`AxisymmetricBody` entity for `UniformRefinement` is not supported with snappyHexMesh."
+                    "`AxisymmetricBody` entity for `UniformRefinement` is supported "
+                    "only with beta mesher and not snappyHexMesh."
                 )
 
-        return self
+        return values
 
 
 class StructuredBoxRefinement(Flow360BaseModel):

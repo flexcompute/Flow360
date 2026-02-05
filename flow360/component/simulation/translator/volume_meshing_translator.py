@@ -132,6 +132,15 @@ def rotation_volume_translator(obj: RotationVolume, rotor_disk_names: list):
     return setting
 
 
+def axisymmetric_body_injector(entity: AxisymmetricBody):
+    return {
+        "name": entity.name,
+        "axisOfRotation": list(entity.axis),
+        "center": list(entity.center.value),
+        "profileCurve": [list(profile_point.value) for profile_point in entity.profile_curve],
+    }
+
+
 def refinement_entity_injector(entity_obj):
     """Injector for UniformRefinement entity [box, cylinder, or axisymmetric body]."""
     if isinstance(entity_obj, Cylinder):
@@ -151,14 +160,7 @@ def refinement_entity_injector(entity_obj):
             "angleOfRotation": entity_obj.angle_of_rotation.to("degree").value.item(),
         }
     if isinstance(entity_obj, AxisymmetricBody):
-        return {
-            "type": "axisymmetric_body",
-            "axis": list(entity_obj.axis),
-            "center": list(entity_obj.center.value),
-            "profileCurve": [
-                list(profile_point.value) for profile_point in entity_obj.profile_curve
-            ],
-        }
+        return axisymmetric_body_injector(entity_obj)
     return {}
 
 
@@ -212,12 +214,7 @@ def rotation_volume_entity_injector(
         return data
 
     if isinstance(entity, AxisymmetricBody):
-        data = {
-            "name": entity.name,
-            "profileCurve": [list(profile_point.value) for profile_point in entity.profile_curve],
-            "axisOfRotation": list(entity.axis),
-            "center": list(entity.center.value),
-        }
+        data = axisymmetric_body_injector(entity)
         if use_inhouse_mesher:
             data["type"] = "Axisymmetric"
         return data
