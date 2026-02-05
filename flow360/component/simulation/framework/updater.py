@@ -493,6 +493,104 @@ def _to_25_8_3(params_as_dict):
 
 
 def _to_25_8_4(params_as_dict):
+    """
+    Populate wind tunnel ghost surfaces in ghost_entities if they are not present,
+    ensuring that they are available for entity selection.
+    """
+
+    def add_wind_tunnel_ghost_surfaces(params_as_dict):
+        def _has_wind_tunnel_ghost_surfaces(ghost_entities):
+            """Check if ghost_entities already contains WindTunnelGhostSurface entities."""
+            for entity in ghost_entities:
+                if entity.get("private_attribute_entity_type_name") == "WindTunnelGhostSurface":
+                    return True
+            return False
+
+        def _get_all_wind_tunnel_ghost_surfaces():
+            """Return a list of all possible WindTunnelGhostSurface dicts."""
+            return [
+                {
+                    "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                    "name": "windTunnelInlet",
+                    "private_attribute_id": "windTunnelInlet",
+                    "used_by": ["all"],
+                },
+                {
+                    "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                    "name": "windTunnelOutlet",
+                    "private_attribute_id": "windTunnelOutlet",
+                    "used_by": ["all"],
+                },
+                {
+                    "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                    "name": "windTunnelCeiling",
+                    "private_attribute_id": "windTunnelCeiling",
+                    "used_by": ["all"],
+                },
+                {
+                    "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                    "name": "windTunnelFloor",
+                    "private_attribute_id": "windTunnelFloor",
+                    "used_by": ["all"],
+                },
+                {
+                    "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                    "name": "windTunnelLeft",
+                    "private_attribute_id": "windTunnelLeft",
+                    "used_by": ["all"],
+                },
+                {
+                    "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                    "name": "windTunnelRight",
+                    "private_attribute_id": "windTunnelRight",
+                    "used_by": ["all"],
+                },
+                {
+                    "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                    "name": "windTunnelFrictionPatch",
+                    "private_attribute_id": "windTunnelFrictionPatch",
+                    "used_by": ["StaticFloor"],
+                },
+                {
+                    "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                    "name": "windTunnelCentralBelt",
+                    "private_attribute_id": "windTunnelCentralBelt",
+                    "used_by": ["CentralBelt", "WheelBelts"],
+                },
+                {
+                    "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                    "name": "windTunnelFrontWheelBelt",
+                    "private_attribute_id": "windTunnelFrontWheelBelt",
+                    "used_by": ["WheelBelts"],
+                },
+                {
+                    "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                    "name": "windTunnelRearWheelBelt",
+                    "private_attribute_id": "windTunnelRearWheelBelt",
+                    "used_by": ["WheelBelts"],
+                },
+            ]
+
+        # Get asset cache, entity info, and ghost entities
+        asset_cache = params_as_dict.get("private_attribute_asset_cache")
+        if asset_cache is None:
+            return params_as_dict
+
+        entity_info = asset_cache.get("project_entity_info")
+        if entity_info is None:
+            return params_as_dict
+
+        ghost_entities = entity_info.get("ghost_entities", [])
+
+        # Check if a wind tunnel ghost surface is already included
+        if _has_wind_tunnel_ghost_surfaces(ghost_entities):
+            return params_as_dict
+
+        # Add all wind tunnel ghost surfaces and update entity_info
+        ghost_entities.extend(_get_all_wind_tunnel_ghost_surfaces())
+        entity_info["ghost_entities"] = ghost_entities
+        return params_as_dict
+
     def fix_write_single_file_for_paraview_format(params_as_dict):
         """
         Fix write_single_file incompatibility with Paraview format.
@@ -533,6 +631,7 @@ def _to_25_8_4(params_as_dict):
 
         return params_as_dict
 
+    add_wind_tunnel_ghost_surfaces(params_as_dict)
     fix_write_single_file_for_paraview_format(params_as_dict)
     return params_as_dict
 
@@ -556,7 +655,7 @@ VERSION_MILESTONES = [
     (Flow360Version("25.8.1"), _to_25_8_1),
     (Flow360Version("25.8.3"), _to_25_8_3),
     (Flow360Version("25.8.4"), _to_25_8_4),
-]  # A list of the Python API version tuple with there corresponding updaters.
+]  # A list of the Python API version tuple with their corresponding updaters.
 
 
 # pylint: disable=dangerous-default-value
