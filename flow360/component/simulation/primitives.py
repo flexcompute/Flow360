@@ -585,22 +585,10 @@ class AxisymmetricBody(_VolumeEntityBase):
     # pylint: disable=no-member
     center: LengthType.Point = pd.Field(description="The center point of the body of revolution.")
     profile_curve: List[LengthType.Pair] = pd.Field(
-        description="The (Axial, Radial) profile of the body of revolution.", min_length=1
+        description="The (Axial, Radial) profile of the body of revolution.", min_length=2
     )
 
     private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
-
-    @pd.field_validator("profile_curve", mode="after")
-    @classmethod
-    def _check_profile_curve_is_nondegenerate(cls, curve):
-        for i in range(len(curve) - 1):
-            p1, p2 = curve[i], curve[i + 1]
-            if p1[0] == p2[0] and p1[1] == p2[1]:
-                raise ValueError(
-                    f"Profile curve has duplicate consecutive points at indices {i} and {i + 1}: {str(p1)}."
-                )
-
-        return curve
 
     @pd.field_validator("profile_curve", mode="after")
     @classmethod
@@ -622,6 +610,18 @@ class AxisymmetricBody(_VolumeEntityBase):
                 raise ValueError(
                     f"Expect profile samples to be (Axial, Radial) samples with positive Radial."
                     f" Found invalid point: {str(profile_point)}."
+                )
+
+        return curve
+    
+    @pd.field_validator("profile_curve", mode="after")
+    @classmethod
+    def _check_profile_curve_has_no_duplicates(cls, curve):
+        for i in range(len(curve) - 1):
+            p1, p2 = curve[i], curve[i + 1]
+            if p1[0] == p2[0] and p1[1] == p2[1]:
+                raise ValueError(
+                    f"Profile curve has duplicate consecutive points at indices {i} and {i + 1}: {str(p1)}."
                 )
 
         return curve

@@ -81,19 +81,18 @@ class UniformRefinement(Flow360BaseModel):
     @contextual_field_validator("entities", mode="after")
     @classmethod
     def check_axisymmetric_body_not_with_snappy(cls, values, param_info: ParamsValidationInfo):
-        """Check that AxisymmetricBody is used with beta mesher and not snappy."""
+        """Check that AxisymmetricBody is used with beta mesher."""
 
         if values is None:
             return values
-        if param_info.is_beta_mesher and not param_info.use_snappy:
+        if param_info.is_beta_mesher:
             return values
 
         expanded = param_info.expand_entity_list(values)
         for entity in expanded:
             if isinstance(entity, AxisymmetricBody):
                 raise ValueError(
-                    "`AxisymmetricBody` entity for `UniformRefinement` is supported "
-                    "only with beta mesher and not snappyHexMesh."
+                    "`AxisymmetricBody` entity for `UniformRefinement` is supported only with beta mesher."
                 )
 
         return values

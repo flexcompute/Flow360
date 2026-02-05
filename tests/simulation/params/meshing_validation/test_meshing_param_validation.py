@@ -145,7 +145,7 @@ def test_disable_invalid_axisymmetric_body_construction():
 
     with pytest.raises(
         pd.ValidationError,
-        match=re.escape("should have at least 1 item"),
+        match=re.escape("should have at least 2 items"),
     ):
         with CGS_unit_system:
             AxisymmetricBody(
