@@ -613,7 +613,7 @@ class AxisymmetricBody(_VolumeEntityBase):
                 )
 
         return curve
-    
+
     @pd.field_validator("profile_curve", mode="after")
     @classmethod
     def _check_profile_curve_has_no_duplicates(cls, curve):
