@@ -1115,6 +1115,72 @@ def test_sliding_interface_tolerance_default_value(get_surface_mesh):
     assert translated["volume"]["slidingInterfaceTolerance"] == 1e-2
 
 
+def test_uniform_refinement_box_cylinder_axisymm_body(get_surface_mesh):
+    """Test that Box, Cylinder, and AxisymmetricBody are correctly translated in UniformRefinement."""
+    with SI_unit_system:
+        cylinder = Cylinder(
+            name="test_cylinder",
+            outer_radius=1.0,
+            height=2.0 * u.m,
+            axis=(0, 0, 1),
+            center=(0, 0, 0),
+        )
+        box = Box.from_principal_axes(
+            name="test_box",
+            center=(1, 2, 3),
+            size=(2, 3, 4),
+            axes=((1, 0, 0), (0, 1, 0)),
+        )
+        axisymmetric_body = AxisymmetricBody(
+            name="test_cone",
+            axis=(0, 1, 0),
+            center=(5, 6, 7),
+            profile_curve=[(0, 0), (0, 0.5), (1, 1), (1, 0)],
+        )
+        param = SimulationParams(
+            meshing=MeshingParams(
+                refinement_factor=1.0,
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-5 * u.m,
+                    boundary_layer_growth_rate=1.2,
+                ),
+                volume_zones=[AutomatedFarfield()],
+                refinements=[
+                    UniformRefinement(
+                        entities=[cylinder, box, axisymmetric_body],
+                        spacing=0.1 * u.m,
+                    ),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+        )
+
+    translated = get_volume_meshing_json(param, get_surface_mesh.mesh_unit)
+    assert "refinement" in translated
+    assert len(translated["refinement"]) == 3
+
+    cylinder_ref = translated["refinement"][0]
+    assert cylinder_ref["type"] == "cylinder"
+    assert cylinder_ref["radius"] == 1.0
+    assert cylinder_ref["length"] == 2.0
+    assert cylinder_ref["axis"] == [0.0, 0.0, 1.0]
+    assert cylinder_ref["center"] == [0.0, 0.0, 0.0]
+    assert cylinder_ref["spacing"] == 0.1
+
+    box_ref = translated["refinement"][1]
+    assert box_ref["type"] == "box"
+    assert box_ref["size"] == [2.0, 3.0, 4.0]
+    assert box_ref["center"] == [1.0, 2.0, 3.0]
+    assert box_ref["spacing"] == 0.1
+
+    axisymm_ref = translated["refinement"][2]
+    assert axisymm_ref["type"] == "Axisymmetric"
+    assert axisymm_ref["axisOfRotation"] == [0.0, 1.0, 0.0]
+    assert axisymm_ref["center"] == [5.0, 6.0, 7.0]
+    assert axisymm_ref["profileCurve"] == [[0.0, 0.0], [0.0, 0.5], [1.0, 1.0], [1.0, 0.0]]
+    assert axisymm_ref["spacing"] == 0.1
+
+
 def test_windtunnel_ghost_surface_supported_in_volume_face_refinements(get_surface_mesh):
     with SI_unit_system:
         wind_tunnel = WindTunnelFarfield()
