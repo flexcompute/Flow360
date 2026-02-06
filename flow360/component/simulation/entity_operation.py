@@ -11,6 +11,7 @@ from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_utils import generate_uuid
 from flow360.component.simulation.unit_system import AngleType, LengthType
 from flow360.component.types import Axis
+from flow360.exceptions import Flow360ValueError
 
 
 def rotation_matrix_from_axis_and_angle(axis, angle):
@@ -161,6 +162,47 @@ def _is_uniform_scale(matrix: np.ndarray, rtol: float = 1e-5) -> bool:
     """
     scale_factors = _extract_scale_from_matrix(matrix)
     return np.allclose(scale_factors, scale_factors[0], rtol=rtol)
+
+
+def _validate_uniform_scale_and_transform_center(
+    matrix: np.ndarray, center, entity_name: str
+) -> tuple:
+    """
+    Common transformation logic for volume primitives that require uniform scaling.
+
+    Validates that the transformation matrix has uniform scaling, extracts the scale factor,
+    and transforms the center point.
+
+    Args:
+        matrix: 3x4 transformation matrix
+        center: The center point (LengthType.Point) to transform
+        entity_name: Name of the entity type (e.g., "Sphere", "Cylinder") for error messages
+
+    Returns:
+        Tuple of (new_center, uniform_scale) where:
+        - new_center: Transformed center point with same type and units as input
+        - uniform_scale: The uniform scale factor extracted from the matrix
+
+    Raises:
+        Flow360ValueError: If the matrix has non-uniform scaling
+    """
+    # Validate uniform scaling
+    if not _is_uniform_scale(matrix):
+        scale_factors = _extract_scale_from_matrix(matrix)
+        raise Flow360ValueError(
+            f"{entity_name} only supports uniform scaling. "
+            f"Detected scale factors: {scale_factors}"
+        )
+
+    # Extract uniform scale factor
+    uniform_scale = _extract_scale_from_matrix(matrix)[0]
+
+    # Transform center
+    center_array = np.asarray(center.value)
+    new_center_array = _transform_point(center_array, matrix)
+    new_center = type(center)(new_center_array, center.units)
+
+    return new_center, uniform_scale
 
 
 def _extract_rotation_matrix(matrix: np.ndarray) -> np.ndarray:

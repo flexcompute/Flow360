@@ -15,11 +15,9 @@ from typing_extensions import Self
 import flow360.component.simulation.units as u
 from flow360.component.simulation.entity_operation import (
     _extract_rotation_matrix,
-    _extract_scale_from_matrix,
-    _is_uniform_scale,
     _rotation_matrix_to_axis_angle,
     _transform_direction,
-    _transform_point,
+    _validate_uniform_scale_and_transform_center,
     rotation_matrix_from_axis_and_angle,
 )
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
@@ -39,7 +37,7 @@ from flow360.component.simulation.validation.validation_context import (
 )
 from flow360.component.types import Axis
 from flow360.component.utils import _naming_pattern_handler
-from flow360.exceptions import Flow360DeprecationError, Flow360ValueError
+from flow360.exceptions import Flow360DeprecationError
 
 BOUNDARY_FULL_NAME_WHEN_NOT_FOUND = "This boundary does not exist!!!"
 
@@ -437,20 +435,9 @@ class Box(MultiConstructorBaseModel, _VolumeEntityBase):
 
     def _apply_transformation(self, matrix: np.ndarray) -> "Box":
         """Apply 3x4 transformation matrix with uniform scale validation and rotation composition."""
-        # Validate uniform scaling
-        if not _is_uniform_scale(matrix):
-            scale_factors = _extract_scale_from_matrix(matrix)
-            raise Flow360ValueError(
-                f"Box only supports uniform scaling. " f"Detected scale factors: {scale_factors}"
-            )
-
-        # Extract uniform scale factor
-        uniform_scale = _extract_scale_from_matrix(matrix)[0]
-
-        # Transform center
-        center_array = np.asarray(self.center.value)
-        new_center_array = _transform_point(center_array, matrix)
-        new_center = type(self.center)(new_center_array, self.center.units)
+        new_center, uniform_scale = _validate_uniform_scale_and_transform_center(
+            matrix, self.center, "Box"
+        )
 
         # Combine rotations: existing rotation + transformation rotation
         # Step 1: Get existing rotation matrix from axis-angle
@@ -477,6 +464,56 @@ class Box(MultiConstructorBaseModel, _VolumeEntityBase):
                 "axis_of_rotation": tuple(new_axis),
                 "angle_of_rotation": new_angle * u.rad,
                 "size": new_size,
+            }
+        )
+
+
+@final
+class Sphere(_VolumeEntityBase):
+    """
+    :class:`Sphere` class represents a sphere in three-dimensional space.
+
+    Example
+    -------
+    >>> fl.Sphere(
+    ...     name="sphere_zone",
+    ...     center=(0, 0, 0) * fl.u.m,
+    ...     radius=1.5 * fl.u.m,
+    ...     axis=(0, 0, 1),
+    ... )
+
+    ====
+    """
+
+    private_attribute_entity_type_name: Literal["Sphere"] = pd.Field("Sphere", frozen=True)
+    # pylint: disable=no-member
+    center: LengthType.Point = pd.Field(description="The center point of the sphere.")
+    radius: LengthType.Positive = pd.Field(description="The radius of the sphere.")
+    axis: Axis = pd.Field(
+        default=(0, 0, 1),
+        description="The axis of rotation for the sphere (used in sliding interfaces).",
+    )
+    private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
+
+    def _apply_transformation(self, matrix: np.ndarray) -> "Sphere":
+        """Apply 3x4 transformation matrix with uniform scale validation."""
+        new_center, uniform_scale = _validate_uniform_scale_and_transform_center(
+            matrix, self.center, "Sphere"
+        )
+
+        # Rotate axis
+        axis_array = np.asarray(self.axis)
+        transformed_axis = _transform_direction(axis_array, matrix)
+        new_axis = tuple(transformed_axis / np.linalg.norm(transformed_axis))
+
+        # Scale radius uniformly
+        new_radius = self.radius * uniform_scale
+
+        return self.model_copy(
+            update={
+                "center": new_center,
+                "axis": new_axis,
+                "radius": new_radius,
             }
         )
 
@@ -520,21 +557,9 @@ class Cylinder(_VolumeEntityBase):
 
     def _apply_transformation(self, matrix: np.ndarray) -> "Cylinder":
         """Apply 3x4 transformation matrix with uniform scale validation."""
-        # Validate uniform scaling
-        if not _is_uniform_scale(matrix):
-            scale_factors = _extract_scale_from_matrix(matrix)
-            raise Flow360ValueError(
-                f"Cylinder only supports uniform scaling. "
-                f"Detected scale factors: {scale_factors}"
-            )
-
-        # Extract uniform scale factor
-        uniform_scale = _extract_scale_from_matrix(matrix)[0]
-
-        # Transform center
-        center_array = np.asarray(self.center.value)
-        new_center_array = _transform_point(center_array, matrix)
-        new_center = type(self.center)(new_center_array, self.center.units)
+        new_center, uniform_scale = _validate_uniform_scale_and_transform_center(
+            matrix, self.center, "Cylinder"
+        )
 
         # Rotate axis
         axis_array = np.asarray(self.axis)
@@ -628,21 +653,9 @@ class AxisymmetricBody(_VolumeEntityBase):
 
     def _apply_transformation(self, matrix: np.ndarray) -> "AxisymmetricBody":
         """Apply 3x4 transformation matrix with uniform scale validation."""
-        # Validate uniform scaling
-        if not _is_uniform_scale(matrix):
-            scale_factors = _extract_scale_from_matrix(matrix)
-            raise Flow360ValueError(
-                f"AxisymmetricBody only supports uniform scaling. "
-                f"Detected scale factors: {scale_factors}"
-            )
-
-        # Extract uniform scale factor
-        uniform_scale = _extract_scale_from_matrix(matrix)[0]
-
-        # Transform center
-        center_array = np.asarray(self.center.value)
-        new_center_array = _transform_point(center_array, matrix)
-        new_center = type(self.center)(new_center_array, self.center.units)
+        new_center, uniform_scale = _validate_uniform_scale_and_transform_center(
+            matrix, self.center, "AxisymmetricBody"
+        )
 
         # Rotate axis
         axis_array = np.asarray(self.axis)
@@ -1008,7 +1021,7 @@ class SeedpointVolume(_VolumeEntityBase):
         return self
 
 
-VolumeEntityTypes = Union[GenericVolume, Cylinder, Box, str]
+VolumeEntityTypes = Union[GenericVolume, Cylinder, Sphere, Box, str]
 
 
 class SurfacePair(SurfacePairBase):

@@ -46,6 +46,7 @@ from flow360.component.simulation.primitives import (
     MirroredSurface,
     SeedpointVolume,
     SnappyBody,
+    Sphere,
     Surface,
     WindTunnelGhostSurface,
 )
@@ -62,6 +63,7 @@ ENTITY_TYPE_MAP = {
     "AxisymmetricBody": AxisymmetricBody,
     "Box": Box,
     "Cylinder": Cylinder,
+    "Sphere": Sphere,
     "ImportedSurface": ImportedSurface,
     "GhostSurface": GhostSurface,
     "GhostSphere": GhostSphere,
