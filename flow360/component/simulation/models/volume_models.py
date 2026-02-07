@@ -63,6 +63,7 @@ from flow360.component.simulation.primitives import (
     SeedpointVolume,
 )
 from flow360.component.simulation.unit_system import (
+    AccelerationType,
     AngleType,
     AngularVelocityType,
     HeatSourceType,
@@ -1485,6 +1486,64 @@ class PorousMedium(Flow360BaseModel):
         return value
 
 
+class Gravity(Flow360BaseModel):
+    """
+    :class:`Gravity` class for specifying gravitational body force.
+
+    The gravity model applies a body force ρg to the momentum equations and ρ(g·u) to the
+    energy equation, enabling simulation of buoyancy-driven flows.
+
+    Example
+    -------
+
+    Define gravity acting in the negative z-direction with Earth's gravitational acceleration:
+
+    >>> fl.Gravity(
+    ...     direction=(0, 0, -1),
+    ...     magnitude=9.81 * fl.u.m / fl.u.s**2,
+    ... )
+
+    Define gravity applied only to specific volume zones:
+
+    >>> fl.Gravity(
+    ...     entities=[volume_mesh["fluid_zone"]],
+    ...     direction=(0, 0, -1),
+    ...     magnitude=9.81 * fl.u.m / fl.u.s**2,
+    ... )
+
+    ====
+    """
+
+    name: Optional[str] = pd.Field("Gravity", description="Name of the `Gravity` model.")
+    type: Literal["Gravity"] = pd.Field("Gravity", frozen=True)
+    entities: Optional[EntityList[GenericVolume]] = pd.Field(
+        default=None,
+        alias="volumes",
+        description="The entity list for the `Gravity` model. "
+        + "If not specified, gravity is applied to all fluid zones.",
+    )
+    direction: Axis = pd.Field(
+        description="The direction of the gravitational acceleration vector. "
+        + "This vector will be normalized automatically."
+    )
+    magnitude: AccelerationType = pd.Field(
+        description="The magnitude of the gravitational acceleration. "
+        + "For Earth's surface gravity, use 9.81 m/s²."
+    )
+    private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
+
+    @pd.field_validator("direction", mode="after")
+    @classmethod
+    def _normalize_direction(cls, value: Axis) -> Axis:
+        """Ensure direction is normalized."""
+        import math
+
+        norm = math.sqrt(sum(v * v for v in value))
+        if norm < 1e-12:
+            raise ValueError("Gravity direction cannot be a zero vector.")
+        return tuple(v / norm for v in value)
+
+
 VolumeModelTypes = Union[
     Fluid,
     Solid,
@@ -1492,4 +1551,5 @@ VolumeModelTypes = Union[
     BETDisk,
     Rotation,
     PorousMedium,
+    Gravity,
 ]
