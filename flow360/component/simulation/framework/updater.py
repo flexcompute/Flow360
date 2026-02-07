@@ -647,7 +647,6 @@ def _to_25_9_0(params_as_dict):
     if not isinstance(meshing_defaults, dict):
         return params_as_dict
     meshing_defaults.pop("remove_non_manifold_faces", None)
-    meshing_defaults.pop("removeNonManifoldFaces", None)
     return params_as_dict
 
 

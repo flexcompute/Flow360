@@ -1595,7 +1595,6 @@ def test_updater_to_25_9_0_remove_deprecated_remove_non_manifold_faces():
             "defaults": {
                 "surface_max_edge_length": {"value": 0.2, "units": "m"},
                 "remove_non_manifold_faces": False,
-                "removeNonManifoldFaces": False,
             }
         },
     }
@@ -1603,4 +1602,3 @@ def test_updater_to_25_9_0_remove_deprecated_remove_non_manifold_faces():
     params_new = _to_25_9_0(params_as_dict)
     defaults = params_new["meshing"]["defaults"]
     assert "remove_non_manifold_faces" not in defaults
-    assert "removeNonManifoldFaces" not in defaults
