@@ -23,7 +23,6 @@
                 "units": "m"
             },
             "sliding_interface_tolerance": 0.01,
-            "remove_non_manifold_faces": false,
             "remove_hidden_geometry": false
         },
         "outputs": [],

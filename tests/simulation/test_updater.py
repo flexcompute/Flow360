@@ -10,6 +10,7 @@ import toml
 from flow360.component.simulation.framework.updater import (
     VERSION_MILESTONES,
     _find_update_path,
+    _to_25_9_0,
     updater,
 )
 from flow360.component.simulation.framework.updater_utils import Flow360Version
@@ -1582,3 +1583,24 @@ def test_updater_to_25_8_4_write_single_file_false():
     assert (
         params_new["outputs"][0]["write_single_file"] is False
     ), "write_single_file should remain False"
+
+
+def test_updater_to_25_9_0_remove_deprecated_remove_non_manifold_faces():
+    """Test 25.9.0 updater step removes deprecated meshing.defaults.remove_non_manifold_faces key."""
+
+    params_as_dict = {
+        "version": "25.8.3",
+        "unit_system": {"name": "SI"},
+        "meshing": {
+            "defaults": {
+                "surface_max_edge_length": {"value": 0.2, "units": "m"},
+                "remove_non_manifold_faces": False,
+                "removeNonManifoldFaces": False,
+            }
+        },
+    }
+
+    params_new = _to_25_9_0(params_as_dict)
+    defaults = params_new["meshing"]["defaults"]
+    assert "remove_non_manifold_faces" not in defaults
+    assert "removeNonManifoldFaces" not in defaults

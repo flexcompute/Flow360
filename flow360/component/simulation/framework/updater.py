@@ -636,6 +636,21 @@ def _to_25_8_4(params_as_dict):
     return params_as_dict
 
 
+def _to_25_9_0(params_as_dict):
+    """
+    Remove deprecated meshing defaults key `remove_non_manifold_faces`.
+
+    Note: this function is intentionally not registered in VERSION_MILESTONES until
+    the Python client version reaches 25.9.0.
+    """
+    meshing_defaults = params_as_dict.get("meshing", {}).get("defaults")
+    if not isinstance(meshing_defaults, dict):
+        return params_as_dict
+    meshing_defaults.pop("remove_non_manifold_faces", None)
+    meshing_defaults.pop("removeNonManifoldFaces", None)
+    return params_as_dict
+
+
 VERSION_MILESTONES = [
     (Flow360Version("24.11.1"), _to_24_11_1),
     (Flow360Version("24.11.7"), _to_24_11_7),
