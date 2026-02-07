@@ -643,7 +643,10 @@ def _to_25_9_0(params_as_dict):
     Note: this function is intentionally not registered in VERSION_MILESTONES until
     the Python client version reaches 25.9.0.
     """
-    meshing_defaults = params_as_dict.get("meshing", {}).get("defaults")
+    meshing = params_as_dict.get("meshing")
+    if not isinstance(meshing, dict):
+        return params_as_dict
+    meshing_defaults = meshing.get("defaults")
     if not isinstance(meshing_defaults, dict):
         return params_as_dict
     meshing_defaults.pop("remove_non_manifold_faces", None)
