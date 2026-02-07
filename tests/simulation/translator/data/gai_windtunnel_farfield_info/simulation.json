@@ -30,8 +30,7 @@
             "sealing_size": {
                 "value": 0.0,
                 "units": "m"
-            },
-            "remove_non_manifold_faces": false
+            }
         },
         "refinements": [],
         "volume_zones": [

@@ -11,7 +11,6 @@
             },
             "planar_face_tolerance": 1e-06,
             "preserve_thin_geometry": false,
-            "remove_non_manifold_faces": false,
             "remove_hidden_geometry": false,
             "resolve_face_boundaries": false,
             "sealing_size": {
