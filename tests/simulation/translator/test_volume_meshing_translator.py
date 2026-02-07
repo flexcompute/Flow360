@@ -1133,9 +1133,9 @@ def test_edge_split_layers_default_translation(get_surface_mesh):
     assert translated["volume"]["numEdgeSplitLayers"] == 1
 
 
-@pytest.mark.parametrize(("edge_split_layers", "expected"), [(True, 1), (False, 0)])
+@pytest.mark.parametrize(("edge_split_layers", "expected"), [(0, 0), (3, 3)])
 def test_edge_split_layers_explicit_translation(get_surface_mesh, edge_split_layers, expected):
-    """Explicit edge split layers should translate to 1/0."""
+    """Explicit edge split layers should translate to the configured integer value."""
     with SI_unit_system:
         param = SimulationParams(
             meshing=MeshingParams(

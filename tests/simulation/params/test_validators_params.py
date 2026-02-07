@@ -2156,7 +2156,7 @@ def test_beta_mesher_only_features(mock_validation_context):
             meshing=MeshingParams(
                 defaults=MeshingDefaults(
                     boundary_layer_first_layer_thickness=1e-4,
-                    edge_split_layers=True,
+                    edge_split_layers=2,
                 ),
             ),
             private_attribute_asset_cache=AssetCache(use_inhouse_mesher=False),
@@ -2178,7 +2178,7 @@ def test_beta_mesher_only_features(mock_validation_context):
             meshing=MeshingParams(
                 defaults=MeshingDefaults(
                     boundary_layer_first_layer_thickness=1e-4,
-                    edge_split_layers=False,
+                    edge_split_layers=0,
                 ),
             ),
             private_attribute_asset_cache=AssetCache(use_inhouse_mesher=False),
@@ -2190,10 +2190,7 @@ def test_beta_mesher_only_features(mock_validation_context):
         validation_level="VolumeMesh",
     )
     assert errors is None
-    assert len(warnings) == 1
-    assert warnings[0]["msg"] == (
-        "`edge_split_layers` is only supported by the beta mesher; this setting will be ignored."
-    )
+    assert warnings == []
 
     with SI_unit_system:
         params = SimulationParams(

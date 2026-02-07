@@ -165,10 +165,11 @@ class MeshingDefaults(Flow360BaseModel):
         description="Flag to remove non-manifold and interior faces.",
     )
 
-    edge_split_layers: Optional[bool] = pd.Field(
-        None,
-        description="Flag to enable tetrahedral wedge element generation at corners. "
-        + "This only affects beta mesher. By default tetrahedral edge element is enabled.",
+    edge_split_layers: int = pd.Field(
+        1,
+        ge=0,
+        description="The number of layers that are considered for edge splitting in the boundary layer mesh."
+        + "This only affects beta mesher.",
     )
 
     @contextual_field_validator("number_of_boundary_layers", mode="after")
@@ -183,7 +184,7 @@ class MeshingDefaults(Flow360BaseModel):
     @classmethod
     def invalid_edge_split_layers(cls, value, param_info: ParamsValidationInfo):
         """Ensure edge split layers is only configured for beta mesher."""
-        if value is not None and not param_info.is_beta_mesher:
+        if value > 0 and not param_info.is_beta_mesher:
             add_validation_warning(
                 "`edge_split_layers` is only supported by the beta mesher; "
                 "this setting will be ignored."
