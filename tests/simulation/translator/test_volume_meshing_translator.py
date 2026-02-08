@@ -659,6 +659,7 @@ def test_seedpoint_zones(get_test_param_w_seedpoints, get_surface_mesh):
             "planarFaceTolerance": 1e-6,
             "slidingInterfaceTolerance": 1e-2,
             "numBoundaryLayers": -1,
+            "numEdgeSplitLayers": 1,
         },
         "faces": {},
         "zones": [
@@ -1113,6 +1114,42 @@ def test_sliding_interface_tolerance_default_value(get_surface_mesh):
     assert "slidingInterfaceTolerance" in translated["volume"]
     # Default value is 1e-2 from DEFAULT_SLIDING_INTERFACE_TOLERANCE
     assert translated["volume"]["slidingInterfaceTolerance"] == 1e-2
+
+
+def test_edge_split_layers_default_translation(get_surface_mesh):
+    """Default edge split layers should translate to enabled."""
+    with SI_unit_system:
+        param = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-3,
+                    boundary_layer_growth_rate=1.2,
+                ),
+                volume_zones=[AutomatedFarfield()],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+        )
+    translated = get_volume_meshing_json(param, get_surface_mesh.mesh_unit)
+    assert translated["volume"]["numEdgeSplitLayers"] == 1
+
+
+@pytest.mark.parametrize(("edge_split_layers", "expected"), [(0, 0), (3, 3)])
+def test_edge_split_layers_explicit_translation(get_surface_mesh, edge_split_layers, expected):
+    """Explicit edge split layers should translate to the configured integer value."""
+    with SI_unit_system:
+        param = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-3,
+                    boundary_layer_growth_rate=1.2,
+                    edge_split_layers=edge_split_layers,
+                ),
+                volume_zones=[AutomatedFarfield()],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+        )
+    translated = get_volume_meshing_json(param, get_surface_mesh.mesh_unit)
+    assert translated["volume"]["numEdgeSplitLayers"] == expected
 
 
 def test_windtunnel_ghost_surface_supported_in_volume_face_refinements(get_surface_mesh):
