@@ -364,6 +364,7 @@ def om6wing_tutorial_global_plus_local_override():
                     surface_edge_growth_rate=1.07,
                     curvature_resolution_angle=10 * u.deg,
                     surface_max_edge_length=15 * u.cm,
+                    edge_split_layers=0,
                 ),
                 refinements=[
                     SurfaceRefinement(
@@ -397,6 +398,7 @@ def om6wing_tutorial_aspect_ratio():
                     surface_edge_growth_rate=1.07,
                     curvature_resolution_angle=10 * u.deg,
                     surface_max_edge_length=15 * u.cm,
+                    edge_split_layers=0,
                 ),
                 refinements=[
                     SurfaceRefinement(
@@ -435,6 +437,7 @@ def om6wing_tutorial_global_only():
                     surface_edge_growth_rate=1.07,
                     curvature_resolution_angle=10 * u.deg,
                     surface_max_edge_length=15 * u.cm,
+                    edge_split_layers=0,
                 ),
                 refinements=[
                     SurfaceEdgeRefinement(
@@ -481,6 +484,7 @@ def airplane_surface_mesh():
                     surface_edge_growth_rate=1.2,
                     surface_max_edge_length=100 * u.cm,
                     curvature_resolution_angle=pi / 12 * u.rad,
+                    edge_split_layers=0,
                 ),
                 refinements=[
                     SurfaceRefinement(
@@ -527,6 +531,7 @@ def rotor_surface_mesh():
                     surface_edge_growth_rate=1.2,
                     surface_max_edge_length=10,
                     curvature_resolution_angle=15 * u.deg,
+                    edge_split_layers=0,
                 ),
                 refinements=[
                     SurfaceRefinement(

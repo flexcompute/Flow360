@@ -9,6 +9,7 @@
         "gapTreatmentStrength": 1.0,
         "growthRate": 1.2,
         "numBoundaryLayers": -1,
+        "numEdgeSplitLayers": 1,
         "planarFaceTolerance": 1e-06,
         "slidingInterfaceTolerance": 0.01
     }
