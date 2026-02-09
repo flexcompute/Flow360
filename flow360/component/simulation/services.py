@@ -229,6 +229,9 @@ def get_default_params(
             exclude={
                 "operating_condition": {"velocity_magnitude": True},
                 "private_attribute_asset_cache": {"registry": True},
+                "meshing": {
+                    "defaults": {"edge_split_layers": True}
+                },  # Due to beta mesher by default is disabled.
             },
         )
 
