@@ -869,7 +869,7 @@ class Delta(Flow360BaseModel):
     Represents a delta calculation between a reference case and a target case based on specified data.
     """
 
-    data: Union[str, DataItem] = pd.Field(
+    data: Union[DataItem, str] = pd.Field(
         description="Path to the data item used for delta calculation."
     )
     ref_index: Optional[pd.NonNegativeInt] = pd.Field(
@@ -912,6 +912,14 @@ class Delta(Flow360BaseModel):
         else:
             data_str = str(self.data)
         return f"Delta {data_str}"
+
+    @property
+    def include(self):
+        return self.data.include if isinstance(self.data, DataItem) else None
+
+    @property
+    def exclude(self):
+        return self.data.exclude if isinstance(self.data, DataItem) else None
 
 
 # pylint: disable=too-few-public-methods

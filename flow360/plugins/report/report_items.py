@@ -1622,8 +1622,9 @@ class Chart2D(BaseChart2D):
             if x_path.startswith("results/"):
                 x_path = x_path[len("results/") :]
 
-            include = None
-            exclude = None
+            include = self.x.include if isinstance(self.x, (DataItem, Delta)) else None
+            exclude = self.x.exclude if isinstance(self.x, (DataItem, Delta)) else None
+
             if x_path == "x_slicing_force_distribution/X":
                 log.warning(
                     "First case is used as a background image with dimensions matched to the extent of X data"
@@ -1631,8 +1632,6 @@ class Chart2D(BaseChart2D):
                 camera = Camera(
                     position=(0, -1, 0), up=(0, 0, 1), dimension=dimension, dimension_dir="width"
                 )
-                include = self.x.include
-                exclude = self.x.exclude
             elif x_path == "y_slicing_force_distribution/Y":
                 log.warning(
                     "First case is used as a background image with dimensions matched to the extent of X data"
@@ -1640,8 +1639,6 @@ class Chart2D(BaseChart2D):
                 camera = Camera(
                     position=(-1, 0, 0), up=(0, 0, 1), dimension=dimension, dimension_dir="width"
                 )
-                include = self.y.include
-                exclude = self.y.exclude
             else:
                 raise ValueError(
                     f"background={self.background} can be only used with x == x_slicing_force_distribution/X"
