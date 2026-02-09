@@ -1116,7 +1116,6 @@ def test_sliding_interface_tolerance_default_value(get_surface_mesh):
     assert translated["volume"]["slidingInterfaceTolerance"] == 1e-2
 
 
-<<<<<<< HEAD
 def test_uniform_refinement_box_cylinder_axisymm_body(get_surface_mesh):
     """Test that Box, Cylinder, and AxisymmetricBody are correctly translated in UniformRefinement."""
     with SI_unit_system:
@@ -1181,7 +1180,8 @@ def test_uniform_refinement_box_cylinder_axisymm_body(get_surface_mesh):
     assert axisymm_ref["center"] == [5.0, 6.0, 7.0]
     assert axisymm_ref["profileCurve"] == [[0.0, 0.0], [0.0, 0.5], [1.0, 1.0], [1.0, 0.0]]
     assert axisymm_ref["spacing"] == 0.1
-=======
+
+
 def test_edge_split_layers_default_translation(get_surface_mesh):
     """Default edge split layers should translate to enabled."""
     with SI_unit_system:
@@ -1216,7 +1216,6 @@ def test_edge_split_layers_explicit_translation(get_surface_mesh, edge_split_lay
         )
     translated = get_volume_meshing_json(param, get_surface_mesh.mesh_unit)
     assert translated["volume"]["numEdgeSplitLayers"] == expected
->>>>>>> 6381660b ([FXC-5481] feat(): Added edge_split_layers option (#1773))
 
 
 def test_windtunnel_ghost_surface_supported_in_volume_face_refinements(get_surface_mesh):

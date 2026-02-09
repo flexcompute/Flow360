@@ -24,11 +24,8 @@
             },
             "sliding_interface_tolerance": 0.01,
             "remove_non_manifold_faces": false,
-<<<<<<< HEAD
-            "remove_hidden_geometry": false
-=======
+            "remove_hidden_geometry": false,
             "edge_split_layers": 1
->>>>>>> 6381660b ([FXC-5481] feat(): Added edge_split_layers option (#1773))
         },
         "outputs": [],
         "refinements": [],
