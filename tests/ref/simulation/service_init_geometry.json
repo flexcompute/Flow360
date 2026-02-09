@@ -24,8 +24,7 @@
             },
             "sliding_interface_tolerance": 0.01,
             "remove_non_manifold_faces": false,
-            "remove_hidden_geometry": false,
-            "edge_split_layers": 1
+            "remove_hidden_geometry": false
         },
         "outputs": [],
         "refinements": [],
