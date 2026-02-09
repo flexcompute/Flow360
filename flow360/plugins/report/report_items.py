@@ -1622,8 +1622,10 @@ class Chart2D(BaseChart2D):
             if x_path.startswith("results/"):
                 x_path = x_path[len("results/") :]
 
-            include = self.x.include if isinstance(self.x, (DataItem, Delta)) else None
-            exclude = self.x.exclude if isinstance(self.x, (DataItem, Delta)) else None
+            ref_y = self.y if not isinstance(self.y, list) else self.y[0]
+
+            include = ref_y.include if isinstance(ref_y, (DataItem, Delta)) else None
+            exclude = ref_y.exclude if isinstance(ref_y, (DataItem, Delta)) else None
 
             if x_path == "x_slicing_force_distribution/X":
                 log.warning(
