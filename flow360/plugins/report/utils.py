@@ -915,10 +915,12 @@ class Delta(Flow360BaseModel):
 
     @property
     def include(self):
+        """Returns the include filter from the underlying DataItem, or None if data is not a DataItem."""
         return self.data.include if isinstance(self.data, DataItem) else None
 
     @property
     def exclude(self):
+        """Returns the exclude filter from the underlying DataItem, or None if data is not a DataItem."""
         return self.data.exclude if isinstance(self.data, DataItem) else None
 
 
