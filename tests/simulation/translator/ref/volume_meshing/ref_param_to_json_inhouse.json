@@ -7,7 +7,8 @@
         "gapTreatmentStrength": 1.0,
         "planarFaceTolerance": 1e-6,
         "slidingInterfaceTolerance": 1e-2,
-        "numBoundaryLayers": -1
+        "numBoundaryLayers": -1,
+        "numEdgeSplitLayers": 1
     },
     "faces": {
         "boundary1": {
@@ -228,5 +229,4 @@
         }
     ]
 }
-
 
