@@ -231,7 +231,7 @@ def get_default_params(
                 "private_attribute_asset_cache": {"registry": True},
                 "meshing": {
                     "defaults": {"edge_split_layers": True}
-                },  # Due to beta mesher ny default is disabled.
+                },  # Due to beta mesher by default is disabled.
             },
         )
 
