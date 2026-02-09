@@ -46,6 +46,7 @@ from tests.report.report_testing_fixtures import (
     get_last_time_step_values,
     here,
     here_class,
+    liquid_case,
     monitors_case,
     residual_plot_model_SA,
     residual_plot_model_SST,
@@ -598,6 +599,42 @@ def test_dimensioned_limits(cases):
 
     converted_limits = chart._get_limits(case)
     assert converted_limits == (0, 10)
+
+
+def test_dimensioned_limits_liquid(liquid_case):
+
+    # For LiquidOperatingCondition with velocity_magnitude=8.231104 m/s
+    # and reference_velocity_magnitude=8.231104 m/s
+
+    expected_flow360_liquid_velocity = 5 / 8.231104
+
+    # Velocity limits converted to flow360 liquid unit system units
+    chart = Chart3D(
+        field="velocity",
+        show="boundaries",
+        limits=(0 * u.m / u.s, 5 * u.m / u.s),
+    )
+    converted_limits = chart._get_limits(liquid_case)
+    assert converted_limits[0] == 0
+    assert abs(converted_limits[1] - expected_flow360_liquid_velocity) < 1e-10
+
+    # Velocity limits converted to SI (field with explicit SI unit system)
+    chart = Chart3D(
+        field="velocity_m_per_s",
+        show="boundaries",
+        limits=(0 * u.m / u.s, 5 * u.m / u.s),
+    )
+    converted_limits = chart._get_limits(liquid_case)
+    assert converted_limits == (0, 5)
+
+    # Plain float limits pass through unchanged
+    chart = Chart3D(
+        field="velocity",
+        show="boundaries",
+        limits=(0, 0.3),
+    )
+    converted_limits = chart._get_limits(liquid_case)
+    assert converted_limits == (0, 0.3)
 
 
 def test_2d_caption_validity(cases):

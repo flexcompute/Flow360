@@ -162,6 +162,24 @@ def monitors_case(here):
 
 
 @pytest.fixture
+def liquid_case(here):
+
+    case_id = "case-77777777-7777-7777-7777-777777777777"
+
+    case_meta = CaseMeta(
+        caseId=case_id,
+        name=f"{case_id}-name",
+        status="completed",
+        userId="user-id",
+        caseMeshId="vm-not-used",
+        cloud_path_prefix="s3://flow360cases-v1/users/user-id",
+    )
+    case = Case.from_local_storage(os.path.join(here, "..", "data", case_id), case_meta)
+
+    return case
+
+
+@pytest.fixture
 def residual_plot_model_SA(here):
     residuals_sa = ["0_cont", "1_momx", "2_momy", "3_momz", "4_energ", "5_nuHat"]
     residual_data = pd.read_csv(
