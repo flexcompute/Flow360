@@ -23,8 +23,12 @@
                 "units": "m"
             },
             "sliding_interface_tolerance": 0.01,
+<<<<<<< HEAD
             "remove_non_manifold_faces": false,
             "remove_hidden_geometry": false
+=======
+            "remove_non_manifold_faces": false
+>>>>>>> eefb72df (fix(): Removed edge_split_layers in the default JSON (#1777))
         },
         "outputs": [],
         "refinements": [],
