@@ -23,8 +23,7 @@
                 "units": "m"
             },
             "sliding_interface_tolerance": 0.01,
-            "remove_non_manifold_faces": false,
-            "edge_split_layers": 1
+            "remove_non_manifold_faces": false
         },
         "outputs": [],
         "refinements": [],
