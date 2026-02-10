@@ -1390,6 +1390,13 @@ class Flow360VelocityUnit(_Flow360BaseUnit):
     unit_name = "flow360_velocity_unit"
 
 
+class Flow360AccelerationUnit(_Flow360BaseUnit):
+    """:class: Flow360AccelerationUnit"""
+
+    dimension_type = AccelerationType
+    unit_name = "flow360_acceleration_unit"
+
+
 class Flow360AreaUnit(_Flow360BaseUnit):
     """:class: Flow360AreaUnit"""
 
@@ -1559,6 +1566,7 @@ _dim_names = [
     "time",
     "temperature",
     "velocity",
+    "acceleration",
     "area",
     "force",
     "pressure",
@@ -1592,6 +1600,7 @@ class UnitSystem(pd.BaseModel):
     time: TimeType = pd.Field()
     temperature: AbsoluteTemperatureType = pd.Field()
     velocity: VelocityType = pd.Field()
+    acceleration: AccelerationType = pd.Field()
     area: AreaType = pd.Field()
     force: ForceType = pd.Field()
     pressure: PressureType = pd.Field()
@@ -1750,6 +1759,7 @@ flow360_mass_unit = Flow360MassUnit()
 flow360_time_unit = Flow360TimeUnit()
 flow360_temperature_unit = Flow360TemperatureUnit()
 flow360_velocity_unit = Flow360VelocityUnit()
+flow360_acceleration_unit = Flow360AccelerationUnit()
 flow360_area_unit = Flow360AreaUnit()
 flow360_force_unit = Flow360ForceUnit()
 flow360_pressure_unit = Flow360PressureUnit()
@@ -1777,6 +1787,7 @@ dimensions = [
     flow360_time_unit,
     flow360_temperature_unit,
     flow360_velocity_unit,
+    flow360_acceleration_unit,
     flow360_area_unit,
     flow360_force_unit,
     flow360_pressure_unit,
@@ -1817,6 +1828,9 @@ class Flow360ConversionUnitSystem(pd.BaseModel):
     )
     base_velocity: float = pd.Field(
         np.inf, json_schema_extra={"target_dimension": Flow360VelocityUnit}
+    )
+    base_acceleration: float = pd.Field(
+        np.inf, json_schema_extra={"target_dimension": Flow360AccelerationUnit}
     )
     base_area: float = pd.Field(np.inf, json_schema_extra={"target_dimension": Flow360AreaUnit})
     base_force: float = pd.Field(np.inf, json_schema_extra={"target_dimension": Flow360ForceUnit})
@@ -1897,6 +1911,7 @@ class Flow360ConversionUnitSystem(pd.BaseModel):
         )
 
         conversion_system["velocity"] = "flow360_velocity_unit"
+        conversion_system["acceleration"] = "flow360_acceleration_unit"
         conversion_system["area"] = "flow360_area_unit"
         conversion_system["force"] = "flow360_force_unit"
         conversion_system["density"] = "flow360_density_unit"
@@ -1947,6 +1962,7 @@ class _PredefinedUnitSystem(UnitSystem):
     time: TimeType = pd.Field(exclude=True)
     temperature: AbsoluteTemperatureType = pd.Field(exclude=True)
     velocity: VelocityType = pd.Field(exclude=True)
+    acceleration: AccelerationType = pd.Field(exclude=True)
     area: AreaType = pd.Field(exclude=True)
     force: ForceType = pd.Field(exclude=True)
     pressure: PressureType = pd.Field(exclude=True)
