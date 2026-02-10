@@ -34,7 +34,6 @@ from pylatex import Command, Document, Figure, NewPage, NoEscape, SubFigure
 from pylatex.utils import bold, escape_latex
 
 from flow360.component.case import Case
-from flow360.component.simulation.conversion import LIQUID_IMAGINARY_FREESTREAM_MACH
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.outputs.output_fields import (
     IsoSurfaceFieldNames,
