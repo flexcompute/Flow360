@@ -47,6 +47,7 @@ from tests.report.report_testing_fixtures import (
     here,
     here_class,
     liquid_case,
+    liquid_case_different_ref_velocity,
     monitors_case,
     residual_plot_model_SA,
     residual_plot_model_SST,
@@ -635,6 +636,45 @@ def test_dimensioned_limits_liquid(liquid_case):
     )
     converted_limits = chart._get_limits(liquid_case)
     assert converted_limits == (0, 0.3)
+
+
+def test_dimensioned_limits_liquid_different_ref_velocity(liquid_case_different_ref_velocity):
+    """
+    Expose bug: liquid_factor is hardcoded as 1/LIQUID_IMAGINARY_FREESTREAM_MACH (=20),
+    which only works when velocity_magnitude == reference_velocity_magnitude.
+
+    When they differ the correct factor is base_velocity / reference_velocity,
+    i.e.  (velocity_magnitude / MACH) / reference_velocity_magnitude.
+
+    Here velocity_magnitude=10 m/s, reference_velocity_magnitude=5 m/s:
+      base_velocity     = 10 / 0.05 = 200 m/s
+      reference_velocity = 5 m/s
+      correct factor    = 200 / 5 = 40
+      hardcoded factor  = 1 / 0.05 = 20  (WRONG)
+
+    For a limit of 5 m/s the expected solver-output value is 5 / 5 = 1.0,
+    but the buggy code produces 5 / 200 * 20 = 0.5.
+    """
+    case = liquid_case_different_ref_velocity
+
+    # velocity_magnitude=10 m/s, reference_velocity_magnitude=5 m/s
+    # The correct limit in solver-output units is physical_limit / reference_velocity
+    expected_upper = 5 / 5  # = 1.0
+
+    chart = Chart3D(
+        field="velocity",
+        show="boundaries",
+        limits=(0 * u.m / u.s, 5 * u.m / u.s),
+    )
+    converted_limits = chart._get_limits(case)
+
+    assert converted_limits[0] == 0
+    assert abs(converted_limits[1] - expected_upper) < 1e-10, (
+        f"Expected upper limit {expected_upper}, got {converted_limits[1]}. "
+        f"The hardcoded liquid_factor (1/MACH = 20) is wrong when "
+        f"velocity_magnitude != reference_velocity_magnitude; "
+        f"the correct factor is base_velocity / reference_velocity."
+    )
 
 
 def test_2d_caption_validity(cases):
