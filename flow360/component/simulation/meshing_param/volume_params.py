@@ -58,7 +58,7 @@ class UniformRefinement(Flow360BaseModel):
     -------
 
       >>> fl.UniformRefinement(
-      ...     entities=[cylinder, box],
+      ...     entities=[cylinder, box, axisymmetric_body],
       ...     spacing=1*fl.u.cm
       ... )
 
@@ -67,9 +67,9 @@ class UniformRefinement(Flow360BaseModel):
 
     name: Optional[str] = pd.Field("Uniform refinement")
     refinement_type: Literal["UniformRefinement"] = pd.Field("UniformRefinement", frozen=True)
-    entities: EntityList[Box, Cylinder] = pd.Field(
-        description=":class:`UniformRefinement` can be applied to :class:`~flow360.Box` "
-        + "and :class:`~flow360.Cylinder` regions."
+    entities: EntityList[Box, Cylinder, AxisymmetricBody] = pd.Field(
+        description=":class:`UniformRefinement` can be applied to :class:`~flow360.Box`, "
+        + ":class:`~flow360.Cylinder`, and :class:`~flow360.AxisymmetricBody` regions."
     )
     # pylint: disable=no-member
     spacing: LengthType.Positive = pd.Field(description="The required refinement spacing.")
@@ -78,9 +78,30 @@ class UniformRefinement(Flow360BaseModel):
         description="Whether to include the refinement in the surface mesh. Defaults to True when using snappy.",
     )
 
+    @contextual_field_validator("entities", mode="after")
+    @classmethod
+    def check_axisymmetric_body_used_with_beta_mesher(
+        cls, values, param_info: ParamsValidationInfo
+    ):
+        """Check that AxisymmetricBody is used with beta mesher."""
+
+        if values is None:
+            return values
+        if param_info.is_beta_mesher:
+            return values
+
+        expanded = param_info.expand_entity_list(values)
+        for entity in expanded:
+            if isinstance(entity, AxisymmetricBody):
+                raise ValueError(
+                    "`AxisymmetricBody` entity for `UniformRefinement` is supported only with beta mesher."
+                )
+
+        return values
+
     @contextual_model_validator(mode="after")
     def check_project_to_surface_with_snappy(self, param_info: ParamsValidationInfo):
-        """Check if project_to_surface is used only with snappy."""
+        """Check that project_to_surface is used only with snappy."""
         if not param_info.use_snappy and self.project_to_surface is not None:
             raise ValueError("project_to_surface is supported only for snappyHexMesh.")
 

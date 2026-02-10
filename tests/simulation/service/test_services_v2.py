@@ -1533,6 +1533,75 @@ def test_merge_geometry_entity_info():
     )
 
 
+def test_sanitize_stack_trace():
+    """Test that _sanitize_stack_trace properly sanitizes file paths and removes traceback prefix."""
+    from flow360.component.simulation.services import _sanitize_stack_trace
+
+    # Test case 1: Full stack trace with traceback prefix and absolute paths
+    input_stack = """Traceback (most recent call last):
+  File "/disk2/ben/Flow360-R2/flow360/component/simulation/services.py", line 553, in validate_model
+    validation_info = ParamsValidationInfo(
+  File "/disk2/ben/Flow360-R2/flow360/component/simulation/validation/validation_context.py", line 437, in __init__
+    self.farfield_method = self._get_farfield_method_(param_as_dict=param_as_dict)
+  File "/disk2/ben/Flow360-R2/flow360/component/simulation/validation/validation_context.py", line 162, in _get_farfield_method_
+    if meshing["type_name"] == "MeshingParams":
+KeyError: 'type_name'"""
+
+    expected_output = """File "flow360/component/simulation/services.py", line 553, in validate_model
+    validation_info = ParamsValidationInfo(
+  File "flow360/component/simulation/validation/validation_context.py", line 437, in __init__
+    self.farfield_method = self._get_farfield_method_(param_as_dict=param_as_dict)
+  File "flow360/component/simulation/validation/validation_context.py", line 162, in _get_farfield_method_
+    if meshing["type_name"] == "MeshingParams":
+KeyError: 'type_name'"""
+
+    result = _sanitize_stack_trace(input_stack)
+    assert result == expected_output
+
+    # Test case 2: Stack trace without traceback prefix (already sanitized prefix)
+    input_stack_no_prefix = """File "/home/user/projects/flow360/component/simulation/services.py", line 100, in some_function
+    some_code()"""
+
+    expected_no_prefix = """File "flow360/component/simulation/services.py", line 100, in some_function
+    some_code()"""
+
+    result_no_prefix = _sanitize_stack_trace(input_stack_no_prefix)
+    assert result_no_prefix == expected_no_prefix
+
+    # Test case 3: Stack trace with non-flow360 paths should remain unchanged for those paths
+    input_mixed = """Traceback (most recent call last):
+  File "/usr/lib/python3.10/site-packages/pydantic/main.py", line 100, in validate
+    return cls.model_validate(obj)
+  File "/disk2/ben/Flow360-R2/flow360/component/simulation/services.py", line 50, in my_func
+    do_something()"""
+
+    expected_mixed = """File "/usr/lib/python3.10/site-packages/pydantic/main.py", line 100, in validate
+    return cls.model_validate(obj)
+  File "flow360/component/simulation/services.py", line 50, in my_func
+    do_something()"""
+
+    result_mixed = _sanitize_stack_trace(input_mixed)
+    assert result_mixed == expected_mixed
+
+    # Test case 4: Empty string should return empty string
+    assert _sanitize_stack_trace("") == ""
+
+    # Test case 5: String with no file paths should remain unchanged (except traceback prefix)
+    input_no_paths = "Some error message without file paths"
+    assert _sanitize_stack_trace(input_no_paths) == input_no_paths
+
+    # Test case 6: Windows-style paths
+    input_windows = """Traceback (most recent call last):
+  File "C:\\Users\\dev\\Flow360-R2\\flow360\\component\\simulation\\services.py", line 100, in func
+    code()"""
+
+    expected_windows = """File "flow360\\component\\simulation\\services.py", line 100, in func
+    code()"""
+
+    result_windows = _sanitize_stack_trace(input_windows)
+    assert result_windows == expected_windows
+
+
 def test_validate_error_location_with_selector():
     """
     Test that validation error locations are correctly preserved when errors occur
