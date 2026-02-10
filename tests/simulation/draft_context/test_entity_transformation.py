@@ -16,7 +16,7 @@ from flow360.component.simulation.outputs.output_entities import (
     PointArray2D,
     Slice,
 )
-from flow360.component.simulation.primitives import Box, Cylinder
+from flow360.component.simulation.primitives import Box, Cylinder, Sphere
 from flow360.component.simulation.unit_system import SI_unit_system
 from flow360.exceptions import Flow360ValueError
 
@@ -305,6 +305,71 @@ def test_box_non_uniform_scale_raises_error():
 
         with pytest.raises(Flow360ValueError, match="only supports uniform scaling"):
             box._apply_transformation(matrix)
+
+
+# ==============================================================================
+# Sphere Tests (with uniform scaling validation)
+# ==============================================================================
+
+
+def test_sphere_identity():
+    """Sphere with identity matrix should remain unchanged."""
+    with SI_unit_system:
+        sphere = Sphere(name="test_sphere", center=(0, 0, 0) * u.m, radius=5 * u.m)
+        transformed = sphere._apply_transformation(identity_matrix())
+
+        np.testing.assert_allclose(transformed.center.value, [0, 0, 0], atol=1e-10)
+        np.testing.assert_allclose(transformed.radius.value, 5, atol=1e-10)
+
+
+def test_sphere_translation():
+    """Sphere should translate center."""
+    with SI_unit_system:
+        sphere = Sphere(name="test_sphere", center=(1, 2, 3) * u.m, radius=5 * u.m)
+        matrix = translation_matrix(10, 20, 30)
+        transformed = sphere._apply_transformation(matrix)
+
+        np.testing.assert_allclose(transformed.center.value, [11, 22, 33], atol=1e-10)
+        # Radius unchanged by translation
+        np.testing.assert_allclose(transformed.radius.value, 5, atol=1e-10)
+
+
+def test_sphere_uniform_scale():
+    """Sphere should scale radius uniformly."""
+    with SI_unit_system:
+        sphere = Sphere(name="test_sphere", center=(1, 0, 0) * u.m, radius=5 * u.m)
+        matrix = uniform_scale_matrix(2.0)
+        transformed = sphere._apply_transformation(matrix)
+
+        # Center scaled: (1,0,0) * 2 = (2,0,0)
+        np.testing.assert_allclose(transformed.center.value, [2, 0, 0], atol=1e-10)
+        # Radius scaled: 5 * 2 = 10
+        np.testing.assert_allclose(transformed.radius.value, 10, atol=1e-10)
+
+
+def test_sphere_rotation():
+    """Sphere center and axis should rotate (radius unchanged)."""
+    with SI_unit_system:
+        sphere = Sphere(name="test_sphere", center=(1, 0, 0) * u.m, radius=5 * u.m, axis=(1, 0, 0))
+        matrix = rotation_z_90()
+        transformed = sphere._apply_transformation(matrix)
+
+        # Center (1,0,0) rotated 90° around Z = (0,1,0)
+        np.testing.assert_allclose(transformed.center.value, [0, 1, 0], atol=1e-10)
+        # Axis (1,0,0) rotated 90° around Z = (0,1,0)
+        np.testing.assert_allclose(transformed.axis, (0, 1, 0), atol=1e-10)
+        # Radius unchanged by rotation
+        np.testing.assert_allclose(transformed.radius.value, 5, atol=1e-10)
+
+
+def test_sphere_non_uniform_scale_raises_error():
+    """Sphere should reject non-uniform scaling."""
+    with SI_unit_system:
+        sphere = Sphere(name="test_sphere", center=(0, 0, 0) * u.m, radius=5 * u.m)
+        matrix = non_uniform_scale_matrix()
+
+        with pytest.raises(Flow360ValueError, match="only supports uniform scaling"):
+            sphere._apply_transformation(matrix)
 
 
 # ==============================================================================
