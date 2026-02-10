@@ -21,6 +21,7 @@ from flow360.component.simulation.primitives import (
     Cylinder,
     Edge,
     GenericVolume,
+    Sphere,
     Surface,
     _SurfaceEntityBase,
 )
@@ -725,4 +726,30 @@ def test_cylinder_validation():
             axis=(1, 0, 0),
             inner_radius=1000 * u.m,
             outer_radius=2 * u.m,
+        )
+
+
+def test_sphere_creation():
+    """Test basic Sphere creation."""
+    with SI_unit_system:
+        sphere = Sphere(name="test_sphere", center=(1, 2, 3) * u.m, radius=5 * u.m)
+        assert sphere.name == "test_sphere"
+        np.testing.assert_allclose(sphere.center.value, [1, 2, 3])
+        np.testing.assert_allclose(sphere.radius.value, 5)
+
+
+def test_sphere_validation():
+    """Test Sphere validation for negative radius."""
+    with pytest.raises(ValueError, match="Input should be greater than 0"):
+        Sphere(
+            name="sphere",
+            center=(0, 0, 0) * u.m,
+            radius=-5 * u.m,
+        )
+
+    with pytest.raises(ValueError, match="Input should be greater than 0"):
+        Sphere(
+            name="sphere",
+            center=(0, 0, 0) * u.m,
+            radius=-5 * u.flow360_length_unit,
         )

@@ -36,6 +36,7 @@ from flow360.component.simulation.primitives import (
     Cylinder,
     SeedpointVolume,
     SnappyBody,
+    Sphere,
     Surface,
 )
 from flow360.component.simulation.services import ValidationCalledBy, validate_model
@@ -142,6 +143,18 @@ def test_disable_invalid_axisymmetric_body_construction():
 
     with pytest.raises(
         pd.ValidationError,
+        match=re.escape("should have at least 2 items"),
+    ):
+        with CGS_unit_system:
+            AxisymmetricBody(
+                name="1",
+                axis=(0, 0, 1),
+                center=(0, 5, 0),
+                profile_curve=[],
+            )
+
+    with pytest.raises(
+        pd.ValidationError,
         match=re.escape(
             "Expect first profile sample to be (Axial, 0.0). Found invalid point: [-1.  1.] cm."
         ),
@@ -166,6 +179,18 @@ def test_disable_invalid_axisymmetric_body_construction():
                 axis=(0, 0, 1),
                 center=(0, 5, 0),
                 profile_curve=[(-1, 0), (-1, 1), (1, 1)],
+            )
+
+    with pytest.raises(
+        pd.ValidationError,
+        match=re.escape("Profile curve has duplicate consecutive points at indices 1 and 2"),
+    ):
+        with CGS_unit_system:
+            invalid = AxisymmetricBody(
+                name="1",
+                axis=(1, 0, 0),
+                center=(0, 3, 0),
+                profile_curve=[(-1, 0), (-1, 1.23), (-1, 1.23), (1, 1), (1, 0)],
             )
 
 
@@ -332,6 +357,200 @@ def test_limit_axisymmetric_body_in_rotation_volume():
                 enclosed_entities=[
                     Surface(name="hub"),
                 ],
+            )
+
+
+def test_sphere_in_rotation_volume_only_in_beta_mesher():
+    """Test that Sphere entity for RotationVolume is only supported with the beta mesher."""
+    # raises when beta mesher is off
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"`Sphere` entity for `RotationVolume` is only supported with the beta mesher.",
+    ):
+        with ValidationContext(VOLUME_MESH, non_beta_mesher_context):
+            with CGS_unit_system:
+                sphere = Sphere(
+                    name="rotation_sphere",
+                    center=(0, 0, 0),
+                    radius=10,
+                )
+                _ = RotationVolume(
+                    entities=[sphere],
+                    spacing_circumferential=0.5,
+                )
+
+    # does not raise with beta mesher on
+    with ValidationContext(VOLUME_MESH, beta_mesher_context):
+        with CGS_unit_system:
+            sphere = Sphere(
+                name="rotation_sphere",
+                center=(0, 0, 0),
+                radius=10,
+            )
+            _ = RotationVolume(
+                entities=[sphere],
+                spacing_circumferential=0.5,
+            )
+
+
+def test_sphere_rotation_volume_spacing_requirements():
+    """Test spacing requirements for Sphere vs Cylinder/AxisymmetricBody in RotationVolume."""
+    # Test 1: Sphere without spacing_circumferential should raise error
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"`spacing_circumferential` is required for `Sphere` entities",
+    ):
+        with ValidationContext(VOLUME_MESH, beta_mesher_context):
+            with CGS_unit_system:
+                sphere = Sphere(name="sphere", center=(0, 0, 0), radius=10)
+                _ = RotationVolume(
+                    entities=[sphere],
+                )
+
+    # Test 2: Sphere with spacing_axial should raise error
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"`spacing_axial` must not be specified for `Sphere` entities",
+    ):
+        with ValidationContext(VOLUME_MESH, beta_mesher_context):
+            with CGS_unit_system:
+                sphere = Sphere(name="sphere", center=(0, 0, 0), radius=10)
+                _ = RotationVolume(
+                    entities=[sphere],
+                    spacing_circumferential=0.5,
+                    spacing_axial=0.5,
+                )
+
+    # Test 3: Sphere with spacing_radial should raise error
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"`spacing_radial` must not be specified for `Sphere` entities",
+    ):
+        with ValidationContext(VOLUME_MESH, beta_mesher_context):
+            with CGS_unit_system:
+                sphere = Sphere(name="sphere", center=(0, 0, 0), radius=10)
+                _ = RotationVolume(
+                    entities=[sphere],
+                    spacing_circumferential=0.5,
+                    spacing_radial=0.5,
+                )
+
+    # Test 4: Cylinder without spacing_axial should raise error
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"`spacing_axial` is required for `Cylinder` or `AxisymmetricBody` entities",
+    ):
+        with ValidationContext(VOLUME_MESH, beta_mesher_context):
+            with CGS_unit_system:
+                cylinder = Cylinder(
+                    name="cyl",
+                    center=(0, 0, 0),
+                    axis=(0, 0, 1),
+                    height=10,
+                    outer_radius=5,
+                )
+                _ = RotationVolume(
+                    entities=[cylinder],
+                    spacing_circumferential=0.5,
+                    spacing_radial=0.5,
+                )
+
+    # Test 5: Cylinder without spacing_radial should raise error
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"`spacing_radial` is required for `Cylinder` or `AxisymmetricBody` entities",
+    ):
+        with ValidationContext(VOLUME_MESH, beta_mesher_context):
+            with CGS_unit_system:
+                cylinder = Cylinder(
+                    name="cyl",
+                    center=(0, 0, 0),
+                    axis=(0, 0, 1),
+                    height=10,
+                    outer_radius=5,
+                )
+                _ = RotationVolume(
+                    entities=[cylinder],
+                    spacing_circumferential=0.5,
+                    spacing_axial=0.5,
+                )
+
+    # Test 6: Cylinder without spacing_circumferential should raise error
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"`spacing_circumferential` is required for `Cylinder` or `AxisymmetricBody`",
+    ):
+        with ValidationContext(VOLUME_MESH, beta_mesher_context):
+            with CGS_unit_system:
+                cylinder = Cylinder(
+                    name="cyl",
+                    center=(0, 0, 0),
+                    axis=(0, 0, 1),
+                    height=10,
+                    outer_radius=5,
+                )
+                _ = RotationVolume(
+                    entities=[cylinder],
+                    spacing_axial=0.5,
+                    spacing_radial=0.5,
+                )
+
+
+def test_sphere_rotation_volume_with_enclosed_entities():
+    """Test that Sphere RotationVolume supports enclosed_entities."""
+    with ValidationContext(VOLUME_MESH, beta_mesher_context):
+        with CGS_unit_system:
+            sphere = Sphere(name="outer_sphere", center=(0, 0, 0), radius=10)
+            inner_sphere = Sphere(name="inner_sphere", center=(0, 0, 0), radius=5)
+            _ = RotationVolume(
+                entities=[sphere],
+                spacing_circumferential=0.5,
+                enclosed_entities=[inner_sphere, Surface(name="hub")],
+            )
+
+
+def test_sphere_in_enclosed_entities_only_in_beta_mesher():
+    """Test that Sphere in enclosed_entities is only supported with the beta mesher."""
+    # raises when beta mesher is off
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"`Sphere` entity in `RotationVolume.enclosed_entities` is only supported with the beta mesher.",
+    ):
+        with ValidationContext(VOLUME_MESH, non_beta_mesher_context):
+            with CGS_unit_system:
+                cylinder = Cylinder(
+                    name="outer_cyl",
+                    center=(0, 0, 0),
+                    axis=(0, 0, 1),
+                    height=10,
+                    outer_radius=5,
+                )
+                inner_sphere = Sphere(name="inner_sphere", center=(0, 0, 0), radius=2)
+                _ = RotationVolume(
+                    entities=[cylinder],
+                    spacing_axial=0.5,
+                    spacing_radial=0.5,
+                    spacing_circumferential=0.5,
+                    enclosed_entities=[inner_sphere],
+                )
+
+    # does not raise with beta mesher on
+    with ValidationContext(VOLUME_MESH, beta_mesher_context):
+        with CGS_unit_system:
+            cylinder = Cylinder(
+                name="outer_cyl",
+                center=(0, 0, 0),
+                axis=(0, 0, 1),
+                height=10,
+                outer_radius=5,
+            )
+            inner_sphere = Sphere(name="inner_sphere", center=(0, 0, 0), radius=2)
+            _ = RotationVolume(
+                entities=[cylinder],
+                spacing_axial=0.5,
+                spacing_radial=0.5,
+                spacing_circumferential=0.5,
+                enclosed_entities=[inner_sphere],
             )
 
 
@@ -579,6 +798,43 @@ def test_reuse_of_same_cylinder(mock_validation_context):
                     zones=[AutomatedFarfield()],
                 )
             )
+
+
+def test_axisymmetric_body_in_uniform_refinement():
+    with ValidationContext(VOLUME_MESH, beta_mesher_context):
+        with CGS_unit_system:
+            axisymmetric_body = AxisymmetricBody(
+                name="a",
+                axis=(0, 0, 1),
+                center=(0, 0, 0),
+                profile_curve=[(-2, 0), (-2, 1), (2, 1.5), (2, 0)],
+            )
+            MeshingParams(
+                refinements=[
+                    UniformRefinement(
+                        entities=[axisymmetric_body],
+                        spacing=0.1,
+                    )
+                ],
+            )
+
+    # raises without beta mesher
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"`AxisymmetricBody` entity for `UniformRefinement` is supported only with beta mesher",
+    ):
+        with ValidationContext(VOLUME_MESH, non_beta_mesher_context):
+            with CGS_unit_system:
+                axisymmetric_body = AxisymmetricBody(
+                    name="1",
+                    axis=(0, 0, 1),
+                    center=(0, 0, 0),
+                    profile_curve=[(-1, 0), (-1, 1), (1, 1), (1, 0)],
+                )
+                UniformRefinement(
+                    entities=[axisymmetric_body],
+                    spacing=0.1,
+                )
 
 
 def test_require_mesh_zones():
