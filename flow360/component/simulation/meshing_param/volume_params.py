@@ -471,7 +471,7 @@ class RotationVolume(Flow360BaseModel):
 
 @deprecated(
     "The `RotationCylinder` class is deprecated! Use `RotationVolume`,"
-    "which supports both `Cylinder` and `AxisymmetricBody` entities instead."
+    "which supports `Cylinder`, `AxisymmetricBody`, and `Sphere` entities instead."
 )
 class RotationCylinder(RotationVolume):
     """
