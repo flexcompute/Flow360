@@ -143,6 +143,18 @@ def test_disable_invalid_axisymmetric_body_construction():
 
     with pytest.raises(
         pd.ValidationError,
+        match=re.escape("should have at least 2 items"),
+    ):
+        with CGS_unit_system:
+            AxisymmetricBody(
+                name="1",
+                axis=(0, 0, 1),
+                center=(0, 5, 0),
+                profile_curve=[],
+            )
+
+    with pytest.raises(
+        pd.ValidationError,
         match=re.escape(
             "Expect first profile sample to be (Axial, 0.0). Found invalid point: [-1.  1.] cm."
         ),
@@ -167,6 +179,18 @@ def test_disable_invalid_axisymmetric_body_construction():
                 axis=(0, 0, 1),
                 center=(0, 5, 0),
                 profile_curve=[(-1, 0), (-1, 1), (1, 1)],
+            )
+
+    with pytest.raises(
+        pd.ValidationError,
+        match=re.escape("Profile curve has duplicate consecutive points at indices 1 and 2"),
+    ):
+        with CGS_unit_system:
+            invalid = AxisymmetricBody(
+                name="1",
+                axis=(1, 0, 0),
+                center=(0, 3, 0),
+                profile_curve=[(-1, 0), (-1, 1.23), (-1, 1.23), (1, 1), (1, 0)],
             )
 
 
@@ -774,6 +798,43 @@ def test_reuse_of_same_cylinder(mock_validation_context):
                     zones=[AutomatedFarfield()],
                 )
             )
+
+
+def test_axisymmetric_body_in_uniform_refinement():
+    with ValidationContext(VOLUME_MESH, beta_mesher_context):
+        with CGS_unit_system:
+            axisymmetric_body = AxisymmetricBody(
+                name="a",
+                axis=(0, 0, 1),
+                center=(0, 0, 0),
+                profile_curve=[(-2, 0), (-2, 1), (2, 1.5), (2, 0)],
+            )
+            MeshingParams(
+                refinements=[
+                    UniformRefinement(
+                        entities=[axisymmetric_body],
+                        spacing=0.1,
+                    )
+                ],
+            )
+
+    # raises without beta mesher
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"`AxisymmetricBody` entity for `UniformRefinement` is supported only with beta mesher",
+    ):
+        with ValidationContext(VOLUME_MESH, non_beta_mesher_context):
+            with CGS_unit_system:
+                axisymmetric_body = AxisymmetricBody(
+                    name="1",
+                    axis=(0, 0, 1),
+                    center=(0, 0, 0),
+                    profile_curve=[(-1, 0), (-1, 1), (1, 1), (1, 0)],
+                )
+                UniformRefinement(
+                    entities=[axisymmetric_body],
+                    spacing=0.1,
+                )
 
 
 def test_require_mesh_zones():
