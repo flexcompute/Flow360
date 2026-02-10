@@ -114,7 +114,7 @@ def _check_duplicate_entities_in_models(params, param_info: ParamsValidationInfo
     usage = EntityUsageMap()
 
     for model in models:
-        if hasattr(model, "entities"):
+        if hasattr(model, "entities") and model.entities is not None:
             expanded_entities = param_info.expand_entity_list(model.entities)
             # seen_entity_hashes: set[str] = set()
             for entity in expanded_entities:
