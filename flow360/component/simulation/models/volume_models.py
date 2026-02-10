@@ -412,7 +412,7 @@ class Solid(PDEModelBase):
             cv_info = enforce_map.get(entity.name, {})
             if cv_info.get("enforce_tetrahedra") is False:
                 raise ValueError(
-                    f"{type(entity)} '"
+                    f"{type(entity).__name__} '"
                     + entity.name
                     + "' must be meshed with tetrahedra-only elements. Please adjust setting in `CustomZones`."
                 )
