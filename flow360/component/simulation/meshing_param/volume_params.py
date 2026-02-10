@@ -273,6 +273,10 @@ class RotationVolume(Flow360BaseModel):
     spacing_radial: Optional[LengthType.Positive] = pd.Field(
         None, description="Spacing along the radial direction."
     )
+    # This is actually a required field for all of Sphere, Cylinder, AxisymmetricBody entity
+    # RotationVolumes, but making this not Optional causes validation to be triggered in pydantic
+    # vs in validator below, giving different error messages than what we want.
+    # Use of validation_default=False messes up schemas.
     spacing_circumferential: Optional[LengthType.Positive] = pd.Field(
         None, description="Spacing along the circumferential direction."
     )
