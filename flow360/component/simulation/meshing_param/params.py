@@ -35,7 +35,12 @@ from flow360.component.simulation.meshing_param.volume_params import (
     UserDefinedFarfield,
     WindTunnelFarfield,
 )
-from flow360.component.simulation.primitives import SeedpointVolume
+from flow360.component.simulation.primitives import (
+    GhostCircularPlane,
+    GhostSphere,
+    GhostSurface,
+    SeedpointVolume,
+)
 from flow360.component.simulation.validation.validation_context import (
     SURFACE_MESH,
     VOLUME_MESH,
@@ -187,6 +192,37 @@ class MeshingParams(Flow360BaseModel):
 
         if total_farfield > 1:
             raise ValueError("Only one farfield zone is allowed in `volume_zones`.")
+
+        # If AutomatedFarfield is used with CustomVolume(s), exactly one of them must reference
+        # AutomatedFarfield.farfield, so the translator can identify which zone is the exterior farfield zone.
+        has_automated_farfield = any(isinstance(z, AutomatedFarfield) for z in v)
+        has_custom_zones = any(isinstance(z, CustomZones) for z in v)
+        if has_automated_farfield and has_custom_zones:
+            farfield_custom_volumes = []
+            for zone in v:
+                if not isinstance(zone, CustomZones):
+                    continue
+                for entity in zone.entities.stored_entities:
+                    if not isinstance(entity, CustomVolume):
+                        continue
+                    has_farfield_ghost = any(
+                        isinstance(s, (GhostSurface, GhostSphere, GhostCircularPlane))
+                        and s.name == "farfield"
+                        for s in entity.boundaries.stored_entities
+                    )
+                    if has_farfield_ghost:
+                        farfield_custom_volumes.append(entity.name)
+            if len(farfield_custom_volumes) == 0:
+                raise ValueError(
+                    "When using AutomatedFarfield with CustomZones, exactly one CustomVolume must include "
+                    "AutomatedFarfield.farfield in its boundaries to define the exterior farfield zone."
+                )
+            if len(farfield_custom_volumes) > 1:
+                raise ValueError(
+                    "Multiple CustomVolumes reference AutomatedFarfield.farfield: "
+                    f"{farfield_custom_volumes}. Only one CustomVolume may define the "
+                    "exterior farfield zone."
+                )
 
         return v
 

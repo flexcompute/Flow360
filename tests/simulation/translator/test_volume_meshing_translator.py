@@ -26,7 +26,6 @@ from flow360.component.simulation.meshing_param.volume_params import (
     AxisymmetricRefinement,
     CustomZones,
     MeshSliceOutput,
-    RotationCylinder,
     RotationVolume,
     StructuredBoxRefinement,
     UniformRefinement,
@@ -1208,3 +1207,57 @@ def test_windtunnel_ghost_surface_supported_in_volume_face_refinements(get_surfa
     assert "faces" in translated
     assert translated["faces"]["windTunnelFloor"]["type"] == "aniso"
     assert translated["faces"]["windTunnelInlet"]["type"] == "projectAnisoSpacing"
+
+
+def test_custom_volume_with_ghost_surface_farfield(get_surface_mesh):
+    """GhostSurface(name='farfield') should be skipped from patches and force zone_name='farfield'."""
+    auto_farfield = AutomatedFarfield()
+    left1 = Surface(name="left1")
+    right1 = Surface(name="right1")
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-4,
+                    boundary_layer_growth_rate=1.2,
+                ),
+                volume_zones=[
+                    CustomZones(
+                        name="interior_zone",
+                        entities=[
+                            CustomVolume(
+                                name="inner",
+                                boundaries=[left1, right1],
+                            ),
+                        ],
+                    ),
+                    CustomZones(
+                        name="exterior_zone",
+                        entities=[
+                            CustomVolume(
+                                name="outer",
+                                boundaries=[
+                                    left1,
+                                    right1,
+                                    auto_farfield.farfield,
+                                ],
+                            ),
+                        ],
+                    ),
+                    auto_farfield,
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+        )
+
+    translated = get_volume_meshing_json(params, get_surface_mesh.mesh_unit)
+    assert "zones" in translated
+    zones_by_name = {z["name"]: z for z in translated["zones"]}
+    # Exterior CustomVolume should be renamed to "farfield" for the mesher
+    assert "farfield" in zones_by_name
+    # GhostSurface should not appear in patches
+    assert "farfield" not in zones_by_name["farfield"]["patches"]
+    assert sorted(zones_by_name["farfield"]["patches"]) == ["left1", "right1"]
+    # Inner zone keeps its original name
+    assert "inner" in zones_by_name
+    assert sorted(zones_by_name["inner"]["patches"]) == ["left1", "right1"]
