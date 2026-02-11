@@ -27,20 +27,26 @@ jobs:
       with:
         fetch-depth: 0
 
-    - name: Validate tag is from release-candidate branch
+    - name: Validate tag is from exactly one release-candidate branch
       if: startsWith(github.ref, 'refs/tags/v')
       shell: bash
       run: |
         git fetch origin '+refs/heads/*:refs/remotes/origin/*'
-        matching_branches=$(git branch -r --contains "$GITHUB_SHA" | sed 's/^[ *]*//' | grep -E '^origin/release-candidate/' || true)
+        mapfile -t matching_branches < <(git branch -r --contains "$GITHUB_SHA" | sed 's/^[ *]*//' | grep -E '^origin/release-candidate/' || true)
+        branch_count=${#matching_branches[@]}
 
-        if [ -z "$matching_branches" ]; then
+        if [ "$branch_count" -eq 0 ]; then
           echo "::error ::Tag ${GITHUB_REF#refs/tags/} is not on any release-candidate/* branch."
           exit 1
         fi
 
-        echo "::notice ::Tag ${GITHUB_REF#refs/tags/} is on branches:"
-        echo "$matching_branches"
+        if [ "$branch_count" -gt 1 ]; then
+          echo "::error ::Tag ${GITHUB_REF#refs/tags/} matches multiple release-candidate branches:"
+          printf '%s\n' "${matching_branches[@]}"
+          exit 1
+        fi
+
+        echo "::notice ::Tag ${GITHUB_REF#refs/tags/} is on branch ${matching_branches[0]}."
 
     - name: Validate manual dispatch branch
       if: github.event_name == 'workflow_dispatch'
@@ -53,15 +59,140 @@ jobs:
 
         echo "::notice ::workflow_dispatch runs on ${GITHUB_REF_NAME}."
 
-  preflight-tests:
+  collect-approval-context:
     needs: validate-release-source
-    uses: ./.github/workflows/test.yml
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: read
+      statuses: read
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Resolve release branch and commit
+      id: resolve
+      shell: bash
+      run: |
+        git fetch origin '+refs/heads/*:refs/remotes/origin/*'
+        tag_commit_sha="$GITHUB_SHA"
+
+        if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+          mapfile -t matching_branches < <(git branch -r --contains "$GITHUB_SHA" | sed 's/^[ *]*//' | grep -E '^origin/release-candidate/' || true)
+          branch_count=${#matching_branches[@]}
+
+          if [ "$branch_count" -ne 1 ]; then
+            echo "::error ::Expected exactly one release-candidate branch for ${GITHUB_REF#refs/tags/}, got ${branch_count}."
+            printf '%s\n' "${matching_branches[@]}"
+            exit 1
+          fi
+
+          release_branch="${matching_branches[0]#origin/}"
+        else
+          release_branch="$GITHUB_REF_NAME"
+        fi
+
+        echo "tag_commit_sha=$tag_commit_sha" >> "$GITHUB_OUTPUT"
+        echo "release_branch=$release_branch" >> "$GITHUB_OUTPUT"
+
+    - name: Collect branch HEAD CI status
+      id: ci
+      uses: actions/github-script@v7
+      env:
+        RELEASE_BRANCH: ${{ steps.resolve.outputs.release_branch }}
+      with:
+        script: |
+          const { owner, repo } = context.repo;
+          const branch = process.env.RELEASE_BRANCH;
+
+          const branchInfo = await github.rest.repos.getBranch({
+            owner,
+            repo,
+            branch,
+          });
+          const headSha = branchInfo.data.commit.sha;
+
+          const combined = await github.rest.repos.getCombinedStatusForRef({
+            owner,
+            repo,
+            ref: headSha,
+          });
+
+          const checks = await github.rest.checks.listForRef({
+            owner,
+            repo,
+            ref: headSha,
+            per_page: 100,
+          });
+
+          const checkRuns = checks.data.check_runs;
+          const pendingCheckCount = checkRuns.filter((run) => run.status !== "completed").length;
+          const failedCheckCount = checkRuns.filter(
+            (run) =>
+              run.status === "completed" &&
+              !["success", "neutral", "skipped"].includes(run.conclusion || "")
+          ).length;
+
+          let aggregateState = "success";
+          if (pendingCheckCount > 0 || combined.data.state === "pending") {
+            aggregateState = "pending";
+          }
+          if (
+            failedCheckCount > 0 ||
+            combined.data.state === "failure" ||
+            combined.data.state === "error"
+          ) {
+            aggregateState = "failure";
+          }
+
+          core.setOutput("branch_head_sha", headSha);
+          core.setOutput("branch_head_ci_state", aggregateState);
+          core.setOutput("combined_status_state", combined.data.state);
+          core.setOutput("check_runs_total", String(checkRuns.length));
+          core.setOutput("check_runs_pending", String(pendingCheckCount));
+          core.setOutput("check_runs_failed", String(failedCheckCount));
+
+    - name: Publish approval context summary
+      shell: bash
+      run: |
+        {
+          echo "## PyPI Publish Approval Context"
+          echo ""
+          echo "- Tag commit SHA: \`${{ steps.resolve.outputs.tag_commit_sha }}\`"
+          echo "- Release branch: \`${{ steps.resolve.outputs.release_branch }}\`"
+          echo "- Branch HEAD SHA: \`${{ steps.ci.outputs.branch_head_sha }}\`"
+          echo "- Branch HEAD CI state: \`${{ steps.ci.outputs.branch_head_ci_state }}\`"
+          echo ""
+          echo "### CI signal details"
+          echo "- Combined status state: \`${{ steps.ci.outputs.combined_status_state }}\`"
+          echo "- Check runs total: \`${{ steps.ci.outputs.check_runs_total }}\`"
+          echo "- Check runs pending: \`${{ steps.ci.outputs.check_runs_pending }}\`"
+          echo "- Check runs failed: \`${{ steps.ci.outputs.check_runs_failed }}\`"
+          echo ""
+          echo "### Links"
+          echo "- Tag commit: ${{ github.server_url }}/${{ github.repository }}/commit/${{ steps.resolve.outputs.tag_commit_sha }}"
+          echo "- Branch HEAD: ${{ github.server_url }}/${{ github.repository }}/commit/${{ steps.ci.outputs.branch_head_sha }}"
+          echo "- Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        } >> "$GITHUB_STEP_SUMMARY"
+
+  approval:
+    needs:
+      - validate-release-source
+      - collect-approval-context
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi-release
+      url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    steps:
+    - name: Approval checkpoint
+      run: echo "Approved for PyPI publish."
 
   publish:
     needs:
       - validate-release-source
-      - preflight-tests
-    if: ${{ needs.validate-release-source.result == 'success' && needs.preflight-tests.result == 'success' }}
+      - collect-approval-context
+      - approval
     runs-on: ubuntu-latest
     env:
       FLOW360_SUPPRESS_BETA_WARNING: "1"
