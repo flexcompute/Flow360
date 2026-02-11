@@ -1,10 +1,5 @@
-# This workflow will upload a Python Package using Twine when a release is created
-# For more information see: https://help.github.com/en/actions/language-and-framework-guides/using-python-with-github-actions#publishing-to-package-registries
-
-# This workflow uses actions that are not certified by GitHub.
-# They are provided by a third-party and are governed by
-# separate terms of service, privacy policy, and support
-# documentation.
+# Publish Python package to PyPI when a semver tag (v*.*.*) is pushed.
+# Can also be triggered manually via workflow_dispatch on a release-candidate/* branch.
 
 name: publish to pypi
 
@@ -14,82 +9,316 @@ on:
       - "v*.*.*"
   workflow_dispatch:
     inputs:
-      version:
-        description: "Semantic release number"
+      tag:
+        description: "Release tag to publish, e.g. v1.2.3"
         required: true
         type: string
 
 jobs:
   validate-release-source:
     runs-on: ubuntu-latest
+    outputs:
+      release_branch: ${{ steps.resolve.outputs.release_branch }}
+      tag_commit_sha: ${{ steps.resolve.outputs.tag_commit_sha }}
+      release_tag: ${{ steps.resolve.outputs.release_tag }}
     steps:
     - uses: actions/checkout@v4
       with:
         fetch-depth: 0
 
-    - name: Validate tag is from release-candidate branch
-      if: startsWith(github.ref, 'refs/tags/v')
+    - name: Validate release source and resolve branch
+      id: resolve
+      env:
+        DISPATCH_TAG: ${{ inputs.tag }}
       shell: bash
       run: |
-        git fetch origin '+refs/heads/*:refs/remotes/origin/*'
-        matching_branches=$(git branch -r --contains "$GITHUB_SHA" | sed 's/^[ *]*//' | grep -E '^origin/release-candidate/' || true)
+        git fetch --tags origin '+refs/heads/*:refs/remotes/origin/*'
 
-        if [ -z "$matching_branches" ]; then
-          echo "::error ::Tag ${GITHUB_REF#refs/tags/} is not on any release-candidate/* branch."
-          exit 1
+        if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+          release_tag="${GITHUB_REF#refs/tags/}"
+          tag_commit_sha="$(git rev-list -n 1 "refs/tags/${release_tag}")"
+          mapfile -t matching_branches < <(git branch -r --contains "$tag_commit_sha" | sed 's/^[ *]*//' | grep -E '^origin/release-candidate/' || true)
+          branch_count=${#matching_branches[@]}
+
+          if [ "$branch_count" -eq 0 ]; then
+            echo "::error ::Tag ${release_tag} is not on any release-candidate/* branch."
+            exit 1
+          fi
+
+          if [ "$branch_count" -gt 1 ]; then
+            echo "::error ::Tag ${release_tag} matches multiple release-candidate branches:"
+            printf '%s\n' "${matching_branches[@]}"
+            echo "::error ::Ambiguous release source. Please rerun workflow_dispatch from the intended release-candidate/* branch and provide the same tag."
+            exit 1
+          fi
+
+          release_branch="${matching_branches[0]#origin/}"
+          echo "::notice ::Tag ${release_tag} (${tag_commit_sha}) is on branch ${release_branch}."
+        else
+          if [[ ! "$GITHUB_REF_NAME" =~ ^release-candidate/ ]]; then
+            echo "::error ::workflow_dispatch must run on release-candidate/*, current ref is ${GITHUB_REF_NAME}."
+            exit 1
+          fi
+
+          release_tag="$DISPATCH_TAG"
+          if [[ ! "$release_tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error ::Input tag must match v*.*.* (e.g. v1.2.3), got ${release_tag}."
+            exit 1
+          fi
+
+          if ! git rev-parse -q --verify "refs/tags/${release_tag}" >/dev/null; then
+            echo "::error ::Tag ${release_tag} does not exist in repository."
+            exit 1
+          fi
+
+          tag_commit_sha="$(git rev-list -n 1 "refs/tags/${release_tag}")"
+          release_branch="$GITHUB_REF_NAME"
+
+          if ! git merge-base --is-ancestor "$tag_commit_sha" "origin/${release_branch}"; then
+            echo "::error ::Tag ${release_tag} commit ${tag_commit_sha} is not contained in ${release_branch}."
+            exit 1
+          fi
+
+          echo "::notice ::workflow_dispatch on ${release_branch} pins tag ${release_tag} (${tag_commit_sha})."
         fi
 
-        echo "::notice ::Tag ${GITHUB_REF#refs/tags/} is on branches:"
-        echo "$matching_branches"
+        echo "tag_commit_sha=$tag_commit_sha" >> "$GITHUB_OUTPUT"
+        echo "release_branch=$release_branch" >> "$GITHUB_OUTPUT"
+        echo "release_tag=$release_tag" >> "$GITHUB_OUTPUT"
 
-    - name: Validate manual dispatch branch
-      if: github.event_name == 'workflow_dispatch'
-      shell: bash
-      run: |
-        if [[ ! "$GITHUB_REF_NAME" =~ ^release-candidate/ ]]; then
-          echo "::error ::workflow_dispatch must run on release-candidate/*, current ref is ${GITHUB_REF_NAME}."
-          exit 1
-        fi
-
-        echo "::notice ::workflow_dispatch runs on ${GITHUB_REF_NAME}."
-
-  preflight-tests:
+  collect-approval-context:
     needs: validate-release-source
-    uses: ./.github/workflows/test.yml
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: read
+      statuses: read
+    steps:
+    - name: Collect and summarize tagged commit CI status
+      uses: actions/github-script@v7
+      env:
+        RELEASE_BRANCH: ${{ needs.validate-release-source.outputs.release_branch }}
+        TAG_COMMIT_SHA: ${{ needs.validate-release-source.outputs.tag_commit_sha }}
+      with:
+        script: |
+          const { owner, repo } = context.repo;
+          const branch = process.env.RELEASE_BRANCH;
+          const tagCommitSha = process.env.TAG_COMMIT_SHA;
+
+          const branchInfo = await github.rest.repos.getBranch({ owner, repo, branch });
+          const branchHeadSha = branchInfo.data.commit.sha;
+
+          const combined = await github.rest.repos.getCombinedStatusForRef({
+            owner, repo, ref: tagCommitSha,
+          });
+
+          const checkRuns = await github.paginate(
+            github.rest.checks.listForRef,
+            { owner, repo, ref: tagCommitSha, per_page: 100 },
+            (response) => response.data.check_runs
+          );
+          const currentRunToken = `/actions/runs/${context.runId}`;
+          const relevant = checkRuns.filter(
+            (r) => !(r.details_url || "").includes(currentRunToken)
+          );
+
+          const counts = {
+            success: 0, neutral: 0, skipped: 0, failed: 0, pending: 0,
+          };
+          for (const r of relevant) {
+            if (r.status !== "completed") { counts.pending++; }
+            else if (r.conclusion === "success") { counts.success++; }
+            else if (r.conclusion === "neutral") { counts.neutral++; }
+            else if (r.conclusion === "skipped") { counts.skipped++; }
+            else { counts.failed++; }
+          }
+
+          const serverUrl = process.env.GITHUB_SERVER_URL;
+          const repoSlug = process.env.GITHUB_REPOSITORY;
+          const runId = process.env.GITHUB_RUN_ID;
+
+          const lines = [
+            `## PyPI Publish Approval Context`,
+            ``,
+            `| Field | Value |`,
+            `|-------|-------|`,
+            `| Tag commit SHA | \`${tagCommitSha}\` |`,
+            `| Release branch | \`${branch}\` |`,
+            `| Branch HEAD SHA | \`${branchHeadSha}\` |`,
+            `| Combined status | \`${combined.data.state}\` (${combined.data.total_count || 0} contexts) |`,
+            `| Check runs | ${relevant.length} total, ${checkRuns.length - relevant.length} ignored (self) |`,
+            `| Checks passed | ${counts.success} success, ${counts.neutral} neutral, ${counts.skipped} skipped |`,
+            `| Checks not passed | ${counts.failed} failed, ${counts.pending} pending |`,
+            ``,
+            `### Links`,
+            `- [Tag commit](${serverUrl}/${repoSlug}/commit/${tagCommitSha})`,
+            `- [Branch HEAD](${serverUrl}/${repoSlug}/commit/${branchHeadSha})`,
+            `- [Workflow run](${serverUrl}/${repoSlug}/actions/runs/${runId})`,
+          ];
+          await core.summary.addRaw(lines.join("\n")).write();
+
+  approval:
+    needs:
+      - validate-release-source
+      - collect-approval-context
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi-release
+      url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    steps:
+    - name: Approval checkpoint
+      run: echo "Approved for PyPI publish."
+
+  ci-gate:
+    needs:
+      - validate-release-source
+      - approval
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      checks: read
+      statuses: read
+    steps:
+    - name: Re-check tagged commit CI status after approval
+      uses: actions/github-script@v7
+      env:
+        TAG_COMMIT_SHA: ${{ needs.validate-release-source.outputs.tag_commit_sha }}
+      with:
+        script: |
+          const { owner, repo } = context.repo;
+          const tagCommitSha = process.env.TAG_COMMIT_SHA;
+
+          const combined = await github.rest.repos.getCombinedStatusForRef({
+            owner,
+            repo,
+            ref: tagCommitSha,
+          });
+
+          const checkRuns = await github.paginate(
+            github.rest.checks.listForRef,
+            {
+              owner,
+              repo,
+              ref: tagCommitSha,
+              per_page: 100,
+            },
+            (response) => response.data.check_runs
+          );
+
+          const currentWorkflowRun = await github.rest.actions.getWorkflowRun({
+            owner,
+            repo,
+            run_id: context.runId,
+          });
+          const currentWorkflowId = currentWorkflowRun.data.workflow_id;
+          const runIdPattern = /\/actions\/runs\/(\d+)(?:\/|$)/;
+          const runIds = [
+            ...new Set(
+              checkRuns
+                .map((run) => {
+                  const match = (run.details_url || "").match(runIdPattern);
+                  return match ? Number(match[1]) : null;
+                })
+                .filter((runId) => Number.isInteger(runId))
+            ),
+          ];
+
+          const workflowIdByRunId = new Map();
+          for (const runId of runIds) {
+            try {
+              const workflowRun = await github.rest.actions.getWorkflowRun({
+                owner,
+                repo,
+                run_id: runId,
+              });
+              workflowIdByRunId.set(runId, workflowRun.data.workflow_id);
+            } catch (error) {
+              core.warning(`Failed to resolve workflow run ${runId}: ${error.message}`);
+            }
+          }
+
+          const relevantCheckRuns = checkRuns.filter(
+            (run) => {
+              const match = (run.details_url || "").match(runIdPattern);
+              if (!match) {
+                return true;
+              }
+              const runId = Number(match[1]);
+              const workflowId = workflowIdByRunId.get(runId);
+              if (workflowId === undefined) {
+                return true;
+              }
+              return workflowId !== currentWorkflowId;
+            }
+          );
+          const ignoredCurrentWorkflowCheckCount = checkRuns.length - relevantCheckRuns.length;
+          const pendingCheckCount = relevantCheckRuns.filter((run) => run.status !== "completed").length;
+          const successfulCheckCount = relevantCheckRuns.filter(
+            (run) => run.status === "completed" && run.conclusion === "success"
+          ).length;
+          const neutralCheckCount = relevantCheckRuns.filter(
+            (run) => run.status === "completed" && run.conclusion === "neutral"
+          ).length;
+          const skippedCheckCount = relevantCheckRuns.filter(
+            (run) => run.status === "completed" && run.conclusion === "skipped"
+          ).length;
+          const failedCheckCount = relevantCheckRuns.filter(
+            (run) =>
+              run.status === "completed" &&
+              !["success", "neutral", "skipped"].includes(run.conclusion || "")
+          ).length;
+
+          const hasCombinedStatuses = (combined.data.total_count || 0) > 0;
+          const hasAnyCiSignal = hasCombinedStatuses || relevantCheckRuns.length > 0;
+          const hasSuccessSignal =
+            (hasCombinedStatuses && combined.data.state === "success") || successfulCheckCount > 0;
+
+          let aggregateState = "no_data";
+          if (
+            failedCheckCount > 0 ||
+            combined.data.state === "failure" ||
+            combined.data.state === "error"
+          ) {
+            aggregateState = "failure";
+          } else if (pendingCheckCount > 0 || (hasCombinedStatuses && combined.data.state === "pending")) {
+            aggregateState = "pending";
+          } else if (!hasAnyCiSignal) {
+            aggregateState = "no_data";
+          } else if (hasSuccessSignal) {
+            aggregateState = "success";
+          } else {
+            aggregateState = "pending";
+          }
+
+          core.notice(
+            `CI gate for ${tagCommitSha}: state=${aggregateState}, combined=${combined.data.state}, checks=${relevantCheckRuns.length}, success=${successfulCheckCount}, neutral=${neutralCheckCount}, skipped=${skippedCheckCount}, pending=${pendingCheckCount}, failed=${failedCheckCount}, has_success_signal=${hasSuccessSignal}, ignored_current_workflow_checks=${ignoredCurrentWorkflowCheckCount}`
+          );
+
+          if (aggregateState !== "success") {
+            core.setFailed(
+              `CI gate failed for ${tagCommitSha}: ${aggregateState}. combined=${combined.data.state}, checks=${relevantCheckRuns.length}, success=${successfulCheckCount}, neutral=${neutralCheckCount}, skipped=${skippedCheckCount}, pending=${pendingCheckCount}, failed=${failedCheckCount}, has_success_signal=${hasSuccessSignal}`
+            );
+          }
 
   publish:
     needs:
       - validate-release-source
-      - preflight-tests
-    if: ${{ needs.validate-release-source.result == 'success' && needs.preflight-tests.result == 'success' }}
+      - ci-gate
     runs-on: ubuntu-latest
     env:
       FLOW360_SUPPRESS_BETA_WARNING: "1"
     steps:
     - uses: actions/checkout@v4
       with:
-        fetch-depth: 0
+        ref: ${{ needs.validate-release-source.outputs.tag_commit_sha }}
 
-    - name: trigger by tag
-      if: startsWith(github.ref, 'refs/tags/v')
-      run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
-
-    - name: trigger by manually input
-      if: ${{ ! startsWith(github.ref, 'refs/tags/v')  }}
-      run: echo "RELEASE_VERSION=${{inputs.version}}" >> $GITHUB_ENV
-
-    -   name: github environment
-        run: |
-            git_hash=$(git rev-parse --short HEAD) 
-            echo "GIT_SHORT_SHA=$git_hash" >> $GITHUB_ENV
-            echo "GIT_BRANCH=${GITHUB_REF#refs/heads/}" >> $GITHUB_ENV
-
-    -   name: echo action used variables
-        run: |
-            echo '${{  toJSON(env) }}' 
-            echo "::notice ::Git Short Sha: ${{env.GIT_SHORT_SHA}}"
-            echo "::notice ::Git Branch: ${{env.GIT_BRANCH}}"
-            echo "::notice ::Semantic release number: ${{ env.RELEASE_VERSION }}"
+    - name: Resolve release metadata
+      run: |
+        echo "RELEASE_VERSION=${{ needs.validate-release-source.outputs.release_tag }}" >> $GITHUB_ENV
+        echo "GIT_BRANCH=${{ needs.validate-release-source.outputs.release_branch }}" >> $GITHUB_ENV
+        echo "::notice ::Release version: ${{ needs.validate-release-source.outputs.release_tag }}"
+        echo "::notice ::Release branch: ${{ needs.validate-release-source.outputs.release_branch }}"
+        echo "::notice ::Tag commit SHA: ${{ needs.validate-release-source.outputs.tag_commit_sha }}"
 
     - name: Install poetry
       run: pipx install poetry
@@ -100,14 +329,14 @@ jobs:
     - name: Install dependencies
       run: poetry install
     - name: Pump version number
-      run: poetry version ${{ env.RELEASE_VERSION }}
+      run: poetry version ${RELEASE_VERSION#v}
     - name: check version
       run: |
           version=$(poetry run python -c "import flow360; print(flow360.version.__version__)")
           publish_version="${{ env.RELEASE_VERSION }}"
           publish_version="${publish_version:1}"
           if [ "$version" != "$publish_version" ]; then
-              echo "version ${version}!=${publish_version} in flow360.version.__version__ does not match to release version ${{ inputs.version }}"
+              echo "version ${version}!=${publish_version} in flow360.version.__version__ does not match to release version ${{ env.RELEASE_VERSION }}"
               exit 1
           fi
     - name: Setup pipy token
