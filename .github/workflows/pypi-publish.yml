@@ -196,6 +196,7 @@ jobs:
       - approval
     runs-on: ubuntu-latest
     permissions:
+      actions: read
       checks: read
       statuses: read
     steps:
@@ -225,10 +226,53 @@ jobs:
             (response) => response.data.check_runs
           );
 
-          const currentRunToken = `/actions/runs/${context.runId}`;
+          const currentWorkflowRun = await github.rest.actions.getWorkflowRun({
+            owner,
+            repo,
+            run_id: context.runId,
+          });
+          const currentWorkflowId = currentWorkflowRun.data.workflow_id;
+          const runIdPattern = /\/actions\/runs\/(\d+)(?:\/|$)/;
+          const runIds = [
+            ...new Set(
+              checkRuns
+                .map((run) => {
+                  const match = (run.details_url || "").match(runIdPattern);
+                  return match ? Number(match[1]) : null;
+                })
+                .filter((runId) => Number.isInteger(runId))
+            ),
+          ];
+
+          const workflowIdByRunId = new Map();
+          for (const runId of runIds) {
+            try {
+              const workflowRun = await github.rest.actions.getWorkflowRun({
+                owner,
+                repo,
+                run_id: runId,
+              });
+              workflowIdByRunId.set(runId, workflowRun.data.workflow_id);
+            } catch (error) {
+              core.warning(`Failed to resolve workflow run ${runId}: ${error.message}`);
+            }
+          }
+
           const relevantCheckRuns = checkRuns.filter(
-            (run) => !(run.details_url || "").includes(currentRunToken)
+            (run) => {
+              const match = (run.details_url || "").match(runIdPattern);
+              if (!match) {
+                return true;
+              }
+              const runId = Number(match[1]);
+              const workflowId = workflowIdByRunId.get(runId);
+              if (workflowId === undefined) {
+                return true;
+              }
+              return workflowId !== currentWorkflowId;
+            }
           );
+          const ignoredCurrentWorkflowCheckCount = checkRuns.length - relevantCheckRuns.length;
           const pendingCheckCount = relevantCheckRuns.filter((run) => run.status !== "completed").length;
           const failedCheckCount = relevantCheckRuns.filter(
             (run) =>
@@ -253,7 +297,7 @@ jobs:
           }
 
           core.notice(
-            `CI gate for ${tagCommitSha}: state=${aggregateState}, combined=${combined.data.state}, checks=${relevantCheckRuns.length}, pending=${pendingCheckCount}, failed=${failedCheckCount}`
+            `CI gate for ${tagCommitSha}: state=${aggregateState}, combined=${combined.data.state}, checks=${relevantCheckRuns.length}, pending=${pendingCheckCount}, failed=${failedCheckCount}, ignored_current_workflow_checks=${ignoredCurrentWorkflowCheckCount}`
           );
 
           if (aggregateState !== "success") {
