@@ -1,7 +1,6 @@
 """Volume models for the simulation framework."""
 
 # pylint: disable=too-many-lines
-import math
 import os
 import re
 from abc import ABCMeta
@@ -1532,15 +1531,6 @@ class Gravity(Flow360BaseModel):
         + "For Earth's surface gravity, use 9.81 m/s²."
     )
     private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
-
-    @pd.field_validator("direction", mode="after")
-    @classmethod
-    def _normalize_direction(cls, value: Axis) -> Axis:
-        """Ensure direction is normalized."""
-        norm = math.sqrt(sum(v * v for v in value))
-        if norm < 1e-12:
-            raise ValueError("Gravity direction cannot be a zero vector.")
-        return tuple(v / norm for v in value)
 
 
 VolumeModelTypes = Union[
