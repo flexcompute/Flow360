@@ -1795,16 +1795,26 @@ class Chart3D(Chart):
     def _get_limits(self, case: Case):
         if self.limits is not None and not isinstance(self.limits[0], float):
             params: SimulationParams = case.params
-            if is_flow360_unit(self.limits[0]):
-                return (self.limits[0].value, self.limits[1].value)
 
-            if isinstance(self.limits[0], unyt_quantity):
-                _, unit_system = get_unit_for_field(self.field)
+            _, unit_system = get_unit_for_field(self.field)
+            liquid_factor = (
+                params.base_velocity / params.reference_velocity
+                if (
+                    case.params.operating_condition.type_name == "LiquidOperatingCondition"
+                    and unit_system == "flow360"
+                )
+                else 1
+            )
+            if isinstance(self.limits[0], unyt_quantity) or is_flow360_unit(self.limits[0]):
                 target_system = "flow360"
                 if unit_system is not None:
                     target_system = unit_system
-                min_val = params.convert_unit(self.limits[0], target_system=target_system)
-                max_val = params.convert_unit(self.limits[1], target_system=target_system)
+                min_val = (
+                    params.convert_unit(self.limits[0], target_system=target_system) * liquid_factor
+                )
+                max_val = (
+                    params.convert_unit(self.limits[1], target_system=target_system) * liquid_factor
+                )
                 return (float(min_val.value), float(max_val.value))
 
         return self.limits
