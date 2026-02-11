@@ -289,7 +289,7 @@ def apply_UniformRefinement_w_snappy(
 
 def _none_tolerant_min(current, candidate):
     """Return the smaller of two spacing quantities, comparing by raw value."""
-    if candidate is not None and candidate.value.item() < current.value.item():
+    if candidate is not None and candidate < current:
         return candidate
     return current
 
