@@ -315,6 +315,7 @@ def _get_effective_min_spacing(input_params, spacing_system: OctreeSpacing):
                 refinement.spacing[0]
                 if isinstance(refinement.spacing, unyt_array)
                 and isinstance(refinement.distances, unyt_array)
+                and len(refinement.spacing) > 0
                 else refinement.spacing
             )
             min_spacing = _none_tolerant_min(min_spacing, edge_spacing)
