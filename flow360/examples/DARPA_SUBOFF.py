@@ -9,4 +9,4 @@ class DARPA_SUBOFF(BaseTestCase):
     name = "DARPA_SUBOFF"
 
     class url:
-        geometry = "https://simcloud-public-1.s3.amazonaws.com/examples/submarine/DARPA.STEP"
+        geometry = "https://simcloud-public-1.s3.amazonaws.com/examples/submarine/DARPA_SUBOFF.STEP"
