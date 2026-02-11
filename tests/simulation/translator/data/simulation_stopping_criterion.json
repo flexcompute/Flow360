@@ -384,6 +384,16 @@
             "output_type": "SurfaceOutput"
         },
         {
+            "name": "X_incremental",
+            "distribution_direction": [
+                1.0,
+                0.0,
+                0.0
+            ],
+            "distribution_type": "incremental",
+            "output_type": "ForceDistributionOutput"
+        },
+        {
             "output_fields": {
                 "items": [
                     {
