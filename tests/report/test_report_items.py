@@ -46,6 +46,8 @@ from tests.report.report_testing_fixtures import (
     get_last_time_step_values,
     here,
     here_class,
+    liquid_case,
+    liquid_case_different_ref_velocity,
     monitors_case,
     residual_plot_model_SA,
     residual_plot_model_SST,
@@ -598,6 +600,56 @@ def test_dimensioned_limits(cases):
 
     converted_limits = chart._get_limits(case)
     assert converted_limits == (0, 10)
+
+
+def test_dimensioned_limits_liquid(liquid_case, liquid_case_different_ref_velocity):
+
+    # For LiquidOperatingCondition with velocity_magnitude=8.231104 m/s
+    # and reference_velocity_magnitude=8.231104 m/s
+
+    expected_flow360_liquid_velocity = 5 / 8.231104
+
+    # Velocity limits converted to flow360 liquid unit system units
+    chart = Chart3D(
+        field="velocity",
+        show="boundaries",
+        limits=(0 * u.m / u.s, 5 * u.m / u.s),
+    )
+    converted_limits = chart._get_limits(liquid_case)
+    assert converted_limits[0] == 0
+    assert abs(converted_limits[1] - expected_flow360_liquid_velocity) < 1e-10
+
+    # Velocity limits converted to SI (field with explicit SI unit system)
+    chart = Chart3D(
+        field="velocity_m_per_s",
+        show="boundaries",
+        limits=(0 * u.m / u.s, 5 * u.m / u.s),
+    )
+    converted_limits = chart._get_limits(liquid_case)
+    assert converted_limits == (0, 5)
+
+    # Plain float limits pass through unchanged
+    chart = Chart3D(
+        field="velocity",
+        show="boundaries",
+        limits=(0, 0.3),
+    )
+    converted_limits = chart._get_limits(liquid_case)
+    assert converted_limits == (0, 0.3)
+
+    # ref velocity different than freestream velocity
+
+    expected_upper = 5 / 5  # = 1.0
+
+    chart = Chart3D(
+        field="velocity",
+        show="boundaries",
+        limits=(0 * u.m / u.s, 5 * u.m / u.s),
+    )
+    converted_limits = chart._get_limits(liquid_case_different_ref_velocity)
+
+    assert converted_limits[0] == 0
+    assert abs(converted_limits[1] - expected_upper) < 1e-10
 
 
 def test_2d_caption_validity(cases):
@@ -1867,3 +1919,154 @@ def test_data_format_check(cases):
 
     with pytest.raises(AttributeError):
         plot_model = chart.get_data(cases=cases, context=context)
+
+
+def test_get_background_chart():
+    """Test the _get_background_chart function of Chart2D."""
+
+    # Test 1: Nothing is returned when self.background is None
+    chart = Chart2D(
+        x="x_slicing_force_distribution/X",
+        y="x_slicing_force_distribution/totalCumulative_CD_Curve",
+        background=None,
+        fig_name="test_chart",
+    )
+    x_data = [[0.0, 1.0, 2.0, 3.0]]
+    result = chart._get_background_chart(x_data)
+    assert result is None, "Expected None when background is None"
+
+    # Test 2: ValueError is thrown when x is not x_slicing_force_distribution/X or y_slicing_force_distribution/Y
+    chart_invalid_x = Chart2D(
+        x="total_forces/CD",
+        y="total_forces/CL",
+        background="geometry",
+        fig_name="test_chart",
+    )
+    x_data = [[0.0, 1.0, 2.0, 3.0]]
+    with pytest.raises(
+        ValueError,
+        match="background=geometry can be only used with x == x_slicing_force_distribution/X OR x == y_slicing_force_distribution/Y",
+    ):
+        chart_invalid_x._get_background_chart(x_data)
+
+    # Test 3: Everything goes well with x_slicing_force_distribution/X when y is a string (include and exclude not defined)
+    # This should work without AttributeError since strings don't have .include/.exclude attributes
+    chart_x_slicing_str = Chart2D(
+        x="x_slicing_force_distribution/X",
+        y="x_slicing_force_distribution/totalCumulative_CD_Curve",
+        background="geometry",
+        fig_name="test_chart_x_str",
+    )
+    x_data = [[0.0, 1.0, 2.0, 3.0]]
+    result_y_str = chart_x_slicing_str._get_background_chart(x_data)
+
+    assert (
+        result_y_str is not None
+    ), "Expected Chart3D object when background is 'geometry' and x is valid"
+    assert isinstance(result_y_str, Chart3D), "Expected result to be a Chart3D instance"
+    assert result_y_str.show == "boundaries", "Expected show to be 'boundaries'"
+    assert (
+        result_y_str.fig_name == "background_test_chart_x_str"
+    ), "Expected fig_name to be prefixed with 'background_'"
+    assert result_y_str.camera.position == (0, -1, 0), "Expected camera position for x_slicing"
+    assert result_y_str.camera.up == (0, 0, 1), "Expected camera up vector"
+    assert result_y_str.camera.dimension == 3.0, "Expected dimension to match x_data extent"
+    assert result_y_str.camera.dimension_dir == "width", "Expected dimension_dir to be 'width'"
+    assert result_y_str.include is None, "Expected include to be None when y is a string"
+    assert result_y_str.exclude is None, "Expected exclude to be None when y is a string"
+
+    # Test 4: Everything goes well with y_slicing_force_distribution/Y when y is a string (include and exclude not defined)
+    chart_y_slicing_str = Chart2D(
+        x="y_slicing_force_distribution/Y",
+        y="y_slicing_force_distribution/totalCFx_per_span",
+        background="geometry",
+        fig_name="test_chart_y_str",
+    )
+    x_data = [[0.0, 1.0, 2.0, 5.0]]
+    result_y_str = chart_y_slicing_str._get_background_chart(x_data)
+
+    assert (
+        result_y_str is not None
+    ), "Expected Chart3D object when background is 'geometry' and y is valid"
+    assert isinstance(result_y_str, Chart3D), "Expected result to be a Chart3D instance"
+    assert result_y_str.show == "boundaries", "Expected show to be 'boundaries'"
+    assert (
+        result_y_str.fig_name == "background_test_chart_y_str"
+    ), "Expected fig_name to be prefixed with 'background_'"
+    assert result_y_str.camera.position == (-1, 0, 0), "Expected camera position for y_slicing"
+    assert result_y_str.camera.up == (0, 0, 1), "Expected camera up vector"
+    assert result_y_str.camera.dimension == 5.0, "Expected dimension to match x_data extent"
+    assert result_y_str.camera.dimension_dir == "width", "Expected dimension_dir to be 'width'"
+    assert result_y_str.include is None, "Expected include to be None when y is a string"
+    assert result_y_str.exclude is None, "Expected exclude to be None when y is a string"
+
+    # Test 5: Include/exclude come from y, not x (even when x has DataItem with include/exclude)
+    chart_with_dataitem_x = Chart2D(
+        x=DataItem(
+            data="x_slicing_force_distribution/X",
+            include=["boundary1", "boundary2"],
+            exclude=["boundary3"],
+        ),
+        y="x_slicing_force_distribution/totalCumulative_CD_Curve",
+        background="geometry",
+        fig_name="test_chart_dataitem_x",
+    )
+    x_data = [[0.0, 1.0, 2.0, 3.0]]
+    result_dataitem_x = chart_with_dataitem_x._get_background_chart(x_data)
+
+    assert (
+        result_dataitem_x.include is None
+    ), "Expected include to be None since y is a string (x include/exclude are ignored)"
+    assert (
+        result_dataitem_x.exclude is None
+    ), "Expected exclude to be None since y is a string (x include/exclude are ignored)"
+
+    # Test 6: Include/exclude come from y DataItem for x_slicing
+    chart_y_dataitem_x_slicing = Chart2D(
+        x="x_slicing_force_distribution/X",
+        y=DataItem(
+            data="x_slicing_force_distribution/totalCumulative_CD_Curve",
+            include=["boundary_y1", "boundary_y2"],
+            exclude=["boundary_y3"],
+        ),
+        background="geometry",
+        fig_name="test_chart_y_dataitem_x_slicing",
+    )
+    x_data = [[0.0, 1.0, 2.0, 3.0]]
+    result_y_dataitem_x_slicing = chart_y_dataitem_x_slicing._get_background_chart(x_data)
+
+    assert result_y_dataitem_x_slicing.include == [
+        "boundary_y1",
+        "boundary_y2",
+    ], "Expected include from y DataItem"
+    assert result_y_dataitem_x_slicing.exclude == [
+        "boundary_y3"
+    ], "Expected exclude from y DataItem"
+
+    # Test 7: When y is a list, use the first element for include/exclude
+    chart_y_list = Chart2D(
+        x="x_slicing_force_distribution/X",
+        y=[
+            DataItem(
+                data="x_slicing_force_distribution/totalCumulative_CD_Curve",
+                include=["first_boundary"],
+                exclude=["first_exclude"],
+            ),
+            DataItem(
+                data="x_slicing_force_distribution/totalCumulative_CL_Curve",
+                include=["second_boundary"],
+                exclude=["second_exclude"],
+            ),
+        ],
+        background="geometry",
+        fig_name="test_chart_y_list",
+    )
+    x_data = [[0.0, 1.0, 2.0, 3.0]]
+    result_y_list = chart_y_list._get_background_chart(x_data)
+
+    assert result_y_list.include == [
+        "first_boundary"
+    ], "Expected include from first y DataItem in list"
+    assert result_y_list.exclude == [
+        "first_exclude"
+    ], "Expected exclude from first y DataItem in list"
