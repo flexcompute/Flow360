@@ -1777,7 +1777,10 @@ def get_stop_criterion_settings(criterion: StoppingCriterion, params: Simulation
 
     criterion_monitor_output = None
     for output in params.outputs:
-        if output.private_attribute_id == criterion.monitor_output:
+        if (
+            hasattr(output, "private_attribute_id")
+            and output.private_attribute_id == criterion.monitor_output
+        ):
             criterion_monitor_output = output
             break
 
