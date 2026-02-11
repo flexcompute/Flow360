@@ -1078,7 +1078,9 @@ def test_snappy_multiple_regions(get_snappy_geometry, snappy_refinements_multipl
 
 
 def test_snappy_settings(get_snappy_geometry, snappy_settings):
-    _translate_and_compare(snappy_settings, get_snappy_geometry.mesh_unit, "snappy_settings.json", atol=1e-6)
+    _translate_and_compare(
+        snappy_settings, get_snappy_geometry.mesh_unit, "snappy_settings.json", atol=1e-6
+    )
 
 
 def test_snappy_settings_off_position(get_snappy_geometry, snappy_settings_off_position):
@@ -1089,7 +1091,10 @@ def test_snappy_settings_off_position(get_snappy_geometry, snappy_settings_off_p
 
 def test_snappy_no_refinements(get_snappy_geometry, snappy_refinements_no_regions):
     _translate_and_compare(
-        snappy_refinements_no_regions, get_snappy_geometry.mesh_unit, "snappy_no_regions.json", atol=1e-6
+        snappy_refinements_no_regions,
+        get_snappy_geometry.mesh_unit,
+        "snappy_no_regions.json",
+        atol=1e-6,
     )
 
 
