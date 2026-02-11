@@ -5,13 +5,13 @@ import pytest
 import flow360.component.simulation.units as u
 from flow360.component.simulation.models.volume_models import Gravity
 from flow360.component.simulation.primitives import GenericVolume
+from flow360.component.simulation.translator.solver_translator import (
+    gravity_entity_info_serializer,
+    gravity_translator,
+)
 from flow360.component.simulation.validation.validation_context import (
     ParamsValidationInfo,
     ValidationContext,
-)
-from flow360.component.simulation.translator.solver_translator import (
-    gravity_translator,
-    gravity_entity_info_serializer,
 )
 
 

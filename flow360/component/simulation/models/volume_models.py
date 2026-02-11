@@ -1,6 +1,7 @@
 """Volume models for the simulation framework."""
 
 # pylint: disable=too-many-lines
+import math
 import os
 import re
 from abc import ABCMeta
@@ -1536,8 +1537,6 @@ class Gravity(Flow360BaseModel):
     @classmethod
     def _normalize_direction(cls, value: Axis) -> Axis:
         """Ensure direction is normalized."""
-        import math
-
         norm = math.sqrt(sum(v * v for v in value))
         if norm < 1e-12:
             raise ValueError("Gravity direction cannot be a zero vector.")
