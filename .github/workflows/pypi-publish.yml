@@ -96,15 +96,17 @@ jobs:
         echo "tag_commit_sha=$tag_commit_sha" >> "$GITHUB_OUTPUT"
         echo "release_branch=$release_branch" >> "$GITHUB_OUTPUT"
 
-    - name: Collect branch HEAD CI status
+    - name: Collect tagged commit CI status
       id: ci
       uses: actions/github-script@v7
       env:
         RELEASE_BRANCH: ${{ steps.resolve.outputs.release_branch }}
+        TAG_COMMIT_SHA: ${{ steps.resolve.outputs.tag_commit_sha }}
       with:
         script: |
           const { owner, repo } = context.repo;
           const branch = process.env.RELEASE_BRANCH;
+          const tagCommitSha = process.env.TAG_COMMIT_SHA;
 
           const branchInfo = await github.rest.repos.getBranch({
             owner,
@@ -116,13 +118,13 @@ jobs:
           const combined = await github.rest.repos.getCombinedStatusForRef({
             owner,
             repo,
-            ref: headSha,
+            ref: tagCommitSha,
           });
 
           const checks = await github.rest.checks.listForRef({
             owner,
             repo,
-            ref: headSha,
+            ref: tagCommitSha,
             per_page: 100,
           });
 
@@ -147,7 +149,7 @@ jobs:
           }
 
           core.setOutput("branch_head_sha", headSha);
-          core.setOutput("branch_head_ci_state", aggregateState);
+          core.setOutput("tag_commit_ci_state", aggregateState);
           core.setOutput("combined_status_state", combined.data.state);
           core.setOutput("check_runs_total", String(checkRuns.length));
           core.setOutput("check_runs_pending", String(pendingCheckCount));
@@ -162,10 +164,10 @@ jobs:
           echo "- Tag commit SHA: \`${{ steps.resolve.outputs.tag_commit_sha }}\`"
           echo "- Release branch: \`${{ steps.resolve.outputs.release_branch }}\`"
           echo "- Branch HEAD SHA: \`${{ steps.ci.outputs.branch_head_sha }}\`"
-          echo "- Branch HEAD CI state: \`${{ steps.ci.outputs.branch_head_ci_state }}\`"
+          echo "- Tag commit CI state: \`${{ steps.ci.outputs.tag_commit_ci_state }}\`"
           echo ""
           echo "### CI signal details"
-          echo "- Combined status state: \`${{ steps.ci.outputs.combined_status_state }}\`"
+          echo "- Combined status state (tag commit): \`${{ steps.ci.outputs.combined_status_state }}\`"
           echo "- Check runs total: \`${{ steps.ci.outputs.check_runs_total }}\`"
           echo "- Check runs pending: \`${{ steps.ci.outputs.check_runs_pending }}\`"
           echo "- Check runs failed: \`${{ steps.ci.outputs.check_runs_failed }}\`"
