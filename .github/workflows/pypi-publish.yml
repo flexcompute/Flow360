@@ -14,8 +14,8 @@ on:
       - "v*.*.*"
   workflow_dispatch:
     inputs:
-      version:
-        description: "Semantic release number"
+      tag:
+        description: "Release tag to publish, e.g. v1.2.3"
         required: true
         type: string
 
@@ -25,6 +25,7 @@ jobs:
     outputs:
       release_branch: ${{ steps.resolve.outputs.release_branch }}
       tag_commit_sha: ${{ steps.resolve.outputs.tag_commit_sha }}
+      release_tag: ${{ steps.resolve.outputs.release_tag }}
     steps:
     - uses: actions/checkout@v4
       with:
@@ -34,39 +35,59 @@ jobs:
       id: resolve
       shell: bash
       run: |
-        tag_commit_sha="$GITHUB_SHA"
+        git fetch --tags origin '+refs/heads/*:refs/remotes/origin/*'
 
         if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
-          git fetch origin '+refs/heads/*:refs/remotes/origin/*'
-          mapfile -t matching_branches < <(git branch -r --contains "$GITHUB_SHA" | sed 's/^[ *]*//' | grep -E '^origin/release-candidate/' || true)
+          release_tag="${GITHUB_REF#refs/tags/}"
+          tag_commit_sha="$GITHUB_SHA"
+          mapfile -t matching_branches < <(git branch -r --contains "$tag_commit_sha" | sed 's/^[ *]*//' | grep -E '^origin/release-candidate/' || true)
           branch_count=${#matching_branches[@]}
 
           if [ "$branch_count" -eq 0 ]; then
-            echo "::error ::Tag ${GITHUB_REF#refs/tags/} is not on any release-candidate/* branch."
+            echo "::error ::Tag ${release_tag} is not on any release-candidate/* branch."
             exit 1
           fi
 
           if [ "$branch_count" -gt 1 ]; then
-            echo "::error ::Tag ${GITHUB_REF#refs/tags/} matches multiple release-candidate branches:"
+            echo "::error ::Tag ${release_tag} matches multiple release-candidate branches:"
             printf '%s\n' "${matching_branches[@]}"
-            echo "::error ::Ambiguous release source. Please choose the intended release-candidate/* branch manually and rerun the publish workflow from that branch."
+            echo "::error ::Ambiguous release source. Please rerun workflow_dispatch from the intended release-candidate/* branch and provide the same tag."
             exit 1
           fi
 
           release_branch="${matching_branches[0]#origin/}"
-          echo "::notice ::Tag ${GITHUB_REF#refs/tags/} is on branch ${release_branch}."
+          echo "::notice ::Tag ${release_tag} (${tag_commit_sha}) is on branch ${release_branch}."
         else
           if [[ ! "$GITHUB_REF_NAME" =~ ^release-candidate/ ]]; then
             echo "::error ::workflow_dispatch must run on release-candidate/*, current ref is ${GITHUB_REF_NAME}."
             exit 1
           fi
 
+          release_tag="${{ inputs.tag }}"
+          if [[ ! "$release_tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error ::Input tag must match v*.*.* (e.g. v1.2.3), got ${release_tag}."
+            exit 1
+          fi
+
+          if ! git rev-parse -q --verify "refs/tags/${release_tag}" >/dev/null; then
+            echo "::error ::Tag ${release_tag} does not exist in repository."
+            exit 1
+          fi
+
+          tag_commit_sha="$(git rev-list -n 1 "refs/tags/${release_tag}")"
           release_branch="$GITHUB_REF_NAME"
-          echo "::notice ::workflow_dispatch runs on ${release_branch}."
+
+          if ! git merge-base --is-ancestor "$tag_commit_sha" "origin/${release_branch}"; then
+            echo "::error ::Tag ${release_tag} commit ${tag_commit_sha} is not contained in ${release_branch}."
+            exit 1
+          fi
+
+          echo "::notice ::workflow_dispatch on ${release_branch} pins tag ${release_tag} (${tag_commit_sha})."
         fi
 
         echo "tag_commit_sha=$tag_commit_sha" >> "$GITHUB_OUTPUT"
         echo "release_branch=$release_branch" >> "$GITHUB_OUTPUT"
+        echo "release_tag=$release_tag" >> "$GITHUB_OUTPUT"
 
   collect-approval-context:
     needs: validate-release-source
@@ -121,6 +142,15 @@ jobs:
           const ignoredSelfCheckCount = checkRuns.length - relevantCheckRuns.length;
 
           const pendingCheckCount = relevantCheckRuns.filter((run) => run.status !== "completed").length;
+          const successfulCheckCount = relevantCheckRuns.filter(
+            (run) => run.status === "completed" && run.conclusion === "success"
+          ).length;
+          const neutralCheckCount = relevantCheckRuns.filter(
+            (run) => run.status === "completed" && run.conclusion === "neutral"
+          ).length;
+          const skippedCheckCount = relevantCheckRuns.filter(
+            (run) => run.status === "completed" && run.conclusion === "skipped"
+          ).length;
           const failedCheckCount = relevantCheckRuns.filter(
             (run) =>
               run.status === "completed" &&
@@ -128,6 +158,8 @@ jobs:
           ).length;
           const hasCombinedStatuses = (combined.data.total_count || 0) > 0;
           const hasAnyCiSignal = hasCombinedStatuses || relevantCheckRuns.length > 0;
+          const hasSuccessSignal =
+            (hasCombinedStatuses && combined.data.state === "success") || successfulCheckCount > 0;
 
           let aggregateState = "no_data";
           if (
@@ -138,17 +170,25 @@ jobs:
             aggregateState = "failure";
           } else if (pendingCheckCount > 0 || (hasCombinedStatuses && combined.data.state === "pending")) {
             aggregateState = "pending";
-          } else if (hasAnyCiSignal) {
+          } else if (!hasAnyCiSignal) {
+            aggregateState = "no_data";
+          } else if (hasSuccessSignal) {
             aggregateState = "success";
+          } else {
+            aggregateState = "pending";
           }
 
           core.setOutput("branch_head_sha", headSha);
           core.setOutput("tag_commit_ci_state", aggregateState);
           core.setOutput("ci_signal_available", hasAnyCiSignal ? "true" : "false");
+          core.setOutput("ci_success_signal", hasSuccessSignal ? "true" : "false");
           core.setOutput("combined_status_state", combined.data.state);
           core.setOutput("combined_status_total", String(combined.data.total_count || 0));
           core.setOutput("check_runs_total", String(relevantCheckRuns.length));
           core.setOutput("check_runs_ignored_self", String(ignoredSelfCheckCount));
+          core.setOutput("check_runs_success", String(successfulCheckCount));
+          core.setOutput("check_runs_neutral", String(neutralCheckCount));
+          core.setOutput("check_runs_skipped", String(skippedCheckCount));
           core.setOutput("check_runs_pending", String(pendingCheckCount));
           core.setOutput("check_runs_failed", String(failedCheckCount));
 
@@ -163,12 +203,16 @@ jobs:
           echo "- Branch HEAD SHA: \`${{ steps.ci.outputs.branch_head_sha }}\`"
           echo "- Tag commit CI state: \`${{ steps.ci.outputs.tag_commit_ci_state }}\`"
           echo "- CI signal available: \`${{ steps.ci.outputs.ci_signal_available }}\`"
+          echo "- CI success signal present: \`${{ steps.ci.outputs.ci_success_signal }}\`"
           echo ""
           echo "### CI signal details"
           echo "- Combined status state (tag commit): \`${{ steps.ci.outputs.combined_status_state }}\`"
           echo "- Combined status contexts: \`${{ steps.ci.outputs.combined_status_total }}\`"
           echo "- Check runs total: \`${{ steps.ci.outputs.check_runs_total }}\`"
           echo "- Check runs ignored (current run): \`${{ steps.ci.outputs.check_runs_ignored_self }}\`"
+          echo "- Check runs success: \`${{ steps.ci.outputs.check_runs_success }}\`"
+          echo "- Check runs neutral: \`${{ steps.ci.outputs.check_runs_neutral }}\`"
+          echo "- Check runs skipped: \`${{ steps.ci.outputs.check_runs_skipped }}\`"
           echo "- Check runs pending: \`${{ steps.ci.outputs.check_runs_pending }}\`"
           echo "- Check runs failed: \`${{ steps.ci.outputs.check_runs_failed }}\`"
           echo ""
@@ -274,6 +318,15 @@ jobs:
           );
           const ignoredCurrentWorkflowCheckCount = checkRuns.length - relevantCheckRuns.length;
           const pendingCheckCount = relevantCheckRuns.filter((run) => run.status !== "completed").length;
+          const successfulCheckCount = relevantCheckRuns.filter(
+            (run) => run.status === "completed" && run.conclusion === "success"
+          ).length;
+          const neutralCheckCount = relevantCheckRuns.filter(
+            (run) => run.status === "completed" && run.conclusion === "neutral"
+          ).length;
+          const skippedCheckCount = relevantCheckRuns.filter(
+            (run) => run.status === "completed" && run.conclusion === "skipped"
+          ).length;
           const failedCheckCount = relevantCheckRuns.filter(
             (run) =>
               run.status === "completed" &&
@@ -282,6 +335,8 @@ jobs:
 
           const hasCombinedStatuses = (combined.data.total_count || 0) > 0;
           const hasAnyCiSignal = hasCombinedStatuses || relevantCheckRuns.length > 0;
+          const hasSuccessSignal =
+            (hasCombinedStatuses && combined.data.state === "success") || successfulCheckCount > 0;
 
           let aggregateState = "no_data";
           if (
@@ -292,17 +347,21 @@ jobs:
             aggregateState = "failure";
           } else if (pendingCheckCount > 0 || (hasCombinedStatuses && combined.data.state === "pending")) {
             aggregateState = "pending";
-          } else if (hasAnyCiSignal) {
+          } else if (!hasAnyCiSignal) {
+            aggregateState = "no_data";
+          } else if (hasSuccessSignal) {
             aggregateState = "success";
+          } else {
+            aggregateState = "pending";
           }
 
           core.notice(
-            `CI gate for ${tagCommitSha}: state=${aggregateState}, combined=${combined.data.state}, checks=${relevantCheckRuns.length}, pending=${pendingCheckCount}, failed=${failedCheckCount}, ignored_current_workflow_checks=${ignoredCurrentWorkflowCheckCount}`
+            `CI gate for ${tagCommitSha}: state=${aggregateState}, combined=${combined.data.state}, checks=${relevantCheckRuns.length}, success=${successfulCheckCount}, neutral=${neutralCheckCount}, skipped=${skippedCheckCount}, pending=${pendingCheckCount}, failed=${failedCheckCount}, has_success_signal=${hasSuccessSignal}, ignored_current_workflow_checks=${ignoredCurrentWorkflowCheckCount}`
           );
 
           if (aggregateState !== "success") {
             core.setFailed(
-              `CI gate failed for ${tagCommitSha}: ${aggregateState}. combined=${combined.data.state}, checks=${relevantCheckRuns.length}, pending=${pendingCheckCount}, failed=${failedCheckCount}`
+              `CI gate failed for ${tagCommitSha}: ${aggregateState}. combined=${combined.data.state}, checks=${relevantCheckRuns.length}, success=${successfulCheckCount}, neutral=${neutralCheckCount}, skipped=${skippedCheckCount}, pending=${pendingCheckCount}, failed=${failedCheckCount}, has_success_signal=${hasSuccessSignal}`
             );
           }
 
@@ -318,20 +377,17 @@ jobs:
     - uses: actions/checkout@v4
       with:
         fetch-depth: 0
+        ref: ${{ needs.validate-release-source.outputs.tag_commit_sha }}
 
-    - name: trigger by tag
-      if: startsWith(github.ref, 'refs/tags/v')
-      run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
-
-    - name: trigger by manually input
-      if: ${{ ! startsWith(github.ref, 'refs/tags/v')  }}
-      run: echo "RELEASE_VERSION=${{inputs.version}}" >> $GITHUB_ENV
+    - name: Resolve release metadata
+      run: |
+        echo "RELEASE_VERSION=${{ needs.validate-release-source.outputs.release_tag }}" >> $GITHUB_ENV
+        echo "GIT_BRANCH=${{ needs.validate-release-source.outputs.release_branch }}" >> $GITHUB_ENV
 
     -   name: github environment
         run: |
             git_hash=$(git rev-parse --short HEAD) 
             echo "GIT_SHORT_SHA=$git_hash" >> $GITHUB_ENV
-            echo "GIT_BRANCH=${GITHUB_REF#refs/heads/}" >> $GITHUB_ENV
 
     -   name: echo action used variables
         run: |
@@ -356,7 +412,7 @@ jobs:
           publish_version="${{ env.RELEASE_VERSION }}"
           publish_version="${publish_version:1}"
           if [ "$version" != "$publish_version" ]; then
-              echo "version ${version}!=${publish_version} in flow360.version.__version__ does not match to release version ${{ inputs.version }}"
+              echo "version ${version}!=${publish_version} in flow360.version.__version__ does not match to release version ${{ env.RELEASE_VERSION }}"
               exit 1
           fi
     - name: Setup pipy token
