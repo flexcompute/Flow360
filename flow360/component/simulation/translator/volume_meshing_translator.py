@@ -54,7 +54,9 @@ def uniform_refinement_translator(obj: UniformRefinement):
     return {"spacing": obj.spacing.value.item()}
 
 
-def cylindrical_refinement_translator(obj: Union[AxisymmetricRefinement, RotationVolume]):
+def cylindrical_refinement_translator(
+    obj: Union[AxisymmetricRefinement, RotationVolume],
+):
     """
     Translate AxisymmetricRefinement or RotationVolume with Cylinder/AxisymmetricBody entities.
 
