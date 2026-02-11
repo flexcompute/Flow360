@@ -11,7 +11,7 @@ name: publish to pypi
 on:
   push:
     tags:
-      - "v*.*.*"
+      - "v[0-9]+.[0-9]+.[0-9]+"
   workflow_dispatch:
     inputs:
       tag:
@@ -39,7 +39,7 @@ jobs:
 
         if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
           release_tag="${GITHUB_REF#refs/tags/}"
-          tag_commit_sha="$GITHUB_SHA"
+          tag_commit_sha="$(git rev-list -n 1 "refs/tags/${release_tag}")"
           mapfile -t matching_branches < <(git branch -r --contains "$tag_commit_sha" | sed 's/^[ *]*//' | grep -E '^origin/release-candidate/' || true)
           branch_count=${#matching_branches[@]}
 
@@ -92,9 +92,6 @@ jobs:
   collect-approval-context:
     needs: validate-release-source
     runs-on: ubuntu-latest
-    outputs:
-      tag_commit_ci_state: ${{ steps.ci.outputs.tag_commit_ci_state }}
-      ci_signal_available: ${{ steps.ci.outputs.ci_signal_available }}
     permissions:
       contents: read
       checks: read
