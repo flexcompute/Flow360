@@ -451,7 +451,8 @@ def snappy_mesher_json(input_params: SimulationParams):
                     quality_settings.min_pyramid_cell_volume
                     if quality_settings.min_pyramid_cell_volume is not None
                     else (
-                        1e-10 * (_get_effective_min_spacing(surface_meshing_params, spacing_system) ** 3)
+                        1e-10
+                        * (_get_effective_min_spacing(surface_meshing_params, spacing_system) ** 3)
                     )
                 )
             ),
