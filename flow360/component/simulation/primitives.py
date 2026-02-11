@@ -1065,9 +1065,7 @@ class CustomVolume(_VolumeEntityBase):
     )
     boundaries: EntityList[
         Surface, WindTunnelGhostSurface, GhostSurface, GhostSphere, GhostCircularPlane
-    ] = pd.Field(
-        description="The surfaces that define the boundaries of the custom volume."
-    )
+    ] = pd.Field(description="The surfaces that define the boundaries of the custom volume.")
     private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
 
     axes: Optional[OrthogonalAxes] = pd.Field(None, description="")  # Porous media support
@@ -1088,7 +1086,9 @@ class CustomVolume(_VolumeEntityBase):
     def ensure_beta_mesher_and_compatible_farfield(self, param_info: ParamsValidationInfo):
         """Check if the beta mesher is enabled and that the user is using a compatible farfield."""
         if param_info.is_beta_mesher and param_info.farfield_method in (
-            "user-defined", "wind-tunnel", "auto",
+            "user-defined",
+            "wind-tunnel",
+            "auto",
         ):
             return self
         raise ValueError(

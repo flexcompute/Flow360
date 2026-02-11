@@ -269,6 +269,7 @@ def rotation_volume_entity_injector(
     return {}
 
 
+# pylint: disable=too-many-nested-blocks
 def _get_custom_volumes(volume_zones: list):
     """Get translated custom volumes from volume zones."""
 
