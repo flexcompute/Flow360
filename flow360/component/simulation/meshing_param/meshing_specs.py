@@ -187,7 +187,10 @@ class MeshingDefaults(Flow360BaseModel):
 
         if "remove_non_manifold_faces" in value:
             value.pop("remove_non_manifold_faces", None)
-            message = "`meshing.defaults.remove_non_manifold_faces` is no longer supported and has been ignored."
+            message = (
+                "`meshing.defaults.remove_non_manifold_faces` is no longer supported and has been "
+                + "ignored. Set `meshing.defaults.remove_hidden_geometry` instead."
+            )
             add_validation_warning(message)
 
         return value
