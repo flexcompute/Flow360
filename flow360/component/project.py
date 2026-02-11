@@ -14,6 +14,7 @@ import typing_extensions
 from pydantic import PositiveInt
 
 from flow360.cloud.flow360_requests import LengthUnitType, RenameAssetRequestV2
+from flow360.cloud.http_util import http
 from flow360.cloud.rest_api import RestApi
 from flow360.component.case import Case
 from flow360.component.cloud_examples import (
@@ -1822,6 +1823,7 @@ class Project(pd.BaseModel):
         raise_on_error: bool,
         tags: List[str],
         draft_only: bool,
+        job_type: Optional[Literal["TIME_SHARED_VGPU", "FLEX_CREDIT"]] = None,
         **kwargs,
     ):
         """
@@ -1851,6 +1853,8 @@ class Project(pd.BaseModel):
             A list of tags to add to the target asset.
         draft_only: bool, optional
             Whether to only create and submit a draft and not run the simulation.
+        job_type: Optional[Literal["TIME_SHARED_VGPU", "FLEX_CREDIT"]]
+            The billing job type to use for the run request.
 
         Returns
         -------
@@ -1952,6 +1956,7 @@ class Project(pd.BaseModel):
                 use_beta_mesher=params.private_attribute_asset_cache.use_inhouse_mesher,
                 use_geometry_AI=use_geometry_AI,
                 start_from=start_from,
+                job_type=job_type,
             )
         except RuntimeError:
             if raise_on_error:
@@ -2148,6 +2153,7 @@ class Project(pd.BaseModel):
         raise_on_error: bool = True,
         tags: List[str] = None,
         draft_only: bool = False,
+        billing_method: Optional[Literal["VirtualGPU", "FlexCredit"]] = None,
         **kwargs,
     ):
         """
@@ -2177,6 +2183,8 @@ class Project(pd.BaseModel):
             A list of tags to add to the case.
         draft_only: bool, optional
             Whether to only create and submit a draft and not run the case.
+        billing_method: Optional[Literal["VirtualGPU", "FlexCredit"]]
+            Override to default billing method.
 
         Returns
         -------
@@ -2187,6 +2195,29 @@ class Project(pd.BaseModel):
         if interpolate_to_mesh is not None and fork_from is None:
             raise Flow360ConfigError(
                 "Interpolation to mesh is only supported when forking from a case."
+            )
+        # Map user-facing billing_method to API-level job_type
+        job_type = None
+        if billing_method is not None and not draft_only:
+            if billing_method == "FlexCredit":
+                log.info("The case will be submitted to regular queue and billed with FlexCredits.")
+                job_type = "FLEX_CREDIT"
+            elif billing_method == "VirtualGPU":
+                account_info = http.get("flow360/account")
+                if not account_info.get("timeSharedVGpuEnabled", False):
+                    raise Flow360ValueError(
+                        "Virtual GPU billing is not enabled for this account. "
+                        "Please contact support to enable Virtual GPU access."
+                    )
+                log.info(
+                    "The case will be submitted to Virtual GPU "
+                    "and billed with Virtual GPU allocation."
+                )
+                job_type = "TIME_SHARED_VGPU"
+        elif draft_only and billing_method is not None:
+            log.info(
+                "`billing_method` input to `run_case()` ignored since"
+                " no billing is necessary when submitting just the draft."
             )
 
         self._check_initialized()
@@ -2203,6 +2234,7 @@ class Project(pd.BaseModel):
             raise_on_error=raise_on_error,
             tags=tags,
             draft_only=draft_only,
+            job_type=job_type,
             **kwargs,
         )
 

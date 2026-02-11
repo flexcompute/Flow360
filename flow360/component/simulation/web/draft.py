@@ -5,7 +5,7 @@ from __future__ import annotations
 import ast
 import json
 from functools import cached_property
-from typing import Literal, Union
+from typing import TYPE_CHECKING, Literal, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -25,6 +25,9 @@ from flow360.component.utils import formatting_validation_errors, validate_type
 from flow360.environment import Env
 from flow360.exceptions import Flow360RuntimeError, Flow360WebError
 from flow360.log import log
+
+if TYPE_CHECKING:
+    from flow360.component.simulation.simulation_params import SimulationParams
 
 
 class DraftMetaModel(BaseModel):
@@ -129,7 +132,7 @@ class Draft(Flow360Resource):
         """Load draft from cloud"""
         return Draft(draft_id=draft_id)
 
-    def update_simulation_params(self, params):
+    def update_simulation_params(self, params: SimulationParams):
         """update the SimulationParams of the draft"""
         params_dict = params.model_dump(mode="json", exclude_none=True)
         params_dict = collect_and_tokenize_selectors_in_place(params_dict)
@@ -175,6 +178,7 @@ class Draft(Flow360Resource):
         use_geometry_AI: bool,  # pylint: disable=invalid-name
         source_item_type: Literal["Geometry", "SurfaceMesh", "VolumeMesh", "Case"],
         start_from: Union[None, Literal["SurfaceMesh", "VolumeMesh", "Case"]],
+        job_type: Optional[Literal["TIME_SHARED_VGPU", "FLEX_CREDIT"]] = None,
     ) -> str:
         """run the draft up to the target asset"""
 
@@ -195,15 +199,20 @@ class Draft(Flow360Resource):
             force_creation_config = (
                 ForceCreationConfig(start_from=start_from) if start_from else None
             )
+
             run_request = DraftRunRequest(
                 source_item_type=source_item_type,
                 up_to=target_asset._cloud_resource_type_name,
                 use_in_house=use_beta_mesher,
                 use_gai=use_geometry_AI,
                 force_creation_config=force_creation_config,
+                job_type=job_type,
             )
+            request_body = run_request.model_dump(by_alias=True)
+            if request_body.get("job_type") is None:
+                request_body.pop("job_type", None)
             run_response = self.post(
-                run_request.model_dump(by_alias=True),
+                request_body,
                 method="run",
             )
             destination_id = run_response["id"]
