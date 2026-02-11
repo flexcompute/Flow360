@@ -432,6 +432,9 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
         translated["volume"]["numBoundaryLayers"] = (
             number_of_boundary_layers if number_of_boundary_layers is not None else -1
         )
+        # Modular workflow uses VolumeMeshingDefaults, which has no edge_split_layers field.
+        edge_split_layers = getattr(defaults, "edge_split_layers", 1)
+        translated["volume"]["numEdgeSplitLayers"] = edge_split_layers
 
         if planar_face_tolerance is not None:
             translated["volume"]["planarFaceTolerance"] = planar_face_tolerance

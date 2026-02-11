@@ -10,7 +10,7 @@ name: publish to pypi
 
 on:
   push:
-    tags: 
+    tags:
       - "v*.*.*"
   workflow_dispatch:
     inputs:
@@ -20,12 +20,55 @@ on:
         type: string
 
 jobs:
+  validate-release-source:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Validate tag is from release-candidate branch
+      if: startsWith(github.ref, 'refs/tags/v')
+      shell: bash
+      run: |
+        git fetch origin '+refs/heads/*:refs/remotes/origin/*'
+        matching_branches=$(git branch -r --contains "$GITHUB_SHA" | sed 's/^[ *]*//' | grep -E '^origin/release-candidate/' || true)
+
+        if [ -z "$matching_branches" ]; then
+          echo "::error ::Tag ${GITHUB_REF#refs/tags/} is not on any release-candidate/* branch."
+          exit 1
+        fi
+
+        echo "::notice ::Tag ${GITHUB_REF#refs/tags/} is on branches:"
+        echo "$matching_branches"
+
+    - name: Validate manual dispatch branch
+      if: github.event_name == 'workflow_dispatch'
+      shell: bash
+      run: |
+        if [[ ! "$GITHUB_REF_NAME" =~ ^release-candidate/ ]]; then
+          echo "::error ::workflow_dispatch must run on release-candidate/*, current ref is ${GITHUB_REF_NAME}."
+          exit 1
+        fi
+
+        echo "::notice ::workflow_dispatch runs on ${GITHUB_REF_NAME}."
+
+  preflight-tests:
+    needs: validate-release-source
+    uses: ./.github/workflows/test.yml
+
   publish:
+    needs:
+      - validate-release-source
+      - preflight-tests
+    if: ${{ needs.validate-release-source.result == 'success' && needs.preflight-tests.result == 'success' }}
     runs-on: ubuntu-latest
     env:
       FLOW360_SUPPRESS_BETA_WARNING: "1"
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
 
     - name: trigger by tag
       if: startsWith(github.ref, 'refs/tags/v')
@@ -75,4 +118,3 @@ jobs:
         poetry config pypi-token.pypi "$PYPI_TOKEN"
     - run: poetry build
     - run: poetry publish
-

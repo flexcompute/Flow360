@@ -88,6 +88,7 @@ def test_draft_end_to_end_selector_and_draft_entity_roundtrip(mock_surface_mesh,
                     ],
                     defaults=MeshingDefaults(
                         boundary_layer_first_layer_thickness=1e-5 * u.m,
+                        edge_split_layers=0,
                     ),
                 ),
                 # Selector used in a boundary model + porous medium uses the same draft entity

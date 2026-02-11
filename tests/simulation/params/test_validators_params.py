@@ -159,6 +159,7 @@ def surface_output_with_wall_metric():
         name="surface",
         surfaces=[Surface(name="noSlipWall")],
         write_single_file=True,
+        output_format="tecplot",
         output_fields=["wallFunctionMetric"],
     )
     return surface_output
@@ -182,6 +183,7 @@ def surface_output_with_low_mach_precond():
         name="surface",
         surfaces=[Surface(name="noSlipWall")],
         write_single_file=True,
+        output_format="tecplot",
         output_fields=["lowMachPreconditionerSensor"],
     )
     return surface_output
@@ -193,6 +195,7 @@ def surface_output_with_numerical_dissipation():
         name="surface",
         surfaces=[Surface(name="noSlipWall")],
         write_single_file=True,
+        output_format="tecplot",
         output_fields=["numericalDissipationFactor"],
     )
     return surface_output
@@ -495,6 +498,7 @@ def test_cht_solver_settings_validator(
         name="surface",
         surfaces=[Surface(name="noSlipWall")],
         write_single_file=True,
+        output_format="tecplot",
         output_fields=["residualHeatSolver"],
     )
 
@@ -2152,6 +2156,47 @@ def test_beta_mesher_only_features(mock_validation_context):
             meshing=MeshingParams(
                 defaults=MeshingDefaults(
                     boundary_layer_first_layer_thickness=1e-4,
+                    edge_split_layers=2,
+                ),
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=False),
+        )
+    params, errors, warnings = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="Geometry",
+        validation_level="VolumeMesh",
+    )
+    assert errors is None
+    assert len(warnings) == 1
+    assert warnings[0]["msg"] == (
+        "`edge_split_layers` is only supported by the beta mesher; this setting will be ignored."
+    )
+
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-4,
+                    edge_split_layers=0,
+                ),
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=False),
+        )
+    params, errors, warnings = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="Geometry",
+        validation_level="VolumeMesh",
+    )
+    assert errors is None
+    assert warnings == []
+
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-4,
                     planar_face_tolerance=1e-4,
                 ),
             ),
@@ -2435,6 +2480,28 @@ def test_beta_mesher_only_features(mock_validation_context):
         "Please add them to a boundary condition model in the `models` section."
     )
     assert errors[0]["loc"] == ()
+
+
+def test_edge_split_layers_default_no_warning_for_dict_input():
+    non_beta_context = ParamsValidationInfo({}, [])
+    non_beta_context.is_beta_mesher = False
+
+    with SI_unit_system, ValidationContext(VOLUME_MESH, non_beta_context) as validation_context:
+        defaults = MeshingDefaults.model_validate({"boundary_layer_first_layer_thickness": 1e-4})
+
+    assert "edge_split_layers" not in defaults.model_fields_set
+    assert validation_context.validation_warnings == []
+
+
+def test_edge_split_layers_default_no_warning_for_constructor_input():
+    non_beta_context = ParamsValidationInfo({}, [])
+    non_beta_context.is_beta_mesher = False
+
+    with SI_unit_system, ValidationContext(VOLUME_MESH, non_beta_context) as validation_context:
+        defaults = MeshingDefaults(boundary_layer_first_layer_thickness=1e-4)
+
+    assert "edge_split_layers" not in defaults.model_fields_set
+    assert validation_context.validation_warnings == []
 
 
 def test_geometry_AI_only_features():
