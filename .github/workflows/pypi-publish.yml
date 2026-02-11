@@ -28,6 +28,8 @@ jobs:
 
     - name: Validate release source and resolve branch
       id: resolve
+      env:
+        DISPATCH_TAG: ${{ inputs.tag }}
       shell: bash
       run: |
         git fetch --tags origin '+refs/heads/*:refs/remotes/origin/*'
@@ -58,7 +60,7 @@ jobs:
             exit 1
           fi
 
-          release_tag="${{ inputs.tag }}"
+          release_tag="$DISPATCH_TAG"
           if [[ ! "$release_tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "::error ::Input tag must match v*.*.* (e.g. v1.2.3), got ${release_tag}."
             exit 1
