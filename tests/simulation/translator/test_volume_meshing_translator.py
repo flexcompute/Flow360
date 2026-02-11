@@ -41,6 +41,7 @@ from flow360.component.simulation.primitives import (
     Cylinder,
     GhostCircularPlane,
     SeedpointVolume,
+    Sphere,
     Surface,
 )
 from flow360.component.simulation.services import ValidationCalledBy, validate_model
@@ -658,6 +659,7 @@ def test_seedpoint_zones(get_test_param_w_seedpoints, get_surface_mesh):
             "planarFaceTolerance": 1e-6,
             "slidingInterfaceTolerance": 1e-2,
             "numBoundaryLayers": -1,
+            "numEdgeSplitLayers": 1,
         },
         "faces": {},
         "zones": [
@@ -1180,6 +1182,42 @@ def test_uniform_refinement_box_cylinder_axisymm_body(get_surface_mesh):
     assert axisymm_ref["spacing"] == 0.1
 
 
+def test_edge_split_layers_default_translation(get_surface_mesh):
+    """Default edge split layers should translate to enabled."""
+    with SI_unit_system:
+        param = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-3,
+                    boundary_layer_growth_rate=1.2,
+                ),
+                volume_zones=[AutomatedFarfield()],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+        )
+    translated = get_volume_meshing_json(param, get_surface_mesh.mesh_unit)
+    assert translated["volume"]["numEdgeSplitLayers"] == 1
+
+
+@pytest.mark.parametrize(("edge_split_layers", "expected"), [(0, 0), (3, 3)])
+def test_edge_split_layers_explicit_translation(get_surface_mesh, edge_split_layers, expected):
+    """Explicit edge split layers should translate to the configured integer value."""
+    with SI_unit_system:
+        param = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-3,
+                    boundary_layer_growth_rate=1.2,
+                    edge_split_layers=edge_split_layers,
+                ),
+                volume_zones=[AutomatedFarfield()],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+        )
+    translated = get_volume_meshing_json(param, get_surface_mesh.mesh_unit)
+    assert translated["volume"]["numEdgeSplitLayers"] == expected
+
+
 def test_windtunnel_ghost_surface_supported_in_volume_face_refinements(get_surface_mesh):
     with SI_unit_system:
         wind_tunnel = WindTunnelFarfield()
@@ -1207,6 +1245,75 @@ def test_windtunnel_ghost_surface_supported_in_volume_face_refinements(get_surfa
     assert "faces" in translated
     assert translated["faces"]["windTunnelFloor"]["type"] == "aniso"
     assert translated["faces"]["windTunnelInlet"]["type"] == "projectAnisoSpacing"
+
+
+def test_sphere_rotation_volume_translator(get_surface_mesh):
+    """Test that Sphere entity in RotationVolume is correctly translated to JSON."""
+    with SI_unit_system:
+        outer_sphere = Sphere(
+            name="outerSphere",
+            center=(0, 0, 0) * u.m,
+            radius=10 * u.m,
+            axis=(1, 0, 0),
+        )
+        inner_sphere = Sphere(
+            name="sphereInterface",
+            center=(1, 2, 3) * u.m,
+            radius=5 * u.m,
+            axis=(0, 0, 1),
+        )
+        param = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-3,
+                    boundary_layer_growth_rate=1.2,
+                ),
+                volume_zones=[
+                    AutomatedFarfield(),
+                    RotationVolume(
+                        entities=[inner_sphere],
+                        spacing_circumferential=0.2 * u.m,
+                        enclosed_entities=[Surface(name="body")],
+                    ),
+                    RotationVolume(
+                        entities=[outer_sphere],
+                        spacing_circumferential=0.5 * u.m,
+                        enclosed_entities=[inner_sphere, Surface(name="otherBody")],
+                    ),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+        )
+
+    translated = get_volume_meshing_json(param, get_surface_mesh.mesh_unit)
+
+    assert "slidingInterfaces" in translated
+    assert len(translated["slidingInterfaces"]) == 2
+
+    # Find the inner sphere interface
+    inner_interface = next(
+        (si for si in translated["slidingInterfaces"] if si["name"] == "sphereInterface"), None
+    )
+    assert inner_interface is not None
+    assert inner_interface["type"] == "Sphere"
+    assert inner_interface["radius"] == 5.0
+    assert inner_interface["axisOfRotation"] == [0, 0, 1]
+    assert inner_interface["center"] == [1.0, 2.0, 3.0]
+    assert inner_interface["maxEdgeLength"] == 0.2
+    assert inner_interface["enclosedObjects"] == ["body"]
+
+    # Find the outer sphere interface
+    outer_interface = next(
+        (si for si in translated["slidingInterfaces"] if si["name"] == "outerSphere"), None
+    )
+    assert outer_interface is not None
+    assert outer_interface["type"] == "Sphere"
+    assert outer_interface["radius"] == 10.0
+    assert outer_interface["axisOfRotation"] == [1, 0, 0]
+    assert outer_interface["center"] == [0, 0, 0]
+    assert outer_interface["maxEdgeLength"] == 0.5
+    assert "slidingInterface-sphereInterface" in outer_interface["enclosedObjects"]
+    assert "otherBody" in outer_interface["enclosedObjects"]
 
 
 def test_custom_volume_with_ghost_surface_farfield(get_surface_mesh):

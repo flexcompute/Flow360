@@ -2,11 +2,18 @@ import re
 
 import pytest
 
+import flow360.component.simulation.units as u
 from flow360.component.simulation.entity_info import SurfaceMeshEntityInfo
 from flow360.component.simulation.framework.param_utils import AssetCache
+from flow360.component.simulation.meshing_param.meshing_specs import (
+    VolumeMeshingDefaults,
+)
 from flow360.component.simulation.meshing_param.params import (
     MeshingDefaults,
     MeshingParams,
+    ModularMeshingWorkflow,
+    VolumeMeshingParams,
+    snappy,
 )
 from flow360.component.simulation.meshing_param.volume_params import (
     CustomZones,
@@ -14,7 +21,11 @@ from flow360.component.simulation.meshing_param.volume_params import (
 )
 from flow360.component.simulation.models.material import aluminum
 from flow360.component.simulation.models.volume_models import Solid
-from flow360.component.simulation.primitives import CustomVolume, Surface
+from flow360.component.simulation.primitives import (
+    CustomVolume,
+    SeedpointVolume,
+    Surface,
+)
 from flow360.component.simulation.services import ValidationCalledBy, validate_model
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import SI_unit_system
@@ -35,6 +46,39 @@ def _build_params_with_custom_volume(element_type: str):
                     element_type=element_type,
                 ),
                 UserDefinedFarfield(),
+            ],
+        ),
+        models=[
+            Solid(
+                entities=[zone],
+                material=aluminum,
+            )
+        ],
+        private_attribute_asset_cache=AssetCache(
+            use_inhouse_mesher=True,
+            project_entity_info=SurfaceMeshEntityInfo(boundaries=[Surface(name="face1")]),
+        ),
+    )
+
+
+def _build_params_with_seedpoint_volume(element_type: str):
+    zone = SeedpointVolume(name="solid_zone", point_in_mesh=(0, 0, 0) * u.mm)
+    return SimulationParams(
+        meshing=ModularMeshingWorkflow(
+            surface_meshing=snappy.SurfaceMeshingParams(
+                defaults=snappy.SurfaceMeshingDefaults(
+                    min_spacing=2 * u.mm, max_spacing=4 * u.mm, gap_resolution=1 * u.mm
+                )
+            ),
+            volume_meshing=VolumeMeshingParams(
+                defaults=VolumeMeshingDefaults(boundary_layer_first_layer_thickness=1e-4),
+            ),
+            zones=[
+                CustomZones(
+                    name="custom_zones",
+                    entities=[zone],
+                    element_type=element_type,
+                ),
             ],
         ),
         models=[
@@ -78,6 +122,40 @@ def test_solid_custom_volume_allows_tetrahedra():
         params_as_dict=params.model_dump(mode="json"),
         validated_by=ValidationCalledBy.LOCAL,
         root_item_type="SurfaceMesh",
+        validation_level="All",
+    )
+
+    assert errors is None
+
+
+def test_solid_seedpoint_volume_requires_tetrahedra_raises_on_mixed():
+    with SI_unit_system:
+        params = _build_params_with_seedpoint_volume(element_type="mixed")
+
+    _, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="Geometry",
+        validation_level="All",
+    )
+
+    assert errors is not None and len(errors) == 1
+    assert errors[0]["msg"] == (
+        "Value error, SeedpointVolume 'solid_zone' must be meshed with "
+        "tetrahedra-only elements. Please adjust setting in `CustomZones`."
+    )
+    assert errors[0]["loc"][0] == "models"
+    assert errors[0]["loc"][2] == "entities"
+
+
+def test_solid_seedpoint_volume_allows_tetrahedra():
+    with SI_unit_system:
+        params = _build_params_with_seedpoint_volume(element_type="tetrahedra")
+
+    _, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="Geometry",
         validation_level="All",
     )
 
