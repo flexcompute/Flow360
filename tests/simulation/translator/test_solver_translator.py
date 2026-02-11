@@ -70,6 +70,7 @@ from flow360.component.simulation.outputs.output_entities import (
     Slice,
 )
 from flow360.component.simulation.outputs.outputs import (
+    ForceDistributionOutput,
     ForceOutput,
     Isosurface,
     IsosurfaceOutput,
@@ -487,14 +488,20 @@ def test_om6wing_with_stopping_criterion_and_moving_statistic(get_om6Wing_tutori
         monitor_output=force_output,
         monitor_field="CL",
     )
+    force_distribution_output = ForceDistributionOutput(
+        name="X_incremental",
+        distribution_direction=[1, 0, 0],
+    )
     params.models.append(wallBC)
     params.run_control = RunControl(stopping_criteria=[criterion1, criterion2, criterion3])
-    params.outputs.extend([probe_output, mass_flow_rate_integral, force_output])
+    params.outputs.extend(
+        [force_distribution_output, probe_output, mass_flow_rate_integral, force_output]
+    )
     translate_and_compare(
         params,
         mesh_unit=0.8059 * u.m,
         ref_json_file="Flow360_om6wing_stopping_criterion_and_moving_statistic.json",
-        debug=False,
+        debug=True,
     )
 
 
