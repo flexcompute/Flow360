@@ -1,3 +1,4 @@
+import json
 import os
 import shutil
 
@@ -157,6 +158,60 @@ def monitors_case(here):
         ),
     )
     cache.add(vm)
+
+    return case
+
+
+@pytest.fixture
+def liquid_case(here):
+
+    case_id = "case-77777777-7777-7777-7777-777777777777"
+
+    case_meta = CaseMeta(
+        caseId=case_id,
+        name=f"{case_id}-name",
+        status="completed",
+        userId="user-id",
+        caseMeshId="vm-not-used",
+        cloud_path_prefix="s3://flow360cases-v1/users/user-id",
+    )
+    case = Case.from_local_storage(os.path.join(here, "..", "data", case_id), case_meta)
+
+    return case
+
+
+@pytest.fixture
+def liquid_case_different_ref_velocity(here, tmp_path):
+    """
+    Liquid case where velocity_magnitude != reference_velocity_magnitude.
+    velocity_magnitude=10 m/s, reference_velocity_magnitude=5 m/s.
+
+    This exposes bugs caused by hardcoding liquid_factor as 1/MACH,
+    which only produces correct results when the two velocities are equal.
+    """
+    case_id = "case-77777777-7777-7777-7777-777777777777"
+    original_sim_json_path = os.path.join(here, "..", "data", case_id, "simulation.json")
+
+    with open(original_sim_json_path, "r", encoding="utf-8") as f:
+        sim_json = json.load(f)
+
+    sim_json["operating_condition"]["velocity_magnitude"]["value"] = 10
+    sim_json["operating_condition"]["reference_velocity_magnitude"]["value"] = 5
+
+    temp_case_dir = tmp_path / case_id
+    temp_case_dir.mkdir(parents=True)
+    with open(temp_case_dir / "simulation.json", "w", encoding="utf-8") as f:
+        json.dump(sim_json, f)
+
+    case_meta = CaseMeta(
+        caseId=case_id,
+        name=f"{case_id}-name",
+        status="completed",
+        userId="user-id",
+        caseMeshId="vm-not-used",
+        cloud_path_prefix="s3://flow360cases-v1/users/user-id",
+    )
+    case = Case.from_local_storage(str(temp_case_dir), case_meta)
 
     return case
 
