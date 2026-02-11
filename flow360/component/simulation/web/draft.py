@@ -209,8 +209,8 @@ class Draft(Flow360Resource):
                 job_type=job_type,
             )
             request_body = run_request.model_dump(by_alias=True)
-            if request_body.get("job_type") is None:
-                request_body.pop("job_type", None)
+            if request_body.get("jobType") is None:
+                request_body.pop("jobType", None)
             run_response = self.post(
                 request_body,
                 method="run",
