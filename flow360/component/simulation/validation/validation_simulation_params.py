@@ -19,6 +19,7 @@ from flow360.component.simulation.meshing_param.volume_params import (
     CustomZones,
     WindTunnelFarfield,
 )
+from flow360.component.simulation.models.material import Air
 from flow360.component.simulation.models.solver_numerics import NoneSolver
 from flow360.component.simulation.models.surface_models import (
     Inflow,
@@ -847,5 +848,98 @@ def _check_coordinate_system_constraints(params, param_info: ParamsValidationInf
                 f"{entity_names}. Box, Cylinder, and AxisymmetricBody only support "
                 f"uniform scaling."
             )
+
+    return params
+
+
+def _is_constant_gamma_coefficients(coefficients):
+    """
+    Check if NASA 9-coefficient set represents constant gamma (calorically perfect gas).
+
+    For constant gamma with CompressibleIsentropic solver, only a2 (index 2) should be non-zero.
+    All other coefficients (a0, a1, a3-a6, a7, a8) must be zero.
+
+    cp/R = a0*T^-2 + a1*T^-1 + a2 + a3*T + a4*T^2 + a5*T^3 + a6*T^4
+
+    For constant cp compatible with the 4x4 isentropic solver, only a2 should be non-zero.
+    """
+    tolerance = 1e-10
+    # Check all coefficients except a2 (index 2) are zero
+    for i in range(9):
+        if i == 2:
+            continue  # Skip a2, which should be non-zero
+        if abs(coefficients[i]) > tolerance:
+            return False
+    return True
+
+
+def _has_temperature_dependent_coefficients(temperature_ranges):
+    """Check if any temperature range has non-constant-gamma coefficients."""
+    for coeff_set in temperature_ranges:
+        if not _is_constant_gamma_coefficients(coeff_set.coefficients):
+            return True
+    return False
+
+
+def _uses_compressible_isentropic_solver(params):
+    """Check if CompressibleIsentropic solver is being used."""
+    if not params.models:
+        return False
+    for model in params.models:
+        if (
+            isinstance(model, Fluid)
+            and model.navier_stokes_solver.type_name == "CompressibleIsentropic"
+        ):
+            return True
+    return False
+
+
+def _get_air_material(params):
+    """Get Air material from operating condition, or None if not applicable."""
+    if params.operating_condition is None:
+        return None
+    op = params.operating_condition
+    if not hasattr(op, "thermal_state") or op.thermal_state is None:
+        return None
+    material = op.thermal_state.material
+    if isinstance(material, Air):
+        return material
+    return None
+
+
+def _material_has_temperature_dependent_gas(material):
+    """Check if Air material uses temperature-dependent gas properties."""
+    # Check each species in the thermally perfect gas model
+    for species in material.thermally_perfect_gas.species:
+        if _has_temperature_dependent_coefficients(species.nasa_9_coefficients.temperature_ranges):
+            return True
+    return False
+
+
+def _check_tpg_not_with_isentropic_solver(params):
+    """
+    Validate that temperature-dependent ThermallyPerfectGas is not used with CompressibleIsentropic solver.
+
+    The CompressibleIsentropic solver (4x4 system) does not support true thermally perfect gas
+    models where cp varies with temperature. However, it does support constant gamma (CPG)
+    coefficients where only the a2 term is non-zero.
+
+    Users must use the full Compressible solver when using temperature-dependent gas properties.
+    """
+    if not _uses_compressible_isentropic_solver(params):
+        return params
+
+    material = _get_air_material(params)
+    if material is None:
+        return params
+
+    if _material_has_temperature_dependent_gas(material):
+        raise ValueError(
+            "Temperature-dependent ThermallyPerfectGas model is not supported with the "
+            "CompressibleIsentropic solver. The CompressibleIsentropic solver uses a 4x4 system "
+            "that decouples the energy equation and requires constant gamma. "
+            "Only constant-gamma coefficients (where only a2 is non-zero) are allowed. "
+            "Please use type_name='Compressible' in NavierStokesSolver for thermally perfect gas simulations."
+        )
 
     return params

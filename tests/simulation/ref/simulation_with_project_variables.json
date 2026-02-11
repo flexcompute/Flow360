@@ -1,5 +1,5 @@
 {
-    "version": "25.8.3",
+    "version": "25.8.5",
     "unit_system": {
         "name": "SI"
     },
@@ -43,7 +43,46 @@
                             "value": 110.4,
                             "units": "K"
                         }
-                    }
+                    },
+                    "thermally_perfect_gas": {
+                        "type_name": "ThermallyPerfectGas",
+                        "species": [
+                            {
+                                "type_name": "FrozenSpecies",
+                                "name": "Air",
+                                "nasa_9_coefficients": {
+                                    "type_name": "NASA9Coefficients",
+                                    "temperature_ranges": [
+                                        {
+                                            "type_name": "NASA9CoefficientSet",
+                                            "temperature_range_min": {
+                                                "value": 200.0,
+                                                "units": "K"
+                                            },
+                                            "temperature_range_max": {
+                                                "value": 6000.0,
+                                                "units": "K"
+                                            },
+                                            "coefficients": [
+                                                0.0,
+                                                0.0,
+                                                3.5,
+                                                0.0,
+                                                0.0,
+                                                0.0,
+                                                0.0,
+                                                0.0,
+                                                0.0
+                                            ]
+                                        }
+                                    ]
+                                },
+                                "mass_fraction": 1.0
+                            }
+                        ]
+                    },
+                    "prandtl_number": 0.72,
+                    "turbulent_prandtl_number": 0.9
                 }
             }
         },
@@ -87,7 +126,46 @@
                         "value": 110.4,
                         "units": "K"
                     }
-                }
+                },
+                "thermally_perfect_gas": {
+                    "type_name": "ThermallyPerfectGas",
+                    "species": [
+                        {
+                            "type_name": "FrozenSpecies",
+                            "name": "Air",
+                            "nasa_9_coefficients": {
+                                "type_name": "NASA9Coefficients",
+                                "temperature_ranges": [
+                                    {
+                                        "type_name": "NASA9CoefficientSet",
+                                        "temperature_range_min": {
+                                            "value": 200.0,
+                                            "units": "K"
+                                        },
+                                        "temperature_range_max": {
+                                            "value": 6000.0,
+                                            "units": "K"
+                                        },
+                                        "coefficients": [
+                                            0.0,
+                                            0.0,
+                                            3.5,
+                                            0.0,
+                                            0.0,
+                                            0.0,
+                                            0.0,
+                                            0.0,
+                                            0.0
+                                        ]
+                                    }
+                                ]
+                            },
+                            "mass_fraction": 1.0
+                        }
+                    ]
+                },
+                "prandtl_number": 0.72,
+                "turbulent_prandtl_number": 0.9
             }
         },
         "reference_velocity_magnitude": {
@@ -113,7 +191,46 @@
                         "value": 110.4,
                         "units": "K"
                     }
-                }
+                },
+                "thermally_perfect_gas": {
+                    "type_name": "ThermallyPerfectGas",
+                    "species": [
+                        {
+                            "type_name": "FrozenSpecies",
+                            "name": "Air",
+                            "nasa_9_coefficients": {
+                                "type_name": "NASA9Coefficients",
+                                "temperature_ranges": [
+                                    {
+                                        "type_name": "NASA9CoefficientSet",
+                                        "temperature_range_min": {
+                                            "value": 200.0,
+                                            "units": "K"
+                                        },
+                                        "temperature_range_max": {
+                                            "value": 6000.0,
+                                            "units": "K"
+                                        },
+                                        "coefficients": [
+                                            0.0,
+                                            0.0,
+                                            3.5,
+                                            0.0,
+                                            0.0,
+                                            0.0,
+                                            0.0,
+                                            0.0,
+                                            0.0
+                                        ]
+                                    }
+                                ]
+                            },
+                            "mass_fraction": 1.0
+                        }
+                    ]
+                },
+                "prandtl_number": 0.72,
+                "turbulent_prandtl_number": 0.9
             },
             "initial_condition": {
                 "type_name": "NavierStokesInitialCondition",

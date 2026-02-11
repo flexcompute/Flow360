@@ -372,9 +372,9 @@ class Solid(PDEModelBase):
 
     name: Optional[str] = pd.Field(None, description="Name of the `Solid` model.")
     type: Literal["Solid"] = pd.Field("Solid", frozen=True)
-    entities: EntityList[GenericVolume, CustomVolume] = pd.Field(
+    entities: EntityList[GenericVolume, CustomVolume, SeedpointVolume] = pd.Field(
         alias="volumes",
-        description="The list of :class:`GenericVolume` or :class:`CustomVolume` "
+        description="The list of :class:`GenericVolume` or :class:`CustomVolume` or :class:`SeedpointVolume` "
         + "entities on which the heat transfer equation is solved. "
         "The assigned volumes must have only tetrahedral elements.",
     )
@@ -403,7 +403,7 @@ class Solid(PDEModelBase):
         """
         expanded = param_info.expand_entity_list(v)
         for entity in expanded:
-            if not isinstance(entity, CustomVolume):
+            if not isinstance(entity, (SeedpointVolume, CustomVolume)):
                 continue
 
             enforce_map = getattr(param_info, "to_be_generated_custom_volumes", {})
@@ -413,7 +413,7 @@ class Solid(PDEModelBase):
             cv_info = enforce_map.get(entity.name, {})
             if cv_info.get("enforce_tetrahedra") is False:
                 raise ValueError(
-                    "CustomVolume '"
+                    f"{type(entity).__name__} '"
                     + entity.name
                     + "' must be meshed with tetrahedra-only elements. Please adjust setting in `CustomZones`."
                 )

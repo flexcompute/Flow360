@@ -1531,3 +1531,135 @@ def test_merge_geometry_entity_info():
         entity_type="face",
         setting_name="name",
     )
+
+
+def test_sanitize_stack_trace():
+    """Test that _sanitize_stack_trace properly sanitizes file paths and removes traceback prefix."""
+    from flow360.component.simulation.services import _sanitize_stack_trace
+
+    # Test case 1: Full stack trace with traceback prefix and absolute paths
+    input_stack = """Traceback (most recent call last):
+  File "/disk2/ben/Flow360-R2/flow360/component/simulation/services.py", line 553, in validate_model
+    validation_info = ParamsValidationInfo(
+  File "/disk2/ben/Flow360-R2/flow360/component/simulation/validation/validation_context.py", line 437, in __init__
+    self.farfield_method = self._get_farfield_method_(param_as_dict=param_as_dict)
+  File "/disk2/ben/Flow360-R2/flow360/component/simulation/validation/validation_context.py", line 162, in _get_farfield_method_
+    if meshing["type_name"] == "MeshingParams":
+KeyError: 'type_name'"""
+
+    expected_output = """File "flow360/component/simulation/services.py", line 553, in validate_model
+    validation_info = ParamsValidationInfo(
+  File "flow360/component/simulation/validation/validation_context.py", line 437, in __init__
+    self.farfield_method = self._get_farfield_method_(param_as_dict=param_as_dict)
+  File "flow360/component/simulation/validation/validation_context.py", line 162, in _get_farfield_method_
+    if meshing["type_name"] == "MeshingParams":
+KeyError: 'type_name'"""
+
+    result = _sanitize_stack_trace(input_stack)
+    assert result == expected_output
+
+    # Test case 2: Stack trace without traceback prefix (already sanitized prefix)
+    input_stack_no_prefix = """File "/home/user/projects/flow360/component/simulation/services.py", line 100, in some_function
+    some_code()"""
+
+    expected_no_prefix = """File "flow360/component/simulation/services.py", line 100, in some_function
+    some_code()"""
+
+    result_no_prefix = _sanitize_stack_trace(input_stack_no_prefix)
+    assert result_no_prefix == expected_no_prefix
+
+    # Test case 3: Stack trace with non-flow360 paths should remain unchanged for those paths
+    input_mixed = """Traceback (most recent call last):
+  File "/usr/lib/python3.10/site-packages/pydantic/main.py", line 100, in validate
+    return cls.model_validate(obj)
+  File "/disk2/ben/Flow360-R2/flow360/component/simulation/services.py", line 50, in my_func
+    do_something()"""
+
+    expected_mixed = """File "/usr/lib/python3.10/site-packages/pydantic/main.py", line 100, in validate
+    return cls.model_validate(obj)
+  File "flow360/component/simulation/services.py", line 50, in my_func
+    do_something()"""
+
+    result_mixed = _sanitize_stack_trace(input_mixed)
+    assert result_mixed == expected_mixed
+
+    # Test case 4: Empty string should return empty string
+    assert _sanitize_stack_trace("") == ""
+
+    # Test case 5: String with no file paths should remain unchanged (except traceback prefix)
+    input_no_paths = "Some error message without file paths"
+    assert _sanitize_stack_trace(input_no_paths) == input_no_paths
+
+    # Test case 6: Windows-style paths
+    input_windows = """Traceback (most recent call last):
+  File "C:\\Users\\dev\\Flow360-R2\\flow360\\component\\simulation\\services.py", line 100, in func
+    code()"""
+
+    expected_windows = """File "flow360\\component\\simulation\\services.py", line 100, in func
+    code()"""
+
+    result_windows = _sanitize_stack_trace(input_windows)
+    assert result_windows == expected_windows
+
+
+def test_validate_error_location_with_selector():
+    """
+    Test that validation error locations are correctly preserved when errors occur
+    within EntitySelector's children field.
+
+    This test verifies the fix for the bug where error locations were incorrectly
+    reduced to just ("children",) instead of the full path like
+    ("models", 0, "entities", "selectors", 0, "children", 0, "value").
+
+    The bug was in _traverse_error_location which used `current.get(field)` instead
+    of `field in current`, causing fields with falsy values (empty list, 0, etc.)
+    to be incorrectly filtered out.
+    """
+    params_data = {
+        "models": [
+            {
+                "type": "Wall",
+                "name": "Wall with selector",
+                "entities": {
+                    "stored_entities": [],
+                    "selectors": ["test-selector-id"],
+                },
+                "use_wall_function": False,
+            }
+        ],
+        "unit_system": {"name": "SI"},
+        "version": __version__,
+        "private_attribute_asset_cache": {
+            "project_entity_info": {
+                "type_name": "VolumeMeshEntityInfo",
+                "draft_entities": [],
+                "zones": [],
+                "boundaries": [],
+            },
+            "used_selectors": [
+                {
+                    "name": "test_selector",
+                    "target_class": "Surface",
+                    "logic": "AND",
+                    "selector_id": "test-selector-id",
+                }
+            ],
+        },
+    }
+
+    _, errors, _ = services.validate_model(
+        params_as_dict=params_data,
+        validated_by=services.ValidationCalledBy.LOCAL,
+        root_item_type="VolumeMesh",
+    )
+
+    assert errors is not None, "Expected validation errors but got None"
+    assert len(errors) == 1, f"Expected 1 error, got {len(errors)}"
+
+    # Verify the location contains the full path, not just "children"
+    loc = errors[0]["loc"]
+    assert loc == ("private_attribute_asset_cache", "used_selectors", 0, "children"), print(
+        "Wrong localtion: ", loc
+    )
+
+    # Verify key path components are present for tokenized selectors in used_selectors
