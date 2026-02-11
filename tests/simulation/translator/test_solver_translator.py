@@ -501,7 +501,7 @@ def test_om6wing_with_stopping_criterion_and_moving_statistic(get_om6Wing_tutori
         params,
         mesh_unit=0.8059 * u.m,
         ref_json_file="Flow360_om6wing_stopping_criterion_and_moving_statistic.json",
-        debug=True,
+        debug=False,
     )
 
 
