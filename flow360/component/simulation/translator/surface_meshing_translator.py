@@ -287,12 +287,14 @@ def apply_UniformRefinement_w_snappy(
         translated["geometry"]["refinementVolumes"].append(volume_body)
 
 
-def _get_effective_min_spacing(surface_meshing_params, spacing_system: OctreeSpacing):
+def _get_effective_min_spacing(input_params, spacing_system: OctreeSpacing):
     """
     Get the effective minimum spacing across all refinements,
-    taking proximity_spacing (gap spacing reduction) and edge spacings into account.
+    taking proximity_spacing (gap spacing reduction), edge spacings, and
+    projected volume refinements into account.
     The result is cast to the nearest lower spacing in the octree series.
     """
+    surface_meshing_params = input_params.meshing.surface_meshing
     min_spacing = surface_meshing_params.defaults.min_spacing
 
     if surface_meshing_params.refinements:
@@ -314,6 +316,19 @@ def _get_effective_min_spacing(surface_meshing_params, spacing_system: OctreeSpa
                     )
                     if edge_spacing.value.item() < min_spacing.value.item():
                         min_spacing = edge_spacing
+            elif isinstance(refinement, UniformRefinement):
+                if refinement.spacing.value.item() < min_spacing.value.item():
+                    min_spacing = refinement.spacing
+
+    # Also consider projected volume meshing refinements
+    if input_params.meshing.volume_meshing is not None:
+        for refinement in input_params.meshing.volume_meshing.refinements:
+            if isinstance(refinement, UniformRefinement) and refinement.project_to_surface in [
+                True,
+                None,
+            ]:
+                if refinement.spacing.value.item() < min_spacing.value.item():
+                    min_spacing = refinement.spacing
 
     # Cast to the nearest lower spacing in the octree series
     level = spacing_system.to_level(min_spacing)[0]
@@ -452,7 +467,7 @@ def snappy_mesher_json(input_params: SimulationParams):
                     if quality_settings.min_pyramid_cell_volume is not None
                     else (
                         1e-10
-                        * (_get_effective_min_spacing(surface_meshing_params, spacing_system) ** 3)
+                        * (_get_effective_min_spacing(input_params, spacing_system) ** 3)
                     )
                 )
             ),
