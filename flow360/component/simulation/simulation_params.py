@@ -117,6 +117,7 @@ from flow360.component.simulation.validation.validation_simulation_params import
     _check_duplicate_entities_in_models,
     _check_duplicate_isosurface_names,
     _check_duplicate_surface_usage,
+    _check_gravity_model_conflicts,
     _check_hybrid_model_to_use_zonal_enforcement,
     _check_low_mach_preconditioner_output,
     _check_numerical_dissipation_factor_output,
@@ -586,6 +587,11 @@ class SimulationParams(_ParamModelBase):
     def check_duplicate_entities_in_models(self, param_info: ParamsValidationInfo):
         """Only allow each Surface/Volume entity to appear once in the Surface/Volume model"""
         return _check_duplicate_entities_in_models(self, param_info)
+
+    @pd.model_validator(mode="after")
+    def check_gravity_model_conflicts(self):
+        """Disallow multiple Gravity models when one applies to all zones"""
+        return _check_gravity_model_conflicts(self)
 
     @contextual_model_validator(mode="after")
     def check_unique_selector_names(self):

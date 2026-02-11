@@ -1,14 +1,17 @@
 import math
+import re
 
 import pytest
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.models.volume_models import Gravity
 from flow360.component.simulation.primitives import GenericVolume
+from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.translator.solver_translator import (
     gravity_entity_info_serializer,
     gravity_translator,
 )
+from flow360.component.simulation.unit_system import SI_unit_system
 from flow360.component.simulation.validation.validation_context import (
     ParamsValidationInfo,
     ValidationContext,
@@ -58,7 +61,7 @@ def test_gravity_direction_normalization():
 
 def test_gravity_zero_direction_raises():
     """Test that zero direction vector raises an error."""
-    with pytest.raises(ValueError, match="Gravity direction cannot be a zero vector"):
+    with pytest.raises(ValueError, match=re.escape("Axis cannot be (0, 0, 0)")):
         Gravity(
             direction=(0, 0, 0),
             magnitude=9.81 * u.m / u.s**2,
@@ -218,3 +221,80 @@ def test_gravity_small_magnitude():
     )
     assert gravity.magnitude.to("m/s**2").value > 1.6
     assert gravity.magnitude.to("m/s**2").value < 1.7
+
+
+def test_single_global_gravity_is_valid():
+    """A single Gravity model with entities=None (global) should be accepted."""
+    gravity = Gravity(
+        direction=(0, 0, -1),
+        magnitude=9.81 * u.m / u.s**2,
+    )
+    with SI_unit_system:
+        params = SimulationParams(models=[gravity])
+    assert params
+
+
+def test_multiple_global_gravity_raises():
+    """Two Gravity models with entities=None should raise a conflict error."""
+    gravity1 = Gravity(
+        direction=(0, 0, -1),
+        magnitude=9.81 * u.m / u.s**2,
+    )
+    gravity2 = Gravity(
+        direction=(1, 0, 0),
+        magnitude=5.0 * u.m / u.s**2,
+    )
+    with SI_unit_system, pytest.raises(
+        ValueError,
+        match=re.escape(
+            "Multiple Gravity models with unspecified entities (applying to all zones) "
+            "are not allowed."
+        ),
+    ):
+        SimulationParams(models=[gravity1, gravity2])
+
+
+def test_global_gravity_with_zone_specific_raises():
+    """A global Gravity (entities=None) mixed with zone-specific Gravity should raise."""
+    mock_context = ValidationContext(
+        levels=None, info=ParamsValidationInfo(param_as_dict={}, referenced_expressions=[])
+    )
+    global_gravity = Gravity(
+        direction=(0, 0, -1),
+        magnitude=9.81 * u.m / u.s**2,
+    )
+    with mock_context:
+        zone_gravity = Gravity(
+            entities=[GenericVolume(name="zone1")],
+            direction=(1, 0, 0),
+            magnitude=5.0 * u.m / u.s**2,
+        )
+    with SI_unit_system, pytest.raises(
+        ValueError,
+        match=re.escape(
+            "A Gravity model that applies to all zones (entities not specified) "
+            "cannot coexist with other Gravity models."
+        ),
+    ):
+        SimulationParams(models=[global_gravity, zone_gravity])
+
+
+def test_multiple_zone_specific_gravity_is_valid():
+    """Multiple Gravity models with distinct entities should be accepted."""
+    mock_context = ValidationContext(
+        levels=None, info=ParamsValidationInfo(param_as_dict={}, referenced_expressions=[])
+    )
+    with mock_context:
+        gravity1 = Gravity(
+            entities=[GenericVolume(name="zone1")],
+            direction=(0, 0, -1),
+            magnitude=9.81 * u.m / u.s**2,
+        )
+        gravity2 = Gravity(
+            entities=[GenericVolume(name="zone2")],
+            direction=(1, 0, 0),
+            magnitude=5.0 * u.m / u.s**2,
+        )
+    with SI_unit_system:
+        params = SimulationParams(models=[gravity1, gravity2])
+    assert params
