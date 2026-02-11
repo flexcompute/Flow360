@@ -287,6 +287,13 @@ def apply_UniformRefinement_w_snappy(
         translated["geometry"]["refinementVolumes"].append(volume_body)
 
 
+def _none_tolerant_min(current, candidate):
+    """Return the smaller of two spacing quantities, comparing by raw value."""
+    if candidate is not None and candidate.value.item() < current.value.item():
+        return candidate
+    return current
+
+
 def _get_effective_min_spacing(input_params, spacing_system: OctreeSpacing):
     """
     Get the effective minimum spacing across all refinements,
@@ -297,28 +304,22 @@ def _get_effective_min_spacing(input_params, spacing_system: OctreeSpacing):
     surface_meshing_params = input_params.meshing.surface_meshing
     min_spacing = surface_meshing_params.defaults.min_spacing
 
-    if surface_meshing_params.refinements:
-        for refinement in surface_meshing_params.refinements:
-            if isinstance(refinement, (snappy.BodyRefinement, snappy.RegionRefinement)):
-                if refinement.min_spacing is not None:
-                    if refinement.min_spacing.value.item() < min_spacing.value.item():
-                        min_spacing = refinement.min_spacing
-                if refinement.proximity_spacing is not None:
-                    if refinement.proximity_spacing.value.item() < min_spacing.value.item():
-                        min_spacing = refinement.proximity_spacing
-            elif isinstance(refinement, snappy.SurfaceEdgeRefinement):
-                if refinement.spacing is not None:
-                    edge_spacing = (
-                        refinement.spacing[0]
-                        if isinstance(refinement.spacing, unyt_array)
-                        and isinstance(refinement.distances, unyt_array)
-                        else refinement.spacing
-                    )
-                    if edge_spacing.value.item() < min_spacing.value.item():
-                        min_spacing = edge_spacing
-            elif isinstance(refinement, UniformRefinement):
-                if refinement.spacing.value.item() < min_spacing.value.item():
-                    min_spacing = refinement.spacing
+    for refinement in surface_meshing_params.refinements or []:
+        if isinstance(refinement, (snappy.BodyRefinement, snappy.RegionRefinement)):
+            min_spacing = _none_tolerant_min(min_spacing, refinement.min_spacing)
+            min_spacing = _none_tolerant_min(min_spacing, refinement.proximity_spacing)
+        elif (
+            isinstance(refinement, snappy.SurfaceEdgeRefinement) and refinement.spacing is not None
+        ):
+            edge_spacing = (
+                refinement.spacing[0]
+                if isinstance(refinement.spacing, unyt_array)
+                and isinstance(refinement.distances, unyt_array)
+                else refinement.spacing
+            )
+            min_spacing = _none_tolerant_min(min_spacing, edge_spacing)
+        elif isinstance(refinement, UniformRefinement):
+            min_spacing = _none_tolerant_min(min_spacing, refinement.spacing)
 
     # Also consider projected volume meshing refinements
     if input_params.meshing.volume_meshing is not None:
@@ -327,8 +328,7 @@ def _get_effective_min_spacing(input_params, spacing_system: OctreeSpacing):
                 True,
                 None,
             ]:
-                if refinement.spacing.value.item() < min_spacing.value.item():
-                    min_spacing = refinement.spacing
+                min_spacing = _none_tolerant_min(min_spacing, refinement.spacing)
 
     # Cast to the nearest lower spacing in the octree series
     level = spacing_system.to_level(min_spacing)[0]
@@ -465,10 +465,7 @@ def snappy_mesher_json(input_params: SimulationParams):
                 else (
                     quality_settings.min_pyramid_cell_volume
                     if quality_settings.min_pyramid_cell_volume is not None
-                    else (
-                        1e-10
-                        * (_get_effective_min_spacing(input_params, spacing_system) ** 3)
-                    )
+                    else (1e-10 * (_get_effective_min_spacing(input_params, spacing_system) ** 3))
                 )
             ),
             "minTetQuality": (
