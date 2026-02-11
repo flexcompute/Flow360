@@ -450,7 +450,6 @@ class SurfaceOutput(_AnimationAndFileFormatSettings, _OutputBase):
         return self
 
 
-
 class TimeAverageSurfaceOutput(SurfaceOutput):
     """
     :class:`TimeAverageSurfaceOutput` class for time average surface output settings.
