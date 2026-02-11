@@ -86,7 +86,7 @@
             "maxBoundarySkewness": 20,
             "maxInternalSkewness": 50,
             "maxConcave": 50,
-            "minVol": 2.7e-09,
+            "minVol": 8e-10,
             "minTetQuality": 1e-9,
             "minArea": 1e-12,
             "minTwist": -2,

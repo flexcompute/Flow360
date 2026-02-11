@@ -290,27 +290,34 @@ def apply_UniformRefinement_w_snappy(
 def _get_effective_min_spacing(surface_meshing_params, spacing_system: OctreeSpacing):
     """
     Get the effective minimum spacing across all refinements,
-    taking proximity_spacing (gap spacing reduction) into account.
+    taking proximity_spacing (gap spacing reduction) and edge spacings into account.
+    The result is cast to the nearest lower spacing in the octree series.
     """
-    min_val = remove_numerical_noise_from_spacing(
-        surface_meshing_params.defaults.min_spacing, spacing_system
-    ).value.item()
+    min_spacing = surface_meshing_params.defaults.min_spacing
 
     if surface_meshing_params.refinements:
         for refinement in surface_meshing_params.refinements:
             if isinstance(refinement, (snappy.BodyRefinement, snappy.RegionRefinement)):
                 if refinement.min_spacing is not None:
-                    val = remove_numerical_noise_from_spacing(
-                        refinement.min_spacing, spacing_system
-                    ).value.item()
-                    min_val = min(min_val, val)
+                    if refinement.min_spacing.value.item() < min_spacing.value.item():
+                        min_spacing = refinement.min_spacing
                 if refinement.proximity_spacing is not None:
-                    val = remove_numerical_noise_from_spacing(
-                        refinement.proximity_spacing, spacing_system
-                    ).value.item()
-                    min_val = min(min_val, val)
+                    if refinement.proximity_spacing.value.item() < min_spacing.value.item():
+                        min_spacing = refinement.proximity_spacing
+            elif isinstance(refinement, snappy.SurfaceEdgeRefinement):
+                if refinement.spacing is not None:
+                    edge_spacing = (
+                        refinement.spacing[0]
+                        if isinstance(refinement.spacing, unyt_array)
+                        and isinstance(refinement.distances, unyt_array)
+                        else refinement.spacing
+                    )
+                    if edge_spacing.value.item() < min_spacing.value.item():
+                        min_spacing = edge_spacing
 
-    return min_val
+    # Cast to the nearest lower spacing in the octree series
+    level = spacing_system.to_level(min_spacing)[0]
+    return spacing_system[level].value.item()
 
 
 # pylint: disable=too-many-branches,too-many-statements,too-many-locals
@@ -444,9 +451,8 @@ def snappy_mesher_json(input_params: SimulationParams):
                     quality_settings.min_pyramid_cell_volume
                     if quality_settings.min_pyramid_cell_volume is not None
                     else (
-                        _get_effective_min_spacing(surface_meshing_params, spacing_system) ** 3
+                        1e-10 * (_get_effective_min_spacing(surface_meshing_params, spacing_system) ** 3)
                     )
-                    * 1e-10
                 )
             ),
             "minTetQuality": (
