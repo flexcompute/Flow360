@@ -287,6 +287,32 @@ def apply_UniformRefinement_w_snappy(
         translated["geometry"]["refinementVolumes"].append(volume_body)
 
 
+def _get_effective_min_spacing(surface_meshing_params, spacing_system: OctreeSpacing):
+    """
+    Get the effective minimum spacing across all refinements,
+    taking proximity_spacing (gap spacing reduction) into account.
+    """
+    min_val = remove_numerical_noise_from_spacing(
+        surface_meshing_params.defaults.min_spacing, spacing_system
+    ).value.item()
+
+    if surface_meshing_params.refinements:
+        for refinement in surface_meshing_params.refinements:
+            if isinstance(refinement, (snappy.BodyRefinement, snappy.RegionRefinement)):
+                if refinement.min_spacing is not None:
+                    val = remove_numerical_noise_from_spacing(
+                        refinement.min_spacing, spacing_system
+                    ).value.item()
+                    min_val = min(min_val, val)
+                if refinement.proximity_spacing is not None:
+                    val = remove_numerical_noise_from_spacing(
+                        refinement.proximity_spacing, spacing_system
+                    ).value.item()
+                    min_val = min(min_val, val)
+
+    return min_val
+
+
 # pylint: disable=too-many-branches,too-many-statements,too-many-locals
 def snappy_mesher_json(input_params: SimulationParams):
     """
@@ -412,9 +438,16 @@ def snappy_mesher_json(input_params: SimulationParams):
                 else 180
             ),
             "minVol": (
-                quality_settings.min_pyramid_cell_volume
-                if quality_settings.min_pyramid_cell_volume
-                else -1e30
+                -1e30
+                if quality_settings.min_pyramid_cell_volume is False
+                else (
+                    quality_settings.min_pyramid_cell_volume
+                    if quality_settings.min_pyramid_cell_volume is not None
+                    else (
+                        _get_effective_min_spacing(surface_meshing_params, spacing_system) ** 3
+                    )
+                    * 1e-10
+                )
             ),
             "minTetQuality": (
                 quality_settings.min_tetrahedron_quality
