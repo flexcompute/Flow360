@@ -121,21 +121,24 @@ jobs:
               !["success", "neutral", "skipped"].includes(run.conclusion || "")
           ).length;
           const hasCombinedStatuses = (combined.data.total_count || 0) > 0;
+          const hasAnyCiSignal = hasCombinedStatuses || relevantCheckRuns.length > 0;
 
-          let aggregateState = "success";
-          if (pendingCheckCount > 0 || (hasCombinedStatuses && combined.data.state === "pending")) {
-            aggregateState = "pending";
-          }
+          let aggregateState = "no_data";
           if (
             failedCheckCount > 0 ||
             combined.data.state === "failure" ||
             combined.data.state === "error"
           ) {
             aggregateState = "failure";
+          } else if (pendingCheckCount > 0 || (hasCombinedStatuses && combined.data.state === "pending")) {
+            aggregateState = "pending";
+          } else if (hasAnyCiSignal) {
+            aggregateState = "success";
           }
 
           core.setOutput("branch_head_sha", headSha);
           core.setOutput("tag_commit_ci_state", aggregateState);
+          core.setOutput("ci_signal_available", hasAnyCiSignal ? "true" : "false");
           core.setOutput("combined_status_state", combined.data.state);
           core.setOutput("combined_status_total", String(combined.data.total_count || 0));
           core.setOutput("check_runs_total", String(relevantCheckRuns.length));
@@ -153,6 +156,7 @@ jobs:
           echo "- Release branch: \`${{ needs.validate-release-source.outputs.release_branch }}\`"
           echo "- Branch HEAD SHA: \`${{ steps.ci.outputs.branch_head_sha }}\`"
           echo "- Tag commit CI state: \`${{ steps.ci.outputs.tag_commit_ci_state }}\`"
+          echo "- CI signal available: \`${{ steps.ci.outputs.ci_signal_available }}\`"
           echo ""
           echo "### CI signal details"
           echo "- Combined status state (tag commit): \`${{ steps.ci.outputs.combined_status_state }}\`"
