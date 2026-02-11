@@ -1,6 +1,6 @@
 """Utility functions for the simulation services."""
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from flow360.component.simulation.framework.entity_expansion_utils import (
     get_registry_from_params,
@@ -11,6 +11,39 @@ from flow360.component.simulation.framework.entity_utils import (
 )
 
 _MIRRORED_ENTITY_TYPE_NAMES = ("MirroredSurface", "MirroredGeometryBodyGroup")
+
+if TYPE_CHECKING:
+    from flow360.component.simulation.simulation_params import SimulationParams
+
+
+def strip_implicit_edge_split_layers_inplace(params: "SimulationParams", params_dict: dict) -> dict:
+    """
+    Remove implicitly injected `edge_split_layers` from serialized params.
+    This extra and specific function was added due to a change in schema during lifecycle of a release (uncommon)
+
+    Why not use `exclude_unset` or `exclude_defaults` globally during `model_dump()`?
+    - `exclude_unset` strips many unrelated defaulted fields and can affect downstream workflows.
+    - `exclude_defaults` also strips explicitly user-set values that equal the default.
+    """
+    meshing = getattr(params, "meshing", None)
+    defaults = getattr(meshing, "defaults", None)
+    if defaults is None:
+        return params_dict
+
+    if "edge_split_layers" in defaults.model_fields_set:
+        # Keep explicit user setting (including explicit value equal to default).
+        return params_dict
+
+    meshing_dict = params_dict.get("meshing")
+    if not isinstance(meshing_dict, dict):
+        return params_dict
+
+    defaults_dict = meshing_dict.get("defaults")
+    if not isinstance(defaults_dict, dict):
+        return params_dict
+
+    defaults_dict.pop("edge_split_layers", None)
+    return params_dict
 
 
 def strip_selector_matches_and_broken_entities_inplace(params) -> Any:

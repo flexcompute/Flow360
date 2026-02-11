@@ -2482,6 +2482,28 @@ def test_beta_mesher_only_features(mock_validation_context):
     assert errors[0]["loc"] == ()
 
 
+def test_edge_split_layers_default_no_warning_for_dict_input():
+    non_beta_context = ParamsValidationInfo({}, [])
+    non_beta_context.is_beta_mesher = False
+
+    with SI_unit_system, ValidationContext(VOLUME_MESH, non_beta_context) as validation_context:
+        defaults = MeshingDefaults.model_validate({"boundary_layer_first_layer_thickness": 1e-4})
+
+    assert "edge_split_layers" not in defaults.model_fields_set
+    assert validation_context.validation_warnings == []
+
+
+def test_edge_split_layers_default_no_warning_for_constructor_input():
+    non_beta_context = ParamsValidationInfo({}, [])
+    non_beta_context.is_beta_mesher = False
+
+    with SI_unit_system, ValidationContext(VOLUME_MESH, non_beta_context) as validation_context:
+        defaults = MeshingDefaults(boundary_layer_first_layer_thickness=1e-4)
+
+    assert "edge_split_layers" not in defaults.model_fields_set
+    assert validation_context.validation_warnings == []
+
+
 def test_geometry_AI_only_features():
     with SI_unit_system:
         params = SimulationParams(
