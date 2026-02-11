@@ -49,6 +49,7 @@ jobs:
           if [ "$branch_count" -gt 1 ]; then
             echo "::error ::Tag ${GITHUB_REF#refs/tags/} matches multiple release-candidate branches:"
             printf '%s\n' "${matching_branches[@]}"
+            echo "::error ::Ambiguous release source. Please choose the intended release-candidate/* branch manually and rerun the publish workflow from that branch."
             exit 1
           fi
 
@@ -70,6 +71,9 @@ jobs:
   collect-approval-context:
     needs: validate-release-source
     runs-on: ubuntu-latest
+    outputs:
+      tag_commit_ci_state: ${{ steps.ci.outputs.tag_commit_ci_state }}
+      ci_signal_available: ${{ steps.ci.outputs.ci_signal_available }}
     permissions:
       contents: read
       checks: read
@@ -100,14 +104,16 @@ jobs:
             ref: tagCommitSha,
           });
 
-          const checks = await github.rest.checks.listForRef({
-            owner,
-            repo,
-            ref: tagCommitSha,
-            per_page: 100,
-          });
-
-          const checkRuns = checks.data.check_runs;
+          const checkRuns = await github.paginate(
+            github.rest.checks.listForRef,
+            {
+              owner,
+              repo,
+              ref: tagCommitSha,
+              per_page: 100,
+            },
+            (response) => response.data.check_runs
+          );
           const currentRunToken = `/actions/runs/${context.runId}`;
           const relevantCheckRuns = checkRuns.filter(
             (run) => !(run.details_url || "").includes(currentRunToken)
@@ -184,11 +190,83 @@ jobs:
     - name: Approval checkpoint
       run: echo "Approved for PyPI publish."
 
+  ci-gate:
+    needs:
+      - validate-release-source
+      - approval
+    runs-on: ubuntu-latest
+    permissions:
+      checks: read
+      statuses: read
+    steps:
+    - name: Re-check tagged commit CI status after approval
+      uses: actions/github-script@v7
+      env:
+        TAG_COMMIT_SHA: ${{ needs.validate-release-source.outputs.tag_commit_sha }}
+      with:
+        script: |
+          const { owner, repo } = context.repo;
+          const tagCommitSha = process.env.TAG_COMMIT_SHA;
+
+          const combined = await github.rest.repos.getCombinedStatusForRef({
+            owner,
+            repo,
+            ref: tagCommitSha,
+          });
+
+          const checkRuns = await github.paginate(
+            github.rest.checks.listForRef,
+            {
+              owner,
+              repo,
+              ref: tagCommitSha,
+              per_page: 100,
+            },
+            (response) => response.data.check_runs
+          );
+
+          const currentRunToken = `/actions/runs/${context.runId}`;
+          const relevantCheckRuns = checkRuns.filter(
+            (run) => !(run.details_url || "").includes(currentRunToken)
+          );
+          const pendingCheckCount = relevantCheckRuns.filter((run) => run.status !== "completed").length;
+          const failedCheckCount = relevantCheckRuns.filter(
+            (run) =>
+              run.status === "completed" &&
+              !["success", "neutral", "skipped"].includes(run.conclusion || "")
+          ).length;
+
+          const hasCombinedStatuses = (combined.data.total_count || 0) > 0;
+          const hasAnyCiSignal = hasCombinedStatuses || relevantCheckRuns.length > 0;
+
+          let aggregateState = "no_data";
+          if (
+            failedCheckCount > 0 ||
+            combined.data.state === "failure" ||
+            combined.data.state === "error"
+          ) {
+            aggregateState = "failure";
+          } else if (pendingCheckCount > 0 || (hasCombinedStatuses && combined.data.state === "pending")) {
+            aggregateState = "pending";
+          } else if (hasAnyCiSignal) {
+            aggregateState = "success";
+          }
+
+          core.notice(
+            `CI gate for ${tagCommitSha}: state=${aggregateState}, combined=${combined.data.state}, checks=${relevantCheckRuns.length}, pending=${pendingCheckCount}, failed=${failedCheckCount}`
+          );
+
+          if (aggregateState !== "success") {
+            core.setFailed(
+              `CI gate failed for ${tagCommitSha}: ${aggregateState}. combined=${combined.data.state}, checks=${relevantCheckRuns.length}, pending=${pendingCheckCount}, failed=${failedCheckCount}`
+            );
+          }
+
   publish:
     needs:
       - validate-release-source
       - collect-approval-context
-      - approval
+      - ci-gate
     runs-on: ubuntu-latest
     env:
       FLOW360_SUPPRESS_BETA_WARNING: "1"
