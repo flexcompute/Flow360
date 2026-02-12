@@ -13,7 +13,10 @@ priority = "explicit"
 [tool.poetry.dependencies]
 python = ">=3.9,<3.14"
 pydantic = ">=2.8,<2.12"
-flow360-schemas = { version = "0.1.0", source = "codeartifact" }
+# -- Local dev (editable install, schema changes take effect immediately):
+flow360-schemas = { path = "../flow360-schemas", develop = true }
+# -- CI / release (install from CodeArtifact, swap comments before pushing):
+# flow360-schemas = { version = "0.1.0", source = "codeartifact" }
 pytest = "^7.1.2"
 click = "^8.1.3"
 toml = "^0.10.2"
