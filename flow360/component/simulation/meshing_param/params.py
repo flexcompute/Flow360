@@ -196,27 +196,23 @@ class MeshingParams(Flow360BaseModel):
         # If AutomatedFarfield is used with CustomVolume(s), exactly one of them must reference
         # AutomatedFarfield.farfield, so the translator can identify which zone is the exterior farfield zone.
         has_automated_farfield = any(isinstance(zone, AutomatedFarfield) for zone in v)
-        has_custom_volumes = any(
-            isinstance(entity, CustomVolume)
+        custom_volumes = [
+            entity
             for zone in v
             if isinstance(zone, CustomZones)
             for entity in zone.entities.stored_entities
-        )
-        if has_automated_farfield and has_custom_volumes:
+            if isinstance(entity, CustomVolume)
+        ]
+        if has_automated_farfield and custom_volumes:
             farfield_custom_volumes = []
-            for zone in v:
-                if not isinstance(zone, CustomZones):
-                    continue
-                for entity in zone.entities.stored_entities:
-                    if not isinstance(entity, CustomVolume):
-                        continue
-                    has_farfield_ghost = any(
-                        isinstance(s, (GhostSurface, GhostSphere, GhostCircularPlane))
-                        and s.name == "farfield"
-                        for s in entity.boundaries.stored_entities
-                    )
-                    if has_farfield_ghost:
-                        farfield_custom_volumes.append(entity.name)
+            for cv in custom_volumes:
+                has_farfield_ghost = any(
+                    isinstance(s, (GhostSurface, GhostSphere, GhostCircularPlane))
+                    and s.name == "farfield"
+                    for s in cv.boundaries.stored_entities
+                )
+                if has_farfield_ghost:
+                    farfield_custom_volumes.append(cv.name)
             if len(farfield_custom_volumes) == 0:
                 raise ValueError(
                     "When using AutomatedFarfield with CustomVolumes, exactly one CustomVolume must include "
@@ -225,8 +221,7 @@ class MeshingParams(Flow360BaseModel):
             if len(farfield_custom_volumes) > 1:
                 raise ValueError(
                     "Multiple CustomVolumes reference AutomatedFarfield.farfield: "
-                    f"{farfield_custom_volumes}. Only one CustomVolume may define the "
-                    "exterior farfield zone."
+                    f"{farfield_custom_volumes}. Only one CustomVolume may define the exterior farfield zone."
                 )
 
         return v
