@@ -7,10 +7,16 @@ on:
   pull_request:
     types: [ opened, synchronize, reopened, ready_for_review ]
   workflow_call:
+    secrets:
+      AWS_CODEARTIFACT_READ_ACCESS_KEY:
+        required: true
+      AWS_CODEARTIFACT_READ_ACCESS_SECRET:
+        required: true
 
 jobs:
   code-style:
     uses: ./.github/workflows/codestyle.yml
+    secrets: inherit
   testing:
     needs: code-style
     name: test ${{ matrix.python-version }} - ${{ matrix.platform }}
@@ -45,6 +51,12 @@ jobs:
         version: 1.8.4 # Accommodating Python 3.9 to 3.13
         virtualenvs-in-project: true
         virtualenvs-create: true
+
+    - name: Setup CodeArtifact auth for Poetry
+      uses: ./.github/actions/setup-codeartifact-poetry-auth
+      with:
+        aws-access-key-id: ${{ secrets.AWS_CODEARTIFACT_READ_ACCESS_KEY }}
+        aws-secret-access-key: ${{ secrets.AWS_CODEARTIFACT_READ_ACCESS_SECRET }}
 
     - name: Install dependencies
       run: poetry install

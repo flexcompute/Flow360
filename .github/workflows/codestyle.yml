@@ -2,6 +2,11 @@ name: Codestyle checking
 
 on:
   workflow_call:
+    secrets:
+      AWS_CODEARTIFACT_READ_ACCESS_KEY:
+        required: true
+      AWS_CODEARTIFACT_READ_ACCESS_SECRET:
+        required: true
   workflow_dispatch:
     
 jobs:
@@ -15,6 +20,11 @@ jobs:
         with:
           python-version: '3.9'
           cache: 'poetry'
+      - name: Setup CodeArtifact auth for Poetry
+        uses: ./.github/actions/setup-codeartifact-poetry-auth
+        with:
+          aws-access-key-id: ${{ secrets.AWS_CODEARTIFACT_READ_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.AWS_CODEARTIFACT_READ_ACCESS_SECRET }}
       - name: Install black
         run: poetry install
       - name: Run black
@@ -30,6 +40,11 @@ jobs:
         with:
           python-version: '3.9'
           cache: 'poetry'
+      - name: Setup CodeArtifact auth for Poetry
+        uses: ./.github/actions/setup-codeartifact-poetry-auth
+        with:
+          aws-access-key-id: ${{ secrets.AWS_CODEARTIFACT_READ_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.AWS_CODEARTIFACT_READ_ACCESS_SECRET }}
       - name: Install isort
         run: poetry install
       - name: Check isort version
@@ -47,6 +62,11 @@ jobs:
         with:
           python-version: '3.9'
           cache: 'poetry'
+      - name: Setup CodeArtifact auth for Poetry
+        uses: ./.github/actions/setup-codeartifact-poetry-auth
+        with:
+          aws-access-key-id: ${{ secrets.AWS_CODEARTIFACT_READ_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.AWS_CODEARTIFACT_READ_ACCESS_SECRET }}
       - name: Install dependencies
         run: poetry install
       - name: Run pylint
