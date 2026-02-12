@@ -2,6 +2,11 @@ name: Codestyle checking
 
 on:
   workflow_call:
+    secrets:
+      AWS_CODEARTIFACT_ACCESS_KEY:
+        required: true
+      AWS_CODEARTIFACT_ACCESS_SECRET:
+        required: true
   workflow_dispatch:
     
 jobs:

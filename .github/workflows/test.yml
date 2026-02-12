@@ -7,10 +7,16 @@ on:
   pull_request:
     types: [ opened, synchronize, reopened, ready_for_review ]
   workflow_call:
+    secrets:
+      AWS_CODEARTIFACT_ACCESS_KEY:
+        required: true
+      AWS_CODEARTIFACT_ACCESS_SECRET:
+        required: true
 
 jobs:
   code-style:
     uses: ./.github/workflows/codestyle.yml
+    secrets: inherit
   testing:
     needs: code-style
     name: test ${{ matrix.python-version }} - ${{ matrix.platform }}
