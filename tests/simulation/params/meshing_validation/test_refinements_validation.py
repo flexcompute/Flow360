@@ -18,8 +18,10 @@ def test_snappy_refinements_validators(mock_validation_context):
         )
 
     message = "UniformRefinement for snappy accepts only Boxes with axes aligned with the global coordinate system (angle_of_rotation=0)."
-    with mock_validation_context, SI_unit_system, pytest.raises(
-        ValueError, match=re.escape(message)
+    with (
+        mock_validation_context,
+        SI_unit_system,
+        pytest.raises(ValueError, match=re.escape(message)),
     ):
         snappy.SurfaceMeshingParams(
             defaults=snappy.SurfaceMeshingDefaults(
@@ -85,8 +87,10 @@ def test_snappy_refinements_validators(mock_validation_context):
     )
 
     message = "UniformRefinement for snappy accepts only full cylinders (where inner_radius = 0)."
-    with mock_validation_context, SI_unit_system, pytest.raises(
-        ValueError, match=re.escape(message)
+    with (
+        mock_validation_context,
+        SI_unit_system,
+        pytest.raises(ValueError, match=re.escape(message)),
     ):
         snappy.SurfaceMeshingParams(
             defaults=snappy.SurfaceMeshingDefaults(
