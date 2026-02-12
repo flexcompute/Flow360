@@ -231,9 +231,10 @@ def zstd_compress(file_path, output_file_path=None, compression_level=3):
         if not output_file_path:
             output_file_path = NamedTemporaryFile(suffix=".zst").name
         with open(file_path, "rb") as f_in, open(output_file_path, "wb") as f_out:
-            with cctx.stream_writer(f_out) as compressor, _get_progress(
-                _S3Action.COMPRESSING
-            ) as progress:
+            with (
+                cctx.stream_writer(f_out) as compressor,
+                _get_progress(_S3Action.COMPRESSING) as progress,
+            ):
                 task_id = progress.add_task(
                     "Compressing file",
                     filename=os.path.basename(file_path),
