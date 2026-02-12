@@ -329,8 +329,8 @@ jobs:
     - name: Setup CodeArtifact auth for Poetry
       uses: ./.github/actions/setup-codeartifact-poetry-auth
       with:
-        aws-access-key-id: ${{ secrets.AWS_CODEARTIFACT_ACCESS_KEY }}
-        aws-secret-access-key: ${{ secrets.AWS_CODEARTIFACT_ACCESS_SECRET }}
+        aws-access-key-id: ${{ secrets.AWS_CODEARTIFACT_READ_ACCESS_KEY }}
+        aws-secret-access-key: ${{ secrets.AWS_CODEARTIFACT_READ_ACCESS_SECRET }}
         aws-region: us-east-1
         domain: flexcompute
         domain-owner: "625554095313"
