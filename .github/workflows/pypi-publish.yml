@@ -326,6 +326,14 @@ jobs:
       with:
         python-version: '3.9'
         cache: 'poetry'
+    - name: Setup CodeArtifact auth for Poetry
+      uses: ./.github/actions/setup-codeartifact-poetry-auth
+      with:
+        aws-access-key-id: ${{ secrets.AWS_CODEARTIFACT_ACCESS_KEY }}
+        aws-secret-access-key: ${{ secrets.AWS_CODEARTIFACT_ACCESS_SECRET }}
+        aws-region: us-east-1
+        domain: flexcompute
+        domain-owner: "625554095313"
     - name: Install dependencies
       run: poetry install
     - name: Pump version number
