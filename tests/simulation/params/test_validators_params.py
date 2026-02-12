@@ -3494,7 +3494,7 @@ def test_incomplete_BC_without_geometry_AI():
     )
 
 
-def test_automated_farfield_with_custom_zones_farfield_ghost():
+def test_automated_farfield_with_custom_zones():
     """AutomatedFarfield + CustomZones: exactly one CustomVolume must reference farfield ghost."""
     auto_ff = AutomatedFarfield()
 
@@ -3532,48 +3532,15 @@ def test_automated_farfield_with_custom_zones_farfield_ghost():
     )
     assert errors is None
 
-    # Positive: GhostSphere (post-expansion form) should also pass
-    with SI_unit_system:
-        params = SimulationParams(
-            meshing=MeshingParams(
-                defaults=MeshingDefaults(
-                    boundary_layer_first_layer_thickness=1e-4,
-                    planar_face_tolerance=1e-4,
-                ),
-                volume_zones=[
-                    CustomZones(
-                        name="exterior",
-                        entities=[
-                            CustomVolume(
-                                name="farfield_zone",
-                                boundaries=[
-                                    Surface(name="face1"),
-                                    GhostSphere(name="farfield"),
-                                ],
-                            )
-                        ],
-                    ),
-                    AutomatedFarfield(),
-                ],
-            ),
-            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
-        )
-    params, errors, _ = validate_model(
-        params_as_dict=params.model_dump(mode="json"),
-        validated_by=ValidationCalledBy.LOCAL,
-        root_item_type="SurfaceMesh",
-        validation_level="VolumeMesh",
-    )
-    assert errors is None
-
     # Negative: no CustomVolume references farfield ghost -> should fail
-    with pytest.raises(pd.ValidationError, match="AutomatedFarfield.farfield"):
+    with pytest.raises(
+        pd.ValidationError, match="exactly one CustomVolume must include AutomatedFarfield.farfield"
+    ):
         with SI_unit_system:
             SimulationParams(
                 meshing=MeshingParams(
                     defaults=MeshingDefaults(
                         boundary_layer_first_layer_thickness=1e-4,
-                        planar_face_tolerance=1e-4,
                     ),
                     volume_zones=[
                         CustomZones(
@@ -3592,14 +3559,13 @@ def test_automated_farfield_with_custom_zones_farfield_ghost():
             )
 
     # Negative: multiple CustomVolumes reference farfield ghost -> should fail
-    with pytest.raises(pd.ValidationError, match="Multiple CustomVolumes"):
+    with pytest.raises(pd.ValidationError, match="Multiple CustomVolumes reference"):
         auto_ff2 = AutomatedFarfield()
         with SI_unit_system:
             SimulationParams(
                 meshing=MeshingParams(
                     defaults=MeshingDefaults(
                         boundary_layer_first_layer_thickness=1e-4,
-                        planar_face_tolerance=1e-4,
                     ),
                     volume_zones=[
                         CustomZones(
@@ -3616,10 +3582,7 @@ def test_automated_farfield_with_custom_zones_farfield_ghost():
                             entities=[
                                 CustomVolume(
                                     name="ff2",
-                                    boundaries=[
-                                        Surface(name="face2"),
-                                        GhostSphere(name="farfield"),
-                                    ],
+                                    boundaries=[Surface(name="face2"), auto_ff2.farfield],
                                 )
                             ],
                         ),
@@ -3628,3 +3591,32 @@ def test_automated_farfield_with_custom_zones_farfield_ghost():
                 ),
                 private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
             )
+
+
+def test_automated_farfield_with_seedpoint_only_custom_zones():
+    """AutomatedFarfield + CustomZones with only SeedpointVolumes should have no zones referencing the farfield."""
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-4,
+                ),
+                volume_zones=[
+                    CustomZones(
+                        name="regions",
+                        entities=[
+                            SeedpointVolume(name="seedpoint", point_in_mesh=(0, 0, 0)),
+                        ],
+                    ),
+                    AutomatedFarfield(),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+        )
+    params, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="SurfaceMesh",
+        validation_level="VolumeMesh",
+    )
+    assert errors is None

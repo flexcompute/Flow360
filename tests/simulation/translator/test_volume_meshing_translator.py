@@ -1317,7 +1317,7 @@ def test_sphere_rotation_volume_translator(get_surface_mesh):
 
 
 def test_custom_volume_with_ghost_surface_farfield(get_surface_mesh):
-    """GhostSurface(name='farfield') should be skipped from patches and force zone_name='farfield'."""
+    """AutomatedFarfield GhostSurface should be skipped from patches and force zone_name='farfield'."""
     auto_farfield = AutomatedFarfield()
     left1 = Surface(name="left1")
     right1 = Surface(name="right1")
@@ -1368,3 +1368,39 @@ def test_custom_volume_with_ghost_surface_farfield(get_surface_mesh):
     # Inner zone keeps its original name
     assert "inner" in zones_by_name
     assert sorted(zones_by_name["inner"]["patches"]) == ["left1", "right1"]
+
+
+def test_custom_volume_with_wind_tunnel_ghost_surface(get_surface_mesh):
+    """WindTunnelGhostSurface should NOT be skipped from patches."""
+    wind_tunnel = WindTunnelFarfield()
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-4,
+                ),
+                volume_zones=[
+                    CustomZones(
+                        name="custom",
+                        entities=[
+                            CustomVolume(
+                                name="zone1",
+                                boundaries=[
+                                    Surface(name="face1"),
+                                    Surface(name="face2"),
+                                    wind_tunnel.left,
+                                ],
+                            ),
+                        ],
+                    ),
+                    wind_tunnel,
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True, use_geometry_AI=True),
+        )
+
+    translated = get_volume_meshing_json(params, get_surface_mesh.mesh_unit)
+    assert "zones" in translated
+    assert len(translated["zones"]) == 1
+    assert translated["zones"][0]["name"] == "zone1"
+    assert "windTunnelLeft" in translated["zones"][0]["patches"]
