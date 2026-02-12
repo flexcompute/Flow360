@@ -195,9 +195,12 @@ def test_disable_invalid_axisymmetric_body_construction():
 
 
 def test_disable_multiple_cylinder_in_one_rotation_volume(mock_validation_context):
-    with mock_validation_context, pytest.raises(
-        pd.ValidationError,
-        match="Only single instance is allowed in entities for each `RotationVolume`.",
+    with (
+        mock_validation_context,
+        pytest.raises(
+            pd.ValidationError,
+            match="Only single instance is allowed in entities for each `RotationVolume`.",
+        ),
     ):
         with CGS_unit_system:
             cylinder_1 = Cylinder(
@@ -230,9 +233,12 @@ def test_disable_multiple_cylinder_in_one_rotation_volume(mock_validation_contex
                     ],
                 )
             )
-    with mock_validation_context, pytest.raises(
-        pd.ValidationError,
-        match="Only single instance is allowed in entities for each `RotationVolume`.",
+    with (
+        mock_validation_context,
+        pytest.raises(
+            pd.ValidationError,
+            match="Only single instance is allowed in entities for each `RotationVolume`.",
+        ),
     ):
         with CGS_unit_system:
             cylinder_1 = Cylinder(
@@ -555,9 +561,12 @@ def test_sphere_in_enclosed_entities_only_in_beta_mesher():
 
 
 def test_reuse_of_same_cylinder(mock_validation_context):
-    with mock_validation_context, pytest.raises(
-        pd.ValidationError,
-        match=r"Using Volume entity `I am reused` in `AxisymmetricRefinement`, `RotationVolume` at the same time is not allowed.",
+    with (
+        mock_validation_context,
+        pytest.raises(
+            pd.ValidationError,
+            match=r"Using Volume entity `I am reused` in `AxisymmetricRefinement`, `RotationVolume` at the same time is not allowed.",
+        ),
     ):
         with CGS_unit_system:
             cylinder = Cylinder(
@@ -592,9 +601,12 @@ def test_reuse_of_same_cylinder(mock_validation_context):
                 )
             )
 
-    with mock_validation_context, pytest.raises(
-        pd.ValidationError,
-        match=r"Using Volume entity `I am reused` in `AxisymmetricRefinement`, `RotationVolume` at the same time is not allowed.",
+    with (
+        mock_validation_context,
+        pytest.raises(
+            pd.ValidationError,
+            match=r"Using Volume entity `I am reused` in `AxisymmetricRefinement`, `RotationVolume` at the same time is not allowed.",
+        ),
     ):
         with CGS_unit_system:
             cylinder = Cylinder(
@@ -697,9 +709,12 @@ def test_reuse_of_same_cylinder(mock_validation_context):
             )
         )
 
-    with mock_validation_context, pytest.raises(
-        pd.ValidationError,
-        match=r"Using Volume entity `I am reused` in `AxisymmetricRefinement`, `UniformRefinement` at the same time is not allowed.",
+    with (
+        mock_validation_context,
+        pytest.raises(
+            pd.ValidationError,
+            match=r"Using Volume entity `I am reused` in `AxisymmetricRefinement`, `UniformRefinement` at the same time is not allowed.",
+        ),
     ):
         with CGS_unit_system:
             cylinder = Cylinder(
@@ -723,9 +738,12 @@ def test_reuse_of_same_cylinder(mock_validation_context):
                 )
             )
 
-    with mock_validation_context, pytest.raises(
-        pd.ValidationError,
-        match=r"Using Volume entity `I am reused` in `AxisymmetricRefinement`, `UniformRefinement` at the same time is not allowed.",
+    with (
+        mock_validation_context,
+        pytest.raises(
+            pd.ValidationError,
+            match=r"Using Volume entity `I am reused` in `AxisymmetricRefinement`, `UniformRefinement` at the same time is not allowed.",
+        ),
     ):
         with CGS_unit_system:
             cylinder = Cylinder(
@@ -753,9 +771,12 @@ def test_reuse_of_same_cylinder(mock_validation_context):
                 )
             )
 
-    with mock_validation_context, pytest.raises(
-        pd.ValidationError,
-        match=r" Volume entity `I am reused` is used multiple times in `UniformRefinement`.",
+    with (
+        mock_validation_context,
+        pytest.raises(
+            pd.ValidationError,
+            match=r" Volume entity `I am reused` is used multiple times in `UniformRefinement`.",
+        ),
     ):
         with CGS_unit_system:
             cylinder = Cylinder(
@@ -774,9 +795,12 @@ def test_reuse_of_same_cylinder(mock_validation_context):
                 )
             )
 
-    with mock_validation_context, pytest.raises(
-        pd.ValidationError,
-        match=r" Volume entity `I am reused` is used multiple times in `UniformRefinement`.",
+    with (
+        mock_validation_context,
+        pytest.raises(
+            pd.ValidationError,
+            match=r" Volume entity `I am reused` is used multiple times in `UniformRefinement`.",
+        ),
     ):
         with CGS_unit_system:
             cylinder = Cylinder(

@@ -13,9 +13,12 @@ from flow360.component.simulation.unit_system import SI_unit_system
 
 def test_ensure_entities_have_sufficient_attributes(mock_validation_context):
 
-    with mock_validation_context, pytest.raises(
-        ValueError,
-        match="Entity 'zone_with_no_axis' must specify `axis` to be used under `Rotation`.",
+    with (
+        mock_validation_context,
+        pytest.raises(
+            ValueError,
+            match="Entity 'zone_with_no_axis' must specify `axis` to be used under `Rotation`.",
+        ),
     ):
 
         Rotation(
@@ -23,9 +26,12 @@ def test_ensure_entities_have_sufficient_attributes(mock_validation_context):
             spec=AngleExpression("0.45 * t"),
         )
 
-    with mock_validation_context, pytest.raises(
-        ValueError,
-        match="Entity 'zone_with_no_axis' must specify `center` to be used under `Rotation`.",
+    with (
+        mock_validation_context,
+        pytest.raises(
+            ValueError,
+            match="Entity 'zone_with_no_axis' must specify `center` to be used under `Rotation`.",
+        ),
     ):
 
         Rotation(
