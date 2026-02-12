@@ -182,6 +182,8 @@ class MeshingDefaults(Flow360BaseModel):
     edge_split_layers: int = pd.Field(
         1,
         ge=0,
+        # Skip default-value validation so warnings are emitted only when users explicitly set this field.
+        validate_default=False,
         description="The number of layers that are considered for edge splitting in the boundary layer mesh."
         + "This only affects beta mesher.",
     )
