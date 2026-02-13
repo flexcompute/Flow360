@@ -34,7 +34,7 @@ def snake_to_camel(string: str) -> str:
 
 
 base_model_config = pd.ConfigDict(
-    arbitrary_types_allowed=True,  # TODO: InputFileModel doesn't need this; remove after audit
+    arbitrary_types_allowed=True,
     extra="forbid",
     frozen=False,
     populate_by_name=True,
