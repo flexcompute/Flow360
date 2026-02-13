@@ -661,7 +661,7 @@ class AutomatedFarfield(_FarfieldBase):
     def farfield(self):
         """Returns the farfield boundary surface."""
         # Make sure the naming is the same here and what the geometry/surface mesh pipeline generates.
-        return GhostSurface(name="farField", private_attribute_id="farField")
+        return GhostSurface(name="farfield", private_attribute_id="farfield")
 
     @property
     def symmetry_plane(self) -> GhostSurface:
