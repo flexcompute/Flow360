@@ -83,11 +83,12 @@ jobs:
       if: matrix.python-version == '3.10' && matrix.platform == 'ubuntu-latest'
       run: poetry run pytest -rA --ignore tests/simulation -vv --cov=flow360 --cov-append --cov-report=term-missing:skip-covered --cov-report=xml:coverage.xml
 
-    - name: Pytest coverage comment
+    - name: Generate coverage summary
       if: matrix.python-version == '3.10' && matrix.platform == 'ubuntu-latest' && github.event_name == 'pull_request'
-      uses: MishaKav/pytest-coverage-comment@v1
+      run: python .github/scripts/coverage_summary.py coverage.xml coverage-summary.md 2
+
+    - name: Post coverage comment
+      if: matrix.python-version == '3.10' && matrix.platform == 'ubuntu-latest' && github.event_name == 'pull_request'
+      uses: marocchino/sticky-pull-request-comment@v2
       with:
-        pytest-xml-coverage-path: coverage.xml
-        report-only-changed-files: true
-        remove-links-to-files: true
-        remove-links-to-lines: true
+        path: coverage-summary.md
