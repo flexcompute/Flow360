@@ -43,7 +43,7 @@ def main():
     )
 
     lines = []
-    lines.append(f"## Coverage Report \u2014 {total_pct:.0f}%")
+    lines.append(f"## Coverage Report of `flow360/` \u2014 {total_pct:.0f}%")
     lines.append("")
     lines.append(
         f"`{make_bar(total_pct, 30)}` **{total_pct:.1f}%** ({total_hits} / {total_lines} lines)"
