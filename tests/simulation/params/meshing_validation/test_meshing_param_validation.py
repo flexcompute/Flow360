@@ -1918,7 +1918,9 @@ def test_meshing_defaults_octree_spacing_warning_no_project_length_unit():
             assert defaults.octree_spacing is None
 
     warning_msgs = [w["msg"] if isinstance(w, dict) else str(w) for w in ctx.validation_warnings]
-    assert any("octree_spacing" in msg and "will not be set automatically" in msg for msg in warning_msgs)
+    assert any(
+        "octree_spacing" in msg and "will not be set automatically" in msg for msg in warning_msgs
+    )
 
 
 def test_meshing_defaults_octree_spacing_negative_raises():

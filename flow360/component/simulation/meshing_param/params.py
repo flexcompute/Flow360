@@ -292,7 +292,7 @@ class MeshingParams(Flow360BaseModel):
         """Validate that UniformRefinement spacings align with the octree series."""
         if not param_info.is_beta_mesher:
             return self
-        if self.defaults.octree_spacing is None:
+        if self.defaults.octree_spacing is None:  # pylint: disable=no-member
             log.warning(
                 "No `octree_spacing` configured in `MeshingDefaults`; "
                 "octree spacing validation for UniformRefinement will be skipped."
@@ -310,7 +310,7 @@ class MeshingParams(Flow360BaseModel):
                 log.warning(msg)
 
         if self.refinements is not None:
-            for refinement in self.refinements:
+            for refinement in self.refinements:  # pylint: disable=not-an-iterable
                 if isinstance(refinement, UniformRefinement):
                     check_spacing(refinement.spacing, type(refinement).__name__)
 
@@ -383,7 +383,7 @@ class VolumeMeshingParams(Flow360BaseModel):
         """Validate that UniformRefinement spacings align with the octree series."""
         if not param_info.is_beta_mesher:
             return self
-        if self.defaults.octree_spacing is None:
+        if self.defaults.octree_spacing is None:  # pylint: disable=no-member
             log.warning(
                 "No `octree_spacing` configured in `VolumeMeshingDefaults`; "
                 "octree spacing validation for UniformRefinement will be skipped."
@@ -401,7 +401,7 @@ class VolumeMeshingParams(Flow360BaseModel):
                 log.warning(msg)
 
         if self.refinements is not None:
-            for refinement in self.refinements:
+            for refinement in self.refinements:  # pylint: disable=not-an-iterable
                 if isinstance(refinement, UniformRefinement):
                     check_spacing(refinement.spacing, type(refinement).__name__)
 
