@@ -638,6 +638,7 @@ def snappy_basic_refinements():
                     min_elem=3,
                     included_angle=120 * u.deg,
                     entities=test_geometry.snappy_bodies["body1"],
+                    geometric_test_only=True,
                 ),
                 snappy.SurfaceEdgeRefinement(
                     spacing=[4 * u.mm],
@@ -796,6 +797,7 @@ def snappy_refinements_multiple_regions():
                     included_angle=120 * u.deg,
                     entities=[test_geometry["body0::patch0"], test_geometry["body0::patch1"]],
                     retain_on_smoothing=False,
+                    geometric_test_only=True,
                 ),
             ],
             smooth_controls=snappy.SmoothControls(),

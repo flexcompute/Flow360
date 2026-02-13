@@ -113,6 +113,10 @@ class SurfaceEdgeRefinement(Flow360BaseModel):
     retain_on_smoothing: bool = pd.Field(
         True, description="Maintain the edge when smoothing is applied."
     )
+    geometric_test_only: bool = pd.Field(
+        False,
+        description="If enabled, only geometric tests are performed on the edge (region edge will be ignored).",
+    )
 
     @pd.model_validator(mode="after")
     def _check_spacing_format(self) -> Self:
