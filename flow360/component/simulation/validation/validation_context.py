@@ -22,6 +22,9 @@ from functools import wraps
 from typing import Any, Callable, List, Literal, Union
 
 import pydantic as pd
+from flow360_schemas.framework.validation.context import (  # noqa: F401 — re-used, not redefined
+    _validation_level_ctx,
+)
 from pydantic import Field, TypeAdapter
 
 from flow360.component.simulation.unit_system import LengthType
@@ -102,12 +105,6 @@ class FeatureUsageInfo:
                 if model["type"] == "BETDisk":
                     self.bet_disk_count += 1
 
-
-# Share the validation-level ContextVar with the schema layer so that
-# validators defined in flow360_schemas read the same context the SDK sets.
-from flow360_schemas.framework.validation.context import (  # noqa: F401 — re-used, not redefined
-    _validation_level_ctx,
-)
 
 _validation_info_ctx = contextvars.ContextVar("validation_info", default=None)
 _validation_warnings_ctx = contextvars.ContextVar("validation_warnings", default=None)

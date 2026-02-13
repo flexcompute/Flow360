@@ -54,10 +54,6 @@ class Flow360BaseModel(_SchemaBaseModel):
     file I/O, hash tracking, unit conversion (preprocess), and rich help output.
     """
 
-    model_config = pd.ConfigDict(
-        include_hash=False,
-    )
-
     def __init__(self, filename: str = None, **kwargs):
         model_dict = self._handle_file(filename=filename, **kwargs)
         super().__init__(**model_dict)
