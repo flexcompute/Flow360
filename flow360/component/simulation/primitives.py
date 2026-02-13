@@ -1063,9 +1063,9 @@ class CustomVolume(_VolumeEntityBase):
     private_attribute_entity_type_name: Literal["CustomVolume"] = pd.Field(
         "CustomVolume", frozen=True
     )
-    boundaries: EntityList[
-        Surface, WindTunnelGhostSurface, GhostSurface, GhostSphere, GhostCircularPlane
-    ] = pd.Field(description="The surfaces that define the boundaries of the custom volume.")
+    boundaries: EntityList[Surface, WindTunnelGhostSurface] = pd.Field(
+        description="The surfaces that define the boundaries of the custom volume."
+    )
     private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
 
     axes: Optional[OrthogonalAxes] = pd.Field(None, description="")  # Porous media support

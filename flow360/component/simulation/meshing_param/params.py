@@ -36,9 +36,6 @@ from flow360.component.simulation.meshing_param.volume_params import (
     WindTunnelFarfield,
 )
 from flow360.component.simulation.primitives import (
-    GhostCircularPlane,
-    GhostSphere,
-    GhostSurface,
     SeedpointVolume,
 )
 from flow360.component.simulation.validation.validation_context import (
@@ -193,35 +190,25 @@ class MeshingParams(Flow360BaseModel):
         if total_farfield > 1:
             raise ValueError("Only one farfield zone is allowed in `volume_zones`.")
 
-        # If AutomatedFarfield is used with CustomVolume(s), exactly one of them must reference
-        # AutomatedFarfield.farfield, so the translator can identify which zone is the exterior farfield zone.
-        has_automated_farfield = any(isinstance(zone, AutomatedFarfield) for zone in v)
-        custom_volumes = [
-            entity
-            for zone in v
-            if isinstance(zone, CustomZones)
-            for entity in zone.entities.stored_entities
-            if isinstance(entity, CustomVolume)
-        ]
-        if has_automated_farfield and custom_volumes:
-            farfield_custom_volumes = []
-            for cv in custom_volumes:
-                has_farfield_ghost = any(
-                    isinstance(s, (GhostSurface, GhostSphere, GhostCircularPlane))
-                    and s.name == "farfield"
-                    for s in cv.boundaries.stored_entities
-                )
-                if has_farfield_ghost:
-                    farfield_custom_volumes.append(cv.name)
-            if len(farfield_custom_volumes) == 0:
+        automated_farfield = next((zone for zone in v if isinstance(zone, AutomatedFarfield)), None)
+        if automated_farfield is not None:
+            has_custom_volumes = any(
+                isinstance(entity, CustomVolume)
+                for zone in v
+                if isinstance(zone, CustomZones)
+                for entity in zone.entities.stored_entities
+            )
+            has_enclosed_surfaces = automated_farfield.enclosed_surfaces is not None
+
+            if has_custom_volumes and not has_enclosed_surfaces:
                 raise ValueError(
-                    "When using AutomatedFarfield with CustomVolumes, exactly one CustomVolume must include "
-                    "AutomatedFarfield.farfield in its boundaries to define the exterior farfield zone."
+                    "When using AutomatedFarfield with CustomVolumes, `enclosed_surfaces` must be "
+                    "specified on the AutomatedFarfield to define the exterior farfield zone boundary."
                 )
-            if len(farfield_custom_volumes) > 1:
+            if has_enclosed_surfaces and not has_custom_volumes:
                 raise ValueError(
-                    "Multiple CustomVolumes reference AutomatedFarfield.farfield: "
-                    f"{farfield_custom_volumes}. Only one CustomVolume may define the exterior farfield zone."
+                    "`enclosed_surfaces` on AutomatedFarfield is only allowed when CustomVolume entities are used."
+                    "Without custom volumes, the farfield zone will be automatically detected."
                 )
 
         return v

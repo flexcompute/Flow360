@@ -1316,9 +1316,8 @@ def test_sphere_rotation_volume_translator(get_surface_mesh):
     assert "otherBody" in outer_interface["enclosedObjects"]
 
 
-def test_custom_volume_with_ghost_surface_farfield(get_surface_mesh):
-    """AutomatedFarfield GhostSurface should be skipped from patches and force zone_name='farfield'."""
-    auto_farfield = AutomatedFarfield()
+def test_automated_farfield_enclosed_surfaces(get_surface_mesh):
+    """AutomatedFarfield.enclosed_surfaces should create a 'farfield' zone in translated output."""
     left1 = Surface(name="left1")
     right1 = Surface(name="right1")
     with SI_unit_system:
@@ -1338,20 +1337,9 @@ def test_custom_volume_with_ghost_surface_farfield(get_surface_mesh):
                             ),
                         ],
                     ),
-                    CustomZones(
-                        name="exterior_zone",
-                        entities=[
-                            CustomVolume(
-                                name="outer",
-                                boundaries=[
-                                    left1,
-                                    right1,
-                                    auto_farfield.farfield,
-                                ],
-                            ),
-                        ],
+                    AutomatedFarfield(
+                        enclosed_surfaces=[left1, right1],
                     ),
-                    auto_farfield,
                 ],
             ),
             private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
@@ -1360,47 +1348,6 @@ def test_custom_volume_with_ghost_surface_farfield(get_surface_mesh):
     translated = get_volume_meshing_json(params, get_surface_mesh.mesh_unit)
     assert "zones" in translated
     zones_by_name = {z["name"]: z for z in translated["zones"]}
-    # Exterior CustomVolume should be renamed to "farfield" for the mesher
+    # enclosed_surfaces should produce a "farfield" zone
     assert "farfield" in zones_by_name
-    # GhostSurface should not appear in patches
-    assert "farfield" not in zones_by_name["farfield"]["patches"]
     assert sorted(zones_by_name["farfield"]["patches"]) == ["left1", "right1"]
-    # Inner zone keeps its original name
-    assert "inner" in zones_by_name
-    assert sorted(zones_by_name["inner"]["patches"]) == ["left1", "right1"]
-
-
-def test_custom_volume_with_wind_tunnel_ghost_surface(get_surface_mesh):
-    """WindTunnelGhostSurface should NOT be skipped from patches."""
-    wind_tunnel = WindTunnelFarfield()
-    with SI_unit_system:
-        params = SimulationParams(
-            meshing=MeshingParams(
-                defaults=MeshingDefaults(
-                    boundary_layer_first_layer_thickness=1e-4,
-                ),
-                volume_zones=[
-                    CustomZones(
-                        name="custom",
-                        entities=[
-                            CustomVolume(
-                                name="zone1",
-                                boundaries=[
-                                    Surface(name="face1"),
-                                    Surface(name="face2"),
-                                    wind_tunnel.left,
-                                ],
-                            ),
-                        ],
-                    ),
-                    wind_tunnel,
-                ],
-            ),
-            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True, use_geometry_AI=True),
-        )
-
-    translated = get_volume_meshing_json(params, get_surface_mesh.mesh_unit)
-    assert "zones" in translated
-    assert len(translated["zones"]) == 1
-    assert translated["zones"][0]["name"] == "zone1"
-    assert "windTunnelLeft" in translated["zones"][0]["patches"]
