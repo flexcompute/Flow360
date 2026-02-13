@@ -13,6 +13,10 @@ on:
       AWS_CODEARTIFACT_READ_ACCESS_SECRET:
         required: true
 
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   code-style:
     uses: ./.github/workflows/codestyle.yml
@@ -61,8 +65,30 @@ jobs:
     - name: Install dependencies
       run: poetry install
 
+    # Non-coverage matrix combinations: run tests normally
     - name: Run simulation_params tests
+      if: ${{ !(matrix.python-version == '3.10' && matrix.platform == 'ubuntu-latest') }}
       run: poetry run pytest -rA tests/simulation -vv
 
     - name: Run flow360_params tests
+      if: ${{ !(matrix.python-version == '3.10' && matrix.platform == 'ubuntu-latest') }}
       run: poetry run pytest -rA --ignore tests/simulation -vv
+
+    # Coverage matrix combination (Python 3.10 + ubuntu-latest): run tests with coverage
+    - name: Run simulation_params tests with coverage
+      if: matrix.python-version == '3.10' && matrix.platform == 'ubuntu-latest'
+      run: poetry run pytest -rA tests/simulation -vv --cov=flow360 --cov-report=term-missing:skip-covered
+
+    - name: Run flow360_params tests with coverage
+      if: matrix.python-version == '3.10' && matrix.platform == 'ubuntu-latest'
+      run: poetry run pytest -rA --ignore tests/simulation -vv --cov=flow360 --cov-append --cov-report=term-missing:skip-covered --cov-report=xml:coverage.xml
+
+    - name: Generate coverage summary
+      if: matrix.python-version == '3.10' && matrix.platform == 'ubuntu-latest' && github.event_name == 'pull_request'
+      run: python .github/scripts/coverage_summary.py coverage.xml coverage-summary.md 2
+
+    - name: Post coverage comment
+      if: matrix.python-version == '3.10' && matrix.platform == 'ubuntu-latest' && github.event_name == 'pull_request'
+      uses: marocchino/sticky-pull-request-comment@v2
+      with:
+        path: coverage-summary.md
