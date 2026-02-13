@@ -14,10 +14,9 @@ from typing import Annotated, Dict, List, Literal, Optional, Union
 
 import numpy as np
 import pydantic as pd
+from flow360_schemas.framework.mixins import Conflicts, ConflictsMixin
 from pydantic import NonNegativeFloat, NonNegativeInt, PositiveFloat, PositiveInt
 from typing_extensions import Self
-
-from flow360_schemas.framework.mixins import Conflicts, ConflictsMixin
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList

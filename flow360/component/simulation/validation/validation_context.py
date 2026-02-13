@@ -103,7 +103,12 @@ class FeatureUsageInfo:
                     self.bet_disk_count += 1
 
 
-_validation_level_ctx = contextvars.ContextVar("validation_levels", default=None)
+# Share the validation-level ContextVar with the schema layer so that
+# validators defined in flow360_schemas read the same context the SDK sets.
+from flow360_schemas.framework.validation.context import (  # noqa: F401 — re-used, not redefined
+    _validation_level_ctx,
+)
+
 _validation_info_ctx = contextvars.ContextVar("validation_info", default=None)
 _validation_warnings_ctx = contextvars.ContextVar("validation_warnings", default=None)
 

@@ -18,6 +18,11 @@ from typing import Annotated, Any, ClassVar, List, Literal, Optional, Tuple, Uni
 
 import numpy as np
 import pydantic as pd
+from flow360_schemas.framework.mixins import (
+    Conflicts,
+    ConflictsMixin,
+    RequireOneOfMixin,
+)
 
 # this plugin is optional, thus pylatex is not required: TODO add handling of installation of pylatex
 # pylint: disable=import-error
@@ -25,8 +30,6 @@ from pylatex import NoEscape, Package, Tabular
 
 from flow360.component.case import Case, CaseMetaV2
 from flow360.component.results import base_results, case_results
-from flow360_schemas.framework.mixins import Conflicts, ConflictsMixin, RequireOneOfMixin
-
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.volume_mesh import VolumeMeshDownloadable, VolumeMeshV2
 from flow360.log import log
