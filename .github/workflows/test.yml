@@ -88,3 +88,6 @@ jobs:
       uses: MishaKav/pytest-coverage-comment@v1
       with:
         pytest-xml-coverage-path: coverage.xml
+        report-only-changed-files: true
+        remove-links-to-files: true
+        remove-links-to-lines: true
