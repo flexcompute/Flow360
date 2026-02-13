@@ -54,13 +54,9 @@ def main():
 
     for key, g in sorted_groups:
         pct = (g["hits"] / g["lines"] * 100) if g["lines"] else 0
-        lines.append(
-            f"| `{key}` | {pct:.1f}% | `{make_bar(pct)}` | {g['hits']} / {g['lines']} |"
-        )
+        lines.append(f"| `{key}` | {pct:.1f}% | `{make_bar(pct)}` | {g['hits']} / {g['lines']} |")
 
-    lines.append(
-        f"| **Total** | **{total_pct:.1f}%** | | **{total_hits} / {total_lines}** |"
-    )
+    lines.append(f"| **Total** | **{total_pct:.1f}%** | | **{total_hits} / {total_lines}** |")
     lines.append("")
 
     with open(output_path, "w") as f:
