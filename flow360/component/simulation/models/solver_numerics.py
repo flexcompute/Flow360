@@ -14,7 +14,6 @@ from typing import Annotated, Dict, List, Literal, Optional, Union
 
 import numpy as np
 import pydantic as pd
-from flow360_schemas.framework.mixins import Conflicts, ConflictsMixin
 from pydantic import NonNegativeFloat, NonNegativeInt, PositiveFloat, PositiveInt
 from typing_extensions import Self
 
@@ -28,7 +27,7 @@ HEAT_EQUATION_EVAL_MAX_PER_PSEUDOSTEP_UNSTEADY = 40
 HEAT_EQUATION_EVALUATION_FREQUENCY_STEADY = 10
 
 
-class LinearSolver(ConflictsMixin, Flow360BaseModel):
+class LinearSolver(Flow360BaseModel):
     """:class:`LinearSolver` class for setting up the linear solver.
 
     Example
@@ -38,8 +37,6 @@ class LinearSolver(ConflictsMixin, Flow360BaseModel):
     ...     absoluteTolerance=1e-10
     ... )
     """
-
-    _conflicting_fields_ = [Conflicts(field1="absolute_tolerance", field2="relative_tolerance")]
 
     max_iterations: PositiveInt = pd.Field(
         30, description="Maximum number of linear solver iterations."
@@ -54,6 +51,18 @@ class LinearSolver(ConflictsMixin, Flow360BaseModel):
         description="The linear solver converges when the ratio of the final residual and the initial "
         + "residual of the pseudo step is below this value.",
     )
+
+    @pd.model_validator(mode="before")
+    @classmethod
+    def _check_tolerance_conflict(cls, values):
+        if (
+            values.get("absolute_tolerance") is not None
+            and values.get("relative_tolerance") is not None
+        ):
+            raise ValueError(
+                "absolute_tolerance and relative_tolerance cannot be specified at the same time."
+            )
+        return values
 
 
 class GenericSolverSettings(Flow360BaseModel, metaclass=ABCMeta):
@@ -477,7 +486,7 @@ class HeatEquationSolver(GenericSolverSettings):
     )
 
 
-class TransitionModelSolver(ConflictsMixin, GenericSolverSettings):
+class TransitionModelSolver(GenericSolverSettings):
     """:class:`TransitionModelSolver` class for setting up transition model solver.
     For more information on setting up the numerical parameters for the transition model solver,
     refer to :ref:`the transition model solver knowledge base <knowledge_base_transitionModelSolver>`.
@@ -497,7 +506,17 @@ class TransitionModelSolver(ConflictsMixin, GenericSolverSettings):
     ... )
     """
 
-    _conflicting_fields_ = [Conflicts(field1="N_crit", field2="turbulence_intensity_percent")]
+    @pd.model_validator(mode="before")
+    @classmethod
+    def _check_n_crit_conflict(cls, values):
+        if (
+            values.get("N_crit") is not None
+            and values.get("turbulence_intensity_percent") is not None
+        ):
+            raise ValueError(
+                "N_crit and turbulence_intensity_percent cannot be specified at the same time."
+            )
+        return values
 
     type_name: Literal["AmplificationFactorTransport"] = pd.Field(
         "AmplificationFactorTransport", frozen=True
