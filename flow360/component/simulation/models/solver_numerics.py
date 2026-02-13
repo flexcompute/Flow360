@@ -52,17 +52,13 @@ class LinearSolver(Flow360BaseModel):
         + "residual of the pseudo step is below this value.",
     )
 
-    @pd.model_validator(mode="before")
-    @classmethod
-    def _check_tolerance_conflict(cls, values):
-        if (
-            values.get("absolute_tolerance") is not None
-            and values.get("relative_tolerance") is not None
-        ):
+    @pd.model_validator(mode="after")
+    def _check_tolerance_conflict(self) -> Self:
+        if self.absolute_tolerance is not None and self.relative_tolerance is not None:
             raise ValueError(
                 "absolute_tolerance and relative_tolerance cannot be specified at the same time."
             )
-        return values
+        return self
 
 
 class GenericSolverSettings(Flow360BaseModel, metaclass=ABCMeta):
@@ -506,17 +502,13 @@ class TransitionModelSolver(GenericSolverSettings):
     ... )
     """
 
-    @pd.model_validator(mode="before")
-    @classmethod
-    def _check_n_crit_conflict(cls, values):
-        if (
-            values.get("N_crit") is not None
-            and values.get("turbulence_intensity_percent") is not None
-        ):
+    @pd.model_validator(mode="after")
+    def _check_n_crit_conflict(self) -> Self:
+        if self.N_crit is not None and self.turbulence_intensity_percent is not None:
             raise ValueError(
                 "N_crit and turbulence_intensity_percent cannot be specified at the same time."
             )
-        return values
+        return self
 
     type_name: Literal["AmplificationFactorTransport"] = pd.Field(
         "AmplificationFactorTransport", frozen=True
