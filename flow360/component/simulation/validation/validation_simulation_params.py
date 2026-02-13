@@ -31,7 +31,6 @@ from flow360.component.simulation.models.surface_models import (
 from flow360.component.simulation.models.volume_models import (
     ActuatorDisk,
     Fluid,
-    Gravity,
     Rotation,
     Solid,
 )
@@ -142,39 +141,6 @@ def _check_duplicate_entities_in_models(params, param_info: ParamsValidationInfo
 
     if error_msg:
         raise ValueError(error_msg)
-
-    return params
-
-
-def _check_gravity_model_conflicts(params):
-    """Check that at most one Gravity model applies to all zones (entities=None).
-
-    When a Gravity model has entities=None it applies to every fluid zone,
-    so having more than one such model or mixing a global one with
-    zone-specific ones would create conflicting gravity definitions.
-    """
-    if not params.models:
-        return params
-
-    gravity_models = [m for m in params.models if isinstance(m, Gravity)]
-    if len(gravity_models) <= 1:
-        return params
-
-    global_gravity = [m for m in gravity_models if m.entities is None]
-
-    if len(global_gravity) > 1:
-        raise ValueError(
-            "Multiple Gravity models with unspecified entities (applying to all zones) "
-            "are not allowed. Please specify explicit entities for each Gravity model "
-            "or use a single Gravity model for all zones."
-        )
-
-    if len(global_gravity) == 1:
-        raise ValueError(
-            "A Gravity model that applies to all zones (entities not specified) "
-            "cannot coexist with other Gravity models. Please specify explicit "
-            "entities for each Gravity model or use a single Gravity model for all zones."
-        )
 
     return params
 

@@ -49,7 +49,6 @@ from flow360.component.simulation.models.volume_models import (
     AngularVelocity,
     BETDisk,
     Fluid,
-    Gravity,
     NavierStokesInitialCondition,
     NavierStokesModifiedRestartSolution,
     PorousMedium,
@@ -1336,41 +1335,35 @@ def porous_media_translator(model: PorousMedium):
     return porous_medium
 
 
-def gravity_entity_info_serializer(volume):
-    """Gravity entity serializer"""
-    if volume is None:
-        return {"zoneType": "global"}
-    return {
-        "zoneType": "mesh",
-        "zoneName": volume.full_name,
-    }
-
-
-def gravity_translator(model: Gravity, params):
-    """Gravity translator - converts dimensional gravity to non-dimensional form.
+def gravity_translator(gravity, params):
+    """Gravity translator - converts dimensional gravity to non-dimensional gravityVector.
 
     Non-dimensionalization: g* = g * L_ref / a_∞²
     where L_ref is the reference length (mesh unit) and a_∞ is the speed of sound.
+
+    The output gravityVector has the magnitude baked into the direction:
+    gravityVector = magnitude_nondim * direction
     """
     # Get the magnitude value in m/s²
-    magnitude = model.magnitude.to("m/s**2").value.item()
+    magnitude = gravity.magnitude.to("m/s**2").value.item()
 
-    # Get direction (already normalized by validator)
-    direction = model.direction
-
-    # Compute the dimensional gravity vector
-    gravity_vector_dimensional = [d * magnitude for d in direction]
+    # Get direction (already normalized by Axis validator)
+    direction = list(gravity.direction)
 
     # Compute non-dimensionalization factor: L_ref / a_∞²
     base_length = params.base_length.to("m").value
     base_velocity = params.base_velocity.to("m/s").value  # speed of sound
-
     nondim_factor = base_length / (base_velocity**2)
 
-    # Non-dimensionalize the gravity vector
-    gravity_vector_nondim = [g * nondim_factor for g in gravity_vector_dimensional]
+    # Non-dimensionalize the magnitude
+    magnitude_nondim = magnitude * nondim_factor
 
-    return {"gravityVector": gravity_vector_nondim}
+    # Combine into a single gravity vector (magnitude baked in)
+    gravity_vector = [magnitude_nondim * d for d in direction]
+
+    return {
+        "gravityVector": gravity_vector,
+    }
 
 
 def bet_disk_entity_info_serializer(volume):
@@ -2344,6 +2337,10 @@ def get_solver_json(
                     "interfaceInterpolationTolerance"
                 ] = model.interface_interpolation_tolerance
 
+            ##:: Step 6b: Get gravity from Fluid model
+            if model.gravity is not None:
+                translated["gravity"] = gravity_translator(model.gravity, input_params)
+
     ##:: Step 7: Get BET and AD lists
     if has_instance_in_list(input_params.models, BETDisk):
         translated["BETDisks"] = translate_setting_and_apply_to_all_entities(
@@ -2388,23 +2385,6 @@ def get_solver_json(
             to_list=True,
             entity_injection_func=porous_media_entity_info_serializer,
         )
-
-    ##:: Step 9b: Get gravity
-    if has_instance_in_list(input_params.models, Gravity):
-        gravity_list = []
-        for gravity_model in get_all_entries_of_type(input_params.models, Gravity):
-            gravity_dict = gravity_translator(gravity_model, input_params)
-            if gravity_model.entities is None:
-                # Apply to all zones (global)
-                gravity_dict.update(gravity_entity_info_serializer(None))
-                gravity_list.append(gravity_dict)
-            else:
-                # Apply to specified zones
-                for entity in gravity_model.entities.stored_entities:
-                    entity_gravity_dict = gravity_dict.copy()
-                    entity_gravity_dict.update(gravity_entity_info_serializer(entity))
-                    gravity_list.append(entity_gravity_dict)
-        translated["gravity"] = gravity_list
 
     ##:: Step 10: Get heat transfer zones
     solid_zone_boundaries = set()
