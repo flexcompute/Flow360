@@ -1812,15 +1812,15 @@ def test_remove_non_manifold_faces_and_remove_hidden_geometry_mutual_exclusion()
             assert defaults.remove_hidden_geometry is False
 
 
-def test_flooding_cell_size_requires_remove_hidden_geometry():
-    """Test that flooding_cell_size can only be specified when remove_hidden_geometry is True."""
+def test_min_passage_size_requires_remove_hidden_geometry():
+    """Test that min_passage_size can only be specified when remove_hidden_geometry is True."""
     gai_context = ParamsValidationInfo({}, [])
     gai_context.use_geometry_AI = True
 
-    # Test 1: flooding_cell_size with remove_hidden_geometry=False should raise
+    # Test 1: min_passage_size with remove_hidden_geometry=False should raise
     with pytest.raises(
         pd.ValidationError,
-        match=r"'flooding_cell_size' can only be specified when 'remove_hidden_geometry' is True",
+        match=r"'min_passage_size' can only be specified when 'remove_hidden_geometry' is True",
     ):
         with ValidationContext(SURFACE_MESH, gai_context):
             with SI_unit_system:
@@ -1828,29 +1828,29 @@ def test_flooding_cell_size_requires_remove_hidden_geometry():
                     geometry_accuracy=0.01 * u.m,
                     surface_max_edge_length=0.1 * u.m,
                     remove_hidden_geometry=False,
-                    flooding_cell_size=0.005 * u.m,
+                    min_passage_size=0.005 * u.m,
                 )
 
-    # Test 2: flooding_cell_size with remove_hidden_geometry=True should work
+    # Test 2: min_passage_size with remove_hidden_geometry=True should work
     with ValidationContext(SURFACE_MESH, gai_context):
         with SI_unit_system:
             defaults = MeshingDefaults(
                 geometry_accuracy=0.01 * u.m,
                 surface_max_edge_length=0.1 * u.m,
                 remove_hidden_geometry=True,
-                flooding_cell_size=0.005 * u.m,
+                min_passage_size=0.005 * u.m,
             )
-            assert defaults.flooding_cell_size == 0.005 * u.m
+            assert defaults.min_passage_size == 0.005 * u.m
             assert defaults.remove_hidden_geometry is True
 
-    # Test 3: remove_hidden_geometry=True without flooding_cell_size should work (it's optional)
+    # Test 3: remove_hidden_geometry=True without min_passage_size should work (it's optional)
     with ValidationContext(SURFACE_MESH, gai_context):
         with SI_unit_system:
             defaults = MeshingDefaults(
                 geometry_accuracy=0.01 * u.m,
                 surface_max_edge_length=0.1 * u.m,
                 remove_hidden_geometry=True,
-                flooding_cell_size=None,
+                min_passage_size=None,
             )
-            assert defaults.flooding_cell_size is None
+            assert defaults.min_passage_size is None
             assert defaults.remove_hidden_geometry is True
