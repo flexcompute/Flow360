@@ -34,21 +34,12 @@ def snake_to_camel(string: str) -> str:
 
 
 base_model_config = pd.ConfigDict(
-    ##:: Pydantic kwargs
-    arbitrary_types_allowed=True,  # ?
+    arbitrary_types_allowed=True,  # TODO: InputFileModel doesn't need this; remove after audit
     extra="forbid",
     frozen=False,
     populate_by_name=True,
     validate_assignment=True,
     validate_default=True,
-    ##:: Custom keys
-    require_one_of=[],
-    allow_but_remove=[],
-    conflicting_fields=[],
-    include_hash=False,
-    include_defaults_in_schema=True,
-    # pylint: disable=fixme
-    # TODO: Remove alias_generator since it is only for translator
     alias_generator=pd.AliasGenerator(
         serialization_alias=snake_to_camel,
     ),
