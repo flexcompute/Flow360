@@ -1009,14 +1009,14 @@ def test_octree_spacing():
     assert spacing.to_level(3.9999999999993 * u.mm) == (-1, True)
 
 
-def test_set_default_base_spacing():
+def test_set_default_octree_spacing():
     surface_meshing = snappy.SurfaceMeshingParams(
         defaults=snappy.SurfaceMeshingDefaults(
             min_spacing=1 * u.mm, max_spacing=2 * u.mm, gap_resolution=1 * u.mm
         )
     )
 
-    assert surface_meshing.base_spacing is None
+    assert surface_meshing.octree_spacing is None
 
     with ValidationContext(SURFACE_MESH, beta_mesher_context):
         surface_meshing = snappy.SurfaceMeshingParams(
@@ -1025,9 +1025,9 @@ def test_set_default_base_spacing():
             )
         )
 
-    assert surface_meshing.base_spacing.base_spacing == 1 * u.mm
-    assert surface_meshing.base_spacing[2] == 0.25 * u.mm
-    assert surface_meshing.base_spacing.to_level(2 * u.mm) == (-1, True)
+    assert surface_meshing.octree_spacing.base_spacing == 1 * u.mm
+    assert surface_meshing.octree_spacing[2] == 0.25 * u.mm
+    assert surface_meshing.octree_spacing.to_level(2 * u.mm) == (-1, True)
 
 
 def test_set_spacing_with_value():
@@ -1035,18 +1035,30 @@ def test_set_spacing_with_value():
         defaults=snappy.SurfaceMeshingDefaults(
             min_spacing=1 * u.mm, max_spacing=2 * u.mm, gap_resolution=1 * u.mm
         ),
-        base_spacing=3 * u.mm,
+        octree_spacing=3 * u.mm,
     )
 
-    assert surface_meshing.base_spacing.base_spacing == 3 * u.mm
+    assert surface_meshing.octree_spacing.base_spacing == 3 * u.mm
 
     with pytest.raises(pd.ValidationError):
         surface_meshing = snappy.SurfaceMeshingParams(
             defaults=snappy.SurfaceMeshingDefaults(
                 min_spacing=1 * u.mm, max_spacing=2 * u.mm, gap_resolution=1 * u.mm
             ),
-            base_spacing=-3 * u.mm,
+            octree_spacing=-3 * u.mm,
         )
+
+
+def test_set_spacing_with_base_spacing_alias():
+    """Test that base_spacing alias still works for backward compatibility."""
+    surface_meshing = snappy.SurfaceMeshingParams(
+        defaults=snappy.SurfaceMeshingDefaults(
+            min_spacing=1 * u.mm, max_spacing=2 * u.mm, gap_resolution=1 * u.mm
+        ),
+        base_spacing=3 * u.mm,
+    )
+
+    assert surface_meshing.octree_spacing.base_spacing == 3 * u.mm
 
 
 def test_quasi_3d_periodic_only_in_legacy_mesher():
@@ -1854,3 +1866,225 @@ def test_flooding_cell_size_requires_remove_hidden_geometry():
             )
             assert defaults.flooding_cell_size is None
             assert defaults.remove_hidden_geometry is True
+
+
+def test_meshing_defaults_octree_spacing_explicit():
+    """Test that octree_spacing can be explicitly set on MeshingDefaults."""
+    with ValidationContext(VOLUME_MESH, beta_mesher_context):
+        with SI_unit_system:
+            defaults = MeshingDefaults(
+                boundary_layer_first_layer_thickness=1e-5 * u.m,
+                octree_spacing=2 * u.m,
+            )
+            assert defaults.octree_spacing is not None
+            assert isinstance(defaults.octree_spacing, OctreeSpacing)
+            assert defaults.octree_spacing.base_spacing == 2 * u.m
+            # Verify indexing works through the field
+            assert defaults.octree_spacing[0] == 2 * u.m
+            assert defaults.octree_spacing[1] == 1 * u.m
+
+
+def test_meshing_defaults_octree_spacing_auto_set_from_project_length_unit():
+    """Test that octree_spacing is automatically set to 1 * project_length_unit when not specified."""
+    with ValidationContext(VOLUME_MESH, beta_mesher_context):
+        with CGS_unit_system:
+            defaults = MeshingDefaults(
+                boundary_layer_first_layer_thickness=0.001,
+            )
+            # beta_mesher_context has project_length_unit = "mm"
+            assert defaults.octree_spacing is not None
+            assert isinstance(defaults.octree_spacing, OctreeSpacing)
+            assert defaults.octree_spacing.base_spacing == 1 * u.mm
+
+
+def test_meshing_defaults_octree_spacing_none_without_context():
+    """Test that octree_spacing stays None when no validation context is active."""
+    with CGS_unit_system:
+        defaults = MeshingDefaults()
+        assert defaults.octree_spacing is None
+
+
+def test_meshing_defaults_octree_spacing_warning_no_project_length_unit():
+    """Test that a validation warning is emitted when project_length_unit is None."""
+    no_unit_context = ParamsValidationInfo({}, [])
+    no_unit_context.is_beta_mesher = True
+    no_unit_context.project_length_unit = None
+
+    with ValidationContext(VOLUME_MESH, no_unit_context) as ctx:
+        with CGS_unit_system:
+            defaults = MeshingDefaults(
+                boundary_layer_first_layer_thickness=0.001,
+            )
+            assert defaults.octree_spacing is None
+
+    warning_msgs = [w["msg"] if isinstance(w, dict) else str(w) for w in ctx.validation_warnings]
+    assert any("octree_spacing" in msg and "will not be set automatically" in msg for msg in warning_msgs)
+
+
+def test_meshing_defaults_octree_spacing_negative_raises():
+    """Test that negative octree_spacing raises a validation error."""
+    with pytest.raises(pd.ValidationError):
+        with SI_unit_system:
+            MeshingDefaults(octree_spacing=-1 * u.m)
+
+
+def test_meshing_defaults_octree_spacing_explicit_object():
+    """Test that octree_spacing can be explicitly set as an OctreeSpacing object."""
+    with ValidationContext(VOLUME_MESH, beta_mesher_context):
+        with SI_unit_system:
+            spacing = OctreeSpacing(base_spacing=5 * u.m)
+            defaults = MeshingDefaults(
+                boundary_layer_first_layer_thickness=1e-5 * u.m,
+                octree_spacing=spacing,
+            )
+            assert defaults.octree_spacing.base_spacing == 5 * u.m
+
+
+def test_meshing_params_octree_check_skipped_for_non_beta():
+    """Test that octree series check is skipped for non-beta mesher."""
+    # Should not warn or raise — the validator returns early for non-beta
+    with ValidationContext(VOLUME_MESH, non_beta_mesher_context) as ctx:
+        with CGS_unit_system:
+            cylinder = Cylinder(
+                name="cyl",
+                outer_radius=10,
+                height=20,
+                axis=(0, 0, 1),
+                center=(0, 0, 0),
+            )
+            MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=0.001,
+                ),
+                refinements=[
+                    UniformRefinement(entities=[cylinder], spacing=0.3),
+                ],
+                volume_zones=[AutomatedFarfield()],
+            )
+    # No octree-related warnings for non-beta mesher
+    warning_msgs = [w["msg"] if isinstance(w, dict) else str(w) for w in ctx.validation_warnings]
+    assert not any("octree series" in msg for msg in warning_msgs)
+
+
+def test_meshing_params_octree_check_warns_for_non_aligned_spacing(capsys):
+    """Test that octree series check warns when spacing doesn't align with octree series."""
+    with ValidationContext(VOLUME_MESH, beta_mesher_context):
+        with CGS_unit_system:
+            cylinder = Cylinder(
+                name="cyl",
+                outer_radius=10,
+                height=20,
+                axis=(0, 0, 1),
+                center=(0, 0, 0),
+            )
+            MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=0.001,
+                    octree_spacing=1 * u.mm,
+                ),
+                refinements=[
+                    # 0.3 mm is not a power-of-2 fraction of 1 mm
+                    UniformRefinement(entities=[cylinder], spacing=0.3 * u.mm),
+                ],
+                volume_zones=[AutomatedFarfield()],
+            )
+    captured = capsys.readouterr()
+    captured_text = " ".join(captured.out.split())
+    assert "will be cast to the first lower refinement" in captured_text
+
+
+def test_meshing_params_octree_check_no_warn_for_aligned_spacing():
+    """Test that octree series check does not warn for aligned spacing."""
+    with ValidationContext(VOLUME_MESH, beta_mesher_context):
+        with CGS_unit_system:
+            cylinder = Cylinder(
+                name="cyl",
+                outer_radius=10,
+                height=20,
+                axis=(0, 0, 1),
+                center=(0, 0, 0),
+            )
+            # 0.5 mm = 1mm * 2^-1, so this is aligned
+            MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=0.001,
+                    octree_spacing=1 * u.mm,
+                ),
+                refinements=[
+                    UniformRefinement(entities=[cylinder], spacing=0.5 * u.mm),
+                ],
+                volume_zones=[AutomatedFarfield()],
+            )
+
+
+def test_meshing_params_octree_check_skipped_when_octree_spacing_none():
+    """Test that octree check is skipped when octree_spacing is None."""
+    no_unit_context = ParamsValidationInfo({}, [])
+    no_unit_context.is_beta_mesher = True
+    no_unit_context.project_length_unit = None
+
+    with ValidationContext(VOLUME_MESH, no_unit_context):
+        with CGS_unit_system:
+            cylinder = Cylinder(
+                name="cyl",
+                outer_radius=10,
+                height=20,
+                axis=(0, 0, 1),
+                center=(0, 0, 0),
+            )
+            # Should not raise — validator just logs a warning and skips
+            MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=0.001,
+                ),
+                refinements=[
+                    UniformRefinement(entities=[cylinder], spacing=0.3),
+                ],
+                volume_zones=[AutomatedFarfield()],
+            )
+
+
+def test_meshing_params_octree_check_multiple_refinements():
+    """Test that octree series check runs on all UniformRefinements."""
+    with ValidationContext(VOLUME_MESH, beta_mesher_context):
+        with CGS_unit_system:
+            cylinder1 = Cylinder(
+                name="cyl1",
+                outer_radius=10,
+                height=20,
+                axis=(0, 0, 1),
+                center=(0, 0, 0),
+            )
+            cylinder2 = Cylinder(
+                name="cyl2",
+                outer_radius=5,
+                height=10,
+                axis=(0, 0, 1),
+                center=(1, 0, 0),
+            )
+            # Both spacings are powers of 2 of the base, should not warn
+            MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=0.001,
+                    octree_spacing=1 * u.mm,
+                ),
+                refinements=[
+                    UniformRefinement(entities=[cylinder1], spacing=0.25 * u.mm),
+                    UniformRefinement(entities=[cylinder2], spacing=0.125 * u.mm),
+                ],
+                volume_zones=[AutomatedFarfield()],
+            )
+
+
+def test_meshing_params_octree_check_no_refinements():
+    """Test that octree check does not fail when there are no refinements."""
+    with ValidationContext(VOLUME_MESH, beta_mesher_context):
+        with CGS_unit_system:
+            MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=0.001,
+                    octree_spacing=1 * u.mm,
+                ),
+                refinements=[],
+                volume_zones=[AutomatedFarfield()],
+            )

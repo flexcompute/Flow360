@@ -221,7 +221,7 @@ class MeshingDefaults(Flow360BaseModel):
         + "This only affects beta mesher.",
     )
 
-    base_spacing: Optional[OctreeSpacing] = pd.Field(
+    octree_spacing: Optional[OctreeSpacing] = pd.Field(
         None,
         description="Octree spacing configuration for volume meshing. "
         "If specified, this will be used to control the base spacing for octree-based meshers.",
@@ -273,22 +273,22 @@ class MeshingDefaults(Flow360BaseModel):
         """Validate that the feature is only used when Geometry AI is enabled."""
         return check_geometry_ai_features(cls, value, info, param_info)
 
-    @contextual_field_validator("base_spacing", mode="after")
+    @contextual_field_validator("octree_spacing", mode="after")
     @classmethod
-    def _set_default_base_spacing(cls, base_spacing, param_info: ParamsValidationInfo):
-        """Set default base_spacing to 1 * project_length_unit when not specified."""
-        if base_spacing is not None:
-            return base_spacing
+    def _set_default_octree_spacing(cls, octree_spacing, param_info: ParamsValidationInfo):
+        """Set default octree_spacing to 1 * project_length_unit when not specified."""
+        if octree_spacing is not None:
+            return octree_spacing
         if param_info.project_length_unit is None:
             add_validation_warning(
-                "No project length unit found; `base_spacing` will not be set automatically. "
+                "No project length unit found; `octree_spacing` will not be set automatically. "
                 "Octree spacing validation will be skipped."
             )
-            return base_spacing
+            return octree_spacing
 
         # pylint: disable=no-member
-        base_spacing = 1 * LengthType.validate(param_info.project_length_unit)
-        return OctreeSpacing(base_spacing=base_spacing)
+        project_length = 1 * LengthType.validate(param_info.project_length_unit)
+        return OctreeSpacing(base_spacing=project_length)
 
     @pd.model_validator(mode="after")
     def validate_mutual_exclusion(self):
@@ -334,3 +334,26 @@ class VolumeMeshingDefaults(Flow360BaseModel):
         " no. of layers to grow the boundary layer elements to isotropic size if not specified."
         " This is only supported by the beta mesher and can not be overridden per face.",
     )
+
+    octree_spacing: Optional[OctreeSpacing] = pd.Field(
+        None,
+        description="Octree spacing configuration for volume meshing. "
+        "If specified, this will be used to control the base spacing for octree-based meshers.",
+    )
+
+    @contextual_field_validator("octree_spacing", mode="after")
+    @classmethod
+    def _set_default_octree_spacing(cls, octree_spacing, param_info: ParamsValidationInfo):
+        """Set default octree_spacing to 1 * project_length_unit when not specified."""
+        if octree_spacing is not None:
+            return octree_spacing
+        if param_info.project_length_unit is None:
+            add_validation_warning(
+                "No project length unit found; `octree_spacing` will not be set automatically. "
+                "Octree spacing validation will be skipped."
+            )
+            return octree_spacing
+
+        # pylint: disable=no-member
+        project_length = 1 * LengthType.validate(param_info.project_length_unit)
+        return OctreeSpacing(base_spacing=project_length)

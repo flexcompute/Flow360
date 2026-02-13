@@ -292,19 +292,19 @@ class MeshingParams(Flow360BaseModel):
         """Validate that UniformRefinement spacings align with the octree series."""
         if not param_info.is_beta_mesher:
             return self
-        if self.defaults.base_spacing is None:
+        if self.defaults.octree_spacing is None:
             log.warning(
-                "No `base_spacing` configured in `MeshingDefaults`; "
+                "No `octree_spacing` configured in `MeshingDefaults`; "
                 "octree spacing validation for UniformRefinement will be skipped."
             )
             return self
 
         def check_spacing(spacing, location):
             # pylint: disable=no-member
-            lvl, close = self.defaults.base_spacing.to_level(spacing)
+            lvl, close = self.defaults.octree_spacing.to_level(spacing)
             spacing_unit = spacing.units
             if not close:
-                closest_spacing = self.defaults.base_spacing[lvl]
+                closest_spacing = self.defaults.octree_spacing[lvl]
                 msg = f"The spacing of {spacing:.4g} specified in {location} will be cast to the first lower refinement"
                 msg += f" in the octree series ({closest_spacing.to(spacing_unit):.4g})."
                 log.warning(msg)
@@ -377,6 +377,35 @@ class VolumeMeshingParams(Flow360BaseModel):
         " relative to the smallest radius of all sliding interfaces specified in meshing parameters."
         " This cannot be overridden per sliding interface.",
     )
+
+    @contextual_model_validator(mode="after")
+    def _check_sizing_against_octree_series(self, param_info: ParamsValidationInfo):
+        """Validate that UniformRefinement spacings align with the octree series."""
+        if not param_info.is_beta_mesher:
+            return self
+        if self.defaults.octree_spacing is None:
+            log.warning(
+                "No `octree_spacing` configured in `VolumeMeshingDefaults`; "
+                "octree spacing validation for UniformRefinement will be skipped."
+            )
+            return self
+
+        def check_spacing(spacing, location):
+            # pylint: disable=no-member
+            lvl, close = self.defaults.octree_spacing.to_level(spacing)
+            spacing_unit = spacing.units
+            if not close:
+                closest_spacing = self.defaults.octree_spacing[lvl]
+                msg = f"The spacing of {spacing:.4g} specified in {location} will be cast to the first lower refinement"
+                msg += f" in the octree series ({closest_spacing.to(spacing_unit):.4g})."
+                log.warning(msg)
+
+        if self.refinements is not None:
+            for refinement in self.refinements:
+                if isinstance(refinement, UniformRefinement):
+                    check_spacing(refinement.spacing, type(refinement).__name__)
+
+        return self
 
 
 SurfaceMeshingParams = Annotated[
