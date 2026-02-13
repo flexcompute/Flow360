@@ -490,18 +490,18 @@ css = ["tinycss2 (>=1.1.0,<1.5)"]
 
 [[package]]
 name = "boto3"
-version = "1.42.47"
+version = "1.42.48"
 description = "The AWS SDK for Python"
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "boto3-1.42.47-py3-none-any.whl", hash = "sha256:ed881ed246027028af566acbb80f008aa619be4d3fdbcc4ad3c75dbe8c34bfaf"},
-    {file = "boto3-1.42.47.tar.gz", hash = "sha256:74812a2e29de7c2bd19e446d765cb887394f20f1517388484b51891a410f33b2"},
+    {file = "boto3-1.42.48-py3-none-any.whl", hash = "sha256:c9164fae0dc196f5040cf15d4fbc309475b09cb15649087fad4b65af55f815f2"},
+    {file = "boto3-1.42.48.tar.gz", hash = "sha256:f4e37445be869157c4aaa53ef3e1b1d1986f9722e64d36f4894de832dd4b11ef"},
 ]
 
 [package.dependencies]
-botocore = ">=1.42.47,<1.43.0"
+botocore = ">=1.42.48,<1.43.0"
 jmespath = ">=0.7.1,<2.0.0"
 s3transfer = ">=0.16.0,<0.17.0"
 
@@ -510,14 +510,14 @@ crt = ["botocore[crt] (>=1.21.0,<2.0a0)"]
 
 [[package]]
 name = "botocore"
-version = "1.42.47"
+version = "1.42.48"
 description = "Low-level, data-driven core of boto 3."
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "botocore-1.42.47-py3-none-any.whl", hash = "sha256:c60f5feaf189423e17755aca3f1d672b7466620dd2032440b32aaac64ae8cac8"},
-    {file = "botocore-1.42.47.tar.gz", hash = "sha256:c26e190c1b4d863ba7b44dc68cc574d8eb862ddae5f0fe3472801daee12a0378"},
+    {file = "botocore-1.42.48-py3-none-any.whl", hash = "sha256:57d23635a90239051bab1e1e980401890ec2d87ded38623b1e4570260aec56f7"},
+    {file = "botocore-1.42.48.tar.gz", hash = "sha256:970983e520de6d85981379efd44dbf293dbc6288d376169787b3b23ea8cd6163"},
 ]
 
 [package.dependencies]
@@ -1467,15 +1467,15 @@ devel = ["colorama", "json-spec", "jsonschema", "pylint", "pytest", "pytest-benc
 
 [[package]]
 name = "filelock"
-version = "3.21.0"
+version = "3.21.2"
 description = "A platform independent file lock."
 optional = true
 python-versions = ">=3.10"
 groups = ["main"]
 markers = "extra == \"docs\""
 files = [
-    {file = "filelock-3.21.0-py3-none-any.whl", hash = "sha256:0f90eee4c62101243df3007db3cf8fc3ebf1bb13541d3e72c687d6e0f3f7d531"},
-    {file = "filelock-3.21.0.tar.gz", hash = "sha256:48c739c73c6fcacd381ed532226991150947c4a76dcd674f84d6807fd55dbaf2"},
+    {file = "filelock-3.21.2-py3-none-any.whl", hash = "sha256:d6cd4dbef3e1bb63bc16500fc5aa100f16e405bbff3fb4231711851be50c1560"},
+    {file = "filelock-3.21.2.tar.gz", hash = "sha256:cfd218cfccf8b947fce7837da312ec3359d10ef2a47c8602edd59e0bacffb708"},
 ]
 
 [[package]]
@@ -4003,14 +4003,14 @@ xmp = ["defusedxml"]
 
 [[package]]
 name = "platformdirs"
-version = "4.6.0"
+version = "4.7.1"
 description = "A small Python package for determining appropriate platform-specific dirs, e.g. a `user data dir`."
 optional = false
 python-versions = ">=3.10"
 groups = ["main", "dev"]
 files = [
-    {file = "platformdirs-4.6.0-py3-none-any.whl", hash = "sha256:dd7f808d828e1764a22ebff09e60f175ee3c41876606a6132a688d809c7c9c73"},
-    {file = "platformdirs-4.6.0.tar.gz", hash = "sha256:4a13c2db1071e5846c3b3e04e5b095c0de36b2a24be9a3bc0145ca66fce4e328"},
+    {file = "platformdirs-4.7.1-py3-none-any.whl", hash = "sha256:06ac79ae0c5025949f62711e3f7cd178736515a29bcc669f42a216016cd1dc7a"},
+    {file = "platformdirs-4.7.1.tar.gz", hash = "sha256:6f4ff8472e482af4b7e67a183fbe63da846a9b34f57d5019c4d112a181003d82"},
 ]
 
 [[package]]
@@ -5606,23 +5606,25 @@ theme-sbt = ["sphinx-book-theme (>=1.1,<2.0)"]
 
 [[package]]
 name = "sphinx-favicon"
-version = "1.0.1"
+version = "1.1.0"
 description = "Sphinx Extension adding support for custom favicons"
 optional = true
-python-versions = ">=3.7"
+python-versions = ">=3.10"
 groups = ["main"]
 markers = "extra == \"docs\""
 files = [
-    {file = "sphinx-favicon-1.0.1.tar.gz", hash = "sha256:df796de32125609c1b4a8964db74270ebf4502089c27cd53f542354dc0b57e8e"},
-    {file = "sphinx_favicon-1.0.1-py3-none-any.whl", hash = "sha256:7c93d6b634cb4c9687ceab67a8526f05d3b02679df94e273e51a43282e6b034c"},
+    {file = "sphinx_favicon-1.1.0-py3-none-any.whl", hash = "sha256:3ca71506fbb4d9a30bddc60a29e3fb8854f3e237ad95abad5a5c15f857d987b2"},
+    {file = "sphinx_favicon-1.1.0.tar.gz", hash = "sha256:6f65939fc2a6ac4259c88b09169f0b72681cd4c03dd1d0cf91c57a1fa314e50b"},
 ]
 
 [package.dependencies]
-sphinx = ">=3.4"
+imagesize = ">=1.3"
+requests = ">=2.30"
+sphinx = ">=8.1,<10"
 
 [package.extras]
 dev = ["nox", "pre-commit"]
-doc = ["pydata-sphinx-theme", "sphinx (<6)", "sphinx-copybutton", "sphinx-design"]
+doc = ["pydata-sphinx-theme", "sphinx (>=8.1,<10)", "sphinx-copybutton", "sphinx-design"]
 test = ["beautifulsoup4", "pytest", "pytest-cov"]
 
 [[package]]
