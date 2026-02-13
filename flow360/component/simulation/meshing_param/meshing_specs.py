@@ -175,7 +175,7 @@ class MeshingDefaults(Flow360BaseModel):
     min_passage_size: Optional[LengthType.Positive] = pd.Field(
         None,
         description="Minimum passage size that hidden geometry removal can resolve. "
-        + "Passages smaller than this value may not be detected. "
+        + "Internal regions connected by thin passages smaller than this size may not be detected. "
         + "If not specified, the value is derived from geometry_accuracy and sealing_size. "
         + "This option is only supported when using geometry AI.",
     )
