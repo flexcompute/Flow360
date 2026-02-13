@@ -12,7 +12,6 @@ import rich
 import unyt as u
 import yaml
 from flow360_schemas.framework.base_model import Flow360BaseModel as _SchemaBaseModel
-from flow360_schemas.framework.mixins import Conflicts
 
 from flow360.component.simulation.conversion import need_conversion
 from flow360.error_messages import do_not_modify_file_manually_msg
@@ -57,65 +56,11 @@ class Flow360BaseModel(_SchemaBaseModel):
 
     model_config = pd.ConfigDict(
         include_hash=False,
-        # Temporary: kept until models migrate to ConflictsMixin/RequireOneOfMixin (Step 5)
-        require_one_of=[],
-        conflicting_fields=[],
     )
 
     def __init__(self, filename: str = None, **kwargs):
         model_dict = self._handle_file(filename=filename, **kwargs)
         super().__init__(**model_dict)
-
-    # -- Temporary validators (move to ConflictsMixin/RequireOneOfMixin in Step 5) --
-
-    @pd.model_validator(mode="before")
-    @classmethod
-    def one_of(cls, values):
-        """
-        root validator for require one of
-        """
-        if cls.model_config["require_one_of"]:
-            set_values = [key for key, v in values.items() if v is not None]
-            aliases = [
-                cls._get_field_alias(field_name=name) for name in cls.model_config["require_one_of"]
-            ]
-            aliases = [item for item in aliases if item is not None]
-            intersection = list(set(set_values) & set(cls.model_config["require_one_of"] + aliases))
-            if len(intersection) == 0:
-                raise ValueError(f"One of {cls.model_config['require_one_of']} is required.")
-        return values
-
-    @pd.model_validator(mode="before")
-    @classmethod
-    def handle_conflicting_fields(cls, values):
-        """
-        root validator to handle deprecated aliases and fields
-        which cannot be simultaneously defined in the model
-        """
-        if cls.model_config["conflicting_fields"]:
-            for conflicting_field in cls.model_config["conflicting_fields"]:
-                values = cls._handle_conflicting_fields(values, conflicting_field)
-        return values
-
-    @classmethod
-    def _handle_conflicting_fields(cls, values, conflicting_field: Conflicts = None):
-        conflicting_field1_value = values.get(conflicting_field.field1, None)
-        conflicting_field2_value = values.get(conflicting_field.field2, None)
-
-        if conflicting_field1_value is None:
-            field1_alias = cls._get_field_alias(field_name=conflicting_field.field1)
-            conflicting_field1_value = values.get(field1_alias, None)
-
-        if conflicting_field2_value is None:
-            field2_alias = cls._get_field_alias(field_name=conflicting_field.field2)
-            conflicting_field2_value = values.get(field2_alias, None)
-
-        if conflicting_field1_value is not None and conflicting_field2_value is not None:
-            raise ValueError(
-                f"{conflicting_field.field1} and {conflicting_field.field2} cannot be specified at the same time."
-            )
-
-        return values
 
     # -- SDK-only methods: dict / file handling --
 

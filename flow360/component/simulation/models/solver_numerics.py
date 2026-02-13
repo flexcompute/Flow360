@@ -17,10 +17,9 @@ import pydantic as pd
 from pydantic import NonNegativeFloat, NonNegativeInt, PositiveFloat, PositiveInt
 from typing_extensions import Self
 
-from flow360.component.simulation.framework.base_model import (
-    Conflicts,
-    Flow360BaseModel,
-)
+from flow360_schemas.framework.mixins import Conflicts, ConflictsMixin
+
+from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.primitives import Box, CustomVolume, GenericVolume
 
@@ -30,7 +29,7 @@ HEAT_EQUATION_EVAL_MAX_PER_PSEUDOSTEP_UNSTEADY = 40
 HEAT_EQUATION_EVALUATION_FREQUENCY_STEADY = 10
 
 
-class LinearSolver(Flow360BaseModel):
+class LinearSolver(ConflictsMixin, Flow360BaseModel):
     """:class:`LinearSolver` class for setting up the linear solver.
 
     Example
@@ -40,6 +39,8 @@ class LinearSolver(Flow360BaseModel):
     ...     absoluteTolerance=1e-10
     ... )
     """
+
+    _conflicting_fields_ = [Conflicts(field1="absolute_tolerance", field2="relative_tolerance")]
 
     max_iterations: PositiveInt = pd.Field(
         30, description="Maximum number of linear solver iterations."
@@ -53,10 +54,6 @@ class LinearSolver(Flow360BaseModel):
         None,
         description="The linear solver converges when the ratio of the final residual and the initial "
         + "residual of the pseudo step is below this value.",
-    )
-
-    model_config = pd.ConfigDict(
-        conflicting_fields=[Conflicts(field1="absolute_tolerance", field2="relative_tolerance")]
     )
 
 
@@ -481,7 +478,7 @@ class HeatEquationSolver(GenericSolverSettings):
     )
 
 
-class TransitionModelSolver(GenericSolverSettings):
+class TransitionModelSolver(ConflictsMixin, GenericSolverSettings):
     """:class:`TransitionModelSolver` class for setting up transition model solver.
     For more information on setting up the numerical parameters for the transition model solver,
     refer to :ref:`the transition model solver knowledge base <knowledge_base_transitionModelSolver>`.
@@ -501,9 +498,7 @@ class TransitionModelSolver(GenericSolverSettings):
     ... )
     """
 
-    model_config = pd.ConfigDict(
-        conflicting_fields=[Conflicts(field1="N_crit", field2="turbulence_intensity_percent")]
-    )
+    _conflicting_fields_ = [Conflicts(field1="N_crit", field2="turbulence_intensity_percent")]
 
     type_name: Literal["AmplificationFactorTransport"] = pd.Field(
         "AmplificationFactorTransport", frozen=True

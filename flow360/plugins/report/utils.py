@@ -25,10 +25,9 @@ from pylatex import NoEscape, Package, Tabular
 
 from flow360.component.case import Case, CaseMetaV2
 from flow360.component.results import base_results, case_results
-from flow360.component.simulation.framework.base_model import (
-    Conflicts,
-    Flow360BaseModel,
-)
+from flow360_schemas.framework.mixins import Conflicts, ConflictsMixin, RequireOneOfMixin
+
+from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.volume_mesh import VolumeMeshDownloadable, VolumeMeshV2
 from flow360.log import log
 
@@ -519,7 +518,7 @@ class GetAttribute(GenericOperation):
         return data, cases, result
 
 
-class Average(GenericOperation):
+class Average(ConflictsMixin, RequireOneOfMixin, GenericOperation):
     """
     Represents an averaging operation on simulation results.
 
@@ -561,17 +560,15 @@ class Average(GenericOperation):
     )
     type_name: Literal["Average"] = pd.Field("Average", frozen=True)
 
-    model_config = pd.ConfigDict(
-        conflicting_fields=[
-            Conflicts(field1="start_step", field2="start_time"),
-            Conflicts(field1="start_step", field2="fraction"),
-            Conflicts(field1="start_time", field2="fraction"),
-            Conflicts(field1="end_step", field2="end_time"),
-            Conflicts(field1="end_step", field2="fraction"),
-            Conflicts(field1="end_time", field2="fraction"),
-        ],
-        require_one_of=["start_step", "start_time", "fraction"],
-    )
+    _conflicting_fields_ = [
+        Conflicts(field1="start_step", field2="start_time"),
+        Conflicts(field1="start_step", field2="fraction"),
+        Conflicts(field1="start_time", field2="fraction"),
+        Conflicts(field1="end_step", field2="end_time"),
+        Conflicts(field1="end_step", field2="fraction"),
+        Conflicts(field1="end_time", field2="fraction"),
+    ]
+    _require_one_of_ = ["start_step", "start_time", "fraction"]
 
     def calculate(
         self, data, case, cases, variables, new_variable_name
