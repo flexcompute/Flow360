@@ -18,11 +18,6 @@ from typing import Annotated, Any, ClassVar, List, Literal, Optional, Tuple, Uni
 
 import numpy as np
 import pydantic as pd
-from flow360_schemas.framework.mixins import (
-    Conflicts,
-    ConflictsMixin,
-    RequireOneOfMixin,
-)
 
 # this plugin is optional, thus pylatex is not required: TODO add handling of installation of pylatex
 # pylint: disable=import-error
@@ -521,7 +516,7 @@ class GetAttribute(GenericOperation):
         return data, cases, result
 
 
-class Average(ConflictsMixin, RequireOneOfMixin, GenericOperation):
+class Average(GenericOperation):
     """
     Represents an averaging operation on simulation results.
 
@@ -563,15 +558,26 @@ class Average(ConflictsMixin, RequireOneOfMixin, GenericOperation):
     )
     type_name: Literal["Average"] = pd.Field("Average", frozen=True)
 
-    _conflicting_fields_ = [
-        Conflicts(field1="start_step", field2="start_time"),
-        Conflicts(field1="start_step", field2="fraction"),
-        Conflicts(field1="start_time", field2="fraction"),
-        Conflicts(field1="end_step", field2="end_time"),
-        Conflicts(field1="end_step", field2="fraction"),
-        Conflicts(field1="end_time", field2="fraction"),
-    ]
-    _require_one_of_ = ["start_step", "start_time", "fraction"]
+    @pd.model_validator(mode="before")
+    @classmethod
+    def _check_range_fields(cls, values):
+        """Validate conflicting and required range fields."""
+        conflicts = [
+            ("start_step", "start_time"),
+            ("start_step", "fraction"),
+            ("start_time", "fraction"),
+            ("end_step", "end_time"),
+            ("end_step", "fraction"),
+            ("end_time", "fraction"),
+        ]
+        for f1, f2 in conflicts:
+            if values.get(f1) is not None and values.get(f2) is not None:
+                raise ValueError(f"{f1} and {f2} cannot be specified at the same time.")
+
+        required = ["start_step", "start_time", "fraction"]
+        if not any(values.get(f) is not None for f in required):
+            raise ValueError(f"One of {required} is required.")
+        return values
 
     def calculate(
         self, data, case, cases, variables, new_variable_name
