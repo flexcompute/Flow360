@@ -114,7 +114,8 @@ class SurfaceEdgeRefinement(Flow360BaseModel):
         True, description="Maintain the edge when smoothing is applied."
     )
     geometric_test_only: bool = pd.Field(
-        False, description="If enabled, only geometric tests are performed on the edge (region edge will be ignored)."
+        False,
+        description="If enabled, only geometric tests are performed on the edge (region edge will be ignored).",
     )
 
     @pd.model_validator(mode="after")
