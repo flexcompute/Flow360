@@ -304,11 +304,14 @@ def test_surface_user_variables_in_output_fields():
 
 def test_duplicate_surface_usage(mock_validation_context):
     my_var = UserVariable(name="my_var", value=solution.node_forces_per_unit_area[1])
-    with mock_validation_context, pytest.raises(
-        ValueError,
-        match=re.escape(
-            "The same surface `fluid/body` is used in multiple `SurfaceOutput`s. "
-            "Please specify all settings for the same surface in one output."
+    with (
+        mock_validation_context,
+        pytest.raises(
+            ValueError,
+            match=re.escape(
+                "The same surface `fluid/body` is used in multiple `SurfaceOutput`s. "
+                "Please specify all settings for the same surface in one output."
+            ),
         ),
     ):
         with imperial_unit_system:
@@ -321,11 +324,14 @@ def test_duplicate_surface_usage(mock_validation_context):
                 ],
             )
 
-    with mock_validation_context, pytest.raises(
-        ValueError,
-        match=re.escape(
-            "The same surface `fluid/body` is used in multiple `TimeAverageSurfaceOutput`s. "
-            "Please specify all settings for the same surface in one output."
+    with (
+        mock_validation_context,
+        pytest.raises(
+            ValueError,
+            match=re.escape(
+                "The same surface `fluid/body` is used in multiple `TimeAverageSurfaceOutput`s. "
+                "Please specify all settings for the same surface in one output."
+            ),
         ),
     ):
         with imperial_unit_system:
@@ -839,11 +845,14 @@ def test_duplicate_probe_entity_names(mock_validation_context):
             ],
         )
 
-    with mock_validation_context, pytest.raises(
-        ValueError,
-        match=re.escape(
-            "In `outputs`[0] ProbeOutput: Entity name point_1 has already been used in the "
-            "same `ProbeOutput`. Entity names must be unique."
+    with (
+        mock_validation_context,
+        pytest.raises(
+            ValueError,
+            match=re.escape(
+                "In `outputs`[0] ProbeOutput: Entity name point_1 has already been used in the "
+                "same `ProbeOutput`. Entity names must be unique."
+            ),
         ),
     ):
         with imperial_unit_system:
@@ -865,11 +874,14 @@ def test_duplicate_probe_entity_names(mock_validation_context):
                 ],
             )
 
-    with mock_validation_context, pytest.raises(
-        ValueError,
-        match=re.escape(
-            "In `outputs`[0] SurfaceProbeOutput: Entity name point_1 has already been used in the "
-            "same `SurfaceProbeOutput`. Entity names must be unique."
+    with (
+        mock_validation_context,
+        pytest.raises(
+            ValueError,
+            match=re.escape(
+                "In `outputs`[0] SurfaceProbeOutput: Entity name point_1 has already been used in the "
+                "same `SurfaceProbeOutput`. Entity names must be unique."
+            ),
         ),
     ):
         with imperial_unit_system:
@@ -911,11 +923,14 @@ def test_surface_integral_entity_types(mock_validation_context):
             ],
         )
 
-    with mock_validation_context, pytest.raises(
-        ValueError,
-        match=re.escape(
-            "Imported and simulation surfaces cannot be used together in the same SurfaceIntegralOutput."
-            " Please assign them to separate outputs."
+    with (
+        mock_validation_context,
+        pytest.raises(
+            ValueError,
+            match=re.escape(
+                "Imported and simulation surfaces cannot be used together in the same SurfaceIntegralOutput."
+                " Please assign them to separate outputs."
+            ),
         ),
     ):
         with imperial_unit_system:
@@ -934,11 +949,14 @@ def test_imported_surface_output_fields_validation(mock_validation_context):
     surface = Surface(name="fluid/body")
 
     # Test 1: Surface-specific field name (not in CommonFieldNames) should fail with imported surface
-    with mock_validation_context, pytest.raises(
-        ValueError,
-        match=re.escape(
-            "Output field 'Cf' is not allowed for imported surfaces. "
-            "Only non-Surface field names are allowed for string format output fields when using imported surfaces."
+    with (
+        mock_validation_context,
+        pytest.raises(
+            ValueError,
+            match=re.escape(
+                "Output field 'Cf' is not allowed for imported surfaces. "
+                "Only non-Surface field names are allowed for string format output fields when using imported surfaces."
+            ),
         ),
     ):
         with imperial_unit_system:
@@ -953,12 +971,15 @@ def test_imported_surface_output_fields_validation(mock_validation_context):
 
     # Test 2: UserVariable with Surface solver variables should fail with imported surface
     uv_surface = UserVariable(name="uv_surface", value=math.dot(solution.velocity, solution.CfVec))
-    with mock_validation_context, pytest.raises(
-        ValueError,
-        match=re.escape(
-            "Variable `uv_surface` cannot be used with imported surfaces "
-            "since it contains Surface type solver variable(s): solution.CfVec. "
-            "Only Volume type solver variables and 'solution.node_unit_normal' are allowed."
+    with (
+        mock_validation_context,
+        pytest.raises(
+            ValueError,
+            match=re.escape(
+                "Variable `uv_surface` cannot be used with imported surfaces "
+                "since it contains Surface type solver variable(s): solution.CfVec. "
+                "Only Volume type solver variables and 'solution.node_unit_normal' are allowed."
+            ),
         ),
     ):
         with imperial_unit_system:
@@ -976,12 +997,15 @@ def test_imported_surface_output_fields_validation(mock_validation_context):
         name="uv_multiple",
         value=solution.node_forces_per_unit_area[0] * solution.Cp * solution.Cf,
     )
-    with mock_validation_context, pytest.raises(
-        ValueError,
-        match=re.escape(
-            "Variable `uv_multiple` cannot be used with imported surfaces "
-            "since it contains Surface type solver variable(s): solution.Cf, solution.node_forces_per_unit_area. "
-            "Only Volume type solver variables and 'solution.node_unit_normal' are allowed."
+    with (
+        mock_validation_context,
+        pytest.raises(
+            ValueError,
+            match=re.escape(
+                "Variable `uv_multiple` cannot be used with imported surfaces "
+                "since it contains Surface type solver variable(s): solution.Cf, solution.node_forces_per_unit_area. "
+                "Only Volume type solver variables and 'solution.node_unit_normal' are allowed."
+            ),
         ),
     ):
         with imperial_unit_system:
@@ -1046,11 +1070,14 @@ def test_imported_surface_output_fields_validation(mock_validation_context):
         )
 
     # Test 7: Mixed entities (imported + regular surfaces) should trigger validation
-    with mock_validation_context, pytest.raises(
-        ValueError,
-        match=re.escape(
-            "Output field 'Cf' is not allowed for imported surfaces. "
-            "Only non-Surface field names are allowed for string format output fields when using imported surfaces."
+    with (
+        mock_validation_context,
+        pytest.raises(
+            ValueError,
+            match=re.escape(
+                "Output field 'Cf' is not allowed for imported surfaces. "
+                "Only non-Surface field names are allowed for string format output fields when using imported surfaces."
+            ),
         ),
     ):
         with imperial_unit_system:
@@ -1071,12 +1098,15 @@ def test_imported_surface_output_fields_validation_surface_integral(mock_validat
 
     # Test 1: UserVariable with Surface solver variables should fail with imported surface
     uv_surface = UserVariable(name="uv_surface", value=math.dot(solution.velocity, solution.CfVec))
-    with mock_validation_context, pytest.raises(
-        ValueError,
-        match=re.escape(
-            "Variable `uv_surface` cannot be used with imported surfaces "
-            "since it contains Surface type solver variable(s): solution.CfVec. "
-            "Only Volume type solver variables and 'solution.node_unit_normal' are allowed."
+    with (
+        mock_validation_context,
+        pytest.raises(
+            ValueError,
+            match=re.escape(
+                "Variable `uv_surface` cannot be used with imported surfaces "
+                "since it contains Surface type solver variable(s): solution.CfVec. "
+                "Only Volume type solver variables and 'solution.node_unit_normal' are allowed."
+            ),
         ),
     ):
         with imperial_unit_system:
@@ -1259,11 +1289,14 @@ def test_force_output_with_surface_and_volume_models(mock_validation_context):
         wall_1.private_attribute_id: wall_1,
         porous_medium.private_attribute_id: porous_medium,
     }
-    with mock_validation_context, pytest.raises(
-        ValueError,
-        match=re.escape(
-            "When ActuatorDisk/BETDisk/PorousMedium is specified, "
-            "only CL, CD, CFx, CFy, CFz, CMx, CMy, CMz can be set as output_fields."
+    with (
+        mock_validation_context,
+        pytest.raises(
+            ValueError,
+            match=re.escape(
+                "When ActuatorDisk/BETDisk/PorousMedium is specified, "
+                "only CL, CD, CFx, CFy, CFz, CMx, CMy, CMz can be set as output_fields."
+            ),
         ),
     ):
         with imperial_unit_system:
@@ -1308,9 +1341,12 @@ def test_force_output_nonexistent_model():
     non_wall2_context = ParamsValidationInfo({}, [])
     non_wall2_context.physics_model_dict = {wall_1.private_attribute_id: wall_1.model_dump()}
 
-    with ValidationContext(CASE, non_wall2_context), pytest.raises(
-        ValueError,
-        match=re.escape("The model does not exist in simulation params' models list."),
+    with (
+        ValidationContext(CASE, non_wall2_context),
+        pytest.raises(
+            ValueError,
+            match=re.escape("The model does not exist in simulation params' models list."),
+        ),
     ):
         with imperial_unit_system:
             SimulationParams(
@@ -1482,9 +1518,12 @@ def test_force_distribution_output_requires_wall_bc(mock_validation_context):
         )
 
     # Test: Invalid case - surface without Wall BC (has Freestream BC)
-    with mock_validation_context, pytest.raises(
-        ValueError,
-        match=re.escape("The following surfaces do not have Wall boundary conditions assigned"),
+    with (
+        mock_validation_context,
+        pytest.raises(
+            ValueError,
+            match=re.escape("The following surfaces do not have Wall boundary conditions assigned"),
+        ),
     ):
         with imperial_unit_system:
             SimulationParams(
@@ -1504,9 +1543,12 @@ def test_force_distribution_output_requires_wall_bc(mock_validation_context):
 
     # Test: Invalid case - surface with SlipWall BC (not a no-slip Wall)
     slipwall_surface = Surface(name="fluid/symmetry")
-    with mock_validation_context, pytest.raises(
-        ValueError,
-        match=re.escape("The following surfaces do not have Wall boundary conditions assigned"),
+    with (
+        mock_validation_context,
+        pytest.raises(
+            ValueError,
+            match=re.escape("The following surfaces do not have Wall boundary conditions assigned"),
+        ),
     ):
         with imperial_unit_system:
             SimulationParams(

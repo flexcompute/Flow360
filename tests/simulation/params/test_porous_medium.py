@@ -14,9 +14,12 @@ def test_ensure_entities_have_sufficient_attributes():
         levels=None, info=ParamsValidationInfo(param_as_dict={}, referenced_expressions=[])
     )
 
-    with mock_context, pytest.raises(
-        ValueError,
-        match="Entity 'zone_with_no_axes' must specify `axes` to be used under `PorousMedium`.",
+    with (
+        mock_context,
+        pytest.raises(
+            ValueError,
+            match="Entity 'zone_with_no_axes' must specify `axes` to be used under `PorousMedium`.",
+        ),
     ):
 
         PorousMedium(
