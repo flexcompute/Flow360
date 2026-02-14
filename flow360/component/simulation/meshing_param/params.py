@@ -35,7 +35,9 @@ from flow360.component.simulation.meshing_param.volume_params import (
     UserDefinedFarfield,
     WindTunnelFarfield,
 )
-from flow360.component.simulation.primitives import SeedpointVolume
+from flow360.component.simulation.primitives import (
+    SeedpointVolume,
+)
 from flow360.component.simulation.validation.validation_context import (
     SURFACE_MESH,
     VOLUME_MESH,
@@ -187,6 +189,27 @@ class MeshingParams(Flow360BaseModel):
 
         if total_farfield > 1:
             raise ValueError("Only one farfield zone is allowed in `volume_zones`.")
+
+        automated_farfield = next((zone for zone in v if isinstance(zone, AutomatedFarfield)), None)
+        if automated_farfield is not None:
+            has_custom_volumes = any(
+                isinstance(entity, CustomVolume)
+                for zone in v
+                if isinstance(zone, CustomZones)
+                for entity in zone.entities.stored_entities
+            )
+            has_enclosed_surfaces = automated_farfield.enclosed_surfaces is not None
+
+            if has_custom_volumes and not has_enclosed_surfaces:
+                raise ValueError(
+                    "When using AutomatedFarfield with CustomVolumes, `enclosed_surfaces` must be "
+                    "specified on the AutomatedFarfield to define the exterior farfield zone boundary."
+                )
+            if has_enclosed_surfaces and not has_custom_volumes:
+                raise ValueError(
+                    "`enclosed_surfaces` on AutomatedFarfield is only allowed when CustomVolume entities are used."
+                    "Without custom volumes, the farfield zone will be automatically detected."
+                )
 
         return v
 

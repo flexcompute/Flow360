@@ -2210,7 +2210,7 @@ def test_beta_mesher_only_features(mock_validation_context):
     )
     assert errors is None
 
-    # Using CustomZones with all three farfield types
+    # Using CustomZones with WindTunnelFarfield
     with SI_unit_system:
         params = SimulationParams(
             meshing=MeshingParams(
@@ -2278,7 +2278,34 @@ def test_beta_mesher_only_features(mock_validation_context):
         == "Value error, WindTunnelFarfield is only supported when Geometry AI is enabled."
     )
 
+    # CustomVolume + AutomatedFarfield requires enclosed_surfaces
+    with pytest.raises(pd.ValidationError, match="enclosed_surfaces.*must be.*specified"):
+        with SI_unit_system:
+            SimulationParams(
+                meshing=MeshingParams(
+                    defaults=MeshingDefaults(
+                        boundary_layer_first_layer_thickness=1e-4,
+                        planar_face_tolerance=1e-4,
+                    ),
+                    volume_zones=[
+                        CustomZones(
+                            name="custom_zones",
+                            entities=[
+                                CustomVolume(
+                                    name="zone1",
+                                    boundaries=[Surface(name="face1"), Surface(name="face2")],
+                                )
+                            ],
+                        ),
+                        AutomatedFarfield(),
+                    ],
+                ),
+                private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+            )
+
     with SI_unit_system:
+        surface1 = Surface(name="face1")
+        surface2 = Surface(name="face2")
         params = SimulationParams(
             meshing=MeshingParams(
                 defaults=MeshingDefaults(
@@ -2291,11 +2318,14 @@ def test_beta_mesher_only_features(mock_validation_context):
                         entities=[
                             CustomVolume(
                                 name="zone1",
-                                boundaries=[Surface(name="face1"), Surface(name="face2")],
-                            )
+                                boundaries=[surface1, surface2],
+                            ),
                         ],
                     ),
-                    AutomatedFarfield(),
+                    AutomatedFarfield(
+                        method="auto",
+                        enclosed_surfaces=[surface1, surface2],
+                    ),
                 ],
             ),
             private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
@@ -2306,12 +2336,7 @@ def test_beta_mesher_only_features(mock_validation_context):
         root_item_type="SurfaceMesh",
         validation_level="VolumeMesh",
     )
-    assert len(errors) == 1
-    assert (
-        errors[0]["msg"]
-        == "Value error, CustomVolume is supported only when the beta mesher is enabled "
-        + "and either a user-defined farfield or a wind tunnel farfield is enabled."
-    )
+    assert errors is None
 
     with SI_unit_system:
         params = SimulationParams(
@@ -2345,7 +2370,7 @@ def test_beta_mesher_only_features(mock_validation_context):
     assert (
         errors[0]["msg"]
         == "Value error, CustomVolume is supported only when the beta mesher is enabled "
-        + "and either a user-defined farfield or a wind tunnel farfield is enabled."
+        + "and an automated, user-defined, or wind tunnel farfield is enabled."
     )
 
     # Unique volume zone names
@@ -3478,3 +3503,87 @@ def test_incomplete_BC_without_geometry_AI():
         "Value error, The following boundaries do not have a boundary condition: no_bc. "
         "Please add them to a boundary condition model in the `models` section."
     )
+
+
+def test_automated_farfield_with_custom_zones():
+    """AutomatedFarfield + CustomZones: enclosed_surfaces is required when CustomVolumes exist."""
+
+    # Positive: enclosed_surfaces provided with CustomVolumes -> should pass
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-4,
+                    planar_face_tolerance=1e-4,
+                ),
+                volume_zones=[
+                    CustomZones(
+                        name="interior",
+                        entities=[
+                            CustomVolume(
+                                name="zone1",
+                                boundaries=[
+                                    Surface(name="face1"),
+                                    Surface(name="face2"),
+                                ],
+                            )
+                        ],
+                    ),
+                    AutomatedFarfield(
+                        enclosed_surfaces=[
+                            Surface(name="face1"),
+                            Surface(name="face2"),
+                        ],
+                    ),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+        )
+    params, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="SurfaceMesh",
+        validation_level="VolumeMesh",
+    )
+    assert errors is None
+
+    # Negative: CustomVolumes exist but enclosed_surfaces not provided -> should fail
+    with pytest.raises(pd.ValidationError, match="enclosed_surfaces.*must be.*specified"):
+        with SI_unit_system:
+            SimulationParams(
+                meshing=MeshingParams(
+                    defaults=MeshingDefaults(
+                        boundary_layer_first_layer_thickness=1e-4,
+                    ),
+                    volume_zones=[
+                        CustomZones(
+                            name="inner",
+                            entities=[
+                                CustomVolume(
+                                    name="zone1",
+                                    boundaries=[Surface(name="face1"), Surface(name="face2")],
+                                )
+                            ],
+                        ),
+                        AutomatedFarfield(),
+                    ],
+                ),
+                private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+            )
+
+    # Negative: enclosed_surfaces provided but no CustomVolumes -> should fail
+    with pytest.raises(pd.ValidationError, match="enclosed_surfaces.*is only needed"):
+        with SI_unit_system:
+            SimulationParams(
+                meshing=MeshingParams(
+                    defaults=MeshingDefaults(
+                        boundary_layer_first_layer_thickness=1e-4,
+                    ),
+                    volume_zones=[
+                        AutomatedFarfield(
+                            enclosed_surfaces=[Surface(name="face1")],
+                        ),
+                    ],
+                ),
+                private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+            )
