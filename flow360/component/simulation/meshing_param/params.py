@@ -40,10 +40,12 @@ from flow360.component.simulation.validation.validation_context import (
     SURFACE_MESH,
     VOLUME_MESH,
     ContextField,
+    ParamsValidationInfo,
     contextual_field_validator,
     contextual_model_validator,
 )
 from flow360.component.simulation.validation.validation_utils import EntityUsageMap
+from flow360.log import log
 
 RefinementTypes = Annotated[
     Union[
@@ -285,6 +287,35 @@ class MeshingParams(Flow360BaseModel):
 
         return self
 
+    @contextual_model_validator(mode="after")
+    def _check_sizing_against_octree_series(self, param_info: ParamsValidationInfo):
+        """Validate that UniformRefinement spacings align with the octree series."""
+        if not param_info.is_beta_mesher:
+            return self
+        if self.defaults.octree_spacing is None:  # pylint: disable=no-member
+            log.warning(
+                "No `octree_spacing` configured in `MeshingDefaults`; "
+                "octree spacing validation for UniformRefinement will be skipped."
+            )
+            return self
+
+        def check_spacing(spacing, location):
+            # pylint: disable=no-member
+            lvl, close = self.defaults.octree_spacing.to_level(spacing)
+            spacing_unit = spacing.units
+            if not close:
+                closest_spacing = self.defaults.octree_spacing[lvl]
+                msg = f"The spacing of {spacing:.4g} specified in {location} will be cast to the first lower refinement"
+                msg += f" in the octree series ({closest_spacing.to(spacing_unit):.4g})."
+                log.warning(msg)
+
+        if self.refinements is not None:
+            for refinement in self.refinements:  # pylint: disable=not-an-iterable
+                if isinstance(refinement, UniformRefinement):
+                    check_spacing(refinement.spacing, type(refinement).__name__)
+
+        return self
+
     @property
     def farfield_method(self):
         """Returns the farfield method used."""
@@ -346,6 +377,35 @@ class VolumeMeshingParams(Flow360BaseModel):
         " relative to the smallest radius of all sliding interfaces specified in meshing parameters."
         " This cannot be overridden per sliding interface.",
     )
+
+    @contextual_model_validator(mode="after")
+    def _check_sizing_against_octree_series(self, param_info: ParamsValidationInfo):
+        """Validate that UniformRefinement spacings align with the octree series."""
+        if not param_info.is_beta_mesher:
+            return self
+        if self.defaults.octree_spacing is None:  # pylint: disable=no-member
+            log.warning(
+                "No `octree_spacing` configured in `VolumeMeshingDefaults`; "
+                "octree spacing validation for UniformRefinement will be skipped."
+            )
+            return self
+
+        def check_spacing(spacing, location):
+            # pylint: disable=no-member
+            lvl, close = self.defaults.octree_spacing.to_level(spacing)
+            spacing_unit = spacing.units
+            if not close:
+                closest_spacing = self.defaults.octree_spacing[lvl]
+                msg = f"The spacing of {spacing:.4g} specified in {location} will be cast to the first lower refinement"
+                msg += f" in the octree series ({closest_spacing.to(spacing_unit):.4g})."
+                log.warning(msg)
+
+        if self.refinements is not None:
+            for refinement in self.refinements:  # pylint: disable=not-an-iterable
+                if isinstance(refinement, UniformRefinement):
+                    check_spacing(refinement.spacing, type(refinement).__name__)
+
+        return self
 
 
 SurfaceMeshingParams = Annotated[

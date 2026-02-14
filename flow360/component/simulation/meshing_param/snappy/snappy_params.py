@@ -3,6 +3,7 @@
 from typing import List, Literal, Optional, Union
 
 import pydantic as pd
+from pydantic import AliasChoices
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
@@ -45,7 +46,19 @@ class SurfaceMeshingParams(Flow360BaseModel):
     castellated_mesh_controls: CastellatedMeshControls = pd.Field(CastellatedMeshControls())
     smooth_controls: Union[SmoothControls, Literal[False]] = pd.Field(SmoothControls())
     refinements: Optional[List[SnappySurfaceRefinementTypes]] = pd.Field(None)
-    base_spacing: Optional[OctreeSpacing] = pd.Field(None)
+    octree_spacing: Optional[OctreeSpacing] = pd.Field(
+        None, validation_alias=AliasChoices("octree_spacing", "base_spacing")
+    )
+
+    @pd.model_validator(mode="before")
+    @classmethod
+    def _warn_base_spacing_deprecated(cls, data):
+        if isinstance(data, dict) and "base_spacing" in data:
+            log.warning(
+                "`base_spacing` has been renamed to `octree_spacing`. "
+                "Please update your code. `base_spacing` will be removed in a future release."
+            )
+        return data
 
     @pd.model_validator(mode="after")
     def _check_body_refinements_w_defaults(self):
@@ -102,15 +115,15 @@ class SurfaceMeshingParams(Flow360BaseModel):
     @pd.model_validator(mode="after")
     def _check_sizing_against_octree_series(self):
 
-        if self.base_spacing is None:
+        if self.octree_spacing is None:
             return self
 
         def check_spacing(spacing, location):
             # pylint: disable=no-member
-            lvl, close = self.base_spacing.to_level(spacing)
+            lvl, close = self.octree_spacing.to_level(spacing)
             spacing_unit = spacing.units
             if not close:
-                closest_spacing = self.base_spacing[lvl]
+                closest_spacing = self.octree_spacing[lvl]
                 msg = f"The spacing of {spacing:.4g} specified in {location} will be cast to the first lower refinement"
                 msg += f" in the octree series ({closest_spacing.to(spacing_unit):.4g})."
                 log.warning(msg)
@@ -140,12 +153,12 @@ class SurfaceMeshingParams(Flow360BaseModel):
 
         return self
 
-    @contextual_field_validator("base_spacing", mode="after")
+    @contextual_field_validator("octree_spacing", mode="after")
     @classmethod
-    def _set_default_base_spacing(cls, base_spacing, param_info: ParamsValidationInfo):
-        if (base_spacing is not None) or (param_info.project_length_unit is None):
-            return base_spacing
+    def _set_default_octree_spacing(cls, octree_spacing, param_info: ParamsValidationInfo):
+        if (octree_spacing is not None) or (param_info.project_length_unit is None):
+            return octree_spacing
 
         # pylint: disable=no-member
-        base_spacing = 1 * LengthType.validate(param_info.project_length_unit)
-        return OctreeSpacing(base_spacing=base_spacing)
+        project_length = 1 * LengthType.validate(param_info.project_length_unit)
+        return OctreeSpacing(base_spacing=project_length)
