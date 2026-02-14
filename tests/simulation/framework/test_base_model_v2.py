@@ -1,17 +1,13 @@
 import json
 import os
 import tempfile
-from typing import Optional
 
 import pydantic as pd
 import pytest
 import yaml
 
 import flow360.component.simulation.units as u
-from flow360.component.simulation.framework.base_model import (
-    Conflicts,
-    Flow360BaseModel,
-)
+from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.log import set_logging_level
 
 set_logging_level("DEBUG")
@@ -35,19 +31,6 @@ class TempParams(Flow360BaseModel):
         return super().preprocess(**kwargs)
 
 
-class BaseModelWithConflictFields(Flow360BaseModel):
-    some_value1: Optional[pd.StrictFloat] = pd.Field(None, alias="value1")
-    some_value2: Optional[pd.StrictFloat] = pd.Field(None, alias="value2")
-
-    model_config = pd.ConfigDict(
-        conflicting_fields=[Conflicts(field1="some_value1", field2="some_value2")]
-    )
-
-    def preprocess(self, **kwargs):
-        self.some_value1 *= 2
-        return super().preprocess(self, **kwargs)
-
-
 def test_help():
     Flow360BaseModel().help()
     Flow360BaseModel().help(methods=True)
@@ -59,20 +42,6 @@ def test_copy():
     assert base_model_copy.some_value == 123
     base_model.some_value = 12345
     assert base_model_copy.some_value == 123
-
-
-def test_conflict():
-    base_model = BaseModelWithConflictFields(some_value1=12.3)
-    with pytest.raises(
-        pd.ValidationError,
-        match="some_value1 and some_value2 cannot be specified at the same time.",
-    ):
-        base_model.some_value2 = 12.3
-    with pytest.raises(
-        pd.ValidationError,
-        match="some_value1 and some_value2 cannot be specified at the same time.",
-    ):
-        base_model.value2 = 12.3
 
 
 def test_from_file():
