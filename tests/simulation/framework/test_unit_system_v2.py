@@ -792,6 +792,7 @@ def test_unit_system_init():
         "temperature": {"value": 1.0, "units": "K"},
         "delta_temperature": {"value": 1.0, "units": "K"},
         "velocity": {"value": 1.0, "units": "m/s"},
+        "acceleration": {"value": 1.0, "units": "m/s**2"},
         "area": {"value": 1.0, "units": "m**2"},
         "force": {"value": 1.0, "units": "N"},
         "pressure": {"value": 1.0, "units": "Pa"},

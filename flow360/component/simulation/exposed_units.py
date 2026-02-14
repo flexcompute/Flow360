@@ -15,6 +15,7 @@ extra_units = {
     "temperature": [],
     "delta_temperature": [],
     "velocity": [],
+    "acceleration": [],
     "area": [],
     "force": [],
     "pressure": [],
@@ -71,6 +72,7 @@ supported_units_by_front_end = {
     "(length)**2": {"SI": "m**2", "CGS": "cm**2", "Imperial": "ft**2"},
     "(length)**(-2)": {"SI": "1/m**2", "CGS": "1/cm**2", "Imperial": "1/ft**2"},
     "(length)/(time)": {"SI": "m/s", "CGS": "cm/s", "Imperial": "ft/s"},
+    "(length)/(time)**2": {"SI": "m/s**2", "CGS": "cm/s**2", "Imperial": "ft/s**2"},  # Acceleration
     "(angle)/(time)": ["rad/s", "degree/s", "rpm"],  # list --> Unit system agnostic dimensions
     "(angle)": ["degree", "rad"],
     "(temperature)": {"SI": "K", "CGS": "K", "Imperial": "degF"},

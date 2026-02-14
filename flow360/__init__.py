@@ -118,6 +118,7 @@ from flow360.component.simulation.models.volume_models import (
     Fluid,
     ForcePerArea,
     FromUserDefinedDynamics,
+    Gravity,
     HeatEquationInitialCondition,
     NavierStokesInitialCondition,
     NavierStokesModifiedRestartSolution,
