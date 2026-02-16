@@ -183,6 +183,7 @@ class Draft(Flow360Resource):
         source_item_type: Literal["Geometry", "SurfaceMesh", "VolumeMesh", "Case"],
         start_from: Union[None, Literal["SurfaceMesh", "VolumeMesh", "Case"]],
         job_type: Optional[Literal["TIME_SHARED_VGPU", "FLEX_CREDIT"]] = None,
+        priority: Optional[int] = None,
     ) -> str:
         """run the draft up to the target asset"""
 
@@ -211,10 +212,13 @@ class Draft(Flow360Resource):
                 use_gai=use_geometry_AI,
                 force_creation_config=force_creation_config,
                 job_type=job_type,
+                priority=priority,
             )
             request_body = run_request.model_dump(by_alias=True)
             if request_body.get("jobType") is None:
                 request_body.pop("jobType", None)
+            if request_body.get("priority") is None:
+                request_body.pop("priority", None)
             run_response = self.post(
                 request_body,
                 method="run",

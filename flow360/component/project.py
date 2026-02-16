@@ -1824,6 +1824,7 @@ class Project(pd.BaseModel):
         tags: List[str],
         draft_only: bool,
         job_type: Optional[Literal["TIME_SHARED_VGPU", "FLEX_CREDIT"]] = None,
+        priority: Optional[int] = None,
         **kwargs,
     ):
         """
@@ -1957,6 +1958,7 @@ class Project(pd.BaseModel):
                 use_geometry_AI=use_geometry_AI,
                 start_from=start_from,
                 job_type=job_type,
+                priority=priority,
             )
         except RuntimeError:
             if raise_on_error:
@@ -2154,6 +2156,7 @@ class Project(pd.BaseModel):
         tags: List[str] = None,
         draft_only: bool = False,
         billing_method: Optional[Literal["VirtualGPU", "FlexCredit"]] = None,
+        priority: Optional[int] = None,
         **kwargs,
     ):
         """
@@ -2185,6 +2188,9 @@ class Project(pd.BaseModel):
             Whether to only create and submit a draft and not run the case.
         billing_method: Optional[Literal["VirtualGPU", "FlexCredit"]]
             Override to default billing method.
+        priority: Optional[int]
+            Queue priority for Virtual GPU jobs, from 1 (lowest) to 10 (highest).
+            Only applicable when ``billing_method="VirtualGPU"``.
 
         Returns
         -------
@@ -2220,6 +2226,18 @@ class Project(pd.BaseModel):
                 " no billing is necessary when submitting just the draft."
             )
 
+        # Validate priority: only applicable for VirtualGPU billing
+        effective_priority = None
+        if priority is not None:
+            if billing_method != "VirtualGPU":
+                log.warning(
+                    "`priority` is only applicable when `billing_method='VirtualGPU'`. Ignoring."
+                )
+            elif draft_only:
+                log.info("`priority` ignored when `draft_only=True`.")
+            else:
+                effective_priority = priority
+
         self._check_initialized()
         case_or_draft = self._run(
             params=params,
@@ -2235,6 +2253,7 @@ class Project(pd.BaseModel):
             tags=tags,
             draft_only=draft_only,
             job_type=job_type,
+            priority=effective_priority,
             **kwargs,
         )
 
