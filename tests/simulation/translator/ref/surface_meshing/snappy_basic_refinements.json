@@ -21,7 +21,7 @@
                             "minElem": 3,
                             "includedAngle": 120,
                             "retainOnSmoothing": true,
-                            "geometricTestOnly": "no"
+                            "geometricTestOnly": false
                         }
                     },
                     {
@@ -40,7 +40,7 @@
                             "minLen": 6,
                             "includedAngle": 150,
                             "retainOnSmoothing": false,
-                            "geometricTestOnly": "no"
+                            "geometricTestOnly": false
                         }
                     }
                 ]
@@ -57,7 +57,7 @@
                         "minElem": 3,
                         "includedAngle": 120,
                         "retainOnSmoothing": true,
-                        "geometricTestOnly": "yes"
+                        "geometricTestOnly": true
                     },
                 "regions": [
                     {
@@ -84,7 +84,7 @@
                             "minLen": 6,
                             "includedAngle": 150,
                             "retainOnSmoothing": false,
-                            "geometricTestOnly": "no"
+                            "geometricTestOnly": false
                         }
                     },
                     {
@@ -127,7 +127,7 @@
                     "minLen": 6,
                     "includedAngle": 150,
                     "retainOnSmoothing": false,
-                    "geometricTestOnly": "no"
+                    "geometricTestOnly": false
                 },
                 "regions": [
                     {

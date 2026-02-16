@@ -32,7 +32,7 @@
                     "minElem": 3,
                     "includedAngle": 120,
                     "retainOnSmoothing": true,
-                    "geometricTestOnly": "no"
+                    "geometricTestOnly": false
                 },
                 "regions": []
             }

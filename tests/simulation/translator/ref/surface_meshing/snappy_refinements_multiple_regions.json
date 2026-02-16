@@ -20,7 +20,7 @@
                             "minElem": 3,
                             "includedAngle": 120,
                             "retainOnSmoothing": false,
-                            "geometricTestOnly": "yes"
+                            "geometricTestOnly": true
                         }
                     },
                     {
@@ -34,7 +34,7 @@
                             "minElem": 3,
                             "includedAngle": 120,
                             "retainOnSmoothing": false,
-                            "geometricTestOnly": "yes"
+                            "geometricTestOnly": true
                         }
                     }
                 ]

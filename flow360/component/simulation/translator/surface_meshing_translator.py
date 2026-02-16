@@ -165,7 +165,7 @@ def apply_SnappySurfaceEdgeRefinement(
         edges["minLen"] = refinement.min_len.value.item()
     if refinement.retain_on_smoothing is not None:
         edges["retainOnSmoothing"] = refinement.retain_on_smoothing
-    edges["geometricTestOnly"] = "yes" if refinement.geometric_test_only else "no"
+    edges["geometricTestOnly"] = refinement.geometric_test_only
     if refinement.spacing is None:
         edges["edgeSpacing"] = defaults.min_spacing.value.item()
     elif isinstance(refinement.spacing, unyt_array) and isinstance(
