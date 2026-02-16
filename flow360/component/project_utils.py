@@ -32,6 +32,7 @@ from flow360.component.simulation.primitives import (
     Surface,
 )
 from flow360.component.simulation.services_utils import (
+    strip_implicit_edge_split_layers_inplace,
     strip_selector_matches_and_broken_entities_inplace,
 )
 from flow360.component.simulation.simulation_params import SimulationParams
@@ -725,6 +726,7 @@ def validate_params_with_context(params: SimulationParams, root_item_type, up_to
     )
 
     params_as_dict = params.model_dump(mode="json", exclude_none=True)
+    params_as_dict = strip_implicit_edge_split_layers_inplace(params, params_as_dict)
 
     params, errors, warnings = services.validate_model(
         params_as_dict=params_as_dict,
