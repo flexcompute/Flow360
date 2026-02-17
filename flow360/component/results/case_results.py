@@ -33,10 +33,20 @@ from flow360.component.simulation.outputs.output_fields import (
     _HEAT_FLUX,
     _X,
     _Y,
+    _NORMAL_DIRECTION,
     ForceOutputCoefficientNames,
     _CFx_PER_SPAN,
+    _CFy_PER_SPAN,
     _CFz_PER_SPAN,
     _CMy_PER_SPAN,
+    _CMz_PER_SPAN,
+    _CMx_PER_SPAN,
+    _CFx_CUMULATIVE,
+    _CFy_CUMULATIVE,
+    _CFz_CUMULATIVE,
+    _CMx_CUMULATIVE,
+    _CMy_CUMULATIVE,
+    _CMz_CUMULATIVE,
 )
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import (
@@ -48,7 +58,7 @@ from flow360.component.simulation.unit_system import (
 )
 from flow360.component.v1.conversions import unit_converter as unit_converter_v1
 from flow360.component.v1.flow360_params import Flow360Params
-from flow360.exceptions import Flow360ValueError
+from flow360.exceptions import Flow360NotImplementedError, Flow360ValueError
 from flow360.log import log
 
 
@@ -86,6 +96,7 @@ class CaseDownloadable(Enum):
     MONITOR_PATTERN = r"monitor_(.+)_v2.csv"
     USER_DEFINED_DYNAMICS_PATTERN = r"udd_(.+)_v2.csv"
     CUSTOM_FORCE_PATTERN = r"force_output_(.+)_v2.csv"
+    FORCE_DISTRIBUTION_PATTERN = r"(.+)_forceDistribution.csv"
 
     # others:
     AEROACOUSTICS = "total_acoustics_v3.csv"
@@ -227,6 +238,35 @@ class YSlicingForceDistributionResultCSVModel(PerEntityResultCSVModel):
     _variables: List[str] = [_CFx_PER_SPAN, _CFz_PER_SPAN, _CMy_PER_SPAN]
     _filter_when_zero = [_CFx_PER_SPAN, _CFz_PER_SPAN, _CMy_PER_SPAN]
     _x_columns: List[str] = [_Y]
+
+
+class CustomForceDistributionResultCSVModel(PerEntityResultCSVModel):
+    """CustomForceDistributionResultCSVModel"""
+
+    _VARIABLES_INCREMENTAL = (_CFx_PER_SPAN, _CFy_PER_SPAN, _CFz_PER_SPAN, _CMx_PER_SPAN, _CMy_PER_SPAN, _CMz_PER_SPAN)
+    _VARIABLES_CUMULATIVE = (_CFx_CUMULATIVE, _CFy_CUMULATIVE, _CFz_CUMULATIVE, _CMx_CUMULATIVE, _CMy_CUMULATIVE, _CMz_CUMULATIVE)
+    _filter_when_zero: List[str] = []
+    _variables: List[str] = []
+    _x_columns: List[str] = [_NORMAL_DIRECTION]
+
+    def _preprocess(self):
+        """
+        Detect whether the data contains incremental or cumulative variables
+        based on column headers, then delegate to the parent preprocessor.
+        """
+        headers = set(self._values.keys()) if self._values else set()
+        if all((h.endswith(suffix) or h in self._x_columns) for h in headers for suffix in self._VARIABLES_CUMULATIVE):
+            self._variables = list(self._VARIABLES_CUMULATIVE)
+            self._filter_when_zero = list(self._VARIABLES_CUMULATIVE)
+        elif all((h.endswith(suffix) or h in self._x_columns) for h in headers for suffix in self._VARIABLES_INCREMENTAL):
+            self._variables = list(self._VARIABLES_INCREMENTAL)
+            self._filter_when_zero = list(self._VARIABLES_INCREMENTAL)
+        else:
+            raise Flow360NotImplementedError(f"Unknown type of data: {headers}")
+
+        super()._preprocess(
+            filter_physical_steps_only=False, include_time=False
+        )
 
 
 class SurfaceHeatTransferResultCSVModel(PerEntityResultCSVModel, TimeSeriesResultCSVModel):
@@ -413,12 +453,13 @@ class CustomForceResultModel(NamedResultsCollectionModel):
         """
         return self.get_result_by_name(name)
 
-    def __getitem__(self, name: str) -> CustomForceCSVModel:
-        """
-        Get a custom force output by name (supporting [] access).
-        """
-        return self.get_custom_force_by_name(name)
+class ForceDistributionsResultModel(NamedResultsCollectionModel):
+    """
+    Model for handling results of force distributions.
+    """
 
+    _pattern: str = CaseDownloadable.FORCE_DISTRIBUTION_PATTERN.value
+    _result_model_class: type = PerEntityResultCSVModel
 
 class _DimensionedCSVResultModel(pd.BaseModel):
     """
