@@ -1325,3 +1325,114 @@ def test_force_distributions_incremental_data_loading(mock_id, mock_response):
         assert not any(
             h.endswith(suffix) for h in headers
         ), f"Unexpected cumulative column ending with '{suffix}' found in incremental data"
+
+
+def test_custom_force_distribution_preprocess_detects_cumulative():
+    """
+    _preprocess must recognise cumulative headers when each column ends with
+    exactly ONE of the cumulative suffixes (not all of them).
+
+    Regression: the original implementation used a Cartesian-product
+    comprehension (`for h in headers for suffix in suffixes`) inside `all()`,
+    which required every header to endswith *every* suffix — always False.
+    """
+    from flow360.component.results.case_results import (
+        CustomForceDistributionResultCSVModel,
+    )
+
+    model = CustomForceDistributionResultCSVModel(remote_file_name="dummy.csv")
+
+    dummy = [0.0, 1.0]
+    model._values = {
+        "normal_direction": dummy,
+        "farfield/fuselage_CFx_cumulative": dummy,
+        "farfield/fuselage_CFy_cumulative": dummy,
+        "farfield/fuselage_CFz_cumulative": dummy,
+        "farfield/fuselage_CMx_cumulative": dummy,
+        "farfield/fuselage_CMy_cumulative": dummy,
+        "farfield/fuselage_CMz_cumulative": dummy,
+    }
+
+    model._preprocess()
+
+    assert model._variables == [
+        "CFx_cumulative",
+        "CFy_cumulative",
+        "CFz_cumulative",
+        "CMx_cumulative",
+        "CMy_cumulative",
+        "CMz_cumulative",
+    ]
+    assert model._filter_when_zero == model._variables
+
+
+def test_custom_force_distribution_preprocess_detects_incremental():
+    """_preprocess must recognise incremental (per_span) headers."""
+    from flow360.component.results.case_results import (
+        CustomForceDistributionResultCSVModel,
+    )
+
+    model = CustomForceDistributionResultCSVModel(remote_file_name="dummy.csv")
+
+    dummy = [0.0, 1.0]
+    model._values = {
+        "normal_direction": dummy,
+        "wing_CFx_per_span": dummy,
+        "wing_CFy_per_span": dummy,
+        "wing_CFz_per_span": dummy,
+        "wing_CMx_per_span": dummy,
+        "wing_CMy_per_span": dummy,
+        "wing_CMz_per_span": dummy,
+    }
+
+    model._preprocess()
+
+    assert model._variables == [
+        "CFx_per_span",
+        "CFy_per_span",
+        "CFz_per_span",
+        "CMx_per_span",
+        "CMy_per_span",
+        "CMz_per_span",
+    ]
+    assert model._filter_when_zero == model._variables
+
+
+def test_custom_force_distribution_preprocess_raises_on_mixed():
+    """_preprocess must raise when headers mix cumulative and incremental columns."""
+    from flow360.component.results.case_results import (
+        CustomForceDistributionResultCSVModel,
+    )
+    from flow360.exceptions import Flow360NotImplementedError
+
+    model = CustomForceDistributionResultCSVModel(remote_file_name="dummy.csv")
+
+    dummy = [0.0, 1.0]
+    model._values = {
+        "normal_direction": dummy,
+        "wing_CFx_cumulative": dummy,
+        "wing_CFy_per_span": dummy,
+    }
+
+    with pytest.raises(Flow360NotImplementedError, match="Unknown type of data"):
+        model._preprocess()
+
+
+def test_force_distribution_pattern_excludes_slicing():
+    """FORCE_DISTRIBUTION_PATTERN must not match X/Y slicing filenames."""
+    import re
+
+    from flow360.component.results.case_results import CaseDownloadable
+
+    pattern = CaseDownloadable.FORCE_DISTRIBUTION_PATTERN.value
+
+    assert re.match(pattern, "X_slicing_forceDistribution.csv") is None
+    assert re.match(pattern, "Y_slicing_forceDistribution.csv") is None
+
+    m = re.match(pattern, "wing_forceDistribution.csv")
+    assert m is not None
+    assert m.group(1) == "wing"
+
+    m = re.match(pattern, "my_surface_forceDistribution.csv")
+    assert m is not None
+    assert m.group(1) == "my_surface"
