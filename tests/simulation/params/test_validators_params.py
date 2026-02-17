@@ -3514,7 +3514,6 @@ def test_automated_farfield_with_custom_zones():
             meshing=MeshingParams(
                 defaults=MeshingDefaults(
                     boundary_layer_first_layer_thickness=1e-4,
-                    planar_face_tolerance=1e-4,
                 ),
                 volume_zones=[
                     CustomZones(
@@ -3572,7 +3571,7 @@ def test_automated_farfield_with_custom_zones():
             )
 
     # Negative: enclosed_surfaces provided but no CustomVolumes -> should fail
-    with pytest.raises(pd.ValidationError, match="enclosed_surfaces.*is only needed"):
+    with pytest.raises(pd.ValidationError, match="enclosed_surfaces.*is only allowed"):
         with SI_unit_system:
             SimulationParams(
                 meshing=MeshingParams(
@@ -3582,6 +3581,34 @@ def test_automated_farfield_with_custom_zones():
                     volume_zones=[
                         AutomatedFarfield(
                             enclosed_surfaces=[Surface(name="face1")],
+                        ),
+                    ],
+                ),
+                private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+            )
+
+
+def test_custom_volume_named_farfield_with_automated_farfield():
+    """CustomVolume named 'farfield' is reserved when using AutomatedFarfield."""
+    with pytest.raises(pd.ValidationError, match="name 'farfield' is reserved"):
+        with SI_unit_system:
+            SimulationParams(
+                meshing=MeshingParams(
+                    defaults=MeshingDefaults(
+                        boundary_layer_first_layer_thickness=1e-4,
+                    ),
+                    volume_zones=[
+                        CustomZones(
+                            name="zones",
+                            entities=[
+                                CustomVolume(
+                                    name="farfield",
+                                    boundaries=[Surface(name="face1"), Surface(name="face2")],
+                                )
+                            ],
+                        ),
+                        AutomatedFarfield(
+                            enclosed_surfaces=[Surface(name="face1"), Surface(name="face2")],
                         ),
                     ],
                 ),

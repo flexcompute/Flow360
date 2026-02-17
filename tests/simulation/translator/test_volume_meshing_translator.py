@@ -1325,7 +1325,6 @@ def test_automated_farfield_enclosed_surfaces(get_surface_mesh):
             meshing=MeshingParams(
                 defaults=MeshingDefaults(
                     boundary_layer_first_layer_thickness=1e-4,
-                    boundary_layer_growth_rate=1.2,
                 ),
                 volume_zones=[
                     CustomZones(

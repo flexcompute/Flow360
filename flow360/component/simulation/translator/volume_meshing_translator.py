@@ -430,6 +430,7 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
 
     ##::  Step 2:  Get farfield
     for zone in volume_zones:
+        # CustomZone implies user-defined farfield if no farfield is specified later
         if isinstance(zone, (UserDefinedFarfield, CustomZones)):
             translated["farfield"] = {"type": "user-defined"}
             if hasattr(zone, "domain_type") and zone.domain_type is not None:
