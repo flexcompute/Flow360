@@ -89,6 +89,8 @@ class SurfaceMeshingParams(Flow360BaseModel):
         for refinement in refinements:
             if not isinstance(refinement, refinement_types_with_entities):
                 continue
+            if refinement.entities is None:
+                continue
             refinement_type_name = type(refinement).__name__
             for entity in refinement.entities.stored_entities:
                 entity_name = entity.name
