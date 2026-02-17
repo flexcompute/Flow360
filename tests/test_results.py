@@ -1201,3 +1201,113 @@ def test_monitors_download_after_populate(mock_id, mock_response):
         assert callable(monitor._download_method)
         assert monitor._get_params_method is not None
         assert callable(monitor._get_params_method)
+
+@pytest.mark.usefixtures("s3_download_override")
+def test_force_distributions_bracket_access(mock_id, mock_response):
+    """Test ForceDistributionsResultModel - bracket access"""
+    case = fl.Case(id="case-666666666-66666666-666-6666666666666")
+
+    names = case.results.force_distributions.names
+    assert "force_distro_cumul" in names
+    assert "ta_distro" in names
+    assert len(names) == 2
+
+
+    cumul = case.results.force_distributions["force_distro_cumul"]
+    assert cumul is not None
+    assert cumul.remote_file_name == "force_distro_cumul_forceDistribution.csv"
+
+    incr = case.results.force_distributions["ta_distro"]
+    assert incr is not None
+    assert incr.remote_file_name == "ta_distro_forceDistribution.csv"
+
+
+@pytest.mark.usefixtures("s3_download_override")
+def test_force_distributions_invalid_name(mock_id, mock_response):
+    """Test ForceDistributionsResultModel - invalid name raises error"""
+    from flow360.exceptions import Flow360ValueError
+
+    case = fl.Case(id="case-666666666-66666666-666-6666666666666")
+
+    with pytest.raises(Flow360ValueError) as exc_info:
+        case.results.force_distributions["nonexistent"]
+    assert "nonexistent" in str(exc_info.value)
+    assert "force_distro_cumul" in str(exc_info.value)
+
+
+@pytest.mark.usefixtures("s3_download_override")
+def test_force_distributions_populate(mock_id, mock_response):
+    """Test ForceDistributionsResultModel._populate populates names and models correctly"""
+    case = fl.Case(id="case-666666666-66666666-666-6666666666666")
+
+    # pylint: disable=protected-access
+    assert len(case.results.force_distributions._names) == 0
+    assert len(case.results.force_distributions._result_collection) == 0
+
+    case.results.force_distributions._populate()
+
+    assert len(case.results.force_distributions._names) == 2
+    assert "force_distro_cumul" in case.results.force_distributions._names
+    assert "ta_distro" in case.results.force_distributions._names
+
+    assert len(case.results.force_distributions._result_collection) == 2
+    assert (
+        case.results.force_distributions._result_collection["force_distro_cumul"].remote_file_name
+        == "force_distro_cumul_forceDistribution.csv"
+    )
+    assert (
+        case.results.force_distributions._result_collection["ta_distro"].remote_file_name
+        == "ta_distro_forceDistribution.csv"
+    )
+
+
+@pytest.mark.usefixtures("s3_download_override")
+def test_force_distributions_cumulative_data_loading(mock_id, mock_response):
+    """Test ForceDistributionsResultModel - cumulative data can be loaded from CSV"""
+    case = fl.Case(id="case-666666666-66666666-666-6666666666666")
+
+    cumul = case.results.force_distributions["force_distro_cumul"]
+    cumul.reload_data()
+    data = cumul.as_dict()
+
+    # Verify cumulative columns are present (CFx_cumulative etc.)
+    cumulative_suffixes = ["CFx_cumulative", "CFy_cumulative", "CFz_cumulative",
+                           "CMx_cumulative", "CMy_cumulative", "CMz_cumulative"]
+    headers = list(data.keys())
+    for suffix in cumulative_suffixes:
+        assert any(h.endswith(suffix) for h in headers), (
+            f"No column ending with '{suffix}' found in headers: {headers}"
+        )
+
+    # Verify no incremental columns are present
+    incremental_suffixes = ["CFx_per_span", "CFy_per_span", "CFz_per_span"]
+    for suffix in incremental_suffixes:
+        assert not any(h.endswith(suffix) for h in headers), (
+            f"Unexpected incremental column ending with '{suffix}' found in cumulative data"
+        )
+
+
+@pytest.mark.usefixtures("s3_download_override")
+def test_force_distributions_incremental_data_loading(mock_id, mock_response):
+    """Test ForceDistributionsResultModel - incremental (per_span) data can be loaded from CSV"""
+    case = fl.Case(id="case-666666666-66666666-666-6666666666666")
+
+    incr = case.results.force_distributions["ta_distro"]
+    incr.reload_data()
+    data = incr.as_dict()
+
+    # Verify incremental columns are present (CFx_per_span etc.)
+    incremental_suffixes = ["CFx_per_span", "CFy_per_span", "CFz_per_span",
+                            "CMx_per_span", "CMy_per_span", "CMz_per_span"]
+    headers = list(data.keys())
+    for suffix in incremental_suffixes:
+        assert any(h.endswith(suffix) for h in headers), (
+            f"No column ending with '{suffix}' found in headers: {headers}"
+        )
+
+    # Verify no cumulative columns are present
+    cumulative_suffixes = ["CFx_cumulative", "CFy_cumulative", "CFz_cumulative"]
+    for suffix in cumulative_suffixes:
+        assert not any(h.endswith(suffix) for h in headers), (
+            f"Unexpected cumulative column ending with '{suffix}' found in incremental data"
+        )

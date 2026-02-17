@@ -807,14 +807,6 @@ def test_force_distribution_reserved_names():
                 distribution_direction=[1.0, 0.0, 0.0],
             )
 
-    # Names starting with "Time-averaging"
-    for name in ("Time-averaging", "Time-averaging_custom"):
-        with pytest.raises(ValueError, match="cannot start with"):
-            ForceDistributionOutput(
-                name=name,
-                distribution_direction=[1.0, 0.0, 0.0],
-            )
-
     # Valid names should pass
     ForceDistributionOutput(
         name="my_custom_output",

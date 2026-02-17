@@ -1684,7 +1684,6 @@ class ForceDistributionOutput(Flow360BaseModel):
     """
 
     _RESERVED_NAMES: ClassVar[Tuple[str, ...]] = ("X_slicing", "Y_slicing")
-    _RESERVED_PREFIXES: ClassVar[Tuple[str, ...]] = ("Time-averaging",)
 
     name: str = pd.Field(description="Name of the `ForceDistributionOutput`.")
     distribution_direction: Axis = pd.Field(
@@ -1705,11 +1704,6 @@ class ForceDistributionOutput(Flow360BaseModel):
                 f"'{name}' is a reserved name and cannot be used for ForceDistributionOutput. "
                 f"Reserved names: {cls._RESERVED_NAMES}"
             )
-        for prefix in cls._RESERVED_PREFIXES:
-            if name.startswith(prefix):
-                raise ValueError(
-                    f"ForceDistributionOutput name cannot start with '{prefix}'. Got: '{name}'"
-                )
         return name
 
 
