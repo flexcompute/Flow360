@@ -1046,6 +1046,23 @@ def test_duplicate_refinement_different_entities_is_allowed():
     )
 
 
+def test_duplicate_refinement_body_and_surface_same_name_is_allowed():
+    """SurfaceEdgeRefinement on a SnappyBody and a Surface sharing a name should NOT raise."""
+    body = SnappyBody(name="shared_name", surfaces=[])
+    surface = Surface(name="shared_name")
+    defaults = snappy.SurfaceMeshingDefaults(
+        min_spacing=1 * u.mm, max_spacing=5 * u.mm, gap_resolution=0.01 * u.mm
+    )
+
+    snappy.SurfaceMeshingParams(
+        defaults=defaults,
+        refinements=[
+            snappy.SurfaceEdgeRefinement(spacing=0.5 * u.mm, entities=[body]),
+            snappy.SurfaceEdgeRefinement(spacing=1 * u.mm, entities=[surface]),
+        ],
+    )
+
+
 def test_box_entity_enclosed_only_in_beta_mesher():
     # raises when beta mesher is off
     with pytest.raises(
