@@ -937,6 +937,132 @@ def test_bad_refinements():
         )
 
 
+def test_duplicate_refinement_type_per_entity():
+    """Raise when the same refinement type is applied twice to one entity."""
+    body = SnappyBody(name="car_body", surfaces=[])
+    surface = Surface(name="wing")
+    defaults = snappy.SurfaceMeshingDefaults(
+        min_spacing=1 * u.mm, max_spacing=5 * u.mm, gap_resolution=0.01 * u.mm
+    )
+
+    # -- Two BodyRefinements targeting the same SnappyBody --
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"`BodyRefinement` is applied 2 times to entity `car_body`",
+    ):
+        snappy.SurfaceMeshingParams(
+            defaults=defaults,
+            refinements=[
+                snappy.BodyRefinement(min_spacing=2 * u.mm, bodies=[body]),
+                snappy.BodyRefinement(max_spacing=4 * u.mm, bodies=[body]),
+            ],
+        )
+
+    # -- Two RegionRefinements targeting the same Surface --
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"`RegionRefinement` is applied 2 times to entity `wing`",
+    ):
+        snappy.SurfaceMeshingParams(
+            defaults=defaults,
+            refinements=[
+                snappy.RegionRefinement(
+                    min_spacing=1 * u.mm, max_spacing=3 * u.mm, regions=[surface]
+                ),
+                snappy.RegionRefinement(
+                    min_spacing=2 * u.mm, max_spacing=4 * u.mm, regions=[surface]
+                ),
+            ],
+        )
+
+    # -- Two SurfaceEdgeRefinements targeting the same SnappyBody --
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"`SurfaceEdgeRefinement` is applied 2 times to entity `car_body`",
+    ):
+        snappy.SurfaceMeshingParams(
+            defaults=defaults,
+            refinements=[
+                snappy.SurfaceEdgeRefinement(spacing=0.5 * u.mm, entities=[body]),
+                snappy.SurfaceEdgeRefinement(spacing=1 * u.mm, entities=[body]),
+            ],
+        )
+
+    # -- Two SurfaceEdgeRefinements targeting the same Surface --
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"`SurfaceEdgeRefinement` is applied 2 times to entity `wing`",
+    ):
+        snappy.SurfaceMeshingParams(
+            defaults=defaults,
+            refinements=[
+                snappy.SurfaceEdgeRefinement(spacing=0.5 * u.mm, entities=[surface]),
+                snappy.SurfaceEdgeRefinement(spacing=1 * u.mm, entities=[surface]),
+            ],
+        )
+
+
+def test_duplicate_refinement_different_types_is_allowed():
+    """Different refinement types on the same entity should NOT raise."""
+    body = SnappyBody(name="car_body", surfaces=[])
+    surface = Surface(name="wing")
+    defaults = snappy.SurfaceMeshingDefaults(
+        min_spacing=1 * u.mm, max_spacing=5 * u.mm, gap_resolution=0.01 * u.mm
+    )
+
+    # BodyRefinement + SurfaceEdgeRefinement on the same SnappyBody is fine
+    snappy.SurfaceMeshingParams(
+        defaults=defaults,
+        refinements=[
+            snappy.BodyRefinement(min_spacing=2 * u.mm, bodies=[body]),
+            snappy.SurfaceEdgeRefinement(spacing=0.5 * u.mm, entities=[body]),
+        ],
+    )
+
+    # RegionRefinement + SurfaceEdgeRefinement on the same Surface is fine
+    snappy.SurfaceMeshingParams(
+        defaults=defaults,
+        refinements=[
+            snappy.RegionRefinement(min_spacing=1 * u.mm, max_spacing=3 * u.mm, regions=[surface]),
+            snappy.SurfaceEdgeRefinement(spacing=0.5 * u.mm, entities=[surface]),
+        ],
+    )
+
+
+def test_duplicate_refinement_different_entities_is_allowed():
+    """Same refinement type on different entities should NOT raise."""
+    body1 = SnappyBody(name="car_body", surfaces=[])
+    body2 = SnappyBody(name="other_body", surfaces=[])
+    defaults = snappy.SurfaceMeshingDefaults(
+        min_spacing=1 * u.mm, max_spacing=5 * u.mm, gap_resolution=0.01 * u.mm
+    )
+
+    snappy.SurfaceMeshingParams(
+        defaults=defaults,
+        refinements=[
+            snappy.BodyRefinement(min_spacing=2 * u.mm, bodies=[body1]),
+            snappy.BodyRefinement(min_spacing=3 * u.mm, bodies=[body2]),
+        ],
+    )
+
+
+def test_duplicate_refinement_body_and_surface_same_name_is_allowed():
+    """SurfaceEdgeRefinement on a SnappyBody and a Surface sharing a name should NOT raise."""
+    body = SnappyBody(name="shared_name", surfaces=[])
+    surface = Surface(name="shared_name")
+    defaults = snappy.SurfaceMeshingDefaults(
+        min_spacing=1 * u.mm, max_spacing=5 * u.mm, gap_resolution=0.01 * u.mm
+    )
+
+    snappy.SurfaceMeshingParams(
+        defaults=defaults,
+        refinements=[
+            snappy.SurfaceEdgeRefinement(spacing=0.5 * u.mm, entities=[body]),
+            snappy.SurfaceEdgeRefinement(spacing=1 * u.mm, entities=[surface]),
+        ],
+    )
+
+
 def test_box_entity_enclosed_only_in_beta_mesher():
     # raises when beta mesher is off
     with pytest.raises(
