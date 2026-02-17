@@ -83,7 +83,7 @@ class SurfaceMeshingParams(Flow360BaseModel):
         if refinements is None:
             return refinements
 
-        entity_refinement_map: dict[str, dict[str, int]] = {}
+        entity_refinement_map: dict[tuple[str, str], dict[str, int]] = {}
         refinement_types_with_entities = (BodyRefinement, RegionRefinement, SurfaceEdgeRefinement)
 
         for refinement in refinements:
@@ -93,16 +93,16 @@ class SurfaceMeshingParams(Flow360BaseModel):
                 continue
             refinement_type_name = type(refinement).__name__
             for entity in refinement.entities.stored_entities:
-                entity_name = entity.name
-                counts = entity_refinement_map.setdefault(entity_name, {})
+                entity_key = (type(entity).__name__, entity.name)
+                counts = entity_refinement_map.setdefault(entity_key, {})
                 counts[refinement_type_name] = counts.get(refinement_type_name, 0) + 1
 
-        for entity_name, type_counts in entity_refinement_map.items():
+        for entity_key, type_counts in entity_refinement_map.items():
             for refinement_type_name, count in type_counts.items():
                 if count > 1:
                     raise ValueError(
                         f"`{refinement_type_name}` is applied {count} times "
-                        f"to entity `{entity_name}`. Each refinement type "
+                        f"to entity `{entity_key[1]}`. Each refinement type "
                         f"can only be applied once per entity."
                     )
         return refinements
