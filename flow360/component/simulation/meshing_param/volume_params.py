@@ -544,14 +544,6 @@ class _FarfieldBase(Flow360BaseModel):
             """,
         )
     )
-    enclosed_surfaces: Optional[EntityList[Surface]] = pd.Field(
-        None,
-        description=(
-            "Geometry surfaces that, together with the farfield surface, form the boundary of the "
-            "exterior farfield zone. Required when using CustomVolumes alongside an AutomatedFarfield. "
-            "The farfield surface and analytically defined surfaces will be implicitly included."
-        ),
-    )
 
     @contextual_field_validator("domain_type", mode="after")
     @classmethod
@@ -653,8 +645,8 @@ class AutomatedFarfield(_FarfieldBase):
     )
     private_attribute_entity: GenericVolume = pd.Field(
         GenericVolume(
-            name="farfield",
-            private_attribute_id="farfield_zone",
+            name="__farfield_zone_name_not_properly_set_yet",
+            private_attribute_id="farfield_zone_name_not_properly_set_yet",
         ),
         frozen=True,
         exclude=True,
@@ -663,6 +655,14 @@ class AutomatedFarfield(_FarfieldBase):
         default=50.0,
         description="Radius of the far-field (semi)sphere/cylinder relative to "
         "the max dimension of the geometry bounding box.",
+    )
+    enclosed_surfaces: Optional[EntityList[Surface]] = pd.Field(
+        None,
+        description=(
+            "Geometry surfaces that, together with the farfield surface, form the boundary of the "
+            "exterior farfield zone. Required when using CustomVolumes alongside an AutomatedFarfield. "
+            "The farfield surface and analytically defined surfaces will be implicitly included."
+        ),
     )
 
     @property
