@@ -41,7 +41,10 @@ from flow360.component.simulation.validation.validation_context import (
     VOLUME_MESH,
     ContextField,
     ParamsValidationInfo,
+<<<<<<< HEAD
     add_validation_warning,
+=======
+>>>>>>> e12e7ba5 ([SNAPPY] Validator to avoid OpenFoam entity name errors (#1816))
     contextual_field_validator,
     contextual_model_validator,
 )
@@ -560,6 +563,60 @@ class ModularMeshingWorkflow(Flow360BaseModel):
         else:
             if total_seedpoint_volumes:
                 raise ValueError("`SeedpointVolume` is applicable only with snappyHexMeshing.")
+
+        return self
+
+    @contextual_model_validator(mode="after")
+    def _check_uniform_refinement_names_not_in_snappy_bodies(  # pylint: disable=too-many-branches
+        self, param_info: ParamsValidationInfo
+    ) -> Self:
+        """Ensure no UniformRefinement entity shares a name with a SnappyBody in the geometry."""
+
+        if not isinstance(self.surface_meshing, snappy.SurfaceMeshingParams):
+            return self
+
+        entity_info = param_info.get_entity_info()
+        if entity_info is None or getattr(entity_info, "type_name", None) != "GeometryEntityInfo":
+            return self
+
+        # pylint: disable=protected-access
+        try:
+            snappy_body_names = {body.name for body in entity_info._get_snappy_bodies()}
+        except (ValueError, IndexError, AttributeError):
+            return self
+
+        if not snappy_body_names:
+            return self
+
+        conflicting: list[str] = []
+
+        # Surface meshing: all UniformRefinement entities
+        # pylint: disable=no-member
+        if self.surface_meshing is not None and self.surface_meshing.refinements is not None:
+            for refinement in self.surface_meshing.refinements:
+                if isinstance(refinement, UniformRefinement):
+                    for entity in refinement.entities.stored_entities:
+                        if entity.name in snappy_body_names:
+                            conflicting.append(entity.name)
+
+        # Volume meshing: UniformRefinement entities that project to surface
+        # (project_to_surface defaults to True for snappy, so None counts as True)
+        # pylint: disable=no-member
+        if self.volume_meshing is not None and self.volume_meshing.refinements is not None:
+            for refinement in self.volume_meshing.refinements:
+                if isinstance(refinement, UniformRefinement) and (
+                    refinement.project_to_surface is not False
+                ):
+                    for entity in refinement.entities.stored_entities:
+                        if entity.name in snappy_body_names:
+                            conflicting.append(entity.name)
+
+        if conflicting:
+            names_str = ", ".join(f"`{name}`" for name in dict.fromkeys(conflicting))
+            raise ValueError(
+                f"UniformRefinement entity name(s) {names_str} conflict with SnappyBody name(s)"
+                " in the geometry. Please use different names for the UniformRefinement entities."
+            )
 
         return self
 
