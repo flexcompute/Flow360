@@ -20,7 +20,8 @@
                             "edgeSpacing": [[5, 4]],
                             "minElem": 3,
                             "includedAngle": 120,
-                            "retainOnSmoothing": true
+                            "retainOnSmoothing": true,
+                            "geometricTestOnly": false
                         }
                     },
                     {
@@ -38,7 +39,8 @@
                             ],
                             "minLen": 6,
                             "includedAngle": 150,
-                            "retainOnSmoothing": false
+                            "retainOnSmoothing": false,
+                            "geometricTestOnly": false
                         }
                     }
                 ]
@@ -54,7 +56,8 @@
                         "edgeSpacing": 4,
                         "minElem": 3,
                         "includedAngle": 120,
-                        "retainOnSmoothing": true
+                        "retainOnSmoothing": true,
+                        "geometricTestOnly": true
                     },
                 "regions": [
                     {
@@ -80,7 +83,8 @@
                             ],
                             "minLen": 6,
                             "includedAngle": 150,
-                            "retainOnSmoothing": false
+                            "retainOnSmoothing": false,
+                            "geometricTestOnly": false
                         }
                     },
                     {
@@ -122,7 +126,8 @@
                     ],
                     "minLen": 6,
                     "includedAngle": 150,
-                    "retainOnSmoothing": false
+                    "retainOnSmoothing": false,
+                    "geometricTestOnly": false
                 },
                 "regions": [
                     {
