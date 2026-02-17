@@ -9,6 +9,7 @@ from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.meshing_param.meshing_specs import OctreeSpacing
 from flow360.component.simulation.meshing_param.snappy.snappy_mesh_refinements import (
     BodyRefinement,
+    RegionRefinement,
     SnappyEntityRefinement,
     SnappySurfaceRefinementTypes,
     SurfaceEdgeRefinement,
@@ -74,6 +75,37 @@ class SurfaceMeshingParams(Flow360BaseModel):
                         + "and maximum spacing is not provided for BodyRefinement."
                     )
         return self
+
+    @pd.field_validator("refinements", mode="after")
+    @classmethod
+    def _check_duplicate_refinements_per_entity(cls, refinements):
+        """Raise if the same refinement type is applied more than once to the same entity."""
+        if refinements is None:
+            return refinements
+
+        entity_refinement_map: dict[str, dict[str, int]] = {}
+        refinement_types_with_entities = (BodyRefinement, RegionRefinement, SurfaceEdgeRefinement)
+
+        for refinement in refinements:
+            if not isinstance(refinement, refinement_types_with_entities):
+                continue
+            if refinement.entities is None:
+                continue
+            refinement_type_name = type(refinement).__name__
+            for entity in refinement.entities.stored_entities:
+                entity_name = entity.name
+                counts = entity_refinement_map.setdefault(entity_name, {})
+                counts[refinement_type_name] = counts.get(refinement_type_name, 0) + 1
+
+        for entity_name, type_counts in entity_refinement_map.items():
+            for refinement_type_name, count in type_counts.items():
+                if count > 1:
+                    raise ValueError(
+                        f"`{refinement_type_name}` is applied {count} times "
+                        f"to entity `{entity_name}`. Each refinement type "
+                        f"can only be applied once per entity."
+                    )
+        return refinements
 
     @contextual_model_validator(mode="after")
     def _check_uniform_refinement_entities(self):
