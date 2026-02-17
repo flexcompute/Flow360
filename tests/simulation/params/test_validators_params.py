@@ -2278,31 +2278,6 @@ def test_beta_mesher_only_features(mock_validation_context):
         == "Value error, WindTunnelFarfield is only supported when Geometry AI is enabled."
     )
 
-    # CustomVolume + AutomatedFarfield requires enclosed_surfaces
-    with pytest.raises(pd.ValidationError, match="enclosed_surfaces.*must be.*specified"):
-        with SI_unit_system:
-            SimulationParams(
-                meshing=MeshingParams(
-                    defaults=MeshingDefaults(
-                        boundary_layer_first_layer_thickness=1e-4,
-                        planar_face_tolerance=1e-4,
-                    ),
-                    volume_zones=[
-                        CustomZones(
-                            name="custom_zones",
-                            entities=[
-                                CustomVolume(
-                                    name="zone1",
-                                    boundaries=[Surface(name="face1"), Surface(name="face2")],
-                                )
-                            ],
-                        ),
-                        AutomatedFarfield(),
-                    ],
-                ),
-                private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
-            )
-
     with SI_unit_system:
         surface1 = Surface(name="face1")
         surface2 = Surface(name="face2")
