@@ -3549,7 +3549,11 @@ def test_automated_farfield_with_custom_zones():
         root_item_type="SurfaceMesh",
         validation_level="VolumeMesh",
     )
-    assert any("enclosed_surfaces" in e["msg"] and "must be" in e["msg"] for e in errors)
+    assert (
+        errors[0]["msg"]
+        == "Value error, When using AutomatedFarfield with CustomVolumes, `enclosed_surfaces` must be "
+        "specified on the AutomatedFarfield to define the exterior farfield zone boundary."
+    )
 
     # Negative: enclosed_surfaces provided but no CustomVolumes -> should fail
     with SI_unit_system:
@@ -3572,7 +3576,11 @@ def test_automated_farfield_with_custom_zones():
         root_item_type="SurfaceMesh",
         validation_level="VolumeMesh",
     )
-    assert any("enclosed_surfaces" in e["msg"] and "is only allowed" in e["msg"] for e in errors)
+    assert (
+        errors[0]["msg"]
+        == "Value error, `enclosed_surfaces` on AutomatedFarfield is only allowed when CustomVolume "
+        "entities are used. Without custom volumes, the farfield zone will be automatically detected."
+    )
 
 
 def test_custom_volume_named_farfield_with_automated_farfield():
@@ -3606,4 +3614,9 @@ def test_custom_volume_named_farfield_with_automated_farfield():
         root_item_type="SurfaceMesh",
         validation_level="VolumeMesh",
     )
-    assert any("name 'farfield' is reserved" in e["msg"] for e in errors)
+    assert (
+        errors[0]["msg"]
+        == "Value error, CustomVolume name 'farfield' is reserved when using AutomatedFarfield. "
+        "The 'farfield' zone will be automatically generated using `AutomatedFarfield.enclosed_surfaces`. "
+        "Please choose a different name."
+    )
