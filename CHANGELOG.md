@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - split code to `VolumeMesh` (cloud resource) and `VolumeMeshDraft` (before submission)
 - added constructor from filename: `Flow360Params("path/to/file.json")`
 - status is enum with `is_final()` method
+- dropped support for Python 3.9; minimum supported Python version is now 3.10
 
 ### Bug Fixes
 - added unittests, code coverage 67%

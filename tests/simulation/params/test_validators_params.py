@@ -2356,8 +2356,11 @@ def test_beta_mesher_only_features(mock_validation_context):
     # manually constructed ParamsValidationInfo (i.e., outside validate_model()).
     beta_mesher_context.to_be_generated_custom_volumes = {"zone1"}
 
-    with ValidationContext(SURFACE_MESH, beta_mesher_context), pytest.raises(
-        ValueError, match="Multiple CustomVolume with the same name `zone1` are not allowed."
+    with (
+        ValidationContext(SURFACE_MESH, beta_mesher_context),
+        pytest.raises(
+            ValueError, match="Multiple CustomVolume with the same name `zone1` are not allowed."
+        ),
     ):
         with SI_unit_system:
             params = SimulationParams(
@@ -2388,8 +2391,11 @@ def test_beta_mesher_only_features(mock_validation_context):
             )
 
     # Unique interface names
-    with mock_validation_context, pytest.raises(
-        ValueError, match="The boundaries of a CustomVolume must have different names."
+    with (
+        mock_validation_context,
+        pytest.raises(
+            ValueError, match="The boundaries of a CustomVolume must have different names."
+        ),
     ):
         with SI_unit_system:
             params = SimulationParams(
@@ -2825,8 +2831,13 @@ def test_ghost_surface_pair_requires_quasi_3d_periodic_farfield():
     periodic_2 = GhostSurface(name="periodic_2", private_attribute_id="periodic_2")
 
     # Case 1: Farfield method NOT "quasi-3d-periodic" → should raise ValueError
-    with SI_unit_system, ValidationContext(CASE, quasi_3d_farfield_context), pytest.raises(
-        ValueError, match="Farfield type must be 'quasi-3d-periodic' when using GhostSurfacePair."
+    with (
+        SI_unit_system,
+        ValidationContext(CASE, quasi_3d_farfield_context),
+        pytest.raises(
+            ValueError,
+            match="Farfield type must be 'quasi-3d-periodic' when using GhostSurfacePair.",
+        ),
     ):
         Periodic(surface_pairs=(periodic_1, periodic_2), spec=Translational())
 
@@ -2839,8 +2850,13 @@ def test_ghost_surface_pair_requires_quasi_3d_periodic_farfield():
     periodic_2 = GhostCircularPlane(name="periodic_2", private_attribute_id="periodic_2")
 
     # Case 3: Farfield method NOT "quasi-3d-periodic" → should raise ValueError
-    with SI_unit_system, ValidationContext(CASE, quasi_3d_farfield_context), pytest.raises(
-        ValueError, match="Farfield type must be 'quasi-3d-periodic' when using GhostSurfacePair."
+    with (
+        SI_unit_system,
+        ValidationContext(CASE, quasi_3d_farfield_context),
+        pytest.raises(
+            ValueError,
+            match="Farfield type must be 'quasi-3d-periodic' when using GhostSurfacePair.",
+        ),
     ):
         Periodic(surface_pairs=(periodic_1, periodic_2), spec=Translational())
 
