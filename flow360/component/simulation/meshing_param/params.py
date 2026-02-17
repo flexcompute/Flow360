@@ -454,7 +454,7 @@ class ModularMeshingWorkflow(Flow360BaseModel):
         return self
 
     @contextual_model_validator(mode="after")
-    def _check_uniform_refinement_names_not_in_snappy_bodies(
+    def _check_uniform_refinement_names_not_in_snappy_bodies(  # pylint: disable=too-many-branches
         self, param_info: ParamsValidationInfo
     ) -> Self:
         """Ensure no UniformRefinement entity shares a name with a SnappyBody in the geometry."""
@@ -478,6 +478,7 @@ class ModularMeshingWorkflow(Flow360BaseModel):
         conflicting: list[str] = []
 
         # Surface meshing: all UniformRefinement entities
+        # pylint: disable=no-member
         if self.surface_meshing is not None and self.surface_meshing.refinements is not None:
             for refinement in self.surface_meshing.refinements:
                 if isinstance(refinement, UniformRefinement):
@@ -487,10 +488,11 @@ class ModularMeshingWorkflow(Flow360BaseModel):
 
         # Volume meshing: UniformRefinement entities that project to surface
         # (project_to_surface defaults to True for snappy, so None counts as True)
+        # pylint: disable=no-member
         if self.volume_meshing is not None and self.volume_meshing.refinements is not None:
             for refinement in self.volume_meshing.refinements:
                 if isinstance(refinement, UniformRefinement) and (
-                    refinement.project_to_surface is None or refinement.project_to_surface is True
+                    refinement.project_to_surface is not False
                 ):
                     for entity in refinement.entities.stored_entities:
                         if entity.name in snappy_body_names:
