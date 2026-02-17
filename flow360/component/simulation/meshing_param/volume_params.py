@@ -661,7 +661,6 @@ class AutomatedFarfield(_FarfieldBase):
         description=(
             "Geometry surfaces that, together with the farfield surface, form the boundary of the "
             "exterior farfield zone. Required when using CustomVolumes alongside an AutomatedFarfield. "
-            "The farfield surface and analytically defined surfaces will be implicitly included."
         ),
     )
 

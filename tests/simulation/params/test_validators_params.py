@@ -3522,70 +3522,88 @@ def test_automated_farfield_with_custom_zones():
     assert errors is None
 
     # Negative: CustomVolumes exist but enclosed_surfaces not provided -> should fail
-    with pytest.raises(pd.ValidationError, match="enclosed_surfaces.*must be.*specified"):
-        with SI_unit_system:
-            SimulationParams(
-                meshing=MeshingParams(
-                    defaults=MeshingDefaults(
-                        boundary_layer_first_layer_thickness=1e-4,
-                    ),
-                    volume_zones=[
-                        CustomZones(
-                            name="inner",
-                            entities=[
-                                CustomVolume(
-                                    name="zone1",
-                                    boundaries=[Surface(name="face1"), Surface(name="face2")],
-                                )
-                            ],
-                        ),
-                        AutomatedFarfield(),
-                    ],
+    with SI_unit_system:
+        params_no_enclosed = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-4,
                 ),
-                private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
-            )
+                volume_zones=[
+                    CustomZones(
+                        name="inner",
+                        entities=[
+                            CustomVolume(
+                                name="zone1",
+                                boundaries=[Surface(name="face1"), Surface(name="face2")],
+                            )
+                        ],
+                    ),
+                    AutomatedFarfield(),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+        )
+    _, errors, _ = validate_model(
+        params_as_dict=params_no_enclosed.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="SurfaceMesh",
+        validation_level="VolumeMesh",
+    )
+    assert any("enclosed_surfaces" in e["msg"] and "must be" in e["msg"] for e in errors)
 
     # Negative: enclosed_surfaces provided but no CustomVolumes -> should fail
-    with pytest.raises(pd.ValidationError, match="enclosed_surfaces.*is only allowed"):
-        with SI_unit_system:
-            SimulationParams(
-                meshing=MeshingParams(
-                    defaults=MeshingDefaults(
-                        boundary_layer_first_layer_thickness=1e-4,
-                    ),
-                    volume_zones=[
-                        AutomatedFarfield(
-                            enclosed_surfaces=[Surface(name="face1")],
-                        ),
-                    ],
+    with SI_unit_system:
+        params_no_cv = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-4,
                 ),
-                private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
-            )
+                volume_zones=[
+                    AutomatedFarfield(
+                        enclosed_surfaces=[Surface(name="face1")],
+                    ),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+        )
+    _, errors, _ = validate_model(
+        params_as_dict=params_no_cv.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="SurfaceMesh",
+        validation_level="VolumeMesh",
+    )
+    assert any("enclosed_surfaces" in e["msg"] and "is only allowed" in e["msg"] for e in errors)
 
 
 def test_custom_volume_named_farfield_with_automated_farfield():
     """CustomVolume named 'farfield' is reserved when using AutomatedFarfield."""
-    with pytest.raises(pd.ValidationError, match="name 'farfield' is reserved"):
-        with SI_unit_system:
-            SimulationParams(
-                meshing=MeshingParams(
-                    defaults=MeshingDefaults(
-                        boundary_layer_first_layer_thickness=1e-4,
-                    ),
-                    volume_zones=[
-                        CustomZones(
-                            name="zones",
-                            entities=[
-                                CustomVolume(
-                                    name="farfield",
-                                    boundaries=[Surface(name="face1"), Surface(name="face2")],
-                                )
-                            ],
-                        ),
-                        AutomatedFarfield(
-                            enclosed_surfaces=[Surface(name="face1"), Surface(name="face2")],
-                        ),
-                    ],
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-4,
                 ),
-                private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
-            )
+                volume_zones=[
+                    CustomZones(
+                        name="zones",
+                        entities=[
+                            CustomVolume(
+                                name="farfield",
+                                boundaries=[Surface(name="face1"), Surface(name="face2")],
+                            )
+                        ],
+                    ),
+                    AutomatedFarfield(
+                        enclosed_surfaces=[Surface(name="face1"), Surface(name="face2")],
+                    ),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+        )
+    _, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="SurfaceMesh",
+        validation_level="VolumeMesh",
+    )
+    assert any("name 'farfield' is reserved" in e["msg"] for e in errors)

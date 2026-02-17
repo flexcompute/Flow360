@@ -188,13 +188,21 @@ class MeshingParams(Flow360BaseModel):
         if total_farfield > 1:
             raise ValueError("Only one farfield zone is allowed in `volume_zones`.")
 
+        return v
+
+    @contextual_field_validator("volume_zones", mode="after")
+    @classmethod
+    def _check_automated_farfield_custom_volumes(cls, v, param_info):
+        if v is None:
+            return v
+
         automated_farfield = next((zone for zone in v if isinstance(zone, AutomatedFarfield)), None)
         if automated_farfield is not None:
             custom_volumes = [
                 entity
                 for zone in v
                 if isinstance(zone, CustomZones)
-                for entity in zone.entities.stored_entities
+                for entity in param_info.expand_entity_list(zone.entities)
                 if isinstance(entity, CustomVolume)
             ]
             if any(cv.name == "farfield" for cv in custom_volumes):
@@ -204,14 +212,18 @@ class MeshingParams(Flow360BaseModel):
                     "Please choose a different name."
                 )
 
-            has_enclosed_surfaces = automated_farfield.enclosed_surfaces is not None
+            enclosed_surfaces = (
+                param_info.expand_entity_list(automated_farfield.enclosed_surfaces)
+                if automated_farfield.enclosed_surfaces is not None
+                else []
+            )
 
-            if custom_volumes and not has_enclosed_surfaces:
+            if custom_volumes and not enclosed_surfaces:
                 raise ValueError(
                     "When using AutomatedFarfield with CustomVolumes, `enclosed_surfaces` must be "
                     "specified on the AutomatedFarfield to define the exterior farfield zone boundary."
                 )
-            if has_enclosed_surfaces and not custom_volumes:
+            if enclosed_surfaces and not custom_volumes:
                 raise ValueError(
                     "`enclosed_surfaces` on AutomatedFarfield is only allowed when CustomVolume entities are used. "
                     "Without custom volumes, the farfield zone will be automatically detected."
