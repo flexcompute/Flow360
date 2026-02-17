@@ -1006,30 +1006,30 @@ def test_custom_forces_is_downloadable(mock_id, mock_response):
 
 @pytest.mark.usefixtures("s3_download_override")
 def test_monitors_populate_monitors(mock_id, mock_response):
-    """Test MonitorsResultModel._populate_monitors populates names and models correctly"""
+    """Test MonitorsResultModel._populate populates names and models correctly"""
     case = fl.Case(id="case-666666666-66666666-666-6666666666666")
 
-    # Before calling _populate_monitors, internal lists should be empty
+    # Before calling _populate, internal lists should be empty
     # pylint: disable=protected-access
-    assert len(case.results.monitors._monitor_names) == 0
-    assert len(case.results.monitors._monitors) == 0
+    assert len(case.results.monitors._names) == 0
+    assert len(case.results.monitors._result_collection) == 0
 
     # Call the private populate method
-    case.results.monitors._populate_monitors()
+    case.results.monitors._populate()
 
     # After calling, internal lists should be populated
-    assert len(case.results.monitors._monitor_names) == 2
-    assert "massFluxExhaust" in case.results.monitors._monitor_names
-    assert "massFluxIntake" in case.results.monitors._monitor_names
+    assert len(case.results.monitors._names) == 2
+    assert "massFluxExhaust" in case.results.monitors._names
+    assert "massFluxIntake" in case.results.monitors._names
 
     # Check that models are created with correct remote file names
-    assert len(case.results.monitors._monitors) == 2
+    assert len(case.results.monitors._result_collection) == 2
     assert (
-        case.results.monitors._monitors["massFluxExhaust"].remote_file_name
+        case.results.monitors._result_collection["massFluxExhaust"].remote_file_name
         == "monitor_massFluxExhaust_v2.csv"
     )
     assert (
-        case.results.monitors._monitors["massFluxIntake"].remote_file_name
+        case.results.monitors._result_collection["massFluxIntake"].remote_file_name
         == "monitor_massFluxIntake_v2.csv"
     )
 
@@ -1042,11 +1042,11 @@ def test_monitors_names_property_idempotent(mock_id, mock_response):
     # Access property first time
     first_call_names = list(case.results.monitors.monitor_names)
     # pylint: disable=protected-access
-    first_call_count = len(case.results.monitors._monitors)
+    first_call_count = len(case.results.monitors._result_collection)
 
     # Access property again
     second_call_names = list(case.results.monitors.monitor_names)
-    second_call_count = len(case.results.monitors._monitors)
+    second_call_count = len(case.results.monitors._result_collection)
 
     assert first_call_names == second_call_names
     assert first_call_count == second_call_count
@@ -1054,30 +1054,30 @@ def test_monitors_names_property_idempotent(mock_id, mock_response):
 
 @pytest.mark.usefixtures("s3_download_override")
 def test_udd_populate_udds(mock_id, mock_response):
-    """Test UserDefinedDynamicsResultModel._populate_udds populates names and models correctly"""
+    """Test UserDefinedDynamicsResultModel._populate populates names and models correctly"""
     case = fl.Case(id="case-666666666-66666666-666-6666666666666")
 
-    # Before calling _populate_udds, internal lists should be empty
+    # Before calling _populate, internal lists should be empty
     # pylint: disable=protected-access
-    assert len(case.results.user_defined_dynamics._udd_names) == 0
-    assert len(case.results.user_defined_dynamics._udds) == 0
+    assert len(case.results.user_defined_dynamics._names) == 0
+    assert len(case.results.user_defined_dynamics._result_collection) == 0
 
     # Call the private populate method
-    case.results.user_defined_dynamics._populate_udds()
+    case.results.user_defined_dynamics._populate()
 
     # After calling, internal lists should be populated
-    assert len(case.results.user_defined_dynamics._udd_names) == 2
-    assert "massInflowController_Exhaust" in case.results.user_defined_dynamics._udd_names
-    assert "massInflowController_Intake" in case.results.user_defined_dynamics._udd_names
+    assert len(case.results.user_defined_dynamics._names) == 2
+    assert "massInflowController_Exhaust" in case.results.user_defined_dynamics._names
+    assert "massInflowController_Intake" in case.results.user_defined_dynamics._names
 
     # Check that models are created with correct remote file names
-    assert len(case.results.user_defined_dynamics._udds) == 2
+    assert len(case.results.user_defined_dynamics._result_collection) == 2
     assert (
-        case.results.user_defined_dynamics._udds["massInflowController_Exhaust"].remote_file_name
+        case.results.user_defined_dynamics._result_collection["massInflowController_Exhaust"].remote_file_name
         == "udd_massInflowController_Exhaust_v2.csv"
     )
     assert (
-        case.results.user_defined_dynamics._udds["massInflowController_Intake"].remote_file_name
+        case.results.user_defined_dynamics._result_collection["massInflowController_Intake"].remote_file_name
         == "udd_massInflowController_Intake_v2.csv"
     )
 
@@ -1090,11 +1090,11 @@ def test_udd_names_property_idempotent(mock_id, mock_response):
     # Access property first time
     first_call_names = list(case.results.user_defined_dynamics.udd_names)
     # pylint: disable=protected-access
-    first_call_count = len(case.results.user_defined_dynamics._udds)
+    first_call_count = len(case.results.user_defined_dynamics._result_collection)
 
     # Access property again
     second_call_names = list(case.results.user_defined_dynamics.udd_names)
-    second_call_count = len(case.results.user_defined_dynamics._udds)
+    second_call_count = len(case.results.user_defined_dynamics._result_collection)
 
     assert first_call_names == second_call_names
     assert first_call_count == second_call_count
@@ -1102,32 +1102,32 @@ def test_udd_names_property_idempotent(mock_id, mock_response):
 
 @pytest.mark.usefixtures("s3_download_override")
 def test_custom_forces_populate_custom_forces(mock_id, mock_response):
-    """Test CustomForceResultModel._populate_custom_forces populates names and models correctly"""
+    """Test CustomForceResultModel._populate populates names and models correctly"""
     case = fl.Case(id="case-666666666-66666666-666-6666666666666")
 
-    # Before calling _populate_custom_forces, internal lists should be empty
+    # Before calling _populate, internal lists should be empty
     # pylint: disable=protected-access
-    assert len(case.results.custom_forces._custom_force_names) == 0
-    assert len(case.results.custom_forces._custom_forces) == 0
+    assert len(case.results.custom_forces._names) == 0
+    assert len(case.results.custom_forces._result_collection) == 0
 
     # Call the private populate method
-    case.results.custom_forces._populate_custom_forces()
+    case.results.custom_forces._populate()
 
     # After calling, internal lists should be populated
-    assert len(case.results.custom_forces._custom_force_names) == 2
-    assert "wing_all_planes_forces" in case.results.custom_forces._custom_force_names
+    assert len(case.results.custom_forces._names) == 2
+    assert "wing_all_planes_forces" in case.results.custom_forces._names
     assert (
-        "wing_all_planes_forces_moving_statistic" in case.results.custom_forces._custom_force_names
+        "wing_all_planes_forces_moving_statistic" in case.results.custom_forces._names
     )
 
     # Check that models are created with correct remote file names
-    assert len(case.results.custom_forces._custom_forces) == 2
+    assert len(case.results.custom_forces._result_collection) == 2
     assert (
-        case.results.custom_forces._custom_forces["wing_all_planes_forces"].remote_file_name
+        case.results.custom_forces._result_collection["wing_all_planes_forces"].remote_file_name
         == "force_output_wing_all_planes_forces_v2.csv"
     )
     assert (
-        case.results.custom_forces._custom_forces[
+        case.results.custom_forces._result_collection[
             "wing_all_planes_forces_moving_statistic"
         ].remote_file_name
         == "force_output_wing_all_planes_forces_moving_statistic_v2.csv"
@@ -1142,11 +1142,11 @@ def test_custom_forces_names_property_idempotent(mock_id, mock_response):
     # Access property first time
     first_call_names = list(case.results.custom_forces.custom_force_names)
     # pylint: disable=protected-access
-    first_call_count = len(case.results.custom_forces._custom_forces)
+    first_call_count = len(case.results.custom_forces._result_collection)
 
     # Access property again
     second_call_names = list(case.results.custom_forces.custom_force_names)
-    second_call_count = len(case.results.custom_forces._custom_forces)
+    second_call_count = len(case.results.custom_forces._result_collection)
 
     assert first_call_names == second_call_names
     assert first_call_count == second_call_count
@@ -1154,15 +1154,15 @@ def test_custom_forces_names_property_idempotent(mock_id, mock_response):
 
 @pytest.mark.usefixtures("s3_download_override")
 def test_udd_download_after_populate(mock_id, mock_response):
-    """Test UserDefinedDynamicsResultModel.download works after _populate_udds"""
+    """Test UserDefinedDynamicsResultModel.download works after _populate"""
     case = fl.Case(id="case-666666666-66666666-666-6666666666666")
 
     # pylint: disable=protected-access
     # First populate
-    case.results.user_defined_dynamics._populate_udds()
+    case.results.user_defined_dynamics._populate()
 
     # Verify download method is set on individual UDDs
-    for udd_name, udd in case.results.user_defined_dynamics._udds.items():
+    for udd_name, udd in case.results.user_defined_dynamics._result_collection.items():
         assert udd._download_method is not None
         assert callable(udd._download_method)
         assert udd._get_params_method is not None
@@ -1171,15 +1171,15 @@ def test_udd_download_after_populate(mock_id, mock_response):
 
 @pytest.mark.usefixtures("s3_download_override")
 def test_custom_forces_download_after_populate(mock_id, mock_response):
-    """Test CustomForceResultModel.download works after _populate_custom_forces"""
+    """Test CustomForceResultModel.download works after _populate"""
     case = fl.Case(id="case-666666666-66666666-666-6666666666666")
 
     # pylint: disable=protected-access
     # First populate
-    case.results.custom_forces._populate_custom_forces()
+    case.results.custom_forces._populate()
 
     # Verify download method is set on individual custom forces
-    for force_name, force in case.results.custom_forces._custom_forces.items():
+    for force_name, force in case.results.custom_forces._result_collection.items():
         assert force._download_method is not None
         assert callable(force._download_method)
         assert force._get_params_method is not None
@@ -1188,15 +1188,15 @@ def test_custom_forces_download_after_populate(mock_id, mock_response):
 
 @pytest.mark.usefixtures("s3_download_override")
 def test_monitors_download_after_populate(mock_id, mock_response):
-    """Test MonitorsResultModel download works after _populate_monitors"""
+    """Test MonitorsResultModel download works after _populate"""
     case = fl.Case(id="case-666666666-66666666-666-6666666666666")
 
     # pylint: disable=protected-access
     # First populate
-    case.results.monitors._populate_monitors()
+    case.results.monitors._populate()
 
     # Verify download method is set on individual monitors
-    for monitor_name, monitor in case.results.monitors._monitors.items():
+    for monitor_name, monitor in case.results.monitors._result_collection.items():
         assert monitor._download_method is not None
         assert callable(monitor._download_method)
         assert monitor._get_params_method is not None

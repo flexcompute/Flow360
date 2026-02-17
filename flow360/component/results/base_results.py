@@ -11,7 +11,8 @@ import time
 import uuid
 from collections import defaultdict
 from itertools import chain, product
-from typing import Callable, Dict, List, Optional
+from pathlib import Path
+from typing import Callable, Dict, List, Optional, Type
 
 import numpy as np
 import pandas
@@ -766,3 +767,107 @@ class LocalResultCSVModel(ResultCSVModel):
         self, to_file: str = None, to_folder: str = ".", overwrite: bool = False, **kwargs
     ):
         raise Flow360TypeError("Cannot download csv from LocalResultCSVModel")
+
+class NamedResultsCollectionModel(ResultBaseModel):
+    """
+    Abstract base model for handling collections of result models searchable by filename pattern.
+
+    Subclasses must override `_pattern` (the regex used to match result filenames)
+    and `_result_model_class` (the CSV model class to instantiate for each match).
+
+    """
+
+    remote_file_name: Optional[str] = pd.Field(None, frozen=True)
+    get_download_file_list_method: Optional[Callable] = pd.Field(lambda: None)
+
+    _names: List[str] = pd.PrivateAttr(default_factory=list)
+    _result_collection: Dict[str, _result_model_class] = pd.PrivateAttr(default_factory=dict)
+
+    # To be given by subclass
+    _pattern: str
+    _result_model_class: Type[ResultBaseModel]
+
+    def _populate(self):
+        """
+        Populate the internal result collection and names list from the file list.
+        """
+        file_list = [
+            file["fileName"]
+            for file in self.get_download_file_list_method()  # pylint:disable=not-callable
+        ]
+        for filepath in file_list:
+            if str(Path(filepath).parent) == "results":
+                filename = Path(filepath).name
+                match = re.match(self._pattern, filename)
+                if match:
+                    name = match.group(1)
+                    self._names.append(name)
+                    result = self._result_model_class(remote_file_name=filename)
+                    # pylint: disable=protected-access
+                    result._download_method = self._download_method
+                    result._get_params_method = self._get_params_method
+                    self._result_collection[name] = result
+
+    @property
+    def names(self) -> List[str]:
+        """
+        Get the list of result names.
+
+        Returns
+        -------
+        list of str
+            List of result names.
+        """
+        if len(self._names) == 0:
+            self._populate()
+        return self._names
+
+    def get_result_by_name(self, name: str) -> _result_model_class:
+        """
+        Get a result by name.
+
+        Parameters
+        ----------
+        name : str
+            The name of the result.
+
+        Returns
+        -------
+        ResultCSVModel
+            The result model corresponding to the given name.
+
+        Raises
+        ------
+        Flow360ValueError
+            If the result with the provided name is not found.
+        """
+        if name not in self.names:
+            raise Flow360ValueError(
+                f"Cannot find result with provided name={name}, available results: {self.names}"
+            )
+        return self._result_collection[name]
+
+    def __getitem__(self, name: str) -> _result_model_class:
+        """
+        Get a result by name (supporting [] access).
+        """
+        return self.get_result_by_name(name)
+
+    def download(
+        self, to_folder: str = ".", overwrite: bool = False
+    ):  # pylint:disable=arguments-differ
+        """
+        Download all result files to the specified location.
+
+        Parameters
+        ----------
+        to_folder : str, optional
+            The folder where the files will be downloaded.
+        overwrite : bool, optional
+            Flag indicating whether to overwrite existing files.
+        """
+        if len(self._names) == 0:
+            self._populate()
+        for result in self._result_collection.values():
+            result.download(to_folder=to_folder, overwrite=overwrite)
+
