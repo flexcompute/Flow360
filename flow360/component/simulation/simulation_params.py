@@ -56,10 +56,10 @@ from flow360.component.simulation.outputs.outputs import (
     ForceOutput,
     IsosurfaceOutput,
     OutputTypes,
-    TimeAverageForceDistributionOutput,
     ProbeOutput,
     SurfaceIntegralOutput,
     SurfaceProbeOutput,
+    TimeAverageForceDistributionOutput,
     UserDefinedField,
     VolumeOutput,
 )
@@ -915,7 +915,7 @@ class SimulationParams(_ParamModelBase):
         returns True when SimulationParams has user defined dynamics
         """
         return self.user_defined_dynamics is not None and len(self.user_defined_dynamics) > 0
-    
+
     def has_force_distributions(self):
         """
         returns True when SimulationParams has force distributions
@@ -923,7 +923,10 @@ class SimulationParams(_ParamModelBase):
         if self.outputs is None:
             return False
         # pylint: disable=not-an-iterable
-        return any(isinstance(item, (ForceDistributionOutput, TimeAverageForceDistributionOutput)) for item in self.outputs)
+        return any(
+            isinstance(item, (ForceDistributionOutput, TimeAverageForceDistributionOutput))
+            for item in self.outputs
+        )
 
     def has_custom_forces(self):
         """

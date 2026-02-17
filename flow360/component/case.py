@@ -39,6 +39,7 @@ from .resource_base import (
     before_submit_only,
     is_object_cloud_resource,
 )
+from .results.base_results import ResultTarGZModel
 from .results.case_results import (
     ActuatorDiskResultCSVModel,
     AeroacousticsResultCSVModel,
@@ -47,6 +48,7 @@ from .results.case_results import (
     CaseDownloadable,
     CFLResultCSVModel,
     CustomForceResultModel,
+    ForceDistributionsResultModel,
     LegacyForceDistributionResultCSVModel,
     LinearResidualsResultCSVModel,
     MaxResidualLocationResultCSVModel,
@@ -56,12 +58,10 @@ from .results.case_results import (
     PorousMediumResultCSVModel,
     ResultBaseModel,
     ResultsDownloaderSettings,
-    ResultTarGZModel,
     SurfaceForcesResultCSVModel,
     SurfaceHeatTransferResultCSVModel,
     TotalForcesResultCSVModel,
     UserDefinedDynamicsResultModel,
-    ForceDistributionsResultModel,
     XSlicingForceDistributionResultCSVModel,
     YSlicingForceDistributionResultCSVModel,
 )

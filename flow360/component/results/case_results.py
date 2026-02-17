@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Callable, Dict, List, Optional, get_args
+from typing import List, Optional, get_args
 
 import numpy as np
 import pydantic as pd
@@ -19,7 +19,6 @@ from flow360.component.results.base_results import (
     PerEntityResultCSVModel,
     ResultBaseModel,
     ResultCSVModel,
-    ResultTarGZModel,
 )
 from flow360.component.results.results_utils import (
     BETDiskCSVHeaderOperation,
@@ -31,22 +30,22 @@ from flow360.component.simulation.outputs.output_fields import (
     _CD_PER_STRIP,
     _CUMULATIVE_CD_CURVE,
     _HEAT_FLUX,
+    _NORMAL_DIRECTION,
     _X,
     _Y,
-    _NORMAL_DIRECTION,
     ForceOutputCoefficientNames,
-    _CFx_PER_SPAN,
-    _CFy_PER_SPAN,
-    _CFz_PER_SPAN,
-    _CMy_PER_SPAN,
-    _CMz_PER_SPAN,
-    _CMx_PER_SPAN,
     _CFx_CUMULATIVE,
+    _CFx_PER_SPAN,
     _CFy_CUMULATIVE,
+    _CFy_PER_SPAN,
     _CFz_CUMULATIVE,
+    _CFz_PER_SPAN,
     _CMx_CUMULATIVE,
+    _CMx_PER_SPAN,
     _CMy_CUMULATIVE,
+    _CMy_PER_SPAN,
     _CMz_CUMULATIVE,
+    _CMz_PER_SPAN,
 )
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import (
@@ -243,29 +242,51 @@ class YSlicingForceDistributionResultCSVModel(PerEntityResultCSVModel):
 class CustomForceDistributionResultCSVModel(PerEntityResultCSVModel):
     """CustomForceDistributionResultCSVModel"""
 
-    _VARIABLES_INCREMENTAL = (_CFx_PER_SPAN, _CFy_PER_SPAN, _CFz_PER_SPAN, _CMx_PER_SPAN, _CMy_PER_SPAN, _CMz_PER_SPAN)
-    _VARIABLES_CUMULATIVE = (_CFx_CUMULATIVE, _CFy_CUMULATIVE, _CFz_CUMULATIVE, _CMx_CUMULATIVE, _CMy_CUMULATIVE, _CMz_CUMULATIVE)
+    _VARIABLES_INCREMENTAL = (
+        _CFx_PER_SPAN,
+        _CFy_PER_SPAN,
+        _CFz_PER_SPAN,
+        _CMx_PER_SPAN,
+        _CMy_PER_SPAN,
+        _CMz_PER_SPAN,
+    )
+    _VARIABLES_CUMULATIVE = (
+        _CFx_CUMULATIVE,
+        _CFy_CUMULATIVE,
+        _CFz_CUMULATIVE,
+        _CMx_CUMULATIVE,
+        _CMy_CUMULATIVE,
+        _CMz_CUMULATIVE,
+    )
     _filter_when_zero: List[str] = []
     _variables: List[str] = []
     _x_columns: List[str] = [_NORMAL_DIRECTION]
 
-    def _preprocess(self):
+    def _preprocess(self, filter_physical_steps_only: bool = False, include_time: bool = False):
         """
         Detect whether the data contains incremental or cumulative variables
         based on column headers, then delegate to the parent preprocessor.
         """
         headers = set(self._values.keys()) if self._values else set()
-        if all((h.endswith(suffix) or h in self._x_columns) for h in headers for suffix in self._VARIABLES_CUMULATIVE):
+        if all(
+            (h.endswith(suffix) or h in self._x_columns)
+            for h in headers
+            for suffix in self._VARIABLES_CUMULATIVE
+        ):
             self._variables = list(self._VARIABLES_CUMULATIVE)
             self._filter_when_zero = list(self._VARIABLES_CUMULATIVE)
-        elif all((h.endswith(suffix) or h in self._x_columns) for h in headers for suffix in self._VARIABLES_INCREMENTAL):
+        elif all(
+            (h.endswith(suffix) or h in self._x_columns)
+            for h in headers
+            for suffix in self._VARIABLES_INCREMENTAL
+        ):
             self._variables = list(self._VARIABLES_INCREMENTAL)
             self._filter_when_zero = list(self._VARIABLES_INCREMENTAL)
         else:
             raise Flow360NotImplementedError(f"Unknown type of data: {headers}")
 
         super()._preprocess(
-            filter_physical_steps_only=False, include_time=False
+            filter_physical_steps_only=filter_physical_steps_only, include_time=include_time
         )
 
 
@@ -298,7 +319,9 @@ class MonitorsResultModel(NamedResultsCollectionModel):
     _pattern: str = CaseDownloadable.MONITOR_PATTERN.value
     _result_model_class: type = MonitorCSVModel
 
-    def download(self, to_file: str = None, to_folder: str = ".", overwrite: bool = False):
+    def download(  # pylint:disable=arguments-differ,arguments-renamed
+        self, to_file: str = None, to_folder: str = ".", overwrite: bool = False
+    ):
         """
         Download the monitors TAR GZ file to the specified location.
 
@@ -453,13 +476,15 @@ class CustomForceResultModel(NamedResultsCollectionModel):
         """
         return self.get_result_by_name(name)
 
+
 class ForceDistributionsResultModel(NamedResultsCollectionModel):
     """
     Model for handling results of force distributions.
     """
 
     _pattern: str = CaseDownloadable.FORCE_DISTRIBUTION_PATTERN.value
-    _result_model_class: type = PerEntityResultCSVModel
+    _result_model_class: type = CustomForceDistributionResultCSVModel
+
 
 class _DimensionedCSVResultModel(pd.BaseModel):
     """

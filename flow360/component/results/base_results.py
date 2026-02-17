@@ -768,6 +768,7 @@ class LocalResultCSVModel(ResultCSVModel):
     ):
         raise Flow360TypeError("Cannot download csv from LocalResultCSVModel")
 
+
 class NamedResultsCollectionModel(ResultBaseModel):
     """
     Abstract base model for handling collections of result models searchable by filename pattern.
@@ -870,4 +871,3 @@ class NamedResultsCollectionModel(ResultBaseModel):
             self._populate()
         for result in self._result_collection.values():
             result.download(to_folder=to_folder, overwrite=overwrite)
-

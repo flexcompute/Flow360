@@ -1073,11 +1073,15 @@ def test_udd_populate_udds(mock_id, mock_response):
     # Check that models are created with correct remote file names
     assert len(case.results.user_defined_dynamics._result_collection) == 2
     assert (
-        case.results.user_defined_dynamics._result_collection["massInflowController_Exhaust"].remote_file_name
+        case.results.user_defined_dynamics._result_collection[
+            "massInflowController_Exhaust"
+        ].remote_file_name
         == "udd_massInflowController_Exhaust_v2.csv"
     )
     assert (
-        case.results.user_defined_dynamics._result_collection["massInflowController_Intake"].remote_file_name
+        case.results.user_defined_dynamics._result_collection[
+            "massInflowController_Intake"
+        ].remote_file_name
         == "udd_massInflowController_Intake_v2.csv"
     )
 
@@ -1116,9 +1120,7 @@ def test_custom_forces_populate_custom_forces(mock_id, mock_response):
     # After calling, internal lists should be populated
     assert len(case.results.custom_forces._names) == 2
     assert "wing_all_planes_forces" in case.results.custom_forces._names
-    assert (
-        "wing_all_planes_forces_moving_statistic" in case.results.custom_forces._names
-    )
+    assert "wing_all_planes_forces_moving_statistic" in case.results.custom_forces._names
 
     # Check that models are created with correct remote file names
     assert len(case.results.custom_forces._result_collection) == 2
@@ -1202,6 +1204,7 @@ def test_monitors_download_after_populate(mock_id, mock_response):
         assert monitor._get_params_method is not None
         assert callable(monitor._get_params_method)
 
+
 @pytest.mark.usefixtures("s3_download_override")
 def test_force_distributions_bracket_access(mock_id, mock_response):
     """Test ForceDistributionsResultModel - bracket access"""
@@ -1211,7 +1214,6 @@ def test_force_distributions_bracket_access(mock_id, mock_response):
     assert "force_distro_cumul" in names
     assert "ta_distro" in names
     assert len(names) == 2
-
 
     cumul = case.results.force_distributions["force_distro_cumul"]
     assert cumul is not None
@@ -1271,20 +1273,26 @@ def test_force_distributions_cumulative_data_loading(mock_id, mock_response):
     data = cumul.as_dict()
 
     # Verify cumulative columns are present (CFx_cumulative etc.)
-    cumulative_suffixes = ["CFx_cumulative", "CFy_cumulative", "CFz_cumulative",
-                           "CMx_cumulative", "CMy_cumulative", "CMz_cumulative"]
+    cumulative_suffixes = [
+        "CFx_cumulative",
+        "CFy_cumulative",
+        "CFz_cumulative",
+        "CMx_cumulative",
+        "CMy_cumulative",
+        "CMz_cumulative",
+    ]
     headers = list(data.keys())
     for suffix in cumulative_suffixes:
-        assert any(h.endswith(suffix) for h in headers), (
-            f"No column ending with '{suffix}' found in headers: {headers}"
-        )
+        assert any(
+            h.endswith(suffix) for h in headers
+        ), f"No column ending with '{suffix}' found in headers: {headers}"
 
     # Verify no incremental columns are present
     incremental_suffixes = ["CFx_per_span", "CFy_per_span", "CFz_per_span"]
     for suffix in incremental_suffixes:
-        assert not any(h.endswith(suffix) for h in headers), (
-            f"Unexpected incremental column ending with '{suffix}' found in cumulative data"
-        )
+        assert not any(
+            h.endswith(suffix) for h in headers
+        ), f"Unexpected incremental column ending with '{suffix}' found in cumulative data"
 
 
 @pytest.mark.usefixtures("s3_download_override")
@@ -1297,17 +1305,23 @@ def test_force_distributions_incremental_data_loading(mock_id, mock_response):
     data = incr.as_dict()
 
     # Verify incremental columns are present (CFx_per_span etc.)
-    incremental_suffixes = ["CFx_per_span", "CFy_per_span", "CFz_per_span",
-                            "CMx_per_span", "CMy_per_span", "CMz_per_span"]
+    incremental_suffixes = [
+        "CFx_per_span",
+        "CFy_per_span",
+        "CFz_per_span",
+        "CMx_per_span",
+        "CMy_per_span",
+        "CMz_per_span",
+    ]
     headers = list(data.keys())
     for suffix in incremental_suffixes:
-        assert any(h.endswith(suffix) for h in headers), (
-            f"No column ending with '{suffix}' found in headers: {headers}"
-        )
+        assert any(
+            h.endswith(suffix) for h in headers
+        ), f"No column ending with '{suffix}' found in headers: {headers}"
 
     # Verify no cumulative columns are present
     cumulative_suffixes = ["CFx_cumulative", "CFy_cumulative", "CFz_cumulative"]
     for suffix in cumulative_suffixes:
-        assert not any(h.endswith(suffix) for h in headers), (
-            f"Unexpected cumulative column ending with '{suffix}' found in incremental data"
-        )
+        assert not any(
+            h.endswith(suffix) for h in headers
+        ), f"Unexpected cumulative column ending with '{suffix}' found in incremental data"
