@@ -320,6 +320,7 @@ __all__ = [
     "NavierStokesInitialCondition",
     "NavierStokesModifiedRestartSolution",
     "FromUserDefinedDynamics",
+    "Gravity",
     "HeatEquationInitialCondition",
     "Temperature",
     "HeatFlux",
