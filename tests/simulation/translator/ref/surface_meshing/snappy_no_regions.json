@@ -31,7 +31,8 @@
                     "edgeSpacing": 4,
                     "minElem": 3,
                     "includedAngle": 120,
-                    "retainOnSmoothing": true
+                    "retainOnSmoothing": true,
+                    "geometricTestOnly": false
                 },
                 "regions": []
             }
