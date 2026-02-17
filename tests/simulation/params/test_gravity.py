@@ -7,24 +7,10 @@ import flow360.component.simulation.units as u
 from flow360.component.simulation.models.volume_models import Fluid, Gravity
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.translator.solver_translator import gravity_translator
-from flow360.component.simulation.unit_system import SI_unit_system
-
-
-class MockSimulationParams:
-    """Mock class for testing gravity_translator"""
-
-    def __init__(self, base_length_m=1.0, base_velocity_ms=340.0):
-        self._base_length = base_length_m * u.m
-        self._base_velocity = base_velocity_ms * u.m / u.s
-
-    @property
-    def base_length(self):
-        return self._base_length
-
-    @property
-    def base_velocity(self):
-        return self._base_velocity
-
+from flow360.component.simulation.unit_system import (
+    SI_unit_system,
+    flow360_acceleration_unit,
+)
 
 # ============================================================================
 # Gravity data class tests
@@ -163,43 +149,37 @@ def test_fluid_with_gravity_in_simulation_params():
 # ============================================================================
 
 
-def test_gravity_translator_nondimensionalization():
-    """Test that gravity_translator correctly non-dimensionalizes.
+def test_gravity_translator_default_direction():
+    """Test that gravity_translator combines magnitude and direction correctly.
 
-    Non-dimensionalization: g* = g * L_ref / a_inf^2
+    With direction (0,0,-1), the gravityVector should be (0, 0, -magnitude).
     """
+    nondim_magnitude = 8.49e-5
     gravity = Gravity(
         direction=(0, 0, -1),
-        magnitude=9.81 * u.m / u.s**2,
+        magnitude=nondim_magnitude * flow360_acceleration_unit,
     )
 
-    mock_params = MockSimulationParams(base_length_m=1.0, base_velocity_ms=340.0)
-    result = gravity_translator(gravity, mock_params)
-
-    expected_nondim = 9.81 / (340.0**2)
+    result = gravity_translator(gravity)
 
     assert "gravityVector" in result
     assert len(result["gravityVector"]) == 3
-    # direction is (0,0,-1), so gravityVector = (0, 0, -expected_nondim)
     assert math.isclose(result["gravityVector"][0], 0.0, abs_tol=1e-15)
     assert math.isclose(result["gravityVector"][1], 0.0, abs_tol=1e-15)
-    assert math.isclose(result["gravityVector"][2], -expected_nondim, rel_tol=1e-5)
+    assert math.isclose(result["gravityVector"][2], -nondim_magnitude, rel_tol=1e-10)
 
 
 def test_gravity_translator_custom_direction():
     """Test that gravity_translator preserves direction correctly."""
+    nondim_magnitude = 1e-3
     gravity = Gravity(
         direction=(1, 0, 0),
-        magnitude=10.0 * u.m / u.s**2,
+        magnitude=nondim_magnitude * flow360_acceleration_unit,
     )
 
-    mock_params = MockSimulationParams(base_length_m=1.0, base_velocity_ms=100.0)
-    result = gravity_translator(gravity, mock_params)
-
-    expected_nondim = 10.0 / (100.0**2)
+    result = gravity_translator(gravity)
 
     assert "gravityVector" in result
-    # direction is (1,0,0), so gravityVector = (expected_nondim, 0, 0)
-    assert math.isclose(result["gravityVector"][0], expected_nondim, rel_tol=1e-5)
+    assert math.isclose(result["gravityVector"][0], nondim_magnitude, rel_tol=1e-10)
     assert math.isclose(result["gravityVector"][1], 0.0, abs_tol=1e-15)
     assert math.isclose(result["gravityVector"][2], 0.0, abs_tol=1e-15)

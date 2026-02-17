@@ -304,8 +304,7 @@ class Gravity(Flow360BaseModel):
     # pylint: disable=no-member
     direction: Axis = pd.Field(
         (0, 0, -1),
-        description="The direction of the gravitational acceleration vector. "
-        + "This vector will be normalized automatically.",
+        description="The direction of the gravitational acceleration vector.",
     )
     magnitude: AccelerationType = pd.Field(
         9.81 * u.m / u.s**2,

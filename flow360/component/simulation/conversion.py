@@ -269,6 +269,11 @@ def unit_converter(dimension, params, required_by: List[str] = None) -> u.UnitSy
         base_velocity = get_base_velocity()
         flow360_conversion_unit_system.base_velocity = base_velocity
 
+    elif dimension == u.dimensions.acceleration:
+        base_velocity = get_base_velocity()
+        base_length = get_base_length()
+        flow360_conversion_unit_system.base_acceleration = base_velocity**2 / base_length
+
     elif dimension == u.dimensions.time:
         base_time = get_base_time()
         flow360_conversion_unit_system.base_time = base_time

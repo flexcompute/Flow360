@@ -1335,31 +1335,17 @@ def porous_media_translator(model: PorousMedium):
     return porous_medium
 
 
-def gravity_translator(gravity, params):
-    """Gravity translator - converts dimensional gravity to non-dimensional gravityVector.
-
-    Non-dimensionalization: g* = g * L_ref / a_∞²
-    where L_ref is the reference length (mesh unit) and a_∞ is the speed of sound.
+def gravity_translator(gravity):
+    """Gravity translator - produces gravityVector from direction and non-dimensional magnitude.
 
     The output gravityVector has the magnitude baked into the direction:
-    gravityVector = magnitude_nondim * direction
+    gravityVector = magnitude_nondim * normalized_direction
     """
-    # Get the magnitude value in m/s²
-    magnitude = gravity.magnitude.to("m/s**2").value.item()
-
-    # Get direction (already normalized by Axis validator)
+    gravity_dict = remove_units_in_dict(dump_dict(gravity))
+    magnitude = gravity_dict["magnitude"]
     direction = list(gravity.direction)
 
-    # Compute non-dimensionalization factor: L_ref / a_∞²
-    base_length = params.base_length.to("m").value
-    base_velocity = params.base_velocity.to("m/s").value  # speed of sound
-    nondim_factor = base_length / (base_velocity**2)
-
-    # Non-dimensionalize the magnitude
-    magnitude_nondim = magnitude * nondim_factor
-
-    # Combine into a single gravity vector (magnitude baked in)
-    gravity_vector = [magnitude_nondim * d for d in direction]
+    gravity_vector = [magnitude * d for d in direction]
 
     return {
         "gravityVector": gravity_vector,
@@ -2339,7 +2325,7 @@ def get_solver_json(
 
             ##:: Step 6b: Get gravity from Fluid model
             if model.gravity is not None:
-                translated["gravity"] = gravity_translator(model.gravity, input_params)
+                translated["gravity"] = gravity_translator(model.gravity)
 
     ##:: Step 7: Get BET and AD lists
     if has_instance_in_list(input_params.models, BETDisk):
