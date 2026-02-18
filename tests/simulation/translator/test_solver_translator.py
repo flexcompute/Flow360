@@ -53,6 +53,7 @@ from flow360.component.simulation.models.turbulence_quantities import (
 )
 from flow360.component.simulation.models.volume_models import (
     Fluid,
+    Gravity,
     NavierStokesInitialCondition,
     NavierStokesModifiedRestartSolution,
     PorousMedium,
@@ -70,6 +71,7 @@ from flow360.component.simulation.outputs.output_entities import (
     Slice,
 )
 from flow360.component.simulation.outputs.outputs import (
+    ForceDistributionOutput,
     ForceOutput,
     Isosurface,
     IsosurfaceOutput,
@@ -487,9 +489,15 @@ def test_om6wing_with_stopping_criterion_and_moving_statistic(get_om6Wing_tutori
         monitor_output=force_output,
         monitor_field="CL",
     )
+    force_distribution_output = ForceDistributionOutput(
+        name="X_incremental",
+        distribution_direction=[1, 0, 0],
+    )
     params.models.append(wallBC)
     params.run_control = RunControl(stopping_criteria=[criterion1, criterion2, criterion3])
-    params.outputs.extend([probe_output, mass_flow_rate_integral, force_output])
+    params.outputs.extend(
+        [force_distribution_output, probe_output, mass_flow_rate_integral, force_output]
+    )
     translate_and_compare(
         params,
         mesh_unit=0.8059 * u.m,
@@ -2036,3 +2044,45 @@ def test_nasa9_a7_correction_with_thermally_perfect_gas():
     assert e_over_R == pytest.approx(
         expected_e_over_R, rel=1e-6
     ), f"Internal energy e/R={e_over_R} at T_nd=1, expected {expected_e_over_R} (gamma={gamma})"
+
+
+def test_gravity_translation_with_si_units():
+    """Test that gravity specified in SI units is non-dimensionalized and translated correctly.
+
+    Non-dimensionalization: base_acceleration = V_ref^2 / L_ref
+    where V_ref = speed of sound (for AerospaceCondition) and L_ref = mesh_unit.
+
+    gravityVector = direction * (magnitude / base_acceleration)
+    """
+    mesh_unit = 1.0 * u.m
+    gravity_magnitude_si = 9.81  # m/s^2
+
+    with SI_unit_system:
+        param = SimulationParams(
+            operating_condition=AerospaceCondition(
+                velocity_magnitude=100 * u.m / u.s,
+            ),
+            models=[
+                Fluid(
+                    gravity=Gravity(
+                        direction=(0, 0, -1),
+                        magnitude=gravity_magnitude_si * u.m / u.s**2,
+                    )
+                ),
+                Wall(entities=Surface(name="fluid/body")),
+                Freestream(entities=Surface(name="fluid/farfield")),
+            ],
+        )
+
+    translated = get_solver_json(param, mesh_unit=mesh_unit)
+
+    base_velocity = param.base_velocity.to("m/s").value
+    base_length = mesh_unit.to("m").value
+    base_acceleration = base_velocity**2 / base_length
+    expected_nondim = gravity_magnitude_si / base_acceleration
+
+    assert "gravity" in translated
+    gravity_vector = translated["gravity"]["gravityVector"]
+    assert gravity_vector[0] == pytest.approx(0.0, abs=1e-15)
+    assert gravity_vector[1] == pytest.approx(0.0, abs=1e-15)
+    assert gravity_vector[2] == pytest.approx(-expected_nondim, rel=1e-10)

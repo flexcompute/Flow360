@@ -364,6 +364,7 @@ def om6wing_tutorial_global_plus_local_override():
                     surface_edge_growth_rate=1.07,
                     curvature_resolution_angle=10 * u.deg,
                     surface_max_edge_length=15 * u.cm,
+                    edge_split_layers=0,
                 ),
                 refinements=[
                     SurfaceRefinement(
@@ -397,6 +398,7 @@ def om6wing_tutorial_aspect_ratio():
                     surface_edge_growth_rate=1.07,
                     curvature_resolution_angle=10 * u.deg,
                     surface_max_edge_length=15 * u.cm,
+                    edge_split_layers=0,
                 ),
                 refinements=[
                     SurfaceRefinement(
@@ -435,6 +437,7 @@ def om6wing_tutorial_global_only():
                     surface_edge_growth_rate=1.07,
                     curvature_resolution_angle=10 * u.deg,
                     surface_max_edge_length=15 * u.cm,
+                    edge_split_layers=0,
                 ),
                 refinements=[
                     SurfaceEdgeRefinement(
@@ -481,6 +484,7 @@ def airplane_surface_mesh():
                     surface_edge_growth_rate=1.2,
                     surface_max_edge_length=100 * u.cm,
                     curvature_resolution_angle=pi / 12 * u.rad,
+                    edge_split_layers=0,
                 ),
                 refinements=[
                     SurfaceRefinement(
@@ -527,6 +531,7 @@ def rotor_surface_mesh():
                     surface_edge_growth_rate=1.2,
                     surface_max_edge_length=10,
                     curvature_resolution_angle=15 * u.deg,
+                    edge_split_layers=0,
                 ),
                 refinements=[
                     SurfaceRefinement(
@@ -633,6 +638,7 @@ def snappy_basic_refinements():
                     min_elem=3,
                     included_angle=120 * u.deg,
                     entities=test_geometry.snappy_bodies["body1"],
+                    geometric_test_only=True,
                 ),
                 snappy.SurfaceEdgeRefinement(
                     spacing=[4 * u.mm],
@@ -791,6 +797,7 @@ def snappy_refinements_multiple_regions():
                     included_angle=120 * u.deg,
                     entities=[test_geometry["body0::patch0"], test_geometry["body0::patch1"]],
                     retain_on_smoothing=False,
+                    geometric_test_only=True,
                 ),
             ],
             smooth_controls=snappy.SmoothControls(),
@@ -1041,7 +1048,7 @@ def test_rotor_surface_mesh(get_rotor_geometry, rotor_surface_mesh):
 
 def test_snappy_default(get_snappy_geometry, snappy_all_defaults):
     _translate_and_compare(
-        snappy_all_defaults, get_snappy_geometry.mesh_unit, "default_snappy.json"
+        snappy_all_defaults, get_snappy_geometry.mesh_unit, "default_snappy.json", atol=1e-6
     )
 
 
@@ -1068,11 +1075,14 @@ def test_snappy_multiple_regions(get_snappy_geometry, snappy_refinements_multipl
         snappy_refinements_multiple_regions,
         get_snappy_geometry.mesh_unit,
         "snappy_refinements_multiple_regions.json",
+        atol=1e-6,
     )
 
 
 def test_snappy_settings(get_snappy_geometry, snappy_settings):
-    _translate_and_compare(snappy_settings, get_snappy_geometry.mesh_unit, "snappy_settings.json")
+    _translate_and_compare(
+        snappy_settings, get_snappy_geometry.mesh_unit, "snappy_settings.json", atol=1e-6
+    )
 
 
 def test_snappy_settings_off_position(get_snappy_geometry, snappy_settings_off_position):
@@ -1083,7 +1093,10 @@ def test_snappy_settings_off_position(get_snappy_geometry, snappy_settings_off_p
 
 def test_snappy_no_refinements(get_snappy_geometry, snappy_refinements_no_regions):
     _translate_and_compare(
-        snappy_refinements_no_regions, get_snappy_geometry.mesh_unit, "snappy_no_regions.json"
+        snappy_refinements_no_regions,
+        get_snappy_geometry.mesh_unit,
+        "snappy_no_regions.json",
+        atol=1e-6,
     )
 
 

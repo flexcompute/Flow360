@@ -1622,8 +1622,11 @@ class Chart2D(BaseChart2D):
             if x_path.startswith("results/"):
                 x_path = x_path[len("results/") :]
 
-            include = None
-            exclude = None
+            ref_y = self.y if not isinstance(self.y, list) else self.y[0]
+
+            include = ref_y.include if isinstance(ref_y, (DataItem, Delta)) else None
+            exclude = ref_y.exclude if isinstance(ref_y, (DataItem, Delta)) else None
+
             if x_path == "x_slicing_force_distribution/X":
                 log.warning(
                     "First case is used as a background image with dimensions matched to the extent of X data"
@@ -1631,8 +1634,6 @@ class Chart2D(BaseChart2D):
                 camera = Camera(
                     position=(0, -1, 0), up=(0, 0, 1), dimension=dimension, dimension_dir="width"
                 )
-                include = self.x.include
-                exclude = self.x.exclude
             elif x_path == "y_slicing_force_distribution/Y":
                 log.warning(
                     "First case is used as a background image with dimensions matched to the extent of X data"
@@ -1640,8 +1641,6 @@ class Chart2D(BaseChart2D):
                 camera = Camera(
                     position=(-1, 0, 0), up=(0, 0, 1), dimension=dimension, dimension_dir="width"
                 )
-                include = self.y.include
-                exclude = self.y.exclude
             else:
                 raise ValueError(
                     f"background={self.background} can be only used with x == x_slicing_force_distribution/X"
@@ -1804,16 +1803,26 @@ class Chart3D(Chart):
     def _get_limits(self, case: Case):
         if self.limits is not None and not isinstance(self.limits[0], float):
             params: SimulationParams = case.params
-            if is_flow360_unit(self.limits[0]):
-                return (self.limits[0].value, self.limits[1].value)
 
-            if isinstance(self.limits[0], unyt_quantity):
-                _, unit_system = get_unit_for_field(self.field)
+            _, unit_system = get_unit_for_field(self.field)
+            liquid_factor = (
+                params.base_velocity / params.reference_velocity
+                if (
+                    case.params.operating_condition.type_name == "LiquidOperatingCondition"
+                    and unit_system == "flow360"
+                )
+                else 1
+            )
+            if isinstance(self.limits[0], unyt_quantity) or is_flow360_unit(self.limits[0]):
                 target_system = "flow360"
                 if unit_system is not None:
                     target_system = unit_system
-                min_val = params.convert_unit(self.limits[0], target_system=target_system)
-                max_val = params.convert_unit(self.limits[1], target_system=target_system)
+                min_val = (
+                    params.convert_unit(self.limits[0], target_system=target_system) * liquid_factor
+                )
+                max_val = (
+                    params.convert_unit(self.limits[1], target_system=target_system) * liquid_factor
+                )
                 return (float(min_val.value), float(max_val.value))
 
         return self.limits

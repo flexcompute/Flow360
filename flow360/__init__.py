@@ -118,6 +118,7 @@ from flow360.component.simulation.models.volume_models import (
     Fluid,
     ForcePerArea,
     FromUserDefinedDynamics,
+    Gravity,
     HeatEquationInitialCondition,
     NavierStokesInitialCondition,
     NavierStokesModifiedRestartSolution,
@@ -175,6 +176,7 @@ from flow360.component.simulation.primitives import (
     Cylinder,
     ReferenceGeometry,
     SeedpointVolume,
+    Sphere,
 )
 from flow360.component.simulation.run_control.run_control import RunControl
 from flow360.component.simulation.run_control.stopping_criterion import (
@@ -248,6 +250,7 @@ __all__ = [
     "ReferenceGeometry",
     "CustomVolume",
     "Cylinder",
+    "Sphere",
     "AxisymmetricBody",
     "AerospaceCondition",
     "ThermalState",
@@ -317,6 +320,7 @@ __all__ = [
     "NavierStokesInitialCondition",
     "NavierStokesModifiedRestartSolution",
     "FromUserDefinedDynamics",
+    "Gravity",
     "HeatEquationInitialCondition",
     "Temperature",
     "HeatFlux",

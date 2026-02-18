@@ -165,6 +165,7 @@ def apply_SnappySurfaceEdgeRefinement(
         edges["minLen"] = refinement.min_len.value.item()
     if refinement.retain_on_smoothing is not None:
         edges["retainOnSmoothing"] = refinement.retain_on_smoothing
+    edges["geometricTestOnly"] = refinement.geometric_test_only
     if refinement.spacing is None:
         edges["edgeSpacing"] = defaults.min_spacing.value.item()
     elif isinstance(refinement.spacing, unyt_array) and isinstance(
@@ -285,6 +286,55 @@ def apply_UniformRefinement_w_snappy(
             )
 
         translated["geometry"]["refinementVolumes"].append(volume_body)
+
+
+def _none_tolerant_min(current, candidate):
+    """Return the smaller of two spacing quantities, comparing by raw value."""
+    if candidate is not None and candidate < current:
+        return candidate
+    return current
+
+
+def _get_effective_min_spacing(input_params, spacing_system: OctreeSpacing):
+    """
+    Get the effective minimum spacing across all refinements,
+    taking proximity_spacing (gap spacing reduction), edge spacings, and
+    projected volume refinements into account.
+    The result is cast to the nearest lower spacing in the octree series.
+    """
+    surface_meshing_params = input_params.meshing.surface_meshing
+    min_spacing = surface_meshing_params.defaults.min_spacing
+
+    for refinement in surface_meshing_params.refinements or []:
+        if isinstance(refinement, (snappy.BodyRefinement, snappy.RegionRefinement)):
+            min_spacing = _none_tolerant_min(min_spacing, refinement.min_spacing)
+            min_spacing = _none_tolerant_min(min_spacing, refinement.proximity_spacing)
+        elif (
+            isinstance(refinement, snappy.SurfaceEdgeRefinement) and refinement.spacing is not None
+        ):
+            edge_spacing = (
+                refinement.spacing[0]
+                if isinstance(refinement.spacing, unyt_array)
+                and isinstance(refinement.distances, unyt_array)
+                and len(refinement.spacing) > 0
+                else refinement.spacing
+            )
+            min_spacing = _none_tolerant_min(min_spacing, edge_spacing)
+        elif isinstance(refinement, UniformRefinement):
+            min_spacing = _none_tolerant_min(min_spacing, refinement.spacing)
+
+    # Also consider projected volume meshing refinements
+    if input_params.meshing.volume_meshing is not None:
+        for refinement in input_params.meshing.volume_meshing.refinements:
+            if isinstance(refinement, UniformRefinement) and refinement.project_to_surface in [
+                True,
+                None,
+            ]:
+                min_spacing = _none_tolerant_min(min_spacing, refinement.spacing)
+
+    # Cast to the nearest lower spacing in the octree series
+    level = spacing_system.to_level(min_spacing)[0]
+    return spacing_system[level].value.item()
 
 
 # pylint: disable=too-many-branches,too-many-statements,too-many-locals
@@ -412,9 +462,13 @@ def snappy_mesher_json(input_params: SimulationParams):
                 else 180
             ),
             "minVol": (
-                quality_settings.min_pyramid_cell_volume
-                if quality_settings.min_pyramid_cell_volume
-                else -1e30
+                -1e30
+                if quality_settings.min_pyramid_cell_volume is False
+                else (
+                    quality_settings.min_pyramid_cell_volume
+                    if quality_settings.min_pyramid_cell_volume is not None
+                    else (1e-10 * (_get_effective_min_spacing(input_params, spacing_system) ** 3))
+                )
             ),
             "minTetQuality": (
                 quality_settings.min_tetrahedron_quality
@@ -727,7 +781,7 @@ def _get_gai_setting_whitelist(input_params: SimulationParams) -> dict:
         "surface_max_adaptation_iterations": None,
         "sealing_size": None,
         "remove_hidden_geometry": None,
-        "flooding_cell_size": None,
+        "min_passage_size": None,
         "planar_face_tolerance": None,
     }
 
