@@ -95,7 +95,9 @@ class CaseDownloadable(Enum):
     MONITOR_PATTERN = r"monitor_(.+)_v2.csv"
     USER_DEFINED_DYNAMICS_PATTERN = r"udd_(.+)_v2.csv"
     CUSTOM_FORCE_PATTERN = r"force_output_(.+)_v2.csv"
-    FORCE_DISTRIBUTION_PATTERN = r"(?![XY]_slicing_)(.+)_forceDistribution.csv"
+    FORCE_DISTRIBUTION_PATTERN = (
+        r"(?![XY]_slicing_forceDistribution\.csv$)(.+)_forceDistribution\.csv"
+    )
 
     # others:
     AEROACOUSTICS = "total_acoustics_v3.csv"

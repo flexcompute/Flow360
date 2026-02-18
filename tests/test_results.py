@@ -1436,3 +1436,11 @@ def test_force_distribution_pattern_excludes_slicing():
     m = re.match(pattern, "my_surface_forceDistribution.csv")
     assert m is not None
     assert m.group(1) == "my_surface"
+
+    m = re.match(pattern, "X_slicing_custom_forceDistribution.csv")
+    assert m is not None
+    assert m.group(1) == "X_slicing_custom"
+
+    m = re.match(pattern, "Y_slicing_custom_forceDistribution.csv")
+    assert m is not None
+    assert m.group(1) == "Y_slicing_custom"
