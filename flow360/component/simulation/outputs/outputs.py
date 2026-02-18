@@ -1708,7 +1708,6 @@ class ForceDistributionOutput(Flow360BaseModel):
         "ForceDistributionOutput", frozen=True
     )
 
-<<<<<<< HEAD
     @contextual_field_validator("entities", mode="after")
     @classmethod
     def ensure_surface_existence(cls, value, param_info: ParamsValidationInfo):
@@ -1749,17 +1748,17 @@ class ForceDistributionOutput(Flow360BaseModel):
             )
 
         return self
-=======
+
     @pd.field_validator("name", mode="after")
     @classmethod
     def _check_reserved_name(cls, name: str) -> str:
+        """Reject names reserved for built-in slicing force distributions (X_slicing, Y_slicing)."""
         if name in cls._RESERVED_NAMES:
             raise ValueError(
                 f"'{name}' is a reserved name and cannot be used for ForceDistributionOutput. "
                 f"Reserved names: {cls._RESERVED_NAMES}"
             )
         return name
->>>>>>> 22833196 ([FXC-5592] Results model for (TimeAveraging)ForceDistributionOutput (#1817))
 
 
 class TimeAverageForceDistributionOutput(ForceDistributionOutput):
