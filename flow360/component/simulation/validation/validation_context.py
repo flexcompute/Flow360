@@ -22,7 +22,7 @@ from functools import wraps
 from typing import Any, Callable, List, Literal, Union
 
 import pydantic as pd
-from flow360_schemas.framework.validation.context import (  # noqa: F401 — re-used, not redefined
+from flow360_schema.framework.validation.context import (  # noqa: F401 — re-used, not redefined
     _validation_level_ctx,
 )
 from pydantic import Field, TypeAdapter
