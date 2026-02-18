@@ -59,7 +59,6 @@ from flow360.component.simulation.outputs.outputs import (
     ProbeOutput,
     SurfaceIntegralOutput,
     SurfaceProbeOutput,
-    TimeAverageForceDistributionOutput,
     UserDefinedField,
     VolumeOutput,
 )
