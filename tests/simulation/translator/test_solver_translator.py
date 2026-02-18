@@ -53,6 +53,7 @@ from flow360.component.simulation.models.turbulence_quantities import (
 )
 from flow360.component.simulation.models.volume_models import (
     Fluid,
+    Gravity,
     NavierStokesInitialCondition,
     NavierStokesModifiedRestartSolution,
     PorousMedium,
@@ -70,6 +71,7 @@ from flow360.component.simulation.outputs.output_entities import (
     Slice,
 )
 from flow360.component.simulation.outputs.outputs import (
+    ForceDistributionOutput,
     ForceOutput,
     Isosurface,
     IsosurfaceOutput,
@@ -487,9 +489,15 @@ def test_om6wing_with_stopping_criterion_and_moving_statistic(get_om6Wing_tutori
         monitor_output=force_output,
         monitor_field="CL",
     )
+    force_distribution_output = ForceDistributionOutput(
+        name="X_incremental",
+        distribution_direction=[1, 0, 0],
+    )
     params.models.append(wallBC)
     params.run_control = RunControl(stopping_criteria=[criterion1, criterion2, criterion3])
-    params.outputs.extend([probe_output, mass_flow_rate_integral, force_output])
+    params.outputs.extend(
+        [force_distribution_output, probe_output, mass_flow_rate_integral, force_output]
+    )
     translate_and_compare(
         params,
         mesh_unit=0.8059 * u.m,
@@ -1592,3 +1600,489 @@ def test_om6wing_render_output(get_om6Wing_tutorial_param):
         ref_json_file="Flow360_om6wing_render.json",
         debug=False,
     )
+
+
+# =============================================================================
+# NASA 9 Coefficient Translation Tests
+# =============================================================================
+
+
+def test_translate_thermally_perfect_gas_single_species():
+    """Test translation of TPG with a single species."""
+    from flow360.component.simulation.models.material import (
+        FrozenSpecies,
+        NASA9Coefficients,
+        NASA9CoefficientSet,
+        ThermallyPerfectGas,
+    )
+    from flow360.component.simulation.translator.solver_translator import (
+        translate_thermally_perfect_gas,
+    )
+
+    T_ref = 300.0
+    with SI_unit_system:
+        coeffs_list = [0.0, 0.0, 3.5, 0.001, 0.0, 0.0, 0.0, 0.0, 0.0]
+        nasa_coeffs = NASA9Coefficients(
+            temperature_ranges=[
+                NASA9CoefficientSet(
+                    temperature_range_min=200.0 * u.K,
+                    temperature_range_max=6000.0 * u.K,
+                    coefficients=coeffs_list,
+                )
+            ]
+        )
+        tpg = ThermallyPerfectGas(
+            species=[
+                FrozenSpecies(
+                    name="Air",
+                    nasa_9_coefficients=nasa_coeffs,
+                    mass_fraction=1.0,
+                )
+            ]
+        )
+
+    result = translate_thermally_perfect_gas(tpg, reference_temperature=T_ref)
+
+    assert "temperatureRanges" in result
+    assert len(result["temperatureRanges"]) == 1
+
+    range_data = result["temperatureRanges"][0]
+    # Temperature ranges should be non-dimensionalized: T_nd = T / T_ref
+    assert range_data["temperatureRangeMin"] == pytest.approx(200.0 / T_ref)
+    assert range_data["temperatureRangeMax"] == pytest.approx(6000.0 / T_ref)
+
+    coeffs = range_data["coefficients"]
+    # a2 (constant term): no scaling
+    assert coeffs[2] == pytest.approx(3.5)
+    # a3 (T^1 term): scale by T_ref -> 0.001 * 300 = 0.3
+    assert coeffs[3] == pytest.approx(0.001 * T_ref)
+
+
+def test_translate_thermally_perfect_gas_mass_fraction_weighting():
+    """Test that multi-species coefficients are correctly mass-fraction weighted."""
+    from flow360.component.simulation.models.material import (
+        FrozenSpecies,
+        NASA9Coefficients,
+        NASA9CoefficientSet,
+        ThermallyPerfectGas,
+    )
+    from flow360.component.simulation.translator.solver_translator import (
+        translate_thermally_perfect_gas,
+    )
+
+    # Species A: cp/R = 3.0 (a2 = 3.0)
+    # Species B: cp/R = 4.0 (a2 = 4.0)
+    # Mass fractions: A = 0.6, B = 0.4
+    # Expected combined: cp/R = 0.6 * 3.0 + 0.4 * 4.0 = 1.8 + 1.6 = 3.4
+
+    with SI_unit_system:
+        species_a = FrozenSpecies(
+            name="A",
+            nasa_9_coefficients=NASA9Coefficients(
+                temperature_ranges=[
+                    NASA9CoefficientSet(
+                        temperature_range_min=200.0 * u.K,
+                        temperature_range_max=6000.0 * u.K,
+                        coefficients=[0.0, 0.0, 3.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                    )
+                ]
+            ),
+            mass_fraction=0.6,
+        )
+        species_b = FrozenSpecies(
+            name="B",
+            nasa_9_coefficients=NASA9Coefficients(
+                temperature_ranges=[
+                    NASA9CoefficientSet(
+                        temperature_range_min=200.0 * u.K,
+                        temperature_range_max=6000.0 * u.K,
+                        coefficients=[0.0, 0.0, 4.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                    )
+                ]
+            ),
+            mass_fraction=0.4,
+        )
+        tpg = ThermallyPerfectGas(species=[species_a, species_b])
+
+    result = translate_thermally_perfect_gas(tpg, reference_temperature=300.0)
+    coeffs = result["temperatureRanges"][0]["coefficients"]
+
+    # a2 should be mass-fraction weighted: 0.6 * 3.0 + 0.4 * 4.0 = 3.4
+    assert coeffs[2] == pytest.approx(3.4)
+
+
+def test_translate_thermally_perfect_gas_all_coefficients_weighted():
+    """Test that all 9 coefficients are correctly mass-fraction weighted."""
+    from flow360.component.simulation.models.material import (
+        FrozenSpecies,
+        NASA9Coefficients,
+        NASA9CoefficientSet,
+        ThermallyPerfectGas,
+    )
+    from flow360.component.simulation.translator.solver_translator import (
+        translate_thermally_perfect_gas,
+    )
+
+    # Two species with different coefficients
+    coeffs_a = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]
+    coeffs_b = [10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0]
+    y_a, y_b = 0.7, 0.3
+
+    with SI_unit_system:
+        species_a = FrozenSpecies(
+            name="A",
+            nasa_9_coefficients=NASA9Coefficients(
+                temperature_ranges=[
+                    NASA9CoefficientSet(
+                        temperature_range_min=200.0 * u.K,
+                        temperature_range_max=6000.0 * u.K,
+                        coefficients=coeffs_a,
+                    )
+                ]
+            ),
+            mass_fraction=y_a,
+        )
+        species_b = FrozenSpecies(
+            name="B",
+            nasa_9_coefficients=NASA9Coefficients(
+                temperature_ranges=[
+                    NASA9CoefficientSet(
+                        temperature_range_min=200.0 * u.K,
+                        temperature_range_max=6000.0 * u.K,
+                        coefficients=coeffs_b,
+                    )
+                ]
+            ),
+            mass_fraction=y_b,
+        )
+        tpg = ThermallyPerfectGas(species=[species_a, species_b])
+
+    T_ref = 300.0
+    result = translate_thermally_perfect_gas(tpg, reference_temperature=T_ref)
+    result_coeffs = result["temperatureRanges"][0]["coefficients"]
+
+    # Compute expected combined coefficients (before non-dimensionalization)
+    expected_combined = [y_a * coeffs_a[i] + y_b * coeffs_b[i] for i in range(9)]
+
+    # Import the a7 correction function used by the translator
+    from flow360.component.simulation.translator.solver_translator import (
+        _compute_a7_correction,
+    )
+
+    # The a7 coefficient is replaced by a computed value for internal energy consistency
+    expected_combined[7] = _compute_a7_correction(expected_combined, T_ref)
+
+    # Apply non-dimensionalization scaling factors
+    t_scale = T_ref
+    t_scale_inv = 1.0 / T_ref
+    expected_nd = [
+        expected_combined[0] * t_scale_inv**2,  # a0 (T^-2)
+        expected_combined[1] * t_scale_inv,  # a1 (T^-1)
+        expected_combined[2],  # a2 (constant)
+        expected_combined[3] * t_scale,  # a3 (T^1)
+        expected_combined[4] * t_scale**2,  # a4 (T^2)
+        expected_combined[5] * t_scale**3,  # a5 (T^3)
+        expected_combined[6] * t_scale**4,  # a6 (T^4)
+        expected_combined[7] * t_scale_inv,  # a7 (enthalpy, corrected and scaled)
+        expected_combined[8],  # a8 (entropy, constant)
+    ]
+
+    for i in range(9):
+        assert result_coeffs[i] == pytest.approx(expected_nd[i]), f"Coefficient a{i} mismatch"
+
+
+def test_translate_thermally_perfect_gas_multiple_temperature_ranges():
+    """Test translation with multiple temperature ranges."""
+    from flow360.component.simulation.models.material import (
+        FrozenSpecies,
+        NASA9Coefficients,
+        NASA9CoefficientSet,
+        ThermallyPerfectGas,
+    )
+    from flow360.component.simulation.translator.solver_translator import (
+        translate_thermally_perfect_gas,
+    )
+
+    # Both species have two temperature ranges with matching boundaries
+    with SI_unit_system:
+        species_a = FrozenSpecies(
+            name="A",
+            nasa_9_coefficients=NASA9Coefficients(
+                temperature_ranges=[
+                    NASA9CoefficientSet(
+                        temperature_range_min=200.0 * u.K,
+                        temperature_range_max=1000.0 * u.K,
+                        coefficients=[0.0, 0.0, 3.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                    ),
+                    NASA9CoefficientSet(
+                        temperature_range_min=1000.0 * u.K,
+                        temperature_range_max=6000.0 * u.K,
+                        coefficients=[0.0, 0.0, 3.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                    ),
+                ]
+            ),
+            mass_fraction=0.75,
+        )
+        species_b = FrozenSpecies(
+            name="B",
+            nasa_9_coefficients=NASA9Coefficients(
+                temperature_ranges=[
+                    NASA9CoefficientSet(
+                        temperature_range_min=200.0 * u.K,
+                        temperature_range_max=1000.0 * u.K,
+                        coefficients=[0.0, 0.0, 4.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                    ),
+                    NASA9CoefficientSet(
+                        temperature_range_min=1000.0 * u.K,
+                        temperature_range_max=6000.0 * u.K,
+                        coefficients=[0.0, 0.0, 4.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                    ),
+                ]
+            ),
+            mass_fraction=0.25,
+        )
+        tpg = ThermallyPerfectGas(species=[species_a, species_b])
+
+    result = translate_thermally_perfect_gas(tpg, reference_temperature=300.0)
+
+    assert len(result["temperatureRanges"]) == 2
+
+    # First range: 0.75 * 3.0 + 0.25 * 4.0 = 2.25 + 1.0 = 3.25
+    assert result["temperatureRanges"][0]["coefficients"][2] == pytest.approx(3.25)
+
+    # Second range: 0.75 * 3.5 + 0.25 * 4.5 = 2.625 + 1.125 = 3.75
+    assert result["temperatureRanges"][1]["coefficients"][2] == pytest.approx(3.75)
+
+
+def test_nasa9_a7_correction_ensures_correct_internal_energy():
+    """
+    Test that the a7 coefficient correction ensures correct internal energy at T_nd=1.
+
+    The NASA database a7 coefficient is calibrated for absolute dimensional enthalpy,
+    but Flow360's non-dimensionalization expects e = cv*T at T_ref.
+
+    The correction computes gamma from the polynomial itself (not a fixed value),
+    ensuring internal energy consistency: e/R = cv/R * T = (1/(gamma-1)) * T at T_nd=1.
+    """
+    import math
+
+    from flow360.component.simulation.models.material import (
+        FrozenSpecies,
+        NASA9Coefficients,
+        NASA9CoefficientSet,
+        ThermallyPerfectGas,
+    )
+    from flow360.component.simulation.translator.solver_translator import (
+        translate_thermally_perfect_gas,
+    )
+
+    T_ref = 300.0  # K
+
+    # Use real NASA-like coefficients with a non-zero a7 that would cause issues
+    # This is similar to the combined air coefficients used in the ShockTube test
+    dim_coeffs = [
+        8765.75,  # a0
+        -176.23,  # a1
+        4.887,  # a2 (cp/R ~ 3.5 for diatomic gas at low T)
+        -0.00545,  # a3
+        1.03e-05,  # a4
+        -7.74e-09,  # a5
+        2.14e-12,  # a6
+        -1585.05,  # a7 - Original NASA value that causes problems
+        -3.57,  # a8
+    ]
+
+    with SI_unit_system:
+        nasa_coeffs = NASA9Coefficients(
+            temperature_ranges=[
+                NASA9CoefficientSet(
+                    temperature_range_min=200.0 * u.K,
+                    temperature_range_max=6000.0 * u.K,
+                    coefficients=dim_coeffs,
+                )
+            ]
+        )
+        tpg = ThermallyPerfectGas(
+            species=[
+                FrozenSpecies(
+                    name="Air",
+                    nasa_9_coefficients=nasa_coeffs,
+                    mass_fraction=1.0,
+                )
+            ]
+        )
+
+    result = translate_thermally_perfect_gas(tpg, T_ref)
+
+    # Get the translated (non-dimensionalized) coefficients
+    nd_coeffs = result["temperatureRanges"][0]["coefficients"]
+
+    # Compute h/R at T_nd=1 using the translated polynomial
+    T_nd = 1.0
+    h_over_R = (
+        -nd_coeffs[0] / T_nd
+        + nd_coeffs[1] * math.log(T_nd)
+        + nd_coeffs[2] * T_nd
+        + (nd_coeffs[3] / 2) * T_nd**2
+        + (nd_coeffs[4] / 3) * T_nd**3
+        + (nd_coeffs[5] / 4) * T_nd**4
+        + (nd_coeffs[6] / 5) * T_nd**5
+        + nd_coeffs[7]
+    )
+
+    # Compute e/R = h/R - T (non-dimensional)
+    e_over_R = h_over_R - T_nd
+
+    # Compute expected e/R from the polynomial's own gamma at T_ref
+    # cp/R at T_ref (dimensional)
+    cp_over_R = (
+        dim_coeffs[0] * T_ref ** (-2)
+        + dim_coeffs[1] * T_ref ** (-1)
+        + dim_coeffs[2]
+        + dim_coeffs[3] * T_ref
+        + dim_coeffs[4] * T_ref**2
+        + dim_coeffs[5] * T_ref**3
+        + dim_coeffs[6] * T_ref**4
+    )
+    # cv/R = cp/R - 1
+    cv_over_R = cp_over_R - 1
+    # gamma = cp/cv
+    gamma = cp_over_R / cv_over_R
+    # Expected e/R at T_nd=1 is cv/R * T = (1/(gamma-1)) * 1
+    expected_e_over_R = 1.0 / (gamma - 1)
+
+    assert e_over_R == pytest.approx(
+        expected_e_over_R, rel=1e-6
+    ), f"Internal energy e/R={e_over_R} at T_nd=1, expected {expected_e_over_R} (gamma={gamma})"
+
+
+def test_nasa9_a7_correction_with_thermally_perfect_gas():
+    """
+    Test the a7 correction through the translate_thermally_perfect_gas function.
+
+    This tests the full translation pipeline with multi-species TPG.
+    """
+    import math
+
+    from flow360.component.simulation.models.material import (
+        FrozenSpecies,
+        NASA9Coefficients,
+        NASA9CoefficientSet,
+        ThermallyPerfectGas,
+    )
+    from flow360.component.simulation.translator.solver_translator import (
+        translate_thermally_perfect_gas,
+    )
+
+    T_ref = 300.0  # K
+
+    # Use real NASA-like coefficients
+    dim_coeffs = [
+        8765.75,  # a0
+        -176.23,  # a1
+        4.887,  # a2
+        -0.00545,  # a3
+        1.03e-05,  # a4
+        -7.74e-09,  # a5
+        2.14e-12,  # a6
+        -1585.05,  # a7 - Original NASA value
+        -3.57,  # a8
+    ]
+
+    # Create a simple single-species TPG with real-like NASA coefficients
+    with SI_unit_system:
+        species = FrozenSpecies(
+            name="air",
+            nasa_9_coefficients=NASA9Coefficients(
+                temperature_ranges=[
+                    NASA9CoefficientSet(
+                        temperature_range_min=200.0 * u.K,
+                        temperature_range_max=6000.0 * u.K,
+                        coefficients=dim_coeffs,
+                    )
+                ]
+            ),
+            mass_fraction=1.0,
+        )
+        tpg = ThermallyPerfectGas(species=[species])
+
+    result = translate_thermally_perfect_gas(tpg, reference_temperature=T_ref)
+
+    # Get the translated coefficients
+    nd_coeffs = result["temperatureRanges"][0]["coefficients"]
+
+    # Compute h/R at T_nd=1
+    T_nd = 1.0
+    h_over_R = (
+        -nd_coeffs[0] / T_nd
+        + nd_coeffs[1] * math.log(T_nd)
+        + nd_coeffs[2] * T_nd
+        + (nd_coeffs[3] / 2) * T_nd**2
+        + (nd_coeffs[4] / 3) * T_nd**3
+        + (nd_coeffs[5] / 4) * T_nd**4
+        + (nd_coeffs[6] / 5) * T_nd**5
+        + nd_coeffs[7]
+    )
+
+    # e/R = h/R - T
+    e_over_R = h_over_R - T_nd
+
+    # Compute expected e/R from the polynomial's own gamma at T_ref
+    cp_over_R = (
+        dim_coeffs[0] * T_ref ** (-2)
+        + dim_coeffs[1] * T_ref ** (-1)
+        + dim_coeffs[2]
+        + dim_coeffs[3] * T_ref
+        + dim_coeffs[4] * T_ref**2
+        + dim_coeffs[5] * T_ref**3
+        + dim_coeffs[6] * T_ref**4
+    )
+    cv_over_R = cp_over_R - 1
+    gamma = cp_over_R / cv_over_R
+    expected_e_over_R = 1.0 / (gamma - 1)
+
+    assert e_over_R == pytest.approx(
+        expected_e_over_R, rel=1e-6
+    ), f"Internal energy e/R={e_over_R} at T_nd=1, expected {expected_e_over_R} (gamma={gamma})"
+
+
+def test_gravity_translation_with_si_units():
+    """Test that gravity specified in SI units is non-dimensionalized and translated correctly.
+
+    Non-dimensionalization: base_acceleration = V_ref^2 / L_ref
+    where V_ref = speed of sound (for AerospaceCondition) and L_ref = mesh_unit.
+
+    gravityVector = direction * (magnitude / base_acceleration)
+    """
+    mesh_unit = 1.0 * u.m
+    gravity_magnitude_si = 9.81  # m/s^2
+
+    with SI_unit_system:
+        param = SimulationParams(
+            operating_condition=AerospaceCondition(
+                velocity_magnitude=100 * u.m / u.s,
+            ),
+            models=[
+                Fluid(
+                    gravity=Gravity(
+                        direction=(0, 0, -1),
+                        magnitude=gravity_magnitude_si * u.m / u.s**2,
+                    )
+                ),
+                Wall(entities=Surface(name="fluid/body")),
+                Freestream(entities=Surface(name="fluid/farfield")),
+            ],
+        )
+
+    translated = get_solver_json(param, mesh_unit=mesh_unit)
+
+    base_velocity = param.base_velocity.to("m/s").value
+    base_length = mesh_unit.to("m").value
+    base_acceleration = base_velocity**2 / base_length
+    expected_nondim = gravity_magnitude_si / base_acceleration
+
+    assert "gravity" in translated
+    gravity_vector = translated["gravity"]["gravityVector"]
+    assert gravity_vector[0] == pytest.approx(0.0, abs=1e-15)
+    assert gravity_vector[1] == pytest.approx(0.0, abs=1e-15)
+    assert gravity_vector[2] == pytest.approx(-expected_nondim, rel=1e-10)

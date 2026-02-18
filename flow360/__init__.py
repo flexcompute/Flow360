@@ -60,8 +60,12 @@ from flow360.component.simulation.meshing_param.volume_params import (
 )
 from flow360.component.simulation.models.material import (
     Air,
+    FrozenSpecies,
+    NASA9Coefficients,
+    NASA9CoefficientSet,
     SolidMaterial,
     Sutherland,
+    ThermallyPerfectGas,
     Water,
 )
 from flow360.component.simulation.models.solver_numerics import (
@@ -114,6 +118,7 @@ from flow360.component.simulation.models.volume_models import (
     Fluid,
     ForcePerArea,
     FromUserDefinedDynamics,
+    Gravity,
     HeatEquationInitialCondition,
     NavierStokesInitialCondition,
     NavierStokesModifiedRestartSolution,
@@ -171,6 +176,7 @@ from flow360.component.simulation.primitives import (
     Cylinder,
     ReferenceGeometry,
     SeedpointVolume,
+    Sphere,
 )
 from flow360.component.simulation.run_control.run_control import RunControl
 from flow360.component.simulation.run_control.stopping_criterion import (
@@ -244,6 +250,7 @@ __all__ = [
     "ReferenceGeometry",
     "CustomVolume",
     "Cylinder",
+    "Sphere",
     "AxisymmetricBody",
     "AerospaceCondition",
     "ThermalState",
@@ -299,7 +306,11 @@ __all__ = [
     "Folder",
     "ForcePerArea",
     "Air",
+    "NASA9CoefficientSet",
+    "NASA9Coefficients",
+    "FrozenSpecies",
     "Sutherland",
+    "ThermallyPerfectGas",
     "SolidMaterial",
     "Slice",
     "Isosurface",
@@ -309,6 +320,7 @@ __all__ = [
     "NavierStokesInitialCondition",
     "NavierStokesModifiedRestartSolution",
     "FromUserDefinedDynamics",
+    "Gravity",
     "HeatEquationInitialCondition",
     "Temperature",
     "HeatFlux",

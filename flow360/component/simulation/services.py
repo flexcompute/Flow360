@@ -229,6 +229,9 @@ def get_default_params(
             exclude={
                 "operating_condition": {"velocity_magnitude": True},
                 "private_attribute_asset_cache": {"registry": True},
+                "meshing": {
+                    "defaults": {"edge_split_layers": True}
+                },  # Due to beta mesher by default is disabled.
             },
         )
 
@@ -509,7 +512,7 @@ def validate_model(  # pylint: disable=too-many-locals
         # TODO: Unifying Materialization and Entity Info?
         # *  As of now entities will still be separate instances when being
         # *  1. materialized here versus
-        # *  2. deserialized in the editing info.
+        # *  2. deserialized in the entity info.
         # *  This impacts manually picked entities and all draft entities since they cannot be matched by Selectors.
         # *  validate_mode() is called in 3 main places:
         # *  1. Local validation
@@ -540,6 +543,29 @@ def validate_model(  # pylint: disable=too-many-locals
     # pylint: disable=protected-access
     # Note: Need to run updater first to accommodate possible schema change in input caches.
     params_as_dict, forward_compatibility_mode = SimulationParams._update_param_dict(params_as_dict)
+
+    # The private_attribute_asset_cache should have been validated/deserialized here before all
+    # the following processes. And then you would just pass a validated asset cache instant to the SimulationParams.
+    # By design (not explicitly planned but in reality) The AssetCache is a pure context provider of the
+    # SimulationParams and its content does not, for most part, interact with each other or depends on the user setting
+    # part of the simulation.json. Therefore it should be fine for the asset cache to be deserialized independently
+    # before the user setting part of the simulation.json.
+    # ** There are several main benefit:
+    # 1. Validate asset cache gives correct and accurate error location if any. This usually only apply to
+    # front-end forms but it is also the front-end that rely on accurate link of error location for webUI error viewer
+    # to work properly.
+    # 2. We have to deserialize everything during the process anyway. For example the variables, the selectors,
+    # and the entity info. We are already actually doing this step by step but there are always places that we
+    # have not covered yet and thus we have issues like [FXC-5256].
+    # 3. Validated asset cache gives proper type hint and also object interface instead of pure JSON interface.
+    # It is just much easier to work with.
+    # 4. We do not have to validate project_length_unit 10 times here and there. This speeds up the validation process
+    # as well as restrict to single source of truth even though:
+    #       a) user cannot directly interact with the source and
+    #       b) We manage the asset cache (source of truth).
+    # 5. I think this also goes well with the general direction of clear separation of different parts of
+    # simulation.json in terms of responsibility as well as purpose.
+
     try:
         updated_param_as_dict = dict_preprocessing(params_as_dict)
 
@@ -579,7 +605,12 @@ def validate_model(  # pylint: disable=too-many-locals
     except pd.ValidationError as err:
         validation_errors = err.errors()
     except Exception as err:  # pylint: disable=broad-exception-caught
-        validation_errors = handle_generic_exception(err, validation_errors)
+        import traceback  # pylint: disable=import-outside-toplevel
+
+        stack = traceback.format_exc()
+        validation_errors = handle_generic_exception(
+            err, validation_errors, loc_prefix=None, error_stack=stack
+        )
     finally:
         if validation_context is not None:
             validation_warnings = list(validation_context.validation_warnings)
@@ -622,8 +653,44 @@ def clean_unrelated_setting_from_params_dict(params: dict, root_item_type: str) 
     return params
 
 
+def _sanitize_stack_trace(stack: str) -> str:
+    """
+    Sanitize file paths in stack trace to only show paths starting from 'flow360/'.
+
+    Gracefully returns the original stack if sanitization fails.
+
+    Parameters
+    ----------
+    stack : str
+        The original stack trace string.
+
+    Returns
+    -------
+    str
+        The sanitized stack trace with shortened file paths, or the original
+        stack if sanitization fails.
+    """
+    # pylint: disable=import-outside-toplevel
+    import re
+
+    try:
+        # Remove the "Traceback (most recent call last):\n" prefix
+        stack = re.sub(r"^Traceback \(most recent call last\):\n\s*", "", stack)
+
+        # Pattern to match file paths containing 'flow360/'
+        # Captures everything before 'flow360/' and replaces with just 'flow360/'
+        pattern = r'File "[^"]*[/\\](flow360[/\\][^"]*)"'
+        replacement = r'File "\1"'
+        return re.sub(pattern, replacement, stack)
+    except Exception:  # pylint: disable=broad-exception-caught
+        return stack
+
+
 def handle_generic_exception(
-    err: Exception, validation_errors: Optional[list], loc_prefix: Optional[list[str]] = None
+    err: Exception,
+    validation_errors: Optional[list],
+    loc_prefix: Optional[list[str]] = None,
+    error_stack: Optional[str] = None,
 ) -> list:
     """
     Handles generic exceptions during validation, adding to validation errors.
@@ -636,6 +703,8 @@ def handle_generic_exception(
         Current list of validation errors, may be None.
     loc_prefix : list or None
         Prefix of the location of the generic error to help locate the issue
+    error_stack : str or None
+        The error stack trace, if available.
 
     Returns
     -------
@@ -645,14 +714,17 @@ def handle_generic_exception(
     if validation_errors is None:
         validation_errors = []
 
-    validation_errors.append(
-        {
-            "type": err.__class__.__name__.lower().replace("error", "_error"),
-            "loc": ["unknown"] if loc_prefix is None else loc_prefix,
-            "msg": str(err),
-            "ctx": {},
-        }
-    )
+    error_entry = {
+        "type": err.__class__.__name__.lower().replace("error", "_error"),
+        "loc": ["unknown"] if loc_prefix is None else loc_prefix,
+        "msg": str(err),
+        "ctx": {},
+    }
+
+    if error_stack is not None:
+        error_entry["debug"] = _sanitize_stack_trace(error_stack)
+
+    validation_errors.append(error_entry)
     return validation_errors
 
 

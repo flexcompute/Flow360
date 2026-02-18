@@ -19,6 +19,7 @@ from flow360.component.simulation.validation.validation_context import (
     ConditionalField,
     ContextField,
     ParamsValidationInfo,
+    add_validation_warning,
     contextual_field_validator,
 )
 from flow360.component.simulation.validation.validation_utils import (
@@ -171,11 +172,21 @@ class MeshingDefaults(Flow360BaseModel):
         + "This option is only supported when using geometry AI.",
     )
 
-    flooding_cell_size: Optional[LengthType.Positive] = pd.Field(
+    min_passage_size: Optional[LengthType.Positive] = pd.Field(
         None,
-        description="Minimum cell size used for flood-fill exterior classification. "
+        description="Minimum passage size that hidden geometry removal can resolve. "
+        + "Internal regions connected by thin passages smaller than this size may not be detected. "
         + "If not specified, the value is derived from geometry_accuracy and sealing_size. "
         + "This option is only supported when using geometry AI.",
+    )
+
+    edge_split_layers: int = pd.Field(
+        1,
+        ge=0,
+        # Skip default-value validation so warnings are emitted only when users explicitly set this field.
+        validate_default=False,
+        description="The number of layers that are considered for edge splitting in the boundary layer mesh."
+        + "This only affects beta mesher.",
     )
 
     @contextual_field_validator("number_of_boundary_layers", mode="after")
@@ -184,6 +195,17 @@ class MeshingDefaults(Flow360BaseModel):
         """Ensure number of boundary layers is not specified"""
         if value is not None and not param_info.is_beta_mesher:
             raise ValueError("Number of boundary layers is only supported by the beta mesher.")
+        return value
+
+    @contextual_field_validator("edge_split_layers", mode="after")
+    @classmethod
+    def invalid_edge_split_layers(cls, value, param_info: ParamsValidationInfo):
+        """Ensure edge split layers is only configured for beta mesher."""
+        if value > 0 and not param_info.is_beta_mesher:
+            add_validation_warning(
+                "`edge_split_layers` is only supported by the beta mesher; "
+                "this setting will be ignored."
+            )
         return value
 
     @contextual_field_validator("geometry_accuracy", mode="after")
@@ -205,7 +227,7 @@ class MeshingDefaults(Flow360BaseModel):
         "sealing_size",
         "remove_non_manifold_faces",
         "remove_hidden_geometry",
-        "flooding_cell_size",
+        "min_passage_size",
         mode="after",
     )
     @classmethod
@@ -224,11 +246,11 @@ class MeshingDefaults(Flow360BaseModel):
         return self
 
     @pd.model_validator(mode="after")
-    def validate_flooding_cell_size_requires_remove_hidden_geometry(self):
-        """Ensure flooding_cell_size is only specified when remove_hidden_geometry is True."""
-        if self.flooding_cell_size is not None and not self.remove_hidden_geometry:
+    def validate_min_passage_size_requires_remove_hidden_geometry(self):
+        """Ensure min_passage_size is only specified when remove_hidden_geometry is True."""
+        if self.min_passage_size is not None and not self.remove_hidden_geometry:
             raise ValueError(
-                "'flooding_cell_size' can only be specified when 'remove_hidden_geometry' is True."
+                "'min_passage_size' can only be specified when 'remove_hidden_geometry' is True."
             )
         return self
 

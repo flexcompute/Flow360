@@ -619,10 +619,7 @@ def test_error_message():
     assert validation_errors[0]["type"] == "value_error"
     assert "line" in validation_errors[0]["ctx"]
     assert "column" in validation_errors[0]["ctx"]
-    assert validation_errors[0]["ctx"]["column"] in (
-        9,
-        11,
-    )  # Python 3.9 report error on col 11, error message is also different
+    assert validation_errors[0]["ctx"]["column"] == 9
 
     with pytest.raises(
         ValueError,
@@ -673,6 +670,7 @@ def test_solver_translation():
         name="surface",
         surfaces=[Surface(name="noSlipWall")],
         write_single_file=True,
+        output_format="tecplot",
         output_fields=["residualHeatSolver"],
     )
     water = Water(

@@ -21,6 +21,9 @@ from flow360.component.resource_base import Flow360Resource, ResourceDraft
 from flow360.component.simulation.framework.entity_selector import (
     collect_and_tokenize_selectors_in_place,
 )
+from flow360.component.simulation.services_utils import (
+    strip_implicit_edge_split_layers_inplace,
+)
 from flow360.component.utils import formatting_validation_errors, validate_type
 from flow360.environment import Env
 from flow360.exceptions import Flow360RuntimeError, Flow360WebError
@@ -132,6 +135,7 @@ class Draft(Flow360Resource):
     def update_simulation_params(self, params):
         """update the SimulationParams of the draft"""
         params_dict = params.model_dump(mode="json", exclude_none=True)
+        params_dict = strip_implicit_edge_split_layers_inplace(params, params_dict)
         params_dict = collect_and_tokenize_selectors_in_place(params_dict)
 
         self.post(

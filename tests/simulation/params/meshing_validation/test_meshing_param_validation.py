@@ -36,6 +36,7 @@ from flow360.component.simulation.primitives import (
     Cylinder,
     SeedpointVolume,
     SnappyBody,
+    Sphere,
     Surface,
 )
 from flow360.component.simulation.services import ValidationCalledBy, validate_model
@@ -142,6 +143,18 @@ def test_disable_invalid_axisymmetric_body_construction():
 
     with pytest.raises(
         pd.ValidationError,
+        match=re.escape("should have at least 2 items"),
+    ):
+        with CGS_unit_system:
+            AxisymmetricBody(
+                name="1",
+                axis=(0, 0, 1),
+                center=(0, 5, 0),
+                profile_curve=[],
+            )
+
+    with pytest.raises(
+        pd.ValidationError,
         match=re.escape(
             "Expect first profile sample to be (Axial, 0.0). Found invalid point: [-1.  1.] cm."
         ),
@@ -168,11 +181,26 @@ def test_disable_invalid_axisymmetric_body_construction():
                 profile_curve=[(-1, 0), (-1, 1), (1, 1)],
             )
 
+    with pytest.raises(
+        pd.ValidationError,
+        match=re.escape("Profile curve has duplicate consecutive points at indices 1 and 2"),
+    ):
+        with CGS_unit_system:
+            invalid = AxisymmetricBody(
+                name="1",
+                axis=(1, 0, 0),
+                center=(0, 3, 0),
+                profile_curve=[(-1, 0), (-1, 1.23), (-1, 1.23), (1, 1), (1, 0)],
+            )
+
 
 def test_disable_multiple_cylinder_in_one_rotation_volume(mock_validation_context):
-    with mock_validation_context, pytest.raises(
-        pd.ValidationError,
-        match="Only single instance is allowed in entities for each `RotationVolume`.",
+    with (
+        mock_validation_context,
+        pytest.raises(
+            pd.ValidationError,
+            match="Only single instance is allowed in entities for each `RotationVolume`.",
+        ),
     ):
         with CGS_unit_system:
             cylinder_1 = Cylinder(
@@ -205,9 +233,12 @@ def test_disable_multiple_cylinder_in_one_rotation_volume(mock_validation_contex
                     ],
                 )
             )
-    with mock_validation_context, pytest.raises(
-        pd.ValidationError,
-        match="Only single instance is allowed in entities for each `RotationVolume`.",
+    with (
+        mock_validation_context,
+        pytest.raises(
+            pd.ValidationError,
+            match="Only single instance is allowed in entities for each `RotationVolume`.",
+        ),
     ):
         with CGS_unit_system:
             cylinder_1 = Cylinder(
@@ -335,10 +366,207 @@ def test_limit_axisymmetric_body_in_rotation_volume():
             )
 
 
-def test_reuse_of_same_cylinder(mock_validation_context):
-    with mock_validation_context, pytest.raises(
+def test_sphere_in_rotation_volume_only_in_beta_mesher():
+    """Test that Sphere entity for RotationVolume is only supported with the beta mesher."""
+    # raises when beta mesher is off
+    with pytest.raises(
         pd.ValidationError,
-        match=r"Using Volume entity `I am reused` in `AxisymmetricRefinement`, `RotationVolume` at the same time is not allowed.",
+        match=r"`Sphere` entity for `RotationVolume` is only supported with the beta mesher.",
+    ):
+        with ValidationContext(VOLUME_MESH, non_beta_mesher_context):
+            with CGS_unit_system:
+                sphere = Sphere(
+                    name="rotation_sphere",
+                    center=(0, 0, 0),
+                    radius=10,
+                )
+                _ = RotationVolume(
+                    entities=[sphere],
+                    spacing_circumferential=0.5,
+                )
+
+    # does not raise with beta mesher on
+    with ValidationContext(VOLUME_MESH, beta_mesher_context):
+        with CGS_unit_system:
+            sphere = Sphere(
+                name="rotation_sphere",
+                center=(0, 0, 0),
+                radius=10,
+            )
+            _ = RotationVolume(
+                entities=[sphere],
+                spacing_circumferential=0.5,
+            )
+
+
+def test_sphere_rotation_volume_spacing_requirements():
+    """Test spacing requirements for Sphere vs Cylinder/AxisymmetricBody in RotationVolume."""
+    # Test 1: Sphere without spacing_circumferential should raise error
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"`spacing_circumferential` is required for `Sphere` entities",
+    ):
+        with ValidationContext(VOLUME_MESH, beta_mesher_context):
+            with CGS_unit_system:
+                sphere = Sphere(name="sphere", center=(0, 0, 0), radius=10)
+                _ = RotationVolume(
+                    entities=[sphere],
+                )
+
+    # Test 2: Sphere with spacing_axial should raise error
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"`spacing_axial` must not be specified for `Sphere` entities",
+    ):
+        with ValidationContext(VOLUME_MESH, beta_mesher_context):
+            with CGS_unit_system:
+                sphere = Sphere(name="sphere", center=(0, 0, 0), radius=10)
+                _ = RotationVolume(
+                    entities=[sphere],
+                    spacing_circumferential=0.5,
+                    spacing_axial=0.5,
+                )
+
+    # Test 3: Sphere with spacing_radial should raise error
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"`spacing_radial` must not be specified for `Sphere` entities",
+    ):
+        with ValidationContext(VOLUME_MESH, beta_mesher_context):
+            with CGS_unit_system:
+                sphere = Sphere(name="sphere", center=(0, 0, 0), radius=10)
+                _ = RotationVolume(
+                    entities=[sphere],
+                    spacing_circumferential=0.5,
+                    spacing_radial=0.5,
+                )
+
+    # Test 4: Cylinder without spacing_axial should raise error
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"`spacing_axial` is required for `Cylinder` or `AxisymmetricBody` entities",
+    ):
+        with ValidationContext(VOLUME_MESH, beta_mesher_context):
+            with CGS_unit_system:
+                cylinder = Cylinder(
+                    name="cyl",
+                    center=(0, 0, 0),
+                    axis=(0, 0, 1),
+                    height=10,
+                    outer_radius=5,
+                )
+                _ = RotationVolume(
+                    entities=[cylinder],
+                    spacing_circumferential=0.5,
+                    spacing_radial=0.5,
+                )
+
+    # Test 5: Cylinder without spacing_radial should raise error
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"`spacing_radial` is required for `Cylinder` or `AxisymmetricBody` entities",
+    ):
+        with ValidationContext(VOLUME_MESH, beta_mesher_context):
+            with CGS_unit_system:
+                cylinder = Cylinder(
+                    name="cyl",
+                    center=(0, 0, 0),
+                    axis=(0, 0, 1),
+                    height=10,
+                    outer_radius=5,
+                )
+                _ = RotationVolume(
+                    entities=[cylinder],
+                    spacing_circumferential=0.5,
+                    spacing_axial=0.5,
+                )
+
+    # Test 6: Cylinder without spacing_circumferential should raise error
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"`spacing_circumferential` is required for `Cylinder` or `AxisymmetricBody`",
+    ):
+        with ValidationContext(VOLUME_MESH, beta_mesher_context):
+            with CGS_unit_system:
+                cylinder = Cylinder(
+                    name="cyl",
+                    center=(0, 0, 0),
+                    axis=(0, 0, 1),
+                    height=10,
+                    outer_radius=5,
+                )
+                _ = RotationVolume(
+                    entities=[cylinder],
+                    spacing_axial=0.5,
+                    spacing_radial=0.5,
+                )
+
+
+def test_sphere_rotation_volume_with_enclosed_entities():
+    """Test that Sphere RotationVolume supports enclosed_entities."""
+    with ValidationContext(VOLUME_MESH, beta_mesher_context):
+        with CGS_unit_system:
+            sphere = Sphere(name="outer_sphere", center=(0, 0, 0), radius=10)
+            inner_sphere = Sphere(name="inner_sphere", center=(0, 0, 0), radius=5)
+            _ = RotationVolume(
+                entities=[sphere],
+                spacing_circumferential=0.5,
+                enclosed_entities=[inner_sphere, Surface(name="hub")],
+            )
+
+
+def test_sphere_in_enclosed_entities_only_in_beta_mesher():
+    """Test that Sphere in enclosed_entities is only supported with the beta mesher."""
+    # raises when beta mesher is off
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"`Sphere` entity in `RotationVolume.enclosed_entities` is only supported with the beta mesher.",
+    ):
+        with ValidationContext(VOLUME_MESH, non_beta_mesher_context):
+            with CGS_unit_system:
+                cylinder = Cylinder(
+                    name="outer_cyl",
+                    center=(0, 0, 0),
+                    axis=(0, 0, 1),
+                    height=10,
+                    outer_radius=5,
+                )
+                inner_sphere = Sphere(name="inner_sphere", center=(0, 0, 0), radius=2)
+                _ = RotationVolume(
+                    entities=[cylinder],
+                    spacing_axial=0.5,
+                    spacing_radial=0.5,
+                    spacing_circumferential=0.5,
+                    enclosed_entities=[inner_sphere],
+                )
+
+    # does not raise with beta mesher on
+    with ValidationContext(VOLUME_MESH, beta_mesher_context):
+        with CGS_unit_system:
+            cylinder = Cylinder(
+                name="outer_cyl",
+                center=(0, 0, 0),
+                axis=(0, 0, 1),
+                height=10,
+                outer_radius=5,
+            )
+            inner_sphere = Sphere(name="inner_sphere", center=(0, 0, 0), radius=2)
+            _ = RotationVolume(
+                entities=[cylinder],
+                spacing_axial=0.5,
+                spacing_radial=0.5,
+                spacing_circumferential=0.5,
+                enclosed_entities=[inner_sphere],
+            )
+
+
+def test_reuse_of_same_cylinder(mock_validation_context):
+    with (
+        mock_validation_context,
+        pytest.raises(
+            pd.ValidationError,
+            match=r"Using Volume entity `I am reused` in `AxisymmetricRefinement`, `RotationVolume` at the same time is not allowed.",
+        ),
     ):
         with CGS_unit_system:
             cylinder = Cylinder(
@@ -373,9 +601,12 @@ def test_reuse_of_same_cylinder(mock_validation_context):
                 )
             )
 
-    with mock_validation_context, pytest.raises(
-        pd.ValidationError,
-        match=r"Using Volume entity `I am reused` in `AxisymmetricRefinement`, `RotationVolume` at the same time is not allowed.",
+    with (
+        mock_validation_context,
+        pytest.raises(
+            pd.ValidationError,
+            match=r"Using Volume entity `I am reused` in `AxisymmetricRefinement`, `RotationVolume` at the same time is not allowed.",
+        ),
     ):
         with CGS_unit_system:
             cylinder = Cylinder(
@@ -478,9 +709,12 @@ def test_reuse_of_same_cylinder(mock_validation_context):
             )
         )
 
-    with mock_validation_context, pytest.raises(
-        pd.ValidationError,
-        match=r"Using Volume entity `I am reused` in `AxisymmetricRefinement`, `UniformRefinement` at the same time is not allowed.",
+    with (
+        mock_validation_context,
+        pytest.raises(
+            pd.ValidationError,
+            match=r"Using Volume entity `I am reused` in `AxisymmetricRefinement`, `UniformRefinement` at the same time is not allowed.",
+        ),
     ):
         with CGS_unit_system:
             cylinder = Cylinder(
@@ -504,9 +738,12 @@ def test_reuse_of_same_cylinder(mock_validation_context):
                 )
             )
 
-    with mock_validation_context, pytest.raises(
-        pd.ValidationError,
-        match=r"Using Volume entity `I am reused` in `AxisymmetricRefinement`, `UniformRefinement` at the same time is not allowed.",
+    with (
+        mock_validation_context,
+        pytest.raises(
+            pd.ValidationError,
+            match=r"Using Volume entity `I am reused` in `AxisymmetricRefinement`, `UniformRefinement` at the same time is not allowed.",
+        ),
     ):
         with CGS_unit_system:
             cylinder = Cylinder(
@@ -534,9 +771,12 @@ def test_reuse_of_same_cylinder(mock_validation_context):
                 )
             )
 
-    with mock_validation_context, pytest.raises(
-        pd.ValidationError,
-        match=r" Volume entity `I am reused` is used multiple times in `UniformRefinement`.",
+    with (
+        mock_validation_context,
+        pytest.raises(
+            pd.ValidationError,
+            match=r" Volume entity `I am reused` is used multiple times in `UniformRefinement`.",
+        ),
     ):
         with CGS_unit_system:
             cylinder = Cylinder(
@@ -555,9 +795,12 @@ def test_reuse_of_same_cylinder(mock_validation_context):
                 )
             )
 
-    with mock_validation_context, pytest.raises(
-        pd.ValidationError,
-        match=r" Volume entity `I am reused` is used multiple times in `UniformRefinement`.",
+    with (
+        mock_validation_context,
+        pytest.raises(
+            pd.ValidationError,
+            match=r" Volume entity `I am reused` is used multiple times in `UniformRefinement`.",
+        ),
     ):
         with CGS_unit_system:
             cylinder = Cylinder(
@@ -579,6 +822,43 @@ def test_reuse_of_same_cylinder(mock_validation_context):
                     zones=[AutomatedFarfield()],
                 )
             )
+
+
+def test_axisymmetric_body_in_uniform_refinement():
+    with ValidationContext(VOLUME_MESH, beta_mesher_context):
+        with CGS_unit_system:
+            axisymmetric_body = AxisymmetricBody(
+                name="a",
+                axis=(0, 0, 1),
+                center=(0, 0, 0),
+                profile_curve=[(-2, 0), (-2, 1), (2, 1.5), (2, 0)],
+            )
+            MeshingParams(
+                refinements=[
+                    UniformRefinement(
+                        entities=[axisymmetric_body],
+                        spacing=0.1,
+                    )
+                ],
+            )
+
+    # raises without beta mesher
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"`AxisymmetricBody` entity for `UniformRefinement` is supported only with beta mesher",
+    ):
+        with ValidationContext(VOLUME_MESH, non_beta_mesher_context):
+            with CGS_unit_system:
+                axisymmetric_body = AxisymmetricBody(
+                    name="1",
+                    axis=(0, 0, 1),
+                    center=(0, 0, 0),
+                    profile_curve=[(-1, 0), (-1, 1), (1, 1), (1, 0)],
+                )
+                UniformRefinement(
+                    entities=[axisymmetric_body],
+                    spacing=0.1,
+                )
 
 
 def test_require_mesh_zones():
@@ -655,6 +935,132 @@ def test_bad_refinements():
                 )
             ],
         )
+
+
+def test_duplicate_refinement_type_per_entity():
+    """Raise when the same refinement type is applied twice to one entity."""
+    body = SnappyBody(name="car_body", surfaces=[])
+    surface = Surface(name="wing")
+    defaults = snappy.SurfaceMeshingDefaults(
+        min_spacing=1 * u.mm, max_spacing=5 * u.mm, gap_resolution=0.01 * u.mm
+    )
+
+    # -- Two BodyRefinements targeting the same SnappyBody --
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"`BodyRefinement` is applied 2 times to entity `car_body`",
+    ):
+        snappy.SurfaceMeshingParams(
+            defaults=defaults,
+            refinements=[
+                snappy.BodyRefinement(min_spacing=2 * u.mm, bodies=[body]),
+                snappy.BodyRefinement(max_spacing=4 * u.mm, bodies=[body]),
+            ],
+        )
+
+    # -- Two RegionRefinements targeting the same Surface --
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"`RegionRefinement` is applied 2 times to entity `wing`",
+    ):
+        snappy.SurfaceMeshingParams(
+            defaults=defaults,
+            refinements=[
+                snappy.RegionRefinement(
+                    min_spacing=1 * u.mm, max_spacing=3 * u.mm, regions=[surface]
+                ),
+                snappy.RegionRefinement(
+                    min_spacing=2 * u.mm, max_spacing=4 * u.mm, regions=[surface]
+                ),
+            ],
+        )
+
+    # -- Two SurfaceEdgeRefinements targeting the same SnappyBody --
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"`SurfaceEdgeRefinement` is applied 2 times to entity `car_body`",
+    ):
+        snappy.SurfaceMeshingParams(
+            defaults=defaults,
+            refinements=[
+                snappy.SurfaceEdgeRefinement(spacing=0.5 * u.mm, entities=[body]),
+                snappy.SurfaceEdgeRefinement(spacing=1 * u.mm, entities=[body]),
+            ],
+        )
+
+    # -- Two SurfaceEdgeRefinements targeting the same Surface --
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"`SurfaceEdgeRefinement` is applied 2 times to entity `wing`",
+    ):
+        snappy.SurfaceMeshingParams(
+            defaults=defaults,
+            refinements=[
+                snappy.SurfaceEdgeRefinement(spacing=0.5 * u.mm, entities=[surface]),
+                snappy.SurfaceEdgeRefinement(spacing=1 * u.mm, entities=[surface]),
+            ],
+        )
+
+
+def test_duplicate_refinement_different_types_is_allowed():
+    """Different refinement types on the same entity should NOT raise."""
+    body = SnappyBody(name="car_body", surfaces=[])
+    surface = Surface(name="wing")
+    defaults = snappy.SurfaceMeshingDefaults(
+        min_spacing=1 * u.mm, max_spacing=5 * u.mm, gap_resolution=0.01 * u.mm
+    )
+
+    # BodyRefinement + SurfaceEdgeRefinement on the same SnappyBody is fine
+    snappy.SurfaceMeshingParams(
+        defaults=defaults,
+        refinements=[
+            snappy.BodyRefinement(min_spacing=2 * u.mm, bodies=[body]),
+            snappy.SurfaceEdgeRefinement(spacing=0.5 * u.mm, entities=[body]),
+        ],
+    )
+
+    # RegionRefinement + SurfaceEdgeRefinement on the same Surface is fine
+    snappy.SurfaceMeshingParams(
+        defaults=defaults,
+        refinements=[
+            snappy.RegionRefinement(min_spacing=1 * u.mm, max_spacing=3 * u.mm, regions=[surface]),
+            snappy.SurfaceEdgeRefinement(spacing=0.5 * u.mm, entities=[surface]),
+        ],
+    )
+
+
+def test_duplicate_refinement_different_entities_is_allowed():
+    """Same refinement type on different entities should NOT raise."""
+    body1 = SnappyBody(name="car_body", surfaces=[])
+    body2 = SnappyBody(name="other_body", surfaces=[])
+    defaults = snappy.SurfaceMeshingDefaults(
+        min_spacing=1 * u.mm, max_spacing=5 * u.mm, gap_resolution=0.01 * u.mm
+    )
+
+    snappy.SurfaceMeshingParams(
+        defaults=defaults,
+        refinements=[
+            snappy.BodyRefinement(min_spacing=2 * u.mm, bodies=[body1]),
+            snappy.BodyRefinement(min_spacing=3 * u.mm, bodies=[body2]),
+        ],
+    )
+
+
+def test_duplicate_refinement_body_and_surface_same_name_is_allowed():
+    """SurfaceEdgeRefinement on a SnappyBody and a Surface sharing a name should NOT raise."""
+    body = SnappyBody(name="shared_name", surfaces=[])
+    surface = Surface(name="shared_name")
+    defaults = snappy.SurfaceMeshingDefaults(
+        min_spacing=1 * u.mm, max_spacing=5 * u.mm, gap_resolution=0.01 * u.mm
+    )
+
+    snappy.SurfaceMeshingParams(
+        defaults=defaults,
+        refinements=[
+            snappy.SurfaceEdgeRefinement(spacing=0.5 * u.mm, entities=[body]),
+            snappy.SurfaceEdgeRefinement(spacing=1 * u.mm, entities=[surface]),
+        ],
+    )
 
 
 def test_box_entity_enclosed_only_in_beta_mesher():
@@ -1532,15 +1938,15 @@ def test_remove_non_manifold_faces_and_remove_hidden_geometry_mutual_exclusion()
             assert defaults.remove_hidden_geometry is False
 
 
-def test_flooding_cell_size_requires_remove_hidden_geometry():
-    """Test that flooding_cell_size can only be specified when remove_hidden_geometry is True."""
+def test_min_passage_size_requires_remove_hidden_geometry():
+    """Test that min_passage_size can only be specified when remove_hidden_geometry is True."""
     gai_context = ParamsValidationInfo({}, [])
     gai_context.use_geometry_AI = True
 
-    # Test 1: flooding_cell_size with remove_hidden_geometry=False should raise
+    # Test 1: min_passage_size with remove_hidden_geometry=False should raise
     with pytest.raises(
         pd.ValidationError,
-        match=r"'flooding_cell_size' can only be specified when 'remove_hidden_geometry' is True",
+        match=r"'min_passage_size' can only be specified when 'remove_hidden_geometry' is True",
     ):
         with ValidationContext(SURFACE_MESH, gai_context):
             with SI_unit_system:
@@ -1548,29 +1954,29 @@ def test_flooding_cell_size_requires_remove_hidden_geometry():
                     geometry_accuracy=0.01 * u.m,
                     surface_max_edge_length=0.1 * u.m,
                     remove_hidden_geometry=False,
-                    flooding_cell_size=0.005 * u.m,
+                    min_passage_size=0.005 * u.m,
                 )
 
-    # Test 2: flooding_cell_size with remove_hidden_geometry=True should work
+    # Test 2: min_passage_size with remove_hidden_geometry=True should work
     with ValidationContext(SURFACE_MESH, gai_context):
         with SI_unit_system:
             defaults = MeshingDefaults(
                 geometry_accuracy=0.01 * u.m,
                 surface_max_edge_length=0.1 * u.m,
                 remove_hidden_geometry=True,
-                flooding_cell_size=0.005 * u.m,
+                min_passage_size=0.005 * u.m,
             )
-            assert defaults.flooding_cell_size == 0.005 * u.m
+            assert defaults.min_passage_size == 0.005 * u.m
             assert defaults.remove_hidden_geometry is True
 
-    # Test 3: remove_hidden_geometry=True without flooding_cell_size should work (it's optional)
+    # Test 3: remove_hidden_geometry=True without min_passage_size should work (it's optional)
     with ValidationContext(SURFACE_MESH, gai_context):
         with SI_unit_system:
             defaults = MeshingDefaults(
                 geometry_accuracy=0.01 * u.m,
                 surface_max_edge_length=0.1 * u.m,
                 remove_hidden_geometry=True,
-                flooding_cell_size=None,
+                min_passage_size=None,
             )
-            assert defaults.flooding_cell_size is None
+            assert defaults.min_passage_size is None
             assert defaults.remove_hidden_geometry is True

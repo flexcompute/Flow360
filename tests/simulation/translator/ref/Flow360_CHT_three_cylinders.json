@@ -7,36 +7,40 @@
             "type": "SlipWall"
         },
         "solid-1/adiabatic-1": {
-            "type": "SolidIsofluxWall",
-            "heatFlux": 0.0
+            "heatFlux": 0.0,
+            "type": "SolidIsofluxWall"
         },
         "solid-1/isothermal-1": {
             "temperature": 1.214645,
             "type": "SolidIsothermalWall"
         },
         "solid-2/adiabatic-2": {
-            "type": "SolidIsofluxWall",
-            "heatFlux": 0.0
+            "heatFlux": 0.0,
+            "type": "SolidIsofluxWall"
         },
         "solid-2/isothermal-2": {
             "temperature": 1.214645,
             "type": "SolidIsothermalWall"
         },
         "solid-3/adiabatic-3": {
-            "type": "SolidIsofluxWall",
-            "heatFlux": 0.0
+            "heatFlux": 0.0,
+            "type": "SolidIsofluxWall"
         },
         "solid-4/adiabatic-4": {
-            "type": "SolidIsofluxWall",
-            "heatFlux": 0.0
+            "heatFlux": 0.0,
+            "type": "SolidIsofluxWall"
         }
+    },
+    "fluidProperties": {
+        "prandtlNumber": 0.72,
+        "turbulentPrandtlNumber": 0.9
     },
     "freestream": {
         "Mach": 0.01,
-        "muRef": 0.00025,
         "Temperature": 288.15,
         "alphaAngle": 0.0,
-        "betaAngle": 0.0
+        "betaAngle": 0.0,
+        "muRef": 0.00025
     },
     "heatEquationSolver": {
         "CFLMultiplier": 1.0,
@@ -46,11 +50,19 @@
             "absoluteTolerance": 1e-15,
             "maxIterations": 100
         },
-        "modelType": "HeatEquation",
         "maxForceJacUpdatePhysicalSteps": 0,
+        "modelType": "HeatEquation",
         "orderOfAccuracy": 2,
         "relativeTolerance": 0.0,
         "updateJacobianFrequency": 1
+    },
+    "initialCondition": {
+        "p": "p",
+        "rho": "rho",
+        "type": "initialCondition",
+        "u": "u",
+        "v": "v",
+        "w": "w"
     },
     "navierStokesSolver": {
         "CFLMultiplier": 1.0,
@@ -70,6 +82,12 @@
         "orderOfAccuracy": 2,
         "relativeTolerance": 0.0,
         "updateJacobianFrequency": 4
+    },
+    "outputRescale": {
+        "velocityScale": 1.0
+    },
+    "runControl": {
+        "externalProcessMonitorOutput": false
     },
     "surfaceOutput": {
         "animationFrequency": -1,
@@ -125,6 +143,25 @@
         },
         "writeSingleFile": false
     },
+    "thermallyPerfectGasModel": {
+        "temperatureRanges": [
+            {
+                "coefficients": [
+                    0.0,
+                    0.0,
+                    3.5,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    7.890809489614162e-16,
+                    0.0
+                ],
+                "temperatureRangeMax": 20.82248828735034,
+                "temperatureRangeMin": 0.694082942911678
+            }
+        ]
+    },
     "timeStepping": {
         "CFL": {
             "final": 50.0,
@@ -140,6 +177,8 @@
     "turbulenceModelSolver": {
         "modelType": "None"
     },
+    "userDefinedFields": [],
+    "usingLiquidAsMaterial": false,
     "volumeOutput": {
         "animationFrequency": -1,
         "animationFrequencyOffset": 0,
@@ -172,21 +211,5 @@
             "thermalConductivity": 0.0239367,
             "volumetricHeatSource": 0.001
         }
-    },
-    "initialCondition": {
-        "p": "p",
-        "rho": "rho",
-        "type": "initialCondition",
-        "u": "u",
-        "v": "v",
-        "w": "w"
-    },
-    "userDefinedFields": [],
-    "usingLiquidAsMaterial": false,
-    "outputRescale": {
-        "velocityScale": 1.0
-    },
-    "runControl": {
-        "externalProcessMonitorOutput": false
     }
 }
