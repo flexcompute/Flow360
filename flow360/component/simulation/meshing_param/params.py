@@ -228,6 +228,11 @@ class MeshingParams(Flow360BaseModel):
                     "`enclosed_surfaces` on AutomatedFarfield is only allowed when CustomVolume entities are used. "
                     "Without custom volumes, the farfield zone will be automatically detected."
                 )
+            if any(s.name == "farfield" for s in enclosed_surfaces):
+                raise ValueError(
+                    "Surface name 'farfield' in `enclosed_surfaces` will conflict with the automatically "
+                    "generated farfield boundary. Please choose a different name."
+                )
 
         return v
 
