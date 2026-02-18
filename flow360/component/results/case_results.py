@@ -317,7 +317,7 @@ class MonitorsResultModel(NamedResultsCollectionModel):
     """
 
     remote_file_name: str = pd.Field(CaseDownloadable.MONITORS_ALL.value, frozen=True)
-    _pattern: str = CaseDownloadable.MONITOR_PATTERN.value
+    _file_name_pattern: str = CaseDownloadable.MONITOR_PATTERN.value
     _result_model_class: type = MonitorCSVModel
 
     def download(  # pylint:disable=arguments-differ,arguments-renamed
@@ -394,7 +394,7 @@ class UserDefinedDynamicsResultModel(NamedResultsCollectionModel):
     Inherits from NamedResultsCollectionModel.
     """
 
-    _pattern: str = CaseDownloadable.USER_DEFINED_DYNAMICS_PATTERN.value
+    _file_name_pattern: str = CaseDownloadable.USER_DEFINED_DYNAMICS_PATTERN.value
     _result_model_class: type = UserDefinedDynamicsCSVModel
 
     @property
@@ -441,7 +441,7 @@ class CustomForceResultModel(NamedResultsCollectionModel):
     Inherits from NamedResultsCollectionModel.
     """
 
-    _pattern: str = CaseDownloadable.CUSTOM_FORCE_PATTERN.value
+    _file_name_pattern: str = CaseDownloadable.CUSTOM_FORCE_PATTERN.value
     _result_model_class: type = CustomForceCSVModel
 
     @property
@@ -483,7 +483,7 @@ class ForceDistributionsResultModel(NamedResultsCollectionModel):
     Model for handling results of force distributions.
     """
 
-    _pattern: str = CaseDownloadable.FORCE_DISTRIBUTION_PATTERN.value
+    _file_name_pattern: str = CaseDownloadable.FORCE_DISTRIBUTION_PATTERN.value
     _result_model_class: type = CustomForceDistributionResultCSVModel
 
 

@@ -773,7 +773,7 @@ class NamedResultsCollectionModel(ResultBaseModel):
     """
     Abstract base model for handling collections of result models searchable by filename pattern.
 
-    Subclasses must override `_pattern` (the regex used to match result filenames)
+    Subclasses must override `_file_name_pattern` (the regex used to match result filenames)
     and `_result_model_class` (the CSV model class to instantiate for each match).
 
     """
@@ -785,7 +785,7 @@ class NamedResultsCollectionModel(ResultBaseModel):
     _result_collection: Dict[str, _result_model_class] = pd.PrivateAttr(default_factory=dict)
 
     # To be given by subclass
-    _pattern: str
+    _file_name_pattern: str
     _result_model_class: Type[ResultBaseModel]
 
     def _populate(self):
@@ -799,7 +799,7 @@ class NamedResultsCollectionModel(ResultBaseModel):
         for filepath in file_list:
             if str(Path(filepath).parent) == "results":
                 filename = Path(filepath).name
-                match = re.match(self._pattern, filename)
+                match = re.match(self._file_name_pattern, filename)
                 if match:
                     name = match.group(1)
                     self._names.append(name)
