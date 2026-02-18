@@ -924,7 +924,7 @@ class SimulationParams(_ParamModelBase):
             return False
         # pylint: disable=not-an-iterable
         return any(
-            isinstance(item, (ForceDistributionOutput, TimeAverageForceDistributionOutput))
+            isinstance(item, ForceDistributionOutput)
             for item in self.outputs
         )
 
