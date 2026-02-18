@@ -11,7 +11,7 @@ import pydantic as pd
 import rich
 import unyt as u
 import yaml
-from flow360_schemas.framework.base_model import Flow360BaseModel as _SchemaBaseModel
+from flow360_schema.framework.base_model import Flow360BaseModel as _SchemaBaseModel
 
 from flow360.component.simulation.conversion import need_conversion
 from flow360.error_messages import do_not_modify_file_manually_msg
