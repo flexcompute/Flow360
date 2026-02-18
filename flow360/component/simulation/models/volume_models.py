@@ -63,6 +63,7 @@ from flow360.component.simulation.primitives import (
     SeedpointVolume,
 )
 from flow360.component.simulation.unit_system import (
+    AccelerationType,
     AngleType,
     AngularVelocityType,
     HeatSourceType,
@@ -275,6 +276,43 @@ class PDEModelBase(Flow360BaseModel):
     private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
 
 
+class Gravity(Flow360BaseModel):
+    """
+    :class:`Gravity` class for specifying gravitational body force.
+
+    The gravity model applies a body force ρg to the momentum equations and ρ(g·u) to the
+    energy equation, enabling simulation of buoyancy-driven flows. Gravity is applied
+    globally to all fluid zones in the simulation.
+
+    Example
+    -------
+
+    Define gravity with Earth's default values (direction=(0,0,-1), magnitude=9.81 m/s²):
+
+    >>> fl.Gravity()
+
+    Define gravity with custom direction and magnitude:
+
+    >>> fl.Gravity(
+    ...     direction=(1, 0, 0),
+    ...     magnitude=5.0 * fl.u.m / fl.u.s**2,
+    ... )
+
+    ====
+    """
+
+    # pylint: disable=no-member
+    direction: Axis = pd.Field(
+        (0, 0, -1),
+        description="The direction of the gravitational acceleration vector.",
+    )
+    magnitude: AccelerationType = pd.Field(
+        9.81 * u.m / u.s**2,
+        description="The magnitude of the gravitational acceleration. "
+        + "For Earth's surface gravity, use 9.81 m/s².",
+    )
+
+
 class Fluid(PDEModelBase):
     """
     :class:`Fluid` class for setting up the volume model that contains
@@ -324,6 +362,12 @@ class Fluid(PDEModelBase):
             discriminator="type_name",
             description="The initial condition of the fluid solver.",
         )
+    )
+
+    gravity: Optional[Gravity] = pd.Field(
+        None,
+        description="Gravitational body force settings. When specified, gravity is applied "
+        "globally to all fluid zones. See :class:`Gravity` documentation.",
     )
 
     interface_interpolation_tolerance: pd.PositiveFloat = pd.Field(
