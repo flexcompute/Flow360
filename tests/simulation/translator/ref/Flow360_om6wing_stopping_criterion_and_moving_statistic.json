@@ -17,6 +17,21 @@
             "type": "NoSlipWall"
         }
     },
+    "forceDistributionOutput": {
+        "X_incremental": {
+            "direction": [
+                1.0,
+                0.0,
+                0.0
+            ],
+            "numberOfSegments": 300,
+            "surfaces": [
+                "1",
+                "4"
+            ],
+            "type": "incremental"
+        }
+    },
     "freestream": {
         "Mach": 0.8399999999999984,
         "Temperature": 288.15,

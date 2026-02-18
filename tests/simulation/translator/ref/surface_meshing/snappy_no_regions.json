@@ -31,7 +31,8 @@
                     "edgeSpacing": 4,
                     "minElem": 3,
                     "includedAngle": 120,
-                    "retainOnSmoothing": true
+                    "retainOnSmoothing": true,
+                    "geometricTestOnly": false
                 },
                 "regions": []
             }
@@ -59,7 +60,7 @@
             "maxBoundarySkewness": 20,
             "maxInternalSkewness": 50,
             "maxConcave": 50,
-            "minVol": 1e-15,
+            "minVol": 1.953125e-13,
             "minTetQuality": 1e-9,
             "minArea": 1e-12,
             "minTwist": -2,

@@ -172,9 +172,10 @@ class MeshingDefaults(Flow360BaseModel):
         + "This option is only supported when using geometry AI.",
     )
 
-    flooding_cell_size: Optional[LengthType.Positive] = pd.Field(
+    min_passage_size: Optional[LengthType.Positive] = pd.Field(
         None,
-        description="Minimum cell size used for flood-fill exterior classification. "
+        description="Minimum passage size that hidden geometry removal can resolve. "
+        + "Internal regions connected by thin passages smaller than this size may not be detected. "
         + "If not specified, the value is derived from geometry_accuracy and sealing_size. "
         + "This option is only supported when using geometry AI.",
     )
@@ -182,6 +183,8 @@ class MeshingDefaults(Flow360BaseModel):
     edge_split_layers: int = pd.Field(
         1,
         ge=0,
+        # Skip default-value validation so warnings are emitted only when users explicitly set this field.
+        validate_default=False,
         description="The number of layers that are considered for edge splitting in the boundary layer mesh."
         + "This only affects beta mesher.",
     )
@@ -224,7 +227,7 @@ class MeshingDefaults(Flow360BaseModel):
         "sealing_size",
         "remove_non_manifold_faces",
         "remove_hidden_geometry",
-        "flooding_cell_size",
+        "min_passage_size",
         mode="after",
     )
     @classmethod
@@ -243,11 +246,11 @@ class MeshingDefaults(Flow360BaseModel):
         return self
 
     @pd.model_validator(mode="after")
-    def validate_flooding_cell_size_requires_remove_hidden_geometry(self):
-        """Ensure flooding_cell_size is only specified when remove_hidden_geometry is True."""
-        if self.flooding_cell_size is not None and not self.remove_hidden_geometry:
+    def validate_min_passage_size_requires_remove_hidden_geometry(self):
+        """Ensure min_passage_size is only specified when remove_hidden_geometry is True."""
+        if self.min_passage_size is not None and not self.remove_hidden_geometry:
             raise ValueError(
-                "'flooding_cell_size' can only be specified when 'remove_hidden_geometry' is True."
+                "'min_passage_size' can only be specified when 'remove_hidden_geometry' is True."
             )
         return self
 

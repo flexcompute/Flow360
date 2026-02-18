@@ -54,11 +54,12 @@ class QualityMetrics(Flow360BaseModel):
         alias="max_concave",
         description="Maximum cell concavity. Set to False to disable this metric.",
     )
-    min_pyramid_cell_volume: Union[float, Literal[False]] = pd.Field(
-        default=1e-15,
+    min_pyramid_cell_volume: Optional[Union[float, Literal[False]]] = pd.Field(
+        default=None,
         alias="min_vol",
         description="Minimum cell pyramid volume [mesh_unit³]. "
-        + "Set to False to disable this metric (uses -1e30 internally).",
+        + "Set to False to disable this metric (uses -1e30 internally). "
+        + "Defaults to (effective_min_spacing³) * 1e-10 when not specified.",
     )
     min_tetrahedron_quality: Union[float, Literal[False]] = pd.Field(
         default=1e-9,

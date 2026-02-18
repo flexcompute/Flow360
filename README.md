@@ -10,6 +10,8 @@
 # How to use Flow360 python client
 
 ## install
+Requires Python 3.10 or newer.
+
 ### Using pip (recommended)
 ``pip install flow360``
 
