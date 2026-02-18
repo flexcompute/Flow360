@@ -812,9 +812,7 @@ def test_passive_spacing_with_ghost_symmetry_in_faces(get_surface_mesh):
         (False, False),
     ],
 )
-def test_user_defined_farfield_ghost_symmetry_requires_gai_and_beta(
-    use_gai, use_beta, get_surface_mesh
-):
+def test_user_defined_farfield_ghost_symmetry_requires_gai_and_beta(use_gai, use_beta):
     # Using GhostCircularPlane("symmetric") must require both GAI and beta mesher for user-defined farfield
     import pydantic as pd
 
@@ -847,7 +845,7 @@ def test_user_defined_farfield_ghost_symmetry_requires_gai_and_beta(
                 PassiveSpacing(entities=[GhostCircularPlane(name="symmetric")], type="projected")
 
 
-def test_user_defined_farfield_ghost_symmetry_passes_with_gai_and_beta(get_surface_mesh):
+def test_user_defined_farfield_ghost_symmetry_passes_with_gai_and_beta():
     # Positive case: both flags enabled and half-body domain -> validator should pass
     from flow360.component.simulation.validation.validation_context import (
         VOLUME_MESH,
@@ -871,6 +869,64 @@ def test_user_defined_farfield_ghost_symmetry_passes_with_gai_and_beta(get_surfa
         info = ParamsValidationInfo(param_as_dict=param_dict, referenced_expressions=[])
         with ValidationContext(levels=VOLUME_MESH, info=info):
             PassiveSpacing(entities=[GhostCircularPlane(name="symmetric")], type="projected")
+
+
+def test_user_defined_farfield_ghost_symmetry_passes_without_explicit_domain_type():
+    # User-defined farfield without explicit domain_type should follow auto-like symmetry behavior
+    from flow360.component.simulation.validation.validation_context import (
+        VOLUME_MESH,
+        ParamsValidationInfo,
+        ValidationContext,
+    )
+
+    with SI_unit_system:
+        param_dict = {
+            "meshing": {
+                "type_name": "MeshingParams",
+                "volume_zones": [{"type": "UserDefinedFarfield"}],
+            },
+            "private_attribute_asset_cache": {
+                "use_inhouse_mesher": True,
+                "use_geometry_AI": True,
+            },
+        }
+        info = ParamsValidationInfo(param_as_dict=param_dict, referenced_expressions=[])
+        with ValidationContext(levels=VOLUME_MESH, info=info):
+            PassiveSpacing(entities=[GhostCircularPlane(name="symmetric")], type="projected")
+
+
+def test_user_defined_farfield_ghost_symmetry_fails_auto_domain_type_bad_bbox():
+    # With domain_type unset, user-defined farfield should still fail if symmetric won't be generated.
+    import pydantic as pd
+
+    from flow360.component.simulation.validation.validation_context import (
+        VOLUME_MESH,
+        ParamsValidationInfo,
+        ValidationContext,
+    )
+
+    with SI_unit_system:
+        param_dict = {
+            "meshing": {
+                "type_name": "MeshingParams",
+                "defaults": {"planar_face_tolerance": 1e-6},
+                "volume_zones": [{"type": "UserDefinedFarfield"}],
+            },
+            "private_attribute_asset_cache": {
+                "use_inhouse_mesher": True,
+                "use_geometry_AI": True,
+                "project_entity_info": {
+                    "type_name": "GeometryEntityInfo",
+                    "global_bounding_box": [[0.0, 1.0, 0.0], [1.0, 2.0, 1.0]],
+                },
+            },
+        }
+        info = ParamsValidationInfo(param_as_dict=param_dict, referenced_expressions=[])
+        with ValidationContext(levels=VOLUME_MESH, info=info):
+            with pytest.raises(
+                pd.ValidationError, match="`symmetric` boundary will not be generated"
+            ):
+                PassiveSpacing(entities=[GhostCircularPlane(name="symmetric")], type="projected")
 
 
 def test_geometry_auto_farfield_requires_beta_for_ghost_in_face_refinements():
