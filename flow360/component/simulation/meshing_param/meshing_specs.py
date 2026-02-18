@@ -160,12 +160,6 @@ class MeshingDefaults(Flow360BaseModel):
         + "per face with :class:`~flow360.GeometryRefinement`.",
     )
 
-    remove_non_manifold_faces: bool = pd.Field(
-        False,
-        description="Flag to remove non-manifold and interior faces. "
-        + "This option is only supported when using geometry AI.",
-    )
-
     remove_hidden_geometry: bool = pd.Field(
         False,
         description="Flag to remove hidden geometry that is not visible to flow. "
@@ -188,6 +182,28 @@ class MeshingDefaults(Flow360BaseModel):
         description="The number of layers that are considered for edge splitting in the boundary layer mesh."
         + "This only affects beta mesher.",
     )
+
+    @pd.model_validator(mode="before")
+    @classmethod
+    def remove_deprecated_arguments(cls, value):
+        """
+        Detect when invoking the constructor of the MeshingDefaults()
+        (Warning: contrary to deserializing data, which is supposed to be handled by the updater.py)
+        If the user added the remove_non_manifold_faces in the argument, pop the argument and give warning
+        that this is no longer supported.
+        """
+        if not isinstance(value, dict):
+            return value
+
+        if "remove_non_manifold_faces" in value:
+            value.pop("remove_non_manifold_faces", None)
+            message = (
+                "`meshing.defaults.remove_non_manifold_faces` is no longer supported and has been "
+                + "ignored. Set `meshing.defaults.remove_hidden_geometry` instead."
+            )
+            add_validation_warning(message)
+
+        return value
 
     @contextual_field_validator("number_of_boundary_layers", mode="after")
     @classmethod
@@ -225,7 +241,6 @@ class MeshingDefaults(Flow360BaseModel):
         "resolve_face_boundaries",
         "preserve_thin_geometry",
         "sealing_size",
-        "remove_non_manifold_faces",
         "remove_hidden_geometry",
         "min_passage_size",
         mode="after",
@@ -234,16 +249,6 @@ class MeshingDefaults(Flow360BaseModel):
     def ensure_geometry_ai_features(cls, value, info, param_info: ParamsValidationInfo):
         """Validate that the feature is only used when Geometry AI is enabled."""
         return check_geometry_ai_features(cls, value, info, param_info)
-
-    @pd.model_validator(mode="after")
-    def validate_mutual_exclusion(self):
-        """Ensure remove_non_manifold_faces and remove_hidden_geometry are not both True."""
-        if self.remove_non_manifold_faces and self.remove_hidden_geometry:
-            raise ValueError(
-                "'remove_non_manifold_faces' and 'remove_hidden_geometry' cannot both be True. "
-                "Please enable only one of these options."
-            )
-        return self
 
     @pd.model_validator(mode="after")
     def validate_min_passage_size_requires_remove_hidden_geometry(self):

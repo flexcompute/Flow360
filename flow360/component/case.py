@@ -39,6 +39,7 @@ from .resource_base import (
     before_submit_only,
     is_object_cloud_resource,
 )
+from .results.base_results import ResultTarGZModel
 from .results.case_results import (
     ActuatorDiskResultCSVModel,
     AeroacousticsResultCSVModel,
@@ -47,6 +48,7 @@ from .results.case_results import (
     CaseDownloadable,
     CFLResultCSVModel,
     CustomForceResultModel,
+    ForceDistributionsResultModel,
     LegacyForceDistributionResultCSVModel,
     LinearResidualsResultCSVModel,
     MaxResidualLocationResultCSVModel,
@@ -56,7 +58,6 @@ from .results.case_results import (
     PorousMediumResultCSVModel,
     ResultBaseModel,
     ResultsDownloaderSettings,
-    ResultTarGZModel,
     SurfaceForcesResultCSVModel,
     SurfaceHeatTransferResultCSVModel,
     TotalForcesResultCSVModel,
@@ -684,6 +685,14 @@ class Case(CaseBase, Flow360Resource):
             return False
         return self.params.has_custom_forces()
 
+    def has_force_distributions(self):
+        """
+        returns True when case has force distributions
+        """
+        if isinstance(self.params, Flow360Params):
+            return False
+        return self.params.has_force_distributions()
+
     def move_to_folder(self, folder: Folder):
         """
         Move the current case to the specified folder.
@@ -900,6 +909,9 @@ class CaseResultsModel(pd.BaseModel):
     custom_forces: CustomForceResultModel = pd.Field(
         default_factory=lambda: CustomForceResultModel()
     )
+    force_distributions: ForceDistributionsResultModel = pd.Field(
+        default_factory=lambda: ForceDistributionsResultModel()
+    )
 
     # others
     surface_heat_transfer: SurfaceHeatTransferResultCSVModel = pd.Field(
@@ -955,6 +967,7 @@ class CaseResultsModel(pd.BaseModel):
             "aeroacoustics": self.case.has_aeroacoustics,
             "user_defined_dynamics": self.case.has_user_defined_dynamics,
             "custom_forces": self.case.has_custom_forces,
+            "force_distributions": self.case.has_force_distributions,
         }
 
         for field_name in self.__class__.model_fields:  # pylint:disable = not-an-iterable
@@ -1040,6 +1053,7 @@ class CaseResultsModel(pd.BaseModel):
         y_slicing_force_distribution: bool = None,
         user_defined_dynamics: bool = None,
         custom_forces: bool = None,
+        force_distributions: bool = None,
         aeroacoustics: bool = None,
         surface_heat_transfer: bool = None,
         all: bool = None,
@@ -1104,6 +1118,7 @@ class CaseResultsModel(pd.BaseModel):
 
         self.user_defined_dynamics.do_download = user_defined_dynamics
         self.custom_forces.do_download = custom_forces
+        self.force_distributions.do_download = force_distributions
         self.aeroacoustics.do_download = aeroacoustics
         self.surface_heat_transfer.do_download = surface_heat_transfer
 
