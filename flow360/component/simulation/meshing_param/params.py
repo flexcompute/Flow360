@@ -231,7 +231,7 @@ class MeshingParams(Flow360BaseModel):
             if any(s.name == "farfield" for s in enclosed_surfaces):
                 raise ValueError(
                     "Surface name 'farfield' in `enclosed_surfaces` will conflict with the automatically "
-                    "generated farfield boundary. Please choose a different name."
+                    "generated farfield boundary. Please choose a different surface."
                 )
 
         return v
