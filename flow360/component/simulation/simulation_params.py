@@ -923,10 +923,7 @@ class SimulationParams(_ParamModelBase):
         if self.outputs is None:
             return False
         # pylint: disable=not-an-iterable
-        return any(
-            isinstance(item, ForceDistributionOutput)
-            for item in self.outputs
-        )
+        return any(isinstance(item, ForceDistributionOutput) for item in self.outputs)
 
     def has_custom_forces(self):
         """
