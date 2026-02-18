@@ -251,7 +251,7 @@ class MeshingDefaults(Flow360BaseModel):
         return check_geometry_ai_features(cls, value, info, param_info)
 
     @pd.model_validator(mode="after")
-    def validate_flooding_cell_size_requires_remove_hidden_geometry(self):
+    def validate_min_passage_size_requires_remove_hidden_geometry(self):
         """Ensure min_passage_size is only specified when remove_hidden_geometry is True."""
         if self.min_passage_size is not None and not self.remove_hidden_geometry:
             raise ValueError(

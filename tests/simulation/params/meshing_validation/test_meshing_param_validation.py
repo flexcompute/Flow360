@@ -1882,7 +1882,7 @@ def test_wind_tunnel_farfield_requires_geometry_ai():
             assert farfield.type == "WindTunnelFarfield"
 
 
-def test_flooding_cell_size_requires_remove_hidden_geometry():
+def test_min_passage_size_requires_remove_hidden_geometry():
     """Test that min_passage_size can only be specified when remove_hidden_geometry is True."""
     gai_context = ParamsValidationInfo({}, [])
     gai_context.use_geometry_AI = True
