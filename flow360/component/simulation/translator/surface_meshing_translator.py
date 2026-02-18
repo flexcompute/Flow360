@@ -780,7 +780,6 @@ def _get_gai_setting_whitelist(input_params: SimulationParams) -> dict:
         "surface_max_aspect_ratio": None,
         "surface_max_adaptation_iterations": None,
         "sealing_size": None,
-        "remove_non_manifold_faces": None,
         "remove_hidden_geometry": None,
         "min_passage_size": None,
         "planar_face_tolerance": None,
