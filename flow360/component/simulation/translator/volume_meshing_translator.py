@@ -296,6 +296,18 @@ def _get_custom_volumes(volume_zones: list):
                         }
                     )
 
+    # Create "farfield" zone from enclosed_surfaces on AutomatedFarfield
+    for zone in volume_zones:
+        if isinstance(zone, AutomatedFarfield) and zone.enclosed_surfaces is not None:
+            patch_names = [surface.name for surface in zone.enclosed_surfaces.stored_entities]
+            custom_volumes.append(
+                {
+                    "name": "farfield",
+                    "patches": sorted(patch_names),
+                }
+            )
+            break
+
     if custom_volumes:
         # Sort custom volumes by name
         custom_volumes.sort(key=lambda x: x["name"])
@@ -418,6 +430,7 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
 
     ##::  Step 2:  Get farfield
     for zone in volume_zones:
+        # CustomZone implies user-defined farfield if no farfield is specified anywhere
         if isinstance(zone, (UserDefinedFarfield, CustomZones)):
             translated["farfield"] = {"type": "user-defined"}
             if hasattr(zone, "domain_type") and zone.domain_type is not None:

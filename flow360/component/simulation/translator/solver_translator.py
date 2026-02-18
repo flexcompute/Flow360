@@ -1335,6 +1335,23 @@ def porous_media_translator(model: PorousMedium):
     return porous_medium
 
 
+def gravity_translator(gravity):
+    """Gravity translator - produces gravityVector from direction and non-dimensional magnitude.
+
+    The output gravityVector has the magnitude baked into the direction:
+    gravityVector = magnitude_nondim * normalized_direction
+    """
+    gravity_dict = remove_units_in_dict(dump_dict(gravity))
+    magnitude = gravity_dict["magnitude"]
+    direction = list(gravity.direction)
+
+    gravity_vector = [magnitude * d for d in direction]
+
+    return {
+        "gravityVector": gravity_vector,
+    }
+
+
 def bet_disk_entity_info_serializer(volume):
     """BET disk entity serializer"""
     v = convert_tuples_to_lists(remove_units_in_dict(dump_dict(volume)))
@@ -2305,6 +2322,10 @@ def get_solver_json(
                 translated["geometry"][
                     "interfaceInterpolationTolerance"
                 ] = model.interface_interpolation_tolerance
+
+            ##:: Step 6b: Get gravity from Fluid model
+            if model.gravity is not None:
+                translated["gravity"] = gravity_translator(model.gravity)
 
     ##:: Step 7: Get BET and AD lists
     if has_instance_in_list(input_params.models, BETDisk):
