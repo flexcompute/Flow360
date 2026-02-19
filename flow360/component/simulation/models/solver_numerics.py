@@ -273,10 +273,10 @@ class DetachedEddySimulation(Flow360BaseModel):
         "``DDES`` (Delayed Detached Eddy Simulation proposed by Spalart 2006) and ``ZDES`` "
         "(proposed by Deck and Renard 2020).",
     )
-    grid_size_for_LES: Literal["maxEdgeLength", "meanEdgeLength"] = pd.Field(
+    grid_size_for_LES: Literal["maxEdgeLength", "meanEdgeLength", "shearLayerAdapted"] = pd.Field(
         "maxEdgeLength",
         description="Specifies the length used for the computation of LES length scale. "
-        + "The allowed inputs are :code:`maxEdgeLength` and :code:`meanEdgeLength`.",
+        + "The allowed inputs are :code:`maxEdgeLength`, :code:`meanEdgeLength` and :code:`shearLayerAdapted`.",
     )
 
 
