@@ -4,10 +4,8 @@
 
 from __future__ import annotations
 
-import re
 from enum import Enum
-from pathlib import Path
-from typing import Callable, Dict, List, Optional, get_args
+from typing import List, Optional, get_args
 
 import numpy as np
 import pydantic as pd
@@ -17,10 +15,10 @@ from flow360.component.results.base_results import (
     _PSEUDO_STEP,
     _TIME,
     LocalResultCSVModel,
+    NamedResultsCollectionModel,
     PerEntityResultCSVModel,
     ResultBaseModel,
     ResultCSVModel,
-    ResultTarGZModel,
 )
 from flow360.component.results.results_utils import (
     BETDiskCSVHeaderOperation,
@@ -32,12 +30,22 @@ from flow360.component.simulation.outputs.output_fields import (
     _CD_PER_STRIP,
     _CUMULATIVE_CD_CURVE,
     _HEAT_FLUX,
+    _NORMAL_DIRECTION,
     _X,
     _Y,
     ForceOutputCoefficientNames,
+    _CFx_CUMULATIVE,
     _CFx_PER_SPAN,
+    _CFy_CUMULATIVE,
+    _CFy_PER_SPAN,
+    _CFz_CUMULATIVE,
     _CFz_PER_SPAN,
+    _CMx_CUMULATIVE,
+    _CMx_PER_SPAN,
+    _CMy_CUMULATIVE,
     _CMy_PER_SPAN,
+    _CMz_CUMULATIVE,
+    _CMz_PER_SPAN,
 )
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import (
@@ -49,7 +57,7 @@ from flow360.component.simulation.unit_system import (
 )
 from flow360.component.v1.conversions import unit_converter as unit_converter_v1
 from flow360.component.v1.flow360_params import Flow360Params
-from flow360.exceptions import Flow360ValueError
+from flow360.exceptions import Flow360NotImplementedError, Flow360ValueError
 from flow360.log import log
 
 
@@ -87,6 +95,9 @@ class CaseDownloadable(Enum):
     MONITOR_PATTERN = r"monitor_(.+)_v2.csv"
     USER_DEFINED_DYNAMICS_PATTERN = r"udd_(.+)_v2.csv"
     CUSTOM_FORCE_PATTERN = r"force_output_(.+)_v2.csv"
+    FORCE_DISTRIBUTION_PATTERN = (
+        r"(?![XY]_slicing_forceDistribution\.csv$)(.+)_forceDistribution\.csv"
+    )
 
     # others:
     AEROACOUSTICS = "total_acoustics_v3.csv"
@@ -230,6 +241,56 @@ class YSlicingForceDistributionResultCSVModel(PerEntityResultCSVModel):
     _x_columns: List[str] = [_Y]
 
 
+class ForceDistributionCSVModel(PerEntityResultCSVModel):
+    """CustomForceDistributionResultCSVModel"""
+
+    _VARIABLES_INCREMENTAL = (
+        _CFx_PER_SPAN,
+        _CFy_PER_SPAN,
+        _CFz_PER_SPAN,
+        _CMx_PER_SPAN,
+        _CMy_PER_SPAN,
+        _CMz_PER_SPAN,
+    )
+    _VARIABLES_CUMULATIVE = (
+        _CFx_CUMULATIVE,
+        _CFy_CUMULATIVE,
+        _CFz_CUMULATIVE,
+        _CMx_CUMULATIVE,
+        _CMy_CUMULATIVE,
+        _CMz_CUMULATIVE,
+    )
+    _filter_when_zero: List[str] = []
+    _variables: List[str] = []
+    _x_columns: List[str] = [_NORMAL_DIRECTION]
+
+    def _preprocess(self, filter_physical_steps_only: bool = False, include_time: bool = False):
+        """
+        Detect whether the data contains incremental or cumulative variables
+        based on column headers, then delegate to the parent preprocessor.
+        """
+        headers = set(self._values.keys()) if self._values else set()
+        if all(
+            h in self._x_columns or any(h.endswith(suffix) for suffix in self._VARIABLES_CUMULATIVE)
+            for h in headers
+        ):
+            self._variables = list(self._VARIABLES_CUMULATIVE)
+            self._filter_when_zero = list(self._VARIABLES_CUMULATIVE)
+        elif all(
+            h in self._x_columns
+            or any(h.endswith(suffix) for suffix in self._VARIABLES_INCREMENTAL)
+            for h in headers
+        ):
+            self._variables = list(self._VARIABLES_INCREMENTAL)
+            self._filter_when_zero = list(self._VARIABLES_INCREMENTAL)
+        else:
+            raise Flow360NotImplementedError(f"Unknown type of data: {headers}")
+
+        super()._preprocess(
+            filter_physical_steps_only=filter_physical_steps_only, include_time=include_time
+        )
+
+
 class SurfaceHeatTransferResultCSVModel(PerEntityResultCSVModel, TimeSeriesResultCSVModel):
     """SurfaceHeatTransferResultCSVModel"""
 
@@ -248,39 +309,46 @@ class AeroacousticsResultCSVModel(TimeSeriesResultCSVModel):
 MonitorCSVModel = ResultCSVModel
 
 
-class MonitorsResultModel(ResultTarGZModel):
+class MonitorsResultModel(NamedResultsCollectionModel):
     """
     Model for handling results of monitors in TAR GZ and CSV formats.
 
-    Inherits from ResultTarGZModel.
+    Inherits from NamedResultsCollectionModel.
     """
 
     remote_file_name: str = pd.Field(CaseDownloadable.MONITORS_ALL.value, frozen=True)
-    get_download_file_list_method: Optional[Callable] = pd.Field(lambda: None)
+    _file_name_pattern: str = CaseDownloadable.MONITOR_PATTERN.value
+    _result_model_class: type = MonitorCSVModel
 
-    _monitor_names: List[str] = pd.PrivateAttr([])
-    _monitors: Dict[str, MonitorCSVModel] = pd.PrivateAttr({})
+    def download(  # pylint:disable=arguments-differ,arguments-renamed
+        self, to_file: str = None, to_folder: str = ".", overwrite: bool = False
+    ):
+        """
+        Download the monitors TAR GZ file to the specified location.
 
-    def _populate_monitors(self):
+        Parameters
+        ----------
+        to_file : str, optional
+            The name of the file after downloading.
+        to_folder : str, optional
+            The folder where the file will be downloaded.
+        overwrite : bool, optional
+            Flag indicating whether to overwrite existing files.
         """
-        Populate the internal monitors dictionary and names list from the file list.
+        ResultBaseModel.download(self, to_file=to_file, to_folder=to_folder, overwrite=overwrite)
+
+    def to_file(self, filename, overwrite: bool = False):
         """
-        pattern = CaseDownloadable.MONITOR_PATTERN.value
-        file_list = [
-            file["fileName"]
-            for file in self.get_download_file_list_method()  # pylint:disable=not-callable
-        ]
-        for filepath in file_list:
-            if str(Path(filepath).parent) == "results":
-                filename = Path(filepath).name
-                match = re.match(pattern, filename)
-                if match:
-                    name = match.group(1)
-                    self._monitor_names.append(name)
-                    self._monitors[name] = MonitorCSVModel(remote_file_name=filename)
-                    # pylint: disable=protected-access
-                    self._monitors[name]._download_method = self._download_method
-                    self._monitors[name]._get_params_method = self._get_params_method
+        Save the TAR GZ file.
+
+        Parameters
+        ----------
+        filename : str
+            The name of the file to save the TAR GZ data.
+        overwrite : bool, optional
+            Flag indicating whether to overwrite existing files.
+        """
+        self.download(to_file=filename, overwrite=overwrite)
 
     @property
     def monitor_names(self):
@@ -292,9 +360,7 @@ class MonitorsResultModel(ResultTarGZModel):
         list of str
             List of monitor names.
         """
-        if len(self._monitor_names) == 0:
-            self._populate_monitors()
-        return self._monitor_names
+        return self.names
 
     def get_monitor_by_name(self, name: str) -> MonitorCSVModel:
         """
@@ -315,57 +381,21 @@ class MonitorsResultModel(ResultTarGZModel):
         Flow360ValueError
             If the monitor with the provided name is not found.
         """
-
-        if name not in self.monitor_names:
-            raise Flow360ValueError(
-                f"Cannot find monitor with provided name={name}, available monitors: {self.monitor_names}"
-            )
-        return self._monitors[name]
-
-    def __getitem__(self, name: str) -> MonitorCSVModel:
-        """
-        Get a monitor by name (supporting [] access).
-        """
-
-        return self.get_monitor_by_name(name)
+        return self.get_result_by_name(name)
 
 
 UserDefinedDynamicsCSVModel = TimeSeriesResultCSVModel
 
 
-class UserDefinedDynamicsResultModel(ResultBaseModel):
+class UserDefinedDynamicsResultModel(NamedResultsCollectionModel):
     """
     Model for handling results of user-defined dynamics.
 
-    Inherits from ResultBaseModel.
+    Inherits from NamedResultsCollectionModel.
     """
 
-    remote_file_name: str = pd.Field(None, frozen=True)
-    get_download_file_list_method: Optional[Callable] = pd.Field(lambda: None)
-
-    _udd_names: List[str] = pd.PrivateAttr([])
-    _udds: Dict[str, UserDefinedDynamicsCSVModel] = pd.PrivateAttr({})
-
-    def _populate_udds(self):
-        """
-        Populate the internal UDDs dictionary and names list from the file list.
-        """
-        pattern = CaseDownloadable.USER_DEFINED_DYNAMICS_PATTERN.value
-        file_list = [
-            file["fileName"]
-            for file in self.get_download_file_list_method()  # pylint:disable=not-callable
-        ]
-        for filepath in file_list:
-            if str(Path(filepath).parent) == "results":
-                filename = Path(filepath).name
-                match = re.match(pattern, filename)
-                if match:
-                    name = match.group(1)
-                    self._udd_names.append(name)
-                    self._udds[name] = UserDefinedDynamicsCSVModel(remote_file_name=filename)
-                    # pylint: disable=protected-access
-                    self._udds[name]._download_method = self._download_method
-                    self._udds[name]._get_params_method = self._get_params_method
+    _file_name_pattern: str = CaseDownloadable.USER_DEFINED_DYNAMICS_PATTERN.value
+    _result_model_class: type = UserDefinedDynamicsCSVModel
 
     @property
     def udd_names(self):
@@ -377,27 +407,7 @@ class UserDefinedDynamicsResultModel(ResultBaseModel):
         list of str
             List of user-defined dynamics names.
         """
-        if len(self._udd_names) == 0:
-            self._populate_udds()
-        return self._udd_names
-
-    def download(
-        self, to_folder: str = ".", overwrite: bool = False
-    ):  # pylint:disable=arguments-differ
-        """
-        Download all udd files to the specified location.
-
-        Parameters
-        ----------
-        to_folder : str, optional
-            The folder where the file will be downloaded.
-        overwrite : bool, optional
-            Flag indicating whether to overwrite existing files.
-        """
-        if len(self._udd_names) == 0:
-            self._populate_udds()
-        for udd in self._udds.values():
-            udd.download(to_folder=to_folder, overwrite=overwrite)
+        return self.names
 
     def get_udd_by_name(self, name: str) -> UserDefinedDynamicsCSVModel:
         """
@@ -418,58 +428,21 @@ class UserDefinedDynamicsResultModel(ResultBaseModel):
         Flow360ValueError
             If the user-defined dynamics with the provided name is not found.
         """
-
-        if name not in self.udd_names:
-            raise Flow360ValueError(
-                f"Cannot find user defined dynamics with provided name={name}, "
-                f"available user defined dynamics: {self.udd_names}"
-            )
-        return self._udds[name]
-
-    def __getitem__(self, name: str) -> UserDefinedDynamicsCSVModel:
-        """
-        Get a UUD by name (supporting [] access).
-        """
-
-        return self.get_udd_by_name(name)
+        return self.get_result_by_name(name)
 
 
 CustomForceCSVModel = ResultCSVModel
 
 
-class CustomForceResultModel(ResultBaseModel):
+class CustomForceResultModel(NamedResultsCollectionModel):
     """
     Model for handling results of custom force outputs.
 
-    Inherits from ResultBaseModel.
+    Inherits from NamedResultsCollectionModel.
     """
 
-    remote_file_name: str = pd.Field(None, frozen=True)
-    get_download_file_list_method: Optional[Callable] = pd.Field(lambda: None)
-
-    _custom_force_names: List[str] = pd.PrivateAttr([])
-    _custom_forces: Dict[str, CustomForceCSVModel] = pd.PrivateAttr({})
-
-    def _populate_custom_forces(self):
-        """
-        Populate the internal custom forces dictionary and names list from the file list.
-        """
-        pattern = CaseDownloadable.CUSTOM_FORCE_PATTERN.value
-        file_list = [
-            file["fileName"]
-            for file in self.get_download_file_list_method()  # pylint:disable=not-callable
-        ]
-        for filepath in file_list:
-            if str(Path(filepath).parent) == "results":
-                filename = Path(filepath).name
-                match = re.match(pattern, filename)
-                if match:
-                    name = match.group(1)
-                    self._custom_force_names.append(name)
-                    self._custom_forces[name] = CustomForceCSVModel(remote_file_name=filename)
-                    # pylint: disable=protected-access
-                    self._custom_forces[name]._download_method = self._download_method
-                    self._custom_forces[name]._get_params_method = self._get_params_method
+    _file_name_pattern: str = CaseDownloadable.CUSTOM_FORCE_PATTERN.value
+    _result_model_class: type = CustomForceCSVModel
 
     @property
     def custom_force_names(self):
@@ -481,27 +454,7 @@ class CustomForceResultModel(ResultBaseModel):
         list of str
             List of custom force output names.
         """
-        if len(self._custom_force_names) == 0:
-            self._populate_custom_forces()
-        return self._custom_force_names
-
-    def download(
-        self, to_folder: str = ".", overwrite: bool = False
-    ):  # pylint:disable=arguments-differ
-        """
-        Download all custom force files to the specified location.
-
-        Parameters
-        ----------
-        to_folder : str, optional
-            The folder where the file will be downloaded.
-        overwrite : bool, optional
-            Flag indicating whether to overwrite existing files.
-        """
-        if len(self._custom_force_names) == 0:
-            self._populate_custom_forces()
-        for custom_force in self._custom_forces.values():
-            custom_force.download(to_folder=to_folder, overwrite=overwrite)
+        return self.names
 
     def get_custom_force_by_name(self, name: str) -> CustomForceCSVModel:
         """
@@ -522,20 +475,16 @@ class CustomForceResultModel(ResultBaseModel):
         Flow360ValueError
             If the custom force output with the provided name is not found.
         """
+        return self.get_result_by_name(name)
 
-        if name not in self.custom_force_names:
-            raise Flow360ValueError(
-                f"Cannot find custom force output with provided name={name}, "
-                f"available custom force outputs: {self.custom_force_names}"
-            )
-        return self._custom_forces[name]
 
-    def __getitem__(self, name: str) -> CustomForceCSVModel:
-        """
-        Get a custom force output by name (supporting [] access).
-        """
+class ForceDistributionsResultModel(NamedResultsCollectionModel):
+    """
+    Model for handling results of force distributions.
+    """
 
-        return self.get_custom_force_by_name(name)
+    _file_name_pattern: str = CaseDownloadable.FORCE_DISTRIBUTION_PATTERN.value
+    _result_model_class: type = ForceDistributionCSVModel
 
 
 class _DimensionedCSVResultModel(pd.BaseModel):

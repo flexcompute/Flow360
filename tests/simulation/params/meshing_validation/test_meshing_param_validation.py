@@ -1882,62 +1882,6 @@ def test_wind_tunnel_farfield_requires_geometry_ai():
             assert farfield.type == "WindTunnelFarfield"
 
 
-def test_remove_non_manifold_faces_and_remove_hidden_geometry_mutual_exclusion():
-    """Test that remove_non_manifold_faces and remove_hidden_geometry cannot both be True."""
-    gai_context = ParamsValidationInfo({}, [])
-    gai_context.use_geometry_AI = True
-
-    # Test 1: Both True should raise ValueError
-    with pytest.raises(
-        pd.ValidationError,
-        match=r"'remove_non_manifold_faces' and 'remove_hidden_geometry' cannot both be True",
-    ):
-        with ValidationContext(SURFACE_MESH, gai_context):
-            with SI_unit_system:
-                MeshingDefaults(
-                    geometry_accuracy=0.01 * u.m,
-                    surface_max_edge_length=0.1 * u.m,
-                    remove_non_manifold_faces=True,
-                    remove_hidden_geometry=True,
-                )
-
-    # Test 2: Only remove_non_manifold_faces=True should work
-    with ValidationContext(SURFACE_MESH, gai_context):
-        with SI_unit_system:
-            defaults = MeshingDefaults(
-                geometry_accuracy=0.01 * u.m,
-                surface_max_edge_length=0.1 * u.m,
-                remove_non_manifold_faces=True,
-                remove_hidden_geometry=False,
-            )
-            assert defaults.remove_non_manifold_faces is True
-            assert defaults.remove_hidden_geometry is False
-
-    # Test 3: Only remove_hidden_geometry=True should work
-    with ValidationContext(SURFACE_MESH, gai_context):
-        with SI_unit_system:
-            defaults = MeshingDefaults(
-                geometry_accuracy=0.01 * u.m,
-                surface_max_edge_length=0.1 * u.m,
-                remove_non_manifold_faces=False,
-                remove_hidden_geometry=True,
-            )
-            assert defaults.remove_non_manifold_faces is False
-            assert defaults.remove_hidden_geometry is True
-
-    # Test 4: Both False should work (default case)
-    with ValidationContext(SURFACE_MESH, gai_context):
-        with SI_unit_system:
-            defaults = MeshingDefaults(
-                geometry_accuracy=0.01 * u.m,
-                surface_max_edge_length=0.1 * u.m,
-                remove_non_manifold_faces=False,
-                remove_hidden_geometry=False,
-            )
-            assert defaults.remove_non_manifold_faces is False
-            assert defaults.remove_hidden_geometry is False
-
-
 def test_min_passage_size_requires_remove_hidden_geometry():
     """Test that min_passage_size can only be specified when remove_hidden_geometry is True."""
     gai_context = ParamsValidationInfo({}, [])

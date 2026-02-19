@@ -1006,30 +1006,30 @@ def test_custom_forces_is_downloadable(mock_id, mock_response):
 
 @pytest.mark.usefixtures("s3_download_override")
 def test_monitors_populate_monitors(mock_id, mock_response):
-    """Test MonitorsResultModel._populate_monitors populates names and models correctly"""
+    """Test MonitorsResultModel._populate populates names and models correctly"""
     case = fl.Case(id="case-666666666-66666666-666-6666666666666")
 
-    # Before calling _populate_monitors, internal lists should be empty
+    # Before calling _populate, internal lists should be empty
     # pylint: disable=protected-access
-    assert len(case.results.monitors._monitor_names) == 0
-    assert len(case.results.monitors._monitors) == 0
+    assert len(case.results.monitors._names) == 0
+    assert len(case.results.monitors._result_collection) == 0
 
     # Call the private populate method
-    case.results.monitors._populate_monitors()
+    case.results.monitors._populate()
 
     # After calling, internal lists should be populated
-    assert len(case.results.monitors._monitor_names) == 2
-    assert "massFluxExhaust" in case.results.monitors._monitor_names
-    assert "massFluxIntake" in case.results.monitors._monitor_names
+    assert len(case.results.monitors._names) == 2
+    assert "massFluxExhaust" in case.results.monitors._names
+    assert "massFluxIntake" in case.results.monitors._names
 
     # Check that models are created with correct remote file names
-    assert len(case.results.monitors._monitors) == 2
+    assert len(case.results.monitors._result_collection) == 2
     assert (
-        case.results.monitors._monitors["massFluxExhaust"].remote_file_name
+        case.results.monitors._result_collection["massFluxExhaust"].remote_file_name
         == "monitor_massFluxExhaust_v2.csv"
     )
     assert (
-        case.results.monitors._monitors["massFluxIntake"].remote_file_name
+        case.results.monitors._result_collection["massFluxIntake"].remote_file_name
         == "monitor_massFluxIntake_v2.csv"
     )
 
@@ -1042,11 +1042,11 @@ def test_monitors_names_property_idempotent(mock_id, mock_response):
     # Access property first time
     first_call_names = list(case.results.monitors.monitor_names)
     # pylint: disable=protected-access
-    first_call_count = len(case.results.monitors._monitors)
+    first_call_count = len(case.results.monitors._result_collection)
 
     # Access property again
     second_call_names = list(case.results.monitors.monitor_names)
-    second_call_count = len(case.results.monitors._monitors)
+    second_call_count = len(case.results.monitors._result_collection)
 
     assert first_call_names == second_call_names
     assert first_call_count == second_call_count
@@ -1054,30 +1054,34 @@ def test_monitors_names_property_idempotent(mock_id, mock_response):
 
 @pytest.mark.usefixtures("s3_download_override")
 def test_udd_populate_udds(mock_id, mock_response):
-    """Test UserDefinedDynamicsResultModel._populate_udds populates names and models correctly"""
+    """Test UserDefinedDynamicsResultModel._populate populates names and models correctly"""
     case = fl.Case(id="case-666666666-66666666-666-6666666666666")
 
-    # Before calling _populate_udds, internal lists should be empty
+    # Before calling _populate, internal lists should be empty
     # pylint: disable=protected-access
-    assert len(case.results.user_defined_dynamics._udd_names) == 0
-    assert len(case.results.user_defined_dynamics._udds) == 0
+    assert len(case.results.user_defined_dynamics._names) == 0
+    assert len(case.results.user_defined_dynamics._result_collection) == 0
 
     # Call the private populate method
-    case.results.user_defined_dynamics._populate_udds()
+    case.results.user_defined_dynamics._populate()
 
     # After calling, internal lists should be populated
-    assert len(case.results.user_defined_dynamics._udd_names) == 2
-    assert "massInflowController_Exhaust" in case.results.user_defined_dynamics._udd_names
-    assert "massInflowController_Intake" in case.results.user_defined_dynamics._udd_names
+    assert len(case.results.user_defined_dynamics._names) == 2
+    assert "massInflowController_Exhaust" in case.results.user_defined_dynamics._names
+    assert "massInflowController_Intake" in case.results.user_defined_dynamics._names
 
     # Check that models are created with correct remote file names
-    assert len(case.results.user_defined_dynamics._udds) == 2
+    assert len(case.results.user_defined_dynamics._result_collection) == 2
     assert (
-        case.results.user_defined_dynamics._udds["massInflowController_Exhaust"].remote_file_name
+        case.results.user_defined_dynamics._result_collection[
+            "massInflowController_Exhaust"
+        ].remote_file_name
         == "udd_massInflowController_Exhaust_v2.csv"
     )
     assert (
-        case.results.user_defined_dynamics._udds["massInflowController_Intake"].remote_file_name
+        case.results.user_defined_dynamics._result_collection[
+            "massInflowController_Intake"
+        ].remote_file_name
         == "udd_massInflowController_Intake_v2.csv"
     )
 
@@ -1090,11 +1094,11 @@ def test_udd_names_property_idempotent(mock_id, mock_response):
     # Access property first time
     first_call_names = list(case.results.user_defined_dynamics.udd_names)
     # pylint: disable=protected-access
-    first_call_count = len(case.results.user_defined_dynamics._udds)
+    first_call_count = len(case.results.user_defined_dynamics._result_collection)
 
     # Access property again
     second_call_names = list(case.results.user_defined_dynamics.udd_names)
-    second_call_count = len(case.results.user_defined_dynamics._udds)
+    second_call_count = len(case.results.user_defined_dynamics._result_collection)
 
     assert first_call_names == second_call_names
     assert first_call_count == second_call_count
@@ -1102,32 +1106,30 @@ def test_udd_names_property_idempotent(mock_id, mock_response):
 
 @pytest.mark.usefixtures("s3_download_override")
 def test_custom_forces_populate_custom_forces(mock_id, mock_response):
-    """Test CustomForceResultModel._populate_custom_forces populates names and models correctly"""
+    """Test CustomForceResultModel._populate populates names and models correctly"""
     case = fl.Case(id="case-666666666-66666666-666-6666666666666")
 
-    # Before calling _populate_custom_forces, internal lists should be empty
+    # Before calling _populate, internal lists should be empty
     # pylint: disable=protected-access
-    assert len(case.results.custom_forces._custom_force_names) == 0
-    assert len(case.results.custom_forces._custom_forces) == 0
+    assert len(case.results.custom_forces._names) == 0
+    assert len(case.results.custom_forces._result_collection) == 0
 
     # Call the private populate method
-    case.results.custom_forces._populate_custom_forces()
+    case.results.custom_forces._populate()
 
     # After calling, internal lists should be populated
-    assert len(case.results.custom_forces._custom_force_names) == 2
-    assert "wing_all_planes_forces" in case.results.custom_forces._custom_force_names
-    assert (
-        "wing_all_planes_forces_moving_statistic" in case.results.custom_forces._custom_force_names
-    )
+    assert len(case.results.custom_forces._names) == 2
+    assert "wing_all_planes_forces" in case.results.custom_forces._names
+    assert "wing_all_planes_forces_moving_statistic" in case.results.custom_forces._names
 
     # Check that models are created with correct remote file names
-    assert len(case.results.custom_forces._custom_forces) == 2
+    assert len(case.results.custom_forces._result_collection) == 2
     assert (
-        case.results.custom_forces._custom_forces["wing_all_planes_forces"].remote_file_name
+        case.results.custom_forces._result_collection["wing_all_planes_forces"].remote_file_name
         == "force_output_wing_all_planes_forces_v2.csv"
     )
     assert (
-        case.results.custom_forces._custom_forces[
+        case.results.custom_forces._result_collection[
             "wing_all_planes_forces_moving_statistic"
         ].remote_file_name
         == "force_output_wing_all_planes_forces_moving_statistic_v2.csv"
@@ -1142,11 +1144,11 @@ def test_custom_forces_names_property_idempotent(mock_id, mock_response):
     # Access property first time
     first_call_names = list(case.results.custom_forces.custom_force_names)
     # pylint: disable=protected-access
-    first_call_count = len(case.results.custom_forces._custom_forces)
+    first_call_count = len(case.results.custom_forces._result_collection)
 
     # Access property again
     second_call_names = list(case.results.custom_forces.custom_force_names)
-    second_call_count = len(case.results.custom_forces._custom_forces)
+    second_call_count = len(case.results.custom_forces._result_collection)
 
     assert first_call_names == second_call_names
     assert first_call_count == second_call_count
@@ -1154,15 +1156,15 @@ def test_custom_forces_names_property_idempotent(mock_id, mock_response):
 
 @pytest.mark.usefixtures("s3_download_override")
 def test_udd_download_after_populate(mock_id, mock_response):
-    """Test UserDefinedDynamicsResultModel.download works after _populate_udds"""
+    """Test UserDefinedDynamicsResultModel.download works after _populate"""
     case = fl.Case(id="case-666666666-66666666-666-6666666666666")
 
     # pylint: disable=protected-access
     # First populate
-    case.results.user_defined_dynamics._populate_udds()
+    case.results.user_defined_dynamics._populate()
 
     # Verify download method is set on individual UDDs
-    for udd_name, udd in case.results.user_defined_dynamics._udds.items():
+    for udd_name, udd in case.results.user_defined_dynamics._result_collection.items():
         assert udd._download_method is not None
         assert callable(udd._download_method)
         assert udd._get_params_method is not None
@@ -1171,15 +1173,15 @@ def test_udd_download_after_populate(mock_id, mock_response):
 
 @pytest.mark.usefixtures("s3_download_override")
 def test_custom_forces_download_after_populate(mock_id, mock_response):
-    """Test CustomForceResultModel.download works after _populate_custom_forces"""
+    """Test CustomForceResultModel.download works after _populate"""
     case = fl.Case(id="case-666666666-66666666-666-6666666666666")
 
     # pylint: disable=protected-access
     # First populate
-    case.results.custom_forces._populate_custom_forces()
+    case.results.custom_forces._populate()
 
     # Verify download method is set on individual custom forces
-    for force_name, force in case.results.custom_forces._custom_forces.items():
+    for force_name, force in case.results.custom_forces._result_collection.items():
         assert force._download_method is not None
         assert callable(force._download_method)
         assert force._get_params_method is not None
@@ -1188,16 +1190,251 @@ def test_custom_forces_download_after_populate(mock_id, mock_response):
 
 @pytest.mark.usefixtures("s3_download_override")
 def test_monitors_download_after_populate(mock_id, mock_response):
-    """Test MonitorsResultModel download works after _populate_monitors"""
+    """Test MonitorsResultModel download works after _populate"""
     case = fl.Case(id="case-666666666-66666666-666-6666666666666")
 
     # pylint: disable=protected-access
     # First populate
-    case.results.monitors._populate_monitors()
+    case.results.monitors._populate()
 
     # Verify download method is set on individual monitors
-    for monitor_name, monitor in case.results.monitors._monitors.items():
+    for monitor_name, monitor in case.results.monitors._result_collection.items():
         assert monitor._download_method is not None
         assert callable(monitor._download_method)
         assert monitor._get_params_method is not None
         assert callable(monitor._get_params_method)
+
+
+@pytest.mark.usefixtures("s3_download_override")
+def test_force_distributions_bracket_access(mock_id, mock_response):
+    """Test ForceDistributionsResultModel - bracket access"""
+    case = fl.Case(id="case-666666666-66666666-666-6666666666666")
+
+    names = case.results.force_distributions.names
+    assert "force_distro_cumul" in names
+    assert "ta_distro" in names
+    assert len(names) == 2
+
+    cumul = case.results.force_distributions["force_distro_cumul"]
+    assert cumul is not None
+    assert cumul.remote_file_name == "force_distro_cumul_forceDistribution.csv"
+
+    incr = case.results.force_distributions["ta_distro"]
+    assert incr is not None
+    assert incr.remote_file_name == "ta_distro_forceDistribution.csv"
+
+
+@pytest.mark.usefixtures("s3_download_override")
+def test_force_distributions_invalid_name(mock_id, mock_response):
+    """Test ForceDistributionsResultModel - invalid name raises error"""
+    from flow360.exceptions import Flow360ValueError
+
+    case = fl.Case(id="case-666666666-66666666-666-6666666666666")
+
+    with pytest.raises(Flow360ValueError) as exc_info:
+        case.results.force_distributions["nonexistent"]
+    assert "nonexistent" in str(exc_info.value)
+    assert "force_distro_cumul" in str(exc_info.value)
+
+
+@pytest.mark.usefixtures("s3_download_override")
+def test_force_distributions_populate(mock_id, mock_response):
+    """Test ForceDistributionsResultModel._populate populates names and models correctly"""
+    case = fl.Case(id="case-666666666-66666666-666-6666666666666")
+
+    # pylint: disable=protected-access
+    assert len(case.results.force_distributions._names) == 0
+    assert len(case.results.force_distributions._result_collection) == 0
+
+    case.results.force_distributions._populate()
+
+    assert len(case.results.force_distributions._names) == 2
+    assert "force_distro_cumul" in case.results.force_distributions._names
+    assert "ta_distro" in case.results.force_distributions._names
+
+    assert len(case.results.force_distributions._result_collection) == 2
+    assert (
+        case.results.force_distributions._result_collection["force_distro_cumul"].remote_file_name
+        == "force_distro_cumul_forceDistribution.csv"
+    )
+    assert (
+        case.results.force_distributions._result_collection["ta_distro"].remote_file_name
+        == "ta_distro_forceDistribution.csv"
+    )
+
+
+@pytest.mark.usefixtures("s3_download_override")
+def test_force_distributions_cumulative_data_loading(mock_id, mock_response):
+    """Test ForceDistributionsResultModel - cumulative data can be loaded from CSV"""
+    case = fl.Case(id="case-666666666-66666666-666-6666666666666")
+
+    cumul = case.results.force_distributions["force_distro_cumul"]
+    cumul.reload_data()
+    data = cumul.as_dict()
+
+    # Verify cumulative columns are present (CFx_cumulative etc.)
+    cumulative_suffixes = [
+        "CFx_cumulative",
+        "CFy_cumulative",
+        "CFz_cumulative",
+        "CMx_cumulative",
+        "CMy_cumulative",
+        "CMz_cumulative",
+    ]
+    headers = list(data.keys())
+    for suffix in cumulative_suffixes:
+        assert any(
+            h.endswith(suffix) for h in headers
+        ), f"No column ending with '{suffix}' found in headers: {headers}"
+
+    # Verify no incremental columns are present
+    incremental_suffixes = ["CFx_per_span", "CFy_per_span", "CFz_per_span"]
+    for suffix in incremental_suffixes:
+        assert not any(
+            h.endswith(suffix) for h in headers
+        ), f"Unexpected incremental column ending with '{suffix}' found in cumulative data"
+
+
+@pytest.mark.usefixtures("s3_download_override")
+def test_force_distributions_incremental_data_loading(mock_id, mock_response):
+    """Test ForceDistributionsResultModel - incremental (per_span) data can be loaded from CSV"""
+    case = fl.Case(id="case-666666666-66666666-666-6666666666666")
+
+    incr = case.results.force_distributions["ta_distro"]
+    incr.reload_data()
+    data = incr.as_dict()
+
+    # Verify incremental columns are present (CFx_per_span etc.)
+    incremental_suffixes = [
+        "CFx_per_span",
+        "CFy_per_span",
+        "CFz_per_span",
+        "CMx_per_span",
+        "CMy_per_span",
+        "CMz_per_span",
+    ]
+    headers = list(data.keys())
+    for suffix in incremental_suffixes:
+        assert any(
+            h.endswith(suffix) for h in headers
+        ), f"No column ending with '{suffix}' found in headers: {headers}"
+
+    # Verify no cumulative columns are present
+    cumulative_suffixes = ["CFx_cumulative", "CFy_cumulative", "CFz_cumulative"]
+    for suffix in cumulative_suffixes:
+        assert not any(
+            h.endswith(suffix) for h in headers
+        ), f"Unexpected cumulative column ending with '{suffix}' found in incremental data"
+
+
+def test_custom_force_distribution_preprocess_detects_cumulative():
+    """
+    _preprocess must recognise cumulative headers when each column ends with
+    exactly ONE of the cumulative suffixes (not all of them).
+
+    Regression: the original implementation used a Cartesian-product
+    comprehension (`for h in headers for suffix in suffixes`) inside `all()`,
+    which required every header to endswith *every* suffix — always False.
+    """
+    from flow360.component.results.case_results import ForceDistributionCSVModel
+
+    model = ForceDistributionCSVModel(remote_file_name="dummy.csv")
+
+    dummy = [0.0, 1.0]
+    model._values = {
+        "normal_direction": dummy,
+        "farfield/fuselage_CFx_cumulative": dummy,
+        "farfield/fuselage_CFy_cumulative": dummy,
+        "farfield/fuselage_CFz_cumulative": dummy,
+        "farfield/fuselage_CMx_cumulative": dummy,
+        "farfield/fuselage_CMy_cumulative": dummy,
+        "farfield/fuselage_CMz_cumulative": dummy,
+    }
+
+    model._preprocess()
+
+    assert model._variables == [
+        "CFx_cumulative",
+        "CFy_cumulative",
+        "CFz_cumulative",
+        "CMx_cumulative",
+        "CMy_cumulative",
+        "CMz_cumulative",
+    ]
+    assert model._filter_when_zero == model._variables
+
+
+def test_custom_force_distribution_preprocess_detects_incremental():
+    """_preprocess must recognise incremental (per_span) headers."""
+    from flow360.component.results.case_results import ForceDistributionCSVModel
+
+    model = ForceDistributionCSVModel(remote_file_name="dummy.csv")
+
+    dummy = [0.0, 1.0]
+    model._values = {
+        "normal_direction": dummy,
+        "wing_CFx_per_span": dummy,
+        "wing_CFy_per_span": dummy,
+        "wing_CFz_per_span": dummy,
+        "wing_CMx_per_span": dummy,
+        "wing_CMy_per_span": dummy,
+        "wing_CMz_per_span": dummy,
+    }
+
+    model._preprocess()
+
+    assert model._variables == [
+        "CFx_per_span",
+        "CFy_per_span",
+        "CFz_per_span",
+        "CMx_per_span",
+        "CMy_per_span",
+        "CMz_per_span",
+    ]
+    assert model._filter_when_zero == model._variables
+
+
+def test_custom_force_distribution_preprocess_raises_on_mixed():
+    """_preprocess must raise when headers mix cumulative and incremental columns."""
+    from flow360.component.results.case_results import ForceDistributionCSVModel
+    from flow360.exceptions import Flow360NotImplementedError
+
+    model = ForceDistributionCSVModel(remote_file_name="dummy.csv")
+
+    dummy = [0.0, 1.0]
+    model._values = {
+        "normal_direction": dummy,
+        "wing_CFx_cumulative": dummy,
+        "wing_CFy_per_span": dummy,
+    }
+
+    with pytest.raises(Flow360NotImplementedError, match="Unknown type of data"):
+        model._preprocess()
+
+
+def test_force_distribution_pattern_excludes_slicing():
+    """FORCE_DISTRIBUTION_PATTERN must not match X/Y slicing filenames."""
+    import re
+
+    from flow360.component.results.case_results import CaseDownloadable
+
+    pattern = CaseDownloadable.FORCE_DISTRIBUTION_PATTERN.value
+
+    assert re.match(pattern, "X_slicing_forceDistribution.csv") is None
+    assert re.match(pattern, "Y_slicing_forceDistribution.csv") is None
+
+    m = re.match(pattern, "wing_forceDistribution.csv")
+    assert m is not None
+    assert m.group(1) == "wing"
+
+    m = re.match(pattern, "my_surface_forceDistribution.csv")
+    assert m is not None
+    assert m.group(1) == "my_surface"
+
+    m = re.match(pattern, "X_slicing_custom_forceDistribution.csv")
+    assert m is not None
+    assert m.group(1) == "X_slicing_custom"
+
+    m = re.match(pattern, "Y_slicing_custom_forceDistribution.csv")
+    assert m is not None
+    assert m.group(1) == "Y_slicing_custom"
