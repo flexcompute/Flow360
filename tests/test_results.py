@@ -1336,11 +1336,9 @@ def test_custom_force_distribution_preprocess_detects_cumulative():
     comprehension (`for h in headers for suffix in suffixes`) inside `all()`,
     which required every header to endswith *every* suffix — always False.
     """
-    from flow360.component.results.case_results import (
-        CustomForceDistributionResultCSVModel,
-    )
+    from flow360.component.results.case_results import ForceDistributionCSVModel
 
-    model = CustomForceDistributionResultCSVModel(remote_file_name="dummy.csv")
+    model = ForceDistributionCSVModel(remote_file_name="dummy.csv")
 
     dummy = [0.0, 1.0]
     model._values = {
@@ -1368,11 +1366,9 @@ def test_custom_force_distribution_preprocess_detects_cumulative():
 
 def test_custom_force_distribution_preprocess_detects_incremental():
     """_preprocess must recognise incremental (per_span) headers."""
-    from flow360.component.results.case_results import (
-        CustomForceDistributionResultCSVModel,
-    )
+    from flow360.component.results.case_results import ForceDistributionCSVModel
 
-    model = CustomForceDistributionResultCSVModel(remote_file_name="dummy.csv")
+    model = ForceDistributionCSVModel(remote_file_name="dummy.csv")
 
     dummy = [0.0, 1.0]
     model._values = {
@@ -1400,12 +1396,10 @@ def test_custom_force_distribution_preprocess_detects_incremental():
 
 def test_custom_force_distribution_preprocess_raises_on_mixed():
     """_preprocess must raise when headers mix cumulative and incremental columns."""
-    from flow360.component.results.case_results import (
-        CustomForceDistributionResultCSVModel,
-    )
+    from flow360.component.results.case_results import ForceDistributionCSVModel
     from flow360.exceptions import Flow360NotImplementedError
 
-    model = CustomForceDistributionResultCSVModel(remote_file_name="dummy.csv")
+    model = ForceDistributionCSVModel(remote_file_name="dummy.csv")
 
     dummy = [0.0, 1.0]
     model._values = {
