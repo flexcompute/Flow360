@@ -216,7 +216,7 @@ def check_user_defined_farfield_symmetry_existence(stored_entities, param_info):
 
     That:
     1. GAI and beta mesher is used.
-    2. Domain type is half_body_positive_y or half_body_negative_y
+    2. Domain type is None (use auto detection), or explicitly set to half_body_positive_y, half_body_negative_y
     """
 
     if param_info.farfield_method != "user-defined":
