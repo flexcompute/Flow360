@@ -194,6 +194,52 @@ class MeshingParams(Flow360BaseModel):
 
     @contextual_field_validator("volume_zones", mode="after")
     @classmethod
+    def _check_automated_farfield_custom_volumes(cls, v, param_info):
+        if v is None:
+            return v
+
+        automated_farfield = next((zone for zone in v if isinstance(zone, AutomatedFarfield)), None)
+        if automated_farfield is not None:
+            custom_volumes = [
+                entity
+                for zone in v
+                if isinstance(zone, CustomZones)
+                for entity in param_info.expand_entity_list(zone.entities)
+                if isinstance(entity, CustomVolume)
+            ]
+            if any(cv.name == "farfield" for cv in custom_volumes):
+                raise ValueError(
+                    "CustomVolume name 'farfield' is reserved when using AutomatedFarfield. "
+                    "The 'farfield' zone will be automatically generated using `AutomatedFarfield.enclosed_surfaces`. "
+                    "Please choose a different name."
+                )
+
+            enclosed_surfaces = (
+                param_info.expand_entity_list(automated_farfield.enclosed_surfaces)
+                if automated_farfield.enclosed_surfaces is not None
+                else []
+            )
+
+            if custom_volumes and not enclosed_surfaces:
+                raise ValueError(
+                    "When using AutomatedFarfield with CustomVolumes, `enclosed_surfaces` must be "
+                    "specified on the AutomatedFarfield to define the exterior farfield zone boundary."
+                )
+            if enclosed_surfaces and not custom_volumes:
+                raise ValueError(
+                    "`enclosed_surfaces` on AutomatedFarfield is only allowed when CustomVolume entities are used. "
+                    "Without custom volumes, the farfield zone will be automatically detected."
+                )
+            if any(s.name == "farfield" for s in enclosed_surfaces):
+                raise ValueError(
+                    "Surface name 'farfield' in `enclosed_surfaces` will conflict with the automatically "
+                    "generated farfield boundary. Please choose a different surface."
+                )
+
+        return v
+
+    @contextual_field_validator("volume_zones", mode="after")
+    @classmethod
     def _check_volume_zones_have_unique_names(cls, v):
         """Ensure there won't be duplicated volume zone names."""
 

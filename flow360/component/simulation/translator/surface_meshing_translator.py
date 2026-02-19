@@ -165,6 +165,7 @@ def apply_SnappySurfaceEdgeRefinement(
         edges["minLen"] = refinement.min_len.value.item()
     if refinement.retain_on_smoothing is not None:
         edges["retainOnSmoothing"] = refinement.retain_on_smoothing
+    edges["geometricTestOnly"] = refinement.geometric_test_only
     if refinement.spacing is None:
         edges["edgeSpacing"] = defaults.min_spacing.value.item()
     elif isinstance(refinement.spacing, unyt_array) and isinstance(
@@ -779,9 +780,8 @@ def _get_gai_setting_whitelist(input_params: SimulationParams) -> dict:
         "surface_max_aspect_ratio": None,
         "surface_max_adaptation_iterations": None,
         "sealing_size": None,
-        "remove_non_manifold_faces": None,
         "remove_hidden_geometry": None,
-        "flooding_cell_size": None,
+        "min_passage_size": None,
         "planar_face_tolerance": None,
     }
 

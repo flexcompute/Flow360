@@ -492,7 +492,7 @@ class RotationVolume(Flow360BaseModel):
 
 @deprecated(
     "The `RotationCylinder` class is deprecated! Use `RotationVolume`,"
-    "which supports both `Cylinder` and `AxisymmetricBody` entities instead."
+    "which supports `Cylinder`, `AxisymmetricBody`, and `Sphere` entities instead."
 )
 class RotationCylinder(RotationVolume):
     """
@@ -655,6 +655,13 @@ class AutomatedFarfield(_FarfieldBase):
         default=50.0,
         description="Radius of the far-field (semi)sphere/cylinder relative to "
         "the max dimension of the geometry bounding box.",
+    )
+    enclosed_surfaces: Optional[EntityList[Surface]] = pd.Field(
+        None,
+        description=(
+            "Geometry surfaces that, together with the farfield surface, form the boundary of the "
+            "exterior farfield zone. Required when using CustomVolumes alongside an AutomatedFarfield. "
+        ),
     )
 
     @property

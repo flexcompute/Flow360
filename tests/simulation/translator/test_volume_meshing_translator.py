@@ -26,7 +26,6 @@ from flow360.component.simulation.meshing_param.volume_params import (
     AxisymmetricRefinement,
     CustomZones,
     MeshSliceOutput,
-    RotationCylinder,
     RotationVolume,
     StructuredBoxRefinement,
     UniformRefinement,
@@ -1317,3 +1316,39 @@ def test_sphere_rotation_volume_translator(get_surface_mesh):
     assert outer_interface["maxEdgeLength"] == 0.5
     assert "slidingInterface-sphereInterface" in outer_interface["enclosedObjects"]
     assert "otherBody" in outer_interface["enclosedObjects"]
+
+
+def test_automated_farfield_enclosed_surfaces(get_surface_mesh):
+    """AutomatedFarfield.enclosed_surfaces should create a 'farfield' zone in translated output."""
+    left1 = Surface(name="left1")
+    right1 = Surface(name="right1")
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-4,
+                ),
+                volume_zones=[
+                    CustomZones(
+                        name="interior_zone",
+                        entities=[
+                            CustomVolume(
+                                name="inner",
+                                boundaries=[left1, right1],
+                            ),
+                        ],
+                    ),
+                    AutomatedFarfield(
+                        enclosed_surfaces=[left1, right1],
+                    ),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+        )
+
+    translated = get_volume_meshing_json(params, get_surface_mesh.mesh_unit)
+    assert "zones" in translated
+    zones_by_name = {z["name"]: z for z in translated["zones"]}
+    # enclosed_surfaces should produce a "farfield" zone
+    assert "farfield" in zones_by_name
+    assert sorted(zones_by_name["farfield"]["patches"]) == ["left1", "right1"]

@@ -160,8 +160,8 @@ def test_snappy_edge_refinement_validators():
             snappy.SurfaceEdgeRefinement(
                 spacing=[2 * u.mm], distances=[5 * u.mm], entities=[Surface(name="test")]
             ),
-            snappy.SurfaceEdgeRefinement(spacing=2 * u.mm, entities=[Surface(name="test")]),
-            snappy.SurfaceEdgeRefinement(entities=[Surface(name="test")]),
+            snappy.SurfaceEdgeRefinement(spacing=2 * u.mm, entities=[Surface(name="test2")]),
+            snappy.SurfaceEdgeRefinement(entities=[Surface(name="test3")]),
         ],
     )
 

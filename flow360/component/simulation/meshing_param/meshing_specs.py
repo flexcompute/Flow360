@@ -193,21 +193,16 @@ class MeshingDefaults(Flow360BaseModel):
         + "per face with :class:`~flow360.GeometryRefinement`.",
     )
 
-    remove_non_manifold_faces: bool = pd.Field(
-        False,
-        description="Flag to remove non-manifold and interior faces. "
-        + "This option is only supported when using geometry AI.",
-    )
-
     remove_hidden_geometry: bool = pd.Field(
         False,
         description="Flag to remove hidden geometry that is not visible to flow. "
         + "This option is only supported when using geometry AI.",
     )
 
-    flooding_cell_size: Optional[LengthType.Positive] = pd.Field(
+    min_passage_size: Optional[LengthType.Positive] = pd.Field(
         None,
-        description="Minimum cell size used for flood-fill exterior classification. "
+        description="Minimum passage size that hidden geometry removal can resolve. "
+        + "Internal regions connected by thin passages smaller than this size may not be detected. "
         + "If not specified, the value is derived from geometry_accuracy and sealing_size. "
         + "This option is only supported when using geometry AI.",
     )
@@ -226,6 +221,28 @@ class MeshingDefaults(Flow360BaseModel):
         description="Octree spacing configuration for volume meshing. "
         "If specified, this will be used to control the base spacing for octree-based meshers.",
     )
+
+    @pd.model_validator(mode="before")
+    @classmethod
+    def remove_deprecated_arguments(cls, value):
+        """
+        Detect when invoking the constructor of the MeshingDefaults()
+        (Warning: contrary to deserializing data, which is supposed to be handled by the updater.py)
+        If the user added the remove_non_manifold_faces in the argument, pop the argument and give warning
+        that this is no longer supported.
+        """
+        if not isinstance(value, dict):
+            return value
+
+        if "remove_non_manifold_faces" in value:
+            value.pop("remove_non_manifold_faces", None)
+            message = (
+                "`meshing.defaults.remove_non_manifold_faces` is no longer supported and has been "
+                + "ignored. Set `meshing.defaults.remove_hidden_geometry` instead."
+            )
+            add_validation_warning(message)
+
+        return value
 
     @contextual_field_validator("number_of_boundary_layers", mode="after")
     @classmethod
@@ -263,9 +280,8 @@ class MeshingDefaults(Flow360BaseModel):
         "resolve_face_boundaries",
         "preserve_thin_geometry",
         "sealing_size",
-        "remove_non_manifold_faces",
         "remove_hidden_geometry",
-        "flooding_cell_size",
+        "min_passage_size",
         mode="after",
     )
     @classmethod
@@ -291,21 +307,11 @@ class MeshingDefaults(Flow360BaseModel):
         return OctreeSpacing(base_spacing=project_length)
 
     @pd.model_validator(mode="after")
-    def validate_mutual_exclusion(self):
-        """Ensure remove_non_manifold_faces and remove_hidden_geometry are not both True."""
-        if self.remove_non_manifold_faces and self.remove_hidden_geometry:
+    def validate_min_passage_size_requires_remove_hidden_geometry(self):
+        """Ensure min_passage_size is only specified when remove_hidden_geometry is True."""
+        if self.min_passage_size is not None and not self.remove_hidden_geometry:
             raise ValueError(
-                "'remove_non_manifold_faces' and 'remove_hidden_geometry' cannot both be True. "
-                "Please enable only one of these options."
-            )
-        return self
-
-    @pd.model_validator(mode="after")
-    def validate_flooding_cell_size_requires_remove_hidden_geometry(self):
-        """Ensure flooding_cell_size is only specified when remove_hidden_geometry is True."""
-        if self.flooding_cell_size is not None and not self.remove_hidden_geometry:
-            raise ValueError(
-                "'flooding_cell_size' can only be specified when 'remove_hidden_geometry' is True."
+                "'min_passage_size' can only be specified when 'remove_hidden_geometry' is True."
             )
         return self
 

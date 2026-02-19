@@ -937,6 +937,132 @@ def test_bad_refinements():
         )
 
 
+def test_duplicate_refinement_type_per_entity():
+    """Raise when the same refinement type is applied twice to one entity."""
+    body = SnappyBody(name="car_body", surfaces=[])
+    surface = Surface(name="wing")
+    defaults = snappy.SurfaceMeshingDefaults(
+        min_spacing=1 * u.mm, max_spacing=5 * u.mm, gap_resolution=0.01 * u.mm
+    )
+
+    # -- Two BodyRefinements targeting the same SnappyBody --
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"`BodyRefinement` is applied 2 times to entity `car_body`",
+    ):
+        snappy.SurfaceMeshingParams(
+            defaults=defaults,
+            refinements=[
+                snappy.BodyRefinement(min_spacing=2 * u.mm, bodies=[body]),
+                snappy.BodyRefinement(max_spacing=4 * u.mm, bodies=[body]),
+            ],
+        )
+
+    # -- Two RegionRefinements targeting the same Surface --
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"`RegionRefinement` is applied 2 times to entity `wing`",
+    ):
+        snappy.SurfaceMeshingParams(
+            defaults=defaults,
+            refinements=[
+                snappy.RegionRefinement(
+                    min_spacing=1 * u.mm, max_spacing=3 * u.mm, regions=[surface]
+                ),
+                snappy.RegionRefinement(
+                    min_spacing=2 * u.mm, max_spacing=4 * u.mm, regions=[surface]
+                ),
+            ],
+        )
+
+    # -- Two SurfaceEdgeRefinements targeting the same SnappyBody --
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"`SurfaceEdgeRefinement` is applied 2 times to entity `car_body`",
+    ):
+        snappy.SurfaceMeshingParams(
+            defaults=defaults,
+            refinements=[
+                snappy.SurfaceEdgeRefinement(spacing=0.5 * u.mm, entities=[body]),
+                snappy.SurfaceEdgeRefinement(spacing=1 * u.mm, entities=[body]),
+            ],
+        )
+
+    # -- Two SurfaceEdgeRefinements targeting the same Surface --
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"`SurfaceEdgeRefinement` is applied 2 times to entity `wing`",
+    ):
+        snappy.SurfaceMeshingParams(
+            defaults=defaults,
+            refinements=[
+                snappy.SurfaceEdgeRefinement(spacing=0.5 * u.mm, entities=[surface]),
+                snappy.SurfaceEdgeRefinement(spacing=1 * u.mm, entities=[surface]),
+            ],
+        )
+
+
+def test_duplicate_refinement_different_types_is_allowed():
+    """Different refinement types on the same entity should NOT raise."""
+    body = SnappyBody(name="car_body", surfaces=[])
+    surface = Surface(name="wing")
+    defaults = snappy.SurfaceMeshingDefaults(
+        min_spacing=1 * u.mm, max_spacing=5 * u.mm, gap_resolution=0.01 * u.mm
+    )
+
+    # BodyRefinement + SurfaceEdgeRefinement on the same SnappyBody is fine
+    snappy.SurfaceMeshingParams(
+        defaults=defaults,
+        refinements=[
+            snappy.BodyRefinement(min_spacing=2 * u.mm, bodies=[body]),
+            snappy.SurfaceEdgeRefinement(spacing=0.5 * u.mm, entities=[body]),
+        ],
+    )
+
+    # RegionRefinement + SurfaceEdgeRefinement on the same Surface is fine
+    snappy.SurfaceMeshingParams(
+        defaults=defaults,
+        refinements=[
+            snappy.RegionRefinement(min_spacing=1 * u.mm, max_spacing=3 * u.mm, regions=[surface]),
+            snappy.SurfaceEdgeRefinement(spacing=0.5 * u.mm, entities=[surface]),
+        ],
+    )
+
+
+def test_duplicate_refinement_different_entities_is_allowed():
+    """Same refinement type on different entities should NOT raise."""
+    body1 = SnappyBody(name="car_body", surfaces=[])
+    body2 = SnappyBody(name="other_body", surfaces=[])
+    defaults = snappy.SurfaceMeshingDefaults(
+        min_spacing=1 * u.mm, max_spacing=5 * u.mm, gap_resolution=0.01 * u.mm
+    )
+
+    snappy.SurfaceMeshingParams(
+        defaults=defaults,
+        refinements=[
+            snappy.BodyRefinement(min_spacing=2 * u.mm, bodies=[body1]),
+            snappy.BodyRefinement(min_spacing=3 * u.mm, bodies=[body2]),
+        ],
+    )
+
+
+def test_duplicate_refinement_body_and_surface_same_name_is_allowed():
+    """SurfaceEdgeRefinement on a SnappyBody and a Surface sharing a name should NOT raise."""
+    body = SnappyBody(name="shared_name", surfaces=[])
+    surface = Surface(name="shared_name")
+    defaults = snappy.SurfaceMeshingDefaults(
+        min_spacing=1 * u.mm, max_spacing=5 * u.mm, gap_resolution=0.01 * u.mm
+    )
+
+    snappy.SurfaceMeshingParams(
+        defaults=defaults,
+        refinements=[
+            snappy.SurfaceEdgeRefinement(spacing=0.5 * u.mm, entities=[body]),
+            snappy.SurfaceEdgeRefinement(spacing=1 * u.mm, entities=[surface]),
+        ],
+    )
+
+
 def test_box_entity_enclosed_only_in_beta_mesher():
     # raises when beta mesher is off
     with pytest.raises(
@@ -1768,71 +1894,15 @@ def test_wind_tunnel_farfield_requires_geometry_ai():
             assert farfield.type == "WindTunnelFarfield"
 
 
-def test_remove_non_manifold_faces_and_remove_hidden_geometry_mutual_exclusion():
-    """Test that remove_non_manifold_faces and remove_hidden_geometry cannot both be True."""
+def test_min_passage_size_requires_remove_hidden_geometry():
+    """Test that min_passage_size can only be specified when remove_hidden_geometry is True."""
     gai_context = ParamsValidationInfo({}, [])
     gai_context.use_geometry_AI = True
 
-    # Test 1: Both True should raise ValueError
+    # Test 1: min_passage_size with remove_hidden_geometry=False should raise
     with pytest.raises(
         pd.ValidationError,
-        match=r"'remove_non_manifold_faces' and 'remove_hidden_geometry' cannot both be True",
-    ):
-        with ValidationContext(SURFACE_MESH, gai_context):
-            with SI_unit_system:
-                MeshingDefaults(
-                    geometry_accuracy=0.01 * u.m,
-                    surface_max_edge_length=0.1 * u.m,
-                    remove_non_manifold_faces=True,
-                    remove_hidden_geometry=True,
-                )
-
-    # Test 2: Only remove_non_manifold_faces=True should work
-    with ValidationContext(SURFACE_MESH, gai_context):
-        with SI_unit_system:
-            defaults = MeshingDefaults(
-                geometry_accuracy=0.01 * u.m,
-                surface_max_edge_length=0.1 * u.m,
-                remove_non_manifold_faces=True,
-                remove_hidden_geometry=False,
-            )
-            assert defaults.remove_non_manifold_faces is True
-            assert defaults.remove_hidden_geometry is False
-
-    # Test 3: Only remove_hidden_geometry=True should work
-    with ValidationContext(SURFACE_MESH, gai_context):
-        with SI_unit_system:
-            defaults = MeshingDefaults(
-                geometry_accuracy=0.01 * u.m,
-                surface_max_edge_length=0.1 * u.m,
-                remove_non_manifold_faces=False,
-                remove_hidden_geometry=True,
-            )
-            assert defaults.remove_non_manifold_faces is False
-            assert defaults.remove_hidden_geometry is True
-
-    # Test 4: Both False should work (default case)
-    with ValidationContext(SURFACE_MESH, gai_context):
-        with SI_unit_system:
-            defaults = MeshingDefaults(
-                geometry_accuracy=0.01 * u.m,
-                surface_max_edge_length=0.1 * u.m,
-                remove_non_manifold_faces=False,
-                remove_hidden_geometry=False,
-            )
-            assert defaults.remove_non_manifold_faces is False
-            assert defaults.remove_hidden_geometry is False
-
-
-def test_flooding_cell_size_requires_remove_hidden_geometry():
-    """Test that flooding_cell_size can only be specified when remove_hidden_geometry is True."""
-    gai_context = ParamsValidationInfo({}, [])
-    gai_context.use_geometry_AI = True
-
-    # Test 1: flooding_cell_size with remove_hidden_geometry=False should raise
-    with pytest.raises(
-        pd.ValidationError,
-        match=r"'flooding_cell_size' can only be specified when 'remove_hidden_geometry' is True",
+        match=r"'min_passage_size' can only be specified when 'remove_hidden_geometry' is True",
     ):
         with ValidationContext(SURFACE_MESH, gai_context):
             with SI_unit_system:
@@ -1840,31 +1910,31 @@ def test_flooding_cell_size_requires_remove_hidden_geometry():
                     geometry_accuracy=0.01 * u.m,
                     surface_max_edge_length=0.1 * u.m,
                     remove_hidden_geometry=False,
-                    flooding_cell_size=0.005 * u.m,
+                    min_passage_size=0.005 * u.m,
                 )
 
-    # Test 2: flooding_cell_size with remove_hidden_geometry=True should work
+    # Test 2: min_passage_size with remove_hidden_geometry=True should work
     with ValidationContext(SURFACE_MESH, gai_context):
         with SI_unit_system:
             defaults = MeshingDefaults(
                 geometry_accuracy=0.01 * u.m,
                 surface_max_edge_length=0.1 * u.m,
                 remove_hidden_geometry=True,
-                flooding_cell_size=0.005 * u.m,
+                min_passage_size=0.005 * u.m,
             )
-            assert defaults.flooding_cell_size == 0.005 * u.m
+            assert defaults.min_passage_size == 0.005 * u.m
             assert defaults.remove_hidden_geometry is True
 
-    # Test 3: remove_hidden_geometry=True without flooding_cell_size should work (it's optional)
+    # Test 3: remove_hidden_geometry=True without min_passage_size should work (it's optional)
     with ValidationContext(SURFACE_MESH, gai_context):
         with SI_unit_system:
             defaults = MeshingDefaults(
                 geometry_accuracy=0.01 * u.m,
                 surface_max_edge_length=0.1 * u.m,
                 remove_hidden_geometry=True,
-                flooding_cell_size=None,
+                min_passage_size=None,
             )
-            assert defaults.flooding_cell_size is None
+            assert defaults.min_passage_size is None
             assert defaults.remove_hidden_geometry is True
 
 
