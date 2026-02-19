@@ -49,6 +49,22 @@
             "updatedAt": null
         },
         {
+            "fileName": "results/force_distro_cumul_forceDistribution.csv",
+            "filePath": "results/force_distro_cumul_forceDistribution.csv",
+            "length": 50000,
+            "fileType": ".csv",
+            "storageClass": null,
+            "updatedAt": null
+        },
+        {
+            "fileName": "results/ta_distro_forceDistribution.csv",
+            "filePath": "results/ta_distro_forceDistribution.csv",
+            "length": 50000,
+            "fileType": ".csv",
+            "storageClass": null,
+            "updatedAt": null
+        },
+        {
             "fileName": "simulation.json",
             "filePath": "simulation.json",
             "length": 36806,

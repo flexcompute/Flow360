@@ -7,7 +7,7 @@ Caveats:
 
 # pylint: disable=too-many-lines
 import re
-from typing import Annotated, List, Literal, Optional, Union, get_args
+from typing import Annotated, ClassVar, List, Literal, Optional, Tuple, Union, get_args
 
 import pydantic as pd
 from typing_extensions import deprecated
@@ -1683,6 +1683,8 @@ class ForceDistributionOutput(Flow360BaseModel):
     ====
     """
 
+    _RESERVED_NAMES: ClassVar[Tuple[str, ...]] = ("X_slicing", "Y_slicing")
+
     name: str = pd.Field(description="Name of the `ForceDistributionOutput`.")
     distribution_direction: Axis = pd.Field(
         description="Direction of the force distribution output."
@@ -1693,6 +1695,16 @@ class ForceDistributionOutput(Flow360BaseModel):
     output_type: Literal["ForceDistributionOutput"] = pd.Field(
         "ForceDistributionOutput", frozen=True
     )
+
+    @pd.field_validator("name", mode="after")
+    @classmethod
+    def _check_reserved_name(cls, name: str) -> str:
+        if name in cls._RESERVED_NAMES:
+            raise ValueError(
+                f"'{name}' is a reserved name and cannot be used for ForceDistributionOutput. "
+                f"Reserved names: {cls._RESERVED_NAMES}"
+            )
+        return name
 
 
 class TimeAverageForceDistributionOutput(ForceDistributionOutput):

@@ -796,6 +796,24 @@ def test_duplicate_force_distribution_names():
             )
 
 
+def test_force_distribution_reserved_names():
+    """Test that reserved names are rejected for ForceDistributionOutput."""
+
+    # Exact reserved names
+    for reserved in ("X_slicing", "Y_slicing"):
+        with pytest.raises(ValueError, match="reserved name"):
+            ForceDistributionOutput(
+                name=reserved,
+                distribution_direction=[1.0, 0.0, 0.0],
+            )
+
+    # Valid names should pass
+    ForceDistributionOutput(
+        name="my_custom_output",
+        distribution_direction=[1.0, 0.0, 0.0],
+    )
+
+
 def test_time_averaged_force_distribution_output_requires_unsteady():
     with pytest.raises(
         ValueError,
