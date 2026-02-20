@@ -16,26 +16,14 @@
                     0.0,
                     1.0
                 ],
-                "center": {
-                    "value": [
-                        0.0,
-                        0.0,
-                        0.0
-                    ],
-                    "units": "ft"
-                },
-                "height": {
-                    "value": 15.0,
-                    "units": "ft"
-                },
-                "inner_radius": {
-                    "value": 0.0,
-                    "units": "m"
-                },
-                "outer_radius": {
-                    "value": 150.0,
-                    "units": "ft"
-                }
+                "center": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "height": 4.572,
+                "inner_radius": 0.0,
+                "outer_radius": 45.72
             }
         ]
     },

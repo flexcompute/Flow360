@@ -9,6 +9,7 @@ from typing import Annotated, ClassVar, List, Literal, Optional, Tuple, Union, f
 
 import numpy as np
 import pydantic as pd
+from flow360_schema.models.primitives import Length
 from pydantic import PositiveFloat
 from typing_extensions import Self
 
@@ -28,7 +29,6 @@ from flow360.component.simulation.framework.multi_constructor_model_base import 
 )
 from flow360.component.simulation.framework.unique_list import UniqueStringList
 from flow360.component.simulation.unit_system import AngleType, AreaType, LengthType
-from flow360_schema.models.primitives import Length
 from flow360.component.simulation.user_code.core.types import ValueOrExpression
 from flow360.component.simulation.utils import BoundingBoxType, model_attribute_unlock
 from flow360.component.simulation.validation.validation_context import (

@@ -99,6 +99,28 @@ class UnitSystemManager:
 unit_system_manager = UnitSystemManager()
 
 
+# TOAI: This is a temporary solution/wrapper that we will get rid of later because the UnitSystemManager
+# TOAI: should also be moved to schema side (maybe not in the current PR though) The main point is I hate wrappers.
+# TOAI: It is fine for now though.
+def _schema_unit_system_provider(dim_name: str):
+    """Provide the current unit for a dimension name to flow360-schema types."""
+    if unit_system_manager.current:
+        unit = unit_system_manager.current[dim_name]
+        if isinstance(unit, _Flow360BaseUnit):
+            return unit
+        return unit.units
+    return None
+
+
+# Register with flow360-schema so new Length/Area/etc types respect unit system context
+# pylint:disable = wrong-import-position, wrong-import-order
+from flow360_schema.models.primitives.unyt_adapter import (
+    set_unit_system_provider,
+)
+
+set_unit_system_provider(_schema_unit_system_provider)
+
+
 def _encode_ndarray(x):
     """
     encoder for ndarray
