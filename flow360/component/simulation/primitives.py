@@ -28,6 +28,7 @@ from flow360.component.simulation.framework.multi_constructor_model_base import 
 )
 from flow360.component.simulation.framework.unique_list import UniqueStringList
 from flow360.component.simulation.unit_system import AngleType, AreaType, LengthType
+from flow360_schema.models.primitives import Length
 from flow360.component.simulation.user_code.core.types import ValueOrExpression
 from flow360.component.simulation.utils import BoundingBoxType, model_attribute_unlock
 from flow360.component.simulation.validation.validation_context import (
@@ -539,12 +540,12 @@ class Cylinder(_VolumeEntityBase):
     private_attribute_entity_type_name: Literal["Cylinder"] = pd.Field("Cylinder", frozen=True)
     axis: Axis = pd.Field(description="The axis of the cylinder.")
     # pylint: disable=no-member
-    center: LengthType.Point = pd.Field(description="The center point of the cylinder.")
-    height: LengthType.Positive = pd.Field(description="The height of the cylinder.")
-    inner_radius: Optional[LengthType.NonNegative] = pd.Field(
+    center: Length.Vector3 = pd.Field(description="The center point of the cylinder.")
+    height: Length.PositiveFloat64 = pd.Field(description="The height of the cylinder.")
+    inner_radius: Optional[Length.NonNegativeFloat64] = pd.Field(
         0 * u.m, description="The inner radius of the cylinder."
     )
-    outer_radius: LengthType.Positive = pd.Field(description="The outer radius of the cylinder.")
+    outer_radius: Length.PositiveFloat64 = pd.Field(description="The outer radius of the cylinder.")
     private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
 
     @pd.model_validator(mode="after")

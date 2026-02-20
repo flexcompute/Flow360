@@ -14,9 +14,9 @@ priority = "explicit"
 python = ">=3.10,<3.14"
 pydantic = ">=2.8,<2.12"
 # -- Local dev (editable install, schema changes take effect immediately):
-# flow360-schema = { path = "../flow360-schema", develop = true }
+flow360-schema = { path = "../flow360-schema", develop = true }
 # -- CI / release (install from CodeArtifact, swap comments before pushing):
-flow360-schema = { version = "~0.1.1", source = "codeartifact" }
+# flow360-schema = { version = "~0.1.1", source = "codeartifact" }
 pytest = "^7.1.2"
 click = "^8.1.3"
 toml = "^0.10.2"
