@@ -2242,6 +2242,20 @@ def get_solver_json(
                 )
             translated["navierStokesSolver"] = dump_dict(model.navier_stokes_solver)
 
+            ns_dict = translated["navierStokesSolver"]
+            ls_dict = ns_dict.setdefault("linearSolver", {})
+            if not model.navier_stokes_solver.use_krylov_solver:
+                ls_dict.pop("maxPreconditionerIterations", None)
+            elif "maxPreconditionerIterations" not in ls_dict:
+                ls_dict.setdefault("maxPreconditionerIterations", 25)
+                ls_dict.setdefault("krylovRelativeTolerance", 0.05)
+                if "lineSearch" not in ns_dict:
+                    ns_dict["lineSearch"] = {
+                        "residualGrowthThreshold": 0.85,
+                        "maxResidualGrowth": 1.1,
+                        "activationStep": 100,
+                    }
+
             replace_dict_key(translated["navierStokesSolver"], "typeName", "modelType")
             if isinstance(op, LiquidOperatingCondition) and not (
                 model.navier_stokes_solver.private_attribute_dict is not None

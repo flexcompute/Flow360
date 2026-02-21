@@ -23,11 +23,39 @@ from flow360.component.simulation.framework.base_model import (
 )
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.primitives import Box, CustomVolume, GenericVolume
+from flow360.log import log
 
 # from .time_stepping import UnsteadyTimeStepping
 
 HEAT_EQUATION_EVAL_MAX_PER_PSEUDOSTEP_UNSTEADY = 40
 HEAT_EQUATION_EVALUATION_FREQUENCY_STEADY = 10
+
+
+class LineSearch(Flow360BaseModel):
+    """:class:`LineSearch` class for configuring line search parameters used with
+    the Krylov solver.
+
+    Example
+    -------
+    >>> fl.LineSearch(
+    ...     residual_growth_threshold=0.85,
+    ...     max_residual_growth=1.1,
+    ...     activation_step=100,
+    ... )
+    """
+
+    residual_growth_threshold: float = pd.Field(
+        0.85,
+        description="Pseudo-step convergence ratio above which no residual increase (RHS > 1.0) is allowed.",
+    )
+    max_residual_growth: float = pd.Field(
+        1.1,
+        description="Hard cap on RHS ratio — never allow residual to grow beyond this factor.",
+    )
+    activation_step: PositiveInt = pd.Field(
+        100,
+        description="Pseudo step threshold before the max_residual_growth limit is activated.",
+    )
 
 
 class LinearSolver(Flow360BaseModel):
@@ -53,6 +81,15 @@ class LinearSolver(Flow360BaseModel):
         None,
         description="The linear solver converges when the ratio of the final residual and the initial "
         + "residual of the pseudo step is below this value.",
+    )
+    max_preconditioner_iterations: Optional[PositiveInt] = pd.Field(
+        None,
+        description="Number of preconditioner sweeps when using the Krylov solver. "
+        + "When set, max_iterations is interpreted as the Krylov subspace size.",
+    )
+    krylov_relative_tolerance: Optional[PositiveFloat] = pd.Field(
+        None,
+        description="Relative tolerance for the Krylov linear solver convergence.",
     )
 
     model_config = pd.ConfigDict(
@@ -143,6 +180,17 @@ class NavierStokesSolver(GenericSolverSettings):
         + "Mach number.",
     )
 
+    use_krylov_solver: bool = pd.Field(
+        False,
+        description="Enable the Krylov solver for the Navier-Stokes equations. "
+        + "When enabled, appropriate defaults are set for the linear solver and line search.",
+    )
+    line_search: Optional[LineSearch] = pd.Field(
+        None,
+        description="Line search parameters for the Newton-Krylov solver. "
+        + "Automatically created with defaults when use_krylov_solver is True.",
+    )
+
     update_jacobian_frequency: PositiveInt = pd.Field(
         4, description="Frequency at which the jacobian is updated."
     )
@@ -151,6 +199,36 @@ class NavierStokesSolver(GenericSolverSettings):
         description="When physical step is less than this value, the jacobian matrix is "
         + "updated every pseudo step.",
     )
+
+    @pd.model_validator(mode="after")
+    def _populate_krylov_defaults(self) -> Self:
+        """When use_krylov_solver is True, populate sensible defaults for the Krylov solver."""
+        if not self.use_krylov_solver:
+            if self.linear_solver.max_preconditioner_iterations is not None:  # pylint: disable=no-member
+                raise ValueError(
+                    "max_preconditioner_iterations can only be set when use_krylov_solver=True."
+                )
+            if self.linear_solver.krylov_relative_tolerance is not None:  # pylint: disable=no-member
+                log.warning(
+                    "krylov_relative_tolerance is set but use_krylov_solver is False. "
+                    "This value will be ignored."
+                )
+            if self.line_search is not None:
+                log.warning(
+                    "line_search is set but use_krylov_solver is False. "
+                    "This value will be ignored."
+                )
+            return self
+        ls = self.linear_solver
+        if ls.max_preconditioner_iterations is None:  # pylint: disable=no-member
+            ls.max_preconditioner_iterations = 25
+        if ls.krylov_relative_tolerance is None:  # pylint: disable=no-member
+            ls.krylov_relative_tolerance = 0.05
+        if "max_iterations" not in ls.model_fields_set:  # pylint: disable=no-member
+            ls.max_iterations = 15
+        if self.line_search is None:
+            self.line_search = LineSearch()
+        return self
 
 
 class SpalartAllmarasModelConstants(Flow360BaseModel):

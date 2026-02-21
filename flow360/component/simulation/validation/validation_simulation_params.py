@@ -916,6 +916,43 @@ def _material_has_temperature_dependent_gas(material):
     return False
 
 
+def _check_krylov_solver_restrictions(params):
+    """Validate that the Krylov solver is not used with incompatible settings."""
+    models = params.models
+    if not models:
+        return params
+
+    for model in models:
+        if not isinstance(model, Fluid):
+            continue
+        ns = model.navier_stokes_solver
+        if not ns.use_krylov_solver:
+            continue
+
+        if ns.limit_velocity:
+            raise ValueError(
+                "The Krylov solver (use_krylov_solver=True) is not compatible with "
+                "limit_velocity=True. Please disable the velocity limiter when using "
+                "the Krylov solver."
+            )
+        if ns.limit_pressure_density:
+            raise ValueError(
+                "The Krylov solver (use_krylov_solver=True) is not compatible with "
+                "limit_pressure_density=True. Please disable the pressure-density limiter "
+                "when using the Krylov solver."
+            )
+
+    if params.time_stepping is not None and isinstance(params.time_stepping, Unsteady):
+        for model in models:
+            if isinstance(model, Fluid) and model.navier_stokes_solver.use_krylov_solver:
+                raise ValueError(
+                    "The Krylov solver (use_krylov_solver=True) is not supported with "
+                    "Unsteady time stepping. Please use Steady time stepping."
+                )
+
+    return params
+
+
 def _check_tpg_not_with_isentropic_solver(params):
     """
     Validate that temperature-dependent ThermallyPerfectGas is not used with CompressibleIsentropic solver.
