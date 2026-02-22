@@ -335,7 +335,7 @@ class MeshingParams(Flow360BaseModel):
     @contextual_model_validator(mode="after")
     def _warn_min_passage_size_without_remove_hidden_geometry(self) -> Self:
         """Warn when GeometryRefinement specifies min_passage_size but remove_hidden_geometry is disabled."""
-        if self.defaults.remove_hidden_geometry:
+        if self.defaults.remove_hidden_geometry:  # pylint: disable=no-member
             return self
         for refinement in self.refinements or []:
             if (
