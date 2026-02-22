@@ -40,6 +40,7 @@ from flow360.component.simulation.validation.validation_context import (
     SURFACE_MESH,
     VOLUME_MESH,
     ContextField,
+    add_validation_warning,
     contextual_field_validator,
     contextual_model_validator,
 )
@@ -329,6 +330,23 @@ class MeshingParams(Flow360BaseModel):
         if error_msg:
             raise ValueError(error_msg)
 
+        return self
+
+    @contextual_model_validator(mode="after")
+    def _warn_min_passage_size_without_remove_hidden_geometry(self) -> Self:
+        """Warn when GeometryRefinement specifies min_passage_size but remove_hidden_geometry is disabled."""
+        if self.defaults.remove_hidden_geometry:
+            return self
+        for refinement in self.refinements or []:
+            if (
+                isinstance(refinement, GeometryRefinement)
+                and refinement.min_passage_size is not None
+            ):
+                add_validation_warning(
+                    f"GeometryRefinement '{refinement.name}' specifies 'min_passage_size' but "
+                    "'remove_hidden_geometry' is not enabled in meshing defaults. "
+                    "The per-face 'min_passage_size' will be ignored."
+                )
         return self
 
     @property

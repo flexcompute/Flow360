@@ -22,7 +22,7 @@
                 "value": 0.0,
                 "units": "1.0*m"
             },
-            "remove_hidden_geometry": false,
+            "remove_hidden_geometry": true,
             "planar_face_tolerance": 1e-06
         },
         "refinements": [
