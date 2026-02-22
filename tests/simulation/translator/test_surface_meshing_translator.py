@@ -1148,6 +1148,7 @@ def test_gai_surface_mesher_refinements():
                         boundary_layer_first_layer_thickness=0.01,
                         surface_max_aspect_ratio=0.01,
                         surface_max_adaptation_iterations=19,
+                        remove_hidden_geometry=True,
                     ),
                     volume_zones=[farfield],
                     refinements=[
@@ -1161,6 +1162,7 @@ def test_gai_surface_mesher_refinements():
                         GeometryRefinement(
                             name="Local_override",
                             geometry_accuracy=0.05 * u.m,
+                            min_passage_size=0.1 * u.m,
                             faces=[geometry["body00001_face00001"]],
                         ),
                     ],
