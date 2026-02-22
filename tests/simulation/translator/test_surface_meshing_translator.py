@@ -1161,6 +1161,7 @@ def test_gai_surface_mesher_refinements():
                         GeometryRefinement(
                             name="Local_override",
                             geometry_accuracy=0.05 * u.m,
+                            min_passage_size=0.1 * u.m,
                             faces=[geometry["body00001_face00001"]],
                         ),
                     ],
