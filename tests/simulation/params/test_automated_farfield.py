@@ -310,6 +310,37 @@ def test_user_defined_farfield_symmetry_plane_requires_half_domain(surface_mesh)
     )
 
 
+def test_user_defined_farfield_auto_symmetry_plane(surface_mesh):
+    farfield = UserDefinedFarfield()
+
+    with SI_unit_system:
+        params = SimulationParams(
+            operating_condition=AerospaceCondition(velocity_magnitude=1),
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=0.001,
+                    boundary_layer_growth_rate=1.1,
+                    geometry_accuracy=1 * u.mm,
+                ),
+                volume_zones=[farfield],
+            ),
+            models=[
+                Wall(surfaces=surface_mesh["*"]),
+                SymmetryPlane(
+                    surfaces=farfield.symmetry_plane,
+                ),
+            ],
+        )
+    errors = _run_validation(params, surface_mesh, use_beta_mesher=True, use_geometry_AI=True)
+    if errors:
+        for error in errors:
+            print(error["msg"])
+    else:
+        print("No errors")
+
+    assert errors is None
+
+
 def test_rotated_symmetric_existence():
     geometry = Geometry.from_local_storage(
         geometry_id="geo-e5c01a98-2180-449e-b255-d60162854a83",
