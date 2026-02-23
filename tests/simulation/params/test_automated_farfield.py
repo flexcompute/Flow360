@@ -332,12 +332,6 @@ def test_user_defined_farfield_auto_symmetry_plane(surface_mesh):
             ],
         )
     errors = _run_validation(params, surface_mesh, use_beta_mesher=True, use_geometry_AI=True)
-    if errors:
-        for error in errors:
-            print(error["msg"])
-    else:
-        print("No errors")
-
     assert errors is None
 
 
