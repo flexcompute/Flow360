@@ -37,6 +37,7 @@
             "heatFlux": 0.0,
             "roughnessHeight": 0.0,
             "type": "WallFunction",
+            "wallModelType": "BoundaryLayer",
             "velocity": [
                 0.08815906095303899,
                 0.0,
@@ -52,6 +53,7 @@
             "heatFlux": 0.0,
             "roughnessHeight": 0.0,
             "type": "WallFunction",
+            "wallModelType": "BoundaryLayer",
             "velocity": [
                 0.08815906095303899,
                 0.0,
@@ -71,6 +73,7 @@
             "heatFlux": 0.0,
             "roughnessHeight": 0.0,
             "type": "WallFunction",
+            "wallModelType": "BoundaryLayer",
             "velocity": [
                 0.08815906095303899,
                 0.0,

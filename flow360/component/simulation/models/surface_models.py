@@ -321,6 +321,8 @@ WallVelocityModelTypes = Annotated[
     Union[SlaterPorousBleed, WallRotation], pd.Field(discriminator="type_name")
 ]
 
+WallFunctionType = Literal["BoundaryLayer", "InnerLayer"]
+
 
 class Wall(BoundaryBase):
     """
@@ -387,10 +389,11 @@ class Wall(BoundaryBase):
 
     name: Optional[str] = pd.Field("Wall", description="Name of the `Wall` boundary condition.")
     type: Literal["Wall"] = pd.Field("Wall", frozen=True)
-    use_wall_function: bool = pd.Field(
+    use_wall_function: Union[bool, WallFunctionType] = pd.Field(
         False,
-        description="Specify if use wall functions to estimate the velocity field "
-        + "close to the solid boundaries.",
+        description="Wall function configuration. Set to `True` or `'BoundaryLayer'` to use the "
+        + "default boundary-layer wall function. Set to `'InnerLayer'` for the inner-layer wall "
+        + "model. Set to `False` to disable wall functions (no-slip wall).",
     )
 
     velocity: Optional[Union[WallVelocityModelTypes, VelocityVectorType]] = pd.Field(
@@ -417,7 +420,7 @@ class Wall(BoundaryBase):
     @pd.model_validator(mode="after")
     def check_wall_function_conflict(self):
         """Check no setting is conflicting with the usage of wall function"""
-        if self.use_wall_function is False:
+        if not self.use_wall_function:
             return self
         if isinstance(self.velocity, SlaterPorousBleed):
             raise ValueError(

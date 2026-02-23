@@ -629,6 +629,67 @@ def test_om6wing_wall_model(create_om6wing_wall_model_param):
     )
 
 
+def test_wall_model_type_translation():
+    """Test that use_wall_function=True and string literals translate to correct wallModelType."""
+    my_wall = Surface(name="1")
+    my_freestream = Surface(name="2")
+    with SI_unit_system:
+        param = SimulationParams(
+            operating_condition=AerospaceCondition.from_mach(mach=0.84),
+            models=[
+                Fluid(),
+                Wall(surfaces=[my_wall], use_wall_function=True),
+                Freestream(entities=[my_freestream]),
+            ],
+            time_stepping=Steady(CFL=RampCFL(initial=5, final=200, ramp_steps=40)),
+        )
+    translated = get_solver_json(param, mesh_unit=1.0 * u.m)
+    assert translated["boundaries"]["1"]["type"] == "WallFunction"
+    assert translated["boundaries"]["1"]["wallModelType"] == "BoundaryLayer"
+
+    with SI_unit_system:
+        param = SimulationParams(
+            operating_condition=AerospaceCondition.from_mach(mach=0.84),
+            models=[
+                Fluid(),
+                Wall(surfaces=[my_wall], use_wall_function="InnerLayer"),
+                Freestream(entities=[my_freestream]),
+            ],
+            time_stepping=Steady(CFL=RampCFL(initial=5, final=200, ramp_steps=40)),
+        )
+    translated = get_solver_json(param, mesh_unit=1.0 * u.m)
+    assert translated["boundaries"]["1"]["type"] == "WallFunction"
+    assert translated["boundaries"]["1"]["wallModelType"] == "InnerLayer"
+
+    with SI_unit_system:
+        param = SimulationParams(
+            operating_condition=AerospaceCondition.from_mach(mach=0.84),
+            models=[
+                Fluid(),
+                Wall(surfaces=[my_wall], use_wall_function="BoundaryLayer"),
+                Freestream(entities=[my_freestream]),
+            ],
+            time_stepping=Steady(CFL=RampCFL(initial=5, final=200, ramp_steps=40)),
+        )
+    translated = get_solver_json(param, mesh_unit=1.0 * u.m)
+    assert translated["boundaries"]["1"]["type"] == "WallFunction"
+    assert translated["boundaries"]["1"]["wallModelType"] == "BoundaryLayer"
+
+    with SI_unit_system:
+        param = SimulationParams(
+            operating_condition=AerospaceCondition.from_mach(mach=0.84),
+            models=[
+                Fluid(),
+                Wall(surfaces=[my_wall], use_wall_function=False),
+                Freestream(entities=[my_freestream]),
+            ],
+            time_stepping=Steady(CFL=RampCFL(initial=5, final=200, ramp_steps=40)),
+        )
+    translated = get_solver_json(param, mesh_unit=1.0 * u.m)
+    assert translated["boundaries"]["1"]["type"] == "NoSlipWall"
+    assert "wallModelType" not in translated["boundaries"]["1"]
+
+
 def test_symmetryBC(create_symmetryBC_param):
     param = create_symmetryBC_param
     translate_and_compare(param, mesh_unit=1.0 * u.m, ref_json_file="Flow360_symmetryBC.json")

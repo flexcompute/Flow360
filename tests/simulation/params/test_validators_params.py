@@ -289,6 +289,43 @@ def test_consistency_wall_function_validator():
         )
 
 
+def test_wall_function_type_interface():
+    """Test the use_wall_function field accepts bool, string literals, stored as-is."""
+    surface = Surface(name="noSlipWall")
+
+    # True stored as True
+    wall = Wall(surfaces=[surface], use_wall_function=True)
+    assert wall.use_wall_function is True
+
+    # False stored as False
+    wall = Wall(surfaces=[surface], use_wall_function=False)
+    assert wall.use_wall_function is False
+
+    # Default is False
+    wall = Wall(surfaces=[surface])
+    assert wall.use_wall_function is False
+
+    # Explicit string literals stored as-is
+    wall = Wall(surfaces=[surface], use_wall_function="BoundaryLayer")
+    assert wall.use_wall_function == "BoundaryLayer"
+
+    wall = Wall(surfaces=[surface], use_wall_function="InnerLayer")
+    assert wall.use_wall_function == "InnerLayer"
+
+    # SlaterPorousBleed conflict applies to all wall function types
+    message = "Using `SlaterPorousBleed` with wall function is not supported currently."
+    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+        Wall(
+            velocity=SlaterPorousBleed(porosity=0.2, static_pressure=1e5 * u.Pa),
+            surfaces=[surface],
+            use_wall_function="InnerLayer",
+        )
+
+    # Invalid string should be rejected by pydantic
+    with pytest.raises(pd.ValidationError):
+        Wall(surfaces=[surface], use_wall_function="InvalidType")
+
+
 def test_low_mach_preconditioner_validator(
     surface_output_with_low_mach_precond, fluid_model_with_low_mach_precond, fluid_model
 ):
