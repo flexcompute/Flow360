@@ -440,14 +440,14 @@ def _collect_asset_boundary_entities(params, param_info: ParamsValidationInfo) -
             for item in ghost_entities
             if item.name in ("farfield", "symmetric-1", "symmetric-2")
         ]
-    elif farfield_method in ("user-defined"):
+    elif farfield_method == "user-defined":
         asset_boundary_entities += [
             item
             for item in ghost_entities
-            if item.name in ("symmetric")
+            if item.name == "symmetric"
             and (param_info.entity_transformation_detected or item.exists(param_info))
         ]
-    elif farfield_method == ("wind-tunnel"):
+    elif farfield_method == "wind-tunnel":
         if param_info.will_generate_forced_symmetry_plane():
             asset_boundary_entities += [item for item in ghost_entities if item.name == "symmetric"]
         # pylint: disable=protected-access
