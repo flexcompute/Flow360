@@ -941,14 +941,11 @@ def _check_krylov_solver_restrictions(params):
                 "limit_pressure_density=True. Please disable the pressure-density limiter "
                 "when using the Krylov solver."
             )
-
-    if params.time_stepping is not None and isinstance(params.time_stepping, Unsteady):
-        for model in models:
-            if isinstance(model, Fluid) and model.navier_stokes_solver.use_krylov_solver:
-                raise ValueError(
-                    "The Krylov solver (use_krylov_solver=True) is not supported with "
-                    "Unsteady time stepping. Please use Steady time stepping."
-                )
+        if params.time_stepping is not None and isinstance(params.time_stepping, Unsteady):
+            raise ValueError(
+                "The Krylov solver (use_krylov_solver=True) is not supported with "
+                "Unsteady time stepping. Please use Steady time stepping."
+            )
 
     return params
 

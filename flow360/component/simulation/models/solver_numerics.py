@@ -23,7 +23,6 @@ from flow360.component.simulation.framework.base_model import (
 )
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.primitives import Box, CustomVolume, GenericVolume
-from flow360.log import log
 
 # from .time_stepping import UnsteadyTimeStepping
 
@@ -44,11 +43,11 @@ class LineSearch(Flow360BaseModel):
     ... )
     """
 
-    residual_growth_threshold: float = pd.Field(
+    residual_growth_threshold: pd.confloat(ge=0, le=1) = pd.Field(
         0.85,
         description="Pseudo-step convergence ratio above which no residual increase (RHS > 1.0) is allowed.",
     )
-    max_residual_growth: float = pd.Field(
+    max_residual_growth: pd.confloat(ge=1.0) = pd.Field(
         1.1,
         description="Hard cap on RHS ratio — never allow residual to grow beyond this factor.",
     )
@@ -204,20 +203,17 @@ class NavierStokesSolver(GenericSolverSettings):
     def _populate_krylov_defaults(self) -> Self:
         """When use_krylov_solver is True, populate sensible defaults for the Krylov solver."""
         if not self.use_krylov_solver:
-            if self.linear_solver.max_preconditioner_iterations is not None:  # pylint: disable=no-member
+            ls = self.linear_solver
+            if ls.max_preconditioner_iterations is not None:  # pylint: disable=no-member
                 raise ValueError(
                     "max_preconditioner_iterations can only be set when use_krylov_solver=True."
                 )
-            if self.linear_solver.krylov_relative_tolerance is not None:  # pylint: disable=no-member
-                log.warning(
-                    "krylov_relative_tolerance is set but use_krylov_solver is False. "
-                    "This value will be ignored."
+            if ls.krylov_relative_tolerance is not None:  # pylint: disable=no-member
+                raise ValueError(
+                    "krylov_relative_tolerance can only be set when use_krylov_solver=True."
                 )
             if self.line_search is not None:
-                log.warning(
-                    "line_search is set but use_krylov_solver is False. "
-                    "This value will be ignored."
-                )
+                raise ValueError("line_search can only be set when use_krylov_solver=True.")
             return self
         ls = self.linear_solver
         if ls.max_preconditioner_iterations is None:  # pylint: disable=no-member
@@ -226,6 +222,8 @@ class NavierStokesSolver(GenericSolverSettings):
             ls.krylov_relative_tolerance = 0.05
         if "max_iterations" not in ls.model_fields_set:  # pylint: disable=no-member
             ls.max_iterations = 15
+        if ls.max_iterations > 50:  # pylint: disable=no-member
+            raise ValueError("max_iterations cannot exceed 50 when use_krylov_solver=True.")
         if self.line_search is None:
             self.line_search = LineSearch()
         return self
