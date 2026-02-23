@@ -4,8 +4,12 @@ import pydantic as pd
 import pytest
 
 from flow360 import u
+from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.meshing_param import snappy
-from flow360.component.simulation.meshing_param.face_params import SurfaceRefinement
+from flow360.component.simulation.meshing_param.face_params import (
+    GeometryRefinement,
+    SurfaceRefinement,
+)
 from flow360.component.simulation.meshing_param.meshing_specs import (
     MeshingDefaults,
     OctreeSpacing,
@@ -1924,3 +1928,92 @@ def test_min_passage_size_requires_remove_hidden_geometry():
             )
             assert defaults.min_passage_size is None
             assert defaults.remove_hidden_geometry is True
+
+
+def test_per_face_min_passage_size_warning_without_remove_hidden_geometry():
+    """Test that per-face min_passage_size on GeometryRefinement warns when remove_hidden_geometry is disabled."""
+
+    # Test 1: min_passage_size on GeometryRefinement with remove_hidden_geometry=False → warning
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    geometry_accuracy=0.01 * u.m,
+                    surface_max_edge_length=0.1 * u.m,
+                    remove_hidden_geometry=False,
+                ),
+                refinements=[
+                    GeometryRefinement(
+                        geometry_accuracy=0.01 * u.m,
+                        min_passage_size=0.05 * u.m,
+                        faces=[Surface(name="face1")],
+                    ),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_geometry_AI=True, use_inhouse_mesher=True),
+        )
+    _, errors, warnings = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="Geometry",
+        validation_level="SurfaceMesh",
+    )
+    assert errors is None
+    assert len(warnings) == 1
+    assert "min_passage_size" in warnings[0]["msg"]
+    assert "remove_hidden_geometry" in warnings[0]["msg"]
+
+    # Test 2: min_passage_size on GeometryRefinement with remove_hidden_geometry=True → no warning
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    geometry_accuracy=0.01 * u.m,
+                    surface_max_edge_length=0.1 * u.m,
+                    remove_hidden_geometry=True,
+                ),
+                refinements=[
+                    GeometryRefinement(
+                        geometry_accuracy=0.01 * u.m,
+                        min_passage_size=0.05 * u.m,
+                        faces=[Surface(name="face1")],
+                    ),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_geometry_AI=True, use_inhouse_mesher=True),
+        )
+    _, errors, warnings = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="Geometry",
+        validation_level="SurfaceMesh",
+    )
+    assert errors is None
+    assert warnings == []
+
+    # Test 3: GeometryRefinement without min_passage_size, remove_hidden_geometry=False → no warning
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    geometry_accuracy=0.01 * u.m,
+                    surface_max_edge_length=0.1 * u.m,
+                    remove_hidden_geometry=False,
+                ),
+                refinements=[
+                    GeometryRefinement(
+                        geometry_accuracy=0.01 * u.m,
+                        faces=[Surface(name="face1")],
+                    ),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_geometry_AI=True, use_inhouse_mesher=True),
+        )
+    _, errors, warnings = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="Geometry",
+        validation_level="SurfaceMesh",
+    )
+    assert errors is None
+    assert warnings == []
