@@ -41,6 +41,7 @@ from flow360.component.simulation.validation.validation_context import (
     VOLUME_MESH,
     ContextField,
     ParamsValidationInfo,
+    add_validation_warning,
     contextual_field_validator,
     contextual_model_validator,
 )
@@ -340,26 +341,34 @@ class MeshingParams(Flow360BaseModel):
             return self
         if self.defaults.octree_spacing is None:  # pylint: disable=no-member
             log.warning(
-                "No `octree_spacing` configured in `MeshingDefaults`; "
-                "octree spacing validation for UniformRefinement will be skipped."
+                "No `octree_spacing` configured in `%s`; "
+                "octree spacing validation for UniformRefinement will be skipped.",
+                type(self.defaults).__name__,
             )
             return self
-
-        def check_spacing(spacing, location):
-            # pylint: disable=no-member
-            lvl, close = self.defaults.octree_spacing.to_level(spacing)
-            spacing_unit = spacing.units
-            if not close:
-                closest_spacing = self.defaults.octree_spacing[lvl]
-                msg = f"The spacing of {spacing:.4g} specified in {location} will be cast to the first lower refinement"
-                msg += f" in the octree series ({closest_spacing.to(spacing_unit):.4g})."
-                log.warning(msg)
 
         if self.refinements is not None:
             for refinement in self.refinements:  # pylint: disable=not-an-iterable
                 if isinstance(refinement, UniformRefinement):
-                    check_spacing(refinement.spacing, type(refinement).__name__)
+                    self.defaults.octree_spacing.check_spacing(  # pylint: disable=no-member
+                        refinement.spacing, type(refinement).__name__
+                    )
 
+    @contextual_model_validator(mode="after")
+    def _warn_min_passage_size_without_remove_hidden_geometry(self) -> Self:
+        """Warn when GeometryRefinement specifies min_passage_size but remove_hidden_geometry is disabled."""
+        if self.defaults.remove_hidden_geometry:  # pylint: disable=no-member
+            return self
+        for refinement in self.refinements or []:
+            if (
+                isinstance(refinement, GeometryRefinement)
+                and refinement.min_passage_size is not None
+            ):
+                add_validation_warning(
+                    f"GeometryRefinement '{refinement.name}' specifies 'min_passage_size' but "
+                    "'remove_hidden_geometry' is not enabled in meshing defaults. "
+                    "The per-face 'min_passage_size' will be ignored."
+                )
         return self
 
     @property
@@ -431,25 +440,18 @@ class VolumeMeshingParams(Flow360BaseModel):
             return self
         if self.defaults.octree_spacing is None:  # pylint: disable=no-member
             log.warning(
-                "No `octree_spacing` configured in `VolumeMeshingDefaults`; "
-                "octree spacing validation for UniformRefinement will be skipped."
+                "No `octree_spacing` configured in `%s`; "
+                "octree spacing validation for UniformRefinement will be skipped.",
+                type(self.defaults).__name__,
             )
             return self
-
-        def check_spacing(spacing, location):
-            # pylint: disable=no-member
-            lvl, close = self.defaults.octree_spacing.to_level(spacing)
-            spacing_unit = spacing.units
-            if not close:
-                closest_spacing = self.defaults.octree_spacing[lvl]
-                msg = f"The spacing of {spacing:.4g} specified in {location} will be cast to the first lower refinement"
-                msg += f" in the octree series ({closest_spacing.to(spacing_unit):.4g})."
-                log.warning(msg)
 
         if self.refinements is not None:
             for refinement in self.refinements:  # pylint: disable=not-an-iterable
                 if isinstance(refinement, UniformRefinement):
-                    check_spacing(refinement.spacing, type(refinement).__name__)
+                    self.defaults.octree_spacing.check_spacing(  # pylint: disable=no-member
+                        refinement.spacing, type(refinement).__name__
+                    )
 
         return self
 

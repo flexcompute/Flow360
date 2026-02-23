@@ -4,8 +4,12 @@ import pydantic as pd
 import pytest
 
 from flow360 import u
+from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.meshing_param import snappy
-from flow360.component.simulation.meshing_param.face_params import SurfaceRefinement
+from flow360.component.simulation.meshing_param.face_params import (
+    GeometryRefinement,
+    SurfaceRefinement,
+)
 from flow360.component.simulation.meshing_param.meshing_specs import (
     MeshingDefaults,
     OctreeSpacing,
@@ -866,7 +870,9 @@ def test_require_mesh_zones():
         ModularMeshingWorkflow(
             surface_meshing=snappy.SurfaceMeshingParams(
                 defaults=snappy.SurfaceMeshingDefaults(
-                    min_spacing=1 * u.mm, max_spacing=5 * u.mm, gap_resolution=0.001 * u.mm
+                    min_spacing=1 * u.mm,
+                    max_spacing=5 * u.mm,
+                    gap_resolution=0.001 * u.mm,
                 ),
             ),
             zones=[AutomatedFarfield()],
@@ -876,7 +882,9 @@ def test_require_mesh_zones():
         ModularMeshingWorkflow(
             surface_meshing=snappy.SurfaceMeshingParams(
                 defaults=snappy.SurfaceMeshingDefaults(
-                    min_spacing=1 * u.mm, max_spacing=5 * u.mm, gap_resolution=0.01 * u.mm
+                    min_spacing=1 * u.mm,
+                    max_spacing=5 * u.mm,
+                    gap_resolution=0.01 * u.mm,
                 ),
             ),
             zones=[
@@ -896,7 +904,9 @@ def test_require_mesh_zones():
             ModularMeshingWorkflow(
                 surface_meshing=snappy.SurfaceMeshingParams(
                     defaults=snappy.SurfaceMeshingDefaults(
-                        min_spacing=1 * u.mm, max_spacing=5 * u.mm, gap_resolution=0.01 * u.mm
+                        min_spacing=1 * u.mm,
+                        max_spacing=5 * u.mm,
+                        gap_resolution=0.01 * u.mm,
                     )
                 ),
                 zones=[UserDefinedFarfield()],
@@ -1371,7 +1381,10 @@ def test_stationary_enclosed_entities_valid_subset():
                 spacing_radial=0.2,
                 spacing_circumferential=20,
                 enclosed_entities=[surface1, surface2],
-                stationary_enclosed_entities=[surface1, surface2],  # All entities stationary
+                stationary_enclosed_entities=[
+                    surface1,
+                    surface2,
+                ],  # All entities stationary
             )
 
             # Should work with empty stationary_enclosed_entities (None)
@@ -1572,7 +1585,9 @@ def test_uniform_project_only_with_snappy():
             meshing=ModularMeshingWorkflow(
                 surface_meshing=snappy.SurfaceMeshingParams(
                     defaults=snappy.SurfaceMeshingDefaults(
-                        min_spacing=1 * u.mm, max_spacing=2 * u.mm, gap_resolution=1 * u.mm
+                        min_spacing=1 * u.mm,
+                        max_spacing=2 * u.mm,
+                        gap_resolution=1 * u.mm,
                     )
                 ),
                 volume_meshing=VolumeMeshingParams(
@@ -1633,7 +1648,8 @@ def test_resolve_face_boundary_only_in_gai_mesher():
             with CGS_unit_system:
                 MeshingParams(
                     defaults=MeshingDefaults(
-                        boundary_layer_first_layer_thickness=0.1, resolve_face_boundaries=True
+                        boundary_layer_first_layer_thickness=0.1,
+                        resolve_face_boundaries=True,
                     )
                 )
 
@@ -1758,7 +1774,9 @@ def test_wind_tunnel_invalid_dimensions():
         ):
             # inlet behind outlet
             _ = WindTunnelFarfield(
-                inlet_x_position=200, outlet_x_position=182, floor_type=FullyMovingFloor()
+                inlet_x_position=200,
+                outlet_x_position=182,
+                floor_type=FullyMovingFloor(),
             )
 
         with pytest.raises(
@@ -1774,7 +1792,8 @@ def test_wind_tunnel_invalid_dimensions():
         ):
             # friction patch x min too small
             _ = WindTunnelFarfield(
-                inlet_x_position=-2025, floor_type=StaticFloor(friction_patch_x_range=(-9001, 333))
+                inlet_x_position=-2025,
+                floor_type=StaticFloor(friction_patch_x_range=(-9001, 333)),
             )
 
         with pytest.raises(
@@ -1819,7 +1838,10 @@ def test_central_belt_width_validation():
                 central_belt_x_range=(-200, 256),
                 central_belt_width=150,  # Width is 150
                 front_wheel_belt_x_range=(-30, 50),
-                front_wheel_belt_y_range=(70, 120),  # Inner edge is 70, 2×70 = 140 < 150
+                front_wheel_belt_y_range=(
+                    70,
+                    120,
+                ),  # Inner edge is 70, 2×70 = 140 < 150
                 rear_wheel_belt_x_range=(260, 380),
                 rear_wheel_belt_y_range=(80, 170),  # Inner edge is 80, 2×80 = 160 > 150
             )
@@ -1833,7 +1855,10 @@ def test_central_belt_width_validation():
                 central_belt_x_range=(-200, 256),
                 central_belt_width=150,  # Width is 150
                 front_wheel_belt_x_range=(-30, 50),
-                front_wheel_belt_y_range=(80, 170),  # Inner edge is 80, 2×80 = 160 > 150
+                front_wheel_belt_y_range=(
+                    80,
+                    170,
+                ),  # Inner edge is 80, 2×80 = 160 > 150
                 rear_wheel_belt_x_range=(260, 380),
                 rear_wheel_belt_y_range=(70, 200),  # Inner edge is 70, 2×70 = 140 < 150
             )
@@ -1847,7 +1872,10 @@ def test_central_belt_width_validation():
                 central_belt_x_range=(-200, 256),
                 central_belt_width=200,  # Width is 200
                 front_wheel_belt_x_range=(-30, 50),
-                front_wheel_belt_y_range=(90, 120),  # Inner edge is 90, 2×90 = 180 < 200
+                front_wheel_belt_y_range=(
+                    90,
+                    120,
+                ),  # Inner edge is 90, 2×90 = 180 < 200
                 rear_wheel_belt_x_range=(260, 380),
                 rear_wheel_belt_y_range=(95, 140),  # Inner edge is 95, 2×95 = 190 < 200
             )
@@ -2160,3 +2188,92 @@ def test_meshing_params_octree_check_no_refinements():
                 refinements=[],
                 volume_zones=[AutomatedFarfield()],
             )
+
+
+def test_per_face_min_passage_size_warning_without_remove_hidden_geometry():
+    """Test that per-face min_passage_size on GeometryRefinement warns when remove_hidden_geometry is disabled."""
+
+    # Test 1: min_passage_size on GeometryRefinement with remove_hidden_geometry=False → warning
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    geometry_accuracy=0.01 * u.m,
+                    surface_max_edge_length=0.1 * u.m,
+                    remove_hidden_geometry=False,
+                ),
+                refinements=[
+                    GeometryRefinement(
+                        geometry_accuracy=0.01 * u.m,
+                        min_passage_size=0.05 * u.m,
+                        faces=[Surface(name="face1")],
+                    ),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_geometry_AI=True, use_inhouse_mesher=True),
+        )
+    _, errors, warnings = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="Geometry",
+        validation_level="SurfaceMesh",
+    )
+    assert errors is None
+    assert len(warnings) == 1
+    assert "min_passage_size" in warnings[0]["msg"]
+    assert "remove_hidden_geometry" in warnings[0]["msg"]
+
+    # Test 2: min_passage_size on GeometryRefinement with remove_hidden_geometry=True → no warning
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    geometry_accuracy=0.01 * u.m,
+                    surface_max_edge_length=0.1 * u.m,
+                    remove_hidden_geometry=True,
+                ),
+                refinements=[
+                    GeometryRefinement(
+                        geometry_accuracy=0.01 * u.m,
+                        min_passage_size=0.05 * u.m,
+                        faces=[Surface(name="face1")],
+                    ),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_geometry_AI=True, use_inhouse_mesher=True),
+        )
+    _, errors, warnings = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="Geometry",
+        validation_level="SurfaceMesh",
+    )
+    assert errors is None
+    assert warnings == []
+
+    # Test 3: GeometryRefinement without min_passage_size, remove_hidden_geometry=False → no warning
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    geometry_accuracy=0.01 * u.m,
+                    surface_max_edge_length=0.1 * u.m,
+                    remove_hidden_geometry=False,
+                ),
+                refinements=[
+                    GeometryRefinement(
+                        geometry_accuracy=0.01 * u.m,
+                        faces=[Surface(name="face1")],
+                    ),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_geometry_AI=True, use_inhouse_mesher=True),
+        )
+    _, errors, warnings = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="Geometry",
+        validation_level="SurfaceMesh",
+    )
+    assert errors is None
+    assert warnings == []

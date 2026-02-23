@@ -22,7 +22,7 @@
                 "value": 0.0,
                 "units": "1.0*m"
             },
-            "remove_hidden_geometry": false,
+            "remove_hidden_geometry": true,
             "planar_face_tolerance": 1e-06
         },
         "refinements": [
@@ -178,6 +178,10 @@
                 },
                 "geometry_accuracy": {
                     "value": 0.05,
+                    "units": "1.0*m"
+                },
+                "min_passage_size": {
+                    "value": 0.1,
                     "units": "1.0*m"
                 }
             }

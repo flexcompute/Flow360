@@ -25,6 +25,7 @@ from flow360.component.simulation.validation.validation_context import (
 from flow360.component.simulation.validation.validation_utils import (
     check_geometry_ai_features,
 )
+from flow360.log import log
 
 
 class OctreeSpacing(Flow360BaseModel):
@@ -58,6 +59,37 @@ class OctreeSpacing(Flow360BaseModel):
         direct_spacing = np.isclose(level, np.round(level), atol=1e-8)
         returned_level = np.round(level) if direct_spacing else np.ceil(level)
         return returned_level, direct_spacing
+
+    # pylint: disable=no-member
+    @pd.validate_call
+    def check_spacing(self, spacing: LengthType.Positive, location: str):
+        """Warn if the given spacing does not align with the octree series."""
+        lvl, close = self.to_level(spacing)
+        if not close:
+            spacing_unit = spacing.units
+            closest_spacing = self[lvl]
+            msg = (
+                f"The spacing of {spacing:.4g} specified in {location} will be cast "
+                f"to the first lower refinement in the octree series "
+                f"({closest_spacing.to(spacing_unit):.4g})."
+            )
+            log.warning(msg)
+
+
+def set_default_octree_spacing(octree_spacing, param_info: ParamsValidationInfo):
+    """Shared logic for defaulting octree_spacing to 1 * project_length_unit."""
+    if octree_spacing is not None:
+        return octree_spacing
+    if param_info.project_length_unit is None:
+        add_validation_warning(
+            "No project length unit found; `octree_spacing` will not be set automatically. "
+            "Octree spacing validation will be skipped."
+        )
+        return octree_spacing
+
+    # pylint: disable=no-member
+    project_length = 1 * LengthType.validate(param_info.project_length_unit)
+    return OctreeSpacing(base_spacing=project_length)
 
 
 class MeshingDefaults(Flow360BaseModel):
@@ -163,8 +195,8 @@ class MeshingDefaults(Flow360BaseModel):
         12 * u.deg,
         description=(
             "Default maximum angular deviation in degrees. This value will restrict:"
-            " 1. The angle between a cell’s normal and its underlying surface normal."
-            " 2. The angle between a line segment’s normal and its underlying curve normal."
+            " 1. The angle between a cell's normal and its underlying surface normal."
+            " 2. The angle between a line segment's normal and its underlying curve normal."
             " This can be overridden per face only when using geometry AI."
         ),
         context=SURFACE_MESH,
@@ -293,18 +325,7 @@ class MeshingDefaults(Flow360BaseModel):
     @classmethod
     def _set_default_octree_spacing(cls, octree_spacing, param_info: ParamsValidationInfo):
         """Set default octree_spacing to 1 * project_length_unit when not specified."""
-        if octree_spacing is not None:
-            return octree_spacing
-        if param_info.project_length_unit is None:
-            add_validation_warning(
-                "No project length unit found; `octree_spacing` will not be set automatically. "
-                "Octree spacing validation will be skipped."
-            )
-            return octree_spacing
-
-        # pylint: disable=no-member
-        project_length = 1 * LengthType.validate(param_info.project_length_unit)
-        return OctreeSpacing(base_spacing=project_length)
+        return set_default_octree_spacing(octree_spacing, param_info)
 
     @pd.model_validator(mode="after")
     def validate_min_passage_size_requires_remove_hidden_geometry(self):
@@ -351,15 +372,4 @@ class VolumeMeshingDefaults(Flow360BaseModel):
     @classmethod
     def _set_default_octree_spacing(cls, octree_spacing, param_info: ParamsValidationInfo):
         """Set default octree_spacing to 1 * project_length_unit when not specified."""
-        if octree_spacing is not None:
-            return octree_spacing
-        if param_info.project_length_unit is None:
-            add_validation_warning(
-                "No project length unit found; `octree_spacing` will not be set automatically. "
-                "Octree spacing validation will be skipped."
-            )
-            return octree_spacing
-
-        # pylint: disable=no-member
-        project_length = 1 * LengthType.validate(param_info.project_length_unit)
-        return OctreeSpacing(base_spacing=project_length)
+        return set_default_octree_spacing(octree_spacing, param_info)
