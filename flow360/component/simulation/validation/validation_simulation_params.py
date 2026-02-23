@@ -20,7 +20,10 @@ from flow360.component.simulation.meshing_param.volume_params import (
     WindTunnelFarfield,
 )
 from flow360.component.simulation.models.material import Air
-from flow360.component.simulation.models.solver_numerics import NoneSolver
+from flow360.component.simulation.models.solver_numerics import (
+    KrylovLinearSolver,
+    NoneSolver,
+)
 from flow360.component.simulation.models.surface_models import (
     Inflow,
     Outflow,
@@ -926,25 +929,23 @@ def _check_krylov_solver_restrictions(params):
         if not isinstance(model, Fluid):
             continue
         ns = model.navier_stokes_solver
-        if not ns.use_krylov_solver:
+        if not isinstance(ns.linear_solver, KrylovLinearSolver):
             continue
 
         if ns.limit_velocity:
             raise ValueError(
-                "The Krylov solver (use_krylov_solver=True) is not compatible with "
-                "limit_velocity=True. Please disable the velocity limiter when using "
-                "the Krylov solver."
+                "KrylovLinearSolver is not compatible with limit_velocity=True. "
+                "Please disable the velocity limiter when using the Krylov solver."
             )
         if ns.limit_pressure_density:
             raise ValueError(
-                "The Krylov solver (use_krylov_solver=True) is not compatible with "
-                "limit_pressure_density=True. Please disable the pressure-density limiter "
-                "when using the Krylov solver."
+                "KrylovLinearSolver is not compatible with limit_pressure_density=True. "
+                "Please disable the pressure-density limiter when using the Krylov solver."
             )
         if params.time_stepping is not None and isinstance(params.time_stepping, Unsteady):
             raise ValueError(
-                "The Krylov solver (use_krylov_solver=True) is not supported with "
-                "Unsteady time stepping. Please use Steady time stepping."
+                "KrylovLinearSolver is not supported with Unsteady time stepping. "
+                "Please use Steady time stepping."
             )
 
     return params

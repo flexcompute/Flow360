@@ -68,6 +68,7 @@ class LinearSolver(Flow360BaseModel):
     ... )
     """
 
+    type_name: Literal["LinearSolver"] = pd.Field("LinearSolver", frozen=True, exclude=True)
     max_iterations: PositiveInt = pd.Field(
         30, description="Maximum number of linear solver iterations."
     )
@@ -81,19 +82,70 @@ class LinearSolver(Flow360BaseModel):
         description="The linear solver converges when the ratio of the final residual and the initial "
         + "residual of the pseudo step is below this value.",
     )
-    max_preconditioner_iterations: Optional[PositiveInt] = pd.Field(
-        None,
-        description="Number of preconditioner sweeps when using the Krylov solver. "
-        + "When set, max_iterations is interpreted as the Krylov subspace size.",
-    )
-    krylov_relative_tolerance: Optional[PositiveFloat] = pd.Field(
-        None,
-        description="Relative tolerance for the Krylov linear solver convergence.",
-    )
 
     model_config = pd.ConfigDict(
         conflicting_fields=[Conflicts(field1="absolute_tolerance", field2="relative_tolerance")]
     )
+
+
+class KrylovLinearSolver(LinearSolver):
+    """:class:`KrylovLinearSolver` class for setting up the Krylov linear solver.
+
+    When used as the ``linear_solver`` on :class:`NavierStokesSolver`,
+    ``max_iterations`` is interpreted as the Krylov subspace size.
+
+    Example
+    -------
+    >>> fl.KrylovLinearSolver(
+    ...     max_iterations=15,
+    ...     max_preconditioner_iterations=25,
+    ...     krylov_relative_tolerance=0.05,
+    ... )
+    """
+
+    type_name: Literal["KrylovLinearSolver"] = pd.Field(
+        "KrylovLinearSolver", frozen=True, exclude=True
+    )
+    max_iterations: PositiveInt = pd.Field(
+        15, description="Krylov subspace size (number of outer Krylov iterations)."
+    )
+    max_preconditioner_iterations: PositiveInt = pd.Field(
+        25, description="Number of preconditioner sweeps per Krylov iteration."
+    )
+    krylov_relative_tolerance: PositiveFloat = pd.Field(
+        0.05, description="Relative tolerance for the Krylov linear solver convergence."
+    )
+
+    @pd.model_validator(mode="after")
+    def _validate_max_iterations(self) -> Self:
+        if self.max_iterations > 50:
+            raise ValueError("max_iterations cannot exceed 50 for the Krylov solver.")
+        return self
+
+
+def _linear_solver_discriminator(v):
+    """Discriminate between LinearSolver and KrylovLinearSolver.
+
+    Uses ``type_name`` when present (forward-compatible path) and falls back
+    to field-based detection for legacy data that predates the discriminator.
+    """
+    if isinstance(v, dict):
+        type_name = v.get("type_name")
+        if type_name is not None:
+            return type_name
+        if "max_preconditioner_iterations" in v or "krylov_relative_tolerance" in v:
+            return "KrylovLinearSolver"
+        return "LinearSolver"
+    return getattr(v, "type_name", "LinearSolver")
+
+
+LinearSolverType = Annotated[
+    Union[
+        Annotated[KrylovLinearSolver, pd.Tag("KrylovLinearSolver")],
+        Annotated[LinearSolver, pd.Tag("LinearSolver")],
+    ],
+    pd.Discriminator(_linear_solver_discriminator),
+]
 
 
 class GenericSolverSettings(Flow360BaseModel, metaclass=ABCMeta):
@@ -179,15 +231,14 @@ class NavierStokesSolver(GenericSolverSettings):
         + "Mach number.",
     )
 
-    use_krylov_solver: bool = pd.Field(
-        False,
-        description="Enable the Krylov solver for the Navier-Stokes equations. "
-        + "When enabled, appropriate defaults are set for the linear solver and line search.",
+    linear_solver: LinearSolverType = pd.Field(
+        default_factory=LinearSolver,
+        description="Linear solver configuration. Use KrylovLinearSolver for Newton-Krylov.",
     )
     line_search: Optional[LineSearch] = pd.Field(
         None,
         description="Line search parameters for the Newton-Krylov solver. "
-        + "Automatically created with defaults when use_krylov_solver is True.",
+        "Only valid when linear_solver is a KrylovLinearSolver.",
     )
 
     update_jacobian_frequency: PositiveInt = pd.Field(
@@ -200,32 +251,11 @@ class NavierStokesSolver(GenericSolverSettings):
     )
 
     @pd.model_validator(mode="after")
-    def _populate_krylov_defaults(self) -> Self:
-        """When use_krylov_solver is True, populate sensible defaults for the Krylov solver."""
-        if not self.use_krylov_solver:
-            ls = self.linear_solver
-            if ls.max_preconditioner_iterations is not None:  # pylint: disable=no-member
-                raise ValueError(
-                    "max_preconditioner_iterations can only be set when use_krylov_solver=True."
-                )
-            if ls.krylov_relative_tolerance is not None:  # pylint: disable=no-member
-                raise ValueError(
-                    "krylov_relative_tolerance can only be set when use_krylov_solver=True."
-                )
-            if self.line_search is not None:
-                raise ValueError("line_search can only be set when use_krylov_solver=True.")
-            return self
-        ls = self.linear_solver
-        if ls.max_preconditioner_iterations is None:  # pylint: disable=no-member
-            ls.max_preconditioner_iterations = 25
-        if ls.krylov_relative_tolerance is None:  # pylint: disable=no-member
-            ls.krylov_relative_tolerance = 0.05
-        if "max_iterations" not in ls.model_fields_set:  # pylint: disable=no-member
-            ls.max_iterations = 15
-        if ls.max_iterations > 50:  # pylint: disable=no-member
-            raise ValueError("max_iterations cannot exceed 50 when use_krylov_solver=True.")
-        if self.line_search is None:
-            self.line_search = LineSearch()
+    def _validate_line_search(self) -> Self:
+        if self.line_search is not None and not isinstance(self.linear_solver, KrylovLinearSolver):
+            raise ValueError(
+                "line_search can only be set when linear_solver is a KrylovLinearSolver."
+            )
         return self
 
 

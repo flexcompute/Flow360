@@ -2,6 +2,7 @@ import pytest
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.models.solver_numerics import (
+    KrylovLinearSolver,
     LinearSolver,
     LineSearch,
     NavierStokesSolver,
@@ -68,135 +69,131 @@ class TestLineSearchValidation:
             LineSearch(activation_step=-1)
 
 
-# ── NavierStokesSolver Krylov default population ────────────────────────────
+# ── KrylovLinearSolver defaults and validation ───────────────────────────────
 
 
-class TestKrylovDefaults:
-    def test_krylov_enabled_populates_defaults(self):
-        ns = NavierStokesSolver(use_krylov_solver=True)
-        assert ns.linear_solver.max_preconditioner_iterations == 25
-        assert ns.linear_solver.krylov_relative_tolerance == 0.05
-        assert ns.linear_solver.max_iterations == 15
-        assert ns.line_search is not None
-        assert ns.line_search.residual_growth_threshold == 0.85
+class TestKrylovLinearSolverDefaults:
+    def test_defaults(self):
+        kls = KrylovLinearSolver()
+        assert kls.max_iterations == 15
+        assert kls.max_preconditioner_iterations == 25
+        assert kls.krylov_relative_tolerance == 0.05
 
-    def test_krylov_enabled_respects_user_overrides(self):
-        ns = NavierStokesSolver(
-            use_krylov_solver=True,
-            linear_solver=LinearSolver(
-                max_iterations=10,
-                max_preconditioner_iterations=30,
-                krylov_relative_tolerance=0.01,
-            ),
-            line_search=LineSearch(residual_growth_threshold=0.5, max_residual_growth=2.0),
+    def test_user_overrides(self):
+        kls = KrylovLinearSolver(
+            max_iterations=10,
+            max_preconditioner_iterations=30,
+            krylov_relative_tolerance=0.01,
         )
-        assert ns.linear_solver.max_preconditioner_iterations == 30
-        assert ns.linear_solver.krylov_relative_tolerance == 0.01
-        assert ns.linear_solver.max_iterations == 10
-        assert ns.line_search.residual_growth_threshold == 0.5
-        assert ns.line_search.max_residual_growth == 2.0
+        assert kls.max_iterations == 10
+        assert kls.max_preconditioner_iterations == 30
+        assert kls.krylov_relative_tolerance == 0.01
 
-    def test_krylov_disabled_is_default(self):
+    def test_max_iterations_at_limit(self):
+        kls = KrylovLinearSolver(max_iterations=50)
+        assert kls.max_iterations == 50
+
+    def test_max_iterations_exceeds_limit(self):
+        with pytest.raises(ValueError, match="max_iterations cannot exceed 50"):
+            KrylovLinearSolver(max_iterations=51)
+
+    def test_max_iterations_minimum(self):
+        kls = KrylovLinearSolver(max_iterations=1)
+        assert kls.max_iterations == 1
+
+    def test_inherits_linear_solver(self):
+        assert issubclass(KrylovLinearSolver, LinearSolver)
+
+    def test_type_name(self):
+        assert KrylovLinearSolver().type_name == "KrylovLinearSolver"
+        assert LinearSolver().type_name == "LinearSolver"
+
+    def test_type_name_excluded_from_dump(self):
+        dump = LinearSolver().model_dump()
+        assert "type_name" not in dump
+        dump = KrylovLinearSolver().model_dump()
+        assert "type_name" not in dump
+
+    def test_type_name_frozen(self):
+        with pytest.raises(Exception):
+            LinearSolver(type_name="KrylovLinearSolver")
+        with pytest.raises(Exception):
+            KrylovLinearSolver(type_name="LinearSolver")
+
+
+# ── NavierStokesSolver with different linear solvers ─────────────────────────
+
+
+class TestNavierStokesLinearSolverTypes:
+    def test_default_is_linear_solver(self):
         ns = NavierStokesSolver()
-        assert ns.use_krylov_solver is False
-        assert ns.linear_solver.max_preconditioner_iterations is None
-        assert ns.linear_solver.krylov_relative_tolerance is None
-        assert ns.line_search is None
+        assert isinstance(ns.linear_solver, LinearSolver)
+        assert not isinstance(ns.linear_solver, KrylovLinearSolver)
 
-    def test_krylov_enabled_with_empty_linear_solver_overrides_max_iterations(self):
-        ns = NavierStokesSolver(
-            use_krylov_solver=True,
-            linear_solver=LinearSolver(),
-        )
-        assert ns.linear_solver.max_iterations == 15
+    def test_accepts_krylov_linear_solver(self):
+        ns = NavierStokesSolver(linear_solver=KrylovLinearSolver())
+        assert isinstance(ns.linear_solver, KrylovLinearSolver)
 
+    def test_accepts_plain_linear_solver(self):
+        ns = NavierStokesSolver(linear_solver=LinearSolver(max_iterations=50))
+        assert isinstance(ns.linear_solver, LinearSolver)
+        assert ns.linear_solver.max_iterations == 50
 
-# ── NavierStokesSolver Krylov error paths ────────────────────────────────────
-
-
-class TestKrylovDisabledErrors:
-    def test_error_max_preconditioner_iterations_without_krylov(self):
-        with pytest.raises(ValueError, match="max_preconditioner_iterations"):
-            NavierStokesSolver(
-                use_krylov_solver=False,
-                linear_solver=LinearSolver(max_preconditioner_iterations=10),
-            )
-
-    def test_error_krylov_relative_tolerance_without_krylov(self):
-        with pytest.raises(ValueError, match="krylov_relative_tolerance"):
-            NavierStokesSolver(
-                use_krylov_solver=False,
-                linear_solver=LinearSolver(krylov_relative_tolerance=0.1),
-            )
-
-    def test_error_line_search_without_krylov(self):
-        with pytest.raises(ValueError, match="line_search"):
-            NavierStokesSolver(
-                use_krylov_solver=False,
-                line_search=LineSearch(),
-            )
-
-    def test_error_krylov_fields_on_base_solver(self):
-        with pytest.raises(ValueError):
-            _make_sim_params(
-                navier_stokes_solver=NavierStokesSolver(
-                    use_krylov_solver=False,
-                    linear_solver=LinearSolver(max_preconditioner_iterations=10),
-                ),
-            )
-        with pytest.raises(ValueError):
-            _make_sim_params(
-                navier_stokes_solver=NavierStokesSolver(
-                    use_krylov_solver=False,
-                    linear_solver=LinearSolver(krylov_relative_tolerance=0.1),
-                ),
-            )
-        with pytest.raises(ValueError):
-            _make_sim_params(
-                navier_stokes_solver=NavierStokesSolver(
-                    use_krylov_solver=False,
-                    line_search=LineSearch(),
-                ),
-            )
-
-    def test_explicit_max_iterations_not_overridden_by_krylov_default(self):
-        ns = NavierStokesSolver(
-            use_krylov_solver=True,
-            linear_solver=LinearSolver(max_iterations=30),
-        )
-        assert ns.linear_solver.max_iterations == 30
-
-    def test_krylov_disabled_no_cap_on_max_iterations(self):
-        ns = NavierStokesSolver(
-            use_krylov_solver=False,
-            linear_solver=LinearSolver(max_iterations=100),
-        )
+    def test_plain_solver_no_cap_on_max_iterations(self):
+        ns = NavierStokesSolver(linear_solver=LinearSolver(max_iterations=100))
         assert ns.linear_solver.max_iterations == 100
 
-    def test_krylov_disabled_default_max_iterations_unchanged(self):
-        ns = NavierStokesSolver(use_krylov_solver=False)
+    def test_krylov_default_max_iterations_is_15(self):
+        ns = NavierStokesSolver(linear_solver=KrylovLinearSolver())
+        assert ns.linear_solver.max_iterations == 15
+
+    def test_krylov_explicit_max_iterations_respected(self):
+        ns = NavierStokesSolver(linear_solver=KrylovLinearSolver(max_iterations=30))
         assert ns.linear_solver.max_iterations == 30
 
-    def test_krylov_enabled_min_max_iterations(self):
-        ns = NavierStokesSolver(
-            use_krylov_solver=True,
-            linear_solver=LinearSolver(max_iterations=1),
-        )
-        assert ns.linear_solver.max_iterations == 1
+    def test_plain_solver_default_max_iterations_is_30(self):
+        ns = NavierStokesSolver()
+        assert ns.linear_solver.max_iterations == 30
 
-    def test_error_max_iterations_exceeds_limit(self):
-        with pytest.raises(ValueError, match="max_iterations cannot exceed 50"):
-            NavierStokesSolver(
-                use_krylov_solver=True,
-                linear_solver=LinearSolver(max_iterations=51),
-            )
-
-    def test_max_iterations_at_limit_is_ok(self):
+    def test_dict_with_type_name_krylov(self):
         ns = NavierStokesSolver(
-            use_krylov_solver=True,
-            linear_solver=LinearSolver(max_iterations=50),
+            linear_solver={"type_name": "KrylovLinearSolver", "max_iterations": 10}
         )
-        assert ns.linear_solver.max_iterations == 50
+        assert isinstance(ns.linear_solver, KrylovLinearSolver)
+        assert ns.linear_solver.max_iterations == 10
+
+    def test_dict_with_type_name_linear(self):
+        ns = NavierStokesSolver(linear_solver={"type_name": "LinearSolver", "max_iterations": 80})
+        assert isinstance(ns.linear_solver, LinearSolver)
+        assert not isinstance(ns.linear_solver, KrylovLinearSolver)
+        assert ns.linear_solver.max_iterations == 80
+
+    def test_dict_without_type_name_defaults_to_linear(self):
+        ns = NavierStokesSolver(linear_solver={"max_iterations": 40})
+        assert isinstance(ns.linear_solver, LinearSolver)
+        assert not isinstance(ns.linear_solver, KrylovLinearSolver)
+
+    def test_dict_without_type_name_krylov_fields_detected(self):
+        ns = NavierStokesSolver(
+            linear_solver={"max_preconditioner_iterations": 30, "max_iterations": 10}
+        )
+        assert isinstance(ns.linear_solver, KrylovLinearSolver)
+
+    def test_line_search_allowed_with_krylov(self):
+        ns = NavierStokesSolver(linear_solver=KrylovLinearSolver(), line_search=LineSearch())
+        assert ns.line_search is not None
+
+    def test_line_search_rejected_with_plain_linear_solver(self):
+        with pytest.raises(ValueError, match="line_search can only be set"):
+            NavierStokesSolver(linear_solver=LinearSolver(), line_search=LineSearch())
+
+    def test_line_search_default_is_none(self):
+        ns = NavierStokesSolver()
+        assert ns.line_search is None
+
+    def test_line_search_none_with_krylov_is_ok(self):
+        ns = NavierStokesSolver(linear_solver=KrylovLinearSolver())
+        assert ns.line_search is None
 
 
 # ── Simulation-level Krylov restrictions ─────────────────────────────────────
@@ -207,7 +204,7 @@ class TestKrylovSimulationRestrictions:
         with pytest.raises(ValueError, match="limit_velocity"):
             _make_sim_params(
                 navier_stokes_solver=NavierStokesSolver(
-                    use_krylov_solver=True, limit_velocity=True
+                    linear_solver=KrylovLinearSolver(), limit_velocity=True
                 ),
             )
 
@@ -215,7 +212,7 @@ class TestKrylovSimulationRestrictions:
         with pytest.raises(ValueError, match="limit_pressure_density"):
             _make_sim_params(
                 navier_stokes_solver=NavierStokesSolver(
-                    use_krylov_solver=True, limit_pressure_density=True
+                    linear_solver=KrylovLinearSolver(), limit_pressure_density=True
                 ),
             )
 
@@ -223,14 +220,22 @@ class TestKrylovSimulationRestrictions:
         with SI_unit_system:
             with pytest.raises(ValueError, match="Unsteady"):
                 _make_sim_params(
-                    navier_stokes_solver=NavierStokesSolver(use_krylov_solver=True),
+                    navier_stokes_solver=NavierStokesSolver(linear_solver=KrylovLinearSolver()),
                     time_stepping=Unsteady(steps=100, step_size=0.1),
                 )
 
     def test_krylov_with_steady_is_ok(self):
         param = _make_sim_params(
-            navier_stokes_solver=NavierStokesSolver(use_krylov_solver=True),
+            navier_stokes_solver=NavierStokesSolver(linear_solver=KrylovLinearSolver()),
             time_stepping=Steady(),
+        )
+        assert param is not None
+
+    def test_plain_solver_with_limiters_is_ok(self):
+        param = _make_sim_params(
+            navier_stokes_solver=NavierStokesSolver(
+                limit_velocity=True, limit_pressure_density=True
+            ),
         )
         assert param is not None
 
@@ -241,39 +246,57 @@ class TestKrylovSimulationRestrictions:
 class TestKrylovTranslation:
     def test_krylov_enabled_includes_fields(self):
         param = _make_sim_params(
-            navier_stokes_solver=NavierStokesSolver(use_krylov_solver=True),
+            navier_stokes_solver=NavierStokesSolver(
+                linear_solver=KrylovLinearSolver(), line_search=LineSearch()
+            ),
         )
         translated = get_solver_json(param, mesh_unit=1 * u.m)
         ns = translated["navierStokesSolver"]
         ls = ns["linearSolver"]
 
-        assert "useKrylovSolver" not in ns
         assert ls["maxPreconditionerIterations"] == 25
         assert ls["krylovRelativeTolerance"] == 0.05
         assert ls["maxIterations"] == 15
+        assert "lineSearch" not in ls
         assert "lineSearch" in ns
         assert ns["lineSearch"]["residualGrowthThreshold"] == 0.85
         assert ns["lineSearch"]["maxResidualGrowth"] == 1.1
         assert ns["lineSearch"]["activationStep"] == 100
 
-    def test_krylov_disabled_strips_fields(self):
+    def test_plain_solver_has_no_krylov_fields(self):
         param = _make_sim_params(
-            navier_stokes_solver=NavierStokesSolver(use_krylov_solver=False),
+            navier_stokes_solver=NavierStokesSolver(),
         )
         translated = get_solver_json(param, mesh_unit=1 * u.m)
         ns = translated["navierStokesSolver"]
         ls = ns.get("linearSolver", {})
 
-        assert "useKrylovSolver" not in ns
         assert "maxPreconditionerIterations" not in ls
         assert "krylovRelativeTolerance" not in ls
         assert "lineSearch" not in ns
+        assert "useKrylovSolver" not in ns
 
-    def test_krylov_enabled_user_overrides_in_json(self):
+    def test_type_name_not_in_translated_json(self):
+        param = _make_sim_params(
+            navier_stokes_solver=NavierStokesSolver(linear_solver=KrylovLinearSolver()),
+        )
+        translated = get_solver_json(param, mesh_unit=1 * u.m)
+        ls = translated["navierStokesSolver"]["linearSolver"]
+        assert "typeName" not in ls
+        assert "type_name" not in ls
+
+    def test_krylov_without_line_search_no_line_search_in_json(self):
+        param = _make_sim_params(
+            navier_stokes_solver=NavierStokesSolver(linear_solver=KrylovLinearSolver()),
+        )
+        translated = get_solver_json(param, mesh_unit=1 * u.m)
+        ns = translated["navierStokesSolver"]
+        assert "lineSearch" not in ns
+
+    def test_krylov_user_overrides_in_json(self):
         param = _make_sim_params(
             navier_stokes_solver=NavierStokesSolver(
-                use_krylov_solver=True,
-                linear_solver=LinearSolver(
+                linear_solver=KrylovLinearSolver(
                     max_iterations=20,
                     max_preconditioner_iterations=40,
                     krylov_relative_tolerance=0.1,
