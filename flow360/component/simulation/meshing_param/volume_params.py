@@ -738,7 +738,7 @@ class UserDefinedFarfield(_FarfieldBase):
             # We allow None here to allow auto detection of domain type from bounding box.
             raise Flow360ValueError(
                 "Symmetry plane of user defined farfield is only supported when domain_type "
-                "is `half_body_positive_y` or `half_body_negative_y`."
+                "is `half_body_positive_y`, `half_body_negative_y`, or None (auto detection)."
             )
         return GhostSurface(name="symmetric", private_attribute_id="symmetric")
 
