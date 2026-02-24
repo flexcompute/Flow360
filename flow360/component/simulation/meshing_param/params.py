@@ -201,9 +201,7 @@ class MeshingParams(Flow360BaseModel):
         if v is None:
             return v
 
-        automated_farfield = next(
-            (zone for zone in v if isinstance(zone, AutomatedFarfield)), None
-        )
+        automated_farfield = next((zone for zone in v if isinstance(zone, AutomatedFarfield)), None)
         if automated_farfield is not None:
             custom_volumes = [
                 entity
@@ -313,9 +311,7 @@ class MeshingParams(Flow360BaseModel):
         error_msg = ""
         for entity_type, entity_model_map in usage.dict_entity.items():
             for entity_info in entity_model_map.values():
-                if len(entity_info["model_list"]) == 1 or sorted(
-                    entity_info["model_list"]
-                ) in [
+                if len(entity_info["model_list"]) == 1 or sorted(entity_info["model_list"]) in [
                     sorted(["RotationCylinder", "UniformRefinement"]),
                     sorted(["RotationVolume", "UniformRefinement"]),
                 ]:
@@ -359,9 +355,7 @@ class MeshingParams(Flow360BaseModel):
             if not close:
                 closest_spacing = self.defaults.octree_spacing[lvl]
                 msg = f"The spacing of {spacing:.4g} specified in {location} will be cast to the first lower refinement"
-                msg += (
-                    f" in the octree series ({closest_spacing.to(spacing_unit):.4g})."
-                )
+                msg += f" in the octree series ({closest_spacing.to(spacing_unit):.4g})."
                 log.warning(msg)
 
         if self.refinements is not None:
@@ -406,9 +400,7 @@ class VolumeMeshingParams(Flow360BaseModel):
     Volume meshing parameters.
     """
 
-    type_name: Literal["VolumeMeshingParams"] = pd.Field(
-        "VolumeMeshingParams", frozen=True
-    )
+    type_name: Literal["VolumeMeshingParams"] = pd.Field("VolumeMeshingParams", frozen=True)
     defaults: VolumeMeshingDefaults = pd.Field()
     refinement_factor: Optional[pd.PositiveFloat] = pd.Field(
         default=1,
@@ -470,9 +462,7 @@ class VolumeMeshingParams(Flow360BaseModel):
             if not close:
                 closest_spacing = self.defaults.octree_spacing[lvl]
                 msg = f"The spacing of {spacing:.4g} specified in {location} will be cast to the first lower refinement"
-                msg += (
-                    f" in the octree series ({closest_spacing.to(spacing_unit):.4g})."
-                )
+                msg += f" in the octree series ({closest_spacing.to(spacing_unit):.4g})."
                 log.warning(msg)
 
         if self.refinements is not None:
@@ -493,15 +483,11 @@ class ModularMeshingWorkflow(Flow360BaseModel):
     Structure consolidating surface and volume meshing parameters.
     """
 
-    type_name: Literal["ModularMeshingWorkflow"] = pd.Field(
-        "ModularMeshingWorkflow", frozen=True
-    )
+    type_name: Literal["ModularMeshingWorkflow"] = pd.Field("ModularMeshingWorkflow", frozen=True)
     surface_meshing: Optional[SurfaceMeshingParams] = ContextField(
         default=None, context=SURFACE_MESH
     )
-    volume_meshing: Optional[VolumeMeshingParams] = ContextField(
-        default=None, context=VOLUME_MESH
-    )
+    volume_meshing: Optional[VolumeMeshingParams] = ContextField(default=None, context=VOLUME_MESH)
     zones: List[ZoneTypesModular]
 
     # Meshing outputs (for now, volume mesh slices)
@@ -519,31 +505,23 @@ class ModularMeshingWorkflow(Flow360BaseModel):
         total_user_defined_farfield = sum(
             isinstance(volume_zone, UserDefinedFarfield) for volume_zone in v
         )
-        total_custom_zones = sum(
-            isinstance(volume_zone, CustomZones) for volume_zone in v
-        )
+        total_custom_zones = sum(isinstance(volume_zone, CustomZones) for volume_zone in v)
 
         if total_custom_zones and total_user_defined_farfield:
-            raise ValueError(
-                "When using `CustomZones` the `UserDefinedFarfield` will be ignored."
-            )
+            raise ValueError("When using `CustomZones` the `UserDefinedFarfield` will be ignored.")
 
         if total_automated_farfield > 1:
             raise ValueError("Only one `AutomatedFarfield` zone is allowed in `zones`.")
 
         if total_user_defined_farfield > 1:
-            raise ValueError(
-                "Only one `UserDefinedFarfield` zone is allowed in `zones`."
-            )
+            raise ValueError("Only one `UserDefinedFarfield` zone is allowed in `zones`.")
 
         if total_automated_farfield + total_user_defined_farfield > 1:
             raise ValueError(
                 "Cannot use `AutomatedFarfield` and `UserDefinedFarfield` simultaneously."
             )
 
-        if (
-            total_user_defined_farfield + total_automated_farfield + total_custom_zones
-        ) == 0:
+        if (total_user_defined_farfield + total_automated_farfield + total_custom_zones) == 0:
             raise ValueError("At least one zone defining the farfield is required.")
 
         if total_automated_farfield and total_custom_zones:
@@ -595,9 +573,7 @@ class ModularMeshingWorkflow(Flow360BaseModel):
 
         else:
             if total_seedpoint_volumes:
-                raise ValueError(
-                    "`SeedpointVolume` is applicable only with snappyHexMeshing."
-                )
+                raise ValueError("`SeedpointVolume` is applicable only with snappyHexMeshing.")
 
         return self
 
@@ -636,10 +612,7 @@ class ModularMeshingWorkflow(Flow360BaseModel):
         # pylint: disable=no-member
         for refinement in (
             self.volume_meshing.refinements
-            if (
-                self.volume_meshing is not None
-                and self.volume_meshing.refinements is not None
-            )
+            if (self.volume_meshing is not None and self.volume_meshing.refinements is not None)
             else []
         ):
             if isinstance(
@@ -654,9 +627,7 @@ class ModularMeshingWorkflow(Flow360BaseModel):
         error_msg = ""
         for entity_type, entity_model_map in usage.dict_entity.items():
             for entity_info in entity_model_map.values():
-                if len(entity_info["model_list"]) == 1 or sorted(
-                    entity_info["model_list"]
-                ) in [
+                if len(entity_info["model_list"]) == 1 or sorted(entity_info["model_list"]) in [
                     sorted(["RotationCylinder", "UniformRefinement"]),
                     sorted(["RotationVolume", "UniformRefinement"]),
                 ]:

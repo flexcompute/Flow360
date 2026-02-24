@@ -46,9 +46,7 @@ class SurfaceMeshingParams(Flow360BaseModel):
     castellated_mesh_controls: CastellatedMeshControls = pd.Field(CastellatedMeshControls())
     smooth_controls: Union[SmoothControls, Literal[False]] = pd.Field(SmoothControls())
     refinements: Optional[List[SnappySurfaceRefinementTypes]] = pd.Field(None)
-    octree_spacing: Optional[OctreeSpacing] = pd.Field(
-        None, validation_alias="base_spacing"
-    )
+    octree_spacing: Optional[OctreeSpacing] = pd.Field(None, validation_alias="base_spacing")
 
     @pd.model_validator(mode="before")
     @classmethod

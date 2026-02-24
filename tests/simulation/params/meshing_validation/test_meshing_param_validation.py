@@ -135,9 +135,7 @@ def test_disable_invalid_axisymmetric_body_construction():
 
     with pytest.raises(
         pd.ValidationError,
-        match=re.escape(
-            "Value error, arg '(-1, 1, 3)' needs to be a collection of 2 values"
-        ),
+        match=re.escape("Value error, arg '(-1, 1, 3)' needs to be a collection of 2 values"),
     ):
         with CGS_unit_system:
             cylinder_1 = AxisymmetricBody(
@@ -189,9 +187,7 @@ def test_disable_invalid_axisymmetric_body_construction():
 
     with pytest.raises(
         pd.ValidationError,
-        match=re.escape(
-            "Profile curve has duplicate consecutive points at indices 1 and 2"
-        ),
+        match=re.escape("Profile curve has duplicate consecutive points at indices 1 and 2"),
     ):
         with CGS_unit_system:
             invalid = AxisymmetricBody(
@@ -635,9 +631,7 @@ def test_reuse_of_same_cylinder(mock_validation_context):
                                 spacing_circumferential=0.3,
                             )
                         ],
-                        defaults=VolumeMeshingDefaults(
-                            boundary_layer_first_layer_thickness=1
-                        ),
+                        defaults=VolumeMeshingDefaults(boundary_layer_first_layer_thickness=1),
                     ),
                     zones=[
                         RotationVolume(
@@ -702,9 +696,7 @@ def test_reuse_of_same_cylinder(mock_validation_context):
                             spacing=0.1,
                         )
                     ],
-                    defaults=VolumeMeshingDefaults(
-                        boundary_layer_first_layer_thickness=1
-                    ),
+                    defaults=VolumeMeshingDefaults(boundary_layer_first_layer_thickness=1),
                 ),
                 zones=[
                     RotationVolume(
@@ -777,9 +769,7 @@ def test_reuse_of_same_cylinder(mock_validation_context):
                                 spacing_circumferential=0.1,
                             ),
                         ],
-                        defaults=VolumeMeshingDefaults(
-                            boundary_layer_first_layer_thickness=1
-                        ),
+                        defaults=VolumeMeshingDefaults(boundary_layer_first_layer_thickness=1),
                     ),
                     zones=[AutomatedFarfield()],
                 )
@@ -831,9 +821,7 @@ def test_reuse_of_same_cylinder(mock_validation_context):
                             UniformRefinement(entities=[cylinder], spacing=0.1),
                             UniformRefinement(entities=[cylinder], spacing=0.2),
                         ],
-                        defaults=VolumeMeshingDefaults(
-                            boundary_layer_first_layer_thickness=1
-                        ),
+                        defaults=VolumeMeshingDefaults(boundary_layer_first_layer_thickness=1),
                     ),
                     zones=[AutomatedFarfield()],
                 )
@@ -902,9 +890,7 @@ def test_require_mesh_zones():
             zones=[
                 CustomZones(
                     name="custom_zones",
-                    entities=[
-                        SeedpointVolume(name="fluid", point_in_mesh=(0, 0, 0) * u.mm)
-                    ],
+                    entities=[SeedpointVolume(name="fluid", point_in_mesh=(0, 0, 0) * u.mm)],
                 )
             ],
         )
@@ -1047,9 +1033,7 @@ def test_duplicate_refinement_different_types_is_allowed():
     snappy.SurfaceMeshingParams(
         defaults=defaults,
         refinements=[
-            snappy.RegionRefinement(
-                min_spacing=1 * u.mm, max_spacing=3 * u.mm, regions=[surface]
-            ),
+            snappy.RegionRefinement(min_spacing=1 * u.mm, max_spacing=3 * u.mm, regions=[surface]),
             snappy.SurfaceEdgeRefinement(spacing=0.5 * u.mm, entities=[surface]),
         ],
     )
@@ -1441,9 +1425,7 @@ def test_snappy_quality_metrics_validation():
     with pytest.raises(pd.ValidationError):
         snappy.QualityMetrics(feature_edge_deduplication_tolerance=-0.1)
 
-    snappy.QualityMetrics(
-        zmetric_threshold=False, feature_edge_deduplication_tolerance=False
-    )
+    snappy.QualityMetrics(zmetric_threshold=False, feature_edge_deduplication_tolerance=False)
 
 
 def test_modular_workflow_zones_validation():
@@ -1456,9 +1438,7 @@ def test_modular_workflow_zones_validation():
                 )
             ),
             volume_meshing=VolumeMeshingParams(
-                defaults=VolumeMeshingDefaults(
-                    boundary_layer_first_layer_thickness=1 * u.mm
-                )
+                defaults=VolumeMeshingDefaults(boundary_layer_first_layer_thickness=1 * u.mm)
             ),
             zones=[],
         )
@@ -1472,17 +1452,13 @@ def test_modular_workflow_zones_validation():
                 )
             ),
             volume_meshing=VolumeMeshingParams(
-                defaults=VolumeMeshingDefaults(
-                    boundary_layer_first_layer_thickness=1 * u.mm
-                )
+                defaults=VolumeMeshingDefaults(boundary_layer_first_layer_thickness=1 * u.mm)
             ),
             zones=[
                 UserDefinedFarfield(),
                 CustomZones(
                     name="custom_zones",
-                    entities=[
-                        SeedpointVolume(name="fluid", point_in_mesh=(0, 0, 0) * u.mm)
-                    ],
+                    entities=[SeedpointVolume(name="fluid", point_in_mesh=(0, 0, 0) * u.mm)],
                 ),
             ],
         )
@@ -1495,9 +1471,7 @@ def test_modular_workflow_zones_validation():
                 )
             ),
             volume_meshing=VolumeMeshingParams(
-                defaults=VolumeMeshingDefaults(
-                    boundary_layer_first_layer_thickness=1 * u.mm
-                )
+                defaults=VolumeMeshingDefaults(boundary_layer_first_layer_thickness=1 * u.mm)
             ),
             zones=[
                 CustomZones(
@@ -1522,9 +1496,7 @@ def test_modular_workflow_zones_validation():
                 )
             ),
             volume_meshing=VolumeMeshingParams(
-                defaults=VolumeMeshingDefaults(
-                    boundary_layer_first_layer_thickness=1 * u.mm
-                )
+                defaults=VolumeMeshingDefaults(boundary_layer_first_layer_thickness=1 * u.mm)
             ),
             zones=[AutomatedFarfield(), AutomatedFarfield()],
         )
@@ -1538,9 +1510,7 @@ def test_modular_workflow_zones_validation():
                 )
             ),
             volume_meshing=VolumeMeshingParams(
-                defaults=VolumeMeshingDefaults(
-                    boundary_layer_first_layer_thickness=1 * u.mm
-                )
+                defaults=VolumeMeshingDefaults(boundary_layer_first_layer_thickness=1 * u.mm)
             ),
             zones=[UserDefinedFarfield(), UserDefinedFarfield()],
         )
@@ -1554,9 +1524,7 @@ def test_modular_workflow_zones_validation():
                 )
             ),
             volume_meshing=VolumeMeshingParams(
-                defaults=VolumeMeshingDefaults(
-                    boundary_layer_first_layer_thickness=1 * u.mm
-                )
+                defaults=VolumeMeshingDefaults(boundary_layer_first_layer_thickness=1 * u.mm)
             ),
             zones=[AutomatedFarfield(), UserDefinedFarfield()],
         )
@@ -1570,17 +1538,13 @@ def test_modular_workflow_zones_validation():
                 )
             ),
             volume_meshing=VolumeMeshingParams(
-                defaults=VolumeMeshingDefaults(
-                    boundary_layer_first_layer_thickness=1 * u.mm
-                )
+                defaults=VolumeMeshingDefaults(boundary_layer_first_layer_thickness=1 * u.mm)
             ),
             zones=[
                 AutomatedFarfield(),
                 CustomZones(
                     name="custom_zones",
-                    entities=[
-                        SeedpointVolume(name="fluid", point_in_mesh=(0, 0, 0) * u.mm)
-                    ],
+                    entities=[SeedpointVolume(name="fluid", point_in_mesh=(0, 0, 0) * u.mm)],
                 ),
             ],
         )
@@ -1593,9 +1557,7 @@ def test_modular_workflow_zones_validation():
                 )
             ),
             volume_meshing=VolumeMeshingParams(
-                defaults=VolumeMeshingDefaults(
-                    boundary_layer_first_layer_thickness=1 * u.mm
-                )
+                defaults=VolumeMeshingDefaults(boundary_layer_first_layer_thickness=1 * u.mm)
             ),
             zones=[
                 AutomatedFarfield(),
@@ -1629,9 +1591,7 @@ def test_uniform_project_only_with_snappy():
                     )
                 ),
                 volume_meshing=VolumeMeshingParams(
-                    defaults=VolumeMeshingDefaults(
-                        boundary_layer_first_layer_thickness=1 * u.mm
-                    ),
+                    defaults=VolumeMeshingDefaults(boundary_layer_first_layer_thickness=1 * u.mm),
                     refinements=[refinement],
                 ),
                 zones=[
@@ -1702,9 +1662,7 @@ def test_surface_refinement_in_gai_mesher():
     ):
         with ValidationContext(SURFACE_MESH, non_gai_context):
             with CGS_unit_system:
-                SurfaceRefinement(
-                    max_edge_length=0.1, curvature_resolution_angle=10 * u.deg
-                )
+                SurfaceRefinement(max_edge_length=0.1, curvature_resolution_angle=10 * u.deg)
 
     # raise when GAI is off
     with pytest.raises(
@@ -1779,9 +1737,7 @@ def test_wind_tunnel_invalid_dimensions():
             match=r"is not strictly increasing",
         ):
             # invalid range
-            _ = StaticFloor(
-                friction_patch_x_range=(-100, -200), friction_patch_width=42
-            )
+            _ = StaticFloor(friction_patch_x_range=(-100, -200), friction_patch_width=42)
 
         with pytest.raises(
             pd.ValidationError,
@@ -1828,9 +1784,7 @@ def test_wind_tunnel_invalid_dimensions():
             match=r"must be less than wind tunnel width",
         ):
             # friction patch too wide
-            _ = WindTunnelFarfield(
-                width=2025, floor_type=StaticFloor(friction_patch_width=9001)
-            )
+            _ = WindTunnelFarfield(width=2025, floor_type=StaticFloor(friction_patch_width=9001))
 
         with pytest.raises(
             pd.ValidationError,
@@ -2061,12 +2015,9 @@ def test_meshing_defaults_octree_spacing_warning_no_project_length_unit():
             )
             assert defaults.octree_spacing is None
 
-    warning_msgs = [
-        w["msg"] if isinstance(w, dict) else str(w) for w in ctx.validation_warnings
-    ]
+    warning_msgs = [w["msg"] if isinstance(w, dict) else str(w) for w in ctx.validation_warnings]
     assert any(
-        "octree_spacing" in msg and "will not be set automatically" in msg
-        for msg in warning_msgs
+        "octree_spacing" in msg and "will not be set automatically" in msg for msg in warning_msgs
     )
 
 
@@ -2111,9 +2062,7 @@ def test_meshing_params_octree_check_skipped_for_non_beta():
                 volume_zones=[AutomatedFarfield()],
             )
     # No octree-related warnings for non-beta mesher
-    warning_msgs = [
-        w["msg"] if isinstance(w, dict) else str(w) for w in ctx.validation_warnings
-    ]
+    warning_msgs = [w["msg"] if isinstance(w, dict) else str(w) for w in ctx.validation_warnings]
     assert not any("octree series" in msg for msg in warning_msgs)
 
 
@@ -2261,9 +2210,7 @@ def test_per_face_min_passage_size_warning_without_remove_hidden_geometry():
                     ),
                 ],
             ),
-            private_attribute_asset_cache=AssetCache(
-                use_geometry_AI=True, use_inhouse_mesher=True
-            ),
+            private_attribute_asset_cache=AssetCache(use_geometry_AI=True, use_inhouse_mesher=True),
         )
     _, errors, warnings = validate_model(
         params_as_dict=params.model_dump(mode="json"),
@@ -2293,9 +2240,7 @@ def test_per_face_min_passage_size_warning_without_remove_hidden_geometry():
                     ),
                 ],
             ),
-            private_attribute_asset_cache=AssetCache(
-                use_geometry_AI=True, use_inhouse_mesher=True
-            ),
+            private_attribute_asset_cache=AssetCache(use_geometry_AI=True, use_inhouse_mesher=True),
         )
     _, errors, warnings = validate_model(
         params_as_dict=params.model_dump(mode="json"),
@@ -2322,9 +2267,7 @@ def test_per_face_min_passage_size_warning_without_remove_hidden_geometry():
                     ),
                 ],
             ),
-            private_attribute_asset_cache=AssetCache(
-                use_geometry_AI=True, use_inhouse_mesher=True
-            ),
+            private_attribute_asset_cache=AssetCache(use_geometry_AI=True, use_inhouse_mesher=True),
         )
     _, errors, warnings = validate_model(
         params_as_dict=params.model_dump(mode="json"),
