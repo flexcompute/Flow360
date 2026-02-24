@@ -45,11 +45,13 @@ class LineSearch(Flow360BaseModel):
 
     residual_growth_threshold: pd.confloat(ge=0.5, le=1) = pd.Field(
         0.85,
-        description="Pseudotime nonlinear residual norm convergence ratio above which residual norm increase is allowed.",
+        description="Pseudotime nonlinear residual norm convergence ratio above which "
+        "residual norm increase is allowed.",
     )
     max_residual_growth: pd.confloat(ge=1.0) = pd.Field(
         1.1,
-        description="Hard cap on the residual norm ratio — never allow the residual norm to grow beyond this factor over a single pseudotime step.",
+        description="Hard cap on the residual norm ratio — never allow the residual norm "
+        "to grow beyond this factor over a single pseudotime step.",
     )
     activation_step: PositiveInt = pd.Field(
         100,
