@@ -7,7 +7,7 @@ async function listCheckRunsForRef(github, { owner, repo, ref }) {
     await github.paginate(
       github.rest.checks.listForRef,
       { owner, repo, ref, per_page: 100 },
-      (response) => response.data.check_runs || []
+      (response) => (Array.isArray(response.data) ? response.data : (response.data.check_runs || []))
     )
   ).filter(Boolean);
 }
