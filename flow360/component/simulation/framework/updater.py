@@ -674,7 +674,7 @@ def _add_linear_solver_type_name(params_as_dict):
 
 
 def _to_25_9_0(params_as_dict):
-    """Remove deprecated ``remove_non_manifold_faces``, migrate wall function bools, and add ``type_name`` discriminator."""
+    """Remove ``remove_non_manifold_faces``, migrate wall function bools, add ``type_name``."""
     _remove_non_manifold_faces_key(params_as_dict)
     _migrate_wall_function_bool(params_as_dict)
     _add_linear_solver_type_name(params_as_dict)
