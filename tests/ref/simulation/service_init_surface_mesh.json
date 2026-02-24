@@ -234,7 +234,6 @@
                 ]
             },
             "name": "Wall",
-            "use_wall_function": false,
             "heat_spec": {
                 "value": {
                     "value": 0.0,

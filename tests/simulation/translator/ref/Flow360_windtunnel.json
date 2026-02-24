@@ -121,6 +121,7 @@
         },
         "windTunnelCentralBelt": {
             "type": "WallFunction",
+            "wallModelType": "BoundaryLayer",
             "velocity": [
                 0.08815906095303899,
                 0.0,
@@ -131,6 +132,7 @@
         },
         "windTunnelFrontWheelBelt": {
             "type": "WallFunction",
+            "wallModelType": "BoundaryLayer",
             "velocity": [
                 0.08815906095303899,
                 0.0,
@@ -141,6 +143,7 @@
         },
         "windTunnelRearWheelBelt": {
             "type": "WallFunction",
+            "wallModelType": "BoundaryLayer",
             "velocity": [
                 0.08815906095303899,
                 0.0,

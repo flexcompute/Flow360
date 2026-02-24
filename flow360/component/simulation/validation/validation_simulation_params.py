@@ -85,7 +85,7 @@ def _check_consistency_wall_function_and_surface_output(v):
     if models:
         has_wall_function_model = False
         for model in models:
-            if isinstance(model, Wall) and model.use_wall_function:
+            if isinstance(model, Wall) and model.use_wall_function is not None:
                 has_wall_function_model = True
                 break
 
