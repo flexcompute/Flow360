@@ -424,6 +424,15 @@ def test_hybrid_model_for_unsteady_validator(
         SimulationParams(models=[fluid_model_with_hybrid_model])
 
 
+def test_hybrid_model_grid_size_for_LES():
+    for valid_option in ["maxEdgeLength", "meanEdgeLength", "shearLayerAdapted"]:
+        des = DetachedEddySimulation(grid_size_for_LES=valid_option)
+        assert des.grid_size_for_LES == valid_option
+
+    with pytest.raises(pd.ValidationError):
+        DetachedEddySimulation(grid_size_for_LES="invalidOption")
+
+
 def test_hybrid_model_to_use_zonal_enforcement(fluid_model, fluid_model_with_hybrid_model):
 
     fluid_model_with_hybrid_model.turbulence_model_solver.controls = [
