@@ -81,10 +81,10 @@ class UniformRefinement(Flow360BaseModel):
 
     @contextual_field_validator("entities", mode="after")
     @classmethod
-    def check_axisymmetric_body_used_with_beta_mesher(
+    def check_entities_used_with_beta_mesher(
         cls, values, param_info: ParamsValidationInfo
     ):
-        """Check that AxisymmetricBody is used with beta mesher."""
+        """Check that AxisymmetricBody and Sphere are used with beta mesher."""
 
         if values is None:
             return values
@@ -96,6 +96,10 @@ class UniformRefinement(Flow360BaseModel):
             if isinstance(entity, AxisymmetricBody):
                 raise ValueError(
                     "`AxisymmetricBody` entity for `UniformRefinement` is supported only with beta mesher."
+                )
+            if isinstance(entity, Sphere):
+                raise ValueError(
+                    "`Sphere` entity for `UniformRefinement` is supported only with beta mesher."
                 )
 
         return values
