@@ -54,6 +54,7 @@ from flow360.component.simulation.validation.validation_utils import (
 # pylint: disable=fixme
 # TODO: Warning: Pydantic V1 import
 from flow360.component.types import Axis
+from flow360.log import log
 
 
 class BoundaryBase(Flow360BaseModel, metaclass=ABCMeta):
@@ -452,8 +453,16 @@ class Wall(BoundaryBase):
     def _normalize_wall_function(cls, value):
         """Handle backward-compatible bool inputs for use_wall_function."""
         if value is True:
+            log.warning(
+                "Passing a bool to `use_wall_function` is deprecated. "
+                "Use `use_wall_function=WallFunction()` instead of `True`."
+            )
             return WallFunction()
         if value is False:
+            log.warning(
+                "Passing a bool to `use_wall_function` is deprecated. "
+                "Use `use_wall_function=None` instead of `False`."
+            )
             return None
         return value
 

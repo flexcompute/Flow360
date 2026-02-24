@@ -294,12 +294,12 @@ def test_wall_function_type_interface():
     """Test the use_wall_function field accepts WallFunction, bool (compat), and None."""
     surface = Surface(name="noSlipWall")
 
-    # True is converted to WallFunction() with default BoundaryLayer
+    # True is converted to WallFunction() with default BoundaryLayer and logs deprecation warning
     wall = Wall(surfaces=[surface], use_wall_function=True)
     assert wall.use_wall_function == WallFunction()
     assert wall.use_wall_function.type_name == "BoundaryLayer"
 
-    # False is converted to None
+    # False is converted to None and logs deprecation warning
     wall = Wall(surfaces=[surface], use_wall_function=False)
     assert wall.use_wall_function is None
 
