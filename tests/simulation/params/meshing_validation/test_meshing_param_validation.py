@@ -2210,7 +2210,9 @@ def test_per_face_min_passage_size_warning_without_remove_hidden_geometry():
                     ),
                 ],
             ),
-            private_attribute_asset_cache=AssetCache(use_geometry_AI=True, use_inhouse_mesher=True),
+            private_attribute_asset_cache=AssetCache(
+                use_geometry_AI=True, use_inhouse_mesher=True, project_length_unit=1 * u.m
+            ),
         )
     _, errors, warnings = validate_model(
         params_as_dict=params.model_dump(mode="json"),
@@ -2240,7 +2242,9 @@ def test_per_face_min_passage_size_warning_without_remove_hidden_geometry():
                     ),
                 ],
             ),
-            private_attribute_asset_cache=AssetCache(use_geometry_AI=True, use_inhouse_mesher=True),
+            private_attribute_asset_cache=AssetCache(
+                use_geometry_AI=True, use_inhouse_mesher=True, project_length_unit=1 * u.m
+            ),
         )
     _, errors, warnings = validate_model(
         params_as_dict=params.model_dump(mode="json"),
@@ -2267,7 +2271,9 @@ def test_per_face_min_passage_size_warning_without_remove_hidden_geometry():
                     ),
                 ],
             ),
-            private_attribute_asset_cache=AssetCache(use_geometry_AI=True, use_inhouse_mesher=True),
+            private_attribute_asset_cache=AssetCache(
+                use_geometry_AI=True, use_inhouse_mesher=True, project_length_unit=1 * u.m
+            ),
         )
     _, errors, warnings = validate_model(
         params_as_dict=params.model_dump(mode="json"),
