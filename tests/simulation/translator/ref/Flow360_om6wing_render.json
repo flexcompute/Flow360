@@ -72,7 +72,8 @@
         "limitPressureDensity": false,
         "limitVelocity": false,
         "linearSolver": {
-            "maxIterations": 25
+            "maxIterations": 25,
+            "typeName": "LinearSolver"
         },
         "lowMachPreconditioner": false,
         "maxForceJacUpdatePhysicalSteps": 0,
@@ -392,7 +393,8 @@
         "equationEvalFrequency": 4,
         "gridSizeForLES": "maxEdgeLength",
         "linearSolver": {
-            "maxIterations": 15
+            "maxIterations": 15,
+            "typeName": "LinearSolver"
         },
         "lowReynoldsCorrection": false,
         "maxForceJacUpdatePhysicalSteps": 0,

@@ -2386,6 +2386,7 @@ def get_solver_json(
                 ["heat_equation_solver", "equation_evaluation_frequency"],
             ),
             "linearSolver": {
+                "typeName": "LinearSolver",
                 "maxIterations": get_global_setting_from_first_instance(
                     input_params.models,
                     Solid,

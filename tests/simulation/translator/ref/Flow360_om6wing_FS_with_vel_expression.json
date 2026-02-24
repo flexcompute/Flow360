@@ -59,7 +59,7 @@
             0.801672958512342
         ],
         "refArea": 1.1529999999999987,
-	"interfaceInterpolationTolerance" : 0.2
+        "interfaceInterpolationTolerance": 0.2
     },
     "navierStokesSolver": {
         "CFLMultiplier": 1.0,
@@ -69,7 +69,8 @@
         "limitPressureDensity": false,
         "limitVelocity": false,
         "linearSolver": {
-            "maxIterations": 25
+            "maxIterations": 25,
+            "typeName": "LinearSolver"
         },
         "lowMachPreconditioner": false,
         "maxForceJacUpdatePhysicalSteps": 0,
@@ -160,7 +161,8 @@
         "equationEvalFrequency": 4,
         "gridSizeForLES": "maxEdgeLength",
         "linearSolver": {
-            "maxIterations": 15
+            "maxIterations": 15,
+            "typeName": "LinearSolver"
         },
         "lowReynoldsCorrection": false,
         "maxForceJacUpdatePhysicalSteps": 0,
