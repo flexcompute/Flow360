@@ -114,8 +114,6 @@ class KrylovLinearSolver(LinearSolver):
         0.05, description="Relative tolerance for the Krylov linear solver convergence."
     )
 
-    model_config = pd.ConfigDict(conflicting_fields=[])
-
 
 class GenericSolverSettings(Flow360BaseModel, metaclass=ABCMeta):
     """:class:`GenericSolverSettings` class"""
@@ -200,11 +198,10 @@ class NavierStokesSolver(GenericSolverSettings):
         + "Mach number.",
     )
 
-    linear_solver: Annotated[
-        Union[LinearSolver, KrylovLinearSolver], pd.Field(discriminator="type_name")
-    ] = pd.Field(
+    linear_solver: Union[LinearSolver, KrylovLinearSolver] = pd.Field(
         default_factory=LinearSolver,
         description="Linear solver configuration. Use KrylovLinearSolver for Newton-Krylov.",
+        discriminator="type_name",
     )
     line_search: Optional[LineSearch] = pd.Field(
         None,
