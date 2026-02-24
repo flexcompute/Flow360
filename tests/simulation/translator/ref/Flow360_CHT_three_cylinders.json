@@ -48,7 +48,8 @@
         "equationEvalFrequency": 20,
         "linearSolver": {
             "absoluteTolerance": 1e-15,
-            "maxIterations": 100
+            "maxIterations": 100,
+            "typeName": "LinearSolver"
         },
         "maxForceJacUpdatePhysicalSteps": 0,
         "modelType": "HeatEquation",
@@ -72,7 +73,8 @@
         "limitPressureDensity": false,
         "limitVelocity": false,
         "linearSolver": {
-            "maxIterations": 50
+            "maxIterations": 50,
+            "typeName": "LinearSolver"
         },
         "lowMachPreconditioner": true,
         "lowMachPreconditionerThreshold": 0.01,

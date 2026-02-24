@@ -48,10 +48,10 @@ class TestLineSearchValidation:
         assert ls.activation_step == 100
 
     def test_residual_growth_threshold_bounds(self):
-        LineSearch(residual_growth_threshold=0.0)
+        LineSearch(residual_growth_threshold=0.5)
         LineSearch(residual_growth_threshold=1.0)
         with pytest.raises(Exception):
-            LineSearch(residual_growth_threshold=-0.1)
+            LineSearch(residual_growth_threshold=0.49)
         with pytest.raises(Exception):
             LineSearch(residual_growth_threshold=1.1)
 
@@ -108,11 +108,11 @@ class TestKrylovLinearSolverDefaults:
         assert KrylovLinearSolver().type_name == "KrylovLinearSolver"
         assert LinearSolver().type_name == "LinearSolver"
 
-    def test_type_name_excluded_from_dump(self):
+    def test_type_name_in_dump(self):
         dump = LinearSolver().model_dump()
-        assert "type_name" not in dump
+        assert dump["type_name"] == "LinearSolver"
         dump = KrylovLinearSolver().model_dump()
-        assert "type_name" not in dump
+        assert dump["type_name"] == "KrylovLinearSolver"
 
     def test_type_name_frozen(self):
         with pytest.raises(Exception):
@@ -276,13 +276,13 @@ class TestKrylovTranslation:
         assert "lineSearch" not in ns
         assert "useKrylovSolver" not in ns
 
-    def test_type_name_not_in_translated_json(self):
+    def test_type_name_in_translated_json(self):
         param = _make_sim_params(
             navier_stokes_solver=NavierStokesSolver(linear_solver=KrylovLinearSolver()),
         )
         translated = get_solver_json(param, mesh_unit=1 * u.m)
         ls = translated["navierStokesSolver"]["linearSolver"]
-        assert "typeName" not in ls
+        assert ls["typeName"] == "KrylovLinearSolver"
         assert "type_name" not in ls
 
     def test_krylov_without_line_search_no_line_search_in_json(self):

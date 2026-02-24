@@ -43,7 +43,7 @@ class LineSearch(Flow360BaseModel):
     ... )
     """
 
-    residual_growth_threshold: pd.confloat(ge=0, le=1) = pd.Field(
+    residual_growth_threshold: pd.confloat(ge=0.5, le=1) = pd.Field(
         0.85,
         description="Pseudo-step convergence ratio above which no residual increase (RHS > 1.0) is allowed.",
     )
@@ -68,7 +68,7 @@ class LinearSolver(Flow360BaseModel):
     ... )
     """
 
-    type_name: Literal["LinearSolver"] = pd.Field("LinearSolver", frozen=True, exclude=True)
+    type_name: Literal["LinearSolver"] = pd.Field("LinearSolver", frozen=True)
     max_iterations: PositiveInt = pd.Field(
         30, description="Maximum number of linear solver iterations."
     )
@@ -104,7 +104,7 @@ class KrylovLinearSolver(LinearSolver):
     """
 
     type_name: Literal["KrylovLinearSolver"] = pd.Field(
-        "KrylovLinearSolver", frozen=True, exclude=True
+        "KrylovLinearSolver", frozen=True
     )
     max_iterations: PositiveInt = pd.Field(
         15, description="Krylov subspace size (number of outer Krylov iterations)."
