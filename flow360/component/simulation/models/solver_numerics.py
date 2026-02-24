@@ -99,7 +99,7 @@ class KrylovLinearSolver(LinearSolver):
     >>> fl.KrylovLinearSolver(
     ...     max_iterations=15,
     ...     max_preconditioner_iterations=25,
-    ...     krylov_relative_tolerance=0.05,
+    ...     relative_tolerance=0.05,
     ... )
     """
 
@@ -110,7 +110,7 @@ class KrylovLinearSolver(LinearSolver):
     max_preconditioner_iterations: PositiveInt = pd.Field(
         25, description="Number of preconditioner sweeps per Krylov iteration."
     )
-    krylov_relative_tolerance: PositiveFloat = pd.Field(
+    relative_tolerance: Optional[PositiveFloat] = pd.Field(
         0.05, description="Relative tolerance for the Krylov linear solver convergence."
     )
 
@@ -131,7 +131,7 @@ def _linear_solver_discriminator(v):
         type_name = v.get("type_name")
         if type_name is not None:
             return type_name
-        if "max_preconditioner_iterations" in v or "krylov_relative_tolerance" in v:
+        if "max_preconditioner_iterations" in v:
             return "KrylovLinearSolver"
         return "LinearSolver"
     return getattr(v, "type_name", "LinearSolver")

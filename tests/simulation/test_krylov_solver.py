@@ -77,17 +77,17 @@ class TestKrylovLinearSolverDefaults:
         kls = KrylovLinearSolver()
         assert kls.max_iterations == 15
         assert kls.max_preconditioner_iterations == 25
-        assert kls.krylov_relative_tolerance == 0.05
+        assert kls.relative_tolerance == 0.05
 
     def test_user_overrides(self):
         kls = KrylovLinearSolver(
             max_iterations=10,
             max_preconditioner_iterations=30,
-            krylov_relative_tolerance=0.01,
+            relative_tolerance=0.01,
         )
         assert kls.max_iterations == 10
         assert kls.max_preconditioner_iterations == 30
-        assert kls.krylov_relative_tolerance == 0.01
+        assert kls.relative_tolerance == 0.01
 
     def test_max_iterations_at_limit(self):
         kls = KrylovLinearSolver(max_iterations=50)
@@ -255,7 +255,7 @@ class TestKrylovTranslation:
         ls = ns["linearSolver"]
 
         assert ls["maxPreconditionerIterations"] == 25
-        assert ls["krylovRelativeTolerance"] == 0.05
+        assert ls["relativeTolerance"] == 0.05
         assert ls["maxIterations"] == 15
         assert "lineSearch" not in ls
         assert "lineSearch" in ns
@@ -272,7 +272,7 @@ class TestKrylovTranslation:
         ls = ns.get("linearSolver", {})
 
         assert "maxPreconditionerIterations" not in ls
-        assert "krylovRelativeTolerance" not in ls
+        assert "relativeTolerance" not in ls
         assert "lineSearch" not in ns
         assert "useKrylovSolver" not in ns
 
@@ -299,7 +299,7 @@ class TestKrylovTranslation:
                 linear_solver=KrylovLinearSolver(
                     max_iterations=20,
                     max_preconditioner_iterations=40,
-                    krylov_relative_tolerance=0.1,
+                    relative_tolerance=0.1,
                 ),
                 line_search=LineSearch(
                     residual_growth_threshold=0.9,
@@ -314,7 +314,7 @@ class TestKrylovTranslation:
 
         assert ls["maxIterations"] == 20
         assert ls["maxPreconditionerIterations"] == 40
-        assert ls["krylovRelativeTolerance"] == 0.1
+        assert ls["relativeTolerance"] == 0.1
         assert ns["lineSearch"]["residualGrowthThreshold"] == 0.9
         assert ns["lineSearch"]["maxResidualGrowth"] == 1.5
         assert ns["lineSearch"]["activationStep"] == 200

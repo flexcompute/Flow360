@@ -654,7 +654,7 @@ def _to_25_9_0(params_as_dict):
                 continue
             ls = ns.get("linear_solver")
             if isinstance(ls, dict) and "type_name" not in ls:
-                if "max_preconditioner_iterations" in ls or "krylov_relative_tolerance" in ls:
+                if "max_preconditioner_iterations" in ls:
                     ls["type_name"] = "KrylovLinearSolver"
                 else:
                     ls["type_name"] = "LinearSolver"
