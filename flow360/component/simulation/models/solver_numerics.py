@@ -104,36 +104,23 @@ class KrylovLinearSolver(LinearSolver):
     """
 
     type_name: Literal["KrylovLinearSolver"] = pd.Field("KrylovLinearSolver", frozen=True)
-    max_iterations: PositiveInt = pd.Field(
+    max_iterations: pd.conint(gt=0, le=50) = pd.Field(
         15, description="Krylov subspace size (number of outer Krylov iterations)."
     )
     max_preconditioner_iterations: PositiveInt = pd.Field(
         25, description="Number of preconditioner sweeps per Krylov iteration."
     )
-    relative_tolerance: Optional[PositiveFloat] = pd.Field(
+    relative_tolerance: PositiveFloat = pd.Field(
         0.05, description="Relative tolerance for the Krylov linear solver convergence."
     )
 
-    @pd.model_validator(mode="after")
-    def _validate_max_iterations(self) -> Self:
-        if self.max_iterations > 50:
-            raise ValueError("max_iterations cannot exceed 50 for the Krylov solver.")
-        return self
+    model_config = pd.ConfigDict(conflicting_fields=[])
 
 
 def _linear_solver_discriminator(v):
-    """Discriminate between LinearSolver and KrylovLinearSolver.
-
-    Uses ``type_name`` when present (forward-compatible path) and falls back
-    to field-based detection for legacy data that predates the discriminator.
-    """
+    """Discriminate between LinearSolver and KrylovLinearSolver via ``type_name``."""
     if isinstance(v, dict):
-        type_name = v.get("type_name")
-        if type_name is not None:
-            return type_name
-        if "max_preconditioner_iterations" in v:
-            return "KrylovLinearSolver"
-        return "LinearSolver"
+        return v.get("type_name", "LinearSolver")
     return getattr(v, "type_name", "LinearSolver")
 
 
