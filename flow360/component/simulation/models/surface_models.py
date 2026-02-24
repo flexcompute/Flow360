@@ -350,8 +350,10 @@ class WallFunction(Flow360BaseModel):
     type_name: Literal["BoundaryLayer", "InnerLayer"] = pd.Field(
         "BoundaryLayer",
         description="Type of wall function model. "
-        + "'BoundaryLayer' uses the standard boundary-layer wall model. "
-        + "'InnerLayer' uses the inner-layer wall model.",
+        + "'BoundaryLayer' uses integral flat plate boundary layer theory to predict wall shear stress. "
+        + "It performs well across all y+ ranges. "
+        + "'InnerLayer' uses the inner layer behavior of the turbulent boundary layer, "
+        + "offering better accuracy for y+ values in the log layer and below.",
     )
 
 
