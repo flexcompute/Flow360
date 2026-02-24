@@ -188,6 +188,12 @@ jobs:
 
               echo "::warning::Workflow file changes detected for ${base_branch}; creating manual hotfix tracking PR."
 
+              if git ls-remote --exit-code origin "refs/heads/$tracking_branch" >/dev/null 2>&1; then
+                echo "::error::Tracking branch '$tracking_branch' already exists on remote. Delete it manually before re-running."
+                push_failed="true"
+                continue
+              fi
+
               git checkout "$base_branch"
               git branch -D "$new_branch"
               git checkout -b "$tracking_branch"
