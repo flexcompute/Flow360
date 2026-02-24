@@ -102,6 +102,8 @@ class MeshingParams(Flow360BaseModel):
     -------
 
       >>> fl.MeshingParams(
+      ...     refinement_factor=1.0,
+      ...     gap_treatment_strength=0.5,
       ...     defaults=fl.MeshingDefaults(
       ...         surface_max_edge_length=1*fl.u.m,
       ...         boundary_layer_first_layer_thickness=1e-5*fl.u.m
