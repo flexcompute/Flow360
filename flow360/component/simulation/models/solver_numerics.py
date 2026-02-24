@@ -117,22 +117,6 @@ class KrylovLinearSolver(LinearSolver):
     model_config = pd.ConfigDict(conflicting_fields=[])
 
 
-def _linear_solver_discriminator(v):
-    """Discriminate between LinearSolver and KrylovLinearSolver via ``type_name``."""
-    if isinstance(v, dict):
-        return v.get("type_name", "LinearSolver")
-    return getattr(v, "type_name", "LinearSolver")
-
-
-LinearSolverType = Annotated[
-    Union[
-        Annotated[KrylovLinearSolver, pd.Tag("KrylovLinearSolver")],
-        Annotated[LinearSolver, pd.Tag("LinearSolver")],
-    ],
-    pd.Discriminator(_linear_solver_discriminator),
-]
-
-
 class GenericSolverSettings(Flow360BaseModel, metaclass=ABCMeta):
     """:class:`GenericSolverSettings` class"""
 
@@ -216,7 +200,9 @@ class NavierStokesSolver(GenericSolverSettings):
         + "Mach number.",
     )
 
-    linear_solver: LinearSolverType = pd.Field(
+    linear_solver: Annotated[
+        Union[LinearSolver, KrylovLinearSolver], pd.Field(discriminator="type_name")
+    ] = pd.Field(
         default_factory=LinearSolver,
         description="Linear solver configuration. Use KrylovLinearSolver for Newton-Krylov.",
     )

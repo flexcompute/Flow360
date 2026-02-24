@@ -168,11 +168,6 @@ class TestNavierStokesLinearSolverTypes:
         assert not isinstance(ns.linear_solver, KrylovLinearSolver)
         assert ns.linear_solver.max_iterations == 80
 
-    def test_dict_without_type_name_defaults_to_linear(self):
-        ns = NavierStokesSolver(linear_solver={"max_iterations": 40})
-        assert isinstance(ns.linear_solver, LinearSolver)
-        assert not isinstance(ns.linear_solver, KrylovLinearSolver)
-
     def test_line_search_allowed_with_krylov(self):
         ns = NavierStokesSolver(linear_solver=KrylovLinearSolver(), line_search=LineSearch())
         assert ns.line_search is not None
