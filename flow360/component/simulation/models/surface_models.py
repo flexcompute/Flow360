@@ -321,7 +321,37 @@ WallVelocityModelTypes = Annotated[
     Union[SlaterPorousBleed, WallRotation], pd.Field(discriminator="type_name")
 ]
 
-WallFunctionType = Literal["BoundaryLayer", "InnerLayer"]
+
+class WallFunction(Flow360BaseModel):
+    """
+    :class:`WallFunction` specifies the wall function model to use on a :class:`Wall` boundary.
+
+    Example
+    -------
+
+    - Default boundary-layer wall function:
+
+      >>> fl.Wall(
+      ...     entities=volume_mesh["fluid/wall"],
+      ...     use_wall_function=fl.WallFunction(),
+      ... )
+
+    - Inner-layer wall model:
+
+      >>> fl.Wall(
+      ...     entities=volume_mesh["fluid/wall"],
+      ...     use_wall_function=fl.WallFunction(type_name="InnerLayer"),
+      ... )
+
+    ====
+    """
+
+    type_name: Literal["BoundaryLayer", "InnerLayer"] = pd.Field(
+        "BoundaryLayer",
+        description="Type of wall function model. "
+        + "'BoundaryLayer' uses the standard boundary-layer wall model. "
+        + "'InnerLayer' uses the inner-layer wall model.",
+    )
 
 
 class Wall(BoundaryBase):
@@ -389,11 +419,11 @@ class Wall(BoundaryBase):
 
     name: Optional[str] = pd.Field("Wall", description="Name of the `Wall` boundary condition.")
     type: Literal["Wall"] = pd.Field("Wall", frozen=True)
-    use_wall_function: Union[bool, WallFunctionType] = pd.Field(
-        False,
-        description="Wall function configuration. Set to `True` or `'BoundaryLayer'` to use the "
-        + "default boundary-layer wall function. Set to `'InnerLayer'` for the inner-layer wall "
-        + "model. Set to `False` to disable wall functions (no-slip wall).",
+    use_wall_function: Optional[WallFunction] = pd.Field(
+        None,
+        description="Wall function configuration. Set to :class:`WallFunction` to enable "
+        + "wall functions. The default wall function type is ``'BoundaryLayer'``. "
+        + "Set to ``None`` to disable wall functions (no-slip wall).",
     )
 
     velocity: Optional[Union[WallVelocityModelTypes, VelocityVectorType]] = pd.Field(
@@ -417,10 +447,20 @@ class Wall(BoundaryBase):
         description="List of boundaries with the `Wall` boundary condition imposed.",
     )
 
+    @pd.field_validator("use_wall_function", mode="before")
+    @classmethod
+    def _normalize_wall_function(cls, value):
+        """Handle backward-compatible bool inputs for use_wall_function."""
+        if value is True:
+            return WallFunction()
+        if value is False:
+            return None
+        return value
+
     @pd.model_validator(mode="after")
     def check_wall_function_conflict(self):
         """Check no setting is conflicting with the usage of wall function"""
-        if not self.use_wall_function:
+        if self.use_wall_function is None:
             return self
         if isinstance(self.velocity, SlaterPorousBleed):
             raise ValueError(

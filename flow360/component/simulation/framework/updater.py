@@ -639,17 +639,26 @@ def _to_25_8_4(params_as_dict):
 def _to_25_9_0(params_as_dict):
     """
     Remove deprecated meshing defaults key `remove_non_manifold_faces`.
+    Convert `use_wall_function` boolean values to the new WallFunction model format.
 
     Note: this function is intentionally not registered in VERSION_MILESTONES until
     the Python client version reaches 25.9.0.
     """
     meshing = params_as_dict.get("meshing")
-    if not isinstance(meshing, dict):
-        return params_as_dict
-    meshing_defaults = meshing.get("defaults")
-    if not isinstance(meshing_defaults, dict):
-        return params_as_dict
-    meshing_defaults.pop("remove_non_manifold_faces", None)
+    if isinstance(meshing, dict):
+        meshing_defaults = meshing.get("defaults")
+        if isinstance(meshing_defaults, dict):
+            meshing_defaults.pop("remove_non_manifold_faces", None)
+
+    for model in params_as_dict.get("models", []):
+        if model.get("type") != "Wall":
+            continue
+        wall_fn = model.get("use_wall_function")
+        if wall_fn is True:
+            model["use_wall_function"] = {"type_name": "BoundaryLayer"}
+        elif wall_fn is False:
+            model.pop("use_wall_function", None)
+
     return params_as_dict
 
 

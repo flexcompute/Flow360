@@ -46,6 +46,7 @@ from flow360.component.simulation.models.surface_models import (
     TotalPressure,
     Translational,
     Wall,
+    WallFunction,
     WallRotation,
 )
 from flow360.component.simulation.models.turbulence_quantities import (
@@ -630,7 +631,7 @@ def test_om6wing_wall_model(create_om6wing_wall_model_param):
 
 
 def test_wall_model_type_translation():
-    """Test that use_wall_function=True and string literals translate to correct wallModelType."""
+    """Test that WallFunction models translate to correct wallModelType."""
     my_wall = Surface(name="1")
     my_freestream = Surface(name="2")
     with SI_unit_system:
@@ -638,7 +639,7 @@ def test_wall_model_type_translation():
             operating_condition=AerospaceCondition.from_mach(mach=0.84),
             models=[
                 Fluid(),
-                Wall(surfaces=[my_wall], use_wall_function=True),
+                Wall(surfaces=[my_wall], use_wall_function=WallFunction()),
                 Freestream(entities=[my_freestream]),
             ],
             time_stepping=Steady(CFL=RampCFL(initial=5, final=200, ramp_steps=40)),
@@ -652,7 +653,7 @@ def test_wall_model_type_translation():
             operating_condition=AerospaceCondition.from_mach(mach=0.84),
             models=[
                 Fluid(),
-                Wall(surfaces=[my_wall], use_wall_function="InnerLayer"),
+                Wall(surfaces=[my_wall], use_wall_function=WallFunction(type_name="InnerLayer")),
                 Freestream(entities=[my_freestream]),
             ],
             time_stepping=Steady(CFL=RampCFL(initial=5, final=200, ramp_steps=40)),
@@ -666,7 +667,10 @@ def test_wall_model_type_translation():
             operating_condition=AerospaceCondition.from_mach(mach=0.84),
             models=[
                 Fluid(),
-                Wall(surfaces=[my_wall], use_wall_function="BoundaryLayer"),
+                Wall(
+                    surfaces=[my_wall],
+                    use_wall_function=WallFunction(type_name="BoundaryLayer"),
+                ),
                 Freestream(entities=[my_freestream]),
             ],
             time_stepping=Steady(CFL=RampCFL(initial=5, final=200, ramp_steps=40)),
@@ -680,7 +684,7 @@ def test_wall_model_type_translation():
             operating_condition=AerospaceCondition.from_mach(mach=0.84),
             models=[
                 Fluid(),
-                Wall(surfaces=[my_wall], use_wall_function=False),
+                Wall(surfaces=[my_wall], use_wall_function=None),
                 Freestream(entities=[my_freestream]),
             ],
             time_stepping=Steady(CFL=RampCFL(initial=5, final=200, ramp_steps=40)),

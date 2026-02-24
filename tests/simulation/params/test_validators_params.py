@@ -70,6 +70,7 @@ from flow360.component.simulation.models.surface_models import (
     TotalPressure,
     Translational,
     Wall,
+    WallFunction,
 )
 from flow360.component.simulation.models.volume_models import (
     AngleExpression,
@@ -290,27 +291,29 @@ def test_consistency_wall_function_validator():
 
 
 def test_wall_function_type_interface():
-    """Test the use_wall_function field accepts bool, string literals, stored as-is."""
+    """Test the use_wall_function field accepts WallFunction, bool (compat), and None."""
     surface = Surface(name="noSlipWall")
 
-    # True stored as True
+    # True is converted to WallFunction() with default BoundaryLayer
     wall = Wall(surfaces=[surface], use_wall_function=True)
-    assert wall.use_wall_function is True
+    assert wall.use_wall_function == WallFunction()
+    assert wall.use_wall_function.type_name == "BoundaryLayer"
 
-    # False stored as False
+    # False is converted to None
     wall = Wall(surfaces=[surface], use_wall_function=False)
-    assert wall.use_wall_function is False
+    assert wall.use_wall_function is None
 
-    # Default is False
+    # Default is None
     wall = Wall(surfaces=[surface])
-    assert wall.use_wall_function is False
+    assert wall.use_wall_function is None
 
-    # Explicit string literals stored as-is
-    wall = Wall(surfaces=[surface], use_wall_function="BoundaryLayer")
-    assert wall.use_wall_function == "BoundaryLayer"
+    # WallFunction with default type_name
+    wall = Wall(surfaces=[surface], use_wall_function=WallFunction())
+    assert wall.use_wall_function.type_name == "BoundaryLayer"
 
-    wall = Wall(surfaces=[surface], use_wall_function="InnerLayer")
-    assert wall.use_wall_function == "InnerLayer"
+    # WallFunction with InnerLayer
+    wall = Wall(surfaces=[surface], use_wall_function=WallFunction(type_name="InnerLayer"))
+    assert wall.use_wall_function.type_name == "InnerLayer"
 
     # SlaterPorousBleed conflict applies to all wall function types
     message = "Using `SlaterPorousBleed` with wall function is not supported currently."
@@ -318,12 +321,12 @@ def test_wall_function_type_interface():
         Wall(
             velocity=SlaterPorousBleed(porosity=0.2, static_pressure=1e5 * u.Pa),
             surfaces=[surface],
-            use_wall_function="InnerLayer",
+            use_wall_function=WallFunction(type_name="InnerLayer"),
         )
 
-    # Invalid string should be rejected by pydantic
+    # Invalid type_name should be rejected by pydantic
     with pytest.raises(pd.ValidationError):
-        Wall(surfaces=[surface], use_wall_function="InvalidType")
+        Wall(surfaces=[surface], use_wall_function=WallFunction(type_name="InvalidType"))
 
 
 def test_low_mach_preconditioner_validator(
