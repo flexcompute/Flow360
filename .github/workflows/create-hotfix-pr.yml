@@ -214,17 +214,18 @@ jobs:
                 continue
               fi
 
-              PR_TRACKING_BODY="Auto hotfix tracking PR for PR #${PR_NUMBER} (${PR_URL}) to \`${base_branch}\`.
-
-Workflow file changes were detected, which cannot be pushed via GITHUB_TOKEN.
-Manual cherry-pick of commit \`${MERGED_SHA}\` is required.
-
-**Affected workflow files:**
-${WORKFLOW_FILES}
-
-**Close this PR after manually cherry-picking the changes. Do NOT merge.**
-
-cc @${PR_AUTHOR}"
+              PR_TRACKING_BODY=$(printf '%s\n' \
+                "Auto hotfix tracking PR for PR #${PR_NUMBER} (${PR_URL}) to \`${base_branch}\`." \
+                "" \
+                "Workflow file changes were detected, which cannot be pushed via GITHUB_TOKEN." \
+                "Manual cherry-pick of commit \`${MERGED_SHA}\` is required." \
+                "" \
+                "**Affected workflow files:**" \
+                "${WORKFLOW_FILES}" \
+                "" \
+                "**Close this PR after manually cherry-picking the changes. Do NOT merge.**" \
+                "" \
+                "cc @${PR_AUTHOR}")
 
               gh pr create \
                 --title "$HOTFIX_PR_TITLE" \
