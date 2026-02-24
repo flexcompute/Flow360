@@ -193,15 +193,15 @@ jobs:
               git checkout -b "$tracking_branch"
 
               mkdir -p "$placeholder_dir"
-              cat > "$placeholder_file" <<EOF
-# Manual hotfix tracking placeholder
-
-original_pr: ${PR_NUMBER}
-original_pr_url: ${PR_URL}
-target_branch: ${base_branch}
-merge_commit_sha: ${MERGED_SHA}
-reason: workflow-file-changes-require-manual-cherry-pick
-EOF
+              printf '%s\n' \
+                "# Manual hotfix tracking placeholder" \
+                "" \
+                "original_pr: ${PR_NUMBER}" \
+                "original_pr_url: ${PR_URL}" \
+                "target_branch: ${base_branch}" \
+                "merge_commit_sha: ${MERGED_SHA}" \
+                "reason: workflow-file-changes-require-manual-cherry-pick" \
+                > "$placeholder_file"
 
               git add "$placeholder_file"
               git commit -m "chore: manual hotfix tracking for PR #${PR_NUMBER} to ${base_branch}"
