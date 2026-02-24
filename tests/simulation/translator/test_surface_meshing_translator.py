@@ -1798,8 +1798,8 @@ def test_gai_target_surface_node_count_absent():
     assert "target_surface_node_count" not in translated["meshing"]["defaults"]
 
 
-def test_legacy_target_surface_node_count_set(get_om6wing_geometry):
-    """target_surface_node_count appears in legacy translated JSON when set."""
+def test_legacy_target_surface_node_count_rejected(get_om6wing_geometry):
+    """target_surface_node_count is rejected for legacy (non-GAI) flows."""
     my_geometry = TempGeometry("om6wing.csm")
     with SI_unit_system:
         params = SimulationParams(
@@ -1818,10 +1818,8 @@ def test_legacy_target_surface_node_count_set(get_om6wing_geometry):
         )
 
     params, err, warnings = validate_params_with_context(params, "Geometry", "SurfaceMesh")
-    assert err is None, f"Validation error: {err}"
-    translated = get_surface_meshing_json(params, mesh_unit=get_om6wing_geometry.mesh_unit)
-    assert "target_surface_node_count" in translated
-    assert translated["target_surface_node_count"] == 5000
+    assert err is not None, "Expected validation error for target_surface_node_count in non-GAI flow"
+    assert "target_surface_node_count" in str(err)
 
 
 def test_legacy_target_surface_node_count_absent(get_om6wing_geometry):

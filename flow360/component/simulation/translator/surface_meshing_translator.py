@@ -603,12 +603,6 @@ def legacy_mesher_json(input_params: SimulationParams):
     ##:: >> Step 3: Get growthRate [REQUIRED]
     translated["growthRate"] = input_params.meshing.defaults.surface_edge_growth_rate
 
-    ##:: >> Step 3.1: Get target_surface_node_count [OPTIONAL]
-    if input_params.meshing.defaults.target_surface_node_count is not None:
-        translated["target_surface_node_count"] = (
-            input_params.meshing.defaults.target_surface_node_count
-        )
-
     ##:: >> Step 4: Get edges [OPTIONAL]
     edge_config = translate_setting_and_apply_to_all_entities(
         input_params.meshing.refinements,
