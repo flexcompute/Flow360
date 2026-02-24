@@ -103,9 +103,7 @@ class KrylovLinearSolver(LinearSolver):
     ... )
     """
 
-    type_name: Literal["KrylovLinearSolver"] = pd.Field(
-        "KrylovLinearSolver", frozen=True
-    )
+    type_name: Literal["KrylovLinearSolver"] = pd.Field("KrylovLinearSolver", frozen=True)
     max_iterations: PositiveInt = pd.Field(
         15, description="Krylov subspace size (number of outer Krylov iterations)."
     )
