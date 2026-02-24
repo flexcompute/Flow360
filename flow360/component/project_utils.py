@@ -717,7 +717,7 @@ def set_up_params_for_uploading(  # pylint: disable=too-many-arguments
     return params
 
 
-def validate_params_with_context(params, root_item_type, up_to):
+def validate_params_with_context(params: SimulationParams, root_item_type, up_to):
     """Validate the simulation params with the simulation path."""
 
     # pylint: disable=protected-access

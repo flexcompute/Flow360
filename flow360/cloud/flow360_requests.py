@@ -238,6 +238,8 @@ class DraftRunRequest(Flow360RequestsV2):
     source_item_type: Literal["Geometry", "SurfaceMesh", "VolumeMesh", "Case"] = pd.Field(
         exclude=True
     )
+    job_type: Optional[Literal["TIME_SHARED_VGPU", "FLEX_CREDIT"]] = pd.Field(None)
+    priority: Optional[int] = pd_v2.Field(default=None, ge=1, le=10)
 
     @pd_v2.model_validator(mode="after")
     def _validate_force_creation_config(self):
