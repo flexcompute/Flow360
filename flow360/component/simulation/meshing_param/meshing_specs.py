@@ -194,6 +194,13 @@ class MeshingDefaults(Flow360BaseModel):
         context=SURFACE_MESH,
     )
 
+    target_surface_node_count: Optional[pd.PositiveInt] = ConditionalField(
+        None,
+        description="Target number of surface mesh nodes. When specified, the surface mesher "
+        "will rescale the meshing parameters to achieve approximately this number of nodes.",
+        context=SURFACE_MESH,
+    )
+
     curvature_resolution_angle: AngleType.Positive = ContextField(
         12 * u.deg,
         description=(
