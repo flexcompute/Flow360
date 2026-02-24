@@ -102,6 +102,7 @@ from flow360.component.simulation.models.surface_models import (
     TotalPressure,
     Translational,
     Wall,
+    WallFunction,
     WallRotation,
 )
 from flow360.component.simulation.models.turbulence_quantities import (
@@ -262,6 +263,7 @@ __all__ = [
     "RampCFL",
     "AdaptiveCFL",
     "Wall",
+    "WallFunction",
     "Freestream",
     "SlipWall",
     "Outflow",

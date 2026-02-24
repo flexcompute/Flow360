@@ -645,6 +645,18 @@ def _remove_non_manifold_faces_key(params_as_dict):
             meshing_defaults.pop("remove_non_manifold_faces", None)
 
 
+def _migrate_wall_function_bool(params_as_dict):
+    """Convert `use_wall_function` boolean values to the new WallFunction model format."""
+    for model in params_as_dict.get("models", []):
+        if model.get("type") != "Wall":
+            continue
+        wall_fn = model.get("use_wall_function")
+        if wall_fn is True:
+            model["use_wall_function"] = {"type_name": "BoundaryLayer"}
+        elif wall_fn is False:
+            model.pop("use_wall_function", None)
+
+
 def _add_linear_solver_type_name(params_as_dict):
     """Add ``type_name`` discriminator to linear_solver dicts inside navier_stokes_solver."""
     models = params_as_dict.get("models")
@@ -662,8 +674,9 @@ def _add_linear_solver_type_name(params_as_dict):
 
 
 def _to_25_9_0(params_as_dict):
-    """Remove deprecated ``remove_non_manifold_faces`` and add ``type_name`` discriminator."""
+    """Remove deprecated ``remove_non_manifold_faces``, migrate wall function bools, and add ``type_name`` discriminator."""
     _remove_non_manifold_faces_key(params_as_dict)
+    _migrate_wall_function_bool(params_as_dict)
     _add_linear_solver_type_name(params_as_dict)
     return params_as_dict
 

@@ -2,6 +2,7 @@
     "boundaries": {
         "1": {
             "type": "WallFunction",
+            "wallModelType": "BoundaryLayer",
             "heatFlux": 0.0,
             "roughnessHeight": 0.0
         },

@@ -1602,3 +1602,26 @@ def test_updater_to_25_9_0_remove_deprecated_remove_non_manifold_faces():
     params_new = _to_25_9_0(params_as_dict)
     defaults = params_new["meshing"]["defaults"]
     assert "remove_non_manifold_faces" not in defaults
+
+
+def test_updater_to_25_9_0_convert_use_wall_function_bool():
+    """Test 25.9.0 updater converts use_wall_function bool to WallFunction dict or removes it."""
+
+    params_as_dict = {
+        "version": "25.8.4",
+        "unit_system": {"name": "SI"},
+        "models": [
+            {"type": "Wall", "use_wall_function": True, "name": "Wall"},
+            {"type": "Wall", "use_wall_function": False, "name": "NoSlipWall"},
+            {"type": "Wall", "name": "DefaultWall"},
+            {"type": "Freestream"},
+        ],
+    }
+
+    params_new = _to_25_9_0(params_as_dict)
+    models = params_new["models"]
+
+    assert models[0]["use_wall_function"] == {"type_name": "BoundaryLayer"}
+    assert "use_wall_function" not in models[1]
+    assert "use_wall_function" not in models[2]
+    assert models[3].get("type") == "Freestream"
