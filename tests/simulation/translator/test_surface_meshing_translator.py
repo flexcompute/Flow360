@@ -1734,3 +1734,115 @@ def test_gai_no_stationary_enclosed_entities():
     for zone in volume_zones:
         if zone["type"] in ("RotationVolume", "RotationCylinder"):
             assert "stationary_enclosed_entities" not in zone
+
+
+def test_gai_target_surface_node_count_set():
+    """target_surface_node_count passes through the GAI whitelist when set."""
+    param_dict = {
+        "private_attribute_asset_cache": {
+            "use_inhouse_mesher": True,
+            "use_geometry_AI": True,
+            "project_entity_info": {"type_name": "GeometryEntityInfo"},
+        },
+    }
+
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    surface_max_edge_length=0.1,
+                    geometry_accuracy=0.01,
+                    target_surface_node_count=50000,
+                ),
+                volume_zones=[AutomatedFarfield()],
+            ),
+            private_attribute_asset_cache=AssetCache.model_validate(
+                param_dict["private_attribute_asset_cache"]
+            ),
+        )
+
+    translated = get_surface_meshing_json(params, 1 * u.m)
+    assert "meshing" in translated
+    assert "defaults" in translated["meshing"]
+    assert "target_surface_node_count" in translated["meshing"]["defaults"]
+    assert translated["meshing"]["defaults"]["target_surface_node_count"] == 50000
+
+
+def test_gai_target_surface_node_count_absent():
+    """target_surface_node_count is absent from GAI JSON when not set."""
+    param_dict = {
+        "private_attribute_asset_cache": {
+            "use_inhouse_mesher": True,
+            "use_geometry_AI": True,
+            "project_entity_info": {"type_name": "GeometryEntityInfo"},
+        },
+    }
+
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    surface_max_edge_length=0.1,
+                    geometry_accuracy=0.01,
+                ),
+                volume_zones=[AutomatedFarfield()],
+            ),
+            private_attribute_asset_cache=AssetCache.model_validate(
+                param_dict["private_attribute_asset_cache"]
+            ),
+        )
+
+    translated = get_surface_meshing_json(params, 1 * u.m)
+    assert "meshing" in translated
+    assert "defaults" in translated["meshing"]
+    assert "target_surface_node_count" not in translated["meshing"]["defaults"]
+
+
+def test_legacy_target_surface_node_count_set(get_om6wing_geometry):
+    """target_surface_node_count appears in legacy translated JSON when set."""
+    my_geometry = TempGeometry("om6wing.csm")
+    with SI_unit_system:
+        params = SimulationParams(
+            private_attribute_asset_cache=AssetCache(
+                project_entity_info=my_geometry._get_entity_info()
+            ),
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    surface_edge_growth_rate=1.2,
+                    curvature_resolution_angle=12 * u.deg,
+                    surface_max_edge_length=1 * u.m,
+                    target_surface_node_count=5000,
+                    edge_split_layers=0,
+                ),
+            ),
+        )
+
+    params, err, warnings = validate_params_with_context(params, "Geometry", "SurfaceMesh")
+    assert err is None, f"Validation error: {err}"
+    translated = get_surface_meshing_json(params, mesh_unit=get_om6wing_geometry.mesh_unit)
+    assert "target_surface_node_count" in translated
+    assert translated["target_surface_node_count"] == 5000
+
+
+def test_legacy_target_surface_node_count_absent(get_om6wing_geometry):
+    """target_surface_node_count is absent from legacy translated JSON when not set."""
+    my_geometry = TempGeometry("om6wing.csm")
+    with SI_unit_system:
+        params = SimulationParams(
+            private_attribute_asset_cache=AssetCache(
+                project_entity_info=my_geometry._get_entity_info()
+            ),
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    surface_edge_growth_rate=1.2,
+                    curvature_resolution_angle=12 * u.deg,
+                    surface_max_edge_length=1 * u.m,
+                    edge_split_layers=0,
+                ),
+            ),
+        )
+
+    params, err, warnings = validate_params_with_context(params, "Geometry", "SurfaceMesh")
+    assert err is None, f"Validation error: {err}"
+    translated = get_surface_meshing_json(params, mesh_unit=get_om6wing_geometry.mesh_unit)
+    assert "target_surface_node_count" not in translated
