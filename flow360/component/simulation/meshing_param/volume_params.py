@@ -540,7 +540,7 @@ class _FarfieldBase(Flow360BaseModel):
             - half_body_negative_y: Trim to a half-model by slicing with the global Y=0 plane; keep the '-y' side for meshing and simulation.
             - full_body: Keep the full body for meshing and simulation without attempting to add symmetry planes.
 
-            Warning: When using AutomatedFarfield, setting `domain_type` overrides the 'auto' symmetry plane behavior.
+            Warning: When using AutomatedFarfield or UserDefinedFarfield, setting `domain_type` overrides automatic symmetry plane detection.
             """,
         )
     )
@@ -734,7 +734,8 @@ class UserDefinedFarfield(_FarfieldBase):
 
         Warning: This should only be used when using GAI and beta mesher.
         """
-        if self.domain_type not in ("half_body_positive_y", "half_body_negative_y"):
+        if self.domain_type not in (None, "half_body_positive_y", "half_body_negative_y"):
+            # We allow None here to allow auto detection of domain type from bounding box.
             raise Flow360ValueError(
                 "Symmetry plane of user defined farfield is only supported when domain_type "
                 "is `half_body_positive_y` or `half_body_negative_y`."
