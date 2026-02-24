@@ -261,6 +261,7 @@ __all__ = [
     "RampCFL",
     "AdaptiveCFL",
     "Wall",
+    "WallFunction",
     "Freestream",
     "SlipWall",
     "Outflow",

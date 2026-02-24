@@ -365,13 +365,22 @@ class Wall(BoundaryBase):
     Example
     -------
 
-    - :code:`Wall` with wall function and prescribed velocity:
+    - :code:`Wall` with default wall function (BoundaryLayer) and prescribed velocity:
 
       >>> fl.Wall(
       ...     entities=geometry["wall_function"],
       ...     velocity = ["min(0.2, 0.2 + 0.2*y/0.5)", "0", "0.1*y/0.5"],
-      ...     use_wall_function=True,
+      ...     use_wall_function=fl.WallFunction(),
       ... )
+
+    - :code:`Wall` with inner-layer wall function:
+
+      >>> fl.Wall(
+      ...     entities=volume_mesh["8"],
+      ...     use_wall_function=fl.WallFunction(type_name="InnerLayer"),
+      ... )
+
+    - :code:`Wall` with wall function and wall rotation:
 
       >>> fl.Wall(
       ...     entities=volume_mesh["8"],
@@ -380,7 +389,7 @@ class Wall(BoundaryBase):
       ...       center=(1, 2, 3) * u.m,
       ...       angular_velocity=100 * u.rpm
       ...     ),
-      ...     use_wall_function=True,
+      ...     use_wall_function=fl.WallFunction(),
       ... )
 
     - Define isothermal wall boundary condition on entities
