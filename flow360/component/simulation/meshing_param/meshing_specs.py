@@ -315,6 +315,22 @@ class MeshingDefaults(Flow360BaseModel):
 
         if value is None and param_info.use_geometry_AI:
             raise ValueError("Geometry accuracy is required when geometry AI is used.")
+
+        if (
+            value is not None
+            and param_info.global_bounding_box is not None
+            and param_info.project_length_unit is not None
+        ):
+            bbox_diag = param_info.global_bounding_box.diagonal
+            ga_value = value.to(param_info.project_length_unit.units).value.item()
+            lower_limit = 1e-6 * bbox_diag
+            if ga_value < lower_limit:
+                raise ValueError(
+                    f"geometry_accuracy ({ga_value}) is below the minimum allowed value "
+                    f"of 1e-6 * bounding box diagonal ({lower_limit:.6e}). "
+                    f"Please increase geometry_accuracy."
+                )
+
         return value
 
     @contextual_field_validator(

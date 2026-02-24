@@ -3559,9 +3559,9 @@ def test_domain_type_bbox_mismatch_downgraded_to_warning_when_transformed():
         params = SimulationParams(
             meshing=MeshingParams(
                 defaults=MeshingDefaults(
-                    boundary_layer_first_layer_thickness=1e-10,
-                    geometry_accuracy=1e-10 * u.m,
-                    surface_max_edge_length=1e-10,
+                    boundary_layer_first_layer_thickness=1e-3,
+                    geometry_accuracy=0.01 * u.m,
+                    surface_max_edge_length=0.1,
                 ),
                 volume_zones=[auto_farfield],
             ),
