@@ -321,13 +321,14 @@ class MeshingDefaults(Flow360BaseModel):
             and param_info.global_bounding_box is not None
             and param_info.project_length_unit is not None
         ):
+            relative_bounding_box_limit = 1e-6
             bbox_diag = param_info.global_bounding_box.diagonal
             ga_value = value.to(param_info.project_length_unit.units).value.item()
-            lower_limit = 1e-6 * bbox_diag
+            lower_limit = relative_bounding_box_limit * bbox_diag
             if ga_value < lower_limit:
                 raise ValueError(
                     f"geometry_accuracy ({ga_value}) is below the minimum allowed value "
-                    f"of 1e-6 * bounding box diagonal ({lower_limit:.6e}). "
+                    f"of {relative_bounding_box_limit} * bounding box diagonal ({lower_limit:.6e}). "
                     f"Please increase geometry_accuracy."
                 )
 
