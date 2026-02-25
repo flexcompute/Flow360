@@ -232,7 +232,8 @@
                 "limit_pressure_density": false,
                 "limit_velocity": false,
                 "linear_solver": {
-                    "max_iterations": 30
+                    "max_iterations": 30,
+                    "type_name": "LinearSolver"
                 },
                 "low_mach_preconditioner": false,
                 "max_force_jac_update_physical_steps": 0,
@@ -247,7 +248,8 @@
                 "absolute_tolerance": 1e-08,
                 "equation_evaluation_frequency": 4,
                 "linear_solver": {
-                    "max_iterations": 20
+                    "max_iterations": 20,
+                    "type_name": "LinearSolver"
                 },
                 "max_force_jac_update_physical_steps": 0,
                 "modeling_constants": {
@@ -264,7 +266,7 @@
                 "update_jacobian_frequency": 4
             },
             "type": "Fluid",
-            "private_attribute_id":"__default_fluid"
+            "private_attribute_id": "__default_fluid"
         }
     ],
     "operating_condition": {

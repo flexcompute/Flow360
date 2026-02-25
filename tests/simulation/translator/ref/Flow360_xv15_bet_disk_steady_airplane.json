@@ -437,7 +437,7 @@
             1.0
         ],
         "refArea": 70685.83470577035,
-	"interfaceInterpolationTolerance" : 0.2
+        "interfaceInterpolationTolerance": 0.2
     },
     "navierStokesSolver": {
         "CFLMultiplier": 1.0,
@@ -447,7 +447,8 @@
         "limitPressureDensity": false,
         "limitVelocity": false,
         "linearSolver": {
-            "maxIterations": 25
+            "maxIterations": 25,
+            "typeName": "LinearSolver"
         },
         "lowMachPreconditioner": false,
         "maxForceJacUpdatePhysicalSteps": 0,

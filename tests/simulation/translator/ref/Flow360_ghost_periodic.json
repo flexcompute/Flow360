@@ -1,165 +1,167 @@
 {
-	"geometry": {
-		"refArea": 1,
-		"momentCenter": [
-			0,
-			0,
-			0
-		],
-		"momentLength": [
-			1,
-			1,
-			1
-		],
-	    "interfaceInterpolationTolerance" : 0.2
-	},
-	"freestream": {
-		"alphaAngle": 0,
-		"betaAngle": 0,
-		"Mach": 0.029386353651012997,
-		"Temperature": 288.15,
-		"muRef": 4.292321046986505e-8
-	},
-	"fluidProperties": {
-		"prandtlNumber": 0.72,
-		"turbulentPrandtlNumber": 0.9
-	},
-	"thermallyPerfectGasModel": {
-		"temperatureRanges": [
-			{
-				"temperatureRangeMin": 0.694082942911678,
-				"temperatureRangeMax": 20.82248828735034,
-				"coefficients": [
-					0.0,
-					0.0,
-					3.5,
-					0.0,
-					0.0,
-					0.0,
-					0.0,
-					7.890809489614162e-16,
-					0.0
-				]
-			}
-		]
-	},
-	"timeStepping": {
-		"CFL": {
-			"type": "adaptive",
-			"min": 0.1,
-			"max": 10000,
-			"maxRelativeChange": 1,
-			"convergenceLimitingFactor": 0.25
-		},
-		"physicalSteps": 1,
-		"orderOfAccuracy": 2,
-		"maxPseudoSteps": 1000,
-		"timeStepSize": "inf"
-	},
-	"navierStokesSolver": {
-		"absoluteTolerance": 1e-10,
-		"relativeTolerance": 0,
-		"orderOfAccuracy": 2,
-		"linearSolver": {
-			"maxIterations": 30
-		},
-		"CFLMultiplier": 1,
-		"kappaMUSCL": -1,
-		"numericalDissipationFactor": 1,
-		"limitVelocity": false,
-		"limitPressureDensity": false,
-		"lowMachPreconditioner": false,
-		"updateJacobianFrequency": 4,
-		"maxForceJacUpdatePhysicalSteps": 0,
-		"modelType": "Compressible",
-		"equationEvalFrequency": 1
-	},
-	"turbulenceModelSolver": {
-		"absoluteTolerance": 1e-8,
-		"relativeTolerance": 0,
-		"orderOfAccuracy": 2,
-		"linearSolver": {
-			"maxIterations": 20
-		},
-		"CFLMultiplier": 2,
-		"reconstructionGradientLimiter": 0.5,
-		"quadraticConstitutiveRelation": false,
-		"updateJacobianFrequency": 4,
-		"maxForceJacUpdatePhysicalSteps": 0,
-		"rotationCorrection": false,
-		"lowReynoldsCorrection": false,
-		"equationEvalFrequency": 4,
-		"modelType": "SpalartAllmaras",
-		"modelConstants": {
-			"C_DES": 0.72,
-			"C_d": 8,
-			"C_cb1": 0.1355,
-			"C_cb2": 0.622,
-			"C_sigma": 0.6666666666666666,
-			"C_v1": 7.1,
-			"C_vonKarman": 0.41,
-			"C_w2": 0.3,
-			"C_w4": 0.21,
-			"C_w5": 1.5,
-			"C_t3": 1.2,
-			"C_t4": 0.5,
-			"C_min_rd": 10
-		},
-		"DDES": false,
-		"ZDES": false,
-		"gridSizeForLES": "maxEdgeLength"
-	},
-	"initialCondition": {
-		"type": "initialCondition",
-		"rho": "rho",
-		"u": "u",
-		"v": "v",
-		"w": "w",
-		"p": "p"
-	},
-	"boundaries": {
-		"body00001": {
-			"type": "NoSlipWall",
-			"heatFlux": 0,
-			"roughnessHeight": 0
-		},
-		"farfield": {
-			"type": "Freestream"
-		},
-		"symmetric-1": {
-			"type": "TranslationallyPeriodic",
-			"pairedPatchName": "symmetric-2"
-		},
-		"symmetric-2": {
-			"type": "TranslationallyPeriodic"
-		}
-	},
-	"surfaceOutput": {
-		"outputFields": [],
-		"outputFormat": "paraview",
-		"animationFrequency": -1,
-		"animationFrequencyOffset": 0,
-		"surfaces": {
-			"body00001": {
-				"outputFields": [
-					"Cf",
-					"CfVec",
-					"Cp",
-					"yPlus"
-				]
-			}
-		},
-		"writeSingleFile": false,
-		"animationFrequencyTimeAverage": -1,
-		"animationFrequencyTimeAverageOffset": 0,
-		"startAverageIntegrationStep": -1
-	},
-	"userDefinedFields": [],
-	"runControl": {
-		"externalProcessMonitorOutput": false
-	},
-	"usingLiquidAsMaterial": false,
-	"outputRescale": {
-		"velocityScale": 1
-	}
+    "geometry": {
+        "refArea": 1,
+        "momentCenter": [
+            0,
+            0,
+            0
+        ],
+        "momentLength": [
+            1,
+            1,
+            1
+        ],
+        "interfaceInterpolationTolerance": 0.2
+    },
+    "freestream": {
+        "alphaAngle": 0,
+        "betaAngle": 0,
+        "Mach": 0.029386353651012997,
+        "Temperature": 288.15,
+        "muRef": 4.292321046986505e-08
+    },
+    "fluidProperties": {
+        "prandtlNumber": 0.72,
+        "turbulentPrandtlNumber": 0.9
+    },
+    "thermallyPerfectGasModel": {
+        "temperatureRanges": [
+            {
+                "temperatureRangeMin": 0.694082942911678,
+                "temperatureRangeMax": 20.82248828735034,
+                "coefficients": [
+                    0.0,
+                    0.0,
+                    3.5,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    7.890809489614162e-16,
+                    0.0
+                ]
+            }
+        ]
+    },
+    "timeStepping": {
+        "CFL": {
+            "type": "adaptive",
+            "min": 0.1,
+            "max": 10000,
+            "maxRelativeChange": 1,
+            "convergenceLimitingFactor": 0.25
+        },
+        "physicalSteps": 1,
+        "orderOfAccuracy": 2,
+        "maxPseudoSteps": 1000,
+        "timeStepSize": "inf"
+    },
+    "navierStokesSolver": {
+        "absoluteTolerance": 1e-10,
+        "relativeTolerance": 0,
+        "orderOfAccuracy": 2,
+        "linearSolver": {
+            "maxIterations": 30,
+            "typeName": "LinearSolver"
+        },
+        "CFLMultiplier": 1,
+        "kappaMUSCL": -1,
+        "numericalDissipationFactor": 1,
+        "limitVelocity": false,
+        "limitPressureDensity": false,
+        "lowMachPreconditioner": false,
+        "updateJacobianFrequency": 4,
+        "maxForceJacUpdatePhysicalSteps": 0,
+        "modelType": "Compressible",
+        "equationEvalFrequency": 1
+    },
+    "turbulenceModelSolver": {
+        "absoluteTolerance": 1e-08,
+        "relativeTolerance": 0,
+        "orderOfAccuracy": 2,
+        "linearSolver": {
+            "maxIterations": 20,
+            "typeName": "LinearSolver"
+        },
+        "CFLMultiplier": 2,
+        "reconstructionGradientLimiter": 0.5,
+        "quadraticConstitutiveRelation": false,
+        "updateJacobianFrequency": 4,
+        "maxForceJacUpdatePhysicalSteps": 0,
+        "rotationCorrection": false,
+        "lowReynoldsCorrection": false,
+        "equationEvalFrequency": 4,
+        "modelType": "SpalartAllmaras",
+        "modelConstants": {
+            "C_DES": 0.72,
+            "C_d": 8,
+            "C_cb1": 0.1355,
+            "C_cb2": 0.622,
+            "C_sigma": 0.6666666666666666,
+            "C_v1": 7.1,
+            "C_vonKarman": 0.41,
+            "C_w2": 0.3,
+            "C_w4": 0.21,
+            "C_w5": 1.5,
+            "C_t3": 1.2,
+            "C_t4": 0.5,
+            "C_min_rd": 10
+        },
+        "DDES": false,
+        "ZDES": false,
+        "gridSizeForLES": "maxEdgeLength"
+    },
+    "initialCondition": {
+        "type": "initialCondition",
+        "rho": "rho",
+        "u": "u",
+        "v": "v",
+        "w": "w",
+        "p": "p"
+    },
+    "boundaries": {
+        "body00001": {
+            "type": "NoSlipWall",
+            "heatFlux": 0,
+            "roughnessHeight": 0
+        },
+        "farfield": {
+            "type": "Freestream"
+        },
+        "symmetric-1": {
+            "type": "TranslationallyPeriodic",
+            "pairedPatchName": "symmetric-2"
+        },
+        "symmetric-2": {
+            "type": "TranslationallyPeriodic"
+        }
+    },
+    "surfaceOutput": {
+        "outputFields": [],
+        "outputFormat": "paraview",
+        "animationFrequency": -1,
+        "animationFrequencyOffset": 0,
+        "surfaces": {
+            "body00001": {
+                "outputFields": [
+                    "Cf",
+                    "CfVec",
+                    "Cp",
+                    "yPlus"
+                ]
+            }
+        },
+        "writeSingleFile": false,
+        "animationFrequencyTimeAverage": -1,
+        "animationFrequencyTimeAverageOffset": 0,
+        "startAverageIntegrationStep": -1
+    },
+    "userDefinedFields": [],
+    "runControl": {
+        "externalProcessMonitorOutput": false
+    },
+    "usingLiquidAsMaterial": false,
+    "outputRescale": {
+        "velocityScale": 1
+    }
 }

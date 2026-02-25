@@ -43,7 +43,8 @@
         "limitPressureDensity": false,
         "limitVelocity": false,
         "linearSolver": {
-            "maxIterations": 30
+            "maxIterations": 30,
+            "typeName": "LinearSolver"
         },
         "lowMachPreconditioner": false,
         "maxForceJacUpdatePhysicalSteps": 0,
@@ -74,7 +75,8 @@
         "equationEvalFrequency": 4,
         "gridSizeForLES": "maxEdgeLength",
         "linearSolver": {
-            "maxIterations": 20
+            "maxIterations": 20,
+            "typeName": "LinearSolver"
         },
         "lowReynoldsCorrection": false,
         "maxForceJacUpdatePhysicalSteps": 0,
@@ -103,7 +105,7 @@
     },
     "actuatorDisks": [
         {
-	    "name": "my_cylinder-1",
+            "name": "my_cylinder-1",
             "center": [
                 0.0,
                 0.0,
