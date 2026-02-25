@@ -32,12 +32,30 @@ from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.utils import model_attribute_unlock
 from flow360.component.simulation.web.asset_base import AssetBase
 from flow360.component.utils import (
+    SUPPORTED_GEOMETRY_FILE_PATTERNS,
     GeometryFiles,
     MeshNameParser,
+    match_file_pattern,
     shared_account_confirm_proceed,
 )
 from flow360.exceptions import Flow360FileError, Flow360ValueError
 from flow360.log import log
+
+# Re-exports for face grouping API
+from flow360.component.geometry_tree import TreeBackend, NodeSet, Node
+from flow360.component.geometry_tree.face_group import FaceGroup
+from flow360.component.import_geometry.import_geometry_api import ImportGeometryApi
+
+
+def _is_file_path(value):
+    """Detect if a string looks like a geometry file path rather than a UUID."""
+    if not isinstance(value, str):
+        return False
+    if match_file_pattern(SUPPORTED_GEOMETRY_FILE_PATTERNS, value):
+        return True
+    if "/" in value or value.startswith("./") or value.startswith("../"):
+        return True
+    return False
 
 
 class GeometryStatus(Enum):
@@ -386,9 +404,146 @@ class Geometry(AssetBase):
     _cloud_resource_type_name = "Geometry"
 
     # pylint: disable=redefined-builtin
-    def __init__(self, id: Union[str, None]):
-        super().__init__(id)
+    def __init__(self, id: Union[str, None], name: str = None):
+        self._backend = None  # TreeBackend for face grouping
+        self._tree_groups = {}  # name -> FaceGroup
+        if id is not None and _is_file_path(id):
+            self._init_from_file(id, name=name)
+        else:
+            super().__init__(id)
+            self.snappy_body_registry = None
+
+    @staticmethod
+    def _make_timestamped_name(file_path):
+        """Generate a resource name like 'MM-DD-hh-mm-ss-<filename>'."""
+        from datetime import datetime
+
+        timestamp = datetime.now().strftime("%m-%d-%H-%M-%S")
+        basename = os.path.splitext(os.path.basename(file_path))[0]
+        return f"{timestamp}-{basename}"
+
+    def _init_from_file(self, file_path, name=None):
+        """Initialize from a geometry file via the import-geometry workflow."""
+        api = ImportGeometryApi()
+
+        if name is None:
+            name = self._make_timestamped_name(file_path)
+
+        # Step 1: Create import-geometry resource
+        log.info(f"Creating import-geometry resource '{name}' for {file_path}")
+        result = api.create(file_path, name=name)
+        geometry_id = result["geometryId"]
+        upload_urls = result["uploadUrls"]
+
+        # Step 2: Upload file to presigned URL
+        log.info(f"Uploading {file_path}...")
+        api.upload_file(file_path, upload_urls[0])
+
+        # Step 3: Mark upload complete
+        api.complete_upload(geometry_id)
+
+        # Step 4: Wait until processed
+        log.info("Waiting for geometry tree processing...")
+        api.wait_until_processed(geometry_id)
+
+        # Step 5: Fetch tree
+        tree_data = api.fetch_tree(geometry_id)
+
+        # Step 6: Initialize base class with real geometry ID
+        super(Geometry, self).__init__(geometry_id)
         self.snappy_body_registry = None
+
+        # Step 7: Load tree into backend
+        self._backend = TreeBackend()
+        self._backend.load_from_json(tree_data)
+        log.info(f"Geometry loaded: {len(self.faces())} faces")
+
+    # ================================================================
+    # Tree Navigation Methods
+    # ================================================================
+
+    def root_node(self) -> NodeSet:
+        """Get NodeSet containing the root node."""
+        if self._backend is None:
+            raise Flow360ValueError(
+                "Geometry tree not loaded. Use Geometry(file_path) to load from file."
+            )
+        root_id = self._backend.get_root()
+        if root_id is None:
+            return NodeSet(self, self._backend, set())
+        return NodeSet(self, self._backend, {root_id})
+
+    def children(self, **filters) -> NodeSet:
+        """Get direct children of the root node."""
+        return self.root_node().children(**filters)
+
+    def descendants(self, **filters) -> NodeSet:
+        """Get all descendants of the root."""
+        return self.root_node().descendants(**filters)
+
+    def faces(self, **filters) -> NodeSet:
+        """Get all face nodes in the geometry."""
+        return self.root_node().faces(**filters)
+
+    # ================================================================
+    # Face Group Management
+    # ================================================================
+
+    def create_face_group(self, name: str, selection: NodeSet) -> FaceGroup:
+        """
+        Create a named face group from a selection.
+
+        Each face can only belong to one group. Faces in the selection
+        are removed from any previous group they belonged to.
+        """
+        if name in self._tree_groups:
+            raise ValueError(f"Group '{name}' already exists")
+
+        # Extract face node IDs from the selection
+        face_nodes = selection.faces()
+        face_node_ids = face_nodes._node_ids
+
+        # Remove these faces from any existing groups (exclusive ownership)
+        for group in self._tree_groups.values():
+            group._node_ids -= face_node_ids
+
+        group = FaceGroup(name, face_node_ids)
+        self._tree_groups[name] = group
+        return group
+
+    def get_face_group(self, name: str) -> FaceGroup:
+        """Get a face group by name."""
+        if name not in self._tree_groups:
+            raise KeyError(f"Group '{name}' not found")
+        return self._tree_groups[name]
+
+    def list_groups(self):
+        """List all group names."""
+        return list(self._tree_groups.keys())
+
+    def clear_groups(self) -> None:
+        """Remove all face groups."""
+        self._tree_groups.clear()
+
+    # ================================================================
+    # Set Operations
+    # ================================================================
+
+    def __sub__(self, other) -> NodeSet:
+        """Subtract faces from total geometry (geometry - FaceGroup or NodeSet)."""
+        all_faces = self.faces()
+        if isinstance(other, FaceGroup):
+            other_nodes = NodeSet(self, self._backend, other._node_ids)
+            return all_faces - other_nodes
+        elif isinstance(other, NodeSet):
+            return all_faces - other.faces()
+        else:
+            return NotImplemented
+
+    def __repr__(self) -> str:
+        if self._backend is not None:
+            return f"Geometry({len(self.faces())} faces)"
+        return f"Geometry('{self.id}')"
 
     @property
     def face_group_tag(self):
