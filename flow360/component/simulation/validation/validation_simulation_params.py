@@ -422,6 +422,7 @@ def _collect_asset_boundary_entities(params, param_info: ParamsValidationInfo) -
                 half_model_symmetry_plane_center_y=param_info.half_model_symmetry_plane_center_y,
                 quasi_3d_symmetry_planes_center_y=param_info.quasi_3d_symmetry_planes_center_y,
                 farfield_domain_type=param_info.farfield_domain_type,
+                gai_and_beta_mesher=param_info.use_geometry_AI and param_info.is_beta_mesher,
             )
             is False
         ]

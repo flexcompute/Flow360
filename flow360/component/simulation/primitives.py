@@ -743,6 +743,7 @@ class Surface(_SurfaceEntityBase):
         half_model_symmetry_plane_center_y: Optional[float],
         quasi_3d_symmetry_planes_center_y: Optional[tuple[float]],
         farfield_domain_type: Optional[str] = None,
+        gai_and_beta_mesher: Optional[bool] = False,
     ) -> bool:
         """
         Check against the automated farfield method and
@@ -778,6 +779,8 @@ class Surface(_SurfaceEntityBase):
         if farfield_method in ("auto", "user-defined"):
             if half_model_symmetry_plane_center_y is None:
                 # Legacy schema.
+                return False
+            if farfield_method == "user-defined" and not gai_and_beta_mesher:
                 return False
             return self._overlaps(half_model_symmetry_plane_center_y, length_tolerance)
 

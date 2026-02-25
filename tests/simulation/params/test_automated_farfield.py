@@ -279,9 +279,12 @@ def test_user_defined_farfield_symmetry_plane(surface_mesh):
         == "Value error, `domain_type` is only supported when using both GAI surface mesher and beta volume mesher."
     )
     params.meshing.defaults.geometry_accuracy = 1 * u.mm
-    errors, warnings = _run_validation(params, surface_mesh, use_beta_mesher=True, use_geometry_AI=True)
+    errors, warnings = _run_validation(
+        params, surface_mesh, use_beta_mesher=True, use_geometry_AI=True
+    )
     assert errors is None
     assert warnings == []
+
 
 def test_user_defined_farfield_symmetry_plane_requires_half_domain(surface_mesh):
     farfield = UserDefinedFarfield(domain_type="full_body")
@@ -333,7 +336,9 @@ def test_user_defined_farfield_auto_symmetry_plane(surface_mesh):
                 ),
             ],
         )
-    errors, warnings = _run_validation(params, surface_mesh, use_beta_mesher=True, use_geometry_AI=True)
+    errors, warnings = _run_validation(
+        params, surface_mesh, use_beta_mesher=True, use_geometry_AI=True
+    )
     assert errors is None
     assert warnings == []
 
