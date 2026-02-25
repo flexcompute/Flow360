@@ -58,7 +58,7 @@ class UniformRefinement(Flow360BaseModel):
     -------
 
       >>> fl.UniformRefinement(
-      ...     entities=[cylinder, box, axisymmetric_body],
+      ...     entities=[cylinder, box, axisymmetric_body, sphere],
       ...     spacing=1*fl.u.cm
       ... )
 
@@ -67,9 +67,10 @@ class UniformRefinement(Flow360BaseModel):
 
     name: Optional[str] = pd.Field("Uniform refinement")
     refinement_type: Literal["UniformRefinement"] = pd.Field("UniformRefinement", frozen=True)
-    entities: EntityList[Box, Cylinder, AxisymmetricBody] = pd.Field(
+    entities: EntityList[Box, Cylinder, AxisymmetricBody, Sphere] = pd.Field(
         description=":class:`UniformRefinement` can be applied to :class:`~flow360.Box`, "
-        + ":class:`~flow360.Cylinder`, and :class:`~flow360.AxisymmetricBody` regions."
+        + ":class:`~flow360.Cylinder`, :class:`~flow360.AxisymmetricBody`, "
+        + "and :class:`~flow360.Sphere` regions."
     )
     # pylint: disable=no-member
     spacing: LengthType.Positive = pd.Field(description="The required refinement spacing.")
@@ -80,10 +81,8 @@ class UniformRefinement(Flow360BaseModel):
 
     @contextual_field_validator("entities", mode="after")
     @classmethod
-    def check_axisymmetric_body_used_with_beta_mesher(
-        cls, values, param_info: ParamsValidationInfo
-    ):
-        """Check that AxisymmetricBody is used with beta mesher."""
+    def check_entities_used_with_beta_mesher(cls, values, param_info: ParamsValidationInfo):
+        """Check that AxisymmetricBody and Sphere are used with beta mesher."""
 
         if values is None:
             return values
@@ -95,6 +94,10 @@ class UniformRefinement(Flow360BaseModel):
             if isinstance(entity, AxisymmetricBody):
                 raise ValueError(
                     "`AxisymmetricBody` entity for `UniformRefinement` is supported only with beta mesher."
+                )
+            if isinstance(entity, Sphere):
+                raise ValueError(
+                    "`Sphere` entity for `UniformRefinement` is supported only with beta mesher."
                 )
 
         return values

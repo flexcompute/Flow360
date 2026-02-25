@@ -196,6 +196,12 @@ def refinement_entity_injector(entity_obj):
         }
     if isinstance(entity_obj, AxisymmetricBody):
         return axisymmetric_body_injector(entity_obj)
+    if isinstance(entity_obj, Sphere):
+        return {
+            "type": "Sphere",
+            "radius": entity_obj.radius.value.item(),
+            "center": list(entity_obj.center.value),
+        }
     return {}
 
 

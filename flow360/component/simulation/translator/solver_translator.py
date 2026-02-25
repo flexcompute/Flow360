@@ -1415,11 +1415,17 @@ def actuator_disk_entity_info_serializer(volume):
 
 def actuator_disk_translator(model: ActuatorDisk):
     """Actuator disk translator"""
-    return {
+    result = {
         "forcePerArea": convert_tuples_to_lists(
             remove_units_in_dict(dump_dict(model.force_per_area))
         )
     }
+    if model.reference_velocity is not None:
+        ref_vel = remove_units_in_dict(
+            model.model_dump(by_alias=True, include={"reference_velocity"})
+        )
+        result["referenceVelocity"] = convert_tuples_to_lists(ref_vel["referenceVelocity"])
+    return result
 
 
 def get_solid_zone_boundaries(volume, solid_zone_boundaries: set):
