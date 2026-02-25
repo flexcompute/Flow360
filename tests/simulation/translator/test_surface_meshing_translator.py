@@ -33,6 +33,7 @@ from flow360.component.simulation.meshing_param.face_params import (
     SurfaceRefinement,
 )
 from flow360.component.simulation.meshing_param.meshing_specs import (
+    OctreeSpacing,
     VolumeMeshingDefaults,
 )
 from flow360.component.simulation.meshing_param.params import (
@@ -357,7 +358,8 @@ def om6wing_tutorial_global_plus_local_override():
     with SI_unit_system:
         param = SimulationParams(
             private_attribute_asset_cache=AssetCache(
-                project_entity_info=my_geometry._get_entity_info()
+                project_entity_info=my_geometry._get_entity_info(),
+                project_length_unit=1 * u.m,
             ),
             meshing=MeshingParams(
                 defaults=MeshingDefaults(
@@ -391,7 +393,8 @@ def om6wing_tutorial_aspect_ratio():
     with SI_unit_system:
         param = SimulationParams(
             private_attribute_asset_cache=AssetCache(
-                project_entity_info=my_geometry._get_entity_info()
+                project_entity_info=my_geometry._get_entity_info(),
+                project_length_unit=1 * u.m,
             ),
             meshing=MeshingParams(
                 defaults=MeshingDefaults(
@@ -430,7 +433,8 @@ def om6wing_tutorial_global_only():
     with SI_unit_system:
         param = SimulationParams(
             private_attribute_asset_cache=AssetCache(
-                project_entity_info=my_geometry._get_entity_info()
+                project_entity_info=my_geometry._get_entity_info(),
+                project_length_unit=1 * u.m,
             ),
             meshing=MeshingParams(
                 defaults=MeshingDefaults(
@@ -477,7 +481,8 @@ def airplane_surface_mesh():
     with SI_unit_system:
         param = SimulationParams(
             private_attribute_asset_cache=AssetCache(
-                project_entity_info=my_geometry._get_entity_info()
+                project_entity_info=my_geometry._get_entity_info(),
+                project_length_unit=1 * u.m,
             ),
             meshing=MeshingParams(
                 defaults=MeshingDefaults(
@@ -524,7 +529,8 @@ def rotor_surface_mesh():
     with imperial_unit_system:
         param = SimulationParams(
             private_attribute_asset_cache=AssetCache(
-                project_entity_info=rotor_geometry._get_entity_info()
+                project_entity_info=rotor_geometry._get_entity_info(),
+                project_length_unit=1 * u.inch,
             ),
             meshing=MeshingParams(
                 defaults=MeshingDefaults(
@@ -606,7 +612,7 @@ def snappy_basic_refinements():
             defaults=snappy.SurfaceMeshingDefaults(
                 min_spacing=3 * u.mm, max_spacing=4 * u.mm, gap_resolution=1 * u.mm
             ),
-            base_spacing=3.5 * u.mm,
+            octree_spacing=OctreeSpacing(base_spacing=3.5 * u.mm),
             refinements=[
                 snappy.BodyRefinement(
                     gap_resolution=2 * u.mm,
@@ -705,7 +711,7 @@ def snappy_coupled_refinements():
             defaults=snappy.SurfaceMeshingDefaults(
                 min_spacing=3 * u.mm, max_spacing=4 * u.mm, gap_resolution=1 * u.mm
             ),
-            base_spacing=5 * u.mm,
+            octree_spacing=OctreeSpacing(base_spacing=5 * u.mm),
             refinements=[],
             smooth_controls=snappy.SmoothControls(),
         )
@@ -768,7 +774,7 @@ def snappy_refinements_multiple_regions():
             defaults=snappy.SurfaceMeshingDefaults(
                 min_spacing=2.999999992 * u.mm, max_spacing=4 * u.mm, gap_resolution=1 * u.mm
             ),
-            base_spacing=3 * u.mm,
+            octree_spacing=OctreeSpacing(base_spacing=3 * u.mm),
             refinements=[
                 snappy.RegionRefinement(
                     min_spacing=20 * u.mm,
@@ -1148,6 +1154,7 @@ def test_gai_surface_mesher_refinements():
                         boundary_layer_first_layer_thickness=0.01,
                         surface_max_aspect_ratio=0.01,
                         surface_max_adaptation_iterations=19,
+                        remove_hidden_geometry=True,
                     ),
                     volume_zones=[farfield],
                     refinements=[
@@ -1161,6 +1168,7 @@ def test_gai_surface_mesher_refinements():
                         GeometryRefinement(
                             name="Local_override",
                             geometry_accuracy=0.05 * u.m,
+                            min_passage_size=0.1 * u.m,
                             faces=[geometry["body00001_face00001"]],
                         ),
                     ],

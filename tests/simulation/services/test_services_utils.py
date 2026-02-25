@@ -2,6 +2,7 @@ import json
 from types import SimpleNamespace
 
 import flow360 as fl
+import flow360.component.simulation.units as u
 from flow360.component.project_utils import validate_params_with_context
 from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.meshing_param.meshing_specs import MeshingDefaults
@@ -29,7 +30,9 @@ def _build_simulation_params(*, edge_split_layers=None):
                 defaults=fl.MeshingDefaults(**defaults_kwargs),
                 volume_zones=[fl.AutomatedFarfield()],
             ),
-            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=False),
+            private_attribute_asset_cache=AssetCache(
+                use_inhouse_mesher=False, project_length_unit=1 * u.m
+            ),
         )
 
 

@@ -20,7 +20,10 @@ from flow360.component.simulation.meshing_param.volume_params import (
     WindTunnelFarfield,
 )
 from flow360.component.simulation.models.material import Air
-from flow360.component.simulation.models.solver_numerics import NoneSolver
+from flow360.component.simulation.models.solver_numerics import (
+    KrylovLinearSolver,
+    NoneSolver,
+)
 from flow360.component.simulation.models.surface_models import (
     Inflow,
     Outflow,
@@ -85,7 +88,7 @@ def _check_consistency_wall_function_and_surface_output(v):
     if models:
         has_wall_function_model = False
         for model in models:
-            if isinstance(model, Wall) and model.use_wall_function:
+            if isinstance(model, Wall) and model.use_wall_function is not None:
                 has_wall_function_model = True
                 break
 
@@ -394,11 +397,11 @@ def _collect_asset_boundary_entities(params, param_info: ParamsValidationInfo) -
     # Check for legacy assets missing private_attributes before farfield-related processing
     # This check is only relevant when we need bounding box information for farfield operations
     # Only flag as legacy if ALL boundaries are missing private_attributes (not just some)
-    # AND the farfield method is one that performs automatic surface deletion (auto/quasi-3d modes)
-    # For user-defined/wind-tunnel, missing BCs are always errors since no auto-deletion occurs
+    # AND the farfield method is one that performs automatic surface deletion (auto/quasi-3d/user-defined
+    # modes). For wind-tunnel farfield, missing BCs are always errors since no auto-deletion occurs
     if (
         asset_boundary_entities
-        and farfield_method in ("auto", "quasi-3d", "quasi-3d-periodic")
+        and farfield_method in ("auto", "quasi-3d", "quasi-3d-periodic", "user-defined")
         and all(
             getattr(item, "private_attributes", None) is None for item in asset_boundary_entities
         )
@@ -419,6 +422,7 @@ def _collect_asset_boundary_entities(params, param_info: ParamsValidationInfo) -
                 half_model_symmetry_plane_center_y=param_info.half_model_symmetry_plane_center_y,
                 quasi_3d_symmetry_planes_center_y=param_info.quasi_3d_symmetry_planes_center_y,
                 farfield_domain_type=param_info.farfield_domain_type,
+                gai_and_beta_mesher=param_info.use_geometry_AI and param_info.is_beta_mesher,
             )
             is False
         ]
@@ -440,15 +444,22 @@ def _collect_asset_boundary_entities(params, param_info: ParamsValidationInfo) -
             for item in ghost_entities
             if item.name in ("farfield", "symmetric-1", "symmetric-2")
         ]
-    elif farfield_method in ("user-defined", "wind-tunnel"):
+    elif farfield_method == "user-defined":
+        if param_info.use_geometry_AI and param_info.is_beta_mesher:
+            asset_boundary_entities += [
+                item
+                for item in ghost_entities
+                if item.name == "symmetric"
+                and (param_info.entity_transformation_detected or item.exists(param_info))
+            ]
+    elif farfield_method == "wind-tunnel":
         if param_info.will_generate_forced_symmetry_plane():
             asset_boundary_entities += [item for item in ghost_entities if item.name == "symmetric"]
-        if farfield_method == "wind-tunnel":
-            # pylint: disable=protected-access
-            asset_boundary_entities += WindTunnelFarfield._get_valid_ghost_surfaces(
-                params.meshing.volume_zones[0].floor_type.type_name,
-                params.meshing.volume_zones[0].domain_type,
-            )
+        # pylint: disable=protected-access
+        asset_boundary_entities += WindTunnelFarfield._get_valid_ghost_surfaces(
+            params.meshing.volume_zones[0].floor_type.type_name,
+            params.meshing.volume_zones[0].domain_type,
+        )
 
     return asset_boundary_entities, has_missing_private_attributes
 
@@ -914,6 +925,38 @@ def _material_has_temperature_dependent_gas(material):
         if _has_temperature_dependent_coefficients(species.nasa_9_coefficients.temperature_ranges):
             return True
     return False
+
+
+def _check_krylov_solver_restrictions(params):
+    """Validate that the Krylov solver is not used with incompatible settings."""
+    models = params.models
+    if not models:
+        return params
+
+    for model in models:
+        if not isinstance(model, Fluid):
+            continue
+        ns = model.navier_stokes_solver
+        if not isinstance(ns.linear_solver, KrylovLinearSolver):
+            continue
+
+        if ns.limit_velocity:
+            raise ValueError(
+                "KrylovLinearSolver is not compatible with limit_velocity=True. "
+                "Please disable the velocity limiter when using the Krylov solver."
+            )
+        if ns.limit_pressure_density:
+            raise ValueError(
+                "KrylovLinearSolver is not compatible with limit_pressure_density=True. "
+                "Please disable the pressure-density limiter when using the Krylov solver."
+            )
+        if params.time_stepping is not None and isinstance(params.time_stepping, Unsteady):
+            raise ValueError(
+                "KrylovLinearSolver is not supported with Unsteady time stepping. "
+                "Please use Steady time stepping."
+            )
+
+    return params
 
 
 def _check_tpg_not_with_isentropic_solver(params):

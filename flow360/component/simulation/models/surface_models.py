@@ -54,6 +54,7 @@ from flow360.component.simulation.validation.validation_utils import (
 # pylint: disable=fixme
 # TODO: Warning: Pydantic V1 import
 from flow360.component.types import Axis
+from flow360.log import log
 
 
 class BoundaryBase(Flow360BaseModel, metaclass=ABCMeta):
@@ -322,6 +323,40 @@ WallVelocityModelTypes = Annotated[
 ]
 
 
+class WallFunction(Flow360BaseModel):
+    """
+    :class:`WallFunction` specifies the wall function model to use on a :class:`Wall` boundary.
+
+    Example
+    -------
+
+    - Default boundary-layer wall function:
+
+      >>> fl.Wall(
+      ...     entities=volume_mesh["fluid/wall"],
+      ...     use_wall_function=fl.WallFunction(),
+      ... )
+
+    - Inner-layer wall model:
+
+      >>> fl.Wall(
+      ...     entities=volume_mesh["fluid/wall"],
+      ...     use_wall_function=fl.WallFunction(type_name="InnerLayer"),
+      ... )
+
+    ====
+    """
+
+    type_name: Literal["BoundaryLayer", "InnerLayer"] = pd.Field(
+        "BoundaryLayer",
+        description="Type of wall function model. "
+        + "'BoundaryLayer' uses integral flat plate boundary layer theory to predict wall shear stress. "
+        + "It performs well across all y+ ranges. "
+        + "'InnerLayer' uses the inner layer behavior of the turbulent boundary layer, "
+        + "offering better accuracy for y+ values in the log layer and below.",
+    )
+
+
 class Wall(BoundaryBase):
     """
     :class:`Wall` class defines the wall boundary condition based on the inputs.
@@ -330,13 +365,22 @@ class Wall(BoundaryBase):
     Example
     -------
 
-    - :code:`Wall` with wall function and prescribed velocity:
+    - :code:`Wall` with default wall function (BoundaryLayer) and prescribed velocity:
 
       >>> fl.Wall(
       ...     entities=geometry["wall_function"],
       ...     velocity = ["min(0.2, 0.2 + 0.2*y/0.5)", "0", "0.1*y/0.5"],
-      ...     use_wall_function=True,
+      ...     use_wall_function=fl.WallFunction(),
       ... )
+
+    - :code:`Wall` with inner-layer wall function:
+
+      >>> fl.Wall(
+      ...     entities=volume_mesh["8"],
+      ...     use_wall_function=fl.WallFunction(type_name="InnerLayer"),
+      ... )
+
+    - :code:`Wall` with wall function and wall rotation:
 
       >>> fl.Wall(
       ...     entities=volume_mesh["8"],
@@ -345,7 +389,7 @@ class Wall(BoundaryBase):
       ...       center=(1, 2, 3) * u.m,
       ...       angular_velocity=100 * u.rpm
       ...     ),
-      ...     use_wall_function=True,
+      ...     use_wall_function=fl.WallFunction(),
       ... )
 
     - Define isothermal wall boundary condition on entities
@@ -387,10 +431,11 @@ class Wall(BoundaryBase):
 
     name: Optional[str] = pd.Field("Wall", description="Name of the `Wall` boundary condition.")
     type: Literal["Wall"] = pd.Field("Wall", frozen=True)
-    use_wall_function: bool = pd.Field(
-        False,
-        description="Specify if use wall functions to estimate the velocity field "
-        + "close to the solid boundaries.",
+    use_wall_function: Optional[WallFunction] = pd.Field(
+        None,
+        description="Wall function configuration. Set to :class:`WallFunction` to enable "
+        + "wall functions. The default wall function type is ``'BoundaryLayer'``. "
+        + "Set to ``None`` to disable wall functions (no-slip wall).",
     )
 
     velocity: Optional[Union[WallVelocityModelTypes, VelocityVectorType]] = pd.Field(
@@ -414,10 +459,28 @@ class Wall(BoundaryBase):
         description="List of boundaries with the `Wall` boundary condition imposed.",
     )
 
+    @pd.field_validator("use_wall_function", mode="before")
+    @classmethod
+    def _normalize_wall_function(cls, value):
+        """Handle backward-compatible bool inputs for use_wall_function."""
+        if value is True:
+            log.warning(
+                "Passing a bool to `use_wall_function` is deprecated. "
+                "Use `use_wall_function=WallFunction()` instead of `True`."
+            )
+            return WallFunction()
+        if value is False:
+            log.warning(
+                "Passing a bool to `use_wall_function` is deprecated. "
+                "Use `use_wall_function=None` instead of `False`."
+            )
+            return None
+        return value
+
     @pd.model_validator(mode="after")
     def check_wall_function_conflict(self):
         """Check no setting is conflicting with the usage of wall function"""
-        if self.use_wall_function is False:
+        if self.use_wall_function is None:
             return self
         if isinstance(self.velocity, SlaterPorousBleed):
             raise ValueError(

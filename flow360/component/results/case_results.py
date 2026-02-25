@@ -241,7 +241,7 @@ class YSlicingForceDistributionResultCSVModel(PerEntityResultCSVModel):
     _x_columns: List[str] = [_Y]
 
 
-class CustomForceDistributionResultCSVModel(PerEntityResultCSVModel):
+class ForceDistributionCSVModel(PerEntityResultCSVModel):
     """CustomForceDistributionResultCSVModel"""
 
     _VARIABLES_INCREMENTAL = (
@@ -484,7 +484,7 @@ class ForceDistributionsResultModel(NamedResultsCollectionModel):
     """
 
     _file_name_pattern: str = CaseDownloadable.FORCE_DISTRIBUTION_PATTERN.value
-    _result_model_class: type = CustomForceDistributionResultCSVModel
+    _result_model_class: type = ForceDistributionCSVModel
 
 
 class _DimensionedCSVResultModel(pd.BaseModel):

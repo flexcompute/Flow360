@@ -1,8 +1,50 @@
 {
+    "actuatorDisks": [
+        {
+            "axisThrust": [
+                0.0,
+                0.0,
+                1.0
+            ],
+            "center": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "forcePerArea": {
+                "circumferential": [
+                    -0.0001,
+                    -0.003,
+                    0
+                ],
+                "radius": [
+                    0.01,
+                    0.05,
+                    0.1
+                ],
+                "thrust": [
+                    0.001,
+                    0.02,
+                    0
+                ]
+            },
+            "name": "my_cylinder-1",
+            "referenceVelocity": [
+                0.29386353651013,
+                0.146931768255065,
+                0.0
+            ],
+            "thickness": 0.01
+        }
+    ],
     "boundaries": {
         "1": {
             "type": "Freestream"
         }
+    },
+    "fluidProperties": {
+        "prandtlNumber": 0.72,
+        "turbulentPrandtlNumber": 0.9
     },
     "freestream": {
         "Mach": 0.0,
@@ -12,28 +54,13 @@
         "betaAngle": 0.0,
         "muRef": 4.292321046986497e-08
     },
-    "fluidProperties": {
-        "prandtlNumber": 0.72,
-        "turbulentPrandtlNumber": 0.9
-    },
-    "thermallyPerfectGasModel": {
-        "temperatureRanges": [
-            {
-                "temperatureRangeMin": 0.694082942911678,
-                "temperatureRangeMax": 20.82248828735034,
-                "coefficients": [
-                    0.0,
-                    0.0,
-                    3.5,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    7.890809489614162e-16,
-                    0.0
-                ]
-            }
-        ]
+    "initialCondition": {
+        "p": "p",
+        "rho": "rho",
+        "type": "initialCondition",
+        "u": "u",
+        "v": "v",
+        "w": "w"
     },
     "navierStokesSolver": {
         "CFLMultiplier": 1.0,
@@ -53,6 +80,32 @@
         "orderOfAccuracy": 2,
         "relativeTolerance": 0.0,
         "updateJacobianFrequency": 4
+    },
+    "outputRescale": {
+        "velocityScale": 1.0
+    },
+    "runControl": {
+        "externalProcessMonitorOutput": true,
+        "monitorProcessorHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "thermallyPerfectGasModel": {
+        "temperatureRanges": [
+            {
+                "coefficients": [
+                    0.0,
+                    0.0,
+                    3.5,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    7.890809489614162e-16,
+                    0.0
+                ],
+                "temperatureRangeMax": 20.82248828735034,
+                "temperatureRangeMin": 0.694082942911678
+            }
+        ]
     },
     "timeStepping": {
         "CFL": {
@@ -82,18 +135,18 @@
         "maxForceJacUpdatePhysicalSteps": 0,
         "modelConstants": {
             "C_DES": 0.72,
-            "C_d": 8.0,
             "C_cb1": 0.1355,
             "C_cb2": 0.622,
+            "C_d": 8.0,
+            "C_min_rd": 10.0,
             "C_sigma": 0.6666666666666666,
+            "C_t3": 1.2,
+            "C_t4": 0.5,
             "C_v1": 7.1,
             "C_vonKarman": 0.41,
             "C_w2": 0.3,
             "C_w4": 0.21,
-            "C_w5": 1.5,
-            "C_t3": 1.2,
-            "C_t4": 0.5,
-            "C_min_rd": 10.0
+            "C_w5": 1.5
         },
         "modelType": "SpalartAllmaras",
         "orderOfAccuracy": 2,
@@ -103,54 +156,6 @@
         "rotationCorrection": false,
         "updateJacobianFrequency": 4
     },
-    "actuatorDisks": [
-        {
-            "name": "my_cylinder-1",
-            "center": [
-                0.0,
-                0.0,
-                0.0
-            ],
-            "axisThrust": [
-                0.0,
-                0.0,
-                1.0
-            ],
-            "thickness": 0.01,
-            "forcePerArea": {
-                "radius": [
-                    0.01,
-                    0.05,
-                    0.1
-                ],
-                "thrust": [
-                    0.001,
-                    0.02,
-                    0
-                ],
-                "circumferential": [
-                    -0.0001,
-                    -0.003,
-                    0
-                ]
-            }
-        }
-    ],
-    "initialCondition": {
-        "p": "p",
-        "rho": "rho",
-        "type": "initialCondition",
-        "u": "u",
-        "v": "v",
-        "w": "w"
-    },
     "userDefinedFields": [],
-    "usingLiquidAsMaterial": false,
-    "outputRescale": {
-        "velocityScale": 1.0
-    },
-    "runControl": {
-        "externalProcessMonitorOutput": true,
-        "monitorProcessorHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-    }
+    "usingLiquidAsMaterial": false
 }

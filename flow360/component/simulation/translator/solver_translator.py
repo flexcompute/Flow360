@@ -1415,11 +1415,17 @@ def actuator_disk_entity_info_serializer(volume):
 
 def actuator_disk_translator(model: ActuatorDisk):
     """Actuator disk translator"""
-    return {
+    result = {
         "forcePerArea": convert_tuples_to_lists(
             remove_units_in_dict(dump_dict(model.force_per_area))
         )
     }
+    if model.reference_velocity is not None:
+        ref_vel = remove_units_in_dict(
+            model.model_dump(by_alias=True, include={"reference_velocity"})
+        )
+        result["referenceVelocity"] = convert_tuples_to_lists(ref_vel["referenceVelocity"])
+    return result
 
 
 def get_solid_zone_boundaries(volume, solid_zone_boundaries: set):
@@ -1582,7 +1588,11 @@ def boundary_spec_translator(model: SurfaceModelTypes, op_acoustic_to_static_pre
     model_dict = remove_units_in_dict(dump_dict(model))
     boundary = {}
     if isinstance(model, Wall):
-        boundary["type"] = "WallFunction" if model.use_wall_function else "NoSlipWall"
+        if model.use_wall_function is not None:
+            boundary["type"] = "WallFunction"
+            boundary["wallModelType"] = model.use_wall_function.type_name
+        else:
+            boundary["type"] = "NoSlipWall"
         if model.velocity is not None:
             if not is_instance_of_type_in_union(model.velocity, WallVelocityModelTypes):
                 boundary["velocity"] = list(model_dict["velocity"])
@@ -2382,6 +2392,7 @@ def get_solver_json(
                 ["heat_equation_solver", "equation_evaluation_frequency"],
             ),
             "linearSolver": {
+                "typeName": "LinearSolver",
                 "maxIterations": get_global_setting_from_first_instance(
                     input_params.models,
                     Solid,

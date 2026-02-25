@@ -145,6 +145,13 @@ class GeometryRefinement(Flow360BaseModel):
         description="Threshold size below which all geometry gaps are automatically closed.",
     )
 
+    min_passage_size: Optional[LengthType.Positive] = pd.Field(
+        None,
+        description="Minimum passage size that hidden geometry removal can resolve for this face group. "
+        "Internal regions connected by thin passages smaller than this size may not be detected. "
+        "If not specified, the value is derived from geometry_accuracy and sealing_size.",
+    )
+
     # Note: No checking on deleted surfaces since geometry accuracy on deleted surface does impact the volume mesh.
 
     @contextual_model_validator(mode="after")

@@ -47,7 +47,8 @@
         "relativeTolerance": 0.0,
         "orderOfAccuracy": 2,
         "linearSolver": {
-            "maxIterations": 35
+            "maxIterations": 35,
+            "typeName": "LinearSolver"
         },
         "CFLMultiplier": 1.0,
         "kappaMUSCL": -1.0,
@@ -65,7 +66,8 @@
         "relativeTolerance": 0.0,
         "orderOfAccuracy": 2,
         "linearSolver": {
-            "maxIterations": 25
+            "maxIterations": 25,
+            "typeName": "LinearSolver"
         },
         "lowReynoldsCorrection": false,
         "CFLMultiplier": 2.0,
