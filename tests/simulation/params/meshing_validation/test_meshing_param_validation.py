@@ -1171,7 +1171,7 @@ def test_set_spacing_with_value():
         defaults=snappy.SurfaceMeshingDefaults(
             min_spacing=1 * u.mm, max_spacing=2 * u.mm, gap_resolution=1 * u.mm
         ),
-        octree_spacing=3 * u.mm,
+        octree_spacing=OctreeSpacing(base_spacing=3 * u.mm),
     )
 
     assert surface_meshing.octree_spacing.base_spacing == 3 * u.mm
@@ -1191,7 +1191,7 @@ def test_set_spacing_with_base_spacing_alias():
         defaults=snappy.SurfaceMeshingDefaults(
             min_spacing=1 * u.mm, max_spacing=2 * u.mm, gap_resolution=1 * u.mm
         ),
-        base_spacing=3 * u.mm,
+        base_spacing=OctreeSpacing(base_spacing=3 * u.mm),
     )
 
     assert surface_meshing.octree_spacing.base_spacing == 3 * u.mm
@@ -1972,7 +1972,7 @@ def test_meshing_defaults_octree_spacing_explicit():
         with SI_unit_system:
             defaults = MeshingDefaults(
                 boundary_layer_first_layer_thickness=1e-5 * u.m,
-                octree_spacing=2 * u.m,
+                octree_spacing=OctreeSpacing(base_spacing=2 * u.m),
             )
             assert defaults.octree_spacing is not None
             assert isinstance(defaults.octree_spacing, OctreeSpacing)
@@ -2080,7 +2080,7 @@ def test_meshing_params_octree_check_warns_for_non_aligned_spacing(capsys):
             MeshingParams(
                 defaults=MeshingDefaults(
                     boundary_layer_first_layer_thickness=0.001,
-                    octree_spacing=1 * u.mm,
+                    octree_spacing=OctreeSpacing(base_spacing=1 * u.mm),
                 ),
                 refinements=[
                     # 0.3 mm is not a power-of-2 fraction of 1 mm
@@ -2108,7 +2108,7 @@ def test_meshing_params_octree_check_no_warn_for_aligned_spacing():
             MeshingParams(
                 defaults=MeshingDefaults(
                     boundary_layer_first_layer_thickness=0.001,
-                    octree_spacing=1 * u.mm,
+                    octree_spacing=OctreeSpacing(base_spacing=1 * u.mm),
                 ),
                 refinements=[
                     UniformRefinement(entities=[cylinder], spacing=0.5 * u.mm),
@@ -2166,7 +2166,7 @@ def test_meshing_params_octree_check_multiple_refinements():
             MeshingParams(
                 defaults=MeshingDefaults(
                     boundary_layer_first_layer_thickness=0.001,
-                    octree_spacing=1 * u.mm,
+                    octree_spacing=OctreeSpacing(base_spacing=1 * u.mm),
                 ),
                 refinements=[
                     UniformRefinement(entities=[cylinder1], spacing=0.25 * u.mm),
@@ -2183,7 +2183,7 @@ def test_meshing_params_octree_check_no_refinements():
             MeshingParams(
                 defaults=MeshingDefaults(
                     boundary_layer_first_layer_thickness=0.001,
-                    octree_spacing=1 * u.mm,
+                    octree_spacing=OctreeSpacing(base_spacing=1 * u.mm),
                 ),
                 refinements=[],
                 volume_zones=[AutomatedFarfield()],
