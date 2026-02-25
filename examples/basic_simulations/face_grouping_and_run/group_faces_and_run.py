@@ -45,7 +45,7 @@ TOTAL_FACE_COUNT = 194
 
 @pytest.fixture
 def geometry():
-    return Geometry("/home/feilin/code/main_flex/Flow360/examples/basic_simulations/face_grouping_and_run/Solid-Body-RC-Plane_v2024_colored.SLDPRT")
+    return Geometry("./Solid-Body-RC-Plane_v2024_colored.SLDPRT")
 
 
 # ================================================================
