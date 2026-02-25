@@ -118,11 +118,18 @@ jobs:
         run: |
           # Read branch pairs and process each one
           IFS=' ' read -r -a PAIRS <<< "${{ steps.define_branches.outputs.branch_pairs }}"
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+          PR_URL="${{ github.event.pull_request.html_url }}"
+          PR_AUTHOR="${{ github.event.pull_request.user.login }}"
+          MERGED_SHA="${{ steps.get_commit.outputs.sha }}"
+          manual_tracking_created="false"
+          push_failed="false"
 
           for pair in "${PAIRS[@]}"; do
             IFS=':' read -r base_branch new_branch <<< "$pair"
 
             echo "Processing hotfix for branch: $base_branch"
+            had_conflicts="false"
 
             # Create and switch to new branch
             git checkout "$base_branch"
@@ -151,7 +158,6 @@ jobs:
               fi
             else
               echo "Cherry-pick successful for $base_branch"
-              had_conflicts="false"
             fi
 
             CHANGED_FILES=$(git diff-tree --no-commit-id --name-only -r HEAD)
@@ -164,22 +170,85 @@ jobs:
             echo "Changed files:"
             echo "$CHANGED_FILES"
 
+            # Determine PR title (shared by both normal and tracking paths)
+            if [[ "$base_branch" == "main" ]]; then
+              HOTFIX_PR_TITLE="[Hotfix Main]: $PR_TITLE"
+            else
+              base_branch_name=${base_branch#"release-candidate/"}
+              HOTFIX_PR_TITLE="[Hotfix $base_branch_name]: $PR_TITLE"
+            fi
+
+            # GitHub blocks GitHub App/GITHUB_TOKEN pushes that modify workflow files.
+            # Create a tracking PR with a placeholder file instead, then fail this run at the end.
+            if printf '%s\n' "$CHANGED_FILES" | grep -q '^\.github/workflows/'; then
+              tracking_branch="manual-hotfix-${base_branch//\//-}-pr${PR_NUMBER}"
+              placeholder_dir=".github/hotfix-manual"
+              placeholder_file="${placeholder_dir}/PR-${PR_NUMBER}-to-${base_branch//\//-}.md"
+              WORKFLOW_FILES=$(printf '%s\n' "$CHANGED_FILES" | grep '^\.github/workflows/')
+
+              echo "::warning::Workflow file changes detected for ${base_branch}; creating manual hotfix tracking PR."
+
+              if git ls-remote --exit-code origin "refs/heads/$tracking_branch" >/dev/null 2>&1; then
+                echo "::error::Tracking branch '$tracking_branch' already exists on remote. Delete it manually before re-running."
+                push_failed="true"
+                continue
+              fi
+
+              git checkout "$base_branch"
+              git branch -D "$new_branch"
+              git checkout -b "$tracking_branch"
+
+              mkdir -p "$placeholder_dir"
+              printf '%s\n' \
+                "# Manual hotfix tracking placeholder" \
+                "" \
+                "original_pr: ${PR_NUMBER}" \
+                "original_pr_url: ${PR_URL}" \
+                "target_branch: ${base_branch}" \
+                "merge_commit_sha: ${MERGED_SHA}" \
+                "reason: workflow-file-changes-require-manual-cherry-pick" \
+                > "$placeholder_file"
+
+              git add "$placeholder_file"
+              git commit -m "chore: manual hotfix tracking for PR #${PR_NUMBER} to ${base_branch}"
+
+              if git push origin "$tracking_branch"; then
+                echo "Successfully pushed tracking branch $tracking_branch"
+              else
+                echo "::error::Failed to push tracking branch $tracking_branch"
+                push_failed="true"
+                continue
+              fi
+
+              PR_TRACKING_BODY=$(printf '%s\n' \
+                "Auto hotfix tracking PR for PR #${PR_NUMBER} (${PR_URL}) to \`${base_branch}\`." \
+                "" \
+                "Workflow file changes were detected, which cannot be pushed via GITHUB_TOKEN." \
+                "Manual cherry-pick of commit \`${MERGED_SHA}\` is required." \
+                "" \
+                "**Affected workflow files:**" \
+                "${WORKFLOW_FILES}" \
+                "" \
+                "**Close this PR after manually cherry-picking the changes. Do NOT merge.**" \
+                "" \
+                "cc @${PR_AUTHOR}")
+
+              gh pr create \
+                --title "$HOTFIX_PR_TITLE" \
+                --body "$PR_TRACKING_BODY" \
+                --head "$tracking_branch" \
+                --base "$base_branch" \
+                --label "auto-hotfix" \
+                --assignee "$PR_AUTHOR" \
+                --draft
+
+              manual_tracking_created="true"
+              continue
+            fi
+
             # Push branch
             if git push origin "$new_branch"; then
               echo "Successfully pushed branch $new_branch"
-
-              # Create PR
-              PR_NUMBER="${{ github.event.pull_request.number }}"
-              PR_URL="${{ github.event.pull_request.html_url }}"
-              PR_AUTHOR="${{ github.event.pull_request.user.login }}"
-
-              # Adjust PR title based on the target branch
-              if [[ "$base_branch" == "main" ]]; then
-                HOTFIX_PR_TITLE="[Hotfix Main]: $PR_TITLE"
-              else
-                base_branch_name=${base_branch#"release-candidate/"}
-                HOTFIX_PR_TITLE="[Hotfix $base_branch_name]: $PR_TITLE"
-              fi
 
               PR_BODY="Hotfix of PR #${PR_NUMBER} (${PR_URL}) to the \`${base_branch}\` branch.
               Hey @${PR_AUTHOR}, please review this hotfix PR created from your original PR."
@@ -201,6 +270,17 @@ jobs:
                 --assignee "$PR_AUTHOR" \
                 --draft
             else
-              echo "Failed to push branch $new_branch"
+              echo "::error::Failed to push branch $new_branch"
+              push_failed="true"
             fi
           done
+
+          if [[ "$push_failed" == "true" ]]; then
+            echo "::error::One or more branch pushes failed."
+            exit 1
+          fi
+
+          if [[ "$manual_tracking_created" == "true" ]]; then
+            echo "::error::One or more hotfix targets contained workflow file changes. Tracking PR(s) were created and manual cherry-pick is required."
+            exit 1
+          fi

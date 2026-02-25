@@ -2,6 +2,7 @@
 Flow360 simulation parameters
 """
 
+# pylint: disable=too-many-lines
 from __future__ import annotations
 
 from typing import Annotated, List, Literal, Optional, Union
@@ -119,6 +120,7 @@ from flow360.component.simulation.validation.validation_simulation_params import
     _check_duplicate_isosurface_names,
     _check_duplicate_surface_usage,
     _check_hybrid_model_to_use_zonal_enforcement,
+    _check_krylov_solver_restrictions,
     _check_low_mach_preconditioner_output,
     _check_numerical_dissipation_factor_output,
     _check_parent_volume_is_rotating,
@@ -610,6 +612,11 @@ class SimulationParams(_ParamModelBase):
         Constant-gamma coefficients (only a2 non-zero) are allowed.
         """
         return _check_tpg_not_with_isentropic_solver(self)
+
+    @pd.model_validator(mode="after")
+    def check_krylov_solver_restrictions(self):
+        """Krylov solver is not compatible with limiters or unsteady time stepping."""
+        return _check_krylov_solver_restrictions(self)
 
     @contextual_model_validator(mode="after")
     @context_validator(context=CASE)

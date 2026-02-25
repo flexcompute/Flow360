@@ -71,6 +71,7 @@ from flow360.component.simulation.unit_system import (
     InverseLengthType,
     LengthType,
     PressureType,
+    VelocityType,
     u,
 )
 from flow360.component.simulation.user_code.core.types import ValueOrExpression
@@ -550,6 +551,12 @@ class ActuatorDisk(Flow360BaseModel):
     force_per_area: ForcePerArea = pd.Field(
         description="The force per area input for the `ActuatorDisk` model. "
         + "See :class:`ForcePerArea` documentation."
+    )
+    reference_velocity: Optional[VelocityType.Vector] = pd.Field(  # pylint: disable=no-member
+        None,
+        description="Reference velocity [Vx, Vy, Vz] for power calculation. "
+        + "When provided, uses this velocity instead of local flow velocity "
+        + "for the actuator disk power output.",
     )
     name: Optional[str] = pd.Field("Actuator disk", description="Name of the `ActuatorDisk` model.")
     private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)

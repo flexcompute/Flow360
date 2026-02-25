@@ -46,6 +46,7 @@ from flow360.component.simulation.models.surface_models import (
     TotalPressure,
     Translational,
     Wall,
+    WallFunction,
     WallRotation,
 )
 from flow360.component.simulation.models.turbulence_quantities import (
@@ -122,6 +123,7 @@ from flow360.component.simulation.user_code.variables import solution
 from flow360.component.simulation.utils import model_attribute_unlock
 from tests.simulation.translator.utils.actuator_disk_param_generator import (
     actuator_disk_create_param,
+    actuator_disk_with_reference_velocity_param,
 )
 from tests.simulation.translator.utils.analytic_windtunnel_param_generator import (
     create_windtunnel_params,
@@ -601,6 +603,17 @@ def test_actuator_disk_translation(actuator_disk_create_param):
     translate_and_compare(param, mesh_unit=1 * u.m, ref_json_file="Flow360_actuator_disk.json")
 
 
+def test_actuator_disk_with_reference_velocity_translation(
+    actuator_disk_with_reference_velocity_param,
+):
+    param = actuator_disk_with_reference_velocity_param
+    translate_and_compare(
+        param,
+        mesh_unit=1 * u.m,
+        ref_json_file="Flow360_actuator_disk_with_ref_velocity.json",
+    )
+
+
 def test_conjugate_heat_transfer(
     create_conjugate_heat_transfer_param,
 ):
@@ -627,6 +640,70 @@ def test_om6wing_wall_model(create_om6wing_wall_model_param):
     translate_and_compare(
         param, mesh_unit=0.8059 * u.m, ref_json_file="Flow360_om6wing_wall_model.json", atol=1e-12
     )
+
+
+def test_wall_model_type_translation():
+    """Test that WallFunction models translate to correct wallModelType."""
+    my_wall = Surface(name="1")
+    my_freestream = Surface(name="2")
+    with SI_unit_system:
+        param = SimulationParams(
+            operating_condition=AerospaceCondition.from_mach(mach=0.84),
+            models=[
+                Fluid(),
+                Wall(surfaces=[my_wall], use_wall_function=WallFunction()),
+                Freestream(entities=[my_freestream]),
+            ],
+            time_stepping=Steady(CFL=RampCFL(initial=5, final=200, ramp_steps=40)),
+        )
+    translated = get_solver_json(param, mesh_unit=1.0 * u.m)
+    assert translated["boundaries"]["1"]["type"] == "WallFunction"
+    assert translated["boundaries"]["1"]["wallModelType"] == "BoundaryLayer"
+
+    with SI_unit_system:
+        param = SimulationParams(
+            operating_condition=AerospaceCondition.from_mach(mach=0.84),
+            models=[
+                Fluid(),
+                Wall(surfaces=[my_wall], use_wall_function=WallFunction(type_name="InnerLayer")),
+                Freestream(entities=[my_freestream]),
+            ],
+            time_stepping=Steady(CFL=RampCFL(initial=5, final=200, ramp_steps=40)),
+        )
+    translated = get_solver_json(param, mesh_unit=1.0 * u.m)
+    assert translated["boundaries"]["1"]["type"] == "WallFunction"
+    assert translated["boundaries"]["1"]["wallModelType"] == "InnerLayer"
+
+    with SI_unit_system:
+        param = SimulationParams(
+            operating_condition=AerospaceCondition.from_mach(mach=0.84),
+            models=[
+                Fluid(),
+                Wall(
+                    surfaces=[my_wall],
+                    use_wall_function=WallFunction(type_name="BoundaryLayer"),
+                ),
+                Freestream(entities=[my_freestream]),
+            ],
+            time_stepping=Steady(CFL=RampCFL(initial=5, final=200, ramp_steps=40)),
+        )
+    translated = get_solver_json(param, mesh_unit=1.0 * u.m)
+    assert translated["boundaries"]["1"]["type"] == "WallFunction"
+    assert translated["boundaries"]["1"]["wallModelType"] == "BoundaryLayer"
+
+    with SI_unit_system:
+        param = SimulationParams(
+            operating_condition=AerospaceCondition.from_mach(mach=0.84),
+            models=[
+                Fluid(),
+                Wall(surfaces=[my_wall], use_wall_function=None),
+                Freestream(entities=[my_freestream]),
+            ],
+            time_stepping=Steady(CFL=RampCFL(initial=5, final=200, ramp_steps=40)),
+        )
+    translated = get_solver_json(param, mesh_unit=1.0 * u.m)
+    assert translated["boundaries"]["1"]["type"] == "NoSlipWall"
+    assert "wallModelType" not in translated["boundaries"]["1"]
 
 
 def test_symmetryBC(create_symmetryBC_param):
