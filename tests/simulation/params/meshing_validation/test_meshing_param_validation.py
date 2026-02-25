@@ -45,7 +45,11 @@ from flow360.component.simulation.primitives import (
 )
 from flow360.component.simulation.services import ValidationCalledBy, validate_model
 from flow360.component.simulation.simulation_params import SimulationParams
-from flow360.component.simulation.unit_system import CGS_unit_system, LengthType, SI_unit_system
+from flow360.component.simulation.unit_system import (
+    CGS_unit_system,
+    LengthType,
+    SI_unit_system,
+)
 from flow360.component.simulation.utils import BoundingBox
 from flow360.component.simulation.validation.validation_context import (
     SURFACE_MESH,
@@ -2351,7 +2355,7 @@ def test_geometry_accuracy_with_non_unit_project_length_scale():
                 surface_max_edge_length=10 * u.m,
             )
     warning_msgs = [w["msg"] if isinstance(w, dict) else str(w) for w in ctx.validation_warnings]
-    assert any("below the minimum allowed value" in msg for msg in warning_msgs)
+    assert any("geometry_accuracy" in msg and "below" in msg for msg in warning_msgs)
 
     # 3.0 mm > correct limit ~2.079 mm → no warning
     with ValidationContext(SURFACE_MESH, gai_ctx) as ctx:
@@ -2362,4 +2366,4 @@ def test_geometry_accuracy_with_non_unit_project_length_scale():
             )
             assert defaults.geometry_accuracy == 3.0 * u.mm
     warning_msgs = [w["msg"] if isinstance(w, dict) else str(w) for w in ctx.validation_warnings]
-    assert not any("below the minimum allowed value" in msg for msg in warning_msgs)
+    assert not any("geometry_accuracy" in msg and "below" in msg for msg in warning_msgs)
