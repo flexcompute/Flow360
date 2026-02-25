@@ -326,7 +326,7 @@ class MeshingDefaults(Flow360BaseModel):
             ga_value = value
             lower_limit = relative_bounding_box_limit * bbox_diag
             if ga_value < lower_limit:
-                raise ValueError(
+                add_validation_warning(
                     f"geometry_accuracy ({ga_value}) is below the minimum allowed value "
                     f"of {relative_bounding_box_limit} * bounding box diagonal ({lower_limit:.6e}). "
                     f"Please increase geometry_accuracy."

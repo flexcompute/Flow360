@@ -2343,20 +2343,23 @@ def test_geometry_accuracy_with_non_unit_project_length_scale():
     gai_ctx.project_length_unit = LengthType.validate(1.2 * u.mm)
     gai_ctx.global_bounding_box = BoundingBox([[-5e5, -5e5, -5e5], [5e5, 5e5, 5e5]])
 
-    # 1.9 mm < correct limit ~2.079 mm → must be rejected
-    with pytest.raises(pd.ValidationError, match="below the minimum allowed value"):
-        with ValidationContext(SURFACE_MESH, gai_ctx):
-            with SI_unit_system:
-                MeshingDefaults(
-                    geometry_accuracy=1.9 * u.mm,
-                    surface_max_edge_length=10 * u.m,
-                )
+    # 1.9 mm < correct limit ~2.079 mm → warning emitted
+    with ValidationContext(SURFACE_MESH, gai_ctx) as ctx:
+        with SI_unit_system:
+            MeshingDefaults(
+                geometry_accuracy=1.9 * u.mm,
+                surface_max_edge_length=10 * u.m,
+            )
+    warning_msgs = [w["msg"] if isinstance(w, dict) else str(w) for w in ctx.validation_warnings]
+    assert any("below the minimum allowed value" in msg for msg in warning_msgs)
 
-    # 3.0 mm > correct limit ~2.079 mm → must be accepted
-    with ValidationContext(SURFACE_MESH, gai_ctx):
+    # 3.0 mm > correct limit ~2.079 mm → no warning
+    with ValidationContext(SURFACE_MESH, gai_ctx) as ctx:
         with SI_unit_system:
             defaults = MeshingDefaults(
                 geometry_accuracy=3.0 * u.mm,
                 surface_max_edge_length=10 * u.m,
             )
             assert defaults.geometry_accuracy == 3.0 * u.mm
+    warning_msgs = [w["msg"] if isinstance(w, dict) else str(w) for w in ctx.validation_warnings]
+    assert not any("below the minimum allowed value" in msg for msg in warning_msgs)
