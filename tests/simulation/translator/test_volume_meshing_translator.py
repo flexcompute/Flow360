@@ -352,7 +352,9 @@ def get_test_param():
                     volume_zones=volume_zones,
                     outputs=meshSliceOutputs,
                 ),
-                private_attribute_asset_cache=AssetCache(use_inhouse_mesher=beta_mesher),
+                private_attribute_asset_cache=AssetCache(
+                    use_inhouse_mesher=beta_mesher, project_length_unit=1 * u.m
+                ),
             )
             return param
 

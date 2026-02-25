@@ -472,6 +472,14 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
             ["meshing", "volume_zones"],
         )
 
+    if (
+        input_params.private_attribute_asset_cache.use_inhouse_mesher
+        and defaults.octree_spacing is not None
+    ):
+        translated["farfield"][
+            "octreeBaseSpacing"
+        ] = defaults.octree_spacing.base_spacing.value.item()
+
     ##:: Step 3: Get volumetric global settings
     translated["volume"] = {}
 

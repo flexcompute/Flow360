@@ -40,11 +40,13 @@ from flow360.component.simulation.validation.validation_context import (
     SURFACE_MESH,
     VOLUME_MESH,
     ContextField,
+    ParamsValidationInfo,
     add_validation_warning,
     contextual_field_validator,
     contextual_model_validator,
 )
 from flow360.component.simulation.validation.validation_utils import EntityUsageMap
+from flow360.log import log
 
 RefinementTypes = Annotated[
     Union[
@@ -335,6 +337,27 @@ class MeshingParams(Flow360BaseModel):
         return self
 
     @contextual_model_validator(mode="after")
+    def _check_sizing_against_octree_series(self, param_info: ParamsValidationInfo):
+        """Validate that UniformRefinement spacings align with the octree series."""
+        if not param_info.is_beta_mesher:
+            return self
+        if self.defaults.octree_spacing is None:  # pylint: disable=no-member
+            log.warning(
+                "No `octree_spacing` configured in `%s`; "
+                "octree spacing validation for UniformRefinement will be skipped.",
+                type(self.defaults).__name__,
+            )
+            return self
+
+        if self.refinements is not None:
+            for refinement in self.refinements:  # pylint: disable=not-an-iterable
+                if isinstance(refinement, UniformRefinement):
+                    self.defaults.octree_spacing.check_spacing(  # pylint: disable=no-member
+                        refinement.spacing, type(refinement).__name__
+                    )
+        return self
+
+    @contextual_model_validator(mode="after")
     def _warn_min_passage_size_without_remove_hidden_geometry(self) -> Self:
         """Warn when GeometryRefinement specifies min_passage_size but remove_hidden_geometry is disabled."""
         if self.defaults.remove_hidden_geometry:  # pylint: disable=no-member
@@ -412,6 +435,28 @@ class VolumeMeshingParams(Flow360BaseModel):
         " relative to the smallest radius of all sliding interfaces specified in meshing parameters."
         " This cannot be overridden per sliding interface.",
     )
+
+    @contextual_model_validator(mode="after")
+    def _check_sizing_against_octree_series(self, param_info: ParamsValidationInfo):
+        """Validate that UniformRefinement spacings align with the octree series."""
+        if not param_info.is_beta_mesher:
+            return self
+        if self.defaults.octree_spacing is None:  # pylint: disable=no-member
+            log.warning(
+                "No `octree_spacing` configured in `%s`; "
+                "octree spacing validation for UniformRefinement will be skipped.",
+                type(self.defaults).__name__,
+            )
+            return self
+
+        if self.refinements is not None:
+            for refinement in self.refinements:  # pylint: disable=not-an-iterable
+                if isinstance(refinement, UniformRefinement):
+                    self.defaults.octree_spacing.check_spacing(  # pylint: disable=no-member
+                        refinement.spacing, type(refinement).__name__
+                    )
+
+        return self
 
 
 SurfaceMeshingParams = Annotated[

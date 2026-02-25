@@ -354,7 +354,7 @@ def snappy_mesher_json(input_params: SimulationParams):
     translated = {}
     surface_meshing_params = input_params.meshing.surface_meshing
     # spacing system
-    spacing_system: OctreeSpacing = surface_meshing_params.base_spacing
+    spacing_system: OctreeSpacing = surface_meshing_params.octree_spacing
 
     # extract geometry information in body: {patch0, ...} format
     bodies = {}
