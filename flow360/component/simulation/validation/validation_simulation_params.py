@@ -20,7 +20,10 @@ from flow360.component.simulation.meshing_param.volume_params import (
     WindTunnelFarfield,
 )
 from flow360.component.simulation.models.material import Air
-from flow360.component.simulation.models.solver_numerics import NoneSolver
+from flow360.component.simulation.models.solver_numerics import (
+    KrylovLinearSolver,
+    NoneSolver,
+)
 from flow360.component.simulation.models.surface_models import (
     Inflow,
     Outflow,
@@ -85,7 +88,7 @@ def _check_consistency_wall_function_and_surface_output(v):
     if models:
         has_wall_function_model = False
         for model in models:
-            if isinstance(model, Wall) and model.use_wall_function:
+            if isinstance(model, Wall) and model.use_wall_function is not None:
                 has_wall_function_model = True
                 break
 
@@ -921,6 +924,38 @@ def _material_has_temperature_dependent_gas(material):
         if _has_temperature_dependent_coefficients(species.nasa_9_coefficients.temperature_ranges):
             return True
     return False
+
+
+def _check_krylov_solver_restrictions(params):
+    """Validate that the Krylov solver is not used with incompatible settings."""
+    models = params.models
+    if not models:
+        return params
+
+    for model in models:
+        if not isinstance(model, Fluid):
+            continue
+        ns = model.navier_stokes_solver
+        if not isinstance(ns.linear_solver, KrylovLinearSolver):
+            continue
+
+        if ns.limit_velocity:
+            raise ValueError(
+                "KrylovLinearSolver is not compatible with limit_velocity=True. "
+                "Please disable the velocity limiter when using the Krylov solver."
+            )
+        if ns.limit_pressure_density:
+            raise ValueError(
+                "KrylovLinearSolver is not compatible with limit_pressure_density=True. "
+                "Please disable the pressure-density limiter when using the Krylov solver."
+            )
+        if params.time_stepping is not None and isinstance(params.time_stepping, Unsteady):
+            raise ValueError(
+                "KrylovLinearSolver is not supported with Unsteady time stepping. "
+                "Please use Steady time stepping."
+            )
+
+    return params
 
 
 def _check_tpg_not_with_isentropic_solver(params):

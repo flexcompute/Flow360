@@ -1,0 +1,50 @@
+name: Hotfix Tracking Guard
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - labeled
+      - unlabeled
+    branches:
+      - main
+      - 'release-candidate/*'
+
+jobs:
+  block_placeholder_merge:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    steps:
+      - name: Fail on auto-hotfix placeholder files
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const labels = (context.payload.pull_request.labels || []).map((label) => label.name);
+            if (!labels.includes("auto-hotfix")) {
+              core.info("PR does not have auto-hotfix label. Passing.");
+              return;
+            }
+
+            const files = await github.paginate(github.rest.pulls.listFiles, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.payload.pull_request.number,
+              per_page: 100,
+            });
+
+            const placeholderFiles = files
+              .map((file) => file.filename)
+              .filter((filename) => filename.startsWith(".github/hotfix-manual/"));
+
+            if (placeholderFiles.length === 0) {
+              core.info("auto-hotfix PR has no hotfix tracking placeholder files. Passing.");
+              return;
+            }
+
+            core.error(`Found hotfix tracking placeholder file(s): ${placeholderFiles.join(", ")}`);
+            core.setFailed(
+              "Manual hotfix tracking PR detected (.github/hotfix-manual/*). Close this PR after manually cherry-picking the changes. Do NOT merge."
+            );
