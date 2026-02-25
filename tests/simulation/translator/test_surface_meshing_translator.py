@@ -1818,7 +1818,9 @@ def test_legacy_target_surface_node_count_rejected(get_om6wing_geometry):
         )
 
     params, err, warnings = validate_params_with_context(params, "Geometry", "SurfaceMesh")
-    assert err is not None, "Expected validation error for target_surface_node_count in non-GAI flow"
+    assert (
+        err is not None
+    ), "Expected validation error for target_surface_node_count in non-GAI flow"
     assert "target_surface_node_count" in str(err)
 
 
