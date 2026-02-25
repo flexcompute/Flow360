@@ -198,7 +198,7 @@ class MeshingDefaults(Flow360BaseModel):
         None,
         description="Target number of surface mesh nodes. When specified, the surface mesher "
         "will rescale the meshing parameters to achieve approximately this number of nodes. "
-        "This option is only supported when using geometry AI.",
+        "This option is only supported when using geometry AI and can not be overridden per face.",
         context=SURFACE_MESH,
     )
 
