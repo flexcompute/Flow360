@@ -771,11 +771,11 @@ class Surface(_SurfaceEntityBase):
                 if farfield_domain_type == "half_body_negative_y" and y_min > length_tolerance:
                     return True
 
-        if farfield_method in ("user-defined", "wind-tunnel"):
+        if farfield_method == "wind-tunnel":
             # Not applicable to user defined or wind tunnel farfield
             return False
 
-        if farfield_method == "auto":
+        if farfield_method in ("auto", "user-defined"):
             if half_model_symmetry_plane_center_y is None:
                 # Legacy schema.
                 return False
