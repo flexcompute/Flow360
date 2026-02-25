@@ -21,6 +21,7 @@ from flow360.component.simulation.primitives import (
     Cylinder,
     SeedpointVolume,
     SnappyBody,
+    Sphere,
     Surface,
 )
 from flow360.component.simulation.simulation_params import SimulationParams
@@ -278,6 +279,14 @@ def apply_UniformRefinement_w_snappy(
                 + 0.5 * volume.axis[2] * volume.height.value.item(),
             }
 
+        elif isinstance(volume, Sphere):
+            volume_body["type"] = "sphere"
+            volume_body["centre"] = {
+                "x": volume.center[0].value.item(),
+                "y": volume.center[1].value.item(),
+                "z": volume.center[2].value.item(),
+            }
+            volume_body["radius"] = volume.radius.value.item()
         else:
             raise Flow360TranslationError(
                 f"Volume of type {type(volume)} cannot be used with Snappy.",

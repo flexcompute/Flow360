@@ -865,6 +865,41 @@ def test_axisymmetric_body_in_uniform_refinement():
                 )
 
 
+def test_sphere_in_uniform_refinement():
+    with ValidationContext(VOLUME_MESH, beta_mesher_context):
+        with CGS_unit_system:
+            sphere = Sphere(
+                name="s",
+                center=(0, 0, 0),
+                radius=1.0,
+            )
+            MeshingParams(
+                refinements=[
+                    UniformRefinement(
+                        entities=[sphere],
+                        spacing=0.1,
+                    )
+                ],
+            )
+
+    # raises without beta mesher
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"`Sphere` entity for `UniformRefinement` is supported only with beta mesher",
+    ):
+        with ValidationContext(VOLUME_MESH, non_beta_mesher_context):
+            with CGS_unit_system:
+                sphere = Sphere(
+                    name="s2",
+                    center=(0, 0, 0),
+                    radius=1.0,
+                )
+                UniformRefinement(
+                    entities=[sphere],
+                    spacing=0.1,
+                )
+
+
 def test_require_mesh_zones():
     with SI_unit_system:
         ModularMeshingWorkflow(

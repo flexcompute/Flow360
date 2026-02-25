@@ -123,6 +123,7 @@ from flow360.component.simulation.user_code.variables import solution
 from flow360.component.simulation.utils import model_attribute_unlock
 from tests.simulation.translator.utils.actuator_disk_param_generator import (
     actuator_disk_create_param,
+    actuator_disk_with_reference_velocity_param,
 )
 from tests.simulation.translator.utils.analytic_windtunnel_param_generator import (
     create_windtunnel_params,
@@ -600,6 +601,17 @@ def test_porous_media(
 def test_actuator_disk_translation(actuator_disk_create_param):
     param = actuator_disk_create_param
     translate_and_compare(param, mesh_unit=1 * u.m, ref_json_file="Flow360_actuator_disk.json")
+
+
+def test_actuator_disk_with_reference_velocity_translation(
+    actuator_disk_with_reference_velocity_param,
+):
+    param = actuator_disk_with_reference_velocity_param
+    translate_and_compare(
+        param,
+        mesh_unit=1 * u.m,
+        ref_json_file="Flow360_actuator_disk_with_ref_velocity.json",
+    )
 
 
 def test_conjugate_heat_transfer(
