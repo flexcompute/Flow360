@@ -322,8 +322,8 @@ class MeshingDefaults(Flow360BaseModel):
             and param_info.project_length_unit is not None
         ):
             relative_bounding_box_limit = 1e-6
-            bbox_diag = param_info.global_bounding_box.diagonal
-            ga_value = (value / param_info.project_length_unit).value.item()
+            bbox_diag = param_info.global_bounding_box.diagonal * param_info.project_length_unit
+            ga_value = value
             lower_limit = relative_bounding_box_limit * bbox_diag
             if ga_value < lower_limit:
                 raise ValueError(
