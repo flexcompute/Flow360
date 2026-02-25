@@ -773,7 +773,7 @@ class Surface(_SurfaceEntityBase):
                     return True
 
         if farfield_method == "wind-tunnel":
-            # Not applicable to user defined or wind tunnel farfield
+            # Not applicable to wind tunnel farfield
             return False
 
         if farfield_method in ("auto", "user-defined"):
