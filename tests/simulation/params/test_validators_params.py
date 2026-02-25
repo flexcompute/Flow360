@@ -1118,6 +1118,103 @@ def test_porousJump_cross_custom_volume_interface(mock_validation_context):
         )
 
 
+def test_collect_farfield_custom_volume_interfaces():
+    """AutomatedFarfield + enclosed_surfaces + CustomZones: dual-belonging faces are recognized as interfaces."""
+    from flow360.component.simulation.validation.validation_simulation_params import (
+        _collect_farfield_custom_volume_interfaces,
+    )
+
+    param_info = ParamsValidationInfo({}, [])
+
+    # Set up farfield enclosed surfaces: face1 and face2 are on the farfield boundary
+    param_info.farfield_enclosed_surfaces = {
+        "id-face1": "face1",
+        "id-face2": "face2",
+        "id-face3": "face3",
+    }
+    # Set up CustomVolume whose boundaries overlap with enclosed_surfaces
+    param_info.to_be_generated_custom_volumes = {
+        "CustomVolume1": {
+            "enforce_tetrahedra": False,
+            "boundary_surface_ids": {"id-face1", "id-face2"},
+        },
+    }
+
+    # face1 and face2 are dual-belonging (enclosed + CV boundary) -> should be interfaces
+    result = _collect_farfield_custom_volume_interfaces(param_info=param_info)
+    assert result == {"face1", "face2"}
+    # face3 is only in enclosed_surfaces, not in any CV boundary -> should NOT be an interface
+    assert "face3" not in result
+
+
+def test_collect_farfield_custom_volume_interfaces_empty_enclosed():
+    """AutomatedFarfield without enclosed_surfaces: returns empty set (existing behavior unchanged)."""
+    from flow360.component.simulation.validation.validation_simulation_params import (
+        _collect_farfield_custom_volume_interfaces,
+    )
+
+    param_info = ParamsValidationInfo({}, [])
+
+    # No farfield enclosed surfaces
+    param_info.farfield_enclosed_surfaces = {}
+    param_info.to_be_generated_custom_volumes = {
+        "CustomVolume1": {
+            "enforce_tetrahedra": False,
+            "boundary_surface_ids": {"some-id"},
+        },
+    }
+
+    result = _collect_farfield_custom_volume_interfaces(param_info=param_info)
+    assert result == set()
+
+
+def test_porousJump_farfield_custom_volume_interface(mock_validation_context):
+    """PorousJump validation passes for cross-farfield-customvolume interface pairs."""
+    # Surfaces that are NOT interfaces in the traditional sense (geometry-stage)
+    surface_a = Surface(
+        name="Surface-A", private_attribute_is_interface=False, private_attribute_id="id-a"
+    )
+    surface_b = Surface(
+        name="Surface-B", private_attribute_is_interface=False, private_attribute_id="id-b"
+    )
+    surface_non_dual = Surface(
+        name="Surface-Non-Dual", private_attribute_is_interface=False, private_attribute_id="id-non"
+    )
+
+    # Both surfaces are dual-belonging: in farfield enclosed_surfaces AND CustomVolume boundaries
+    mock_validation_context.info.farfield_enclosed_surfaces = {
+        "id-a": "Surface-A",
+        "id-b": "Surface-B",
+        "id-non": "Surface-Non-Dual",
+    }
+    mock_validation_context.info.to_be_generated_custom_volumes = {
+        "CustomVolume1": {
+            "enforce_tetrahedra": False,
+            "boundary_surface_ids": {"id-a", "id-b"},
+        },
+    }
+
+    # Dual-belonging pair: should pass (no interface error)
+    with mock_validation_context:
+        PorousJump(
+            entity_pairs=[(surface_a, surface_b)],
+            darcy_coefficient=1e6 / (u.m * u.m),
+            forchheimer_coefficient=1e3 / u.m,
+            thickness=0.01 * u.m,
+        )
+
+    # Non-dual-belonging pair: surface_non_dual is in enclosed but NOT in any CV boundary.
+    # surface_a is iterated first and also fails the is_interface check.
+    error_message = "Boundary `Surface-A` is not an interface"
+    with mock_validation_context, pytest.raises(ValueError, match=re.escape(error_message)):
+        PorousJump(
+            entity_pairs=[(surface_a, surface_non_dual)],
+            darcy_coefficient=1e6 / (u.m * u.m),
+            forchheimer_coefficient=1e3 / u.m,
+            thickness=0.01 * u.m,
+        )
+
+
 def test_duplicate_entities_in_models():
     entity_generic_volume = GenericVolume(name="Duplicate Volume")
     entity_surface = Surface(name="Duplicate Surface")

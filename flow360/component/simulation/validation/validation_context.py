@@ -144,6 +144,7 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         "quasi_3d_symmetry_planes_center_y",
         "entity_transformation_detected",
         "to_be_generated_custom_volumes",
+        "farfield_enclosed_surfaces",
         "root_asset_type",
         # Entity expansion support
         "_entity_info",  # Owns the entities (keeps them alive), initialized eagerly
@@ -433,6 +434,30 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
                 }
         return custom_volume_info
 
+    def _get_farfield_enclosed_surfaces(self, param_as_dict: dict) -> dict[str, str]:
+        """Extract enclosed surface {id: name} from AutomatedFarfield zones.
+
+        Only returns non-empty when an AutomatedFarfield zone has enclosed_surfaces set.
+        """
+        volume_zones = get_value_with_path(param_as_dict, ["meshing", "volume_zones"])
+        if not volume_zones:
+            volume_zones = get_value_with_path(param_as_dict, ["meshing", "zones"])
+        if not volume_zones:
+            return {}
+
+        for zone in volume_zones:
+            if zone.get("type") != "AutomatedFarfield":
+                continue
+            enclosed = zone.get("enclosed_surfaces")
+            if not enclosed:
+                return {}
+            # At this stage enclosed_surfaces is a dict with materialized entity objects
+            # in stored_entities (same pattern as _get_to_be_generated_custom_volumes).
+            surfaces = enclosed.get("stored_entities", [])
+            return {s.private_attribute_id: s.name for s in surfaces}
+
+        return {}
+
     def __init__(self, param_as_dict: dict, referenced_expressions: list):
         self.farfield_method = self._get_farfield_method_(param_as_dict=param_as_dict)
         self.farfield_domain_type = self._get_farfield_domain_type_(param_as_dict=param_as_dict)
@@ -477,6 +502,9 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
 
         # Must be after _entity_registry initialization (needs selector expansion)
         self.to_be_generated_custom_volumes = self._get_to_be_generated_custom_volumes(
+            param_as_dict=param_as_dict
+        )
+        self.farfield_enclosed_surfaces = self._get_farfield_enclosed_surfaces(
             param_as_dict=param_as_dict
         )
 
