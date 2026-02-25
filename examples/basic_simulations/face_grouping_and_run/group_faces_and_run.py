@@ -18,7 +18,7 @@ from pathlib import Path
 import pytest
 import flow360 as fl
 fl.Env.load("on_premises").active()
-from fl.component.geometry import Geometry, NodeSet, FaceGroup, Node
+from flow360.component.geometry import Geometry, NodeSet, FaceGroup, Node
 
 
 # ================================================================
@@ -43,9 +43,14 @@ TOTAL_FACE_COUNT = 194
 # Fixtures
 # ================================================================
 
-@pytest.fixture
+GEOMETRY_FILE = str(Path(__file__).parent / "Solid-Body-RC-Plane_v2024_colored.SLDPRT")
+
+@pytest.fixture(scope="session")
 def geometry():
-    return Geometry("./Solid-Body-RC-Plane_v2024_colored.SLDPRT")
+    from datetime import datetime
+    timestamp = datetime.now().strftime("%m-%d-%H-%M-%S")
+    name = f"{timestamp}-RC-Plane-face-grouping-test"
+    return Geometry(GEOMETRY_FILE, name=name)
 
 
 # ================================================================
