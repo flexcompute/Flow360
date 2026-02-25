@@ -352,7 +352,7 @@ class MeshingParams(Flow360BaseModel):
         if self.refinements is not None:
             for refinement in self.refinements:  # pylint: disable=not-an-iterable
                 if isinstance(refinement, UniformRefinement):
-                    self.defaults.octree_spacing.check_spacing(
+                    self.defaults.octree_spacing.check_spacing(  # pylint: disable=no-member
                         refinement.spacing, type(refinement).__name__
                     )
         return self
