@@ -394,11 +394,11 @@ def _collect_asset_boundary_entities(params, param_info: ParamsValidationInfo) -
     # Check for legacy assets missing private_attributes before farfield-related processing
     # This check is only relevant when we need bounding box information for farfield operations
     # Only flag as legacy if ALL boundaries are missing private_attributes (not just some)
-    # AND the farfield method is one that performs automatic surface deletion (auto/quasi-3d modes)
-    # For user-defined/wind-tunnel, missing BCs are always errors since no auto-deletion occurs
+    # AND the farfield method is one that performs automatic surface deletion (auto/quasi-3d/user-defined
+    # modes). For wind-tunnel farfield, missing BCs are always errors since no auto-deletion occurs
     if (
         asset_boundary_entities
-        and farfield_method in ("auto", "quasi-3d", "quasi-3d-periodic")
+        and farfield_method in ("auto", "quasi-3d", "quasi-3d-periodic", "user-defined")
         and all(
             getattr(item, "private_attributes", None) is None for item in asset_boundary_entities
         )
@@ -441,12 +441,13 @@ def _collect_asset_boundary_entities(params, param_info: ParamsValidationInfo) -
             if item.name in ("farfield", "symmetric-1", "symmetric-2")
         ]
     elif farfield_method == "user-defined":
-        asset_boundary_entities += [
-            item
-            for item in ghost_entities
-            if item.name == "symmetric"
-            and (param_info.entity_transformation_detected or item.exists(param_info))
-        ]
+        if param_info.use_geometry_AI and param_info.is_beta_mesher:
+            asset_boundary_entities += [
+                item
+                for item in ghost_entities
+                if item.name == "symmetric"
+                and (param_info.entity_transformation_detected or item.exists(param_info))
+            ]
     elif farfield_method == "wind-tunnel":
         if param_info.will_generate_forced_symmetry_plane():
             asset_boundary_entities += [item for item in ghost_entities if item.name == "symmetric"]
