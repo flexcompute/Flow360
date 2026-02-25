@@ -234,7 +234,6 @@
                 ]
             },
             "name": "Wall",
-            "use_wall_function": false,
             "heat_spec": {
                 "value": {
                     "value": 0.0,
@@ -334,7 +333,8 @@
                 "order_of_accuracy": 2,
                 "equation_evaluation_frequency": 1,
                 "linear_solver": {
-                    "max_iterations": 30
+                    "max_iterations": 30,
+                    "type_name": "LinearSolver"
                 },
                 "CFL_multiplier": 1.0,
                 "kappa_MUSCL": -1.0,
@@ -352,7 +352,8 @@
                 "order_of_accuracy": 2,
                 "equation_evaluation_frequency": 4,
                 "linear_solver": {
-                    "max_iterations": 20
+                    "max_iterations": 20,
+                    "type_name": "LinearSolver"
                 },
                 "CFL_multiplier": 2.0,
                 "type_name": "SpalartAllmaras",

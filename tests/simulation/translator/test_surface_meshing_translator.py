@@ -33,6 +33,7 @@ from flow360.component.simulation.meshing_param.face_params import (
     SurfaceRefinement,
 )
 from flow360.component.simulation.meshing_param.meshing_specs import (
+    OctreeSpacing,
     VolumeMeshingDefaults,
 )
 from flow360.component.simulation.meshing_param.params import (
@@ -611,7 +612,7 @@ def snappy_basic_refinements():
             defaults=snappy.SurfaceMeshingDefaults(
                 min_spacing=3 * u.mm, max_spacing=4 * u.mm, gap_resolution=1 * u.mm
             ),
-            octree_spacing=3.5 * u.mm,
+            octree_spacing=OctreeSpacing(base_spacing=3.5 * u.mm),
             refinements=[
                 snappy.BodyRefinement(
                     gap_resolution=2 * u.mm,
@@ -710,7 +711,7 @@ def snappy_coupled_refinements():
             defaults=snappy.SurfaceMeshingDefaults(
                 min_spacing=3 * u.mm, max_spacing=4 * u.mm, gap_resolution=1 * u.mm
             ),
-            octree_spacing=5 * u.mm,
+            octree_spacing=OctreeSpacing(base_spacing=5 * u.mm),
             refinements=[],
             smooth_controls=snappy.SmoothControls(),
         )
@@ -773,7 +774,7 @@ def snappy_refinements_multiple_regions():
             defaults=snappy.SurfaceMeshingDefaults(
                 min_spacing=2.999999992 * u.mm, max_spacing=4 * u.mm, gap_resolution=1 * u.mm
             ),
-            octree_spacing=3 * u.mm,
+            octree_spacing=OctreeSpacing(base_spacing=3 * u.mm),
             refinements=[
                 snappy.RegionRefinement(
                     min_spacing=20 * u.mm,

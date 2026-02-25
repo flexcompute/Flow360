@@ -3,7 +3,6 @@
 from typing import List, Literal, Optional, Union
 
 import pydantic as pd
-from pydantic import AliasChoices
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
@@ -47,9 +46,7 @@ class SurfaceMeshingParams(Flow360BaseModel):
     castellated_mesh_controls: CastellatedMeshControls = pd.Field(CastellatedMeshControls())
     smooth_controls: Union[SmoothControls, Literal[False]] = pd.Field(SmoothControls())
     refinements: Optional[List[SnappySurfaceRefinementTypes]] = pd.Field(None)
-    octree_spacing: Optional[OctreeSpacing] = pd.Field(
-        None, validation_alias=AliasChoices("octree_spacing", "base_spacing")
-    )
+    octree_spacing: Optional[OctreeSpacing] = pd.Field(None, validation_alias="base_spacing")
 
     @pd.model_validator(mode="before")
     @classmethod

@@ -38,9 +38,12 @@ class OctreeSpacing(Flow360BaseModel):
 
     @pd.model_validator(mode="before")
     @classmethod
-    def _project_spacing_to_object(cls, input_data):
+    def _reject_plain_value(cls, input_data):
         if isinstance(input_data, u.unyt.unyt_quantity):
-            return {"base_spacing": input_data}
+            raise ValueError(
+                "Passing a plain dimensional value to OctreeSpacing is not supported. "
+                "Use OctreeSpacing(base_spacing=<value>) instead."
+            )
         return input_data
 
     @pd.validate_call

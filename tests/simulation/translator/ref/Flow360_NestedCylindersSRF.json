@@ -46,7 +46,8 @@
         "limitPressureDensity": false,
         "limitVelocity": false,
         "linearSolver": {
-            "maxIterations": 35
+            "maxIterations": 35,
+            "typeName": "LinearSolver"
         },
         "lowMachPreconditioner": false,
         "maxForceJacUpdatePhysicalSteps": 0,

@@ -70,6 +70,7 @@ from flow360.component.simulation.models.surface_models import (
     TotalPressure,
     Translational,
     Wall,
+    WallFunction,
 )
 from flow360.component.simulation.models.volume_models import (
     AngleExpression,
@@ -289,6 +290,45 @@ def test_consistency_wall_function_validator():
         )
 
 
+def test_wall_function_type_interface():
+    """Test the use_wall_function field accepts WallFunction, bool (compat), and None."""
+    surface = Surface(name="noSlipWall")
+
+    # True is converted to WallFunction() with default BoundaryLayer and logs deprecation warning
+    wall = Wall(surfaces=[surface], use_wall_function=True)
+    assert wall.use_wall_function == WallFunction()
+    assert wall.use_wall_function.type_name == "BoundaryLayer"
+
+    # False is converted to None and logs deprecation warning
+    wall = Wall(surfaces=[surface], use_wall_function=False)
+    assert wall.use_wall_function is None
+
+    # Default is None
+    wall = Wall(surfaces=[surface])
+    assert wall.use_wall_function is None
+
+    # WallFunction with default type_name
+    wall = Wall(surfaces=[surface], use_wall_function=WallFunction())
+    assert wall.use_wall_function.type_name == "BoundaryLayer"
+
+    # WallFunction with InnerLayer
+    wall = Wall(surfaces=[surface], use_wall_function=WallFunction(type_name="InnerLayer"))
+    assert wall.use_wall_function.type_name == "InnerLayer"
+
+    # SlaterPorousBleed conflict applies to all wall function types
+    message = "Using `SlaterPorousBleed` with wall function is not supported currently."
+    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+        Wall(
+            velocity=SlaterPorousBleed(porosity=0.2, static_pressure=1e5 * u.Pa),
+            surfaces=[surface],
+            use_wall_function=WallFunction(type_name="InnerLayer"),
+        )
+
+    # Invalid type_name should be rejected by pydantic
+    with pytest.raises(pd.ValidationError):
+        Wall(surfaces=[surface], use_wall_function=WallFunction(type_name="InvalidType"))
+
+
 def test_low_mach_preconditioner_validator(
     surface_output_with_low_mach_precond, fluid_model_with_low_mach_precond, fluid_model
 ):
@@ -382,6 +422,15 @@ def test_hybrid_model_for_unsteady_validator(
     # Invalid simulation params (using hybrid model for steady simulations)
     with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
         SimulationParams(models=[fluid_model_with_hybrid_model])
+
+
+def test_hybrid_model_grid_size_for_LES():
+    for valid_option in ["maxEdgeLength", "meanEdgeLength", "shearLayerAdapted"]:
+        des = DetachedEddySimulation(grid_size_for_LES=valid_option)
+        assert des.grid_size_for_LES == valid_option
+
+    with pytest.raises(pd.ValidationError):
+        DetachedEddySimulation(grid_size_for_LES="invalidOption")
 
 
 def test_hybrid_model_to_use_zonal_enforcement(fluid_model, fluid_model_with_hybrid_model):

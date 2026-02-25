@@ -104,6 +104,8 @@ class MeshingParams(Flow360BaseModel):
     -------
 
       >>> fl.MeshingParams(
+      ...     refinement_factor=1.0,
+      ...     gap_treatment_strength=0.5,
       ...     defaults=fl.MeshingDefaults(
       ...         surface_max_edge_length=1*fl.u.m,
       ...         boundary_layer_first_layer_thickness=1e-5*fl.u.m
@@ -350,9 +352,10 @@ class MeshingParams(Flow360BaseModel):
         if self.refinements is not None:
             for refinement in self.refinements:  # pylint: disable=not-an-iterable
                 if isinstance(refinement, UniformRefinement):
-                    self.defaults.octree_spacing.check_spacing(  # pylint: disable=no-member
+                    self.defaults.octree_spacing.check_spacing(
                         refinement.spacing, type(refinement).__name__
                     )
+        return self
 
     @contextual_model_validator(mode="after")
     def _warn_min_passage_size_without_remove_hidden_geometry(self) -> Self:
