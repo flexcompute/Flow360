@@ -94,6 +94,10 @@ jobs:
       checks: read
       statuses: read
     steps:
+    - uses: actions/checkout@v4
+      with:
+        sparse-checkout: |
+          .github/scripts
     - name: Collect and summarize tagged commit CI status
       uses: actions/github-script@v7
       env:
@@ -101,6 +105,10 @@ jobs:
         TAG_COMMIT_SHA: ${{ needs.validate-release-source.outputs.tag_commit_sha }}
       with:
         script: |
+          const {
+            listCheckRunsForRef,
+            getDetailsUrl,
+          } = require(`${process.env.GITHUB_WORKSPACE}/.github/scripts/pypi_check_runs.js`);
           const { owner, repo } = context.repo;
           const branch = process.env.RELEASE_BRANCH;
           const tagCommitSha = process.env.TAG_COMMIT_SHA;
@@ -112,14 +120,10 @@ jobs:
             owner, repo, ref: tagCommitSha,
           });
 
-          const checkRuns = await github.paginate(
-            github.rest.checks.listForRef,
-            { owner, repo, ref: tagCommitSha, per_page: 100 },
-            (response) => response.data.check_runs
-          );
+          const checkRuns = await listCheckRunsForRef(github, { owner, repo, ref: tagCommitSha });
           const currentRunToken = `/actions/runs/${context.runId}`;
           const relevant = checkRuns.filter(
-            (r) => !(r.details_url || "").includes(currentRunToken)
+            (r) => !getDetailsUrl(r).includes(currentRunToken)
           );
 
           const counts = {
@@ -175,16 +179,26 @@ jobs:
       - approval
     runs-on: ubuntu-latest
     permissions:
+      contents: read
       actions: read
       checks: read
       statuses: read
     steps:
+    - uses: actions/checkout@v4
+      with:
+        sparse-checkout: |
+          .github/scripts
     - name: Re-check tagged commit CI status after approval
       uses: actions/github-script@v7
       env:
         TAG_COMMIT_SHA: ${{ needs.validate-release-source.outputs.tag_commit_sha }}
       with:
         script: |
+          const {
+            listCheckRunsForRef,
+            getDetailsUrl,
+            extractWorkflowRunId,
+          } = require(`${process.env.GITHUB_WORKSPACE}/.github/scripts/pypi_check_runs.js`);
           const { owner, repo } = context.repo;
           const tagCommitSha = process.env.TAG_COMMIT_SHA;
 
@@ -194,16 +208,7 @@ jobs:
             ref: tagCommitSha,
           });
 
-          const checkRuns = await github.paginate(
-            github.rest.checks.listForRef,
-            {
-              owner,
-              repo,
-              ref: tagCommitSha,
-              per_page: 100,
-            },
-            (response) => response.data.check_runs
-          );
+          const checkRuns = await listCheckRunsForRef(github, { owner, repo, ref: tagCommitSha });
 
           const currentWorkflowRun = await github.rest.actions.getWorkflowRun({
             owner,
@@ -211,13 +216,11 @@ jobs:
             run_id: context.runId,
           });
           const currentWorkflowId = currentWorkflowRun.data.workflow_id;
-          const runIdPattern = /\/actions\/runs\/(\d+)(?:\/|$)/;
           const runIds = [
             ...new Set(
               checkRuns
                 .map((run) => {
-                  const match = (run.details_url || "").match(runIdPattern);
-                  return match ? Number(match[1]) : null;
+                  return extractWorkflowRunId(getDetailsUrl(run));
                 })
                 .filter((runId) => Number.isInteger(runId))
             ),
@@ -239,11 +242,10 @@ jobs:
 
           const relevantCheckRuns = checkRuns.filter(
             (run) => {
-              const match = (run.details_url || "").match(runIdPattern);
-              if (!match) {
+              const runId = extractWorkflowRunId(getDetailsUrl(run));
+              if (!Number.isInteger(runId)) {
                 return true;
               }
-              const runId = Number(match[1]);
               const workflowId = workflowIdByRunId.get(runId);
               if (workflowId === undefined) {
                 return true;
