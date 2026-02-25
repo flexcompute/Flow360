@@ -698,6 +698,32 @@
                             ]
                         ]
                     }
+                },
+                {
+                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                    "private_attribute_entity_type_name": "Surface",
+                    "private_attribute_id": "preexistingSymmetry",
+                    "name": "preexistingSymmetry",
+                    "private_attribute_full_name": null,
+                    "private_attribute_is_interface": null,
+                    "private_attribute_tag_key": null,
+                    "private_attribute_sub_components": [],
+                    "private_attribute_color": null,
+                    "private_attributes": {
+                        "type_name": "SurfacePrivateAttributes",
+                        "bounding_box": [
+                            [
+                                0,
+                                1159.931377585337,
+                                0
+                            ],
+                            [
+                                1,
+                                1159.931377585337,
+                                1
+                            ]
+                        ]
+                    }
                 }
             ],
             "global_bounding_box": [
