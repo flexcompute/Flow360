@@ -11,6 +11,7 @@ from flow360.component.simulation.framework.updater import (
     VERSION_MILESTONES,
     _find_update_path,
     _to_25_9_0,
+    _to_25_9_1,
     updater,
 )
 from flow360.component.simulation.framework.updater_utils import Flow360Version
@@ -1625,3 +1626,105 @@ def test_updater_to_25_9_0_convert_use_wall_function_bool():
     assert "use_wall_function" not in models[1]
     assert "use_wall_function" not in models[2]
     assert models[3].get("type") == "Freestream"
+
+
+def test_updater_to_25_9_1_add_linear_solver_type_name():
+    """Test 25.9.1 updater adds type_name to linear_solver inside navier_stokes_solver."""
+
+    params_as_dict = {
+        "version": "25.9.0",
+        "unit_system": {"name": "SI"},
+        "models": [
+            {
+                "type": "Fluid",
+                "navier_stokes_solver": {
+                    "absolute_tolerance": 1e-10,
+                    "linear_solver": {
+                        "max_iterations": 30,
+                    },
+                },
+            },
+            {
+                "type": "Fluid",
+                "navier_stokes_solver": {
+                    "absolute_tolerance": 1e-10,
+                    "linear_solver": {
+                        "type_name": "LinearSolver",
+                        "max_iterations": 50,
+                    },
+                },
+            },
+            {
+                "type": "Fluid",
+                "navier_stokes_solver": {
+                    "absolute_tolerance": 1e-10,
+                },
+            },
+            {
+                "type": "Wall",
+                "name": "wall-1",
+            },
+        ],
+    }
+
+    params_new = _to_25_9_1(params_as_dict)
+    models = params_new["models"]
+
+    # linear_solver without type_name should get it added
+    assert models[0]["navier_stokes_solver"]["linear_solver"]["type_name"] == "LinearSolver"
+    assert models[0]["navier_stokes_solver"]["linear_solver"]["max_iterations"] == 30
+
+    # linear_solver that already has type_name should be unchanged
+    assert models[1]["navier_stokes_solver"]["linear_solver"]["type_name"] == "LinearSolver"
+    assert models[1]["navier_stokes_solver"]["linear_solver"]["max_iterations"] == 50
+
+    # navier_stokes_solver without linear_solver should be unaffected
+    assert "linear_solver" not in models[2]["navier_stokes_solver"]
+
+    # Non-Fluid model without navier_stokes_solver should be unaffected
+    assert "navier_stokes_solver" not in models[3]
+
+
+def test_updater_to_25_9_1_via_updater():
+    """Test the full updater path from 25.9.0 to 25.9.1 adds linear_solver type_name."""
+
+    params_as_dict = {
+        "version": "25.9.0",
+        "unit_system": {"name": "SI"},
+        "models": [
+            {
+                "type": "Fluid",
+                "navier_stokes_solver": {
+                    "linear_solver": {
+                        "max_iterations": 25,
+                    },
+                },
+            },
+        ],
+    }
+
+    params_new = updater(
+        version_from="25.9.0",
+        version_to="25.9.1",
+        params_as_dict=params_as_dict,
+    )
+
+    assert params_new["version"] == "25.9.1"
+    assert (
+        params_new["models"][0]["navier_stokes_solver"]["linear_solver"]["type_name"]
+        == "LinearSolver"
+    )
+
+
+def test_updater_to_25_9_1_no_models():
+    """Test 25.9.1 updater handles missing or empty models gracefully."""
+
+    # No models key at all
+    params_no_models = {"version": "25.9.0"}
+    params_new = _to_25_9_1(params_no_models)
+    assert "models" not in params_new
+
+    # Empty models list
+    params_empty_models = {"version": "25.9.0", "models": []}
+    params_new = _to_25_9_1(params_empty_models)
+    assert params_new["models"] == []
