@@ -112,9 +112,7 @@ def _schema_unit_system_provider(dim_name: str):
 
 # Register with flow360-schema so new Length/Area/etc types respect unit system context
 # pylint:disable = wrong-import-position, wrong-import-order
-from flow360_schema.models.primitives.unyt_adapter import (
-    set_unit_system_provider,
-)
+from flow360_schema.models.primitives.unyt_adapter import set_unit_system_provider
 
 set_unit_system_provider(_schema_unit_system_provider)
 
