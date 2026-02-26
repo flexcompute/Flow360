@@ -1,6 +1,8 @@
+"""Shared validation helpers for meshing parameters."""
+
+import flow360.component.simulation.units as u
 from flow360.component.simulation.meshing_param.volume_params import UniformRefinement
 from flow360.component.simulation.primitives import Box, Cylinder, Sphere
-import flow360.component.simulation.units as u
 
 
 def validate_snappy_uniform_refinement_entities(refinement: UniformRefinement):
@@ -16,13 +18,13 @@ def validate_snappy_uniform_refinement_entities(refinement: UniformRefinement):
             )
         if (
             isinstance(entity, Box)
-            and entity.angle_of_rotation.to("deg") % (360 * u.deg) != 0 * u.deg
+            and entity.angle_of_rotation.to("deg") % (360 * u.deg) != 0 * u.deg  # pylint: disable=no-member
         ):
             raise ValueError(
                 "UniformRefinement for snappy accepts only Boxes with axes aligned"
                 + " with the global coordinate system (angle_of_rotation=0)."
             )
-        if isinstance(entity, Cylinder) and entity.inner_radius.to("m") != 0 * u.m:
+        if isinstance(entity, Cylinder) and entity.inner_radius.to("m") != 0 * u.m:  # pylint: disable=no-member
             raise ValueError(
                 "UniformRefinement for snappy accepts only full cylinders (where inner_radius = 0)."
             )

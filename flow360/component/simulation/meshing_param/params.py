@@ -37,7 +37,6 @@ from flow360.component.simulation.meshing_param.volume_params import (
     UniformRefinement,
     UserDefinedFarfield,
     WindTunnelFarfield,
-    validate_snappy_uniform_refinement_entities,
 )
 from flow360.component.simulation.primitives import SeedpointVolume
 from flow360.component.simulation.validation.validation_context import (
