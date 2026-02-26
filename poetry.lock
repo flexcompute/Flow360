@@ -229,14 +229,14 @@ test = ["astroid (>=2,<5)", "pytest (<9.0)", "pytest-cov", "pytest-xdist"]
 
 [[package]]
 name = "async-lru"
-version = "2.1.0"
+version = "2.2.0"
 description = "Simple LRU cache for asyncio"
 optional = false
 python-versions = ">=3.10"
 groups = ["main", "dev"]
 files = [
-    {file = "async_lru-2.1.0-py3-none-any.whl", hash = "sha256:fa12dcf99a42ac1280bc16c634bbaf06883809790f6304d85cdab3f666f33a7e"},
-    {file = "async_lru-2.1.0.tar.gz", hash = "sha256:9eeb2fecd3fe42cc8a787fc32ead53a3a7158cc43d039c3c55ab3e4e5b2a80ed"},
+    {file = "async_lru-2.2.0-py3-none-any.whl", hash = "sha256:e2c1cf731eba202b59c5feedaef14ffd9d02ad0037fcda64938699f2c380eafe"},
+    {file = "async_lru-2.2.0.tar.gz", hash = "sha256:80abae2a237dbc6c60861d621619af39f0d920aea306de34cb992c879e01370c"},
 ]
 markers = {main = "extra == \"docs\""}
 
@@ -490,18 +490,18 @@ css = ["tinycss2 (>=1.1.0,<1.5)"]
 
 [[package]]
 name = "boto3"
-version = "1.42.53"
+version = "1.42.57"
 description = "The AWS SDK for Python"
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "boto3-1.42.53-py3-none-any.whl", hash = "sha256:3bd32f3508a6e9851671d0ef3b1f9e8ee7e8c095aa0488bcd9e86074aef5b7eb"},
-    {file = "boto3-1.42.53.tar.gz", hash = "sha256:56bc79388763995852b6d3fe48023e661e63fc2e60a921273c422d0171b9fbfb"},
+    {file = "boto3-1.42.57-py3-none-any.whl", hash = "sha256:74f47051e3b741a0c1e64d57b891076c2c68f8d7b98aee36b044fab1849b4823"},
+    {file = "boto3-1.42.57.tar.gz", hash = "sha256:b598f1705f231f118a81abbfde0c5b52879b1b1997a1aba513f04d61e7b12cbd"},
 ]
 
 [package.dependencies]
-botocore = ">=1.42.53,<1.43.0"
+botocore = ">=1.42.57,<1.43.0"
 jmespath = ">=0.7.1,<2.0.0"
 s3transfer = ">=0.16.0,<0.17.0"
 
@@ -510,14 +510,14 @@ crt = ["botocore[crt] (>=1.21.0,<2.0a0)"]
 
 [[package]]
 name = "botocore"
-version = "1.42.53"
+version = "1.42.57"
 description = "Low-level, data-driven core of boto 3."
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "botocore-1.42.53-py3-none-any.whl", hash = "sha256:1255db56bc0a284a8caa182c20966277e6c8871b6881cf816d40e993fa5da503"},
-    {file = "botocore-1.42.53.tar.gz", hash = "sha256:0bc1a2e1b6ae4c8397c9bede3bb9007b4f16e159ef2ca7f24837e31d5860caac"},
+    {file = "botocore-1.42.57-py3-none-any.whl", hash = "sha256:0d26c09955e52ac5090d9cf9e218542df81670077049a606be7c3bd235208e67"},
+    {file = "botocore-1.42.57.tar.gz", hash = "sha256:51f94c602b687a70aa11d8bbea2b741b87b0aef7bddb43e5386247bf4311c479"},
 ]
 
 [package.dependencies]
@@ -610,14 +610,14 @@ test = ["flake8", "isort", "pytest"]
 
 [[package]]
 name = "certifi"
-version = "2026.1.4"
+version = "2026.2.25"
 description = "Python package for providing Mozilla's CA Bundle."
 optional = false
 python-versions = ">=3.7"
 groups = ["main", "dev"]
 files = [
-    {file = "certifi-2026.1.4-py3-none-any.whl", hash = "sha256:9943707519e4add1115f44c2bc244f782c0249876bf51b6599fee1ffbedd685c"},
-    {file = "certifi-2026.1.4.tar.gz", hash = "sha256:ac726dd470482006e014ad384921ed6438c457018f4b3d204aea4281258b2120"},
+    {file = "certifi-2026.2.25-py3-none-any.whl", hash = "sha256:027692e4402ad994f1c42e52a4997a9763c646b73e4096e4d5d6db8af1d6f0fa"},
+    {file = "certifi-2026.2.25.tar.gz", hash = "sha256:e887ab5cee78ea814d3472169153c2d12cd43b14bd03329a39a9c6e2e80bfba7"},
 ]
 
 [[package]]
@@ -1480,13 +1480,15 @@ files = [
 
 [[package]]
 name = "flow360-schema"
-version = "0.1.2"
+version = "0.1.3"
 description = "Pure Pydantic schemas for Flow360 - Single Source of Truth"
 optional = false
 python-versions = ">=3.9,<4.0"
 groups = ["main"]
-files = []
-develop = true
+files = [
+    {file = "flow360_schema-0.1.3-py3-none-any.whl", hash = "sha256:f83dd1f5d9593a045486a02aee214e5a371a0936d5b577615990bafbf2585da1"},
+    {file = "flow360_schema-0.1.3.tar.gz", hash = "sha256:5062fa7b6c7aa0408cb78c9e0212eb83a26fbf37c7659dded5934c197a2939ca"},
+]
 
 [package.dependencies]
 pydantic = ">=2.8,<3.0"
@@ -1495,8 +1497,9 @@ pydantic = ">=2.8,<3.0"
 unyt = ["unyt (>=2.9.0)"]
 
 [package.source]
-type = "directory"
-url = "../flex/share/flow360-schema"
+type = "legacy"
+url = "https://flexcompute-625554095313.d.codeartifact.us-east-1.amazonaws.com/pypi/pypi-releases/simple"
+reference = "codeartifact"
 
 [[package]]
 name = "fonttools"
@@ -2389,14 +2392,14 @@ test = ["jupyter-server (>=2.0.0)", "pytest (>=7.0)", "pytest-jupyter[server] (>
 
 [[package]]
 name = "jupyterlab"
-version = "4.5.4"
+version = "4.5.5"
 description = "JupyterLab computational environment"
 optional = false
 python-versions = ">=3.9"
 groups = ["main", "dev"]
 files = [
-    {file = "jupyterlab-4.5.4-py3-none-any.whl", hash = "sha256:cc233f70539728534669fb0015331f2a3a87656207b3bb2d07916e9289192f12"},
-    {file = "jupyterlab-4.5.4.tar.gz", hash = "sha256:c215f48d8e4582bd2920ad61cc6a40d8ebfef7e5a517ae56b8a9413c9789fdfb"},
+    {file = "jupyterlab-4.5.5-py3-none-any.whl", hash = "sha256:a35694a40a8e7f2e82f387472af24e61b22adcce87b5a8ab97a5d9c486202a6d"},
+    {file = "jupyterlab-4.5.5.tar.gz", hash = "sha256:eac620698c59eb810e1729909be418d9373d18137cac66637141abba613b3fda"},
 ]
 markers = {main = "extra == \"docs\""}
 
@@ -3408,20 +3411,20 @@ markers = {main = "extra == \"docs\""}
 
 [[package]]
 name = "notebook"
-version = "7.5.3"
+version = "7.5.4"
 description = "Jupyter Notebook - A web-based notebook environment for interactive computing"
 optional = false
 python-versions = ">=3.9"
 groups = ["main", "dev"]
 files = [
-    {file = "notebook-7.5.3-py3-none-any.whl", hash = "sha256:c997bfa1a2a9eb58c9bbb7e77d50428befb1033dd6f02c482922e96851d67354"},
-    {file = "notebook-7.5.3.tar.gz", hash = "sha256:393ceb269cf9fdb02a3be607a57d7bd5c2c14604f1818a17dbeb38e04f98cbfa"},
+    {file = "notebook-7.5.4-py3-none-any.whl", hash = "sha256:860e31782b3d3a25ca0819ff039f5cf77845d1bf30c78ef9528b88b25e0a9850"},
+    {file = "notebook-7.5.4.tar.gz", hash = "sha256:b928b2ba22cb63aa83df2e0e76fe3697950a0c1c4a41b84ebccf1972b1bb5771"},
 ]
 markers = {main = "extra == \"docs\""}
 
 [package.dependencies]
 jupyter-server = ">=2.4.0,<3"
-jupyterlab = ">=4.5.3,<4.6"
+jupyterlab = ">=4.5.5,<4.6"
 jupyterlab-server = ">=2.28.0,<3"
 notebook-shim = ">=0.2,<0.3"
 tornado = ">=6.2.0"
@@ -4028,14 +4031,14 @@ testing = ["coverage", "pytest", "pytest-benchmark"]
 
 [[package]]
 name = "pontos"
-version = "25.8.1"
+version = "26.2.0"
 description = "Common utilities and tools maintained by Greenbone Networks"
 optional = false
 python-versions = "<4.0,>=3.9"
 groups = ["dev"]
 files = [
-    {file = "pontos-25.8.1-py3-none-any.whl", hash = "sha256:9e32a3bcbdd9f9ad7274457075bffe4bc3df49083429754899a8c847bd0f9bf6"},
-    {file = "pontos-25.8.1.tar.gz", hash = "sha256:c60a8a0a6271ba173e8c0af098b4aa102ad5fcdbf6fe6857d2bf889c37899cd7"},
+    {file = "pontos-26.2.0-py3-none-any.whl", hash = "sha256:37d5dc30ea65cef9b5aa12e00997165ae906be8eef2b6c017c9eb41431bb1d71"},
+    {file = "pontos-26.2.0.tar.gz", hash = "sha256:54ed2d1532879647d6f51b94d988c4295da419f7531910b5511a100f7ed81c8b"},
 ]
 
 [package.dependencies]
@@ -5487,23 +5490,19 @@ testing = ["covdefaults (>=2.3)", "coverage (>=7.13)", "defusedxml (>=0.7.1)", "
 
 [[package]]
 name = "sphinx-autodoc-typehints"
-version = "3.6.3"
+version = "3.8.0"
 description = "Type hints (PEP 484) support for the Sphinx autodoc extension"
 optional = true
 python-versions = ">=3.12"
 groups = ["main"]
 markers = "python_version >= \"3.12\" and extra == \"docs\""
 files = [
-    {file = "sphinx_autodoc_typehints-3.6.3-py3-none-any.whl", hash = "sha256:46ebc68fa85b320d55887a8d836a01e12e3b7744da973e70af8cedc74072aad5"},
-    {file = "sphinx_autodoc_typehints-3.6.3.tar.gz", hash = "sha256:6c387b47d9ad5e75b157810af5bad46901f0a22708ed5e4adf466885a9c60910"},
+    {file = "sphinx_autodoc_typehints-3.8.0-py3-none-any.whl", hash = "sha256:f348971f3d88eaee053668b61512e921086b8f0600f1e0887a39bc9476aca51c"},
+    {file = "sphinx_autodoc_typehints-3.8.0.tar.gz", hash = "sha256:155a30407e88ed3287eeeb1e9156b0ed0ad08c998b0391c652b540563132fd70"},
 ]
 
 [package.dependencies]
 sphinx = ">=9.1"
-
-[package.extras]
-docs = ["furo (>=2025.12.19)"]
-testing = ["covdefaults (>=2.3)", "coverage (>=7.13.4)", "defusedxml (>=0.7.1)", "diff-cover (>=10.2)", "pytest (>=9.0.2)", "pytest-cov (>=7)", "sphobjinv (>=2.3.1.3)", "typing-extensions (>=4.15)"]
 
 [[package]]
 name = "sphinx-book-theme"
@@ -6460,4 +6459,4 @@ docs = ["autodoc_pydantic", "cairosvg", "ipython", "jinja2", "jupyter", "myst-pa
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<3.14"
-content-hash = "6d6b12d422990342f93721cc85e80f2191ee28a4cca782a6de8ae974416bd465"
+content-hash = "590baf6f9088ab5fd43d69f705ee63135d681243c570403f5c9a1ba7d7519888"
