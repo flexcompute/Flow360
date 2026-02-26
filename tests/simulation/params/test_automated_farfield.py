@@ -325,7 +325,7 @@ def test_user_defined_farfield_auto_symmetry_plane(surface_mesh):
                 defaults=MeshingDefaults(
                     boundary_layer_first_layer_thickness=0.001,
                     boundary_layer_growth_rate=1.1,
-                    geometry_accuracy=1 * u.mm,
+                    geometry_accuracy=0.01 * u.m,
                 ),
                 volume_zones=[farfield],
             ),
