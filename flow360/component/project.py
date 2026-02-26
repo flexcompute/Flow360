@@ -13,7 +13,11 @@ import pydantic as pd
 import typing_extensions
 from pydantic import PositiveInt
 
-from flow360.cloud.flow360_requests import LengthUnitType, RenameAssetRequestV2
+from flow360.cloud.flow360_requests import (
+    CloneVolumeMeshRequest,
+    LengthUnitType,
+    RenameAssetRequestV2,
+)
 from flow360.cloud.http_util import http
 from flow360.cloud.rest_api import RestApi
 from flow360.component.case import Case
@@ -72,7 +76,7 @@ from flow360.component.utils import (
     parse_datetime,
     wrapstring,
 )
-from flow360.component.volume_mesh import VolumeMeshV2
+from flow360.component.volume_mesh import VolumeMeshMetaV2, VolumeMeshV2
 from flow360.exceptions import (
     Flow360ConfigError,
     Flow360FileError,
@@ -990,6 +994,90 @@ class Project(pd.BaseModel):
         return project
 
     @classmethod
+    def _create_project_from_volume_mesh_clone(
+        cls,
+        *,
+        volume_mesh: VolumeMeshV2,
+        name: str = None,
+        solver_version: str = None,
+        length_unit: LengthUnitType = None,
+        tags: List[str] = None,
+        run_async: bool = False,
+        folder: Optional[Folder] = None,
+    ):
+        """
+        Creates a project by cloning an existing cloud volume mesh.
+
+        Parameters
+        ----------
+        volume_mesh : VolumeMeshV2
+            The cloud volume mesh to clone.
+        name : str, optional
+            Name of the project (default: original volume mesh name).
+        solver_version : str, optional
+            Version of the solver (default: from original volume mesh).
+        length_unit : LengthUnitType, optional
+            Unit of length (default: from original project).
+        tags : list of str, optional
+            Tags to assign to the project.
+        run_async : bool, optional
+            Whether to create the project asynchronously (default is False).
+        folder : Optional[Folder], optional
+            Parent folder for the project. If None, creates in root.
+
+        Returns
+        -------
+        Project
+            An instance of the project. Or Project ID when run_async is True.
+        """
+
+        if solver_version is None:
+            solver_version = volume_mesh.solver_version
+
+        if length_unit is None:
+            source_project = Project.from_cloud(project_id=volume_mesh.info.project_id)
+            length_unit = str(source_project.length_unit.units)
+
+        if name is None:
+            name = volume_mesh.info.name
+
+        req = CloneVolumeMeshRequest(
+            name=name,
+            solver_version=solver_version,
+            tags=tags or [],
+            parent_folder_id=folder.id if folder else "ROOT.FLOW360",
+            length_unit=length_unit,
+            original_volume_mesh_id=volume_mesh.id,
+        )
+
+        resp = RestApi(VolumeMeshInterfaceV2.endpoint).post(req.dict(), method="clone")
+        vm_info = VolumeMeshMetaV2(**resp)
+
+        if run_async:
+            log.info(
+                f"Volume mesh clone submitted to project: {vm_info.project_id}. "
+                "Only the project ID string is returned. "
+                "To retrieve this project later, use 'Project.from_cloud(project_id)'. "
+            )
+            return vm_info.project_id
+
+        root_asset = VolumeMeshV2.from_cloud(vm_info.id)
+        project_id = root_asset.project_id
+        project_api = RestApi(ProjectInterface.endpoint, id=project_id)
+        project_info = project_api.get()
+        project = Project(
+            metadata=ProjectMeta(**project_info),
+            project_tree=ProjectTree(),
+            solver_version=root_asset.solver_version,
+        )
+        project._project_webapi = project_api
+        project._root_webapi = RestApi(VolumeMeshInterfaceV2.endpoint, id=root_asset.id)
+        project._root_asset = root_asset
+        project._get_root_simulation_json()
+        project._get_tree_from_cloud()
+        return project
+
+    @classmethod
     @pd.validate_call(
         config={
             "arbitrary_types_allowed": True
@@ -1137,7 +1225,7 @@ class Project(pd.BaseModel):
     @pd.validate_call(config={"arbitrary_types_allowed": True})
     def from_volume_mesh(
         cls,
-        file: str,
+        file: Union[str, VolumeMeshV2],
         /,
         name: str = None,
         solver_version: str = __solver_version__,
@@ -1147,19 +1235,25 @@ class Project(pd.BaseModel):
         folder: Optional[Folder] = None,
     ):
         """
-        Initializes a project from a local volume mesh file.
+        Initializes a project from a local volume mesh file or an existing cloud volume mesh.
 
         Parameters
         ----------
-        file : str (positional argument only)
-            Volume mesh file path. For UGRID file the mapbc
-            file needs to be renamed with the same prefix under same folder.
+        file : Union[str, VolumeMeshV2] (positional argument only)
+            Volume mesh file path or a VolumeMeshV2 cloud object.
+            For file path: UGRID files need the mapbc file renamed with the same prefix
+            under the same folder.
+            For VolumeMeshV2: creates a new project by cloning the existing volume mesh.
+            The solver_version and length_unit default to the values from the original
+            volume mesh's project.
         name : str, optional
             Name of the project (default is None).
         solver_version : str, optional
-            Version of the solver (default is None).
+            Version of the solver (default is the current solver version for file input,
+            or the original volume mesh's solver version for VolumeMeshV2 input).
         length_unit : LengthUnitType, optional
-            Unit of length (default is "m").
+            Unit of length (default is "m" for file input, or the original project's
+            length unit for VolumeMeshV2 input).
         tags : list of str, optional
             Tags to assign to the project (default is None).
         run_async : bool, optional
@@ -1170,12 +1264,12 @@ class Project(pd.BaseModel):
         Returns
         -------
         Project
-            An instance of the project.
+            An instance of the project. Or Project ID when run_async is True.
 
         Raises
         ------
         Flow360FileError
-            If the project cannot be initialized from the file. Or Project ID when run_async is True.
+            If the project cannot be initialized from the file.
 
         Example
         -------
@@ -1186,7 +1280,21 @@ class Project(pd.BaseModel):
         ...     length_unit="inch"
         ...     tags=["Quarter 1", "Revision 2"]
         ... )
+
+        >>> volume_mesh = fl.VolumeMeshV2.from_cloud("vm-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx")
+        >>> my_project = fl.Project.from_volume_mesh(volume_mesh, name="Cloned_Project")
         """
+
+        if isinstance(file, VolumeMeshV2):
+            return cls._create_project_from_volume_mesh_clone(
+                volume_mesh=file,
+                name=name,
+                solver_version=solver_version,
+                length_unit=length_unit if length_unit != "m" else None,
+                tags=tags,
+                run_async=run_async,
+                folder=folder,
+            )
 
         try:
             validated_files = VolumeMeshFile(file_names=file)
