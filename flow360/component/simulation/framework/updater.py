@@ -677,6 +677,10 @@ def _to_25_9_0(params_as_dict):
     """Remove ``remove_non_manifold_faces``, migrate wall function bools, add ``type_name``."""
     _remove_non_manifold_faces_key(params_as_dict)
     _migrate_wall_function_bool(params_as_dict)
+    return params_as_dict
+
+
+def _to_25_9_1(params_as_dict):
     _add_linear_solver_type_name(params_as_dict)
     return params_as_dict
 
@@ -701,6 +705,7 @@ VERSION_MILESTONES = [
     (Flow360Version("25.8.3"), _to_25_8_3),
     (Flow360Version("25.8.4"), _to_25_8_4),
     (Flow360Version("25.9.0"), _to_25_9_0),
+    (Flow360Version("25.9.1"), _to_25_9_1),
 ]  # A list of the Python API version tuple with their corresponding updaters.
 
 
