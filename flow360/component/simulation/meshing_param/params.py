@@ -41,10 +41,7 @@ from flow360.component.simulation.validation.validation_context import (
     VOLUME_MESH,
     ContextField,
     ParamsValidationInfo,
-<<<<<<< HEAD
     add_validation_warning,
-=======
->>>>>>> e12e7ba5 ([SNAPPY] Validator to avoid OpenFoam entity name errors (#1816))
     contextual_field_validator,
     contextual_model_validator,
 )
