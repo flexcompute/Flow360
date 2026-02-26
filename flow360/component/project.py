@@ -994,6 +994,7 @@ class Project(pd.BaseModel):
         return project
 
     @classmethod
+    # pylint: disable=too-many-locals
     def _create_project_from_volume_mesh_clone(
         cls,
         *,
