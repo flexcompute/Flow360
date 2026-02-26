@@ -22,6 +22,9 @@ from flow360.component.simulation.meshing_param.meshing_specs import (
     MeshingDefaults,
     VolumeMeshingDefaults,
 )
+from flow360.component.simulation.meshing_param.meshing_validators import (
+    validate_snappy_uniform_refinement_entities,
+)
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     AxisymmetricRefinement,
@@ -456,6 +459,19 @@ class VolumeMeshingParams(Flow360BaseModel):
                         refinement.spacing, type(refinement).__name__
                     )
 
+        return self
+
+    @contextual_model_validator(mode="after")
+    def _check_snappy_uniform_refinement_entities(self, param_info: ParamsValidationInfo):
+        """Validate projected UniformRefinement entities are compatible with snappyHexMesh."""
+        if not param_info.use_snappy:
+            return self
+        for refinement in self.refinements:  # pylint: disable=not-an-iterable
+            if (
+                isinstance(refinement, UniformRefinement)
+                and refinement.project_to_surface is not False
+            ):
+                validate_snappy_uniform_refinement_entities(refinement)
         return self
 
 

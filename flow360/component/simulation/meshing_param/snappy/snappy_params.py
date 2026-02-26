@@ -4,9 +4,11 @@ from typing import List, Literal, Optional, Union
 
 import pydantic as pd
 
-import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.meshing_param.meshing_specs import OctreeSpacing
+from flow360.component.simulation.meshing_param.meshing_validators import (
+    validate_snappy_uniform_refinement_entities,
+)
 from flow360.component.simulation.meshing_param.snappy.snappy_mesh_refinements import (
     BodyRefinement,
     RegionRefinement,
@@ -22,7 +24,6 @@ from flow360.component.simulation.meshing_param.snappy.snappy_specs import (
     SurfaceMeshingDefaults,
 )
 from flow360.component.simulation.meshing_param.volume_params import UniformRefinement
-from flow360.component.simulation.primitives import Box, Cylinder
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.validation.validation_context import (
     ParamsValidationInfo,
@@ -124,20 +125,7 @@ class SurfaceMeshingParams(Flow360BaseModel):
             return self
         for refinement in self.refinements:
             if isinstance(refinement, UniformRefinement):
-                # No expansion needed since we only allow Draft entities here.
-                for entity in refinement.entities.stored_entities:
-                    if (
-                        isinstance(entity, Box)
-                        and entity.angle_of_rotation.to("deg") % (360 * u.deg) != 0 * u.deg
-                    ):
-                        raise ValueError(
-                            "UniformRefinement for snappy accepts only Boxes with axes aligned"
-                            + " with the global coordinate system (angle_of_rotation=0)."
-                        )
-                    if isinstance(entity, Cylinder) and entity.inner_radius.to("m") != 0 * u.m:
-                        raise ValueError(
-                            "UniformRefinement for snappy accepts only full cylinders (where inner_radius = 0)."
-                        )
+                validate_snappy_uniform_refinement_entities(refinement)
 
         return self
 

@@ -68,6 +68,10 @@ beta_mesher_context = ParamsValidationInfo({}, [])
 beta_mesher_context.is_beta_mesher = True
 beta_mesher_context.project_length_unit = "mm"
 
+snappy_context = ParamsValidationInfo({}, [])
+snappy_context.use_snappy = True
+snappy_context.is_beta_mesher = True
+
 
 def test_structured_box_only_in_beta_mesher():
     # raises when beta mesher is off
@@ -887,7 +891,20 @@ def test_sphere_in_uniform_refinement():
                 ],
             )
 
-    # raises without beta mesher
+    # also allowed with snappy
+    with ValidationContext(VOLUME_MESH, snappy_context):
+        with CGS_unit_system:
+            sphere = Sphere(
+                name="s_snappy",
+                center=(0, 0, 0),
+                radius=1.0,
+            )
+            UniformRefinement(
+                entities=[sphere],
+                spacing=0.1,
+            )
+
+    # raises without beta mesher or snappy
     with pytest.raises(
         pd.ValidationError,
         match=r"`Sphere` entity for `UniformRefinement` is supported only with beta mesher",
@@ -901,6 +918,45 @@ def test_sphere_in_uniform_refinement():
                 )
                 UniformRefinement(
                     entities=[sphere],
+                    spacing=0.1,
+                )
+
+
+def test_uniform_refinement_snappy_entity_restrictions():
+    """With snappy, UniformRefinement only accepts Box, Cylinder, and Sphere entities."""
+    # Box, Cylinder, Sphere all allowed
+    with ValidationContext(VOLUME_MESH, snappy_context):
+        with CGS_unit_system:
+            UniformRefinement(
+                entities=[
+                    Box(center=(0, 0, 0), size=(1, 1, 1), name="box"),
+                    Cylinder(
+                        name="cyl",
+                        axis=(0, 0, 1),
+                        center=(0, 0, 0),
+                        height=1.0,
+                        outer_radius=0.5,
+                    ),
+                    Sphere(name="sph", center=(0, 0, 0), radius=1.0),
+                ],
+                spacing=0.1,
+            )
+
+    # AxisymmetricBody rejected with snappy
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"`AxisymmetricBody` entity for `UniformRefinement` is not supported with snappyHexMesh",
+    ):
+        with ValidationContext(VOLUME_MESH, snappy_context):
+            with CGS_unit_system:
+                axisymmetric_body = AxisymmetricBody(
+                    name="axisymm",
+                    axis=(0, 0, 1),
+                    center=(0, 0, 0),
+                    profile_curve=[(-1, 0), (-1, 1), (1, 1), (1, 0)],
+                )
+                UniformRefinement(
+                    entities=[axisymmetric_body],
                     spacing=0.1,
                 )
 
