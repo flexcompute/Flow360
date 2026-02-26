@@ -2296,7 +2296,9 @@ def test_beta_mesher_only_features(mock_validation_context):
                     )
                 ],
             ),
-            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=False),
+            private_attribute_asset_cache=AssetCache(
+                use_inhouse_mesher=False, project_length_unit=1 * u.m
+            ),
         )
     params, errors, _ = validate_model(
         params_as_dict=params.model_dump(mode="json"),
@@ -2318,7 +2320,9 @@ def test_beta_mesher_only_features(mock_validation_context):
                     number_of_boundary_layers=10,
                 ),
             ),
-            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=False),
+            private_attribute_asset_cache=AssetCache(
+                use_inhouse_mesher=False, project_length_unit=1 * u.m
+            ),
         )
     params, errors, _ = validate_model(
         params_as_dict=params.model_dump(mode="json"),
@@ -2339,7 +2343,9 @@ def test_beta_mesher_only_features(mock_validation_context):
                     edge_split_layers=2,
                 ),
             ),
-            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=False),
+            private_attribute_asset_cache=AssetCache(
+                use_inhouse_mesher=False, project_length_unit=1 * u.m
+            ),
         )
     params, errors, warnings = validate_model(
         params_as_dict=params.model_dump(mode="json"),
@@ -2361,7 +2367,9 @@ def test_beta_mesher_only_features(mock_validation_context):
                     edge_split_layers=0,
                 ),
             ),
-            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=False),
+            private_attribute_asset_cache=AssetCache(
+                use_inhouse_mesher=False, project_length_unit=1 * u.m
+            ),
         )
     params, errors, warnings = validate_model(
         params_as_dict=params.model_dump(mode="json"),
@@ -2380,7 +2388,9 @@ def test_beta_mesher_only_features(mock_validation_context):
                     planar_face_tolerance=1e-4,
                 ),
             ),
-            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=False),
+            private_attribute_asset_cache=AssetCache(
+                use_inhouse_mesher=False, project_length_unit=1 * u.m
+            ),
         )
     params, errors, _ = validate_model(
         validated_by=ValidationCalledBy.LOCAL,
@@ -2671,6 +2681,7 @@ def test_beta_mesher_only_features(mock_validation_context):
 def test_edge_split_layers_default_no_warning_for_dict_input():
     non_beta_context = ParamsValidationInfo({}, [])
     non_beta_context.is_beta_mesher = False
+    non_beta_context.project_length_unit = 1 * u.m
 
     with SI_unit_system, ValidationContext(VOLUME_MESH, non_beta_context) as validation_context:
         defaults = MeshingDefaults.model_validate({"boundary_layer_first_layer_thickness": 1e-4})
@@ -2682,6 +2693,7 @@ def test_edge_split_layers_default_no_warning_for_dict_input():
 def test_edge_split_layers_default_no_warning_for_constructor_input():
     non_beta_context = ParamsValidationInfo({}, [])
     non_beta_context.is_beta_mesher = False
+    non_beta_context.project_length_unit = 1 * u.m
 
     with SI_unit_system, ValidationContext(VOLUME_MESH, non_beta_context) as validation_context:
         defaults = MeshingDefaults(boundary_layer_first_layer_thickness=1e-4)

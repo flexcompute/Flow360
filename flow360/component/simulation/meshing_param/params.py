@@ -40,11 +40,13 @@ from flow360.component.simulation.validation.validation_context import (
     SURFACE_MESH,
     VOLUME_MESH,
     ContextField,
+    ParamsValidationInfo,
     add_validation_warning,
     contextual_field_validator,
     contextual_model_validator,
 )
 from flow360.component.simulation.validation.validation_utils import EntityUsageMap
+from flow360.log import log
 
 RefinementTypes = Annotated[
     Union[
@@ -335,6 +337,27 @@ class MeshingParams(Flow360BaseModel):
         return self
 
     @contextual_model_validator(mode="after")
+    def _check_sizing_against_octree_series(self, param_info: ParamsValidationInfo):
+        """Validate that UniformRefinement spacings align with the octree series."""
+        if not param_info.is_beta_mesher:
+            return self
+        if self.defaults.octree_spacing is None:  # pylint: disable=no-member
+            log.warning(
+                "No `octree_spacing` configured in `%s`; "
+                "octree spacing validation for UniformRefinement will be skipped.",
+                type(self.defaults).__name__,
+            )
+            return self
+
+        if self.refinements is not None:
+            for refinement in self.refinements:  # pylint: disable=not-an-iterable
+                if isinstance(refinement, UniformRefinement):
+                    self.defaults.octree_spacing.check_spacing(  # pylint: disable=no-member
+                        refinement.spacing, type(refinement).__name__
+                    )
+        return self
+
+    @contextual_model_validator(mode="after")
     def _warn_min_passage_size_without_remove_hidden_geometry(self) -> Self:
         """Warn when GeometryRefinement specifies min_passage_size but remove_hidden_geometry is disabled."""
         if self.defaults.remove_hidden_geometry:  # pylint: disable=no-member
@@ -412,6 +435,28 @@ class VolumeMeshingParams(Flow360BaseModel):
         " relative to the smallest radius of all sliding interfaces specified in meshing parameters."
         " This cannot be overridden per sliding interface.",
     )
+
+    @contextual_model_validator(mode="after")
+    def _check_sizing_against_octree_series(self, param_info: ParamsValidationInfo):
+        """Validate that UniformRefinement spacings align with the octree series."""
+        if not param_info.is_beta_mesher:
+            return self
+        if self.defaults.octree_spacing is None:  # pylint: disable=no-member
+            log.warning(
+                "No `octree_spacing` configured in `%s`; "
+                "octree spacing validation for UniformRefinement will be skipped.",
+                type(self.defaults).__name__,
+            )
+            return self
+
+        if self.refinements is not None:
+            for refinement in self.refinements:  # pylint: disable=not-an-iterable
+                if isinstance(refinement, UniformRefinement):
+                    self.defaults.octree_spacing.check_spacing(  # pylint: disable=no-member
+                        refinement.spacing, type(refinement).__name__
+                    )
+
+        return self
 
 
 SurfaceMeshingParams = Annotated[
@@ -515,6 +560,60 @@ class ModularMeshingWorkflow(Flow360BaseModel):
         else:
             if total_seedpoint_volumes:
                 raise ValueError("`SeedpointVolume` is applicable only with snappyHexMeshing.")
+
+        return self
+
+    @contextual_model_validator(mode="after")
+    def _check_uniform_refinement_names_not_in_snappy_bodies(  # pylint: disable=too-many-branches
+        self, param_info: ParamsValidationInfo
+    ) -> Self:
+        """Ensure no UniformRefinement entity shares a name with a SnappyBody in the geometry."""
+
+        if not isinstance(self.surface_meshing, snappy.SurfaceMeshingParams):
+            return self
+
+        entity_info = param_info.get_entity_info()
+        if entity_info is None or getattr(entity_info, "type_name", None) != "GeometryEntityInfo":
+            return self
+
+        # pylint: disable=protected-access
+        try:
+            snappy_body_names = {body.name for body in entity_info._get_snappy_bodies()}
+        except (ValueError, IndexError, AttributeError):
+            return self
+
+        if not snappy_body_names:
+            return self
+
+        conflicting: list[str] = []
+
+        # Surface meshing: all UniformRefinement entities
+        # pylint: disable=no-member
+        if self.surface_meshing is not None and self.surface_meshing.refinements is not None:
+            for refinement in self.surface_meshing.refinements:
+                if isinstance(refinement, UniformRefinement):
+                    for entity in refinement.entities.stored_entities:
+                        if entity.name in snappy_body_names:
+                            conflicting.append(entity.name)
+
+        # Volume meshing: UniformRefinement entities that project to surface
+        # (project_to_surface defaults to True for snappy, so None counts as True)
+        # pylint: disable=no-member
+        if self.volume_meshing is not None and self.volume_meshing.refinements is not None:
+            for refinement in self.volume_meshing.refinements:
+                if isinstance(refinement, UniformRefinement) and (
+                    refinement.project_to_surface is not False
+                ):
+                    for entity in refinement.entities.stored_entities:
+                        if entity.name in snappy_body_names:
+                            conflicting.append(entity.name)
+
+        if conflicting:
+            names_str = ", ".join(f"`{name}`" for name in dict.fromkeys(conflicting))
+            raise ValueError(
+                f"UniformRefinement entity name(s) {names_str} conflict with SnappyBody name(s)"
+                " in the geometry. Please use different names for the UniformRefinement entities."
+            )
 
         return self
 

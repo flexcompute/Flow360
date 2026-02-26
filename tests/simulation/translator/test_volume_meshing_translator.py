@@ -352,7 +352,9 @@ def get_test_param():
                     volume_zones=volume_zones,
                     outputs=meshSliceOutputs,
                 ),
-                private_attribute_asset_cache=AssetCache(use_inhouse_mesher=beta_mesher),
+                private_attribute_asset_cache=AssetCache(
+                    use_inhouse_mesher=beta_mesher, project_length_unit=1 * u.m
+                ),
             )
             return param
 
@@ -1313,6 +1315,44 @@ def test_uniform_refinement_box_cylinder_axisymm_body(get_surface_mesh):
     assert axisymm_ref["center"] == [5.0, 6.0, 7.0]
     assert axisymm_ref["profileCurve"] == [[0.0, 0.0], [0.0, 0.5], [1.0, 1.0], [1.0, 0.0]]
     assert axisymm_ref["spacing"] == 0.1
+
+
+def test_uniform_refinement_sphere(get_surface_mesh):
+    """Test that Sphere is correctly translated in UniformRefinement."""
+    with SI_unit_system:
+        sphere = Sphere(
+            name="test_sphere",
+            center=(1, 2, 3),
+            radius=0.5 * u.m,
+            axis=(0, 0, 1),
+        )
+        param = SimulationParams(
+            meshing=MeshingParams(
+                refinement_factor=1.0,
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-5 * u.m,
+                    boundary_layer_growth_rate=1.2,
+                ),
+                volume_zones=[AutomatedFarfield()],
+                refinements=[
+                    UniformRefinement(
+                        entities=[sphere],
+                        spacing=0.05 * u.m,
+                    ),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+        )
+
+    translated = get_volume_meshing_json(param, get_surface_mesh.mesh_unit)
+    assert "refinement" in translated
+    assert len(translated["refinement"]) == 1
+
+    sphere_ref = translated["refinement"][0]
+    assert sphere_ref["type"] == "Sphere"
+    assert sphere_ref["radius"] == 0.5
+    assert sphere_ref["center"] == [1.0, 2.0, 3.0]
+    assert sphere_ref["spacing"] == 0.05
 
 
 def test_edge_split_layers_default_translation(get_surface_mesh):
