@@ -99,9 +99,7 @@ class UnitSystemManager:
 unit_system_manager = UnitSystemManager()
 
 
-# TOAI: This is a temporary solution/wrapper that we will get rid of later because the UnitSystemManager
-# TOAI: should also be moved to schema side (maybe not in the current PR though) The main point is I hate wrappers.
-# TOAI: It is fine for now though.
+# TO_U: This is a temporary wrapper. UnitSystemManager should be moved to schema side in a future PR.
 def _schema_unit_system_provider(dim_name: str):
     """Provide the current unit for a dimension name to flow360-schema types."""
     if unit_system_manager.current:
