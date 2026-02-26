@@ -1728,3 +1728,58 @@ def test_updater_to_25_9_1_no_models():
     params_empty_models = {"version": "25.9.0", "models": []}
     params_new = _to_25_9_1(params_empty_models)
     assert params_new["models"] == []
+
+
+def test_updater_to_25_9_1_remove_local_cfl_for_steady():
+    """Test 25.9.1 updater removes localCFL from output fields in steady simulations."""
+
+    params_as_dict = {
+        "version": "25.9.0",
+        "unit_system": {"name": "SI"},
+        "time_stepping": {"type_name": "Steady"},
+        "outputs": [
+            {
+                "output_type": "VolumeOutput",
+                "output_fields": {"items": ["Cp", "localCFL", "Mach"]},
+            },
+            {
+                "output_type": "SliceOutput",
+                "output_fields": {"items": ["localCFL"]},
+            },
+            {
+                "output_type": "TimeAverageVolumeOutput",
+                "output_fields": {"items": ["localCFL", "pressure"]},
+            },
+            {
+                "output_type": "TimeAverageSliceOutput",
+                "output_fields": {"items": ["velocity", "localCFL"]},
+            },
+        ],
+    }
+
+    params_new = _to_25_9_1(params_as_dict)
+
+    assert params_new["outputs"][0]["output_fields"]["items"] == ["Cp", "Mach"]
+    assert params_new["outputs"][1]["output_fields"]["items"] == []
+    assert params_new["outputs"][2]["output_fields"]["items"] == ["pressure"]
+    assert params_new["outputs"][3]["output_fields"]["items"] == ["velocity"]
+
+
+def test_updater_to_25_9_1_keep_local_cfl_for_unsteady():
+    """Test 25.9.1 updater preserves localCFL in output fields for unsteady simulations."""
+
+    params_as_dict = {
+        "version": "25.9.0",
+        "unit_system": {"name": "SI"},
+        "time_stepping": {"type_name": "Unsteady", "steps": 100, "step_size": 0.001},
+        "outputs": [
+            {
+                "output_type": "VolumeOutput",
+                "output_fields": {"items": ["Cp", "localCFL", "Mach"]},
+            },
+        ],
+    }
+
+    params_new = _to_25_9_1(params_as_dict)
+
+    assert params_new["outputs"][0]["output_fields"]["items"] == ["Cp", "localCFL", "Mach"]
