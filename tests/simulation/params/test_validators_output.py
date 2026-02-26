@@ -36,7 +36,7 @@ from flow360.component.simulation.models.solver_numerics import (
 )
 from flow360.component.simulation.models.surface_models import Wall
 from flow360.component.simulation.models.volume_models import Fluid, PorousMedium
-from flow360.component.simulation.outputs.output_entities import Point
+from flow360.component.simulation.outputs.output_entities import Point, Slice
 from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
     ForceDistributionOutput,
@@ -44,6 +44,7 @@ from flow360.component.simulation.outputs.outputs import (
     IsosurfaceOutput,
     MovingStatistic,
     ProbeOutput,
+    SliceOutput,
     SurfaceIntegralOutput,
     SurfaceOutput,
     SurfaceProbeOutput,
@@ -126,6 +127,51 @@ def test_unsteadiness_to_use_aero_acoustics():
                 ],
                 time_stepping=fl.Steady(),
             )
+
+
+def test_local_cfl_output_requires_unsteady():
+    """localCFL output field is only valid for unsteady simulations."""
+
+    # Steady + localCFL in VolumeOutput should raise
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "In `outputs`[0] VolumeOutput: "
+            "`localCFL` output is only supported for unsteady simulations."
+        ),
+    ):
+        with imperial_unit_system:
+            SimulationParams(
+                outputs=[VolumeOutput(output_fields=["localCFL"])],
+                time_stepping=Steady(),
+            )
+
+    # Steady + localCFL in SliceOutput should raise
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "In `outputs`[0] SliceOutput: "
+            "`localCFL` output is only supported for unsteady simulations."
+        ),
+    ):
+        with imperial_unit_system:
+            SimulationParams(
+                outputs=[
+                    SliceOutput(
+                        name="slice",
+                        output_fields=["localCFL"],
+                        slices=[Slice(name="center", normal=(1, 0, 0), origin=(0, 0, 0))],
+                    )
+                ],
+                time_stepping=Steady(),
+            )
+
+    # Unsteady + localCFL should be valid
+    with imperial_unit_system:
+        SimulationParams(
+            outputs=[VolumeOutput(output_fields=["localCFL"])],
+            time_stepping=Unsteady(steps=100, step_size=1e-3),
+        )
 
 
 def test_aero_acoustics_observer_time_step_size():

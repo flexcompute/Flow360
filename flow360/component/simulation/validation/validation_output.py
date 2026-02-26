@@ -207,6 +207,28 @@ def _check_unsteadiness_to_use_aero_acoustics(params):
     return params
 
 
+def _check_local_cfl_output(params):
+    """localCFL output is only valid for unsteady simulations."""
+
+    if not params.outputs:
+        return params
+
+    if not isinstance(params.time_stepping, Steady):
+        return params
+
+    for output_index, output in enumerate(params.outputs):
+        if not hasattr(output, "output_fields") or output.output_fields is None:
+            continue
+        for item in output.output_fields.items:
+            if isinstance(item, str) and item == "localCFL":
+                raise ValueError(
+                    f"In `outputs`[{output_index}] {output.output_type}: "
+                    "`localCFL` output is only supported for unsteady simulations."
+                )
+
+    return params
+
+
 def _check_aero_acoustics_observer_time_step_size(params):
 
     if not params.outputs:
