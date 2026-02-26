@@ -18,13 +18,16 @@ def validate_snappy_uniform_refinement_entities(refinement: UniformRefinement):
             )
         if (
             isinstance(entity, Box)
-            and entity.angle_of_rotation.to("deg") % (360 * u.deg) != 0 * u.deg  # pylint: disable=no-member
+            and entity.angle_of_rotation.to("deg") % (360 * u.deg)
+            != 0 * u.deg  # pylint: disable=no-member
         ):
             raise ValueError(
                 "UniformRefinement for snappy accepts only Boxes with axes aligned"
                 + " with the global coordinate system (angle_of_rotation=0)."
             )
-        if isinstance(entity, Cylinder) and entity.inner_radius.to("m") != 0 * u.m:  # pylint: disable=no-member
+        if (
+            isinstance(entity, Cylinder) and entity.inner_radius.to("m") != 0 * u.m
+        ):  # pylint: disable=no-member
             raise ValueError(
                 "UniformRefinement for snappy accepts only full cylinders (where inner_radius = 0)."
             )
