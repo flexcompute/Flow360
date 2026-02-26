@@ -217,7 +217,13 @@ def _check_local_cfl_output(params):
         return params
 
     for output_index, output in enumerate(params.outputs):
-        if not hasattr(output, "output_fields") or output.output_fields is None:
+        if output.output_type in (
+            "AeroAcousticOutput",
+            "StreamlineOutput",
+            "ForceDistributionOutput",
+            "TimeAverageForceDistributionOutput",
+            "RenderOutput",
+        ):
             continue
         for item in output.output_fields.items:
             if isinstance(item, str) and item == "localCFL":

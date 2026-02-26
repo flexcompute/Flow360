@@ -49,7 +49,9 @@ from flow360.component.simulation.outputs.outputs import (
     SurfaceOutput,
     SurfaceProbeOutput,
     TimeAverageForceDistributionOutput,
+    TimeAverageSliceOutput,
     TimeAverageSurfaceOutput,
+    TimeAverageVolumeOutput,
     VolumeOutput,
 )
 from flow360.component.simulation.primitives import ImportedSurface, Surface
@@ -161,6 +163,41 @@ def test_local_cfl_output_requires_unsteady():
                         name="slice",
                         output_fields=["localCFL"],
                         slices=[Slice(name="center", normal=(1, 0, 0), origin=(0, 0, 0))],
+                    )
+                ],
+                time_stepping=Steady(),
+            )
+
+    # Steady + localCFL in TimeAverageVolumeOutput should raise
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "In `outputs`[0] TimeAverageVolumeOutput: "
+            "`localCFL` output is only supported for unsteady simulations."
+        ),
+    ):
+        with imperial_unit_system:
+            SimulationParams(
+                outputs=[TimeAverageVolumeOutput(output_fields=["localCFL"], start_step=10)],
+                time_stepping=Steady(),
+            )
+
+    # Steady + localCFL in TimeAverageSliceOutput should raise
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "In `outputs`[0] TimeAverageSliceOutput: "
+            "`localCFL` output is only supported for unsteady simulations."
+        ),
+    ):
+        with imperial_unit_system:
+            SimulationParams(
+                outputs=[
+                    TimeAverageSliceOutput(
+                        name="slice",
+                        output_fields=["localCFL"],
+                        slices=[Slice(name="center", normal=(1, 0, 0), origin=(0, 0, 0))],
+                        start_step=10,
                     )
                 ],
                 time_stepping=Steady(),
