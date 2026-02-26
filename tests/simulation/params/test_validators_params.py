@@ -1118,6 +1118,40 @@ def test_porousJump_cross_custom_volume_interface(mock_validation_context):
         )
 
 
+def test_get_farfield_enclosed_surfaces_expands_selectors():
+    """_get_farfield_enclosed_surfaces must expand selectors, not just read stored_entities."""
+    from unittest.mock import patch
+
+    param_info = ParamsValidationInfo({}, [])
+
+    surface_stored = Surface(name="StoredSurface", private_attribute_id="id-stored")
+    surface_from_selector = Surface(name="SelectorSurface", private_attribute_id="id-sel")
+
+    param_as_dict = {
+        "meshing": {
+            "volume_zones": [
+                {
+                    "type": "AutomatedFarfield",
+                    "enclosed_surfaces": {
+                        "stored_entities": [surface_stored],
+                        "selectors": ["some-selector-token"],
+                    },
+                }
+            ]
+        }
+    }
+
+    # Mock expand_entity_list on the class to return both stored and selector-resolved surfaces
+    with patch.object(
+        ParamsValidationInfo,
+        "expand_entity_list",
+        return_value=[surface_stored, surface_from_selector],
+    ):
+        result = param_info._get_farfield_enclosed_surfaces(param_as_dict)
+
+    assert result == {"id-stored": "StoredSurface", "id-sel": "SelectorSurface"}
+
+
 def test_collect_farfield_custom_volume_interfaces():
     """AutomatedFarfield + enclosed_surfaces + CustomZones: dual-belonging faces are recognized as interfaces."""
     from flow360.component.simulation.validation.validation_simulation_params import (

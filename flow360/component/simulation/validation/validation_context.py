@@ -19,6 +19,7 @@ import contextvars
 import inspect
 from enum import Enum
 from functools import wraps
+from types import SimpleNamespace
 from typing import Any, Callable, List, Literal, Union
 
 import pydantic as pd
@@ -438,6 +439,7 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         """Extract enclosed surface {id: name} from AutomatedFarfield zones.
 
         Only returns non-empty when an AutomatedFarfield zone has enclosed_surfaces set.
+        Expands selectors so that selector-only enclosed_surfaces inputs are handled.
         """
         volume_zones = get_value_with_path(param_as_dict, ["meshing", "volume_zones"])
         if not volume_zones:
@@ -451,9 +453,13 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
             enclosed = zone.get("enclosed_surfaces")
             if not enclosed:
                 return {}
-            # At this stage enclosed_surfaces is a dict with materialized entity objects
-            # in stored_entities (same pattern as _get_to_be_generated_custom_volumes).
-            surfaces = enclosed.get("stored_entities", [])
+            # At this stage enclosed_surfaces is a dict with materialized stored_entities
+            # and optional selectors. Wrap as duck-typed object for expand_entity_list.
+            enclosed_obj = SimpleNamespace(
+                stored_entities=enclosed.get("stored_entities", []),
+                selectors=enclosed.get("selectors"),
+            )
+            surfaces = self.expand_entity_list(enclosed_obj)
             return {s.private_attribute_id: s.name for s in surfaces}
 
         return {}
