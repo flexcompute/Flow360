@@ -636,20 +636,48 @@ def _to_25_8_4(params_as_dict):
     return params_as_dict
 
 
-def _to_25_9_0(params_as_dict):
-    """
-    Remove deprecated meshing defaults key `remove_non_manifold_faces`.
-
-    Note: this function is intentionally not registered in VERSION_MILESTONES until
-    the Python client version reaches 25.9.0.
-    """
+def _remove_non_manifold_faces_key(params_as_dict):
+    """Remove deprecated meshing defaults key ``remove_non_manifold_faces``."""
     meshing = params_as_dict.get("meshing")
-    if not isinstance(meshing, dict):
-        return params_as_dict
-    meshing_defaults = meshing.get("defaults")
-    if not isinstance(meshing_defaults, dict):
-        return params_as_dict
-    meshing_defaults.pop("remove_non_manifold_faces", None)
+    if isinstance(meshing, dict):
+        meshing_defaults = meshing.get("defaults")
+        if isinstance(meshing_defaults, dict):
+            meshing_defaults.pop("remove_non_manifold_faces", None)
+
+
+def _migrate_wall_function_bool(params_as_dict):
+    """Convert `use_wall_function` boolean values to the new WallFunction model format."""
+    for model in params_as_dict.get("models", []):
+        if model.get("type") != "Wall":
+            continue
+        wall_fn = model.get("use_wall_function")
+        if wall_fn is True:
+            model["use_wall_function"] = {"type_name": "BoundaryLayer"}
+        elif wall_fn is False:
+            model.pop("use_wall_function", None)
+
+
+def _add_linear_solver_type_name(params_as_dict):
+    """Add ``type_name`` discriminator to linear_solver dicts inside navier_stokes_solver."""
+    models = params_as_dict.get("models")
+    if not isinstance(models, list):
+        return
+    for model in models:
+        if not isinstance(model, dict):
+            continue
+        ns = model.get("navier_stokes_solver")
+        if not isinstance(ns, dict):
+            continue
+        ls = ns.get("linear_solver")
+        if isinstance(ls, dict) and "type_name" not in ls:
+            ls["type_name"] = "LinearSolver"
+
+
+def _to_25_9_0(params_as_dict):
+    """Remove ``remove_non_manifold_faces``, migrate wall function bools, add ``type_name``."""
+    _remove_non_manifold_faces_key(params_as_dict)
+    _migrate_wall_function_bool(params_as_dict)
+    _add_linear_solver_type_name(params_as_dict)
     return params_as_dict
 
 
@@ -672,6 +700,7 @@ VERSION_MILESTONES = [
     (Flow360Version("25.8.1"), _to_25_8_1),
     (Flow360Version("25.8.3"), _to_25_8_3),
     (Flow360Version("25.8.4"), _to_25_8_4),
+    (Flow360Version("25.9.0"), _to_25_9_0),
 ]  # A list of the Python API version tuple with their corresponding updaters.
 
 

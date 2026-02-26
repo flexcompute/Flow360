@@ -51,7 +51,7 @@
             1.2
         ],
         "refArea": 0.016286016316209486,
-	"interfaceInterpolationTolerance" : 0.2
+        "interfaceInterpolationTolerance": 0.2
     },
     "initialCondition": {
         "p": "p",
@@ -109,7 +109,8 @@
         "limitPressureDensity": false,
         "limitVelocity": false,
         "linearSolver": {
-            "maxIterations": 35
+            "maxIterations": 35,
+            "typeName": "LinearSolver"
         },
         "lowMachPreconditioner": true,
         "lowMachPreconditionerThreshold": 0.049999999999999996,
@@ -142,7 +143,8 @@
         "absoluteTolerance": 1e-07,
         "equationEvalFrequency": 4,
         "linearSolver": {
-            "maxIterations": 20
+            "maxIterations": 20,
+            "typeName": "LinearSolver"
         },
         "maxForceJacUpdatePhysicalSteps": 0,
         "modelType": "AmplificationFactorTransport",
@@ -159,7 +161,8 @@
         "equationEvalFrequency": 1,
         "gridSizeForLES": "maxEdgeLength",
         "linearSolver": {
-            "maxIterations": 25
+            "maxIterations": 25,
+            "typeName": "LinearSolver"
         },
         "lowReynoldsCorrection": false,
         "maxForceJacUpdatePhysicalSteps": 0,

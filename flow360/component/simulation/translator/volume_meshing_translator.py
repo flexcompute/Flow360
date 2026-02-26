@@ -54,7 +54,9 @@ def uniform_refinement_translator(obj: UniformRefinement):
     return {"spacing": obj.spacing.value.item()}
 
 
-def cylindrical_refinement_translator(obj: Union[AxisymmetricRefinement, RotationVolume]):
+def cylindrical_refinement_translator(
+    obj: Union[AxisymmetricRefinement, RotationVolume],
+):
     """
     Translate AxisymmetricRefinement or RotationVolume with Cylinder/AxisymmetricBody entities.
 
@@ -194,6 +196,12 @@ def refinement_entity_injector(entity_obj):
         }
     if isinstance(entity_obj, AxisymmetricBody):
         return axisymmetric_body_injector(entity_obj)
+    if isinstance(entity_obj, Sphere):
+        return {
+            "type": "Sphere",
+            "radius": entity_obj.radius.value.item(),
+            "center": list(entity_obj.center.value),
+        }
     return {}
 
 
@@ -463,6 +471,14 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
             None,
             ["meshing", "volume_zones"],
         )
+
+    if (
+        input_params.private_attribute_asset_cache.use_inhouse_mesher
+        and defaults.octree_spacing is not None
+    ):
+        translated["farfield"][
+            "octreeBaseSpacing"
+        ] = defaults.octree_spacing.base_spacing.value.item()
 
     ##:: Step 3: Get volumetric global settings
     translated["volume"] = {}

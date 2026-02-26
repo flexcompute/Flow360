@@ -27,6 +27,35 @@ HEAT_EQUATION_EVAL_MAX_PER_PSEUDOSTEP_UNSTEADY = 40
 HEAT_EQUATION_EVALUATION_FREQUENCY_STEADY = 10
 
 
+class LineSearch(Flow360BaseModel):
+    """:class:`LineSearch` class for configuring line search parameters used with
+    the Krylov solver.
+
+    Example
+    -------
+    >>> fl.LineSearch(
+    ...     residual_growth_threshold=0.85,
+    ...     max_residual_growth=1.1,
+    ...     activation_step=100,
+    ... )
+    """
+
+    residual_growth_threshold: pd.confloat(ge=0.5, le=1) = pd.Field(
+        0.85,
+        description="Pseudotime nonlinear residual norm convergence ratio above which "
+        "residual norm increase is allowed.",
+    )
+    max_residual_growth: pd.confloat(ge=1.0) = pd.Field(
+        1.1,
+        description="Hard cap on the residual norm ratio — never allow the residual norm "
+        "to grow beyond this factor over a single pseudotime step.",
+    )
+    activation_step: PositiveInt = pd.Field(
+        100,
+        description="Pseudotime step threshold before the max_residual_growth limit is activated.",
+    )
+
+
 class LinearSolver(Flow360BaseModel):
     """:class:`LinearSolver` class for setting up the linear solver.
 
@@ -38,6 +67,7 @@ class LinearSolver(Flow360BaseModel):
     ... )
     """
 
+    type_name: Literal["LinearSolver"] = pd.Field("LinearSolver", frozen=True)
     max_iterations: PositiveInt = pd.Field(
         30, description="Maximum number of linear solver iterations."
     )
@@ -59,6 +89,33 @@ class LinearSolver(Flow360BaseModel):
                 "absolute_tolerance and relative_tolerance cannot be specified at the same time."
             )
         return self
+
+
+class KrylovLinearSolver(LinearSolver):
+    """:class:`KrylovLinearSolver` class for setting up the Krylov linear solver.
+
+    When used as the ``linear_solver`` on :class:`NavierStokesSolver`,
+    ``max_iterations`` is interpreted as the Krylov iterations.
+
+    Example
+    -------
+    >>> fl.KrylovLinearSolver(
+    ...     max_iterations=15,
+    ...     max_preconditioner_iterations=25,
+    ...     relative_tolerance=0.05,
+    ... )
+    """
+
+    type_name: Literal["KrylovLinearSolver"] = pd.Field("KrylovLinearSolver", frozen=True)
+    max_iterations: pd.conint(gt=0, le=50) = pd.Field(
+        15, description="Number of Krylov iterations."
+    )
+    max_preconditioner_iterations: PositiveInt = pd.Field(
+        25, description="Number of preconditioner sweeps per Krylov iteration."
+    )
+    relative_tolerance: PositiveFloat = pd.Field(
+        0.05, description="Relative tolerance for the Krylov linear solver convergence."
+    )
 
 
 class GenericSolverSettings(Flow360BaseModel, metaclass=ABCMeta):
@@ -144,6 +201,17 @@ class NavierStokesSolver(GenericSolverSettings):
         + "Mach number.",
     )
 
+    linear_solver: Union[LinearSolver, KrylovLinearSolver] = pd.Field(
+        default_factory=LinearSolver,
+        description="Linear solver configuration. Use KrylovLinearSolver for Newton-Krylov.",
+        discriminator="type_name",
+    )
+    line_search: Optional[LineSearch] = pd.Field(
+        None,
+        description="Line search parameters for the Newton-Krylov solver. "
+        "Only valid when linear_solver is a KrylovLinearSolver.",
+    )
+
     update_jacobian_frequency: PositiveInt = pd.Field(
         4, description="Frequency at which the jacobian is updated."
     )
@@ -152,6 +220,14 @@ class NavierStokesSolver(GenericSolverSettings):
         description="When physical step is less than this value, the jacobian matrix is "
         + "updated every pseudo step.",
     )
+
+    @pd.model_validator(mode="after")
+    def _validate_line_search(self) -> Self:
+        if self.line_search is not None and not isinstance(self.linear_solver, KrylovLinearSolver):
+            raise ValueError(
+                "line_search can only be set when linear_solver is a KrylovLinearSolver."
+            )
+        return self
 
 
 class SpalartAllmarasModelConstants(Flow360BaseModel):
@@ -274,10 +350,10 @@ class DetachedEddySimulation(Flow360BaseModel):
         "``DDES`` (Delayed Detached Eddy Simulation proposed by Spalart 2006) and ``ZDES`` "
         "(proposed by Deck and Renard 2020).",
     )
-    grid_size_for_LES: Literal["maxEdgeLength", "meanEdgeLength"] = pd.Field(
+    grid_size_for_LES: Literal["maxEdgeLength", "meanEdgeLength", "shearLayerAdapted"] = pd.Field(
         "maxEdgeLength",
         description="Specifies the length used for the computation of LES length scale. "
-        + "The allowed inputs are :code:`maxEdgeLength` and :code:`meanEdgeLength`.",
+        + "The allowed inputs are :code:`maxEdgeLength`, :code:`meanEdgeLength` and :code:`shearLayerAdapted`.",
     )
 
 
@@ -332,7 +408,7 @@ class TurbulenceModelSolver(GenericSolverSettings, metaclass=ABCMeta):
     max_force_jac_update_physical_steps: NonNegativeInt = pd.Field(
         0,
         description="For physical steps less than the input value, the jacobian matrix is "
-        + "updated every pseudo-step overriding the :py:attr:`update_jacobian_frequency` value.",
+        + "updated every pseudo step overriding the :py:attr:`update_jacobian_frequency` value.",
     )
 
     linear_solver: LinearSolver = pd.Field(
@@ -543,7 +619,7 @@ class TransitionModelSolver(GenericSolverSettings):
     max_force_jac_update_physical_steps: NonNegativeInt = pd.Field(
         0,
         description="For physical steps less than the input value, the jacobian matrix "
-        + "is updated every pseudo-step overriding the :py:attr:`update_jacobian_frequency` value.",
+        + "is updated every pseudo step overriding the :py:attr:`update_jacobian_frequency` value.",
     )
 
     reconstruction_gradient_limiter: Optional[pd.confloat(ge=0.0, le=2.0)] = pd.Field(

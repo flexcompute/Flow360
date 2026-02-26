@@ -65,7 +65,8 @@
         "limitPressureDensity": false,
         "limitVelocity": false,
         "linearSolver": {
-            "maxIterations": 50
+            "maxIterations": 50,
+            "typeName": "LinearSolver"
         },
         "lowMachPreconditioner": true,
         "lowMachPreconditionerThreshold": 0.19999999999999998,
@@ -111,7 +112,8 @@
         "absoluteTolerance": 1e-08,
         "equationEvalFrequency": 1,
         "linearSolver": {
-            "maxIterations": 50
+            "maxIterations": 50,
+            "typeName": "LinearSolver"
         },
         "maxForceJacUpdatePhysicalSteps": 0,
         "modelType": "AmplificationFactorTransport",
@@ -154,7 +156,8 @@
         "equationEvalFrequency": 4,
         "gridSizeForLES": "maxEdgeLength",
         "linearSolver": {
-            "maxIterations": 50
+            "maxIterations": 50,
+            "typeName": "LinearSolver"
         },
         "lowReynoldsCorrection": false,
         "maxForceJacUpdatePhysicalSteps": 0,

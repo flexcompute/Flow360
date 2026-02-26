@@ -25,6 +25,74 @@ from flow360.component.simulation.validation.validation_context import (
 from flow360.component.simulation.validation.validation_utils import (
     check_geometry_ai_features,
 )
+from flow360.log import log
+
+
+class OctreeSpacing(Flow360BaseModel):
+    """
+    Helper class for octree-based meshers. Holds the base for the octree spacing and lows calculation of levels.
+    """
+
+    # pylint: disable=no-member
+    base_spacing: LengthType.Positive
+
+    @pd.model_validator(mode="before")
+    @classmethod
+    def _reject_plain_value(cls, input_data):
+        if isinstance(input_data, u.unyt.unyt_quantity):
+            raise ValueError(
+                "Passing a plain dimensional value to OctreeSpacing is not supported. "
+                "Use OctreeSpacing(base_spacing=<value>) instead."
+            )
+        return input_data
+
+    @pd.validate_call
+    def __getitem__(self, idx: int):
+        return self.base_spacing * (2 ** (-idx))
+
+    # pylint: disable=no-member
+    @pd.validate_call
+    def to_level(self, spacing: LengthType.Positive):
+        """
+        Can be used to check in what refinement level would the given spacing result
+        and if it is a direct match in the spacing series.
+        """
+        level = -log2(spacing / self.base_spacing)
+
+        direct_spacing = np.isclose(level, np.round(level), atol=1e-8)
+        returned_level = np.round(level) if direct_spacing else np.ceil(level)
+        return returned_level, direct_spacing
+
+    # pylint: disable=no-member
+    @pd.validate_call
+    def check_spacing(self, spacing: LengthType.Positive, location: str):
+        """Warn if the given spacing does not align with the octree series."""
+        lvl, close = self.to_level(spacing)
+        if not close:
+            spacing_unit = spacing.units
+            closest_spacing = self[lvl]
+            msg = (
+                f"The spacing of {spacing:.4g} specified in {location} will be cast "
+                f"to the first lower refinement in the octree series "
+                f"({closest_spacing.to(spacing_unit):.4g})."
+            )
+            log.warning(msg)
+
+
+def set_default_octree_spacing(octree_spacing, param_info: ParamsValidationInfo):
+    """Shared logic for defaulting octree_spacing to 1 * project_length_unit."""
+    if octree_spacing is not None:
+        return octree_spacing
+    if param_info.project_length_unit is None:
+        add_validation_warning(
+            "No project length unit found; `octree_spacing` will not be set automatically. "
+            "Octree spacing validation will be skipped."
+        )
+        return octree_spacing
+
+    # pylint: disable=no-member
+    project_length = 1 * LengthType.validate(param_info.project_length_unit)
+    return OctreeSpacing(base_spacing=project_length)
 
 
 class MeshingDefaults(Flow360BaseModel):
@@ -130,8 +198,8 @@ class MeshingDefaults(Flow360BaseModel):
         12 * u.deg,
         description=(
             "Default maximum angular deviation in degrees. This value will restrict:"
-            " 1. The angle between a cell’s normal and its underlying surface normal."
-            " 2. The angle between a line segment’s normal and its underlying curve normal."
+            " 1. The angle between a cell's normal and its underlying surface normal."
+            " 2. The angle between a line segment's normal and its underlying curve normal."
             " This can be overridden per face only when using geometry AI."
         ),
         context=SURFACE_MESH,
@@ -181,6 +249,12 @@ class MeshingDefaults(Flow360BaseModel):
         validate_default=False,
         description="The number of layers that are considered for edge splitting in the boundary layer mesh."
         + "This only affects beta mesher.",
+    )
+
+    octree_spacing: Optional[OctreeSpacing] = pd.Field(
+        None,
+        description="Octree spacing configuration for volume meshing. "
+        "If specified, this will be used to control the base spacing for octree-based meshers.",
     )
 
     @pd.model_validator(mode="before")
@@ -250,6 +324,12 @@ class MeshingDefaults(Flow360BaseModel):
         """Validate that the feature is only used when Geometry AI is enabled."""
         return check_geometry_ai_features(cls, value, info, param_info)
 
+    @contextual_field_validator("octree_spacing", mode="after")
+    @classmethod
+    def _set_default_octree_spacing(cls, octree_spacing, param_info: ParamsValidationInfo):
+        """Set default octree_spacing to 1 * project_length_unit when not specified."""
+        return set_default_octree_spacing(octree_spacing, param_info)
+
     @pd.model_validator(mode="after")
     def validate_min_passage_size_requires_remove_hidden_geometry(self):
         """Ensure min_passage_size is only specified when remove_hidden_geometry is True."""
@@ -285,35 +365,14 @@ class VolumeMeshingDefaults(Flow360BaseModel):
         " This is only supported by the beta mesher and can not be overridden per face.",
     )
 
+    octree_spacing: Optional[OctreeSpacing] = pd.Field(
+        None,
+        description="Octree spacing configuration for volume meshing. "
+        "If specified, this will be used to control the base spacing for octree-based meshers.",
+    )
 
-class OctreeSpacing(Flow360BaseModel):
-    """
-    Helper class for octree-based meshers. Holds the base for the octree spacing and lows calculation of levels.
-    """
-
-    # pylint: disable=no-member
-    base_spacing: LengthType.Positive
-
-    @pd.model_validator(mode="before")
+    @contextual_field_validator("octree_spacing", mode="after")
     @classmethod
-    def _project_spacing_to_object(cls, input_data):
-        if isinstance(input_data, u.unyt.unyt_quantity):
-            return {"base_spacing": input_data}
-        return input_data
-
-    @pd.validate_call
-    def __getitem__(self, idx: int):
-        return self.base_spacing * (2 ** (-idx))
-
-    # pylint: disable=no-member
-    @pd.validate_call
-    def to_level(self, spacing: LengthType.Positive):
-        """
-        Can be used to check in what refinement level would the given spacing result
-        and if it is a direct match in the spacing series.
-        """
-        level = -log2(spacing / self.base_spacing)
-
-        direct_spacing = np.isclose(level, np.round(level), atol=1e-8)
-        returned_level = np.round(level) if direct_spacing else np.ceil(level)
-        return returned_level, direct_spacing
+    def _set_default_octree_spacing(cls, octree_spacing, param_info: ParamsValidationInfo):
+        """Set default octree_spacing to 1 * project_length_unit when not specified."""
+        return set_default_octree_spacing(octree_spacing, param_info)

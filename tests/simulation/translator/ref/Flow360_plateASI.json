@@ -11,7 +11,7 @@
             1.0,
             1.0
         ],
-	"interfaceInterpolationTolerance" : 0.2
+        "interfaceInterpolationTolerance": 0.2
     },
     "freestream": {
         "alphaAngle": 0.0,
@@ -60,7 +60,8 @@
         "relativeTolerance": 0.001,
         "orderOfAccuracy": 2,
         "linearSolver": {
-            "maxIterations": 35
+            "maxIterations": 35,
+            "typeName": "LinearSolver"
         },
         "CFLMultiplier": 1.0,
         "kappaMUSCL": 0.33,
@@ -78,7 +79,8 @@
         "relativeTolerance": 0.01,
         "orderOfAccuracy": 2,
         "linearSolver": {
-            "maxIterations": 35
+            "maxIterations": 35,
+            "typeName": "LinearSolver"
         },
         "lowReynoldsCorrection": false,
         "CFLMultiplier": 2.0,

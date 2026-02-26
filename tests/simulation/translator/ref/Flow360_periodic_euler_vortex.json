@@ -63,7 +63,7 @@
             1
         ],
         "refArea": 1.0,
-	"interfaceInterpolationTolerance" : 0.2
+        "interfaceInterpolationTolerance": 0.2
     },
     "initialCondition": {
         "p": "0.7142857142857143/(0.7142857142857143*1.0)*pow((1.0-(0.2*0.2*4.0*4.0)/(2*2.5000000000000004)*exp(-(pow(x-0.0, 2)+pow(y-0.0, 2))/(1*1)))/1.0,1/(1.4-1.)) * 0.7142857142857143 * (1.0-(0.2*0.2*4.0*4.0)/(2*2.5000000000000004)*exp(-(pow(x-0.0, 2)+pow(y-0.0, 2))/(1*1)))",
@@ -81,7 +81,8 @@
         "limitPressureDensity": false,
         "limitVelocity": false,
         "linearSolver": {
-            "maxIterations": 25
+            "maxIterations": 25,
+            "typeName": "LinearSolver"
         },
         "lowMachPreconditioner": false,
         "maxForceJacUpdatePhysicalSteps": 0,

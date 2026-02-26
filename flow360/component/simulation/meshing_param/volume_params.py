@@ -58,7 +58,7 @@ class UniformRefinement(Flow360BaseModel):
     -------
 
       >>> fl.UniformRefinement(
-      ...     entities=[cylinder, box, axisymmetric_body],
+      ...     entities=[cylinder, box, axisymmetric_body, sphere],
       ...     spacing=1*fl.u.cm
       ... )
 
@@ -67,9 +67,10 @@ class UniformRefinement(Flow360BaseModel):
 
     name: Optional[str] = pd.Field("Uniform refinement")
     refinement_type: Literal["UniformRefinement"] = pd.Field("UniformRefinement", frozen=True)
-    entities: EntityList[Box, Cylinder, AxisymmetricBody] = pd.Field(
+    entities: EntityList[Box, Cylinder, AxisymmetricBody, Sphere] = pd.Field(
         description=":class:`UniformRefinement` can be applied to :class:`~flow360.Box`, "
-        + ":class:`~flow360.Cylinder`, and :class:`~flow360.AxisymmetricBody` regions."
+        + ":class:`~flow360.Cylinder`, :class:`~flow360.AxisymmetricBody`, "
+        + "and :class:`~flow360.Sphere` regions."
     )
     # pylint: disable=no-member
     spacing: LengthType.Positive = pd.Field(description="The required refinement spacing.")
@@ -80,10 +81,8 @@ class UniformRefinement(Flow360BaseModel):
 
     @contextual_field_validator("entities", mode="after")
     @classmethod
-    def check_axisymmetric_body_used_with_beta_mesher(
-        cls, values, param_info: ParamsValidationInfo
-    ):
-        """Check that AxisymmetricBody is used with beta mesher."""
+    def check_entities_used_with_beta_mesher(cls, values, param_info: ParamsValidationInfo):
+        """Check that AxisymmetricBody and Sphere are used with beta mesher."""
 
         if values is None:
             return values
@@ -95,6 +94,10 @@ class UniformRefinement(Flow360BaseModel):
             if isinstance(entity, AxisymmetricBody):
                 raise ValueError(
                     "`AxisymmetricBody` entity for `UniformRefinement` is supported only with beta mesher."
+                )
+            if isinstance(entity, Sphere):
+                raise ValueError(
+                    "`Sphere` entity for `UniformRefinement` is supported only with beta mesher."
                 )
 
         return values
@@ -492,7 +495,7 @@ class RotationVolume(Flow360BaseModel):
 
 @deprecated(
     "The `RotationCylinder` class is deprecated! Use `RotationVolume`,"
-    "which supports both `Cylinder` and `AxisymmetricBody` entities instead."
+    "which supports `Cylinder`, `AxisymmetricBody`, and `Sphere` entities instead."
 )
 class RotationCylinder(RotationVolume):
     """
@@ -540,7 +543,7 @@ class _FarfieldBase(Flow360BaseModel):
             - half_body_negative_y: Trim to a half-model by slicing with the global Y=0 plane; keep the '-y' side for meshing and simulation.
             - full_body: Keep the full body for meshing and simulation without attempting to add symmetry planes.
 
-            Warning: When using AutomatedFarfield, setting `domain_type` overrides the 'auto' symmetry plane behavior.
+            Warning: When using AutomatedFarfield or UserDefinedFarfield, setting `domain_type` overrides automatic symmetry plane detection.
             """,
         )
     )
@@ -734,10 +737,11 @@ class UserDefinedFarfield(_FarfieldBase):
 
         Warning: This should only be used when using GAI and beta mesher.
         """
-        if self.domain_type not in ("half_body_positive_y", "half_body_negative_y"):
+        if self.domain_type not in (None, "half_body_positive_y", "half_body_negative_y"):
+            # We allow None here to allow auto detection of domain type from bounding box.
             raise Flow360ValueError(
                 "Symmetry plane of user defined farfield is only supported when domain_type "
-                "is `half_body_positive_y` or `half_body_negative_y`."
+                "is `half_body_positive_y`, `half_body_negative_y`, or None (auto detection)."
             )
         return GhostSurface(name="symmetric", private_attribute_id="symmetric")
 
