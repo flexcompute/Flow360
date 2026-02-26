@@ -102,6 +102,26 @@ class UniformRefinement(Flow360BaseModel):
 
         return values
 
+    @contextual_field_validator("entities", mode="after")
+    @classmethod
+    def check_entities_used_with_snappy(cls, values, param_info: ParamsValidationInfo):
+        """Check that only Box, Cylinder, and Sphere entities are used with snappyHexMesh."""
+
+        if values is None:
+            return values
+        if not param_info.use_snappy:
+            return values
+
+        expanded = param_info.expand_entity_list(values)
+        for entity in expanded:
+            if not isinstance(entity, (Box, Cylinder, Sphere)):
+                raise ValueError(
+                    f"`{type(entity).__name__}` entity for `UniformRefinement` is not supported "
+                    "with snappyHexMesh. Only `Box`, `Cylinder`, and `Sphere` are allowed."
+                )
+
+        return values
+
     @contextual_model_validator(mode="after")
     def check_project_to_surface_with_snappy(self, param_info: ParamsValidationInfo):
         """Check that project_to_surface is used only with snappy."""

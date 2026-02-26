@@ -12,11 +12,6 @@ def validate_snappy_uniform_refinement_entities(refinement: UniformRefinement):
     """
     # pylint: disable=no-member
     for entity in refinement.entities.stored_entities:
-        if not isinstance(entity, (Box, Cylinder, Sphere)):
-            raise ValueError(
-                "UniformRefinement for snappy only supports entities of type Box, Cylinder, or Sphere. "
-                f"Got {type(entity).__name__} instead."
-            )
         if (
             isinstance(entity, Box)
             and entity.angle_of_rotation.to("deg") % (360 * u.deg) != 0 * u.deg
