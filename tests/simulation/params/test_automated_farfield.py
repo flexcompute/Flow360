@@ -278,7 +278,7 @@ def test_user_defined_farfield_symmetry_plane(surface_mesh):
         errors[0]["msg"]
         == "Value error, `domain_type` is only supported when using both GAI surface mesher and beta volume mesher."
     )
-    params.meshing.defaults.geometry_accuracy = 1 * u.mm
+    params.meshing.defaults.geometry_accuracy = 0.01 * u.m
     errors, warnings = _run_validation(
         params, surface_mesh, use_beta_mesher=True, use_geometry_AI=True
     )
@@ -296,7 +296,7 @@ def test_user_defined_farfield_symmetry_plane_requires_half_domain(surface_mesh)
                 defaults=MeshingDefaults(
                     boundary_layer_first_layer_thickness=0.001,
                     boundary_layer_growth_rate=1.1,
-                    geometry_accuracy=1 * u.mm,
+                    geometry_accuracy=0.01 * u.m,
                 ),
                 volume_zones=[farfield],
             ),
@@ -325,7 +325,7 @@ def test_user_defined_farfield_auto_symmetry_plane(surface_mesh):
                 defaults=MeshingDefaults(
                     boundary_layer_first_layer_thickness=0.001,
                     boundary_layer_growth_rate=1.1,
-                    geometry_accuracy=1 * u.mm,
+                    geometry_accuracy=0.01 * u.m,
                 ),
                 volume_zones=[farfield],
             ),
@@ -373,7 +373,7 @@ def test_rotated_symmetric_existence():
                     defaults=MeshingDefaults(
                         boundary_layer_first_layer_thickness=0.001,
                         boundary_layer_growth_rate=1.1,
-                        geometry_accuracy=1e-7,
+                        geometry_accuracy=1e-4,
                         surface_max_edge_length=1e-9,
                     ),
                     volume_zones=[farfield],
@@ -405,7 +405,7 @@ def test_rotated_symmetric_existence():
                     defaults=MeshingDefaults(
                         boundary_layer_first_layer_thickness=0.001,
                         boundary_layer_growth_rate=1.1,
-                        geometry_accuracy=1e-7,
+                        geometry_accuracy=1e-4,
                         surface_max_edge_length=1e-9,
                     ),
                     volume_zones=[farfield],
@@ -441,7 +441,7 @@ def test_rotated_symmetric_existence():
                     defaults=MeshingDefaults(
                         boundary_layer_first_layer_thickness=0.001,
                         boundary_layer_growth_rate=1.1,
-                        geometry_accuracy=1e-7,
+                        geometry_accuracy=1e-4,
                         surface_max_edge_length=1e-9,
                     ),
                     volume_zones=[farfield],
@@ -567,7 +567,7 @@ def test_domain_type_bounding_box_check():
             meshing=MeshingParams(
                 defaults=MeshingDefaults(
                     planar_face_tolerance=0.01,
-                    geometry_accuracy=1e-5,
+                    geometry_accuracy=1e-4,
                     boundary_layer_first_layer_thickness=1e-3,
                 ),
                 volume_zones=[farfield_pos],
@@ -598,7 +598,7 @@ def test_domain_type_bounding_box_check():
             meshing=MeshingParams(
                 defaults=MeshingDefaults(
                     planar_face_tolerance=0.01,
-                    geometry_accuracy=1e-5,
+                    geometry_accuracy=1e-4,
                     boundary_layer_first_layer_thickness=1e-3,
                 ),
                 volume_zones=[farfield_neg],

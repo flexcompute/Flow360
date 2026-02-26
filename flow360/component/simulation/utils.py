@@ -167,6 +167,12 @@ class BoundingBox(list[list[float]]):
         """Return the largest dimension of the bounding box."""
         return max(self.size)
 
+    @property
+    def diagonal(self):
+        """Return the diagonal length of the bounding box."""
+        dx, dy, dz = self.size
+        return (dx**2 + dy**2 + dz**2) ** 0.5
+
     def expand(self, other: "BoundingBox") -> "BoundingBox":
         """Return a new bounding box expanded by a given bounding box."""
         (sx0, sy0, sz0), (sx1, sy1, sz1) = self
