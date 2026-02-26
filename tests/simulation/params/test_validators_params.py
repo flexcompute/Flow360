@@ -52,6 +52,7 @@ from flow360.component.simulation.models.solver_numerics import (
     DetachedEddySimulation,
     KOmegaSST,
     KOmegaSSTModelConstants,
+    LinearSolver,
     SpalartAllmaras,
     SpalartAllmarasModelConstants,
     TransitionModelSolver,
@@ -645,6 +646,20 @@ def test_transition_model_solver_settings_validator():
         )
         assert params.models[0].transition_model_solver.N_crit == 2.3598473252999543
         assert params.models[0].transition_model_solver.turbulence_intensity_percent is None
+
+
+def test_linear_solver_tolerance_conflict():
+    with pytest.raises(pd.ValidationError, match="absolute_tolerance and relative_tolerance"):
+        LinearSolver(absolute_tolerance=1e-10, relative_tolerance=1e-6)
+
+    # Only one is fine
+    ls = LinearSolver(absolute_tolerance=1e-10)
+    assert ls.absolute_tolerance == 1e-10
+    assert ls.relative_tolerance is None
+
+    ls = LinearSolver(relative_tolerance=1e-6)
+    assert ls.relative_tolerance == 1e-6
+    assert ls.absolute_tolerance is None
 
 
 def test_BC_geometry():

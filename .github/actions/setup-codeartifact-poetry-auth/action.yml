@@ -1,0 +1,52 @@
+name: Setup CodeArtifact Poetry Auth
+description: Configure AWS credentials, fetch CodeArtifact token, and set Poetry auth env vars.
+
+inputs:
+  aws-access-key-id:
+    description: AWS access key id for CodeArtifact access.
+    required: true
+  aws-secret-access-key:
+    description: AWS secret access key for CodeArtifact access.
+    required: true
+  aws-region:
+    description: AWS region of the CodeArtifact domain.
+    required: false
+    default: us-east-1
+  domain:
+    description: CodeArtifact domain name.
+    required: false
+    default: flexcompute
+  domain-owner:
+    description: AWS account id that owns the CodeArtifact domain.
+    required: false
+    default: "625554095313"
+
+outputs:
+  token:
+    description: CodeArtifact authorization token.
+    value: ${{ steps.get-token.outputs.token }}
+
+runs:
+  using: composite
+  steps:
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ inputs.aws-access-key-id }}
+        aws-secret-access-key: ${{ inputs.aws-secret-access-key }}
+        aws-region: ${{ inputs.aws-region }}
+
+    - name: Get CodeArtifact token and set Poetry env
+      id: get-token
+      shell: bash
+      run: |
+        TOKEN=$(aws codeartifact get-authorization-token \
+          --domain "${{ inputs.domain }}" \
+          --domain-owner "${{ inputs.domain-owner }}" \
+          --region "${{ inputs.aws-region }}" \
+          --query authorizationToken \
+          --output text)
+        echo "::add-mask::$TOKEN"
+        echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
+        echo "POETRY_HTTP_BASIC_CODEARTIFACT_USERNAME=aws" >> "$GITHUB_ENV"
+        echo "POETRY_HTTP_BASIC_CODEARTIFACT_PASSWORD=$TOKEN" >> "$GITHUB_ENV"

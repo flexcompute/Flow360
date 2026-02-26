@@ -17,10 +17,7 @@ import pydantic as pd
 from pydantic import NonNegativeFloat, NonNegativeInt, PositiveFloat, PositiveInt
 from typing_extensions import Self
 
-from flow360.component.simulation.framework.base_model import (
-    Conflicts,
-    Flow360BaseModel,
-)
+from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.primitives import Box, CustomVolume, GenericVolume
 
@@ -85,9 +82,13 @@ class LinearSolver(Flow360BaseModel):
         + "residual of the pseudo step is below this value.",
     )
 
-    model_config = pd.ConfigDict(
-        conflicting_fields=[Conflicts(field1="absolute_tolerance", field2="relative_tolerance")]
-    )
+    @pd.model_validator(mode="after")
+    def _check_tolerance_conflict(self) -> Self:
+        if self.absolute_tolerance is not None and self.relative_tolerance is not None:
+            raise ValueError(
+                "absolute_tolerance and relative_tolerance cannot be specified at the same time."
+            )
+        return self
 
 
 class KrylovLinearSolver(LinearSolver):
@@ -577,9 +578,13 @@ class TransitionModelSolver(GenericSolverSettings):
     ... )
     """
 
-    model_config = pd.ConfigDict(
-        conflicting_fields=[Conflicts(field1="N_crit", field2="turbulence_intensity_percent")]
-    )
+    @pd.model_validator(mode="after")
+    def _check_n_crit_conflict(self) -> Self:
+        if self.N_crit is not None and self.turbulence_intensity_percent is not None:
+            raise ValueError(
+                "N_crit and turbulence_intensity_percent cannot be specified at the same time."
+            )
+        return self
 
     type_name: Literal["AmplificationFactorTransport"] = pd.Field(
         "AmplificationFactorTransport", frozen=True

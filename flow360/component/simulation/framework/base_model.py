@@ -4,31 +4,19 @@ from __future__ import annotations
 
 import hashlib
 import json
-from functools import lru_cache
 from itertools import chain
-from typing import Any, List, Literal, get_args, get_origin
+from typing import List
 
 import pydantic as pd
 import rich
 import unyt as u
 import yaml
-from pydantic._internal._decorators import Decorator, FieldValidatorDecoratorInfo
-from pydantic_core import InitErrorDetails
+from flow360_schema.framework.base_model import Flow360BaseModel as _SchemaBaseModel
 
 from flow360.component.simulation.conversion import need_conversion
-from flow360.component.simulation.framework.base_model_config import base_model_config
-from flow360.component.simulation.validation import validation_context
 from flow360.error_messages import do_not_modify_file_manually_msg
 from flow360.exceptions import Flow360FileError
 from flow360.log import log
-
-DISCRIMINATOR_NAMES = [
-    "type",
-    "type_name",
-    "refinement_type",
-    "output_type",
-    "private_attribute_entity_type_name",
-]
 
 
 def _preprocess_nested_list(value, required_by, params, exclude, flow360_unit_system):
@@ -60,41 +48,17 @@ def _preprocess_nested_list(value, required_by, params, exclude, flow360_unit_sy
     return new_list
 
 
-class Conflicts(pd.BaseModel):
-    """
-    Wrapper for handling fields that cannot be specified simultaneously
-    """
-
-    field1: str
-    field2: str
-
-
-class Flow360BaseModel(pd.BaseModel):
+class Flow360BaseModel(_SchemaBaseModel):
     """Base pydantic (V2) model that all Flow360 components inherit from.
-    Defines configuration for handling data structures
-    as well as methods for importing, exporting, and hashing Flow360 objects.
-    For more details on pydantic base models, see:
-    `Pydantic Models <https://pydantic-docs.helpmanual.io/usage/models/>`
+    Extends the schema-layer Flow360BaseModel with SDK features:
+    file I/O, hash tracking, unit conversion (preprocess), and rich help output.
     """
 
     def __init__(self, filename: str = None, **kwargs):
         model_dict = self._handle_file(filename=filename, **kwargs)
-        try:
-            super().__init__(**model_dict)
-        except pd.ValidationError as e:
-            validation_errors = e.errors()
-            for i, error in enumerate(validation_errors):
-                ctx = error.get("ctx")
-                if not isinstance(ctx, dict) or ctx.get("relevant_for") is None:
-                    loc_tuple = tuple(error.get("loc", ()))
-                    rf = self.__class__._infer_relevant_for_cached(tuple(loc_tuple))
-                    if rf is not None:
-                        new_ctx = {} if not isinstance(ctx, dict) else dict(ctx)
-                        new_ctx["relevant_for"] = list(rf)
-                        validation_errors[i]["ctx"] = new_ctx
-            raise pd.ValidationError.from_exception_data(
-                title=self.__class__.__name__, line_errors=validation_errors
-            )
+        super().__init__(**model_dict)
+
+    # -- SDK-only methods: dict / file handling --
 
     @classmethod
     def _handle_dict(cls, **kwargs):
@@ -116,266 +80,6 @@ class Flow360BaseModel(pd.BaseModel):
         if filename is not None:
             return cls._dict_from_file(filename=filename)
         return kwargs
-
-    @classmethod
-    def __pydantic_init_subclass__(cls, **kwargs) -> None:
-        """Things that are done to each of the models."""
-        need_to_rebuild = cls._handle_conditional_validators()
-        if need_to_rebuild is True:
-            cls.model_rebuild(force=True)
-        super().__pydantic_init_subclass__(**kwargs)  # Correct use of super
-
-    model_config = base_model_config
-
-    def __setattr__(self, name, value):
-        # pylint: disable=unsupported-membership-test,  unsubscriptable-object
-        if name in self.__class__.model_fields:
-            is_frozen = self.__class__.model_fields[name].frozen
-            if is_frozen is not None and is_frozen is True:
-                raise ValueError(f"Cannot modify immutable/frozen fields: {name}")
-        super().__setattr__(name, value)
-
-    @pd.model_validator(mode="before")
-    @classmethod
-    def one_of(cls, values):
-        """
-        root validator for require one of
-        """
-        if cls.model_config["require_one_of"]:
-            set_values = [key for key, v in values.items() if v is not None]
-            aliases = [
-                cls._get_field_alias(field_name=name) for name in cls.model_config["require_one_of"]
-            ]
-            aliases = [item for item in aliases if item is not None]
-            intersection = list(set(set_values) & set(cls.model_config["require_one_of"] + aliases))
-            if len(intersection) == 0:
-                raise ValueError(f"One of {cls.model_config['require_one_of']} is required.")
-        return values
-
-    # pylint: disable=no-self-argument
-    # pylint: disable=duplicate-code
-    @pd.model_validator(mode="before")
-    @classmethod
-    def handle_conflicting_fields(cls, values):
-        """
-        root validator to handle deprecated aliases and fields
-        which cannot be simultaneously defined in the model
-        """
-        if cls.model_config["conflicting_fields"]:
-            for conflicting_field in cls.model_config["conflicting_fields"]:
-                values = cls._handle_conflicting_fields(values, conflicting_field)
-        return values
-
-    @classmethod
-    def _handle_conflicting_fields(cls, values, conflicting_field: Conflicts = None):
-        conflicting_field1_value = values.get(conflicting_field.field1, None)
-        conflicting_field2_value = values.get(conflicting_field.field2, None)
-
-        if conflicting_field1_value is None:
-            field1_alias = cls._get_field_alias(field_name=conflicting_field.field1)
-            conflicting_field1_value = values.get(field1_alias, None)
-
-        if conflicting_field2_value is None:
-            field2_alias = cls._get_field_alias(field_name=conflicting_field.field2)
-            conflicting_field2_value = values.get(field2_alias, None)
-
-        if conflicting_field1_value is not None and conflicting_field2_value is not None:
-            raise ValueError(
-                f"{conflicting_field.field1} and {conflicting_field.field2} cannot be specified at the same time."
-            )
-
-        return values
-
-    @classmethod
-    def _get_field_alias(cls, field_name: str = None):
-        if field_name is not None:
-            alias = [
-                info.alias
-                for name, info in cls.model_fields.items()
-                if name == field_name and info.alias is not None
-            ]
-            if len(alias) > 0:
-                return alias[0]
-        return None
-
-    @classmethod
-    def _get_field_context(cls, info, context_key):
-        if info.field_name is not None:
-            # pylint:disable = unsubscriptable-object
-            field_info = cls.model_fields[info.field_name]
-            if isinstance(field_info.json_schema_extra, dict):
-                return field_info.json_schema_extra.get(context_key)
-
-        return None
-
-    @classmethod
-    def _handle_conditional_validators(cls):
-        """
-        Applies `before` validators to selected fields while excluding discriminator fields.
-
-        **Purpose**:
-        - Dynamically determines if a field is optional depending on the current validation context.
-
-        **How it works**:
-        - Iterates over model fields, excluding discriminator fields.
-        - Applies validators dynamically to the remaining fields to ensure compatibility.
-
-        """
-
-        validators = [
-            ("before", "validate_conditionally_required_field"),
-        ]
-        fields_to_validate = []
-        need_to_rebuild = False
-
-        for field_name, field in cls.model_fields.items():
-            # Ignore discriminator validators
-            # pylint: disable=comparison-with-callable
-            if get_origin(field.annotation) == Literal and field_name in DISCRIMINATOR_NAMES:
-                need_to_rebuild = True
-                continue
-
-            fields_to_validate.append(field_name)
-
-        if need_to_rebuild is True:
-            for mode, method in validators:
-                info = FieldValidatorDecoratorInfo(
-                    fields=tuple(fields_to_validate),
-                    mode=mode,
-                    check_fields=None,
-                    json_schema_input_type=Any,
-                )
-                deco = Decorator.build(cls, cls_var_name=method, info=info, shim=None)
-                cls.__pydantic_decorators__.field_validators[method] = deco
-        return need_to_rebuild
-
-    @pd.field_validator("*", mode="before")
-    @classmethod
-    def validate_conditionally_required_field(cls, value, info):
-        """
-        this validator checks for conditionally required fields depending on context
-        """
-        validation_levels = validation_context.get_validation_levels()
-        if validation_levels is None:
-            return value
-
-        conditionally_required = cls._get_field_context(info, "conditionally_required")
-        relevant_for = cls._get_field_context(info, "relevant_for")
-
-        all_relevant_levels = ()
-        if isinstance(relevant_for, list):
-            all_relevant_levels = tuple(relevant_for + [validation_context.ALL])
-        else:
-            all_relevant_levels = (relevant_for, validation_context.ALL)
-
-        if (
-            conditionally_required is True
-            and any(lvl in all_relevant_levels for lvl in validation_levels)
-            and value is None
-        ):
-            raise pd.ValidationError.from_exception_data(
-                "validation error", [InitErrorDetails(type="missing")]
-            )
-
-        return value
-
-    @classmethod
-    @lru_cache(maxsize=4096)
-    def _infer_relevant_for_cached(cls, loc: tuple) -> tuple | None:
-        """Infer relevant_for along the loc path starting at this model class.
-
-        Returns a tuple of strings or None if not found.
-        """
-        model: type = cls
-        last_relevant = None
-        for seg in loc:
-            if not (isinstance(model, type) and issubclass(model, Flow360BaseModel)):
-                break
-            fields = getattr(model, "model_fields", None)
-            if (
-                not isinstance(seg, str)
-                or not fields
-                or seg not in fields  # pylint: disable=unsupported-membership-test
-            ):
-                break
-            field_info = fields[seg]  # pylint: disable=unsubscriptable-object
-            extra = getattr(field_info, "json_schema_extra", None)
-            if isinstance(extra, dict):
-                rf = extra.get("relevant_for")
-                if rf is not None:
-                    last_relevant = rf
-
-            next_model = cls._first_model_type_from(field_info)
-            if next_model is None:
-                break
-            model = next_model
-
-        if last_relevant is None:
-            return None
-        if isinstance(last_relevant, list):
-            return tuple(last_relevant)
-        return (last_relevant,)
-
-    @staticmethod
-    def _first_model_type_from(field_info) -> type | None:
-        """Extract first Flow360BaseModel subclass from a field's annotation."""
-        annotation = getattr(field_info, "annotation", None)
-        return Flow360BaseModel._extract_model_type(annotation)
-
-    @staticmethod
-    def _extract_model_type(tp) -> type | None:
-        # pylint: disable=too-many-branches, too-many-return-statements
-        if tp is None:
-            return None
-        if isinstance(tp, type):
-            try:
-                if issubclass(tp, Flow360BaseModel):
-                    return tp
-            except TypeError:
-                return None
-            return None
-        origin = get_origin(tp)
-        if origin is None:
-            return None
-        # typing.Annotated
-        if str(origin) == "typing.Annotated":
-            args = get_args(tp)
-            if args:
-                return Flow360BaseModel._extract_model_type(args[0])
-            return None
-        # Optional/Union
-        if origin is Literal:
-            return None
-        if str(origin) == "typing.Union":
-            for arg in get_args(tp):
-                mt = Flow360BaseModel._extract_model_type(arg)
-                if mt is not None:
-                    return mt
-            return None
-        # Containers: List[T], Dict[K,V], Tuple[...] (take first value-like arg)
-        args = get_args(tp)
-        if not args:
-            return None
-        # For Dict[K,V], prefer V; else iterate args
-        dict_types = (dict,)
-        from typing import Dict as TypingDict  # pylint: disable=import-outside-toplevel
-
-        if origin in (*dict_types, TypingDict) and len(args) == 2:
-            start_index = 1
-        else:
-            start_index = 0
-        for arg in args[start_index:]:
-            mt = Flow360BaseModel._extract_model_type(arg)
-            if mt is not None:
-                return mt
-        return None
-
-    # Note: to_solver architecture will be reworked in favor of splitting the models between
-    # the user-side and solver-side models (see models.py and models_avl.py for reference
-    # in the design360 repo)
-    #
-    # for now the to_solver functionality is removed, although some of the logic
-    # (recursive definition) will probably carry over.
 
     def copy(self, update=None, **kwargs) -> Flow360BaseModel:
         """Copy a Flow360BaseModel.  With ``deep=True`` as default."""
