@@ -27,6 +27,7 @@ pandas = "^2.2.1"
 pylint = "^3.1.0"
 black = {extras = ["jupyter"], version = "^24.10.0"}
 wcmatch = "^10.0"
+networkx = "^3.0"
 
 # docs
 autodoc_pydantic = {version="*", optional = true}

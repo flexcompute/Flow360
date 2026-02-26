@@ -155,3 +155,9 @@ class ImportGeometryApi:
         POST /v2/import-geometry/{id}/face-grouping - Save face grouping config.
         """
         return RestApi(ENDPOINT, id=geometry_id).post(config, method="face-grouping")
+
+    def get_face_grouping_rules(self, geometry_id):
+        """
+        GET /v2/import-geometry/{id}/face-grouping-rules - Retrieve face grouping rules from S3.
+        """
+        return RestApi(ENDPOINT, id=geometry_id).get(method="face-grouping-rules")

@@ -449,6 +449,35 @@ class TestAirplaneGroupingWorkflow:
         assert total == TOTAL_FACE_COUNT
         assert len(geometry.list_groups()) == 6
 
+        # --- Save to cloud ---
+        geometry.save_groups_to_cloud()
+
+        # Record expected state before clearing
+        expected_groups = {
+            name: geometry.get_face_group(name).face_count()
+            for name in geometry.list_groups()
+        }
+
+        # --- Clear local state ---
+        geometry.clear_groups()
+        assert len(geometry.list_groups()) == 0
+
+        # --- Retrieve from cloud ---
+        geometry.load_groups_from_cloud()
+
+        # --- Verify round-trip ---
+        assert set(geometry.list_groups()) == set(expected_groups.keys())
+        for name, expected_count in expected_groups.items():
+            assert geometry.get_face_group(name).face_count() == expected_count
+
+        # Verify total coverage after round-trip
+        total = sum(
+            geometry.get_face_group(name).face_count()
+            for name in geometry.list_groups()
+        )
+        assert total == TOTAL_FACE_COUNT
+        assert len(geometry.list_groups()) == 6
+
     def test_group_all_then_split(self, geometry):
         """Test grouping all faces first, then splitting into color groups."""
         # Start with everything in one group

@@ -525,6 +525,140 @@ class Geometry(AssetBase):
         """Remove all face groups."""
         self._tree_groups.clear()
 
+    def save_groups_to_cloud(self) -> None:
+        """
+        Save face groups to the cloud via POST /v2/import-geometry/{id}/face-grouping.
+
+        Builds:
+        - faceGroupingConfiguration: {uuid: group_name, ...}
+        - faceGroupingRules: V2.0 JSON string with selection rules per group
+        """
+        import json as _json
+        from datetime import datetime, timezone
+
+        face_grouping_config = {}
+        group_defs = []
+
+        for group_name, group in self._tree_groups.items():
+            colors = set()
+            for node_id in group._node_ids:
+                node = Node(self, self._backend, node_id)
+                uuid = node.uuid
+                if uuid is not None:
+                    face_grouping_config[uuid] = group_name
+                colors.add(node.color)
+
+            # Build selection rule based on face attributes
+            if len(colors) == 1 and next(iter(colors)):
+                # All faces share a single non-empty color → color-based rule
+                group_defs.append({
+                    "name": group_name,
+                    "selection": {
+                        "steps": [{
+                            "method": "faces",
+                            "conditions": {"colorRGB": next(iter(colors))},
+                        }],
+                    },
+                })
+            else:
+                # Mixed or empty colors → remaining group
+                group_defs.append({
+                    "name": group_name,
+                    "selection": {"steps": []},
+                    "isRemaining": True,
+                })
+
+        rules = {
+            "version": "2.0",
+            "exportedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+            "groups": group_defs,
+        }
+
+        payload = {
+            "faceGroupingConfiguration": face_grouping_config,
+            "faceGroupingRules": _json.dumps(rules, indent=2),
+        }
+
+        api = ImportGeometryApi()
+        api.save_face_grouping(self.id, payload)
+        log.info(f"Saved {len(self._tree_groups)} face groups to cloud")
+
+    def load_groups_from_cloud(self) -> None:
+        """
+        Load face groups from the cloud via GET /v2/import-geometry/{id}/face-grouping-rules.
+
+        Parses V2.0 faceGroupingRules, evaluates selection steps against the
+        local tree, and reconstructs FaceGroup objects.
+        """
+        import json as _json
+
+        api = ImportGeometryApi()
+        resp = api.get_face_grouping_rules(self.id)
+
+        # Response is {"faceGroupingRules": "<json-string>"} — extract the inner value
+        rules = resp
+        if isinstance(rules, dict) and "faceGroupingRules" in rules:
+            rules = rules["faceGroupingRules"]
+        if isinstance(rules, str):
+            rules = _json.loads(rules)
+
+        self._tree_groups.clear()
+
+        remaining_group_names = []
+        assigned_node_ids = set()
+
+        for group_def in rules.get("groups", []):
+            name = group_def["name"]
+            is_remaining = group_def.get("isRemaining", False)
+
+            if is_remaining:
+                remaining_group_names.append(name)
+                continue
+
+            # Evaluate selection steps against local tree
+            steps = group_def.get("selection", {}).get("steps", [])
+            node_ids = self._evaluate_selection_steps(steps)
+            assigned_node_ids |= node_ids
+            self._tree_groups[name] = FaceGroup(name, node_ids)
+
+        # Remaining groups get all faces not assigned to other groups
+        all_face_ids = {face.node_id for face in self.faces()}
+        remaining_ids = all_face_ids - assigned_node_ids
+        for name in remaining_group_names:
+            self._tree_groups[name] = FaceGroup(name, set(remaining_ids))
+            remaining_ids = set()  # Only first remaining group gets the faces
+
+        log.info(f"Loaded {len(self._tree_groups)} face groups from cloud")
+
+    def _evaluate_selection_steps(self, steps: list) -> set:
+        """Evaluate selection steps from V2.0 rules against the local tree."""
+        if not steps:
+            return {face.node_id for face in self.faces()}
+
+        node_ids = set()
+        for step in steps:
+            method = step.get("method", "")
+            conditions = step.get("conditions", {})
+
+            if method == "faces":
+                faces = self.faces(**conditions)
+                node_ids |= faces._node_ids
+            elif method in ("children", "descendants"):
+                nav = self.children if method == "children" else self.descendants
+                result = nav(**conditions)
+                node_ids |= result.faces()._node_ids
+            elif method in ("assemblies", "parts", "bodies", "shells"):
+                type_map = {
+                    "assemblies": "Assembly",
+                    "parts": "Part",
+                    "bodies": "Body",
+                    "shells": "Shell",
+                }
+                matches = self.descendants(type=type_map[method], **conditions)
+                node_ids |= matches.faces()._node_ids
+
+        return node_ids
+
     # ================================================================
     # Set Operations
     # ================================================================
