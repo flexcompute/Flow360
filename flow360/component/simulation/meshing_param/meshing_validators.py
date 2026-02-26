@@ -2,7 +2,7 @@
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.meshing_param.volume_params import UniformRefinement
-from flow360.component.simulation.primitives import Box, Cylinder, Sphere
+from flow360.component.simulation.primitives import Box, Cylinder
 
 
 def validate_snappy_uniform_refinement_entities(refinement: UniformRefinement):
