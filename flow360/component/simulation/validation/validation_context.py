@@ -458,6 +458,17 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
 
         return {}
 
+    @property
+    def farfield_cv_dual_belonging_ids(self) -> set[str]:
+        """Surface IDs that appear in both farfield enclosed_surfaces and some CustomVolume boundaries."""
+        if not self.farfield_enclosed_surfaces:
+            return set()
+        enclosed_ids = set(self.farfield_enclosed_surfaces.keys())
+        cv_boundary_ids: set[str] = set()
+        for cv_info in self.to_be_generated_custom_volumes.values():
+            cv_boundary_ids |= cv_info.get("boundary_surface_ids", set())
+        return enclosed_ids & cv_boundary_ids
+
     def __init__(self, param_as_dict: dict, referenced_expressions: list):
         self.farfield_method = self._get_farfield_method_(param_as_dict=param_as_dict)
         self.farfield_domain_type = self._get_farfield_domain_type_(param_as_dict=param_as_dict)

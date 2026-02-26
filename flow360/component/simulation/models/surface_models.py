@@ -914,27 +914,9 @@ class PorousJump(Flow360BaseModel):
             )
 
         def _is_farfield_custom_volume_interface(surface1, surface2) -> bool:
-            """Check if two surfaces form a cross-farfield-customvolume interface.
-
-            Both surfaces must be dual-belonging: present in both the farfield's
-            enclosed_surfaces and some CustomVolume's boundary_surface_ids.
-            This indicates they sit at a farfield-CustomVolume zone boundary.
-            """
-            if not param_info.farfield_enclosed_surfaces:
-                return False
-
-            enclosed_ids = set(param_info.farfield_enclosed_surfaces.keys())
-
-            custom_volume_boundary_ids: set[str] = set()
-            for cv_info in param_info.to_be_generated_custom_volumes.values():
-                custom_volume_boundary_ids |= cv_info.get("boundary_surface_ids", set())
-
-            dual_belonging_ids = enclosed_ids & custom_volume_boundary_ids
-
-            return (
-                surface1.private_attribute_id in dual_belonging_ids
-                and surface2.private_attribute_id in dual_belonging_ids
-            )
+            """Check if both surfaces are dual-belonging (farfield enclosed ∩ CustomVolume boundary)."""
+            dual = param_info.farfield_cv_dual_belonging_ids
+            return surface1.private_attribute_id in dual and surface2.private_attribute_id in dual
 
         for surface_pair in value.items:
             check_deleted_surface_pair(surface_pair, param_info)

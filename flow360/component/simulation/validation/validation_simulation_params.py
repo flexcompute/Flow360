@@ -484,25 +484,14 @@ def _collect_zone_zone_interfaces(
 
 
 def _collect_farfield_custom_volume_interfaces(*, param_info: ParamsValidationInfo) -> set[str]:
-    """Collect interface names for faces shared between AutomatedFarfield enclosed_surfaces and CustomVolume boundaries.
+    """Collect interface names for dual-belonging faces (farfield enclosed_surfaces ∩ CustomVolume boundaries).
 
-    A face is an interface if it appears in both the farfield's enclosed_surfaces
-    and some CustomVolume's boundary_surface_ids. Returns names (not IDs) since
-    _validate_boundary_completeness works with name sets.
+    Returns names (not IDs) since _validate_boundary_completeness works with name sets.
     """
-    if not param_info.farfield_enclosed_surfaces:
-        return set()
-
-    enclosed_ids = set(param_info.farfield_enclosed_surfaces.keys())
-
-    # Gather all CustomVolume boundary IDs
-    custom_volume_boundary_ids: set[str] = set()
-    for cv_info in param_info.to_be_generated_custom_volumes.values():
-        custom_volume_boundary_ids |= cv_info.get("boundary_surface_ids", set())
-
-    # Only dual-belonging faces are interfaces
-    interface_ids = enclosed_ids & custom_volume_boundary_ids
-    return {param_info.farfield_enclosed_surfaces[sid] for sid in interface_ids}
+    return {
+        param_info.farfield_enclosed_surfaces[sid]
+        for sid in param_info.farfield_cv_dual_belonging_ids
+    }
 
 
 def _collect_used_boundary_names(params, param_info: ParamsValidationInfo) -> set:
