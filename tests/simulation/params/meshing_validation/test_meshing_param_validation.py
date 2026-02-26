@@ -45,7 +45,12 @@ from flow360.component.simulation.primitives import (
 )
 from flow360.component.simulation.services import ValidationCalledBy, validate_model
 from flow360.component.simulation.simulation_params import SimulationParams
-from flow360.component.simulation.unit_system import CGS_unit_system, SI_unit_system
+from flow360.component.simulation.unit_system import (
+    CGS_unit_system,
+    LengthType,
+    SI_unit_system,
+)
+from flow360.component.simulation.utils import BoundingBox
 from flow360.component.simulation.validation.validation_context import (
     SURFACE_MESH,
     VOLUME_MESH,
@@ -2380,3 +2385,47 @@ def test_per_face_min_passage_size_warning_without_remove_hidden_geometry():
     )
     assert errors is None
     assert warnings == []
+
+
+def test_geometry_accuracy_with_non_unit_project_length_scale():
+    """geometry_accuracy validation must account for the project-length scale factor.
+
+    When project_length_unit carries a non-1 scale (e.g. 1.2*mm), the bounding-box
+    diagonal in project coordinates must be scaled to physical units before the
+    comparison with geometry_accuracy.
+
+    bbox diagonal in project coords ≈ sqrt(3) * 1e6 ≈ 1.732e6
+    physical diagonal = 1.732e6 * 1.2 mm ≈ 2.079e6 mm
+    correct lower limit = 1e-6 * 2.079e6 mm ≈ 2.079 mm
+    """
+    gai_ctx = ParamsValidationInfo({}, [])
+    gai_ctx.use_geometry_AI = True
+    gai_ctx.project_length_unit = LengthType.validate(1.2 * u.mm)
+    gai_ctx.global_bounding_box = BoundingBox([[-5e5, -5e5, -5e5], [5e5, 5e5, 5e5]])
+
+    expected_warning = (
+        "geometry_accuracy (1.9 mm) is below the recommended value "
+        "of 1e-06 * bounding box diagonal (2.08e+00 mm). "
+        "Please increase geometry_accuracy."
+    )
+
+    # 1.9 mm < correct limit ~2.079 mm → warning emitted
+    with ValidationContext(SURFACE_MESH, gai_ctx) as ctx:
+        with SI_unit_system:
+            MeshingDefaults(
+                geometry_accuracy=1.9 * u.mm,
+                surface_max_edge_length=10 * u.m,
+            )
+    warning_msgs = [w["msg"] if isinstance(w, dict) else str(w) for w in ctx.validation_warnings]
+    assert expected_warning in warning_msgs
+
+    # 3.0 mm > correct limit ~2.079 mm → no warning
+    with ValidationContext(SURFACE_MESH, gai_ctx) as ctx:
+        with SI_unit_system:
+            defaults = MeshingDefaults(
+                geometry_accuracy=3.0 * u.mm,
+                surface_max_edge_length=10 * u.m,
+            )
+            assert defaults.geometry_accuracy == 3.0 * u.mm
+    warning_msgs = [w["msg"] if isinstance(w, dict) else str(w) for w in ctx.validation_warnings]
+    assert expected_warning not in warning_msgs

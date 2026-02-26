@@ -19,6 +19,7 @@ import contextvars
 import inspect
 from enum import Enum
 from functools import wraps
+from types import SimpleNamespace
 from typing import Any, Callable, List, Literal, Union
 
 import pydantic as pd
@@ -144,6 +145,7 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         "quasi_3d_symmetry_planes_center_y",
         "entity_transformation_detected",
         "to_be_generated_custom_volumes",
+        "farfield_enclosed_surfaces",
         "root_asset_type",
         # Entity expansion support
         "_entity_info",  # Owns the entities (keeps them alive), initialized eagerly
@@ -433,6 +435,46 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
                 }
         return custom_volume_info
 
+    def _get_farfield_enclosed_surfaces(self, param_as_dict: dict) -> dict[str, str]:
+        """Extract enclosed surface {id: name} from AutomatedFarfield zones.
+
+        Only returns non-empty when an AutomatedFarfield zone has enclosed_surfaces set.
+        Expands selectors so that selector-only enclosed_surfaces inputs are handled.
+        """
+        volume_zones = get_value_with_path(param_as_dict, ["meshing", "volume_zones"])
+        if not volume_zones:
+            volume_zones = get_value_with_path(param_as_dict, ["meshing", "zones"])
+        if not volume_zones:
+            return {}
+
+        for zone in volume_zones:
+            if zone.get("type") != "AutomatedFarfield":
+                continue
+            enclosed = zone.get("enclosed_surfaces")
+            if not enclosed:
+                return {}
+            # At this stage enclosed_surfaces is a dict with materialized stored_entities
+            # and optional selectors. Wrap as duck-typed object for expand_entity_list.
+            enclosed_obj = SimpleNamespace(
+                stored_entities=enclosed.get("stored_entities", []),
+                selectors=enclosed.get("selectors"),
+            )
+            surfaces = self.expand_entity_list(enclosed_obj)
+            return {s.private_attribute_id: s.name for s in surfaces}
+
+        return {}
+
+    @property
+    def farfield_cv_dual_belonging_ids(self) -> set[str]:
+        """Surface IDs that appear in both farfield enclosed_surfaces and some CustomVolume boundaries."""
+        if not self.farfield_enclosed_surfaces:
+            return set()
+        enclosed_ids = set(self.farfield_enclosed_surfaces.keys())
+        cv_boundary_ids: set[str] = set()
+        for cv_info in self.to_be_generated_custom_volumes.values():
+            cv_boundary_ids |= cv_info.get("boundary_surface_ids", set())
+        return enclosed_ids & cv_boundary_ids
+
     def __init__(self, param_as_dict: dict, referenced_expressions: list):
         self.farfield_method = self._get_farfield_method_(param_as_dict=param_as_dict)
         self.farfield_domain_type = self._get_farfield_domain_type_(param_as_dict=param_as_dict)
@@ -477,6 +519,9 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
 
         # Must be after _entity_registry initialization (needs selector expansion)
         self.to_be_generated_custom_volumes = self._get_to_be_generated_custom_volumes(
+            param_as_dict=param_as_dict
+        )
+        self.farfield_enclosed_surfaces = self._get_farfield_enclosed_surfaces(
             param_as_dict=param_as_dict
         )
 
