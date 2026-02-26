@@ -99,6 +99,24 @@ class UnitSystemManager:
 unit_system_manager = UnitSystemManager()
 
 
+# TO_U: This is a temporary wrapper. UnitSystemManager should be moved to schema side in a future PR.
+def _schema_unit_system_provider(dim_name: str):
+    """Provide the current unit for a dimension name to flow360-schema types."""
+    if unit_system_manager.current:
+        unit = unit_system_manager.current[dim_name]
+        if isinstance(unit, _Flow360BaseUnit):
+            return unit
+        return unit.units
+    return None
+
+
+# Register with flow360-schema so new Length/Area/etc types respect unit system context
+# pylint:disable = wrong-import-position, wrong-import-order
+from flow360_schema.models.primitives.unyt_adapter import set_unit_system_provider
+
+set_unit_system_provider(_schema_unit_system_provider)
+
+
 def _encode_ndarray(x):
     """
     encoder for ndarray

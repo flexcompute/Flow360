@@ -1372,11 +1372,11 @@ def test_sliding_interface_tolerance_gai():
             "stored_entities": [
                 {
                     "axis": [0.0, 0.0, 1.0],
-                    "center": {"units": "1.0*m", "value": [0.0, 0.0, 0.0]},
-                    "height": {"units": "1.0*m", "value": 10.0},
-                    "inner_radius": {"units": "1.0*m", "value": 0.0},
+                    "center": [0.0, 0.0, 0.0],
+                    "height": 10.0,
+                    "inner_radius": 0.0,
                     "name": "cylinder",
-                    "outer_radius": {"units": "1.0*m", "value": 5.0},
+                    "outer_radius": 5.0,
                     "private_attribute_entity_type_name": "Cylinder",
                     "private_attribute_id": "b8d08e11-e837-4cc7-95b3-f92e05e71a65",
                     "private_attribute_zone_boundary_names": {"items": []},
