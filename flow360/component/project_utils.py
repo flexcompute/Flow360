@@ -303,22 +303,41 @@ class ProjectRecords(pd.BaseModel):
 
 
 def get_project_records(
-    search_keyword: str, tags: Optional[List[str]] = None
+    search_keyword: str = "",
+    tags: Optional[List[str]] = None,
+    folder_ids: Optional[List[str]] = None,
+    exclude_subfolders: bool = False,
 ) -> tuple[ProjectRecords, int]:
-    """Get all projects with a keyword filter"""
+    """Get all projects with a keyword filter
+
+    Parameters
+    ----------
+    search_keyword : str
+        Keyword to filter projects by name. Defaults to "" (all projects).
+    tags : Optional[List[str]]
+        Tags to filter projects.
+    folder_ids : Optional[List[str]]
+        List of folder IDs to search within.
+    exclude_subfolders : bool
+        If True, only search the specified folders, not their subfolders.
+    """
     # pylint: disable=invalid-name
     MAX_SEARCHABLE_ITEM_COUNT = 1000
     _api = RestApi(ProjectInterface.endpoint, id=None)
-    resp = _api.get(
-        params={
-            "page": "0",
-            "size": MAX_SEARCHABLE_ITEM_COUNT,
-            "filterKeywords": search_keyword,
-            "filterTags": tags,
-            "sortFields": ["createdAt"],
-            "sortDirections": ["asc"],
-        }
-    )
+
+    params = {
+        "page": "0",
+        "size": MAX_SEARCHABLE_ITEM_COUNT,
+        "filterKeywords": search_keyword,
+        "filterTags": tags,
+        "sortFields": ["createdAt"],
+        "sortDirections": ["asc"],
+    }
+    if folder_ids is not None:
+        params["filterFolderIds"] = folder_ids
+        params["filterExcludeSubfolders"] = exclude_subfolders
+
+    resp = _api.get(params=params)
 
     all_projects = ProjectRecords.model_validate({"records": resp["records"]})
     num_of_projects = resp["total"]
