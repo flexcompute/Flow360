@@ -32,12 +32,30 @@ from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.utils import model_attribute_unlock
 from flow360.component.simulation.web.asset_base import AssetBase
 from flow360.component.utils import (
+    SUPPORTED_GEOMETRY_FILE_PATTERNS,
     GeometryFiles,
     MeshNameParser,
+    match_file_pattern,
     shared_account_confirm_proceed,
 )
 from flow360.exceptions import Flow360FileError, Flow360ValueError
 from flow360.log import log
+
+# Re-exports for face grouping API
+from flow360.component.geometry_tree import TreeBackend, NodeSet, Node
+from flow360.component.geometry_tree.face_group import FaceGroup
+from flow360.component.import_geometry.import_geometry_api import ImportGeometryApi
+
+
+def _is_file_path(value):
+    """Detect if a string looks like a geometry file path rather than a UUID."""
+    if not isinstance(value, str):
+        return False
+    if match_file_pattern(SUPPORTED_GEOMETRY_FILE_PATTERNS, value):
+        return True
+    if "/" in value or value.startswith("./") or value.startswith("../"):
+        return True
+    return False
 
 
 class GeometryStatus(Enum):
@@ -386,9 +404,280 @@ class Geometry(AssetBase):
     _cloud_resource_type_name = "Geometry"
 
     # pylint: disable=redefined-builtin
-    def __init__(self, id: Union[str, None]):
-        super().__init__(id)
+    def __init__(self, id: Union[str, None], name: str = None):
+        self._backend = None  # TreeBackend for face grouping
+        self._tree_groups = {}  # name -> FaceGroup
+        if id is not None and _is_file_path(id):
+            self._init_from_file(id, name=name)
+        else:
+            super().__init__(id)
+            self.snappy_body_registry = None
+
+    @staticmethod
+    def _make_timestamped_name(file_path):
+        """Generate a resource name like 'MM-DD-hh-mm-ss-<filename>'."""
+        from datetime import datetime
+
+        timestamp = datetime.now().strftime("%m-%d-%H-%M-%S")
+        basename = os.path.splitext(os.path.basename(file_path))[0]
+        return f"{timestamp}-{basename}"
+
+    def _init_from_file(self, file_path, name=None):
+        """Initialize from a geometry file via the import-geometry workflow."""
+        api = ImportGeometryApi()
+
+        if name is None:
+            name = self._make_timestamped_name(file_path)
+
+        # Step 1: Create import-geometry resource
+        log.info(f"Creating import-geometry resource '{name}' for {file_path}")
+        result = api.create(file_path, name=name)
+        geometry_id = result["geometryId"]
+        upload_urls = result["uploadUrls"]
+
+        # Step 2: Upload file to presigned URL
+        log.info(f"Uploading {file_path}...")
+        api.upload_file(file_path, upload_urls[0])
+
+        # Step 3: Mark upload complete
+        api.complete_upload(geometry_id)
+
+        # Step 4: Wait until processed
+        log.info("Waiting for geometry tree processing...")
+        api.wait_until_processed(geometry_id)
+
+        # Step 5: Fetch tree
+        tree_data = api.fetch_tree(geometry_id)
+
+        # Step 6: Initialize base class with real geometry ID
+        super(Geometry, self).__init__(geometry_id)
         self.snappy_body_registry = None
+
+        # Step 7: Load tree into backend
+        self._backend = TreeBackend()
+        self._backend.load_from_json(tree_data)
+        log.info(f"Geometry loaded: {len(self.faces())} faces")
+
+    # ================================================================
+    # Tree Navigation Methods
+    # ================================================================
+
+    def root_node(self) -> NodeSet:
+        """Get NodeSet containing the root node."""
+        if self._backend is None:
+            raise Flow360ValueError(
+                "Geometry tree not loaded. Use Geometry(file_path) to load from file."
+            )
+        root_id = self._backend.get_root()
+        if root_id is None:
+            return NodeSet(self, self._backend, set())
+        return NodeSet(self, self._backend, {root_id})
+
+    def children(self, **filters) -> NodeSet:
+        """Get direct children of the root node."""
+        return self.root_node().children(**filters)
+
+    def descendants(self, **filters) -> NodeSet:
+        """Get all descendants of the root."""
+        return self.root_node().descendants(**filters)
+
+    def faces(self, **filters) -> NodeSet:
+        """Get all face nodes in the geometry."""
+        return self.root_node().faces(**filters)
+
+    # ================================================================
+    # Face Group Management
+    # ================================================================
+
+    def create_face_group(self, name: str, selection: NodeSet) -> FaceGroup:
+        """
+        Create a named face group from a selection.
+
+        Each face can only belong to one group. Faces in the selection
+        are removed from any previous group they belonged to.
+        """
+        if name in self._tree_groups:
+            raise ValueError(f"Group '{name}' already exists")
+
+        # Extract face node IDs from the selection
+        face_nodes = selection.faces()
+        face_node_ids = face_nodes._node_ids
+
+        # Remove these faces from any existing groups (exclusive ownership)
+        for group in self._tree_groups.values():
+            group._node_ids -= face_node_ids
+
+        group = FaceGroup(name, face_node_ids)
+        self._tree_groups[name] = group
+        return group
+
+    def get_face_group(self, name: str) -> FaceGroup:
+        """Get a face group by name."""
+        if name not in self._tree_groups:
+            raise KeyError(f"Group '{name}' not found")
+        return self._tree_groups[name]
+
+    def list_groups(self):
+        """List all group names."""
+        return list(self._tree_groups.keys())
+
+    def clear_groups(self) -> None:
+        """Remove all face groups."""
+        self._tree_groups.clear()
+
+    def save_groups_to_cloud(self) -> None:
+        """
+        Save face groups to the cloud via POST /v2/import-geometry/{id}/face-grouping.
+
+        Builds:
+        - faceGroupingConfiguration: {uuid: group_name, ...}
+        - faceGroupingRules: V2.0 JSON string with selection rules per group
+        """
+        import json as _json
+        from datetime import datetime, timezone
+
+        face_grouping_config = {}
+        group_defs = []
+
+        for group_name, group in self._tree_groups.items():
+            colors = set()
+            for node_id in group._node_ids:
+                node = Node(self, self._backend, node_id)
+                uuid = node.uuid
+                if uuid is not None:
+                    face_grouping_config[uuid] = group_name
+                colors.add(node.color)
+
+            # Build selection rule based on face attributes
+            if len(colors) == 1 and next(iter(colors)):
+                # All faces share a single non-empty color → color-based rule
+                group_defs.append({
+                    "name": group_name,
+                    "selection": {
+                        "steps": [{
+                            "method": "faces",
+                            "conditions": {"colorRGB": next(iter(colors))},
+                        }],
+                    },
+                })
+            else:
+                # Mixed or empty colors → remaining group
+                group_defs.append({
+                    "name": group_name,
+                    "selection": {"steps": []},
+                    "isRemaining": True,
+                })
+
+        rules = {
+            "version": "2.0",
+            "exportedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+            "groups": group_defs,
+        }
+
+        payload = {
+            "faceGroupingConfiguration": face_grouping_config,
+            "faceGroupingRules": _json.dumps(rules, indent=2),
+        }
+
+        api = ImportGeometryApi()
+        api.save_face_grouping(self.id, payload)
+        log.info(f"Saved {len(self._tree_groups)} face groups to cloud")
+
+    def load_groups_from_cloud(self) -> None:
+        """
+        Load face groups from the cloud via GET /v2/import-geometry/{id}/face-grouping-rules.
+
+        Parses V2.0 faceGroupingRules, evaluates selection steps against the
+        local tree, and reconstructs FaceGroup objects.
+        """
+        import json as _json
+
+        api = ImportGeometryApi()
+        resp = api.get_face_grouping_rules(self.id)
+
+        # Response is {"faceGroupingRules": "<json-string>"} — extract the inner value
+        rules = resp
+        if isinstance(rules, dict) and "faceGroupingRules" in rules:
+            rules = rules["faceGroupingRules"]
+        if isinstance(rules, str):
+            rules = _json.loads(rules)
+
+        self._tree_groups.clear()
+
+        remaining_group_names = []
+        assigned_node_ids = set()
+
+        for group_def in rules.get("groups", []):
+            name = group_def["name"]
+            is_remaining = group_def.get("isRemaining", False)
+
+            if is_remaining:
+                remaining_group_names.append(name)
+                continue
+
+            # Evaluate selection steps against local tree
+            steps = group_def.get("selection", {}).get("steps", [])
+            node_ids = self._evaluate_selection_steps(steps)
+            assigned_node_ids |= node_ids
+            self._tree_groups[name] = FaceGroup(name, node_ids)
+
+        # Remaining groups get all faces not assigned to other groups
+        all_face_ids = {face.node_id for face in self.faces()}
+        remaining_ids = all_face_ids - assigned_node_ids
+        for name in remaining_group_names:
+            self._tree_groups[name] = FaceGroup(name, set(remaining_ids))
+            remaining_ids = set()  # Only first remaining group gets the faces
+
+        log.info(f"Loaded {len(self._tree_groups)} face groups from cloud")
+
+    def _evaluate_selection_steps(self, steps: list) -> set:
+        """Evaluate selection steps from V2.0 rules against the local tree."""
+        if not steps:
+            return {face.node_id for face in self.faces()}
+
+        node_ids = set()
+        for step in steps:
+            method = step.get("method", "")
+            conditions = step.get("conditions", {})
+
+            if method == "faces":
+                faces = self.faces(**conditions)
+                node_ids |= faces._node_ids
+            elif method in ("children", "descendants"):
+                nav = self.children if method == "children" else self.descendants
+                result = nav(**conditions)
+                node_ids |= result.faces()._node_ids
+            elif method in ("assemblies", "parts", "bodies", "shells"):
+                type_map = {
+                    "assemblies": "Assembly",
+                    "parts": "Part",
+                    "bodies": "Body",
+                    "shells": "Shell",
+                }
+                matches = self.descendants(type=type_map[method], **conditions)
+                node_ids |= matches.faces()._node_ids
+
+        return node_ids
+
+    # ================================================================
+    # Set Operations
+    # ================================================================
+
+    def __sub__(self, other) -> NodeSet:
+        """Subtract faces from total geometry (geometry - FaceGroup or NodeSet)."""
+        all_faces = self.faces()
+        if isinstance(other, FaceGroup):
+            other_nodes = NodeSet(self, self._backend, other._node_ids)
+            return all_faces - other_nodes
+        elif isinstance(other, NodeSet):
+            return all_faces - other.faces()
+        else:
+            return NotImplemented
+
+    def __repr__(self) -> str:
+        if self._backend is not None:
+            return f"Geometry({len(self.faces())} faces)"
+        return f"Geometry('{self.id}')"
 
     @property
     def face_group_tag(self):
