@@ -12,6 +12,7 @@ import rich
 import unyt as u
 import yaml
 from flow360_schema.framework.base_model import Flow360BaseModel as _SchemaBaseModel
+from flow360_schema.framework.validation.context import DeserializationContext
 
 from flow360.component.simulation.conversion import need_conversion
 from flow360.error_messages import do_not_modify_file_manually_msg
@@ -54,10 +55,6 @@ class Flow360BaseModel(_SchemaBaseModel):
     file I/O, hash tracking, unit conversion (preprocess), and rich help output.
     """
 
-    def __init__(self, filename: str = None, **kwargs):
-        model_dict = self._handle_file(filename=filename, **kwargs)
-        super().__init__(**model_dict)
-
     # -- SDK-only methods: dict / file handling --
 
     @classmethod
@@ -87,7 +84,8 @@ class Flow360BaseModel(_SchemaBaseModel):
             raise ValueError("Can't do shallow copy of component, set `deep=True` in copy().")
         new_copy = pd.BaseModel.model_copy(self, update=update, deep=True, **kwargs)
         data = new_copy.model_dump(exclude={"private_attribute_id"})
-        return self.model_validate(data)
+        with DeserializationContext():
+            return self.model_validate(data)
 
     def help(self, methods: bool = False) -> None:
         """Prints message describing the fields and methods of a :class:`Flow360BaseModel`.
@@ -121,7 +119,9 @@ class Flow360BaseModel(_SchemaBaseModel):
         -------
         >>> params = Flow360BaseModel.from_file(filename='folder/sim.json') # doctest: +SKIP
         """
-        return cls(filename=filename)
+        model_dict = cls._handle_file(filename=filename)
+        with DeserializationContext():
+            return cls.model_validate(model_dict)
 
     @classmethod
     def _dict_from_file(cls, filename: str) -> dict:
