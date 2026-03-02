@@ -1100,13 +1100,10 @@ class Project(pd.BaseModel):
         else:
             if resolved_solver_version is None:
                 resolved_solver_version = __solver_version__
-                default_values["solver_version"] = resolved_solver_version
             if resolved_length_unit is None:
                 resolved_length_unit = "m"
-                default_values["length_unit"] = resolved_length_unit
             if resolved_tags is None:
                 resolved_tags = []
-                default_values["tags"] = resolved_tags
 
         return (
             resolved_name,
