@@ -140,7 +140,12 @@ def parse_datetime(dt_str: str, fmt: str = "%Y-%m-%dT%H:%M:%S.%fZ") -> datetime.
     try:
         return datetime.datetime.strptime(dt_str, fmt)
     except ValueError:
-        return datetime.datetime.strptime(dt_str, fmt.replace("%S.%f", "%S"))
+        # Truncate sub-second digits to 6 (microseconds) since %f doesn't support nanoseconds
+        truncated = re.sub(r"(\.\d{6})\d+", r"\1", dt_str)
+        try:
+            return datetime.datetime.strptime(truncated, fmt)
+        except ValueError:
+            return datetime.datetime.strptime(truncated, fmt.replace("%S.%f", "%S"))
 
 
 def beta_feature(feature_name: str):
