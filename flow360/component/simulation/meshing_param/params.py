@@ -139,7 +139,9 @@ def _collect_rotation_entity_names(zones, param_info, zone_types):
     return names
 
 
-def _validate_farfield_enclosed_entities(zones, rotation_entity_names, has_custom_zones, param_info):
+def _validate_farfield_enclosed_entities(
+    zones, rotation_entity_names, has_custom_zones, param_info
+):
     """Validate farfield enclosed_entities: require CustomZones and rotation-volume association."""
     for zone in zones:
         if not isinstance(zone, _FarfieldBase):
@@ -375,7 +377,9 @@ class MeshingParams(Flow360BaseModel):
             self.volume_zones, rotation_entity_names, has_custom_zones, param_info
         )
         custom_volumes = _collect_all_custom_volumes(self.volume_zones)
-        _validate_custom_volume_rotation_association(custom_volumes, rotation_entity_names, param_info)
+        _validate_custom_volume_rotation_association(
+            custom_volumes, rotation_entity_names, param_info
+        )
         _validate_farfield_no_intersection(self.volume_zones, param_info)
 
         return self
@@ -691,7 +695,9 @@ class ModularMeshingWorkflow(Flow360BaseModel):
             self.zones, rotation_entity_names, has_custom_zones, param_info
         )
         custom_volumes = _collect_all_custom_volumes(self.zones)
-        _validate_custom_volume_rotation_association(custom_volumes, rotation_entity_names, param_info)
+        _validate_custom_volume_rotation_association(
+            custom_volumes, rotation_entity_names, param_info
+        )
         _validate_farfield_no_intersection(self.zones, param_info)
 
         return self
