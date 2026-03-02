@@ -1080,15 +1080,17 @@ class Project(pd.BaseModel):
             if resolved_solver_version is None:
                 resolved_solver_version = volume_mesh.solver_version
                 default_values["solver_version"] = resolved_solver_version
-
             if resolved_length_unit is None:
                 source_project = Project.from_cloud(project_id=volume_mesh.info.project_id)
                 resolved_length_unit = str(source_project.length_unit.units)
                 default_values["length_unit"] = resolved_length_unit
-
             if resolved_name is None:
                 resolved_name = volume_mesh.info.name
                 default_values["name"] = resolved_name
+            if resolved_tags is None:
+                resolved_tags = volume_mesh.tags
+                default_values["tags"] = resolved_tags
+
         else:
             project_creation_method = "from local volume mesh file"
             if resolved_solver_version is None:
@@ -1097,10 +1099,9 @@ class Project(pd.BaseModel):
             if resolved_length_unit is None:
                 resolved_length_unit = "m"
                 default_values["length_unit"] = resolved_length_unit
-
-        if resolved_tags is None:
-            resolved_tags = []
-            default_values["tags"] = resolved_tags
+            if resolved_tags is None:
+                resolved_tags = []
+                default_values["tags"] = resolved_tags
 
         if default_values:
             defaults_summary = ", ".join(
