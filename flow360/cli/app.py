@@ -11,7 +11,6 @@ import toml
 from packaging.version import InvalidVersion, Version
 
 from flow360.cli import dict_utils
-
 from flow360.environment import Env
 from flow360.version import __solver_version__, __version__
 
