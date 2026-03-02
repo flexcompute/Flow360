@@ -7,26 +7,14 @@
         "type_name": "AerospaceCondition",
         "private_attribute_constructor": "default",
         "private_attribute_input_cache": {
-            "alpha": {
-                "value": 0.0,
-                "units": "degree"
-            },
-            "beta": {
-                "value": 0.0,
-                "units": "degree"
-            },
+            "alpha": 0.0,
+            "beta": 0.0,
             "thermal_state": {
                 "type_name": "ThermalState",
                 "private_attribute_constructor": "default",
                 "private_attribute_input_cache": {},
-                "temperature": {
-                    "value": 288.15,
-                    "units": "K"
-                },
-                "density": {
-                    "value": 1.225,
-                    "units": "kg/m**3"
-                },
+                "temperature": 288.15,
+                "density": 1.225,
                 "material": {
                     "type": "air",
                     "name": "air",
@@ -86,14 +74,8 @@
                 }
             }
         },
-        "alpha": {
-            "value": 0.0,
-            "units": "degree"
-        },
-        "beta": {
-            "value": 0.0,
-            "units": "degree"
-        },
+        "alpha": 0.0,
+        "beta": 0.0,
         "velocity_magnitude": {
             "type_name": "expression",
             "expression": "10 * u.m / u.s"
@@ -102,14 +84,8 @@
             "type_name": "ThermalState",
             "private_attribute_constructor": "default",
             "private_attribute_input_cache": {},
-            "temperature": {
-                "value": 288.15,
-                "units": "K"
-            },
-            "density": {
-                "value": 1.225,
-                "units": "kg/m**3"
-            },
+            "temperature": 288.15,
+            "density": 1.225,
             "material": {
                 "type": "air",
                 "name": "air",
@@ -168,10 +144,7 @@
                 "turbulent_prandtl_number": 0.9
             }
         },
-        "reference_velocity_magnitude": {
-            "value": 10.0,
-            "units": "m/s"
-        }
+        "reference_velocity_magnitude": 10.0
     },
     "models": [
         {

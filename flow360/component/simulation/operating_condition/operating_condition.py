@@ -15,16 +15,17 @@ from flow360.component.simulation.models.material import Air, Water
 from flow360.component.simulation.operating_condition.atmosphere_model import (
     StandardAtmosphereModel,
 )
-from flow360.component.simulation.unit_system import (
-    AbsoluteTemperatureType,
-    AngleType,
-    DeltaTemperatureType,
-    DensityType,
-    LengthType,
-    PressureType,
-    VelocityType,
-    ViscosityType,
+from flow360_schema.models.primitives import (
+    AbsoluteTemperature,
+    Angle,
+    Density,
+    Length,
+    Pressure,
+    Velocity,
+    Viscosity,
 )
+
+from flow360.component.simulation.unit_system import DeltaTemperatureType
 from flow360.component.simulation.user_code.core.types import (
     Expression,
     ValueOrExpression,
@@ -40,7 +41,7 @@ from flow360.log import log
 
 # pylint: disable=no-member
 VelocityVectorType = Union[
-    Tuple[StringExpression, StringExpression, StringExpression], VelocityType.Vector
+    Tuple[StringExpression, StringExpression, StringExpression], Velocity.Vector3  # type: ignore[valid-type]
 ]
 
 
@@ -48,7 +49,7 @@ class ThermalStateCache(Flow360BaseModel):
     """[INTERNAL] Cache for thermal state inputs"""
 
     # pylint: disable=no-member
-    altitude: Optional[LengthType] = None
+    altitude: Optional[Length.Float64] = None  # type: ignore[valid-type]
     temperature_offset: Optional[DeltaTemperatureType] = None
 
 
@@ -71,10 +72,10 @@ class ThermalState(MultiConstructorBaseModel):
     # pylint: disable=fixme
     # TODO: remove frozen and throw warning if temperature/density is modified after construction from atmospheric model
     type_name: Literal["ThermalState"] = pd.Field("ThermalState", frozen=True)
-    temperature: AbsoluteTemperatureType = pd.Field(
+    temperature: AbsoluteTemperature.Float64 = pd.Field(  # type: ignore[valid-type]
         288.15 * u.K, frozen=True, description="The temperature of the fluid."
     )
-    density: DensityType.Positive = pd.Field(
+    density: Density.PositiveFloat64 = pd.Field(  # type: ignore[valid-type]
         1.225 * u.kg / u.m**3, frozen=True, description="The density of the fluid."
     )
     material: Air = pd.Field(Air(), frozen=True, description="The material of the fluid.")
@@ -88,7 +89,7 @@ class ThermalState(MultiConstructorBaseModel):
     @pd.validate_call
     def from_standard_atmosphere(
         cls,
-        altitude: LengthType = 0 * u.m,
+        altitude: Length.Float64 = 0 * u.m,  # type: ignore[valid-type]
         temperature_offset: DeltaTemperatureType = 0 * u.K,
     ):
         """
@@ -96,7 +97,7 @@ class ThermalState(MultiConstructorBaseModel):
 
         Parameters
         ----------
-        altitude : LengthType, optional
+        altitude : Length.Float64, optional
             The altitude at which the thermal state is calculated. Defaults to ``0 * u.m``.
         temperature_offset : DeltaTemperatureType, optional
             The temperature offset to be applied to the standard temperature at the given altitude.
@@ -147,7 +148,7 @@ class ThermalState(MultiConstructorBaseModel):
         return state
 
     @property
-    def altitude(self) -> Optional[LengthType]:
+    def altitude(self) -> Optional[Length.Float64]:  # type: ignore[valid-type]
         """Return user specified altitude."""
         if not self.private_attribute_input_cache.altitude:
             log.warning("Altitude not provided from input")
@@ -161,17 +162,17 @@ class ThermalState(MultiConstructorBaseModel):
         return self.private_attribute_input_cache.temperature_offset
 
     @property
-    def speed_of_sound(self) -> VelocityType.Positive:
+    def speed_of_sound(self) -> Velocity.PositiveFloat64:  # type: ignore[valid-type]
         """Computes speed of sound."""
         return self.material.get_speed_of_sound(self.temperature)
 
     @property
-    def pressure(self) -> PressureType.Positive:
+    def pressure(self) -> Pressure.PositiveFloat64:  # type: ignore[valid-type]
         """Computes pressure."""
         return self.material.get_pressure(self.density, self.temperature)
 
     @property
-    def dynamic_viscosity(self) -> ViscosityType.Positive:
+    def dynamic_viscosity(self) -> Viscosity.PositiveFloat64:  # type: ignore[valid-type]
         """Computes dynamic viscosity."""
         return self.material.get_dynamic_viscosity(self.temperature)
 
@@ -207,7 +208,7 @@ class GenericReferenceCondition(MultiConstructorBaseModel):
     type_name: Literal["GenericReferenceCondition"] = pd.Field(
         "GenericReferenceCondition", frozen=True
     )
-    velocity_magnitude: Optional[ValueOrExpression[VelocityType.Positive]] = ConditionalField(
+    velocity_magnitude: Optional[ValueOrExpression[Velocity.PositiveFloat64]] = ConditionalField(  # type: ignore[valid-type]
         context=CASE,
         description="Freestream velocity magnitude. Used as reference velocity magnitude"
         + " when :py:attr:`reference_velocity_magnitude` is not specified. Cannot change once specified.",
@@ -248,10 +249,10 @@ class AerospaceConditionCache(Flow360BaseModel):
 
     mach: Optional[pd.NonNegativeFloat] = None
     reynolds_mesh_unit: Optional[pd.PositiveFloat] = None
-    project_length_unit: Optional[LengthType.Positive] = None
-    alpha: Optional[AngleType] = None
-    beta: Optional[AngleType] = None
-    temperature: Optional[AbsoluteTemperatureType] = None
+    project_length_unit: Optional[Length.PositiveFloat64] = None  # type: ignore[valid-type]
+    alpha: Optional[Angle.Float64] = None  # type: ignore[valid-type]
+    beta: Optional[Angle.Float64] = None  # type: ignore[valid-type]
+    temperature: Optional[AbsoluteTemperature.Float64] = None  # type: ignore[valid-type]
     thermal_state: Optional[ThermalState] = pd.Field(None, alias="atmosphere")
     reference_mach: Optional[pd.PositiveFloat] = None
 
@@ -281,9 +282,9 @@ class AerospaceCondition(MultiConstructorBaseModel):
     """
 
     type_name: Literal["AerospaceCondition"] = pd.Field("AerospaceCondition", frozen=True)
-    alpha: AngleType = ConditionalField(0 * u.deg, description="The angle of attack.", context=CASE)
-    beta: AngleType = ConditionalField(0 * u.deg, description="The side slip angle.", context=CASE)
-    velocity_magnitude: Optional[ValueOrExpression[VelocityType.NonNegative]] = ConditionalField(
+    alpha: Angle.Float64 = ConditionalField(0 * u.deg, description="The angle of attack.", context=CASE)  # type: ignore[valid-type]
+    beta: Angle.Float64 = ConditionalField(0 * u.deg, description="The side slip angle.", context=CASE)  # type: ignore[valid-type]
+    velocity_magnitude: Optional[ValueOrExpression[Velocity.NonNegativeFloat64]] = ConditionalField(  # type: ignore[valid-type]
         description="Freestream velocity magnitude. Used as reference velocity magnitude"
         + " when :py:attr:`reference_velocity_magnitude` is not specified.",
         context=CASE,
@@ -294,7 +295,7 @@ class AerospaceCondition(MultiConstructorBaseModel):
         alias="atmosphere",
         description="Reference and freestream thermal state. Defaults to US standard atmosphere at sea level.",
     )
-    reference_velocity_magnitude: Optional[VelocityType.Positive] = CaseField(
+    reference_velocity_magnitude: Optional[Velocity.PositiveFloat64] = CaseField(  # type: ignore[valid-type]
         None,
         description="Reference velocity magnitude. Is required when :py:attr:`velocity_magnitude` is 0.",
         frozen=True,
@@ -307,8 +308,8 @@ class AerospaceCondition(MultiConstructorBaseModel):
     def from_mach(
         cls,
         mach: pd.NonNegativeFloat,
-        alpha: AngleType = 0 * u.deg,
-        beta: AngleType = 0 * u.deg,
+        alpha: Angle.Float64 = 0 * u.deg,
+        beta: Angle.Float64 = 0 * u.deg,
         thermal_state: ThermalState = ThermalState(),
         reference_mach: Optional[pd.PositiveFloat] = None,
     ):
@@ -320,9 +321,9 @@ class AerospaceCondition(MultiConstructorBaseModel):
         mach : float
             Freestream Mach number (non-negative).
             Used as reference Mach number when ``reference_mach`` is not specified.
-        alpha : AngleType, optional
+        alpha : Angle.Float64, optional
             The angle of attack. Defaults to ``0 * u.deg``.
-        beta : AngleType, optional
+        beta : Angle.Float64, optional
             The side slip angle. Defaults to ``0 * u.deg``.
         thermal_state : ThermalState, optional
             Reference and freestream thermal state. Defaults to US standard atmosphere at sea level.
@@ -383,10 +384,10 @@ class AerospaceCondition(MultiConstructorBaseModel):
         cls,
         mach: pd.PositiveFloat,
         reynolds_mesh_unit: pd.PositiveFloat,
-        project_length_unit: Optional[LengthType.Positive],
-        alpha: AngleType = 0 * u.deg,
-        beta: AngleType = 0 * u.deg,
-        temperature: AbsoluteTemperatureType = 288.15 * u.K,
+        project_length_unit: Optional[Length.PositiveFloat64],
+        alpha: Angle.Float64 = 0 * u.deg,
+        beta: Angle.Float64 = 0 * u.deg,
+        temperature: AbsoluteTemperature.Float64 = 288.15 * u.K,
         reference_mach: Optional[pd.PositiveFloat] = None,
     ):
         """
@@ -404,13 +405,13 @@ class AerospaceCondition(MultiConstructorBaseModel):
             Freestream Reynolds number scaled to mesh unit (must be positive).
             For example if the mesh unit is 1 mm, the reynolds_mesh_unit should be
             equal to a Reynolds number that has the characteristic length of 1 mm.
-        project_length_unit: LengthType.Positive
+        project_length_unit: Length.PositiveFloat64
             Project length unit used to compute the density (must be positive).
-        alpha : AngleType, optional
+        alpha : Angle.Float64, optional
             Angle of attack. Default is 0 degrees.
-        beta : AngleType, optional
+        beta : Angle.Float64, optional
             Sideslip angle. Default is 0 degrees.
-        temperature : AbsoluteTemperatureType, optional
+        temperature : AbsoluteTemperature.Float64, optional
             Freestream static temperature (must be a positive temperature value). Default is 288.15 Kelvin.
         reference_mach : PositiveFloat, optional
             Reference Mach number. Default is None.
@@ -479,7 +480,7 @@ class AerospaceCondition(MultiConstructorBaseModel):
         )
 
     @property
-    def _evaluated_velocity_magnitude(self) -> VelocityType.Positive:
+    def _evaluated_velocity_magnitude(self) -> Velocity.PositiveFloat64:
         if isinstance(self.velocity_magnitude, Expression):
             return self.velocity_magnitude.evaluate(
                 raise_on_non_evaluable=True, force_evaluate=True
@@ -515,7 +516,7 @@ class AerospaceCondition(MultiConstructorBaseModel):
         return value
 
     @pd.validate_call
-    def flow360_reynolds_number(self, length_unit: LengthType.Positive):
+    def flow360_reynolds_number(self, length_unit: Length.PositiveFloat64):
         """
         Computes length_unit based Reynolds number.
         :math:`Re = \\rho_{\\infty} \\cdot U_{\\infty} \\cdot L_{grid}/\\mu_{\\infty}` where
@@ -527,7 +528,7 @@ class AerospaceCondition(MultiConstructorBaseModel):
 
         Parameters
         ----------
-        length_unit : LengthType.Positive
+        length_unit : Length.PositiveFloat64
             Physical length represented by unit length in the given mesh/geometry file.
         """
 
@@ -560,15 +561,15 @@ class LiquidOperatingCondition(Flow360BaseModel):
     type_name: Literal["LiquidOperatingCondition"] = pd.Field(
         "LiquidOperatingCondition", frozen=True
     )
-    alpha: AngleType = ConditionalField(0 * u.deg, description="The angle of attack.", context=CASE)
-    beta: AngleType = ConditionalField(0 * u.deg, description="The side slip angle.", context=CASE)
-    velocity_magnitude: Optional[ValueOrExpression[VelocityType.NonNegative]] = ConditionalField(
+    alpha: Angle.Float64 = ConditionalField(0 * u.deg, description="The angle of attack.", context=CASE)
+    beta: Angle.Float64 = ConditionalField(0 * u.deg, description="The side slip angle.", context=CASE)
+    velocity_magnitude: Optional[ValueOrExpression[Velocity.NonNegativeFloat64]] = ConditionalField(
         context=CASE,
         description="Incoming flow velocity magnitude. Used as reference velocity magnitude"
         + " when :py:attr:`reference_velocity_magnitude` is not specified. Cannot change once specified.",
         frozen=True,
     )
-    reference_velocity_magnitude: Optional[VelocityType.Positive] = CaseField(
+    reference_velocity_magnitude: Optional[Velocity.PositiveFloat64] = CaseField(
         None,
         description="Reference velocity magnitude. Is required when :py:attr:`velocity_magnitude` is 0."
         " Used as the velocity scale for nondimensionalization.",
@@ -580,7 +581,7 @@ class LiquidOperatingCondition(Flow360BaseModel):
     )
 
     @property
-    def _evaluated_velocity_magnitude(self) -> VelocityType.Positive:
+    def _evaluated_velocity_magnitude(self) -> Velocity.PositiveFloat64:
         if isinstance(self.velocity_magnitude, Expression):
             return self.velocity_magnitude.evaluate(
                 raise_on_non_evaluable=True, force_evaluate=True
