@@ -8,6 +8,7 @@ on:
       - synchronize
       - labeled
       - unlabeled
+      - ready_for_review
     branches:
       - main
       - 'release-candidate/*'
