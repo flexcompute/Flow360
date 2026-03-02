@@ -194,6 +194,14 @@ class MeshingDefaults(Flow360BaseModel):
         context=SURFACE_MESH,
     )
 
+    target_surface_node_count: Optional[pd.PositiveInt] = ContextField(
+        None,
+        description="Target number of surface mesh nodes. When specified, the surface mesher "
+        "will rescale the meshing parameters to achieve approximately this number of nodes. "
+        "This option is only supported when using geometry AI and can not be overridden per face.",
+        context=SURFACE_MESH,
+    )
+
     curvature_resolution_angle: AngleType.Positive = ContextField(
         12 * u.deg,
         description=(
@@ -307,11 +315,29 @@ class MeshingDefaults(Flow360BaseModel):
 
         if value is None and param_info.use_geometry_AI:
             raise ValueError("Geometry accuracy is required when geometry AI is used.")
+
+        if (
+            value is not None
+            and param_info.global_bounding_box is not None
+            and param_info.project_length_unit is not None
+        ):
+            relative_bounding_box_limit = 1e-6
+            bbox_diag = param_info.global_bounding_box.diagonal * param_info.project_length_unit
+            ga_value = value
+            lower_limit = relative_bounding_box_limit * bbox_diag
+            if ga_value < lower_limit:
+                add_validation_warning(
+                    f"geometry_accuracy ({ga_value}) is below the recommended value "
+                    f"of {relative_bounding_box_limit} * bounding box diagonal ({lower_limit:.2e}). "
+                    f"Please increase geometry_accuracy."
+                )
+
         return value
 
     @contextual_field_validator(
         "surface_max_aspect_ratio",
         "surface_max_adaptation_iterations",
+        "target_surface_node_count",
         "resolve_face_boundaries",
         "preserve_thin_geometry",
         "sealing_size",
