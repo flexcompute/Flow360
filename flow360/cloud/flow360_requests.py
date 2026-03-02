@@ -153,6 +153,22 @@ class NewVolumeMeshRequestV2(Flow360RequestsV2):
     format: Literal["cgns", "aflr3"] = pd_v2.Field(description="data format")
 
 
+class CloneVolumeMeshRequest(Flow360RequestsV2):
+    """[Simulation V2] Creates new project by cloning an existing volume mesh."""
+
+    name: str = pd_v2.Field(description="project name")
+    solver_version: str = pd_v2.Field(
+        alias="solverVersion", description="solver version used for the project"
+    )
+    tags: List[str] = pd_v2.Field(default=[], description="project tags")
+    parent_folder_id: str = pd_v2.Field(alias="parentFolderId", default="ROOT.FLOW360")
+    length_unit: LengthUnitType = pd_v2.Field(alias="lengthUnit", description="project length unit")
+    description: str = pd_v2.Field(default="", description="project description")
+    original_volume_mesh_id: str = pd_v2.Field(
+        alias="originalVolumeMeshId", description="ID of the volume mesh to clone"
+    )
+
+
 class NewGeometryDependencyRequest(Flow360RequestsV2):
     """[Simulation V2] Import geometry dependency to a project's draft."""
 
