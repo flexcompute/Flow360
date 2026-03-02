@@ -1054,21 +1054,7 @@ class Project(pd.BaseModel):
             )
             return vm_info.project_id
 
-        root_asset = VolumeMeshV2.from_cloud(vm_info.id)
-        project_id = root_asset.project_id
-        project_api = RestApi(ProjectInterface.endpoint, id=project_id)
-        project_info = project_api.get()
-        project = Project(
-            metadata=ProjectMeta(**project_info),
-            project_tree=ProjectTree(),
-            solver_version=root_asset.solver_version,
-        )
-        project._project_webapi = project_api
-        project._root_webapi = RestApi(VolumeMeshInterfaceV2.endpoint, id=root_asset.id)
-        project._root_asset = root_asset
-        project._get_root_simulation_json()
-        project._get_tree_from_cloud()
-        return project
+        return cls.from_cloud(vm_info.project_id)
 
     @classmethod
     def _resolve_from_volume_mesh_defaults(
@@ -1086,8 +1072,10 @@ class Project(pd.BaseModel):
         resolved_length_unit = length_unit
         resolved_tags = tags
         default_values = {}
+        project_creation_method = ""
 
         if isinstance(file, VolumeMeshV2):
+            project_creation_method = "by cloning a cloud volume mesh"
             volume_mesh = file
             if resolved_solver_version is None:
                 resolved_solver_version = volume_mesh.solver_version
@@ -1102,6 +1090,7 @@ class Project(pd.BaseModel):
                 resolved_name = volume_mesh.info.name
                 default_values["name"] = resolved_name
         else:
+            project_creation_method = "from local volume mesh file"
             if resolved_solver_version is None:
                 resolved_solver_version = __solver_version__
                 default_values["solver_version"] = resolved_solver_version
@@ -1113,12 +1102,20 @@ class Project(pd.BaseModel):
             resolved_tags = []
             default_values["tags"] = resolved_tags
 
+        if default_values:
+            defaults_summary = ", ".join(
+                f"{key}={value!r}" for key, value in default_values.items()
+            )
+            log.info(
+                f"The following default values are applied "
+                f"when creating project {project_creation_method}: {defaults_summary}"
+            )
+
         return (
             resolved_name,
             resolved_solver_version,
             resolved_length_unit,
             resolved_tags,
-            default_values,
         )
 
     @classmethod
@@ -1336,7 +1333,6 @@ class Project(pd.BaseModel):
             resolved_solver_version,
             resolved_length_unit,
             resolved_tags,
-            default_values,
         ) = cls._resolve_from_volume_mesh_defaults(
             file=file,
             name=name,
@@ -1344,15 +1340,6 @@ class Project(pd.BaseModel):
             length_unit=length_unit,
             tags=tags,
         )
-
-        if default_values:
-            defaults_summary = ", ".join(
-                f"{key}={value!r}" for key, value in default_values.items()
-            )
-            log.info(
-                f"The following default values are applied "
-                f"when creating project from volume mesh: {defaults_summary}"
-            )
 
         if isinstance(file, VolumeMeshV2):
             return cls._create_project_from_volume_mesh_clone(
