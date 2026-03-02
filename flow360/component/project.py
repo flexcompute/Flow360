@@ -1001,12 +1001,12 @@ class Project(pd.BaseModel):
         cls,
         *,
         volume_mesh: VolumeMeshV2,
-        name: str = None,
-        solver_version: str = None,
-        length_unit: LengthUnitType = None,
-        tags: List[str] = None,
-        run_async: bool = False,
-        folder: Optional[Folder] = None,
+        name: str,
+        solver_version: str,
+        length_unit: LengthUnitType,
+        tags: Optional[List[str]],
+        run_async: bool,
+        folder: Optional[Folder],
     ):
         """
         Creates a project by cloning an existing cloud volume mesh.
@@ -1016,15 +1016,15 @@ class Project(pd.BaseModel):
         volume_mesh : VolumeMeshV2
             The cloud volume mesh to clone.
         name : str, optional
-            Name of the project (default: original volume mesh name).
+            Name of the project.
         solver_version : str, optional
-            Version of the solver (default: from original volume mesh).
+            Version of the solver.
         length_unit : LengthUnitType, optional
-            Unit of length (default: from original project).
+            Unit of length.
         tags : list of str, optional
             Tags to assign to the project.
-        run_async : bool, optional
-            Whether to create the project asynchronously (default is False).
+        run_async : bool
+            Whether to create the project asynchronously.
         folder : Optional[Folder], optional
             Parent folder for the project. If None, creates in root.
 
@@ -1034,20 +1034,10 @@ class Project(pd.BaseModel):
             An instance of the project. Or Project ID when run_async is True.
         """
 
-        if solver_version is None:
-            solver_version = volume_mesh.solver_version
-
-        if length_unit is None:
-            source_project = Project.from_cloud(project_id=volume_mesh.info.project_id)
-            length_unit = str(source_project.length_unit.units)
-
-        if name is None:
-            name = volume_mesh.info.name
-
         req = CloneVolumeMeshRequest(
             name=name,
             solver_version=solver_version,
-            tags=tags or [],
+            tags=tags,
             parent_folder_id=folder.id if folder else "ROOT.FLOW360",
             length_unit=length_unit,
             original_volume_mesh_id=volume_mesh.id,
@@ -1079,6 +1069,57 @@ class Project(pd.BaseModel):
         project._get_root_simulation_json()
         project._get_tree_from_cloud()
         return project
+
+    @classmethod
+    def _resolve_from_volume_mesh_defaults(
+        cls,
+        *,
+        file: Union[str, VolumeMeshV2],
+        name: Optional[str],
+        solver_version: Optional[str],
+        length_unit: Optional[LengthUnitType],
+        tags: Optional[List[str]],
+    ):
+        """Resolve branch-specific defaults for from_volume_mesh()."""
+        resolved_name = name
+        resolved_solver_version = solver_version
+        resolved_length_unit = length_unit
+        resolved_tags = tags
+        default_values = {}
+
+        if isinstance(file, VolumeMeshV2):
+            volume_mesh = file
+            if resolved_solver_version is None:
+                resolved_solver_version = volume_mesh.solver_version
+                default_values["solver_version"] = resolved_solver_version
+
+            if resolved_length_unit is None:
+                source_project = Project.from_cloud(project_id=volume_mesh.info.project_id)
+                resolved_length_unit = str(source_project.length_unit.units)
+                default_values["length_unit"] = resolved_length_unit
+
+            if resolved_name is None:
+                resolved_name = volume_mesh.info.name
+                default_values["name"] = resolved_name
+        else:
+            if resolved_solver_version is None:
+                resolved_solver_version = __solver_version__
+                default_values["solver_version"] = resolved_solver_version
+            if resolved_length_unit is None:
+                resolved_length_unit = "m"
+                default_values["length_unit"] = resolved_length_unit
+
+        if resolved_tags is None:
+            resolved_tags = []
+            default_values["tags"] = resolved_tags
+
+        return (
+            resolved_name,
+            resolved_solver_version,
+            resolved_length_unit,
+            resolved_tags,
+            default_values,
+        )
 
     @classmethod
     @pd.validate_call(
@@ -1226,14 +1267,15 @@ class Project(pd.BaseModel):
 
     @classmethod
     @pd.validate_call(config={"arbitrary_types_allowed": True})
+    # pylint: disable=too-many-locals
     def from_volume_mesh(
         cls,
         file: Union[str, VolumeMeshV2],
         /,
         name: str = None,
-        solver_version: str = __solver_version__,
-        length_unit: LengthUnitType = "m",
-        tags: List[str] = None,
+        solver_version: Optional[str] = None,
+        length_unit: Optional[LengthUnitType] = None,
+        tags: Optional[List[str]] = None,
         run_async: bool = False,
         folder: Optional[Folder] = None,
     ):
@@ -1250,7 +1292,8 @@ class Project(pd.BaseModel):
             The solver_version and length_unit default to the values from the original
             volume mesh's project.
         name : str, optional
-            Name of the project (default is None).
+            Name of the project (default is None for file input,
+            or the original project's solver version for VolumeMeshV2 input).
         solver_version : str, optional
             Version of the solver (default is the current solver version for file input,
             or the original volume mesh's solver version for VolumeMeshV2 input).
@@ -1258,8 +1301,9 @@ class Project(pd.BaseModel):
             Unit of length (default is "m" for file input, or the original project's
             length unit for VolumeMeshV2 input).
         tags : list of str, optional
-            Tags to assign to the project (default is None).
-        run_async : bool, optional
+            Tags to assign to the project (default is None for file input,
+            or the original volume mesh's tags for VolumeMeshV2 input).
+        run_async : bool
             Whether to create project asynchronously (default is False).
         folder : Optional[Folder], optional
             Parent folder for the project. If None, creates in root.
@@ -1287,14 +1331,36 @@ class Project(pd.BaseModel):
         >>> volume_mesh = fl.VolumeMeshV2.from_cloud("vm-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx")
         >>> my_project = fl.Project.from_volume_mesh(volume_mesh, name="Cloned_Project")
         """
+        (
+            resolved_name,
+            resolved_solver_version,
+            resolved_length_unit,
+            resolved_tags,
+            default_values,
+        ) = cls._resolve_from_volume_mesh_defaults(
+            file=file,
+            name=name,
+            solver_version=solver_version,
+            length_unit=length_unit,
+            tags=tags,
+        )
+
+        if default_values:
+            defaults_summary = ", ".join(
+                f"{key}={value!r}" for key, value in default_values.items()
+            )
+            log.info(
+                f"The following default values are applied "
+                f"when creating project from volume mesh: {defaults_summary}"
+            )
 
         if isinstance(file, VolumeMeshV2):
             return cls._create_project_from_volume_mesh_clone(
                 volume_mesh=file,
-                name=name,
-                solver_version=solver_version,
-                length_unit=length_unit if length_unit != "m" else None,
-                tags=tags,
+                name=resolved_name,
+                solver_version=resolved_solver_version,
+                length_unit=resolved_length_unit,
+                tags=resolved_tags,
                 run_async=run_async,
                 folder=folder,
             )
@@ -1307,10 +1373,10 @@ class Project(pd.BaseModel):
 
         return cls._create_project_from_files(
             files=validated_files,
-            name=name,
-            solver_version=solver_version,
-            length_unit=length_unit,
-            tags=tags,
+            name=resolved_name,
+            solver_version=resolved_solver_version,
+            length_unit=resolved_length_unit,
+            tags=resolved_tags,
             run_async=run_async,
             folder=folder,
         )
