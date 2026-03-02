@@ -1072,10 +1072,8 @@ class Project(pd.BaseModel):
         resolved_length_unit = length_unit
         resolved_tags = tags
         default_values = {}
-        project_creation_method = ""
 
         if isinstance(file, VolumeMeshV2):
-            project_creation_method = "by cloning a cloud volume mesh"
             volume_mesh = file
             if resolved_solver_version is None:
                 resolved_solver_version = volume_mesh.solver_version
@@ -1090,9 +1088,16 @@ class Project(pd.BaseModel):
             if resolved_tags is None:
                 resolved_tags = volume_mesh.tags
                 default_values["tags"] = resolved_tags
+            if default_values:
+                defaults_summary = "\n\t".join(
+                    f"{key}={value!r}" for key, value in default_values.items()
+                )
+                log.info(
+                    f"The following default values are applied to create the project "
+                    f"from cloning a cloud volume mesh:\n\t{defaults_summary}"
+                )
 
         else:
-            project_creation_method = "from local volume mesh file"
             if resolved_solver_version is None:
                 resolved_solver_version = __solver_version__
                 default_values["solver_version"] = resolved_solver_version
@@ -1102,15 +1107,6 @@ class Project(pd.BaseModel):
             if resolved_tags is None:
                 resolved_tags = []
                 default_values["tags"] = resolved_tags
-
-        if default_values:
-            defaults_summary = ", ".join(
-                f"{key}={value!r}" for key, value in default_values.items()
-            )
-            log.info(
-                f"The following default values are applied "
-                f"when creating project {project_creation_method}: {defaults_summary}"
-            )
 
         return (
             resolved_name,
