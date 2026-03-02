@@ -106,7 +106,7 @@ udf_prepending_code = {
     "solution.temperature": "double ___temperature;"
     "___temperature =  primitiveVars[4] / (primitiveVars[0] * (1.0 / 1.4));",
     "solution.temperature_solid": "double ___temperature;"
-    + f"double ___epsilon = {np.finfo(np.float64).eps};"
+    + f"double ___epsilon = {np.finfo(np.float64).eps};"  # pylint: disable=no-member
     "___temperature = (primitiveVars[0] < ___epsilon) ? "
     "solutionHeatSolver : primitiveVars[4] / (primitiveVars[0] * (1.0 / 1.4));",
     "solution.vorticity": "double ___vorticity[3];"
@@ -129,7 +129,7 @@ udf_prepending_code = {
     "solution.heat_transfer_coefficient_static_temperature": "double ___heat_transfer_coefficient_static_temperature;"
     + "double ___temperatureTmp = "
     + "primitiveVars[4] / (primitiveVars[0] * 1.0 / 1.4);"
-    + f"double ___epsilon = {np.finfo(np.float64).eps};"
+    + f"double ___epsilon = {np.finfo(np.float64).eps};"  # pylint: disable=no-member
     + "double ___temperatureSafeDivide = (___temperatureTmp - 1.0 < 0) ? "
     + "___temperatureTmp - 1.0 - ___epsilon : "
     + "___temperatureTmp - 1.0 + ___epsilon;"
@@ -140,7 +140,7 @@ udf_prepending_code = {
     + "double ___temperatureTmp = "
     + "primitiveVars[4] / (primitiveVars[0] * 1.0 / 1.4);"
     + "double ___temperatureTotal = 1.0 + (1.4 - 1.0) / 2.0 * MachRef * MachRef;"
-    + f"double ___epsilon = {np.finfo(np.float64).eps};"
+    + f"double ___epsilon = {np.finfo(np.float64).eps};"  # pylint: disable=no-member
     + "double ___temperatureSafeDivide = (___temperatureTmp - ___temperatureTotal < 0) ? "
     + "___temperatureTmp - ___temperatureTotal - ___epsilon : "
     + "___temperatureTmp - ___temperatureTotal + ___epsilon;"

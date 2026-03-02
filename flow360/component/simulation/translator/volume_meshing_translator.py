@@ -31,7 +31,6 @@ from flow360.component.simulation.primitives import (
     Cylinder,
     SeedpointVolume,
     Sphere,
-    Surface,
 )
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.translator.solver_translator import inject_slice_info
@@ -277,13 +276,34 @@ def rotation_volume_entity_injector(
     return {}
 
 
+def _build_farfield_zone(volume_zones: list):
+    """Build the farfield zone dict from enclosed_entities on any farfield type.
+
+    CustomVolume entities are unwrapped into their constituent enclosed_entities,
+    each translated via _translate_enclosed_entity_name. Final patches are deduplicated.
+    """
+    for zone in volume_zones:
+        if isinstance(zone, _FarfieldBase) and zone.enclosed_entities is not None:
+            patch_names: set[str] = set()
+            for entity in zone.enclosed_entities.stored_entities:
+                if isinstance(entity, CustomVolume):
+                    for child in entity.enclosed_entities.stored_entities:
+                        patch_names.add(_translate_enclosed_entity_name(child))
+                else:
+                    patch_names.add(_translate_enclosed_entity_name(entity))
+            return {
+                "name": "farfield",
+                "patches": sorted(patch_names),
+            }
+    return None
+
+
 def _get_custom_volumes(volume_zones: list):
     """Get translated custom volumes from volume zones."""
 
     custom_volumes = []
     for zone in volume_zones:
         if isinstance(zone, CustomZones):
-            # Extract CustomVolume and SeedpointVolume from CustomZones
             enforce_tetrahedral = getattr(zone, "element_type") == "tetrahedra"
             for custom_volume in zone.entities.stored_entities:
                 if isinstance(custom_volume, CustomVolume):
@@ -310,28 +330,11 @@ def _get_custom_volumes(volume_zones: list):
                         }
                     )
 
-    # Create "farfield" zone from enclosed_entities on any farfield type.
-    # CustomVolume entities are unwrapped into their constituent enclosed_entities,
-    # each translated via _translate_enclosed_entity_name. Final patches are deduplicated.
-    for zone in volume_zones:
-        if isinstance(zone, _FarfieldBase) and zone.enclosed_entities is not None:
-            patch_names: set[str] = set()
-            for entity in zone.enclosed_entities.stored_entities:
-                if isinstance(entity, CustomVolume):
-                    for child in entity.enclosed_entities.stored_entities:
-                        patch_names.add(_translate_enclosed_entity_name(child))
-                else:
-                    patch_names.add(_translate_enclosed_entity_name(entity))
-            custom_volumes.append(
-                {
-                    "name": "farfield",
-                    "patches": sorted(patch_names),
-                }
-            )
-            break
+    farfield_zone = _build_farfield_zone(volume_zones)
+    if farfield_zone is not None:
+        custom_volumes.append(farfield_zone)
 
     if custom_volumes:
-        # Sort custom volumes by name
         custom_volumes.sort(key=lambda x: x["name"])
     return custom_volumes
 

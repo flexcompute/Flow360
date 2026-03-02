@@ -1093,7 +1093,7 @@ class CustomVolume(_VolumeEntityBase):
     def _validate_enclosed_entity_existence(cls, value, param_info: ParamsValidationInfo):
         """Ensure all boundaries will be present after mesher."""
         # Lazy import to avoid circular dependency
-        from flow360.component.simulation.validation.validation_utils import (
+        from flow360.component.simulation.validation.validation_utils import (  # pylint: disable=import-outside-toplevel
             validate_entity_list_surface_existence,
         )
 

@@ -4426,7 +4426,7 @@ def test_user_defined_farfield_enclosed_entities_requires_custom_zones():
         validation_level="VolumeMesh",
     )
     assert errors is not None
-    assert any("only allowed when `CustomZones` are used" in e["msg"] for e in errors)
+    assert any("only allowed when `CustomZones` are present" in e["msg"] for e in errors)
 
 
 def test_wind_tunnel_farfield_enclosed_entities_requires_custom_zones():
@@ -4455,7 +4455,7 @@ def test_wind_tunnel_farfield_enclosed_entities_requires_custom_zones():
         validation_level="VolumeMesh",
     )
     assert errors is not None
-    assert any("only allowed when `CustomZones` are used" in e["msg"] for e in errors)
+    assert any("only allowed when `CustomZones` are present" in e["msg"] for e in errors)
 
 
 def test_custom_volume_enclosed_entities_rotation_volume_association_positive():

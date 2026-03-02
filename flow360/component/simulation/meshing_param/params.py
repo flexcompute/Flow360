@@ -129,6 +129,86 @@ def _check_custom_volume_no_intersection(enclosed_entities, param_info: "ParamsV
             )
 
 
+def _collect_rotation_entity_names(zones, param_info, zone_types):
+    """Collect entity names associated with RotationVolume/RotationCylinder zones."""
+    names: set[str] = set()
+    for zone in zones:
+        if isinstance(zone, zone_types):
+            for entity in param_info.expand_entity_list(zone.entities):
+                names.add(entity.name)
+    return names
+
+
+def _validate_farfield_enclosed_entities(zones, rotation_entity_names, has_custom_zones, param_info):
+    """Validate farfield enclosed_entities: require CustomZones and rotation-volume association."""
+    for zone in zones:
+        if not isinstance(zone, _FarfieldBase):
+            continue
+        if zone.enclosed_entities is None:
+            continue
+
+        if not has_custom_zones:
+            raise ValueError(
+                "`enclosed_entities` for farfield is only allowed when "
+                "`CustomZones` are present in volume zones."
+            )
+
+        for entity in param_info.expand_entity_list(zone.enclosed_entities):
+            if (
+                isinstance(entity, (Cylinder, AxisymmetricBody, Sphere))
+                and entity.name not in rotation_entity_names
+            ):
+                raise ValueError(
+                    f"`{type(entity).__name__}` entity `{entity.name}` in "
+                    f"`enclosed_entities` must be associated with a `RotationVolume`."
+                )
+
+
+def _collect_all_custom_volumes(zones):
+    """Collect all CustomVolume instances from CustomZones and farfield enclosed_entities."""
+    custom_volumes: list[CustomVolume] = []
+    for zone in zones:
+        if isinstance(zone, CustomZones):
+            for cv in zone.entities.stored_entities:
+                if isinstance(cv, CustomVolume):
+                    custom_volumes.append(cv)
+        if isinstance(zone, _FarfieldBase) and zone.enclosed_entities is not None:
+            for entity in zone.enclosed_entities.stored_entities:
+                if isinstance(entity, CustomVolume):
+                    custom_volumes.append(entity)
+    return custom_volumes
+
+
+def _validate_custom_volume_rotation_association(custom_volumes, rotation_entity_names, param_info):
+    """Validate that Cylinder/AxisymmetricBody/Sphere in CustomVolume.enclosed_entities
+    are associated with a RotationVolume."""
+    for cv in custom_volumes:
+        for entity in param_info.expand_entity_list(cv.enclosed_entities):
+            if (
+                isinstance(entity, (Cylinder, AxisymmetricBody, Sphere))
+                and entity.name not in rotation_entity_names
+            ):
+                raise ValueError(
+                    f"`{type(entity).__name__}` entity `{entity.name}` in "
+                    f"`CustomVolume` `{cv.name}` `enclosed_entities` must be "
+                    f"associated with a `RotationVolume`."
+                )
+
+
+def _validate_farfield_no_intersection(zones, param_info):
+    """Check no-intersection between CustomVolume enclosed_entities and sibling entities
+    in the same parent enclosed_entities list.
+    Currently applies to farfield enclosed_entities.
+    """
+    # TODO: extend to CustomVolume.enclosed_entities when nested CustomVolumes are supported.
+    for zone in zones:
+        if not isinstance(zone, _FarfieldBase):
+            continue
+        if zone.enclosed_entities is None:
+            continue
+        _check_custom_volume_no_intersection(zone.enclosed_entities, param_info)
+
+
 class MeshingParams(Flow360BaseModel):
     """
     Meshing parameters for volume and/or surface mesher. This contains all the meshing related settings.
@@ -288,68 +368,15 @@ class MeshingParams(Flow360BaseModel):
             return self
 
         has_custom_zones = any(isinstance(zone, CustomZones) for zone in self.volume_zones)
-
-        rotation_entity_names: set[str] = set()
-        for zone in self.volume_zones:
-            if isinstance(zone, (RotationVolume, RotationCylinder)):
-                for entity in param_info.expand_entity_list(zone.entities):
-                    rotation_entity_names.add(entity.name)
-
-        for zone in self.volume_zones:
-            if not isinstance(zone, _FarfieldBase):
-                continue
-            if zone.enclosed_entities is None:
-                continue
-
-            if not has_custom_zones:
-                raise ValueError(
-                    "`enclosed_entities` for farfield is only allowed when `CustomZones` are used in `volume_zones`."
-                )
-
-            for entity in param_info.expand_entity_list(zone.enclosed_entities):
-                if (
-                    isinstance(entity, (Cylinder, AxisymmetricBody, Sphere))
-                    and entity.name not in rotation_entity_names
-                ):
-                    raise ValueError(
-                        f"`{type(entity).__name__}` entity `{entity.name}` in "
-                        f"`enclosed_entities` must be associated with a `RotationVolume`."
-                    )
-
-        # Check CustomVolume.enclosed_entities from all sources
-        custom_volumes: list[CustomVolume] = []
-        for zone in self.volume_zones:
-            if isinstance(zone, CustomZones):
-                for cv in zone.entities.stored_entities:
-                    if isinstance(cv, CustomVolume):
-                        custom_volumes.append(cv)
-            if isinstance(zone, _FarfieldBase) and zone.enclosed_entities is not None:
-                for entity in zone.enclosed_entities.stored_entities:
-                    if isinstance(entity, CustomVolume):
-                        custom_volumes.append(entity)
-
-        for cv in custom_volumes:
-            for entity in param_info.expand_entity_list(cv.enclosed_entities):
-                if (
-                    isinstance(entity, (Cylinder, AxisymmetricBody, Sphere))
-                    and entity.name not in rotation_entity_names
-                ):
-                    raise ValueError(
-                        f"`{type(entity).__name__}` entity `{entity.name}` in "
-                        f"`CustomVolume` `{cv.name}` `enclosed_entities` must be "
-                        f"associated with a `RotationVolume`."
-                    )
-
-        # Check no-intersection between CustomVolume enclosed_entities and sibling entities
-        # in the same parent enclosed_entities list.
-        # Currently applies to farfield enclosed_entities.
-        # TODO: extend to CustomVolume.enclosed_entities when nested CustomVolumes are supported.
-        for zone in self.volume_zones:
-            if not isinstance(zone, _FarfieldBase):
-                continue
-            if zone.enclosed_entities is None:
-                continue
-            _check_custom_volume_no_intersection(zone.enclosed_entities, param_info)
+        rotation_entity_names = _collect_rotation_entity_names(
+            self.volume_zones, param_info, (RotationVolume, RotationCylinder)
+        )
+        _validate_farfield_enclosed_entities(
+            self.volume_zones, rotation_entity_names, has_custom_zones, param_info
+        )
+        custom_volumes = _collect_all_custom_volumes(self.volume_zones)
+        _validate_custom_volume_rotation_association(custom_volumes, rotation_entity_names, param_info)
+        _validate_farfield_no_intersection(self.volume_zones, param_info)
 
         return self
 
@@ -657,68 +684,15 @@ class ModularMeshingWorkflow(Flow360BaseModel):
           are associated with a RotationVolume
         """
         has_custom_zones = any(isinstance(zone, CustomZones) for zone in self.zones)
-
-        rotation_entity_names: set[str] = set()
-        for zone in self.zones:
-            if isinstance(zone, RotationVolume):
-                for entity in param_info.expand_entity_list(zone.entities):
-                    rotation_entity_names.add(entity.name)
-
-        for zone in self.zones:
-            if not isinstance(zone, _FarfieldBase):
-                continue
-            if zone.enclosed_entities is None:
-                continue
-
-            if not has_custom_zones:
-                raise ValueError(
-                    "`enclosed_entities` is only allowed when `CustomZones` are used in `zones`."
-                )
-
-            for entity in param_info.expand_entity_list(zone.enclosed_entities):
-                if (
-                    isinstance(entity, (Cylinder, AxisymmetricBody, Sphere))
-                    and entity.name not in rotation_entity_names
-                ):
-                    raise ValueError(
-                        f"`{type(entity).__name__}` entity `{entity.name}` in "
-                        f"`enclosed_entities` must be associated with a `RotationVolume`."
-                    )
-
-        # Check CustomVolume.enclosed_entities from all sources
-        custom_volumes: list[CustomVolume] = []
-        for zone in self.zones:
-            if isinstance(zone, CustomZones):
-                for cv in zone.entities.stored_entities:
-                    if isinstance(cv, CustomVolume):
-                        custom_volumes.append(cv)
-            if isinstance(zone, _FarfieldBase) and zone.enclosed_entities is not None:
-                for entity in zone.enclosed_entities.stored_entities:
-                    if isinstance(entity, CustomVolume):
-                        custom_volumes.append(entity)
-
-        for cv in custom_volumes:
-            for entity in param_info.expand_entity_list(cv.enclosed_entities):
-                if (
-                    isinstance(entity, (Cylinder, AxisymmetricBody, Sphere))
-                    and entity.name not in rotation_entity_names
-                ):
-                    raise ValueError(
-                        f"`{type(entity).__name__}` entity `{entity.name}` in "
-                        f"`CustomVolume` `{cv.name}` `enclosed_entities` must be "
-                        f"associated with a `RotationVolume`."
-                    )
-
-        # Check no-intersection between CustomVolume enclosed_entities and sibling entities
-        # in the same parent enclosed_entities list.
-        # Currently applies to farfield enclosed_entities.
-        # TODO: extend to CustomVolume.enclosed_entities when nested CustomVolumes are supported.
-        for zone in self.zones:
-            if not isinstance(zone, _FarfieldBase):
-                continue
-            if zone.enclosed_entities is None:
-                continue
-            _check_custom_volume_no_intersection(zone.enclosed_entities, param_info)
+        rotation_entity_names = _collect_rotation_entity_names(
+            self.zones, param_info, (RotationVolume,)
+        )
+        _validate_farfield_enclosed_entities(
+            self.zones, rotation_entity_names, has_custom_zones, param_info
+        )
+        custom_volumes = _collect_all_custom_volumes(self.zones)
+        _validate_custom_volume_rotation_association(custom_volumes, rotation_entity_names, param_info)
+        _validate_farfield_no_intersection(self.zones, param_info)
 
         return self
 
