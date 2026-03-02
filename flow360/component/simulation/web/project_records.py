@@ -38,7 +38,7 @@ class ProjectInfo(pd.BaseModel):
     name: str
     project_id: str = pd.Field(alias="id")
     tags: list[str] = pd.Field()
-    description: str = pd.Field()
+    description: Optional[str] = pd.Field(None)
     statistics: ProjectStatistics = pd.Field()
     solver_version: Optional[str] = pd.Field(
         None,
