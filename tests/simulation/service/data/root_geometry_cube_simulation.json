@@ -1151,5 +1151,9 @@
         "name": "SI"
     },
     "user_defined_fields": [],
+<<<<<<< HEAD
     "version": "25.9.1b1"
+=======
+    "version": "25.8.6"
+>>>>>>> 24f0a9f2 (chore(): Bump to 25.8.6 (#1861))
 }
