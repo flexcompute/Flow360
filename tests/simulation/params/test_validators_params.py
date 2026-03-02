@@ -4388,3 +4388,58 @@ def test_wind_tunnel_farfield_rotation_volume_association_positive():
         validation_level="VolumeMesh",
     )
     assert errors is None
+
+
+def test_user_defined_farfield_enclosed_entities_requires_custom_zones():
+    """UserDefinedFarfield: enclosed_entities without CustomZones should fail."""
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-4,
+                ),
+                volume_zones=[
+                    UserDefinedFarfield(
+                        enclosed_entities=[Surface(name="face1")],
+                    ),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+        )
+    _, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="SurfaceMesh",
+        validation_level="VolumeMesh",
+    )
+    assert errors is not None
+    assert any("only allowed when `CustomZones` are used" in e["msg"] for e in errors)
+
+
+def test_wind_tunnel_farfield_enclosed_entities_requires_custom_zones():
+    """WindTunnelFarfield: enclosed_entities without CustomZones should fail."""
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-4,
+                    geometry_accuracy=1e-4,
+                ),
+                volume_zones=[
+                    WindTunnelFarfield(
+                        name="wind tunnel",
+                        floor_type=FullyMovingFloor(),
+                        enclosed_entities=[Surface(name="face1")],
+                    ),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True, use_geometry_AI=True),
+        )
+    _, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="SurfaceMesh",
+        validation_level="VolumeMesh",
+    )
+    assert errors is not None
+    assert any("only allowed when `CustomZones` are used" in e["msg"] for e in errors)

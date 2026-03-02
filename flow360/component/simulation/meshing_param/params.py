@@ -251,11 +251,15 @@ class MeshingParams(Flow360BaseModel):
         self, param_info: ParamsValidationInfo
     ) -> Self:
         """
-        Ensure Cylinder, AxisymmetricBody, and Sphere entities in farfield
-        enclosed_entities are associated with a RotationVolume.
+        Ensure that:
+        - enclosed_entities on any farfield requires at least one CustomZone
+        - Cylinder, AxisymmetricBody, and Sphere entities in enclosed_entities
+          are associated with a RotationVolume
         """
         if self.volume_zones is None:
             return self
+
+        has_custom_zones = any(isinstance(zone, CustomZones) for zone in self.volume_zones)
 
         rotation_entity_names: set[str] = set()
         for zone in self.volume_zones:
@@ -268,6 +272,12 @@ class MeshingParams(Flow360BaseModel):
                 continue
             if zone.enclosed_entities is None:
                 continue
+
+            if not has_custom_zones:
+                raise ValueError(
+                    "`enclosed_entities` for farfield is only allowed when `CustomZones` are used in `volume_zones`."
+                )
+
             for entity in param_info.expand_entity_list(zone.enclosed_entities):
                 if (
                     isinstance(entity, (Cylinder, AxisymmetricBody, Sphere))
@@ -578,9 +588,13 @@ class ModularMeshingWorkflow(Flow360BaseModel):
         self, param_info: ParamsValidationInfo
     ) -> Self:
         """
-        Ensure Cylinder, AxisymmetricBody, and Sphere entities in farfield
-        enclosed_entities are associated with a RotationVolume.
+        Ensure that:
+        - enclosed_entities on any farfield requires at least one CustomZone
+        - Cylinder, AxisymmetricBody, and Sphere entities in enclosed_entities
+          are associated with a RotationVolume
         """
+        has_custom_zones = any(isinstance(zone, CustomZones) for zone in self.zones)
+
         rotation_entity_names: set[str] = set()
         for zone in self.zones:
             if isinstance(zone, RotationVolume):
@@ -592,6 +606,12 @@ class ModularMeshingWorkflow(Flow360BaseModel):
                 continue
             if zone.enclosed_entities is None:
                 continue
+
+            if not has_custom_zones:
+                raise ValueError(
+                    "`enclosed_entities` is only allowed when `CustomZones` are used in `zones`."
+                )
+
             for entity in param_info.expand_entity_list(zone.enclosed_entities):
                 if (
                     isinstance(entity, (Cylinder, AxisymmetricBody, Sphere))
