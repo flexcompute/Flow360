@@ -4052,3 +4052,339 @@ def test_enclosed_entities_surfaces_only_no_rotation_volume_needed():
         validation_level="VolumeMesh",
     )
     assert errors is None
+
+
+def test_user_defined_farfield_enclosed_entities_beta_mesher_positive():
+    """UserDefinedFarfield: enclosed_entities with beta mesher should pass."""
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-4,
+                ),
+                volume_zones=[
+                    CustomZones(
+                        name="interior",
+                        entities=[
+                            CustomVolume(
+                                name="zone1",
+                                boundaries=[
+                                    Surface(name="face1"),
+                                    Surface(name="face2"),
+                                ],
+                            )
+                        ],
+                    ),
+                    UserDefinedFarfield(
+                        enclosed_entities=[
+                            Surface(name="face1"),
+                            Surface(name="face2"),
+                        ],
+                    ),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+        )
+    _, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="SurfaceMesh",
+        validation_level="VolumeMesh",
+    )
+    assert errors is None
+
+
+def test_user_defined_farfield_enclosed_entities_beta_mesher_negative():
+    """UserDefinedFarfield: enclosed_entities with legacy mesher should fail."""
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-4,
+                ),
+                volume_zones=[
+                    UserDefinedFarfield(
+                        enclosed_entities=[Surface(name="face1")],
+                    ),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=False),
+        )
+    _, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="SurfaceMesh",
+        validation_level="VolumeMesh",
+    )
+    assert errors is not None
+    assert any(
+        "`enclosed_entities` is only supported with the beta mesher" in e["msg"] for e in errors
+    )
+
+
+def test_user_defined_farfield_rotation_volume_association_negative():
+    """UserDefinedFarfield: Cylinder in enclosed_entities without RotationVolume should fail."""
+    rotor_disk = Cylinder(
+        name="rotor",
+        center=(0, 0, 0) * u.m,
+        axis=(0, 0, 1),
+        height=1 * u.m,
+        outer_radius=5 * u.m,
+    )
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-4,
+                ),
+                volume_zones=[
+                    CustomZones(
+                        name="interior",
+                        entities=[
+                            CustomVolume(
+                                name="zone1",
+                                boundaries=[Surface(name="face1")],
+                            )
+                        ],
+                    ),
+                    UserDefinedFarfield(
+                        enclosed_entities=[Surface(name="face1"), rotor_disk],
+                    ),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+        )
+    _, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="SurfaceMesh",
+        validation_level="VolumeMesh",
+    )
+    assert errors is not None
+    assert any(
+        "`Cylinder` entity `rotor` in `enclosed_entities` must be associated with a `RotationVolume`"
+        in e["msg"]
+        for e in errors
+    )
+
+
+def test_user_defined_farfield_rotation_volume_association_positive():
+    """UserDefinedFarfield: Cylinder in enclosed_entities with RotationVolume should pass."""
+    rotor_disk = Cylinder(
+        name="rotor",
+        center=(0, 0, 0) * u.m,
+        axis=(0, 0, 1),
+        height=1 * u.m,
+        outer_radius=5 * u.m,
+    )
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-4,
+                ),
+                volume_zones=[
+                    RotationVolume(
+                        entities=[rotor_disk],
+                        spacing_axial=0.5 * u.m,
+                        spacing_radial=0.5 * u.m,
+                        spacing_circumferential=0.3 * u.m,
+                    ),
+                    CustomZones(
+                        name="interior",
+                        entities=[
+                            CustomVolume(
+                                name="zone1",
+                                boundaries=[Surface(name="face1")],
+                            )
+                        ],
+                    ),
+                    UserDefinedFarfield(
+                        enclosed_entities=[Surface(name="face1"), rotor_disk],
+                    ),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+        )
+    _, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="SurfaceMesh",
+        validation_level="VolumeMesh",
+    )
+    assert errors is None
+
+
+def test_wind_tunnel_farfield_enclosed_entities_beta_mesher_positive():
+    """WindTunnelFarfield: enclosed_entities with beta mesher + GAI should pass."""
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-4,
+                    geometry_accuracy=1e-4,
+                ),
+                volume_zones=[
+                    CustomZones(
+                        name="interior",
+                        entities=[
+                            CustomVolume(
+                                name="zone1",
+                                boundaries=[
+                                    Surface(name="face1"),
+                                    Surface(name="face2"),
+                                ],
+                            )
+                        ],
+                    ),
+                    WindTunnelFarfield(
+                        name="wind tunnel",
+                        floor_type=FullyMovingFloor(),
+                        enclosed_entities=[
+                            Surface(name="face1"),
+                            Surface(name="face2"),
+                        ],
+                    ),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True, use_geometry_AI=True),
+        )
+    _, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="SurfaceMesh",
+        validation_level="VolumeMesh",
+    )
+    assert errors is None
+
+
+def test_wind_tunnel_farfield_enclosed_entities_beta_mesher_negative():
+    """WindTunnelFarfield: enclosed_entities with legacy mesher should fail."""
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-4,
+                    geometry_accuracy=1e-4,
+                ),
+                volume_zones=[
+                    WindTunnelFarfield(
+                        name="wind tunnel",
+                        floor_type=FullyMovingFloor(),
+                        enclosed_entities=[Surface(name="face1")],
+                    ),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(
+                use_inhouse_mesher=False, use_geometry_AI=True
+            ),
+        )
+    _, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="SurfaceMesh",
+        validation_level="VolumeMesh",
+    )
+    assert errors is not None
+    assert any(
+        "`enclosed_entities` is only supported with the beta mesher" in e["msg"] for e in errors
+    )
+
+
+def test_wind_tunnel_farfield_rotation_volume_association_negative():
+    """WindTunnelFarfield: Cylinder in enclosed_entities without RotationVolume should fail."""
+    rotor_disk = Cylinder(
+        name="rotor",
+        center=(0, 0, 0) * u.m,
+        axis=(0, 0, 1),
+        height=1 * u.m,
+        outer_radius=5 * u.m,
+    )
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-4,
+                    geometry_accuracy=1e-4,
+                ),
+                volume_zones=[
+                    CustomZones(
+                        name="interior",
+                        entities=[
+                            CustomVolume(
+                                name="zone1",
+                                boundaries=[Surface(name="face1")],
+                            )
+                        ],
+                    ),
+                    WindTunnelFarfield(
+                        name="wind tunnel",
+                        floor_type=FullyMovingFloor(),
+                        enclosed_entities=[Surface(name="face1"), rotor_disk],
+                    ),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True, use_geometry_AI=True),
+        )
+    _, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="SurfaceMesh",
+        validation_level="VolumeMesh",
+    )
+    assert errors is not None
+    assert any(
+        "`Cylinder` entity `rotor` in `enclosed_entities` must be associated with a `RotationVolume`"
+        in e["msg"]
+        for e in errors
+    )
+
+
+def test_wind_tunnel_farfield_rotation_volume_association_positive():
+    """WindTunnelFarfield: Cylinder in enclosed_entities with RotationVolume should pass."""
+    rotor_disk = Cylinder(
+        name="rotor",
+        center=(0, 0, 0) * u.m,
+        axis=(0, 0, 1),
+        height=1 * u.m,
+        outer_radius=5 * u.m,
+    )
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-4,
+                    geometry_accuracy=1e-4,
+                ),
+                volume_zones=[
+                    RotationVolume(
+                        entities=[rotor_disk],
+                        spacing_axial=0.5 * u.m,
+                        spacing_radial=0.5 * u.m,
+                        spacing_circumferential=0.3 * u.m,
+                    ),
+                    CustomZones(
+                        name="interior",
+                        entities=[
+                            CustomVolume(
+                                name="zone1",
+                                boundaries=[Surface(name="face1")],
+                            )
+                        ],
+                    ),
+                    WindTunnelFarfield(
+                        name="wind tunnel",
+                        floor_type=FullyMovingFloor(),
+                        enclosed_entities=[Surface(name="face1"), rotor_disk],
+                    ),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True, use_geometry_AI=True),
+        )
+    _, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="SurfaceMesh",
+        validation_level="VolumeMesh",
+    )
+    assert errors is None
