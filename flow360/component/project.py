@@ -1869,6 +1869,10 @@ class Project(pd.BaseModel):
             RenameAssetRequestV2(name=new_name).dict(), method=self.id
         )
 
+    def delete(self):
+        """Delete the current project"""
+        return self._project_webapi.delete()
+
     def print_project_tree(self, line_width: int = 30, is_horizontal: bool = True):
         """Print the project tree to the terminal.
 
