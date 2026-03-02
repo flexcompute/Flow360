@@ -1207,22 +1207,6 @@ def translate_xfoil_c81_bet_disk(
     return bet_dict_list, errors
 
 
-def get_default_report_config() -> dict:
-    """
-    Get the default report config
-    Returns
-    -------
-    dict
-        default report config
-    """
-    # pylint: disable=import-outside-toplevel
-    from flow360.plugins.report.report import get_default_report_summary_template
-
-    return get_default_report_summary_template().model_dump(
-        exclude_none=True,
-    )
-
-
 def _parse_root_item_type_from_simulation_json(*, param_as_dict: dict):
     """[External] Deduct the root item entity type from simulation.json"""
     try:
