@@ -137,8 +137,6 @@ def wrapstring(long_str: str, str_length: str = None):
 
 def parse_datetime(dt_str: str, fmt: str = "%Y-%m-%dT%H:%M:%S.%fZ") -> datetime.datetime:
     """Parse the datetime from the API call."""
-    # Truncate nanosecond precision to microseconds (Python %f handles max 6 digits)
-    dt_str = re.sub(r"(\.\d{6})\d+(Z)$", r"\1\2", dt_str)
     try:
         return datetime.datetime.strptime(dt_str, fmt)
     except ValueError:
