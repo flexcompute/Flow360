@@ -4632,3 +4632,72 @@ def test_custom_volume_in_farfield_enclosed_entities_rotation_volume_negative():
     )
     assert errors is not None
     assert any("`Cylinder` entity `rotor` in `CustomVolume` `zone1`" in e["msg"] for e in errors)
+
+
+def test_farfield_custom_volume_no_intersection_positive():
+    """CustomVolume in farfield enclosed_entities with disjoint entities should pass."""
+    with SI_unit_system:
+        cv = CustomVolume(
+            name="inner_zone",
+            enclosed_entities=[Surface(name="cv_face1"), Surface(name="cv_face2")],
+        )
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-4,
+                ),
+                volume_zones=[
+                    CustomZones(
+                        name="interior",
+                        entities=[cv],
+                    ),
+                    AutomatedFarfield(
+                        enclosed_entities=[Surface(name="outer_face"), cv],
+                    ),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+        )
+    _, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="SurfaceMesh",
+        validation_level="VolumeMesh",
+    )
+    assert errors is None
+
+
+def test_farfield_custom_volume_no_intersection_negative():
+    """CustomVolume in farfield enclosed_entities sharing a surface with a sibling should fail."""
+    shared_face = Surface(name="shared")
+    with SI_unit_system:
+        cv = CustomVolume(
+            name="inner_zone",
+            enclosed_entities=[shared_face, Surface(name="cv_only")],
+        )
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-4,
+                ),
+                volume_zones=[
+                    CustomZones(
+                        name="interior",
+                        entities=[cv],
+                    ),
+                    AutomatedFarfield(
+                        enclosed_entities=[shared_face, cv],
+                    ),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+        )
+    _, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="SurfaceMesh",
+        validation_level="VolumeMesh",
+    )
+    assert errors is not None
+    assert any("shares entities with sibling entities" in e["msg"] for e in errors)
+    assert any("shared" in e["msg"] for e in errors)

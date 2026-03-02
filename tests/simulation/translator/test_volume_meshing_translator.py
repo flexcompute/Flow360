@@ -1783,3 +1783,261 @@ def test_farfield_enclosed_entities_with_axisymmetric_body(get_surface_mesh):
     zones_by_name = {z["name"]: z for z in translated["zones"]}
     assert "farfield" in zones_by_name
     assert sorted(zones_by_name["farfield"]["patches"]) == ["face1", "slidingInterface-cone"]
+
+
+def test_farfield_enclosed_entities_unwraps_custom_volume(get_surface_mesh):
+    """CustomVolume in farfield enclosed_entities should be unwrapped into its constituent patches."""
+    with SI_unit_system:
+        cv = CustomVolume(
+            name="inner",
+            enclosed_entities=[Surface(name="cv_face1"), Surface(name="cv_face2")],
+        )
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-4,
+                ),
+                volume_zones=[
+                    CustomZones(
+                        name="interior",
+                        entities=[cv],
+                    ),
+                    AutomatedFarfield(
+                        enclosed_entities=[Surface(name="outer_face"), cv],
+                    ),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+        )
+
+    translated = get_volume_meshing_json(params, get_surface_mesh.mesh_unit)
+    assert "zones" in translated
+    zones_by_name = {z["name"]: z for z in translated["zones"]}
+    assert "farfield" in zones_by_name
+    assert sorted(zones_by_name["farfield"]["patches"]) == [
+        "cv_face1",
+        "cv_face2",
+        "outer_face",
+    ]
+
+
+def test_farfield_enclosed_entities_unwraps_custom_volume_with_cylinder(get_surface_mesh):
+    """CustomVolume containing a Cylinder should unwrap with slidingInterface- prefix."""
+    rotor = Cylinder(
+        name="rotor",
+        center=(0, 0, 0) * u.m,
+        axis=(0, 0, 1),
+        height=1 * u.m,
+        outer_radius=5 * u.m,
+    )
+    with SI_unit_system:
+        cv = CustomVolume(
+            name="inner",
+            enclosed_entities=[Surface(name="cv_face"), rotor],
+        )
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-4,
+                ),
+                volume_zones=[
+                    RotationVolume(
+                        entities=[rotor],
+                        spacing_axial=0.5 * u.m,
+                        spacing_radial=0.5 * u.m,
+                        spacing_circumferential=0.3 * u.m,
+                    ),
+                    CustomZones(
+                        name="interior",
+                        entities=[cv],
+                    ),
+                    AutomatedFarfield(
+                        enclosed_entities=[Surface(name="outer_face"), cv],
+                    ),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+        )
+
+    translated = get_volume_meshing_json(params, get_surface_mesh.mesh_unit)
+    assert "zones" in translated
+    zones_by_name = {z["name"]: z for z in translated["zones"]}
+    assert "farfield" in zones_by_name
+    assert sorted(zones_by_name["farfield"]["patches"]) == [
+        "cv_face",
+        "outer_face",
+        "slidingInterface-rotor",
+    ]
+
+
+def test_farfield_enclosed_entities_unwrap_deduplicates(get_surface_mesh):
+    """If a surface appears both directly and inside a CustomVolume, patches should be deduplicated."""
+    shared = Surface(name="shared_face")
+    with SI_unit_system:
+        cv = CustomVolume(
+            name="inner",
+            enclosed_entities=[shared, Surface(name="cv_only")],
+        )
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-4,
+                ),
+                volume_zones=[
+                    CustomZones(
+                        name="interior",
+                        entities=[cv],
+                    ),
+                    AutomatedFarfield(
+                        enclosed_entities=[shared, cv],
+                    ),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+        )
+
+    translated = get_volume_meshing_json(params, get_surface_mesh.mesh_unit)
+    assert "zones" in translated
+    zones_by_name = {z["name"]: z for z in translated["zones"]}
+    assert "farfield" in zones_by_name
+    patches = zones_by_name["farfield"]["patches"]
+    assert sorted(patches) == ["cv_only", "shared_face"]
+    assert len(patches) == len(set(patches))
+
+
+def test_farfield_enclosed_entities_unwraps_custom_volume_all_types(get_surface_mesh):
+    """CustomVolume containing all supported entity types should unwrap with correct prefixes."""
+    rotor = Cylinder(
+        name="rotor",
+        center=(0, 0, 0) * u.m,
+        axis=(0, 0, 1),
+        height=1 * u.m,
+        outer_radius=5 * u.m,
+    )
+    with SI_unit_system:
+        cone = AxisymmetricBody(
+            name="cone",
+            center=(0, 0, 0) * u.m,
+            axis=(1, 0, 0),
+            profile_curve=[(-1, 0) * u.m, (-1, 1) * u.m, (1, 1) * u.m, (1, 0) * u.m],
+        )
+        sph = Sphere(
+            name="ball",
+            center=(0, 0, 0) * u.m,
+            radius=5 * u.m,
+        )
+        cv = CustomVolume(
+            name="inner",
+            enclosed_entities=[
+                Surface(name="wall"),
+                rotor,
+                cone,
+                sph,
+            ],
+        )
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-4,
+                ),
+                volume_zones=[
+                    RotationVolume(
+                        entities=[rotor],
+                        spacing_axial=0.5 * u.m,
+                        spacing_radial=0.5 * u.m,
+                        spacing_circumferential=0.3 * u.m,
+                    ),
+                    RotationVolume(
+                        entities=[cone],
+                        spacing_axial=0.5 * u.m,
+                        spacing_radial=0.5 * u.m,
+                        spacing_circumferential=0.3 * u.m,
+                    ),
+                    RotationVolume(
+                        entities=[sph],
+                        spacing_circumferential=0.3 * u.m,
+                    ),
+                    CustomZones(
+                        name="interior",
+                        entities=[cv],
+                    ),
+                    AutomatedFarfield(
+                        enclosed_entities=[Surface(name="outer"), cv],
+                    ),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+        )
+
+    translated = get_volume_meshing_json(params, get_surface_mesh.mesh_unit)
+    zones_by_name = {z["name"]: z for z in translated["zones"]}
+    assert "farfield" in zones_by_name
+    assert sorted(zones_by_name["farfield"]["patches"]) == [
+        "outer",
+        "slidingInterface-ball",
+        "slidingInterface-cone",
+        "slidingInterface-rotor",
+        "wall",
+    ]
+
+
+def test_farfield_enclosed_entities_mixed_direct_and_custom_volume(get_surface_mesh):
+    """Farfield with both direct entities and a CustomVolume should produce a complete patch list."""
+    rotor = Cylinder(
+        name="rotor",
+        center=(0, 0, 0) * u.m,
+        axis=(0, 0, 1),
+        height=1 * u.m,
+        outer_radius=5 * u.m,
+    )
+    with SI_unit_system:
+        sph = Sphere(
+            name="ball",
+            center=(0, 0, 0) * u.m,
+            radius=5 * u.m,
+        )
+        cv = CustomVolume(
+            name="inner",
+            enclosed_entities=[Surface(name="cv_wall"), sph],
+        )
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-4,
+                ),
+                volume_zones=[
+                    RotationVolume(
+                        entities=[rotor],
+                        spacing_axial=0.5 * u.m,
+                        spacing_radial=0.5 * u.m,
+                        spacing_circumferential=0.3 * u.m,
+                    ),
+                    RotationVolume(
+                        entities=[sph],
+                        spacing_circumferential=0.3 * u.m,
+                    ),
+                    CustomZones(
+                        name="interior",
+                        entities=[cv],
+                    ),
+                    AutomatedFarfield(
+                        enclosed_entities=[
+                            Surface(name="farfield_face"),
+                            rotor,
+                            cv,
+                        ],
+                    ),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+        )
+
+    translated = get_volume_meshing_json(params, get_surface_mesh.mesh_unit)
+    zones_by_name = {z["name"]: z for z in translated["zones"]}
+    assert "farfield" in zones_by_name
+    assert sorted(zones_by_name["farfield"]["patches"]) == [
+        "cv_wall",
+        "farfield_face",
+        "slidingInterface-ball",
+        "slidingInterface-rotor",
+    ]

@@ -1067,6 +1067,8 @@ class CustomVolume(_VolumeEntityBase):
     private_attribute_entity_type_name: Literal["CustomVolume"] = pd.Field(
         "CustomVolume", frozen=True
     )
+    # TODO: support nested CustomVolume in enclosed_entities (currently blocked by EntityList
+    # metaclass requiring __name__ on type args, preventing self-referencing forward refs).
     enclosed_entities: EntityList[Surface, Cylinder, AxisymmetricBody, Sphere] = pd.Field(
         description="The entities that define the boundaries of the custom volume."
     )

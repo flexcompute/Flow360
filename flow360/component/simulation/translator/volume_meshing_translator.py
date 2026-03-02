@@ -310,13 +310,18 @@ def _get_custom_volumes(volume_zones: list):
                         }
                     )
 
-    # Create "farfield" zone from enclosed_entities on any farfield type
+    # Create "farfield" zone from enclosed_entities on any farfield type.
+    # CustomVolume entities are unwrapped into their constituent enclosed_entities,
+    # each translated via _translate_enclosed_entity_name. Final patches are deduplicated.
     for zone in volume_zones:
         if isinstance(zone, _FarfieldBase) and zone.enclosed_entities is not None:
-            patch_names = [
-                _translate_enclosed_entity_name(entity)
-                for entity in zone.enclosed_entities.stored_entities
-            ]
+            patch_names: set[str] = set()
+            for entity in zone.enclosed_entities.stored_entities:
+                if isinstance(entity, CustomVolume):
+                    for child in entity.enclosed_entities.stored_entities:
+                        patch_names.add(_translate_enclosed_entity_name(child))
+                else:
+                    patch_names.add(_translate_enclosed_entity_name(entity))
             custom_volumes.append(
                 {
                     "name": "farfield",
