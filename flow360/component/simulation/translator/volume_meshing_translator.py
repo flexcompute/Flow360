@@ -22,6 +22,7 @@ from flow360.component.simulation.meshing_param.volume_params import (
     UniformRefinement,
     UserDefinedFarfield,
     WindTunnelFarfield,
+    _FarfieldBase,
 )
 from flow360.component.simulation.primitives import (
     AxisymmetricBody,
@@ -133,6 +134,22 @@ def spherical_refinement_translator(obj: RotationVolume):
     }
 
 
+def _translate_enclosed_entity_name(entity, rotor_disk_names=None):
+    """Translate an enclosed entity to its mesher-expected name.
+
+    Used by both RotationVolume and farfield zone translation.
+    """
+    if is_exact_instance(entity, Cylinder):
+        if rotor_disk_names and entity.name in rotor_disk_names:
+            return "rotorDisk-" + entity.name
+        return "slidingInterface-" + entity.name
+    if is_exact_instance(entity, (AxisymmetricBody, Sphere)):
+        return "slidingInterface-" + entity.name
+    if is_exact_instance(entity, Box):
+        return "structuredBox-" + entity.name
+    return entity.name
+
+
 def rotation_volume_translator(obj: RotationVolume, rotor_disk_names: list):
     """Setting translation for RotationVolume."""
     # Check if the entity is a Sphere (uses different spacing fields)
@@ -145,23 +162,9 @@ def rotation_volume_translator(obj: RotationVolume, rotor_disk_names: list):
     setting["enclosedObjects"] = []
     if obj.enclosed_entities is not None:
         for enclosed_entity in obj.enclosed_entities.stored_entities:
-            if is_exact_instance(enclosed_entity, Cylinder):
-                if enclosed_entity.name in rotor_disk_names:
-                    # Current sliding interface encloses a rotor disk
-                    # Then we append the interface name which is hardcoded "rotorDisk-<name>""
-                    setting["enclosedObjects"].append("rotorDisk-" + enclosed_entity.name)
-                else:
-                    # Current sliding interface encloses another sliding interface
-                    # Then we append the interface name which is hardcoded "slidingInterface-<name>""
-                    setting["enclosedObjects"].append("slidingInterface-" + enclosed_entity.name)
-            elif is_exact_instance(enclosed_entity, AxisymmetricBody):
-                setting["enclosedObjects"].append("slidingInterface-" + enclosed_entity.name)
-            elif is_exact_instance(enclosed_entity, Sphere):
-                setting["enclosedObjects"].append("slidingInterface-" + enclosed_entity.name)
-            elif is_exact_instance(enclosed_entity, Box):
-                setting["enclosedObjects"].append("structuredBox-" + enclosed_entity.name)
-            elif is_exact_instance(enclosed_entity, Surface):
-                setting["enclosedObjects"].append(enclosed_entity.name)
+            setting["enclosedObjects"].append(
+                _translate_enclosed_entity_name(enclosed_entity, rotor_disk_names)
+            )
     return setting
 
 
@@ -304,10 +307,13 @@ def _get_custom_volumes(volume_zones: list):
                         }
                     )
 
-    # Create "farfield" zone from enclosed_entities on AutomatedFarfield
+    # Create "farfield" zone from enclosed_entities on any farfield type
     for zone in volume_zones:
-        if isinstance(zone, AutomatedFarfield) and zone.enclosed_entities is not None:
-            patch_names = [surface.name for surface in zone.enclosed_entities.stored_entities]
+        if isinstance(zone, _FarfieldBase) and zone.enclosed_entities is not None:
+            patch_names = [
+                _translate_enclosed_entity_name(entity)
+                for entity in zone.enclosed_entities.stored_entities
+            ]
             custom_volumes.append(
                 {
                     "name": "farfield",

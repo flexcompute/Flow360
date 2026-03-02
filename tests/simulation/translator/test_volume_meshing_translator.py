@@ -49,6 +49,7 @@ from flow360.component.simulation.primitives import (
 from flow360.component.simulation.services import ValidationCalledBy, validate_model
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.translator.volume_meshing_translator import (
+    _translate_enclosed_entity_name,
     get_volume_meshing_json,
 )
 from flow360.component.simulation.unit_system import LengthType, SI_unit_system
@@ -1523,3 +1524,238 @@ def test_automated_farfield_enclosed_entities(get_surface_mesh):
     # enclosed_entities should produce a "farfield" zone
     assert "farfield" in zones_by_name
     assert sorted(zones_by_name["farfield"]["patches"]) == ["left1", "right1"]
+
+
+def test_user_defined_farfield_enclosed_entities(get_surface_mesh):
+    """UserDefinedFarfield.enclosed_entities should create a 'farfield' zone in translated output."""
+    left1 = Surface(name="left1")
+    right1 = Surface(name="right1")
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-4,
+                ),
+                volume_zones=[
+                    CustomZones(
+                        name="interior_zone",
+                        entities=[
+                            CustomVolume(
+                                name="inner",
+                                boundaries=[left1, right1],
+                            ),
+                        ],
+                    ),
+                    UserDefinedFarfield(
+                        enclosed_entities=[left1, right1],
+                    ),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+        )
+
+    translated = get_volume_meshing_json(params, get_surface_mesh.mesh_unit)
+    assert "zones" in translated
+    zones_by_name = {z["name"]: z for z in translated["zones"]}
+    assert "farfield" in zones_by_name
+    assert sorted(zones_by_name["farfield"]["patches"]) == ["left1", "right1"]
+
+
+def test_farfield_enclosed_entities_with_cylinder(get_surface_mesh):
+    """Cylinder in farfield enclosed_entities should translate to slidingInterface- prefix."""
+    face1 = Surface(name="face1")
+    rotor = Cylinder(
+        name="rotor",
+        center=(0, 0, 0) * u.m,
+        axis=(0, 0, 1),
+        height=1 * u.m,
+        outer_radius=5 * u.m,
+    )
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-4,
+                ),
+                volume_zones=[
+                    RotationVolume(
+                        entities=[rotor],
+                        spacing_axial=0.5 * u.m,
+                        spacing_radial=0.5 * u.m,
+                        spacing_circumferential=0.3 * u.m,
+                    ),
+                    CustomZones(
+                        name="interior_zone",
+                        entities=[
+                            CustomVolume(
+                                name="inner",
+                                boundaries=[face1],
+                            ),
+                        ],
+                    ),
+                    AutomatedFarfield(
+                        enclosed_entities=[face1, rotor],
+                    ),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+        )
+
+    translated = get_volume_meshing_json(params, get_surface_mesh.mesh_unit)
+    assert "zones" in translated
+    zones_by_name = {z["name"]: z for z in translated["zones"]}
+    assert "farfield" in zones_by_name
+    assert sorted(zones_by_name["farfield"]["patches"]) == ["face1", "slidingInterface-rotor"]
+
+
+class TestTranslateEnclosedEntityName:
+    """Direct unit tests for _translate_enclosed_entity_name covering all branches."""
+
+    @pytest.fixture(autouse=True)
+    def _setup_entities(self):
+        with SI_unit_system:
+            self.surface = Surface(name="s1")
+            self.cylinder = Cylinder(
+                name="cyl",
+                center=(0, 0, 0) * u.m,
+                axis=(0, 0, 1),
+                height=1 * u.m,
+                outer_radius=5 * u.m,
+            )
+            self.axisymmetric_body = AxisymmetricBody(
+                name="cone",
+                center=(0, 0, 0) * u.m,
+                axis=(1, 0, 0),
+                profile_curve=[(-1, 0) * u.m, (-1, 1) * u.m, (1, 1) * u.m, (1, 0) * u.m],
+            )
+            self.sphere = Sphere(
+                name="sph",
+                center=(0, 0, 0) * u.m,
+                radius=5 * u.m,
+            )
+            self.box = Box.from_principal_axes(
+                name="box",
+                center=(0, 0, 0) * u.m,
+                size=(1, 2, 3) * u.m,
+                axes=((1, 0, 0), (0, 1, 0)),
+            )
+            self.custom_volume = CustomVolume(
+                name="cv",
+                boundaries=[Surface(name="f1")],
+            )
+
+    def test_surface_returns_raw_name(self):
+        assert _translate_enclosed_entity_name(self.surface) == "s1"
+
+    def test_cylinder_in_rotor_disk_names(self):
+        assert _translate_enclosed_entity_name(self.cylinder, rotor_disk_names=["cyl"]) == "rotorDisk-cyl"
+
+    def test_cylinder_not_in_rotor_disk_names(self):
+        assert _translate_enclosed_entity_name(self.cylinder, rotor_disk_names=["other"]) == "slidingInterface-cyl"
+
+    def test_cylinder_rotor_disk_names_none(self):
+        assert _translate_enclosed_entity_name(self.cylinder, rotor_disk_names=None) == "slidingInterface-cyl"
+
+    def test_cylinder_rotor_disk_names_empty(self):
+        assert _translate_enclosed_entity_name(self.cylinder, rotor_disk_names=[]) == "slidingInterface-cyl"
+
+    def test_axisymmetric_body(self):
+        assert _translate_enclosed_entity_name(self.axisymmetric_body) == "slidingInterface-cone"
+
+    def test_sphere(self):
+        assert _translate_enclosed_entity_name(self.sphere) == "slidingInterface-sph"
+
+    def test_box(self):
+        assert _translate_enclosed_entity_name(self.box) == "structuredBox-box"
+
+    def test_custom_volume_returns_raw_name(self):
+        assert _translate_enclosed_entity_name(self.custom_volume) == "cv"
+
+
+def test_farfield_enclosed_entities_with_sphere(get_surface_mesh):
+    """Sphere in farfield enclosed_entities should translate to slidingInterface- prefix."""
+    face1 = Surface(name="face1")
+    with SI_unit_system:
+        sph = Sphere(
+            name="sph",
+            center=(0, 0, 0) * u.m,
+            radius=5 * u.m,
+        )
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-4,
+                ),
+                volume_zones=[
+                    RotationVolume(
+                        entities=[sph],
+                        spacing_circumferential=0.3 * u.m,  # Sphere only needs circumferential
+                    ),
+                    CustomZones(
+                        name="interior_zone",
+                        entities=[
+                            CustomVolume(
+                                name="inner",
+                                boundaries=[face1],
+                            ),
+                        ],
+                    ),
+                    AutomatedFarfield(
+                        enclosed_entities=[face1, sph],
+                    ),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+        )
+
+    translated = get_volume_meshing_json(params, get_surface_mesh.mesh_unit)
+    assert "zones" in translated
+    zones_by_name = {z["name"]: z for z in translated["zones"]}
+    assert "farfield" in zones_by_name
+    assert sorted(zones_by_name["farfield"]["patches"]) == ["face1", "slidingInterface-sph"]
+
+
+def test_farfield_enclosed_entities_with_axisymmetric_body(get_surface_mesh):
+    """AxisymmetricBody in farfield enclosed_entities should translate to slidingInterface- prefix."""
+    face1 = Surface(name="face1")
+    with SI_unit_system:
+        cone = AxisymmetricBody(
+            name="cone",
+            center=(0, 0, 0) * u.m,
+            axis=(1, 0, 0),
+            profile_curve=[(-1, 0) * u.m, (-1, 1) * u.m, (1, 1) * u.m, (1, 0) * u.m],
+        )
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-4,
+                ),
+                volume_zones=[
+                    RotationVolume(
+                        entities=[cone],
+                        spacing_axial=0.5 * u.m,
+                        spacing_radial=0.5 * u.m,
+                        spacing_circumferential=0.3 * u.m,
+                    ),
+                    CustomZones(
+                        name="interior_zone",
+                        entities=[
+                            CustomVolume(
+                                name="inner",
+                                boundaries=[face1],
+                            ),
+                        ],
+                    ),
+                    AutomatedFarfield(
+                        enclosed_entities=[face1, cone],
+                    ),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+        )
+
+    translated = get_volume_meshing_json(params, get_surface_mesh.mesh_unit)
+    assert "zones" in translated
+    zones_by_name = {z["name"]: z for z in translated["zones"]}
+    assert "farfield" in zones_by_name
+    assert sorted(zones_by_name["farfield"]["patches"]) == ["face1", "slidingInterface-cone"]
