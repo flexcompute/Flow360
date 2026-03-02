@@ -492,12 +492,12 @@ def _collect_zone_zone_interfaces(
 
 
 def _collect_farfield_custom_volume_interfaces(*, param_info: ParamsValidationInfo) -> set[str]:
-    """Collect interface names for dual-belonging faces (farfield enclosed_surfaces ∩ CustomVolume boundaries).
+    """Collect interface names for dual-belonging faces (farfield enclosed_entities ∩ CustomVolume boundaries).
 
     Returns names (not IDs) since _validate_boundary_completeness works with name sets.
     """
     return {
-        param_info.farfield_enclosed_surfaces[sid]
+        param_info.farfield_enclosed_entities[sid]
         for sid in param_info.farfield_cv_dual_belonging_ids
     }
 

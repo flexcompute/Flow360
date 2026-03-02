@@ -548,6 +548,34 @@ class _FarfieldBase(Flow360BaseModel):
         )
     )
 
+    enclosed_entities: Optional[
+        EntityList[Surface, Cylinder, AxisymmetricBody, Sphere, CustomVolume]
+    ] = pd.Field(
+        None,
+        description="""
+        The surfaces/surface groups that are the interior boundaries of the `farfield` zone when defining custom volumes.
+        - Only allowed when using one or more `CustomZone`(s) to define volume zone(s) in meshing parameters
+        - Cylinder, AxisymmetricBody, Sphere entities must be associated with `RotationVolume`(s)
+        """,
+    )
+
+    @contextual_field_validator("enclosed_entities", mode="after")
+    @classmethod
+    def _validate_enclosed_entities_beta_mesher_only(cls, value, param_info: ParamsValidationInfo):
+        """Ensure enclosed_entities is only used with the beta mesher."""
+        if value is None:
+            return value
+        if param_info.is_beta_mesher:
+            return value
+
+        raise ValueError("`enclosed_entities` is only supported with the beta mesher.")
+
+    @contextual_field_validator("enclosed_entities", mode="after")
+    @classmethod
+    def _validate_enclosed_entity_existence(cls, value, param_info: ParamsValidationInfo):
+        """Ensure all boundaries will be present after mesher."""
+        return validate_entity_list_surface_existence(value, param_info)
+
     @contextual_field_validator("domain_type", mode="after")
     @classmethod
     def _validate_only_in_beta_mesher(cls, value, param_info: ParamsValidationInfo):
@@ -659,13 +687,6 @@ class AutomatedFarfield(_FarfieldBase):
         description="Radius of the far-field (semi)sphere/cylinder relative to "
         "the max dimension of the geometry bounding box.",
     )
-    enclosed_surfaces: Optional[EntityList[Surface]] = pd.Field(
-        None,
-        description=(
-            "Geometry surfaces that, together with the farfield surface, form the boundary of the "
-            "exterior farfield zone. Required when using CustomVolumes alongside an AutomatedFarfield. "
-        ),
-    )
 
     @property
     def farfield(self):
@@ -737,7 +758,11 @@ class UserDefinedFarfield(_FarfieldBase):
 
         Warning: This should only be used when using GAI and beta mesher.
         """
-        if self.domain_type not in (None, "half_body_positive_y", "half_body_negative_y"):
+        if self.domain_type not in (
+            None,
+            "half_body_positive_y",
+            "half_body_negative_y",
+        ):
             # We allow None here to allow auto detection of domain type from bounding box.
             raise Flow360ValueError(
                 "Symmetry plane of user defined farfield is only supported when domain_type "

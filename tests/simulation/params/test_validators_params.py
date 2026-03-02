@@ -44,6 +44,7 @@ from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     CustomZones,
     FullyMovingFloor,
+    RotationVolume,
     UserDefinedFarfield,
     WindTunnelFarfield,
 )
@@ -105,6 +106,7 @@ from flow360.component.simulation.outputs.outputs import (
     VolumeOutput,
 )
 from flow360.component.simulation.primitives import (
+    AxisymmetricBody,
     Box,
     CustomVolume,
     Cylinder,
@@ -116,6 +118,7 @@ from flow360.component.simulation.primitives import (
     MirroredGeometryBodyGroup,
     MirroredSurface,
     SeedpointVolume,
+    Sphere,
     Surface,
     SurfacePrivateAttributes,
 )
@@ -1118,8 +1121,8 @@ def test_porousJump_cross_custom_volume_interface(mock_validation_context):
         )
 
 
-def test_get_farfield_enclosed_surfaces_expands_selectors():
-    """_get_farfield_enclosed_surfaces must expand selectors, not just read stored_entities."""
+def test_get_farfield_enclosed_entities_expands_selectors():
+    """_get_farfield_enclosed_entities must expand selectors, not just read stored_entities."""
     from unittest.mock import patch
 
     param_info = ParamsValidationInfo({}, [])
@@ -1132,7 +1135,7 @@ def test_get_farfield_enclosed_surfaces_expands_selectors():
             "volume_zones": [
                 {
                     "type": "AutomatedFarfield",
-                    "enclosed_surfaces": {
+                    "enclosed_entities": {
                         "stored_entities": [surface_stored],
                         "selectors": ["some-selector-token"],
                     },
@@ -1147,13 +1150,13 @@ def test_get_farfield_enclosed_surfaces_expands_selectors():
         "expand_entity_list",
         return_value=[surface_stored, surface_from_selector],
     ):
-        result = param_info._get_farfield_enclosed_surfaces(param_as_dict)
+        result = param_info._get_farfield_enclosed_entities(param_as_dict)
 
     assert result == {"id-stored": "StoredSurface", "id-sel": "SelectorSurface"}
 
 
 def test_collect_farfield_custom_volume_interfaces():
-    """AutomatedFarfield + enclosed_surfaces + CustomZones: dual-belonging faces are recognized as interfaces."""
+    """AutomatedFarfield + enclosed_entities + CustomZones: dual-belonging faces are recognized as interfaces."""
     from flow360.component.simulation.validation.validation_simulation_params import (
         _collect_farfield_custom_volume_interfaces,
     )
@@ -1161,12 +1164,12 @@ def test_collect_farfield_custom_volume_interfaces():
     param_info = ParamsValidationInfo({}, [])
 
     # Set up farfield enclosed surfaces: face1 and face2 are on the farfield boundary
-    param_info.farfield_enclosed_surfaces = {
+    param_info.farfield_enclosed_entities = {
         "id-face1": "face1",
         "id-face2": "face2",
         "id-face3": "face3",
     }
-    # Set up CustomVolume whose boundaries overlap with enclosed_surfaces
+    # Set up CustomVolume whose boundaries overlap with enclosed_entities
     param_info.to_be_generated_custom_volumes = {
         "CustomVolume1": {
             "enforce_tetrahedra": False,
@@ -1177,12 +1180,12 @@ def test_collect_farfield_custom_volume_interfaces():
     # face1 and face2 are dual-belonging (enclosed + CV boundary) -> should be interfaces
     result = _collect_farfield_custom_volume_interfaces(param_info=param_info)
     assert result == {"face1", "face2"}
-    # face3 is only in enclosed_surfaces, not in any CV boundary -> should NOT be an interface
+    # face3 is only in enclosed_entities, not in any CV boundary -> should NOT be an interface
     assert "face3" not in result
 
 
 def test_collect_farfield_custom_volume_interfaces_empty_enclosed():
-    """AutomatedFarfield without enclosed_surfaces: returns empty set (existing behavior unchanged)."""
+    """AutomatedFarfield without enclosed_entities: returns empty set (existing behavior unchanged)."""
     from flow360.component.simulation.validation.validation_simulation_params import (
         _collect_farfield_custom_volume_interfaces,
     )
@@ -1190,7 +1193,7 @@ def test_collect_farfield_custom_volume_interfaces_empty_enclosed():
     param_info = ParamsValidationInfo({}, [])
 
     # No farfield enclosed surfaces
-    param_info.farfield_enclosed_surfaces = {}
+    param_info.farfield_enclosed_entities = {}
     param_info.to_be_generated_custom_volumes = {
         "CustomVolume1": {
             "enforce_tetrahedra": False,
@@ -1215,8 +1218,8 @@ def test_porousJump_farfield_custom_volume_interface(mock_validation_context):
         name="Surface-Non-Dual", private_attribute_is_interface=False, private_attribute_id="id-non"
     )
 
-    # Both surfaces are dual-belonging: in farfield enclosed_surfaces AND CustomVolume boundaries
-    mock_validation_context.info.farfield_enclosed_surfaces = {
+    # Both surfaces are dual-belonging: in farfield enclosed_entities AND CustomVolume boundaries
+    mock_validation_context.info.farfield_enclosed_entities = {
         "id-a": "Surface-A",
         "id-b": "Surface-B",
         "id-non": "Surface-Non-Dual",
@@ -2489,7 +2492,7 @@ def test_beta_mesher_only_features(mock_validation_context):
                     ),
                     AutomatedFarfield(
                         method="auto",
-                        enclosed_surfaces=[surface1, surface2],
+                        enclosed_entities=[surface1, surface2],
                     ),
                 ],
             ),
@@ -3673,9 +3676,9 @@ def test_incomplete_BC_without_geometry_AI():
 
 
 def test_automated_farfield_with_custom_zones():
-    """AutomatedFarfield + CustomZones: enclosed_surfaces is required when CustomVolumes exist."""
+    """AutomatedFarfield + CustomZones: enclosed_entities is required when CustomVolumes exist."""
 
-    # Positive: enclosed_surfaces provided with CustomVolumes -> should pass
+    # Positive: enclosed_entities provided with CustomVolumes -> should pass
     with SI_unit_system:
         params = SimulationParams(
             meshing=MeshingParams(
@@ -3696,7 +3699,7 @@ def test_automated_farfield_with_custom_zones():
                         ],
                     ),
                     AutomatedFarfield(
-                        enclosed_surfaces=[
+                        enclosed_entities=[
                             Surface(name="face1"),
                             Surface(name="face2"),
                         ],
@@ -3713,7 +3716,7 @@ def test_automated_farfield_with_custom_zones():
     )
     assert errors is None
 
-    # Negative: CustomVolumes exist but enclosed_surfaces not provided -> should fail
+    # Negative: CustomVolumes exist but enclosed_entities not provided -> should fail
     with SI_unit_system:
         params_no_enclosed = SimulationParams(
             meshing=MeshingParams(
@@ -3743,11 +3746,11 @@ def test_automated_farfield_with_custom_zones():
     )
     assert (
         errors[0]["msg"]
-        == "Value error, When using AutomatedFarfield with CustomVolumes, `enclosed_surfaces` must be "
+        == "Value error, When using AutomatedFarfield with CustomVolumes, `enclosed_entities` must be "
         "specified on the AutomatedFarfield to define the exterior farfield zone boundary."
     )
 
-    # Negative: enclosed_surfaces provided but no CustomVolumes -> should fail
+    # Negative: enclosed_entities provided but no CustomVolumes -> should fail
     with SI_unit_system:
         params_no_cv = SimulationParams(
             meshing=MeshingParams(
@@ -3756,7 +3759,7 @@ def test_automated_farfield_with_custom_zones():
                 ),
                 volume_zones=[
                     AutomatedFarfield(
-                        enclosed_surfaces=[Surface(name="face1")],
+                        enclosed_entities=[Surface(name="face1")],
                     ),
                 ],
             ),
@@ -3770,7 +3773,7 @@ def test_automated_farfield_with_custom_zones():
     )
     assert (
         errors[0]["msg"]
-        == "Value error, `enclosed_surfaces` on AutomatedFarfield is only allowed when CustomVolume "
+        == "Value error, `enclosed_entities` on AutomatedFarfield is only allowed when CustomVolume "
         "entities are used. Without custom volumes, the farfield zone will be automatically detected."
     )
 
@@ -3794,7 +3797,7 @@ def test_custom_volume_named_farfield_with_automated_farfield():
                         ],
                     ),
                     AutomatedFarfield(
-                        enclosed_surfaces=[Surface(name="face1"), Surface(name="face2")],
+                        enclosed_entities=[Surface(name="face1"), Surface(name="face2")],
                     ),
                 ],
             ),
@@ -3809,6 +3812,243 @@ def test_custom_volume_named_farfield_with_automated_farfield():
     assert (
         errors[0]["msg"]
         == "Value error, CustomVolume name 'farfield' is reserved when using AutomatedFarfield. "
-        "The 'farfield' zone will be automatically generated using `AutomatedFarfield.enclosed_surfaces`. "
+        "The 'farfield' zone will be automatically generated using `AutomatedFarfield.enclosed_entities`. "
         "Please choose a different name."
     )
+
+
+def test_enclosed_entities_beta_mesher_only_positive():
+    """enclosed_entities with beta mesher should pass validation."""
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-4,
+                ),
+                volume_zones=[
+                    CustomZones(
+                        name="interior",
+                        entities=[
+                            CustomVolume(
+                                name="zone1",
+                                boundaries=[
+                                    Surface(name="face1"),
+                                    Surface(name="face2"),
+                                ],
+                            )
+                        ],
+                    ),
+                    AutomatedFarfield(
+                        enclosed_entities=[
+                            Surface(name="face1"),
+                            Surface(name="face2"),
+                        ],
+                    ),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+        )
+    _, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="SurfaceMesh",
+        validation_level="VolumeMesh",
+    )
+    assert errors is None
+
+
+def test_enclosed_entities_beta_mesher_only_negative():
+    """enclosed_entities with legacy mesher should fail validation."""
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-4,
+                ),
+                volume_zones=[
+                    AutomatedFarfield(
+                        enclosed_entities=[Surface(name="face1")],
+                    ),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=False),
+        )
+    _, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="SurfaceMesh",
+        validation_level="VolumeMesh",
+    )
+    assert errors is not None
+    assert any(
+        "`enclosed_entities` is only supported with the beta mesher" in e["msg"] for e in errors
+    )
+
+
+def test_enclosed_entities_none_with_legacy_mesher():
+    """enclosed_entities=None with legacy mesher should pass (no error from this validator)."""
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-4,
+                ),
+                volume_zones=[
+                    AutomatedFarfield(),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=False),
+        )
+    _, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="SurfaceMesh",
+        validation_level="VolumeMesh",
+    )
+    assert errors is None
+
+
+def test_enclosed_entities_rotation_volume_association_positive():
+    """Cylinder in enclosed_entities that is also in a RotationVolume should pass."""
+    rotor_disk = Cylinder(
+        name="rotor",
+        center=(0, 0, 0) * u.m,
+        axis=(0, 0, 1),
+        height=1 * u.m,
+        outer_radius=5 * u.m,
+    )
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-4,
+                ),
+                volume_zones=[
+                    RotationVolume(
+                        entities=[rotor_disk],
+                        spacing_axial=0.5 * u.m,
+                        spacing_radial=0.5 * u.m,
+                        spacing_circumferential=0.3 * u.m,
+                    ),
+                    CustomZones(
+                        name="interior",
+                        entities=[
+                            CustomVolume(
+                                name="zone1",
+                                boundaries=[
+                                    Surface(name="face1"),
+                                    Surface(name="face2"),
+                                ],
+                            )
+                        ],
+                    ),
+                    AutomatedFarfield(
+                        enclosed_entities=[
+                            Surface(name="face1"),
+                            Surface(name="face2"),
+                            rotor_disk,
+                        ],
+                    ),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+        )
+    _, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="SurfaceMesh",
+        validation_level="VolumeMesh",
+    )
+    assert errors is None
+
+
+def test_enclosed_entities_rotation_volume_association_negative():
+    """Cylinder in enclosed_entities without a RotationVolume should fail."""
+    rotor_disk = Cylinder(
+        name="rotor",
+        center=(0, 0, 0) * u.m,
+        axis=(0, 0, 1),
+        height=1 * u.m,
+        outer_radius=5 * u.m,
+    )
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-4,
+                ),
+                volume_zones=[
+                    CustomZones(
+                        name="interior",
+                        entities=[
+                            CustomVolume(
+                                name="zone1",
+                                boundaries=[
+                                    Surface(name="face1"),
+                                    Surface(name="face2"),
+                                ],
+                            )
+                        ],
+                    ),
+                    AutomatedFarfield(
+                        enclosed_entities=[
+                            Surface(name="face1"),
+                            rotor_disk,
+                        ],
+                    ),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+        )
+    _, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="SurfaceMesh",
+        validation_level="VolumeMesh",
+    )
+    assert errors is not None
+    assert any(
+        "`Cylinder` entity `rotor` in `enclosed_entities` must be associated with a `RotationVolume`"
+        in e["msg"]
+        for e in errors
+    )
+
+
+def test_enclosed_entities_surfaces_only_no_rotation_volume_needed():
+    """Only Surface entities in enclosed_entities should not require a RotationVolume."""
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-4,
+                ),
+                volume_zones=[
+                    CustomZones(
+                        name="interior",
+                        entities=[
+                            CustomVolume(
+                                name="zone1",
+                                boundaries=[
+                                    Surface(name="face1"),
+                                    Surface(name="face2"),
+                                ],
+                            )
+                        ],
+                    ),
+                    AutomatedFarfield(
+                        enclosed_entities=[
+                            Surface(name="face1"),
+                            Surface(name="face2"),
+                        ],
+                    ),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+        )
+    _, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="SurfaceMesh",
+        validation_level="VolumeMesh",
+    )
+    assert errors is None

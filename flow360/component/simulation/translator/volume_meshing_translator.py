@@ -304,10 +304,10 @@ def _get_custom_volumes(volume_zones: list):
                         }
                     )
 
-    # Create "farfield" zone from enclosed_surfaces on AutomatedFarfield
+    # Create "farfield" zone from enclosed_entities on AutomatedFarfield
     for zone in volume_zones:
-        if isinstance(zone, AutomatedFarfield) and zone.enclosed_surfaces is not None:
-            patch_names = [surface.name for surface in zone.enclosed_surfaces.stored_entities]
+        if isinstance(zone, AutomatedFarfield) and zone.enclosed_entities is not None:
+            patch_names = [surface.name for surface in zone.enclosed_entities.stored_entities]
             custom_volumes.append(
                 {
                     "name": "farfield",

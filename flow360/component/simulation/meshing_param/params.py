@@ -35,7 +35,12 @@ from flow360.component.simulation.meshing_param.volume_params import (
     UserDefinedFarfield,
     WindTunnelFarfield,
 )
-from flow360.component.simulation.primitives import SeedpointVolume
+from flow360.component.simulation.primitives import (
+    AxisymmetricBody,
+    Cylinder,
+    SeedpointVolume,
+    Sphere,
+)
 from flow360.component.simulation.validation.validation_context import (
     SURFACE_MESH,
     VOLUME_MESH,
@@ -213,33 +218,67 @@ class MeshingParams(Flow360BaseModel):
             if any(cv.name == "farfield" for cv in custom_volumes):
                 raise ValueError(
                     "CustomVolume name 'farfield' is reserved when using AutomatedFarfield. "
-                    "The 'farfield' zone will be automatically generated using `AutomatedFarfield.enclosed_surfaces`. "
+                    "The 'farfield' zone will be automatically generated using `AutomatedFarfield.enclosed_entities`. "
                     "Please choose a different name."
                 )
 
-            enclosed_surfaces = (
-                param_info.expand_entity_list(automated_farfield.enclosed_surfaces)
-                if automated_farfield.enclosed_surfaces is not None
+            enclosed_entities = (
+                param_info.expand_entity_list(automated_farfield.enclosed_entities)
+                if automated_farfield.enclosed_entities is not None
                 else []
             )
 
-            if custom_volumes and not enclosed_surfaces:
+            if custom_volumes and not enclosed_entities:
                 raise ValueError(
-                    "When using AutomatedFarfield with CustomVolumes, `enclosed_surfaces` must be "
+                    "When using AutomatedFarfield with CustomVolumes, `enclosed_entities` must be "
                     "specified on the AutomatedFarfield to define the exterior farfield zone boundary."
                 )
-            if enclosed_surfaces and not custom_volumes:
+            if enclosed_entities and not custom_volumes:
                 raise ValueError(
-                    "`enclosed_surfaces` on AutomatedFarfield is only allowed when CustomVolume entities are used. "
+                    "`enclosed_entities` on AutomatedFarfield is only allowed when CustomVolume entities are used. "
                     "Without custom volumes, the farfield zone will be automatically detected."
                 )
-            if any(s.name == "farfield" for s in enclosed_surfaces):
+            if any(s.name == "farfield" for s in enclosed_entities):
                 raise ValueError(
-                    "Surface name 'farfield' in `enclosed_surfaces` will conflict with the automatically "
+                    "Surface name 'farfield' in `enclosed_entities` will conflict with the automatically "
                     "generated farfield boundary. Please choose a different surface."
                 )
 
         return v
+
+    @contextual_model_validator(mode="after")
+    def _check_enclosed_entities_rotation_volume_association(
+        self, param_info: ParamsValidationInfo
+    ) -> Self:
+        """
+        Ensure Cylinder, AxisymmetricBody, and Sphere entities in farfield
+        enclosed_entities are associated with a RotationVolume.
+        """
+        if self.volume_zones is None:
+            return self
+
+        rotation_entity_names: set[str] = set()
+        for zone in self.volume_zones:
+            if isinstance(zone, (RotationVolume, RotationCylinder)):
+                for entity in param_info.expand_entity_list(zone.entities):
+                    rotation_entity_names.add(entity.name)
+
+        for zone in self.volume_zones:
+            if not isinstance(zone, (AutomatedFarfield, UserDefinedFarfield, WindTunnelFarfield)):
+                continue
+            if zone.enclosed_entities is None:
+                continue
+            for entity in param_info.expand_entity_list(zone.enclosed_entities):
+                if (
+                    isinstance(entity, (Cylinder, AxisymmetricBody, Sphere))
+                    and entity.name not in rotation_entity_names
+                ):
+                    raise ValueError(
+                        f"`{type(entity).__name__}` entity `{entity.name}` in "
+                        f"`enclosed_entities` must be associated with a `RotationVolume`."
+                    )
+
+        return self
 
     @contextual_field_validator("volume_zones", mode="after")
     @classmethod
@@ -533,6 +572,37 @@ class ModularMeshingWorkflow(Flow360BaseModel):
                     to_be_generated_volume_zone_names.add(custom_volume.name)
 
         return v
+
+    @contextual_model_validator(mode="after")
+    def _check_enclosed_entities_rotation_volume_association(
+        self, param_info: ParamsValidationInfo
+    ) -> Self:
+        """
+        Ensure Cylinder, AxisymmetricBody, and Sphere entities in farfield
+        enclosed_entities are associated with a RotationVolume.
+        """
+        rotation_entity_names: set[str] = set()
+        for zone in self.zones:
+            if isinstance(zone, RotationVolume):
+                for entity in param_info.expand_entity_list(zone.entities):
+                    rotation_entity_names.add(entity.name)
+
+        for zone in self.zones:
+            if not isinstance(zone, (AutomatedFarfield, UserDefinedFarfield)):
+                continue
+            if zone.enclosed_entities is None:
+                continue
+            for entity in param_info.expand_entity_list(zone.enclosed_entities):
+                if (
+                    isinstance(entity, (Cylinder, AxisymmetricBody, Sphere))
+                    and entity.name not in rotation_entity_names
+                ):
+                    raise ValueError(
+                        f"`{type(entity).__name__}` entity `{entity.name}` in "
+                        f"`enclosed_entities` must be associated with a `RotationVolume`."
+                    )
+
+        return self
 
     @pd.model_validator(mode="after")
     def _check_snappy_zones(self) -> Self:
