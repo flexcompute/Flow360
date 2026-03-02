@@ -137,15 +137,12 @@ def wrapstring(long_str: str, str_length: str = None):
 
 def parse_datetime(dt_str: str, fmt: str = "%Y-%m-%dT%H:%M:%S.%fZ") -> datetime.datetime:
     """Parse the datetime from the API call."""
+    # Truncate sub-second digits to 6 (microseconds) since %f doesn't support nanoseconds
+    truncated = re.sub(r"(\.\d{6})\d+", r"\1", dt_str)
     try:
-        return datetime.datetime.strptime(dt_str, fmt)
+        return datetime.datetime.strptime(truncated, fmt)
     except ValueError:
-        # Truncate sub-second digits to 6 (microseconds) since %f doesn't support nanoseconds
-        truncated = re.sub(r"(\.\d{6})\d+", r"\1", dt_str)
-        try:
-            return datetime.datetime.strptime(truncated, fmt)
-        except ValueError:
-            return datetime.datetime.strptime(truncated, fmt.replace("%S.%f", "%S"))
+        return datetime.datetime.strptime(truncated, fmt.replace("%S.%f", "%S"))
 
 
 def beta_feature(feature_name: str):
