@@ -1,3 +1,4 @@
+import datetime
 from io import StringIO
 
 import pytest
@@ -10,6 +11,7 @@ from flow360.component.utils import (
     MeshNameParser,
     UGRIDEndianness,
     is_valid_uuid,
+    parse_datetime,
     shared_account_confirm_proceed,
     validate_type,
 )
@@ -188,3 +190,18 @@ def test_mesh_name_parser_compressed_targz_with_path():
     assert parser.is_valid_volume_mesh()
     assert parser.is_compressed()
     assert parser.get_associated_mapbc_filename() == "./dir1/dir2/testMesh.mapbc"
+
+
+def test_parse_datetime_microseconds():
+    result = parse_datetime("2026-02-11T18:34:00.219245Z")
+    assert result == datetime.datetime(2026, 2, 11, 18, 34, 0, 219245)
+
+
+def test_parse_datetime_nanoseconds():
+    result = parse_datetime("2026-02-11T18:34:00.219245281Z")
+    assert result == datetime.datetime(2026, 2, 11, 18, 34, 0, 219245)
+
+
+def test_parse_datetime_no_fractional():
+    result = parse_datetime("2026-02-11T18:34:00Z")
+    assert result == datetime.datetime(2026, 2, 11, 18, 34, 0)
