@@ -1,3 +1,4 @@
+# pylint:disable = too-many-lines
 """
 validation for SimulationParams
 """
@@ -490,6 +491,17 @@ def _collect_zone_zone_interfaces(
     return potential_zone_zone_interfaces, snappy_multizone
 
 
+def _collect_farfield_custom_volume_interfaces(*, param_info: ParamsValidationInfo) -> set[str]:
+    """Collect interface names for dual-belonging faces (farfield enclosed_surfaces ∩ CustomVolume boundaries).
+
+    Returns names (not IDs) since _validate_boundary_completeness works with name sets.
+    """
+    return {
+        param_info.farfield_enclosed_surfaces[sid]
+        for sid in param_info.farfield_cv_dual_belonging_ids
+    }
+
+
 def _collect_used_boundary_names(params, param_info: ParamsValidationInfo) -> set:
     """Collect all boundary names referenced in Surface BC models."""
     if len(params.models) == 1 and isinstance(params.models[0], Fluid):
@@ -580,6 +592,9 @@ def _check_complete_boundary_condition_and_unknown_surface(
     volume_zones = _collect_volume_zones(params)
     potential_zone_zone_interfaces, snappy_multizone = _collect_zone_zone_interfaces(
         param_info=param_info, volume_zones=volume_zones
+    )
+    potential_zone_zone_interfaces |= _collect_farfield_custom_volume_interfaces(
+        param_info=param_info
     )
     used_boundaries = _collect_used_boundary_names(params, param_info)
 

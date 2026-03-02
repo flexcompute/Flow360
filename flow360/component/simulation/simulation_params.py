@@ -99,6 +99,7 @@ from flow360.component.simulation.utils import (
 )
 from flow360.component.simulation.validation.validation_output import (
     _check_aero_acoustics_observer_time_step_size,
+    _check_local_cfl_output,
     _check_moving_statistic_applicability,
     _check_output_fields,
     _check_output_fields_valid_given_transition_model,
@@ -563,6 +564,11 @@ class SimulationParams(_ParamModelBase):
     def check_unsteadiness_to_use_aero_acoustics(self):
         """Only allow Aero acoustics when using unsteady simulation"""
         return _check_unsteadiness_to_use_aero_acoustics(self)
+
+    @pd.model_validator(mode="after")
+    def check_local_cfl_output(self):
+        """Only allow localCFL output when using unsteady simulation"""
+        return _check_local_cfl_output(self)
 
     @pd.model_validator(mode="after")
     def check_aero_acoustics_observer_time_step_size(self):
