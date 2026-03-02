@@ -11,7 +11,8 @@ import toml
 from packaging.version import InvalidVersion, Version
 
 from flow360.cli import dict_utils
-from flow360.component.project_utils import show_projects_with_keyword_filter
+
+# from flow360.component.simulation.web.project_records import show_projects_with_keyword_filter
 from flow360.environment import Env
 from flow360.version import __solver_version__, __version__
 
@@ -123,6 +124,11 @@ def show_projects(keyword, env: str):
         env_config = Env.load(env)
         prev_env_config = Env.current
         env_config.active()
+
+    # pylint: disable=import-outside-toplevel
+    from flow360.component.simulation.web.project_records import (
+        show_projects_with_keyword_filter,
+    )
 
     show_projects_with_keyword_filter(search_keyword=keyword)
 

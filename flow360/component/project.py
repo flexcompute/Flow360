@@ -36,10 +36,8 @@ from flow360.component.interfaces import (
 from flow360.component.project_utils import (
     apply_and_inform_grouping_selections,
     deep_copy_entity_info,
-    get_project_records,
     load_status_from_asset,
     set_up_params_for_uploading,
-    show_projects_with_keyword_filter,
     validate_params_with_context,
 )
 from flow360.component.resource_base import Flow360Resource
@@ -61,6 +59,10 @@ from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.web.asset_base import AssetBase
 from flow360.component.simulation.web.draft import Draft
+from flow360.component.simulation.web.project_records import (
+    get_project_records,
+    show_projects_with_keyword_filter,
+)
 from flow360.component.simulation.web.utils import (
     get_project_dependency_resource_metadata,
 )

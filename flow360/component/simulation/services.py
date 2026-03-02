@@ -97,7 +97,6 @@ from flow360.exceptions import (
     Flow360TranslationError,
     Flow360ValueError,
 )
-from flow360.plugins.report.report import get_default_report_summary_template
 from flow360.version import __version__
 
 # Required for correct global scope initialization
@@ -1216,6 +1215,9 @@ def get_default_report_config() -> dict:
     dict
         default report config
     """
+    # pylint: disable=import-outside-toplevel
+    from flow360.plugins.report.report import get_default_report_summary_template
+
     return get_default_report_summary_template().model_dump(
         exclude_none=True,
     )

@@ -4,7 +4,7 @@ import pytest
 
 from flow360.cloud.rest_api import RestApi
 from flow360.component.interfaces import ProjectInterface
-from flow360.component.project_utils import ProjectRecords
+from flow360.component.simulation.web.project_records import ProjectRecords
 
 
 @pytest.fixture(autouse=True)

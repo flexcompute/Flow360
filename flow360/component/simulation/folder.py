@@ -209,7 +209,8 @@ class Folder(Flow360Resource):
             A list of project dictionaries found in the folder.
         """
 
-        from flow360.component.project_utils import get_project_records  # pylint: disable=import-outside-toplevel
+        # pylint: disable=import-outside-toplevel
+        from flow360.component.simulation.web.project_records import get_project_records
 
         records, _ = get_project_records(
             search_keyword=search_keyword,
