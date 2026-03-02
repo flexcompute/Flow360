@@ -11,6 +11,7 @@ from functools import wraps
 from typing import Any, Callable, Literal, Optional, Union, get_args, get_origin
 
 import pydantic as pd
+from flow360_schema.framework.validation.context import DeserializationContext
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.utils import model_attribute_unlock
@@ -204,9 +205,10 @@ def model_custom_constructor_parser(model_as_dict, global_vars):
             ):
                 input_kwargs_filtered[arg_name] = None
         try:
-            model_dict = constructor(**input_kwargs_filtered).model_dump(
-                mode="json", exclude_none=True
-            )
+            with DeserializationContext():
+                model_dict = constructor(**input_kwargs_filtered).model_dump(
+                    mode="json", exclude_none=True
+                )
             # Make sure we do not generate a new ID.
             if "private_attribute_id" in model_as_dict:
                 model_dict["private_attribute_id"] = model_as_dict["private_attribute_id"]

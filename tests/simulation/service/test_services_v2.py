@@ -492,12 +492,9 @@ def test_validate_error_from_multi_constructor():
                 "stored_entities",
                 0,
                 "height",
-                "value",
             ),
-            "type": "greater_than",
-            "msg": "Input should be greater than 0",
-            "input": -15,
-            "ctx": {"gt": "0.0"},
+            "type": "value_error",
+            "msg": "Value error, Value must be positive (>0), got -15.0",
         },
     ]
 

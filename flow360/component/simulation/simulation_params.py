@@ -9,6 +9,7 @@ from typing import Annotated, List, Literal, Optional, Union
 
 import pydantic as pd
 import unyt as u
+from flow360_schema.framework.validation.context import DeserializationContext
 
 from flow360.component.simulation.conversion import (
     LIQUID_IMAGINARY_FREESTREAM_MACH,
@@ -76,6 +77,7 @@ from flow360.component.simulation.unit_system import (
     DimensionedTypes,
     LengthType,
     MassType,
+    SI_unit_system,
     TimeType,
     UnitSystem,
     UnitSystemType,
@@ -132,10 +134,7 @@ from flow360.component.simulation.validation.validation_simulation_params import
     _populate_validated_field_to_validation_context,
 )
 from flow360.component.simulation.validation.validation_utils import has_mirroring_usage
-from flow360.error_messages import (
-    unit_system_inconsistent_msg,
-    use_unit_system_for_simulation_msg,
-)
+from flow360.error_messages import unit_system_inconsistent_msg
 from flow360.exceptions import Flow360ConfigurationError, Flow360RuntimeError
 from flow360.log import log
 from flow360.version import __version__
@@ -167,16 +166,18 @@ class _ParamModelBase(Flow360BaseModel):
     @classmethod
     def _init_check_unit_system(cls, **kwargs):
         """
-        Check existence of unit system and raise an error if it is not set or inconsistent.
+        Resolve the unit system from kwargs / active context / SI default.
+        Raises if an explicit kwarg unit_system conflicts with the active context.
+        Returns (resolved_unit_system, remaining_kwargs).
         """
-        if unit_system_manager.current is None:
-            raise Flow360RuntimeError(use_unit_system_for_simulation_msg)
-        # pylint: disable=duplicate-code
         kwarg_unit_system = kwargs.pop("unit_system", None)
         if kwarg_unit_system is not None:
             if not isinstance(kwarg_unit_system, UnitSystem):
                 kwarg_unit_system = UnitSystem.from_dict(**kwarg_unit_system)
-            if kwarg_unit_system != unit_system_manager.current:
+            if (
+                unit_system_manager.current is not None
+                and kwarg_unit_system != unit_system_manager.current
+            ):
                 raise Flow360RuntimeError(
                     unit_system_inconsistent_msg(
                         kwarg_unit_system.system_repr(),
@@ -184,7 +185,8 @@ class _ParamModelBase(Flow360BaseModel):
                     )
                 )
 
-        return kwargs
+        resolved = kwarg_unit_system or unit_system_manager.current or SI_unit_system
+        return resolved, kwargs
 
     @classmethod
     def _get_version_from_dict(cls, model_dict: dict) -> str:
@@ -226,16 +228,19 @@ class _ParamModelBase(Flow360BaseModel):
         """
         return sanitize_params_dict(model_dict)
 
+    @classmethod
+    def from_file(cls, filename: str):
+        """Override to run sanitizer and version updater before validation."""
+        model_dict = cls._handle_file(filename=filename)
+        model_dict = cls._sanitize_params_dict(model_dict)
+        model_dict, _ = cls._update_param_dict(model_dict)
+        with DeserializationContext():
+            return cls.model_validate(model_dict)
+
     def _init_no_unit_context(self, filename, file_content, **kwargs):
         """
-        Initialize the simulation parameters without a unit context.
+        Initialize the simulation parameters from file or dict content.
         """
-        if unit_system_manager.current is not None:
-            raise Flow360RuntimeError(
-                f"When loading params from file: {self.__class__.__name__}(filename), "
-                "unit context must not be used."
-            )
-
         if filename is not None:
             model_dict = self._handle_file(filename=filename, **kwargs)
         else:
@@ -245,11 +250,7 @@ class _ParamModelBase(Flow360BaseModel):
         # When treating files/file like contents the updater will always be run.
         model_dict, _ = _ParamModelBase._update_param_dict(model_dict)
 
-        unit_system = model_dict.get("unit_system")
-
-        with UnitSystem.from_dict(
-            **unit_system, verbose=False
-        ):  # pylint: disable=not-context-manager
+        with DeserializationContext():
             super().__init__(**model_dict)
 
     def _init_with_unit_context(self, **kwargs):
@@ -258,9 +259,9 @@ class _ParamModelBase(Flow360BaseModel):
         This is the entry when user construct Param with Python script.
         """
         # When treating dicts the updater is skipped.
-        kwargs = _ParamModelBase._init_check_unit_system(**kwargs)
+        unit_system, kwargs = _ParamModelBase._init_check_unit_system(**kwargs)
 
-        super().__init__(unit_system=unit_system_manager.current, **kwargs)
+        super().__init__(unit_system=unit_system, **kwargs)
 
     # pylint: disable=super-init-not-called
     # pylint: disable=fixme

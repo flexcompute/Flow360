@@ -154,7 +154,9 @@ from flow360.exceptions import Flow360TranslationError
 def dump_dict(input_params, exclude_none=True):
     """Dumping param/model to dictionary."""
 
-    result = input_params.model_dump(by_alias=True, exclude_none=exclude_none)
+    result = input_params.model_dump(
+        by_alias=True, exclude_none=exclude_none, context={"no_unit": True}
+    )
     if result.pop("privateAttributeDict", None) is not None:
         result.update(input_params.private_attribute_dict)
     return result
