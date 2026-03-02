@@ -34,6 +34,7 @@ from flow360.component.simulation.meshing_param.volume_params import (
     UniformRefinement,
     UserDefinedFarfield,
     WindTunnelFarfield,
+    _FarfieldBase,
 )
 from flow360.component.simulation.primitives import (
     AxisymmetricBody,
@@ -268,7 +269,7 @@ class MeshingParams(Flow360BaseModel):
                     rotation_entity_names.add(entity.name)
 
         for zone in self.volume_zones:
-            if not isinstance(zone, (AutomatedFarfield, UserDefinedFarfield, WindTunnelFarfield)):
+            if not isinstance(zone, _FarfieldBase):
                 continue
             if zone.enclosed_entities is None:
                 continue
@@ -286,6 +287,30 @@ class MeshingParams(Flow360BaseModel):
                     raise ValueError(
                         f"`{type(entity).__name__}` entity `{entity.name}` in "
                         f"`enclosed_entities` must be associated with a `RotationVolume`."
+                    )
+
+        # Check CustomVolume.enclosed_entities from all sources
+        custom_volumes: list[CustomVolume] = []
+        for zone in self.volume_zones:
+            if isinstance(zone, CustomZones):
+                for cv in zone.entities.stored_entities:
+                    if isinstance(cv, CustomVolume):
+                        custom_volumes.append(cv)
+            if isinstance(zone, _FarfieldBase) and zone.enclosed_entities is not None:
+                for entity in zone.enclosed_entities.stored_entities:
+                    if isinstance(entity, CustomVolume):
+                        custom_volumes.append(entity)
+
+        for cv in custom_volumes:
+            for entity in param_info.expand_entity_list(cv.enclosed_entities):
+                if (
+                    isinstance(entity, (Cylinder, AxisymmetricBody, Sphere))
+                    and entity.name not in rotation_entity_names
+                ):
+                    raise ValueError(
+                        f"`{type(entity).__name__}` entity `{entity.name}` in "
+                        f"`CustomVolume` `{cv.name}` `enclosed_entities` must be "
+                        f"associated with a `RotationVolume`."
                     )
 
         return self
@@ -602,7 +627,7 @@ class ModularMeshingWorkflow(Flow360BaseModel):
                     rotation_entity_names.add(entity.name)
 
         for zone in self.zones:
-            if not isinstance(zone, (AutomatedFarfield, UserDefinedFarfield)):
+            if not isinstance(zone, _FarfieldBase):
                 continue
             if zone.enclosed_entities is None:
                 continue
@@ -620,6 +645,30 @@ class ModularMeshingWorkflow(Flow360BaseModel):
                     raise ValueError(
                         f"`{type(entity).__name__}` entity `{entity.name}` in "
                         f"`enclosed_entities` must be associated with a `RotationVolume`."
+                    )
+
+        # Check CustomVolume.enclosed_entities from all sources
+        custom_volumes: list[CustomVolume] = []
+        for zone in self.zones:
+            if isinstance(zone, CustomZones):
+                for cv in zone.entities.stored_entities:
+                    if isinstance(cv, CustomVolume):
+                        custom_volumes.append(cv)
+            if isinstance(zone, _FarfieldBase) and zone.enclosed_entities is not None:
+                for entity in zone.enclosed_entities.stored_entities:
+                    if isinstance(entity, CustomVolume):
+                        custom_volumes.append(entity)
+
+        for cv in custom_volumes:
+            for entity in param_info.expand_entity_list(cv.enclosed_entities):
+                if (
+                    isinstance(entity, (Cylinder, AxisymmetricBody, Sphere))
+                    and entity.name not in rotation_entity_names
+                ):
+                    raise ValueError(
+                        f"`{type(entity).__name__}` entity `{entity.name}` in "
+                        f"`CustomVolume` `{cv.name}` `enclosed_entities` must be "
+                        f"associated with a `RotationVolume`."
                     )
 
         return self

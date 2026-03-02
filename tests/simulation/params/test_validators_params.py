@@ -2418,7 +2418,7 @@ def test_beta_mesher_only_features(mock_validation_context):
                         entities=[
                             CustomVolume(
                                 name="zone1",
-                                boundaries=[Surface(name="face1"), Surface(name="face2")],
+                                enclosed_entities=[Surface(name="face1"), Surface(name="face2")],
                             )
                         ],
                     ),
@@ -2448,7 +2448,7 @@ def test_beta_mesher_only_features(mock_validation_context):
                         entities=[
                             CustomVolume(
                                 name="zone1",
-                                boundaries=[Surface(name="face1"), Surface(name="face2")],
+                                enclosed_entities=[Surface(name="face1"), Surface(name="face2")],
                             )
                         ],
                     ),
@@ -2486,7 +2486,7 @@ def test_beta_mesher_only_features(mock_validation_context):
                         entities=[
                             CustomVolume(
                                 name="zone1",
-                                boundaries=[surface1, surface2],
+                                enclosed_entities=[surface1, surface2],
                             ),
                         ],
                     ),
@@ -2519,7 +2519,7 @@ def test_beta_mesher_only_features(mock_validation_context):
                         entities=[
                             CustomVolume(
                                 name="zone1",
-                                boundaries=[Surface(name="face1"), Surface(name="face2")],
+                                enclosed_entities=[Surface(name="face1"), Surface(name="face2")],
                             )
                         ],
                     ),
@@ -2569,11 +2569,17 @@ def test_beta_mesher_only_features(mock_validation_context):
                             entities=[
                                 CustomVolume(
                                     name="zone1",
-                                    boundaries=[Surface(name="face1"), Surface(name="face2")],
+                                    enclosed_entities=[
+                                        Surface(name="face1"),
+                                        Surface(name="face2"),
+                                    ],
                                 ),
                                 CustomVolume(
                                     name="zone1",
-                                    boundaries=[Surface(name="face3"), Surface(name="face4")],
+                                    enclosed_entities=[
+                                        Surface(name="face3"),
+                                        Surface(name="face4"),
+                                    ],
                                 ),
                             ],
                         ),
@@ -2587,7 +2593,7 @@ def test_beta_mesher_only_features(mock_validation_context):
     with (
         mock_validation_context,
         pytest.raises(
-            ValueError, match="The boundaries of a CustomVolume must have different names."
+            ValueError, match="The enclosed entities of a CustomVolume must have different names."
         ),
     ):
         with SI_unit_system:
@@ -2603,7 +2609,10 @@ def test_beta_mesher_only_features(mock_validation_context):
                             entities=[
                                 CustomVolume(
                                     name="zone1",
-                                    boundaries=[Surface(name="face1"), Surface(name="face1")],
+                                    enclosed_entities=[
+                                        Surface(name="face1"),
+                                        Surface(name="face1"),
+                                    ],
                                 )
                             ],
                         ),
@@ -2627,7 +2636,7 @@ def test_beta_mesher_only_features(mock_validation_context):
                         entities=[
                             CustomVolume(
                                 name="zone1",
-                                boundaries=[Surface(name="face1"), Surface(name="face2")],
+                                enclosed_entities=[Surface(name="face1"), Surface(name="face2")],
                             )
                         ],
                     ),
@@ -2868,7 +2877,7 @@ def test_check_duplicate_isosurface_names():
 def test_check_custom_volume_in_volume_zones():
     from flow360.component.simulation.meshing_param.volume_params import CustomZones
 
-    zone_2 = CustomVolume(name="zone2", boundaries=[Surface(name="face2")])
+    zone_2 = CustomVolume(name="zone2", enclosed_entities=[Surface(name="face2")])
     zone_2.axes = [(1, 0, 0), (0, 1, 0)]
 
     with SI_unit_system:
@@ -2881,7 +2890,9 @@ def test_check_custom_volume_in_volume_zones():
                 volume_zones=[
                     CustomZones(
                         name="custom_zones",
-                        entities=[CustomVolume(name="zone1", boundaries=[Surface(name="face1")])],
+                        entities=[
+                            CustomVolume(name="zone1", enclosed_entities=[Surface(name="face1")])
+                        ],
                     ),
                     UserDefinedFarfield(),
                 ],
@@ -2916,7 +2927,7 @@ def test_check_custom_volume_in_volume_zones():
     )
     assert errors[0]["loc"] == ("models", 0, "entities")
 
-    zone_3 = CustomVolume(name="zone3", boundaries=[Surface(name="face3")])
+    zone_3 = CustomVolume(name="zone3", enclosed_entities=[Surface(name="face3")])
     zone_3.axis = (1, 0, 0)
     zone_3.center = (0, 0, 0) * u.mm
 
@@ -2929,7 +2940,9 @@ def test_check_custom_volume_in_volume_zones():
                 zones=[
                     CustomZones(
                         name="custom_zones",
-                        entities=[CustomVolume(name="zone1", boundaries=[Surface(name="face1")])],
+                        entities=[
+                            CustomVolume(name="zone1", enclosed_entities=[Surface(name="face1")])
+                        ],
                     ),
                 ],
             ),
@@ -3691,7 +3704,7 @@ def test_automated_farfield_with_custom_zones():
                         entities=[
                             CustomVolume(
                                 name="zone1",
-                                boundaries=[
+                                enclosed_entities=[
                                     Surface(name="face1"),
                                     Surface(name="face2"),
                                 ],
@@ -3729,7 +3742,7 @@ def test_automated_farfield_with_custom_zones():
                         entities=[
                             CustomVolume(
                                 name="zone1",
-                                boundaries=[Surface(name="face1"), Surface(name="face2")],
+                                enclosed_entities=[Surface(name="face1"), Surface(name="face2")],
                             )
                         ],
                     ),
@@ -3792,7 +3805,7 @@ def test_custom_volume_named_farfield_with_automated_farfield():
                         entities=[
                             CustomVolume(
                                 name="farfield",
-                                boundaries=[Surface(name="face1"), Surface(name="face2")],
+                                enclosed_entities=[Surface(name="face1"), Surface(name="face2")],
                             )
                         ],
                     ),
@@ -3831,7 +3844,7 @@ def test_enclosed_entities_beta_mesher_only_positive():
                         entities=[
                             CustomVolume(
                                 name="zone1",
-                                boundaries=[
+                                enclosed_entities=[
                                     Surface(name="face1"),
                                     Surface(name="face2"),
                                 ],
@@ -3935,7 +3948,7 @@ def test_enclosed_entities_rotation_volume_association_positive():
                         entities=[
                             CustomVolume(
                                 name="zone1",
-                                boundaries=[
+                                enclosed_entities=[
                                     Surface(name="face1"),
                                     Surface(name="face2"),
                                 ],
@@ -3983,7 +3996,7 @@ def test_enclosed_entities_rotation_volume_association_negative():
                         entities=[
                             CustomVolume(
                                 name="zone1",
-                                boundaries=[
+                                enclosed_entities=[
                                     Surface(name="face1"),
                                     Surface(name="face2"),
                                 ],
@@ -4028,7 +4041,7 @@ def test_enclosed_entities_surfaces_only_no_rotation_volume_needed():
                         entities=[
                             CustomVolume(
                                 name="zone1",
-                                boundaries=[
+                                enclosed_entities=[
                                     Surface(name="face1"),
                                     Surface(name="face2"),
                                 ],
@@ -4068,7 +4081,7 @@ def test_user_defined_farfield_enclosed_entities_beta_mesher_positive():
                         entities=[
                             CustomVolume(
                                 name="zone1",
-                                boundaries=[
+                                enclosed_entities=[
                                     Surface(name="face1"),
                                     Surface(name="face2"),
                                 ],
@@ -4143,7 +4156,7 @@ def test_user_defined_farfield_rotation_volume_association_negative():
                         entities=[
                             CustomVolume(
                                 name="zone1",
-                                boundaries=[Surface(name="face1")],
+                                enclosed_entities=[Surface(name="face1")],
                             )
                         ],
                     ),
@@ -4195,7 +4208,7 @@ def test_user_defined_farfield_rotation_volume_association_positive():
                         entities=[
                             CustomVolume(
                                 name="zone1",
-                                boundaries=[Surface(name="face1")],
+                                enclosed_entities=[Surface(name="face1")],
                             )
                         ],
                     ),
@@ -4230,7 +4243,7 @@ def test_wind_tunnel_farfield_enclosed_entities_beta_mesher_positive():
                         entities=[
                             CustomVolume(
                                 name="zone1",
-                                boundaries=[
+                                enclosed_entities=[
                                     Surface(name="face1"),
                                     Surface(name="face2"),
                                 ],
@@ -4313,7 +4326,7 @@ def test_wind_tunnel_farfield_rotation_volume_association_negative():
                         entities=[
                             CustomVolume(
                                 name="zone1",
-                                boundaries=[Surface(name="face1")],
+                                enclosed_entities=[Surface(name="face1")],
                             )
                         ],
                     ),
@@ -4368,7 +4381,7 @@ def test_wind_tunnel_farfield_rotation_volume_association_positive():
                         entities=[
                             CustomVolume(
                                 name="zone1",
-                                boundaries=[Surface(name="face1")],
+                                enclosed_entities=[Surface(name="face1")],
                             )
                         ],
                     ),
@@ -4443,3 +4456,179 @@ def test_wind_tunnel_farfield_enclosed_entities_requires_custom_zones():
     )
     assert errors is not None
     assert any("only allowed when `CustomZones` are used" in e["msg"] for e in errors)
+
+
+def test_custom_volume_enclosed_entities_rotation_volume_association_positive():
+    """CustomVolume with Cylinder in enclosed_entities that is in a RotationVolume should pass."""
+    rotor = Cylinder(
+        name="rotor",
+        center=(0, 0, 0) * u.m,
+        axis=(0, 0, 1),
+        height=1 * u.m,
+        outer_radius=5 * u.m,
+    )
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-4,
+                ),
+                volume_zones=[
+                    RotationVolume(
+                        entities=[rotor],
+                        spacing_axial=0.5 * u.m,
+                        spacing_radial=0.5 * u.m,
+                        spacing_circumferential=0.3 * u.m,
+                    ),
+                    CustomZones(
+                        name="interior",
+                        entities=[
+                            CustomVolume(
+                                name="zone1",
+                                enclosed_entities=[Surface(name="face1"), rotor],
+                            )
+                        ],
+                    ),
+                    AutomatedFarfield(
+                        enclosed_entities=[Surface(name="face1"), rotor],
+                    ),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+        )
+    _, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="SurfaceMesh",
+        validation_level="VolumeMesh",
+    )
+    assert errors is None
+
+
+def test_custom_volume_enclosed_entities_rotation_volume_association_negative():
+    """CustomVolume with Cylinder in enclosed_entities without a RotationVolume should fail."""
+    rotor = Cylinder(
+        name="rotor",
+        center=(0, 0, 0) * u.m,
+        axis=(0, 0, 1),
+        height=1 * u.m,
+        outer_radius=5 * u.m,
+    )
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-4,
+                ),
+                volume_zones=[
+                    CustomZones(
+                        name="interior",
+                        entities=[
+                            CustomVolume(
+                                name="zone1",
+                                enclosed_entities=[Surface(name="face1"), rotor],
+                            )
+                        ],
+                    ),
+                    AutomatedFarfield(
+                        enclosed_entities=[Surface(name="face1")],
+                    ),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+        )
+    _, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="SurfaceMesh",
+        validation_level="VolumeMesh",
+    )
+    assert errors is not None
+    assert any("`Cylinder` entity `rotor` in `CustomVolume` `zone1`" in e["msg"] for e in errors)
+
+
+def test_custom_volume_enclosed_entities_sphere_rotation_volume_negative():
+    """CustomVolume with Sphere in enclosed_entities without a RotationVolume should fail."""
+    sph = Sphere(
+        name="sph",
+        center=(0, 0, 0) * u.m,
+        radius=5 * u.m,
+    )
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-4,
+                ),
+                volume_zones=[
+                    CustomZones(
+                        name="interior",
+                        entities=[
+                            CustomVolume(
+                                name="zone1",
+                                enclosed_entities=[Surface(name="face1"), sph],
+                            )
+                        ],
+                    ),
+                    AutomatedFarfield(
+                        enclosed_entities=[Surface(name="face1")],
+                    ),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+        )
+    _, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="SurfaceMesh",
+        validation_level="VolumeMesh",
+    )
+    assert errors is not None
+    assert any("`Sphere` entity `sph` in `CustomVolume` `zone1`" in e["msg"] for e in errors)
+
+
+def test_custom_volume_in_farfield_enclosed_entities_rotation_volume_negative():
+    """CustomVolume inside farfield enclosed_entities with Cylinder not in RotationVolume should fail."""
+    rotor = Cylinder(
+        name="rotor",
+        center=(0, 0, 0) * u.m,
+        axis=(0, 0, 1),
+        height=1 * u.m,
+        outer_radius=5 * u.m,
+    )
+    with SI_unit_system:
+        cv = CustomVolume(
+            name="zone1",
+            enclosed_entities=[Surface(name="face1"), rotor],
+        )
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-4,
+                ),
+                volume_zones=[
+                    CustomZones(
+                        name="interior",
+                        entities=[
+                            cv,
+                            CustomVolume(
+                                name="zone2",
+                                enclosed_entities=[Surface(name="face2")],
+                            ),
+                        ],
+                    ),
+                    AutomatedFarfield(
+                        enclosed_entities=[Surface(name="face2"), cv],
+                    ),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+        )
+    _, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="SurfaceMesh",
+        validation_level="VolumeMesh",
+    )
+    assert errors is not None
+    assert any("`Cylinder` entity `rotor` in `CustomVolume` `zone1`" in e["msg"] for e in errors)

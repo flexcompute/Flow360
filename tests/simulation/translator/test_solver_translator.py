@@ -1523,7 +1523,7 @@ def test_auto_ref_area_settings():
 
 
 def test_custom_volume_translation():
-    zone_2 = CustomVolume(name="zone2", boundaries=[Surface(name="face2")])
+    zone_2 = CustomVolume(name="zone2", enclosed_entities=[Surface(name="face2")])
     zone_2.axes = [(1, 0, 0), (0, 1, 0)]
 
     with SI_unit_system:
@@ -1537,7 +1537,7 @@ def test_custom_volume_translation():
                     CustomZones(
                         name="custom_zones",
                         entities=[
-                            CustomVolume(name="zone1", boundaries=[Surface(name="face1")]),
+                            CustomVolume(name="zone1", enclosed_entities=[Surface(name="face1")]),
                             zone_2,
                         ],
                     ),

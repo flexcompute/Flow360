@@ -891,7 +891,7 @@ class PorousJump(Flow360BaseModel):
         """Ensure all boundaries will be present after mesher and all entities are surfaces"""
 
         def _is_cross_custom_volume_interface(surface1, surface2) -> bool:
-            """Check if two surfaces belong to different CustomVolumes' boundaries."""
+            """Check if two surfaces belong to different CustomVolumes' enclosed_entities."""
             surface1_id = surface1.private_attribute_id
             surface2_id = surface2.private_attribute_id
 
@@ -914,7 +914,7 @@ class PorousJump(Flow360BaseModel):
             )
 
         def _is_farfield_custom_volume_interface(surface1, surface2) -> bool:
-            """Check if both surfaces are dual-belonging (farfield enclosed ∩ CustomVolume boundary)."""
+            """Check if both surfaces are dual-belonging (farfield enclosed ∩ CustomVolume enclosed_entities)."""
             dual = param_info.farfield_cv_dual_belonging_ids
             return surface1.private_attribute_id in dual and surface2.private_attribute_id in dual
 
@@ -923,11 +923,11 @@ class PorousJump(Flow360BaseModel):
 
             surface1, surface2 = surface_pair.pair
 
-            # Skip interface check for cross-CustomVolume boundaries (will become interface after meshing)
+            # Skip interface check for cross-CustomVolume enclosed_entities (will become interface after meshing)
             if _is_cross_custom_volume_interface(surface1, surface2):
                 continue
 
-            # Skip interface check for cross-farfield-CustomVolume boundaries
+            # Skip interface check for cross-farfield-CustomVolume enclosed_entities
             if _is_farfield_custom_volume_interface(surface1, surface2):
                 continue
 

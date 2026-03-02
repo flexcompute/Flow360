@@ -481,7 +481,7 @@ def _collect_zone_zone_interfaces(
             continue
         for custom_volume in zones.entities.stored_entities:
             if isinstance(custom_volume, CustomVolume):
-                expanded = param_info.expand_entity_list(custom_volume.boundaries)
+                expanded = param_info.expand_entity_list(custom_volume.enclosed_entities)
                 for boundary in expanded:
                     potential_zone_zone_interfaces.add(boundary.name)
             if isinstance(custom_volume, SeedpointVolume):
@@ -492,7 +492,7 @@ def _collect_zone_zone_interfaces(
 
 
 def _collect_farfield_custom_volume_interfaces(*, param_info: ParamsValidationInfo) -> set[str]:
-    """Collect interface names for dual-belonging faces (farfield enclosed_entities ∩ CustomVolume boundaries).
+    """Collect interface names for dual-belonging faces (farfield enclosed_entities ∩ CustomVolume enclosed_entities).
 
     Returns names (not IDs) since _validate_boundary_completeness works with name sets.
     """

@@ -32,7 +32,7 @@ from flow360.component.simulation.unit_system import SI_unit_system
 
 
 def _build_params_with_custom_volume(element_type: str):
-    zone = CustomVolume(name="solid_zone", boundaries=[Surface(name="face1")])
+    zone = CustomVolume(name="solid_zone", enclosed_entities=[Surface(name="face1")])
     return SimulationParams(
         meshing=MeshingParams(
             defaults=MeshingDefaults(

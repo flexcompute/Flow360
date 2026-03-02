@@ -290,7 +290,10 @@ def _get_custom_volumes(volume_zones: list):
                     volume_dict = {
                         "name": custom_volume.name,
                         "patches": sorted(
-                            [surface.name for surface in custom_volume.boundaries.stored_entities]
+                            [
+                                _translate_enclosed_entity_name(entity)
+                                for entity in custom_volume.enclosed_entities.stored_entities
+                            ]
                         ),
                     }
                     if enforce_tetrahedral:

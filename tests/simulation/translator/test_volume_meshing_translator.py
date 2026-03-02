@@ -213,7 +213,10 @@ def get_test_param():
                         entities=[
                             CustomVolume(
                                 name="custom_volume-1",
-                                boundaries=[Surface(name="interface1"), Surface(name="interface2")],
+                                enclosed_entities=[
+                                    Surface(name="interface1"),
+                                    Surface(name="interface2"),
+                                ],
                             )
                         ],
                     )
@@ -478,7 +481,10 @@ def get_test_param_modular():
                         entities=[
                             CustomVolume(
                                 name="custom_volume-1",
-                                boundaries=[Surface(name="interface1"), Surface(name="interface2")],
+                                enclosed_entities=[
+                                    Surface(name="interface1"),
+                                    Surface(name="interface2"),
+                                ],
                             ),
                         ],
                     ),
@@ -729,7 +735,10 @@ def test_custom_zones_element_type_tetrahedra(get_surface_mesh):
                         entities=[
                             CustomVolume(
                                 name="tetrahedral_zone",
-                                boundaries=[Surface(name="boundary1"), Surface(name="boundary2")],
+                                enclosed_entities=[
+                                    Surface(name="boundary1"),
+                                    Surface(name="boundary2"),
+                                ],
                             )
                         ],
                         element_type="tetrahedra",
@@ -764,7 +773,10 @@ def test_custom_zones_element_type_mixed(get_surface_mesh):
                         entities=[
                             CustomVolume(
                                 name="mixed_zone",
-                                boundaries=[Surface(name="boundary1"), Surface(name="boundary2")],
+                                enclosed_entities=[
+                                    Surface(name="boundary1"),
+                                    Surface(name="boundary2"),
+                                ],
                             )
                         ],
                         element_type="mixed",
@@ -1506,7 +1518,7 @@ def test_automated_farfield_enclosed_entities(get_surface_mesh):
                         entities=[
                             CustomVolume(
                                 name="inner",
-                                boundaries=[left1, right1],
+                                enclosed_entities=[left1, right1],
                             ),
                         ],
                     ),
@@ -1542,7 +1554,7 @@ def test_user_defined_farfield_enclosed_entities(get_surface_mesh):
                         entities=[
                             CustomVolume(
                                 name="inner",
-                                boundaries=[left1, right1],
+                                enclosed_entities=[left1, right1],
                             ),
                         ],
                     ),
@@ -1589,7 +1601,7 @@ def test_farfield_enclosed_entities_with_cylinder(get_surface_mesh):
                         entities=[
                             CustomVolume(
                                 name="inner",
-                                boundaries=[face1],
+                                enclosed_entities=[face1],
                             ),
                         ],
                     ),
@@ -1641,23 +1653,35 @@ class TestTranslateEnclosedEntityName:
             )
             self.custom_volume = CustomVolume(
                 name="cv",
-                boundaries=[Surface(name="f1")],
+                enclosed_entities=[Surface(name="f1")],
             )
 
     def test_surface_returns_raw_name(self):
         assert _translate_enclosed_entity_name(self.surface) == "s1"
 
     def test_cylinder_in_rotor_disk_names(self):
-        assert _translate_enclosed_entity_name(self.cylinder, rotor_disk_names=["cyl"]) == "rotorDisk-cyl"
+        assert (
+            _translate_enclosed_entity_name(self.cylinder, rotor_disk_names=["cyl"])
+            == "rotorDisk-cyl"
+        )
 
     def test_cylinder_not_in_rotor_disk_names(self):
-        assert _translate_enclosed_entity_name(self.cylinder, rotor_disk_names=["other"]) == "slidingInterface-cyl"
+        assert (
+            _translate_enclosed_entity_name(self.cylinder, rotor_disk_names=["other"])
+            == "slidingInterface-cyl"
+        )
 
     def test_cylinder_rotor_disk_names_none(self):
-        assert _translate_enclosed_entity_name(self.cylinder, rotor_disk_names=None) == "slidingInterface-cyl"
+        assert (
+            _translate_enclosed_entity_name(self.cylinder, rotor_disk_names=None)
+            == "slidingInterface-cyl"
+        )
 
     def test_cylinder_rotor_disk_names_empty(self):
-        assert _translate_enclosed_entity_name(self.cylinder, rotor_disk_names=[]) == "slidingInterface-cyl"
+        assert (
+            _translate_enclosed_entity_name(self.cylinder, rotor_disk_names=[])
+            == "slidingInterface-cyl"
+        )
 
     def test_axisymmetric_body(self):
         assert _translate_enclosed_entity_name(self.axisymmetric_body) == "slidingInterface-cone"
@@ -1696,7 +1720,7 @@ def test_farfield_enclosed_entities_with_sphere(get_surface_mesh):
                         entities=[
                             CustomVolume(
                                 name="inner",
-                                boundaries=[face1],
+                                enclosed_entities=[face1],
                             ),
                         ],
                     ),
@@ -1742,7 +1766,7 @@ def test_farfield_enclosed_entities_with_axisymmetric_body(get_surface_mesh):
                         entities=[
                             CustomVolume(
                                 name="inner",
-                                boundaries=[face1],
+                                enclosed_entities=[face1],
                             ),
                         ],
                     ),
