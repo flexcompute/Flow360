@@ -9,6 +9,7 @@ from flow360.component.simulation import services
 from flow360.component.simulation.entity_info import GeometryEntityInfo
 from flow360.component.simulation.exposed_units import supported_units_by_front_end
 from flow360.component.simulation.framework.updater_utils import compare_values
+from flow360.component.simulation.services_report import get_default_report_config
 from flow360.component.simulation.unit_system import _PredefinedUnitSystem
 from flow360.component.simulation.user_code.core.types import UserVariable
 from flow360.component.simulation.validation.validation_context import (
@@ -1343,7 +1344,7 @@ def test_unit_conversion_front_end_compatibility():
 
 
 def test_get_default_report_config_json():
-    report_config_dict = services.get_default_report_config()
+    report_config_dict = get_default_report_config()
     with open("ref/default_report_config.json", "r") as fp:
         ref_dict = json.load(fp)
     assert compare_values(report_config_dict, ref_dict, ignore_keys=["formatter"])
