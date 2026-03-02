@@ -12,7 +12,6 @@ from packaging.version import InvalidVersion, Version
 
 from flow360.cli import dict_utils
 
-# from flow360.component.simulation.web.project_records import show_projects_with_keyword_filter
 from flow360.environment import Env
 from flow360.version import __solver_version__, __version__
 
