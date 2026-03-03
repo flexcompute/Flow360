@@ -169,6 +169,9 @@ def test_conflicting_entity_grouping_tags(mock_response, capsys):
     ) as f:
         params_as_dict = json.load(f)
 
+    from flow360.version import __version__
+
+    params_as_dict["version"] = __version__
     params, errors, _ = validate_model(
         params_as_dict=params_as_dict,
         validated_by=ValidationCalledBy.LOCAL,
