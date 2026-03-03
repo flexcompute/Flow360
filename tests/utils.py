@@ -76,8 +76,8 @@ def to_file_from_file_test(obj):
 def compare_dict_to_ref(data, ref_path):
     with open(ref_path) as fh:
         ref_data = json.load(fh)
-    data.pop("version", None)
-    ref_data.pop("version", None)
+    data = {k: v for k, v in data.items() if k != "version"}
+    ref_data = {k: v for k, v in ref_data.items() if k != "version"}
     equal = sorted(data.items()) == sorted(ref_data.items())
     if equal is False:
         show_dict_diff(data, ref_data)
