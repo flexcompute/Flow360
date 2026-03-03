@@ -1150,6 +1150,5 @@
     "unit_system": {
         "name": "SI"
     },
-    "user_defined_fields": [],
-    "version": "25.9.1b1"
+    "user_defined_fields": []
 }
