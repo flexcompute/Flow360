@@ -742,5 +742,10 @@
     "unit_system": {
         "name": "SI"
     },
+<<<<<<< HEAD
     "user_defined_fields": []
+=======
+    "user_defined_fields": [],
+    "version": "25.8.7"
+>>>>>>> 9446875b (chore(): update version to 25.8.7 across all relevant files (#1875))
 }
