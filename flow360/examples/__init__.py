@@ -8,8 +8,8 @@ from .cube import Cube
 from .cylinder2D import Cylinder2D
 from .cylinder3D import Cylinder3D
 from .DARPA_SUBOFF import DARPA_SUBOFF
-from .DTU_WindTurbine import DTU_WindTurbine
 from .drivaer import DrivAer
+from .DTU_WindTurbine import DTU_WindTurbine
 from .evtol import EVTOL
 from .f1_2025 import F1_2025
 from .isolated_propeller import IsolatedPropeller
