@@ -246,10 +246,16 @@ def test_symmetric_existence(surface_mesh):
         in errors[0]["msg"]
     )
 
-    # Invalid Symmetric but did not use it
+    # Invalid Symmetric and did not use preexisting symmetry surface:
+    # no auto-generated/forced symmetry plane exists, so preexistingSymmetry remains
+    # a real boundary and must be assigned a BC.
     params.models.pop()
     errors, warnings = _run_validation(params, surface_mesh)
-    assert errors is None
+    assert len(errors) == 1
+    assert (
+        "The following boundaries do not have a boundary condition: preexistingSymmetry."
+        in errors[0]["msg"]
+    )
     assert warnings == []
 
 
