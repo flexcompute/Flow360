@@ -1,7 +1,9 @@
 import json
 import os
+from unittest.mock import patch
 
 import pytest
+from flow360_schema.framework.validation.context import DeserializationContext
 
 import flow360 as fl
 
@@ -24,7 +26,7 @@ def test_bet_disk_updater_and_override(tmp_path):
                     "private_attribute_registry_bucket_name": "DraftEntities",
                     "name": "BET 5",
                     "axis": [0, 0, 1],
-                    "center": [2.7, -6, 1.06],
+                    "center": {"value": [2.7, -6, 1.06], "units": "m"},
                     "height": {"value": 0.2, "units": "m"},
                     "outer_radius": {"value": 1.5, "units": "m"},
                 },
@@ -82,3 +84,65 @@ def test_bet_disk_updater_and_override(tmp_path):
     assert disk.name == "BET 57"
     assert disk.number_of_blades == 2
     assert len(disk.entities.stored_entities) == 2
+
+
+def test_bet_disk_from_file_uses_deserialization_context(tmp_path):
+    """BETDisk.from_file must wrap model_validate in DeserializationContext."""
+    filename = tmp_path / "bet.json"
+    data = {
+        "version": "25.7.5",
+        "name": "BET",
+        "type": "BETDisk",
+        "entities": {
+            "stored_entities": [
+                {
+                    "private_attribute_entity_type_name": "Cylinder",
+                    "private_attribute_registry_bucket_name": "DraftEntities",
+                    "name": "cyl",
+                    "axis": [0, 0, 1],
+                    "center": {"value": [0, 0, 0], "units": "m"},
+                    "height": {"value": 1, "units": "m"},
+                    "outer_radius": {"value": 1, "units": "m"},
+                }
+            ]
+        },
+        "rotation_direction_rule": "leftHand",
+        "number_of_blades": 2,
+        "omega": {"value": 800, "units": "rpm"},
+        "chord_ref": {"value": 0.14, "units": "m"},
+        "n_loading_nodes": 20,
+        "blade_line_chord": {"value": 0.25, "units": "m"},
+        "initial_blade_direction": [1, 0, 0],
+        "tip_gap": "inf",
+        "mach_numbers": [0],
+        "reynolds_numbers": [1000000],
+        "alphas": {"value": [-180, 180], "units": "degree"},
+        "sectional_radiuses": {"value": [0.1, 1], "units": "m"},
+        "sectional_polars": [
+            {"lift_coeffs": [[[0.0, 0.0]]], "drag_coeffs": [[[0.0, 0.0]]]},
+            {"lift_coeffs": [[[0.0, 0.0]]], "drag_coeffs": [[[0.0, 0.0]]]},
+        ],
+        "twists": [
+            {"radius": {"value": 0.1, "units": "m"}, "twist": {"value": 0, "units": "degree"}},
+            {"radius": {"value": 1, "units": "m"}, "twist": {"value": 0, "units": "degree"}},
+        ],
+        "chords": [
+            {"radius": {"value": 0.1, "units": "m"}, "chord": {"value": 0.1, "units": "m"}},
+            {"radius": {"value": 1, "units": "m"}, "chord": {"value": 0.1, "units": "m"}},
+        ],
+    }
+    with open(filename, "w") as f:
+        json.dump(data, f)
+
+    entered = False
+    original_enter = DeserializationContext.__enter__
+
+    def tracking_enter(self):
+        nonlocal entered
+        entered = True
+        return original_enter(self)
+
+    with patch.object(DeserializationContext, "__enter__", tracking_enter):
+        fl.BETDisk.from_file(str(filename))
+
+    assert entered, "BETDisk.from_file must use DeserializationContext"
