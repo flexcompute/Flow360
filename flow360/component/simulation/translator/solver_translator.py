@@ -93,6 +93,7 @@ from flow360.component.simulation.outputs.outputs import (
 from flow360.component.simulation.primitives import (
     BOUNDARY_FULL_NAME_WHEN_NOT_FOUND,
     Box,
+<<<<<<< HEAD
     GhostCircularPlane,
     GhostSphere,
     GhostSurface,
@@ -105,6 +106,10 @@ from flow360.component.simulation.primitives import (
 from flow360.component.simulation.run_control.stopping_criterion import (
     StoppingCriterion,
 )
+=======
+    SurfacePair,
+)
+>>>>>>> be1ea774 ([HOTFIX RC 25.6] Backport missing-boundary translator handling for symmetry-overlap deleted surfaces (#1393, #1399) (#1867))
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
 from flow360.component.simulation.translator.user_expression_utils import (
@@ -425,8 +430,12 @@ def inject_surface_list_info(entity: EntityList):
         "surfaces": [
             surface.full_name
             for surface in entity.stored_entities
+<<<<<<< HEAD
             if not isinstance(surface, ImportedSurface)
             and surface.full_name != BOUNDARY_FULL_NAME_WHEN_NOT_FOUND
+=======
+            if surface.full_name != BOUNDARY_FULL_NAME_WHEN_NOT_FOUND
+>>>>>>> be1ea774 ([HOTFIX RC 25.6] Backport missing-boundary translator handling for symmetry-overlap deleted surfaces (#1393, #1399) (#1867))
         ],
         "type": "surfaceIntegral",
     }
