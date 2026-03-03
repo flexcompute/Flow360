@@ -24,7 +24,7 @@ def test_bet_disk_updater_and_override(tmp_path):
                     "private_attribute_registry_bucket_name": "DraftEntities",
                     "name": "BET 5",
                     "axis": [0, 0, 1],
-                    "center": {"value": [2.7, -6, 1.06], "units": "m"},
+                    "center": [2.7, -6, 1.06],
                     "height": {"value": 0.2, "units": "m"},
                     "outer_radius": {"value": 1.5, "units": "m"},
                 },
