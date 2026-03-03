@@ -1,5 +1,9 @@
 {
+<<<<<<< HEAD
     "version": "25.7.8",
+=======
+    "version": "25.7.1b1",
+>>>>>>> be1ea774 ([HOTFIX RC 25.6] Backport missing-boundary translator handling for symmetry-overlap deleted surfaces (#1393, #1399) (#1867))
     "unit_system": {
         "name": "SI"
     },
