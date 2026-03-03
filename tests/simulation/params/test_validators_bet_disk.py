@@ -1,6 +1,7 @@
 import unittest
 
 import pytest
+from flow360_schema.framework.validation.context import DeserializationContext
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation import services
@@ -38,7 +39,8 @@ def test_bet_disk_blade_line_chord(create_steady_bet_disk):
 
 def test_bet_disk_initial_blade_direction(create_steady_bet_disk):
     bet_disk = create_steady_bet_disk
-    BETDisk.model_validate(bet_disk)
+    with DeserializationContext():
+        BETDisk.model_validate(bet_disk)
 
     with pytest.raises(
         ValueError,
@@ -67,7 +69,8 @@ def test_bet_disk_disorder_alphas(create_steady_bet_disk):
         tmp = bet_disk.alphas[0]
         bet_disk.alphas[0] = bet_disk.alphas[1]
         bet_disk.alphas[1] = tmp
-        BETDisk.model_validate(bet_disk.model_dump())
+        with DeserializationContext():
+            BETDisk.model_validate(bet_disk.model_dump())
 
 
 def test_bet_disk_duplicate_chords(create_steady_bet_disk):
@@ -78,7 +81,8 @@ def test_bet_disk_duplicate_chords(create_steady_bet_disk):
     ):
         bet_disk.name = "diskABC"
         bet_disk.chords.append(bet_disk.chords[-1])
-        BETDisk.model_validate(bet_disk.model_dump())
+        with DeserializationContext():
+            BETDisk.model_validate(bet_disk.model_dump())
 
 
 def test_bet_disk_duplicate_twists(create_steady_bet_disk):
@@ -89,7 +93,8 @@ def test_bet_disk_duplicate_twists(create_steady_bet_disk):
     ):
         bet_disk.name = "diskABC"
         bet_disk.twists.append(bet_disk.twists[-1])
-        BETDisk.model_validate(bet_disk.model_dump())
+        with DeserializationContext():
+            BETDisk.model_validate(bet_disk.model_dump())
 
 
 def test_bet_disk_nonequal_sectional_radiuses_and_polars(create_steady_bet_disk):
@@ -103,7 +108,8 @@ def test_bet_disk_nonequal_sectional_radiuses_and_polars(create_steady_bet_disk)
         bet_disk_dict["sectional_radiuses"]["value"] = bet_disk_dict["sectional_radiuses"][
             "value"
         ] + (bet_disk.sectional_radiuses[-1],)
-        bet_disk_error = BETDisk(**bet_disk_dict)
+        with DeserializationContext():
+            bet_disk_error = BETDisk.model_validate(bet_disk_dict)
         BETDisk.model_validate(bet_disk_error)
 
 
@@ -115,7 +121,8 @@ def test_bet_disk_3d_coefficients_dimension_wrong_mach_numbers(create_steady_bet
     ):
         bet_disk.name = "diskABC"
         bet_disk.mach_numbers.append(bet_disk.mach_numbers[-1])
-        BETDisk.model_validate(bet_disk)
+        with DeserializationContext():
+            BETDisk.model_validate(bet_disk)
 
 
 def test_bet_disk_3d_coefficients_dimension_wrong_re_numbers(create_steady_bet_disk):
@@ -138,5 +145,6 @@ def test_bet_disk_3d_coefficients_dimension_wrong_alpha_numbers(create_steady_be
         bet_disk.name = "diskABC"
         bet_disk_dict = bet_disk.model_dump()
         bet_disk_dict["alphas"]["value"] = bet_disk_dict["alphas"]["value"] + (bet_disk.alphas[-1],)
-        bet_disk_error = BETDisk(**bet_disk_dict)
+        with DeserializationContext():
+            bet_disk_error = BETDisk.model_validate(bet_disk_dict)
         BETDisk.model_validate(bet_disk_error)

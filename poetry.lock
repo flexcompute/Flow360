@@ -1480,14 +1480,14 @@ files = [
 
 [[package]]
 name = "flow360-schema"
-version = "0.1.3"
+version = "0.1.4"
 description = "Pure Pydantic schemas for Flow360 - Single Source of Truth"
 optional = false
 python-versions = ">=3.9,<4.0"
 groups = ["main"]
 files = [
-    {file = "flow360_schema-0.1.3-py3-none-any.whl", hash = "sha256:f83dd1f5d9593a045486a02aee214e5a371a0936d5b577615990bafbf2585da1"},
-    {file = "flow360_schema-0.1.3.tar.gz", hash = "sha256:5062fa7b6c7aa0408cb78c9e0212eb83a26fbf37c7659dded5934c197a2939ca"},
+    {file = "flow360_schema-0.1.4-py3-none-any.whl", hash = "sha256:636f3ebb1923a684fb811525bfc892e70d484eae685ddbe7b16f61cf88c7afba"},
+    {file = "flow360_schema-0.1.4.tar.gz", hash = "sha256:1467f18c19120da9f0735c64bb0f79b7bf2ae0b9b13433a7876e24fa65d08f8b"},
 ]
 
 [package.dependencies]
@@ -5490,15 +5490,15 @@ testing = ["covdefaults (>=2.3)", "coverage (>=7.13)", "defusedxml (>=0.7.1)", "
 
 [[package]]
 name = "sphinx-autodoc-typehints"
-version = "3.9.4"
+version = "3.9.5"
 description = "Type hints (PEP 484) support for the Sphinx autodoc extension"
 optional = true
 python-versions = ">=3.12"
 groups = ["main"]
 markers = "python_version >= \"3.12\" and extra == \"docs\""
 files = [
-    {file = "sphinx_autodoc_typehints-3.9.4-py3-none-any.whl", hash = "sha256:bd34fd41f12334c994ad53aac9deff2327a7ef736115ea61d0fc2398e8a3e127"},
-    {file = "sphinx_autodoc_typehints-3.9.4.tar.gz", hash = "sha256:ffc2ce3d2c62cd7873e199162db395eccfff32c9ea14ce9c152c0a384bd0d29d"},
+    {file = "sphinx_autodoc_typehints-3.9.5-py3-none-any.whl", hash = "sha256:c94f88a90b6c61a7a6686cb77b410e46e077712838387e6cf22d69e85cfd06a5"},
+    {file = "sphinx_autodoc_typehints-3.9.5.tar.gz", hash = "sha256:60e646efb7c352a0e98f34dd7fdcde4527fbbdbdf30371ff8321b6b3eb1fd37d"},
 ]
 
 [package.dependencies]
