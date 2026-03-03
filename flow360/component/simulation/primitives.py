@@ -800,16 +800,18 @@ class Surface(_SurfaceEntityBase):
             if half_model_symmetry_plane_center_y is None:
                 # Legacy schema.
                 return False
-<<<<<<< HEAD
             if farfield_method == "user-defined" and not gai_and_beta_mesher:
-=======
-            if farfield_domain_type not in ("half_body_positive_y", "half_body_negative_y") and (
-                not _auto_symmetric_plane_exists_from_bbox(
-                    global_bounding_box=global_bounding_box,
-                    planar_face_tolerance=planar_face_tolerance,
+                return False
+            if (
+                farfield_method == "auto"
+                and farfield_domain_type not in ("half_body_positive_y", "half_body_negative_y")
+                and (
+                    not _auto_symmetric_plane_exists_from_bbox(
+                        global_bounding_box=global_bounding_box,
+                        planar_face_tolerance=planar_face_tolerance,
+                    )
                 )
             ):
->>>>>>> fa159430 ([FXC-6102] fix(): avoid false-positive deleted-surface validation for auto farfield full-body and add regression tests (#1871))
                 return False
             return self._overlaps(half_model_symmetry_plane_center_y, length_tolerance)
 
