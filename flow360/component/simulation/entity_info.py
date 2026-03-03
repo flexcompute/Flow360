@@ -29,6 +29,7 @@ from flow360.component.simulation.primitives import (
     GhostCircularPlane,
     GhostSphere,
     SnappyBody,
+    Sphere,
     Surface,
     WindTunnelGhostSurface,
 )
@@ -43,6 +44,7 @@ DraftEntityTypes = Annotated[
         AxisymmetricBody,
         Box,
         Cylinder,
+        Sphere,
         Point,
         PointArray,
         PointArray2D,
