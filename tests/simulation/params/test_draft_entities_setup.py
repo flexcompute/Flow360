@@ -12,6 +12,7 @@ from flow360.component.simulation.meshing_param.volume_params import (
 from flow360.component.simulation.primitives import (
     AxisymmetricBody,
     CustomVolume,
+    Sphere,
     Surface,
 )
 from flow360.component.simulation.simulation_params import SimulationParams
@@ -69,3 +70,22 @@ def test_axisymmetric_body_added_to_draft_entities():
     assert any(
         isinstance(e, AxisymmetricBody) and e.name == "axis_body" for e in updated.draft_entities
     )
+
+
+def test_sphere_added_to_draft_entities():
+    with SI_unit_system:
+        sphere = Sphere(name="sphere_zone", center=(0, 0, 0) * u.m, radius=0.5 * u.m)
+        params = SimulationParams(
+            meshing=MeshingParams(
+                volume_zones=[
+                    RotationVolume(
+                        entities=sphere,
+                        spacing_circumferential=0.1 * u.m,
+                    ),
+                    UserDefinedFarfield(name="ff"),
+                ]
+            )
+        )
+    entity_info = _get_basic_entity_info()
+    updated = _set_up_params_non_persistent_entity_info(entity_info, params)
+    assert any(isinstance(e, Sphere) and e.name == "sphere_zone" for e in updated.draft_entities)
