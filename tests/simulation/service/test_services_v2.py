@@ -1,3 +1,4 @@
+import copy
 import json
 import re
 
@@ -1661,3 +1662,24 @@ def test_validate_error_location_with_selector():
     )
 
     # Verify key path components are present for tokenized selectors in used_selectors
+
+
+@pytest.mark.parametrize("unit_system_name", ["SI", "Imperial", "CGS"])
+def test_validate_model_preserves_unit_system(unit_system_name):
+    """validate_model must not mutate the unit_system entry in the input dict."""
+    with open("data/simulation.json", "r") as fp:
+        params_data = json.load(fp)
+
+    # Convert to the target unit system so all values carry matching units
+    services.change_unit_system(data=params_data, target_unit_system=unit_system_name)
+    unit_system_before = copy.deepcopy(params_data["unit_system"])
+
+    validated_param, errors, _ = services.validate_model(
+        params_as_dict=params_data,
+        validated_by=services.ValidationCalledBy.LOCAL,
+        root_item_type="VolumeMesh",
+    )
+
+    assert params_data["unit_system"] == unit_system_before
+    if validated_param is not None:
+        assert validated_param.unit_system.name == unit_system_name

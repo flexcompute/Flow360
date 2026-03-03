@@ -3,6 +3,15 @@
 from typing import Literal, Optional, Tuple, Union
 
 import pydantic as pd
+from flow360_schema.models.primitives import (
+    AbsoluteTemperature,
+    Angle,
+    Density,
+    Length,
+    Pressure,
+    Velocity,
+    Viscosity,
+)
 from typing_extensions import Self
 
 import flow360.component.simulation.units as u
@@ -15,16 +24,6 @@ from flow360.component.simulation.models.material import Air, Water
 from flow360.component.simulation.operating_condition.atmosphere_model import (
     StandardAtmosphereModel,
 )
-from flow360_schema.models.primitives import (
-    AbsoluteTemperature,
-    Angle,
-    Density,
-    Length,
-    Pressure,
-    Velocity,
-    Viscosity,
-)
-
 from flow360.component.simulation.unit_system import DeltaTemperatureType
 from flow360.component.simulation.user_code.core.types import (
     Expression,
@@ -208,7 +207,7 @@ class GenericReferenceCondition(MultiConstructorBaseModel):
     type_name: Literal["GenericReferenceCondition"] = pd.Field(
         "GenericReferenceCondition", frozen=True
     )
-    velocity_magnitude: Optional[ValueOrExpression[Velocity.PositiveFloat64]] = ConditionalField(  # type: ignore[valid-type]
+    velocity_magnitude: Optional[ValueOrExpression[Velocity.PositiveFloat64]] = ConditionalField(
         context=CASE,
         description="Freestream velocity magnitude. Used as reference velocity magnitude"
         + " when :py:attr:`reference_velocity_magnitude` is not specified. Cannot change once specified.",
@@ -282,9 +281,13 @@ class AerospaceCondition(MultiConstructorBaseModel):
     """
 
     type_name: Literal["AerospaceCondition"] = pd.Field("AerospaceCondition", frozen=True)
-    alpha: Angle.Float64 = ConditionalField(0 * u.deg, description="The angle of attack.", context=CASE)  # type: ignore[valid-type]
-    beta: Angle.Float64 = ConditionalField(0 * u.deg, description="The side slip angle.", context=CASE)  # type: ignore[valid-type]
-    velocity_magnitude: Optional[ValueOrExpression[Velocity.NonNegativeFloat64]] = ConditionalField(  # type: ignore[valid-type]
+    alpha: Angle.Float64 = ConditionalField(
+        0 * u.deg, description="The angle of attack.", context=CASE
+    )
+    beta: Angle.Float64 = ConditionalField(
+        0 * u.deg, description="The side slip angle.", context=CASE
+    )
+    velocity_magnitude: Optional[ValueOrExpression[Velocity.NonNegativeFloat64]] = ConditionalField(
         description="Freestream velocity magnitude. Used as reference velocity magnitude"
         + " when :py:attr:`reference_velocity_magnitude` is not specified.",
         context=CASE,
@@ -561,8 +564,12 @@ class LiquidOperatingCondition(Flow360BaseModel):
     type_name: Literal["LiquidOperatingCondition"] = pd.Field(
         "LiquidOperatingCondition", frozen=True
     )
-    alpha: Angle.Float64 = ConditionalField(0 * u.deg, description="The angle of attack.", context=CASE)
-    beta: Angle.Float64 = ConditionalField(0 * u.deg, description="The side slip angle.", context=CASE)
+    alpha: Angle.Float64 = ConditionalField(
+        0 * u.deg, description="The angle of attack.", context=CASE
+    )
+    beta: Angle.Float64 = ConditionalField(
+        0 * u.deg, description="The side slip angle.", context=CASE
+    )
     velocity_magnitude: Optional[ValueOrExpression[Velocity.NonNegativeFloat64]] = ConditionalField(
         context=CASE,
         description="Incoming flow velocity magnitude. Used as reference velocity magnitude"
