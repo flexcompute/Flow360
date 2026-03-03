@@ -36,8 +36,11 @@ from flow360.component.simulation.validation.validation_context import (
     contextual_model_validator,
 )
 from flow360.component.types import Axis
+<<<<<<< HEAD
 from flow360.component.utils import _naming_pattern_handler
 from flow360.exceptions import Flow360DeprecationError
+=======
+>>>>>>> be1ea774 ([HOTFIX RC 25.6] Backport missing-boundary translator handling for symmetry-overlap deleted surfaces (#1393, #1399) (#1867))
 
 BOUNDARY_FULL_NAME_WHEN_NOT_FOUND = "This boundary does not exist!!!"
 
@@ -59,6 +62,7 @@ def _get_generated_boundary_names(surface_name: str, volume_mesh_meta: dict[str,
             if (
                 match is not None and match.group(1) == surface_name
             ) or existing_boundary_name == surface_name:
+<<<<<<< HEAD
                 full_boundary_names.append(existing_boundary_name)
 
     # Not found
@@ -66,6 +70,12 @@ def _get_generated_boundary_names(surface_name: str, volume_mesh_meta: dict[str,
         return [BOUNDARY_FULL_NAME_WHEN_NOT_FOUND]
 
     return full_boundary_names
+=======
+                return existing_boundary_name
+
+    # Not found
+    return BOUNDARY_FULL_NAME_WHEN_NOT_FOUND
+>>>>>>> be1ea774 ([HOTFIX RC 25.6] Backport missing-boundary translator handling for symmetry-overlap deleted surfaces (#1393, #1399) (#1867))
 
 
 def _check_axis_is_orthogonal(axis_pair: Tuple[Axis, Axis]) -> Tuple[Axis, Axis]:

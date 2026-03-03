@@ -562,6 +562,7 @@ def translate_setting_and_apply_to_all_entities(
                     continue
 
             for entity in list_of_entities:
+<<<<<<< HEAD
                 if (
                     entity_type_to_include is None
                     or lump_list_of_entities
@@ -574,12 +575,33 @@ def translate_setting_and_apply_to_all_entities(
                             if setting is None:
                                 continue
                             output.update(setting)
+=======
+                if not to_list:
+                    # Generate a $name:{$value} dict
+                    if custom_output_dict_entries:
+                        setting = entity_injection_func(entity, **entity_injection_kwargs)
+                        if setting is None:
+                            continue
+                        output.update(setting)
+                    else:
+                        if use_instance_name_as_key is True and lump_list_of_entities is False:
+                            raise NotImplementedError(
+                                "[Internal Error]: use_instance_name_as_key cannot be used"
+                                " when lump_list_of_entities is True"
+                            )
+                        if use_sub_item_as_key is True:
+                            # pylint: disable=fixme
+                            # TODO: Make sure when use_sub_item_as_key is True
+                            # TODO: the entity has private_attribute_sub_components
+                            key_names = entity.private_attribute_sub_components
+>>>>>>> be1ea774 ([HOTFIX RC 25.6] Backport missing-boundary translator handling for symmetry-overlap deleted surfaces (#1393, #1399) (#1867))
                         else:
                             if use_instance_name_as_key is True and lump_list_of_entities is False:
                                 raise NotImplementedError(
                                     "[Internal Error]: use_instance_name_as_key cannot be used"
                                     " when lump_list_of_entities is True"
                                 )
+<<<<<<< HEAD
                             if use_sub_item_as_key is True:
                                 # pylint: disable=fixme
                                 # TODO: Make sure when use_sub_item_as_key is True
@@ -613,6 +635,27 @@ def translate_setting_and_apply_to_all_entities(
                             continue
                         setting.update(translated_setting)
                         output.append(setting)
+=======
+                            ]
+                        for key_name in key_names:
+                            if key_name == BOUNDARY_FULL_NAME_WHEN_NOT_FOUND:
+                                # Skip missing boundary
+                                continue
+                            if output.get(key_name) is None:
+                                setting = entity_injection_func(entity, **entity_injection_kwargs)
+                                if setting is None:
+                                    continue
+                                output[key_name] = setting
+                            update_dict_recursively(output[key_name], translated_setting)
+                else:
+                    # Generate a list with $name being an item
+                    # Note: Surface/Boundary logic should be handled in the entity_injection_func
+                    setting = entity_injection_func(entity, **entity_injection_kwargs)
+                    if setting is None:
+                        continue
+                    setting.update(translated_setting)
+                    output.append(setting)
+>>>>>>> be1ea774 ([HOTFIX RC 25.6] Backport missing-boundary translator handling for symmetry-overlap deleted surfaces (#1393, #1399) (#1867))
     return output
 
 
