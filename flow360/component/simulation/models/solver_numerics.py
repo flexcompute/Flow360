@@ -220,6 +220,21 @@ class NavierStokesSolver(GenericSolverSettings):
         + "updated every pseudo step.",
     )
 
+    @pd.model_validator(mode="before")
+    @classmethod
+    def _default_linear_solver_type(cls, data):
+        """Inject default type_name for linear_solver when missing.
+
+        The WebUI generates linear_solver dicts without type_name. Without this,
+        pydantic's discriminated union fails because it cannot determine the variant.
+        The updater only covers JSON with older version stamps; this handles current-version JSON.
+        """
+        if isinstance(data, dict):
+            ls = data.get("linear_solver")
+            if isinstance(ls, dict) and "type_name" not in ls:
+                ls["type_name"] = "LinearSolver"
+        return data
+
     @pd.model_validator(mode="after")
     def _validate_line_search(self) -> Self:
         if self.line_search is not None and not isinstance(self.linear_solver, KrylovLinearSolver):
