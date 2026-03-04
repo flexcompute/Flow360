@@ -198,6 +198,9 @@ class NavierStokesSolver(GenericFlowSolverSettings):
 
     model_type: Literal["Compressible"] = pd.Field("Compressible", alias="modelType", const=True)
 
+    riemann_solver: Optional[Literal["Roe", "SLAU2"]] = pd.Field(
+        "Roe", alias="riemannSolver", displayed="Riemann Solver"
+    )
     low_mach_preconditioner: Optional[bool] = pd.Field(False, alias="lowMachPreconditioner")
     low_mach_preconditioner_threshold: Optional[pd.NonNegativeFloat] = pd.Field(
         alias="lowMachPreconditionerThreshold"

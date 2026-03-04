@@ -80,6 +80,61 @@ class GenericSolverSettings(Flow360BaseModel, metaclass=ABCMeta):
     private_attribute_dict: Optional[Dict] = pd.Field(None)
 
 
+class RoeFlux(Flow360BaseModel):
+    """:class:`RoeFlux` class for the Roe flux-difference splitting Riemann solver.
+
+    Example
+    -------
+    >>> fl.RoeFlux(numerical_dissipation_factor=0.2, low_mach_preconditioner=True)
+    """
+
+    type_name: Literal["Roe"] = pd.Field("Roe", frozen=True)
+    numerical_dissipation_factor: pd.confloat(ge=0.01, le=1) = pd.Field(
+        1,
+        description="A factor in the range [0.01, 1.0] which exponentially reduces the "
+        + "dissipation of the Roe flux. The recommended starting value for most "
+        + "low-dissipation runs is 0.2.",
+    )
+    low_mach_preconditioner: bool = pd.Field(
+        False, description="Use preconditioning for accelerating low Mach number flows."
+    )
+    low_mach_preconditioner_threshold: Optional[NonNegativeFloat] = pd.Field(
+        None,
+        description="For flow regions with Mach numbers smaller than threshold, the input "
+        + "Mach number to the preconditioner is assumed to be the threshold value if it is "
+        + "smaller than the threshold. The default value for the threshold is the freestream "
+        + "Mach number.",
+    )
+
+
+class SLAU2Flux(Flow360BaseModel):
+    """:class:`SLAU2Flux` class for the SLAU2 (Simple Low-dissipation AUSM) Riemann solver.
+
+    Reference: Kitamura & Shima, J. Comput. Phys., 2013.
+    HR-SLAU2: Kitamura & Hashimoto, Comput. Fluids, 2016.
+
+    Example
+    -------
+    >>> fl.SLAU2Flux()  # standard SLAU2
+    >>> fl.SLAU2Flux(hr_dissipation_factor=0.01)  # HR-SLAU2
+    """
+
+    type_name: Literal["SLAU2"] = pd.Field("SLAU2", frozen=True)
+    hr_dissipation_factor: Optional[pd.confloat(ge=0.0, le=1.0)] = pd.Field(
+        None,
+        description="High-resolution dissipation coefficient (gammaHR). "
+        + "When None, standard SLAU2 is used. "
+        + "When set (e.g., 0.01), HR-SLAU2 is used with reduced pressure dissipation. "
+        + "Smaller values give less dissipation. Typical range: 0.01 to 0.1.",
+    )
+
+
+RiemannSolverType = Annotated[
+    Union[RoeFlux, SLAU2Flux],
+    pd.Field(discriminator="type_name"),
+]
+
+
 class NavierStokesSolver(GenericSolverSettings):
     """:class:`NavierStokesSolver` class for setting up the compressible Navier-Stokes solver.
     For more information on setting up the numerical parameters for the Navier-Stokes solver,
@@ -89,9 +144,8 @@ class NavierStokesSolver(GenericSolverSettings):
     -------
     >>> fl.NavierStokesSolver(
     ...     absolute_tolerance=1e-10,
-    ...     numerical_dissipation_factor=0.01,
+    ...     riemann_solver=fl.SLAU2Flux(hr_dissipation_factor=0.01),
     ...     linear_solver=LinearSolver(max_iterations=50),
-    ...     low_mach_preconditioner=True,
     ... )
     """
 
@@ -113,12 +167,23 @@ class NavierStokesSolver(GenericSolverSettings):
         + "subsonic flows leading to reduced dissipation.",
     )
 
-    numerical_dissipation_factor: pd.confloat(ge=0.01, le=1) = pd.Field(
-        1,
-        description="A factor in the range [0.01, 1.0] which exponentially reduces the "
-        + "dissipation of the numerical flux. The recommended starting value for most "
-        + "low-dissipation runs is 0.2.",
+    # Backward-compatible top-level fields: if set, these propagate to the default Roe flux.
+    numerical_dissipation_factor: Optional[pd.confloat(ge=0.01, le=1)] = pd.Field(
+        None,
+        description="[Backward compatible] A factor in the range [0.01, 1.0] which exponentially "
+        + "reduces the dissipation of the Roe flux. Prefer using "
+        + "riemann_solver=RoeFlux(numerical_dissipation_factor=...) instead.",
     )
+    low_mach_preconditioner: Optional[bool] = pd.Field(
+        None,
+        description="[Backward compatible] Use preconditioning for accelerating low Mach number flows. "
+        + "Prefer using riemann_solver=RoeFlux(low_mach_preconditioner=...) instead.",
+    )
+    low_mach_preconditioner_threshold: Optional[NonNegativeFloat] = pd.Field(
+        None,
+        description="[Backward compatible] Threshold for the low Mach preconditioner.",
+    )
+
     limit_velocity: bool = pd.Field(False, description="Limiter for velocity")
     limit_pressure_density: bool = pd.Field(False, description="Limiter for pressure and density.")
 
@@ -132,16 +197,25 @@ class NavierStokesSolver(GenericSolverSettings):
         + "regardless of the value of this field.",
     )
 
-    low_mach_preconditioner: bool = pd.Field(
-        False, description="Use preconditioning for accelerating low Mach number flows."
+    riemann_solver: RiemannSolverType = pd.Field(
+        default_factory=RoeFlux,
+        description="The Riemann solver for inviscid fluxes. "
+        + "Use RoeFlux() for the Roe scheme or SLAU2Flux() for SLAU2.",
     )
-    low_mach_preconditioner_threshold: Optional[NonNegativeFloat] = pd.Field(
-        None,
-        description="For flow regions with Mach numbers smaller than threshold, the input "
-        + "Mach number to the preconditioner is assumed to be the threshold value if it is "
-        + "smaller than the threshold. The default value for the threshold is the freestream "
-        + "Mach number.",
-    )
+
+    @pd.model_validator(mode="after")
+    def _propagate_legacy_fields(self) -> Self:
+        """Propagate backward-compatible top-level fields into the Roe flux object."""
+        if isinstance(self.riemann_solver, RoeFlux):
+            if self.numerical_dissipation_factor is not None:
+                self.riemann_solver.numerical_dissipation_factor = self.numerical_dissipation_factor
+            if self.low_mach_preconditioner is not None:
+                self.riemann_solver.low_mach_preconditioner = self.low_mach_preconditioner
+            if self.low_mach_preconditioner_threshold is not None:
+                self.riemann_solver.low_mach_preconditioner_threshold = (
+                    self.low_mach_preconditioner_threshold
+                )
+        return self
 
     update_jacobian_frequency: PositiveInt = pd.Field(
         4, description="Frequency at which the jacobian is updated."

@@ -153,6 +153,11 @@ def _check_low_mach_preconditioner_output(v):
         for model in models:
             if isinstance(model, Fluid) and model.navier_stokes_solver:
                 preconditioner = model.navier_stokes_solver.low_mach_preconditioner
+                if preconditioner is None:
+                    from flow360.component.simulation.models.solver_numerics import RoeFlux
+                    rs = model.navier_stokes_solver.riemann_solver
+                    if isinstance(rs, RoeFlux):
+                        preconditioner = rs.low_mach_preconditioner
                 if preconditioner:
                     has_low_mach_preconditioner = True
                     break
@@ -188,6 +193,14 @@ def _check_numerical_dissipation_factor_output(v):
                 numerical_dissipation_factor = (
                     model.navier_stokes_solver.numerical_dissipation_factor
                 )
+                if numerical_dissipation_factor is None:
+                    # Check if the riemann_solver has it (new class-based API)
+                    from flow360.component.simulation.models.solver_numerics import RoeFlux
+                    rs = model.navier_stokes_solver.riemann_solver
+                    if isinstance(rs, RoeFlux):
+                        numerical_dissipation_factor = rs.numerical_dissipation_factor
+                    else:
+                        numerical_dissipation_factor = 1.0
                 low_dissipation_flag = int(round(1.0 / numerical_dissipation_factor)) - 1
                 if low_dissipation_flag != 0:
                     low_dissipation_enabled = True

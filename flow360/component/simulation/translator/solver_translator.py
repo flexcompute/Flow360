@@ -2208,19 +2208,36 @@ def get_solver_json(
     ##:: Step 6: Get solver settings and initial condition
     for model in input_params.models:
         if isinstance(model, Fluid):
-            if isinstance(op, LiquidOperatingCondition):
-                model.navier_stokes_solver.low_mach_preconditioner = True
-                model.navier_stokes_solver.low_mach_preconditioner_threshold = (
-                    LIQUID_IMAGINARY_FREESTREAM_MACH
-                )
-            if (
-                model.navier_stokes_solver.low_mach_preconditioner
-                and model.navier_stokes_solver.low_mach_preconditioner_threshold is None
+            from flow360.component.simulation.models.solver_numerics import RoeFlux
+            rs = model.navier_stokes_solver.riemann_solver
+            if isinstance(op, LiquidOperatingCondition) and isinstance(rs, RoeFlux):
+                rs.low_mach_preconditioner = True
+                rs.low_mach_preconditioner_threshold = LIQUID_IMAGINARY_FREESTREAM_MACH
+            if isinstance(rs, RoeFlux) and (
+                rs.low_mach_preconditioner
+                and rs.low_mach_preconditioner_threshold is None
             ):
-                model.navier_stokes_solver.low_mach_preconditioner_threshold = (
+                rs.low_mach_preconditioner_threshold = (
                     input_params.operating_condition.mach
                 )
             translated["navierStokesSolver"] = dump_dict(model.navier_stokes_solver)
+
+            # Flatten riemann_solver class into parent dict for C++ consumption
+            rs = translated["navierStokesSolver"].pop("riemannSolver", None)
+            if rs is not None and isinstance(rs, dict):
+                rs_type = rs.pop("typeName", "Roe")
+                translated["navierStokesSolver"]["riemannSolver"] = rs_type
+                # Merge flux-specific parameters into parent
+                for k, v in rs.items():
+                    if v is not None:
+                        translated["navierStokesSolver"][k] = v
+            # Ensure backward-compat fields are present for Roe
+            if "numericalDissipationFactor" not in translated["navierStokesSolver"]:
+                translated["navierStokesSolver"]["numericalDissipationFactor"] = 1.0
+            # Remove legacy None fields
+            for legacy_key in ["lowMachPreconditioner", "lowMachPreconditionerThreshold"]:
+                if legacy_key in translated["navierStokesSolver"] and translated["navierStokesSolver"][legacy_key] is None:
+                    del translated["navierStokesSolver"][legacy_key]
 
             replace_dict_key(translated["navierStokesSolver"], "typeName", "modelType")
             if isinstance(op, LiquidOperatingCondition) and not (
