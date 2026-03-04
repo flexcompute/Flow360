@@ -411,9 +411,8 @@ def test_sphere_in_rotation_sphere_only_in_beta_mesher():
 
 def test_sphere_rotation_volume_spacing_requirements():
     """Test spacing requirements for RotationSphere vs RotationVolume."""
-    # TOAI: Please match the error message exactly? Otherwise how do you know what error you captured?
     # Test 1: RotationSphere without spacing_circumferential should raise error
-    with pytest.raises(pd.ValidationError):
+    with pytest.raises(pd.ValidationError, match=r"Field required"):
         with ValidationContext(VOLUME_MESH, beta_mesher_context):
             with CGS_unit_system:
                 sphere = Sphere(name="sphere", center=(0, 0, 0), radius=10)
@@ -422,7 +421,7 @@ def test_sphere_rotation_volume_spacing_requirements():
                 )
 
     # Test 2: RotationSphere with spacing_axial should raise error
-    with pytest.raises(pd.ValidationError):
+    with pytest.raises(pd.ValidationError, match=r"Extra inputs are not permitted"):
         with ValidationContext(VOLUME_MESH, beta_mesher_context):
             with CGS_unit_system:
                 sphere = Sphere(name="sphere", center=(0, 0, 0), radius=10)
@@ -433,7 +432,7 @@ def test_sphere_rotation_volume_spacing_requirements():
                 )
 
     # Test 3: RotationSphere with spacing_radial should raise error
-    with pytest.raises(pd.ValidationError):
+    with pytest.raises(pd.ValidationError, match=r"Extra inputs are not permitted"):
         with ValidationContext(VOLUME_MESH, beta_mesher_context):
             with CGS_unit_system:
                 sphere = Sphere(name="sphere", center=(0, 0, 0), radius=10)
@@ -444,7 +443,7 @@ def test_sphere_rotation_volume_spacing_requirements():
                 )
 
     # Test 4: Cylinder without spacing_axial should raise error
-    with pytest.raises(pd.ValidationError):
+    with pytest.raises(pd.ValidationError, match=r"Field required"):
         with ValidationContext(VOLUME_MESH, beta_mesher_context):
             with CGS_unit_system:
                 cylinder = Cylinder(
@@ -461,7 +460,7 @@ def test_sphere_rotation_volume_spacing_requirements():
                 )
 
     # Test 5: Cylinder without spacing_radial should raise error
-    with pytest.raises(pd.ValidationError):
+    with pytest.raises(pd.ValidationError, match=r"Field required"):
         with ValidationContext(VOLUME_MESH, beta_mesher_context):
             with CGS_unit_system:
                 cylinder = Cylinder(
@@ -478,7 +477,7 @@ def test_sphere_rotation_volume_spacing_requirements():
                 )
 
     # Test 6: Cylinder without spacing_circumferential should raise error
-    with pytest.raises(pd.ValidationError):
+    with pytest.raises(pd.ValidationError, match=r"Field required"):
         with ValidationContext(VOLUME_MESH, beta_mesher_context):
             with CGS_unit_system:
                 cylinder = Cylinder(
