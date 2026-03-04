@@ -1516,13 +1516,13 @@ def _get_default_mass_outflow_udd(entities, mass_flow_rate):
                 "Kp": proportional_coefficient,
                 "initialStaticPressureRatio": 1.0,
             },
-            output_vars={
-                "staticPressureRatio": "if (pseudoStep > 0) state[0]; else initialStaticPressureRatio;"
-            },
+            output_vars={"staticPressureRatio": "state[0];"},
             state_vars_initial_value=["initialStaticPressureRatio"],
             update_law=[
-                "if (hasSupersonicFlow and massFlowRate > 0) (1.0 + Kp) * state[0]; else state[0] + "
-                + "Kp * (massFlowRate/area - massFlowRateTarget/area);"
+                "(pseudoStep > 0) ? ("
+                "(hasSupersonicFlow and massFlowRate > 0) ? ((1.0 + Kp) * state[0]) : (state[0] + "
+                "Kp * (massFlowRate/area - massFlowRateTarget/area))"
+                ") : (state[0]);"
             ],
             input_boundary_patches=entities.stored_entities,
             output_target=entity,
@@ -1545,13 +1545,13 @@ def _get_default_mass_inflow_udd(entities, mass_flow_rate):
                 "Kp": proportional_coefficient,
                 "initialTotalPressureRatio": 1.0,
             },
-            output_vars={
-                "totalPressureRatio": "if (pseudoStep > 0) state[0]; else initialTotalPressureRatio;"
-            },
+            output_vars={"totalPressureRatio": "state[0];"},
             state_vars_initial_value=["initialTotalPressureRatio"],
             update_law=[
-                "if (hasSupersonicFlow and massFlowRate > 0) (1.0 - Kp) * state[0]; else state[0] - "
-                + "Kp * (massFlowRate/area - massFlowRateTarget/area);"
+                "(pseudoStep > 0) ? ("
+                "(hasSupersonicFlow and massFlowRate > 0) ? ((1.0 - Kp) * state[0]) : (state[0] - "
+                "Kp * (massFlowRate/area - massFlowRateTarget/area))"
+                ") : (state[0]);"
             ],
             input_boundary_patches=entities.stored_entities,
             output_target=entity,

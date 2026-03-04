@@ -79,6 +79,26 @@ def _check_axis_is_orthogonal(axis_pair: Tuple[Axis, Axis]) -> Tuple[Axis, Axis]
     return (tuple(axis_1), tuple(axis_2))
 
 
+def _auto_symmetric_plane_exists_from_bbox(
+    *,
+    global_bounding_box: BoundingBoxType,
+    planar_face_tolerance: float,
+) -> bool:
+    """
+    Determine whether automated farfield logic will generate a `symmetric` plane
+    from global bounding box extents and planar-face tolerance.
+    """
+
+    y_min = global_bounding_box[0][1]
+    y_max = global_bounding_box[1][1]
+    tolerance = global_bounding_box.largest_dimension * planar_face_tolerance
+
+    positive_half = abs(y_min) < tolerance < y_max
+    negative_half = abs(y_max) < tolerance and y_min < -tolerance
+
+    return positive_half or negative_half
+
+
 OrthogonalAxes = Annotated[Tuple[Axis, Axis], pd.AfterValidator(_check_axis_is_orthogonal)]
 
 
@@ -783,6 +803,17 @@ class Surface(_SurfaceEntityBase):
                 return False
             if farfield_method == "user-defined" and not gai_and_beta_mesher:
                 return False
+            if (
+                farfield_method == "auto"
+                and farfield_domain_type not in ("half_body_positive_y", "half_body_negative_y")
+                and (
+                    not _auto_symmetric_plane_exists_from_bbox(
+                        global_bounding_box=global_bounding_box,
+                        planar_face_tolerance=planar_face_tolerance,
+                    )
+                )
+            ):
+                return False
             return self._overlaps(half_model_symmetry_plane_center_y, length_tolerance)
 
         if farfield_method in ("quasi-3d", "quasi-3d-periodic"):
@@ -903,12 +934,10 @@ class GhostCircularPlane(_SurfaceEntityBase):
         if validation_info.will_generate_forced_symmetry_plane():
             return True
 
-        y_min, y_max, tolerance, _ = self._get_existence_dependency(validation_info)
-
-        positive_half = abs(y_min) < tolerance < y_max
-        negative_half = abs(y_max) < tolerance and y_min < -tolerance
-
-        return positive_half or negative_half
+        return _auto_symmetric_plane_exists_from_bbox(
+            global_bounding_box=validation_info.global_bounding_box,
+            planar_face_tolerance=validation_info.planar_face_tolerance,
+        )
 
     def _per_entity_type_validation(self, param_info: ParamsValidationInfo):
         """Validate ghost surface existence and configuration."""

@@ -6,6 +6,7 @@ from flow360.component.simulation.entity_info import SurfaceMeshEntityInfo
 from flow360.component.simulation.meshing_param.params import MeshingParams
 from flow360.component.simulation.meshing_param.volume_params import (
     CustomZones,
+    RotationSphere,
     RotationVolume,
     UserDefinedFarfield,
 )
@@ -78,7 +79,7 @@ def test_sphere_added_to_draft_entities():
         params = SimulationParams(
             meshing=MeshingParams(
                 volume_zones=[
-                    RotationVolume(
+                    RotationSphere(
                         entities=sphere,
                         spacing_circumferential=0.1 * u.m,
                     ),

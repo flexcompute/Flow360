@@ -39,6 +39,7 @@ from flow360.component.simulation.meshing_param.params import (
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     RotationCylinder,
+    RotationSphere,
     RotationVolume,
 )
 from flow360.component.simulation.models.surface_models import SurfaceModelTypes
@@ -713,7 +714,7 @@ class SimulationParams(_ParamModelBase):
                             "symmetric*",
                             volume.private_attribute_entity.name,
                         )
-                    if isinstance(volume, (RotationCylinder, RotationVolume)):
+                    if isinstance(volume, (RotationCylinder, RotationVolume, RotationSphere)):
                         # pylint: disable=fixme
                         # TODO: Implement this
                         pass
