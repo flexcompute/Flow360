@@ -29,6 +29,7 @@ from flow360.component.simulation.meshing_param.volume_params import (
     CustomZones,
     MeshSliceOutput,
     RotationCylinder,
+    RotationSphere,
     RotationVolume,
     StructuredBoxRefinement,
     UniformRefinement,
@@ -65,6 +66,7 @@ RefinementTypes = Annotated[
 VolumeZonesTypes = Annotated[
     Union[
         RotationVolume,
+        RotationSphere,
         RotationCylinder,
         AutomatedFarfield,
         UserDefinedFarfield,
@@ -290,7 +292,7 @@ class MeshingParams(Flow360BaseModel):
         usage = EntityUsageMap()
 
         for volume_zone in self.volume_zones if self.volume_zones is not None else []:
-            if isinstance(volume_zone, (RotationVolume, RotationCylinder)):
+            if isinstance(volume_zone, (RotationVolume, RotationSphere, RotationCylinder)):
                 # pylint: disable=protected-access
                 _ = [
                     usage.add_entity_usage(item, volume_zone.type)
@@ -314,6 +316,7 @@ class MeshingParams(Flow360BaseModel):
                 if len(entity_info["model_list"]) == 1 or sorted(entity_info["model_list"]) in [
                     sorted(["RotationCylinder", "UniformRefinement"]),
                     sorted(["RotationVolume", "UniformRefinement"]),
+                    sorted(["RotationSphere", "UniformRefinement"]),
                 ]:
                     # RotationCylinder and UniformRefinement are allowed to be used together
                     continue

@@ -709,6 +709,38 @@ def _to_25_9_1(params_as_dict):
     _remove_local_cfl_for_steady(params_as_dict)
     return params_as_dict
 
+# TOAI: This should be defined as funciton, we may have multiple updater logic and it soon become a mess in here.
+def _to_25_9_2(params_as_dict):
+    """
+    Migrate sphere-based rotation zones from ``RotationVolume`` to ``RotationSphere``.
+
+    Applies only to ``meshing.volume_zones``.
+    """
+    meshing = params_as_dict.get("meshing")
+    if not isinstance(meshing, dict):
+        return params_as_dict
+
+    volume_zones = meshing.get("volume_zones")
+    if not isinstance(volume_zones, list):
+        return params_as_dict
+
+    for zone in volume_zones:
+        if not isinstance(zone, dict) or zone.get("type") != "RotationVolume":
+            continue
+
+        entities = zone.get("entities", {}).get("stored_entities", [])
+        if not entities:
+            continue
+
+        if entities[0].get("private_attribute_entity_type_name") != "Sphere":
+            continue
+
+        zone["type"] = "RotationSphere"
+        zone.pop("spacing_axial", None)
+        zone.pop("spacing_radial", None)
+
+    return params_as_dict
+
 
 VERSION_MILESTONES = [
     (Flow360Version("24.11.1"), _to_24_11_1),
@@ -731,6 +763,7 @@ VERSION_MILESTONES = [
     (Flow360Version("25.8.4"), _to_25_8_4),
     (Flow360Version("25.9.0"), _to_25_9_0),
     (Flow360Version("25.9.1"), _to_25_9_1),
+    (Flow360Version("25.9.2"), _to_25_9_2),
 ]  # A list of the Python API version tuple with their corresponding updaters.
 
 

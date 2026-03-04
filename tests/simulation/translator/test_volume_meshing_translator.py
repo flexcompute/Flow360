@@ -27,6 +27,7 @@ from flow360.component.simulation.meshing_param.volume_params import (
     AxisymmetricRefinement,
     CustomZones,
     MeshSliceOutput,
+    RotationSphere,
     RotationVolume,
     StructuredBoxRefinement,
     UniformRefinement,
@@ -1421,7 +1422,7 @@ def test_windtunnel_ghost_surface_supported_in_volume_face_refinements(get_surfa
 
 
 def test_sphere_rotation_volume_translator(get_surface_mesh):
-    """Test that Sphere entity in RotationVolume is correctly translated to JSON."""
+    """Test that RotationSphere is correctly translated to JSON."""
     with SI_unit_system:
         outer_sphere = Sphere(
             name="outerSphere",
@@ -1443,12 +1444,12 @@ def test_sphere_rotation_volume_translator(get_surface_mesh):
                 ),
                 volume_zones=[
                     AutomatedFarfield(),
-                    RotationVolume(
+                    RotationSphere(
                         entities=[inner_sphere],
                         spacing_circumferential=0.2 * u.m,
                         enclosed_entities=[Surface(name="body")],
                     ),
-                    RotationVolume(
+                    RotationSphere(
                         entities=[outer_sphere],
                         spacing_circumferential=0.5 * u.m,
                         enclosed_entities=[inner_sphere, Surface(name="otherBody")],
