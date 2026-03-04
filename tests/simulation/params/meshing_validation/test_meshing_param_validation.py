@@ -1597,6 +1597,26 @@ def test_modular_workflow_zones_validation():
         )
 
 
+def test_modular_workflow_accepts_rotation_sphere_zone():
+    with ValidationContext(VOLUME_MESH, beta_mesher_context):
+        with SI_unit_system:
+            sphere = Sphere(name="sphere_modular_zone", center=(0, 0, 0) * u.m, radius=1 * u.m)
+            workflow = ModularMeshingWorkflow(
+                volume_meshing=VolumeMeshingParams(
+                    defaults=VolumeMeshingDefaults(boundary_layer_first_layer_thickness=1 * u.mm)
+                ),
+                zones=[
+                    AutomatedFarfield(),
+                    RotationSphere(
+                        entities=[sphere],
+                        spacing_circumferential=0.2 * u.m,
+                    ),
+                ],
+            )
+
+    assert isinstance(workflow.zones[1], RotationSphere)
+
+
 def test_uniform_project_only_with_snappy():
     refinement = UniformRefinement(
         entities=[Box(center=(0, 0, 0) * u.m, size=(1, 1, 1) * u.m, name="box")],

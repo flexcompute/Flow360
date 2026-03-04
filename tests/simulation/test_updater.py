@@ -1891,3 +1891,40 @@ def test_updater_to_25_9_2_via_updater():
     assert zone["type"] == "RotationSphere"
     assert "spacing_axial" not in zone
     assert "spacing_radial" not in zone
+
+
+def test_updater_to_25_9_2_modular_zones_rotation_volume_sphere_to_rotation_sphere():
+    """Test 25.9.2 updater migrates sphere-based RotationVolume in meshing.zones."""
+    params_as_dict = {
+        "version": "25.9.1",
+        "unit_system": {"name": "SI"},
+        "meshing": {
+            "type_name": "ModularMeshingWorkflow",
+            "zones": [
+                {"type": "AutomatedFarfield"},
+                {
+                    "type": "RotationVolume",
+                    "name": "sphere_zone_modular",
+                    "entities": {
+                        "stored_entities": [
+                            {
+                                "private_attribute_entity_type_name": "Sphere",
+                                "name": "s3",
+                            }
+                        ]
+                    },
+                    "spacing_axial": {"value": 0.5, "units": "m"},
+                    "spacing_radial": {"value": 0.6, "units": "m"},
+                    "spacing_circumferential": {"value": 0.7, "units": "m"},
+                },
+            ],
+        },
+    }
+
+    params_new = _to_25_9_2(params_as_dict)
+    zone = params_new["meshing"]["zones"][1]
+
+    assert zone["type"] == "RotationSphere"
+    assert "spacing_axial" not in zone
+    assert "spacing_radial" not in zone
+    assert zone["spacing_circumferential"] == {"value": 0.7, "units": "m"}

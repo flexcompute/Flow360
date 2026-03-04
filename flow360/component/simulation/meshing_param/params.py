@@ -79,6 +79,7 @@ VolumeZonesTypes = Annotated[
 ZoneTypesModular = Annotated[
     Union[
         RotationVolume,
+        RotationSphere,
         AutomatedFarfield,
         UserDefinedFarfield,
         CustomZones,
@@ -647,7 +648,7 @@ class ModularMeshingWorkflow(Flow360BaseModel):
         usage = EntityUsageMap()
 
         for volume_zone in self.zones if self.zones is not None else []:
-            if isinstance(volume_zone, RotationVolume):
+            if isinstance(volume_zone, (RotationVolume, RotationSphere)):
                 _ = [
                     usage.add_entity_usage(item, volume_zone.type)
                     for item in volume_zone.entities.stored_entities
@@ -673,6 +674,7 @@ class ModularMeshingWorkflow(Flow360BaseModel):
                 if len(entity_info["model_list"]) == 1 or sorted(entity_info["model_list"]) in [
                     sorted(["RotationCylinder", "UniformRefinement"]),
                     sorted(["RotationVolume", "UniformRefinement"]),
+                    sorted(["RotationSphere", "UniformRefinement"]),
                 ]:
                     # RotationCylinder and UniformRefinement are allowed to be used together
                     continue

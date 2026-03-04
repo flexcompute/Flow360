@@ -714,7 +714,7 @@ def _to_25_9_2(params_as_dict):
     """
     Migrate sphere-based rotation zones from ``RotationVolume`` to ``RotationSphere``.
 
-    Applies only to ``meshing.volume_zones``.
+    Applies to both ``meshing.volume_zones`` and ``meshing.zones``.
     """
 
     def _migrate_rotation_volume_to_rotation_sphere(params_dict):
@@ -722,24 +722,25 @@ def _to_25_9_2(params_as_dict):
         if not isinstance(meshing, dict):
             return
 
-        volume_zones = meshing.get("volume_zones")
-        if not isinstance(volume_zones, list):
-            return
-
-        for zone in volume_zones:
-            if not isinstance(zone, dict) or zone.get("type") != "RotationVolume":
+        for zone_key in ("volume_zones", "zones"):
+            zones = meshing.get(zone_key)
+            if not isinstance(zones, list):
                 continue
 
-            entities = zone.get("entities", {}).get("stored_entities", [])
-            if not entities:
-                continue
+            for zone in zones:
+                if not isinstance(zone, dict) or zone.get("type") != "RotationVolume":
+                    continue
 
-            if entities[0].get("private_attribute_entity_type_name") != "Sphere":
-                continue
+                entities = zone.get("entities", {}).get("stored_entities", [])
+                if not entities:
+                    continue
 
-            zone["type"] = "RotationSphere"
-            zone.pop("spacing_axial", None)
-            zone.pop("spacing_radial", None)
+                if entities[0].get("private_attribute_entity_type_name") != "Sphere":
+                    continue
+
+                zone["type"] = "RotationSphere"
+                zone.pop("spacing_axial", None)
+                zone.pop("spacing_radial", None)
 
     _migrate_rotation_volume_to_rotation_sphere(params_as_dict)
 
