@@ -458,6 +458,36 @@ class Geometry(AssetBase):
         self._backend.load_from_json(tree_data)
         log.info(f"Geometry loaded: {len(self.faces())} faces")
 
+    @classmethod
+    def from_local_tree(cls, tree_json_path: str = "geometryHierarchicalMetadata.json") -> "Geometry":
+        """
+        Create a Geometry from a local hierarchical metadata JSON file.
+
+        This is the local equivalent of Geometry(file_path), which uploads to the
+        cloud and fetches the tree back. Here we load the tree directly from the
+        JSON produced by geometryTreeParserPipeline.
+
+        Parameters
+        ----------
+        tree_json_path : str
+            Path to the hierarchical metadata JSON file.
+
+        Returns
+        -------
+        Geometry
+            Geometry with tree backend loaded (supports faces(), create_face_group(), etc.)
+        """
+        import json as _json
+
+        geo = cls(id=None)
+        geo.snappy_body_registry = None
+        with open(tree_json_path, "r") as f:
+            tree_data = _json.load(f)
+        geo._backend = TreeBackend()
+        geo._backend.load_from_json(tree_data)
+        log.info(f"Geometry loaded from local tree: {len(geo.faces())} faces")
+        return geo
+
     # ================================================================
     # Tree Navigation Methods
     # ================================================================
