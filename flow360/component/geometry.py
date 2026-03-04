@@ -555,6 +555,33 @@ class Geometry(AssetBase):
         """Remove all face groups."""
         self._tree_groups.clear()
 
+    def _build_face_grouping_config(self) -> dict:
+        """Build the UUID → group name mapping from current face groups."""
+        face_grouping_config = {}
+        for group_name, group in self._tree_groups.items():
+            for node_id in group._node_ids:
+                node = Node(self, self._backend, node_id)
+                uuid = node.uuid
+                if uuid is not None:
+                    face_grouping_config[uuid] = group_name
+        return face_grouping_config
+
+    def save_groups_to_file(self, output_path: str) -> None:
+        """
+        Save face groups to a local JSON file as {uuid: group_name, ...}.
+
+        Parameters
+        ----------
+        output_path : str
+            Path to write the face grouping JSON file.
+        """
+        import json as _json
+
+        face_grouping_config = self._build_face_grouping_config()
+        with open(output_path, "w") as fh:
+            _json.dump(face_grouping_config, fh, indent=4)
+        log.info(f"Saved {len(face_grouping_config)} face group entries to {output_path}")
+
     def save_groups_to_cloud(self) -> None:
         """
         Save face groups to the cloud via POST /v2/import-geometry/{id}/face-grouping.
@@ -566,16 +593,13 @@ class Geometry(AssetBase):
         import json as _json
         from datetime import datetime, timezone
 
-        face_grouping_config = {}
+        face_grouping_config = self._build_face_grouping_config()
         group_defs = []
 
         for group_name, group in self._tree_groups.items():
             colors = set()
             for node_id in group._node_ids:
                 node = Node(self, self._backend, node_id)
-                uuid = node.uuid
-                if uuid is not None:
-                    face_grouping_config[uuid] = group_name
                 colors.add(node.color)
 
             # Build selection rule based on face attributes
