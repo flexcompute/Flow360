@@ -371,8 +371,20 @@ class _AnimationAndFileFormatSettings(_AnimationSettings):
     Controls how frequently the output files are generated and the file format.
     """
 
-    output_format: Literal["paraview", "tecplot", "both"] = pd.Field(
-        default="paraview", description=":code:`paraview`, :code:`tecplot` or :code:`both`."
+    output_format: Literal[
+        "paraview",
+        "tecplot",
+        "vtkhdf",
+        "both",
+        "paraview,vtkhdf",
+        "tecplot,vtkhdf",
+        "paraview,tecplot,vtkhdf",
+    ] = pd.Field(
+        default="paraview",
+        description=":code:`paraview`, :code:`tecplot`, :code:`vtkhdf`, :code:`both` "
+        "(paraview+tecplot), or comma-separated combinations like :code:`paraview,vtkhdf`. "
+        "The :code:`vtkhdf` format stores the mesh once and appends field data per timestep "
+        "into a single HDF5 file, dramatically reducing output size for unsteady simulations.",
     )
 
 
@@ -423,10 +435,10 @@ class SurfaceOutput(_AnimationAndFileFormatSettings, _OutputBase):
     )
     write_single_file: bool = pd.Field(
         default=False,
-        description="Enable writing all surface outputs into a single file instead of one file per surface."
-        + "This option currently only supports Tecplot output format."
-        + "Will choose the value of the last instance of this option of the same output type "
-        + "(:class:`SurfaceOutput` or :class:`TimeAverageSurfaceOutput`) in the output list.",
+        description="Enable writing all surface outputs into a single file instead of one file per surface. "
+        "Supported by Tecplot, Paraview, and VTK-HDF output formats. "
+        "Will choose the value of the last instance of this option of the same output type "
+        "(:class:`SurfaceOutput` or :class:`TimeAverageSurfaceOutput`) in the output list.",
     )
     output_fields: UniqueItemList[Union[SurfaceFieldNames, str, UserVariable]] = pd.Field(
         description="List of output variables. Including :ref:`universal output variables<UniversalVariablesV2>`,"
