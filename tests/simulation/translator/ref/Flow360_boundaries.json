@@ -202,13 +202,13 @@
             ],
             "outputTargetName": "boundary_name_B",
             "outputVars": {
-                "totalPressureRatio": "(pseudoStep > 0) ? (state[0]) : (initialTotalPressureRatio);"
+                "totalPressureRatio": "state[0];"
             },
             "stateVarsInitialValue": [
                 "initialTotalPressureRatio"
             ],
             "updateLaw": [
-                "(hasSupersonicFlow and massFlowRate > 0) ? ((1.0 - Kp) * state[0]) : (state[0] - Kp * (massFlowRate/area - massFlowRateTarget/area));"
+                "(pseudoStep > 0) ? ((hasSupersonicFlow and massFlowRate > 0) ? ((1.0 - Kp) * state[0]) : (state[0] - Kp * (massFlowRate/area - massFlowRateTarget/area))) : (state[0]);"
             ]
         },
         {
@@ -228,13 +228,13 @@
             ],
             "outputTargetName": "boundary_name_H",
             "outputVars": {
-                "staticPressureRatio": "(pseudoStep > 0) ? (state[0]) : (initialStaticPressureRatio);"
+                "staticPressureRatio": "state[0];"
             },
             "stateVarsInitialValue": [
                 "initialStaticPressureRatio"
             ],
             "updateLaw": [
-                "(hasSupersonicFlow and massFlowRate > 0) ? ((1.0 + Kp) * state[0]) : (state[0] + Kp * (massFlowRate/area - massFlowRateTarget/area));"
+                "(pseudoStep > 0) ? ((hasSupersonicFlow and massFlowRate > 0) ? ((1.0 + Kp) * state[0]) : (state[0] + Kp * (massFlowRate/area - massFlowRateTarget/area))) : (state[0]);"
             ]
         }
     ],
