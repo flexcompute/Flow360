@@ -27,6 +27,7 @@ from flow360.component.simulation.meshing_param.volume_params import (
     AxisymmetricRefinement,
     CustomZones,
     MeshSliceOutput,
+    RotationSphere,
     RotationVolume,
     StructuredBoxRefinement,
     UniformRefinement,
@@ -1421,7 +1422,7 @@ def test_windtunnel_ghost_surface_supported_in_volume_face_refinements(get_surfa
 
 
 def test_sphere_rotation_volume_translator(get_surface_mesh):
-    """Test that Sphere entity in RotationVolume is correctly translated to JSON."""
+    """Test that RotationSphere is correctly translated to JSON."""
     with SI_unit_system:
         outer_sphere = Sphere(
             name="outerSphere",
@@ -1443,12 +1444,12 @@ def test_sphere_rotation_volume_translator(get_surface_mesh):
                 ),
                 volume_zones=[
                     AutomatedFarfield(),
-                    RotationVolume(
+                    RotationSphere(
                         entities=[inner_sphere],
                         spacing_circumferential=0.2 * u.m,
                         enclosed_entities=[Surface(name="body")],
                     ),
-                    RotationVolume(
+                    RotationSphere(
                         entities=[outer_sphere],
                         spacing_circumferential=0.5 * u.m,
                         enclosed_entities=[inner_sphere, Surface(name="otherBody")],
@@ -1487,6 +1488,50 @@ def test_sphere_rotation_volume_translator(get_surface_mesh):
     assert outer_interface["maxEdgeLength"] == 0.5
     assert "slidingInterface-sphereInterface" in outer_interface["enclosedObjects"]
     assert "otherBody" in outer_interface["enclosedObjects"]
+
+
+def test_sphere_rotation_volume_translator_modular(get_surface_mesh):
+    """Test that RotationSphere in ModularMeshingWorkflow is correctly translated to JSON."""
+    with SI_unit_system:
+        sphere = Sphere(
+            name="sphereInterfaceModular",
+            center=(1, 2, 3) * u.m,
+            radius=5 * u.m,
+            axis=(0, 0, 1),
+        )
+        param = SimulationParams(
+            meshing=ModularMeshingWorkflow(
+                volume_meshing=VolumeMeshingParams(
+                    defaults=VolumeMeshingDefaults(
+                        boundary_layer_first_layer_thickness=1e-3,
+                        boundary_layer_growth_rate=1.2,
+                    ),
+                ),
+                zones=[
+                    AutomatedFarfield(),
+                    RotationSphere(
+                        entities=[sphere],
+                        spacing_circumferential=0.2 * u.m,
+                        enclosed_entities=[Surface(name="body")],
+                    ),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+        )
+
+    translated = get_volume_meshing_json(param, get_surface_mesh.mesh_unit)
+
+    assert "slidingInterfaces" in translated
+    assert len(translated["slidingInterfaces"]) == 1
+
+    interface = translated["slidingInterfaces"][0]
+    assert interface["name"] == "sphereInterfaceModular"
+    assert interface["type"] == "Sphere"
+    assert interface["radius"] == 5.0
+    assert interface["axisOfRotation"] == [0, 0, 1]
+    assert interface["center"] == [1.0, 2.0, 3.0]
+    assert interface["maxEdgeLength"] == 0.2
+    assert interface["enclosedObjects"] == ["body"]
 
 
 def test_automated_farfield_enclosed_surfaces(get_surface_mesh):
