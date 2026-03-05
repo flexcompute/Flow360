@@ -11,6 +11,7 @@ from flow360.component.geometry import Geometry
 from flow360.component.geometry_tree import NodeType, TreeBackend
 from flow360.component.geometry_tree.face_group import FaceGroup
 from flow360.component.geometry_tree.filters import matches_pattern
+from flow360.exceptions import Flow360ValueError
 
 TREE_DATA_DIR = os.path.join(os.path.dirname(__file__), "../../data/geometry_tree")
 AIRPLANE_JSON_PATH = os.path.join(TREE_DATA_DIR, "airplane_rc_geometry_tree.json")
@@ -419,9 +420,10 @@ class TestSetOperations:
         )
         assert len(airplane_geometry - group) == AIRPLANE_TOTAL_FACES - 40
 
-    def test_geometry_subtract_nodeset(self, airplane_geometry):
+    def test_geometry_subtract_nodeset_raises(self, airplane_geometry):
         magenta = airplane_geometry.faces(colorRGB="255,0,255")
-        assert len(airplane_geometry - magenta) == AIRPLANE_TOTAL_FACES - 40
+        with pytest.raises(Flow360ValueError):
+            _ = airplane_geometry - magenta
 
     def test_nodeset_is_empty(self, airplane_geometry):
         empty = airplane_geometry.faces(colorRGB="999,999,999")

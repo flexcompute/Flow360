@@ -40,21 +40,6 @@ class Node:
         """Get the node color (colorRGB value)."""
         return self._attrs.get("colorRGB", "")
 
-    @property
-    def material(self) -> str:
-        """Get the node material."""
-        return self._attrs.get("material", "")
-
-    @property
-    def face_count(self) -> Optional[int]:
-        """Get the face count (if available)."""
-        return self._attrs.get("faceCount")
-
-    @property
-    def attributes(self) -> dict:
-        """Get all attributes as a dictionary."""
-        return self._attrs.copy()
-
     def children(self, **filters) -> "NodeSet":
         """Get direct children of this node."""
         from .node_set import NodeSet  # pylint: disable=import-outside-toplevel

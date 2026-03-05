@@ -524,7 +524,7 @@ class Geometry(AssetBase):  # pylint: disable=too-many-public-methods
     # ================================================================
 
     def __sub__(self, other) -> NodeSet:
-        """Subtract faces from total geometry (geometry - FaceGroup or NodeSet)."""
+        """Subtract faces from total geometry (geometry - FaceGroup)."""
         all_faces = self.faces()
         if isinstance(other, FaceGroup):
             other_nodes = NodeSet(
@@ -532,7 +532,7 @@ class Geometry(AssetBase):  # pylint: disable=too-many-public-methods
             )  # pylint: disable=protected-access
             return all_faces - other_nodes
         if isinstance(other, NodeSet):
-            return all_faces - other.faces()
+            raise Flow360ValueError("Geometry subtraction with NodeSet is not supported. ")
         return NotImplemented
 
     @property
