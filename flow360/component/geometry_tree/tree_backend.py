@@ -1,8 +1,5 @@
 """
-tree_backend.py - NetworkX backend for geometry tree
-
-Stores the geometry tree structure in a NetworkX DiGraph.
-Provides low-level operations for tree traversal and querying.
+tree_backend.py - Backend for geometry tree storage and querying.
 """
 
 import json
@@ -16,12 +13,10 @@ from .node_type import NodeType
 
 class TreeBackend:
     """
-    NetworkX-based backend for storing and querying geometry tree.
+    Backend for storing and querying the geometry tree.
 
-    The tree is stored as a directed graph (DiGraph) where:
-    - Nodes represent tree elements (ModelFile, Assembly, Part, Face, etc.)
-    - Edges represent parent-child relationships (parent -> child)
-    - Node attributes store metadata (name, type, colorRGB, material, etc.)
+    The tree stores elements (ModelFile, Assembly, Part, Face, etc.)
+    with parent-child relationships and metadata (name, type, colorRGB, material, etc.)
     """
 
     def __init__(self):
@@ -30,7 +25,7 @@ class TreeBackend:
 
     def load_from_json(self, json_data: dict) -> str:
         """
-        Load geometry tree from JSON dictionary into NetworkX graph.
+        Load geometry tree from JSON dictionary.
 
         Args:
             json_data: Versioned tree structure {"version": "...", "tree": {...}}

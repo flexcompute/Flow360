@@ -1,7 +1,5 @@
 """
 node_type.py - Enum for geometry tree node types.
-
-Defines the valid node types exported by the C++ CAD hierarchy extractor.
 """
 
 from enum import Enum

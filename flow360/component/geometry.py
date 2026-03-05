@@ -404,9 +404,8 @@ class Geometry(AssetBase):  # pylint: disable=too-many-public-methods
         """
         Create a Geometry from a local hierarchical metadata JSON file.
 
-        This is the local equivalent of Geometry(file_path), which uploads to the
-        cloud and fetches the tree back. Here we load the tree directly from the
-        JSON produced by geometryTreeParserPipeline.
+        Loads the tree directly from a local JSON file, without requiring
+        cloud upload.
 
         Parameters
         ----------
