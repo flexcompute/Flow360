@@ -1695,11 +1695,33 @@ class UnitSystem(pd.BaseModel):
 
         return str_repr
 
+    def _assert_no_active_unit_system(self):
+        active_unit_system = unit_system_manager.current
+        if active_unit_system is None:
+            return
+        active_name = (
+            active_unit_system.system_repr()
+            if hasattr(active_unit_system, "system_repr")
+            else str(active_unit_system)
+        )
+        raise RuntimeError(
+            "Nested unit system context is not allowed. "
+            f"Active unit system: {active_name}. "
+            f"Attempted: {self.system_repr()}. "
+            "Please remove the inner unit system context."
+        )
+
     def __enter__(self):
         _lock.acquire()
-        if self._verbose:
-            log.info(f"using: {self.system_repr()} unit system for unit inference.")
-        self._context_token = unit_system_manager.set_current(self)
+        try:
+            self._assert_no_active_unit_system()
+            if self._verbose:
+                log.info(f"using: {self.system_repr()} unit system for unit inference.")
+            self._context_token = unit_system_manager.set_current(self)
+            return self
+        except Exception:
+            _lock.release()
+            raise
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         try:

@@ -68,9 +68,9 @@ def to_file_from_file_test(obj):
             obj_filename = os.path.join(tmpdir, f"obj.{ext}")
             obj.to_file(obj_filename)
             obj_read = factory.from_file(obj_filename)
-            assert obj == obj_read
+            assert obj.model_dump() == obj_read.model_dump()
             obj_read = factory(filename=obj_filename)
-            assert obj == obj_read
+            assert obj.model_dump() == obj_read.model_dump()
 
 
 def compare_dict_to_ref(data, ref_path):

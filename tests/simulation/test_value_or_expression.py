@@ -576,7 +576,7 @@ def test_integer_validation():
 
     with pytest.raises(
         ValueError,
-        match=re.escape("Value error, arg '10' does not match (length)/(time) dimension."),
+        match=re.escape("Value does not have units matching 'velocity' dimension"),
     ):
         with SI_unit_system:
             AerospaceCondition(velocity_magnitude=Expression(expression="10"))

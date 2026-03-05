@@ -4,6 +4,7 @@ import unittest
 
 import pydantic as pd
 import pytest
+from flow360_schema.framework.validation.context import DeserializationContext
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.draft_context.coordinate_system_manager import (
@@ -1818,12 +1819,14 @@ def test_wall_deserialization():
     # Wall->velocity accept discriminated AND non-discriminated unions.
     # Need to check if all works when deserializing.
     dummy_boundary = Surface(name="chameleon")
-    simple_wall = Wall(**Wall(entities=dummy_boundary).model_dump(mode="json"))
+    with DeserializationContext():
+        simple_wall = Wall(**Wall(entities=dummy_boundary).model_dump(mode="json"))
     assert simple_wall.velocity is None
 
-    const_vel_wall = Wall(
-        **Wall(entities=dummy_boundary, velocity=[1, 2, 3] * u.m / u.s).model_dump(mode="json")
-    )
+    with DeserializationContext():
+        const_vel_wall = Wall(
+            **Wall(entities=dummy_boundary, velocity=[1, 2, 3] * u.m / u.s).model_dump(mode="json")
+        )
     assert all(const_vel_wall.velocity == [1, 2, 3] * u.m / u.s)
 
     slater_bleed_wall = Wall(
