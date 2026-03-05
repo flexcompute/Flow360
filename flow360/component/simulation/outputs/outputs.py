@@ -81,6 +81,7 @@ from flow360.component.simulation.validation.validation_utils import (
     validate_improper_surface_field_usage_for_imported_surface,
 )
 from flow360.component.types import Axis
+from flow360.log import log
 
 # Invalid characters for Linux filenames: / is path separator, \0 is null terminator
 _INVALID_FILENAME_CHARS_PATTERN = re.compile(r"[/\0]")
@@ -366,26 +367,55 @@ class _AnimationSettings(Flow360BaseModel):
         return value
 
 
+_OutputFormatOption = Literal["paraview", "tecplot", "vtkhdf", "ensight"]
+
+_LegacyOutputFormatStrings = Literal[
+    "paraview",
+    "tecplot",
+    "vtkhdf",
+    "ensight",
+    "both",
+    "paraview,vtkhdf",
+    "tecplot,vtkhdf",
+    "paraview,tecplot,vtkhdf",
+]
+
+
 class _AnimationAndFileFormatSettings(_AnimationSettings):
     """
     Controls how frequently the output files are generated and the file format.
     """
 
-    output_format: Literal[
-        "paraview",
-        "tecplot",
-        "vtkhdf",
-        "both",
-        "paraview,vtkhdf",
-        "tecplot,vtkhdf",
-        "paraview,tecplot,vtkhdf",
-    ] = pd.Field(
-        default="paraview",
-        description=":code:`paraview`, :code:`tecplot`, :code:`vtkhdf`, :code:`both` "
-        "(paraview+tecplot), or comma-separated combinations like :code:`paraview,vtkhdf`. "
-        "The :code:`vtkhdf` format stores the mesh once and appends field data per timestep "
-        "into a single HDF5 file, dramatically reducing output size for unsteady simulations.",
+    output_format: Union[List[_OutputFormatOption], _LegacyOutputFormatStrings] = pd.Field(
+        default=["paraview"],
+        description="List of output formats, e.g. :code:`['paraview']`, "
+        ":code:`['paraview', 'vtkhdf']`, :code:`['tecplot', 'vtkhdf']`. "
+        "Supported formats: :code:`paraview`, :code:`tecplot`, :code:`vtkhdf`, :code:`ensight`. "
+        "A single string is accepted for backward compatibility but deprecated.",
     )
+
+    @pd.field_validator("output_format", mode="before")
+    @classmethod
+    def _normalize_output_format(cls, value):
+        if isinstance(value, str):
+            if value == "both":
+                log.warning(
+                    '`output_format="both"` is deprecated. '
+                    'Use `output_format=["paraview", "tecplot"]` instead.'
+                )
+                return ["paraview", "tecplot"]
+            if "," in value:
+                log.warning(
+                    f"`output_format` comma-separated strings are deprecated. "
+                    f'Use `output_format={value.split(",")}` instead.'
+                )
+                return value.split(",")
+            log.warning(
+                f"Passing a string to `output_format` is deprecated. "
+                f'Use `output_format=["{value}"]` instead.'
+            )
+            return [value]
+        return value
 
 
 class SurfaceOutput(_AnimationAndFileFormatSettings, _OutputBase):
@@ -1178,7 +1208,9 @@ class SurfaceSliceOutput(_AnimationAndFileFormatSettings, _OutputBase):
         description="List of :class:`Surface` entities on which the slice will cut through."
     )
 
-    output_format: Literal["paraview"] = pd.Field(default="paraview")
+    output_format: Union[List[Literal["paraview"]], Literal["paraview"]] = pd.Field(
+        default=["paraview"]
+    )
 
     output_fields: UniqueItemList[Union[SurfaceFieldNames, str, UserVariable]] = pd.Field(
         description="List of output variables. Including :ref:`universal output variables<UniversalVariablesV2>`,"
