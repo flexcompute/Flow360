@@ -501,10 +501,7 @@ class Geometry(AssetBase):  # pylint: disable=too-many-public-methods
         face_group_mapping = {}
         for group_name, group in self._face_groups.items():
             for node_id in group._node_ids:  # pylint: disable=protected-access
-                attrs = self._tree.get_node_attrs(node_id)
-                uuid = attrs.get("attributes", {}).get("_Flow360UUID")
-                if uuid is not None:
-                    face_group_mapping[uuid] = group_name
+                face_group_mapping[node_id] = group_name
         return {"version": "1.0", "face_group_mapping": face_group_mapping}
 
     def export_face_grouping_config(self, output_path: str) -> None:
