@@ -202,75 +202,21 @@ class AxisymmetricRefinement(Flow360BaseModel):
     )
 
 
-class RotationVolume(Flow360BaseModel):
+class _RotationVolumeBase(Flow360BaseModel):
     """
-    Creates a rotation volume mesh using cylindrical, axisymmetric body, or sphere entities.
+    Shared base class for rotation volume zones.
 
     - The mesh on :class:`RotationVolume` is guaranteed to be concentric.
     - The :class:`RotationVolume` is designed to enclose other objects, but it can't intersect with other objects.
     - Users can create a donut-shaped :class:`RotationVolume` and put their stationary centerbody in the middle.
     - This type of volume zone can be used to generate volume zones compatible with :class:`~flow360.Rotation` model.
-    - Supports :class:`Cylinder`, :class:`AxisymmetricBody`, and :class:`Sphere` entities
-      for defining the rotation volume geometry.
-
-    .. note::
-        The deprecated :class:`RotationCylinder` class is maintained for backward compatibility
-        but only accepts :class:`Cylinder` entities. New code should use :class:`RotationVolume`.
-
-    .. note::
-        For :class:`Sphere` entities, only `spacing_circumferential` is required (uniform spacing on the surface).
-        For :class:`Cylinder` and :class:`AxisymmetricBody` entities, `spacing_axial`, `spacing_radial`,
-        and `spacing_circumferential` are all required.
-
-    Example
-    -------
-    Using a Cylinder entity:
-
-      >>> fl.RotationVolume(
-      ...     name="RotationCylinder",
-      ...     spacing_axial=0.5*fl.u.m,
-      ...     spacing_circumferential=0.3*fl.u.m,
-      ...     spacing_radial=1.5*fl.u.m,
-      ...     entities=cylinder
-      ... )
-
-    Using an AxisymmetricBody entity:
-
-      >>> fl.RotationVolume(
-      ...     name="RotationConeFrustum",
-      ...     spacing_axial=0.5*fl.u.m,
-      ...     spacing_circumferential=0.3*fl.u.m,
-      ...     spacing_radial=1.5*fl.u.m,
-      ...     entities=axisymmetric_body
-      ... )
-
-    Using a Sphere entity (spherical sliding interface):
-
-      >>> fl.RotationVolume(
-      ...     name="RotationSphere",
-      ...     spacing_circumferential=0.3*fl.u.m,
-      ...     entities=sphere
-      ... )
-
-    With enclosed entities:
-
-      >>> fl.RotationVolume(
-      ...     name="RotationVolume",
-      ...     spacing_axial=0.5*fl.u.m,
-      ...     spacing_circumferential=0.3*fl.u.m,
-      ...     spacing_radial=1.5*fl.u.m,
-      ...     entities=outer_cylinder,
-      ...     enclosed_entities=[inner_cylinder, surface]
-      ... )
     """
 
     # Note: Please refer to
     # Note: https://www.notion.so/flexcompute/Python-model-design-document-
     # Note: 78d442233fa944e6af8eed4de9541bb1?pvs=4#c2de0b822b844a12aa2c00349d1f68a3
 
-    type: Literal["RotationVolume"] = pd.Field("RotationVolume", frozen=True)
-    name: Optional[str] = pd.Field("Rotation Volume", description="Name to display in the GUI.")
-    entities: EntityList[Cylinder, AxisymmetricBody, Sphere] = pd.Field()
+    name: Optional[str] = pd.Field(None, description="Name to display in the GUI.")
     enclosed_entities: Optional[
         EntityList[Cylinder, Surface, MirroredSurface, AxisymmetricBody, Box, Sphere]
     ] = pd.Field(
@@ -290,38 +236,32 @@ class RotationVolume(Flow360BaseModel):
             "(excluded from rotation)."
         ),
     )
-    # pylint: disable=no-member
-    spacing_axial: Optional[LengthType.Positive] = pd.Field(
-        None, description="Spacing along the axial direction."
-    )
-    spacing_radial: Optional[LengthType.Positive] = pd.Field(
-        None, description="Spacing along the radial direction."
-    )
-    # This is actually a required field for all of Sphere, Cylinder, AxisymmetricBody entity
-    # RotationVolumes, but making this not Optional causes validation to be triggered in pydantic
-    # vs in validator below, giving different error messages than what we want.
-    # Use of validation_default=False messes up schemas.
-    spacing_circumferential: Optional[LengthType.Positive] = pd.Field(
-        None, description="Spacing along the circumferential direction."
-    )
 
-    @contextual_field_validator("entities", mode="after")
+    @pd.model_validator(mode="before")
+    @classmethod
+    def _prevent_direct_instantiation(cls, data):
+        if cls is _RotationVolumeBase:
+            raise TypeError(
+                "`_RotationVolumeBase` is an abstract base model and cannot be instantiated directly."
+            )
+        return data
+
+    @contextual_field_validator("entities", mode="after", check_fields=False)
     @classmethod
     def _validate_single_instance_in_entity_list(cls, values, param_info: ParamsValidationInfo):
         """
-        [CAPABILITY-LIMITATION]
-        Only single instance is allowed in entities for each `RotationVolume`.
+        [CAPABILITY-LIMITATION] Only single instance is allowed in entities.
         """
         # Note: Should be fine without expansion since we only allow Draft entities here.
         # But using expand_entity_list for consistency and future-proofing.
         expanded_entities = param_info.expand_entity_list(values)
         if len(expanded_entities) > 1:
             raise ValueError(
-                "Only single instance is allowed in entities for each `RotationVolume`."
+                f"Only single instance is allowed in entities for each `{cls.__name__}`."
             )
         return values
 
-    @contextual_field_validator("entities", mode="after")
+    @contextual_field_validator("entities", mode="after", check_fields=False)
     @classmethod
     def _validate_cylinder_name_length(cls, values, param_info: ParamsValidationInfo):
         """
@@ -338,7 +278,7 @@ class RotationVolume(Flow360BaseModel):
         for entity in expanded_entities:
             if isinstance(entity, Cylinder) and len(entity.name) > max_cylinder_name_length:
                 raise ValueError(
-                    f"The name ({entity.name}) of `Cylinder` entity in `RotationVolume` "
+                    f"The name ({entity.name}) of `Cylinder` entity in `{cls.__name__}` "
                     + f"exceeds {max_cylinder_name_length} characters limit."
                 )
         return values
@@ -358,40 +298,19 @@ class RotationVolume(Flow360BaseModel):
         for entity in expanded:
             if isinstance(entity, Box):
                 raise ValueError(
-                    "`Box` entity in `RotationVolume.enclosed_entities` is only supported with the beta mesher."
+                    f"`Box` entity in `{cls.__name__}.enclosed_entities` is only supported with the beta mesher."
                 )
             if isinstance(entity, Sphere):
                 raise ValueError(
-                    "`Sphere` entity in `RotationVolume.enclosed_entities` is only supported with the beta mesher."
+                    f"`Sphere` entity in `{cls.__name__}.enclosed_entities` is only supported with the beta mesher."
                 )
 
-        return values
-
-    @contextual_field_validator("entities", mode="after")
-    @classmethod
-    def _validate_entities_beta_mesher_only(cls, values, param_info: ParamsValidationInfo):
-        """
-        Ensure that AxisymmetricBody and Sphere entities are only used with the beta mesher.
-        """
-        if param_info.is_beta_mesher:
-            return values
-
-        expanded_entities = param_info.expand_entity_list(values)
-        for entity in expanded_entities:
-            if isinstance(entity, AxisymmetricBody):
-                raise ValueError(
-                    "`AxisymmetricBody` entity for `RotationVolume` is only supported with the beta mesher."
-                )
-            if isinstance(entity, Sphere):
-                raise ValueError(
-                    "`Sphere` entity for `RotationVolume` is only supported with the beta mesher."
-                )
         return values
 
     @contextual_field_validator("enclosed_entities", mode="after")
     @classmethod
     def ensure_surface_existence(cls, value, param_info: ParamsValidationInfo):
-        """Ensure all boundaries will be present after mesher"""
+        """Ensure all boundaries will be present after mesher."""
         return validate_entity_list_surface_existence(value, param_info)
 
     @contextual_field_validator("stationary_enclosed_entities", mode="after")
@@ -406,7 +325,7 @@ class RotationVolume(Flow360BaseModel):
             return values
         if not param_info.is_beta_mesher:
             raise ValueError(
-                "`stationary_enclosed_entities` in `RotationVolume` is only supported with the beta mesher."
+                f"`stationary_enclosed_entities` in `{cls.__name__}` is only supported with the beta mesher."
             )
         return values
 
@@ -442,60 +361,134 @@ class RotationVolume(Flow360BaseModel):
 
         return self
 
-    @contextual_model_validator(mode="after")
-    def _validate_spacing_requirements_by_entity_type(self, param_info: ParamsValidationInfo):
+
+class RotationVolume(_RotationVolumeBase):
+    """
+    Creates a rotation volume mesh using cylindrical or axisymmetric body entities.
+
+    - The mesh on :class:`RotationVolume` is guaranteed to be concentric.
+    - The :class:`RotationVolume` is designed to enclose other objects, but it can't intersect with other objects.
+    - Users can create a donut-shaped :class:`RotationVolume` and put their stationary centerbody in the middle.
+    - This type of volume zone can be used to generate volume zones compatible with :class:`~flow360.Rotation` model.
+    - Supports :class:`Cylinder` and :class:`AxisymmetricBody` entities for defining the rotation volume geometry.
+
+    .. note::
+        For spherical sliding interfaces, use :class:`RotationSphere`.
+
+    .. note::
+        The deprecated :class:`RotationCylinder` class is maintained for backward compatibility
+        but only accepts :class:`Cylinder` entities. New code should use :class:`RotationVolume`.
+
+    Example
+    -------
+    Using a Cylinder entity:
+
+      >>> fl.RotationVolume(
+      ...     name="RotationCylinder",
+      ...     spacing_axial=0.5*fl.u.m,
+      ...     spacing_circumferential=0.3*fl.u.m,
+      ...     spacing_radial=1.5*fl.u.m,
+      ...     entities=cylinder
+      ... )
+
+    Using an AxisymmetricBody entity:
+
+      >>> fl.RotationVolume(
+      ...     name="RotationConeFrustum",
+      ...     spacing_axial=0.5*fl.u.m,
+      ...     spacing_circumferential=0.3*fl.u.m,
+      ...     spacing_radial=1.5*fl.u.m,
+      ...     entities=axisymmetric_body
+      ... )
+
+    With enclosed entities:
+
+      >>> fl.RotationVolume(
+      ...     name="RotationVolume",
+      ...     spacing_axial=0.5*fl.u.m,
+      ...     spacing_circumferential=0.3*fl.u.m,
+      ...     spacing_radial=1.5*fl.u.m,
+      ...     entities=outer_cylinder,
+      ...     enclosed_entities=[inner_cylinder, surface]
+      ... )
+    """
+
+    type: Literal["RotationVolume"] = pd.Field("RotationVolume", frozen=True)
+    name: Optional[str] = pd.Field("Rotation Volume", description="Name to display in the GUI.")
+    entities: EntityList[Cylinder, AxisymmetricBody] = pd.Field()
+    # pylint: disable=no-member
+    spacing_axial: LengthType.Positive = pd.Field(description="Spacing along the axial direction.")
+    spacing_radial: LengthType.Positive = pd.Field(
+        description="Spacing along the radial direction."
+    )
+    spacing_circumferential: LengthType.Positive = pd.Field(
+        description="Spacing along the circumferential direction."
+    )
+
+    @contextual_field_validator("entities", mode="after")
+    @classmethod
+    def _validate_entities_beta_mesher_only(cls, values, param_info: ParamsValidationInfo):
         """
-        Validate spacing requirements based on entity type:
-        - Sphere: only spacing_circumferential is required; spacing_axial and spacing_radial must not be specified
-        - Cylinder/AxisymmetricBody: all three spacings are required
+        Ensure that AxisymmetricBody entities are only used with the beta mesher.
         """
-        # Check if entity is a Sphere
-        # pylint: disable=no-member
-        expanded_entities = param_info.expand_entity_list(self.entities)
-        has_sphere = any(isinstance(entity, Sphere) for entity in expanded_entities)
-        has_cylinder_or_axisymmetric = any(
-            isinstance(entity, (Cylinder, AxisymmetricBody)) for entity in expanded_entities
-        )
+        if param_info.is_beta_mesher:
+            return values
 
-        if has_sphere:
-            if self.spacing_circumferential is None:
+        expanded_entities = param_info.expand_entity_list(values)
+        for entity in expanded_entities:
+            if isinstance(entity, AxisymmetricBody):
                 raise ValueError(
-                    "`spacing_circumferential` is required for `Sphere` entities in `RotationVolume`."
+                    "`AxisymmetricBody` entity for `RotationVolume` is only supported with the beta mesher."
                 )
-            if self.spacing_axial is not None:
-                raise ValueError(
-                    "`spacing_axial` must not be specified for `Sphere` entities. "
-                    "Sphere uses only `spacing_circumferential` for uniform surface spacing."
-                )
-            if self.spacing_radial is not None:
-                raise ValueError(
-                    "`spacing_radial` must not be specified for `Sphere` entities. "
-                    "Sphere uses only `spacing_circumferential` for uniform surface spacing."
-                )
+        return values
 
-        if has_cylinder_or_axisymmetric:
-            if self.spacing_axial is None:
-                raise ValueError(
-                    "`spacing_axial` is required for `Cylinder` or `AxisymmetricBody` entities "
-                    "in `RotationVolume`."
-                )
-            if self.spacing_radial is None:
-                raise ValueError(
-                    "`spacing_radial` is required for `Cylinder` or `AxisymmetricBody` entities "
-                    "in `RotationVolume`."
-                )
-            if self.spacing_circumferential is None:
-                raise ValueError(
-                    "`spacing_circumferential` is required for `Cylinder` or `AxisymmetricBody` "
-                    "entities in `RotationVolume`."
-                )
 
-        return self
+class RotationSphere(_RotationVolumeBase):
+    """
+    Creates a spherical sliding interface using :class:`Sphere` entities.
+
+    - The mesh on :class:`RotationSphere` is guaranteed to be concentric.
+    - The :class:`RotationSphere` is designed to enclose other objects, but it can't intersect with other objects.
+    - This type of volume zone can be used to generate volume zones compatible with :class:`~flow360.Rotation` model.
+
+    Example
+    -------
+
+      >>> fl.RotationSphere(
+      ...     name="RotationSphere",
+      ...     spacing_circumferential=0.3*fl.u.m,
+      ...     entities=sphere
+      ... )
+    """
+
+    type: Literal["RotationSphere"] = pd.Field("RotationSphere", frozen=True)
+    name: Optional[str] = pd.Field("Rotation Sphere", description="Name to display in the GUI.")
+    entities: EntityList[Sphere] = pd.Field()
+    # pylint: disable=no-member
+    spacing_circumferential: LengthType.Positive = pd.Field(
+        description="Uniform spacing on the spherical interface."
+    )
+
+    @contextual_field_validator("entities", mode="after")
+    @classmethod
+    def _validate_entities_beta_mesher_only(cls, values, param_info: ParamsValidationInfo):
+        """
+        Ensure that Sphere entities are only used with the beta mesher.
+        """
+        if param_info.is_beta_mesher:
+            return values
+
+        expanded_entities = param_info.expand_entity_list(values)
+        if expanded_entities:
+            raise ValueError(
+                "`Sphere` entity for `RotationSphere` is only supported with the beta mesher."
+            )
+        return values
 
 
 @deprecated(
-    "The `RotationCylinder` class is deprecated! Use `RotationVolume`,"
-    "which supports `Cylinder`, `AxisymmetricBody`, and `Sphere` entities instead."
+    "The `RotationCylinder` class is deprecated! Use `RotationVolume` for non-sphere "
+    "entities and `RotationSphere` for sphere entities instead."
 )
 class RotationCylinder(RotationVolume):
     """
@@ -511,8 +504,9 @@ class RotationCylinder(RotationVolume):
     - This type of volume zone can be used to generate volume zone compatible with :class:`~flow360.Rotation` model.
 
     .. note::
-        :class:`RotationVolume` now supports both :class:`Cylinder` and :class:`AxisymmetricBody` entities.
-        Please migrate to using :class:`RotationVolume` directly.
+        :class:`RotationVolume` supports :class:`Cylinder` and :class:`AxisymmetricBody` entities.
+        :class:`RotationSphere` supports :class:`Sphere` entities.
+        Please migrate to using :class:`RotationVolume` / :class:`RotationSphere` directly.
 
     Example
     -------

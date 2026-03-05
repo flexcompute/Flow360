@@ -186,6 +186,40 @@ class Folder(Flow360Resource):
         )
         return new_folder
 
+    def get_projects(
+        self,
+        search_keyword: str = "",
+        tags: Optional[List[str]] = None,
+        exclude_subfolders: bool = False,
+    ) -> list[dict]:
+        """Get projects within this folder.
+
+        Parameters
+        ----------
+        search_keyword : str
+            Keyword to filter projects by name. Defaults to "" (all projects).
+        tags : Optional[List[str]]
+            Tags to filter projects.
+        exclude_subfolders : bool
+            If True, only search this folder, not its subfolders. Defaults to False.
+
+        Returns
+        -------
+        list
+            A list of project dictionaries found in the folder.
+        """
+
+        # pylint: disable=import-outside-toplevel
+        from flow360.component.simulation.web.project_records import get_project_records
+
+        records, _ = get_project_records(
+            search_keyword=search_keyword,
+            tags=tags,
+            folder_ids=[self.id],
+            exclude_subfolders=exclude_subfolders,
+        )
+        return [record.model_dump() for record in records.records]
+
     def get_items(self):
         """
         Fetch all items within the current folder, handling pagination if needed.
