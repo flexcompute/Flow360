@@ -392,7 +392,7 @@ class Geometry(AssetBase):
 
     # pylint: disable=redefined-builtin
     def __init__(self, id: Union[str, None], name: str = None):
-        self._backend = None  # TreeBackend for face grouping
+        self._tree = None  # TreeBackend for tree navigation and face grouping
         self._tree_groups = {}  # name -> FaceGroup
         super().__init__(id)
         self.snappy_body_registry = None
@@ -414,7 +414,7 @@ class Geometry(AssetBase):
         Returns
         -------
         Geometry
-            Geometry with tree backend loaded (supports faces(), create_face_group(), etc.)
+            Geometry with tree loaded (supports faces(), create_face_group(), etc.)
         """
         import json as _json
 
@@ -422,8 +422,8 @@ class Geometry(AssetBase):
         geo.snappy_body_registry = None
         with open(tree_json_path, "r") as f:
             tree_data = _json.load(f)
-        geo._backend = TreeBackend()
-        geo._backend.load_from_json(tree_data)
+        geo._tree = TreeBackend()
+        geo._tree.load_from_json(tree_data)
         log.info(f"Geometry loaded from local tree: {len(geo.faces())} faces")
         return geo
 
@@ -433,14 +433,14 @@ class Geometry(AssetBase):
 
     def root_node(self) -> NodeSet:
         """Get NodeSet containing the root node."""
-        if self._backend is None:
+        if self._tree is None:
             raise Flow360ValueError(
                 "Geometry tree not loaded. Use Geometry(file_path) to load from file."
             )
-        root_id = self._backend.get_root()
+        root_id = self._tree.get_root()
         if root_id is None:
-            return NodeSet(self, self._backend, set())
-        return NodeSet(self, self._backend, {root_id})
+            return NodeSet(self, self._tree, set())
+        return NodeSet(self, self._tree, {root_id})
 
     def children(self, **filters) -> NodeSet:
         """Get direct children of the root node."""
@@ -499,7 +499,7 @@ class Geometry(AssetBase):
         face_grouping_config = {}
         for group_name, group in self._tree_groups.items():
             for node_id in group._node_ids:
-                node = Node(self, self._backend, node_id)
+                node = Node(self, self._tree, node_id)
                 uuid = node.uuid
                 if uuid is not None:
                     face_grouping_config[uuid] = group_name
@@ -529,7 +529,7 @@ class Geometry(AssetBase):
         """Subtract faces from total geometry (geometry - FaceGroup or NodeSet)."""
         all_faces = self.faces()
         if isinstance(other, FaceGroup):
-            other_nodes = NodeSet(self, self._backend, other._node_ids)
+            other_nodes = NodeSet(self, self._tree, other._node_ids)
             return all_faces - other_nodes
         elif isinstance(other, NodeSet):
             return all_faces - other.faces()
@@ -537,7 +537,7 @@ class Geometry(AssetBase):
             return NotImplemented
 
     def __repr__(self) -> str:
-        if self._backend is not None:
+        if self._tree is not None:
             return f"Geometry({len(self.faces())} faces)"
         return f"Geometry('{self.id}')"
 

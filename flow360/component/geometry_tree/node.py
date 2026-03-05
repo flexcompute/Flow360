@@ -17,11 +17,11 @@ class Node:
     Provides direct attribute access and navigation from a single node.
     """
 
-    def __init__(self, geometry, backend, node_id: str):
+    def __init__(self, geometry, tree, node_id: str):
         self._geometry = geometry
-        self._backend = backend
+        self._tree = tree
         self._node_id = node_id
-        self._attrs = backend.get_node_attrs(node_id)
+        self._attrs = tree.get_node_attrs(node_id)
 
     @property
     def node_id(self) -> str:
@@ -68,25 +68,25 @@ class Node:
         """Get direct children of this node."""
         from .node_set import NodeSet
 
-        child_ids = set(self._backend.get_children(self._node_id))
+        child_ids = set(self._tree.get_children(self._node_id))
         if filters:
-            child_ids = self._backend.filter_nodes(child_ids, **filters)
-        return NodeSet(self._geometry, self._backend, child_ids)
+            child_ids = self._tree.filter_nodes(child_ids, **filters)
+        return NodeSet(self._geometry, self._tree, child_ids)
 
     def descendants(self, **filters) -> "NodeSet":
         """Get all descendants of this node."""
         from .node_set import NodeSet
 
-        descendant_ids = self._backend.get_descendants(self._node_id)
+        descendant_ids = self._tree.get_descendants(self._node_id)
         if filters:
-            descendant_ids = self._backend.filter_nodes(descendant_ids, **filters)
-        return NodeSet(self._geometry, self._backend, descendant_ids)
+            descendant_ids = self._tree.filter_nodes(descendant_ids, **filters)
+        return NodeSet(self._geometry, self._tree, descendant_ids)
 
     def faces(self, **filters) -> "NodeSet":
         """Get all face nodes under this node."""
         from .node_set import NodeSet
 
-        node_set = NodeSet(self._geometry, self._backend, {self._node_id})
+        node_set = NodeSet(self._geometry, self._tree, {self._node_id})
         return node_set.faces(**filters)
 
     def is_face(self) -> bool:

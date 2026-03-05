@@ -18,9 +18,9 @@ class NodeSet:
     Supports fluent navigation through method chaining and set operations.
     """
 
-    def __init__(self, geometry, backend, node_ids: Set[str]):
+    def __init__(self, geometry, tree, node_ids: Set[str]):
         self._geometry = geometry
-        self._backend = backend
+        self._tree = tree
         self._node_ids = node_ids.copy()
 
     # ================================================================
@@ -31,37 +31,37 @@ class NodeSet:
         """Get direct children of all nodes in this set."""
         child_ids = set()
         for node_id in self._node_ids:
-            child_ids.update(self._backend.get_children(node_id))
+            child_ids.update(self._tree.get_children(node_id))
         if filters:
-            child_ids = self._backend.filter_nodes(child_ids, **filters)
-        return NodeSet(self._geometry, self._backend, child_ids)
+            child_ids = self._tree.filter_nodes(child_ids, **filters)
+        return NodeSet(self._geometry, self._tree, child_ids)
 
     def descendants(self, **filters) -> "NodeSet":
         """Get all descendants of all nodes in this set."""
         descendant_ids = set()
         for node_id in self._node_ids:
-            descendant_ids.update(self._backend.get_descendants(node_id))
+            descendant_ids.update(self._tree.get_descendants(node_id))
         if filters:
-            descendant_ids = self._backend.filter_nodes(descendant_ids, **filters)
-        return NodeSet(self._geometry, self._backend, descendant_ids)
+            descendant_ids = self._tree.filter_nodes(descendant_ids, **filters)
+        return NodeSet(self._geometry, self._tree, descendant_ids)
 
     def faces(self, **filters) -> "NodeSet":
         """Get all face nodes within this node scope."""
         all_nodes = set()
         for node_id in self._node_ids:
             all_nodes.add(node_id)
-            all_nodes.update(self._backend.get_descendants(node_id))
+            all_nodes.update(self._tree.get_descendants(node_id))
 
         face_node_ids = set()
         for node_id in all_nodes:
-            attrs = self._backend.get_node_attrs(node_id)
+            attrs = self._tree.get_node_attrs(node_id)
             if is_face_node(attrs):
                 if filters:
                     if not matches_criteria(attrs, filters):
                         continue
                 face_node_ids.add(node_id)
 
-        return NodeSet(self._geometry, self._backend, face_node_ids)
+        return NodeSet(self._geometry, self._tree, face_node_ids)
 
     # ================================================================
     # Set Operations
@@ -71,22 +71,22 @@ class NodeSet:
         """Union of two NodeSets."""
         if not isinstance(other, NodeSet):
             return NotImplemented
-        return NodeSet(self._geometry, self._backend, self._node_ids | other._node_ids)
+        return NodeSet(self._geometry, self._tree, self._node_ids | other._node_ids)
 
     def __and__(self, other: "NodeSet") -> "NodeSet":
         """Intersection of two NodeSets."""
         if not isinstance(other, NodeSet):
             return NotImplemented
-        return NodeSet(self._geometry, self._backend, self._node_ids & other._node_ids)
+        return NodeSet(self._geometry, self._tree, self._node_ids & other._node_ids)
 
     def __sub__(self, other) -> "NodeSet":
         """Difference: supports NodeSet and FaceGroup."""
         from .face_group import FaceGroup
 
         if isinstance(other, NodeSet):
-            return NodeSet(self._geometry, self._backend, self._node_ids - other._node_ids)
+            return NodeSet(self._geometry, self._tree, self._node_ids - other._node_ids)
         elif isinstance(other, FaceGroup):
-            return NodeSet(self._geometry, self._backend, self._node_ids - other._node_ids)
+            return NodeSet(self._geometry, self._tree, self._node_ids - other._node_ids)
         else:
             return NotImplemented
 
@@ -103,7 +103,7 @@ class NodeSet:
 
     def __iter__(self) -> Iterator[Node]:
         for node_id in self._node_ids:
-            yield Node(self._geometry, self._backend, node_id)
+            yield Node(self._geometry, self._tree, node_id)
 
     def __contains__(self, item) -> bool:
         if isinstance(item, Node):
@@ -127,7 +127,7 @@ class NodeSet:
 
         lines = [f"NodeSet({len(self._node_ids)} nodes):"]
         for node_id in sorted(self._node_ids):
-            attrs = self._backend.get_node_attrs(node_id)
+            attrs = self._tree.get_node_attrs(node_id)
             name = attrs.get("name", "<unnamed>")
             node_type = attrs.get("type", "<no type>")
             color = attrs.get("colorRGB", "")
