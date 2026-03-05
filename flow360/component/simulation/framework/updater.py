@@ -743,6 +743,7 @@ def _to_25_9_2(params_as_dict):
                 zone.pop("spacing_radial", None)
 
     _migrate_rotation_volume_to_rotation_sphere(params_as_dict)
+    _migrate_output_format_to_list(params_as_dict)
 
     return params_as_dict
 
@@ -769,12 +770,6 @@ def _migrate_output_format_to_list(params_as_dict):
             output["output_format"] = [fmt]
 
 
-def _to_25_10_0(params_as_dict):
-    """Migrate ``output_format`` from string to list."""
-    _migrate_output_format_to_list(params_as_dict)
-    return params_as_dict
-
-
 VERSION_MILESTONES = [
     (Flow360Version("24.11.1"), _to_24_11_1),
     (Flow360Version("24.11.7"), _to_24_11_7),
@@ -797,7 +792,6 @@ VERSION_MILESTONES = [
     (Flow360Version("25.9.0"), _to_25_9_0),
     (Flow360Version("25.9.1"), _to_25_9_1),
     (Flow360Version("25.9.2"), _to_25_9_2),
-    (Flow360Version("25.10.0"), _to_25_10_0),
 ]  # A list of the Python API version tuple with their corresponding updaters.
 
 

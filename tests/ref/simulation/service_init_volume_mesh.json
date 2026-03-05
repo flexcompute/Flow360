@@ -355,7 +355,7 @@
         {
             "frequency": -1,
             "frequency_offset": 0,
-            "output_format": "paraview",
+            "output_format": ["paraview"],
             "name": "Surface output",
             "write_single_file": false,
             "output_fields": {
