@@ -79,14 +79,3 @@ def is_face_node(node_attrs: Dict[str, Any]) -> bool:
     """Check if a node is a face (Face or FacePointer)."""
     node_type = node_attrs.get("type", "")
     return node_type in ("Face", "FacePointer")
-
-
-def get_face_uuid(node_attrs: Dict[str, Any]):
-    """Get the _Flow360UUID of a face node."""
-    if "_Flow360UUID" in node_attrs:
-        return node_attrs["_Flow360UUID"]
-
-    if "attributes" in node_attrs:
-        return node_attrs["attributes"].get("_Flow360UUID")
-
-    return None

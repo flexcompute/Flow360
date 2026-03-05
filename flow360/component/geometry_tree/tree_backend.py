@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Optional, Set
 
 import networkx as nx
 
-from .filters import get_face_uuid, is_face_node, matches_criteria
+from .filters import is_face_node, matches_criteria
 
 
 class TreeBackend:
@@ -69,7 +69,7 @@ class TreeBackend:
             Node ID of the added node
         """
         attributes = node_data.get("attributes", {})
-        node_id = attributes.get("Flow360UUID")
+        node_id = attributes.get("_Flow360UUID")
 
         if node_id is None or node_id in self.graph:
             self._node_counter += 1
@@ -159,41 +159,16 @@ class TreeBackend:
                 result.add(node_id)
         return result
 
-    def get_faces_in_nodes(self, node_ids: Set[str], **filters) -> Set[str]:
-        """
-        Get all face nodes within given nodes (including descendants).
-
-        Args:
-            node_ids: Set of node IDs to search within
-            **filters: Additional filters for faces
-
-        Returns:
-            Set of face node IDs (with Flow360UUID)
-        """
-        face_ids = set()
-
-        all_nodes = set()
-        for node_id in node_ids:
-            all_nodes.add(node_id)
-            all_nodes.update(self.get_descendants(node_id))
-
-        for node_id in all_nodes:
-            attrs = self.get_node_attrs(node_id)
-            if is_face_node(attrs):
-                if filters and not matches_criteria(attrs, filters):
-                    continue
-
-                uuid = get_face_uuid(attrs)
-                if uuid:
-                    face_ids.add(uuid)
-
-        return face_ids
-
     def get_all_faces(self) -> Set[str]:
-        """Get all face UUIDs in the entire tree."""
+        """Get all face node IDs in the entire tree."""
         if self.root_id is None:
             return set()
-        return self.get_faces_in_nodes({self.root_id})
+        result = set()
+        for node_id in self.graph.nodes():
+            attrs = self.get_node_attrs(node_id)
+            if is_face_node(attrs):
+                result.add(node_id)
+        return result
 
     def get_all_nodes(self) -> Set[str]:
         """Get all node IDs in the tree."""
