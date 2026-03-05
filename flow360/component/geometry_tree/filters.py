@@ -8,6 +8,8 @@ Supports glob patterns (* and ?) for string matching.
 import re
 from typing import Any, Dict
 
+from .node_type import NodeType
+
 
 def glob_to_regex(pattern: str) -> re.Pattern:
     """
@@ -59,23 +61,24 @@ def matches_criteria(node_attrs: Dict[str, Any], criteria: Dict[str, Any]) -> bo
                     return False
             continue
 
-        # System attributes - only match top-level keys
+        # Type uses exact NodeType comparison
+        if key == "type":
+            if node_attrs.get("type") != expected_value:
+                return False
+            continue
+
+        # Other system attributes - match via pattern
         actual_value = node_attrs.get(key)
 
         if actual_value is None:
             return False
 
-        # Convert to string for pattern matching
-        actual_str = str(actual_value)
-        expected_str = str(expected_value)
-
-        if not matches_pattern(actual_str, expected_str):
+        if not matches_pattern(str(actual_value), str(expected_value)):
             return False
 
     return True
 
 
 def is_face_node(node_attrs: Dict[str, Any]) -> bool:
-    """Check if a node is a face (Face or FacePointer)."""
-    node_type = node_attrs.get("type", "")
-    return node_type in ("Face", "FacePointer")
+    """Check if a node is a face."""
+    return node_attrs.get("type") == NodeType.FACE

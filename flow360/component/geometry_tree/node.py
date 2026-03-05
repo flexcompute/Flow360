@@ -6,6 +6,8 @@ A Node represents a single node in the geometry tree with direct attribute acces
 
 from typing import TYPE_CHECKING, Optional
 
+from .node_type import NodeType
+
 if TYPE_CHECKING:
     from .node_set import NodeSet
 
@@ -29,9 +31,9 @@ class Node:
         return self._attrs.get("name", "")
 
     @property
-    def type(self) -> str:
-        """Get the node type (e.g., 'PartDefinition', 'Face')."""
-        return self._attrs.get("type", "")
+    def type(self) -> Optional[NodeType]:
+        """Get the node type (e.g., NodeType.PART, NodeType.FACE)."""
+        return self._attrs.get("type")
 
     @property
     def color(self) -> str:
@@ -79,8 +81,8 @@ class Node:
         return node_set.faces(**filters)
 
     def is_face(self) -> bool:
-        """Check if this node is a face (Face or FacePointer)."""
-        return self.type in ("Face", "FacePointer")
+        """Check if this node is a face."""
+        return self.type == NodeType.FACE
 
     def __repr__(self) -> str:
         info = f"Node('{self.name}', type='{self.type}'"

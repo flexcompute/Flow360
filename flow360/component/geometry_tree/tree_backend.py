@@ -11,6 +11,7 @@ from typing import Any, Dict, List, Optional, Set
 import networkx as nx
 
 from .filters import is_face_node, matches_criteria
+from .node_type import NodeType
 
 
 class TreeBackend:
@@ -18,7 +19,7 @@ class TreeBackend:
     NetworkX-based backend for storing and querying geometry tree.
 
     The tree is stored as a directed graph (DiGraph) where:
-    - Nodes represent tree elements (ModelFile, PartDefinition, TopoFace, etc.)
+    - Nodes represent tree elements (ModelFile, Assembly, Part, Face, etc.)
     - Edges represent parent-child relationships (parent -> child)
     - Node attributes store metadata (name, type, colorRGB, material, etc.)
     """
@@ -70,14 +71,30 @@ class TreeBackend:
         """
         attributes = node_data.get("attributes", {})
         node_id = attributes.get("_Flow360UUID")
+        node_name = node_data.get("name", "<unnamed>")
+        node_type = node_data.get("type", "<unknown>")
 
-        if node_id is None or node_id in self.graph:
-            self._node_counter += 1
-            node_id = f"node_{self._node_counter}"
+        if node_id is None:
+            raise ValueError(
+                f"Node '{node_name}' (type={node_type}) is missing " f"'_Flow360UUID' attribute."
+            )
+        if node_id in self.graph:
+            raise ValueError(
+                f"Duplicate _Flow360UUID '{node_id}' found on node "
+                f"'{node_name}' (type={node_type})."
+            )
+
+        try:
+            resolved_type = NodeType(node_type)
+        except ValueError as exc:
+            raise ValueError(
+                f"Node '{node_name}' has unknown type '{node_type}'. "
+                f"Valid types: {[t.value for t in NodeType]}"
+            ) from exc
 
         node_attrs = {
             "name": node_data.get("name", ""),
-            "type": node_data.get("type", ""),
+            "type": resolved_type,
             "colorRGB": node_data.get("colorRGB", ""),
             "material": node_data.get("material", ""),
             "faceCount": node_data.get("faceCount"),
@@ -123,21 +140,6 @@ class TreeBackend:
             return set()
         return nx.descendants(self.graph, node_id)
 
-    def get_ancestors(self, node_id: str) -> Set[str]:
-        """Get all ancestors of a node (recursive parents)."""
-        if node_id not in self.graph:
-            return set()
-        return nx.ancestors(self.graph, node_id)
-
-    def get_siblings(self, node_id: str) -> Set[str]:
-        """Get siblings of a node (same parent, excluding self)."""
-        parent = self.get_parent(node_id)
-        if parent is None:
-            return set()
-        children = set(self.get_children(parent))
-        children.discard(node_id)
-        return children
-
     def filter_nodes(self, node_ids: Set[str], **criteria) -> Set[str]:
         """
         Filter nodes by criteria.
@@ -177,7 +179,3 @@ class TreeBackend:
     def node_count(self) -> int:
         """Get total number of nodes."""
         return self.graph.number_of_nodes()
-
-    def edge_count(self) -> int:
-        """Get total number of edges."""
-        return self.graph.number_of_edges()
