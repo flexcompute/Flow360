@@ -33,14 +33,14 @@ class TreeBackend:
         Load geometry tree from JSON dictionary into NetworkX graph.
 
         Args:
-            json_data: Tree structure as dictionary
+            json_data: Versioned tree structure {"version": "...", "tree": {...}}
 
         Returns:
             Root node ID
         """
         self.graph.clear()
         self._node_counter = 0
-        self.root_id = self._add_node_recursive(json_data, parent_id=None)
+        self.root_id = self._add_node_recursive(json_data["tree"], parent_id=None)
         return self.root_id
 
     def load_from_file(self, filepath: str) -> str:
