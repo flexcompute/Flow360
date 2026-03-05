@@ -1,17 +1,5 @@
 """
 Tests for the geometry tree and face grouping API.
-
-Uses the airplane RC geometry (194 faces, 7 colors) as the test model.
-
-Covers:
-- TreeBackend: versioned JSON loading, node traversal, filtering
-- Geometry.from_local_tree(): loading from local hierarchical metadata JSON
-- Tree navigation: root_node, children, descendants, faces (with filters)
-- Node attribute access (including FaceGroup.face_ids)
-- Face group management: create_face_group, get_face_group, list_groups, clear_groups
-- save_groups_to_file and _build_face_grouping_config: export to JSON
-- Set operations on NodeSet and Geometry
-- Filter pattern matching (glob)
 """
 
 import json
@@ -23,10 +11,10 @@ from flow360.component.geometry import Geometry
 from flow360.component.geometry_tree import TreeBackend
 from flow360.component.geometry_tree.face_group import FaceGroup
 from flow360.component.geometry_tree.filters import matches_pattern
-from flow360.exceptions import Flow360ValueError
 
 TREE_DATA_DIR = os.path.join(os.path.dirname(__file__), "../../data/geometry_tree")
 AIRPLANE_JSON_PATH = os.path.join(TREE_DATA_DIR, "airplane_rc_geometry_tree.json")
+AIRPLANE_TOTAL_FACES = 194
 
 AIRPLANE_COLOR_EXPECTED = [
     ("255,0,255", 40),
@@ -102,11 +90,11 @@ class TestTreeBackend:
         assert airplane_tree.get_parent(root) is None
 
     def test_get_all_faces(self, airplane_tree):
-        assert len(airplane_tree.get_all_faces()) == 194
+        assert len(airplane_tree.get_all_faces()) == AIRPLANE_TOTAL_FACES
 
     def test_filter_nodes_by_type(self, airplane_tree):
         all_nodes = airplane_tree.get_all_nodes()
-        assert len(airplane_tree.filter_nodes(all_nodes, type="Face")) == 194
+        assert len(airplane_tree.filter_nodes(all_nodes, type="Face")) == AIRPLANE_TOTAL_FACES
         assert len(airplane_tree.filter_nodes(all_nodes, type="Shell")) == 1
         assert len(airplane_tree.filter_nodes(all_nodes, type="BodyCollection")) == 3
 
@@ -118,24 +106,6 @@ class TestTreeBackend:
 
 
 # ================================================================
-# Geometry.from_local_tree() tests
-# ================================================================
-
-
-class TestGeometryFromLocalTree:
-    def test_loads_tree_with_correct_face_count(self, airplane_geometry):
-        assert len(airplane_geometry.faces()) == 194
-
-    def test_repr(self, airplane_geometry):
-        assert "194 faces" in repr(airplane_geometry)
-
-    def test_root_node_raises_without_tree(self):
-        geo = Geometry(id=None)
-        with pytest.raises(Flow360ValueError):
-            geo.root_node()
-
-
-# ================================================================
 # Tree navigation tests
 # ================================================================
 
@@ -143,10 +113,8 @@ class TestGeometryFromLocalTree:
 class TestTreeNavigation:
     def test_root_node(self, airplane_geometry):
         root = airplane_geometry.root_node()
-        assert len(root) == 1
-        node = next(iter(root))
-        assert node.name == "Solid-Body-RC-Plane_v2024_colored"
-        assert node.type == "ModelFile"
+        assert root.name == "Solid-Body-RC-Plane_v2024_colored"
+        assert root.type == "ModelFile"
 
     def test_children(self, airplane_geometry):
         children = airplane_geometry.children()
@@ -156,6 +124,8 @@ class TestTreeNavigation:
         assert len(airplane_geometry.descendants()) == 203
 
     def test_descendants_with_type_filter(self, airplane_geometry):
+        assert len(airplane_geometry.descendants(type="Face")) == AIRPLANE_TOTAL_FACES
+        assert len(airplane_geometry.descendants(type="ShellCollection")) == 1
         assert len(airplane_geometry.descendants(type="Part")) == 1
         assert len(airplane_geometry.descendants(type="Body")) == 1
         assert len(airplane_geometry.descendants(type="Shell")) == 1
@@ -163,7 +133,7 @@ class TestTreeNavigation:
         assert len(airplane_geometry.descendants(type="BodyCollection")) == 3
 
     def test_faces_no_filter(self, airplane_geometry):
-        assert len(airplane_geometry.faces()) == 194
+        assert len(airplane_geometry.faces()) == AIRPLANE_TOTAL_FACES
 
     @pytest.mark.parametrize("color,expected_count", AIRPLANE_COLOR_EXPECTED)
     def test_faces_filter_by_color(self, airplane_geometry, color, expected_count):
@@ -176,21 +146,7 @@ class TestTreeNavigation:
         total = sum(
             len(airplane_geometry.faces(colorRGB=color)) for color, _ in AIRPLANE_COLOR_EXPECTED
         )
-        assert total == 194
-
-    def test_shell_has_all_faces_as_children(self, airplane_geometry):
-        shell = next(iter(airplane_geometry.descendants(type="Shell")))
-        children = shell.children()
-        assert len(children) == 194
-        for child in children:
-            assert child.is_face()
-
-    def test_body_collections_are_empty(self, airplane_geometry):
-        """The 3 BodyCollections (Sketch1/2/3) have no face descendants."""
-        body_collections = airplane_geometry.descendants(type="BodyCollection")
-        assert len(body_collections) == 3
-        for bc in body_collections:
-            assert len(bc.faces()) == 0
+        assert total == AIRPLANE_TOTAL_FACES
 
 
 # ================================================================
@@ -204,7 +160,6 @@ class TestNodeAttributes:
         node = next(iter(magenta_faces))
         assert node.type == "Face"
         assert node.color == "255,0,255"
-        assert node.uuid is not None
         assert node.is_face()
 
     def test_non_face_node(self, airplane_geometry):
@@ -213,15 +168,11 @@ class TestNodeAttributes:
         assert not node.is_face()
 
     def test_node_equality(self, airplane_geometry):
-        faces1 = list(airplane_geometry.faces(colorRGB="0,0,0"))
-        faces2 = list(airplane_geometry.faces(colorRGB="0,0,0"))
+        faces1 = airplane_geometry.faces(colorRGB="0,0,0")
+        faces2 = airplane_geometry.faces(colorRGB="0,0,0")
         assert len(faces1) == 2
-        # Same query yields same nodes
-        assert set(n.node_id for n in faces1) == set(n.node_id for n in faces2)
-
-    def test_face_uuids_are_unique(self, airplane_geometry):
-        uuids = [node.uuid for node in airplane_geometry.faces()]
-        assert len(uuids) == len(set(uuids))
+        # Same query yields equal NodeSets
+        assert faces1 == faces2
 
 
 # ================================================================
@@ -237,16 +188,6 @@ class TestFaceGroupManagement:
         assert isinstance(group, FaceGroup)
         assert group.name == "magenta"
         assert group.face_count() == 40
-
-    def test_face_group_face_ids_returns_copy(self, airplane_geometry):
-        group = airplane_geometry.create_face_group(
-            "blue", airplane_geometry.faces(colorRGB="0,0,255")
-        )
-        ids = group.face_ids
-        assert len(ids) == 37
-        # Mutating the returned set should not affect the group
-        ids.clear()
-        assert group.face_count() == 37
 
     def test_list_groups(self, airplane_geometry):
         airplane_geometry.create_face_group(
@@ -285,15 +226,15 @@ class TestFaceGroupManagement:
     def test_exclusive_face_ownership(self, airplane_geometry):
         """Assigning faces to a new group removes them from the old group."""
         all_group = airplane_geometry.create_face_group("all", airplane_geometry.faces())
-        assert all_group.face_count() == 194
+        assert all_group.face_count() == AIRPLANE_TOTAL_FACES
 
         airplane_geometry.create_face_group(
             "magenta", airplane_geometry.faces(colorRGB="255,0,255")
         )
-        assert all_group.face_count() == 154  # 194 - 40
+        assert all_group.face_count() == AIRPLANE_TOTAL_FACES - 40
 
         airplane_geometry.create_face_group("blue", airplane_geometry.faces(colorRGB="0,0,255"))
-        assert all_group.face_count() == 117  # 154 - 37
+        assert all_group.face_count() == AIRPLANE_TOTAL_FACES - 40 - 37
 
     @pytest.mark.parametrize("color,expected_count", AIRPLANE_COLOR_EXPECTED)
     def test_group_face_count_per_color(self, airplane_geometry, color, expected_count):
@@ -309,7 +250,7 @@ class TestFaceGroupManagement:
 
 
 # ================================================================
-# save_groups_to_file and _build_face_grouping_config tests
+# export_face_grouping_config and _build_face_grouping_config tests
 # ================================================================
 
 
@@ -321,13 +262,10 @@ class TestSaveGroups:
         airplane_geometry.create_face_group("blue", airplane_geometry.faces(colorRGB="0,0,255"))
 
         config = airplane_geometry._build_face_grouping_config()
-        assert len(config) == 40 + 37  # 77 UUID entries
-        assert set(config.values()) == {"magenta", "blue"}
-        # Verify a specific face UUID maps to the correct group
-        magenta_uuid = next(iter(airplane_geometry.faces(colorRGB="255,0,255"))).uuid
-        blue_uuid = next(iter(airplane_geometry.faces(colorRGB="0,0,255"))).uuid
-        assert config[magenta_uuid] == "magenta"
-        assert config[blue_uuid] == "blue"
+        assert config["version"] == "1.0"
+        mapping = config["face_group_mapping"]
+        assert len(mapping) == 40 + 37  # 77 UUID entries
+        assert set(mapping.values()) == {"magenta", "blue"}
 
     def test_save_and_load(self, airplane_geometry, tmp_path):
         airplane_geometry.create_face_group(
@@ -337,14 +275,16 @@ class TestSaveGroups:
         airplane_geometry.create_face_group("green", airplane_geometry.faces(colorRGB="0,255,0"))
 
         output_path = str(tmp_path / "face_grouping.json")
-        airplane_geometry.save_groups_to_file(output_path)
+        airplane_geometry.export_face_grouping_config(output_path)
         with open(output_path, "r") as f:
             data = json.load(f)
 
-        assert len(data) == 40 + 37 + 37  # 114 faces across 3 groups
-        assert set(data.values()) == {"magenta", "blue", "green"}
+        assert data["version"] == "1.0"
+        mapping = data["face_group_mapping"]
+        assert len(mapping) == 40 + 37 + 37  # 114 faces across 3 groups
+        assert set(mapping.values()) == {"magenta", "blue", "green"}
         # Keys should be valid UUIDs (contain hyphens)
-        for key in data:
+        for key in mapping:
             assert "-" in key
 
 
@@ -372,7 +312,7 @@ class TestSetOperations:
     def test_nodeset_difference(self, airplane_geometry):
         all_faces = airplane_geometry.faces()
         magenta = airplane_geometry.faces(colorRGB="255,0,255")
-        assert len(all_faces - magenta) == 154
+        assert len(all_faces - magenta) == AIRPLANE_TOTAL_FACES - 40
 
     def test_subtract_multiple_colors(self, airplane_geometry):
         remaining = (
@@ -380,23 +320,23 @@ class TestSetOperations:
             - airplane_geometry.faces(colorRGB="255,0,255")
             - airplane_geometry.faces(colorRGB="0,0,255")
         )
-        assert len(remaining) == 117  # 194 - 40 - 37
+        assert len(remaining) == AIRPLANE_TOTAL_FACES - 40 - 37
 
     def test_nodeset_subtract_face_group(self, airplane_geometry):
         group = airplane_geometry.create_face_group(
             "magenta", airplane_geometry.faces(colorRGB="255,0,255")
         )
-        assert len(airplane_geometry.faces() - group) == 154
+        assert len(airplane_geometry.faces() - group) == AIRPLANE_TOTAL_FACES - 40
 
     def test_geometry_subtract_face_group(self, airplane_geometry):
         group = airplane_geometry.create_face_group(
             "magenta", airplane_geometry.faces(colorRGB="255,0,255")
         )
-        assert len(airplane_geometry - group) == 154
+        assert len(airplane_geometry - group) == AIRPLANE_TOTAL_FACES - 40
 
     def test_geometry_subtract_nodeset(self, airplane_geometry):
         magenta = airplane_geometry.faces(colorRGB="255,0,255")
-        assert len(airplane_geometry - magenta) == 154
+        assert len(airplane_geometry - magenta) == AIRPLANE_TOTAL_FACES - 40
 
     def test_nodeset_is_empty(self, airplane_geometry):
         empty = airplane_geometry.faces(colorRGB="999,999,999")

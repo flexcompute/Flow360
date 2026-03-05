@@ -104,7 +104,7 @@ class NodeSet:
 
     def __contains__(self, item) -> bool:
         if isinstance(item, Node):
-            return item.node_id in self._node_ids
+            return item._node_id in self._node_ids  # pylint: disable=protected-access
         return item in self._node_ids
 
     def __bool__(self) -> bool:

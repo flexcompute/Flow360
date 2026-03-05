@@ -393,7 +393,7 @@ class Geometry(AssetBase):  # pylint: disable=too-many-public-methods
     # pylint: disable=redefined-builtin
     def __init__(self, id: Union[str, None], name: str = None):  # pylint: disable=unused-argument
         self._tree = None  # TreeBackend for tree navigation and face grouping
-        self._tree_groups = {}  # name -> FaceGroup
+        self._face_groups = {}  # name -> FaceGroup
         super().__init__(id)
         self.snappy_body_registry = None
 
@@ -431,16 +431,14 @@ class Geometry(AssetBase):  # pylint: disable=too-many-public-methods
     # Tree Navigation Methods
     # ================================================================
 
-    def root_node(self) -> NodeSet:
-        """Get NodeSet containing the root node."""
+    def root_node(self) -> Node:
+        """Get the root node of the geometry tree."""
         if self._tree is None:
             raise Flow360ValueError(
                 "Geometry tree not loaded. Use Geometry(file_path) to load from file."
             )
         root_id = self._tree.get_root()
-        if root_id is None:
-            return NodeSet(self, self._tree, set())
-        return NodeSet(self, self._tree, {root_id})
+        return Node(self, self._tree, root_id)
 
     def children(self, **filters) -> NodeSet:
         """Get direct children of the root node."""
@@ -465,7 +463,7 @@ class Geometry(AssetBase):  # pylint: disable=too-many-public-methods
         Each face can only belong to one group. Faces in the selection
         are removed from any previous group they belonged to.
         """
-        if name in self._tree_groups:
+        if name in self._face_groups:
             raise ValueError(f"Group '{name}' already exists")
 
         # Extract face node IDs from the selection
@@ -473,41 +471,45 @@ class Geometry(AssetBase):  # pylint: disable=too-many-public-methods
         face_node_ids = face_nodes._node_ids  # pylint: disable=protected-access
 
         # Remove these faces from any existing groups (exclusive ownership)
-        for group in self._tree_groups.values():
+        for group in self._face_groups.values():
             group._node_ids -= face_node_ids
 
         group = FaceGroup(name, face_node_ids)
-        self._tree_groups[name] = group
+        self._face_groups[name] = group
         return group
 
     def get_face_group(self, name: str) -> FaceGroup:
         """Get a face group by name."""
-        if name not in self._tree_groups:
+        if name not in self._face_groups:
             raise KeyError(f"Group '{name}' not found")
-        return self._tree_groups[name]
+        return self._face_groups[name]
 
     def list_groups(self):
         """List all group names."""
-        return list(self._tree_groups.keys())
+        return list(self._face_groups.keys())
 
     def clear_groups(self) -> None:
         """Remove all face groups."""
-        self._tree_groups.clear()
+        self._face_groups.clear()
 
     def _build_face_grouping_config(self) -> dict:
-        """Build the UUID → group name mapping from current face groups."""
-        face_grouping_config = {}
-        for group_name, group in self._tree_groups.items():
-            for node_id in group._node_ids:  # pylint: disable=protected-access
-                node = Node(self, self._tree, node_id)
-                uuid = node.uuid
-                if uuid is not None:
-                    face_grouping_config[uuid] = group_name
-        return face_grouping_config
+        """Build versioned face grouping config.
 
-    def save_groups_to_file(self, output_path: str) -> None:
+        Returns a dict with structure:
+            {"version": "1.0", "face_group_mapping": {uuid: group_name, ...}}
         """
-        Save face groups to a local JSON file as {uuid: group_name, ...}.
+        face_group_mapping = {}
+        for group_name, group in self._face_groups.items():
+            for node_id in group._node_ids:  # pylint: disable=protected-access
+                attrs = self._tree.get_node_attrs(node_id)
+                uuid = attrs.get("attributes", {}).get("_Flow360UUID")
+                if uuid is not None:
+                    face_group_mapping[uuid] = group_name
+        return {"version": "1.0", "face_group_mapping": face_group_mapping}
+
+    def export_face_grouping_config(self, output_path: str) -> None:
+        """
+        Save face groups to a versioned local JSON file.
 
         Parameters
         ----------
@@ -517,7 +519,8 @@ class Geometry(AssetBase):  # pylint: disable=too-many-public-methods
         face_grouping_config = self._build_face_grouping_config()
         with open(output_path, "w", encoding="utf-8") as fh:
             json.dump(face_grouping_config, fh, indent=4)
-        log.info(f"Saved {len(face_grouping_config)} face group entries to {output_path}")
+        mapping = face_grouping_config["face_group_mapping"]
+        log.info(f"Saved {len(mapping)} face group entries to {output_path}")
 
     # ================================================================
     # Set Operations
@@ -534,11 +537,6 @@ class Geometry(AssetBase):  # pylint: disable=too-many-public-methods
         if isinstance(other, NodeSet):
             return all_faces - other.faces()
         return NotImplemented
-
-    def __repr__(self) -> str:
-        if self._tree is not None:
-            return f"Geometry({len(self.faces())} faces)"
-        return f"Geometry('{self.id}')"
 
     @property
     def face_group_tag(self):

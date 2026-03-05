@@ -24,11 +24,6 @@ class Node:
         self._attrs = tree.get_node_attrs(node_id)
 
     @property
-    def node_id(self) -> str:
-        """Get the internal node ID."""
-        return self._node_id
-
-    @property
     def name(self) -> str:
         """Get the node name."""
         return self._attrs.get("name", "")
@@ -52,12 +47,6 @@ class Node:
     def face_count(self) -> Optional[int]:
         """Get the face count (if available)."""
         return self._attrs.get("faceCount")
-
-    @property
-    def uuid(self) -> Optional[str]:
-        """Get the _Flow360UUID (if available)."""
-        attrs = self._attrs.get("attributes", {})
-        return attrs.get("_Flow360UUID")
 
     @property
     def attributes(self) -> dict:

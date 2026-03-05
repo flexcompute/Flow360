@@ -16,11 +16,6 @@ class FaceGroup:
         self.name = name
         self._node_ids = node_ids.copy()
 
-    @property
-    def face_ids(self) -> Set[str]:
-        """Get the set of face node IDs in this group."""
-        return self._node_ids.copy()
-
     def face_count(self) -> int:
         """Get number of faces in group."""
         return len(self._node_ids)
