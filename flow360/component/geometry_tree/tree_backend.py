@@ -27,7 +27,6 @@ class TreeBackend:
     def __init__(self):
         self.graph = nx.DiGraph()
         self.root_id: Optional[str] = None
-        self._node_counter = 0
 
     def load_from_json(self, json_data: dict) -> str:
         """
@@ -40,7 +39,6 @@ class TreeBackend:
             Root node ID
         """
         self.graph.clear()
-        self._node_counter = 0
         self.root_id = self._add_node_recursive(json_data["tree"], parent_id=None)
         return self.root_id
 

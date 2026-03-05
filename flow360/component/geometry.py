@@ -391,7 +391,7 @@ class Geometry(AssetBase):  # pylint: disable=too-many-public-methods
     _cloud_resource_type_name = "Geometry"
 
     # pylint: disable=redefined-builtin
-    def __init__(self, id: Union[str, None], name: str = None):  # pylint: disable=unused-argument
+    def __init__(self, id: Union[str, None]):
         self._tree = None  # TreeBackend for tree navigation and face grouping
         self._face_groups = {}  # name -> FaceGroup
         super().__init__(id)
