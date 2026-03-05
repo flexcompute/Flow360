@@ -81,14 +81,11 @@ class NodeSet:
 
     def __sub__(self, other) -> "NodeSet":
         """Difference: supports NodeSet and FaceGroup."""
-        from .face_group import FaceGroup
+        from .face_group import FaceGroup  # pylint: disable=import-outside-toplevel
 
-        if isinstance(other, NodeSet):
+        if isinstance(other, (NodeSet, FaceGroup)):
             return NodeSet(self._geometry, self._tree, self._node_ids - other._node_ids)
-        elif isinstance(other, FaceGroup):
-            return NodeSet(self._geometry, self._tree, self._node_ids - other._node_ids)
-        else:
-            return NotImplemented
+        return NotImplemented
 
     # ================================================================
     # Collection Methods
@@ -118,8 +115,7 @@ class NodeSet:
             return False
         return self._node_ids == other._node_ids
 
-    def __hash__(self):
-        return None
+    __hash__ = None
 
     def __repr__(self) -> str:
         if not self._node_ids:

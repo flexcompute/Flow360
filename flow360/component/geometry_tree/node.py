@@ -4,7 +4,7 @@ node.py - Node class for individual tree nodes
 A Node represents a single node in the geometry tree with direct attribute access.
 """
 
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from .node_set import NodeSet
@@ -66,7 +66,7 @@ class Node:
 
     def children(self, **filters) -> "NodeSet":
         """Get direct children of this node."""
-        from .node_set import NodeSet
+        from .node_set import NodeSet  # pylint: disable=import-outside-toplevel
 
         child_ids = set(self._tree.get_children(self._node_id))
         if filters:
@@ -75,7 +75,7 @@ class Node:
 
     def descendants(self, **filters) -> "NodeSet":
         """Get all descendants of this node."""
-        from .node_set import NodeSet
+        from .node_set import NodeSet  # pylint: disable=import-outside-toplevel
 
         descendant_ids = self._tree.get_descendants(self._node_id)
         if filters:
@@ -84,7 +84,7 @@ class Node:
 
     def faces(self, **filters) -> "NodeSet":
         """Get all face nodes under this node."""
-        from .node_set import NodeSet
+        from .node_set import NodeSet  # pylint: disable=import-outside-toplevel
 
         node_set = NodeSet(self._geometry, self._tree, {self._node_id})
         return node_set.faces(**filters)

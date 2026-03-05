@@ -174,8 +174,7 @@ class TestTreeNavigation:
 
     def test_all_color_filters_sum_to_total(self, airplane_geometry):
         total = sum(
-            len(airplane_geometry.faces(colorRGB=color))
-            for color, _ in AIRPLANE_COLOR_EXPECTED
+            len(airplane_geometry.faces(colorRGB=color)) for color, _ in AIRPLANE_COLOR_EXPECTED
         )
         assert total == 194
 
@@ -250,7 +249,9 @@ class TestFaceGroupManagement:
         assert group.face_count() == 37
 
     def test_list_groups(self, airplane_geometry):
-        airplane_geometry.create_face_group("magenta", airplane_geometry.faces(colorRGB="255,0,255"))
+        airplane_geometry.create_face_group(
+            "magenta", airplane_geometry.faces(colorRGB="255,0,255")
+        )
         airplane_geometry.create_face_group("blue", airplane_geometry.faces(colorRGB="0,0,255"))
         assert airplane_geometry.list_groups() == ["magenta", "blue"]
 
@@ -265,12 +266,18 @@ class TestFaceGroupManagement:
             airplane_geometry.get_face_group("nonexistent")
 
     def test_duplicate_group_name_raises(self, airplane_geometry):
-        airplane_geometry.create_face_group("magenta", airplane_geometry.faces(colorRGB="255,0,255"))
+        airplane_geometry.create_face_group(
+            "magenta", airplane_geometry.faces(colorRGB="255,0,255")
+        )
         with pytest.raises(ValueError, match="already exists"):
-            airplane_geometry.create_face_group("magenta", airplane_geometry.faces(colorRGB="0,0,255"))
+            airplane_geometry.create_face_group(
+                "magenta", airplane_geometry.faces(colorRGB="0,0,255")
+            )
 
     def test_clear_groups(self, airplane_geometry):
-        airplane_geometry.create_face_group("magenta", airplane_geometry.faces(colorRGB="255,0,255"))
+        airplane_geometry.create_face_group(
+            "magenta", airplane_geometry.faces(colorRGB="255,0,255")
+        )
         airplane_geometry.create_face_group("blue", airplane_geometry.faces(colorRGB="0,0,255"))
         airplane_geometry.clear_groups()
         assert airplane_geometry.list_groups() == []
@@ -280,7 +287,9 @@ class TestFaceGroupManagement:
         all_group = airplane_geometry.create_face_group("all", airplane_geometry.faces())
         assert all_group.face_count() == 194
 
-        airplane_geometry.create_face_group("magenta", airplane_geometry.faces(colorRGB="255,0,255"))
+        airplane_geometry.create_face_group(
+            "magenta", airplane_geometry.faces(colorRGB="255,0,255")
+        )
         assert all_group.face_count() == 154  # 194 - 40
 
         airplane_geometry.create_face_group("blue", airplane_geometry.faces(colorRGB="0,0,255"))
@@ -306,7 +315,9 @@ class TestFaceGroupManagement:
 
 class TestSaveGroups:
     def test_build_face_grouping_config(self, airplane_geometry):
-        airplane_geometry.create_face_group("magenta", airplane_geometry.faces(colorRGB="255,0,255"))
+        airplane_geometry.create_face_group(
+            "magenta", airplane_geometry.faces(colorRGB="255,0,255")
+        )
         airplane_geometry.create_face_group("blue", airplane_geometry.faces(colorRGB="0,0,255"))
 
         config = airplane_geometry._build_face_grouping_config()
@@ -319,7 +330,9 @@ class TestSaveGroups:
         assert config[blue_uuid] == "blue"
 
     def test_save_and_load(self, airplane_geometry, tmp_path):
-        airplane_geometry.create_face_group("magenta", airplane_geometry.faces(colorRGB="255,0,255"))
+        airplane_geometry.create_face_group(
+            "magenta", airplane_geometry.faces(colorRGB="255,0,255")
+        )
         airplane_geometry.create_face_group("blue", airplane_geometry.faces(colorRGB="0,0,255"))
         airplane_geometry.create_face_group("green", airplane_geometry.faces(colorRGB="0,255,0"))
 

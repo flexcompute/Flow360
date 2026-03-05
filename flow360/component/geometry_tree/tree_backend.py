@@ -53,7 +53,7 @@ class TreeBackend:
         Returns:
             Root node ID
         """
-        with open(filepath, "r") as f:
+        with open(filepath, "r", encoding="utf-8") as f:
             json_data = json.load(f)
         return self.load_from_json(json_data)
 

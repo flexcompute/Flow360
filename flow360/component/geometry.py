@@ -4,6 +4,7 @@ Geometry component
 
 from __future__ import annotations
 
+import json
 import os
 import threading
 from enum import Enum
@@ -19,6 +20,10 @@ from flow360.cloud.flow360_requests import (
 )
 from flow360.cloud.heartbeat import post_upload_heartbeat
 from flow360.cloud.rest_api import RestApi
+
+# Re-exports for face grouping API
+from flow360.component.geometry_tree import Node, NodeSet, TreeBackend
+from flow360.component.geometry_tree.face_group import FaceGroup
 from flow360.component.interfaces import GeometryInterface
 from flow360.component.resource_base import (
     AssetMetaBaseModelV2,
@@ -32,18 +37,13 @@ from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.utils import model_attribute_unlock
 from flow360.component.simulation.web.asset_base import AssetBase
 from flow360.component.utils import (
-    SUPPORTED_GEOMETRY_FILE_PATTERNS,
     GeometryFiles,
     MeshNameParser,
-    match_file_pattern,
     shared_account_confirm_proceed,
 )
 from flow360.exceptions import Flow360FileError, Flow360ValueError
 from flow360.log import log
 
-# Re-exports for face grouping API
-from flow360.component.geometry_tree import TreeBackend, NodeSet, Node
-from flow360.component.geometry_tree.face_group import FaceGroup
 
 class GeometryStatus(Enum):
     """Status of geometry resource, the is_final method is overloaded"""
@@ -379,7 +379,7 @@ class GeometryDraft(ResourceDraft):
         return Geometry.from_cloud(info.id)
 
 
-class Geometry(AssetBase):
+class Geometry(AssetBase):  # pylint: disable=too-many-public-methods
     """
     Geometry component for workbench (simulation V2)
     """
@@ -391,14 +391,16 @@ class Geometry(AssetBase):
     _cloud_resource_type_name = "Geometry"
 
     # pylint: disable=redefined-builtin
-    def __init__(self, id: Union[str, None], name: str = None):
+    def __init__(self, id: Union[str, None], name: str = None):  # pylint: disable=unused-argument
         self._tree = None  # TreeBackend for tree navigation and face grouping
         self._tree_groups = {}  # name -> FaceGroup
         super().__init__(id)
         self.snappy_body_registry = None
 
     @classmethod
-    def from_local_tree(cls, tree_json_path: str = "geometryHierarchicalMetadata.json") -> "Geometry":
+    def from_local_tree(
+        cls, tree_json_path: str = "geometryHierarchicalMetadata.json"
+    ) -> "Geometry":
         """
         Create a Geometry from a local hierarchical metadata JSON file.
 
@@ -416,12 +418,10 @@ class Geometry(AssetBase):
         Geometry
             Geometry with tree loaded (supports faces(), create_face_group(), etc.)
         """
-        import json as _json
-
         geo = cls(id=None)
         geo.snappy_body_registry = None
-        with open(tree_json_path, "r") as f:
-            tree_data = _json.load(f)
+        with open(tree_json_path, "r", encoding="utf-8") as f:
+            tree_data = json.load(f)
         geo._tree = TreeBackend()
         geo._tree.load_from_json(tree_data)
         log.info(f"Geometry loaded from local tree: {len(geo.faces())} faces")
@@ -470,7 +470,7 @@ class Geometry(AssetBase):
 
         # Extract face node IDs from the selection
         face_nodes = selection.faces()
-        face_node_ids = face_nodes._node_ids
+        face_node_ids = face_nodes._node_ids  # pylint: disable=protected-access
 
         # Remove these faces from any existing groups (exclusive ownership)
         for group in self._tree_groups.values():
@@ -498,7 +498,7 @@ class Geometry(AssetBase):
         """Build the UUID → group name mapping from current face groups."""
         face_grouping_config = {}
         for group_name, group in self._tree_groups.items():
-            for node_id in group._node_ids:
+            for node_id in group._node_ids:  # pylint: disable=protected-access
                 node = Node(self, self._tree, node_id)
                 uuid = node.uuid
                 if uuid is not None:
@@ -514,11 +514,9 @@ class Geometry(AssetBase):
         output_path : str
             Path to write the face grouping JSON file.
         """
-        import json as _json
-
         face_grouping_config = self._build_face_grouping_config()
-        with open(output_path, "w") as fh:
-            _json.dump(face_grouping_config, fh, indent=4)
+        with open(output_path, "w", encoding="utf-8") as fh:
+            json.dump(face_grouping_config, fh, indent=4)
         log.info(f"Saved {len(face_grouping_config)} face group entries to {output_path}")
 
     # ================================================================
@@ -529,12 +527,13 @@ class Geometry(AssetBase):
         """Subtract faces from total geometry (geometry - FaceGroup or NodeSet)."""
         all_faces = self.faces()
         if isinstance(other, FaceGroup):
-            other_nodes = NodeSet(self, self._tree, other._node_ids)
+            other_nodes = NodeSet(
+                self, self._tree, other._node_ids
+            )  # pylint: disable=protected-access
             return all_faces - other_nodes
-        elif isinstance(other, NodeSet):
+        if isinstance(other, NodeSet):
             return all_faces - other.faces()
-        else:
-            return NotImplemented
+        return NotImplemented
 
     def __repr__(self) -> str:
         if self._tree is not None:
