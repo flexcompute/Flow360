@@ -12,7 +12,10 @@ import rich
 import unyt as u
 import yaml
 from flow360_schema.framework.base_model import Flow360BaseModel as _SchemaBaseModel
-from flow360_schema.framework.validation.context import DeserializationContext
+from flow360_schema.framework.validation.context import (
+    DeserializationContext,
+    unit_system_manager,
+)
 
 from flow360.component.simulation.conversion import need_conversion
 from flow360.error_messages import do_not_modify_file_manually_msg
@@ -84,7 +87,7 @@ class Flow360BaseModel(_SchemaBaseModel):
             raise ValueError("Can't do shallow copy of component, set `deep=True` in copy().")
         new_copy = pd.BaseModel.model_copy(self, update=update, deep=True, **kwargs)
         data = new_copy.model_dump(exclude={"private_attribute_id"})
-        with DeserializationContext():
+        with unit_system_manager.suspended(), DeserializationContext():
             return self.model_validate(data)
 
     def help(self, methods: bool = False) -> None:
