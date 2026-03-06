@@ -52,7 +52,7 @@ u.unit_systems.cgs_unit_system["delta_temperature"] = u.Unit("K").expr
 
 # Register with flow360-schema so new schema types respect unit system context
 # pylint: disable=wrong-import-position,wrong-import-order
-from flow360_schema import unit_system_manager
+from flow360_schema.framework.validation.context import unit_system_manager
 
 
 def _encode_ndarray(x):

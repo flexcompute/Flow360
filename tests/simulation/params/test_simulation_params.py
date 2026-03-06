@@ -73,7 +73,7 @@ from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics im
     UserDefinedDynamic,
 )
 from flow360.component.simulation.utils import model_attribute_unlock
-from tests.utils import to_file_from_file_test
+from tests.simulation.conftest import to_file_from_file_test
 
 assertions = unittest.TestCase("__init__")
 

@@ -78,7 +78,7 @@ from flow360.component.simulation.user_code.core.types import (
     save_user_variables,
 )
 from flow360.component.simulation.user_code.variables import control, solution
-from tests.utils import to_file_from_file_test
+from tests.simulation.conftest import to_file_from_file_test
 
 
 @pytest.fixture(autouse=True)
