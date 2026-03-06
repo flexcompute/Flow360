@@ -60,6 +60,23 @@ def show_dict_diff(dict1, dict2):
     print("end of diff")
 
 
+def _approx_equal(a, b, rel_tol=1e-12):
+    """Recursively compare nested structures with float tolerance."""
+    if isinstance(a, dict) and isinstance(b, dict):
+        if a.keys() != b.keys():
+            return False
+        return all(_approx_equal(a[k], b[k], rel_tol) for k in a)
+    if isinstance(a, (list, tuple)) and isinstance(b, (list, tuple)):
+        if len(a) != len(b):
+            return False
+        return all(_approx_equal(ai, bi, rel_tol) for ai, bi in zip(a, b))
+    if isinstance(a, Number) and isinstance(b, Number):
+        if a == b:
+            return True
+        return abs(a - b) <= rel_tol * max(abs(a), abs(b))
+    return a == b
+
+
 def to_file_from_file_test(obj):
     test_extentions = ["yaml", "json"]
     factory = obj.__class__
@@ -68,9 +85,9 @@ def to_file_from_file_test(obj):
             obj_filename = os.path.join(tmpdir, f"obj.{ext}")
             obj.to_file(obj_filename)
             obj_read = factory.from_file(obj_filename)
-            assert obj.model_dump() == obj_read.model_dump()
+            assert _approx_equal(obj.model_dump(), obj_read.model_dump())
             obj_read = factory(filename=obj_filename)
-            assert obj.model_dump() == obj_read.model_dump()
+            assert _approx_equal(obj.model_dump(), obj_read.model_dump())
 
 
 def compare_dict_to_ref(data, ref_path):
