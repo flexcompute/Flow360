@@ -73,7 +73,7 @@ from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics im
     UserDefinedDynamic,
 )
 from flow360.component.simulation.utils import model_attribute_unlock
-from tests.simulation.conftest import to_file_from_file_test
+from tests.simulation.conftest import to_file_from_file_test_approx
 
 assertions = unittest.TestCase("__init__")
 
@@ -258,7 +258,7 @@ def get_param_with_list_of_lengths():
 
 @pytest.mark.usefixtures("array_equality_override")
 def test_simulation_params_serialization(get_the_param):
-    to_file_from_file_test(get_the_param)
+    to_file_from_file_test_approx(get_the_param)
 
 
 @pytest.mark.usefixtures("array_equality_override")

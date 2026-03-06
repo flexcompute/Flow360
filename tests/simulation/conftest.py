@@ -29,7 +29,7 @@ def _approx_equal(a, b, rel_tol=1e-12):
     return a == b
 
 
-def to_file_from_file_test(obj):
+def to_file_from_file_test_approx(obj):
     """v2 serialization round-trip test with float tolerance."""
     test_extentions = ["yaml", "json"]
     factory = obj.__class__

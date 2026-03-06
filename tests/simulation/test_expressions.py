@@ -78,7 +78,7 @@ from flow360.component.simulation.user_code.core.types import (
     save_user_variables,
 )
 from flow360.component.simulation.user_code.variables import control, solution
-from tests.simulation.conftest import to_file_from_file_test
+from tests.simulation.conftest import to_file_from_file_test_approx
 
 
 @pytest.fixture(autouse=True)
@@ -811,7 +811,7 @@ def test_to_file_from_file_expression(
             ],
         )
 
-    to_file_from_file_test(params)
+    to_file_from_file_test_approx(params)
     params.display_output_units()  # Just to make sure not exception.
 
 
