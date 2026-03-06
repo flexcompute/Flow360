@@ -675,6 +675,7 @@ def _get_volume_zones(volume_zones_list: list[dict]):
         elif item["type"] in (
             "RotationVolume",
             "RotationCylinder",
+            "RotationSphere",
         ):
             item.pop("stationary_enclosed_entities", None)
             volume_zones_translated.append(item)
@@ -774,7 +775,7 @@ def _get_gai_setting_whitelist(input_params: SimulationParams) -> dict:
     has_rotation_zones = False
     if input_params.meshing and input_params.meshing.volume_zones:
         has_rotation_zones = any(
-            zone.__class__.__name__ in ("RotationCylinder", "RotationVolume")
+            zone.__class__.__name__ in ("RotationCylinder", "RotationVolume", "RotationSphere")
             for zone in input_params.meshing.volume_zones
         )
 

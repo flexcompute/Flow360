@@ -17,6 +17,7 @@ from flow360.component.simulation.meshing_param.volume_params import (
     CustomZones,
     MeshSliceOutput,
     RotationCylinder,
+    RotationSphere,
     RotationVolume,
     StructuredBoxRefinement,
     UniformRefinement,
@@ -54,25 +55,11 @@ def uniform_refinement_translator(obj: UniformRefinement):
     return {"spacing": obj.spacing.value.item()}
 
 
-def cylindrical_refinement_translator(
-    obj: Union[AxisymmetricRefinement, RotationVolume],
-):
+def cylindrical_refinement_translator(obj: Union[AxisymmetricRefinement, RotationVolume]):
     """
     Translate AxisymmetricRefinement or RotationVolume with Cylinder/AxisymmetricBody entities.
 
-    Note: This should not be called for RotationVolume with Sphere entities.
-    Use spherical_refinement_translator() for those cases.
     """
-    if (
-        obj.spacing_axial is None
-        or obj.spacing_radial is None
-        or obj.spacing_circumferential is None
-    ):
-        raise ValueError(
-            "cylindrical_refinement_translator requires all spacing fields to be specified. "
-            "For Sphere entities in RotationVolume, use spherical_refinement_translator instead."
-        )
-
     return {
         "spacingAxial": obj.spacing_axial.value.item(),
         "spacingRadial": obj.spacing_radial.value.item(),
@@ -123,9 +110,9 @@ def passive_spacing_translator(obj: PassiveSpacing):
     }
 
 
-def spherical_refinement_translator(obj: RotationVolume):
+def spherical_refinement_translator(obj: RotationSphere):
     """
-    Translate RotationVolume with Sphere entity.
+    Translate RotationSphere.
     Sphere only uses spacing_circumferential as maxEdgeLength.
     """
     return {
@@ -133,11 +120,9 @@ def spherical_refinement_translator(obj: RotationVolume):
     }
 
 
-def rotation_volume_translator(obj: RotationVolume, rotor_disk_names: list):
-    """Setting translation for RotationVolume."""
-    # Check if the entity is a Sphere (uses different spacing fields)
-    entity = obj.entities.stored_entities[0]  # Only single entity allowed
-    if is_exact_instance(entity, Sphere):
+def rotation_volume_translator(obj: Union[RotationVolume, RotationSphere], rotor_disk_names: list):
+    """Setting translation for RotationVolume/RotationSphere."""
+    if isinstance(obj, RotationSphere):
         setting = spherical_refinement_translator(obj)
     else:
         setting = cylindrical_refinement_translator(obj)
@@ -595,9 +580,20 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
         translation_func_rotor_disk_names=rotor_disk_names,
         entity_injection_use_inhouse_mesher=input_params.private_attribute_asset_cache.use_inhouse_mesher,
     )
+    sliding_interfaces_spheres = translate_setting_and_apply_to_all_entities(
+        volume_zones,
+        RotationSphere,
+        rotation_volume_translator,
+        to_list=True,
+        entity_injection_func=rotation_volume_entity_injector,
+        translation_func_rotor_disk_names=rotor_disk_names,
+        entity_injection_use_inhouse_mesher=input_params.private_attribute_asset_cache.use_inhouse_mesher,
+    )
 
-    if sliding_interfaces or sliding_interfaces_cylinders:
-        translated["slidingInterfaces"] = sliding_interfaces + sliding_interfaces_cylinders
+    if sliding_interfaces or sliding_interfaces_cylinders or sliding_interfaces_spheres:
+        translated["slidingInterfaces"] = (
+            sliding_interfaces + sliding_interfaces_cylinders + sliding_interfaces_spheres
+        )
 
     ##::  Step 6: Get custom volumes
     custom_volumes = _get_custom_volumes(volume_zones)
