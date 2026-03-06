@@ -22,6 +22,8 @@ def _approx_equal(a, b, rel_tol=1e-12):
         if len(a) != len(b):
             return False
         return all(_approx_equal(ai, bi, rel_tol) for ai, bi in zip(a, b))
+    if isinstance(a, bool) or isinstance(b, bool):
+        return isinstance(a, bool) and isinstance(b, bool) and a == b
     if isinstance(a, Number) and isinstance(b, Number):
         if a == b:
             return True
