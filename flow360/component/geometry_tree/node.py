@@ -1,7 +1,7 @@
 """
-node.py - Node class for individual tree nodes
+node.py - GeometryTreeNode class for individual tree nodes
 
-A Node represents a single node in the geometry tree with direct attribute access.
+A GeometryTreeNode represents a single node in the geometry tree with direct attribute access.
 """
 
 from typing import TYPE_CHECKING, Optional
@@ -9,10 +9,10 @@ from typing import TYPE_CHECKING, Optional
 from .node_type import NodeType
 
 if TYPE_CHECKING:
-    from .node_set import NodeSet
+    from .node_set import GeometryTreeNodeSet
 
 
-class Node:
+class GeometryTreeNode:
     """
     Represents a single node in the geometry tree.
 
@@ -40,29 +40,35 @@ class Node:
         """Get the node color (colorRGB value)."""
         return self._attrs.get("colorRGB", "")
 
-    def children(self, **filters) -> "NodeSet":
+    def children(self, **filters) -> "GeometryTreeNodeSet":
         """Get direct children of this node."""
-        from .node_set import NodeSet  # pylint: disable=import-outside-toplevel
+        from .node_set import (
+            GeometryTreeNodeSet,  # pylint: disable=import-outside-toplevel
+        )
 
         child_ids = set(self._tree.get_children(self._node_id))
         if filters:
             child_ids = self._tree.filter_nodes(child_ids, **filters)
-        return NodeSet(self._geometry, self._tree, child_ids)
+        return GeometryTreeNodeSet(self._geometry, self._tree, child_ids)
 
-    def descendants(self, **filters) -> "NodeSet":
+    def descendants(self, **filters) -> "GeometryTreeNodeSet":
         """Get all descendants of this node."""
-        from .node_set import NodeSet  # pylint: disable=import-outside-toplevel
+        from .node_set import (
+            GeometryTreeNodeSet,  # pylint: disable=import-outside-toplevel
+        )
 
         descendant_ids = self._tree.get_descendants(self._node_id)
         if filters:
             descendant_ids = self._tree.filter_nodes(descendant_ids, **filters)
-        return NodeSet(self._geometry, self._tree, descendant_ids)
+        return GeometryTreeNodeSet(self._geometry, self._tree, descendant_ids)
 
-    def faces(self, **filters) -> "NodeSet":
+    def faces(self, **filters) -> "GeometryTreeNodeSet":
         """Get all face nodes under this node."""
-        from .node_set import NodeSet  # pylint: disable=import-outside-toplevel
+        from .node_set import (
+            GeometryTreeNodeSet,  # pylint: disable=import-outside-toplevel
+        )
 
-        node_set = NodeSet(self._geometry, self._tree, {self._node_id})
+        node_set = GeometryTreeNodeSet(self._geometry, self._tree, {self._node_id})
         return node_set.faces(**filters)
 
     def is_face(self) -> bool:
@@ -70,14 +76,14 @@ class Node:
         return self.type == NodeType.FACE
 
     def __repr__(self) -> str:
-        info = f"Node('{self.name}', type='{self.type}'"
+        info = f"GeometryTreeNode('{self.name}', type='{self.type}'"
         if self.color:
             info += f", color='{self.color}'"
         info += ")"
         return info
 
     def __eq__(self, other) -> bool:
-        if not isinstance(other, Node):
+        if not isinstance(other, GeometryTreeNode):
             return False
         return self._node_id == other._node_id
 

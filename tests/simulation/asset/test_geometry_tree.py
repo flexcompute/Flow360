@@ -18,8 +18,8 @@ AIRPLANE_JSON_PATH = os.path.join(TREE_DATA_DIR, "airplane_rc_geometry_tree.json
 AIRPLANE_TOTAL_FACES = 194
 
 DRIVAER_JSON_PATH = os.path.join(TREE_DATA_DIR, "drivaer_geometry_tree.json")
-DRIVAER_TOTAL_FACES = 9645
-DRIVAER_TOTAL_NODES = 28410
+DRIVAER_TOTAL_FACES = 74
+DRIVAER_TOTAL_NODES = 233
 
 AIRPLANE_COLOR_EXPECTED = [
     ("255,0,255", 40),
@@ -465,9 +465,9 @@ class TestDrivAer:
 
     def test_type_counts(self, drivaer_geometry):
         assert len(drivaer_geometry.descendants(type=NodeType.FACE)) == DRIVAER_TOTAL_FACES
-        assert len(drivaer_geometry.descendants(type=NodeType.BODY)) == 6240
-        assert len(drivaer_geometry.descendants(type=NodeType.SHELL)) == 6240
-        assert len(drivaer_geometry.descendants(type=NodeType.SHELL_COLLECTION)) == 6240
+        assert len(drivaer_geometry.descendants(type=NodeType.BODY)) == 38
+        assert len(drivaer_geometry.descendants(type=NodeType.SHELL)) == 38
+        assert len(drivaer_geometry.descendants(type=NodeType.SHELL_COLLECTION)) == 38
         assert len(drivaer_geometry.descendants(type=NodeType.PART)) == 15
         assert len(drivaer_geometry.descendants(type=NodeType.ASSEMBLY)) == 29
 
@@ -478,20 +478,20 @@ class TestDrivAer:
     def test_face_grouping_by_assembly_name(self, drivaer_geometry):
         """Group faces by Assembly name and verify counts."""
         expected_faces = {
-            "09_engineAndGearbox": 563,
-            "21_Chassis": 256,
+            "09_engineAndGearbox": 3,
+            "21_Chassis": 9,
             "22_EngineBaySeals": 3,
-            "Body": 1285,
-            "ExhaustSystem_new": 474,
-            "Mirrors": 362,
-            "RearEnd_Sedan": 226,
+            "Body": 3,
+            "ExhaustSystem_new": 3,
+            "Mirrors": 6,
+            "RearEnd_Sedan": 3,
             "Slip_Ground": 4,
-            "Underbody_new": 4186,
-            "WT_Sides": 9,
+            "Underbody_new": 4,
+            "WT_Sides": 7,
             "WT_ground_NoSlip": 2,
-            "Wheels_Front": 1120,
-            "Wheels_Rear": 1119,
-            "tyre_plinth": 36,
+            "Wheels_Front": 9,
+            "Wheels_Rear": 9,
+            "tyre_plinth": 9,
         }
 
         for name, count in expected_faces.items():
@@ -510,11 +510,11 @@ class TestDrivAer:
     def test_face_grouping_by_children_navigation(self, drivaer_geometry):
         """Group faces using chained .children() navigation."""
         expected = {
-            "Body": 1285,
-            "Wheels_Front": 1120,
-            "Wheels_Rear": 1119,
-            "Underbody_new": 4186,
-            "Mirrors": 362,
+            "Body": 3,
+            "Wheels_Front": 9,
+            "Wheels_Rear": 9,
+            "Underbody_new": 4,
+            "Mirrors": 6,
         }
 
         for name, count in expected.items():

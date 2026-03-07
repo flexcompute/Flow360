@@ -22,7 +22,11 @@ from flow360.cloud.heartbeat import post_upload_heartbeat
 from flow360.cloud.rest_api import RestApi
 
 # Re-exports for face grouping API
-from flow360.component.geometry_tree import Node, NodeSet, TreeBackend
+from flow360.component.geometry_tree import (
+    GeometryTreeNode,
+    GeometryTreeNodeSet,
+    TreeBackend,
+)
 from flow360.component.geometry_tree.face_group import FaceGroup
 from flow360.component.interfaces import GeometryInterface
 from flow360.component.resource_base import (
@@ -430,24 +434,24 @@ class Geometry(AssetBase):  # pylint: disable=too-many-public-methods
     # Tree Navigation Methods
     # ================================================================
 
-    def root_node(self) -> Node:
+    def root_node(self) -> GeometryTreeNode:
         """Get the root node of the geometry tree."""
         if self._tree is None:
             raise Flow360ValueError(
                 "Geometry tree not loaded. Use Geometry(file_path) to load from file."
             )
         root_id = self._tree.get_root()
-        return Node(self, self._tree, root_id)
+        return GeometryTreeNode(self, self._tree, root_id)
 
-    def children(self, **filters) -> NodeSet:
+    def children(self, **filters) -> GeometryTreeNodeSet:
         """Get direct children of the root node."""
         return self.root_node().children(**filters)
 
-    def descendants(self, **filters) -> NodeSet:
+    def descendants(self, **filters) -> GeometryTreeNodeSet:
         """Get all descendants of the root."""
         return self.root_node().descendants(**filters)
 
-    def faces(self, **filters) -> NodeSet:
+    def faces(self, **filters) -> GeometryTreeNodeSet:
         """Get all face nodes in the geometry."""
         return self.root_node().faces(**filters)
 
@@ -455,7 +459,7 @@ class Geometry(AssetBase):  # pylint: disable=too-many-public-methods
     # Face Group Management
     # ================================================================
 
-    def create_face_group(self, name: str, selection: NodeSet) -> FaceGroup:
+    def create_face_group(self, name: str, selection: GeometryTreeNodeSet) -> FaceGroup:
         """
         Create a named face group from a selection.
 
@@ -522,16 +526,18 @@ class Geometry(AssetBase):  # pylint: disable=too-many-public-methods
     # Set Operations
     # ================================================================
 
-    def __sub__(self, other) -> NodeSet:
+    def __sub__(self, other) -> GeometryTreeNodeSet:
         """Subtract faces from total geometry (geometry - FaceGroup)."""
         all_faces = self.faces()
         if isinstance(other, FaceGroup):
-            other_nodes = NodeSet(
+            other_nodes = GeometryTreeNodeSet(
                 self, self._tree, other._node_ids
             )  # pylint: disable=protected-access
             return all_faces - other_nodes
-        if isinstance(other, NodeSet):
-            raise Flow360ValueError("Geometry subtraction with NodeSet is not supported. ")
+        if isinstance(other, GeometryTreeNodeSet):
+            raise Flow360ValueError(
+                "Geometry subtraction with GeometryTreeNodeSet is not supported. "
+            )
         return NotImplemented
 
     @property
