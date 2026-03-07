@@ -42,8 +42,8 @@ class GeometryTreeNode:
 
     def children(self, **filters) -> "GeometryTreeNodeSet":
         """Get direct children of this node."""
-        from .node_set import (
-            GeometryTreeNodeSet,  # pylint: disable=import-outside-toplevel
+        from .node_set import (  # pylint: disable=import-outside-toplevel
+            GeometryTreeNodeSet,
         )
 
         child_ids = set(self._tree.get_children(self._node_id))
@@ -53,8 +53,8 @@ class GeometryTreeNode:
 
     def descendants(self, **filters) -> "GeometryTreeNodeSet":
         """Get all descendants of this node."""
-        from .node_set import (
-            GeometryTreeNodeSet,  # pylint: disable=import-outside-toplevel
+        from .node_set import (  # pylint: disable=import-outside-toplevel
+            GeometryTreeNodeSet,
         )
 
         descendant_ids = self._tree.get_descendants(self._node_id)
@@ -64,8 +64,8 @@ class GeometryTreeNode:
 
     def faces(self, **filters) -> "GeometryTreeNodeSet":
         """Get all face nodes under this node."""
-        from .node_set import (
-            GeometryTreeNodeSet,  # pylint: disable=import-outside-toplevel
+        from .node_set import (  # pylint: disable=import-outside-toplevel
+            GeometryTreeNodeSet,
         )
 
         node_set = GeometryTreeNodeSet(self._geometry, self._tree, {self._node_id})
