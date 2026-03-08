@@ -2422,7 +2422,11 @@ def test_beta_mesher_only_features(mock_validation_context):
                             )
                         ],
                     ),
-                    WindTunnelFarfield(name="wind tunnel", floor_type=FullyMovingFloor()),
+                    WindTunnelFarfield(
+                        name="wind tunnel",
+                        floor_type=FullyMovingFloor(),
+                        enclosed_entities=[Surface(name="face1"), Surface(name="face2")],
+                    ),
                 ],
             ),
             private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True, use_geometry_AI=True),
@@ -2452,7 +2456,11 @@ def test_beta_mesher_only_features(mock_validation_context):
                             )
                         ],
                     ),
-                    WindTunnelFarfield(name="wind tunnel", floor_type=FullyMovingFloor()),
+                    WindTunnelFarfield(
+                        name="wind tunnel",
+                        floor_type=FullyMovingFloor(),
+                        enclosed_entities=[Surface(name="face1"), Surface(name="face2")],
+                    ),
                 ],
             ),
             private_attribute_asset_cache=AssetCache(
@@ -2523,7 +2531,9 @@ def test_beta_mesher_only_features(mock_validation_context):
                             )
                         ],
                     ),
-                    UserDefinedFarfield(),
+                    UserDefinedFarfield(
+                        enclosed_entities=[Surface(name="face1"), Surface(name="face2")],
+                    ),
                 ],
             ),
             private_attribute_asset_cache=AssetCache(use_inhouse_mesher=False),
@@ -2534,11 +2544,15 @@ def test_beta_mesher_only_features(mock_validation_context):
         root_item_type="SurfaceMesh",
         validation_level="VolumeMesh",
     )
-    assert len(errors) == 1
+    assert len(errors) == 2
     assert (
         errors[0]["msg"]
         == "Value error, CustomVolume is supported only when the beta mesher is enabled "
         + "and an automated, user-defined, or wind tunnel farfield is enabled."
+    )
+    assert (
+        errors[1]["msg"]
+        == "Value error, `enclosed_entities` is only supported with the beta mesher."
     )
 
     # Unique volume zone names
@@ -2583,7 +2597,12 @@ def test_beta_mesher_only_features(mock_validation_context):
                                 ),
                             ],
                         ),
-                        UserDefinedFarfield(),
+                        UserDefinedFarfield(
+                            enclosed_entities=[
+                                Surface(name="face1"),
+                                Surface(name="face2"),
+                            ],
+                        ),
                     ],
                 ),
                 private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
@@ -2616,7 +2635,9 @@ def test_beta_mesher_only_features(mock_validation_context):
                                 )
                             ],
                         ),
-                        UserDefinedFarfield(),
+                        UserDefinedFarfield(
+                            enclosed_entities=[Surface(name="face1")],
+                        ),
                     ],
                 ),
                 private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
@@ -2640,7 +2661,9 @@ def test_beta_mesher_only_features(mock_validation_context):
                             )
                         ],
                     ),
-                    UserDefinedFarfield(),
+                    UserDefinedFarfield(
+                        enclosed_entities=[Surface(name="face1"), Surface(name="face2")],
+                    ),
                 ],
             ),
             models=[
@@ -2894,7 +2917,9 @@ def test_check_custom_volume_in_volume_zones():
                             CustomVolume(name="zone1", enclosed_entities=[Surface(name="face1")])
                         ],
                     ),
-                    UserDefinedFarfield(),
+                    UserDefinedFarfield(
+                        enclosed_entities=[Surface(name="face1")],
+                    ),
                 ],
             ),
             models=[
@@ -4823,5 +4848,5 @@ def test_farfield_custom_volume_no_intersection_negative():
         validation_level="VolumeMesh",
     )
     assert errors is not None
-    assert any("shares entities with sibling entities" in e["msg"] for e in errors)
+    assert any("shares enclosed entities" in e["msg"] for e in errors)
     assert any("shared" in e["msg"] for e in errors)

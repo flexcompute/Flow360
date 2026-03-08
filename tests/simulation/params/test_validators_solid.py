@@ -45,7 +45,9 @@ def _build_params_with_custom_volume(element_type: str):
                     entities=[zone],
                     element_type=element_type,
                 ),
-                UserDefinedFarfield(),
+                UserDefinedFarfield(
+                    enclosed_entities=[Surface(name="face1")],
+                ),
             ],
         ),
         models=[

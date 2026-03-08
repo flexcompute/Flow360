@@ -1756,9 +1756,9 @@ def test_farfield_enclosed_entities_with_sphere(get_surface_mesh):
                     boundary_layer_first_layer_thickness=1e-4,
                 ),
                 volume_zones=[
-                    RotationVolume(
+                    RotationSphere(
                         entities=[sph],
-                        spacing_circumferential=0.3 * u.m,  # Sphere only needs circumferential
+                        spacing_circumferential=0.3 * u.m,
                     ),
                     CustomZones(
                         name="interior_zone",
@@ -1998,7 +1998,7 @@ def test_farfield_enclosed_entities_unwraps_custom_volume_all_types(get_surface_
                         spacing_radial=0.5 * u.m,
                         spacing_circumferential=0.3 * u.m,
                     ),
-                    RotationVolume(
+                    RotationSphere(
                         entities=[sph],
                         spacing_circumferential=0.3 * u.m,
                     ),
@@ -2057,7 +2057,7 @@ def test_farfield_enclosed_entities_mixed_direct_and_custom_volume(get_surface_m
                         spacing_radial=0.5 * u.m,
                         spacing_circumferential=0.3 * u.m,
                     ),
-                    RotationVolume(
+                    RotationSphere(
                         entities=[sph],
                         spacing_circumferential=0.3 * u.m,
                     ),

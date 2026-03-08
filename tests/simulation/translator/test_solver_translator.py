@@ -1541,7 +1541,9 @@ def test_custom_volume_translation():
                             zone_2,
                         ],
                     ),
-                    UserDefinedFarfield(),
+                    UserDefinedFarfield(
+                        enclosed_entities=[Surface(name="face1"), Surface(name="face2")],
+                    ),
                 ],
             ),
             operating_condition=AerospaceCondition(velocity_magnitude=10),
