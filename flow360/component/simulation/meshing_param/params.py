@@ -105,7 +105,7 @@ VolumeRefinementTypes = Annotated[
 ]
 
 
-def _check_custom_volume_no_intersection(enclosed_entities, param_info: "ParamsValidationInfo"):
+def _check_custom_volume_enclosed_entities_no_intersection(enclosed_entities, param_info: "ParamsValidationInfo"):
     """Validate that no CustomVolume in an enclosed_entities list shares entities with its siblings.
 
     For each CustomVolume found in the list, its own expanded enclosed_entities must not
@@ -148,7 +148,13 @@ def _validate_farfield_enclosed_entities(
     for zone in zones:
         if not isinstance(zone, _FarfieldBase):
             continue
+
         if zone.enclosed_entities is None:
+            if has_custom_zones:
+                raise ValueError(
+                    "`enclosed_entities` for farfield must be specified when "
+                    "`CustomZones` are present in volume zones."
+                )
             continue
 
         if not has_custom_zones:
@@ -210,7 +216,7 @@ def _validate_farfield_no_intersection(zones, param_info):
             continue
         if zone.enclosed_entities is None:
             continue
-        _check_custom_volume_no_intersection(zone.enclosed_entities, param_info)
+        _check_custom_volume_enclosed_entities_no_intersection(zone.enclosed_entities, param_info)
 
 
 class MeshingParams(Flow360BaseModel):
