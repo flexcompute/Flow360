@@ -105,31 +105,6 @@ VolumeRefinementTypes = Annotated[
 ]
 
 
-def _check_custom_volume_enclosed_entities_no_intersection(enclosed_entities, param_info: "ParamsValidationInfo"):
-    """Validate that no CustomVolume in an enclosed_entities list shares entities with its siblings.
-
-    For each CustomVolume found in the list, its own expanded enclosed_entities must not
-    overlap (by name) with the other non-CustomVolume entities in the same list.
-
-    This function is agnostic to the parent (farfield, custom volume, etc.).
-    """
-    expanded = param_info.expand_entity_list(enclosed_entities)
-
-    custom_volumes_in_list = [e for e in expanded if isinstance(e, CustomVolume)]
-    if not custom_volumes_in_list:
-        return
-
-    non_cv_names = {e.name for e in expanded if not isinstance(e, CustomVolume)}
-
-    for cv in custom_volumes_in_list:
-        cv_child_names = {e.name for e in param_info.expand_entity_list(cv.enclosed_entities)}
-        overlap = cv_child_names & non_cv_names
-        if overlap:
-            raise ValueError(
-                f"`CustomVolume` `{cv.name}` shares enclosed entities ({sorted(overlap)}) with sibling `CustomVolume`. "
-                f"A `CustomVolume`'s enclosed entities must be disjoint from its siblings."
-            )
-
 
 def _collect_rotation_entity_names(zones, param_info, zone_types):
     """Collect entity names associated with RotationVolume/RotationCylinder/RotationSphere zones."""
@@ -204,19 +179,6 @@ def _validate_custom_volume_rotation_association(custom_volumes, rotation_entity
                     f"associated with a `RotationVolume` or `RotationSphere`."
                 )
 
-
-def _validate_farfield_no_intersection(zones, param_info):
-    """Check no-intersection between CustomVolume enclosed_entities and sibling entities
-    in the same parent enclosed_entities list.
-    Currently applies to farfield enclosed_entities.
-    """
-    # TODO: extend to CustomVolume.enclosed_entities when nested CustomVolumes are supported.
-    for zone in zones:
-        if not isinstance(zone, _FarfieldBase):
-            continue
-        if zone.enclosed_entities is None:
-            continue
-        _check_custom_volume_enclosed_entities_no_intersection(zone.enclosed_entities, param_info)
 
 
 class MeshingParams(Flow360BaseModel):
@@ -388,7 +350,6 @@ class MeshingParams(Flow360BaseModel):
         _validate_custom_volume_rotation_association(
             custom_volumes, rotation_entity_names, param_info
         )
-        _validate_farfield_no_intersection(self.volume_zones, param_info)
 
         return self
 
@@ -706,7 +667,6 @@ class ModularMeshingWorkflow(Flow360BaseModel):
         _validate_custom_volume_rotation_association(
             custom_volumes, rotation_entity_names, param_info
         )
-        _validate_farfield_no_intersection(self.zones, param_info)
 
         return self
 

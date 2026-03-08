@@ -553,6 +553,30 @@ class _FarfieldBase(Flow360BaseModel):
         """,
     )
 
+    @contextual_model_validator(mode="after")
+    def _validate_enclosed_entities_no_intersection(self, param_info: ParamsValidationInfo):
+        """Check that no CustomVolume's enclosed_entities overlap with sibling entities."""
+        if self.enclosed_entities is None:
+            return self
+        expanded = param_info.expand_entity_list(self.enclosed_entities)
+
+        custom_volumes_in_list = [e for e in expanded if isinstance(e, CustomVolume)]
+        if not custom_volumes_in_list:
+            return self
+
+        non_cv_names = {e.name for e in expanded if not isinstance(e, CustomVolume)}
+
+        for cv in custom_volumes_in_list:
+            cv_child_names = {e.name for e in param_info.expand_entity_list(cv.enclosed_entities)}
+            overlap = cv_child_names & non_cv_names
+            if overlap:
+                raise ValueError(
+                    f"`CustomVolume` `{cv.name}` shares enclosed entities ({sorted(overlap)}) with sibling `CustomVolume`. "
+                    f"A `CustomVolume`'s enclosed entities must be disjoint from its siblings."
+                )
+
+        return self
+
     @contextual_field_validator("enclosed_entities", mode="after")
     @classmethod
     def _validate_enclosed_entities_beta_mesher_only(cls, value, param_info: ParamsValidationInfo):
