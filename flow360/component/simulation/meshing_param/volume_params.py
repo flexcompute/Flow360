@@ -25,6 +25,7 @@ from flow360.component.simulation.primitives import (
     Sphere,
     Surface,
     WindTunnelGhostSurface,
+    compute_bbox_tolerance,
 )
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.validation.validation_context import (
@@ -627,15 +628,9 @@ class _FarfieldBase(Flow360BaseModel):
         y_min = validation_info.global_bounding_box[0][1]
         y_max = validation_info.global_bounding_box[1][1]
 
-        largest_dimension = -float("inf")
-        for dim in range(3):
-            dimension = (
-                validation_info.global_bounding_box[1][dim]
-                - validation_info.global_bounding_box[0][dim]
-            )
-            largest_dimension = max(largest_dimension, dimension)
-
-        tolerance = largest_dimension * validation_info.planar_face_tolerance
+        _, tolerance = compute_bbox_tolerance(
+            validation_info.global_bounding_box, validation_info.planar_face_tolerance
+        )
 
         # Check if model crosses Y=0
         crossing = y_min < -tolerance and y_max > tolerance

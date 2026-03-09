@@ -890,6 +890,16 @@ class GhostSphere(_SurfaceEntityBase):
         return True
 
 
+def compute_bbox_tolerance(global_bounding_box, planar_face_tolerance):
+    """Compute the largest bounding-box dimension and the derived planar-face tolerance."""
+    largest_dimension = 0.0
+    for dim in range(3):
+        largest_dimension = max(
+            largest_dimension, global_bounding_box[1][dim] - global_bounding_box[0][dim]
+        )
+    return largest_dimension, largest_dimension * planar_face_tolerance
+
+
 # pylint: disable=missing-class-docstring
 @final
 class GhostCircularPlane(_SurfaceEntityBase):
@@ -904,16 +914,9 @@ class GhostCircularPlane(_SurfaceEntityBase):
     def _get_existence_dependency(self, validation_info):
         y_max = validation_info.global_bounding_box[1][1]
         y_min = validation_info.global_bounding_box[0][1]
-
-        largest_dimension = -np.inf
-        for dim in range(3):
-            dimension = (
-                validation_info.global_bounding_box[1][dim]
-                - validation_info.global_bounding_box[0][dim]
-            )
-            largest_dimension = max(largest_dimension, dimension)
-
-        tolerance = largest_dimension * validation_info.planar_face_tolerance
+        largest_dimension, tolerance = compute_bbox_tolerance(
+            validation_info.global_bounding_box, validation_info.planar_face_tolerance
+        )
         return y_min, y_max, tolerance, largest_dimension
 
     def exists(self, validation_info) -> bool:
