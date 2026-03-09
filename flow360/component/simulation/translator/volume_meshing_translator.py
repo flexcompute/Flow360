@@ -52,7 +52,35 @@ def uniform_refinement_translator(obj: UniformRefinement):
     """
     Translate UniformRefinement.
     """
-    return {"spacing": obj.spacing.value.item()}
+    result = {"spacing": obj.spacing.value.item()}
+    if obj.face_spacing:  # temporary
+        result["_face_spacing"] = {
+            name: {idx: s.value.item() for idx, s in overrides.items()}
+            for name, overrides in obj.face_spacing.items()
+        }
+    return result
+
+
+def _expand_face_spacing(refinement_list: list):
+    """Expand sparse face_spacing into dense faceSpacings arrays.
+
+    Each item in the list may contain a '_face_spacing' key from uniform_refinement_translator.
+    For AxisymmetricBody entities whose name appears in the overrides, this expands the sparse
+    {face_idx: spacing} dict into a dense list and strips the internal key.
+    """
+    for item in refinement_list:
+        overrides = item.pop("_face_spacing", None)
+        if not overrides:
+            continue
+        if item.get("type") != "Axisymmetric":
+            continue
+        entity_name = item.get("name")
+        if entity_name not in overrides:
+            continue
+        num_faces = len(item["profileCurve"]) - 1
+        default_spacing = item["spacing"]
+        face_overrides = overrides[entity_name]
+        item["faceSpacings"] = [face_overrides.get(i, default_spacing) for i in range(num_faces)]
 
 
 def cylindrical_refinement_translator(obj: Union[AxisymmetricRefinement, RotationVolume]):
@@ -514,6 +542,7 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
         to_list=True,
         entity_injection_func=refinement_entity_injector,
     )
+    _expand_face_spacing(uniform_refinement_list)
     rotor_disk_refinement = translate_setting_and_apply_to_all_entities(
         refinements,
         AxisymmetricRefinement,
