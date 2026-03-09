@@ -1096,8 +1096,27 @@ class CustomVolume(_VolumeEntityBase):
     private_attribute_entity_type_name: Literal["CustomVolume"] = pd.Field(
         "CustomVolume", frozen=True
     )
-    # TODO: support nested CustomVolume in enclosed_entities (currently blocked by EntityList
-    # metaclass requiring __name__ on type args, preventing self-referencing forward refs).
+
+    @pd.model_validator(mode="before")
+    @classmethod
+    def _rename_boundaries_to_enclosed_entities(cls, value):
+        """Accept the legacy ``boundaries`` key and migrate it to ``enclosed_entities``."""
+        if not isinstance(value, dict):
+            return value
+
+        if "boundaries" in value and "enclosed_entities" not in value:
+            value["enclosed_entities"] = value.pop("boundaries")
+            from flow360.component.simulation.validation.validation_context import (  # pylint: disable=import-outside-toplevel
+                add_validation_warning,
+            )
+
+            add_validation_warning(
+                "`CustomVolume.boundaries` has been renamed to `enclosed_entities`. "
+                "Please update your code to use `enclosed_entities`."
+            )
+
+        return value
+
     enclosed_entities: EntityList[Surface, Cylinder, AxisymmetricBody, Sphere] = pd.Field(
         description="The entities that define the boundaries of the custom volume."
     )

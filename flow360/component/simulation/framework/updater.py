@@ -712,7 +712,8 @@ def _to_25_9_1(params_as_dict):
 
 def _to_25_9_2(params_as_dict):
     """
-    Migrate sphere-based rotation zones from ``RotationVolume`` to ``RotationSphere``.
+    - Migrate sphere-based rotation zones from ``RotationVolume`` to ``RotationSphere``.
+    - Rename ``boundaries`` to ``enclosed_entities`` on ``CustomVolume`` dicts.
 
     Applies to both ``meshing.volume_zones`` and ``meshing.zones``.
     """
@@ -742,7 +743,38 @@ def _to_25_9_2(params_as_dict):
                 zone.pop("spacing_axial", None)
                 zone.pop("spacing_radial", None)
 
+    def _rename_custom_volume_boundaries(params_dict):
+        def _rename_in_entity(entity):
+            if (
+                isinstance(entity, dict)
+                and entity.get("private_attribute_entity_type_name") == "CustomVolume"
+                and "boundaries" in entity
+                and "enclosed_entities" not in entity
+            ):
+                entity["enclosed_entities"] = entity.pop("boundaries")
+
+        meshing = params_dict.get("meshing")
+        if not isinstance(meshing, dict):
+            return
+
+        for zone_key in ("volume_zones", "zones"):
+            zones = meshing.get(zone_key)
+            if not isinstance(zones, list):
+                continue
+
+            for zone in zones:
+                if not isinstance(zone, dict):
+                    continue
+
+                for container_key in ("entities", "enclosed_entities"):
+                    container = zone.get(container_key)
+                    if not isinstance(container, dict):
+                        continue
+                    for entity in container.get("stored_entities", []):
+                        _rename_in_entity(entity)
+
     _migrate_rotation_volume_to_rotation_sphere(params_as_dict)
+    _rename_custom_volume_boundaries(params_as_dict)
 
     return params_as_dict
 

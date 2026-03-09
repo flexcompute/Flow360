@@ -105,7 +105,6 @@ VolumeRefinementTypes = Annotated[
 ]
 
 
-
 def _collect_rotation_entity_names(zones, param_info, zone_types):
     """Collect entity names associated with RotationVolume/RotationCylinder/RotationSphere zones."""
     names: set[str] = set()
@@ -178,7 +177,6 @@ def _validate_custom_volume_rotation_association(custom_volumes, rotation_entity
                     f"`CustomVolume` `{cv.name}` `enclosed_entities` must be "
                     f"associated with a `RotationVolume` or `RotationSphere`."
                 )
-
 
 
 class MeshingParams(Flow360BaseModel):
@@ -344,9 +342,7 @@ class MeshingParams(Flow360BaseModel):
         rotation_entity_names = _collect_rotation_entity_names(
             v, param_info, (RotationVolume, RotationCylinder, RotationSphere)
         )
-        _validate_farfield_enclosed_entities(
-            v, rotation_entity_names, has_custom_zones, param_info
-        )
+        _validate_farfield_enclosed_entities(v, rotation_entity_names, has_custom_zones, param_info)
         custom_volumes = _collect_all_custom_volumes(v)
         _validate_custom_volume_rotation_association(
             custom_volumes, rotation_entity_names, param_info
@@ -665,9 +661,7 @@ class ModularMeshingWorkflow(Flow360BaseModel):
         rotation_entity_names = _collect_rotation_entity_names(
             v, param_info, (RotationVolume, RotationSphere)
         )
-        _validate_farfield_enclosed_entities(
-            v, rotation_entity_names, has_custom_zones, param_info
-        )
+        _validate_farfield_enclosed_entities(v, rotation_entity_names, has_custom_zones, param_info)
         custom_volumes = _collect_all_custom_volumes(v)
         _validate_custom_volume_rotation_association(
             custom_volumes, rotation_entity_names, param_info

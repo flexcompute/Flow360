@@ -571,7 +571,8 @@ class _FarfieldBase(Flow360BaseModel):
             overlap = cv_child_names & non_cv_names
             if overlap:
                 raise ValueError(
-                    f"`CustomVolume` `{cv.name}` shares enclosed entities ({sorted(overlap)}) with sibling `CustomVolume`. "
+                    f"`CustomVolume` `{cv.name}` shares enclosed entities "
+                    f"({sorted(overlap)}) with sibling `CustomVolume`. "
                     f"A `CustomVolume`'s enclosed entities must be disjoint from its siblings."
                 )
 
