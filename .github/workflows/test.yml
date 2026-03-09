@@ -83,9 +83,13 @@ jobs:
       if: matrix.python-version == '3.10' && matrix.platform == 'ubuntu-latest'
       run: poetry run pytest -rA --ignore tests/simulation -vv --cov=flow360 --cov-append --cov-report=term-missing:skip-covered --cov-report=xml:coverage.xml
 
+    - name: Fetch base branch for diff coverage
+      if: matrix.python-version == '3.10' && matrix.platform == 'ubuntu-latest' && github.event_name == 'pull_request'
+      run: git fetch origin ${{ github.base_ref }} --depth=1
+
     - name: Generate coverage summary
       if: matrix.python-version == '3.10' && matrix.platform == 'ubuntu-latest' && github.event_name == 'pull_request'
-      run: python .github/scripts/coverage_summary.py coverage.xml coverage-summary.md 2
+      run: python .github/scripts/coverage_summary.py coverage.xml coverage-summary.md 2 origin/${{ github.base_ref }}
 
     - name: Post coverage comment
       if: matrix.python-version == '3.10' && matrix.platform == 'ubuntu-latest' && github.event_name == 'pull_request'
