@@ -3,9 +3,8 @@ tree_backend.py - Backend for geometry tree storage and querying.
 """
 
 import json
+from collections import deque
 from typing import Any, Dict, List, Optional, Set
-
-import networkx as nx
 
 from .filters import is_face_node, matches_criteria
 from .node_type import NodeType
@@ -20,8 +19,17 @@ class TreeBackend:
     """
 
     def __init__(self):
-        self.graph = nx.DiGraph()
+        self._nodes: Dict[str, Dict[str, Any]] = {}
+        self._children: Dict[str, List[str]] = {}
+        self._parent: Dict[str, Optional[str]] = {}
         self.root_id: Optional[str] = None
+
+    def _clear(self):
+        """Clear all stored data."""
+        self._nodes.clear()
+        self._children.clear()
+        self._parent.clear()
+        self.root_id = None
 
     def load_from_json(self, json_data: dict) -> str:
         """
@@ -33,7 +41,7 @@ class TreeBackend:
         Returns:
             Root node ID
         """
-        self.graph.clear()
+        self._clear()
         self.root_id = self._add_node_recursive(json_data["tree"], parent_id=None)
         return self.root_id
 
@@ -71,7 +79,7 @@ class TreeBackend:
             raise ValueError(
                 f"Node '{node_name}' (type={node_type}) is missing " f"'_Flow360UUID' attribute."
             )
-        if node_id in self.graph:
+        if node_id in self._nodes:
             raise ValueError(
                 f"Duplicate _Flow360UUID '{node_id}' found on node "
                 f"'{node_name}' (type={node_type})."
@@ -85,7 +93,7 @@ class TreeBackend:
                 f"Valid types: {[t.value for t in NodeType]}"
             ) from exc
 
-        node_attrs = {
+        self._nodes[node_id] = {
             "name": node_data.get("name", ""),
             "type": resolved_type,
             "colorRGB": node_data.get("colorRGB", ""),
@@ -93,11 +101,11 @@ class TreeBackend:
             "faceCount": node_data.get("faceCount"),
             "attributes": attributes,
         }
-
-        self.graph.add_node(node_id, **node_attrs)
+        self._children[node_id] = []
+        self._parent[node_id] = parent_id
 
         if parent_id is not None:
-            self.graph.add_edge(parent_id, node_id)
+            self._children[parent_id].append(node_id)
 
         for child_data in node_data.get("children", []):
             self._add_node_recursive(child_data, parent_id=node_id)
@@ -110,28 +118,33 @@ class TreeBackend:
 
     def get_node_attrs(self, node_id: str) -> Dict[str, Any]:
         """Get attributes of a node."""
-        if node_id not in self.graph:
+        if node_id not in self._nodes:
             return {}
-        return dict(self.graph.nodes[node_id])
+        return dict(self._nodes[node_id])
 
     def get_children(self, node_id: str) -> List[str]:
         """Get direct children of a node."""
-        if node_id not in self.graph:
+        if node_id not in self._nodes:
             return []
-        return list(self.graph.successors(node_id))
+        return list(self._children[node_id])
 
     def get_parent(self, node_id: str) -> Optional[str]:
         """Get parent of a node."""
-        if node_id not in self.graph:
+        if node_id not in self._nodes:
             return None
-        predecessors = list(self.graph.predecessors(node_id))
-        return predecessors[0] if predecessors else None
+        return self._parent[node_id]
 
     def get_descendants(self, node_id: str) -> Set[str]:
         """Get all descendants of a node (recursive children)."""
-        if node_id not in self.graph:
+        if node_id not in self._nodes:
             return set()
-        return nx.descendants(self.graph, node_id)
+        result = set()
+        queue = deque(self._children[node_id])
+        while queue:
+            child_id = queue.popleft()
+            result.add(child_id)
+            queue.extend(self._children[child_id])
+        return result
 
     def filter_nodes(self, node_ids: Set[str], **criteria) -> Set[str]:
         """
@@ -159,16 +172,15 @@ class TreeBackend:
         if self.root_id is None:
             return set()
         result = set()
-        for node_id in self.graph.nodes():
-            attrs = self.get_node_attrs(node_id)
+        for node_id, attrs in self._nodes.items():
             if is_face_node(attrs):
                 result.add(node_id)
         return result
 
     def get_all_nodes(self) -> Set[str]:
         """Get all node IDs in the tree."""
-        return set(self.graph.nodes())
+        return set(self._nodes.keys())
 
     def node_count(self) -> int:
         """Get total number of nodes."""
-        return self.graph.number_of_nodes()
+        return len(self._nodes)
