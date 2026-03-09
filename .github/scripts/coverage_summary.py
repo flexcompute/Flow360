@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate an HTML coverage summary from Cobertura XML, with optional diff coverage."""
+"""Generate a coverage summary from Cobertura XML, with optional diff coverage."""
 
 import os
 import re
@@ -9,22 +9,18 @@ import xml.etree.ElementTree as ET
 from collections import defaultdict
 
 
-def pct_color(pct):
-    if pct >= 80:
-        return "#4caf50"
-    if pct >= 60:
-        return "#ff9800"
-    return "#f44336"
-
-
-def html_bar(pct, width=200):
+def make_bar(pct, width=20):
     pct = max(0.0, min(100.0, pct))
-    color = pct_color(pct)
-    return (
-        f'<div style="background:#e0e0e0;border-radius:4px;width:{width}px;height:14px;display:inline-block">'
-        f'<div style="background:{color};border-radius:4px;width:{pct:.1f}%;height:14px"></div>'
-        f"</div>"
-    )
+    filled = round(pct / 100 * width)
+    return "\u2593" * filled + "\u2591" * (width - filled)
+
+
+def status_icon(pct):
+    if pct >= 80:
+        return "\U0001f7e2"
+    if pct >= 60:
+        return "\U0001f7e1"
+    return "\U0001f534"
 
 
 def _normalize_filename(filename, source_roots):
@@ -100,12 +96,11 @@ def get_changed_lines(diff_branch):
     }
 
 
-def build_diff_coverage_html(changed_lines, file_coverage):
-    """Build diff coverage HTML section."""
+def build_diff_coverage_md(changed_lines, file_coverage):
+    """Build diff coverage markdown section."""
     if not changed_lines:
-        return "<h3>Diff Coverage</h3>\n<p>No implementation files changed.</p>\n"
+        return "## Diff Coverage\n\nNo implementation files changed.\n"
 
-    rows = []
     total_covered = 0
     total_changed = 0
 
@@ -126,41 +121,29 @@ def build_diff_coverage_html(changed_lines, file_coverage):
     file_stats.sort(key=lambda x: x[1])
     total_pct = (total_covered / total_changed * 100) if total_changed else 100
 
+    lines = []
+    lines.append(f"## {status_icon(total_pct)} Diff Coverage — {total_pct:.0f}%")
+    lines.append("")
+    lines.append(f"`{make_bar(total_pct, 30)}` **{total_pct:.1f}%** ({total_covered} / {total_changed} changed lines covered)")
+    lines.append("")
+    lines.append("| File | Coverage | Lines | Missing |")
+    lines.append("|:-----|:--------:|:-----:|:--------|")
+
     for filepath, pct, n_cov, n_exec, missing in file_stats:
-        color = pct_color(pct) if pct >= 0 else "#888"
+        icon = status_icon(pct) if pct >= 0 else "\u26aa"
         pct_str = f"{pct:.0f}%" if pct >= 0 else "N/A"
         missing_str = ", ".join(f"L{ln}" for ln in missing[:20])
         if len(missing) > 20:
-            missing_str += f" … +{len(missing) - 20} more"
-        rows.append(
-            f"<tr>"
-            f"<td><code>{filepath}</code></td>"
-            f'<td style="color:{color};text-align:center"><b>{pct_str}</b></td>'
-            f'<td style="text-align:center">{n_cov} / {n_exec}</td>'
-            f"<td>{missing_str}</td>"
-            f"</tr>"
-        )
+            missing_str += f" \u2026 +{len(missing) - 20} more"
+        lines.append(f"| `{filepath}` | {icon} {pct_str} | {n_cov} / {n_exec} | {missing_str} |")
 
-    total_color = pct_color(total_pct)
-
-    html = f"<h3>Diff Coverage — {total_pct:.0f}%</h3>\n"
-    html += f"{html_bar(total_pct, 300)} <b>{total_covered} / {total_changed}</b> changed lines covered\n"
-    html += "<table>\n"
-    html += "<tr><th>File</th><th>Coverage</th><th>Lines</th><th>Missing</th></tr>\n"
-    html += "\n".join(rows) + "\n"
-    html += (
-        f'<tr style="font-weight:bold">'
-        f"<td>Total</td>"
-        f'<td style="color:{total_color};text-align:center">{total_pct:.1f}%</td>'
-        f'<td style="text-align:center">{total_covered} / {total_changed}</td>'
-        f"<td></td></tr>\n"
-    )
-    html += "</table>\n"
-    return html
+    lines.append(f"| **Total** | **{total_pct:.1f}%** | **{total_covered} / {total_changed}** | |")
+    lines.append("")
+    return "\n".join(lines)
 
 
-def build_full_coverage_html(groups):
-    """Build full coverage HTML section (wrapped in <details>, collapsed by default)."""
+def build_full_coverage_md(groups):
+    """Build full coverage markdown section (wrapped in <details>, collapsed by default)."""
     total_lines = sum(g["lines"] for g in groups.values())
     total_hits = sum(g["hits"] for g in groups.values())
     total_pct = (total_hits / total_lines * 100) if total_lines else 0
@@ -170,37 +153,25 @@ def build_full_coverage_html(groups):
         key=lambda x: (x[1]["hits"] / x[1]["lines"] * 100) if x[1]["lines"] else 0,
     )
 
-    rows = []
+    lines = []
+    lines.append("<details>")
+    lines.append(f"<summary><h3>{status_icon(total_pct)} Full Coverage Report — {total_pct:.0f}% ({total_hits} / {total_lines} lines)</h3></summary>")
+    lines.append("")
+    lines.append(f"`{make_bar(total_pct, 30)}` **{total_pct:.1f}%** ({total_hits} / {total_lines} lines)")
+    lines.append("")
+    lines.append("| Package | Coverage | Progress | Lines |")
+    lines.append("|:--------|:--------:|:---------|------:|")
+
     for key, g in sorted_groups:
         pct = (g["hits"] / g["lines"] * 100) if g["lines"] else 0
-        color = pct_color(pct)
-        rows.append(
-            f"<tr>"
-            f"<td><code>{key}</code></td>"
-            f'<td style="color:{color};text-align:center"><b>{pct:.1f}%</b></td>'
-            f"<td>{html_bar(pct, 150)}</td>"
-            f'<td style="text-align:right">{g["hits"]} / {g["lines"]}</td>'
-            f"</tr>"
-        )
+        icon = status_icon(pct)
+        lines.append(f"| `{key}` | {icon} {pct:.1f}% | `{make_bar(pct)}` | {g['hits']} / {g['lines']} |")
 
-    total_color = pct_color(total_pct)
-
-    html = "<details>\n"
-    html += f"<summary><h3>Full Coverage Report — {total_pct:.0f}% ({total_hits} / {total_lines} lines)</h3></summary>\n\n"
-    html += "<table>\n"
-    html += "<tr><th>Package</th><th>Coverage</th><th>Progress</th><th>Lines</th></tr>\n"
-    html += "\n".join(rows) + "\n"
-    html += (
-        f'<tr style="font-weight:bold">'
-        f"<td>Total</td>"
-        f'<td style="color:{total_color};text-align:center">{total_pct:.1f}%</td>'
-        f"<td></td>"
-        f'<td style="text-align:right">{total_hits} / {total_lines}</td>'
-        f"</tr>\n"
-    )
-    html += "</table>\n"
-    html += "</details>\n"
-    return html
+    lines.append(f"| **Total** | **{total_pct:.1f}%** | | **{total_hits} / {total_lines}** |")
+    lines.append("")
+    lines.append("</details>")
+    lines.append("")
+    return "\n".join(lines)
 
 
 def main():
@@ -215,9 +186,9 @@ def main():
 
     if diff_branch:
         changed_lines = get_changed_lines(diff_branch)
-        parts.append(build_diff_coverage_html(changed_lines, file_coverage))
+        parts.append(build_diff_coverage_md(changed_lines, file_coverage))
 
-    parts.append(build_full_coverage_html(groups))
+    parts.append(build_full_coverage_md(groups))
 
     with open(output_path, "w") as f:
         f.write("\n".join(parts))
