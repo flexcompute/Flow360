@@ -58,7 +58,9 @@ def parse_coverage_xml(xml_path, depth):
             for line in cls.findall(".//line"):
                 line_num = int(line.get("number", "0"))
                 hit = int(line.get("hits", "0")) > 0
-                file_coverage[filename][line_num] = file_coverage[filename].get(line_num, False) or hit
+                file_coverage[filename][line_num] = (
+                    file_coverage[filename].get(line_num, False) or hit
+                )
                 groups[key]["lines"] += 1
                 if hit:
                     groups[key]["hits"] += 1
@@ -132,7 +134,7 @@ def build_diff_coverage_html(changed_lines, file_coverage):
             missing_str += f" … +{len(missing) - 20} more"
         rows.append(
             f"<tr>"
-            f'<td><code>{filepath}</code></td>'
+            f"<td><code>{filepath}</code></td>"
             f'<td style="color:{color};text-align:center"><b>{pct_str}</b></td>'
             f'<td style="text-align:center">{n_cov} / {n_exec}</td>'
             f"<td>{missing_str}</td>"
@@ -144,7 +146,7 @@ def build_diff_coverage_html(changed_lines, file_coverage):
     html = f"<h3>Diff Coverage — {total_pct:.0f}%</h3>\n"
     html += f"{html_bar(total_pct, 300)} <b>{total_covered} / {total_changed}</b> changed lines covered\n"
     html += "<table>\n"
-    html += '<tr><th>File</th><th>Coverage</th><th>Lines</th><th>Missing</th></tr>\n'
+    html += "<tr><th>File</th><th>Coverage</th><th>Lines</th><th>Missing</th></tr>\n"
     html += "\n".join(rows) + "\n"
     html += (
         f'<tr style="font-weight:bold">'
