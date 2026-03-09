@@ -25,7 +25,6 @@ from flow360.component.results.results_utils import (
     DiskCoefficientsComputation,
     PorousMediumCoefficientsComputation,
 )
-from flow360.component.simulation.conversion import unit_converter as unit_converter_v2
 from flow360.component.simulation.outputs.output_fields import (
     _CD_PER_STRIP,
     _CUMULATIVE_CD_CURVE,
@@ -48,15 +47,10 @@ from flow360.component.simulation.outputs.output_fields import (
     _CMz_PER_SPAN,
 )
 from flow360.component.simulation.simulation_params import SimulationParams
-from flow360.component.simulation.unit_system import (
-    Flow360UnitSystem,
-    ForceType,
-    MomentType,
-    PowerType,
-    is_flow360_unit,
-)
+from flow360.component.simulation.unit_system import ForceType, MomentType, PowerType
 from flow360.component.v1.conversions import unit_converter as unit_converter_v1
 from flow360.component.v1.flow360_params import Flow360Params
+from flow360.component.v1.unit_system import Flow360UnitSystem
 from flow360.exceptions import Flow360NotImplementedError, Flow360ValueError
 from flow360.log import log
 
@@ -502,28 +496,20 @@ class _DimensionedCSVResultModel(pd.BaseModel):
     def _in_base_component(self, base, component, component_name, params):
         log.debug(f"   -> need conversion for: {component_name} = {component}")
 
-        if isinstance(params, SimulationParams):
-            flow360_conv_system = unit_converter_v2(
-                component.units.dimensions,
-                params=params,
-                required_by=[self._name, component_name],
-            )
-        elif isinstance(params, Flow360Params):
+        if isinstance(params, Flow360Params):
+            # V1 path: unit_converter_v1 validates + returns conversion system
             flow360_conv_system = unit_converter_v1(
                 component.units.dimensions,
                 params=params,
                 required_by=[self._name, component_name],
             )
-        else:
+            component.units.registry = flow360_conv_system.registry  # pylint: disable=no-member
+        elif not isinstance(params, SimulationParams):
             raise Flow360ValueError(
                 f"Unknown type of params: {type(params)=}, expected one of (Flow360Params, SimulationParams)"
             )
 
-        if is_flow360_unit(component):
-            converted = component.in_base(base, flow360_conv_system)
-        else:
-            component.units.registry = flow360_conv_system.registry  # pylint:disable=no-member
-            converted = component.in_base(unit_system=base)
+        converted = component.in_base(unit_system=base)
         log.debug(f"      converted to: {converted}")
         return converted
 

@@ -72,14 +72,11 @@ from flow360.component.simulation.translator.volume_meshing_translator import (
     get_volume_meshing_json,
 )
 from flow360.component.simulation.unit_system import (
+    _UNIT_SYSTEMS,
     AngleType,
-    CGS_unit_system,
     LengthType,
-    SI_unit_system,
     UnitSystem,
     _dimensioned_type_serializer,
-    flow360_unit_system,
-    imperial_unit_system,
     u,
     unit_system_manager,
 )
@@ -103,20 +100,12 @@ from flow360.version import __version__
 # Required for correct global scope initialization
 
 
-unit_system_map = {
-    "SI": SI_unit_system,
-    "CGS": CGS_unit_system,
-    "Imperial": imperial_unit_system,
-    "Flow360": flow360_unit_system,
-}
-
-
 def init_unit_system(unit_system_name) -> UnitSystem:
     """Returns UnitSystem object from string representation.
 
     Parameters
     ----------
-    unit_system_name : ["SI", "CGS", "Imperial", "Flow360"]
+    unit_system_name : ["SI", "CGS", "Imperial"]
         Unit system string representation
 
     Returns
@@ -132,11 +121,10 @@ def init_unit_system(unit_system_name) -> UnitSystem:
         If this function is run inside unit system context
     """
 
-    unit_system = unit_system_map.get(unit_system_name, None)
-    if not isinstance(unit_system, UnitSystem):
+    unit_system = _UNIT_SYSTEMS.get(unit_system_name)
+    if unit_system is None:
         raise ValueError(
-            f"Incorrect unit system provided for {unit_system_name} unit "
-            f"system, got {unit_system=}, expected value of type UnitSystem"
+            f"Unknown unit system: {unit_system_name!r}. " f"Available: {list(_UNIT_SYSTEMS)}"
         )
 
     if unit_system_manager.current is not None:

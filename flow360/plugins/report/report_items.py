@@ -38,11 +38,7 @@ from flow360.component.simulation.outputs.output_fields import (
 )
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import Unsteady
-from flow360.component.simulation.unit_system import (
-    DimensionedTypes,
-    is_flow360_unit,
-    unyt_quantity,
-)
+from flow360.component.simulation.unit_system import DimensionedTypes, unyt_quantity
 from flow360.exceptions import Flow360ValidationError
 from flow360.log import log
 from flow360.plugins.report.report_context import ReportContext
@@ -1813,7 +1809,7 @@ class Chart3D(Chart):
                 )
                 else 1
             )
-            if isinstance(self.limits[0], unyt_quantity) or is_flow360_unit(self.limits[0]):
+            if isinstance(self.limits[0], unyt_quantity):
                 target_system = "flow360"
                 if unit_system is not None:
                     target_system = unit_system

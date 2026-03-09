@@ -11,7 +11,9 @@ from flow360.component.simulation.entity_info import GeometryEntityInfo
 from flow360.component.simulation.exposed_units import supported_units_by_front_end
 from flow360.component.simulation.framework.updater_utils import compare_values
 from flow360.component.simulation.services_report import get_default_report_config
-from flow360.component.simulation.unit_system import _PredefinedUnitSystem
+from typing import get_args
+
+from flow360.component.simulation.unit_system import DimensionedTypes
 from flow360.component.simulation.user_code.core.types import UserVariable
 from flow360.component.simulation.validation.validation_context import (
     CASE,
@@ -1328,14 +1330,13 @@ def test_unit_conversion_front_end_compatibility():
                 raise ValueError(f"Unit {unit} is not valid for dimension {dimension}")
 
     ##### 2.  Ensure that all units supported have set their front-end approved units
-    for field_name, field_info in _PredefinedUnitSystem.model_fields.items():
-        if field_name == "name":
-            continue
-        unit_system_dimension_string = str(field_info.annotation.dim)
-        # for unit_name in unit:
+    for dim_type in get_args(DimensionedTypes):
+        inner_type = get_args(dim_type)[0]  # unwrap Annotated
+        unit_system_dimension_string = str(inner_type.dim)
+        dim_name = inner_type.dim_name
         if unit_system_dimension_string not in supported_units_by_front_end.keys():
             raise ValueError(
-                f"Unit {unit_system_dimension_string} (A.K.A {field_name}) is not supported by the front-end.",
+                f"Unit {unit_system_dimension_string} (A.K.A {dim_name}) is not supported by the front-end.",
                 "Please ensure front end team is aware of this new unit and add its support.",
             )
 
