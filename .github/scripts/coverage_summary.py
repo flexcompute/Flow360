@@ -124,7 +124,9 @@ def build_diff_coverage_md(changed_lines, file_coverage):
     lines = []
     lines.append(f"## {status_icon(total_pct)} Diff Coverage — {total_pct:.0f}%")
     lines.append("")
-    lines.append(f"`{make_bar(total_pct, 30)}` **{total_pct:.1f}%** ({total_covered} / {total_changed} changed lines covered)")
+    lines.append(
+        f"`{make_bar(total_pct, 30)}` **{total_pct:.1f}%** ({total_covered} / {total_changed} changed lines covered)"
+    )
     lines.append("")
     lines.append("| File | Coverage | Lines | Missing |")
     lines.append("|:-----|:--------:|:-----:|:--------|")
@@ -155,9 +157,13 @@ def build_full_coverage_md(groups):
 
     lines = []
     lines.append("<details>")
-    lines.append(f"<summary><h3>{status_icon(total_pct)} Full Coverage Report — {total_pct:.0f}% ({total_hits} / {total_lines} lines)</h3></summary>")
+    lines.append(
+        f"<summary><h3>{status_icon(total_pct)} Full Coverage Report — {total_pct:.0f}% ({total_hits} / {total_lines} lines)</h3></summary>"
+    )
     lines.append("")
-    lines.append(f"`{make_bar(total_pct, 30)}` **{total_pct:.1f}%** ({total_hits} / {total_lines} lines)")
+    lines.append(
+        f"`{make_bar(total_pct, 30)}` **{total_pct:.1f}%** ({total_hits} / {total_lines} lines)"
+    )
     lines.append("")
     lines.append("| Package | Coverage | Progress | Lines |")
     lines.append("|:--------|:--------:|:---------|------:|")
@@ -165,7 +171,9 @@ def build_full_coverage_md(groups):
     for key, g in sorted_groups:
         pct = (g["hits"] / g["lines"] * 100) if g["lines"] else 0
         icon = status_icon(pct)
-        lines.append(f"| `{key}` | {icon} {pct:.1f}% | `{make_bar(pct)}` | {g['hits']} / {g['lines']} |")
+        lines.append(
+            f"| `{key}` | {icon} {pct:.1f}% | `{make_bar(pct)}` | {g['hits']} / {g['lines']} |"
+        )
 
     lines.append(f"| **Total** | **{total_pct:.1f}%** | | **{total_hits} / {total_lines}** |")
     lines.append("")
