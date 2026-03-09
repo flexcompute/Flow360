@@ -1813,13 +1813,15 @@ class Chart3D(Chart):
                 target_system = "flow360"
                 if unit_system is not None:
                     target_system = unit_system
-                min_val = (
-                    params.convert_unit(self.limits[0], target_system=target_system) * liquid_factor
+                min_converted = params.convert_unit(self.limits[0], target_system=target_system)
+                max_converted = params.convert_unit(self.limits[1], target_system=target_system)
+                # Extract numerical value before arithmetic to avoid unyt
+                # collapsing complex unit expressions (e.g. 340.29*m/s → m/s).
+                liquid_factor_float = float(liquid_factor)
+                return (
+                    float(min_converted.value) * liquid_factor_float,
+                    float(max_converted.value) * liquid_factor_float,
                 )
-                max_val = (
-                    params.convert_unit(self.limits[1], target_system=target_system) * liquid_factor
-                )
-                return (float(min_val.value), float(max_val.value))
 
         return self.limits
 

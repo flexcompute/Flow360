@@ -49,7 +49,7 @@ class RestrictedUnitSystem(u.UnitSystem):
             supported.add(u.dimensions.temperature)
 
         super().__init__(
-            name,
+            f"{name}_{id(self)}",
             length_unit=length_unit,
             mass_unit=mass_unit or 1 * u.kg,
             time_unit=time_unit or 1 * u.s,
