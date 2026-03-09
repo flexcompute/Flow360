@@ -40,7 +40,7 @@ class RestrictedUnitSystem(u.UnitSystem):
         temperature_unit=None,
         **kwargs,
     ):
-        supported = {u.dimensions.length}
+        supported = {u.dimensions.length, u.dimensions.angle}
         if mass_unit is not None:
             supported.add(u.dimensions.mass)
         if time_unit is not None:

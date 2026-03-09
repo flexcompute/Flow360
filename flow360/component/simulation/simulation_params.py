@@ -281,8 +281,17 @@ class _ParamModelBase(Flow360BaseModel):
     def __init__(self, filename: str = None, file_content: dict = None, **kwargs):
         if filename is not None or file_content is not None:
             self._init_no_unit_context(filename, file_content, **kwargs)
-        else:
+        elif unit_system_manager.current is not None:
             self._init_with_unit_context(**kwargs)
+        elif "unit_system" in kwargs:
+            # Deserialization path (model_validate) — unit_system already in dict
+            with DeserializationContext():
+                super().__init__(**kwargs)
+        else:
+            raise Flow360RuntimeError(
+                "Please use a unit system context (e.g. `with SI_unit_system:`) "
+                "when constructing SimulationParams from Python."
+            )
 
     def copy(self, update=None, **kwargs) -> _ParamModelBase:
         if unit_system_manager.current is None:

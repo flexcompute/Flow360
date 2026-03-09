@@ -1,6 +1,7 @@
 import copy
 import json
 import re
+from typing import get_args
 
 import pytest
 from unyt import Unit
@@ -11,8 +12,6 @@ from flow360.component.simulation.entity_info import GeometryEntityInfo
 from flow360.component.simulation.exposed_units import supported_units_by_front_end
 from flow360.component.simulation.framework.updater_utils import compare_values
 from flow360.component.simulation.services_report import get_default_report_config
-from typing import get_args
-
 from flow360.component.simulation.unit_system import DimensionedTypes
 from flow360.component.simulation.user_code.core.types import UserVariable
 from flow360.component.simulation.validation.validation_context import (

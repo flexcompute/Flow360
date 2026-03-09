@@ -702,16 +702,8 @@ def test_box_validation():
             angle_of_rotation=10 * u.deg,
         )
 
-    with pytest.raises(
-        ValueError, match=re.escape("'(1, 1, -10) flow360_length_unit' cannot have negative value")
-    ):
-        Box(
-            name="box6",
-            center=(0, 0, 0) * u.m,
-            size=(1, 1, -10) * u.flow360_length_unit,
-            axis_of_rotation=(1, 0, 0),
-            angle_of_rotation=10 * u.deg,
-        )
+    # flow360_length_unit block removed — _Flow360BaseUnit deleted in Phase 4
+    # Tracked in plans/removed_tests.markdown
 
 
 def test_cylinder_validation():
@@ -747,9 +739,5 @@ def test_sphere_validation():
             radius=-5 * u.m,
         )
 
-    with pytest.raises(ValueError, match="Input should be greater than 0"):
-        Sphere(
-            name="sphere",
-            center=(0, 0, 0) * u.m,
-            radius=-5 * u.flow360_length_unit,
-        )
+    # flow360_length_unit block removed — _Flow360BaseUnit deleted in Phase 4
+    # Tracked in plans/removed_tests.markdown
