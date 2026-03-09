@@ -106,7 +106,6 @@ from flow360.component.simulation.outputs.outputs import (
     VolumeOutput,
 )
 from flow360.component.simulation.primitives import (
-    AxisymmetricBody,
     Box,
     CustomVolume,
     Cylinder,
