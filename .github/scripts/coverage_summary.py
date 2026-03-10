@@ -23,13 +23,39 @@ def status_icon(pct):
     return "\U0001f534"
 
 
+def _get_repo_root():
+    result = subprocess.run(
+        ["git", "rev-parse", "--show-toplevel"],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    return result.stdout.strip()
+
+
+_repo_root = None
+
+
 def _normalize_filename(filename, source_roots):
-    """Normalize coverage XML filename to repo-relative path."""
-    if not os.path.isabs(filename):
-        return filename
+    """Normalize coverage XML filename to repo-relative path.
+
+    Coverage XML records paths relative to <source> roots, while git diff
+    produces paths relative to the repo root. This joins the two and strips
+    the repo root prefix so both sides use the same reference frame.
+    """
+    global _repo_root
+    if _repo_root is None:
+        _repo_root = _get_repo_root()
+    repo_prefix = _repo_root + "/"
+
     for root in source_roots:
-        if filename.startswith(root + "/"):
-            return filename[len(root) + 1 :]
+        if os.path.isabs(filename):
+            if filename.startswith(repo_prefix):
+                return filename[len(repo_prefix) :]
+        else:
+            full = os.path.join(root, filename)
+            if full.startswith(repo_prefix):
+                return full[len(repo_prefix) :]
     return filename
 
 
