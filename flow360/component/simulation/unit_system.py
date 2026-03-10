@@ -19,14 +19,14 @@ import unyt.dimensions as udim
 from flow360_schema.framework.validation.context import (  # pylint: disable=unused-import
     unit_system_manager,
 )
-from flow360_schema.models.base_unit_system_type import (  # pylint: disable=unused-import
+from flow360_schema.framework.unit_system.base_system_type import (  # pylint: disable=unused-import
     BaseSystemType,
 )
 
 # Importing unit_system triggers udim.* dimension registrations and
 # unit_systems configuration on the schema side. Must happen before
 # _DimensionedType subclass bodies reference udim.viscosity etc.
-from flow360_schema.models.unit_system import (  # pylint: disable=unused-import
+from flow360_schema.framework.unit_system import (  # pylint: disable=unused-import
     _UNIT_SYSTEMS,
     CGS_unit_system,
     CGSUnitSystem,

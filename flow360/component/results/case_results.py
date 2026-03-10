@@ -495,7 +495,7 @@ class _DimensionedCSVResultModel(pd.BaseModel):
     def _build_flow360_unit_system(params):
         """Build a schema UnitSystem from V1 or V2 params for unit inference context."""
         # pylint: disable=import-outside-toplevel
-        from flow360_schema.models.unit_system import create_flow360_unit_system
+        from flow360_schema.framework.unit_system import create_flow360_unit_system
 
         if isinstance(params, SimulationParams):
             return create_flow360_unit_system(

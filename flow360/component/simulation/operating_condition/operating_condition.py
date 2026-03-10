@@ -3,7 +3,7 @@
 from typing import Literal, Optional, Tuple, Union
 
 import pydantic as pd
-from flow360_schema.models.primitives import (
+from flow360_schema.framework.physical_dimensions import (
     AbsoluteTemperature,
     Angle,
     Density,

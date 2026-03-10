@@ -9,7 +9,7 @@ from typing import Annotated, ClassVar, List, Literal, Optional, Tuple, Union, f
 
 import numpy as np
 import pydantic as pd
-from flow360_schema.models.primitives import Length
+from flow360_schema.framework.physical_dimensions import Length
 from pydantic import PositiveFloat
 from typing_extensions import Self
 
