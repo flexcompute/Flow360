@@ -448,7 +448,11 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
             return {}
 
         for zone in volume_zones:
-            if zone.get("type") not in ("AutomatedFarfield", "UserDefinedFarfield", "WindTunnelFarfield"):
+            if zone.get("type") not in (
+                "AutomatedFarfield",
+                "UserDefinedFarfield",
+                "WindTunnelFarfield",
+            ):
                 continue
             enclosed = zone.get("enclosed_entities")
             if not enclosed:
