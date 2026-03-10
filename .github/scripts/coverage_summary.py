@@ -25,11 +25,15 @@ def status_icon(pct):
 
 def _normalize_filename(filename, source_roots):
     """Normalize coverage XML filename to repo-relative path."""
-    if not os.path.isabs(filename):
-        return filename
     for root in source_roots:
-        if filename.startswith(root + "/"):
-            return filename[len(root) + 1 :]
+        if os.path.isabs(filename):
+            if filename.startswith(root + "/"):
+                return os.path.relpath(filename)
+        else:
+            full = os.path.join(root, filename)
+            rel = os.path.relpath(full)
+            if not rel.startswith(".."):
+                return rel
     return filename
 
 
