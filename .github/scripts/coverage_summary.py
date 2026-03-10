@@ -51,11 +51,11 @@ def _normalize_filename(filename, source_roots):
     for root in source_roots:
         if os.path.isabs(filename):
             if filename.startswith(repo_prefix):
-                return filename[len(repo_prefix):]
+                return filename[len(repo_prefix) :]
         else:
             full = os.path.join(root, filename)
             if full.startswith(repo_prefix):
-                return full[len(repo_prefix):]
+                return full[len(repo_prefix) :]
     return filename
 
 
