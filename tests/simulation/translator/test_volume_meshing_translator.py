@@ -214,7 +214,7 @@ def get_test_param():
                         entities=[
                             CustomVolume(
                                 name="custom_volume-1",
-                                enclosed_entities=[
+                                bounding_entities=[
                                     Surface(name="interface1"),
                                     Surface(name="interface2"),
                                 ],
@@ -482,7 +482,7 @@ def get_test_param_modular():
                         entities=[
                             CustomVolume(
                                 name="custom_volume-1",
-                                enclosed_entities=[
+                                bounding_entities=[
                                     Surface(name="interface1"),
                                     Surface(name="interface2"),
                                 ],
@@ -736,7 +736,7 @@ def test_custom_zones_element_type_tetrahedra(get_surface_mesh):
                         entities=[
                             CustomVolume(
                                 name="tetrahedral_zone",
-                                enclosed_entities=[
+                                bounding_entities=[
                                     Surface(name="boundary1"),
                                     Surface(name="boundary2"),
                                 ],
@@ -774,7 +774,7 @@ def test_custom_zones_element_type_mixed(get_surface_mesh):
                         entities=[
                             CustomVolume(
                                 name="mixed_zone",
-                                enclosed_entities=[
+                                bounding_entities=[
                                     Surface(name="boundary1"),
                                     Surface(name="boundary2"),
                                 ],
@@ -1563,7 +1563,7 @@ def test_automated_farfield_enclosed_entities(get_surface_mesh):
                         entities=[
                             CustomVolume(
                                 name="inner",
-                                enclosed_entities=[left1, right1],
+                                bounding_entities=[left1, right1],
                             ),
                         ],
                     ),
@@ -1599,7 +1599,7 @@ def test_user_defined_farfield_enclosed_entities(get_surface_mesh):
                         entities=[
                             CustomVolume(
                                 name="inner",
-                                enclosed_entities=[left1, right1],
+                                bounding_entities=[left1, right1],
                             ),
                         ],
                     ),
@@ -1646,7 +1646,7 @@ def test_farfield_enclosed_entities_with_cylinder(get_surface_mesh):
                         entities=[
                             CustomVolume(
                                 name="inner",
-                                enclosed_entities=[face1],
+                                bounding_entities=[face1],
                             ),
                         ],
                     ),
@@ -1698,7 +1698,7 @@ class TestTranslateEnclosedEntityName:
             )
             self.custom_volume = CustomVolume(
                 name="cv",
-                enclosed_entities=[Surface(name="f1")],
+                bounding_entities=[Surface(name="f1")],
             )
 
     def test_surface_returns_raw_name(self):
@@ -1765,7 +1765,7 @@ def test_farfield_enclosed_entities_with_sphere(get_surface_mesh):
                         entities=[
                             CustomVolume(
                                 name="inner",
-                                enclosed_entities=[face1],
+                                bounding_entities=[face1],
                             ),
                         ],
                     ),
@@ -1811,7 +1811,7 @@ def test_farfield_enclosed_entities_with_axisymmetric_body(get_surface_mesh):
                         entities=[
                             CustomVolume(
                                 name="inner",
-                                enclosed_entities=[face1],
+                                bounding_entities=[face1],
                             ),
                         ],
                     ),
@@ -1835,7 +1835,7 @@ def test_farfield_enclosed_entities_unwraps_custom_volume(get_surface_mesh):
     with SI_unit_system:
         cv = CustomVolume(
             name="inner",
-            enclosed_entities=[Surface(name="cv_face1"), Surface(name="cv_face2")],
+            bounding_entities=[Surface(name="cv_face1"), Surface(name="cv_face2")],
         )
         params = SimulationParams(
             meshing=MeshingParams(
@@ -1878,7 +1878,7 @@ def test_farfield_enclosed_entities_unwraps_custom_volume_with_cylinder(get_surf
     with SI_unit_system:
         cv = CustomVolume(
             name="inner",
-            enclosed_entities=[Surface(name="cv_face"), rotor],
+            bounding_entities=[Surface(name="cv_face"), rotor],
         )
         params = SimulationParams(
             meshing=MeshingParams(
@@ -1921,7 +1921,7 @@ def test_farfield_enclosed_entities_unwrap_deduplicates(get_surface_mesh):
     with SI_unit_system:
         cv = CustomVolume(
             name="inner",
-            enclosed_entities=[shared, Surface(name="cv_only")],
+            bounding_entities=[shared, Surface(name="cv_only")],
         )
         params = SimulationParams(
             meshing=MeshingParams(
@@ -1973,7 +1973,7 @@ def test_farfield_enclosed_entities_unwraps_custom_volume_all_types(get_surface_
         )
         cv = CustomVolume(
             name="inner",
-            enclosed_entities=[
+            bounding_entities=[
                 Surface(name="wall"),
                 rotor,
                 cone,
@@ -2043,7 +2043,7 @@ def test_farfield_enclosed_entities_mixed_direct_and_custom_volume(get_surface_m
         )
         cv = CustomVolume(
             name="inner",
-            enclosed_entities=[Surface(name="cv_wall"), sph],
+            bounding_entities=[Surface(name="cv_wall"), sph],
         )
         params = SimulationParams(
             meshing=MeshingParams(

@@ -1502,7 +1502,7 @@ def test_modular_workflow_zones_validation():
                     entities=[
                         CustomVolume(
                             name="zone1",
-                            enclosed_entities=[Surface(name="face1"), Surface(name="face2")],
+                            bounding_entities=[Surface(name="face1"), Surface(name="face2")],
                         )
                     ],
                 ),
@@ -1589,7 +1589,7 @@ def test_modular_workflow_zones_validation():
                     entities=[
                         CustomVolume(
                             name="zone1",
-                            enclosed_entities=[Surface(name="face1"), Surface(name="face2")],
+                            bounding_entities=[Surface(name="face1"), Surface(name="face2")],
                         )
                     ],
                 ),

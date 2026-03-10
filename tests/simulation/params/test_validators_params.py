@@ -2416,7 +2416,7 @@ def test_beta_mesher_only_features(mock_validation_context):
                         entities=[
                             CustomVolume(
                                 name="zone1",
-                                enclosed_entities=[Surface(name="face1"), Surface(name="face2")],
+                                bounding_entities=[Surface(name="face1"), Surface(name="face2")],
                             )
                         ],
                     ),
@@ -2450,7 +2450,7 @@ def test_beta_mesher_only_features(mock_validation_context):
                         entities=[
                             CustomVolume(
                                 name="zone1",
-                                enclosed_entities=[Surface(name="face1"), Surface(name="face2")],
+                                bounding_entities=[Surface(name="face1"), Surface(name="face2")],
                             )
                         ],
                     ),
@@ -2492,7 +2492,7 @@ def test_beta_mesher_only_features(mock_validation_context):
                         entities=[
                             CustomVolume(
                                 name="zone1",
-                                enclosed_entities=[surface1, surface2],
+                                bounding_entities=[surface1, surface2],
                             ),
                         ],
                     ),
@@ -2525,7 +2525,7 @@ def test_beta_mesher_only_features(mock_validation_context):
                         entities=[
                             CustomVolume(
                                 name="zone1",
-                                enclosed_entities=[Surface(name="face1"), Surface(name="face2")],
+                                bounding_entities=[Surface(name="face1"), Surface(name="face2")],
                             )
                         ],
                     ),
@@ -2581,14 +2581,14 @@ def test_beta_mesher_only_features(mock_validation_context):
                             entities=[
                                 CustomVolume(
                                     name="zone1",
-                                    enclosed_entities=[
+                                    bounding_entities=[
                                         Surface(name="face1"),
                                         Surface(name="face2"),
                                     ],
                                 ),
                                 CustomVolume(
                                     name="zone1",
-                                    enclosed_entities=[
+                                    bounding_entities=[
                                         Surface(name="face3"),
                                         Surface(name="face4"),
                                     ],
@@ -2610,7 +2610,7 @@ def test_beta_mesher_only_features(mock_validation_context):
     with (
         mock_validation_context,
         pytest.raises(
-            ValueError, match="The enclosed entities of a CustomVolume must have different names."
+            ValueError, match="The bounding entities of a CustomVolume must have different names."
         ),
     ):
         with SI_unit_system:
@@ -2626,7 +2626,7 @@ def test_beta_mesher_only_features(mock_validation_context):
                             entities=[
                                 CustomVolume(
                                     name="zone1",
-                                    enclosed_entities=[
+                                    bounding_entities=[
                                         Surface(name="face1"),
                                         Surface(name="face1"),
                                     ],
@@ -2655,7 +2655,7 @@ def test_beta_mesher_only_features(mock_validation_context):
                         entities=[
                             CustomVolume(
                                 name="zone1",
-                                enclosed_entities=[Surface(name="face1"), Surface(name="face2")],
+                                bounding_entities=[Surface(name="face1"), Surface(name="face2")],
                             )
                         ],
                     ),
@@ -2898,7 +2898,7 @@ def test_check_duplicate_isosurface_names():
 def test_check_custom_volume_in_volume_zones():
     from flow360.component.simulation.meshing_param.volume_params import CustomZones
 
-    zone_2 = CustomVolume(name="zone2", enclosed_entities=[Surface(name="face2")])
+    zone_2 = CustomVolume(name="zone2", bounding_entities=[Surface(name="face2")])
     zone_2.axes = [(1, 0, 0), (0, 1, 0)]
 
     with SI_unit_system:
@@ -2912,7 +2912,7 @@ def test_check_custom_volume_in_volume_zones():
                     CustomZones(
                         name="custom_zones",
                         entities=[
-                            CustomVolume(name="zone1", enclosed_entities=[Surface(name="face1")])
+                            CustomVolume(name="zone1", bounding_entities=[Surface(name="face1")])
                         ],
                     ),
                     UserDefinedFarfield(
@@ -2950,7 +2950,7 @@ def test_check_custom_volume_in_volume_zones():
     )
     assert errors[0]["loc"] == ("models", 0, "entities")
 
-    zone_3 = CustomVolume(name="zone3", enclosed_entities=[Surface(name="face3")])
+    zone_3 = CustomVolume(name="zone3", bounding_entities=[Surface(name="face3")])
     zone_3.axis = (1, 0, 0)
     zone_3.center = (0, 0, 0) * u.mm
 
@@ -2964,7 +2964,7 @@ def test_check_custom_volume_in_volume_zones():
                     CustomZones(
                         name="custom_zones",
                         entities=[
-                            CustomVolume(name="zone1", enclosed_entities=[Surface(name="face1")])
+                            CustomVolume(name="zone1", bounding_entities=[Surface(name="face1")])
                         ],
                     ),
                 ],
@@ -3851,7 +3851,7 @@ def test_automated_farfield_with_custom_zones():
                         entities=[
                             CustomVolume(
                                 name="zone1",
-                                enclosed_entities=[
+                                bounding_entities=[
                                     Surface(name="face1"),
                                     Surface(name="face2"),
                                 ],
@@ -3889,7 +3889,7 @@ def test_automated_farfield_with_custom_zones():
                         entities=[
                             CustomVolume(
                                 name="zone1",
-                                enclosed_entities=[Surface(name="face1"), Surface(name="face2")],
+                                bounding_entities=[Surface(name="face1"), Surface(name="face2")],
                             )
                         ],
                     ),
@@ -3952,7 +3952,7 @@ def test_custom_volume_named_farfield_with_automated_farfield():
                         entities=[
                             CustomVolume(
                                 name="farfield",
-                                enclosed_entities=[Surface(name="face1"), Surface(name="face2")],
+                                bounding_entities=[Surface(name="face1"), Surface(name="face2")],
                             )
                         ],
                     ),

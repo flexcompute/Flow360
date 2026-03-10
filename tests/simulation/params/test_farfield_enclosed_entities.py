@@ -83,7 +83,7 @@ def _make_custom_zones_with_volume():
         entities=[
             CustomVolume(
                 name="zone1",
-                enclosed_entities=[Surface(name="face1"), Surface(name="face2")],
+                bounding_entities=[Surface(name="face1"), Surface(name="face2")],
             )
         ],
     )
@@ -169,7 +169,7 @@ def test_enclosed_entities_rotation_volume_association_negative(farfield_cls):
                         entities=[
                             CustomVolume(
                                 name="zone1",
-                                enclosed_entities=[Surface(name="face1")],
+                                bounding_entities=[Surface(name="face1")],
                             )
                         ],
                     ),
@@ -215,7 +215,7 @@ def test_enclosed_entities_rotation_volume_association_positive(farfield_cls):
                         entities=[
                             CustomVolume(
                                 name="zone1",
-                                enclosed_entities=[Surface(name="face1")],
+                                bounding_entities=[Surface(name="face1")],
                             )
                         ],
                     ),
@@ -295,12 +295,12 @@ def test_enclosed_entities_surfaces_only_no_rotation_volume_needed():
 
 
 # ---------------------------------------------------------------------------
-# CustomVolume enclosed_entities + rotation association tests
+# CustomVolume bounding_entities + rotation association tests
 # ---------------------------------------------------------------------------
 
 
 def test_custom_volume_enclosed_entities_rotation_volume_association_positive():
-    """CustomVolume with Cylinder in enclosed_entities that is in a RotationVolume should pass."""
+    """CustomVolume with Cylinder in bounding_entities that is in a RotationVolume should pass."""
     rotor = _make_rotor_disk()
     with SI_unit_system:
         params = SimulationParams(
@@ -318,7 +318,7 @@ def test_custom_volume_enclosed_entities_rotation_volume_association_positive():
                         entities=[
                             CustomVolume(
                                 name="zone1",
-                                enclosed_entities=[Surface(name="face1"), rotor],
+                                bounding_entities=[Surface(name="face1"), rotor],
                             )
                         ],
                     ),
@@ -334,7 +334,7 @@ def test_custom_volume_enclosed_entities_rotation_volume_association_positive():
 
 
 def test_custom_volume_enclosed_entities_rotation_volume_association_negative():
-    """CustomVolume with Cylinder in enclosed_entities without a RotationVolume should fail."""
+    """CustomVolume with Cylinder in bounding_entities without a RotationVolume should fail."""
     rotor = _make_rotor_disk()
     with SI_unit_system:
         params = SimulationParams(
@@ -346,7 +346,7 @@ def test_custom_volume_enclosed_entities_rotation_volume_association_negative():
                         entities=[
                             CustomVolume(
                                 name="zone1",
-                                enclosed_entities=[Surface(name="face1"), rotor],
+                                bounding_entities=[Surface(name="face1"), rotor],
                             )
                         ],
                     ),
@@ -363,7 +363,7 @@ def test_custom_volume_enclosed_entities_rotation_volume_association_negative():
 
 
 def test_custom_volume_enclosed_entities_sphere_rotation_volume_negative():
-    """CustomVolume with Sphere in enclosed_entities without a RotationVolume should fail."""
+    """CustomVolume with Sphere in bounding_entities without a RotationVolume should fail."""
     sph = Sphere(
         name="sph",
         center=(0, 0, 0) * u.m,
@@ -379,7 +379,7 @@ def test_custom_volume_enclosed_entities_sphere_rotation_volume_negative():
                         entities=[
                             CustomVolume(
                                 name="zone1",
-                                enclosed_entities=[Surface(name="face1"), sph],
+                                bounding_entities=[Surface(name="face1"), sph],
                             )
                         ],
                     ),
@@ -401,7 +401,7 @@ def test_custom_volume_in_farfield_enclosed_entities_rotation_volume_negative():
     with SI_unit_system:
         cv = CustomVolume(
             name="zone1",
-            enclosed_entities=[Surface(name="face1"), rotor],
+            bounding_entities=[Surface(name="face1"), rotor],
         )
         params = SimulationParams(
             meshing=MeshingParams(
@@ -413,7 +413,7 @@ def test_custom_volume_in_farfield_enclosed_entities_rotation_volume_negative():
                             cv,
                             CustomVolume(
                                 name="zone2",
-                                enclosed_entities=[Surface(name="face2")],
+                                bounding_entities=[Surface(name="face2")],
                             ),
                         ],
                     ),
@@ -439,7 +439,7 @@ def test_farfield_custom_volume_no_intersection_positive():
     with SI_unit_system:
         cv = CustomVolume(
             name="inner_zone",
-            enclosed_entities=[Surface(name="cv_face1"), Surface(name="cv_face2")],
+            bounding_entities=[Surface(name="cv_face1"), Surface(name="cv_face2")],
         )
         params = SimulationParams(
             meshing=MeshingParams(
@@ -463,7 +463,7 @@ def test_farfield_custom_volume_no_intersection_negative():
     with SI_unit_system:
         cv = CustomVolume(
             name="inner_zone",
-            enclosed_entities=[shared_face, Surface(name="cv_only")],
+            bounding_entities=[shared_face, Surface(name="cv_only")],
         )
         params = SimulationParams(
             meshing=MeshingParams(
@@ -479,5 +479,5 @@ def test_farfield_custom_volume_no_intersection_negative():
         )
     _, errors, _ = _validate(params)
     assert errors is not None
-    assert any("shares enclosed entities" in e["msg"] for e in errors)
+    assert any("shares bounding entities" in e["msg"] for e in errors)
     assert any("shared" in e["msg"] for e in errors)

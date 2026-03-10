@@ -393,11 +393,11 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         """Extract boundary surface IDs from a CustomVolume entity, expanding selectors if needed."""
         if entity.private_attribute_entity_type_name != "CustomVolume":
             return set()
-        enclosed_entities = getattr(entity, "enclosed_entities", None)
-        if not enclosed_entities:
+        bounding_entities = getattr(entity, "bounding_entities", None)
+        if not bounding_entities:
             return set()
         # Expand selectors to get all boundary surfaces
-        expanded_entities = self.expand_entity_list(enclosed_entities)
+        expanded_entities = self.expand_entity_list(bounding_entities)
         return {entity.private_attribute_id for entity in expanded_entities}
 
     def _get_to_be_generated_custom_volumes(self, param_as_dict: dict):
@@ -466,7 +466,7 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
 
     @property
     def farfield_cv_dual_belonging_ids(self) -> set[str]:
-        """Surface IDs that appear in both farfield enclosed_entities and some CustomVolume enclosed_entities."""
+        """Surface IDs that appear in both farfield enclosed_entities and some CustomVolume bounding_entities."""
         if not self.farfield_enclosed_entities:
             return set()
         enclosed_ids = set(self.farfield_enclosed_entities.keys())

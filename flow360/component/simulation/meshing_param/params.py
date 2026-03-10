@@ -164,17 +164,17 @@ def _collect_all_custom_volumes(zones):
 
 
 def _validate_custom_volume_rotation_association(custom_volumes, rotation_entity_names, param_info):
-    """Validate that Cylinder/AxisymmetricBody/Sphere in CustomVolume.enclosed_entities
+    """Validate that Cylinder/AxisymmetricBody/Sphere in CustomVolume.bounding_entities
     are associated with a RotationVolume or RotationSphere."""
     for cv in custom_volumes:
-        for entity in param_info.expand_entity_list(cv.enclosed_entities):
+        for entity in param_info.expand_entity_list(cv.bounding_entities):
             if (
                 isinstance(entity, (Cylinder, AxisymmetricBody, Sphere))
                 and entity.name not in rotation_entity_names
             ):
                 raise ValueError(
                     f"`{type(entity).__name__}` entity `{entity.name}` in "
-                    f"`CustomVolume` `{cv.name}` `enclosed_entities` must be "
+                    f"`CustomVolume` `{cv.name}` `bounding_entities` must be "
                     f"associated with a `RotationVolume` or `RotationSphere`."
                 )
 

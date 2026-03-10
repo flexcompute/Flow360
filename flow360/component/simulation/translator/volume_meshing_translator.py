@@ -264,7 +264,7 @@ def rotation_volume_entity_injector(
 def _build_farfield_zone(volume_zones: list):
     """Build the farfield zone dict from enclosed_entities on any farfield type.
 
-    CustomVolume entities are unwrapped into their constituent enclosed_entities,
+    CustomVolume entities are unwrapped into their constituent bounding_entities,
     each translated via _translate_enclosed_entity_name. Final patches are deduplicated.
     """
     for zone in volume_zones:
@@ -272,7 +272,7 @@ def _build_farfield_zone(volume_zones: list):
             patch_names: set[str] = set()
             for entity in zone.enclosed_entities.stored_entities:
                 if isinstance(entity, CustomVolume):
-                    for child in entity.enclosed_entities.stored_entities:
+                    for child in entity.bounding_entities.stored_entities:
                         patch_names.add(_translate_enclosed_entity_name(child))
                 else:
                     patch_names.add(_translate_enclosed_entity_name(entity))
@@ -297,7 +297,7 @@ def _get_custom_volumes(volume_zones: list):
                         "patches": sorted(
                             [
                                 _translate_enclosed_entity_name(entity)
-                                for entity in custom_volume.enclosed_entities.stored_entities
+                                for entity in custom_volume.bounding_entities.stored_entities
                             ]
                         ),
                     }

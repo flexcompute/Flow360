@@ -26,7 +26,7 @@ def _get_basic_entity_info():
 
 def test_custom_volume_added_to_draft_entities():
     with SI_unit_system:
-        custom_volume = CustomVolume(name="cv1", enclosed_entities=[Surface(name="face1")])
+        custom_volume = CustomVolume(name="cv1", bounding_entities=[Surface(name="face1")])
         params = SimulationParams(
             meshing=MeshingParams(
                 volume_zones=[
