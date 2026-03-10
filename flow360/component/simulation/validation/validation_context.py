@@ -436,9 +436,9 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         return custom_volume_info
 
     def _get_farfield_enclosed_entities(self, param_as_dict: dict) -> dict[str, str]:
-        """Extract enclosed surface {id: name} from AutomatedFarfield zones.
+        """Extract enclosed surface {id: name} from farfield zones.
 
-        Only returns non-empty when an AutomatedFarfield zone has enclosed_entities set.
+        Only returns non-empty when a farfield zone has enclosed_entities set.
         Expands selectors so that selector-only enclosed_entities inputs are handled.
         """
         volume_zones = get_value_with_path(param_as_dict, ["meshing", "volume_zones"])
@@ -448,7 +448,7 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
             return {}
 
         for zone in volume_zones:
-            if zone.get("type") != "AutomatedFarfield":
+            if zone.get("type") not in ("AutomatedFarfield", "UserDefinedFarfield", "WindTunnelFarfield"):
                 continue
             enclosed = zone.get("enclosed_entities")
             if not enclosed:
