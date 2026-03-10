@@ -1099,6 +1099,15 @@ class CustomVolume(_VolumeEntityBase):
     private_attribute_entity_type_name: Literal["CustomVolume"] = pd.Field(
         "CustomVolume", frozen=True
     )
+    bounding_entities: EntityList[Surface, Cylinder, AxisymmetricBody, Sphere] = pd.Field(
+        description="The entities that define the boundaries of the custom volume."
+    )
+    private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
+
+    axes: Optional[OrthogonalAxes] = pd.Field(None, description="")  # Porous media support
+    axis: Optional[Axis] = pd.Field(None)  # Rotation support
+    # pylint: disable=no-member
+    center: Optional[LengthType.Point] = pd.Field(None, description="")  # Rotation support
 
     @pd.model_validator(mode="before")
     @classmethod
@@ -1119,16 +1128,6 @@ class CustomVolume(_VolumeEntityBase):
             )
 
         return value
-
-    bounding_entities: EntityList[Surface, Cylinder, AxisymmetricBody, Sphere] = pd.Field(
-        description="The entities that define the boundaries of the custom volume."
-    )
-    private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
-
-    axes: Optional[OrthogonalAxes] = pd.Field(None, description="")  # Porous media support
-    axis: Optional[Axis] = pd.Field(None)  # Rotation support
-    # pylint: disable=no-member
-    center: Optional[LengthType.Point] = pd.Field(None, description="")  # Rotation support
 
     @contextual_field_validator("bounding_entities", mode="after")
     @classmethod

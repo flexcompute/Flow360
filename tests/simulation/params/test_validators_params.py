@@ -2895,6 +2895,24 @@ def test_check_duplicate_isosurface_names():
         )
 
 
+def test_custom_volume_legacy_boundaries_key():
+    """Legacy ``boundaries`` key is accepted and migrated to ``bounding_entities``."""
+    with SI_unit_system:
+        cv = CustomVolume(name="zone1", boundaries=[Surface(name="face1")])
+    assert cv.bounding_entities is not None
+    assert cv.bounding_entities.stored_entities[0].name == "face1"
+
+
+def test_custom_volume_legacy_boundaries_key_rejected_when_bounding_entities_present():
+    """When ``bounding_entities`` is already present, ``boundaries`` is rejected as extra input."""
+    with SI_unit_system, pytest.raises(pd.ValidationError, match="Extra inputs are not permitted"):
+        CustomVolume(
+            name="zone1",
+            bounding_entities=[Surface(name="face1")],
+            boundaries=[Surface(name="face_ignored")],
+        )
+
+
 def test_check_custom_volume_in_volume_zones():
     from flow360.component.simulation.meshing_param.volume_params import CustomZones
 
