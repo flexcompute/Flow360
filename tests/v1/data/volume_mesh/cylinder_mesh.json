@@ -1,6 +1,7 @@
 {
-    "boundaries" :
-    {
-        "noSlipWalls" : ["fluid/wall"]
+    "boundaries": {
+        "noSlipWalls": [
+            "fluid/wall"
+        ]
     }
 }

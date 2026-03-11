@@ -1,8 +1,8 @@
 {
     "faces": {},
     "farfield": {
-        "type": "wind-tunnel",
-        "octreeBaseSpacing": 1.0
+        "octreeBaseSpacing": 1.0,
+        "type": "wind-tunnel"
     },
     "refinementFactor": 1.0,
     "volume": {

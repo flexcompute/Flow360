@@ -1,8 +1,30 @@
 {
+    "boundaries": {
+        "1": {
+            "name": "wing",
+            "type": "NoSlipWall"
+        },
+        "2": {
+            "name": "symmetry",
+            "type": "SlipWall"
+        },
+        "3": {
+            "name": "freestream",
+            "type": "Freestream"
+        }
+    },
+    "freestream": {
+        "Mach": 0.84,
+        "Reynolds": 14600000.0,
+        "Temperature": 288.15,
+        "alphaAngle": 3.06,
+        "betaAngle": 0.0,
+        "turbulentViscosityRatio": 0.210438,
+        "turbulentViscosityRatioSA": 2.9999990326054022
+    },
     "geometry": {
-        "meshName": "wing.ugrid",
         "endianness": "little",
-        "refArea": 1.15315084119231,
+        "meshName": "wing.ugrid",
         "momentCenter": [
             0.0,
             0.0,
@@ -12,82 +34,60 @@
             0.801672958512342,
             0.801672958512342,
             0.801672958512342
-        ]
+        ],
+        "refArea": 1.15315084119231
+    },
+    "navierStokesSolver": {
+        "kappaMUSCL": -1.0,
+        "linearIterations": 25,
+        "tolerance": 1e-10
     },
     "runControl": {
         "restart": false
     },
-    "volumeOutput": {
-        "outputFormat": "paraview",
-        "animationFrequency": -1,
-        "primitiveVars": true,
-        "vorticity": false,
-        "residualNavierStokes": true,
-        "residualTurbulence": true,
-        "T": false,
-        "s": false,
-        "Cp": false,
-        "mut": false,
-        "mutRatio": false,
-        "Mach": true
-    },
-    "surfaceOutput": {
-        "outputFormat": "paraview",
-        "animationFrequency": -1,
-        "primitiveVars": true,
-        "Cp": true,
-        "Cf": true,
-        "CfVec": false,
-        "yPlus": false,
-        "wallDistance": false
-    },
     "sliceOutput": {
-        "outputFormat": "tecplot",
-        "animationFrequency": -1,
-        "primitiveVars": true,
-        "vorticity": true,
-        "T": true,
-        "s": true,
         "Cp": true,
+        "Mach": true,
+        "T": true,
+        "animationFrequency": -1,
         "mut": true,
         "mutRatio": true,
-        "Mach": true
+        "outputFormat": "tecplot",
+        "primitiveVars": true,
+        "s": true,
+        "vorticity": true
     },
-    "navierStokesSolver": {
-        "tolerance": 1e-10,
-        "linearIterations": 25,
-        "kappaMUSCL": -1.0
-    },
-    "turbulenceModelSolver": {
-        "modelType": "SpalartAllmaras",
-        "tolerance": 1e-08,
-        "linearIterations": 15,
-        "kappaMUSCL": -1.0
-    },
-    "freestream": {
-        "Reynolds": 14600000.0,
-        "Mach": 0.84,
-        "Temperature": 288.15,
-        "alphaAngle": 3.06,
-        "betaAngle": 0.0,
-        "turbulentViscosityRatio": 0.210438,
-        "turbulentViscosityRatioSA": 2.9999990326054022
-    },
-    "boundaries": {
-        "1": {
-            "type": "NoSlipWall",
-            "name": "wing"
-        },
-        "2": {
-            "type": "SlipWall",
-            "name": "symmetry"
-        },
-        "3": {
-            "type": "Freestream",
-            "name": "freestream"
-        }
+    "surfaceOutput": {
+        "Cf": true,
+        "CfVec": false,
+        "Cp": true,
+        "animationFrequency": -1,
+        "outputFormat": "paraview",
+        "primitiveVars": true,
+        "wallDistance": false,
+        "yPlus": false
     },
     "transitionModelSolver": {
         "Ncrit": 8.15
+    },
+    "turbulenceModelSolver": {
+        "kappaMUSCL": -1.0,
+        "linearIterations": 15,
+        "modelType": "SpalartAllmaras",
+        "tolerance": 1e-08
+    },
+    "volumeOutput": {
+        "Cp": false,
+        "Mach": true,
+        "T": false,
+        "animationFrequency": -1,
+        "mut": false,
+        "mutRatio": false,
+        "outputFormat": "paraview",
+        "primitiveVars": true,
+        "residualNavierStokes": true,
+        "residualTurbulence": true,
+        "s": false,
+        "vorticity": false
     }
 }
