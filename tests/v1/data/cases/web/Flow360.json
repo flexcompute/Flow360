@@ -1,55 +1,69 @@
 {
-    "geometry" : {
-        "refArea" : 1.15315084119231,
-        "momentCenter" : [0.0, 0.0, 0.0],
-        "momentLength" : [1.47602, 0.801672958512342, 1.47602]
-    },
-    "volumeOutput" : {
-        "outputFormat" : "tecplot",
-        "animationFrequency" : -1,
-        "outputFields": ["primitiveVars", "Mach"]
-    },
-    "surfaceOutput" : {
-        "outputFormat" : "tecplot",
-        "animationFrequency" : -1,
-        "outputFields": ["primitiveVars", "Cp", "Cf"]
-    },
-    "navierStokesSolver" : {
-        "absoluteTolerance" : 1e-10,
-        "kappaMUSCL" : -1.0
-    },
-    "turbulenceModelSolver" : {
-        "modelType" : "SpalartAllmaras",
-        "absoluteTolerance" : 1e-8
-    },
-    "freestream" :
-    {
-        "Reynolds" : 14.6e6,
-        "Mach" : 0.84,
-        "Temperature" : 288.15,
-        "alphaAngle" : 3.06,
-        "betaAngle" : 0.0
-    },
-    "boundaries" : {
-        "1" : {
-		    "type" : "NoSlipWall",
-            "name" : "wing"
-		},
-		"2" : {
-			"type" : "SlipWall",
-            "name" : "symmetry"
-		},
-		"3" : {
-			"type" : "Freestream",
-            "name" : "freestream"
-		}
-    },
-    "timeStepping" : {                                                              
-        "maxPseudoSteps" : 500,
-        "CFL" : {                                                                   
-            "initial" : 5,                                                          
-            "final": 200,                                                           
-            "rampSteps" : 40                                                        
+    "boundaries": {
+        "1": {
+            "name": "wing",
+            "type": "NoSlipWall"
+        },
+        "2": {
+            "name": "symmetry",
+            "type": "SlipWall"
+        },
+        "3": {
+            "name": "freestream",
+            "type": "Freestream"
         }
+    },
+    "freestream": {
+        "Mach": 0.84,
+        "Reynolds": 14600000.0,
+        "Temperature": 288.15,
+        "alphaAngle": 3.06,
+        "betaAngle": 0.0
+    },
+    "geometry": {
+        "momentCenter": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "momentLength": [
+            1.47602,
+            0.801672958512342,
+            1.47602
+        ],
+        "refArea": 1.15315084119231
+    },
+    "navierStokesSolver": {
+        "absoluteTolerance": 1e-10,
+        "kappaMUSCL": -1.0
+    },
+    "surfaceOutput": {
+        "animationFrequency": -1,
+        "outputFields": [
+            "primitiveVars",
+            "Cp",
+            "Cf"
+        ],
+        "outputFormat": "tecplot"
+    },
+    "timeStepping": {
+        "CFL": {
+            "final": 200,
+            "initial": 5,
+            "rampSteps": 40
+        },
+        "maxPseudoSteps": 500
+    },
+    "turbulenceModelSolver": {
+        "absoluteTolerance": 1e-08,
+        "modelType": "SpalartAllmaras"
+    },
+    "volumeOutput": {
+        "animationFrequency": -1,
+        "outputFields": [
+            "primitiveVars",
+            "Mach"
+        ],
+        "outputFormat": "tecplot"
     }
 }

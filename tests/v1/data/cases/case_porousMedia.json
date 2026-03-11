@@ -1,208 +1,208 @@
 {
-    "geometry": {
-       "refArea": 1.92,
-       "momentCenter": [
-          1.328,
-          0,
-          -0.1
-       ],
-       "momentLength": [
-          2.45,
-          2.45,
-          2.45
-       ]
-    },
-    "navierStokesSolver": {
-       "relativeTolerance": 0.01,
-       "kappaMUSCL": 0.333,
-       "orderOfAccuracy": 2,
-       "limitVelocity": false,
-       "limitPressureDensity": false,
-       "extraDissipation": 0,
-       "updateJacobianFrequency": 4,
-       "viscousWaveSpeedScale": 0
-    },
-    "turbulenceModelSolver": {
-       "modelType": "SpalartAllmaras",
-       "relativeTolerance": 0.01,
-       "kappaMUSCL": 0.333,
-       "orderOfAccuracy": 2,
-       "rotationCorrection": true,
-       "DDES": true
-    },
-    "freestream": {
-       "Reynolds": 2582260,
-       "Mach": 0.11295,
-       "Temperature": 293,
-       "alphaAngle": 0,
-       "betaAngle": 0
-    },
     "boundaries": {
-       "fluid/ground_underCar": {
-          "type": "NoSlipWall",
-          "Velocity": [
-             0.11295,
-             0,
-             0
-          ],
-          "name": "ground_underCar"
-       },
-       "fluid/outlet": {
-          "type": "Freestream",
-          "name": "outlet"
-       },
-       "fluid/sides": {
-          "type": "SlipWall",
-          "name": "sides"
-       },
-       "fluid/ground": {
-          "type": "NoSlipWall",
-          "Velocity": [
-             0.11295,
-             0,
-             0
-          ],
-          "name": "ground"
-       },
-       "fluid/top": {
-          "type": "SlipWall",
-          "name": "top"
-       },
-       "fluid/inlet": {
-          "type": "Freestream",
-          "name": "inlet"
-       },
-       "fluid/Body": {
-          "type": "NoSlipWall",
-          "name": "Body"
-       },
-       "fluid/Cooling_Air_path": {
-          "type": "NoSlipWall",
-          "name": "Cooling_Air_path"
-       },
-       "fluid/Condenser_Walls": {
-          "type": "NoSlipWall",
-          "name": "Condenser_Walls"
-       },
-       "fluid/Charge_Air_Cooler_Walls": {
-          "type": "NoSlipWall",
-          "name": "Charge_Air_Cooler_Walls"
-       },
-       "fluid/Radiator_Walls": {
-          "type": "NoSlipWall",
-          "name": "Radiator_Walls"
-       },
-       "fluid/Heat_Exchanger_seals": {
-          "type": "NoSlipWall",
-          "name": "Heat_Exchanger_seals"
-       },
-       "fluid/A-Pillar": {
-          "type": "NoSlipWall",
-          "name": "A-Pillar"
-       },
-       "fluid/A-Pillar_slot_outer": {
-          "type": "NoSlipWall",
-          "name": "A-Pillar_slot_outer"
-       },
-       "fluid/Wing_mirror": {
-          "type": "NoSlipWall",
-          "name": "Wing_mirror"
-       }
-    },
-    "timeStepping": {
-       "maxPhysicalSteps": 6300,
-       "timeStepSize": 0.171557133,
-       "maxPseudoSteps": 50,
-       "CFL": {
-          "initial": 100,
-          "final": 1000,
-          "rampSteps": 25
-       }
-    },
-    "porousMedia": [
-       {
-          "DarcyCoefficient": [
-             68900000,
-             666300000,
-             666300000
-          ],
-          "ForchheimerCoefficient": [
-             359.265,
-             0,
-             0
-          ],
-          "volumeZone": {
-             "zoneType": "box",
-             "center": [
-                0.067839,
-                -0.000003,
-                0.215948
-             ],
-             "axes": [
-                [
-                   1,
-                   0,
-                   0
-                ],
-                [
-                   0,
-                   1,
-                   0
-                ]
-             ],
-             "lengths": [
-                0.012,
-                0.665,
-                0.495
-             ],
-             "windowingLengths": [
-                0,
+        "fluid/A-Pillar": {
+            "name": "A-Pillar",
+            "type": "NoSlipWall"
+        },
+        "fluid/A-Pillar_slot_outer": {
+            "name": "A-Pillar_slot_outer",
+            "type": "NoSlipWall"
+        },
+        "fluid/Body": {
+            "name": "Body",
+            "type": "NoSlipWall"
+        },
+        "fluid/Charge_Air_Cooler_Walls": {
+            "name": "Charge_Air_Cooler_Walls",
+            "type": "NoSlipWall"
+        },
+        "fluid/Condenser_Walls": {
+            "name": "Condenser_Walls",
+            "type": "NoSlipWall"
+        },
+        "fluid/Cooling_Air_path": {
+            "name": "Cooling_Air_path",
+            "type": "NoSlipWall"
+        },
+        "fluid/Heat_Exchanger_seals": {
+            "name": "Heat_Exchanger_seals",
+            "type": "NoSlipWall"
+        },
+        "fluid/Radiator_Walls": {
+            "name": "Radiator_Walls",
+            "type": "NoSlipWall"
+        },
+        "fluid/Wing_mirror": {
+            "name": "Wing_mirror",
+            "type": "NoSlipWall"
+        },
+        "fluid/ground": {
+            "Velocity": [
+                0.11295,
                 0,
                 0
-             ]
-          }
-       },
-       {
-          "DarcyCoefficient": [
-             57100000,
-             666300000,
-             666300000
-          ],
-          "ForchheimerCoefficient": [
-             276.865,
-             0,
-             0
-          ],
-          "volumeZone": {
-             "zoneType": "box",
-             "center": [
-                0.144905,
-                -5e-7,
-                0.18994
-             ],
-             "axes": [
-                [
-                   1,
-                   0,
-                   0
+            ],
+            "name": "ground",
+            "type": "NoSlipWall"
+        },
+        "fluid/ground_underCar": {
+            "Velocity": [
+                0.11295,
+                0,
+                0
+            ],
+            "name": "ground_underCar",
+            "type": "NoSlipWall"
+        },
+        "fluid/inlet": {
+            "name": "inlet",
+            "type": "Freestream"
+        },
+        "fluid/outlet": {
+            "name": "outlet",
+            "type": "Freestream"
+        },
+        "fluid/sides": {
+            "name": "sides",
+            "type": "SlipWall"
+        },
+        "fluid/top": {
+            "name": "top",
+            "type": "SlipWall"
+        }
+    },
+    "freestream": {
+        "Mach": 0.11295,
+        "Reynolds": 2582260,
+        "Temperature": 293,
+        "alphaAngle": 0,
+        "betaAngle": 0
+    },
+    "geometry": {
+        "momentCenter": [
+            1.328,
+            0,
+            -0.1
+        ],
+        "momentLength": [
+            2.45,
+            2.45,
+            2.45
+        ],
+        "refArea": 1.92
+    },
+    "navierStokesSolver": {
+        "extraDissipation": 0,
+        "kappaMUSCL": 0.333,
+        "limitPressureDensity": false,
+        "limitVelocity": false,
+        "orderOfAccuracy": 2,
+        "relativeTolerance": 0.01,
+        "updateJacobianFrequency": 4,
+        "viscousWaveSpeedScale": 0
+    },
+    "porousMedia": [
+        {
+            "DarcyCoefficient": [
+                68900000,
+                666300000,
+                666300000
+            ],
+            "ForchheimerCoefficient": [
+                359.265,
+                0,
+                0
+            ],
+            "volumeZone": {
+                "axes": [
+                    [
+                        1,
+                        0,
+                        0
+                    ],
+                    [
+                        0,
+                        1,
+                        0
+                    ]
                 ],
-                [
-                   0,
-                   1,
-                   0
-                ]
-             ],
-             "lengths": [
-                0.021,
-                0.645,
-                0.455
-             ],
-             "windowingLengths": [
-                0.1,
-                0.1,
-                0.1
-             ]
-          }
-       }
-    ]
- }
+                "center": [
+                    0.067839,
+                    -3e-06,
+                    0.215948
+                ],
+                "lengths": [
+                    0.012,
+                    0.665,
+                    0.495
+                ],
+                "windowingLengths": [
+                    0,
+                    0,
+                    0
+                ],
+                "zoneType": "box"
+            }
+        },
+        {
+            "DarcyCoefficient": [
+                57100000,
+                666300000,
+                666300000
+            ],
+            "ForchheimerCoefficient": [
+                276.865,
+                0,
+                0
+            ],
+            "volumeZone": {
+                "axes": [
+                    [
+                        1,
+                        0,
+                        0
+                    ],
+                    [
+                        0,
+                        1,
+                        0
+                    ]
+                ],
+                "center": [
+                    0.144905,
+                    -5e-07,
+                    0.18994
+                ],
+                "lengths": [
+                    0.021,
+                    0.645,
+                    0.455
+                ],
+                "windowingLengths": [
+                    0.1,
+                    0.1,
+                    0.1
+                ],
+                "zoneType": "box"
+            }
+        }
+    ],
+    "timeStepping": {
+        "CFL": {
+            "final": 1000,
+            "initial": 100,
+            "rampSteps": 25
+        },
+        "maxPhysicalSteps": 6300,
+        "maxPseudoSteps": 50,
+        "timeStepSize": 0.171557133
+    },
+    "turbulenceModelSolver": {
+        "DDES": true,
+        "kappaMUSCL": 0.333,
+        "modelType": "SpalartAllmaras",
+        "orderOfAccuracy": 2,
+        "relativeTolerance": 0.01,
+        "rotationCorrection": true
+    }
+}

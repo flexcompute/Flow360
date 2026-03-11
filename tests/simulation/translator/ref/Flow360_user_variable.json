@@ -9,12 +9,34 @@
             "type": "Freestream"
         }
     },
+    "fluidProperties": {
+        "prandtlNumber": 7.0,
+        "turbulentPrandtlNumber": 0.9
+    },
     "freestream": {
         "Mach": 0.05,
         "Temperature": -1,
         "alphaAngle": 5.0,
         "betaAngle": 2.0,
         "muRef": 5.010000000000001e-09
+    },
+    "importedSurfaceIntegralOutput": {
+        "animationFrequency": -1,
+        "animationFrequencyOffset": 0,
+        "surfaces": {
+            "imported1": {
+                "meshFile": "imported1.stl",
+                "outputFields": [
+                    "MassFluxProjected_integral"
+                ]
+            },
+            "imported2": {
+                "meshFile": "imported2.stl",
+                "outputFields": [
+                    "MassFluxProjected_integral"
+                ]
+            }
+        }
     },
     "initialCondition": {
         "p": "p",
@@ -105,6 +127,10 @@
     },
     "outputRescale": {
         "velocityScale": 20.0
+    },
+    "runControl": {
+        "externalProcessMonitorOutput": true,
+        "monitorProcessorHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "surfaceOutput": {
         "animationFrequency": -1,
@@ -351,31 +377,5 @@
         ],
         "outputFormat": "paraview",
         "startAverageIntegrationStep": -1
-    },
-    "importedSurfaceIntegralOutput": {
-        "animationFrequency": -1,
-        "animationFrequencyOffset": 0,
-        "surfaces": {
-            "imported1": {
-                "meshFile": "imported1.stl",
-                "outputFields": [
-                    "MassFluxProjected_integral"
-                ]
-            },
-            "imported2": {
-                "meshFile": "imported2.stl",
-                "outputFields": [
-                    "MassFluxProjected_integral"
-                ]
-            }
-        }
-    },
-    "runControl": {
-        "externalProcessMonitorOutput": true,
-        "monitorProcessorHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-    },
-    "fluidProperties": {
-        "prandtlNumber": 7.0,
-        "turbulentPrandtlNumber": 0.9
     }
 }

@@ -1,21 +1,4 @@
 {
-    "rotationDirectionRule": "leftHand",
-    "centerOfRotation": [
-        0,
-        0,
-        0
-    ],
-    "axisOfRotation": [
-        0,
-        0,
-        1
-    ],
-    "numberOfBlades": 3,
-    "radius": 150,
-    "omega": 0.0046,
-    "chordRef": 14,
-    "thickness": 15,
-    "nLoadingNodes": 20,
     "MachNumbers": [
         0
     ],
@@ -61,64 +44,30 @@
         170,
         180
     ],
-    "sectionalRadiuses": 75.0,
-    "twists": [
-        {
-            "radius": 75.0,
-            "twist": 10.0
-        }
+    "axisOfRotation": [
+        0,
+        0,
+        1
     ],
+    "centerOfRotation": [
+        0,
+        0,
+        0
+    ],
+    "chordRef": 14,
     "chords": [
         {
-            "radius": 75.0,
-            "chord": 14.0
+            "chord": 14.0,
+            "radius": 75.0
         }
     ],
+    "nLoadingNodes": 20,
+    "numberOfBlades": 3,
+    "omega": 0.0046,
+    "radius": 150,
+    "rotationDirectionRule": "leftHand",
     "sectionalPolars": [
         {
-            "liftCoeffs": [
-                [
-                    [
-                        0.0,
-                        0.1,
-                        0.2,
-                        0.3,
-                        0.4,
-                        0.5,
-                        0.6,
-                        0.7,
-                        0.8,
-                        0.9,
-                        1.0,
-                        0.9,
-                        0.8,
-                        0.7,
-                        0.6,
-                        0.5,
-                        0.4,
-                        0.3,
-                        0.2,
-                        0.1,
-                        0.0,
-                        -0.1,
-                        -0.2,
-                        -0.3,
-                        -0.4,
-                        -0.5,
-                        -0.6,
-                        -0.7,
-                        -0.8,
-                        -0.9,
-                        -1.0,
-                        -0.9,
-                        -0.8,
-                        -0.7,
-                        -0.6,
-                        -0.5,
-                        0.0
-                    ]
-                ]
-            ],
             "dragCoeffs": [
                 [
                     [
@@ -161,7 +110,58 @@
                         0.01
                     ]
                 ]
+            ],
+            "liftCoeffs": [
+                [
+                    [
+                        0.0,
+                        0.1,
+                        0.2,
+                        0.3,
+                        0.4,
+                        0.5,
+                        0.6,
+                        0.7,
+                        0.8,
+                        0.9,
+                        1.0,
+                        0.9,
+                        0.8,
+                        0.7,
+                        0.6,
+                        0.5,
+                        0.4,
+                        0.3,
+                        0.2,
+                        0.1,
+                        0.0,
+                        -0.1,
+                        -0.2,
+                        -0.3,
+                        -0.4,
+                        -0.5,
+                        -0.6,
+                        -0.7,
+                        -0.8,
+                        -0.9,
+                        -1.0,
+                        -0.9,
+                        -0.8,
+                        -0.7,
+                        -0.6,
+                        -0.5,
+                        0.0
+                    ]
+                ]
             ]
+        }
+    ],
+    "sectionalRadiuses": 75.0,
+    "thickness": 15,
+    "twists": [
+        {
+            "radius": 75.0,
+            "twist": 10.0
         }
     ]
 }

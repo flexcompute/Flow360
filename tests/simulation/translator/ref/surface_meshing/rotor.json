@@ -1,53 +1,4 @@
 {
-    "curvatureResolutionAngle": 15,
-    "growthRate": 1.2,
-    "edges": {
-        "body01_edge001": {
-            "type": "aniso",
-            "method": "angle",
-            "value": 1
-        },
-        "body01_edge002": {
-            "type": "aniso",
-            "method": "height",
-            "value": 0.05
-        },
-        "body01_edge003": {
-            "type": "aniso",
-            "method": "height",
-            "value": 0.05
-        },
-        "body01_edge004": {
-            "type": "projectAnisoSpacing"
-        },
-        "body01_edge005": {
-            "type": "aniso",
-            "method": "height",
-            "value": 0.01
-        },
-        "body01_edge006": {
-            "type": "projectAnisoSpacing"
-        },
-        "body01_edge007": {
-            "type": "aniso",
-            "method": "height",
-            "value": 0.01
-        }
-    },
-    "faces": {
-        "body01_face001": {
-            "maxEdgeLength": 10,
-            "curvatureResolutionAngle": 15
-        },
-        "body01_face002": {
-            "maxEdgeLength": 10,
-            "curvatureResolutionAngle": 15
-        },
-        "body01_face003": {
-            "maxEdgeLength": 0.1,
-            "curvatureResolutionAngle": 15
-        }
-    },
     "boundaries": {
         "body01_face001": {
             "boundaryName": "rotor"
@@ -58,5 +9,54 @@
         "body01_face003": {
             "boundaryName": "rotor"
         }
-    }
+    },
+    "curvatureResolutionAngle": 15,
+    "edges": {
+        "body01_edge001": {
+            "method": "angle",
+            "type": "aniso",
+            "value": 1
+        },
+        "body01_edge002": {
+            "method": "height",
+            "type": "aniso",
+            "value": 0.05
+        },
+        "body01_edge003": {
+            "method": "height",
+            "type": "aniso",
+            "value": 0.05
+        },
+        "body01_edge004": {
+            "type": "projectAnisoSpacing"
+        },
+        "body01_edge005": {
+            "method": "height",
+            "type": "aniso",
+            "value": 0.01
+        },
+        "body01_edge006": {
+            "type": "projectAnisoSpacing"
+        },
+        "body01_edge007": {
+            "method": "height",
+            "type": "aniso",
+            "value": 0.01
+        }
+    },
+    "faces": {
+        "body01_face001": {
+            "curvatureResolutionAngle": 15,
+            "maxEdgeLength": 10
+        },
+        "body01_face002": {
+            "curvatureResolutionAngle": 15,
+            "maxEdgeLength": 10
+        },
+        "body01_face003": {
+            "curvatureResolutionAngle": 15,
+            "maxEdgeLength": 0.1
+        }
+    },
+    "growthRate": 1.2
 }

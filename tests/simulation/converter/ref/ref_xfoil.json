@@ -1,63 +1,6 @@
 {
-    "name": "BET disk",
-    "type": "BETDisk",
-    "entities": {
-        "selectors": null,
-        "stored_entities": [
-            {
-                "private_attribute_entity_type_name": "Cylinder",
-                "name": "BET_cylinder",
-                "private_attribute_zone_boundary_names": {
-                    "items": []
-                },
-                "private_attribute_full_name": null,
-                "axis": [
-                    0.0,
-                    0.0,
-                    1.0
-                ],
-                "center": [
-                    0.0,
-                    0.0,
-                    0.0
-                ],
-                "height": 4.572,
-                "inner_radius": 0.0,
-                "outer_radius": 45.72
-            }
-        ]
-    },
-    "rotation_direction_rule": "leftHand",
-    "number_of_blades": 3,
-    "omega": {
-        "value": 0.0046,
-        "units": "degree/s"
-    },
-    "chord_ref": {
-        "value": 14.0,
-        "units": "m"
-    },
-    "n_loading_nodes": 20,
-    "blade_line_chord": {
-        "value": 1.0,
-        "units": "m"
-    },
-    "initial_blade_direction": [
-        1.0,
-        0.0,
-        0.0
-    ],
-    "tip_gap": "inf",
-    "mach_numbers": [
-        0.0,
-        0.5773502691896257,
-        0.816496580927726,
-        0.9486832980505138
-    ],
-    "reynolds_numbers": [
-        1.0
-    ],
     "alphas": {
+        "units": "degree",
         "value": [
             -180.0,
             -170.0,
@@ -150,1677 +93,708 @@
             160.0,
             170.0,
             180.0
-        ],
-        "units": "degree"
+        ]
     },
-    "twists": [
-        {
-            "radius": {
-                "value": 0.0,
-                "units": "m"
-            },
-            "twist": {
-                "value": 0.0,
-                "units": "degree"
-            }
-        },
-        {
-            "radius": {
-                "value": 3.4505914499999997,
-                "units": "m"
-            },
-            "twist": {
-                "value": 33.27048712,
-                "units": "degree"
-            }
-        },
-        {
-            "radius": {
-                "value": 5.867434050000001,
-                "units": "m"
-            },
-            "twist": {
-                "value": 32.37853609,
-                "units": "degree"
-            }
-        },
-        {
-            "radius": {
-                "value": 9.05761395,
-                "units": "m"
-            },
-            "twist": {
-                "value": 31.42712165,
-                "units": "degree"
-            }
-        },
-        {
-            "radius": {
-                "value": 12.5377488,
-                "units": "m"
-            },
-            "twist": {
-                "value": 30.65409742,
-                "units": "degree"
-            }
-        },
-        {
-            "radius": {
-                "value": 13.9536156,
-                "units": "m"
-            },
-            "twist": {
-                "value": 30.13214089,
-                "units": "degree"
-            }
-        },
-        {
-            "radius": {
-                "value": 16.238024850000002,
-                "units": "m"
-            },
-            "twist": {
-                "value": 29.41523066,
-                "units": "degree"
-            }
-        },
-        {
-            "radius": {
-                "value": 18.33595185,
-                "units": "m"
-            },
-            "twist": {
-                "value": 28.75567325,
-                "units": "degree"
-            }
-        },
-        {
-            "radius": {
-                "value": 21.086566350000002,
-                "units": "m"
-            },
-            "twist": {
-                "value": 27.89538097,
-                "units": "degree"
-            }
-        },
-        {
-            "radius": {
-                "value": 23.9304951,
-                "units": "m"
-            },
-            "twist": {
-                "value": 26.69097178,
-                "units": "degree"
-            }
-        },
-        {
-            "radius": {
-                "value": 25.8886038,
-                "units": "m"
-            },
-            "twist": {
-                "value": 25.88803232,
-                "units": "degree"
-            }
-        },
-        {
-            "radius": {
-                "value": 27.380500650000002,
-                "units": "m"
-            },
-            "twist": {
-                "value": 25.25715132,
-                "units": "degree"
-            }
-        },
-        {
-            "radius": {
-                "value": 28.87241085,
-                "units": "m"
-            },
-            "twist": {
-                "value": 24.5689175,
-                "units": "degree"
-            }
-        },
-        {
-            "radius": {
-                "value": 30.457542,
-                "units": "m"
-            },
-            "twist": {
-                "value": 23.93803649,
-                "units": "degree"
-            }
-        },
-        {
-            "radius": {
-                "value": 32.2291686,
-                "units": "m"
-            },
-            "twist": {
-                "value": 23.19244985,
-                "units": "degree"
-            }
-        },
-        {
-            "radius": {
-                "value": 34.0940496,
-                "units": "m"
-            },
-            "twist": {
-                "value": 22.36083398,
-                "units": "degree"
-            }
-        },
-        {
-            "radius": {
-                "value": 35.91228015,
-                "units": "m"
-            },
-            "twist": {
-                "value": 21.67260016,
-                "units": "degree"
-            }
-        },
-        {
-            "radius": {
-                "value": 37.730543999999995,
-                "units": "m"
-            },
-            "twist": {
-                "value": 20.84098429,
-                "units": "degree"
-            }
-        },
-        {
-            "radius": {
-                "value": 39.6886794,
-                "units": "m"
-            },
-            "twist": {
-                "value": 19.92333919,
-                "units": "degree"
-            }
-        },
-        {
-            "radius": {
-                "value": 41.413722,
-                "units": "m"
-            },
-            "twist": {
-                "value": 19.03437051,
-                "units": "degree"
-            }
-        },
-        {
-            "radius": {
-                "value": 42.95224935,
-                "units": "m"
-            },
-            "twist": {
-                "value": 18.34613668,
-                "units": "degree"
-            }
-        },
-        {
-            "radius": {
-                "value": 44.6772921,
-                "units": "m"
-            },
-            "twist": {
-                "value": 17.457168,
-                "units": "degree"
-            }
-        },
-        {
-            "radius": {
-                "value": 46.448872050000006,
-                "units": "m"
-            },
-            "twist": {
-                "value": 16.91231622,
-                "units": "degree"
-            }
-        },
-        {
-            "radius": {
-                "value": 48.40696755,
-                "units": "m"
-            },
-            "twist": {
-                "value": 16.16672958,
-                "units": "degree"
-            }
-        },
-        {
-            "radius": {
-                "value": 50.22518475,
-                "units": "m"
-            },
-            "twist": {
-                "value": 15.53584858,
-                "units": "degree"
-            }
-        },
-        {
-            "radius": {
-                "value": 51.763692150000004,
-                "units": "m"
-            },
-            "twist": {
-                "value": 14.93364398,
-                "units": "degree"
-            }
-        },
-        {
-            "radius": {
-                "value": 53.4887016,
-                "units": "m"
-            },
-            "twist": {
-                "value": 14.18805734,
-                "units": "degree"
-            }
-        },
-        {
-            "radius": {
-                "value": 55.07383275,
-                "units": "m"
-            },
-            "twist": {
-                "value": 13.55717634,
-                "units": "degree"
-            }
-        },
-        {
-            "radius": {
-                "value": 56.28603975,
-                "units": "m"
-            },
-            "twist": {
-                "value": 12.86894251,
-                "units": "degree"
-            }
-        },
-        {
-            "radius": {
-                "value": 57.824567099999996,
-                "units": "m"
-            },
-            "twist": {
-                "value": 12.18070869,
-                "units": "degree"
-            }
-        },
-        {
-            "radius": {
-                "value": 59.456328750000004,
-                "units": "m"
-            },
-            "twist": {
-                "value": 11.49247487,
-                "units": "degree"
-            }
-        },
-        {
-            "radius": {
-                "value": 60.994816199999995,
-                "units": "m"
-            },
-            "twist": {
-                "value": 10.9762995,
-                "units": "degree"
-            }
-        },
-        {
-            "radius": {
-                "value": 62.859590700000005,
-                "units": "m"
-            },
-            "twist": {
-                "value": 10.60350618,
-                "units": "degree"
-            }
-        },
-        {
-            "radius": {
-                "value": 65.4703071,
-                "units": "m"
-            },
-            "twist": {
-                "value": 9.94394877,
-                "units": "degree"
-            }
-        },
-        {
-            "radius": {
-                "value": 67.6148514,
-                "units": "m"
-            },
-            "twist": {
-                "value": 9.28439136,
-                "units": "degree"
-            }
-        },
-        {
-            "radius": {
-                "value": 69.80601945,
-                "units": "m"
-            },
-            "twist": {
-                "value": 8.59615753,
-                "units": "degree"
-            }
-        },
-        {
-            "radius": {
-                "value": 71.53100235,
-                "units": "m"
-            },
-            "twist": {
-                "value": 7.96527653,
-                "units": "degree"
-            }
-        },
-        {
-            "radius": {
-                "value": 73.48907115,
-                "units": "m"
-            },
-            "twist": {
-                "value": 7.33439553,
-                "units": "degree"
-            }
-        },
-        {
-            "radius": {
-                "value": 74.56137315,
-                "units": "m"
-            },
-            "twist": {
-                "value": 6.87557298,
-                "units": "degree"
-            }
-        },
-        {
-            "radius": {
-                "value": 76.7524548,
-                "units": "m"
-            },
-            "twist": {
-                "value": 6.56013248,
-                "units": "degree"
-            }
-        },
-        {
-            "radius": {
-                "value": 79.36313129999999,
-                "units": "m"
-            },
-            "twist": {
-                "value": 6.07263352,
-                "units": "degree"
-            }
-        },
-        {
-            "radius": {
-                "value": 81.6941244,
-                "units": "m"
-            },
-            "twist": {
-                "value": 5.49910533,
-                "units": "degree"
-            }
-        },
-        {
-            "radius": {
-                "value": 83.65213994999999,
-                "units": "m"
-            },
-            "twist": {
-                "value": 5.0976356,
-                "units": "degree"
-            }
-        },
-        {
-            "radius": {
-                "value": 85.42368675,
-                "units": "m"
-            },
-            "twist": {
-                "value": 4.69616587,
-                "units": "degree"
-            }
-        },
-        {
-            "radius": {
-                "value": 87.84791430000001,
-                "units": "m"
-            },
-            "twist": {
-                "value": 4.12263769,
-                "units": "degree"
-            }
-        },
-        {
-            "radius": {
-                "value": 89.52621345,
-                "units": "m"
-            },
-            "twist": {
-                "value": 3.77852078,
-                "units": "degree"
-            }
-        },
-        {
-            "radius": {
-                "value": 91.39097475,
-                "units": "m"
-            },
-            "twist": {
-                "value": 3.46308028,
-                "units": "degree"
-            }
-        },
-        {
-            "radius": {
-                "value": 94.32797144999999,
-                "units": "m"
-            },
-            "twist": {
-                "value": 2.97558132,
-                "units": "degree"
-            }
-        },
-        {
-            "radius": {
-                "value": 99.73579305,
-                "units": "m"
-            },
-            "twist": {
-                "value": 2.0005834,
-                "units": "degree"
-            }
-        },
-        {
-            "radius": {
-                "value": 102.95246655,
-                "units": "m"
-            },
-            "twist": {
-                "value": 1.62779008,
-                "units": "degree"
-            }
-        },
-        {
-            "radius": {
-                "value": 104.91047549999999,
-                "units": "m"
-            },
-            "twist": {
-                "value": 1.25499676,
-                "units": "degree"
-            }
-        },
-        {
-            "radius": {
-                "value": 106.68199560000001,
-                "units": "m"
-            },
-            "twist": {
-                "value": 0.96823267,
-                "units": "degree"
-            }
-        },
-        {
-            "radius": {
-                "value": 109.01296215,
-                "units": "m"
-            },
-            "twist": {
-                "value": 0.50941012,
-                "units": "degree"
-            }
-        },
-        {
-            "radius": {
-                "value": 111.81012735,
-                "units": "m"
-            },
-            "twist": {
-                "value": -0.064118065,
-                "units": "degree"
-            }
-        },
-        {
-            "radius": {
-                "value": 114.42079709999999,
-                "units": "m"
-            },
-            "twist": {
-                "value": -0.522940614,
-                "units": "degree"
-            }
-        },
-        {
-            "radius": {
-                "value": 119.5955193,
-                "units": "m"
-            },
-            "twist": {
-                "value": -1.44058571,
-                "units": "degree"
-            }
-        },
-        {
-            "radius": {
-                "value": 126.3086691,
-                "units": "m"
-            },
-            "twist": {
-                "value": -2.61631849,
-                "units": "degree"
-            }
-        },
-        {
-            "radius": {
-                "value": 131.57657925,
-                "units": "m"
-            },
-            "twist": {
-                "value": -3.333228722,
-                "units": "degree"
-            }
-        },
-        {
-            "radius": {
-                "value": 137.077602,
-                "units": "m"
-            },
-            "twist": {
-                "value": -4.164844591,
-                "units": "degree"
-            }
-        },
-        {
-            "radius": {
-                "value": 140.43416025,
-                "units": "m"
-            },
-            "twist": {
-                "value": -4.681019957,
-                "units": "degree"
-            }
-        },
-        {
-            "radius": {
-                "value": 143.60421645,
-                "units": "m"
-            },
-            "twist": {
-                "value": -5.053813278,
-                "units": "degree"
-            }
-        },
-        {
-            "radius": {
-                "value": 146.6810649,
-                "units": "m"
-            },
-            "twist": {
-                "value": -5.541312235,
-                "units": "degree"
-            }
-        },
-        {
-            "radius": {
-                "value": 148.4525784,
-                "units": "m"
-            },
-            "twist": {
-                "value": -5.799399919,
-                "units": "degree"
-            }
-        },
-        {
-            "radius": {
-                "value": 150.0,
-                "units": "m"
-            },
-            "twist": {
-                "value": -6.1,
-                "units": "degree"
-            }
-        }
-    ],
+    "blade_line_chord": {
+        "units": "m",
+        "value": 1.0
+    },
+    "chord_ref": {
+        "units": "m",
+        "value": 14.0
+    },
     "chords": [
         {
-            "radius": {
-                "value": 0.0,
-                "units": "m"
-            },
             "chord": {
-                "value": 0.0,
-                "units": "m"
+                "units": "m",
+                "value": 0.0
+            },
+            "radius": {
+                "units": "m",
+                "value": 0.0
             }
         },
         {
-            "radius": {
-                "value": 3.4505914499999997,
-                "units": "m"
-            },
             "chord": {
-                "value": 17.01426045,
-                "units": "m"
+                "units": "m",
+                "value": 17.01426045
+            },
+            "radius": {
+                "units": "m",
+                "value": 3.4505914499999997
             }
         },
         {
-            "radius": {
-                "value": 5.867434050000001,
-                "units": "m"
-            },
             "chord": {
-                "value": 17.01426045,
-                "units": "m"
+                "units": "m",
+                "value": 17.01426045
+            },
+            "radius": {
+                "units": "m",
+                "value": 5.867434050000001
             }
         },
         {
-            "radius": {
-                "value": 9.05761395,
-                "units": "m"
-            },
             "chord": {
-                "value": 17.01426045,
-                "units": "m"
+                "units": "m",
+                "value": 17.01426045
+            },
+            "radius": {
+                "units": "m",
+                "value": 9.05761395
             }
         },
         {
-            "radius": {
-                "value": 12.5377488,
-                "units": "m"
-            },
             "chord": {
-                "value": 17.01426045,
-                "units": "m"
+                "units": "m",
+                "value": 17.01426045
+            },
+            "radius": {
+                "units": "m",
+                "value": 12.5377488
             }
         },
         {
-            "radius": {
-                "value": 13.9536156,
-                "units": "m"
-            },
             "chord": {
-                "value": 17.01426045,
-                "units": "m"
+                "units": "m",
+                "value": 17.01426045
+            },
+            "radius": {
+                "units": "m",
+                "value": 13.9536156
             }
         },
         {
-            "radius": {
-                "value": 16.238024850000002,
-                "units": "m"
-            },
             "chord": {
-                "value": 17.01426045,
-                "units": "m"
+                "units": "m",
+                "value": 17.01426045
+            },
+            "radius": {
+                "units": "m",
+                "value": 16.238024850000002
             }
         },
         {
-            "radius": {
-                "value": 18.33595185,
-                "units": "m"
-            },
             "chord": {
-                "value": 16.7413494,
-                "units": "m"
+                "units": "m",
+                "value": 16.7413494
+            },
+            "radius": {
+                "units": "m",
+                "value": 18.33595185
             }
         },
         {
-            "radius": {
-                "value": 21.086566350000002,
-                "units": "m"
-            },
             "chord": {
-                "value": 16.4684385,
-                "units": "m"
+                "units": "m",
+                "value": 16.4684385
+            },
+            "radius": {
+                "units": "m",
+                "value": 21.086566350000002
             }
         },
         {
-            "radius": {
-                "value": 23.9304951,
-                "units": "m"
-            },
             "chord": {
-                "value": 16.19552745,
-                "units": "m"
+                "units": "m",
+                "value": 16.19552745
+            },
+            "radius": {
+                "units": "m",
+                "value": 23.9304951
             }
         },
         {
-            "radius": {
-                "value": 25.8886038,
-                "units": "m"
-            },
             "chord": {
-                "value": 15.9226164,
-                "units": "m"
+                "units": "m",
+                "value": 15.9226164
+            },
+            "radius": {
+                "units": "m",
+                "value": 25.8886038
             }
         },
         {
-            "radius": {
-                "value": 27.380500650000002,
-                "units": "m"
-            },
             "chord": {
-                "value": 15.649705500000001,
-                "units": "m"
+                "units": "m",
+                "value": 15.649705500000001
+            },
+            "radius": {
+                "units": "m",
+                "value": 27.380500650000002
             }
         },
         {
-            "radius": {
-                "value": 28.87241085,
-                "units": "m"
-            },
             "chord": {
-                "value": 15.37679445,
-                "units": "m"
+                "units": "m",
+                "value": 15.37679445
+            },
+            "radius": {
+                "units": "m",
+                "value": 28.87241085
             }
         },
         {
-            "radius": {
-                "value": 30.457542,
-                "units": "m"
-            },
             "chord": {
-                "value": 15.1038834,
-                "units": "m"
+                "units": "m",
+                "value": 15.1038834
+            },
+            "radius": {
+                "units": "m",
+                "value": 30.457542
             }
         },
         {
-            "radius": {
-                "value": 32.2291686,
-                "units": "m"
-            },
             "chord": {
-                "value": 14.830972500000001,
-                "units": "m"
+                "units": "m",
+                "value": 14.830972500000001
+            },
+            "radius": {
+                "units": "m",
+                "value": 32.2291686
             }
         },
         {
-            "radius": {
-                "value": 34.0940496,
-                "units": "m"
-            },
             "chord": {
-                "value": 14.55806145,
-                "units": "m"
+                "units": "m",
+                "value": 14.55806145
+            },
+            "radius": {
+                "units": "m",
+                "value": 34.0940496
             }
         },
         {
-            "radius": {
-                "value": 35.91228015,
-                "units": "m"
-            },
             "chord": {
-                "value": 14.285150400000001,
-                "units": "m"
+                "units": "m",
+                "value": 14.285150400000001
+            },
+            "radius": {
+                "units": "m",
+                "value": 35.91228015
             }
         },
         {
-            "radius": {
-                "value": 37.730543999999995,
-                "units": "m"
-            },
             "chord": {
-                "value": 14.012239950000001,
-                "units": "m"
+                "units": "m",
+                "value": 14.012239950000001
+            },
+            "radius": {
+                "units": "m",
+                "value": 37.730543999999995
             }
         },
         {
-            "radius": {
-                "value": 39.6886794,
-                "units": "m"
-            },
             "chord": {
-                "value": 14.012070000000001,
-                "units": "m"
+                "units": "m",
+                "value": 14.012070000000001
+            },
+            "radius": {
+                "units": "m",
+                "value": 39.6886794
             }
         },
         {
-            "radius": {
-                "value": 41.413722,
-                "units": "m"
-            },
             "chord": {
-                "value": 14.011900050000001,
-                "units": "m"
+                "units": "m",
+                "value": 14.011900050000001
+            },
+            "radius": {
+                "units": "m",
+                "value": 41.413722
             }
         },
         {
-            "radius": {
-                "value": 42.95224935,
-                "units": "m"
-            },
             "chord": {
-                "value": 14.011729950000001,
-                "units": "m"
+                "units": "m",
+                "value": 14.011729950000001
+            },
+            "radius": {
+                "units": "m",
+                "value": 42.95224935
             }
         },
         {
-            "radius": {
-                "value": 44.6772921,
-                "units": "m"
-            },
             "chord": {
-                "value": 14.011560000000001,
-                "units": "m"
+                "units": "m",
+                "value": 14.011560000000001
+            },
+            "radius": {
+                "units": "m",
+                "value": 44.6772921
             }
         },
         {
-            "radius": {
-                "value": 46.448872050000006,
-                "units": "m"
-            },
             "chord": {
-                "value": 14.011390050000001,
-                "units": "m"
+                "units": "m",
+                "value": 14.011390050000001
+            },
+            "radius": {
+                "units": "m",
+                "value": 46.448872050000006
             }
         },
         {
-            "radius": {
-                "value": 48.40696755,
-                "units": "m"
-            },
             "chord": {
-                "value": 14.011219950000001,
-                "units": "m"
+                "units": "m",
+                "value": 14.011219950000001
+            },
+            "radius": {
+                "units": "m",
+                "value": 48.40696755
             }
         },
         {
-            "radius": {
-                "value": 50.22518475,
-                "units": "m"
-            },
             "chord": {
-                "value": 14.011050000000001,
-                "units": "m"
+                "units": "m",
+                "value": 14.011050000000001
+            },
+            "radius": {
+                "units": "m",
+                "value": 50.22518475
             }
         },
         {
-            "radius": {
-                "value": 51.763692150000004,
-                "units": "m"
-            },
             "chord": {
-                "value": 14.01088005,
-                "units": "m"
+                "units": "m",
+                "value": 14.01088005
+            },
+            "radius": {
+                "units": "m",
+                "value": 51.763692150000004
             }
         },
         {
-            "radius": {
-                "value": 53.4887016,
-                "units": "m"
-            },
             "chord": {
-                "value": 14.01070995,
-                "units": "m"
+                "units": "m",
+                "value": 14.01070995
+            },
+            "radius": {
+                "units": "m",
+                "value": 53.4887016
             }
         },
         {
-            "radius": {
-                "value": 55.07383275,
-                "units": "m"
-            },
             "chord": {
-                "value": 14.01054,
-                "units": "m"
+                "units": "m",
+                "value": 14.01054
+            },
+            "radius": {
+                "units": "m",
+                "value": 55.07383275
             }
         },
         {
-            "radius": {
-                "value": 56.28603975,
-                "units": "m"
-            },
             "chord": {
-                "value": 14.01037005,
-                "units": "m"
+                "units": "m",
+                "value": 14.01037005
+            },
+            "radius": {
+                "units": "m",
+                "value": 56.28603975
             }
         },
         {
-            "radius": {
-                "value": 57.824567099999996,
-                "units": "m"
-            },
             "chord": {
-                "value": 14.01019995,
-                "units": "m"
+                "units": "m",
+                "value": 14.01019995
+            },
+            "radius": {
+                "units": "m",
+                "value": 57.824567099999996
             }
         },
         {
-            "radius": {
-                "value": 59.456328750000004,
-                "units": "m"
-            },
             "chord": {
-                "value": 14.01003,
-                "units": "m"
+                "units": "m",
+                "value": 14.01003
+            },
+            "radius": {
+                "units": "m",
+                "value": 59.456328750000004
             }
         },
         {
-            "radius": {
-                "value": 60.994816199999995,
-                "units": "m"
-            },
             "chord": {
-                "value": 14.00986005,
-                "units": "m"
+                "units": "m",
+                "value": 14.00986005
+            },
+            "radius": {
+                "units": "m",
+                "value": 60.994816199999995
             }
         },
         {
-            "radius": {
-                "value": 62.859590700000005,
-                "units": "m"
-            },
             "chord": {
-                "value": 14.00968995,
-                "units": "m"
+                "units": "m",
+                "value": 14.00968995
+            },
+            "radius": {
+                "units": "m",
+                "value": 62.859590700000005
             }
         },
         {
-            "radius": {
-                "value": 65.4703071,
-                "units": "m"
-            },
             "chord": {
-                "value": 14.00952,
-                "units": "m"
+                "units": "m",
+                "value": 14.00952
+            },
+            "radius": {
+                "units": "m",
+                "value": 65.4703071
             }
         },
         {
-            "radius": {
-                "value": 67.6148514,
-                "units": "m"
-            },
             "chord": {
-                "value": 14.00935005,
-                "units": "m"
+                "units": "m",
+                "value": 14.00935005
+            },
+            "radius": {
+                "units": "m",
+                "value": 67.6148514
             }
         },
         {
-            "radius": {
-                "value": 69.80601945,
-                "units": "m"
-            },
             "chord": {
-                "value": 14.00917995,
-                "units": "m"
+                "units": "m",
+                "value": 14.00917995
+            },
+            "radius": {
+                "units": "m",
+                "value": 69.80601945
             }
         },
         {
-            "radius": {
-                "value": 71.53100235,
-                "units": "m"
-            },
             "chord": {
-                "value": 14.00901,
-                "units": "m"
+                "units": "m",
+                "value": 14.00901
+            },
+            "radius": {
+                "units": "m",
+                "value": 71.53100235
             }
         },
         {
-            "radius": {
-                "value": 73.48907115,
-                "units": "m"
-            },
             "chord": {
-                "value": 14.00884005,
-                "units": "m"
+                "units": "m",
+                "value": 14.00884005
+            },
+            "radius": {
+                "units": "m",
+                "value": 73.48907115
             }
         },
         {
-            "radius": {
-                "value": 74.56137315,
-                "units": "m"
-            },
             "chord": {
-                "value": 14.00866995,
-                "units": "m"
+                "units": "m",
+                "value": 14.00866995
+            },
+            "radius": {
+                "units": "m",
+                "value": 74.56137315
             }
         },
         {
-            "radius": {
-                "value": 76.7524548,
-                "units": "m"
-            },
             "chord": {
-                "value": 14.0085,
-                "units": "m"
+                "units": "m",
+                "value": 14.0085
+            },
+            "radius": {
+                "units": "m",
+                "value": 76.7524548
             }
         },
         {
-            "radius": {
-                "value": 79.36313129999999,
-                "units": "m"
-            },
             "chord": {
-                "value": 14.00833005,
-                "units": "m"
+                "units": "m",
+                "value": 14.00833005
+            },
+            "radius": {
+                "units": "m",
+                "value": 79.36313129999999
             }
         },
         {
-            "radius": {
-                "value": 81.6941244,
-                "units": "m"
-            },
             "chord": {
-                "value": 14.00815995,
-                "units": "m"
+                "units": "m",
+                "value": 14.00815995
+            },
+            "radius": {
+                "units": "m",
+                "value": 81.6941244
             }
         },
         {
-            "radius": {
-                "value": 83.65213994999999,
-                "units": "m"
-            },
             "chord": {
-                "value": 14.00799,
-                "units": "m"
+                "units": "m",
+                "value": 14.00799
+            },
+            "radius": {
+                "units": "m",
+                "value": 83.65213994999999
             }
         },
         {
-            "radius": {
-                "value": 85.42368675,
-                "units": "m"
-            },
             "chord": {
-                "value": 14.00782005,
-                "units": "m"
+                "units": "m",
+                "value": 14.00782005
+            },
+            "radius": {
+                "units": "m",
+                "value": 85.42368675
             }
         },
         {
-            "radius": {
-                "value": 87.84791430000001,
-                "units": "m"
-            },
             "chord": {
-                "value": 14.00764995,
-                "units": "m"
+                "units": "m",
+                "value": 14.00764995
+            },
+            "radius": {
+                "units": "m",
+                "value": 87.84791430000001
             }
         },
         {
-            "radius": {
-                "value": 89.52621345,
-                "units": "m"
-            },
             "chord": {
-                "value": 14.00748,
-                "units": "m"
+                "units": "m",
+                "value": 14.00748
+            },
+            "radius": {
+                "units": "m",
+                "value": 89.52621345
             }
         },
         {
-            "radius": {
-                "value": 91.39097475,
-                "units": "m"
-            },
             "chord": {
-                "value": 14.00731005,
-                "units": "m"
+                "units": "m",
+                "value": 14.00731005
+            },
+            "radius": {
+                "units": "m",
+                "value": 91.39097475
             }
         },
         {
-            "radius": {
-                "value": 94.32797144999999,
-                "units": "m"
-            },
             "chord": {
-                "value": 14.00713995,
-                "units": "m"
+                "units": "m",
+                "value": 14.00713995
+            },
+            "radius": {
+                "units": "m",
+                "value": 94.32797144999999
             }
         },
         {
-            "radius": {
-                "value": 99.73579305,
-                "units": "m"
-            },
             "chord": {
-                "value": 14.006969999999999,
-                "units": "m"
+                "units": "m",
+                "value": 14.006969999999999
+            },
+            "radius": {
+                "units": "m",
+                "value": 99.73579305
             }
         },
         {
-            "radius": {
-                "value": 102.95246655,
-                "units": "m"
-            },
             "chord": {
-                "value": 14.006800049999999,
-                "units": "m"
+                "units": "m",
+                "value": 14.006800049999999
+            },
+            "radius": {
+                "units": "m",
+                "value": 102.95246655
             }
         },
         {
-            "radius": {
-                "value": 104.91047549999999,
-                "units": "m"
-            },
             "chord": {
-                "value": 14.00662995,
-                "units": "m"
+                "units": "m",
+                "value": 14.00662995
+            },
+            "radius": {
+                "units": "m",
+                "value": 104.91047549999999
             }
         },
         {
-            "radius": {
-                "value": 106.68199560000001,
-                "units": "m"
-            },
             "chord": {
-                "value": 14.00646,
-                "units": "m"
+                "units": "m",
+                "value": 14.00646
+            },
+            "radius": {
+                "units": "m",
+                "value": 106.68199560000001
             }
         },
         {
-            "radius": {
-                "value": 109.01296215,
-                "units": "m"
-            },
             "chord": {
-                "value": 14.00629005,
-                "units": "m"
+                "units": "m",
+                "value": 14.00629005
+            },
+            "radius": {
+                "units": "m",
+                "value": 109.01296215
             }
         },
         {
-            "radius": {
-                "value": 111.81012735,
-                "units": "m"
-            },
             "chord": {
-                "value": 14.00611995,
-                "units": "m"
+                "units": "m",
+                "value": 14.00611995
+            },
+            "radius": {
+                "units": "m",
+                "value": 111.81012735
             }
         },
         {
-            "radius": {
-                "value": 114.42079709999999,
-                "units": "m"
-            },
             "chord": {
-                "value": 14.00595,
-                "units": "m"
+                "units": "m",
+                "value": 14.00595
+            },
+            "radius": {
+                "units": "m",
+                "value": 114.42079709999999
             }
         },
         {
-            "radius": {
-                "value": 119.5955193,
-                "units": "m"
-            },
             "chord": {
-                "value": 14.00578005,
-                "units": "m"
+                "units": "m",
+                "value": 14.00578005
+            },
+            "radius": {
+                "units": "m",
+                "value": 119.5955193
             }
         },
         {
-            "radius": {
-                "value": 126.3086691,
-                "units": "m"
-            },
             "chord": {
-                "value": 14.00560995,
-                "units": "m"
+                "units": "m",
+                "value": 14.00560995
+            },
+            "radius": {
+                "units": "m",
+                "value": 126.3086691
             }
         },
         {
-            "radius": {
-                "value": 131.57657925,
-                "units": "m"
-            },
             "chord": {
-                "value": 14.00544,
-                "units": "m"
+                "units": "m",
+                "value": 14.00544
+            },
+            "radius": {
+                "units": "m",
+                "value": 131.57657925
             }
         },
         {
-            "radius": {
-                "value": 137.077602,
-                "units": "m"
-            },
             "chord": {
-                "value": 14.00527005,
-                "units": "m"
+                "units": "m",
+                "value": 14.00527005
+            },
+            "radius": {
+                "units": "m",
+                "value": 137.077602
             }
         },
         {
-            "radius": {
-                "value": 140.43416025,
-                "units": "m"
-            },
             "chord": {
-                "value": 14.00509995,
-                "units": "m"
+                "units": "m",
+                "value": 14.00509995
+            },
+            "radius": {
+                "units": "m",
+                "value": 140.43416025
             }
         },
         {
-            "radius": {
-                "value": 143.60421645,
-                "units": "m"
-            },
             "chord": {
-                "value": 14.00493,
-                "units": "m"
+                "units": "m",
+                "value": 14.00493
+            },
+            "radius": {
+                "units": "m",
+                "value": 143.60421645
             }
         },
         {
-            "radius": {
-                "value": 146.6810649,
-                "units": "m"
-            },
             "chord": {
-                "value": 14.00476005,
-                "units": "m"
+                "units": "m",
+                "value": 14.00476005
+            },
+            "radius": {
+                "units": "m",
+                "value": 146.6810649
             }
         },
         {
-            "radius": {
-                "value": 148.4525784,
-                "units": "m"
-            },
             "chord": {
-                "value": 14.00458995,
-                "units": "m"
+                "units": "m",
+                "value": 14.00458995
+            },
+            "radius": {
+                "units": "m",
+                "value": 148.4525784
             }
         },
         {
-            "radius": {
-                "value": 150.0,
-                "units": "m"
-            },
             "chord": {
-                "value": 14.00451,
-                "units": "m"
+                "units": "m",
+                "value": 14.00451
+            },
+            "radius": {
+                "units": "m",
+                "value": 150.0
             }
         }
     ],
+    "entities": {
+        "selectors": null,
+        "stored_entities": [
+            {
+                "axis": [
+                    0.0,
+                    0.0,
+                    1.0
+                ],
+                "center": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "height": 4.572,
+                "inner_radius": 0.0,
+                "name": "BET_cylinder",
+                "outer_radius": 45.72,
+                "private_attribute_entity_type_name": "Cylinder",
+                "private_attribute_full_name": null,
+                "private_attribute_zone_boundary_names": {
+                    "items": []
+                }
+            }
+        ]
+    },
+    "initial_blade_direction": [
+        1.0,
+        0.0,
+        0.0
+    ],
+    "mach_numbers": [
+        0.0,
+        0.5773502691896257,
+        0.816496580927726,
+        0.9486832980505138
+    ],
+    "n_loading_nodes": 20,
+    "name": "BET disk",
+    "number_of_blades": 3,
+    "omega": {
+        "units": "degree/s",
+        "value": 0.0046
+    },
+    "reynolds_numbers": [
+        1.0
+    ],
+    "rotation_direction_rule": "leftHand",
     "sectional_polars": [
         {
-            "lift_coeffs": [
-                [
-                    [
-                        0.0,
-                        0.7260020786182674,
-                        0.8519669154604093,
-                        0.8252273921394143,
-                        0.7435900857357557,
-                        0.6293481805726722,
-                        0.4917645958492829,
-                        0.33721764336183657,
-                        0.17142399410016385,
-                        -6.047125210727891e-17,
-                        -0.17142399410016396,
-                        -0.39032216020707894,
-                        -0.5919318640510814,
-                        -0.6293,
-                        -0.7427,
-                        -0.5869,
-                        -0.5496,
-                        -0.5098,
-                        -0.4681,
-                        -0.425,
-                        -0.3812,
-                        -0.3373,
-                        -0.2938,
-                        -0.2516,
-                        -0.2111,
-                        -0.173,
-                        -0.1379,
-                        -0.1062,
-                        -0.0785,
-                        -0.0551,
-                        -0.0363,
-                        -0.0221,
-                        -0.0127,
-                        -0.0075,
-                        -0.0037,
-                        0.002,
-                        0.0113,
-                        0.0267,
-                        0.0512,
-                        0.0869,
-                        0.134,
-                        0.1902,
-                        0.2525,
-                        0.3183,
-                        0.386,
-                        0.4548,
-                        0.524,
-                        0.5935,
-                        0.6631,
-                        0.7325,
-                        0.8018,
-                        0.8705,
-                        0.9381,
-                        1.0036,
-                        1.0654,
-                        1.1209,
-                        1.167,
-                        1.2016,
-                        1.2251,
-                        1.2398,
-                        1.2487,
-                        1.2542,
-                        1.2578,
-                        1.2593,
-                        1.2578,
-                        1.2537,
-                        1.2471,
-                        1.238,
-                        1.2266,
-                        1.2129,
-                        1.197,
-                        1.1788,
-                        1.1587,
-                        1.1365,
-                        1.1125,
-                        1.0869,
-                        0.7953,
-                        0.6293,
-                        0.5919318640510814,
-                        0.39032216020707894,
-                        0.17142399410016396,
-                        6.047125210727891e-17,
-                        -0.17142399410016385,
-                        -0.33721764336183657,
-                        -0.4917645958492829,
-                        -0.6293481805726722,
-                        -0.7435900857357557,
-                        -0.8252273921394143,
-                        -0.8519669154604093,
-                        -0.7260020786182674,
-                        0.0
-                    ]
-                ],
-                [
-                    [
-                        0.0,
-                        0.7260020786182674,
-                        0.8519669154604093,
-                        0.8252273921394143,
-                        0.7435900857357557,
-                        0.6293481805726722,
-                        0.4917645958492829,
-                        0.33721764336183657,
-                        0.17142399410016385,
-                        -6.047125210727891e-17,
-                        -0.17142399410016396,
-                        -0.39032216020707894,
-                        -0.5919318640510814,
-                        -0.6293,
-                        -0.7436,
-                        -0.6278,
-                        -0.5931,
-                        -0.5554,
-                        -0.5152,
-                        -0.473,
-                        -0.4295,
-                        -0.3852,
-                        -0.3409,
-                        -0.297,
-                        -0.2544,
-                        -0.2136,
-                        -0.1751,
-                        -0.1397,
-                        -0.1078,
-                        -0.0798,
-                        -0.0562,
-                        -0.0372,
-                        -0.0229,
-                        -0.0132,
-                        -0.0076,
-                        -0.0027,
-                        0.0055,
-                        0.0207,
-                        0.0479,
-                        0.0917,
-                        0.1521,
-                        0.2246,
-                        0.304,
-                        0.3868,
-                        0.4711,
-                        0.5561,
-                        0.6412,
-                        0.7263,
-                        0.8111,
-                        0.895,
-                        0.9767,
-                        1.054,
-                        1.1226,
-                        1.1771,
-                        1.2143,
-                        1.2362,
-                        1.2482,
-                        1.2548,
-                        1.2589,
-                        1.2606,
-                        1.2591,
-                        1.2551,
-                        1.2486,
-                        1.2399,
-                        1.229,
-                        1.216,
-                        1.201,
-                        1.184,
-                        1.1652,
-                        1.1446,
-                        1.1223,
-                        1.0986,
-                        1.0736,
-                        1.0475,
-                        1.0204,
-                        0.9928,
-                        0.7483,
-                        0.6293,
-                        0.5919318640510814,
-                        0.39032216020707894,
-                        0.17142399410016396,
-                        6.047125210727891e-17,
-                        -0.17142399410016385,
-                        -0.33721764336183657,
-                        -0.4917645958492829,
-                        -0.6293481805726722,
-                        -0.7435900857357557,
-                        -0.8252273921394143,
-                        -0.8519669154604093,
-                        -0.7260020786182674,
-                        0.0
-                    ]
-                ],
-                [
-                    [
-                        0.0,
-                        0.7260020786182674,
-                        0.8519669154604093,
-                        0.8252273921394143,
-                        0.7435900857357557,
-                        0.6293481805726722,
-                        0.4917645958492829,
-                        0.33721764336183657,
-                        0.17142399410016385,
-                        -6.047125210727891e-17,
-                        -0.17142399410016396,
-                        -0.39032216020707894,
-                        -0.5919318640510814,
-                        -0.6293,
-                        -0.7436,
-                        -0.668,
-                        -0.6367,
-                        -0.6019,
-                        -0.5641,
-                        -0.5237,
-                        -0.4814,
-                        -0.4377,
-                        -0.3931,
-                        -0.3484,
-                        -0.3043,
-                        -0.2612,
-                        -0.2199,
-                        -0.181,
-                        -0.1451,
-                        -0.1126,
-                        -0.0841,
-                        -0.06,
-                        -0.0404,
-                        -0.0256,
-                        -0.0154,
-                        -0.0092,
-                        -0.0029,
-                        0.0102,
-                        0.0408,
-                        0.1025,
-                        0.1946,
-                        0.3019,
-                        0.4086,
-                        0.4989,
-                        0.5581,
-                        0.587,
-                        0.5993,
-                        0.6053,
-                        0.6083,
-                        0.61,
-                        0.6119,
-                        0.6152,
-                        0.6204,
-                        0.6276,
-                        0.6368,
-                        0.648,
-                        0.6607,
-                        0.6748,
-                        0.6899,
-                        0.7056,
-                        0.7215,
-                        0.7374,
-                        0.7529,
-                        0.7676,
-                        0.7814,
-                        0.7939,
-                        0.805,
-                        0.8145,
-                        0.8223,
-                        0.8282,
-                        0.8322,
-                        0.8343,
-                        0.8346,
-                        0.833,
-                        0.8298,
-                        0.8251,
-                        0.7436,
-                        0.6293,
-                        0.5919318640510814,
-                        0.39032216020707894,
-                        0.17142399410016396,
-                        6.047125210727891e-17,
-                        -0.17142399410016385,
-                        -0.33721764336183657,
-                        -0.4917645958492829,
-                        -0.6293481805726722,
-                        -0.7435900857357557,
-                        -0.8252273921394143,
-                        -0.8519669154604093,
-                        -0.7260020786182674,
-                        0.0
-                    ]
-                ],
-                [
-                    [
-                        0.0,
-                        0.7260020786182674,
-                        0.8519669154604093,
-                        0.8252273921394143,
-                        0.7435900857357557,
-                        0.6293481805726722,
-                        0.4917645958492829,
-                        0.33721764336183657,
-                        0.17142399410016385,
-                        -6.047125210727891e-17,
-                        -0.17142399410016396,
-                        -0.39032216020707894,
-                        -0.5919318640510814,
-                        -0.6293,
-                        -0.7436,
-                        -0.7099,
-                        -0.6836,
-                        -0.6534,
-                        -0.6197,
-                        -0.5829,
-                        -0.5433,
-                        -0.5016,
-                        -0.4583,
-                        -0.4139,
-                        -0.3692,
-                        -0.3247,
-                        -0.281,
-                        -0.2389,
-                        -0.199,
-                        -0.1618,
-                        -0.1279,
-                        -0.0978,
-                        -0.0718,
-                        -0.0504,
-                        -0.0336,
-                        -0.0214,
-                        -0.0136,
-                        -0.0066,
-                        0.0099,
-                        0.0473,
-                        0.0704,
-                        0.0788,
-                        0.0834,
-                        0.0866,
-                        0.0902,
-                        0.0964,
-                        0.1069,
-                        0.1229,
-                        0.145,
-                        0.1733,
-                        0.2073,
-                        0.2462,
-                        0.289,
-                        0.3348,
-                        0.3825,
-                        0.4311,
-                        0.4798,
-                        0.5278,
-                        0.5742,
-                        0.6185,
-                        0.6601,
-                        0.6984,
-                        0.733,
-                        0.7635,
-                        0.7897,
-                        0.8113,
-                        0.8281,
-                        0.8402,
-                        0.8474,
-                        0.85,
-                        0.8482,
-                        0.8448,
-                        0.8408,
-                        0.8362,
-                        0.831,
-                        0.8252,
-                        0.7436,
-                        0.6293,
-                        0.5919318640510814,
-                        0.39032216020707894,
-                        0.17142399410016396,
-                        6.047125210727891e-17,
-                        -0.17142399410016385,
-                        -0.33721764336183657,
-                        -0.4917645958492829,
-                        -0.6293481805726722,
-                        -0.7435900857357557,
-                        -0.8252273921394143,
-                        -0.8519669154604093,
-                        -0.7260020786182674,
-                        0.0
-                    ]
-                ]
-            ],
             "drag_coeffs": [
                 [
                     [
@@ -2202,9 +1176,7 @@
                         0.05
                     ]
                 ]
-            ]
-        },
-        {
+            ],
             "lift_coeffs": [
                 [
                     [
@@ -2222,69 +1194,69 @@
                         -0.39032216020707894,
                         -0.5919318640510814,
                         -0.6293,
-                        -0.7345,
-                        -0.6997,
-                        -0.6879,
-                        -0.6753,
-                        -0.6622,
-                        -0.6489,
-                        -0.6355,
-                        -0.6225,
-                        -0.61,
-                        -0.5985,
-                        -0.588,
-                        -0.5788,
-                        -0.5712,
-                        -0.5651,
-                        -0.5606,
-                        -0.5576,
-                        -0.5546,
-                        -0.5494,
-                        -0.5384,
-                        -0.5143,
-                        -0.4676,
-                        -0.3954,
-                        -0.3053,
-                        -0.2062,
-                        -0.1036,
-                        0.0004,
-                        0.1049,
-                        0.2095,
-                        0.3142,
-                        0.4189,
-                        0.5236,
-                        0.6282,
-                        0.7327,
-                        0.8368,
-                        0.9398,
-                        1.0396,
-                        1.1318,
-                        1.2075,
-                        1.2585,
-                        1.2857,
-                        1.2982,
-                        1.304,
-                        1.3072,
-                        1.3079,
-                        1.3052,
-                        1.2997,
-                        1.2917,
-                        1.2812,
-                        1.2685,
+                        -0.7427,
+                        -0.5869,
+                        -0.5496,
+                        -0.5098,
+                        -0.4681,
+                        -0.425,
+                        -0.3812,
+                        -0.3373,
+                        -0.2938,
+                        -0.2516,
+                        -0.2111,
+                        -0.173,
+                        -0.1379,
+                        -0.1062,
+                        -0.0785,
+                        -0.0551,
+                        -0.0363,
+                        -0.0221,
+                        -0.0127,
+                        -0.0075,
+                        -0.0037,
+                        0.002,
+                        0.0113,
+                        0.0267,
+                        0.0512,
+                        0.0869,
+                        0.134,
+                        0.1902,
+                        0.2525,
+                        0.3183,
+                        0.386,
+                        0.4548,
+                        0.524,
+                        0.5935,
+                        0.6631,
+                        0.7325,
+                        0.8018,
+                        0.8705,
+                        0.9381,
+                        1.0036,
+                        1.0654,
+                        1.1209,
+                        1.167,
+                        1.2016,
+                        1.2251,
+                        1.2398,
+                        1.2487,
+                        1.2542,
+                        1.2578,
+                        1.2593,
+                        1.2578,
                         1.2537,
-                        1.2367,
-                        1.2179,
-                        1.1972,
-                        1.1747,
-                        1.1508,
-                        1.1254,
-                        1.0989,
-                        1.0714,
-                        1.0431,
-                        1.0144,
-                        0.9855,
-                        0.9566,
-                        0.7436,
+                        1.2471,
+                        1.238,
+                        1.2266,
+                        1.2129,
+                        1.197,
+                        1.1788,
+                        1.1587,
+                        1.1365,
+                        1.1125,
+                        1.0869,
+                        0.7953,
                         0.6293,
                         0.5919318640510814,
                         0.39032216020707894,
@@ -2317,69 +1289,69 @@
                         -0.39032216020707894,
                         -0.5919318640510814,
                         -0.6293,
-                        -0.7409,
-                        -0.73,
-                        -0.7194,
-                        -0.7076,
-                        -0.6948,
-                        -0.6813,
-                        -0.6673,
-                        -0.6531,
-                        -0.639,
-                        -0.6252,
-                        -0.6122,
-                        -0.6001,
-                        -0.5892,
-                        -0.5797,
-                        -0.5717,
-                        -0.5654,
-                        -0.5606,
-                        -0.5571,
-                        -0.5528,
-                        -0.5433,
-                        -0.5183,
-                        -0.4614,
-                        -0.3675,
-                        -0.2514,
-                        -0.1268,
-                        0.0004,
-                        0.1284,
-                        0.2565,
-                        0.3848,
-                        0.513,
-                        0.6411,
-                        0.769,
-                        0.896,
-                        1.0199,
-                        1.1337,
-                        1.2226,
-                        1.2738,
-                        1.2954,
-                        1.3037,
-                        1.3076,
-                        1.3083,
-                        1.3055,
-                        1.2996,
-                        1.2912,
-                        1.2806,
-                        1.2678,
-                        1.2531,
-                        1.2364,
-                        1.2181,
-                        1.1981,
-                        1.1766,
-                        1.1537,
-                        1.1296,
-                        1.1044,
-                        1.0783,
-                        1.0517,
-                        1.0246,
-                        0.9973,
-                        0.9702,
-                        0.9435,
-                        0.9176,
-                        0.8926,
-                        0.7436,
+                        -0.7436,
+                        -0.6278,
+                        -0.5931,
+                        -0.5554,
+                        -0.5152,
+                        -0.473,
+                        -0.4295,
+                        -0.3852,
+                        -0.3409,
+                        -0.297,
+                        -0.2544,
+                        -0.2136,
+                        -0.1751,
+                        -0.1397,
+                        -0.1078,
+                        -0.0798,
+                        -0.0562,
+                        -0.0372,
+                        -0.0229,
+                        -0.0132,
+                        -0.0076,
+                        -0.0027,
+                        0.0055,
+                        0.0207,
+                        0.0479,
+                        0.0917,
+                        0.1521,
+                        0.2246,
+                        0.304,
+                        0.3868,
+                        0.4711,
+                        0.5561,
+                        0.6412,
+                        0.7263,
+                        0.8111,
+                        0.895,
+                        0.9767,
+                        1.054,
+                        1.1226,
+                        1.1771,
+                        1.2143,
+                        1.2362,
+                        1.2482,
+                        1.2548,
+                        1.2589,
+                        1.2606,
+                        1.2591,
+                        1.2551,
+                        1.2486,
+                        1.2399,
+                        1.229,
+                        1.216,
+                        1.201,
+                        1.184,
+                        1.1652,
+                        1.1446,
+                        1.1223,
+                        1.0986,
+                        1.0736,
+                        1.0475,
+                        1.0204,
+                        0.9928,
+                        0.7483,
                         0.6293,
                         0.5919318640510814,
                         0.39032216020707894,
@@ -2412,68 +1384,68 @@
                         -0.39032216020707894,
                         -0.5919318640510814,
                         -0.6293,
-                        -0.7434,
-                        -0.7447,
-                        -0.7336,
-                        -0.7209,
-                        -0.7067,
-                        -0.6911,
-                        -0.6746,
-                        -0.6574,
-                        -0.6398,
-                        -0.6221,
-                        -0.6048,
-                        -0.588,
-                        -0.5721,
-                        -0.5574,
-                        -0.5442,
-                        -0.5327,
-                        -0.523,
-                        -0.5153,
-                        -0.5095,
-                        -0.5054,
-                        -0.501,
-                        -0.4902,
-                        -0.4494,
-                        -0.3397,
-                        -0.1772,
-                        0.0006,
-                        0.1809,
-                        0.3593,
-                        0.5246,
-                        0.6417,
-                        0.6881,
-                        0.7004,
-                        0.705,
-                        0.7068,
-                        0.7066,
-                        0.706,
-                        0.7061,
-                        0.7077,
-                        0.711,
-                        0.716,
-                        0.7228,
-                        0.7311,
-                        0.7405,
-                        0.7509,
-                        0.7617,
-                        0.7729,
-                        0.7839,
-                        0.7946,
-                        0.8047,
-                        0.814,
-                        0.8222,
-                        0.8293,
-                        0.835,
-                        0.8393,
-                        0.8422,
-                        0.8437,
-                        0.8437,
-                        0.8423,
-                        0.8396,
-                        0.8358,
-                        0.8309,
-                        0.8252,
+                        -0.7436,
+                        -0.668,
+                        -0.6367,
+                        -0.6019,
+                        -0.5641,
+                        -0.5237,
+                        -0.4814,
+                        -0.4377,
+                        -0.3931,
+                        -0.3484,
+                        -0.3043,
+                        -0.2612,
+                        -0.2199,
+                        -0.181,
+                        -0.1451,
+                        -0.1126,
+                        -0.0841,
+                        -0.06,
+                        -0.0404,
+                        -0.0256,
+                        -0.0154,
+                        -0.0092,
+                        -0.0029,
+                        0.0102,
+                        0.0408,
+                        0.1025,
+                        0.1946,
+                        0.3019,
+                        0.4086,
+                        0.4989,
+                        0.5581,
+                        0.587,
+                        0.5993,
+                        0.6053,
+                        0.6083,
+                        0.61,
+                        0.6119,
+                        0.6152,
+                        0.6204,
+                        0.6276,
+                        0.6368,
+                        0.648,
+                        0.6607,
+                        0.6748,
+                        0.6899,
+                        0.7056,
+                        0.7215,
+                        0.7374,
+                        0.7529,
+                        0.7676,
+                        0.7814,
+                        0.7939,
+                        0.805,
+                        0.8145,
+                        0.8223,
+                        0.8282,
+                        0.8322,
+                        0.8343,
+                        0.8346,
+                        0.833,
+                        0.8298,
+                        0.8251,
                         0.7436,
                         0.6293,
                         0.5919318640510814,
@@ -2508,62 +1480,62 @@
                         -0.5919318640510814,
                         -0.6293,
                         -0.7436,
-                        -0.7331,
-                        -0.7089,
-                        -0.6804,
-                        -0.6479,
-                        -0.6118,
-                        -0.5725,
-                        -0.5305,
-                        -0.4863,
-                        -0.4405,
-                        -0.3937,
-                        -0.3467,
-                        -0.3,
-                        -0.2544,
-                        -0.2104,
-                        -0.1688,
-                        -0.1302,
-                        -0.0951,
-                        -0.0641,
-                        -0.0374,
-                        -0.0155,
-                        0.0015,
-                        0.0137,
-                        0.0214,
-                        0.0288,
-                        0.0687,
-                        0.1572,
-                        0.1748,
-                        0.1808,
-                        0.1851,
-                        0.1882,
-                        0.1921,
-                        0.1984,
-                        0.2088,
-                        0.2242,
-                        0.2448,
-                        0.2707,
-                        0.3013,
-                        0.3358,
-                        0.3736,
-                        0.4136,
-                        0.455,
-                        0.4971,
-                        0.5392,
-                        0.5804,
-                        0.6201,
-                        0.6579,
-                        0.6932,
-                        0.7255,
-                        0.7545,
-                        0.7799,
-                        0.8014,
-                        0.8189,
-                        0.8323,
-                        0.8414,
-                        0.8465,
-                        0.8475,
+                        -0.7099,
+                        -0.6836,
+                        -0.6534,
+                        -0.6197,
+                        -0.5829,
+                        -0.5433,
+                        -0.5016,
+                        -0.4583,
+                        -0.4139,
+                        -0.3692,
+                        -0.3247,
+                        -0.281,
+                        -0.2389,
+                        -0.199,
+                        -0.1618,
+                        -0.1279,
+                        -0.0978,
+                        -0.0718,
+                        -0.0504,
+                        -0.0336,
+                        -0.0214,
+                        -0.0136,
+                        -0.0066,
+                        0.0099,
+                        0.0473,
+                        0.0704,
+                        0.0788,
+                        0.0834,
+                        0.0866,
+                        0.0902,
+                        0.0964,
+                        0.1069,
+                        0.1229,
+                        0.145,
+                        0.1733,
+                        0.2073,
+                        0.2462,
+                        0.289,
+                        0.3348,
+                        0.3825,
+                        0.4311,
+                        0.4798,
+                        0.5278,
+                        0.5742,
+                        0.6185,
+                        0.6601,
+                        0.6984,
+                        0.733,
+                        0.7635,
+                        0.7897,
+                        0.8113,
+                        0.8281,
+                        0.8402,
+                        0.8474,
+                        0.85,
+                        0.8482,
                         0.8448,
                         0.8408,
                         0.8362,
@@ -2586,7 +1558,9 @@
                         0.0
                     ]
                 ]
-            ],
+            ]
+        },
+        {
             "drag_coeffs": [
                 [
                     [
@@ -2968,9 +1942,7 @@
                         0.05
                     ]
                 ]
-            ]
-        },
-        {
+            ],
             "lift_coeffs": [
                 [
                     [
@@ -2988,69 +1960,69 @@
                         -0.39032216020707894,
                         -0.5919318640510814,
                         -0.6293,
-                        -0.8598,
-                        -1.2336,
-                        -1.264,
-                        -1.2919,
-                        -1.3172,
-                        -1.3396,
-                        -1.359,
-                        -1.3753,
-                        -1.3884,
-                        -1.3983,
-                        -1.4048,
-                        -1.4079,
-                        -1.4073,
-                        -1.4042,
-                        -1.3985,
-                        -1.3865,
-                        -1.3602,
-                        -1.3104,
-                        -1.2356,
-                        -1.144,
-                        -1.0444,
-                        -0.9415,
-                        -0.8374,
-                        -0.7329,
-                        -0.6283,
-                        -0.5236,
-                        -0.4189,
-                        -0.3142,
-                        -0.2094,
-                        -0.1047,
-                        0.0,
-                        0.1047,
-                        0.2094,
+                        -0.7345,
+                        -0.6997,
+                        -0.6879,
+                        -0.6753,
+                        -0.6622,
+                        -0.6489,
+                        -0.6355,
+                        -0.6225,
+                        -0.61,
+                        -0.5985,
+                        -0.588,
+                        -0.5788,
+                        -0.5712,
+                        -0.5651,
+                        -0.5606,
+                        -0.5576,
+                        -0.5546,
+                        -0.5494,
+                        -0.5384,
+                        -0.5143,
+                        -0.4676,
+                        -0.3954,
+                        -0.3053,
+                        -0.2062,
+                        -0.1036,
+                        0.0004,
+                        0.1049,
+                        0.2095,
                         0.3142,
                         0.4189,
                         0.5236,
-                        0.6283,
-                        0.7329,
-                        0.8374,
-                        0.9415,
-                        1.0444,
-                        1.144,
-                        1.2356,
-                        1.3104,
-                        1.3602,
-                        1.3865,
-                        1.3985,
-                        1.4042,
-                        1.4073,
-                        1.4079,
-                        1.4047,
-                        1.3982,
-                        1.3885,
-                        1.3755,
-                        1.3595,
-                        1.3404,
-                        1.3185,
-                        1.2939,
-                        1.2667,
-                        1.2371,
-                        1.2054,
-                        1.1718,
-                        0.809,
+                        0.6282,
+                        0.7327,
+                        0.8368,
+                        0.9398,
+                        1.0396,
+                        1.1318,
+                        1.2075,
+                        1.2585,
+                        1.2857,
+                        1.2982,
+                        1.304,
+                        1.3072,
+                        1.3079,
+                        1.3052,
+                        1.2997,
+                        1.2917,
+                        1.2812,
+                        1.2685,
+                        1.2537,
+                        1.2367,
+                        1.2179,
+                        1.1972,
+                        1.1747,
+                        1.1508,
+                        1.1254,
+                        1.0989,
+                        1.0714,
+                        1.0431,
+                        1.0144,
+                        0.9855,
+                        0.9566,
+                        0.7436,
                         0.6293,
                         0.5919318640510814,
                         0.39032216020707894,
@@ -3083,69 +2055,69 @@
                         -0.39032216020707894,
                         -0.5919318640510814,
                         -0.6293,
-                        -0.7891,
-                        -1.1428,
-                        -1.1776,
-                        -1.2107,
-                        -1.242,
-                        -1.2711,
-                        -1.2979,
-                        -1.3221,
-                        -1.3436,
-                        -1.3622,
-                        -1.3779,
-                        -1.3905,
-                        -1.4,
-                        -1.4062,
-                        -1.409,
-                        -1.4082,
-                        -1.4047,
-                        -1.3979,
-                        -1.3805,
-                        -1.3372,
-                        -1.2561,
-                        -1.1462,
-                        -1.0237,
-                        -0.8971,
-                        -0.7694,
-                        -0.6412,
-                        -0.513,
-                        -0.3848,
-                        -0.2565,
-                        -0.1283,
-                        0.0,
-                        0.1283,
+                        -0.7409,
+                        -0.73,
+                        -0.7194,
+                        -0.7076,
+                        -0.6948,
+                        -0.6813,
+                        -0.6673,
+                        -0.6531,
+                        -0.639,
+                        -0.6252,
+                        -0.6122,
+                        -0.6001,
+                        -0.5892,
+                        -0.5797,
+                        -0.5717,
+                        -0.5654,
+                        -0.5606,
+                        -0.5571,
+                        -0.5528,
+                        -0.5433,
+                        -0.5183,
+                        -0.4614,
+                        -0.3675,
+                        -0.2514,
+                        -0.1268,
+                        0.0004,
+                        0.1284,
                         0.2565,
                         0.3848,
                         0.513,
-                        0.6412,
-                        0.7694,
-                        0.8971,
-                        1.0237,
-                        1.1462,
-                        1.2561,
-                        1.3372,
-                        1.3805,
-                        1.3979,
-                        1.4047,
-                        1.4082,
-                        1.409,
-                        1.406,
-                        1.3997,
-                        1.3902,
-                        1.3776,
-                        1.3621,
-                        1.3437,
-                        1.3226,
-                        1.2988,
-                        1.2727,
-                        1.2443,
-                        1.2139,
-                        1.1818,
-                        1.1481,
-                        1.1133,
-                        1.0776,
-                        0.7587,
+                        0.6411,
+                        0.769,
+                        0.896,
+                        1.0199,
+                        1.1337,
+                        1.2226,
+                        1.2738,
+                        1.2954,
+                        1.3037,
+                        1.3076,
+                        1.3083,
+                        1.3055,
+                        1.2996,
+                        1.2912,
+                        1.2806,
+                        1.2678,
+                        1.2531,
+                        1.2364,
+                        1.2181,
+                        1.1981,
+                        1.1766,
+                        1.1537,
+                        1.1296,
+                        1.1044,
+                        1.0783,
+                        1.0517,
+                        1.0246,
+                        0.9973,
+                        0.9702,
+                        0.9435,
+                        0.9176,
+                        0.8926,
+                        0.7436,
                         0.6293,
                         0.5919318640510814,
                         0.39032216020707894,
@@ -3178,30 +2150,25 @@
                         -0.39032216020707894,
                         -0.5919318640510814,
                         -0.6293,
-                        -0.7436,
-                        -0.802,
-                        -0.7981,
-                        -0.7919,
-                        -0.7836,
-                        -0.7731,
-                        -0.7606,
-                        -0.7464,
-                        -0.7305,
-                        -0.7134,
-                        -0.6952,
-                        -0.6763,
-                        -0.6569,
-                        -0.6376,
-                        -0.6185,
-                        -0.6001,
-                        -0.5827,
-                        -0.5666,
-                        -0.5522,
-                        -0.5395,
-                        -0.5289,
-                        -0.5204,
-                        -0.5139,
-                        -0.5091,
+                        -0.7434,
+                        -0.7447,
+                        -0.7336,
+                        -0.7209,
+                        -0.7067,
+                        -0.6911,
+                        -0.6746,
+                        -0.6574,
+                        -0.6398,
+                        -0.6221,
+                        -0.6048,
+                        -0.588,
+                        -0.5721,
+                        -0.5574,
+                        -0.5442,
+                        -0.5327,
+                        -0.523,
+                        -0.5153,
+                        -0.5095,
                         -0.5054,
                         -0.501,
                         -0.4902,
@@ -3216,30 +2183,35 @@
                         0.6881,
                         0.7004,
                         0.705,
-                        0.708,
-                        0.7107,
-                        0.7138,
-                        0.7178,
-                        0.7229,
-                        0.729,
-                        0.7362,
-                        0.7442,
-                        0.7528,
-                        0.7619,
-                        0.7712,
-                        0.7805,
-                        0.7895,
-                        0.798,
-                        0.8058,
-                        0.8126,
-                        0.8185,
-                        0.8231,
-                        0.8264,
-                        0.8284,
-                        0.8289,
-                        0.828,
-                        0.8258,
+                        0.7068,
+                        0.7066,
+                        0.706,
+                        0.7061,
+                        0.7077,
+                        0.711,
+                        0.716,
+                        0.7228,
+                        0.7311,
+                        0.7405,
+                        0.7509,
+                        0.7617,
+                        0.7729,
+                        0.7839,
+                        0.7946,
+                        0.8047,
+                        0.814,
                         0.8222,
+                        0.8293,
+                        0.835,
+                        0.8393,
+                        0.8422,
+                        0.8437,
+                        0.8437,
+                        0.8423,
+                        0.8396,
+                        0.8358,
+                        0.8309,
+                        0.8252,
                         0.7436,
                         0.6293,
                         0.5919318640510814,
@@ -3274,67 +2246,67 @@
                         -0.5919318640510814,
                         -0.6293,
                         -0.7436,
-                        -0.8195,
-                        -0.8161,
-                        -0.8078,
-                        -0.7945,
-                        -0.7762,
-                        -0.7531,
-                        -0.7254,
-                        -0.6933,
-                        -0.6573,
-                        -0.6177,
-                        -0.575,
-                        -0.5297,
-                        -0.4825,
-                        -0.434,
-                        -0.3848,
-                        -0.3358,
-                        -0.2875,
-                        -0.2407,
-                        -0.1962,
-                        -0.1547,
-                        -0.1166,
-                        -0.0828,
-                        -0.0535,
-                        -0.0292,
-                        -0.01,
-                        0.0045,
-                        0.0146,
+                        -0.7331,
+                        -0.7089,
+                        -0.6804,
+                        -0.6479,
+                        -0.6118,
+                        -0.5725,
+                        -0.5305,
+                        -0.4863,
+                        -0.4405,
+                        -0.3937,
+                        -0.3467,
+                        -0.3,
+                        -0.2544,
+                        -0.2104,
+                        -0.1688,
+                        -0.1302,
+                        -0.0951,
+                        -0.0641,
+                        -0.0374,
+                        -0.0155,
+                        0.0015,
+                        0.0137,
                         0.0214,
                         0.0288,
                         0.0687,
                         0.1572,
                         0.1748,
                         0.1808,
-                        0.1867,
-                        0.1944,
-                        0.2049,
-                        0.2191,
-                        0.2374,
-                        0.2596,
-                        0.2858,
-                        0.3153,
-                        0.3479,
-                        0.3829,
-                        0.4197,
-                        0.4578,
-                        0.4964,
-                        0.5351,
-                        0.5731,
-                        0.61,
-                        0.6452,
-                        0.6782,
-                        0.7087,
-                        0.7362,
-                        0.7604,
-                        0.781,
-                        0.798,
-                        0.8111,
-                        0.8202,
-                        0.8255,
-                        0.8269,
-                        0.8246,
+                        0.1851,
+                        0.1882,
+                        0.1921,
+                        0.1984,
+                        0.2088,
+                        0.2242,
+                        0.2448,
+                        0.2707,
+                        0.3013,
+                        0.3358,
+                        0.3736,
+                        0.4136,
+                        0.455,
+                        0.4971,
+                        0.5392,
+                        0.5804,
+                        0.6201,
+                        0.6579,
+                        0.6932,
+                        0.7255,
+                        0.7545,
+                        0.7799,
+                        0.8014,
+                        0.8189,
+                        0.8323,
+                        0.8414,
+                        0.8465,
+                        0.8475,
+                        0.8448,
+                        0.8408,
+                        0.8362,
+                        0.831,
+                        0.8252,
                         0.7436,
                         0.6293,
                         0.5919318640510814,
@@ -3352,7 +2324,9 @@
                         0.0
                     ]
                 ]
-            ],
+            ]
+        },
+        {
             "drag_coeffs": [
                 [
                     [
@@ -3734,9 +2708,7 @@
                         0.05
                     ]
                 ]
-            ]
-        },
-        {
+            ],
             "lift_coeffs": [
                 [
                     [
@@ -3754,30 +2726,30 @@
                         -0.39032216020707894,
                         -0.5919318640510814,
                         -0.6293,
-                        -0.9103,
-                        -1.3353,
-                        -1.3684,
-                        -1.3984,
-                        -1.4251,
-                        -1.4483,
-                        -1.4679,
-                        -1.4837,
-                        -1.4956,
-                        -1.5037,
-                        -1.5077,
-                        -1.5074,
-                        -1.5043,
-                        -1.4989,
-                        -1.4872,
-                        -1.4618,
-                        -1.4132,
-                        -1.3394,
-                        -1.2484,
-                        -1.1489,
-                        -1.0461,
-                        -0.9421,
-                        -0.8376,
-                        -0.733,
+                        -0.8598,
+                        -1.2336,
+                        -1.264,
+                        -1.2919,
+                        -1.3172,
+                        -1.3396,
+                        -1.359,
+                        -1.3753,
+                        -1.3884,
+                        -1.3983,
+                        -1.4048,
+                        -1.4079,
+                        -1.4073,
+                        -1.4042,
+                        -1.3985,
+                        -1.3865,
+                        -1.3602,
+                        -1.3104,
+                        -1.2356,
+                        -1.144,
+                        -1.0444,
+                        -0.9415,
+                        -0.8374,
+                        -0.7329,
                         -0.6283,
                         -0.5236,
                         -0.4189,
@@ -3791,32 +2763,32 @@
                         0.4189,
                         0.5236,
                         0.6283,
-                        0.733,
-                        0.8377,
-                        0.9423,
-                        1.0468,
-                        1.1508,
-                        1.2535,
-                        1.3527,
-                        1.4432,
-                        1.516,
-                        1.5634,
-                        1.588,
-                        1.5992,
-                        1.6045,
-                        1.6075,
-                        1.6075,
-                        1.6026,
-                        1.5931,
-                        1.5791,
-                        1.5608,
-                        1.5383,
-                        1.5117,
-                        1.4813,
-                        1.4472,
-                        1.4098,
-                        1.3693,
-                        0.893,
+                        0.7329,
+                        0.8374,
+                        0.9415,
+                        1.0444,
+                        1.144,
+                        1.2356,
+                        1.3104,
+                        1.3602,
+                        1.3865,
+                        1.3985,
+                        1.4042,
+                        1.4073,
+                        1.4079,
+                        1.4047,
+                        1.3982,
+                        1.3885,
+                        1.3755,
+                        1.3595,
+                        1.3404,
+                        1.3185,
+                        1.2939,
+                        1.2667,
+                        1.2371,
+                        1.2054,
+                        1.1718,
+                        0.809,
                         0.6293,
                         0.5919318640510814,
                         0.39032216020707894,
@@ -3849,30 +2821,30 @@
                         -0.39032216020707894,
                         -0.5919318640510814,
                         -0.6293,
-                        -0.7924,
-                        -1.1695,
-                        -1.207,
-                        -1.2429,
-                        -1.2769,
-                        -1.3086,
-                        -1.3378,
-                        -1.3643,
-                        -1.3879,
-                        -1.4084,
-                        -1.4256,
-                        -1.4396,
-                        -1.4501,
-                        -1.457,
-                        -1.4603,
-                        -1.4594,
-                        -1.455,
-                        -1.4451,
-                        -1.4193,
-                        -1.361,
-                        -1.266,
-                        -1.1494,
-                        -1.0247,
-                        -0.8974,
+                        -0.7891,
+                        -1.1428,
+                        -1.1776,
+                        -1.2107,
+                        -1.242,
+                        -1.2711,
+                        -1.2979,
+                        -1.3221,
+                        -1.3436,
+                        -1.3622,
+                        -1.3779,
+                        -1.3905,
+                        -1.4,
+                        -1.4062,
+                        -1.409,
+                        -1.4082,
+                        -1.4047,
+                        -1.3979,
+                        -1.3805,
+                        -1.3372,
+                        -1.2561,
+                        -1.1462,
+                        -1.0237,
+                        -0.8971,
                         -0.7694,
                         -0.6412,
                         -0.513,
@@ -3884,34 +2856,34 @@
                         0.2565,
                         0.3848,
                         0.513,
-                        0.6413,
-                        0.7695,
-                        0.8977,
-                        1.0257,
-                        1.1532,
-                        1.2785,
-                        1.397,
-                        1.4964,
-                        1.5606,
-                        1.5902,
-                        1.6016,
-                        1.6065,
-                        1.607,
-                        1.6025,
-                        1.5933,
-                        1.5798,
-                        1.5621,
-                        1.5403,
-                        1.5146,
-                        1.4854,
-                        1.4526,
-                        1.4168,
-                        1.3781,
-                        1.3369,
-                        1.2936,
-                        1.2485,
-                        1.2023,
-                        0.7798,
+                        0.6412,
+                        0.7694,
+                        0.8971,
+                        1.0237,
+                        1.1462,
+                        1.2561,
+                        1.3372,
+                        1.3805,
+                        1.3979,
+                        1.4047,
+                        1.4082,
+                        1.409,
+                        1.406,
+                        1.3997,
+                        1.3902,
+                        1.3776,
+                        1.3621,
+                        1.3437,
+                        1.3226,
+                        1.2988,
+                        1.2727,
+                        1.2443,
+                        1.2139,
+                        1.1818,
+                        1.1481,
+                        1.1133,
+                        1.0776,
+                        0.7587,
                         0.6293,
                         0.5919318640510814,
                         0.39032216020707894,
@@ -4118,7 +3090,9 @@
                         0.0
                     ]
                 ]
-            ],
+            ]
+        },
+        {
             "drag_coeffs": [
                 [
                     [
@@ -4500,9 +3474,7 @@
                         0.05
                     ]
                 ]
-            ]
-        },
-        {
+            ],
             "lift_coeffs": [
                 [
                     [
@@ -4517,32 +3489,32 @@
                         0.17142399410016385,
                         -6.047125210727891e-17,
                         -0.17142399410016396,
-                        -0.3918405720812624,
-                        -0.599214881018264,
-                        -0.6393,
-                        -1.1325,
-                        -1.681,
-                        -1.7157,
-                        -1.7452,
-                        -1.7692,
-                        -1.7876,
-                        -1.8003,
-                        -1.807,
-                        -1.8078,
-                        -1.8049,
-                        -1.7999,
-                        -1.7894,
-                        -1.7664,
-                        -1.7213,
-                        -1.6506,
-                        -1.5613,
-                        -1.4626,
-                        -1.3601,
-                        -1.2562,
-                        -1.1518,
-                        -1.0471,
-                        -0.9425,
-                        -0.8378,
+                        -0.39032216020707894,
+                        -0.5919318640510814,
+                        -0.6293,
+                        -0.9103,
+                        -1.3353,
+                        -1.3684,
+                        -1.3984,
+                        -1.4251,
+                        -1.4483,
+                        -1.4679,
+                        -1.4837,
+                        -1.4956,
+                        -1.5037,
+                        -1.5077,
+                        -1.5074,
+                        -1.5043,
+                        -1.4989,
+                        -1.4872,
+                        -1.4618,
+                        -1.4132,
+                        -1.3394,
+                        -1.2484,
+                        -1.1489,
+                        -1.0461,
+                        -0.9421,
+                        -0.8376,
                         -0.733,
                         -0.6283,
                         -0.5236,
@@ -4550,39 +3522,39 @@
                         -0.3142,
                         -0.2094,
                         -0.1047,
-                        -0.0,
+                        0.0,
                         0.1047,
                         0.2094,
-                        0.3141,
-                        0.4186,
-                        0.5228,
-                        0.626,
-                        0.7265,
-                        0.82,
-                        0.8986,
-                        0.9531,
-                        0.9831,
-                        0.997,
-                        1.0034,
-                        1.0068,
-                        1.0086,
-                        1.0089,
-                        1.0081,
-                        1.0065,
-                        1.004,
-                        1.0006,
-                        0.9964,
-                        0.9913,
-                        0.9853,
-                        0.9783,
-                        0.9703,
-                        0.9612,
-                        0.9511,
-                        0.9399,
-                        0.9278,
-                        0.9146,
-                        0.9006,
-                        0.7461,
+                        0.3142,
+                        0.4189,
+                        0.5236,
+                        0.6283,
+                        0.733,
+                        0.8377,
+                        0.9423,
+                        1.0468,
+                        1.1508,
+                        1.2535,
+                        1.3527,
+                        1.4432,
+                        1.516,
+                        1.5634,
+                        1.588,
+                        1.5992,
+                        1.6045,
+                        1.6075,
+                        1.6075,
+                        1.6026,
+                        1.5931,
+                        1.5791,
+                        1.5608,
+                        1.5383,
+                        1.5117,
+                        1.4813,
+                        1.4472,
+                        1.4098,
+                        1.3693,
+                        0.893,
                         0.6293,
                         0.5919318640510814,
                         0.39032216020707894,
@@ -4645,39 +3617,39 @@
                         -0.3848,
                         -0.2565,
                         -0.1283,
-                        -0.0,
-                        0.1282,
+                        0.0,
+                        0.1283,
                         0.2565,
-                        0.3846,
-                        0.5123,
-                        0.6386,
-                        0.7602,
-                        0.8676,
-                        0.9442,
-                        0.9835,
-                        0.999,
-                        1.0052,
-                        1.0085,
-                        1.0103,
-                        1.0106,
-                        1.0099,
-                        1.0083,
-                        1.0059,
-                        1.0028,
-                        0.9989,
-                        0.9942,
-                        0.9887,
-                        0.9822,
-                        0.9749,
-                        0.9665,
-                        0.9572,
-                        0.9469,
-                        0.9357,
-                        0.9235,
-                        0.9105,
-                        0.8968,
-                        0.8824,
-                        0.7436,
+                        0.3848,
+                        0.513,
+                        0.6413,
+                        0.7695,
+                        0.8977,
+                        1.0257,
+                        1.1532,
+                        1.2785,
+                        1.397,
+                        1.4964,
+                        1.5606,
+                        1.5902,
+                        1.6016,
+                        1.6065,
+                        1.607,
+                        1.6025,
+                        1.5933,
+                        1.5798,
+                        1.5621,
+                        1.5403,
+                        1.5146,
+                        1.4854,
+                        1.4526,
+                        1.4168,
+                        1.3781,
+                        1.3369,
+                        1.2936,
+                        1.2485,
+                        1.2023,
+                        0.7798,
                         0.6293,
                         0.5919318640510814,
                         0.39032216020707894,
@@ -4884,7 +3856,9 @@
                         0.0
                     ]
                 ]
-            ],
+            ]
+        },
+        {
             "drag_coeffs": [
                 [
                     [
@@ -5266,17 +4240,1043 @@
                         0.05
                     ]
                 ]
+            ],
+            "lift_coeffs": [
+                [
+                    [
+                        0.0,
+                        0.7260020786182674,
+                        0.8519669154604093,
+                        0.8252273921394143,
+                        0.7435900857357557,
+                        0.6293481805726722,
+                        0.4917645958492829,
+                        0.33721764336183657,
+                        0.17142399410016385,
+                        -6.047125210727891e-17,
+                        -0.17142399410016396,
+                        -0.3918405720812624,
+                        -0.599214881018264,
+                        -0.6393,
+                        -1.1325,
+                        -1.681,
+                        -1.7157,
+                        -1.7452,
+                        -1.7692,
+                        -1.7876,
+                        -1.8003,
+                        -1.807,
+                        -1.8078,
+                        -1.8049,
+                        -1.7999,
+                        -1.7894,
+                        -1.7664,
+                        -1.7213,
+                        -1.6506,
+                        -1.5613,
+                        -1.4626,
+                        -1.3601,
+                        -1.2562,
+                        -1.1518,
+                        -1.0471,
+                        -0.9425,
+                        -0.8378,
+                        -0.733,
+                        -0.6283,
+                        -0.5236,
+                        -0.4189,
+                        -0.3142,
+                        -0.2094,
+                        -0.1047,
+                        -0.0,
+                        0.1047,
+                        0.2094,
+                        0.3141,
+                        0.4186,
+                        0.5228,
+                        0.626,
+                        0.7265,
+                        0.82,
+                        0.8986,
+                        0.9531,
+                        0.9831,
+                        0.997,
+                        1.0034,
+                        1.0068,
+                        1.0086,
+                        1.0089,
+                        1.0081,
+                        1.0065,
+                        1.004,
+                        1.0006,
+                        0.9964,
+                        0.9913,
+                        0.9853,
+                        0.9783,
+                        0.9703,
+                        0.9612,
+                        0.9511,
+                        0.9399,
+                        0.9278,
+                        0.9146,
+                        0.9006,
+                        0.7461,
+                        0.6293,
+                        0.5919318640510814,
+                        0.39032216020707894,
+                        0.17142399410016396,
+                        6.047125210727891e-17,
+                        -0.17142399410016385,
+                        -0.33721764336183657,
+                        -0.4917645958492829,
+                        -0.6293481805726722,
+                        -0.7435900857357557,
+                        -0.8252273921394143,
+                        -0.8519669154604093,
+                        -0.7260020786182674,
+                        0.0
+                    ]
+                ],
+                [
+                    [
+                        0.0,
+                        0.7260020786182674,
+                        0.8519669154604093,
+                        0.8252273921394143,
+                        0.7435900857357557,
+                        0.6293481805726722,
+                        0.4917645958492829,
+                        0.33721764336183657,
+                        0.17142399410016385,
+                        -6.047125210727891e-17,
+                        -0.17142399410016396,
+                        -0.39032216020707894,
+                        -0.5919318640510814,
+                        -0.6293,
+                        -0.7924,
+                        -1.1695,
+                        -1.207,
+                        -1.2429,
+                        -1.2769,
+                        -1.3086,
+                        -1.3378,
+                        -1.3643,
+                        -1.3879,
+                        -1.4084,
+                        -1.4256,
+                        -1.4396,
+                        -1.4501,
+                        -1.457,
+                        -1.4603,
+                        -1.4594,
+                        -1.455,
+                        -1.4451,
+                        -1.4193,
+                        -1.361,
+                        -1.266,
+                        -1.1494,
+                        -1.0247,
+                        -0.8974,
+                        -0.7694,
+                        -0.6412,
+                        -0.513,
+                        -0.3848,
+                        -0.2565,
+                        -0.1283,
+                        -0.0,
+                        0.1282,
+                        0.2565,
+                        0.3846,
+                        0.5123,
+                        0.6386,
+                        0.7602,
+                        0.8676,
+                        0.9442,
+                        0.9835,
+                        0.999,
+                        1.0052,
+                        1.0085,
+                        1.0103,
+                        1.0106,
+                        1.0099,
+                        1.0083,
+                        1.0059,
+                        1.0028,
+                        0.9989,
+                        0.9942,
+                        0.9887,
+                        0.9822,
+                        0.9749,
+                        0.9665,
+                        0.9572,
+                        0.9469,
+                        0.9357,
+                        0.9235,
+                        0.9105,
+                        0.8968,
+                        0.8824,
+                        0.7436,
+                        0.6293,
+                        0.5919318640510814,
+                        0.39032216020707894,
+                        0.17142399410016396,
+                        6.047125210727891e-17,
+                        -0.17142399410016385,
+                        -0.33721764336183657,
+                        -0.4917645958492829,
+                        -0.6293481805726722,
+                        -0.7435900857357557,
+                        -0.8252273921394143,
+                        -0.8519669154604093,
+                        -0.7260020786182674,
+                        0.0
+                    ]
+                ],
+                [
+                    [
+                        0.0,
+                        0.7260020786182674,
+                        0.8519669154604093,
+                        0.8252273921394143,
+                        0.7435900857357557,
+                        0.6293481805726722,
+                        0.4917645958492829,
+                        0.33721764336183657,
+                        0.17142399410016385,
+                        -6.047125210727891e-17,
+                        -0.17142399410016396,
+                        -0.39032216020707894,
+                        -0.5919318640510814,
+                        -0.6293,
+                        -0.7436,
+                        -0.802,
+                        -0.7981,
+                        -0.7919,
+                        -0.7836,
+                        -0.7731,
+                        -0.7606,
+                        -0.7464,
+                        -0.7305,
+                        -0.7134,
+                        -0.6952,
+                        -0.6763,
+                        -0.6569,
+                        -0.6376,
+                        -0.6185,
+                        -0.6001,
+                        -0.5827,
+                        -0.5666,
+                        -0.5522,
+                        -0.5395,
+                        -0.5289,
+                        -0.5204,
+                        -0.5139,
+                        -0.5091,
+                        -0.5054,
+                        -0.501,
+                        -0.4902,
+                        -0.4494,
+                        -0.3397,
+                        -0.1772,
+                        0.0006,
+                        0.1809,
+                        0.3593,
+                        0.5246,
+                        0.6417,
+                        0.6881,
+                        0.7004,
+                        0.705,
+                        0.708,
+                        0.7107,
+                        0.7138,
+                        0.7178,
+                        0.7229,
+                        0.729,
+                        0.7362,
+                        0.7442,
+                        0.7528,
+                        0.7619,
+                        0.7712,
+                        0.7805,
+                        0.7895,
+                        0.798,
+                        0.8058,
+                        0.8126,
+                        0.8185,
+                        0.8231,
+                        0.8264,
+                        0.8284,
+                        0.8289,
+                        0.828,
+                        0.8258,
+                        0.8222,
+                        0.7436,
+                        0.6293,
+                        0.5919318640510814,
+                        0.39032216020707894,
+                        0.17142399410016396,
+                        6.047125210727891e-17,
+                        -0.17142399410016385,
+                        -0.33721764336183657,
+                        -0.4917645958492829,
+                        -0.6293481805726722,
+                        -0.7435900857357557,
+                        -0.8252273921394143,
+                        -0.8519669154604093,
+                        -0.7260020786182674,
+                        0.0
+                    ]
+                ],
+                [
+                    [
+                        0.0,
+                        0.7260020786182674,
+                        0.8519669154604093,
+                        0.8252273921394143,
+                        0.7435900857357557,
+                        0.6293481805726722,
+                        0.4917645958492829,
+                        0.33721764336183657,
+                        0.17142399410016385,
+                        -6.047125210727891e-17,
+                        -0.17142399410016396,
+                        -0.39032216020707894,
+                        -0.5919318640510814,
+                        -0.6293,
+                        -0.7436,
+                        -0.8195,
+                        -0.8161,
+                        -0.8078,
+                        -0.7945,
+                        -0.7762,
+                        -0.7531,
+                        -0.7254,
+                        -0.6933,
+                        -0.6573,
+                        -0.6177,
+                        -0.575,
+                        -0.5297,
+                        -0.4825,
+                        -0.434,
+                        -0.3848,
+                        -0.3358,
+                        -0.2875,
+                        -0.2407,
+                        -0.1962,
+                        -0.1547,
+                        -0.1166,
+                        -0.0828,
+                        -0.0535,
+                        -0.0292,
+                        -0.01,
+                        0.0045,
+                        0.0146,
+                        0.0214,
+                        0.0288,
+                        0.0687,
+                        0.1572,
+                        0.1748,
+                        0.1808,
+                        0.1867,
+                        0.1944,
+                        0.2049,
+                        0.2191,
+                        0.2374,
+                        0.2596,
+                        0.2858,
+                        0.3153,
+                        0.3479,
+                        0.3829,
+                        0.4197,
+                        0.4578,
+                        0.4964,
+                        0.5351,
+                        0.5731,
+                        0.61,
+                        0.6452,
+                        0.6782,
+                        0.7087,
+                        0.7362,
+                        0.7604,
+                        0.781,
+                        0.798,
+                        0.8111,
+                        0.8202,
+                        0.8255,
+                        0.8269,
+                        0.8246,
+                        0.7436,
+                        0.6293,
+                        0.5919318640510814,
+                        0.39032216020707894,
+                        0.17142399410016396,
+                        6.047125210727891e-17,
+                        -0.17142399410016385,
+                        -0.33721764336183657,
+                        -0.4917645958492829,
+                        -0.6293481805726722,
+                        -0.7435900857357557,
+                        -0.8252273921394143,
+                        -0.8519669154604093,
+                        -0.7260020786182674,
+                        0.0
+                    ]
+                ]
             ]
         }
     ],
     "sectional_radiuses": {
+        "units": "m",
         "value": [
             13.5,
             25.500000000000004,
             76.5,
             120.0,
             150.0
-        ],
-        "units": "m"
-    }
+        ]
+    },
+    "tip_gap": "inf",
+    "twists": [
+        {
+            "radius": {
+                "units": "m",
+                "value": 0.0
+            },
+            "twist": {
+                "units": "degree",
+                "value": 0.0
+            }
+        },
+        {
+            "radius": {
+                "units": "m",
+                "value": 3.4505914499999997
+            },
+            "twist": {
+                "units": "degree",
+                "value": 33.27048712
+            }
+        },
+        {
+            "radius": {
+                "units": "m",
+                "value": 5.867434050000001
+            },
+            "twist": {
+                "units": "degree",
+                "value": 32.37853609
+            }
+        },
+        {
+            "radius": {
+                "units": "m",
+                "value": 9.05761395
+            },
+            "twist": {
+                "units": "degree",
+                "value": 31.42712165
+            }
+        },
+        {
+            "radius": {
+                "units": "m",
+                "value": 12.5377488
+            },
+            "twist": {
+                "units": "degree",
+                "value": 30.65409742
+            }
+        },
+        {
+            "radius": {
+                "units": "m",
+                "value": 13.9536156
+            },
+            "twist": {
+                "units": "degree",
+                "value": 30.13214089
+            }
+        },
+        {
+            "radius": {
+                "units": "m",
+                "value": 16.238024850000002
+            },
+            "twist": {
+                "units": "degree",
+                "value": 29.41523066
+            }
+        },
+        {
+            "radius": {
+                "units": "m",
+                "value": 18.33595185
+            },
+            "twist": {
+                "units": "degree",
+                "value": 28.75567325
+            }
+        },
+        {
+            "radius": {
+                "units": "m",
+                "value": 21.086566350000002
+            },
+            "twist": {
+                "units": "degree",
+                "value": 27.89538097
+            }
+        },
+        {
+            "radius": {
+                "units": "m",
+                "value": 23.9304951
+            },
+            "twist": {
+                "units": "degree",
+                "value": 26.69097178
+            }
+        },
+        {
+            "radius": {
+                "units": "m",
+                "value": 25.8886038
+            },
+            "twist": {
+                "units": "degree",
+                "value": 25.88803232
+            }
+        },
+        {
+            "radius": {
+                "units": "m",
+                "value": 27.380500650000002
+            },
+            "twist": {
+                "units": "degree",
+                "value": 25.25715132
+            }
+        },
+        {
+            "radius": {
+                "units": "m",
+                "value": 28.87241085
+            },
+            "twist": {
+                "units": "degree",
+                "value": 24.5689175
+            }
+        },
+        {
+            "radius": {
+                "units": "m",
+                "value": 30.457542
+            },
+            "twist": {
+                "units": "degree",
+                "value": 23.93803649
+            }
+        },
+        {
+            "radius": {
+                "units": "m",
+                "value": 32.2291686
+            },
+            "twist": {
+                "units": "degree",
+                "value": 23.19244985
+            }
+        },
+        {
+            "radius": {
+                "units": "m",
+                "value": 34.0940496
+            },
+            "twist": {
+                "units": "degree",
+                "value": 22.36083398
+            }
+        },
+        {
+            "radius": {
+                "units": "m",
+                "value": 35.91228015
+            },
+            "twist": {
+                "units": "degree",
+                "value": 21.67260016
+            }
+        },
+        {
+            "radius": {
+                "units": "m",
+                "value": 37.730543999999995
+            },
+            "twist": {
+                "units": "degree",
+                "value": 20.84098429
+            }
+        },
+        {
+            "radius": {
+                "units": "m",
+                "value": 39.6886794
+            },
+            "twist": {
+                "units": "degree",
+                "value": 19.92333919
+            }
+        },
+        {
+            "radius": {
+                "units": "m",
+                "value": 41.413722
+            },
+            "twist": {
+                "units": "degree",
+                "value": 19.03437051
+            }
+        },
+        {
+            "radius": {
+                "units": "m",
+                "value": 42.95224935
+            },
+            "twist": {
+                "units": "degree",
+                "value": 18.34613668
+            }
+        },
+        {
+            "radius": {
+                "units": "m",
+                "value": 44.6772921
+            },
+            "twist": {
+                "units": "degree",
+                "value": 17.457168
+            }
+        },
+        {
+            "radius": {
+                "units": "m",
+                "value": 46.448872050000006
+            },
+            "twist": {
+                "units": "degree",
+                "value": 16.91231622
+            }
+        },
+        {
+            "radius": {
+                "units": "m",
+                "value": 48.40696755
+            },
+            "twist": {
+                "units": "degree",
+                "value": 16.16672958
+            }
+        },
+        {
+            "radius": {
+                "units": "m",
+                "value": 50.22518475
+            },
+            "twist": {
+                "units": "degree",
+                "value": 15.53584858
+            }
+        },
+        {
+            "radius": {
+                "units": "m",
+                "value": 51.763692150000004
+            },
+            "twist": {
+                "units": "degree",
+                "value": 14.93364398
+            }
+        },
+        {
+            "radius": {
+                "units": "m",
+                "value": 53.4887016
+            },
+            "twist": {
+                "units": "degree",
+                "value": 14.18805734
+            }
+        },
+        {
+            "radius": {
+                "units": "m",
+                "value": 55.07383275
+            },
+            "twist": {
+                "units": "degree",
+                "value": 13.55717634
+            }
+        },
+        {
+            "radius": {
+                "units": "m",
+                "value": 56.28603975
+            },
+            "twist": {
+                "units": "degree",
+                "value": 12.86894251
+            }
+        },
+        {
+            "radius": {
+                "units": "m",
+                "value": 57.824567099999996
+            },
+            "twist": {
+                "units": "degree",
+                "value": 12.18070869
+            }
+        },
+        {
+            "radius": {
+                "units": "m",
+                "value": 59.456328750000004
+            },
+            "twist": {
+                "units": "degree",
+                "value": 11.49247487
+            }
+        },
+        {
+            "radius": {
+                "units": "m",
+                "value": 60.994816199999995
+            },
+            "twist": {
+                "units": "degree",
+                "value": 10.9762995
+            }
+        },
+        {
+            "radius": {
+                "units": "m",
+                "value": 62.859590700000005
+            },
+            "twist": {
+                "units": "degree",
+                "value": 10.60350618
+            }
+        },
+        {
+            "radius": {
+                "units": "m",
+                "value": 65.4703071
+            },
+            "twist": {
+                "units": "degree",
+                "value": 9.94394877
+            }
+        },
+        {
+            "radius": {
+                "units": "m",
+                "value": 67.6148514
+            },
+            "twist": {
+                "units": "degree",
+                "value": 9.28439136
+            }
+        },
+        {
+            "radius": {
+                "units": "m",
+                "value": 69.80601945
+            },
+            "twist": {
+                "units": "degree",
+                "value": 8.59615753
+            }
+        },
+        {
+            "radius": {
+                "units": "m",
+                "value": 71.53100235
+            },
+            "twist": {
+                "units": "degree",
+                "value": 7.96527653
+            }
+        },
+        {
+            "radius": {
+                "units": "m",
+                "value": 73.48907115
+            },
+            "twist": {
+                "units": "degree",
+                "value": 7.33439553
+            }
+        },
+        {
+            "radius": {
+                "units": "m",
+                "value": 74.56137315
+            },
+            "twist": {
+                "units": "degree",
+                "value": 6.87557298
+            }
+        },
+        {
+            "radius": {
+                "units": "m",
+                "value": 76.7524548
+            },
+            "twist": {
+                "units": "degree",
+                "value": 6.56013248
+            }
+        },
+        {
+            "radius": {
+                "units": "m",
+                "value": 79.36313129999999
+            },
+            "twist": {
+                "units": "degree",
+                "value": 6.07263352
+            }
+        },
+        {
+            "radius": {
+                "units": "m",
+                "value": 81.6941244
+            },
+            "twist": {
+                "units": "degree",
+                "value": 5.49910533
+            }
+        },
+        {
+            "radius": {
+                "units": "m",
+                "value": 83.65213994999999
+            },
+            "twist": {
+                "units": "degree",
+                "value": 5.0976356
+            }
+        },
+        {
+            "radius": {
+                "units": "m",
+                "value": 85.42368675
+            },
+            "twist": {
+                "units": "degree",
+                "value": 4.69616587
+            }
+        },
+        {
+            "radius": {
+                "units": "m",
+                "value": 87.84791430000001
+            },
+            "twist": {
+                "units": "degree",
+                "value": 4.12263769
+            }
+        },
+        {
+            "radius": {
+                "units": "m",
+                "value": 89.52621345
+            },
+            "twist": {
+                "units": "degree",
+                "value": 3.77852078
+            }
+        },
+        {
+            "radius": {
+                "units": "m",
+                "value": 91.39097475
+            },
+            "twist": {
+                "units": "degree",
+                "value": 3.46308028
+            }
+        },
+        {
+            "radius": {
+                "units": "m",
+                "value": 94.32797144999999
+            },
+            "twist": {
+                "units": "degree",
+                "value": 2.97558132
+            }
+        },
+        {
+            "radius": {
+                "units": "m",
+                "value": 99.73579305
+            },
+            "twist": {
+                "units": "degree",
+                "value": 2.0005834
+            }
+        },
+        {
+            "radius": {
+                "units": "m",
+                "value": 102.95246655
+            },
+            "twist": {
+                "units": "degree",
+                "value": 1.62779008
+            }
+        },
+        {
+            "radius": {
+                "units": "m",
+                "value": 104.91047549999999
+            },
+            "twist": {
+                "units": "degree",
+                "value": 1.25499676
+            }
+        },
+        {
+            "radius": {
+                "units": "m",
+                "value": 106.68199560000001
+            },
+            "twist": {
+                "units": "degree",
+                "value": 0.96823267
+            }
+        },
+        {
+            "radius": {
+                "units": "m",
+                "value": 109.01296215
+            },
+            "twist": {
+                "units": "degree",
+                "value": 0.50941012
+            }
+        },
+        {
+            "radius": {
+                "units": "m",
+                "value": 111.81012735
+            },
+            "twist": {
+                "units": "degree",
+                "value": -0.064118065
+            }
+        },
+        {
+            "radius": {
+                "units": "m",
+                "value": 114.42079709999999
+            },
+            "twist": {
+                "units": "degree",
+                "value": -0.522940614
+            }
+        },
+        {
+            "radius": {
+                "units": "m",
+                "value": 119.5955193
+            },
+            "twist": {
+                "units": "degree",
+                "value": -1.44058571
+            }
+        },
+        {
+            "radius": {
+                "units": "m",
+                "value": 126.3086691
+            },
+            "twist": {
+                "units": "degree",
+                "value": -2.61631849
+            }
+        },
+        {
+            "radius": {
+                "units": "m",
+                "value": 131.57657925
+            },
+            "twist": {
+                "units": "degree",
+                "value": -3.333228722
+            }
+        },
+        {
+            "radius": {
+                "units": "m",
+                "value": 137.077602
+            },
+            "twist": {
+                "units": "degree",
+                "value": -4.164844591
+            }
+        },
+        {
+            "radius": {
+                "units": "m",
+                "value": 140.43416025
+            },
+            "twist": {
+                "units": "degree",
+                "value": -4.681019957
+            }
+        },
+        {
+            "radius": {
+                "units": "m",
+                "value": 143.60421645
+            },
+            "twist": {
+                "units": "degree",
+                "value": -5.053813278
+            }
+        },
+        {
+            "radius": {
+                "units": "m",
+                "value": 146.6810649
+            },
+            "twist": {
+                "units": "degree",
+                "value": -5.541312235
+            }
+        },
+        {
+            "radius": {
+                "units": "m",
+                "value": 148.4525784
+            },
+            "twist": {
+                "units": "degree",
+                "value": -5.799399919
+            }
+        },
+        {
+            "radius": {
+                "units": "m",
+                "value": 150.0
+            },
+            "twist": {
+                "units": "degree",
+                "value": -6.1
+            }
+        }
+    ],
+    "type": "BETDisk"
 }

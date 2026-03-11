@@ -1,25 +1,25 @@
 {
     "data": {
-        "type": "Geometry",
-        "userId": "XXXX",
-        "id": "geo-xxxxx",
-        "name": "Untitled12",
-        "tags": [],
-        "status": "processed",
-        "solverVersion": "workbench-24.8.0",
-        "parentFolderId": "ROOT.FLOW360",
-        "projectId": "prj-29e35434-2148-47c8-b548-58b479c37b99",
-        "viewed": null,
-        "parentFolders": null,
-        "storageSize": 0,
-        "deleted": false,
         "createdAt": "2024-08-06T16:05:00.880148Z",
-        "updatedAt": "2024-08-06T16:05:00.880148Z",
+        "deleted": false,
         "files": [
             {
                 "name": "box.csm",
                 "type": "main"
             }
-        ]
+        ],
+        "id": "geo-xxxxx",
+        "name": "Untitled12",
+        "parentFolderId": "ROOT.FLOW360",
+        "parentFolders": null,
+        "projectId": "prj-29e35434-2148-47c8-b548-58b479c37b99",
+        "solverVersion": "workbench-24.8.0",
+        "status": "processed",
+        "storageSize": 0,
+        "tags": [],
+        "type": "Geometry",
+        "updatedAt": "2024-08-06T16:05:00.880148Z",
+        "userId": "XXXX",
+        "viewed": null
     }
 }
