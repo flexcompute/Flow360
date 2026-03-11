@@ -749,31 +749,30 @@ def _to_25_9_2(params_as_dict):
 
 def _to_25_10_0(params_as_dict):
     """Migrate to 25.10.0: output_format string to list, add vtkhdf/ensight support."""
-    params_as_dict["version"] = "25.10.0"
+
+    def _migrate_output_format_to_list(params_as_dict):
+        """Convert string ``output_format`` values to list form.
+
+        ``"both"`` becomes ``["paraview", "tecplot"]``, comma-separated strings are
+        split, and bare strings are wrapped in a list.
+        """
+        outputs = params_as_dict.get("outputs")
+        if not outputs:
+            return
+
+        for output in outputs:
+            fmt = output.get("output_format")
+            if not isinstance(fmt, str):
+                continue
+            if fmt == "both":
+                output["output_format"] = ["paraview", "tecplot"]
+            elif "," in fmt:
+                output["output_format"] = sorted(set(v.strip() for v in fmt.split(",")))
+            else:
+                output["output_format"] = [fmt]
+
     _migrate_output_format_to_list(params_as_dict)
     return params_as_dict
-
-
-def _migrate_output_format_to_list(params_as_dict):
-    """Convert string ``output_format`` values to list form.
-
-    ``"both"`` becomes ``["paraview", "tecplot"]``, comma-separated strings are
-    split, and bare strings are wrapped in a list.
-    """
-    outputs = params_as_dict.get("outputs")
-    if not outputs:
-        return
-
-    for output in outputs:
-        fmt = output.get("output_format")
-        if not isinstance(fmt, str):
-            continue
-        if fmt == "both":
-            output["output_format"] = ["paraview", "tecplot"]
-        elif "," in fmt:
-            output["output_format"] = [v.strip() for v in fmt.split(",")]
-        else:
-            output["output_format"] = [fmt]
 
 
 VERSION_MILESTONES = [
