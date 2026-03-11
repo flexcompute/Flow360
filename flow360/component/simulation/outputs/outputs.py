@@ -401,9 +401,9 @@ class _AnimationAndFileFormatSettings(_AnimationSettings):
             if "," in value:
                 log.warning(
                     f"`output_format` comma-separated strings are deprecated. "
-                    f'Use `output_format={sorted(v.strip() for v in value.split(","))}` instead.'
+                    f'Use `output_format={sorted(set(v.strip() for v in value.split(",")))}` instead.'
                 )
-                return sorted(v.strip() for v in value.split(","))
+                return sorted(set(v.strip() for v in value.split(",")))
             log.warning(
                 f"Passing a string to `output_format` is deprecated. "
                 f'Use `output_format=["{value}"]` instead.'
