@@ -253,7 +253,7 @@ def test_enclosed_entities_requires_custom_zones(farfield_cls):
         )
     _, errors, _ = _validate(params)
     assert errors is not None
-    assert any("only allowed when `CustomZones` are present" in e["msg"] for e in errors)
+    assert any("only allowed when `CustomVolume` entities are present" in e["msg"] for e in errors)
 
 
 # ---------------------------------------------------------------------------

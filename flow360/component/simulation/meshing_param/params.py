@@ -116,25 +116,25 @@ def _collect_rotation_entity_names(zones, param_info, zone_types):
 
 
 def _validate_farfield_enclosed_entities(
-    zones, rotation_entity_names, has_custom_zones, param_info
+    zones, rotation_entity_names, has_custom_volumes, param_info
 ):
-    """Validate farfield enclosed_entities: require CustomZones and rotation-volume association."""
+    """Validate farfield enclosed_entities: require CustomVolumes and rotation-volume association."""
     for zone in zones:
         if not isinstance(zone, _FarfieldBase):
             continue
 
         if zone.enclosed_entities is None:
-            if has_custom_zones:
+            if has_custom_volumes:
                 raise ValueError(
                     "`enclosed_entities` for farfield must be specified when "
-                    "`CustomZones` are present in volume zones."
+                    "`CustomVolume` entities are present in volume zones."
                 )
             continue
 
-        if not has_custom_zones:
+        if not has_custom_volumes:
             raise ValueError(
                 "`enclosed_entities` for farfield is only allowed when "
-                "`CustomZones` are present in volume zones."
+                "`CustomVolume` entities are present in volume zones."
             )
 
         for entity in param_info.expand_entity_list(zone.enclosed_entities):
@@ -338,12 +338,14 @@ class MeshingParams(Flow360BaseModel):
         if v is None:
             return v
 
-        has_custom_zones = any(isinstance(zone, CustomZones) for zone in v)
         rotation_entity_names = _collect_rotation_entity_names(
             v, param_info, (RotationVolume, RotationCylinder, RotationSphere)
         )
-        _validate_farfield_enclosed_entities(v, rotation_entity_names, has_custom_zones, param_info)
         custom_volumes = _collect_all_custom_volumes(v)
+        has_custom_volumes = len(custom_volumes) > 0
+        _validate_farfield_enclosed_entities(
+            v, rotation_entity_names, has_custom_volumes, param_info
+        )
         _validate_custom_volume_rotation_association(
             custom_volumes, rotation_entity_names, param_info
         )
