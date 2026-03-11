@@ -23,6 +23,7 @@ from flow360.component.simulation.meshing_param.volume_params import (
     UniformRefinement,
     UserDefinedFarfield,
     WindTunnelFarfield,
+    _FarfieldBase,
 )
 from flow360.component.simulation.primitives import (
     AxisymmetricBody,
@@ -31,7 +32,6 @@ from flow360.component.simulation.primitives import (
     Cylinder,
     SeedpointVolume,
     Sphere,
-    Surface,
 )
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.translator.solver_translator import inject_slice_info
@@ -120,6 +120,22 @@ def spherical_refinement_translator(obj: RotationSphere):
     }
 
 
+def _translate_enclosed_entity_name(entity, rotor_disk_names=None):
+    """Translate an enclosed entity to its mesher-expected name.
+
+    Used by both RotationVolume and farfield zone translation.
+    """
+    if is_exact_instance(entity, Cylinder):
+        if rotor_disk_names and entity.name in rotor_disk_names:
+            return "rotorDisk-" + entity.name
+        return "slidingInterface-" + entity.name
+    if is_exact_instance(entity, (AxisymmetricBody, Sphere)):
+        return "slidingInterface-" + entity.name
+    if is_exact_instance(entity, Box):
+        return "structuredBox-" + entity.name
+    return entity.name
+
+
 def rotation_volume_translator(obj: Union[RotationVolume, RotationSphere], rotor_disk_names: list):
     """Setting translation for RotationVolume/RotationSphere."""
     if isinstance(obj, RotationSphere):
@@ -130,23 +146,9 @@ def rotation_volume_translator(obj: Union[RotationVolume, RotationSphere], rotor
     setting["enclosedObjects"] = []
     if obj.enclosed_entities is not None:
         for enclosed_entity in obj.enclosed_entities.stored_entities:
-            if is_exact_instance(enclosed_entity, Cylinder):
-                if enclosed_entity.name in rotor_disk_names:
-                    # Current sliding interface encloses a rotor disk
-                    # Then we append the interface name which is hardcoded "rotorDisk-<name>""
-                    setting["enclosedObjects"].append("rotorDisk-" + enclosed_entity.name)
-                else:
-                    # Current sliding interface encloses another sliding interface
-                    # Then we append the interface name which is hardcoded "slidingInterface-<name>""
-                    setting["enclosedObjects"].append("slidingInterface-" + enclosed_entity.name)
-            elif is_exact_instance(enclosed_entity, AxisymmetricBody):
-                setting["enclosedObjects"].append("slidingInterface-" + enclosed_entity.name)
-            elif is_exact_instance(enclosed_entity, Sphere):
-                setting["enclosedObjects"].append("slidingInterface-" + enclosed_entity.name)
-            elif is_exact_instance(enclosed_entity, Box):
-                setting["enclosedObjects"].append("structuredBox-" + enclosed_entity.name)
-            elif is_exact_instance(enclosed_entity, Surface):
-                setting["enclosedObjects"].append(enclosed_entity.name)
+            setting["enclosedObjects"].append(
+                _translate_enclosed_entity_name(enclosed_entity, rotor_disk_names)
+            )
     return setting
 
 
@@ -259,20 +261,44 @@ def rotation_volume_entity_injector(
     return {}
 
 
+def _build_farfield_zone(volume_zones: list):
+    """Build the farfield zone dict from enclosed_entities on any farfield type.
+
+    CustomVolume entities are unwrapped into their constituent bounding_entities,
+    each translated via _translate_enclosed_entity_name. Final patches are deduplicated.
+    """
+    for zone in volume_zones:
+        if isinstance(zone, _FarfieldBase) and zone.enclosed_entities is not None:
+            patch_names: set[str] = set()
+            for entity in zone.enclosed_entities.stored_entities:
+                if isinstance(entity, CustomVolume):
+                    for child in entity.bounding_entities.stored_entities:
+                        patch_names.add(_translate_enclosed_entity_name(child))
+                else:
+                    patch_names.add(_translate_enclosed_entity_name(entity))
+            return {
+                "name": "farfield",
+                "patches": sorted(patch_names),
+            }
+    return None
+
+
 def _get_custom_volumes(volume_zones: list):
     """Get translated custom volumes from volume zones."""
 
     custom_volumes = []
     for zone in volume_zones:
         if isinstance(zone, CustomZones):
-            # Extract CustomVolume and SeedpointVolume from CustomZones
             enforce_tetrahedral = getattr(zone, "element_type") == "tetrahedra"
             for custom_volume in zone.entities.stored_entities:
                 if isinstance(custom_volume, CustomVolume):
                     volume_dict = {
                         "name": custom_volume.name,
                         "patches": sorted(
-                            [surface.name for surface in custom_volume.boundaries.stored_entities]
+                            [
+                                _translate_enclosed_entity_name(entity)
+                                for entity in custom_volume.bounding_entities.stored_entities
+                            ]
                         ),
                     }
                     if enforce_tetrahedral:
@@ -289,20 +315,11 @@ def _get_custom_volumes(volume_zones: list):
                         }
                     )
 
-    # Create "farfield" zone from enclosed_surfaces on AutomatedFarfield
-    for zone in volume_zones:
-        if isinstance(zone, AutomatedFarfield) and zone.enclosed_surfaces is not None:
-            patch_names = [surface.name for surface in zone.enclosed_surfaces.stored_entities]
-            custom_volumes.append(
-                {
-                    "name": "farfield",
-                    "patches": sorted(patch_names),
-                }
-            )
-            break
+    farfield_zone = _build_farfield_zone(volume_zones)
+    if farfield_zone is not None:
+        custom_volumes.append(farfield_zone)
 
     if custom_volumes:
-        # Sort custom volumes by name
         custom_volumes.sort(key=lambda x: x["name"])
     return custom_volumes
 
