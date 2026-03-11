@@ -1,13 +1,11 @@
 {
+    "cadIsFluid": true,
+    "enforcedSpacing": 5,
     "geometry": {
         "bodies": [
             {
                 "bodyName": "body0",
                 "gap": 1,
-                "spacing": {
-                    "min": 3,
-                    "max": 4
-                },
                 "regions": [
                     {
                         "patchName": "patch0"
@@ -15,15 +13,15 @@
                     {
                         "patchName": "patch1"
                     }
-                ]
+                ],
+                "spacing": {
+                    "max": 4,
+                    "min": 3
+                }
             },
             {
                 "bodyName": "body1",
                 "gap": 1,
-                "spacing": {
-                    "min": 3,
-                    "max": 4
-                },
                 "regions": [
                     {
                         "patchName": "patch0"
@@ -34,98 +32,120 @@
                     {
                         "patchName": "patch2"
                     }
-                ]
+                ],
+                "spacing": {
+                    "max": 4,
+                    "min": 3
+                }
             },
             {
                 "bodyName": "body2",
                 "gap": 1,
-                "spacing": {
-                    "min": 3,
-                    "max": 4
-                },
                 "regions": [
                     {
                         "patchName": "patch0"
                     }
-                ]
+                ],
+                "spacing": {
+                    "max": 4,
+                    "min": 3
+                }
             },
             {
                 "bodyName": "body3",
                 "gap": 1,
-                "spacing": {
-                    "min": 3,
-                    "max": 4
-                },
                 "regions": [
                     {
                         "patchName": "patch0"
                     }
-                ]
+                ],
+                "spacing": {
+                    "max": 4,
+                    "min": 3
+                }
             }
         ],
         "refinementVolumes": [
             {
-                "type": "box",
-                "min": {"x": -10, "y": 15, "z": 40},
-                "max": {"x": 10, "y": 45, "z": 80},
+                "max": {
+                    "x": 10,
+                    "y": 45,
+                    "z": 80
+                },
+                "min": {
+                    "x": -10,
+                    "y": 15,
+                    "z": 40
+                },
                 "name": "box0",
-                "spacing": 2
+                "spacing": 2,
+                "type": "box"
             },
             {
-                "type": "cylinder",
-                "point1": {"x": 10, "y": 20, "z": 0},
-                "point2": {"x": 10, "y": 20, "z": 60},
-                "radius": 20,
                 "name": "cyl0",
-                "spacing": 2
+                "point1": {
+                    "x": 10,
+                    "y": 20,
+                    "z": 0
+                },
+                "point2": {
+                    "x": 10,
+                    "y": 20,
+                    "z": 60
+                },
+                "radius": 20,
+                "spacing": 2,
+                "type": "cylinder"
             }
         ]
     },
+    "locationInMesh": {
+        "farfield": [
+            0,
+            0,
+            0
+        ]
+    },
     "mesherSettings": {
+        "meshQuality": {
+            "errorReduction": 0.75,
+            "featureEdgeDeduplicationTolerance": 0.2,
+            "maxBoundarySkewness": 20,
+            "maxConcave": 50,
+            "maxInternalSkewness": 50,
+            "maxNonOrtho": 85,
+            "minArea": 1e-12,
+            "minDeterminant": -100000.0,
+            "minFaceWeight": 0,
+            "minTetQuality": 1e-09,
+            "minTriangleTwist": -1,
+            "minTwist": -2,
+            "minVol": 1.953125e-10,
+            "minVolCollapseRatio": 0,
+            "minVolRatio": 0,
+            "nSmoothScale": 4,
+            "zMetricThreshold": 0.8
+        },
         "snappyHexMesh": {
             "castellatedMeshControls": {
-                "resolveFeatureAngle": 25,
+                "minRefinementCells": 10,
                 "nCellsBetweenLevels": 1,
-                "minRefinementCells": 10
+                "resolveFeatureAngle": 25
             },
             "snapControls": {
-                "nSmoothPatch": 3,
-                "tolerance": 2,
-                "nSolveIter": 30,
-                "nRelaxIter": 5,
-                "nFeatureSnapIter": 15,
                 "multiRegionFeatureSnap": true,
-                "strictRegionSnap": false
+                "nFeatureSnapIter": 15,
+                "nRelaxIter": 5,
+                "nSmoothPatch": 3,
+                "nSolveIter": 30,
+                "strictRegionSnap": false,
+                "tolerance": 2
             }
-        },
-    "meshQuality": {
-            "maxNonOrtho": 85,
-            "maxBoundarySkewness": 20,
-            "maxInternalSkewness": 50,
-            "maxConcave": 50,
-            "minVol": 1.953125e-10,
-            "minTetQuality": 1e-9,
-            "minArea": 1e-12,
-            "minTwist": -2,
-            "minDeterminant": -1e5,
-            "minVolRatio": 0,
-            "minFaceWeight": 0,
-            "minTriangleTwist": -1,
-            "nSmoothScale": 4,
-            "errorReduction": 0.75,
-            "zMetricThreshold": 0.8,
-            "featureEdgeDeduplicationTolerance": 0.2,
-            "minVolCollapseRatio": 0
         }
     },
     "smoothingControls": {
+        "iter": 5,
         "lambda": 0.7,
-        "mu": 0.71,
-        "iter": 5
-    },
-    "locationInMesh": {
-        "farfield": [0, 0, 0]
-    },
-    "cadIsFluid": true,
-    "enforcedSpacing": 5
+        "mu": 0.71
+    }
 }

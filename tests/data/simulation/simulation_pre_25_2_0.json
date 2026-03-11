@@ -57,9 +57,9 @@
             },
             "turbulence_model_solver": {
                 "CFL_multiplier": 2.0,
+                "DDES": true,
                 "absolute_tolerance": 1e-08,
                 "equation_evaluation_frequency": 1,
-                "DDES": true,
                 "grid_size_for_LES": "maxEdgeLength",
                 "linear_solver": {
                     "absolute_tolerance": null,

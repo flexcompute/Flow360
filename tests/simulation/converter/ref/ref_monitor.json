@@ -1,45 +1,40 @@
 {
-    "unit_system": {
-        "name": "SI"
-    },
     "models": [
         {
+            "initial_condition": {
+                "p": "p",
+                "rho": "rho",
+                "type_name": "NavierStokesInitialCondition",
+                "u": "u",
+                "v": "v",
+                "w": "w"
+            },
+            "interface_interpolation_tolerance": 0.2,
             "material": {
-                "type": "air",
-                "name": "air",
                 "dynamic_viscosity": {
-                    "reference_viscosity": {
-                        "value": 1.716e-05,
-                        "units": "Pa*s"
+                    "effective_temperature": {
+                        "units": "K",
+                        "value": 110.4
                     },
                     "reference_temperature": {
-                        "value": 273.15,
-                        "units": "K"
+                        "units": "K",
+                        "value": 273.15
                     },
-                    "effective_temperature": {
-                        "value": 110.4,
-                        "units": "K"
+                    "reference_viscosity": {
+                        "units": "Pa*s",
+                        "value": 1.716e-05
                     }
                 },
+                "name": "air",
+                "prandtl_number": 0.72,
                 "thermally_perfect_gas": {
-                    "type_name": "ThermallyPerfectGas",
                     "species": [
                         {
-                            "type_name": "FrozenSpecies",
+                            "mass_fraction": 1.0,
                             "name": "Air",
                             "nasa_9_coefficients": {
-                                "type_name": "NASA9Coefficients",
                                 "temperature_ranges": [
                                     {
-                                        "type_name": "NASA9CoefficientSet",
-                                        "temperature_range_min": {
-                                            "value": 200.0,
-                                            "units": "K"
-                                        },
-                                        "temperature_range_max": {
-                                            "value": 6000.0,
-                                            "units": "K"
-                                        },
                                         "coefficients": [
                                             0.0,
                                             0.0,
@@ -50,117 +45,107 @@
                                             0.0,
                                             0.0,
                                             0.0
-                                        ]
+                                        ],
+                                        "temperature_range_max": {
+                                            "units": "K",
+                                            "value": 6000.0
+                                        },
+                                        "temperature_range_min": {
+                                            "units": "K",
+                                            "value": 200.0
+                                        },
+                                        "type_name": "NASA9CoefficientSet"
                                     }
-                                ]
+                                ],
+                                "type_name": "NASA9Coefficients"
                             },
-                            "mass_fraction": 1.0
+                            "type_name": "FrozenSpecies"
                         }
-                    ]
+                    ],
+                    "type_name": "ThermallyPerfectGas"
                 },
-                "prandtl_number": 0.72,
-                "turbulent_prandtl_number": 0.9
+                "turbulent_prandtl_number": 0.9,
+                "type": "air"
             },
-            "initial_condition": {
-                "type_name": "NavierStokesInitialCondition",
-                "rho": "rho",
-                "u": "u",
-                "v": "v",
-                "w": "w",
-                "p": "p"
-            },
-            "type": "Fluid",
-            "private_attribute_id": "__default_fluid",
             "navier_stokes_solver": {
-                "absolute_tolerance": 1e-10,
-                "relative_tolerance": 0.0,
-                "order_of_accuracy": 2,
-                "equation_evaluation_frequency": 1,
-                "linear_solver": {
-                    "type_name": "LinearSolver",
-                    "max_iterations": 30
-                },
                 "CFL_multiplier": 1.0,
+                "absolute_tolerance": 1e-10,
+                "equation_evaluation_frequency": 1,
                 "kappa_MUSCL": -1.0,
-                "numerical_dissipation_factor": 1.0,
-                "limit_velocity": false,
                 "limit_pressure_density": false,
-                "type_name": "Compressible",
+                "limit_velocity": false,
+                "linear_solver": {
+                    "max_iterations": 30,
+                    "type_name": "LinearSolver"
+                },
                 "low_mach_preconditioner": false,
-                "update_jacobian_frequency": 4,
-                "max_force_jac_update_physical_steps": 0
+                "max_force_jac_update_physical_steps": 0,
+                "numerical_dissipation_factor": 1.0,
+                "order_of_accuracy": 2,
+                "relative_tolerance": 0.0,
+                "type_name": "Compressible",
+                "update_jacobian_frequency": 4
+            },
+            "private_attribute_id": "__default_fluid",
+            "transition_model_solver": {
+                "type_name": "None"
             },
             "turbulence_model_solver": {
+                "CFL_multiplier": 2.0,
                 "absolute_tolerance": 1e-08,
-                "relative_tolerance": 0.0,
-                "order_of_accuracy": 2,
                 "equation_evaluation_frequency": 4,
                 "linear_solver": {
-                    "type_name": "LinearSolver",
-                    "max_iterations": 20
+                    "max_iterations": 20,
+                    "type_name": "LinearSolver"
                 },
-                "CFL_multiplier": 2.0,
-                "type_name": "SpalartAllmaras",
-                "reconstruction_gradient_limiter": 0.5,
-                "quadratic_constitutive_relation": false,
+                "low_reynolds_correction": false,
+                "max_force_jac_update_physical_steps": 0,
                 "modeling_constants": {
-                    "type_name": "SpalartAllmarasConsts",
                     "C_DES": 0.72,
-                    "C_d": 8.0,
                     "C_cb1": 0.1355,
                     "C_cb2": 0.622,
+                    "C_d": 8.0,
+                    "C_min_rd": 10.0,
                     "C_sigma": 0.6666666666666666,
+                    "C_t3": 1.2,
+                    "C_t4": 0.5,
                     "C_v1": 7.1,
                     "C_vonKarman": 0.41,
                     "C_w2": 0.3,
                     "C_w4": 0.21,
                     "C_w5": 1.5,
-                    "C_t3": 1.2,
-                    "C_t4": 0.5,
-                    "C_min_rd": 10.0
+                    "type_name": "SpalartAllmarasConsts"
                 },
-                "update_jacobian_frequency": 4,
-                "max_force_jac_update_physical_steps": 0,
+                "order_of_accuracy": 2,
+                "quadratic_constitutive_relation": false,
+                "reconstruction_gradient_limiter": 0.5,
+                "relative_tolerance": 0.0,
                 "rotation_correction": false,
-                "low_reynolds_correction": false
+                "type_name": "SpalartAllmaras",
+                "update_jacobian_frequency": 4
             },
-            "transition_model_solver": {
-                "type_name": "None"
-            },
-            "interface_interpolation_tolerance": 0.2
+            "type": "Fluid"
         }
     ],
-    "time_stepping": {
-        "type_name": "Steady",
-        "max_steps": 2000,
-        "CFL": {
-            "type": "adaptive",
-            "min": 0.1,
-            "max": 10000.0,
-            "max_relative_change": 1.0,
-            "convergence_limiting_factor": 0.25
-        }
-    },
-    "user_defined_fields": [],
     "outputs": [
         {
-            "name": "R1",
             "entities": {
                 "stored_entities": [
                     {
-                        "private_attribute_entity_type_name": "Point",
-                        "name": "Point-0",
                         "location": {
+                            "units": "m",
                             "value": [
                                 2.694298,
                                 0.0,
                                 1.0195910000000001
-                            ],
-                            "units": "m"
-                        }
+                            ]
+                        },
+                        "name": "Point-0",
+                        "private_attribute_entity_type_name": "Point"
                     }
                 ]
             },
+            "name": "R1",
             "output_fields": {
                 "items": [
                     "primitiveVars"
@@ -169,47 +154,47 @@
             "output_type": "ProbeOutput"
         },
         {
-            "name": "V3",
             "entities": {
                 "stored_entities": [
                     {
-                        "private_attribute_entity_type_name": "Point",
-                        "name": "Point-1",
                         "location": {
+                            "units": "m",
                             "value": [
                                 4.007,
                                 0.0,
                                 -0.31760000000000005
-                            ],
-                            "units": "m"
-                        }
+                            ]
+                        },
+                        "name": "Point-1",
+                        "private_attribute_entity_type_name": "Point"
                     },
                     {
-                        "private_attribute_entity_type_name": "Point",
-                        "name": "Point-2",
                         "location": {
+                            "units": "m",
                             "value": [
                                 4.007,
                                 0.0,
                                 -0.29760000000000003
-                            ],
-                            "units": "m"
-                        }
+                            ]
+                        },
+                        "name": "Point-2",
+                        "private_attribute_entity_type_name": "Point"
                     },
                     {
-                        "private_attribute_entity_type_name": "Point",
-                        "name": "Point-3",
                         "location": {
+                            "units": "m",
                             "value": [
                                 4.007,
                                 0.0,
                                 -0.2776
-                            ],
-                            "units": "m"
-                        }
+                            ]
+                        },
+                        "name": "Point-3",
+                        "private_attribute_entity_type_name": "Point"
                     }
                 ]
             },
+            "name": "V3",
             "output_fields": {
                 "items": [
                     "mut"
@@ -219,7 +204,22 @@
         }
     ],
     "private_attribute_asset_cache": {
-        "use_inhouse_mesher": false,
-        "use_geometry_AI": false
-    }
+        "use_geometry_AI": false,
+        "use_inhouse_mesher": false
+    },
+    "time_stepping": {
+        "CFL": {
+            "convergence_limiting_factor": 0.25,
+            "max": 10000.0,
+            "max_relative_change": 1.0,
+            "min": 0.1,
+            "type": "adaptive"
+        },
+        "max_steps": 2000,
+        "type_name": "Steady"
+    },
+    "unit_system": {
+        "name": "SI"
+    },
+    "user_defined_fields": []
 }

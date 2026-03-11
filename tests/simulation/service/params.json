@@ -1,150 +1,66 @@
 {
-    "version": "25.8.0b4",
-    "unit_system": {
-        "name": "SI"
-    },
     "meshing": {
-        "refinement_factor": 1.0,
-        "gap_treatment_strength": 0.0,
         "defaults": {
-            "geometry_accuracy": null,
-            "surface_edge_growth_rate": 1.2,
-            "boundary_layer_growth_rate": 1.2,
             "boundary_layer_first_layer_thickness": null,
-            "number_of_boundary_layers": null,
-            "planar_face_tolerance": 1e-6,
-            "surface_max_edge_length": null,
-            "surface_max_aspect_ratio": 10.0,
-            "surface_max_adaptation_iterations": 50,
+            "boundary_layer_growth_rate": 1.2,
             "curvature_resolution_angle": {
-                "value": 12.0,
-                "units": "degree"
-            }
+                "units": "degree",
+                "value": 12.0
+            },
+            "geometry_accuracy": null,
+            "number_of_boundary_layers": null,
+            "planar_face_tolerance": 1e-06,
+            "surface_edge_growth_rate": 1.2,
+            "surface_max_adaptation_iterations": 50,
+            "surface_max_aspect_ratio": 10.0,
+            "surface_max_edge_length": null
         },
+        "gap_treatment_strength": 0.0,
+        "refinement_factor": 1.0,
         "refinements": [],
         "volume_zones": [
             {
-                "type": "AutomatedFarfield",
+                "method": "auto",
                 "name": "my_farfield",
-                "method": "auto"
+                "type": "AutomatedFarfield"
             }
         ]
     },
-    "reference_geometry": null,
-    "operating_condition": {
-        "type_name": "AerospaceCondition",
-        "private_attribute_constructor": "from_mach",
-        "private_attribute_input_cache": {
-            "mach": 0.2,
-            "reynolds_mesh_unit": null,
-            "project_length_unit": null,
-            "alpha": {
-                "value": 0.0,
-                "units": "degree"
-            },
-            "beta": {
-                "value": 0.0,
-                "units": "degree"
-            },
-            "temperature": null,
-            "thermal_state": {
-                "type_name": "ThermalState",
-                "private_attribute_constructor": "default",
-                "private_attribute_input_cache": {
-                    "altitude": null,
-                    "temperature_offset": null
-                },
-                "temperature": {
-                    "value": 288.15,
-                    "units": "K"
-                },
-                "density": {
-                    "value": 1.225,
-                    "units": "kg/m**3"
-                },
-                "material": {
-                    "type": "air",
-                    "name": "air",
-                    "dynamic_viscosity": {
-                        "reference_viscosity": {
-                            "value": 0.00001716,
-                            "units": "Pa*s"
-                        },
-                        "reference_temperature": {
-                            "value": 273.15,
-                            "units": "K"
-                        },
-                        "effective_temperature": {
-                            "value": 110.4,
-                            "units": "K"
-                        }
-                    }
-                }
-            },
-            "reference_mach": null
-        },
-        "alpha": {
-            "value": 0.0,
-            "units": "degree"
-        },
-        "beta": {
-            "value": 0.0,
-            "units": "degree"
-        },
-        "velocity_magnitude": {
-            "type_name": "number",
-            "value": 68.05880116164256,
-            "units": "m/s",
-            "expression": null,
-            "output_units": null
-        },
-        "thermal_state": {
-            "type_name": "ThermalState",
-            "private_attribute_constructor": "default",
-            "private_attribute_input_cache": {
-                "altitude": null,
-                "temperature_offset": null
-            },
-            "temperature": {
-                "value": 288.15,
-                "units": "K"
-            },
-            "density": {
-                "value": 1.225,
-                "units": "kg/m**3"
-            },
-            "material": {
-                "type": "air",
-                "name": "air",
-                "dynamic_viscosity": {
-                    "reference_viscosity": {
-                        "value": 0.00001716,
-                        "units": "Pa*s"
-                    },
-                    "reference_temperature": {
-                        "value": 273.15,
-                        "units": "K"
-                    },
-                    "effective_temperature": {
-                        "value": 110.4,
-                        "units": "K"
-                    }
-                }
-            }
-        },
-        "reference_velocity_magnitude": null
-    },
     "models": [
         {
-            "name": "Rotation",
-            "type": "Rotation",
             "entities": {
                 "stored_entities": [
                     {
-                        "private_attribute_registry_bucket_name": "VolumetricEntityType",
-                        "private_attribute_entity_type_name": "Cylinder",
-                        "private_attribute_id": "10fa2818-9b0c-4ccd-ad46-e06b8c2488bb",
+                        "axis": [
+                            0.0,
+                            1.0,
+                            0.0
+                        ],
+                        "center": {
+                            "units": "m",
+                            "value": [
+                                0.0,
+                                1.0,
+                                2.0
+                            ]
+                        },
+                        "height": {
+                            "units": "m",
+                            "value": 0.2
+                        },
+                        "inner_radius": {
+                            "units": "m",
+                            "value": 0.0
+                        },
                         "name": "rotating_zone",
+                        "outer_radius": {
+                            "units": "m",
+                            "value": 5.0
+                        },
+                        "private_attribute_entity_type_name": "Cylinder",
+                        "private_attribute_full_name": "rotatingBlock-rotating_zone",
+                        "private_attribute_id": "10fa2818-9b0c-4ccd-ad46-e06b8c2488bb",
+                        "private_attribute_registry_bucket_name": "VolumetricEntityType",
                         "private_attribute_zone_boundary_names": {
                             "items": [
                                 "rotatingBlock-rotating_zone/blade1",
@@ -155,275 +71,359 @@
                                 "rotatingBlock-rotating_zone/hub",
                                 "rotatingBlock-rotating_zone/slidingInterface-rotating_zone"
                             ]
-                        },
-                        "private_attribute_full_name": "rotatingBlock-rotating_zone",
-                        "axis": [
-                            0.0,
-                            1.0,
-                            0.0
-                        ],
-                        "center": {
-                            "value": [
-                                0.0,
-                                1.0,
-                                2.0
-                            ],
-                            "units": "m"
-                        },
-                        "height": {
-                            "value": 0.2,
-                            "units": "m"
-                        },
-                        "inner_radius": {
-                            "value": 0.0,
-                            "units": "m"
-                        },
-                        "outer_radius": {
-                            "value": 5.0,
-                            "units": "m"
                         }
                     }
                 ]
             },
-            "spec": {
-                "value": {
-                    "type_name": "number",
-                    "value": 200.0,
-                    "units": "degree/hr",
-                    "expression": null,
-                    "output_units": null
-                },
-                "type_name": "AngularVelocity"
-            },
+            "name": "Rotation",
             "parent_volume": null,
-            "rotating_reference_frame_model": null
+            "rotating_reference_frame_model": null,
+            "spec": {
+                "type_name": "AngularVelocity",
+                "value": {
+                    "expression": null,
+                    "output_units": null,
+                    "type_name": "number",
+                    "units": "degree/hr",
+                    "value": 200.0
+                }
+            },
+            "type": "Rotation"
         },
         {
-            "type": "Wall",
             "entities": {
                 "stored_entities": [
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
-                        "private_attribute_entity_type_name": "Surface",
-                        "private_attribute_id": null,
                         "name": "blade1",
+                        "private_attribute_color": null,
+                        "private_attribute_entity_type_name": "Surface",
                         "private_attribute_full_name": "rotatingBlock-rotating_zone/blade1",
+                        "private_attribute_id": null,
                         "private_attribute_is_interface": null,
-                        "private_attribute_tag_key": null,
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_sub_components": [],
-                        "private_attribute_color": null,
+                        "private_attribute_tag_key": null,
                         "private_attributes": null
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
-                        "private_attribute_entity_type_name": "Surface",
-                        "private_attribute_id": null,
                         "name": "blade2",
-                        "private_attribute_full_name": "rotatingBlock-rotating_zone/blade2",
-                        "private_attribute_is_interface": null,
-                        "private_attribute_tag_key": null,
-                        "private_attribute_sub_components": [],
                         "private_attribute_color": null,
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_full_name": "rotatingBlock-rotating_zone/blade2",
+                        "private_attribute_id": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_sub_components": [],
+                        "private_attribute_tag_key": null,
                         "private_attributes": null
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
-                        "private_attribute_entity_type_name": "Surface",
-                        "private_attribute_id": null,
                         "name": "blade3",
-                        "private_attribute_full_name": "rotatingBlock-rotating_zone/blade3",
-                        "private_attribute_is_interface": null,
-                        "private_attribute_tag_key": null,
-                        "private_attribute_sub_components": [],
                         "private_attribute_color": null,
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_full_name": "rotatingBlock-rotating_zone/blade3",
+                        "private_attribute_id": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_sub_components": [],
+                        "private_attribute_tag_key": null,
                         "private_attributes": null
                     }
                 ]
             },
-            "name": "Wall",
-            "use_wall_function": false,
-            "velocity": null,
             "heat_spec": {
+                "type_name": "HeatFlux",
                 "value": {
-                    "value": 0.0,
-                    "units": "W/m**2"
-                },
-                "type_name": "HeatFlux"
+                    "units": "W/m**2",
+                    "value": 0.0
+                }
             },
+            "name": "Wall",
+            "private_attribute_dict": null,
             "roughness_height": {
-                "value": 0.0,
-                "units": "m"
+                "units": "m",
+                "value": 0.0
             },
-            "private_attribute_dict": null
+            "type": "Wall",
+            "use_wall_function": false,
+            "velocity": null
         },
         {
-            "name": "Periodic",
-            "type": "Periodic",
             "entity_pairs": {
                 "items": [
                     {
                         "pair": [
                             {
-                                "private_attribute_registry_bucket_name": "SurfaceEntityType",
-                                "private_attribute_entity_type_name": "Surface",
-                                "private_attribute_id": null,
                                 "name": "blade4",
-                                "private_attribute_full_name": "rotatingBlock-rotating_zone/blade4",
-                                "private_attribute_is_interface": null,
-                                "private_attribute_tag_key": null,
-                                "private_attribute_sub_components": [],
                                 "private_attribute_color": null,
+                                "private_attribute_entity_type_name": "Surface",
+                                "private_attribute_full_name": "rotatingBlock-rotating_zone/blade4",
+                                "private_attribute_id": null,
+                                "private_attribute_is_interface": null,
+                                "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                                "private_attribute_sub_components": [],
+                                "private_attribute_tag_key": null,
                                 "private_attributes": null
                             },
                             {
-                                "private_attribute_registry_bucket_name": "SurfaceEntityType",
-                                "private_attribute_entity_type_name": "Surface",
-                                "private_attribute_id": null,
                                 "name": "blade5",
-                                "private_attribute_full_name": "rotatingBlock-rotating_zone/blade5",
-                                "private_attribute_is_interface": null,
-                                "private_attribute_tag_key": null,
-                                "private_attribute_sub_components": [],
                                 "private_attribute_color": null,
+                                "private_attribute_entity_type_name": "Surface",
+                                "private_attribute_full_name": "rotatingBlock-rotating_zone/blade5",
+                                "private_attribute_id": null,
+                                "private_attribute_is_interface": null,
+                                "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                                "private_attribute_sub_components": [],
+                                "private_attribute_tag_key": null,
                                 "private_attributes": null
                             }
                         ]
                     }
                 ]
             },
+            "name": "Periodic",
             "spec": {
-                "type_name": "Rotational",
-                "axis_of_rotation": null
-            }
+                "axis_of_rotation": null,
+                "type_name": "Rotational"
+            },
+            "type": "Periodic"
         },
         {
-            "type": "Freestream",
             "entities": {
                 "stored_entities": [
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
-                        "private_attribute_entity_type_name": "GhostSurface",
-                        "private_attribute_id": null,
                         "name": "farfield",
-                        "private_attribute_full_name": "stationaryBlock/farfield"
+                        "private_attribute_entity_type_name": "GhostSurface",
+                        "private_attribute_full_name": "stationaryBlock/farfield",
+                        "private_attribute_id": null,
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType"
                     }
                 ]
             },
-            "turbulence_quantities": null,
             "name": "Freestream",
+            "turbulence_quantities": null,
+            "type": "Freestream",
             "velocity": null
         },
         {
-            "material": {
-                "type": "air",
-                "name": "air",
-                "dynamic_viscosity": {
-                    "reference_viscosity": {
-                        "value": 0.00001716,
-                        "units": "Pa*s"
-                    },
-                    "reference_temperature": {
-                        "value": 273.15,
-                        "units": "K"
-                    },
-                    "effective_temperature": {
-                        "value": 110.4,
-                        "units": "K"
-                    }
-                }
-            },
             "initial_condition": {
-                "type_name": "NavierStokesInitialCondition",
                 "constants": null,
+                "p": "p",
                 "rho": "rho",
+                "type_name": "NavierStokesInitialCondition",
                 "u": "u",
                 "v": "v",
-                "w": "w",
-                "p": "p"
+                "w": "w"
             },
-            "type": "Fluid",
+            "material": {
+                "dynamic_viscosity": {
+                    "effective_temperature": {
+                        "units": "K",
+                        "value": 110.4
+                    },
+                    "reference_temperature": {
+                        "units": "K",
+                        "value": 273.15
+                    },
+                    "reference_viscosity": {
+                        "units": "Pa*s",
+                        "value": 1.716e-05
+                    }
+                },
+                "name": "air",
+                "type": "air"
+            },
             "navier_stokes_solver": {
+                "CFL_multiplier": 1.0,
                 "absolute_tolerance": 1e-10,
-                "relative_tolerance": 0.0,
-                "order_of_accuracy": 2,
                 "equation_evaluation_frequency": 1,
+                "kappa_MUSCL": -1.0,
+                "limit_pressure_density": false,
+                "limit_velocity": false,
                 "linear_solver": {
-                    "max_iterations": 30,
                     "absolute_tolerance": null,
+                    "max_iterations": 30,
                     "relative_tolerance": null
                 },
-                "private_attribute_dict": null,
-                "CFL_multiplier": 1.0,
-                "kappa_MUSCL": -1.0,
-                "numerical_dissipation_factor": 1.0,
-                "limit_velocity": false,
-                "limit_pressure_density": false,
-                "type_name": "Compressible",
                 "low_mach_preconditioner": false,
                 "low_mach_preconditioner_threshold": null,
-                "update_jacobian_frequency": 4,
-                "max_force_jac_update_physical_steps": 0
-            },
-            "turbulence_model_solver": {
-                "absolute_tolerance": 1e-8,
-                "relative_tolerance": 0.0,
-                "order_of_accuracy": 2,
-                "equation_evaluation_frequency": 4,
-                "linear_solver": {
-                    "max_iterations": 20,
-                    "absolute_tolerance": null,
-                    "relative_tolerance": null
-                },
-                "private_attribute_dict": null,
-                "CFL_multiplier": 2.0,
-                "type_name": "SpalartAllmaras",
-                "reconstruction_gradient_limiter": 0.5,
-                "quadratic_constitutive_relation": false,
-                "modeling_constants": {
-                    "type_name": "SpalartAllmarasConsts",
-                    "C_DES": 0.72,
-                    "C_d": 8.0,
-                    "C_cb1": 0.1355,
-                    "C_cb2": 0.622,
-                    "C_sigma": 0.6666666666666666,
-                    "C_v1": 7.1,
-                    "C_vonKarman": 0.41,
-                    "C_w2": 0.3,
-                    "C_t3": 1.2,
-                    "C_t4": 0.5,
-                    "C_min_rd": 10.0
-                },
-                "update_jacobian_frequency": 4,
                 "max_force_jac_update_physical_steps": 0,
-                "hybrid_model": null,
-                "rotation_correction": false,
-                "controls": null
+                "numerical_dissipation_factor": 1.0,
+                "order_of_accuracy": 2,
+                "private_attribute_dict": null,
+                "relative_tolerance": 0.0,
+                "type_name": "Compressible",
+                "update_jacobian_frequency": 4
             },
             "transition_model_solver": {
                 "type_name": "None"
-            }
+            },
+            "turbulence_model_solver": {
+                "CFL_multiplier": 2.0,
+                "absolute_tolerance": 1e-08,
+                "controls": null,
+                "equation_evaluation_frequency": 4,
+                "hybrid_model": null,
+                "linear_solver": {
+                    "absolute_tolerance": null,
+                    "max_iterations": 20,
+                    "relative_tolerance": null
+                },
+                "max_force_jac_update_physical_steps": 0,
+                "modeling_constants": {
+                    "C_DES": 0.72,
+                    "C_cb1": 0.1355,
+                    "C_cb2": 0.622,
+                    "C_d": 8.0,
+                    "C_min_rd": 10.0,
+                    "C_sigma": 0.6666666666666666,
+                    "C_t3": 1.2,
+                    "C_t4": 0.5,
+                    "C_v1": 7.1,
+                    "C_vonKarman": 0.41,
+                    "C_w2": 0.3,
+                    "type_name": "SpalartAllmarasConsts"
+                },
+                "order_of_accuracy": 2,
+                "private_attribute_dict": null,
+                "quadratic_constitutive_relation": false,
+                "reconstruction_gradient_limiter": 0.5,
+                "relative_tolerance": 0.0,
+                "rotation_correction": false,
+                "type_name": "SpalartAllmaras",
+                "update_jacobian_frequency": 4
+            },
+            "type": "Fluid"
         }
     ],
+    "operating_condition": {
+        "alpha": {
+            "units": "degree",
+            "value": 0.0
+        },
+        "beta": {
+            "units": "degree",
+            "value": 0.0
+        },
+        "private_attribute_constructor": "from_mach",
+        "private_attribute_input_cache": {
+            "alpha": {
+                "units": "degree",
+                "value": 0.0
+            },
+            "beta": {
+                "units": "degree",
+                "value": 0.0
+            },
+            "mach": 0.2,
+            "project_length_unit": null,
+            "reference_mach": null,
+            "reynolds_mesh_unit": null,
+            "temperature": null,
+            "thermal_state": {
+                "density": {
+                    "units": "kg/m**3",
+                    "value": 1.225
+                },
+                "material": {
+                    "dynamic_viscosity": {
+                        "effective_temperature": {
+                            "units": "K",
+                            "value": 110.4
+                        },
+                        "reference_temperature": {
+                            "units": "K",
+                            "value": 273.15
+                        },
+                        "reference_viscosity": {
+                            "units": "Pa*s",
+                            "value": 1.716e-05
+                        }
+                    },
+                    "name": "air",
+                    "type": "air"
+                },
+                "private_attribute_constructor": "default",
+                "private_attribute_input_cache": {
+                    "altitude": null,
+                    "temperature_offset": null
+                },
+                "temperature": {
+                    "units": "K",
+                    "value": 288.15
+                },
+                "type_name": "ThermalState"
+            }
+        },
+        "reference_velocity_magnitude": null,
+        "thermal_state": {
+            "density": {
+                "units": "kg/m**3",
+                "value": 1.225
+            },
+            "material": {
+                "dynamic_viscosity": {
+                    "effective_temperature": {
+                        "units": "K",
+                        "value": 110.4
+                    },
+                    "reference_temperature": {
+                        "units": "K",
+                        "value": 273.15
+                    },
+                    "reference_viscosity": {
+                        "units": "Pa*s",
+                        "value": 1.716e-05
+                    }
+                },
+                "name": "air",
+                "type": "air"
+            },
+            "private_attribute_constructor": "default",
+            "private_attribute_input_cache": {
+                "altitude": null,
+                "temperature_offset": null
+            },
+            "temperature": {
+                "units": "K",
+                "value": 288.15
+            },
+            "type_name": "ThermalState"
+        },
+        "type_name": "AerospaceCondition",
+        "velocity_magnitude": {
+            "expression": null,
+            "output_units": null,
+            "type_name": "number",
+            "units": "m/s",
+            "value": 68.05880116164256
+        }
+    },
+    "outputs": null,
+    "private_attribute_asset_cache": {
+        "project_entity_info": null,
+        "project_length_unit": null,
+        "use_geometry_AI": false,
+        "use_inhouse_mesher": false,
+        "variable_context": null
+    },
+    "private_attribute_dict": null,
+    "reference_geometry": null,
     "time_stepping": {
-        "type_name": "Steady",
-        "max_steps": 2000,
         "CFL": {
-            "type": "adaptive",
-            "min": 0.1,
+            "convergence_limiting_factor": 0.25,
             "max": 10000.0,
             "max_relative_change": 1.0,
-            "convergence_limiting_factor": 0.25
-        }
+            "min": 0.1,
+            "type": "adaptive"
+        },
+        "max_steps": 2000,
+        "type_name": "Steady"
+    },
+    "unit_system": {
+        "name": "SI"
     },
     "user_defined_dynamics": null,
     "user_defined_fields": [],
-    "outputs": null,
-    "private_attribute_asset_cache": {
-        "project_length_unit": null,
-        "project_entity_info": null,
-        "use_inhouse_mesher": false,
-        "use_geometry_AI": false,
-        "variable_context": null
-    },
-    "private_attribute_dict": null
+    "version": "25.8.0b4"
 }
