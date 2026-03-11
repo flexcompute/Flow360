@@ -1,92 +1,92 @@
 {
-	"geometry": {
-		"refArea": 1,
-		"momentCenter": [
-			0,
-			0,
-			0
-		],
-		"momentLength": [
-			1,
-			1,
-			1
-		]
-	},
-	"freestream": {
-		"Reynolds": 1520000,
-		"Mach": 0.09,
-		"Temperature": 297.778,
-		"alphaAngle": 13.87,
-		"betaAngle": 0
-	},
-	"boundaries": {
-		"Block/Symm1": {
-			"type": "SlipWall"
-		},
-		"Block/Symm2": {
-			"type": "SlipWall"
-		},
-		"Block/Farfield": {
-			"type": "Freestream"
-		},
-		"Block/Wall": {
-			"type": "NoSlipWall"
-		}
-	},
-	"navierStokesSolver": {
-		"tolerance": 1e-10,
-		"relativeTolerance": 1e-10,
-		"linearIterations": 35,
-		"kappaMUSCL": -1,
-		"orderOfAccuracy": 2,
-		"updateJacobianFrequency": 4,
-		"equationEvalFrequency": 1
-	},
-	"turbulenceModelSolver": {
-		"modelType": "SpalartAllmaras",
-		"absoluteTolerance": 1e-8,
-		"relativeTolerance": 1e-8,
-		"linearIterations": 25,
-		"kappaMUSCL": -1,
-		"orderOfAccuracy": 2,
-		"updateJacobianFrequency": 4,
-		"equationEvalFrequency": 4
-	},
-	"timeStepping": {
-		"timeStepSize": "inf",
-		"maxPhysicalSteps": 1,
-		"maxPseudoSteps": 20000,
-		"CFL": {
-			"initial": 1,
-			"final": 200,
-			"rampSteps": 2000
-		}
-	},
-	"volumeOutput": {
-		"outputFormat": "tecplot",
-		"primitiveVars": true,
-		"vorticity": false,
-		"residualNavierStokes": true,
-		"residualTurbulence": true,
-		"T": false,
-		"s": true,
-		"Cp": true,
-		"mut": true,
-		"mutRatio": true,
-		"qcriterion": true
-	},
-	"surfaceOutput": {
-		"outputFormat": "tecplot",
-		"primitiveVars": true,
-		"Cp": true,
-		"Cf": true,
-		"CfTangent": true,
-		"CfNormal": true,
-		"CfVec": true,
-		"yPlus": true,
-		"wallDistance": false,
-		"Mach": false,
-		"animationFrequency": -1,
-		"nodeForcesPerUnitArea": true
-	}
+    "boundaries": {
+        "Block/Farfield": {
+            "type": "Freestream"
+        },
+        "Block/Symm1": {
+            "type": "SlipWall"
+        },
+        "Block/Symm2": {
+            "type": "SlipWall"
+        },
+        "Block/Wall": {
+            "type": "NoSlipWall"
+        }
+    },
+    "freestream": {
+        "Mach": 0.09,
+        "Reynolds": 1520000,
+        "Temperature": 297.778,
+        "alphaAngle": 13.87,
+        "betaAngle": 0
+    },
+    "geometry": {
+        "momentCenter": [
+            0,
+            0,
+            0
+        ],
+        "momentLength": [
+            1,
+            1,
+            1
+        ],
+        "refArea": 1
+    },
+    "navierStokesSolver": {
+        "equationEvalFrequency": 1,
+        "kappaMUSCL": -1,
+        "linearIterations": 35,
+        "orderOfAccuracy": 2,
+        "relativeTolerance": 1e-10,
+        "tolerance": 1e-10,
+        "updateJacobianFrequency": 4
+    },
+    "surfaceOutput": {
+        "Cf": true,
+        "CfNormal": true,
+        "CfTangent": true,
+        "CfVec": true,
+        "Cp": true,
+        "Mach": false,
+        "animationFrequency": -1,
+        "nodeForcesPerUnitArea": true,
+        "outputFormat": "tecplot",
+        "primitiveVars": true,
+        "wallDistance": false,
+        "yPlus": true
+    },
+    "timeStepping": {
+        "CFL": {
+            "final": 200,
+            "initial": 1,
+            "rampSteps": 2000
+        },
+        "maxPhysicalSteps": 1,
+        "maxPseudoSteps": 20000,
+        "timeStepSize": "inf"
+    },
+    "turbulenceModelSolver": {
+        "absoluteTolerance": 1e-08,
+        "equationEvalFrequency": 4,
+        "kappaMUSCL": -1,
+        "linearIterations": 25,
+        "modelType": "SpalartAllmaras",
+        "orderOfAccuracy": 2,
+        "relativeTolerance": 1e-08,
+        "updateJacobianFrequency": 4
+    },
+    "volumeOutput": {
+        "Cp": true,
+        "T": false,
+        "mut": true,
+        "mutRatio": true,
+        "outputFormat": "tecplot",
+        "primitiveVars": true,
+        "qcriterion": true,
+        "residualNavierStokes": true,
+        "residualTurbulence": true,
+        "s": true,
+        "vorticity": false
+    }
 }

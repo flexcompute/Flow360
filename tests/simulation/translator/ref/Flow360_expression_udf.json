@@ -1,20 +1,52 @@
 {
-    "freestream": {
-        "alphaAngle": 0.0,
-        "betaAngle": 0.0,
-        "Mach": 0.8399999999999999,
-        "Temperature": 288.15,
-        "muRef": 4.292321046986499e-08
-    },
+    "boundaries": {},
     "fluidProperties": {
         "prandtlNumber": 0.72,
         "turbulentPrandtlNumber": 0.9
     },
+    "freestream": {
+        "Mach": 0.8399999999999999,
+        "Temperature": 288.15,
+        "alphaAngle": 0.0,
+        "betaAngle": 0.0,
+        "muRef": 4.292321046986499e-08
+    },
+    "initialCondition": {
+        "p": "p",
+        "rho": "rho",
+        "type": "initialCondition",
+        "u": "u",
+        "v": "v",
+        "w": "w"
+    },
+    "navierStokesSolver": {
+        "CFLMultiplier": 1.0,
+        "absoluteTolerance": 1e-10,
+        "equationEvalFrequency": 1,
+        "kappaMUSCL": -1.0,
+        "limitPressureDensity": false,
+        "limitVelocity": false,
+        "linearSolver": {
+            "maxIterations": 30,
+            "typeName": "LinearSolver"
+        },
+        "lowMachPreconditioner": false,
+        "maxForceJacUpdatePhysicalSteps": 0,
+        "modelType": "Compressible",
+        "numericalDissipationFactor": 1.0,
+        "orderOfAccuracy": 2,
+        "relativeTolerance": 0.0,
+        "updateJacobianFrequency": 4
+    },
+    "outputRescale": {
+        "velocityScale": 1.0
+    },
+    "runControl": {
+        "externalProcessMonitorOutput": false
+    },
     "thermallyPerfectGasModel": {
         "temperatureRanges": [
             {
-                "temperatureRangeMin": 0.694082942911678,
-                "temperatureRangeMax": 20.82248828735034,
                 "coefficients": [
                     0.0,
                     0.0,
@@ -25,119 +57,87 @@
                     0.0,
                     7.890809489614162e-16,
                     0.0
-                ]
+                ],
+                "temperatureRangeMax": 20.82248828735034,
+                "temperatureRangeMin": 0.694082942911678
             }
         ]
     },
     "timeStepping": {
         "CFL": {
-            "type": "adaptive",
-            "min": 0.1,
+            "convergenceLimitingFactor": 0.25,
             "max": 10000.0,
             "maxRelativeChange": 1.0,
-            "convergenceLimitingFactor": 0.25
+            "min": 0.1,
+            "type": "adaptive"
         },
-        "physicalSteps": 1,
-        "orderOfAccuracy": 2,
         "maxPseudoSteps": 2000,
+        "orderOfAccuracy": 2,
+        "physicalSteps": 1,
         "timeStepSize": "inf"
     },
-    "navierStokesSolver": {
-        "absoluteTolerance": 1e-10,
-        "relativeTolerance": 0.0,
-        "orderOfAccuracy": 2,
-        "linearSolver": {
-            "maxIterations": 30,
-            "typeName": "LinearSolver"
-        },
-        "CFLMultiplier": 1.0,
-        "kappaMUSCL": -1.0,
-        "numericalDissipationFactor": 1.0,
-        "limitVelocity": false,
-        "limitPressureDensity": false,
-        "lowMachPreconditioner": false,
-        "updateJacobianFrequency": 4,
-        "maxForceJacUpdatePhysicalSteps": 0,
-        "modelType": "Compressible",
-        "equationEvalFrequency": 1
-    },
     "turbulenceModelSolver": {
+        "CFLMultiplier": 2.0,
+        "DDES": false,
+        "ZDES": false,
         "absoluteTolerance": 1e-08,
-        "relativeTolerance": 0.0,
-        "orderOfAccuracy": 2,
+        "equationEvalFrequency": 4,
+        "gridSizeForLES": "maxEdgeLength",
         "linearSolver": {
             "maxIterations": 20,
             "typeName": "LinearSolver"
         },
         "lowReynoldsCorrection": false,
-        "CFLMultiplier": 2.0,
-        "reconstructionGradientLimiter": 0.5,
-        "quadraticConstitutiveRelation": false,
-        "updateJacobianFrequency": 4,
         "maxForceJacUpdatePhysicalSteps": 0,
-        "rotationCorrection": false,
-        "equationEvalFrequency": 4,
-        "modelType": "SpalartAllmaras",
         "modelConstants": {
             "C_DES": 0.72,
-            "C_d": 8.0,
             "C_cb1": 0.1355,
             "C_cb2": 0.622,
+            "C_d": 8.0,
+            "C_min_rd": 10.0,
             "C_sigma": 0.6666666666666666,
+            "C_t3": 1.2,
+            "C_t4": 0.5,
             "C_v1": 7.1,
             "C_vonKarman": 0.41,
             "C_w2": 0.3,
             "C_w4": 0.21,
-            "C_w5": 1.5,
-            "C_t3": 1.2,
-            "C_t4": 0.5,
-            "C_min_rd": 10.0
+            "C_w5": 1.5
         },
-        "DDES": false,
-        "ZDES": false,
-        "gridSizeForLES": "maxEdgeLength"
+        "modelType": "SpalartAllmaras",
+        "orderOfAccuracy": 2,
+        "quadraticConstitutiveRelation": false,
+        "reconstructionGradientLimiter": 0.5,
+        "relativeTolerance": 0.0,
+        "rotationCorrection": false,
+        "updateJacobianFrequency": 4
     },
-    "initialCondition": {
-        "type": "initialCondition",
-        "rho": "rho",
-        "u": "u",
-        "v": "v",
-        "w": "w",
-        "p": "p"
-    },
-    "boundaries": {},
+    "userDefinedFields": [
+        {
+            "expression": "double ___Mach;___Mach = usingLiquidAsMaterial ? 0 : sqrt(primitiveVars[1] * primitiveVars[1] + primitiveVars[2] * primitiveVars[2] + primitiveVars[3] * primitiveVars[3]) / sqrt(1.4 * primitiveVars[4] / primitiveVars[0]);Mach_SI = (___Mach * 1.0);",
+            "name": "Mach_SI"
+        },
+        {
+            "expression": "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;uuu[0] = (___velocity[0] * 340.2940058082124); uuu[1] = (___velocity[1] * 340.2940058082124); uuu[2] = (___velocity[2] * 340.2940058082124);",
+            "name": "uuu"
+        },
+        {
+            "expression": "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;velocity_SI[0] = (___velocity[0] * 340.2940058082124); velocity_SI[1] = (___velocity[1] * 340.2940058082124); velocity_SI[2] = (___velocity[2] * 340.2940058082124);",
+            "name": "velocity_SI"
+        }
+    ],
+    "usingLiquidAsMaterial": false,
     "volumeOutput": {
+        "animationFrequency": -1,
+        "animationFrequencyOffset": 0,
+        "animationFrequencyTimeAverage": -1,
+        "animationFrequencyTimeAverageOffset": 0,
         "outputFields": [
             "Mach_SI",
             "velocity_SI",
             "uuu"
         ],
         "outputFormat": "paraview",
-        "animationFrequency": -1,
-        "animationFrequencyOffset": 0,
-        "animationFrequencyTimeAverage": -1,
-        "animationFrequencyTimeAverageOffset": 0,
         "startAverageIntegrationStep": -1
-    },
-    "userDefinedFields": [
-        {
-            "name": "Mach_SI",
-            "expression": "double ___Mach;___Mach = usingLiquidAsMaterial ? 0 : sqrt(primitiveVars[1] * primitiveVars[1] + primitiveVars[2] * primitiveVars[2] + primitiveVars[3] * primitiveVars[3]) / sqrt(1.4 * primitiveVars[4] / primitiveVars[0]);Mach_SI = (___Mach * 1.0);"
-        },
-        {
-            "name": "uuu",
-            "expression": "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;uuu[0] = (___velocity[0] * 340.2940058082124); uuu[1] = (___velocity[1] * 340.2940058082124); uuu[2] = (___velocity[2] * 340.2940058082124);"
-        },
-        {
-            "name": "velocity_SI",
-            "expression": "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;velocity_SI[0] = (___velocity[0] * 340.2940058082124); velocity_SI[1] = (___velocity[1] * 340.2940058082124); velocity_SI[2] = (___velocity[2] * 340.2940058082124);"
-        }
-    ],
-    "usingLiquidAsMaterial": false,
-    "outputRescale": {
-        "velocityScale": 1.0
-    },
-    "runControl": {
-        "externalProcessMonitorOutput": false
     }
 }

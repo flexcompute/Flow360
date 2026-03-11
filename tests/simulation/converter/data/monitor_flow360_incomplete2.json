@@ -1,13 +1,13 @@
 {
-	"monitorOutput": {
-		"monitors": {
-			"R1": {
-				"type": "probe",
-				"monitorLocations": [],
-				"outputFields": [
-					"primitiveVars"
-				]
-			}
-		}
-	}
+    "monitorOutput": {
+        "monitors": {
+            "R1": {
+                "monitorLocations": [],
+                "outputFields": [
+                    "primitiveVars"
+                ],
+                "type": "probe"
+            }
+        }
+    }
 }
