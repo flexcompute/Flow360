@@ -762,6 +762,9 @@ def _to_25_10_0(params_as_dict):
 
         for output in outputs:
             fmt = output.get("output_format")
+            if isinstance(fmt, list):
+                output["output_format"] = sorted(set(fmt))
+                continue
             if not isinstance(fmt, str):
                 continue
             if fmt == "both":
