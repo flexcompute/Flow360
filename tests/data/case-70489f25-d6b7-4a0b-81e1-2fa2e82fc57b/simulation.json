@@ -560,9 +560,9 @@
     "private_attribute_dict": null,
     "reference_geometry": {
         "area": {
+            "type_name": "number",
             "units": "m**2",
-            "value": 70685.83470577035,
-            "type_name":"number"
+            "value": 70685.83470577035
         },
         "moment_center": {
             "units": "m",

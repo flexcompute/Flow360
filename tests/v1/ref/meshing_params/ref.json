@@ -1,10 +1,10 @@
 {
-    "maxEdgeLength": 0.1,
+    "curvatureResolutionAngle": 15.0,
     "edges": {
         "leadingEdge": {
             "method": "angle",
-            "value": 1.0,
-            "type": "aniso"
+            "type": "aniso",
+            "value": 1.0
         }
     },
     "faces": {
@@ -12,6 +12,6 @@
             "maxEdgeLength": 0.05
         }
     },
-    "curvatureResolutionAngle": 15.0,
-    "growthRate": 1.2
+    "growthRate": 1.2,
+    "maxEdgeLength": 0.1
 }

@@ -1,6 +1,9 @@
 {
-    "boundaries" :
-    {
-        "noSlipWalls" : ["one", "two", "three"]
+    "boundaries": {
+        "noSlipWalls": [
+            "one",
+            "two",
+            "three"
+        ]
     }
 }

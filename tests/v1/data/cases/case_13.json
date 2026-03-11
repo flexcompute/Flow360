@@ -1,6 +1,26 @@
 {
+    "boundaries": {
+        "1": {
+            "name": "wing",
+            "type": "NoSlipWall"
+        },
+        "2": {
+            "name": "symmetry",
+            "type": "SlipWall"
+        },
+        "3": {
+            "name": "freestream",
+            "type": "Freestream"
+        }
+    },
+    "freestream": {
+        "Mach": 0.84,
+        "Reynolds": 14600000.0,
+        "Temperature": 288.15,
+        "alphaAngle": 3.06,
+        "betaAngle": 0.0
+    },
     "geometry": {
-        "refArea": 1.15315084119231,
         "momentCenter": [
             0.0,
             0.0,
@@ -10,79 +30,26 @@
             1.47602,
             0.801672958512342,
             1.47602
-        ]
-    },
-    "volumeOutput": {
-        "outputFormat": "tecplot",
-        "animationFrequency": -1,
-        "outputFields": [
-            "primitiveVars",
-            "Mach",
-            "hmmm"
-        ]
-    },
-    "surfaceOutput": {
-        "outputFormat": "tecplot",
-        "animationFrequency": -1,
-        "outputFields": [
-            "primitiveVars",
-            "Cp",
-            "Cf",
-            "uhh"
-        ]
-    },
-    "sliceOutput": {
-        "outputFormat": "paraview",
-        "slices": [
-            {
-                "sliceName": "mid_Height",
-                "sliceNormal": [
-                    0,
-                    0,
-                    1
-                ],
-                "sliceOrigin": [
-                    0,
-                    0,
-                    0.5
-                ],
-                "outputFields": [
-                    "uhh",
-                    "Cp"
-                ]
-            }
         ],
-        "primitiveVars": true,
-        "Mach": true,
-        "animationFrequency": 5
+        "refArea": 1.15315084119231
     },
     "isoSurfaceOutput": {
         "animationFrequency": -1,
-        "outputFormat": "tecplot",
         "isoSurfaces": {
             "newKey": {
-                "surfaceField": "Mach",
-                "surfaceFieldMagnitude": 0.25,
                 "outputFields": [
                     "Mach",
                     "hmmm"
-                ]
+                ],
+                "surfaceField": "Mach",
+                "surfaceFieldMagnitude": 0.25
             }
-        }
+        },
+        "outputFormat": "tecplot"
     },
     "monitorOutput": {
         "monitors": {
-            "newKey": {
-                "type": "surfaceIntegral",
-                "surfaces": [
-                    "fluid/rightWing"
-                ],
-                "outputFields": [
-                    "hmmm"
-                ]
-            },
             "Group1": {
-                "type": "probe",
                 "monitorLocations": [
                     [
                         0.12,
@@ -108,7 +75,17 @@
                 "outputFields": [
                     "primitiveVars",
                     "uhh"
-                ]
+                ],
+                "type": "probe"
+            },
+            "newKey": {
+                "outputFields": [
+                    "hmmm"
+                ],
+                "surfaces": [
+                    "fluid/rightWing"
+                ],
+                "type": "surfaceIntegral"
             }
         }
     },
@@ -116,47 +93,70 @@
         "absoluteTolerance": 1e-10,
         "kappaMUSCL": -1.0
     },
-    "turbulenceModelSolver": {
-        "modelType": "SpalartAllmaras",
-        "absoluteTolerance": 1e-8
+    "sliceOutput": {
+        "Mach": true,
+        "animationFrequency": 5,
+        "outputFormat": "paraview",
+        "primitiveVars": true,
+        "slices": [
+            {
+                "outputFields": [
+                    "uhh",
+                    "Cp"
+                ],
+                "sliceName": "mid_Height",
+                "sliceNormal": [
+                    0,
+                    0,
+                    1
+                ],
+                "sliceOrigin": [
+                    0,
+                    0,
+                    0.5
+                ]
+            }
+        ]
     },
-    "freestream": {
-        "Reynolds": 14.6e6,
-        "Mach": 0.84,
-        "Temperature": 288.15,
-        "alphaAngle": 3.06,
-        "betaAngle": 0.0
-    },
-    "boundaries": {
-        "1": {
-            "type": "NoSlipWall",
-            "name": "wing"
-        },
-        "2": {
-            "type": "SlipWall",
-            "name": "symmetry"
-        },
-        "3": {
-            "type": "Freestream",
-            "name": "freestream"
-        }
+    "surfaceOutput": {
+        "animationFrequency": -1,
+        "outputFields": [
+            "primitiveVars",
+            "Cp",
+            "Cf",
+            "uhh"
+        ],
+        "outputFormat": "tecplot"
     },
     "timeStepping": {
-        "maxPseudoSteps": 500,
         "CFL": {
-            "initial": 5,
             "final": 200,
+            "initial": 5,
             "rampSteps": 40
-        }
+        },
+        "maxPseudoSteps": 500
+    },
+    "turbulenceModelSolver": {
+        "absoluteTolerance": 1e-08,
+        "modelType": "SpalartAllmaras"
     },
     "userDefinedFields": [
         {
-            "name": "uhh",
-            "expression": "sin(0.2)+primitiveVars[1]"
+            "expression": "sin(0.2)+primitiveVars[1]",
+            "name": "uhh"
         },
         {
-            "name": "hmmm",
-            "expression": "cos(0.2)+Cp"
+            "expression": "cos(0.2)+Cp",
+            "name": "hmmm"
         }
-    ]
+    ],
+    "volumeOutput": {
+        "animationFrequency": -1,
+        "outputFields": [
+            "primitiveVars",
+            "Mach",
+            "hmmm"
+        ],
+        "outputFormat": "tecplot"
+    }
 }
