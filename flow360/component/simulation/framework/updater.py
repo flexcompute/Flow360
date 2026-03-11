@@ -743,8 +743,14 @@ def _to_25_9_2(params_as_dict):
                 zone.pop("spacing_radial", None)
 
     _migrate_rotation_volume_to_rotation_sphere(params_as_dict)
-    _migrate_output_format_to_list(params_as_dict)
 
+    return params_as_dict
+
+
+def _to_25_10_0(params_as_dict):
+    """Migrate to 25.10.0: output_format string to list, add vtkhdf/ensight support."""
+    params_as_dict["version"] = "25.10.0"
+    _migrate_output_format_to_list(params_as_dict)
     return params_as_dict
 
 
@@ -792,6 +798,7 @@ VERSION_MILESTONES = [
     (Flow360Version("25.9.0"), _to_25_9_0),
     (Flow360Version("25.9.1"), _to_25_9_1),
     (Flow360Version("25.9.2"), _to_25_9_2),
+    (Flow360Version("25.10.0"), _to_25_10_0),
 ]  # A list of the Python API version tuple with their corresponding updaters.
 
 

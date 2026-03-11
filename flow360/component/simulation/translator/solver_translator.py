@@ -214,7 +214,7 @@ def init_output_base(obj_list, class_type: Type, is_average: bool):
     )
     assert output_format is not None
     if isinstance(output_format, list):
-        output_format = ",".join(output_format)
+        output_format = ",".join(sorted(output_format))
     elif output_format == "both":
         output_format = "paraview,tecplot"
     base["outputFormat"] = output_format

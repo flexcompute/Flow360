@@ -13,6 +13,7 @@ from flow360.component.simulation.framework.updater import (
     _to_25_9_0,
     _to_25_9_1,
     _to_25_9_2,
+    _to_25_10_0,
     updater,
 )
 from flow360.component.simulation.framework.updater_utils import Flow360Version
@@ -1930,11 +1931,11 @@ def test_updater_to_25_9_2_modular_zones_rotation_volume_sphere_to_rotation_sphe
     assert zone["spacing_circumferential"] == {"value": 0.7, "units": "m"}
 
 
-def test_updater_to_25_9_2_output_format_to_list():
-    """Test 25.9.2 updater converts string output_format to list form."""
+def test_updater_to_25_10_0_output_format_to_list():
+    """Test 25.10.0 updater converts string output_format to list form."""
 
     params_as_dict = {
-        "version": "25.9.1",
+        "version": "25.9.2",
         "unit_system": {"name": "SI"},
         "outputs": [
             {
@@ -1967,23 +1968,23 @@ def test_updater_to_25_9_2_output_format_to_list():
     }
 
     params_new = updater(
-        version_from="25.9.1",
-        version_to="25.9.2",
+        version_from="25.9.2",
+        version_to="25.10.0",
         params_as_dict=params_as_dict,
     )
 
-    assert params_new["version"] == "25.9.2"
+    assert params_new["version"] == "25.10.0"
     assert params_new["outputs"][0]["output_format"] == ["paraview"]
     assert params_new["outputs"][1]["output_format"] == ["paraview", "tecplot"]
     assert params_new["outputs"][2]["output_format"] == ["tecplot"]
     assert params_new["outputs"][3]["output_format"] == ["paraview", "vtkhdf"]
 
 
-def test_updater_to_25_9_2_output_format_already_list():
-    """Test 25.9.2 updater is a no-op when output_format is already a list."""
+def test_updater_to_25_10_0_output_format_already_list():
+    """Test 25.10.0 updater is a no-op when output_format is already a list."""
 
     params_as_dict = {
-        "version": "25.9.1",
+        "version": "25.9.2",
         "unit_system": {"name": "SI"},
         "outputs": [
             {
@@ -1995,17 +1996,17 @@ def test_updater_to_25_9_2_output_format_already_list():
         ],
     }
 
-    params_new = _to_25_9_2(params_as_dict)
+    params_new = _to_25_10_0(params_as_dict)
     assert params_new["outputs"][0]["output_format"] == ["paraview", "vtkhdf"]
 
 
-def test_updater_to_25_9_2_output_format_no_outputs():
-    """Test 25.9.2 updater handles missing or empty outputs for output_format migration."""
+def test_updater_to_25_10_0_output_format_no_outputs():
+    """Test 25.10.0 updater handles missing or empty outputs for output_format migration."""
 
-    params_no_outputs = {"version": "25.9.1", "unit_system": {"name": "SI"}}
-    params_new = _to_25_9_2(params_no_outputs)
+    params_no_outputs = {"version": "25.9.2", "unit_system": {"name": "SI"}}
+    params_new = _to_25_10_0(params_no_outputs)
     assert "outputs" not in params_new
 
-    params_empty = {"version": "25.9.1", "unit_system": {"name": "SI"}, "outputs": []}
-    params_new = _to_25_9_2(params_empty)
+    params_empty = {"version": "25.9.2", "unit_system": {"name": "SI"}, "outputs": []}
+    params_new = _to_25_10_0(params_empty)
     assert params_new["outputs"] == []

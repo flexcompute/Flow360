@@ -30,14 +30,7 @@ from flow360.component.v1.params_base import (
 from flow360.component.v1.unit_system import Flow360UnitSystem, LengthType
 
 OutputFormat = Literal[
-    "paraview",
-    "tecplot",
-    "vtkhdf",
-    "both",
-    "paraview,tecplot",
-    "paraview,vtkhdf",
-    "tecplot,vtkhdf",
-    "paraview,tecplot,vtkhdf",
+    "paraview", "tecplot", "both", "paraview,tecplot"
 ]  # Removed "paraview,tecplot" during schema generation
 
 CommonFields = CommonFieldNames

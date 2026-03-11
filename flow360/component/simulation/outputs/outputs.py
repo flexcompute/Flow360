@@ -372,12 +372,7 @@ _OutputFormatOption = Literal["paraview", "tecplot", "vtkhdf", "ensight"]
 _LegacyOutputFormatStrings = Literal[
     "paraview",
     "tecplot",
-    "vtkhdf",
-    "ensight",
     "both",
-    "paraview,vtkhdf",
-    "tecplot,vtkhdf",
-    "paraview,tecplot,vtkhdf",
 ]
 
 
@@ -414,6 +409,8 @@ class _AnimationAndFileFormatSettings(_AnimationSettings):
                 f'Use `output_format=["{value}"]` instead.'
             )
             return [value]
+        if isinstance(value, list):
+            return list(dict.fromkeys(value))
         return value
 
 
