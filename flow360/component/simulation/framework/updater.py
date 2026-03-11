@@ -771,7 +771,7 @@ def _migrate_output_format_to_list(params_as_dict):
         if fmt == "both":
             output["output_format"] = ["paraview", "tecplot"]
         elif "," in fmt:
-            output["output_format"] = fmt.split(",")
+            output["output_format"] = [v.strip() for v in fmt.split(",")]
         else:
             output["output_format"] = [fmt]
 

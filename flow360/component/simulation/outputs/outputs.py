@@ -403,14 +403,14 @@ class _AnimationAndFileFormatSettings(_AnimationSettings):
                     f"`output_format` comma-separated strings are deprecated. "
                     f'Use `output_format={value.split(",")}` instead.'
                 )
-                return value.split(",")
+                return sorted(v.strip() for v in value.split(","))
             log.warning(
                 f"Passing a string to `output_format` is deprecated. "
                 f'Use `output_format=["{value}"]` instead.'
             )
             return [value]
         if isinstance(value, list):
-            return list(dict.fromkeys(value))
+            return sorted(set(value))
         return value
 
 

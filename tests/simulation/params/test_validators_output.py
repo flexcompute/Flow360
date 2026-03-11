@@ -1693,19 +1693,19 @@ def test_surface_output_write_single_file_validator():
 
 
 def test_output_format_list():
-    # List format should be accepted
+    # List format should be accepted and sorted
     out = VolumeOutput(output_fields=["Mach"], output_format=["paraview"])
     assert out.output_format == ["paraview"]
 
-    out = VolumeOutput(output_fields=["Mach"], output_format=["paraview", "vtkhdf"])
+    out = VolumeOutput(output_fields=["Mach"], output_format=["vtkhdf", "paraview"])
     assert out.output_format == ["paraview", "vtkhdf"]
 
     out = VolumeOutput(output_fields=["Mach"], output_format=["tecplot", "vtkhdf", "ensight"])
-    assert out.output_format == ["tecplot", "vtkhdf", "ensight"]
+    assert out.output_format == ["ensight", "tecplot", "vtkhdf"]
 
 
 def test_output_format_legacy_string_converted_to_list():
-    # Legacy strings should be normalized to lists
+    # Legacy strings should be normalized to sorted lists
     out = VolumeOutput(output_fields=["Mach"], output_format="paraview")
     assert out.output_format == ["paraview"]
 
@@ -1717,12 +1717,12 @@ def test_output_format_legacy_string_converted_to_list():
 
 
 def test_output_format_deduplication():
-    # Duplicate entries should be removed
+    # Duplicate entries should be removed and result sorted
     out = VolumeOutput(output_fields=["Mach"], output_format=["paraview", "paraview"])
     assert out.output_format == ["paraview"]
 
     out = VolumeOutput(output_fields=["Mach"], output_format=["vtkhdf", "paraview", "vtkhdf"])
-    assert out.output_format == ["vtkhdf", "paraview"]
+    assert out.output_format == ["paraview", "vtkhdf"]
 
 
 def test_output_format_both_not_allowed_in_list():
