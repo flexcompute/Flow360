@@ -383,6 +383,7 @@ class _AnimationAndFileFormatSettings(_AnimationSettings):
 
     output_format: Union[List[_OutputFormatOption], _LegacyOutputFormatStrings] = pd.Field(
         default=["paraview"],
+        min_length=1,
         description="List of output formats, "
         "Supported formats: :code:`paraview`, :code:`tecplot`, :code:`vtkhdf`, :code:`ensight`. "
         "A single string is accepted for backward compatibility but deprecated.",
@@ -1205,7 +1206,7 @@ class SurfaceSliceOutput(_AnimationAndFileFormatSettings, _OutputBase):
     )
 
     output_format: Union[List[Literal["paraview"]], Literal["paraview"]] = pd.Field(
-        default=["paraview"]
+        default=["paraview"], min_length=1
     )
 
     output_fields: UniqueItemList[Union[SurfaceFieldNames, str, UserVariable]] = pd.Field(
