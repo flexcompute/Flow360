@@ -149,17 +149,13 @@ def _validate_farfield_enclosed_entities(
 
 
 def _collect_all_custom_volumes(zones):
-    """Collect all CustomVolume instances from CustomZones and farfield enclosed_entities."""
+    """Collect all CustomVolume instances from CustomZones."""
     custom_volumes: list[CustomVolume] = []
     for zone in zones:
         if isinstance(zone, CustomZones):
             for cv in zone.entities.stored_entities:
                 if isinstance(cv, CustomVolume):
                     custom_volumes.append(cv)
-        if isinstance(zone, _FarfieldBase) and zone.enclosed_entities is not None:
-            for entity in zone.enclosed_entities.stored_entities:
-                if isinstance(entity, CustomVolume):
-                    custom_volumes.append(entity)
     return custom_volumes
 
 
@@ -286,13 +282,7 @@ class MeshingParams(Flow360BaseModel):
 
         automated_farfield = next((zone for zone in v if isinstance(zone, AutomatedFarfield)), None)
         if automated_farfield is not None:
-            custom_volumes = [
-                entity
-                for zone in v
-                if isinstance(zone, CustomZones)
-                for entity in param_info.expand_entity_list(zone.entities)
-                if isinstance(entity, CustomVolume)
-            ]
+            custom_volumes = _collect_all_custom_volumes(v)
             if any(cv.name == "farfield" for cv in custom_volumes):
                 raise ValueError(
                     "CustomVolume name 'farfield' is reserved when using AutomatedFarfield. "
