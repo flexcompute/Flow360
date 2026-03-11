@@ -388,8 +388,7 @@ class _AnimationAndFileFormatSettings(_AnimationSettings):
 
     output_format: Union[List[_OutputFormatOption], _LegacyOutputFormatStrings] = pd.Field(
         default=["paraview"],
-        description="List of output formats, e.g. :code:`['paraview']`, "
-        ":code:`['paraview', 'vtkhdf']`, :code:`['tecplot', 'vtkhdf']`. "
+        description="List of output formats, "
         "Supported formats: :code:`paraview`, :code:`tecplot`, :code:`vtkhdf`, :code:`ensight`. "
         "A single string is accepted for backward compatibility but deprecated.",
     )
