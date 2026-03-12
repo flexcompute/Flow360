@@ -508,6 +508,7 @@ def test_custom_zones_without_farfield():
 
     farfield_method = ParamsValidationInfo._get_farfield_method_(params.model_dump(mode="json"))
     assert farfield_method == "user-defined"
+    assert params.meshing.farfield_method == "user-defined"
 
 
 @pytest.mark.parametrize(
