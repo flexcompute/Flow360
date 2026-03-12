@@ -266,8 +266,10 @@ class MeshingParams(Flow360BaseModel):
             )
             for volume_zone in v
         )
-        if total_farfield == 0:
-            raise ValueError("Farfield zone is required in `volume_zones`.")
+        if total_farfield == 0 and not _collect_all_custom_volumes(v):
+            raise ValueError(
+                "A farfield zone or `CustomVolume` entities are required in `volume_zones`."
+            )
 
         if total_farfield > 1:
             raise ValueError("Only one farfield zone is allowed in `volume_zones`.")
