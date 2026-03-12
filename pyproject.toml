@@ -25,7 +25,7 @@ zstandard = "^0.21.0"
 unyt = "^3.0.0"
 pandas = "^2.2.1"
 pylint = "^3.1.0"
-black = {extras = ["jupyter"], version = "^24.10.0"}
+black = {extras = ["jupyter"], version = ">=24.10,<27.0"}
 wcmatch = "^10.0"
 
 # docs
@@ -70,7 +70,7 @@ autohooks-plugin-isort = "^22.8.0"
 autohooks-plugin-pylint = "^23.10.0"
 pytest = "^7.3.0"
 pylint = "^3.1.0"
-black = "^24.1.0"
+black = ">=24.1,<27.0"
 notebook = "^7.0.6"
 pytest-mock = "^3.14.0"
 
