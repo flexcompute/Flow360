@@ -2088,7 +2088,6 @@ def test_farfield_enclosed_entities_mixed_direct_and_custom_volume(get_surface_m
     ]
 
 
-
 def test_face_spacing_single_body(get_surface_mesh):
     """Per-face spacing overrides produce dense faceSpacings array."""
     with SI_unit_system:
