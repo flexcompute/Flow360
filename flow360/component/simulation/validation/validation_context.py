@@ -175,7 +175,7 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
                     return "wind-tunnel"
                 if zone["type"] in ("CustomZones", "SeedpointVolume"):
                     has_custom_zones = True
-            if has_custom_zones:
+            if has_custom_zones:  # CV + no FF => implicit UD
                 return "user-defined"
 
         return None

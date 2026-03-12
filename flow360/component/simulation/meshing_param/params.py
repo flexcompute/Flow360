@@ -491,7 +491,7 @@ class MeshingParams(Flow360BaseModel):
                     return "user-defined"
                 if isinstance(zone, CustomZones):
                     has_custom_zones = True
-            if has_custom_zones:
+            if has_custom_zones:  # CV + no FF => implicit UD
                 return "user-defined"
         return None
 
