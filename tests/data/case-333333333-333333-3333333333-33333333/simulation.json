@@ -1,763 +1,763 @@
 {
-	"version": "25.4.1b2",
-	"unit_system": {
-		"name": "SI"
-	},
-	"meshing": null,
-	"reference_geometry": {
-		"moment_center": {
-			"value": [
-				0,
-				0,
-				0
-			],
-			"units": "m"
-		},
-		"moment_length": {
-			"value": 2.7862,
-			"units": "m"
-		},
-		"area": {
-			"value": 2.17,
-			"units": "m**2"
-		}
-	},
-	"operating_condition": {
-		"type_name": "AerospaceCondition",
-		"private_attribute_constructor": "default",
-		"private_attribute_input_cache": {
-			"mach": null,
-			"alpha": {
-				"value": 0,
-				"units": "degree"
-			},
-			"beta": {
-				"value": 0,
-				"units": "degree"
-			},
-			"thermal_state": {
-				"type_name": "ThermalState",
-				"private_attribute_constructor": "default",
-				"private_attribute_input_cache": {
-					"altitude": null,
-					"temperature_offset": null
-				},
-				"temperature": {
-					"value": 288.15,
-					"units": "K"
-				},
-				"density": {
-					"value": 1.225,
-					"units": "kg/m**3"
-				},
-				"material": {
-					"type": "air",
-					"name": "air",
-					"dynamic_viscosity": {
-						"reference_viscosity": {
-							"value": 0.00001716,
-							"units": "Pa*s"
-						},
-						"reference_temperature": {
-							"value": 273.15,
-							"units": "K"
-						},
-						"effective_temperature": {
-							"value": 110.4,
-							"units": "K"
-						}
-					}
-				}
-			},
-			"reference_mach": null
-		},
-		"alpha": {
-			"value": 0,
-			"units": "degree"
-		},
-		"beta": {
-			"value": 0,
-			"units": "degree"
-		},
-		"velocity_magnitude": {
-			"value": 40,
-			"units": "m/s"
-		},
-		"thermal_state": {
-			"type_name": "ThermalState",
-			"private_attribute_constructor": "default",
-			"private_attribute_input_cache": {
-				"altitude": null,
-				"temperature_offset": null
-			},
-			"temperature": {
-				"value": 288.15,
-				"units": "K"
-			},
-			"density": {
-				"value": 1.225,
-				"units": "kg/m**3"
-			},
-			"material": {
-				"type": "air",
-				"name": "air",
-				"dynamic_viscosity": {
-					"reference_viscosity": {
-						"value": 0.00001716,
-						"units": "Pa*s"
-					},
-					"reference_temperature": {
-						"value": 273.15,
-						"units": "K"
-					},
-					"effective_temperature": {
-						"value": 110.4,
-						"units": "K"
-					}
-				}
-			}
-		},
-		"reference_velocity_magnitude": null
-	},
-	"models": [
-		{
-			"type": "Wall",
-			"entities": {
-				"stored_entities": [
-					{
-						"private_attribute_registry_bucket_name": "SurfaceEntityType",
-						"private_attribute_entity_type_name": "Surface",
-						"private_attribute_id": "blk-1/WT_ground_patch",
-						"name": "blk-1/WT_ground_patch",
-						"private_attribute_full_name": "blk-1/WT_ground_patch",
-						"private_attribute_is_interface": false,
-						"private_attribute_tag_key": null,
-						"private_attribute_sub_components": [],
-						"private_attribute_potential_issues": [],
-						"private_attribute_color": null
-					},
-					{
-						"private_attribute_registry_bucket_name": "SurfaceEntityType",
-						"private_attribute_entity_type_name": "Surface",
-						"private_attribute_id": "blk-1/wheel_rim",
-						"name": "blk-1/wheel_rim",
-						"private_attribute_full_name": "blk-1/wheel_rim",
-						"private_attribute_is_interface": false,
-						"private_attribute_tag_key": null,
-						"private_attribute_sub_components": [],
-						"private_attribute_potential_issues": [],
-						"private_attribute_color": null
-					},
-					{
-						"private_attribute_registry_bucket_name": "SurfaceEntityType",
-						"private_attribute_entity_type_name": "Surface",
-						"private_attribute_id": "blk-1/wheel_tire",
-						"name": "blk-1/wheel_tire",
-						"private_attribute_full_name": "blk-1/wheel_tire",
-						"private_attribute_is_interface": false,
-						"private_attribute_tag_key": null,
-						"private_attribute_sub_components": [],
-						"private_attribute_potential_issues": [],
-						"private_attribute_color": null
-					},
-					{
-						"private_attribute_registry_bucket_name": "SurfaceEntityType",
-						"private_attribute_entity_type_name": "Surface",
-						"private_attribute_id": "blk-1/WT_ground_close",
-						"name": "blk-1/WT_ground_close",
-						"private_attribute_full_name": "blk-1/WT_ground_close",
-						"private_attribute_is_interface": false,
-						"private_attribute_tag_key": null,
-						"private_attribute_sub_components": [],
-						"private_attribute_potential_issues": [],
-						"private_attribute_color": null
-					},
-					{
-						"private_attribute_registry_bucket_name": "SurfaceEntityType",
-						"private_attribute_entity_type_name": "Surface",
-						"private_attribute_id": "blk-1/BODY",
-						"name": "blk-1/BODY",
-						"private_attribute_full_name": "blk-1/BODY",
-						"private_attribute_is_interface": false,
-						"private_attribute_tag_key": null,
-						"private_attribute_sub_components": [],
-						"private_attribute_potential_issues": [],
-						"private_attribute_color": null
-					}
-				]
-			},
-			"name": "Wall",
-			"use_wall_function": true,
-			"velocity": null,
-			"heat_spec": {
-				"value": {
-					"value": 0,
-					"units": "W/m**2"
-				},
-				"type_name": "HeatFlux"
-			},
-			"roughness_height": {
-				"value": 0,
-				"units": "m"
-			}
-		},
-		{
-			"type": "Freestream",
-			"entities": {
-				"stored_entities": [
-					{
-						"private_attribute_registry_bucket_name": "SurfaceEntityType",
-						"private_attribute_entity_type_name": "Surface",
-						"private_attribute_id": "blk-1/WT_side1",
-						"name": "blk-1/WT_side1",
-						"private_attribute_full_name": "blk-1/WT_side1",
-						"private_attribute_is_interface": false,
-						"private_attribute_tag_key": null,
-						"private_attribute_sub_components": [],
-						"private_attribute_potential_issues": [],
-						"private_attribute_color": null
-					},
-					{
-						"private_attribute_registry_bucket_name": "SurfaceEntityType",
-						"private_attribute_entity_type_name": "Surface",
-						"private_attribute_id": "blk-1/WT_side2",
-						"name": "blk-1/WT_side2",
-						"private_attribute_full_name": "blk-1/WT_side2",
-						"private_attribute_is_interface": false,
-						"private_attribute_tag_key": null,
-						"private_attribute_sub_components": [],
-						"private_attribute_potential_issues": [],
-						"private_attribute_color": null
-					},
-					{
-						"private_attribute_registry_bucket_name": "SurfaceEntityType",
-						"private_attribute_entity_type_name": "Surface",
-						"private_attribute_id": "blk-1/WT_inlet",
-						"name": "blk-1/WT_inlet",
-						"private_attribute_full_name": "blk-1/WT_inlet",
-						"private_attribute_is_interface": false,
-						"private_attribute_tag_key": null,
-						"private_attribute_sub_components": [],
-						"private_attribute_potential_issues": [],
-						"private_attribute_color": null
-					},
-					{
-						"private_attribute_registry_bucket_name": "SurfaceEntityType",
-						"private_attribute_entity_type_name": "Surface",
-						"private_attribute_id": "blk-1/WT_outlet",
-						"name": "blk-1/WT_outlet",
-						"private_attribute_full_name": "blk-1/WT_outlet",
-						"private_attribute_is_interface": false,
-						"private_attribute_tag_key": null,
-						"private_attribute_sub_components": [],
-						"private_attribute_potential_issues": [],
-						"private_attribute_color": null
-					}
-				]
-			},
-			"turbulence_quantities": null,
-			"name": "Freestream",
-			"velocity": null
-		},
-		{
-			"type": "SlipWall",
-			"entities": {
-				"stored_entities": [
-					{
-						"private_attribute_registry_bucket_name": "SurfaceEntityType",
-						"private_attribute_entity_type_name": "Surface",
-						"private_attribute_id": "blk-1/WT_ceiling",
-						"name": "blk-1/WT_ceiling",
-						"private_attribute_full_name": "blk-1/WT_ceiling",
-						"private_attribute_is_interface": false,
-						"private_attribute_tag_key": null,
-						"private_attribute_sub_components": [],
-						"private_attribute_potential_issues": [],
-						"private_attribute_color": null
-					},
-					{
-						"private_attribute_registry_bucket_name": "SurfaceEntityType",
-						"private_attribute_entity_type_name": "Surface",
-						"private_attribute_id": "blk-1/WT_ground_front",
-						"name": "blk-1/WT_ground_front",
-						"private_attribute_full_name": "blk-1/WT_ground_front",
-						"private_attribute_is_interface": false,
-						"private_attribute_tag_key": null,
-						"private_attribute_sub_components": [],
-						"private_attribute_potential_issues": [],
-						"private_attribute_color": null
-					},
-					{
-						"private_attribute_registry_bucket_name": "SurfaceEntityType",
-						"private_attribute_entity_type_name": "Surface",
-						"private_attribute_id": "blk-1/WT_ground",
-						"name": "blk-1/WT_ground",
-						"private_attribute_full_name": "blk-1/WT_ground",
-						"private_attribute_is_interface": false,
-						"private_attribute_tag_key": null,
-						"private_attribute_sub_components": [],
-						"private_attribute_potential_issues": [],
-						"private_attribute_color": null
-					}
-				]
-			},
-			"name": "Slip wall"
-		},
-		{
-			"material": {
-				"type": "air",
-				"name": "air",
-				"dynamic_viscosity": {
-					"reference_viscosity": {
-						"value": 0.00001716,
-						"units": "Pa*s"
-					},
-					"reference_temperature": {
-						"value": 273.15,
-						"units": "K"
-					},
-					"effective_temperature": {
-						"value": 110.4,
-						"units": "K"
-					}
-				}
-			},
-			"initial_condition": {
-				"type_name": "NavierStokesInitialCondition",
-				"constants": null,
-				"rho": "rho",
-				"u": "u",
-				"v": "v",
-				"w": "w",
-				"p": "p"
-			},
-			"type": "Fluid",
-			"navier_stokes_solver": {
-				"absolute_tolerance": 1e-10,
-				"relative_tolerance": 0,
-				"order_of_accuracy": 2,
-				"equation_evaluation_frequency": 1,
-				"linear_solver": {
-					"max_iterations": 30,
-					"absolute_tolerance": null,
-					"relative_tolerance": null
-				},
-				"private_attribute_dict": null,
-				"CFL_multiplier": 1,
-				"kappa_MUSCL": -1,
-				"numerical_dissipation_factor": 1,
-				"limit_velocity": false,
-				"limit_pressure_density": false,
-				"type_name": "Compressible",
-				"low_mach_preconditioner": false,
-				"low_mach_preconditioner_threshold": null,
-				"update_jacobian_frequency": 4,
-				"max_force_jac_update_physical_steps": 0
-			},
-			"turbulence_model_solver": {
-				"absolute_tolerance": 1e-8,
-				"relative_tolerance": 0,
-				"order_of_accuracy": 2,
-				"equation_evaluation_frequency": 4,
-				"linear_solver": {
-					"max_iterations": 20,
-					"absolute_tolerance": null,
-					"relative_tolerance": null
-				},
-				"private_attribute_dict": null,
-				"CFL_multiplier": 2,
-				"type_name": "kOmegaSST",
-				"reconstruction_gradient_limiter": 1,
-				"quadratic_constitutive_relation": false,
-				"modeling_constants": {
-					"type_name": "kOmegaSSTConsts",
-					"C_DES1": 0.78,
-					"C_DES2": 0.61,
-					"C_d1": 20,
-					"C_d2": 3,
-					"C_sigma_k1": 0.85,
-					"C_sigma_k2": 1,
-					"C_sigma_omega1": 0.5,
-					"C_sigma_omega2": 0.856,
-					"C_alpha1": 0.31,
-					"C_beta1": 0.075,
-					"C_beta2": 0.0828,
-					"C_beta_star": 0.09
-				},
-				"update_jacobian_frequency": 4,
-				"max_force_jac_update_physical_steps": 0,
-				"hybrid_model": null,
-				"rotation_correction": false
-			},
-			"transition_model_solver": {
-				"type_name": "None"
-			}
-		}
-	],
-	"time_stepping": {
-		"type_name": "Steady",
-		"max_steps": 2000,
-		"CFL": {
-			"type": "adaptive",
-			"min": 0.1,
-			"max": 10000,
-			"max_relative_change": 1,
-			"convergence_limiting_factor": 0.25
-		}
-	},
-	"user_defined_dynamics": null,
-	"user_defined_fields": [],
-	"outputs": [
-		{
-			"output_fields": {
-				"items": [
-					"Cp",
-					"Cf",
-					"CfVec",
-					"primitiveVars"
-				]
-			},
-			"frequency": -1,
-			"frequency_offset": 0,
-			"output_format": "paraview",
-			"name": "Surface output",
-			"entities": {
-				"stored_entities": [
-					{
-						"private_attribute_registry_bucket_name": "SurfaceEntityType",
-						"private_attribute_entity_type_name": "Surface",
-						"private_attribute_id": "blk-1/WT_side1",
-						"name": "blk-1/WT_side1",
-						"private_attribute_full_name": "blk-1/WT_side1",
-						"private_attribute_is_interface": false,
-						"private_attribute_tag_key": null,
-						"private_attribute_sub_components": [],
-						"private_attribute_potential_issues": [],
-						"private_attribute_color": null
-					},
-					{
-						"private_attribute_registry_bucket_name": "SurfaceEntityType",
-						"private_attribute_entity_type_name": "Surface",
-						"private_attribute_id": "blk-1/wheel_tire",
-						"name": "blk-1/wheel_tire",
-						"private_attribute_full_name": "blk-1/wheel_tire",
-						"private_attribute_is_interface": false,
-						"private_attribute_tag_key": null,
-						"private_attribute_sub_components": [],
-						"private_attribute_potential_issues": [],
-						"private_attribute_color": null
-					},
-					{
-						"private_attribute_registry_bucket_name": "SurfaceEntityType",
-						"private_attribute_entity_type_name": "Surface",
-						"private_attribute_id": "blk-1/WT_ground_patch",
-						"name": "blk-1/WT_ground_patch",
-						"private_attribute_full_name": "blk-1/WT_ground_patch",
-						"private_attribute_is_interface": false,
-						"private_attribute_tag_key": null,
-						"private_attribute_sub_components": [],
-						"private_attribute_potential_issues": [],
-						"private_attribute_color": null
-					},
-					{
-						"private_attribute_registry_bucket_name": "SurfaceEntityType",
-						"private_attribute_entity_type_name": "Surface",
-						"private_attribute_id": "blk-1/WT_outlet",
-						"name": "blk-1/WT_outlet",
-						"private_attribute_full_name": "blk-1/WT_outlet",
-						"private_attribute_is_interface": false,
-						"private_attribute_tag_key": null,
-						"private_attribute_sub_components": [],
-						"private_attribute_potential_issues": [],
-						"private_attribute_color": null
-					},
-					{
-						"private_attribute_registry_bucket_name": "SurfaceEntityType",
-						"private_attribute_entity_type_name": "Surface",
-						"private_attribute_id": "blk-1/WT_ground",
-						"name": "blk-1/WT_ground",
-						"private_attribute_full_name": "blk-1/WT_ground",
-						"private_attribute_is_interface": false,
-						"private_attribute_tag_key": null,
-						"private_attribute_sub_components": [],
-						"private_attribute_potential_issues": [],
-						"private_attribute_color": null
-					},
-					{
-						"private_attribute_registry_bucket_name": "SurfaceEntityType",
-						"private_attribute_entity_type_name": "Surface",
-						"private_attribute_id": "blk-1/wheel_rim",
-						"name": "blk-1/wheel_rim",
-						"private_attribute_full_name": "blk-1/wheel_rim",
-						"private_attribute_is_interface": false,
-						"private_attribute_tag_key": null,
-						"private_attribute_sub_components": [],
-						"private_attribute_potential_issues": [],
-						"private_attribute_color": null
-					},
-					{
-						"private_attribute_registry_bucket_name": "SurfaceEntityType",
-						"private_attribute_entity_type_name": "Surface",
-						"private_attribute_id": "blk-1/WT_ceiling",
-						"name": "blk-1/WT_ceiling",
-						"private_attribute_full_name": "blk-1/WT_ceiling",
-						"private_attribute_is_interface": false,
-						"private_attribute_tag_key": null,
-						"private_attribute_sub_components": [],
-						"private_attribute_potential_issues": [],
-						"private_attribute_color": null
-					},
-					{
-						"private_attribute_registry_bucket_name": "SurfaceEntityType",
-						"private_attribute_entity_type_name": "Surface",
-						"private_attribute_id": "blk-1/BODY",
-						"name": "blk-1/BODY",
-						"private_attribute_full_name": "blk-1/BODY",
-						"private_attribute_is_interface": false,
-						"private_attribute_tag_key": null,
-						"private_attribute_sub_components": [],
-						"private_attribute_potential_issues": [],
-						"private_attribute_color": null
-					},
-					{
-						"private_attribute_registry_bucket_name": "SurfaceEntityType",
-						"private_attribute_entity_type_name": "Surface",
-						"private_attribute_id": "blk-1/WT_ground_close",
-						"name": "blk-1/WT_ground_close",
-						"private_attribute_full_name": "blk-1/WT_ground_close",
-						"private_attribute_is_interface": false,
-						"private_attribute_tag_key": null,
-						"private_attribute_sub_components": [],
-						"private_attribute_potential_issues": [],
-						"private_attribute_color": null
-					},
-					{
-						"private_attribute_registry_bucket_name": "SurfaceEntityType",
-						"private_attribute_entity_type_name": "Surface",
-						"private_attribute_id": "blk-1/WT_side2",
-						"name": "blk-1/WT_side2",
-						"private_attribute_full_name": "blk-1/WT_side2",
-						"private_attribute_is_interface": false,
-						"private_attribute_tag_key": null,
-						"private_attribute_sub_components": [],
-						"private_attribute_potential_issues": [],
-						"private_attribute_color": null
-					},
-					{
-						"private_attribute_registry_bucket_name": "SurfaceEntityType",
-						"private_attribute_entity_type_name": "Surface",
-						"private_attribute_id": "blk-1/WT_ground_front",
-						"name": "blk-1/WT_ground_front",
-						"private_attribute_full_name": "blk-1/WT_ground_front",
-						"private_attribute_is_interface": false,
-						"private_attribute_tag_key": null,
-						"private_attribute_sub_components": [],
-						"private_attribute_potential_issues": [],
-						"private_attribute_color": null
-					},
-					{
-						"private_attribute_registry_bucket_name": "SurfaceEntityType",
-						"private_attribute_entity_type_name": "Surface",
-						"private_attribute_id": "blk-1/WT_inlet",
-						"name": "blk-1/WT_inlet",
-						"private_attribute_full_name": "blk-1/WT_inlet",
-						"private_attribute_is_interface": false,
-						"private_attribute_tag_key": null,
-						"private_attribute_sub_components": [],
-						"private_attribute_potential_issues": [],
-						"private_attribute_color": null
-					}
-				]
-			},
-			"write_single_file": false,
-			"output_type": "SurfaceOutput"
-		}
-	],
-	"private_attribute_asset_cache": {
-		"project_length_unit": {
-			"value": 1,
-			"units": "m"
-		},
-		"project_entity_info": {
-			"draft_entities": [],
-			"ghost_entities": [],
-			"type_name": "VolumeMeshEntityInfo",
-			"zones": [
-				{
-					"private_attribute_registry_bucket_name": "VolumetricEntityType",
-					"private_attribute_entity_type_name": "GenericVolume",
-					"private_attribute_id": "blk-1",
-					"name": "blk-1",
-					"private_attribute_zone_boundary_names": {
-						"items": [
-							"blk-1/BODY",
-							"blk-1/WT_ceiling",
-							"blk-1/WT_ground",
-							"blk-1/WT_ground_close",
-							"blk-1/WT_ground_front",
-							"blk-1/WT_ground_patch",
-							"blk-1/WT_inlet",
-							"blk-1/WT_outlet",
-							"blk-1/WT_side1",
-							"blk-1/WT_side2",
-							"blk-1/wheel_rim",
-							"blk-1/wheel_tire"
-						]
-					},
-					"private_attribute_full_name": "blk-1",
-					"axes": null,
-					"axis": null,
-					"center": null
-				}
-			],
-			"boundaries": [
-				{
-					"private_attribute_registry_bucket_name": "SurfaceEntityType",
-					"private_attribute_entity_type_name": "Surface",
-					"private_attribute_id": "blk-1/WT_side1",
-					"name": "blk-1/WT_side1",
-					"private_attribute_full_name": "blk-1/WT_side1",
-					"private_attribute_is_interface": false,
-					"private_attribute_tag_key": null,
-					"private_attribute_sub_components": [],
-					"private_attribute_potential_issues": [],
-					"private_attribute_color": null
-				},
-				{
-					"private_attribute_registry_bucket_name": "SurfaceEntityType",
-					"private_attribute_entity_type_name": "Surface",
-					"private_attribute_id": "blk-1/wheel_tire",
-					"name": "blk-1/wheel_tire",
-					"private_attribute_full_name": "blk-1/wheel_tire",
-					"private_attribute_is_interface": false,
-					"private_attribute_tag_key": null,
-					"private_attribute_sub_components": [],
-					"private_attribute_potential_issues": [],
-					"private_attribute_color": null
-				},
-				{
-					"private_attribute_registry_bucket_name": "SurfaceEntityType",
-					"private_attribute_entity_type_name": "Surface",
-					"private_attribute_id": "blk-1/WT_ground_patch",
-					"name": "blk-1/WT_ground_patch",
-					"private_attribute_full_name": "blk-1/WT_ground_patch",
-					"private_attribute_is_interface": false,
-					"private_attribute_tag_key": null,
-					"private_attribute_sub_components": [],
-					"private_attribute_potential_issues": [],
-					"private_attribute_color": null
-				},
-				{
-					"private_attribute_registry_bucket_name": "SurfaceEntityType",
-					"private_attribute_entity_type_name": "Surface",
-					"private_attribute_id": "blk-1/WT_outlet",
-					"name": "blk-1/WT_outlet",
-					"private_attribute_full_name": "blk-1/WT_outlet",
-					"private_attribute_is_interface": false,
-					"private_attribute_tag_key": null,
-					"private_attribute_sub_components": [],
-					"private_attribute_potential_issues": [],
-					"private_attribute_color": null
-				},
-				{
-					"private_attribute_registry_bucket_name": "SurfaceEntityType",
-					"private_attribute_entity_type_name": "Surface",
-					"private_attribute_id": "blk-1/WT_ground",
-					"name": "blk-1/WT_ground",
-					"private_attribute_full_name": "blk-1/WT_ground",
-					"private_attribute_is_interface": false,
-					"private_attribute_tag_key": null,
-					"private_attribute_sub_components": [],
-					"private_attribute_potential_issues": [],
-					"private_attribute_color": null
-				},
-				{
-					"private_attribute_registry_bucket_name": "SurfaceEntityType",
-					"private_attribute_entity_type_name": "Surface",
-					"private_attribute_id": "blk-1/wheel_rim",
-					"name": "blk-1/wheel_rim",
-					"private_attribute_full_name": "blk-1/wheel_rim",
-					"private_attribute_is_interface": false,
-					"private_attribute_tag_key": null,
-					"private_attribute_sub_components": [],
-					"private_attribute_potential_issues": [],
-					"private_attribute_color": null
-				},
-				{
-					"private_attribute_registry_bucket_name": "SurfaceEntityType",
-					"private_attribute_entity_type_name": "Surface",
-					"private_attribute_id": "blk-1/WT_ceiling",
-					"name": "blk-1/WT_ceiling",
-					"private_attribute_full_name": "blk-1/WT_ceiling",
-					"private_attribute_is_interface": false,
-					"private_attribute_tag_key": null,
-					"private_attribute_sub_components": [],
-					"private_attribute_potential_issues": [],
-					"private_attribute_color": null
-				},
-				{
-					"private_attribute_registry_bucket_name": "SurfaceEntityType",
-					"private_attribute_entity_type_name": "Surface",
-					"private_attribute_id": "blk-1/BODY",
-					"name": "blk-1/BODY",
-					"private_attribute_full_name": "blk-1/BODY",
-					"private_attribute_is_interface": false,
-					"private_attribute_tag_key": null,
-					"private_attribute_sub_components": [],
-					"private_attribute_potential_issues": [],
-					"private_attribute_color": null
-				},
-				{
-					"private_attribute_registry_bucket_name": "SurfaceEntityType",
-					"private_attribute_entity_type_name": "Surface",
-					"private_attribute_id": "blk-1/WT_ground_close",
-					"name": "blk-1/WT_ground_close",
-					"private_attribute_full_name": "blk-1/WT_ground_close",
-					"private_attribute_is_interface": false,
-					"private_attribute_tag_key": null,
-					"private_attribute_sub_components": [],
-					"private_attribute_potential_issues": [],
-					"private_attribute_color": null
-				},
-				{
-					"private_attribute_registry_bucket_name": "SurfaceEntityType",
-					"private_attribute_entity_type_name": "Surface",
-					"private_attribute_id": "blk-1/WT_side2",
-					"name": "blk-1/WT_side2",
-					"private_attribute_full_name": "blk-1/WT_side2",
-					"private_attribute_is_interface": false,
-					"private_attribute_tag_key": null,
-					"private_attribute_sub_components": [],
-					"private_attribute_potential_issues": [],
-					"private_attribute_color": null
-				},
-				{
-					"private_attribute_registry_bucket_name": "SurfaceEntityType",
-					"private_attribute_entity_type_name": "Surface",
-					"private_attribute_id": "blk-1/WT_ground_front",
-					"name": "blk-1/WT_ground_front",
-					"private_attribute_full_name": "blk-1/WT_ground_front",
-					"private_attribute_is_interface": false,
-					"private_attribute_tag_key": null,
-					"private_attribute_sub_components": [],
-					"private_attribute_potential_issues": [],
-					"private_attribute_color": null
-				},
-				{
-					"private_attribute_registry_bucket_name": "SurfaceEntityType",
-					"private_attribute_entity_type_name": "Surface",
-					"private_attribute_id": "blk-1/WT_inlet",
-					"name": "blk-1/WT_inlet",
-					"private_attribute_full_name": "blk-1/WT_inlet",
-					"private_attribute_is_interface": false,
-					"private_attribute_tag_key": null,
-					"private_attribute_sub_components": [],
-					"private_attribute_potential_issues": [],
-					"private_attribute_color": null
-				}
-			]
-		},
-		"use_inhouse_mesher": false,
-		"use_geometry_AI": false
-	}
+    "meshing": null,
+    "models": [
+        {
+            "entities": {
+                "stored_entities": [
+                    {
+                        "name": "blk-1/WT_ground_patch",
+                        "private_attribute_color": null,
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_full_name": "blk-1/WT_ground_patch",
+                        "private_attribute_id": "blk-1/WT_ground_patch",
+                        "private_attribute_is_interface": false,
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_sub_components": [],
+                        "private_attribute_tag_key": null
+                    },
+                    {
+                        "name": "blk-1/wheel_rim",
+                        "private_attribute_color": null,
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_full_name": "blk-1/wheel_rim",
+                        "private_attribute_id": "blk-1/wheel_rim",
+                        "private_attribute_is_interface": false,
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_sub_components": [],
+                        "private_attribute_tag_key": null
+                    },
+                    {
+                        "name": "blk-1/wheel_tire",
+                        "private_attribute_color": null,
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_full_name": "blk-1/wheel_tire",
+                        "private_attribute_id": "blk-1/wheel_tire",
+                        "private_attribute_is_interface": false,
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_sub_components": [],
+                        "private_attribute_tag_key": null
+                    },
+                    {
+                        "name": "blk-1/WT_ground_close",
+                        "private_attribute_color": null,
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_full_name": "blk-1/WT_ground_close",
+                        "private_attribute_id": "blk-1/WT_ground_close",
+                        "private_attribute_is_interface": false,
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_sub_components": [],
+                        "private_attribute_tag_key": null
+                    },
+                    {
+                        "name": "blk-1/BODY",
+                        "private_attribute_color": null,
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_full_name": "blk-1/BODY",
+                        "private_attribute_id": "blk-1/BODY",
+                        "private_attribute_is_interface": false,
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_sub_components": [],
+                        "private_attribute_tag_key": null
+                    }
+                ]
+            },
+            "heat_spec": {
+                "type_name": "HeatFlux",
+                "value": {
+                    "units": "W/m**2",
+                    "value": 0
+                }
+            },
+            "name": "Wall",
+            "roughness_height": {
+                "units": "m",
+                "value": 0
+            },
+            "type": "Wall",
+            "use_wall_function": true,
+            "velocity": null
+        },
+        {
+            "entities": {
+                "stored_entities": [
+                    {
+                        "name": "blk-1/WT_side1",
+                        "private_attribute_color": null,
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_full_name": "blk-1/WT_side1",
+                        "private_attribute_id": "blk-1/WT_side1",
+                        "private_attribute_is_interface": false,
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_sub_components": [],
+                        "private_attribute_tag_key": null
+                    },
+                    {
+                        "name": "blk-1/WT_side2",
+                        "private_attribute_color": null,
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_full_name": "blk-1/WT_side2",
+                        "private_attribute_id": "blk-1/WT_side2",
+                        "private_attribute_is_interface": false,
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_sub_components": [],
+                        "private_attribute_tag_key": null
+                    },
+                    {
+                        "name": "blk-1/WT_inlet",
+                        "private_attribute_color": null,
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_full_name": "blk-1/WT_inlet",
+                        "private_attribute_id": "blk-1/WT_inlet",
+                        "private_attribute_is_interface": false,
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_sub_components": [],
+                        "private_attribute_tag_key": null
+                    },
+                    {
+                        "name": "blk-1/WT_outlet",
+                        "private_attribute_color": null,
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_full_name": "blk-1/WT_outlet",
+                        "private_attribute_id": "blk-1/WT_outlet",
+                        "private_attribute_is_interface": false,
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_sub_components": [],
+                        "private_attribute_tag_key": null
+                    }
+                ]
+            },
+            "name": "Freestream",
+            "turbulence_quantities": null,
+            "type": "Freestream",
+            "velocity": null
+        },
+        {
+            "entities": {
+                "stored_entities": [
+                    {
+                        "name": "blk-1/WT_ceiling",
+                        "private_attribute_color": null,
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_full_name": "blk-1/WT_ceiling",
+                        "private_attribute_id": "blk-1/WT_ceiling",
+                        "private_attribute_is_interface": false,
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_sub_components": [],
+                        "private_attribute_tag_key": null
+                    },
+                    {
+                        "name": "blk-1/WT_ground_front",
+                        "private_attribute_color": null,
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_full_name": "blk-1/WT_ground_front",
+                        "private_attribute_id": "blk-1/WT_ground_front",
+                        "private_attribute_is_interface": false,
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_sub_components": [],
+                        "private_attribute_tag_key": null
+                    },
+                    {
+                        "name": "blk-1/WT_ground",
+                        "private_attribute_color": null,
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_full_name": "blk-1/WT_ground",
+                        "private_attribute_id": "blk-1/WT_ground",
+                        "private_attribute_is_interface": false,
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_sub_components": [],
+                        "private_attribute_tag_key": null
+                    }
+                ]
+            },
+            "name": "Slip wall",
+            "type": "SlipWall"
+        },
+        {
+            "initial_condition": {
+                "constants": null,
+                "p": "p",
+                "rho": "rho",
+                "type_name": "NavierStokesInitialCondition",
+                "u": "u",
+                "v": "v",
+                "w": "w"
+            },
+            "material": {
+                "dynamic_viscosity": {
+                    "effective_temperature": {
+                        "units": "K",
+                        "value": 110.4
+                    },
+                    "reference_temperature": {
+                        "units": "K",
+                        "value": 273.15
+                    },
+                    "reference_viscosity": {
+                        "units": "Pa*s",
+                        "value": 1.716e-05
+                    }
+                },
+                "name": "air",
+                "type": "air"
+            },
+            "navier_stokes_solver": {
+                "CFL_multiplier": 1,
+                "absolute_tolerance": 1e-10,
+                "equation_evaluation_frequency": 1,
+                "kappa_MUSCL": -1,
+                "limit_pressure_density": false,
+                "limit_velocity": false,
+                "linear_solver": {
+                    "absolute_tolerance": null,
+                    "max_iterations": 30,
+                    "relative_tolerance": null
+                },
+                "low_mach_preconditioner": false,
+                "low_mach_preconditioner_threshold": null,
+                "max_force_jac_update_physical_steps": 0,
+                "numerical_dissipation_factor": 1,
+                "order_of_accuracy": 2,
+                "private_attribute_dict": null,
+                "relative_tolerance": 0,
+                "type_name": "Compressible",
+                "update_jacobian_frequency": 4
+            },
+            "transition_model_solver": {
+                "type_name": "None"
+            },
+            "turbulence_model_solver": {
+                "CFL_multiplier": 2,
+                "absolute_tolerance": 1e-08,
+                "equation_evaluation_frequency": 4,
+                "hybrid_model": null,
+                "linear_solver": {
+                    "absolute_tolerance": null,
+                    "max_iterations": 20,
+                    "relative_tolerance": null
+                },
+                "max_force_jac_update_physical_steps": 0,
+                "modeling_constants": {
+                    "C_DES1": 0.78,
+                    "C_DES2": 0.61,
+                    "C_alpha1": 0.31,
+                    "C_beta1": 0.075,
+                    "C_beta2": 0.0828,
+                    "C_beta_star": 0.09,
+                    "C_d1": 20,
+                    "C_d2": 3,
+                    "C_sigma_k1": 0.85,
+                    "C_sigma_k2": 1,
+                    "C_sigma_omega1": 0.5,
+                    "C_sigma_omega2": 0.856,
+                    "type_name": "kOmegaSSTConsts"
+                },
+                "order_of_accuracy": 2,
+                "private_attribute_dict": null,
+                "quadratic_constitutive_relation": false,
+                "reconstruction_gradient_limiter": 1,
+                "relative_tolerance": 0,
+                "rotation_correction": false,
+                "type_name": "kOmegaSST",
+                "update_jacobian_frequency": 4
+            },
+            "type": "Fluid"
+        }
+    ],
+    "operating_condition": {
+        "alpha": {
+            "units": "degree",
+            "value": 0
+        },
+        "beta": {
+            "units": "degree",
+            "value": 0
+        },
+        "private_attribute_constructor": "default",
+        "private_attribute_input_cache": {
+            "alpha": {
+                "units": "degree",
+                "value": 0
+            },
+            "beta": {
+                "units": "degree",
+                "value": 0
+            },
+            "mach": null,
+            "reference_mach": null,
+            "thermal_state": {
+                "density": {
+                    "units": "kg/m**3",
+                    "value": 1.225
+                },
+                "material": {
+                    "dynamic_viscosity": {
+                        "effective_temperature": {
+                            "units": "K",
+                            "value": 110.4
+                        },
+                        "reference_temperature": {
+                            "units": "K",
+                            "value": 273.15
+                        },
+                        "reference_viscosity": {
+                            "units": "Pa*s",
+                            "value": 1.716e-05
+                        }
+                    },
+                    "name": "air",
+                    "type": "air"
+                },
+                "private_attribute_constructor": "default",
+                "private_attribute_input_cache": {
+                    "altitude": null,
+                    "temperature_offset": null
+                },
+                "temperature": {
+                    "units": "K",
+                    "value": 288.15
+                },
+                "type_name": "ThermalState"
+            }
+        },
+        "reference_velocity_magnitude": null,
+        "thermal_state": {
+            "density": {
+                "units": "kg/m**3",
+                "value": 1.225
+            },
+            "material": {
+                "dynamic_viscosity": {
+                    "effective_temperature": {
+                        "units": "K",
+                        "value": 110.4
+                    },
+                    "reference_temperature": {
+                        "units": "K",
+                        "value": 273.15
+                    },
+                    "reference_viscosity": {
+                        "units": "Pa*s",
+                        "value": 1.716e-05
+                    }
+                },
+                "name": "air",
+                "type": "air"
+            },
+            "private_attribute_constructor": "default",
+            "private_attribute_input_cache": {
+                "altitude": null,
+                "temperature_offset": null
+            },
+            "temperature": {
+                "units": "K",
+                "value": 288.15
+            },
+            "type_name": "ThermalState"
+        },
+        "type_name": "AerospaceCondition",
+        "velocity_magnitude": {
+            "units": "m/s",
+            "value": 40
+        }
+    },
+    "outputs": [
+        {
+            "entities": {
+                "stored_entities": [
+                    {
+                        "name": "blk-1/WT_side1",
+                        "private_attribute_color": null,
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_full_name": "blk-1/WT_side1",
+                        "private_attribute_id": "blk-1/WT_side1",
+                        "private_attribute_is_interface": false,
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_sub_components": [],
+                        "private_attribute_tag_key": null
+                    },
+                    {
+                        "name": "blk-1/wheel_tire",
+                        "private_attribute_color": null,
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_full_name": "blk-1/wheel_tire",
+                        "private_attribute_id": "blk-1/wheel_tire",
+                        "private_attribute_is_interface": false,
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_sub_components": [],
+                        "private_attribute_tag_key": null
+                    },
+                    {
+                        "name": "blk-1/WT_ground_patch",
+                        "private_attribute_color": null,
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_full_name": "blk-1/WT_ground_patch",
+                        "private_attribute_id": "blk-1/WT_ground_patch",
+                        "private_attribute_is_interface": false,
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_sub_components": [],
+                        "private_attribute_tag_key": null
+                    },
+                    {
+                        "name": "blk-1/WT_outlet",
+                        "private_attribute_color": null,
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_full_name": "blk-1/WT_outlet",
+                        "private_attribute_id": "blk-1/WT_outlet",
+                        "private_attribute_is_interface": false,
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_sub_components": [],
+                        "private_attribute_tag_key": null
+                    },
+                    {
+                        "name": "blk-1/WT_ground",
+                        "private_attribute_color": null,
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_full_name": "blk-1/WT_ground",
+                        "private_attribute_id": "blk-1/WT_ground",
+                        "private_attribute_is_interface": false,
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_sub_components": [],
+                        "private_attribute_tag_key": null
+                    },
+                    {
+                        "name": "blk-1/wheel_rim",
+                        "private_attribute_color": null,
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_full_name": "blk-1/wheel_rim",
+                        "private_attribute_id": "blk-1/wheel_rim",
+                        "private_attribute_is_interface": false,
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_sub_components": [],
+                        "private_attribute_tag_key": null
+                    },
+                    {
+                        "name": "blk-1/WT_ceiling",
+                        "private_attribute_color": null,
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_full_name": "blk-1/WT_ceiling",
+                        "private_attribute_id": "blk-1/WT_ceiling",
+                        "private_attribute_is_interface": false,
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_sub_components": [],
+                        "private_attribute_tag_key": null
+                    },
+                    {
+                        "name": "blk-1/BODY",
+                        "private_attribute_color": null,
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_full_name": "blk-1/BODY",
+                        "private_attribute_id": "blk-1/BODY",
+                        "private_attribute_is_interface": false,
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_sub_components": [],
+                        "private_attribute_tag_key": null
+                    },
+                    {
+                        "name": "blk-1/WT_ground_close",
+                        "private_attribute_color": null,
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_full_name": "blk-1/WT_ground_close",
+                        "private_attribute_id": "blk-1/WT_ground_close",
+                        "private_attribute_is_interface": false,
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_sub_components": [],
+                        "private_attribute_tag_key": null
+                    },
+                    {
+                        "name": "blk-1/WT_side2",
+                        "private_attribute_color": null,
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_full_name": "blk-1/WT_side2",
+                        "private_attribute_id": "blk-1/WT_side2",
+                        "private_attribute_is_interface": false,
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_sub_components": [],
+                        "private_attribute_tag_key": null
+                    },
+                    {
+                        "name": "blk-1/WT_ground_front",
+                        "private_attribute_color": null,
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_full_name": "blk-1/WT_ground_front",
+                        "private_attribute_id": "blk-1/WT_ground_front",
+                        "private_attribute_is_interface": false,
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_sub_components": [],
+                        "private_attribute_tag_key": null
+                    },
+                    {
+                        "name": "blk-1/WT_inlet",
+                        "private_attribute_color": null,
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_full_name": "blk-1/WT_inlet",
+                        "private_attribute_id": "blk-1/WT_inlet",
+                        "private_attribute_is_interface": false,
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_sub_components": [],
+                        "private_attribute_tag_key": null
+                    }
+                ]
+            },
+            "frequency": -1,
+            "frequency_offset": 0,
+            "name": "Surface output",
+            "output_fields": {
+                "items": [
+                    "Cp",
+                    "Cf",
+                    "CfVec",
+                    "primitiveVars"
+                ]
+            },
+            "output_format": "paraview",
+            "output_type": "SurfaceOutput",
+            "write_single_file": false
+        }
+    ],
+    "private_attribute_asset_cache": {
+        "project_entity_info": {
+            "boundaries": [
+                {
+                    "name": "blk-1/WT_side1",
+                    "private_attribute_color": null,
+                    "private_attribute_entity_type_name": "Surface",
+                    "private_attribute_full_name": "blk-1/WT_side1",
+                    "private_attribute_id": "blk-1/WT_side1",
+                    "private_attribute_is_interface": false,
+                    "private_attribute_potential_issues": [],
+                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                    "private_attribute_sub_components": [],
+                    "private_attribute_tag_key": null
+                },
+                {
+                    "name": "blk-1/wheel_tire",
+                    "private_attribute_color": null,
+                    "private_attribute_entity_type_name": "Surface",
+                    "private_attribute_full_name": "blk-1/wheel_tire",
+                    "private_attribute_id": "blk-1/wheel_tire",
+                    "private_attribute_is_interface": false,
+                    "private_attribute_potential_issues": [],
+                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                    "private_attribute_sub_components": [],
+                    "private_attribute_tag_key": null
+                },
+                {
+                    "name": "blk-1/WT_ground_patch",
+                    "private_attribute_color": null,
+                    "private_attribute_entity_type_name": "Surface",
+                    "private_attribute_full_name": "blk-1/WT_ground_patch",
+                    "private_attribute_id": "blk-1/WT_ground_patch",
+                    "private_attribute_is_interface": false,
+                    "private_attribute_potential_issues": [],
+                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                    "private_attribute_sub_components": [],
+                    "private_attribute_tag_key": null
+                },
+                {
+                    "name": "blk-1/WT_outlet",
+                    "private_attribute_color": null,
+                    "private_attribute_entity_type_name": "Surface",
+                    "private_attribute_full_name": "blk-1/WT_outlet",
+                    "private_attribute_id": "blk-1/WT_outlet",
+                    "private_attribute_is_interface": false,
+                    "private_attribute_potential_issues": [],
+                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                    "private_attribute_sub_components": [],
+                    "private_attribute_tag_key": null
+                },
+                {
+                    "name": "blk-1/WT_ground",
+                    "private_attribute_color": null,
+                    "private_attribute_entity_type_name": "Surface",
+                    "private_attribute_full_name": "blk-1/WT_ground",
+                    "private_attribute_id": "blk-1/WT_ground",
+                    "private_attribute_is_interface": false,
+                    "private_attribute_potential_issues": [],
+                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                    "private_attribute_sub_components": [],
+                    "private_attribute_tag_key": null
+                },
+                {
+                    "name": "blk-1/wheel_rim",
+                    "private_attribute_color": null,
+                    "private_attribute_entity_type_name": "Surface",
+                    "private_attribute_full_name": "blk-1/wheel_rim",
+                    "private_attribute_id": "blk-1/wheel_rim",
+                    "private_attribute_is_interface": false,
+                    "private_attribute_potential_issues": [],
+                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                    "private_attribute_sub_components": [],
+                    "private_attribute_tag_key": null
+                },
+                {
+                    "name": "blk-1/WT_ceiling",
+                    "private_attribute_color": null,
+                    "private_attribute_entity_type_name": "Surface",
+                    "private_attribute_full_name": "blk-1/WT_ceiling",
+                    "private_attribute_id": "blk-1/WT_ceiling",
+                    "private_attribute_is_interface": false,
+                    "private_attribute_potential_issues": [],
+                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                    "private_attribute_sub_components": [],
+                    "private_attribute_tag_key": null
+                },
+                {
+                    "name": "blk-1/BODY",
+                    "private_attribute_color": null,
+                    "private_attribute_entity_type_name": "Surface",
+                    "private_attribute_full_name": "blk-1/BODY",
+                    "private_attribute_id": "blk-1/BODY",
+                    "private_attribute_is_interface": false,
+                    "private_attribute_potential_issues": [],
+                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                    "private_attribute_sub_components": [],
+                    "private_attribute_tag_key": null
+                },
+                {
+                    "name": "blk-1/WT_ground_close",
+                    "private_attribute_color": null,
+                    "private_attribute_entity_type_name": "Surface",
+                    "private_attribute_full_name": "blk-1/WT_ground_close",
+                    "private_attribute_id": "blk-1/WT_ground_close",
+                    "private_attribute_is_interface": false,
+                    "private_attribute_potential_issues": [],
+                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                    "private_attribute_sub_components": [],
+                    "private_attribute_tag_key": null
+                },
+                {
+                    "name": "blk-1/WT_side2",
+                    "private_attribute_color": null,
+                    "private_attribute_entity_type_name": "Surface",
+                    "private_attribute_full_name": "blk-1/WT_side2",
+                    "private_attribute_id": "blk-1/WT_side2",
+                    "private_attribute_is_interface": false,
+                    "private_attribute_potential_issues": [],
+                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                    "private_attribute_sub_components": [],
+                    "private_attribute_tag_key": null
+                },
+                {
+                    "name": "blk-1/WT_ground_front",
+                    "private_attribute_color": null,
+                    "private_attribute_entity_type_name": "Surface",
+                    "private_attribute_full_name": "blk-1/WT_ground_front",
+                    "private_attribute_id": "blk-1/WT_ground_front",
+                    "private_attribute_is_interface": false,
+                    "private_attribute_potential_issues": [],
+                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                    "private_attribute_sub_components": [],
+                    "private_attribute_tag_key": null
+                },
+                {
+                    "name": "blk-1/WT_inlet",
+                    "private_attribute_color": null,
+                    "private_attribute_entity_type_name": "Surface",
+                    "private_attribute_full_name": "blk-1/WT_inlet",
+                    "private_attribute_id": "blk-1/WT_inlet",
+                    "private_attribute_is_interface": false,
+                    "private_attribute_potential_issues": [],
+                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                    "private_attribute_sub_components": [],
+                    "private_attribute_tag_key": null
+                }
+            ],
+            "draft_entities": [],
+            "ghost_entities": [],
+            "type_name": "VolumeMeshEntityInfo",
+            "zones": [
+                {
+                    "axes": null,
+                    "axis": null,
+                    "center": null,
+                    "name": "blk-1",
+                    "private_attribute_entity_type_name": "GenericVolume",
+                    "private_attribute_full_name": "blk-1",
+                    "private_attribute_id": "blk-1",
+                    "private_attribute_registry_bucket_name": "VolumetricEntityType",
+                    "private_attribute_zone_boundary_names": {
+                        "items": [
+                            "blk-1/BODY",
+                            "blk-1/WT_ceiling",
+                            "blk-1/WT_ground",
+                            "blk-1/WT_ground_close",
+                            "blk-1/WT_ground_front",
+                            "blk-1/WT_ground_patch",
+                            "blk-1/WT_inlet",
+                            "blk-1/WT_outlet",
+                            "blk-1/WT_side1",
+                            "blk-1/WT_side2",
+                            "blk-1/wheel_rim",
+                            "blk-1/wheel_tire"
+                        ]
+                    }
+                }
+            ]
+        },
+        "project_length_unit": {
+            "units": "m",
+            "value": 1
+        },
+        "use_geometry_AI": false,
+        "use_inhouse_mesher": false
+    },
+    "reference_geometry": {
+        "area": {
+            "units": "m**2",
+            "value": 2.17
+        },
+        "moment_center": {
+            "units": "m",
+            "value": [
+                0,
+                0,
+                0
+            ]
+        },
+        "moment_length": {
+            "units": "m",
+            "value": 2.7862
+        }
+    },
+    "time_stepping": {
+        "CFL": {
+            "convergence_limiting_factor": 0.25,
+            "max": 10000,
+            "max_relative_change": 1,
+            "min": 0.1,
+            "type": "adaptive"
+        },
+        "max_steps": 2000,
+        "type_name": "Steady"
+    },
+    "unit_system": {
+        "name": "SI"
+    },
+    "user_defined_dynamics": null,
+    "user_defined_fields": [],
+    "version": "25.4.1b2"
 }

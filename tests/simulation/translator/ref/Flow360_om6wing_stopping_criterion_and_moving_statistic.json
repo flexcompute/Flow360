@@ -17,6 +17,10 @@
             "type": "NoSlipWall"
         }
     },
+    "fluidProperties": {
+        "prandtlNumber": 0.72,
+        "turbulentPrandtlNumber": 0.9
+    },
     "forceDistributionOutput": {
         "X_incremental": {
             "direction": [
@@ -38,29 +42,6 @@
         "alphaAngle": 3.06,
         "betaAngle": 0.0,
         "muRef": 5.3261211651402046e-08
-    },
-    "fluidProperties": {
-        "prandtlNumber": 0.72,
-        "turbulentPrandtlNumber": 0.9
-    },
-    "thermallyPerfectGasModel": {
-        "temperatureRanges": [
-            {
-                "temperatureRangeMin": 0.694082942911678,
-                "temperatureRangeMax": 20.82248828735034,
-                "coefficients": [
-                    0.0,
-                    0.0,
-                    3.5,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    7.890809489614162e-16,
-                    0.0
-                ]
-            }
-        ]
     },
     "geometry": {
         "interfaceInterpolationTolerance": 0.2,
@@ -229,6 +210,25 @@
             }
         },
         "writeSingleFile": false
+    },
+    "thermallyPerfectGasModel": {
+        "temperatureRanges": [
+            {
+                "coefficients": [
+                    0.0,
+                    0.0,
+                    3.5,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    7.890809489614162e-16,
+                    0.0
+                ],
+                "temperatureRangeMax": 20.82248828735034,
+                "temperatureRangeMin": 0.694082942911678
+            }
+        ]
     },
     "timeStepping": {
         "CFL": {

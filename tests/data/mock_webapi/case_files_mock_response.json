@@ -3,72 +3,72 @@
         {
             "fileName": "results/monitor_massFluxExhaust_v2.csv",
             "filePath": "results/monitor_massFluxExhaust_v2.csv",
-            "length": 2479,
             "fileType": ".csv",
+            "length": 2479,
             "storageClass": null,
             "updatedAt": null
         },
         {
             "fileName": "results/monitor_massFluxIntake_v2.csv",
             "filePath": "results/monitor_massFluxIntake_v2.csv",
-            "length": 2479,
             "fileType": ".csv",
+            "length": 2479,
             "storageClass": null,
             "updatedAt": null
         },
         {
             "fileName": "results/udd_massInflowController_Exhaust_v2.csv",
             "filePath": "results/udd_massInflowController_Exhaust_v2.csv",
-            "length": 2479,
             "fileType": ".csv",
+            "length": 2479,
             "storageClass": null,
             "updatedAt": null
         },
         {
             "fileName": "results/udd_massInflowController_Intake_v2.csv",
             "filePath": "results/udd_massInflowController_Intake_v2.csv",
-            "length": 2479,
             "fileType": ".csv",
+            "length": 2479,
             "storageClass": null,
             "updatedAt": null
         },
         {
             "fileName": "results/force_output_wing_all_planes_forces_v2.csv",
             "filePath": "results/force_output_wing_all_planes_forces_v2.csv",
-            "length": 1524,
             "fileType": ".csv",
+            "length": 1524,
             "storageClass": null,
             "updatedAt": null
         },
         {
             "fileName": "results/force_output_wing_all_planes_forces_moving_statistic_v2.csv",
             "filePath": "results/force_output_wing_all_planes_forces_moving_statistic_v2.csv",
-            "length": 1648,
             "fileType": ".csv",
+            "length": 1648,
             "storageClass": null,
             "updatedAt": null
         },
         {
             "fileName": "results/force_distro_cumul_forceDistribution.csv",
             "filePath": "results/force_distro_cumul_forceDistribution.csv",
-            "length": 50000,
             "fileType": ".csv",
+            "length": 50000,
             "storageClass": null,
             "updatedAt": null
         },
         {
             "fileName": "results/ta_distro_forceDistribution.csv",
             "filePath": "results/ta_distro_forceDistribution.csv",
-            "length": 50000,
             "fileType": ".csv",
+            "length": 50000,
             "storageClass": null,
             "updatedAt": null
         },
         {
             "fileName": "simulation.json",
             "filePath": "simulation.json",
-            "length": 36806,
             "fileType": ".json",
+            "length": 36806,
             "storageClass": null,
             "updatedAt": null
         }

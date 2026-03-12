@@ -1,182 +1,182 @@
 {
-   "geometry": {
-      "refArea": 9,
-      "momentCenter": [
-         0,
-         0,
-         0
-      ],
-      "momentLength": [
-         0.9,
-         0.9,
-         2.5
-      ]
-   },
-   "runControl": {
-      "restart": false
-   },
-   "volumeOutput": {
-      "outputFormat": "paraview",
-      "primitiveVars": true,
-      "vorticity": false,
-      "residualNavierStokes": false,
-      "residualTurbulence": false,
-      "wallDistanceDir": false,
-      "T": false,
-      "s": false,
-      "Cp": false,
-      "Mach": true,
-      "qcriterion": true,
-      "mut": false,
-      "VelocityRelative": false,
-      "nuHat": false,
-      "mutRatio": false,
-      "animationFrequency": -1
-   },
-   "surfaceOutput": {
-      "outputFormat": "paraview",
-      "primitiveVars": true,
-      "Cp": true,
-      "Cf": true,
-      "CfTangent": true,
-      "CfNormal": true,
-      "CfVec": false,
-      "yPlus": true,
-      "wallDistance": false,
-      "Mach": false,
-      "animationFrequency": -1,
-      "nodeForcesPerUnitArea": true
-   },
-   "sliceOutput": {
-      "outputFormat": "paraview",
-      "slices": [
-         {
-            "sliceName": "mid_Height",
-            "sliceNormal": [
-               0,
-               0,
-               1
-            ],
-            "sliceOrigin": [
-               0,
-               0,
-               0.5
-            ]
-         }
-      ],
-      "primitiveVars": true,
-      "Mach": true,
-      "animationFrequency": 5
-   },
-   "navierStokesSolver": {
-      "absoluteTolerance": 1e-9,
-      "relativeTolerance": 0.01,
-      "linearIterations": 35,
-      "kappaMUSCL": -1,
-      "orderOfAccuracy": 1,
-      "updateJacobianFrequency": 1,
-      "equationEvalFrequency": 1
-   },
-   "turbulenceModelSolver": {
-      "modelType": "SpalartAllmaras",
-      "absoluteTolerance": 1e-8,
-      "relativeTolerance": 0.01,
-      "linearIterations": 35,
-      "kappaMUSCL": -1,
-      "DDES": true,
-      "orderOfAccuracy": 1,
-      "updateJacobianFrequency": 1,
-      "equationEvalFrequency": 1,
-      "rotationCorrection": true
-   },
-   "freestream": {
-      "muRef": 4.1283e-8,
-      "Mach": 0.050641458474,
-      "MachRef": 0.1266036,
-      "Temperature": 278.15,
-      "alphaAngle": 0,
-      "betaAngle": 0
-   },
-   "boundaries": {
-      "OuterBlock/inlet": {
-         "type": "Freestream"
-      },
-      "OuterBlock/outlet": {
-         "type": "Freestream"
-      },
-      "OuterBlock/front": {
-         "type": "SlipWall"
-      },
-      "OuterBlock/back": {
-         "type": "SlipWall"
-      },
-      "OuterBlock/top": {
-         "type": "SlipWall"
-      },
-      "OuterBlock/bottom": {
-         "type": "SlipWall"
-      },
-      "OuterBlock/AMI_outer": {
-         "type": "SlidingInterface"
-      },
-      "InnerBlock/AMI_inner": {
-         "type": "SlidingInterface"
-      },
-      "InnerBlock/foil1": {
-         "type": "NoSlipWall"
-      },
-      "InnerBlock/foil2": {
-         "type": "NoSlipWall"
-      },
-      "InnerBlock/foil3": {
-         "type": "NoSlipWall"
-      },
-      "InnerBlock/struct1": {
-         "type": "NoSlipWall"
-      },
-      "InnerBlock/struct2": {
-         "type": "NoSlipWall"
-      },
-      "InnerBlock/struct3": {
-         "type": "NoSlipWall"
-      },
-      "InnerBlock/shaft": {
-         "type": "NoSlipWall"
-      },
-      "InnerBlock/backingPlates": {
-         "type": "NoSlipWall"
-      }
-   },
-   "slidingInterfaces": [
-      {
-         "stationaryPatches": [
-            "OuterBlock/outer"
-         ],
-         "rotatingPatches": [
-            "InnerBlock/inner"
-         ],
-         "axisOfRotation": [
-            0,
-            0,
-            1
-         ],
-         "centerOfRotation": [
+    "boundaries": {
+        "InnerBlock/AMI_inner": {
+            "type": "SlidingInterface"
+        },
+        "InnerBlock/backingPlates": {
+            "type": "NoSlipWall"
+        },
+        "InnerBlock/foil1": {
+            "type": "NoSlipWall"
+        },
+        "InnerBlock/foil2": {
+            "type": "NoSlipWall"
+        },
+        "InnerBlock/foil3": {
+            "type": "NoSlipWall"
+        },
+        "InnerBlock/shaft": {
+            "type": "NoSlipWall"
+        },
+        "InnerBlock/struct1": {
+            "type": "NoSlipWall"
+        },
+        "InnerBlock/struct2": {
+            "type": "NoSlipWall"
+        },
+        "InnerBlock/struct3": {
+            "type": "NoSlipWall"
+        },
+        "OuterBlock/AMI_outer": {
+            "type": "SlidingInterface"
+        },
+        "OuterBlock/back": {
+            "type": "SlipWall"
+        },
+        "OuterBlock/bottom": {
+            "type": "SlipWall"
+        },
+        "OuterBlock/front": {
+            "type": "SlipWall"
+        },
+        "OuterBlock/inlet": {
+            "type": "Freestream"
+        },
+        "OuterBlock/outlet": {
+            "type": "Freestream"
+        },
+        "OuterBlock/top": {
+            "type": "SlipWall"
+        }
+    },
+    "freestream": {
+        "Mach": 0.050641458474,
+        "MachRef": 0.1266036,
+        "Temperature": 278.15,
+        "alphaAngle": 0,
+        "betaAngle": 0,
+        "muRef": 4.1283e-08
+    },
+    "geometry": {
+        "momentCenter": [
             0,
             0,
             0
-         ],
-         "omega": 0.14067184334908842,
-         "volumeName": "InnerBlock"
-      }
-   ],
-   "timeStepping": {
-      "timeStepSize": 0.3722129198939596,
-      "maxPhysicalSteps": 1,
-      "maxPseudoSteps": 1,
-      "CFL": {
-         "initial": 1,
-         "final": 1,
-         "rampSteps": 1
-      }
-   }
+        ],
+        "momentLength": [
+            0.9,
+            0.9,
+            2.5
+        ],
+        "refArea": 9
+    },
+    "navierStokesSolver": {
+        "absoluteTolerance": 1e-09,
+        "equationEvalFrequency": 1,
+        "kappaMUSCL": -1,
+        "linearIterations": 35,
+        "orderOfAccuracy": 1,
+        "relativeTolerance": 0.01,
+        "updateJacobianFrequency": 1
+    },
+    "runControl": {
+        "restart": false
+    },
+    "sliceOutput": {
+        "Mach": true,
+        "animationFrequency": 5,
+        "outputFormat": "paraview",
+        "primitiveVars": true,
+        "slices": [
+            {
+                "sliceName": "mid_Height",
+                "sliceNormal": [
+                    0,
+                    0,
+                    1
+                ],
+                "sliceOrigin": [
+                    0,
+                    0,
+                    0.5
+                ]
+            }
+        ]
+    },
+    "slidingInterfaces": [
+        {
+            "axisOfRotation": [
+                0,
+                0,
+                1
+            ],
+            "centerOfRotation": [
+                0,
+                0,
+                0
+            ],
+            "omega": 0.14067184334908842,
+            "rotatingPatches": [
+                "InnerBlock/inner"
+            ],
+            "stationaryPatches": [
+                "OuterBlock/outer"
+            ],
+            "volumeName": "InnerBlock"
+        }
+    ],
+    "surfaceOutput": {
+        "Cf": true,
+        "CfNormal": true,
+        "CfTangent": true,
+        "CfVec": false,
+        "Cp": true,
+        "Mach": false,
+        "animationFrequency": -1,
+        "nodeForcesPerUnitArea": true,
+        "outputFormat": "paraview",
+        "primitiveVars": true,
+        "wallDistance": false,
+        "yPlus": true
+    },
+    "timeStepping": {
+        "CFL": {
+            "final": 1,
+            "initial": 1,
+            "rampSteps": 1
+        },
+        "maxPhysicalSteps": 1,
+        "maxPseudoSteps": 1,
+        "timeStepSize": 0.3722129198939596
+    },
+    "turbulenceModelSolver": {
+        "DDES": true,
+        "absoluteTolerance": 1e-08,
+        "equationEvalFrequency": 1,
+        "kappaMUSCL": -1,
+        "linearIterations": 35,
+        "modelType": "SpalartAllmaras",
+        "orderOfAccuracy": 1,
+        "relativeTolerance": 0.01,
+        "rotationCorrection": true,
+        "updateJacobianFrequency": 1
+    },
+    "volumeOutput": {
+        "Cp": false,
+        "Mach": true,
+        "T": false,
+        "VelocityRelative": false,
+        "animationFrequency": -1,
+        "mut": false,
+        "mutRatio": false,
+        "nuHat": false,
+        "outputFormat": "paraview",
+        "primitiveVars": true,
+        "qcriterion": true,
+        "residualNavierStokes": false,
+        "residualTurbulence": false,
+        "s": false,
+        "vorticity": false,
+        "wallDistanceDir": false
+    }
 }

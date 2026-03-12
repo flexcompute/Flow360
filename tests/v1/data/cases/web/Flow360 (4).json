@@ -1,90 +1,97 @@
 {
-    "geometry" : {
-        "refArea" : 297360.0,
-        "momentCenter" : [1325.90, 0.0, 177.95],
-        "momentLength" : [1156.75, 275.8, 1156.75]
+    "boundaries": {
+        "1": {
+            "type": "Freestream"
+        },
+        "2": {
+            "type": "NoSlipWall"
+        },
+        "3": {
+            "type": "NoSlipWall"
+        },
+        "4": {
+            "type": "Freestream"
+        },
+        "5": {
+            "type": "NoSlipWall"
+        },
+        "6": {
+            "type": "Freestream"
+        },
+        "7": {
+            "type": "NoSlipWall"
+        },
+        "8": {
+            "type": "SlipWall"
+        },
+        "9": {
+            "type": "NoSlipWall"
+        }
     },
-    "volumeOutput" : {
-        "primitiveVars" : true,
-        "vorticity" : false,
-        "residualNavierStokes" : true,
-        "residualTurbulence" : true,
-        "T" : false,
-        "s" : false,
-        "Cp" : false,
-        "mut" : false,
-        "mutRatio" : false,
-	"qcriterion" : true
+    "freestream": {
+        "Mach": 0.2,
+        "Reynolds": 11820.15953,
+        "Temperature": 288.15,
+        "alphaAngle": 16,
+        "betaAngle": 0.0
     },
-    "surfaceOutput" : {
-        "primitiveVars" : true,
-        "Cp" : true,
-        "Cf" : true,
-        "CfVec" : true,
-        "yPlus" : true,
-        "wallDistance" : false,
-	"residualSA" : true
+    "geometry": {
+        "momentCenter": [
+            1325.9,
+            0.0,
+            177.95
+        ],
+        "momentLength": [
+            1156.75,
+            275.8,
+            1156.75
+        ],
+        "refArea": 297360.0
     },
-    "navierStokesSolver" : {
-        "tolerance" : 1e-10,
-        "linearIterations" : 25,
-        "kappaMUSCL" : -1,
-        "updateJacobianFrequency": 1,
-        "equationEvalFrequency": 1
+    "navierStokesSolver": {
+        "equationEvalFrequency": 1,
+        "kappaMUSCL": -1,
+        "linearIterations": 25,
+        "tolerance": 1e-10,
+        "updateJacobianFrequency": 1
     },
-    "turbulenceModelSolver" : {
-        "modelType" : "SpalartAllmaras",
-        "tolerance" : 1e-8,
-        "linearIterations" : 15,
-        "kappaMUSCL" : -1,
-        "updateJacobianFrequency": 1,
-        "equationEvalFrequency": 1
+    "surfaceOutput": {
+        "Cf": true,
+        "CfVec": true,
+        "Cp": true,
+        "primitiveVars": true,
+        "residualSA": true,
+        "wallDistance": false,
+        "yPlus": true
     },
-    "freestream" :
-    {
-        "Reynolds" : 11820.15953,
-        "Mach" : 0.2,
-        "Temperature" : 288.15,
-        "alphaAngle" : 16,
-        "betaAngle" : 0.0
-    },
-    "boundaries" : {
-		"1" : {
-			"type" : "Freestream"
-		},
-		"2" : {
-			"type" : "NoSlipWall"
-		},
-		"3" : {
-			"type" : "NoSlipWall"
-		},
-		"4" : {
-			"type" : "Freestream"
-		},
-		"5" : {
-			"type" : "NoSlipWall"
-		},
-		"6" : {
-			"type" : "Freestream"
-		},
-		"7" : {
-			"type" : "NoSlipWall"
-		},
-		"8" : {
-			"type" : "SlipWall"
-		},
-		"9" : {
-			"type" : "NoSlipWall"
-		}
-    },
-    "timeStepping" :{
-        "maxPhysicalSteps" : 1,
-        "timeStepSize" : "inf",
-        "maxPseudoSteps" : 10000,
-        "CFL" : {
-            "initial" : 5,
+    "timeStepping": {
+        "CFL": {
             "final": 200,
-            "rampSteps" : 100
-            }
+            "initial": 5,
+            "rampSteps": 100
+        },
+        "maxPhysicalSteps": 1,
+        "maxPseudoSteps": 10000,
+        "timeStepSize": "inf"
+    },
+    "turbulenceModelSolver": {
+        "equationEvalFrequency": 1,
+        "kappaMUSCL": -1,
+        "linearIterations": 15,
+        "modelType": "SpalartAllmaras",
+        "tolerance": 1e-08,
+        "updateJacobianFrequency": 1
+    },
+    "volumeOutput": {
+        "Cp": false,
+        "T": false,
+        "mut": false,
+        "mutRatio": false,
+        "primitiveVars": true,
+        "qcriterion": true,
+        "residualNavierStokes": true,
+        "residualTurbulence": true,
+        "s": false,
+        "vorticity": false
     }
 }

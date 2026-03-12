@@ -1,37 +1,37 @@
 {
+    "boundaries": {
+        "body01_face001": {
+            "boundaryName": "wing"
+        }
+    },
     "curvatureResolutionAngle": 10,
-    "growthRate": 1.07,
     "edges": {
         "body01_edge001": {
-            "type": "aniso",
             "method": "height",
-            "value": 3e-4
+            "type": "aniso",
+            "value": 0.0003
         },
         "body01_edge002": {
-            "type": "aniso",
             "method": "height",
-            "value": 3e-4
+            "type": "aniso",
+            "value": 0.0003
         },
         "body01_edge003": {
-            "type": "aniso",
             "method": "aspectRatio",
+            "type": "aniso",
             "value": 10
         },
         "body01_edge004": {
-            "type": "aniso",
             "method": "aspectRatio",
+            "type": "aniso",
             "value": 10
         }
     },
     "faces": {
         "body01_face001": {
-            "maxEdgeLength": 0.14,
-            "curvatureResolutionAngle": 10
+            "curvatureResolutionAngle": 10,
+            "maxEdgeLength": 0.14
         }
     },
-    "boundaries": {
-        "body01_face001": {
-            "boundaryName": "wing"
-        }
-    }
+    "growthRate": 1.07
 }

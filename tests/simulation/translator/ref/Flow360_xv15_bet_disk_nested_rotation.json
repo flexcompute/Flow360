@@ -399,6 +399,10 @@
             "type": "Freestream"
         }
     },
+    "fluidProperties": {
+        "prandtlNumber": 0.72,
+        "turbulentPrandtlNumber": 0.9
+    },
     "freestream": {
         "Mach": 0,
         "MachRef": 0.69,
@@ -407,30 +411,8 @@
         "betaAngle": 0.0,
         "muRef": 1.95151e-06
     },
-    "fluidProperties": {
-        "prandtlNumber": 0.72,
-        "turbulentPrandtlNumber": 0.9
-    },
-    "thermallyPerfectGasModel": {
-        "temperatureRanges": [
-            {
-                "temperatureRangeMin": 0.694082942911678,
-                "temperatureRangeMax": 20.82248828735034,
-                "coefficients": [
-                    0.0,
-                    0.0,
-                    3.5,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    7.890809489614162e-16,
-                    0.0
-                ]
-            }
-        ]
-    },
     "geometry": {
+        "interfaceInterpolationTolerance": 0.2,
         "momentCenter": [
             0.0,
             0.0,
@@ -441,8 +423,15 @@
             1.0,
             1.0
         ],
-        "refArea": 70685.83470577035,
-        "interfaceInterpolationTolerance": 0.2
+        "refArea": 70685.83470577035
+    },
+    "initialCondition": {
+        "p": "p",
+        "rho": "rho",
+        "type": "initialCondition",
+        "u": "u",
+        "v": "v",
+        "w": "w"
     },
     "navierStokesSolver": {
         "CFLMultiplier": 1.0,
@@ -462,6 +451,13 @@
         "orderOfAccuracy": 2,
         "relativeTolerance": 0.0,
         "updateJacobianFrequency": 4
+    },
+    "outputRescale": {
+        "velocityScale": 1.0
+    },
+    "runControl": {
+        "externalProcessMonitorOutput": true,
+        "monitorProcessorHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "surfaceOutput": {
         "animationFrequency": -1,
@@ -483,6 +479,25 @@
         },
         "writeSingleFile": false
     },
+    "thermallyPerfectGasModel": {
+        "temperatureRanges": [
+            {
+                "coefficients": [
+                    0.0,
+                    0.0,
+                    3.5,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    7.890809489614162e-16,
+                    0.0
+                ],
+                "temperatureRangeMax": 20.82248828735034,
+                "temperatureRangeMin": 0.694082942911678
+            }
+        ]
+    },
     "timeStepping": {
         "CFL": {
             "final": 10000.0,
@@ -498,6 +513,8 @@
     "turbulenceModelSolver": {
         "modelType": "None"
     },
+    "userDefinedFields": [],
+    "usingLiquidAsMaterial": false,
     "volumeOutput": {
         "animationFrequency": -1,
         "animationFrequencyOffset": 0,
@@ -513,8 +530,8 @@
     },
     "volumeZones": {
         "inner": {
-            "modelType": "FluidDynamics",
             "isRotatingReferenceFrame": false,
+            "modelType": "FluidDynamics",
             "referenceFrame": {
                 "axisOfRotation": [
                     0.0,
@@ -531,8 +548,8 @@
             }
         },
         "middle": {
-            "modelType": "FluidDynamics",
             "isRotatingReferenceFrame": false,
+            "modelType": "FluidDynamics",
             "referenceFrame": {
                 "axisOfRotation": [
                     0.0,
@@ -547,22 +564,5 @@
                 "thetaRadians": "-0.001299999975337446*t"
             }
         }
-    },
-    "initialCondition": {
-        "p": "p",
-        "rho": "rho",
-        "type": "initialCondition",
-        "u": "u",
-        "v": "v",
-        "w": "w"
-    },
-    "userDefinedFields": [],
-    "usingLiquidAsMaterial": false,
-    "outputRescale": {
-        "velocityScale": 1.0
-    },
-    "runControl": {
-        "externalProcessMonitorOutput": true,
-        "monitorProcessorHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     }
 }

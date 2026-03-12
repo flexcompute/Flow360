@@ -4,46 +4,31 @@
             "type": "Freestream"
         }
     },
-    "volumeZones": {
-        "outerBlock": {
-            "modelType": "FluidDynamics"
-        },
-        "innerBlock": {
-            "modelType": "HeatEquation",
-            "thermalConductivity": 0.03472,
-            "initialCondition": {
-                "T": 1
-            }
-        }
-    },
     "freestream": {
         "Mach": 0.0,
         "MachRef": 0.1,
-        "muRef": 1e-5,
         "Temperature": 288.15,
         "alphaAngle": 0.0,
-        "betaAngle": 0.0
+        "betaAngle": 0.0,
+        "muRef": 1e-05
     },
     "geometry": {
         "refArea": 1.0
+    },
+    "heatEquationSolver": {
+        "equationEvalFrequency": 20,
+        "linearSolver": {
+            "absoluteTolerance": 1e-12,
+            "maxIterations": 4
+        },
+        "modelType": "HeatEquation"
     },
     "navierStokesSolver": {
         "equationEvalFrequency": 1,
         "linearIterations": 50,
         "modelType": "Compressible",
-        "orderOfAccuracy": 2,
-        "numericalDissipationFactor": 0.01
-    },
-    "heatEquationSolver": {
-        "modelType": "HeatEquation",
-        "linearSolver": {
-            "maxIterations": 4,
-            "absoluteTolerance": 1e-12
-        },
-        "equationEvalFrequency": 20
-    },
-    "turbulenceModelSolver": {
-        "modelType": "None"
+        "numericalDissipationFactor": 0.01,
+        "orderOfAccuracy": 2
     },
     "surfaceOutput": {
         "surfaces": {
@@ -59,12 +44,27 @@
         "physicalSteps": 1,
         "timeStepSize": "inf"
     },
+    "turbulenceModelSolver": {
+        "modelType": "None"
+    },
     "volumeOutput": {
-        "outputFormat": "paraview",
         "outputFields": [
             "solutionNavierStokes",
             "T",
             "primitiveVars"
-        ]
+        ],
+        "outputFormat": "paraview"
+    },
+    "volumeZones": {
+        "innerBlock": {
+            "initialCondition": {
+                "T": 1
+            },
+            "modelType": "HeatEquation",
+            "thermalConductivity": 0.03472
+        },
+        "outerBlock": {
+            "modelType": "FluidDynamics"
+        }
     }
 }

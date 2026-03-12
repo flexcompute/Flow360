@@ -1,12 +1,12 @@
 {
-    "refinementFactor": 1.0,
+    "faces": {},
     "farfield": {
         "type": "wind-tunnel"
     },
+    "refinementFactor": 1.0,
     "volume": {
         "firstLayerThickness": 0.0001,
-        "growthRate": 1.2,
-        "gapTreatmentStrength": 0.0
-    },
-    "faces": {}
+        "gapTreatmentStrength": 0.0,
+        "growthRate": 1.2
+    }
 }

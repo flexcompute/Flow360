@@ -1,6 +1,33 @@
 {
+    "boundaries": {
+        "farFieldBlock/farField": {
+            "type": "Freestream"
+        },
+        "farFieldBlock/slipWall": {
+            "type": "SlipWall"
+        },
+        "plateBlock/noSlipWall": {
+            "heatFlux": 0.0,
+            "roughnessHeight": 0.0,
+            "type": "NoSlipWall"
+        },
+        "plateBlock/slipWall": {
+            "type": "SlipWall"
+        }
+    },
+    "fluidProperties": {
+        "prandtlNumber": 0.72,
+        "turbulentPrandtlNumber": 0.9
+    },
+    "freestream": {
+        "Mach": 0.19999999999999998,
+        "Temperature": 288.15,
+        "alphaAngle": 0.0,
+        "betaAngle": 0.0,
+        "muRef": 5.242024372937634e-06
+    },
     "geometry": {
-        "refArea": 0.5325,
+        "interfaceInterpolationTolerance": 0.2,
         "momentCenter": [
             0.0,
             0.0,
@@ -11,24 +38,61 @@
             1.0,
             1.0
         ],
-        "interfaceInterpolationTolerance": 0.2
+        "refArea": 0.5325
     },
-    "freestream": {
-        "alphaAngle": 0.0,
-        "betaAngle": 0.0,
-        "Mach": 0.19999999999999998,
-        "Temperature": 288.15,
-        "muRef": 5.242024372937634e-06
+    "initialCondition": {
+        "p": "p",
+        "rho": "rho",
+        "type": "initialCondition",
+        "u": "u",
+        "v": "v",
+        "w": "w"
     },
-    "fluidProperties": {
-        "prandtlNumber": 0.72,
-        "turbulentPrandtlNumber": 0.9
+    "navierStokesSolver": {
+        "CFLMultiplier": 1.0,
+        "absoluteTolerance": 1e-09,
+        "equationEvalFrequency": 1,
+        "kappaMUSCL": 0.33,
+        "limitPressureDensity": false,
+        "limitVelocity": false,
+        "linearSolver": {
+            "maxIterations": 35,
+            "typeName": "LinearSolver"
+        },
+        "lowMachPreconditioner": false,
+        "maxForceJacUpdatePhysicalSteps": 0,
+        "modelType": "Compressible",
+        "numericalDissipationFactor": 1.0,
+        "orderOfAccuracy": 2,
+        "relativeTolerance": 0.001,
+        "updateJacobianFrequency": 1
+    },
+    "outputRescale": {
+        "velocityScale": 1.0
+    },
+    "runControl": {
+        "externalProcessMonitorOutput": false
+    },
+    "surfaceOutput": {
+        "animationFrequency": -1,
+        "animationFrequencyOffset": 0,
+        "animationFrequencyTimeAverage": -1,
+        "animationFrequencyTimeAverageOffset": 0,
+        "outputFields": [],
+        "outputFormat": "paraview",
+        "startAverageIntegrationStep": -1,
+        "surfaces": {
+            "plateBlock/noSlipWall": {
+                "outputFields": [
+                    "Cp"
+                ]
+            }
+        },
+        "writeSingleFile": false
     },
     "thermallyPerfectGasModel": {
         "temperatureRanges": [
             {
-                "temperatureRangeMin": 0.694082942911678,
-                "temperatureRangeMax": 20.82248828735034,
                 "coefficients": [
                     0.0,
                     0.0,
@@ -39,154 +103,80 @@
                     0.0,
                     7.890809489614162e-16,
                     0.0
-                ]
+                ],
+                "temperatureRangeMax": 20.82248828735034,
+                "temperatureRangeMin": 0.694082942911678
             }
         ]
     },
     "timeStepping": {
         "CFL": {
-            "type": "ramp",
-            "initial": 1.0,
             "final": 50000.0,
-            "rampSteps": 5
+            "initial": 1.0,
+            "rampSteps": 5,
+            "type": "ramp"
         },
-        "physicalSteps": 300,
-        "orderOfAccuracy": 2,
         "maxPseudoSteps": 100,
+        "orderOfAccuracy": 2,
+        "physicalSteps": 300,
         "timeStepSize": 1.0
     },
-    "navierStokesSolver": {
-        "absoluteTolerance": 1e-09,
-        "relativeTolerance": 0.001,
-        "orderOfAccuracy": 2,
-        "linearSolver": {
-            "maxIterations": 35,
-            "typeName": "LinearSolver"
-        },
-        "CFLMultiplier": 1.0,
-        "kappaMUSCL": 0.33,
-        "numericalDissipationFactor": 1.0,
-        "limitVelocity": false,
-        "limitPressureDensity": false,
-        "lowMachPreconditioner": false,
-        "updateJacobianFrequency": 1,
-        "maxForceJacUpdatePhysicalSteps": 0,
-        "modelType": "Compressible",
-        "equationEvalFrequency": 1
-    },
     "turbulenceModelSolver": {
+        "CFLMultiplier": 2.0,
+        "DDES": false,
+        "ZDES": true,
         "absoluteTolerance": 1e-08,
-        "relativeTolerance": 0.01,
-        "orderOfAccuracy": 2,
+        "equationEvalFrequency": 1,
+        "gridSizeForLES": "meanEdgeLength",
         "linearSolver": {
             "maxIterations": 35,
             "typeName": "LinearSolver"
         },
         "lowReynoldsCorrection": false,
-        "CFLMultiplier": 2.0,
-        "DDES": false,
-        "ZDES": true,
-        "gridSizeForLES": "meanEdgeLength",
-        "reconstructionGradientLimiter": 0.5,
-        "quadraticConstitutiveRelation": false,
-        "updateJacobianFrequency": 1,
         "maxForceJacUpdatePhysicalSteps": 0,
-        "rotationCorrection": true,
-        "equationEvalFrequency": 1,
-        "modelType": "SpalartAllmaras",
         "modelConstants": {
             "C_DES": 0.72,
-            "C_d": 8.0,
             "C_cb1": 0.1355,
             "C_cb2": 0.622,
+            "C_d": 8.0,
+            "C_min_rd": 10.0,
             "C_sigma": 0.6666666666666666,
+            "C_t3": 1.2,
+            "C_t4": 0.5,
             "C_v1": 7.1,
             "C_vonKarman": 0.41,
             "C_w2": 0.3,
             "C_w4": 0.21,
-            "C_w5": 1.5,
-            "C_t3": 1.2,
-            "C_t4": 0.5,
-            "C_min_rd": 10.0
-        }
-    },
-    "volumeZones": {
-        "plateBlock": {
-            "referenceFrame": {
-                "axisOfRotation": [
-                    0.0,
-                    1.0,
-                    0.0
-                ],
-                "centerOfRotation": [
-                    0.0,
-                    0.0,
-                    0.0
-                ]
-            },
-            "isRotatingReferenceFrame": false,
-            "modelType": "FluidDynamics"
-        }
-    },
-    "boundaries": {
-        "farFieldBlock/farField": {
-            "type": "Freestream"
+            "C_w5": 1.5
         },
-        "farFieldBlock/slipWall": {
-            "type": "SlipWall"
-        },
-        "plateBlock/slipWall": {
-            "type": "SlipWall"
-        },
-        "plateBlock/noSlipWall": {
-            "type": "NoSlipWall",
-            "heatFlux": 0.0,
-            "roughnessHeight": 0.0
-        }
-    },
-    "volumeOutput": {
-        "outputFields": [
-            "primitiveVars"
-        ],
-        "outputFormat": "paraview",
-        "animationFrequency": -1,
-        "animationFrequencyOffset": 0,
-        "animationFrequencyTimeAverage": -1,
-        "animationFrequencyTimeAverageOffset": 0,
-        "startAverageIntegrationStep": -1
-    },
-    "surfaceOutput": {
-        "outputFields": [],
-        "outputFormat": "paraview",
-        "animationFrequency": -1,
-        "animationFrequencyOffset": 0,
-        "surfaces": {
-            "plateBlock/noSlipWall": {
-                "outputFields": [
-                    "Cp"
-                ]
-            }
-        },
-        "writeSingleFile": false,
-        "animationFrequencyTimeAverage": -1,
-        "animationFrequencyTimeAverageOffset": 0,
-        "startAverageIntegrationStep": -1
+        "modelType": "SpalartAllmaras",
+        "orderOfAccuracy": 2,
+        "quadraticConstitutiveRelation": false,
+        "reconstructionGradientLimiter": 0.5,
+        "relativeTolerance": 0.01,
+        "rotationCorrection": true,
+        "updateJacobianFrequency": 1
     },
     "userDefinedDynamics": [
         {
+            "constants": {
+                "I": 0.443768309310345,
+                "K": 0.01612271065846271,
+                "omegaN": 0.19060788888888883,
+                "theta0": 0.08726646259971647,
+                "zeta": 4.0
+            },
+            "dynamicsName": "dynamicTheta",
+            "inputBoundaryPatches": [
+                "plateBlock/noSlipWall"
+            ],
             "inputVars": [
                 "rotMomentY"
             ],
-            "constants": {
-                "I": 0.443768309310345,
-                "zeta": 4.0,
-                "K": 0.01612271065846271,
-                "omegaN": 0.19060788888888883,
-                "theta0": 0.08726646259971647
-            },
+            "outputTargetName": "plateBlock",
             "outputVars": {
-                "omegaDot": "state[0];",
                 "omega": "state[1];",
+                "omegaDot": "state[0];",
                 "theta": "state[2];"
             },
             "stateVarsInitialValue": [
@@ -198,28 +188,38 @@
                 "(pseudoStep == 0) ? ((momentY - K * ( state[2] - theta0 ) - 2 * zeta * omegaN * I *state[1] ) / I) : (state[0]);",
                 "(pseudoStep == 0) ? (state[1] + state[0] * timeStepSize) : (state[1]);",
                 "(pseudoStep == 0) ? (state[2] + state[1] * timeStepSize) : (state[2]);"
-            ],
-            "inputBoundaryPatches": [
-                "plateBlock/noSlipWall"
-            ],
-            "dynamicsName": "dynamicTheta",
-            "outputTargetName": "plateBlock"
+            ]
         }
     ],
-    "initialCondition": {
-        "p": "p",
-        "rho": "rho",
-        "type": "initialCondition",
-        "u": "u",
-        "v": "v",
-        "w": "w"
-    },
     "userDefinedFields": [],
     "usingLiquidAsMaterial": false,
-    "outputRescale": {
-        "velocityScale": 1.0
+    "volumeOutput": {
+        "animationFrequency": -1,
+        "animationFrequencyOffset": 0,
+        "animationFrequencyTimeAverage": -1,
+        "animationFrequencyTimeAverageOffset": 0,
+        "outputFields": [
+            "primitiveVars"
+        ],
+        "outputFormat": "paraview",
+        "startAverageIntegrationStep": -1
     },
-    "runControl": {
-        "externalProcessMonitorOutput": false
+    "volumeZones": {
+        "plateBlock": {
+            "isRotatingReferenceFrame": false,
+            "modelType": "FluidDynamics",
+            "referenceFrame": {
+                "axisOfRotation": [
+                    0.0,
+                    1.0,
+                    0.0
+                ],
+                "centerOfRotation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ]
+            }
+        }
     }
 }
