@@ -6,11 +6,12 @@ from enum import Enum
 from typing import List, Literal, Optional, Union
 
 import pydantic as pd
+from flow360_schema.framework.physical_dimensions import Angle, Length, Time
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.outputs.output_fields import CommonFieldNames
-from flow360.component.simulation.unit_system import AngleType, LengthType, TimeType
+from flow360.component.simulation.unit_system import AngleType, LengthType
 from flow360.component.simulation.user_code.core.types import (
     Expression,
     UnytQuantity,
@@ -64,7 +65,7 @@ class Keyframe(Flow360BaseModel):
     """
 
     type_name: Literal["Keyframe"] = pd.Field("Keyframe", frozen=True)
-    time: TimeType = pd.Field(
+    time: Time.Float64 = pd.Field(
         0, ge=0, description="Timestamp at which the keyframe should be reached"
     )
     view: StaticView = pd.Field(description="Camera parameters at this keyframe")
@@ -119,11 +120,11 @@ class OrthographicProjection(Flow360BaseModel):
     """
 
     type_name: Literal["OrthographicProjection"] = pd.Field("OrthographicProjection", frozen=True)
-    width: LengthType = pd.Field(description="Width of the camera frustum in world units")
-    near: LengthType = pd.Field(
+    width: Length.Float64 = pd.Field(description="Width of the camera frustum in world units")
+    near: Length.Float64 = pd.Field(
         description="Near clipping plane in world units, pixels closer to the camera than this value are culled"
     )
-    far: LengthType = pd.Field(
+    far: Length.Float64 = pd.Field(
         description="Far clipping plane in world units, pixels further from the camera than this value are culled"
     )
 
@@ -142,11 +143,11 @@ class PerspectiveProjection(Flow360BaseModel):
     """
 
     type_name: Literal["PerspectiveProjection"] = pd.Field("PerspectiveProjection", frozen=True)
-    fov: AngleType = pd.Field(description="Field of view of the camera (angle)")
-    near: LengthType = pd.Field(
+    fov: Angle.Float64 = pd.Field(description="Field of view of the camera (angle)")
+    near: Length.Float64 = pd.Field(
         description="Near clipping plane in world units, pixels closer to the camera than this value are culled"
     )
-    far: LengthType = pd.Field(
+    far: Length.Float64 = pd.Field(
         description="Far clipping plane in world units, pixels further from the camera than this value are culled"
     )
 

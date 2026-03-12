@@ -4,6 +4,7 @@ from typing import Literal, Optional, Union
 
 import numpy as np
 import pydantic as pd
+from flow360_schema.framework.physical_dimensions import Length
 
 from flow360.component.simulation.entity_operation import (
     _transform_direction,
@@ -117,7 +118,7 @@ class Isosurface(_OutputItemBase):
     )
 
     # pylint: disable=no-member
-    wall_distance_clip_threshold: Optional[LengthType.Positive] = pd.Field(
+    wall_distance_clip_threshold: Optional[Length.PositiveFloat64] = pd.Field(
         default=None,
         description="Optional parameter to remove the isosurface within a specified distance from walls.",
     )

@@ -10,6 +10,7 @@ import re
 from typing import Annotated, ClassVar, List, Literal, Optional, Tuple, Union, get_args
 
 import pydantic as pd
+from flow360_schema.framework.physical_dimensions import Time
 from typing_extensions import deprecated
 
 import flow360.component.simulation.units as u
@@ -59,7 +60,7 @@ from flow360.component.simulation.primitives import (
     Surface,
     WindTunnelGhostSurface,
 )
-from flow360.component.simulation.unit_system import LengthType, TimeType
+from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.user_code.core.types import (
     Expression,
     UserVariable,
@@ -1466,13 +1467,13 @@ class AeroAcousticOutput(Flow360BaseModel):
         description="Enable writing of aeroacoustic results on a per-surface basis, "
         + "in addition to results for all wall surfaces combined.",
     )
-    observer_time_step_size: Optional[TimeType.Positive] = pd.Field(
+    observer_time_step_size: Optional[Time.PositiveFloat64] = pd.Field(
         None,
         description="Time step size for aeroacoustic output. "
         + "A valid value is smaller than or equal to the time step size of the CFD simulation. "
         + "Defaults to time step size of CFD.",
     )
-    aeroacoustic_solver_start_time: TimeType.NonNegative = pd.Field(
+    aeroacoustic_solver_start_time: Time.NonNegativeFloat64 = pd.Field(
         0 * u.s,
         description="Time to start the aeroacoustic solver. "
         + "Signals emitted after this start time at the source surfaces are included in the output.",

@@ -732,7 +732,7 @@ def test_sphere_creation():
 
 def test_sphere_validation():
     """Test Sphere validation for negative radius."""
-    with pytest.raises(ValueError, match="Input should be greater than 0"):
+    with pytest.raises(ValueError, match="|Value must be positive"):
         Sphere(
             name="sphere",
             center=(0, 0, 0) * u.m,

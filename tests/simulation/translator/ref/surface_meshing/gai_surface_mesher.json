@@ -1,36 +1,21 @@
 {
     "meshing": {
         "defaults": {
-            "curvature_resolution_angle": {
-                "units": "rad",
-                "value": 0.20943951023931956
-            },
-            "geometry_accuracy": {
-                "units": "1.0*m",
-                "value": 0.05
-            },
+            "curvature_resolution_angle": 0.20943951023931956,
+            "geometry_accuracy": 0.05,
             "planar_face_tolerance": 1e-06,
             "preserve_thin_geometry": false,
             "remove_hidden_geometry": true,
             "resolve_face_boundaries": false,
-            "sealing_size": {
-                "units": "1.0*m",
-                "value": 0.0
-            },
+            "sealing_size": 0.0,
             "surface_edge_growth_rate": 1.2,
             "surface_max_adaptation_iterations": 19,
             "surface_max_aspect_ratio": 0.01,
-            "surface_max_edge_length": {
-                "units": "1.0*m",
-                "value": 0.2
-            }
+            "surface_max_edge_length": 0.2
         },
         "refinements": [
             {
-                "curvature_resolution_angle": {
-                    "units": "rad",
-                    "value": 0.08726646259971647
-                },
+                "curvature_resolution_angle": 0.08726646259971647,
                 "entities": {
                     "stored_entities": [
                         {
@@ -152,10 +137,7 @@
                         }
                     ]
                 },
-                "max_edge_length": {
-                    "units": "1.0*m",
-                    "value": 0.1
-                },
+                "max_edge_length": 0.1,
                 "name": "renamed_surface",
                 "refinement_type": "SurfaceRefinement",
                 "resolve_face_boundaries": true
@@ -174,14 +156,8 @@
                         }
                     ]
                 },
-                "geometry_accuracy": {
-                    "units": "1.0*m",
-                    "value": 0.05
-                },
-                "min_passage_size": {
-                    "units": "1.0*m",
-                    "value": 0.1
-                },
+                "geometry_accuracy": 0.05,
+                "min_passage_size": 0.1,
                 "name": "Local_override",
                 "refinement_type": "GeometryRefinement"
             }

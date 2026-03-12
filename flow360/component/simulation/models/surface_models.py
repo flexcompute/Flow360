@@ -6,6 +6,18 @@ from abc import ABCMeta
 from typing import Annotated, Dict, Literal, Optional, Union
 
 import pydantic as pd
+from flow360_schema.framework.physical_dimensions import (
+    AbsoluteTemperature,
+    AngularVelocity,
+)
+from flow360_schema.framework.physical_dimensions import HeatFlux as HeatFluxDim
+from flow360_schema.framework.physical_dimensions import (
+    InverseArea,
+    InverseLength,
+    Length,
+)
+from flow360_schema.framework.physical_dimensions import MassFlowRate as MassFlowRateDim
+from flow360_schema.framework.physical_dimensions import Pressure as PressureDim
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
@@ -32,16 +44,7 @@ from flow360.component.simulation.primitives import (
     SurfacePair,
     WindTunnelGhostSurface,
 )
-from flow360.component.simulation.unit_system import (
-    AbsoluteTemperatureType,
-    AngularVelocityType,
-    HeatFluxType,
-    InverseAreaType,
-    InverseLengthType,
-    LengthType,
-    MassFlowRateType,
-    PressureType,
-)
+from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.validation.validation_context import (
     ParamsValidationInfo,
     contextual_field_validator,
@@ -100,7 +103,9 @@ class HeatFlux(SingleAttributeModel):
     """
 
     type_name: Literal["HeatFlux"] = pd.Field("HeatFlux", frozen=True)
-    value: Union[StringExpression, HeatFluxType] = pd.Field(description="The heat flux value.")
+    value: Union[StringExpression, HeatFluxDim.Float64] = pd.Field(
+        description="The heat flux value."
+    )
 
 
 class Temperature(SingleAttributeModel):
@@ -119,7 +124,7 @@ class Temperature(SingleAttributeModel):
 
     type_name: Literal["Temperature"] = pd.Field("Temperature", frozen=True)
     # pylint: disable=no-member
-    value: Union[StringExpression, AbsoluteTemperatureType] = pd.Field(
+    value: Union[StringExpression, AbsoluteTemperature.Float64] = pd.Field(
         description="The temperature value."
     )
 
@@ -149,7 +154,7 @@ class TotalPressure(Flow360BaseModel):
 
     type_name: Literal["TotalPressure"] = pd.Field("TotalPressure", frozen=True)
     # pylint: disable=no-member
-    value: Union[StringExpression, PressureType.Positive] = pd.Field(
+    value: Union[StringExpression, PressureDim.PositiveFloat64] = pd.Field(
         description="The total pressure value. When a string expression is supplied the value"
         + " needs to nondimensionalized by the pressure defined in `operating_condition`."
     )
@@ -170,7 +175,7 @@ class Pressure(SingleAttributeModel):
 
     type_name: Literal["Pressure"] = pd.Field("Pressure", frozen=True)
     # pylint: disable=no-member
-    value: PressureType.Positive = pd.Field(description="The static pressure value.")
+    value: PressureDim.PositiveFloat64 = pd.Field(description="The static pressure value.")
 
 
 class SlaterPorousBleed(Flow360BaseModel):
@@ -191,7 +196,9 @@ class SlaterPorousBleed(Flow360BaseModel):
 
     type_name: Literal["SlaterPorousBleed"] = pd.Field("SlaterPorousBleed", frozen=True)
     # pylint: disable=no-member
-    static_pressure: PressureType.Positive = pd.Field(description="The static pressure value.")
+    static_pressure: PressureDim.PositiveFloat64 = pd.Field(
+        description="The static pressure value."
+    )
     porosity: float = pd.Field(gt=0, le=1, description="The porosity of the bleed region.")
     activation_step: Optional[pd.PositiveInt] = pd.Field(
         None, description="Pseudo step at which to start applying the SlaterPorousBleedModel."
@@ -216,7 +223,7 @@ class MassFlowRate(Flow360BaseModel):
 
     type_name: Literal["MassFlowRate"] = pd.Field("MassFlowRate", frozen=True)
     # pylint: disable=no-member
-    value: MassFlowRateType.NonNegative = pd.Field(description="The mass flow rate.")
+    value: MassFlowRateDim.NonNegativeFloat64 = pd.Field(description="The mass flow rate.")
     ramp_steps: Optional[pd.PositiveInt] = pd.Field(
         None,
         description="Number of pseudo steps before reaching :py:attr:`MassFlowRate.value` within 1 physical step.",
@@ -239,8 +246,8 @@ class Supersonic(Flow360BaseModel):
 
     type_name: Literal["Supersonic"] = pd.Field("Supersonic", frozen=True)
     # pylint: disable=no-member
-    total_pressure: PressureType.Positive = pd.Field(description="The total pressure.")
-    static_pressure: PressureType.Positive = pd.Field(description="The static pressure.")
+    total_pressure: PressureDim.PositiveFloat64 = pd.Field(description="The total pressure.")
+    static_pressure: PressureDim.PositiveFloat64 = pd.Field(description="The static pressure.")
 
 
 class Mach(SingleAttributeModel):
@@ -308,7 +315,7 @@ class WallRotation(Flow360BaseModel):
     # pylint: disable=no-member
     center: LengthType.Point = pd.Field(description="The center of rotation")
     axis: Axis = pd.Field(description="The axis of rotation.")
-    angular_velocity: AngularVelocityType = pd.Field("The value of the angular velocity.")
+    angular_velocity: AngularVelocity.Float64 = pd.Field("The value of the angular velocity.")
     type_name: Literal["WallRotation"] = pd.Field("WallRotation", frozen=True)
     private_attribute_circle_mode: Optional[dict] = pd.Field(None)
 
@@ -448,7 +455,7 @@ class Wall(BoundaryBase):
         discriminator="type_name",
         description="Specify the heat flux or temperature at the `Wall` boundary.",
     )
-    roughness_height: LengthType.NonNegative = pd.Field(
+    roughness_height: Length.NonNegativeFloat64 = pd.Field(
         0 * u.m,
         description="Equivalent sand grain roughness height. Available only to `Fluid` zone boundaries.",
     )
@@ -686,7 +693,7 @@ class Inflow(BoundaryBaseWithTurbulenceQuantities):
     name: Optional[str] = pd.Field("Inflow", description="Name of the `Inflow` boundary condition.")
     type: Literal["Inflow"] = pd.Field("Inflow", frozen=True)
     # pylint: disable=no-member
-    total_temperature: Union[StringExpression, AbsoluteTemperatureType] = pd.Field(
+    total_temperature: Union[StringExpression, AbsoluteTemperature.Float64] = pd.Field(
         description="Specify the total temperature at the `Inflow` boundary."
         + " When a string expression is supplied the value"
         + " needs to nondimensionalized by the temperature defined in `operating_condition`."
@@ -871,16 +878,16 @@ class PorousJump(Flow360BaseModel):
     entity_pairs: UniqueItemList[SurfacePair] = pd.Field(
         alias="surface_pairs", description="List of matching pairs of :class:`~flow360.Surface`. "
     )
-    darcy_coefficient: InverseAreaType = pd.Field(
+    darcy_coefficient: InverseArea.Float64 = pd.Field(
         description="Darcy coefficient of the porous media model which determines the scaling of the "
         + "viscous loss term. The value defines the coefficient for the axis normal "
         + "to the surface."
     )
-    forchheimer_coefficient: InverseLengthType = pd.Field(
+    forchheimer_coefficient: InverseLength.Float64 = pd.Field(
         description="Forchheimer coefficient of the porous media model which determines "
         + "the scaling of the inertial loss term."
     )
-    thickness: LengthType = pd.Field(
+    thickness: Length.Float64 = pd.Field(
         description="Thickness of the thin porous media on the surface"
     )
     private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)

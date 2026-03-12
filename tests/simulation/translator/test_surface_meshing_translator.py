@@ -1384,9 +1384,9 @@ def test_sliding_interface_tolerance_gai():
             ]
         },
         "name": "rotating_volume",
-        "spacing_axial": {"units": "1.0*m", "value": 0.1},
-        "spacing_circumferential": {"units": "1.0*m", "value": 0.1},
-        "spacing_radial": {"units": "1.0*m", "value": 0.1},
+        "spacing_axial": 0.1,
+        "spacing_circumferential": 0.1,
+        "spacing_radial": 0.1,
         "type": "RotationVolume",
     }
 

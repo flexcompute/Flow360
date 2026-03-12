@@ -4,6 +4,7 @@ from abc import ABCMeta
 from typing import Annotated, List, Literal, Optional, Union
 
 import pydantic as pd
+from flow360_schema.framework.physical_dimensions import Length
 from typing_extensions import Self
 
 import flow360.component.simulation.units as u
@@ -21,9 +22,9 @@ class SnappyEntityRefinement(Flow360BaseModel, metaclass=ABCMeta):
     """
 
     # pylint: disable=no-member
-    min_spacing: Optional[LengthType.Positive] = pd.Field(None)
-    max_spacing: Optional[LengthType.Positive] = pd.Field(None)
-    proximity_spacing: Optional[LengthType.Positive] = pd.Field(None)
+    min_spacing: Optional[Length.PositiveFloat64] = pd.Field(None)
+    max_spacing: Optional[Length.PositiveFloat64] = pd.Field(None)
+    proximity_spacing: Optional[Length.PositiveFloat64] = pd.Field(None)
 
     @pd.model_validator(mode="after")
     def _check_spacing_order(self) -> Self:
@@ -51,7 +52,7 @@ class BodyRefinement(SnappyEntityRefinement):
 
     # pylint: disable=no-member
     refinement_type: Literal["SnappyBodyRefinement"] = pd.Field("SnappyBodyRefinement", frozen=True)
-    gap_resolution: Optional[LengthType.NonNegative] = pd.Field(None)
+    gap_resolution: Optional[Length.NonNegativeFloat64] = pd.Field(None)
     entities: EntityList[SnappyBody] = pd.Field(alias="bodies")
 
     @pd.model_validator(mode="after")
@@ -76,8 +77,8 @@ class RegionRefinement(SnappyEntityRefinement):
     """
 
     # pylint: disable=no-member
-    min_spacing: LengthType.Positive = pd.Field()
-    max_spacing: LengthType.Positive = pd.Field()
+    min_spacing: Length.PositiveFloat64 = pd.Field()
+    max_spacing: Length.PositiveFloat64 = pd.Field()
     refinement_type: Literal["SnappySurfaceRefinement"] = pd.Field(
         "SnappySurfaceRefinement", frozen=True
     )
@@ -93,7 +94,7 @@ class SurfaceEdgeRefinement(Flow360BaseModel):
     refinement_type: Literal["SnappySurfaceEdgeRefinement"] = pd.Field(
         "SnappySurfaceEdgeRefinement", frozen=True
     )
-    spacing: Optional[Union[LengthType.PositiveArray, LengthType.Positive]] = pd.Field(
+    spacing: Optional[Union[LengthType.PositiveArray, Length.PositiveFloat64]] = pd.Field(
         None, description="Spacing on and close to the edges. Defaults to default min_spacing."
     )
     distances: Optional[LengthType.PositiveArray] = pd.Field(
@@ -102,7 +103,7 @@ class SurfaceEdgeRefinement(Flow360BaseModel):
     min_elem: Optional[pd.NonNegativeInt] = pd.Field(
         None, description="Minimum number of elements on the edge to apply the edge refinement."
     )
-    min_len: Optional[LengthType.NonNegative] = pd.Field(
+    min_len: Optional[Length.NonNegativeFloat64] = pd.Field(
         None, description="Minimum length of the edge to apply edge refinement."
     )
     included_angle: AngleType.Positive = pd.Field(

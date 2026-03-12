@@ -1075,9 +1075,9 @@ def test_porousJump_entities_is_interface(mock_validation_context):
     with mock_validation_context, pytest.raises(ValueError, match=re.escape(error_message)):
         PorousJump(
             entity_pairs=[(surface_2_is_not_interface, surface_1_is_interface)],
-            darcy_coefficient=1e6,
-            forchheimer_coefficient=1e3,
-            thickness=0.01,
+            darcy_coefficient=1e6 / (u.m * u.m),
+            forchheimer_coefficient=1e3 / u.m,
+            thickness=0.01 * u.m,
         )
 
     PorousJump(
@@ -1830,12 +1830,13 @@ def test_wall_deserialization():
         )
     assert all(const_vel_wall.velocity == [1, 2, 3] * u.m / u.s)
 
-    slater_bleed_wall = Wall(
-        **Wall(
-            entities=dummy_boundary,
-            velocity=SlaterPorousBleed(porosity=0.2, static_pressure=0.1 * u.Pa),
-        ).model_dump(mode="json")
-    )
+    with DeserializationContext():
+        slater_bleed_wall = Wall(
+            **Wall(
+                entities=dummy_boundary,
+                velocity=SlaterPorousBleed(porosity=0.2, static_pressure=0.1 * u.Pa),
+            ).model_dump(mode="json")
+        )
     assert slater_bleed_wall.velocity.porosity == 0.2
     assert slater_bleed_wall.velocity.static_pressure == 0.1 * u.Pa
 

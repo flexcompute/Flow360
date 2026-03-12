@@ -1817,11 +1817,13 @@ def calculate_monitor_semaphore_hash(params: SimulationParams):
                     recursive_remove_key(
                         model_dict, "privateAttributeId", "privateAttributeInputCache"
                     )
-                    force_output_models_dict.append(json.dumps(model_dict))
+                    force_output_models_dict.append(json.dumps(model_dict, sort_keys=True))
                 json_string_list.extend(force_output_models_dict)
                 json_string_list.extend(output.output_fields.items)
             if output.moving_statistic is not None:
-                json_string_list.append(json.dumps(dump_dict(output.moving_statistic)))
+                json_string_list.append(
+                    json.dumps(dump_dict(output.moving_statistic), sort_keys=True)
+                )
     combined_string = "".join(sorted(json_string_list))
     hasher = hashlib.sha256()
     hasher.update(combined_string.encode("utf-8"))

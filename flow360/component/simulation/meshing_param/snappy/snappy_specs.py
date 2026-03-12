@@ -3,11 +3,11 @@
 from typing import Literal, Optional, Union
 
 import pydantic as pd
+from flow360_schema.framework.physical_dimensions import Angle, Area, Length
 from typing_extensions import Self
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.simulation.unit_system import AngleType, AreaType, LengthType
 
 
 class SurfaceMeshingDefaults(Flow360BaseModel):
@@ -17,9 +17,9 @@ class SurfaceMeshingDefaults(Flow360BaseModel):
     """
 
     # pylint: disable=no-member
-    min_spacing: LengthType.Positive = pd.Field()
-    max_spacing: LengthType.Positive = pd.Field()
-    gap_resolution: LengthType.Positive = pd.Field()
+    min_spacing: Length.PositiveFloat64 = pd.Field()
+    max_spacing: Length.PositiveFloat64 = pd.Field()
+    gap_resolution: Length.PositiveFloat64 = pd.Field()
 
     @pd.model_validator(mode="after")
     def _check_spacing_order(self) -> Self:
@@ -35,21 +35,21 @@ class QualityMetrics(Flow360BaseModel):
     """
 
     # pylint: disable=no-member
-    max_non_orthogonality: Union[AngleType.Positive, Literal[False]] = pd.Field(
+    max_non_orthogonality: Union[Angle.PositiveFloat64, Literal[False]] = pd.Field(
         default=85 * u.deg,
         alias="max_non_ortho",
         description="Maximum face non-orthogonality angle: the angle made by the vector between the two adjacent "
         "cell centres across the common face and the face normal. Set to False to disable this metric.",
     )
-    max_boundary_skewness: Union[AngleType.Positive, Literal[False]] = pd.Field(
+    max_boundary_skewness: Union[Angle.PositiveFloat64, Literal[False]] = pd.Field(
         default=20 * u.deg,
         description="Maximum boundary skewness. Set to False to disable this metric.",
     )
-    max_internal_skewness: Union[AngleType.Positive, Literal[False]] = pd.Field(
+    max_internal_skewness: Union[Angle.PositiveFloat64, Literal[False]] = pd.Field(
         default=50 * u.deg,
         description="Maximum internal face skewness. Set to False to disable this metric.",
     )
-    max_concavity: Union[AngleType.Positive, Literal[False]] = pd.Field(
+    max_concavity: Union[Angle.PositiveFloat64, Literal[False]] = pd.Field(
         default=50 * u.deg,
         alias="max_concave",
         description="Maximum cell concavity. Set to False to disable this metric.",
@@ -66,7 +66,7 @@ class QualityMetrics(Flow360BaseModel):
         alias="min_tet_quality",
         description="Minimum tetrahedron quality. Set to False to disable this metric (uses -1e30 internally).",
     )
-    min_face_area: Optional[Union[AreaType.Positive, Literal[False]]] = pd.Field(
+    min_face_area: Optional[Union[Area.PositiveFloat64, Literal[False]]] = pd.Field(
         default=None,
         alias="min_area",
         description="Minimum face area. Set to False to disable. Defaults to 1e-12 of mesh unit.",
@@ -145,7 +145,7 @@ class CastellatedMeshControls(Flow360BaseModel):
     """
 
     # pylint: disable=no-member
-    resolve_feature_angle: AngleType.Positive = pd.Field(
+    resolve_feature_angle: Angle.PositiveFloat64 = pd.Field(
         default=25 * u.deg,
         description="This parameter controls the local curvature refinement. "
         "The higher the value, the less features it captures. "

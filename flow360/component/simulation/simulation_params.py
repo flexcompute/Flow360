@@ -9,6 +9,14 @@ from typing import Annotated, List, Literal, Optional, Union
 
 import pydantic as pd
 import unyt as u
+from flow360_schema.framework.physical_dimensions import (
+    AbsoluteTemperature,
+    Density,
+    Length,
+    Mass,
+    Time,
+    Velocity,
+)
 from flow360_schema.framework.validation.context import DeserializationContext
 
 from flow360.component.simulation.conversion import (
@@ -74,16 +82,11 @@ from flow360.component.simulation.run_control.run_control import RunControl
 from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
 from flow360.component.simulation.unit_system import (
     _UNIT_SYSTEMS,
-    AbsoluteTemperatureType,
-    DensityType,
     DimensionedTypes,
     LengthType,
-    MassType,
     SI_unit_system,
-    TimeType,
     UnitSystem,
     UnitSystemConfig,
-    VelocityType,
     unit_system_manager,
 )
 from flow360.component.simulation.user_code.core.types import (
@@ -401,7 +404,7 @@ class SimulationParams(_ParamModelBase):
         self,
         value: DimensionedTypes,
         target_system: Literal["SI", "Imperial", "flow360"],
-        length_unit: Optional[LengthType] = None,
+        length_unit: Optional[Length.Float64] = None,
     ):
         """
         Converts a given value to the specified unit system.
@@ -416,7 +419,7 @@ class SimulationParams(_ParamModelBase):
             unit system.
         target_system : str
             The target unit system for conversion. Common values include "SI", "Imperial", "flow360".
-        length_unit : LengthType, optional
+        length_unit : Length.Float64, optional
             The length unit to use for conversion. If not provided, the method defaults to
             the project length unit stored in the `private_attribute_asset_cache`.
 
@@ -729,13 +732,13 @@ class SimulationParams(_ParamModelBase):
         return registry
 
     @property
-    def base_length(self) -> LengthType:
+    def base_length(self) -> Length.Float64:
         """Get base length unit for non-dimensionalization"""
         # pylint:disable=no-member
         return self.private_attribute_asset_cache.project_length_unit.to("m")
 
     @property
-    def base_temperature(self) -> AbsoluteTemperatureType:
+    def base_temperature(self) -> AbsoluteTemperature.Float64:
         """Get base temperature unit for non-dimensionalization"""
         # pylint:disable=no-member
         if self.operating_condition.type_name == "LiquidOperatingCondition":
@@ -746,7 +749,7 @@ class SimulationParams(_ParamModelBase):
         return self.operating_condition.thermal_state.temperature.to("K")
 
     @property
-    def base_velocity(self) -> VelocityType:
+    def base_velocity(self) -> Velocity.Float64:
         """Get base velocity unit for non-dimensionalization"""
         # pylint:disable=no-member
         if self.operating_condition.type_name == "LiquidOperatingCondition":
@@ -766,7 +769,7 @@ class SimulationParams(_ParamModelBase):
         return self.operating_condition.thermal_state.speed_of_sound.to("m/s")
 
     @property
-    def reference_velocity(self) -> VelocityType:
+    def reference_velocity(self) -> Velocity.Float64:
         """
         This function returns the **reference velocity**.
         Note that the reference velocity is **NOT** the non-dimensionalization velocity scale
@@ -791,7 +794,7 @@ class SimulationParams(_ParamModelBase):
         return reference_velocity
 
     @property
-    def base_density(self) -> DensityType:
+    def base_density(self) -> Density.Float64:
         """Get base density unit for non-dimensionalization"""
         # pylint:disable=no-member
         if self.operating_condition.type_name == "LiquidOperatingCondition":
@@ -799,12 +802,12 @@ class SimulationParams(_ParamModelBase):
         return self.operating_condition.thermal_state.density.to("kg/m**3")
 
     @property
-    def base_mass(self) -> MassType:
+    def base_mass(self) -> Mass.Float64:
         """Get base mass unit for non-dimensionalization"""
         return self.base_density * self.base_length**3
 
     @property
-    def base_time(self) -> TimeType:
+    def base_time(self) -> Time.Float64:
         """Get base time unit for non-dimensionalization"""
         return self.base_length / self.base_velocity
 

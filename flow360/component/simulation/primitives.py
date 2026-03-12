@@ -9,7 +9,7 @@ from typing import Annotated, ClassVar, List, Literal, Optional, Tuple, Union, f
 
 import numpy as np
 import pydantic as pd
-from flow360_schema.framework.physical_dimensions import Length
+from flow360_schema.framework.physical_dimensions import Angle, Length
 from pydantic import PositiveFloat
 from typing_extensions import Self
 
@@ -28,7 +28,7 @@ from flow360.component.simulation.framework.multi_constructor_model_base import 
     MultiConstructorBaseModel,
 )
 from flow360.component.simulation.framework.unique_list import UniqueStringList
-from flow360.component.simulation.unit_system import AngleType, AreaType, LengthType
+from flow360.component.simulation.unit_system import AreaType, LengthType
 from flow360.component.simulation.user_code.core.types import ValueOrExpression
 from flow360.component.simulation.utils import BoundingBoxType, model_attribute_unlock
 from flow360.component.simulation.validation.validation_context import (
@@ -126,7 +126,7 @@ class ReferenceGeometry(Flow360BaseModel):
     moment_center: Optional[LengthType.Point] = pd.Field(
         None, description="The x, y, z coordinate of moment center."
     )
-    moment_length: Optional[Union[LengthType.Positive, LengthType.PositiveVector]] = pd.Field(
+    moment_length: Optional[Union[Length.PositiveFloat64, LengthType.PositiveVector]] = pd.Field(
         None, description="The x, y, z component-wise moment reference lengths."
     )
     area: Optional[ValueOrExpression[AreaType.Positive]] = pd.Field(
@@ -371,7 +371,7 @@ class Box(MultiConstructorBaseModel, _VolumeEntityBase):
         description="The rotation axis. Cannot change once specified.",
         frozen=True,
     )
-    angle_of_rotation: AngleType = pd.Field(
+    angle_of_rotation: Angle.Float64 = pd.Field(
         default=0 * u.degree,
         description="The rotation angle. Cannot change once specified.",
         frozen=True,
@@ -509,7 +509,7 @@ class Sphere(_VolumeEntityBase):
     private_attribute_entity_type_name: Literal["Sphere"] = pd.Field("Sphere", frozen=True)
     # pylint: disable=no-member
     center: LengthType.Point = pd.Field(description="The center point of the sphere.")
-    radius: LengthType.Positive = pd.Field(description="The radius of the sphere.")
+    radius: Length.PositiveFloat64 = pd.Field(description="The radius of the sphere.")
     axis: Axis = pd.Field(
         default=(0, 0, 1),
         description="The axis of rotation for the sphere (used in sliding interfaces).",

@@ -107,8 +107,8 @@ def test_validate_service():
     params_data_from_geo = params_data_from_vm
     params_data_from_geo["meshing"]["defaults"] = {
         "surface_edge_growth_rate": 1.5,
-        "boundary_layer_first_layer_thickness": "1*m",
-        "surface_max_edge_length": "1*m",
+        "boundary_layer_first_layer_thickness": {"value": 1, "units": "m"},
+        "surface_max_edge_length": {"value": 1, "units": "m"},
     }
     params_data_from_geo["version"] = "24.11.0"
 
@@ -253,8 +253,8 @@ def test_validate_multiple_errors():
             "gap_treatment_strength": 0.2,
             "defaults": {
                 "surface_edge_growth_rate": 1.5,
-                "boundary_layer_first_layer_thickness": "1*m",
-                "surface_max_edge_length": "1*s",
+                "boundary_layer_first_layer_thickness": {"value": 1, "units": "m"},
+                "surface_max_edge_length": {"value": 1, "units": "s"},
             },
             "refinements": [],
             "volume_zones": [
@@ -687,7 +687,8 @@ def test_init():
     assert data["reference_geometry"]["moment_length"]["units"] == "cm"
     assert data["private_attribute_asset_cache"]["project_length_unit"]["units"] == "cm"
 
-    assert data["models"][0]["roughness_height"]["units"] == "cm"
+    # roughness_height now serializes as bare SI float (new dimension types)
+    assert data["models"][0]["roughness_height"] == 0.0
     remove_model_and_output_id_in_default_dict(data)
     # to convert tuples to lists:
     data = json.loads(json.dumps(data))
@@ -803,8 +804,8 @@ def test_front_end_JSON_with_multi_constructor():
     params_data = {
         "meshing": {
             "defaults": {
-                "boundary_layer_first_layer_thickness": "1*m",
-                "surface_max_edge_length": "1*m",
+                "boundary_layer_first_layer_thickness": {"value": 1, "units": "m"},
+                "surface_max_edge_length": {"value": 1, "units": "m"},
             },
             "refinement_factor": 1.45,
             "refinements": [
@@ -1028,7 +1029,7 @@ def test_generate_process_json():
         },
     }
 
-    params_data["meshing"]["defaults"]["surface_max_edge_length"] = "1*m"
+    params_data["meshing"]["defaults"]["surface_max_edge_length"] = {"value": 1, "units": "m"}
     res1, res2, res3 = services.generate_process_json(
         simulation_json=json.dumps(params_data), root_item_type="Geometry", up_to="SurfaceMesh"
     )
@@ -1037,7 +1038,10 @@ def test_generate_process_json():
     assert res2 is None
     assert res3 is None
 
-    params_data["meshing"]["defaults"]["boundary_layer_first_layer_thickness"] = "1*m"
+    params_data["meshing"]["defaults"]["boundary_layer_first_layer_thickness"] = {
+        "value": 1,
+        "units": "m",
+    }
     res1, res2, res3 = services.generate_process_json(
         simulation_json=json.dumps(params_data), root_item_type="Geometry", up_to="VolumeMesh"
     )
