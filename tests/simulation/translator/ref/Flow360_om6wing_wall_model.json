@@ -1,10 +1,10 @@
 {
     "boundaries": {
         "1": {
-            "type": "WallFunction",
-            "wallModelType": "BoundaryLayer",
             "heatFlux": 0.0,
-            "roughnessHeight": 0.0
+            "roughnessHeight": 0.0,
+            "type": "WallFunction",
+            "wallModelType": "BoundaryLayer"
         },
         "2": {
             "type": "SlipWall"
@@ -13,37 +13,19 @@
             "type": "Freestream"
         }
     },
-    "freestream": {
-        "Mach": 0.84,
-        "muRef": 5.326121165140212e-08,
-        "Temperature": 288.15,
-        "alphaAngle": 3.06,
-        "betaAngle": 0.0
-    },
     "fluidProperties": {
         "prandtlNumber": 0.72,
         "turbulentPrandtlNumber": 0.9
     },
-    "thermallyPerfectGasModel": {
-        "temperatureRanges": [
-            {
-                "temperatureRangeMin": 0.694082942911678,
-                "temperatureRangeMax": 20.82248828735034,
-                "coefficients": [
-                    0.0,
-                    0.0,
-                    3.5,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    7.890809489614162e-16,
-                    0.0
-                ]
-            }
-        ]
+    "freestream": {
+        "Mach": 0.84,
+        "Temperature": 288.15,
+        "alphaAngle": 3.06,
+        "betaAngle": 0.0,
+        "muRef": 5.326121165140212e-08
     },
     "geometry": {
+        "interfaceInterpolationTolerance": 0.2,
         "momentCenter": [
             0.0,
             0.0,
@@ -54,8 +36,15 @@
             0.801672958512342,
             0.801672958512342
         ],
-        "refArea": 1.1529999999999987,
-        "interfaceInterpolationTolerance": 0.2
+        "refArea": 1.1529999999999987
+    },
+    "initialCondition": {
+        "p": "p",
+        "rho": "rho",
+        "type": "initialCondition",
+        "u": "u",
+        "v": "v",
+        "w": "w"
     },
     "navierStokesSolver": {
         "CFLMultiplier": 1.0,
@@ -75,6 +64,12 @@
         "orderOfAccuracy": 2,
         "relativeTolerance": 0.0,
         "updateJacobianFrequency": 4
+    },
+    "outputRescale": {
+        "velocityScale": 1.0
+    },
+    "runControl": {
+        "externalProcessMonitorOutput": false
     },
     "surfaceOutput": {
         "animationFrequency": -1,
@@ -103,6 +98,25 @@
         },
         "writeSingleFile": false
     },
+    "thermallyPerfectGasModel": {
+        "temperatureRanges": [
+            {
+                "coefficients": [
+                    0.0,
+                    0.0,
+                    3.5,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    7.890809489614162e-16,
+                    0.0
+                ],
+                "temperatureRangeMax": 20.82248828735034,
+                "temperatureRangeMin": 0.694082942911678
+            }
+        ]
+    },
     "timeStepping": {
         "CFL": {
             "final": 200.0,
@@ -130,18 +144,18 @@
         "maxForceJacUpdatePhysicalSteps": 0,
         "modelConstants": {
             "C_DES": 0.72,
-            "C_d": 8.0,
             "C_cb1": 0.1355,
             "C_cb2": 0.622,
+            "C_d": 8.0,
+            "C_min_rd": 10.0,
             "C_sigma": 0.6666666666666666,
+            "C_t3": 1.2,
+            "C_t4": 0.5,
             "C_v1": 7.1,
             "C_vonKarman": 0.41,
             "C_w2": 0.3,
             "C_w4": 0.21,
-            "C_w5": 1.5,
-            "C_t3": 1.2,
-            "C_t4": 0.5,
-            "C_min_rd": 10.0
+            "C_w5": 1.5
         },
         "modelType": "SpalartAllmaras",
         "orderOfAccuracy": 2,
@@ -151,6 +165,8 @@
         "rotationCorrection": false,
         "updateJacobianFrequency": 4
     },
+    "userDefinedFields": [],
+    "usingLiquidAsMaterial": false,
     "volumeOutput": {
         "animationFrequency": -1,
         "animationFrequencyOffset": 0,
@@ -164,21 +180,5 @@
         ],
         "outputFormat": "paraview",
         "startAverageIntegrationStep": -1
-    },
-    "initialCondition": {
-        "p": "p",
-        "rho": "rho",
-        "type": "initialCondition",
-        "u": "u",
-        "v": "v",
-        "w": "w"
-    },
-    "userDefinedFields": [],
-    "usingLiquidAsMaterial": false,
-    "outputRescale": {
-        "velocityScale": 1.0
-    },
-    "runControl": {
-        "externalProcessMonitorOutput": false
     }
 }

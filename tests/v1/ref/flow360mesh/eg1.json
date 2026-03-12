@@ -1,6 +1,7 @@
 {
-    "boundaries" :
-    {
-        "noSlipWalls" : [1]
+    "boundaries": {
+        "noSlipWalls": [
+            1
+        ]
     }
 }

@@ -1,208 +1,335 @@
 {
-    "refinementFactor": 1.45,
-    "farfield": {"type": "user-defined", "domainType": "half_body_negative_y"},
-    "volume": {
-        "firstLayerThickness": 1.35e-06,
-        "growthRate": 1.04,
-        "gapTreatmentStrength": 1.0,
-        "planarFaceTolerance": 1e-6,
-        "slidingInterfaceTolerance": 1e-2,
-        "numBoundaryLayers": -1,
-        "numEdgeSplitLayers": 1
-    },
     "faces": {
         "boundary1": {
             "firstLayerThickness": 0.5,
-            "type": "aniso",
-            "growthRate": 1.3
+            "growthRate": 1.3,
+            "type": "aniso"
         },
-        "passive1": {"type": "projectAnisoSpacing"},
-        "passive2": {"type": "none"}
+        "passive1": {
+            "type": "projectAnisoSpacing"
+        },
+        "passive2": {
+            "type": "none"
+        }
+    },
+    "farfield": {
+        "domainType": "half_body_negative_y",
+        "type": "user-defined"
     },
     "meshSliceOutput": {
         "slices": {
-            "test_slice_y_normal": {
-                "sliceOrigin": [0.1, 0.2, 0.3],
-                "sliceNormal": [0.0, 1.0, 0.0],
-                "crinkled": false
-            },
-            "test_slice_z_normal": {
-                "sliceOrigin": [0.6, 0.1, 0.4],
-                "sliceNormal": [0.0, 0.0, 1.0],
-                "crinkled": false
-            },
             "crinkled_slice_with_cutoff": {
-                "sliceOrigin": [0.1, 0.2, 0.3],
-                "sliceNormal": [0.0, 0.7071067811865475, 0.7071067811865475],
                 "crinkled": true,
-                "cutoffRadius": 10.0
+                "cutoffRadius": 10.0,
+                "sliceNormal": [
+                    0.0,
+                    0.7071067811865475,
+                    0.7071067811865475
+                ],
+                "sliceOrigin": [
+                    0.1,
+                    0.2,
+                    0.3
+                ]
             },
             "crinkled_slice_without_cutoff": {
-                "sliceOrigin": [0.5, 0.6, 0.7],
-                "sliceNormal": [-1.0, 0.0, 0.0],
-                "crinkled": true
+                "crinkled": true,
+                "sliceNormal": [
+                    -1.0,
+                    0.0,
+                    0.0
+                ],
+                "sliceOrigin": [
+                    0.5,
+                    0.6,
+                    0.7
+                ]
+            },
+            "test_slice_y_normal": {
+                "crinkled": false,
+                "sliceNormal": [
+                    0.0,
+                    1.0,
+                    0.0
+                ],
+                "sliceOrigin": [
+                    0.1,
+                    0.2,
+                    0.3
+                ]
+            },
+            "test_slice_z_normal": {
+                "crinkled": false,
+                "sliceNormal": [
+                    0.0,
+                    0.0,
+                    1.0
+                ],
+                "sliceOrigin": [
+                    0.6,
+                    0.1,
+                    0.4
+                ]
             }
         }
     },
     "refinement": [
         {
-            "type": "cylinder",
-            "radius": 1.1,
+            "axis": [
+                0.0,
+                1.0,
+                0.0
+            ],
+            "center": [
+                0.7,
+                -1.0,
+                0.0
+            ],
             "length": 2.0,
-            "axis": [0.0, 1.0, 0.0],
-            "center": [0.7, -1.0, 0.0],
-            "spacing": 0.075
+            "radius": 1.1,
+            "spacing": 0.075,
+            "type": "cylinder"
         },
         {
-            "type": "box",
-            "size": [4.0, 5.0, 6.0],
-            "center": [0.0, 1.0, 2.0],
-            "axisOfRotation": [0.0, 0.0, 1.0],
             "angleOfRotation": 45.0,
-            "spacing": 0.075
+            "axisOfRotation": [
+                0.0,
+                0.0,
+                1.0
+            ],
+            "center": [
+                0.0,
+                1.0,
+                2.0
+            ],
+            "size": [
+                4.0,
+                5.0,
+                6.0
+            ],
+            "spacing": 0.075,
+            "type": "box"
         }
     ],
+    "refinementFactor": 1.45,
     "rotorDisks": [
         {
-            "name": "enclosed",
+            "axisThrust": [
+                0.0,
+                1.0,
+                0.0
+            ],
+            "center": [
+                0.7,
+                -1.0,
+                0.0
+            ],
             "innerRadius": 0,
+            "name": "enclosed",
             "outerRadius": 1.1,
-            "thickness": 0.15,
-            "axisThrust": [0.0, 1.0, 0.0],
-            "center": [0.7, -1.0, 0.0],
             "spacingAxial": 0.2,
+            "spacingCircumferential": 0.2,
             "spacingRadial": 0.2,
-            "spacingCircumferential": 0.2
+            "thickness": 0.15
         }
     ],
     "slidingInterfaces": [
         {
-            "name": "inner",
-            "type": "Cylinder",
-            "innerRadius": 0,
-            "outerRadius": 0.75,
-            "thickness": 0.5,
-            "axisOfRotation": [0.0, 0.0, 1.0],
-            "center": [0.0, 0.0, 0.0],
-            "spacingAxial": 0.2,
-            "spacingRadial": 0.2,
-            "spacingCircumferential": 0.2,
+            "axisOfRotation": [
+                0.0,
+                0.0,
+                1.0
+            ],
+            "center": [
+                0.0,
+                0.0,
+                0.0
+            ],
             "enclosedObjects": [
                 "hub",
                 "blade1",
                 "blade2",
                 "blade3",
                 "slidingInterface-cone"
-            ]
+            ],
+            "innerRadius": 0,
+            "name": "inner",
+            "outerRadius": 0.75,
+            "spacingAxial": 0.2,
+            "spacingCircumferential": 0.2,
+            "spacingRadial": 0.2,
+            "thickness": 0.5,
+            "type": "Cylinder"
         },
         {
+            "axisOfRotation": [
+                0.0,
+                1.0,
+                0.0
+            ],
+            "center": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "enclosedObjects": [
+                "slidingInterface-inner"
+            ],
+            "innerRadius": 0,
             "name": "mid",
-            "type": "Cylinder",
-            "innerRadius": 0,
             "outerRadius": 2.0,
-            "thickness": 2.0,
-            "axisOfRotation": [0.0, 1.0, 0.0],
-            "center": [0.0, 0.0, 0.0],
             "spacingAxial": 0.2,
-            "spacingRadial": 0.2,
             "spacingCircumferential": 0.2,
-            "enclosedObjects": ["slidingInterface-inner"]
+            "spacingRadial": 0.2,
+            "thickness": 2.0,
+            "type": "Cylinder"
         },
         {
-            "name": "2",
-            "type": "Cylinder",
-            "innerRadius": 0,
-            "outerRadius": 2.0,
-            "thickness": 2.0,
-            "axisOfRotation": [0.0, 1.0, 0.0],
-            "center": [0.0, 5.0, 0.0],
-            "spacingAxial": 0.2,
-            "spacingRadial": 0.2,
-            "spacingCircumferential": 0.2,
+            "axisOfRotation": [
+                0.0,
+                1.0,
+                0.0
+            ],
+            "center": [
+                0.0,
+                5.0,
+                0.0
+            ],
             "enclosedObjects": [
                 "rotorDisk-enclosed",
                 "structuredBox-porousRegion"
-            ]
-        },
-        {
-            "name": "3",
-            "type": "Cylinder",
-            "innerRadius": 1.5,
+            ],
+            "innerRadius": 0,
+            "name": "2",
             "outerRadius": 2.0,
-            "thickness": 2.0,
-            "axisOfRotation": [0.0, 1.0, 0.0],
-            "center": [0.0, -5.0, 0.0],
             "spacingAxial": 0.2,
-            "spacingRadial": 0.2,
             "spacingCircumferential": 0.2,
-            "enclosedObjects": []
+            "spacingRadial": 0.2,
+            "thickness": 2.0,
+            "type": "Cylinder"
         },
         {
-            "name": "outer",
-            "type": "Cylinder",
-            "innerRadius": 0.0,
-            "outerRadius": 8.0,
-            "thickness": 6.0,
-            "axisOfRotation": [1.0, 0.0, 0.0],
-            "center": [0.0, 0.0, 0.0],
-            "spacingAxial": 0.4,
-            "spacingRadial": 0.4,
-            "spacingCircumferential": 0.4,
+            "axisOfRotation": [
+                0.0,
+                1.0,
+                0.0
+            ],
+            "center": [
+                0.0,
+                -5.0,
+                0.0
+            ],
+            "enclosedObjects": [],
+            "innerRadius": 1.5,
+            "name": "3",
+            "outerRadius": 2.0,
+            "spacingAxial": 0.2,
+            "spacingCircumferential": 0.2,
+            "spacingRadial": 0.2,
+            "thickness": 2.0,
+            "type": "Cylinder"
+        },
+        {
+            "axisOfRotation": [
+                1.0,
+                0.0,
+                0.0
+            ],
+            "center": [
+                0.0,
+                0.0,
+                0.0
+            ],
             "enclosedObjects": [
                 "slidingInterface-mid",
                 "rotorDisk-enclosed",
                 "slidingInterface-2",
                 "slidingInterface-3"
-            ]
+            ],
+            "innerRadius": 0.0,
+            "name": "outer",
+            "outerRadius": 8.0,
+            "spacingAxial": 0.4,
+            "spacingCircumferential": 0.4,
+            "spacingRadial": 0.4,
+            "thickness": 6.0,
+            "type": "Cylinder"
         },
         {
-            "type": "Axisymmetric",
-            "name": "cone",
             "axisOfRotation": [
                 0.7071067811865476,
                 0.0,
                 0.7071067811865476
             ],
-            "center": [0.0, 0.0, 0.0],
+            "center": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "enclosedObjects": [],
+            "name": "cone",
             "profileCurve": [
-                [-1.0, 0.0],
-                [-1.0, 1.0],
-                [1.0, 2.0],
-                [1.0, 0.0]
+                [
+                    -1.0,
+                    0.0
+                ],
+                [
+                    -1.0,
+                    1.0
+                ],
+                [
+                    1.0,
+                    2.0
+                ],
+                [
+                    1.0,
+                    0.0
+                ]
             ],
             "spacingAxial": 0.4,
             "spacingCircumferential": 0.2,
             "spacingRadial": 0.4,
-            "enclosedObjects": []
+            "type": "Axisymmetric"
         },
         {
-            "type": "Axisymmetric",
-            "name": "cone_mm_curve",
             "axisOfRotation": [
                 0.7071067811865476,
                 0.0,
                 0.7071067811865476
             ],
-            "center": [0.0, 0.01, 0.0],
+            "center": [
+                0.0,
+                0.01,
+                0.0
+            ],
+            "enclosedObjects": [],
+            "name": "cone_mm_curve",
             "profileCurve": [
-                [-1.0e-3, 0.0],
-                [-1.0e-3, 1.0e-3],
-                [1.0e-3, 2.0e-3],
-                [1.0e-3, 0.0]
+                [
+                    -0.001,
+                    0.0
+                ],
+                [
+                    -0.001,
+                    0.001
+                ],
+                [
+                    0.001,
+                    0.002
+                ],
+                [
+                    0.001,
+                    0.0
+                ]
             ],
             "spacingAxial": 0.04,
             "spacingCircumferential": 0.02,
             "spacingRadial": 0.4,
-            "enclosedObjects": []
+            "type": "Axisymmetric"
         }
     ],
     "structuredRegions": [
         {
-            "name": "porousRegion",
-            "type": "box",
-            "lengthAxis1": 1.0,
-            "lengthAxis2": 2.0,
-            "lengthNormal": 1.0,
             "axis1": [
                 0.7071067811865476,
                 0.7071067811865476,
@@ -213,12 +340,30 @@
                 0.7071067811865476,
                 0.0
             ],
-            "center": [0.0, 1.0, 1.0],
+            "center": [
+                0.0,
+                1.0,
+                1.0
+            ],
+            "lengthAxis1": 1.0,
+            "lengthAxis2": 2.0,
+            "lengthNormal": 1.0,
+            "name": "porousRegion",
             "spacingAxis1": 0.075,
             "spacingAxis2": 0.1,
-            "spacingNormal": 0.15
+            "spacingNormal": 0.15,
+            "type": "box"
         }
     ],
+    "volume": {
+        "firstLayerThickness": 1.35e-06,
+        "gapTreatmentStrength": 1.0,
+        "growthRate": 1.04,
+        "numBoundaryLayers": -1,
+        "numEdgeSplitLayers": 1,
+        "planarFaceTolerance": 1e-06,
+        "slidingInterfaceTolerance": 0.01
+    },
     "zones": [
         {
             "name": "custom_volume-1",
@@ -229,4 +374,3 @@
         }
     ]
 }
-

@@ -1,94 +1,122 @@
 {
-    "geometry" : {
-        "refArea" : 1.15315084119231,
-        "momentCenter" : [0.0, 0.0, 0.0],
-        "momentLength" : [1.47602, 0.801672958512342, 1.47602],
+    "boundaries": {
+        "1": {
+            "name": "wing",
+            "type": "NoSlipWall"
+        },
+        "2": {
+            "name": "symmetry",
+            "type": "SlipWall"
+        },
+        "3": {
+            "name": "freestream",
+            "type": "Freestream"
+        }
+    },
+    "freestream": {
+        "Mach": 0.84,
+        "Reynolds": 14600000.0,
+        "Temperature": -288.15,
+        "alphaAngle": 3.06,
+        "betaAngle": 0.0
+    },
+    "geometry": {
+        "momentCenter": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "momentLength": [
+            1.47602,
+            0.801672958512342,
+            1.47602
+        ],
+        "refArea": 1.15315084119231,
         "unsupported": "geometry"
     },
-    "volumeOutput" : {
-        "outputFormat" : "tecplot",
-        "animationFrequency" : -1,
-        "primitiveVars" : true,
-        "vorticity" : false,
-        "residualNavierStokes" : false,
-        "residualTurbulence" : false,
-        "T" : false,
-        "s" : false,
-        "Cp" : false,
-        "mut" : false,
-        "mutRatio" : false,
-        "Mach" : true
+    "navierStokesSolver": {
+        "absoluteTolerance": 1e-10,
+        "kappaMUSCL": -1.0
     },
-    "surfaceOutput" : {
-        "outputFormat" : "tecplot",
-        "animationFrequency" : -1,
-        "primitiveVars" : true,
-        "Cp" : true,
-        "Cf" : true,
-        "CfVec" : false,
-        "yPlus" : false,
-        "wallDistance" : false
-    },
-
     "sliceOutput": {
         "animationFrequency": -1,
         "animationFrequencyOffset": 0,
         "coarsenIterations": 0,
+        "outputFields": [
+            "Cp"
+        ],
         "outputFormat": "tecplot",
-        "outputFields": [ "Cp" ],
         "slices": {
             "x0": {
-                "sliceNormal": [ 1, 0, 0 ],
-                "sliceOrigin": [ 0, 0, 0 ],
-                "outputFields": [ "Mach" ]
+                "outputFields": [
+                    "Mach"
+                ],
+                "sliceNormal": [
+                    1,
+                    0,
+                    0
+                ],
+                "sliceOrigin": [
+                    0,
+                    0,
+                    0
+                ]
             },
             "y1": {
-                "sliceNormal": [ 0, 1, 0 ],
-                "sliceOrigin": [ 2, 1, 0 ],
-                "outputFields": [ "T" ]
+                "outputFields": [
+                    "T"
+                ],
+                "sliceNormal": [
+                    0,
+                    1,
+                    0
+                ],
+                "sliceOrigin": [
+                    2,
+                    1,
+                    0
+                ]
             }
         }
     },
-    "navierStokesSolver" : {
-        "absoluteTolerance" : 1e-10,
-        "kappaMUSCL" : -1.0
+    "surfaceOutput": {
+        "Cf": true,
+        "CfVec": false,
+        "Cp": true,
+        "animationFrequency": -1,
+        "outputFormat": "tecplot",
+        "primitiveVars": true,
+        "wallDistance": false,
+        "yPlus": false
     },
-    "turbulenceModelSolver" : {
-        "modelType" : "unsupportedType",
-        "absoluteTolerance" : 1e-8,
-        "kappaMUSCL" : -1.0
+    "timeStepping": {
+        "CFL": {
+            "final": 200,
+            "initial": 5,
+            "rampSteps": 100
+        },
+        "maxPseudoSteps": 500
     },
-    "freestream" :
-    {
-        "Reynolds" : 14.6e6,
-        "Mach" : 0.84,
-        "Temperature" : -288.15,
-        "alphaAngle" : 3.06,
-        "betaAngle" : 0.0
-    },
-    "boundaries" : {
-        "1" : {
-		    "type" : "NoSlipWall",
-            "name" : "wing"
-		},
-		"2" : {
-			"type" : "SlipWall",
-            "name" : "symmetry"
-		},
-		"3" : {
-			"type" : "Freestream",
-            "name" : "freestream"
-		}
-    },
-    "timeStepping" : {                                                              
-        "maxPseudoSteps" : 500,
-        "CFL" : {                                                                   
-            "initial" : 5,                                                          
-            "final": 200,                                                           
-            "rampSteps" : 100                                                        
-        }
+    "turbulenceModelSolver": {
+        "absoluteTolerance": 1e-08,
+        "kappaMUSCL": -1.0,
+        "modelType": "unsupportedType"
     },
     "unsupported": {
         "section": "entire unsupported additional section"
+    },
+    "volumeOutput": {
+        "Cp": false,
+        "Mach": true,
+        "T": false,
+        "animationFrequency": -1,
+        "mut": false,
+        "mutRatio": false,
+        "outputFormat": "tecplot",
+        "primitiveVars": true,
+        "residualNavierStokes": false,
+        "residualTurbulence": false,
+        "s": false,
+        "vorticity": false
     }
 }

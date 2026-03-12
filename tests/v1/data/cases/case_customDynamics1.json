@@ -1,115 +1,142 @@
 {
-    "geometry" : {
-        "meshName" : "file.cgns",
-        "endianness" : "big",
-        "refArea" : 297360.0,
-        "momentCenter" : [1325.90, 468.75, 177.95],
-        "momentLength" : [275.8, 275.8, 275.8]
-    },
-    "runControl" : {
-        "restart" : false
-    },
-    "volumeOutput" : {
-    "outputFormat" : "paraview",    
-        "primitiveVars" : true,
-        "vorticity" : true,
-        "residualNavierStokes" : true,
-        "residualTurbulence" : true,
-        "T" : true,
-        "s" : false,
-        "Cp" : false,
-        "mut" : false,
-        "mutRatio" : false
-    },
-    "surfaceOutput" : {
-    "outputFormat" : "paraview",    
-        "primitiveVars" : true,
-        "Cp" : true,
-        "Cf" : false,
-        "CfVec" : false,
-        "yPlus" : false,
-        "wallDistance" : false,
-        "Mach" : true
-    },
-    "sliceOutput" : {
-      "outputFormat":"paraview",
-      "slices":[
-        {
-          "sliceName" : "sliceTest",
-          "sliceNormal" : [0.0, 1.0, 0.0],
-          "sliceOrigin" : [0.7165, 0.27772, 0.0179426]
-        }
-      ]
-    },
-    "navierStokesSolver" : {
-        "tolerance" : 1e-9,
-        "linearIterations" : 25,
-        "kappaMUSCL" : -1.0
-    },
-    "freestream" :
-    {
-        "Reynolds" : "inf",
-        "Mach" : 0.5,
-        "Temperature" : 283,
-        "alphaAngle" : 3.12,
-        "betaAngle" : 0.0
-    },
-    "boundaries" : {
-        "fluid/wall" : {
-            "type" : "NoSlipWall"
+    "boundaries": {
+        "fluid/farfield": {
+            "type": "Freestream"
         },
-        "fluid/farfield" : {
-            "type" : "Freestream"
+        "fluid/periodic_0_l": {
+            "type": "SlipWall"
         },
-        "fluid/periodic_0_l" : {
-            "type" : "SlipWall"
+        "fluid/periodic_0_r": {
+            "type": "SlipWall"
         },
-        "fluid/periodic_0_r" : {
-            "type" : "SlipWall"
+        "fluid/wall": {
+            "type": "NoSlipWall"
         }
     },
-    "initialCondition" : {
-        "type" : "expression",
-        "constants" : {
-            "U_inf" : "0.5",
-            "P_inf" : "1/1.4",
-            "T_inf" : "1.0",
-            "beta" : "1./5.",
-            "Radius" : "1.",
-            "Cp" : "1./(1.4-1.)",
-            "Rgas" : "1./1.4",
-            "Xc" : "0.",
-            "Yc" : "0."
-        },
-        "rho" : "P_inf/(Rgas*T_inf)*pow((T_inf-(U_inf^2*beta^2)/(2*Cp)*exp(-((x-Xc)^2+(y-Yc)^2)/(Radius*Radius)))/T_inf,1/(1.4-1.))",
-        "u" : "U_inf*(1.-beta*(y-Yc)/Radius*exp(-0.5*((x-Xc)^2+(y-Yc)^2)/(Radius*Radius)))",
-        "v" : "U_inf*beta*(x-Xc)/Radius*exp(-0.5*((x-Xc)^2+(y-Yc)^2)/(Radius*Radius))",
-        "w" : "0.",
-        "p" : "P_inf/(Rgas*T_inf)*pow((T_inf-(U_inf^2*beta^2)/(2*Cp)*exp(-((x-Xc)^2+(y-Yc)^2)/(Radius*Radius)))/T_inf,1/(1.4-1.)) * Rgas * (T_inf-(U_inf^2*beta^2)/(2*Cp)*exp(-((x-Xc)^2+(y-Yc)^2)/(Radius*Radius)))"
+    "freestream": {
+        "Mach": 0.5,
+        "Reynolds": "inf",
+        "Temperature": 283,
+        "alphaAngle": 3.12,
+        "betaAngle": 0.0
     },
-    "timeStepping" : {
-        "timeStepSize" : 0.25,
-        "physicalSteps" : 1,
-        "maxPseudoSteps" : 20,
-        "CFL":{
-            "initial" : 5,
+    "geometry": {
+        "endianness": "big",
+        "meshName": "file.cgns",
+        "momentCenter": [
+            1325.9,
+            468.75,
+            177.95
+        ],
+        "momentLength": [
+            275.8,
+            275.8,
+            275.8
+        ],
+        "refArea": 297360.0
+    },
+    "initialCondition": {
+        "constants": {
+            "Cp": "1./(1.4-1.)",
+            "P_inf": "1/1.4",
+            "Radius": "1.",
+            "Rgas": "1./1.4",
+            "T_inf": "1.0",
+            "U_inf": "0.5",
+            "Xc": "0.",
+            "Yc": "0.",
+            "beta": "1./5."
+        },
+        "p": "P_inf/(Rgas*T_inf)*pow((T_inf-(U_inf^2*beta^2)/(2*Cp)*exp(-((x-Xc)^2+(y-Yc)^2)/(Radius*Radius)))/T_inf,1/(1.4-1.)) * Rgas * (T_inf-(U_inf^2*beta^2)/(2*Cp)*exp(-((x-Xc)^2+(y-Yc)^2)/(Radius*Radius)))",
+        "rho": "P_inf/(Rgas*T_inf)*pow((T_inf-(U_inf^2*beta^2)/(2*Cp)*exp(-((x-Xc)^2+(y-Yc)^2)/(Radius*Radius)))/T_inf,1/(1.4-1.))",
+        "type": "expression",
+        "u": "U_inf*(1.-beta*(y-Yc)/Radius*exp(-0.5*((x-Xc)^2+(y-Yc)^2)/(Radius*Radius)))",
+        "v": "U_inf*beta*(x-Xc)/Radius*exp(-0.5*((x-Xc)^2+(y-Yc)^2)/(Radius*Radius))",
+        "w": "0."
+    },
+    "navierStokesSolver": {
+        "kappaMUSCL": -1.0,
+        "linearIterations": 25,
+        "tolerance": 1e-09
+    },
+    "runControl": {
+        "restart": false
+    },
+    "sliceOutput": {
+        "outputFormat": "paraview",
+        "slices": [
+            {
+                "sliceName": "sliceTest",
+                "sliceNormal": [
+                    0.0,
+                    1.0,
+                    0.0
+                ],
+                "sliceOrigin": [
+                    0.7165,
+                    0.27772,
+                    0.0179426
+                ]
+            }
+        ]
+    },
+    "surfaceOutput": {
+        "Cf": false,
+        "CfVec": false,
+        "Cp": true,
+        "Mach": true,
+        "outputFormat": "paraview",
+        "primitiveVars": true,
+        "wallDistance": false,
+        "yPlus": false
+    },
+    "timeStepping": {
+        "CFL": {
             "final": 200,
-            "rampSteps" : 20
-        }
+            "initial": 5,
+            "rampSteps": 20
+        },
+        "maxPseudoSteps": 20,
+        "physicalSteps": 1,
+        "timeStepSize": 0.25
     },
-    "userDefinedDynamics" : [
+    "userDefinedDynamics": [
         {
-            "dynamicsName" : "alphaController",
-            "inputVars" : ["CL"],
-            "constants" : {"CLTarget": 0.4,
-                           "Kp": 0.2,
-                           "Ki": 0.002
+            "constants": {
+                "CLTarget": 0.4,
+                "Ki": 0.002,
+                "Kp": 0.2
             },
-            "outputVars" : {"alphaAngle":"if (pseudoStep > 500) state[0]; else alphaAngle;"},
-            "stateVarsInitialValue" : ["alphaAngle", "0.0"],
-            "updateLaw" : ["if (pseudoStep > 500) state[0] + Kp * (CLTarget - CL) + Ki * state[1]; else state[0];",
-                            "if (pseudoStep > 500) state[1] + (CLTarget - CL); else state[1];"],
-            "inputBoundaryPatches" : ["fluid/wall"]
+            "dynamicsName": "alphaController",
+            "inputBoundaryPatches": [
+                "fluid/wall"
+            ],
+            "inputVars": [
+                "CL"
+            ],
+            "outputVars": {
+                "alphaAngle": "if (pseudoStep > 500) state[0]; else alphaAngle;"
+            },
+            "stateVarsInitialValue": [
+                "alphaAngle",
+                "0.0"
+            ],
+            "updateLaw": [
+                "if (pseudoStep > 500) state[0] + Kp * (CLTarget - CL) + Ki * state[1]; else state[0];",
+                "if (pseudoStep > 500) state[1] + (CLTarget - CL); else state[1];"
+            ]
         }
-    ]
+    ],
+    "volumeOutput": {
+        "Cp": false,
+        "T": true,
+        "mut": false,
+        "mutRatio": false,
+        "outputFormat": "paraview",
+        "primitiveVars": true,
+        "residualNavierStokes": true,
+        "residualTurbulence": true,
+        "s": false,
+        "vorticity": true
+    }
 }

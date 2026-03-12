@@ -12,6 +12,7 @@ from flow360.component.simulation.framework.updater import (
     _find_update_path,
     _to_25_9_0,
     _to_25_9_1,
+    _to_25_9_2,
     updater,
 )
 from flow360.component.simulation.framework.updater_utils import Flow360Version
@@ -1783,3 +1784,328 @@ def test_updater_to_25_9_1_keep_local_cfl_for_unsteady():
     params_new = _to_25_9_1(params_as_dict)
 
     assert params_new["outputs"][0]["output_fields"]["items"] == ["Cp", "localCFL", "Mach"]
+
+
+def test_updater_to_25_9_2_rotation_volume_sphere_to_rotation_sphere():
+    """Test 25.9.2 updater migrates sphere-based RotationVolume to RotationSphere."""
+    params_as_dict = {
+        "version": "25.9.1",
+        "unit_system": {"name": "SI"},
+        "meshing": {
+            "volume_zones": [
+                {
+                    "type": "RotationVolume",
+                    "name": "sphere_zone",
+                    "entities": {
+                        "stored_entities": [
+                            {
+                                "private_attribute_entity_type_name": "Sphere",
+                                "name": "s1",
+                            }
+                        ]
+                    },
+                    "spacing_axial": {"value": 0.1, "units": "m"},
+                    "spacing_radial": {"value": 0.2, "units": "m"},
+                    "spacing_circumferential": {"value": 0.3, "units": "m"},
+                }
+            ]
+        },
+    }
+
+    params_new = _to_25_9_2(params_as_dict)
+    zone = params_new["meshing"]["volume_zones"][0]
+
+    assert zone["type"] == "RotationSphere"
+    assert "spacing_axial" not in zone
+    assert "spacing_radial" not in zone
+    assert zone["spacing_circumferential"] == {"value": 0.3, "units": "m"}
+
+
+def test_updater_to_25_9_2_keeps_non_sphere_rotation_volume():
+    """Test 25.9.2 updater does not modify non-sphere RotationVolume zones."""
+    params_as_dict = {
+        "version": "25.9.1",
+        "unit_system": {"name": "SI"},
+        "meshing": {
+            "volume_zones": [
+                {
+                    "type": "RotationVolume",
+                    "name": "cyl_zone",
+                    "entities": {
+                        "stored_entities": [
+                            {
+                                "private_attribute_entity_type_name": "Cylinder",
+                                "name": "c1",
+                            }
+                        ]
+                    },
+                    "spacing_axial": {"value": 0.1, "units": "m"},
+                    "spacing_radial": {"value": 0.2, "units": "m"},
+                    "spacing_circumferential": {"value": 0.3, "units": "m"},
+                }
+            ]
+        },
+    }
+
+    params_new = _to_25_9_2(params_as_dict)
+    zone = params_new["meshing"]["volume_zones"][0]
+
+    assert zone["type"] == "RotationVolume"
+    assert "spacing_axial" in zone
+    assert "spacing_radial" in zone
+
+
+def test_updater_to_25_9_2_via_updater():
+    """Test updater() path from 25.9.1 to 25.9.2 applies RotationSphere migration."""
+    params_as_dict = {
+        "version": "25.9.1",
+        "unit_system": {"name": "SI"},
+        "meshing": {
+            "volume_zones": [
+                {
+                    "type": "RotationVolume",
+                    "entities": {
+                        "stored_entities": [
+                            {
+                                "private_attribute_entity_type_name": "Sphere",
+                                "name": "s2",
+                            }
+                        ]
+                    },
+                    "spacing_axial": {"value": 1.0, "units": "m"},
+                    "spacing_radial": {"value": 2.0, "units": "m"},
+                    "spacing_circumferential": {"value": 3.0, "units": "m"},
+                }
+            ]
+        },
+    }
+
+    params_new = updater(
+        version_from="25.9.1",
+        version_to="25.9.2",
+        params_as_dict=params_as_dict,
+    )
+
+    assert params_new["version"] == "25.9.2"
+    zone = params_new["meshing"]["volume_zones"][0]
+    assert zone["type"] == "RotationSphere"
+    assert "spacing_axial" not in zone
+    assert "spacing_radial" not in zone
+
+
+def test_updater_to_25_9_2_modular_zones_rotation_volume_sphere_to_rotation_sphere():
+    """Test 25.9.2 updater migrates sphere-based RotationVolume in meshing.zones."""
+    params_as_dict = {
+        "version": "25.9.1",
+        "unit_system": {"name": "SI"},
+        "meshing": {
+            "type_name": "ModularMeshingWorkflow",
+            "zones": [
+                {"type": "AutomatedFarfield"},
+                {
+                    "type": "RotationVolume",
+                    "name": "sphere_zone_modular",
+                    "entities": {
+                        "stored_entities": [
+                            {
+                                "private_attribute_entity_type_name": "Sphere",
+                                "name": "s3",
+                            }
+                        ]
+                    },
+                    "spacing_axial": {"value": 0.5, "units": "m"},
+                    "spacing_radial": {"value": 0.6, "units": "m"},
+                    "spacing_circumferential": {"value": 0.7, "units": "m"},
+                },
+            ],
+        },
+    }
+
+    params_new = _to_25_9_2(params_as_dict)
+    zone = params_new["meshing"]["zones"][1]
+
+    assert zone["type"] == "RotationSphere"
+    assert "spacing_axial" not in zone
+    assert "spacing_radial" not in zone
+    assert zone["spacing_circumferential"] == {"value": 0.7, "units": "m"}
+
+
+def test_updater_to_25_9_2_custom_volume_boundaries_to_bounding_entities():
+    """Test 25.9.2 updater renames boundaries -> bounding_entities on CustomVolume."""
+    params_as_dict = {
+        "version": "25.9.1",
+        "meshing": {
+            "volume_zones": [
+                {
+                    "type": "CustomZones",
+                    "entities": {
+                        "stored_entities": [
+                            {
+                                "private_attribute_entity_type_name": "CustomVolume",
+                                "name": "zone1",
+                                "boundaries": {
+                                    "stored_entities": [
+                                        {
+                                            "private_attribute_entity_type_name": "Surface",
+                                            "name": "face1",
+                                        }
+                                    ]
+                                },
+                            }
+                        ]
+                    },
+                },
+            ],
+        },
+    }
+
+    params_new = _to_25_9_2(params_as_dict)
+    cv = params_new["meshing"]["volume_zones"][0]["entities"]["stored_entities"][0]
+
+    assert "boundaries" not in cv
+    assert "bounding_entities" in cv
+    assert cv["bounding_entities"]["stored_entities"][0]["name"] == "face1"
+
+
+def test_updater_to_25_9_2_custom_volume_in_farfield_enclosed_entities():
+    """Test 25.9.2 updater handles CustomVolume inside farfield enclosed_entities."""
+    params_as_dict = {
+        "version": "25.9.1",
+        "meshing": {
+            "volume_zones": [
+                {
+                    "type": "AutomatedFarfield",
+                    "enclosed_entities": {
+                        "stored_entities": [
+                            {
+                                "private_attribute_entity_type_name": "CustomVolume",
+                                "name": "inner",
+                                "boundaries": {
+                                    "stored_entities": [
+                                        {
+                                            "private_attribute_entity_type_name": "Surface",
+                                            "name": "wall",
+                                        }
+                                    ]
+                                },
+                            }
+                        ]
+                    },
+                },
+            ],
+        },
+    }
+
+    params_new = _to_25_9_2(params_as_dict)
+    cv = params_new["meshing"]["volume_zones"][0]["enclosed_entities"]["stored_entities"][0]
+
+    assert "boundaries" not in cv
+    assert "bounding_entities" in cv
+
+
+def test_updater_to_25_9_2_custom_volume_boundaries_modular_zones():
+    """Test 25.9.2 updater handles CustomVolume under meshing.zones (modular workflow)."""
+    params_as_dict = {
+        "version": "25.9.1",
+        "meshing": {
+            "zones": [
+                {
+                    "type": "CustomZones",
+                    "entities": {
+                        "stored_entities": [
+                            {
+                                "private_attribute_entity_type_name": "CustomVolume",
+                                "name": "zone1",
+                                "boundaries": {
+                                    "stored_entities": [
+                                        {
+                                            "private_attribute_entity_type_name": "Surface",
+                                            "name": "f1",
+                                        }
+                                    ]
+                                },
+                            }
+                        ]
+                    },
+                },
+            ],
+        },
+    }
+
+    params_new = _to_25_9_2(params_as_dict)
+    cv = params_new["meshing"]["zones"][0]["entities"]["stored_entities"][0]
+
+    assert "boundaries" not in cv
+    assert "bounding_entities" in cv
+
+
+def test_updater_to_25_9_2_custom_volume_no_op_when_already_bounding_entities():
+    """Test 25.9.2 updater is a no-op when CustomVolume already uses bounding_entities."""
+    params_as_dict = {
+        "version": "25.9.1",
+        "meshing": {
+            "volume_zones": [
+                {
+                    "type": "CustomZones",
+                    "entities": {
+                        "stored_entities": [
+                            {
+                                "private_attribute_entity_type_name": "CustomVolume",
+                                "name": "zone1",
+                                "bounding_entities": {
+                                    "stored_entities": [
+                                        {
+                                            "private_attribute_entity_type_name": "Surface",
+                                            "name": "f1",
+                                        }
+                                    ]
+                                },
+                            }
+                        ]
+                    },
+                },
+            ],
+        },
+    }
+
+    params_new = _to_25_9_2(params_as_dict)
+    cv = params_new["meshing"]["volume_zones"][0]["entities"]["stored_entities"][0]
+
+    assert "bounding_entities" in cv
+    assert "boundaries" not in cv
+
+
+def test_updater_to_25_9_2_custom_volume_boundaries_via_updater():
+    """Test updater() path from 25.9.1 to 25.9.2 applies boundaries rename."""
+    params_as_dict = {
+        "version": "25.9.1",
+        "meshing": {
+            "volume_zones": [
+                {
+                    "type": "CustomZones",
+                    "entities": {
+                        "stored_entities": [
+                            {
+                                "private_attribute_entity_type_name": "CustomVolume",
+                                "name": "zone1",
+                                "boundaries": {
+                                    "stored_entities": [
+                                        {
+                                            "private_attribute_entity_type_name": "Surface",
+                                            "name": "f1",
+                                        }
+                                    ]
+                                },
+                            }
+                        ]
+                    },
+                },
+            ],
+        },
+    }
+
+    params_new = updater("25.9.1", "25.9.2", params_as_dict)
+    cv = params_new["meshing"]["volume_zones"][0]["entities"]["stored_entities"][0]
+
+    assert "boundaries" not in cv
+    assert "bounding_entities" in cv

@@ -37,12 +37,12 @@
             "heatFlux": 0.0,
             "roughnessHeight": 0.0,
             "type": "WallFunction",
-            "wallModelType": "BoundaryLayer",
             "velocity": [
                 0.08815906095303899,
                 0.0,
                 0.0
-            ]
+            ],
+            "wallModelType": "BoundaryLayer"
         },
         "farfield/windTunnelFloor": {
             "heatFlux": 0.0,
@@ -53,12 +53,12 @@
             "heatFlux": 0.0,
             "roughnessHeight": 0.0,
             "type": "WallFunction",
-            "wallModelType": "BoundaryLayer",
             "velocity": [
                 0.08815906095303899,
                 0.0,
                 0.0
-            ]
+            ],
+            "wallModelType": "BoundaryLayer"
         },
         "farfield/windTunnelInlet": {
             "type": "Freestream"
@@ -73,16 +73,20 @@
             "heatFlux": 0.0,
             "roughnessHeight": 0.0,
             "type": "WallFunction",
-            "wallModelType": "BoundaryLayer",
             "velocity": [
                 0.08815906095303899,
                 0.0,
                 0.0
-            ]
+            ],
+            "wallModelType": "BoundaryLayer"
         },
         "farfield/windTunnelRight": {
             "type": "SlipWall"
         }
+    },
+    "fluidProperties": {
+        "prandtlNumber": 0.72,
+        "turbulentPrandtlNumber": 0.9
     },
     "freestream": {
         "Mach": 0.08815906095303899,
@@ -90,29 +94,6 @@
         "alphaAngle": 0.0,
         "betaAngle": 0.0,
         "muRef": 4.292321046986505e-08
-    },
-    "fluidProperties": {
-        "prandtlNumber": 0.72,
-        "turbulentPrandtlNumber": 0.9
-    },
-    "thermallyPerfectGasModel": {
-        "temperatureRanges": [
-            {
-                "temperatureRangeMin": 0.694082942911678,
-                "temperatureRangeMax": 20.82248828735034,
-                "coefficients": [
-                    0.0,
-                    0.0,
-                    3.5,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    7.890809489614162e-16,
-                    0.0
-                ]
-            }
-        ]
     },
     "geometry": {
         "interfaceInterpolationTolerance": 0.2,
@@ -253,6 +234,25 @@
             }
         },
         "writeSingleFile": false
+    },
+    "thermallyPerfectGasModel": {
+        "temperatureRanges": [
+            {
+                "coefficients": [
+                    0.0,
+                    0.0,
+                    3.5,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    7.890809489614162e-16,
+                    0.0
+                ],
+                "temperatureRangeMax": 20.82248828735034,
+                "temperatureRangeMin": 0.694082942911678
+            }
+        ]
     },
     "timeStepping": {
         "CFL": {

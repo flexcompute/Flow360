@@ -17,7 +17,16 @@ Split scenarios:
 import re
 from dataclasses import dataclass
 from enum import Enum
-from typing import TYPE_CHECKING, Dict, List, Optional, Protocol, Set, runtime_checkable
+from typing import (
+    TYPE_CHECKING,
+    Dict,
+    List,
+    Optional,
+    Protocol,
+    Set,
+    Union,
+    runtime_checkable,
+)
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
@@ -31,7 +40,10 @@ from flow360.component.simulation.utils import model_attribute_unlock
 from flow360.log import log
 
 if TYPE_CHECKING:
-    from flow360.component.simulation.meshing_param.volume_params import RotationVolume
+    from flow360.component.simulation.meshing_param.volume_params import (
+        RotationSphere,
+        RotationVolume,
+    )
     from flow360.component.simulation.models.surface_models import Wall
     from flow360.component.simulation.simulation_params import SimulationParams
 
@@ -88,14 +100,15 @@ class RotationVolumeSplitProvider:
 
     # region ====private methods====
 
-    def _get_rotation_volumes(self) -> List["RotationVolume"]:
-        """Extract RotationVolume instances from params.meshing."""
+    def _get_rotation_volumes(self) -> List[Union["RotationVolume", "RotationSphere"]]:
+        """Extract rotation sliding-interface zones from params.meshing."""
         # pylint: disable=import-outside-toplevel
         from flow360.component.simulation.meshing_param.params import (
             MeshingParams,
             ModularMeshingWorkflow,
         )
         from flow360.component.simulation.meshing_param.volume_params import (
+            RotationSphere,
             RotationVolume,
         )
 
@@ -111,7 +124,17 @@ class RotationVolumeSplitProvider:
         if volume_zones is None:
             return []
 
-        return [zone for zone in volume_zones if isinstance(zone, RotationVolume)]
+        return [
+            zone
+            for zone in volume_zones
+            if isinstance(
+                zone,
+                (
+                    RotationVolume,
+                    RotationSphere,
+                ),
+            )
+        ]
 
     def has_active_volumes(self) -> bool:
         """Check if there are any rotation volumes with enclosed entities."""
@@ -122,8 +145,10 @@ class RotationVolumeSplitProvider:
         return False
 
     @staticmethod
-    def _find_zone_name(rotation_volume: "RotationVolume", zones: dict) -> Optional[str]:
-        """Find the zone name for a rotation volume by matching entity name."""
+    def _find_zone_name(
+        rotation_volume: Union["RotationVolume", "RotationSphere"], zones: dict
+    ) -> Optional[str]:
+        """Find the zone name for a rotation zone by matching entity name."""
         if not rotation_volume.entities or not rotation_volume.entities.stored_entities:
             return None
 
@@ -143,7 +168,9 @@ class RotationVolumeSplitProvider:
         return None
 
     @staticmethod
-    def _get_stationary_base_names(rotation_volume: "RotationVolume") -> Set[str]:
+    def _get_stationary_base_names(
+        rotation_volume: Union["RotationVolume", "RotationSphere"]
+    ) -> Set[str]:
         """Collect base names of stationary enclosed entities."""
         stationary_base_names: Set[str] = set()
         if rotation_volume.stationary_enclosed_entities:
@@ -154,7 +181,7 @@ class RotationVolumeSplitProvider:
 
     def _add_enclosed_mappings(  # pylint: disable=too-many-arguments
         self,
-        rotation_volume: "RotationVolume",
+        rotation_volume: Union["RotationVolume", "RotationSphere"],
         zone_name: str,
         boundary_full_names: List[str],
         stationary_base_names: Set[str],

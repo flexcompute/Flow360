@@ -1,30 +1,20 @@
 {
     "boundaries": {
         "boundary_name_A": {
-            "type": "SubsonicInflow",
-            "totalTemperatureRatio": 1.0411244143675171,
             "totalPressureRatio": 0.9,
-            "velocityDirection": [
-                1.0,
-                0.0,
-                0.0
-            ]
-        },
-        "boundary_name_D": {
+            "totalTemperatureRatio": 1.0411244143675171,
             "type": "SubsonicInflow",
-            "totalTemperatureRatio": "1 + x",
-            "totalPressureRatio": "1 + sin(y)",
             "velocityDirection": [
-                0.0,
                 1.0,
+                0.0,
                 0.0
             ]
         },
         "boundary_name_B": {
-            "type": "MassInflow",
-            "totalTemperatureRatio": 1.0411244143675171,
             "massFlowRate": 0.2,
             "rampSteps": 10,
+            "totalTemperatureRatio": 1.0411244143675171,
+            "type": "MassInflow",
             "velocityDirection": [
                 0.0,
                 0.0,
@@ -32,10 +22,20 @@
             ]
         },
         "boundary_name_C": {
-            "type": "SupersonicInflow",
-            "totalTemperatureRatio": 1.0411244143675171,
-            "totalPressureRatio": 8.0,
             "staticPressureRatio": 0.9,
+            "totalPressureRatio": 8.0,
+            "totalTemperatureRatio": 1.0411244143675171,
+            "type": "SupersonicInflow",
+            "velocityDirection": [
+                0.0,
+                1.0,
+                0.0
+            ]
+        },
+        "boundary_name_D": {
+            "totalPressureRatio": "1 + sin(y)",
+            "totalTemperatureRatio": "1 + x",
+            "type": "SubsonicInflow",
             "velocityDirection": [
                 0.0,
                 1.0,
@@ -43,39 +43,43 @@
             ]
         },
         "boundary_name_E": {
-            "type": "SubsonicOutflowPressure",
-            "staticPressureRatio": 0.9
-        },
-        "boundary_name_H": {
-            "type": "MassOutflow",
-            "massFlowRate": 0.2,
-            "rampSteps": 10
+            "staticPressureRatio": 0.9,
+            "type": "SubsonicOutflowPressure"
         },
         "boundary_name_F": {
-            "type": "SubsonicOutflowMach",
-            "MachNumber": 0.3
+            "MachNumber": 0.3,
+            "type": "SubsonicOutflowMach"
         },
         "boundary_name_G": {
+            "heatFlux": 0.0,
+            "roughnessHeight": 0.0,
             "type": "NoSlipWall",
             "wallVelocityModel": {
-                "type": "SlaterPorousBleed",
-                "staticPressureRatio": 0.8165514936615943,
+                "activationStep": 20,
                 "porosity": 0.49,
-                "activationStep": 20
-            },
-            "heatFlux": 0.0,
-            "roughnessHeight": 0.0
+                "staticPressureRatio": 0.8165514936615943,
+                "type": "SlaterPorousBleed"
+            }
+        },
+        "boundary_name_H": {
+            "massFlowRate": 0.2,
+            "rampSteps": 10,
+            "type": "MassOutflow"
         },
         "boundary_name_I": {
+            "heatFlux": 0.0,
+            "roughnessHeight": 0.0,
             "type": "NoSlipWall",
             "velocity": [
                 "0.0 * (z - 3.0) - 0.03077331758193801 * (y - 2.0)",
                 "0.03077331758193801 * (x - 1.0) - 0.0 * (z - 3.0)",
                 "0.0 * (y - 2.0) - 0.0 * (x - 1.0)"
-            ],
-            "heatFlux": 0.0,
-            "roughnessHeight": 0.0
+            ]
         }
+    },
+    "fluidProperties": {
+        "prandtlNumber": 0.72,
+        "turbulentPrandtlNumber": 0.9
     },
     "freestream": {
         "Mach": 0.8399999999999999,
@@ -83,29 +87,6 @@
         "alphaAngle": 0.0,
         "betaAngle": 0.0,
         "muRef": 4.292321046986499e-08
-    },
-    "fluidProperties": {
-        "prandtlNumber": 0.72,
-        "turbulentPrandtlNumber": 0.9
-    },
-    "thermallyPerfectGasModel": {
-        "temperatureRanges": [
-            {
-                "temperatureRangeMin": 0.694082942911678,
-                "temperatureRangeMax": 20.82248828735034,
-                "coefficients": [
-                    0.0,
-                    0.0,
-                    3.5,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    7.890809489614162e-16,
-                    0.0
-                ]
-            }
-        ]
     },
     "initialCondition": {
         "p": "p",
@@ -133,6 +114,31 @@
         "orderOfAccuracy": 2,
         "relativeTolerance": 0.0,
         "updateJacobianFrequency": 4
+    },
+    "outputRescale": {
+        "velocityScale": 1.0
+    },
+    "runControl": {
+        "externalProcessMonitorOutput": false
+    },
+    "thermallyPerfectGasModel": {
+        "temperatureRanges": [
+            {
+                "coefficients": [
+                    0.0,
+                    0.0,
+                    3.5,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    7.890809489614162e-16,
+                    0.0
+                ],
+                "temperatureRangeMax": 20.82248828735034,
+                "temperatureRangeMin": 0.694082942911678
+            }
+        ]
     },
     "timeStepping": {
         "CFL": {
@@ -183,7 +189,6 @@
         "rotationCorrection": false,
         "updateJacobianFrequency": 4
     },
-    "userDefinedFields": [],
     "userDefinedDynamics": [
         {
             "constants": {
@@ -202,13 +207,13 @@
             ],
             "outputTargetName": "boundary_name_B",
             "outputVars": {
-                "totalPressureRatio": "(pseudoStep > 0) ? (state[0]) : (initialTotalPressureRatio);"
+                "totalPressureRatio": "state[0];"
             },
             "stateVarsInitialValue": [
                 "initialTotalPressureRatio"
             ],
             "updateLaw": [
-                "(hasSupersonicFlow and massFlowRate > 0) ? ((1.0 - Kp) * state[0]) : (state[0] - Kp * (massFlowRate/area - massFlowRateTarget/area));"
+                "(pseudoStep > 0) ? ((hasSupersonicFlow and massFlowRate > 0) ? ((1.0 - Kp) * state[0]) : (state[0] - Kp * (massFlowRate/area - massFlowRateTarget/area))) : (state[0]);"
             ]
         },
         {
@@ -228,21 +233,16 @@
             ],
             "outputTargetName": "boundary_name_H",
             "outputVars": {
-                "staticPressureRatio": "(pseudoStep > 0) ? (state[0]) : (initialStaticPressureRatio);"
+                "staticPressureRatio": "state[0];"
             },
             "stateVarsInitialValue": [
                 "initialStaticPressureRatio"
             ],
             "updateLaw": [
-                "(hasSupersonicFlow and massFlowRate > 0) ? ((1.0 + Kp) * state[0]) : (state[0] + Kp * (massFlowRate/area - massFlowRateTarget/area));"
+                "(pseudoStep > 0) ? ((hasSupersonicFlow and massFlowRate > 0) ? ((1.0 + Kp) * state[0]) : (state[0] + Kp * (massFlowRate/area - massFlowRateTarget/area))) : (state[0]);"
             ]
         }
     ],
-    "usingLiquidAsMaterial": false,
-    "outputRescale": {
-        "velocityScale": 1.0
-    },
-    "runControl": {
-        "externalProcessMonitorOutput": false
-    }
+    "userDefinedFields": [],
+    "usingLiquidAsMaterial": false
 }
