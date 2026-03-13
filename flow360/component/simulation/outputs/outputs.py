@@ -415,6 +415,19 @@ class _AnimationAndFileFormatSettings(_AnimationSettings):
         return value
 
 
+class _MonitorOutputSettings(Flow360BaseModel):
+    """
+    Settings for monitor-type outputs that support writing only at the final pseudo step.
+    """
+
+    output_at_final_pseudo_step_only: bool = pd.Field(
+        False,
+        description="When True, the result is only written at the final pseudo step "
+        "of each physical step (or once at the end for steady simulations), "
+        "suppressing intermediate pseudo-step writes.",
+    )
+
+
 class SurfaceOutput(_AnimationAndFileFormatSettings, _OutputBase):
     """
 
@@ -777,7 +790,7 @@ class TimeAverageIsosurfaceOutput(IsosurfaceOutput):
     )
 
 
-class SurfaceIntegralOutput(_OutputBase):
+class SurfaceIntegralOutput(_MonitorOutputSettings, _OutputBase):
     """
 
     :class:`SurfaceIntegralOutput` class for surface integral output settings.
@@ -857,7 +870,7 @@ class SurfaceIntegralOutput(_OutputBase):
         return self
 
 
-class ForceOutput(_OutputBase):
+class ForceOutput(_MonitorOutputSettings, _OutputBase):
     """
     :class:`ForceOutput` class for setting total force output of specific surfaces.
 
@@ -1051,7 +1064,7 @@ class RenderOutput(_AnimationSettings):
         return value
 
 
-class ProbeOutput(_OutputBase):
+class ProbeOutput(_MonitorOutputSettings, _OutputBase):
     """
     :class:`ProbeOutput` class for setting output data probed at monitor points in the voulume of the domain.
     Regardless of the motion of the mesh, the points retain their positions in the
@@ -1115,7 +1128,7 @@ class ProbeOutput(_OutputBase):
     output_type: Literal["ProbeOutput"] = pd.Field("ProbeOutput", frozen=True)
 
 
-class SurfaceProbeOutput(_OutputBase):
+class SurfaceProbeOutput(_MonitorOutputSettings, _OutputBase):
     """
     :class:`SurfaceProbeOutput` class for setting surface output data probed at monitor points.
     The specified monitor point will be projected to the :py:attr:`~SurfaceProbeOutput.target_surfaces`
