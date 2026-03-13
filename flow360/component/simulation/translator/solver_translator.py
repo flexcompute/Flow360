@@ -340,6 +340,8 @@ def monitor_translator(
         monitor_group["animationFrequencyTimeAverage"] = output_model.frequency
         monitor_group["animationFrequencyTimeAverageOffset"] = output_model.frequency_offset
         monitor_group["startAverageIntegrationStep"] = output_model.start_step
+    if getattr(output_model, "output_at_final_pseudo_step_only", False):
+        monitor_group["outputAtFinalPseudoStepOnly"] = True
     return monitor_group
 
 
