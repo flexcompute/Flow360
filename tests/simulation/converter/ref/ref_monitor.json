@@ -151,7 +151,8 @@
                     "primitiveVars"
                 ]
             },
-            "output_type": "ProbeOutput"
+            "output_type": "ProbeOutput",
+            "output_at_final_pseudo_step_only": false
         },
         {
             "entities": {
@@ -200,7 +201,8 @@
                     "mut"
                 ]
             },
-            "output_type": "ProbeOutput"
+            "output_type": "ProbeOutput",
+            "output_at_final_pseudo_step_only": false
         }
     ],
     "private_attribute_asset_cache": {

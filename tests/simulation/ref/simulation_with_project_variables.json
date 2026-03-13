@@ -352,7 +352,8 @@
                 ]
             },
             "output_type": "ProbeOutput",
-            "private_attribute_id": "222"
+            "private_attribute_id": "222",
+            "output_at_final_pseudo_step_only": false
         }
     ],
     "private_attribute_asset_cache": {

@@ -429,13 +429,12 @@ class _MonitorOutputSettings(Flow360BaseModel):
 
     @pd.field_validator("output_at_final_pseudo_step_only", mode="after")
     @classmethod
-    def _forbid_final_pseudo_step_only_on_time_average(cls, v, info: pd.ValidationInfo):
+    def _forbid_final_pseudo_step_only_on_time_average(cls, v):
         """TimeAverage outputs already write only at physical-step boundaries, so
         ``output_at_final_pseudo_step_only`` is redundant and not supported."""
-        output_type = info.data.get("output_type", "")
-        if v and output_type.startswith("TimeAverage"):
+        if v and cls.__name__.startswith("TimeAverage"):
             raise ValueError(
-                f"`output_at_final_pseudo_step_only` is not supported on {output_type}."
+                f"`output_at_final_pseudo_step_only` is not supported on {cls.__name__}."
             )
         return v
 
@@ -1147,8 +1146,9 @@ class ProbeOutput(_MonitorOutputSettings, _OutputBase):
         + "monitor group. :class:`~flow360.PointArray` is used to "
         + "define monitored points along a line.",
     )
-    output_fields: UniqueItemList[Union[CommonFieldNames, str, UserVariable]] = pd.Field(
-        description="List of output fields. Including :ref:`universal output variables<UniversalVariablesV2>`"
+    output_fields: UniqueItemList[Union[VolumeFieldNames, str, UserVariable]] = pd.Field(
+        description="List of output variables. Including :ref:`universal output variables<UniversalVariablesV2>`,"
+        " :ref:`variables specific to VolumeOutput<VolumeAndSliceSpecificVariablesV2>`"
         " and :class:`UserDefinedField`."
     )
     moving_statistic: Optional[MovingStatistic] = pd.Field(
