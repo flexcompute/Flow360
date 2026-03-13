@@ -148,12 +148,19 @@ class _S3STSToken(BaseModel):
         from botocore.config import Config as BotocoreConfig
 
         # pylint: disable=no-member
+        config_kwargs = {"max_pool_connections": MAX_POOL}
+        if Env.current.s3_endpoint_url is not None:
+            # S3-compatible stores (s3proxy, MinIO) may not implement the
+            # checksum headers that newer boto3 versions send by default.
+            config_kwargs["request_checksum_calculation"] = "when_required"
+            config_kwargs["response_checksum_validation"] = "when_required"
+
         kwargs = {
             "region_name": self.user_credential.region,
             "aws_access_key_id": self.user_credential.access_key_id,
             "aws_secret_access_key": self.user_credential.secret_access_key,
             "aws_session_token": self.user_credential.session_token,
-            "config": BotocoreConfig(max_pool_connections=MAX_POOL),
+            "config": BotocoreConfig(**config_kwargs),
         }
 
         if Env.current.s3_endpoint_url is not None:

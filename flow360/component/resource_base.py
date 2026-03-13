@@ -764,7 +764,13 @@ class RemoteResourceLogs:
             if self._tmp_dir is None:
                 self._tmp_dir = TemporaryLogDirectory()
             if self._remote_file_name is None:
-                self._remote_file_name = self._get_log_file_names()[0]
+                log_files = self._get_log_file_names()
+                if not log_files:
+                    raise FileNotFoundError(
+                        "No log files available for this resource. "
+                        "The job may not have started or produced any logs yet."
+                    )
+                self._remote_file_name = log_files[0]
             self._tmp_file_name = os.path.join(self._tmp_dir.name, self._remote_file_name)
         return self._tmp_file_name
 
