@@ -158,7 +158,6 @@ class TestRemoteResourceLogs:
                 assert temp.read() == original_file.read()
         os.remove(temp_file)
 
-
     def test_empty_log_files_raises_error(self):
         self.flow360_resource.get_download_file_list.return_value = []
         fresh_logs = RemoteResourceLogs(self.flow360_resource)
