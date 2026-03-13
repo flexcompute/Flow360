@@ -154,6 +154,10 @@ class _S3STSToken(BaseModel):
             # checksum headers that newer boto3 versions send by default.
             config_kwargs["request_checksum_calculation"] = "when_required"
             config_kwargs["response_checksum_validation"] = "when_required"
+            # Path-style addressing (http://host/bucket/key) works universally
+            # with s3proxy, MinIO, and in Kubernetes where virtual-hosted style
+            # (http://bucket.host/key) fails DNS resolution.
+            config_kwargs["s3"] = {"addressing_style": "path"}
 
         try:
             config = BotocoreConfig(**config_kwargs)
