@@ -40,6 +40,7 @@ from flow360.component.simulation.outputs.output_fields import (
     SliceFieldNames,
     SurfaceFieldNames,
     VolumeFieldNames,
+    VolumeProbeFieldNames,
     get_field_values,
 )
 from flow360.component.simulation.outputs.render_config import (
@@ -1146,7 +1147,7 @@ class ProbeOutput(_MonitorOutputSettings, _OutputBase):
         + "monitor group. :class:`~flow360.PointArray` is used to "
         + "define monitored points along a line.",
     )
-    output_fields: UniqueItemList[Union[VolumeFieldNames, str, UserVariable]] = pd.Field(
+    output_fields: UniqueItemList[Union[VolumeProbeFieldNames, str, UserVariable]] = pd.Field(
         description="List of output variables. Including :ref:`universal output variables<UniversalVariablesV2>`,"
         " :ref:`variables specific to VolumeOutput<VolumeAndSliceSpecificVariablesV2>`"
         " and :class:`UserDefinedField`."
