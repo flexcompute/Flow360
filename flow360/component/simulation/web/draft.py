@@ -175,7 +175,7 @@ class Draft(Flow360Resource):
         response = self.get(method="simulation/file", params={"type": "simulation"})
         return json.loads(response["simulationJson"])
 
-    def run_up_to_target_asset(
+    def run_up_to_target_asset(  # pylint:disable = too-many-locals
         self,
         target_asset: type,
         use_beta_mesher: bool,
