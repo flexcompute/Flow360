@@ -40,6 +40,7 @@ from flow360.component.simulation.outputs.output_fields import (
     SliceFieldNames,
     SurfaceFieldNames,
     VolumeFieldNames,
+    VolumeProbeFieldNames,
     get_field_values,
 )
 from flow360.component.simulation.outputs.render_config import (
@@ -415,6 +416,47 @@ class _AnimationAndFileFormatSettings(_AnimationSettings):
         return value
 
 
+class _MonitorOutputSettings(Flow360BaseModel):
+    """
+    Settings for monitor-type outputs that support writing only at the final pseudo step.
+    """
+
+    output_at_final_pseudo_step_only: bool = pd.Field(
+        False,
+        description="When True, the result is only written at the final pseudo step "
+        "of each physical step (or once at the end for steady simulations), "
+        "suppressing intermediate pseudo-step writes.",
+    )
+
+    @pd.field_validator("output_at_final_pseudo_step_only", mode="after")
+    @classmethod
+    def _forbid_final_pseudo_step_only_on_time_average(cls, v):
+        """TimeAverage outputs already write only at physical-step boundaries, so
+        ``output_at_final_pseudo_step_only`` is redundant and not supported."""
+        if v and cls.__name__.startswith("TimeAverage"):
+            raise ValueError(
+                f"`output_at_final_pseudo_step_only` is not supported on {cls.__name__}."
+            )
+        return v
+
+    @contextual_model_validator(mode="after")
+    def _forbid_final_pseudo_step_only_with_moving_statistic_in_steady(
+        self, param_info: ParamsValidationInfo
+    ):
+        """In steady simulations with the toggle on, only one data point is produced,
+        making ``moving_statistic`` meaningless."""
+        if (
+            self.output_at_final_pseudo_step_only
+            and getattr(self, "moving_statistic", None) is not None
+            and param_info.time_stepping == TimeSteppingType.STEADY
+        ):
+            raise ValueError(
+                "`output_at_final_pseudo_step_only=True` with `moving_statistic` is not allowed "
+                "for steady simulations (only one data point would be produced)."
+            )
+        return self
+
+
 class SurfaceOutput(_AnimationAndFileFormatSettings, _OutputBase):
     """
 
@@ -777,7 +819,7 @@ class TimeAverageIsosurfaceOutput(IsosurfaceOutput):
     )
 
 
-class SurfaceIntegralOutput(_OutputBase):
+class SurfaceIntegralOutput(_MonitorOutputSettings, _OutputBase):
     """
 
     :class:`SurfaceIntegralOutput` class for surface integral output settings.
@@ -857,7 +899,7 @@ class SurfaceIntegralOutput(_OutputBase):
         return self
 
 
-class ForceOutput(_OutputBase):
+class ForceOutput(_MonitorOutputSettings, _OutputBase):
     """
     :class:`ForceOutput` class for setting total force output of specific surfaces.
 
@@ -1051,7 +1093,7 @@ class RenderOutput(_AnimationSettings):
         return value
 
 
-class ProbeOutput(_OutputBase):
+class ProbeOutput(_MonitorOutputSettings, _OutputBase):
     """
     :class:`ProbeOutput` class for setting output data probed at monitor points in the voulume of the domain.
     Regardless of the motion of the mesh, the points retain their positions in the
@@ -1105,8 +1147,9 @@ class ProbeOutput(_OutputBase):
         + "monitor group. :class:`~flow360.PointArray` is used to "
         + "define monitored points along a line.",
     )
-    output_fields: UniqueItemList[Union[CommonFieldNames, str, UserVariable]] = pd.Field(
-        description="List of output fields. Including :ref:`universal output variables<UniversalVariablesV2>`"
+    output_fields: UniqueItemList[Union[VolumeProbeFieldNames, str, UserVariable]] = pd.Field(
+        description="List of output variables. Including :ref:`universal output variables<UniversalVariablesV2>`,"
+        " :ref:`variables specific to VolumeOutput<VolumeAndSliceSpecificVariablesV2>`"
         " and :class:`UserDefinedField`."
     )
     moving_statistic: Optional[MovingStatistic] = pd.Field(
@@ -1115,7 +1158,7 @@ class ProbeOutput(_OutputBase):
     output_type: Literal["ProbeOutput"] = pd.Field("ProbeOutput", frozen=True)
 
 
-class SurfaceProbeOutput(_OutputBase):
+class SurfaceProbeOutput(_MonitorOutputSettings, _OutputBase):
     """
     :class:`SurfaceProbeOutput` class for setting surface output data probed at monitor points.
     The specified monitor point will be projected to the :py:attr:`~SurfaceProbeOutput.target_surfaces`

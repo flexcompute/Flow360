@@ -343,6 +343,7 @@
                 ]
             },
             "name": "Probe output",
+            "output_at_final_pseudo_step_only": false,
             "output_fields": {
                 "items": [
                     {
