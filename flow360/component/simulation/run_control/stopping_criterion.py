@@ -137,6 +137,20 @@ class StoppingCriterion(Flow360BaseModel):
 
     @contextual_field_validator("monitor_output", mode="after", required_context=["output_dict"])
     @classmethod
+    def _check_not_final_pseudo_step_only(cls, v, param_info: ParamsValidationInfo):
+        """Forbid referencing a monitor output with output_at_final_pseudo_step_only=True."""
+        monitor_output = param_info.output_dict.get(v)
+        if monitor_output is not None and getattr(
+            monitor_output, "output_at_final_pseudo_step_only", False
+        ):
+            raise ValueError(
+                "A monitor output with `output_at_final_pseudo_step_only=True` cannot be "
+                "referenced by a StoppingCriterion."
+            )
+        return v
+
+    @contextual_field_validator("monitor_output", mode="after", required_context=["output_dict"])
+    @classmethod
     def _check_single_point_in_probe_output(cls, v, param_info: ParamsValidationInfo):
         monitor_output = param_info.output_dict.get(v)
         if not isinstance(monitor_output, (ProbeOutput, SurfaceProbeOutput)):
