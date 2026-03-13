@@ -430,12 +430,31 @@ class _MonitorOutputSettings(Flow360BaseModel):
     @pd.field_validator("output_at_final_pseudo_step_only", mode="after")
     @classmethod
     def _forbid_final_pseudo_step_only_on_time_average(cls, v, info: pd.ValidationInfo):
+        """TimeAverage outputs already write only at physical-step boundaries, so
+        ``output_at_final_pseudo_step_only`` is redundant and not supported."""
         output_type = info.data.get("output_type", "")
         if v and output_type.startswith("TimeAverage"):
             raise ValueError(
                 f"`output_at_final_pseudo_step_only` is not supported on {output_type}."
             )
         return v
+
+    @contextual_model_validator(mode="after")
+    def _forbid_final_pseudo_step_only_with_moving_statistic_in_steady(
+        self, param_info: ParamsValidationInfo
+    ):
+        """In steady simulations with the toggle on, only one data point is produced,
+        making ``moving_statistic`` meaningless."""
+        if (
+            self.output_at_final_pseudo_step_only
+            and getattr(self, "moving_statistic", None) is not None
+            and param_info.time_stepping == TimeSteppingType.STEADY
+        ):
+            raise ValueError(
+                "`output_at_final_pseudo_step_only=True` with `moving_statistic` is not allowed "
+                "for steady simulations (only one data point would be produced)."
+            )
+        return self
 
 
 class SurfaceOutput(_AnimationAndFileFormatSettings, _OutputBase):
