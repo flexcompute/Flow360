@@ -29,7 +29,7 @@ def test_temperature_offset():
     ThermalState.from_standard_atmosphere(
         altitude=10 * u.m, temperature_offset=11.11 * u.delta_degC
     )
-    with pytest.raises(ValueError, match="Absolute temperature unit"):
+    with pytest.raises(ValueError, match="Use delta units"):
         ThermalState.from_standard_atmosphere(altitude=10 * u.m, temperature_offset=11.11 * u.degC)
 
     with fl.imperial_unit_system:
