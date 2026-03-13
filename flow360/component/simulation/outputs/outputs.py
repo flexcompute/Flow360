@@ -427,6 +427,16 @@ class _MonitorOutputSettings(Flow360BaseModel):
         "suppressing intermediate pseudo-step writes.",
     )
 
+    @pd.field_validator("output_at_final_pseudo_step_only", mode="after")
+    @classmethod
+    def _forbid_final_pseudo_step_only_on_time_average(cls, v, info: pd.ValidationInfo):
+        output_type = info.data.get("output_type", "")
+        if v and output_type.startswith("TimeAverage"):
+            raise ValueError(
+                f"`output_at_final_pseudo_step_only` is not supported on {output_type}."
+            )
+        return v
+
 
 class SurfaceOutput(_AnimationAndFileFormatSettings, _OutputBase):
     """
