@@ -26,7 +26,7 @@ from flow360.component.simulation.services_utils import (
 )
 from flow360.component.utils import formatting_validation_errors, validate_type
 from flow360.environment import Env
-from flow360.exceptions import Flow360RuntimeError, Flow360WebError
+from flow360.exceptions import Flow360WebError
 from flow360.log import log
 
 if TYPE_CHECKING:
@@ -234,15 +234,20 @@ class Draft(Flow360Resource):
                     f"Failure detail: {formatting_validation_errors(ast.literal_eval(detailed_error))}"
                 )
             except SyntaxError:
-                # Not validation errors, likely translation error
                 detailed_error = json.loads(err.auxiliary_json["detail"])["detail"]
                 log.error(f"Failure detail: {detailed_error}")
             except (json.decoder.JSONDecodeError, TypeError):
-                # No detail given.
-                raise Flow360RuntimeError(
-                    "An unexpected error has occurred. Please contact customer support."
-                ) from None
-        raise RuntimeError("Submission not successful.")
+                # detail is not JSON — surface the raw server error
+                if err.auxiliary_json:
+                    server_error = err.auxiliary_json.get("error", "")
+                    server_detail = err.auxiliary_json.get("detail", "")
+                    error_code = err.auxiliary_json.get("code", "")
+                    parts = [p for p in [server_error, server_detail] if p]
+                    message = ": ".join(parts)
+                    if error_code:
+                        message += f" (code: {error_code})"
+                    log.error(f"Failure detail: {message}")
+            raise
 
     @cached_property
     def project_id(self) -> str:
