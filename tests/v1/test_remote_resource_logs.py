@@ -8,6 +8,7 @@ from flow360.component.resource_base import (
     Position,
     RemoteResourceLogs,
 )
+from flow360.exceptions import Flow360RuntimeError
 
 
 def create_file(file_name: str, to_file):
@@ -156,6 +157,27 @@ class TestRemoteResourceLogs:
                 temp.seek(0)
                 assert temp.read() == original_file.read()
         os.remove(temp_file)
+
+
+    def test_empty_log_files_raises_error(self):
+        self.flow360_resource.get_download_file_list.return_value = []
+        fresh_logs = RemoteResourceLogs(self.flow360_resource)
+
+        with pytest.raises(Flow360RuntimeError, match="No log files available"):
+            fresh_logs.tail()
+
+        with pytest.raises(Flow360RuntimeError, match="No log files available"):
+            fresh_logs._get_tmp_file_name()
+
+    def test_no_matching_log_files_raises_error(self):
+        self.flow360_resource.get_download_file_list.return_value = [
+            {"fileName": "flow360.json"},
+            {"fileName": "simulation.json"},
+        ]
+        fresh_logs = RemoteResourceLogs(self.flow360_resource)
+
+        with pytest.raises(Flow360RuntimeError, match="No log files available"):
+            fresh_logs.tail()
 
 
 if __name__ == "__main__":

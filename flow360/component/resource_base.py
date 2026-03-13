@@ -761,16 +761,16 @@ class RemoteResourceLogs:
 
     def _get_tmp_file_name(self):
         if self._tmp_file_name is None:
-            if self._tmp_dir is None:
-                self._tmp_dir = TemporaryLogDirectory()
             if self._remote_file_name is None:
                 log_files = self._get_log_file_names()
                 if not log_files:
-                    raise FileNotFoundError(
+                    raise Flow360RuntimeError(
                         "No log files available for this resource. "
                         "The job may not have started or produced any logs yet."
                     )
                 self._remote_file_name = log_files[0]
+            if self._tmp_dir is None:
+                self._tmp_dir = TemporaryLogDirectory()
             self._tmp_file_name = os.path.join(self._tmp_dir.name, self._remote_file_name)
         return self._tmp_file_name
 

@@ -155,12 +155,20 @@ class _S3STSToken(BaseModel):
             config_kwargs["request_checksum_calculation"] = "when_required"
             config_kwargs["response_checksum_validation"] = "when_required"
 
+        try:
+            config = BotocoreConfig(**config_kwargs)
+        except TypeError:
+            # Older botocore versions don't support checksum config options.
+            config_kwargs.pop("request_checksum_calculation", None)
+            config_kwargs.pop("response_checksum_validation", None)
+            config = BotocoreConfig(**config_kwargs)
+
         kwargs = {
             "region_name": self.user_credential.region,
             "aws_access_key_id": self.user_credential.access_key_id,
             "aws_secret_access_key": self.user_credential.secret_access_key,
             "aws_session_token": self.user_credential.session_token,
-            "config": BotocoreConfig(**config_kwargs),
+            "config": config,
         }
 
         if Env.current.s3_endpoint_url is not None:
