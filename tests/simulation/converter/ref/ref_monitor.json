@@ -146,13 +146,13 @@
                 ]
             },
             "name": "R1",
+            "output_at_final_pseudo_step_only": false,
             "output_fields": {
                 "items": [
                     "primitiveVars"
                 ]
             },
-            "output_type": "ProbeOutput",
-            "output_at_final_pseudo_step_only": false
+            "output_type": "ProbeOutput"
         },
         {
             "entities": {
@@ -196,13 +196,13 @@
                 ]
             },
             "name": "V3",
+            "output_at_final_pseudo_step_only": false,
             "output_fields": {
                 "items": [
                     "mut"
                 ]
             },
-            "output_type": "ProbeOutput",
-            "output_at_final_pseudo_step_only": false
+            "output_type": "ProbeOutput"
         }
     ],
     "private_attribute_asset_cache": {
