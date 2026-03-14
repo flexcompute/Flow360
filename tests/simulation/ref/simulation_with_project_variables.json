@@ -318,7 +318,9 @@
                     }
                 ]
             },
-            "output_format": "paraview",
+            "output_format": [
+                "paraview"
+            ],
             "output_type": "VolumeOutput",
             "private_attribute_id": "000"
         },

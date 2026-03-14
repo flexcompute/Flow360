@@ -954,14 +954,15 @@ def test_project_variables_serialization():
     assert output_units_by_name["ddd"] == "m/s"
     assert output_units_by_name["eee"] == "dimensionless"
 
-    paramsJson = params.model_dump_json(indent=4, exclude_none=True)
-    with open("ref/simulation_with_project_variables.json", "w") as f:
-        f.write(paramsJson)
+    params_data = params.model_dump(mode="json", exclude_none=True)
 
     with open("ref/simulation_with_project_variables.json", "r") as fh:
-        ref_data = fh.read()
+        ref_data = json.load(fh)
 
-    assert ref_data == params.model_dump_json(indent=4, exclude_none=True)
+    # Compare ignoring version which changes between releases
+    params_data.pop("version", None)
+    ref_data.pop("version", None)
+    assert ref_data == params_data
 
 
 def test_project_variables_deserialization():
