@@ -477,6 +477,26 @@ class MeshingParams(Flow360BaseModel):
                 )
         return self
 
+    @contextual_model_validator(mode="after")
+    def _warn_multi_zone_remove_hidden_geometry(self) -> Self:
+        """Warn when remove_hidden_geometry is enabled with multiple farfield/custom volume zones."""
+        if not self.defaults.remove_hidden_geometry:  # pylint: disable=no-member
+            return self
+        if self.volume_zones is None:
+            return self
+        count = sum(
+            isinstance(
+                zone, (AutomatedFarfield, WindTunnelFarfield, UserDefinedFarfield, CustomZones)
+            )
+            for zone in self.volume_zones  # pylint: disable=not-an-iterable
+        )
+        if count > 1:
+            add_validation_warning(
+                "Multiple farfield/custom volume zones detected. Removal of hidden geometry "
+                "for multi-zone cases is not fully supported and may not work as intended."
+            )
+        return self
+
     @property
     def farfield_method(self):
         """Returns the farfield method used."""

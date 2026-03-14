@@ -2334,6 +2334,114 @@ def test_per_face_min_passage_size_warning_without_remove_hidden_geometry():
     assert warnings == []
 
 
+def test_multi_zone_remove_hidden_geometry_warning():
+    """Test that remove_hidden_geometry with multiple farfield/custom volume zones triggers a warning."""
+
+    # Test 1: remove_hidden_geometry=True with farfield + CustomZones → warning
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    geometry_accuracy=0.01 * u.m,
+                    surface_max_edge_length=0.1 * u.m,
+                    remove_hidden_geometry=True,
+                ),
+                volume_zones=[
+                    AutomatedFarfield(enclosed_entities=[Surface(name="face1")]),
+                    CustomZones(
+                        name="custom_zones",
+                        entities=[
+                            CustomVolume(
+                                name="zone1",
+                                bounding_entities=[Surface(name="face1"), Surface(name="face2")],
+                            )
+                        ],
+                    ),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(
+                use_geometry_AI=True,
+                use_inhouse_mesher=True,
+                project_length_unit=1 * u.m,
+            ),
+        )
+    _, errors, warnings = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="Geometry",
+        validation_level="SurfaceMesh",
+    )
+    assert errors is None
+    assert len(warnings) == 1
+    assert (
+        "removal of hidden geometry for multi-zone cases is not fully supported"
+        in warnings[0]["msg"].lower()
+    )
+
+    # Test 2: remove_hidden_geometry=True with a single farfield zone → no warning
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    geometry_accuracy=0.01 * u.m,
+                    surface_max_edge_length=0.1 * u.m,
+                    remove_hidden_geometry=True,
+                ),
+                volume_zones=[AutomatedFarfield()],
+            ),
+            private_attribute_asset_cache=AssetCache(
+                use_geometry_AI=True,
+                use_inhouse_mesher=True,
+                project_length_unit=1 * u.m,
+            ),
+        )
+    _, errors, warnings = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="Geometry",
+        validation_level="SurfaceMesh",
+    )
+    assert errors is None
+    assert warnings == []
+
+    # Test 3: remove_hidden_geometry=False with farfield + CustomZones → no warning
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    geometry_accuracy=0.01 * u.m,
+                    surface_max_edge_length=0.1 * u.m,
+                    remove_hidden_geometry=False,
+                ),
+                volume_zones=[
+                    AutomatedFarfield(enclosed_entities=[Surface(name="face1")]),
+                    CustomZones(
+                        name="custom_zones",
+                        entities=[
+                            CustomVolume(
+                                name="zone1",
+                                bounding_entities=[Surface(name="face1"), Surface(name="face2")],
+                            )
+                        ],
+                    ),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(
+                use_geometry_AI=True,
+                use_inhouse_mesher=True,
+                project_length_unit=1 * u.m,
+            ),
+        )
+    _, errors, warnings = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="Geometry",
+        validation_level="SurfaceMesh",
+    )
+    assert errors is None
+    assert warnings == []
+
+
 def test_geometry_accuracy_with_non_unit_project_length_scale():
     """geometry_accuracy validation must account for the project-length scale factor.
 
