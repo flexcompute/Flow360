@@ -6,7 +6,13 @@ import pytest
 import flow360.component.simulation.units as u
 from flow360.component.simulation.meshing_param import snappy
 from flow360.component.simulation.meshing_param.volume_params import UniformRefinement
-from flow360.component.simulation.primitives import Box, Cylinder, SnappyBody, Surface
+from flow360.component.simulation.primitives import (
+    AxisymmetricBody,
+    Box,
+    Cylinder,
+    SnappyBody,
+    Surface,
+)
 from flow360.component.simulation.unit_system import SI_unit_system
 
 
@@ -211,3 +217,47 @@ def test_snappy_body_refinement_validator():
     snappy.BodyRefinement(
         bodies=SnappyBody(name="body1", surfaces=[Surface(name="surface")]), gap_resolution=2 * u.mm
     )
+
+
+def test_face_spacing_validation():
+    with SI_unit_system:
+        body = AxisymmetricBody(
+            name="body",
+            axis=(0, 0, 1),
+            center=(0, 0, 0),
+            profile_curve=[(0, 0), (0, 1), (1, 1), (1, 0)],
+        )
+
+        # Valid: override face 1 of 3 faces
+        UniformRefinement(
+            entities=[body],
+            spacing=0.5 * u.m,
+            face_spacing={"body": {1: 0.1 * u.m}},
+        )
+
+        # Invalid: face index out of range
+        with pytest.raises(pd.ValidationError, match="out of range"):
+            UniformRefinement(
+                entities=[body],
+                spacing=0.5 * u.m,
+                face_spacing={"body": {5: 0.1 * u.m}},
+            )
+
+        # Invalid: entity name not found
+        with pytest.raises(pd.ValidationError, match="does not match any AxisymmetricBody"):
+            UniformRefinement(
+                entities=[body],
+                spacing=0.5 * u.m,
+                face_spacing={"invalid_name": {0: 0.1 * u.m}},
+            )
+
+        # Invalid: non-AxisymmetricBody entity name
+        box = Box.from_principal_axes(
+            name="mybox", center=(0, 0, 0), size=(1, 1, 1), axes=((1, 0, 0), (0, 1, 0))
+        )
+        with pytest.raises(pd.ValidationError, match="does not match any AxisymmetricBody"):
+            UniformRefinement(
+                entities=[box],
+                spacing=0.5 * u.m,
+                face_spacing={"mybox": {0: 0.1 * u.m}},
+            )
