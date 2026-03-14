@@ -242,7 +242,7 @@ class Draft(Flow360Resource):
                     server_error = err.auxiliary_json.get("error", "")
                     server_detail = err.auxiliary_json.get("detail", "")
                     error_code = err.auxiliary_json.get("code", "")
-                    parts = [p for p in [server_error, server_detail] if p]
+                    parts = [str(p) for p in [server_error, server_detail] if p]
                     message = ": ".join(parts)
                     if error_code:
                         message += f" (code: {error_code})"
