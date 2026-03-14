@@ -670,6 +670,7 @@ def _get_volume_zones(volume_zones_list: list[dict]):
             "AutomatedFarfield",
             "UserDefinedFarfield",
             "WindTunnelFarfield",
+            "CustomZones",
         ):
             volume_zones_translated.append(item)
         elif item["type"] in (
