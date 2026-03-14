@@ -484,12 +484,15 @@ class MeshingParams(Flow360BaseModel):
             return self
         if self.volume_zones is None:
             return self
-        count = 0
-        for zone in self.volume_zones:  # pylint: disable=not-an-iterable
-            if isinstance(zone, (AutomatedFarfield, WindTunnelFarfield, UserDefinedFarfield)):
-                count += 1
-            elif isinstance(zone, CustomZones):
-                count += len(zone.entities.stored_entities)
+        # AF and WTF each generate their own farfield zone but UDF does not,
+        # so it doesn't contribute to the zone count
+        has_non_udf_farfield = any(
+            isinstance(zone, (AutomatedFarfield, WindTunnelFarfield))
+            for zone in self.volume_zones  # pylint: disable=not-an-iterable
+        )
+        count = len(_collect_all_custom_volumes(self.volume_zones)) + (
+            1 if has_non_udf_farfield else 0
+        )
         if count > 1:
             add_validation_warning(
                 "Multiple farfield/custom volume zones detected. Removal of hidden geometry "
