@@ -7,6 +7,7 @@ from abc import ABCMeta
 from typing import Annotated, Dict, List, Literal, Optional, Union
 
 import pydantic as pd
+from flow360_schema.framework.physical_dimensions import Acceleration, HeatSource
 from flow360_schema.framework.validation.context import DeserializationContext
 
 import flow360.component.simulation.units as u
@@ -64,10 +65,8 @@ from flow360.component.simulation.primitives import (
     SeedpointVolume,
 )
 from flow360.component.simulation.unit_system import (
-    AccelerationType,
     AngleType,
     AngularVelocityType,
-    HeatSourceType,
     InverseAreaType,
     InverseLengthType,
     LengthType,
@@ -308,7 +307,7 @@ class Gravity(Flow360BaseModel):
         (0, 0, -1),
         description="The direction of the gravitational acceleration vector.",
     )
-    magnitude: AccelerationType = pd.Field(
+    magnitude: Acceleration.Float64 = pd.Field(
         9.81 * u.m / u.s**2,
         description="The magnitude of the gravitational acceleration. "
         + "For Earth's surface gravity, use 9.81 m/s².",
@@ -432,7 +431,7 @@ class Solid(PDEModelBase):
         + ":class:`HeatEquationSolver` documentation.",
     )
     # pylint: disable=no-member
-    volumetric_heat_source: Union[StringExpression, HeatSourceType] = pd.Field(
+    volumetric_heat_source: Union[StringExpression, HeatSource.Float64] = pd.Field(
         0 * u.W / (u.m**3), description="The volumetric heat source."
     )
 
@@ -1501,7 +1500,7 @@ class PorousMedium(Flow360BaseModel):
         description="Forchheimer coefficient of the porous media model which determines "
         + "the scaling of the inertial loss term."
     )
-    volumetric_heat_source: Optional[Union[StringExpression, HeatSourceType]] = pd.Field(
+    volumetric_heat_source: Optional[Union[StringExpression, HeatSource.Float64]] = pd.Field(
         None, description="The volumetric heat source."
     )
     private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
@@ -1524,7 +1523,7 @@ class PorousMedium(Flow360BaseModel):
     @classmethod
     def _validate_volumetric_heat_source_for_liquid(
         cls,
-        value: Optional[Union[StringExpression, HeatSourceType]],
+        value: Optional[Union[StringExpression, HeatSource.Float64]],
         param_info: ParamsValidationInfo,
     ):
         """Disable the volumetric_heat_source when liquid operating condition is used"""

@@ -2,18 +2,12 @@
     "meshing": {
         "defaults": {
             "boundary_layer_growth_rate": 1.2,
-            "curvature_resolution_angle": {
-                "units": "degree",
-                "value": 12.0
-            },
+            "curvature_resolution_angle": 0.20943951023931956,
             "planar_face_tolerance": 1e-06,
             "preserve_thin_geometry": false,
             "remove_hidden_geometry": false,
             "resolve_face_boundaries": false,
-            "sealing_size": {
-                "units": "m",
-                "value": 0.0
-            },
+            "sealing_size": 0.0,
             "sliding_interface_tolerance": 0.01,
             "surface_edge_growth_rate": 1.2,
             "surface_max_adaptation_iterations": 50,
@@ -45,16 +39,10 @@
             },
             "heat_spec": {
                 "type_name": "HeatFlux",
-                "value": {
-                    "units": "W/m**2",
-                    "value": 0.0
-                }
-            },
-            "name": "Wall",
-            "roughness_height": {
-                "units": "m",
                 "value": 0.0
             },
+            "name": "Wall",
+            "roughness_height": 0.0,
             "type": "Wall"
         },
         {
@@ -82,18 +70,9 @@
             "interface_interpolation_tolerance": 0.2,
             "material": {
                 "dynamic_viscosity": {
-                    "effective_temperature": {
-                        "units": "K",
-                        "value": 110.4
-                    },
-                    "reference_temperature": {
-                        "units": "K",
-                        "value": 273.15
-                    },
-                    "reference_viscosity": {
-                        "units": "Pa*s",
-                        "value": 1.716e-05
-                    }
+                    "effective_temperature": 110.4,
+                    "reference_temperature": 273.15,
+                    "reference_viscosity": 1.716e-05
                 },
                 "name": "air",
                 "prandtl_number": 0.72,
@@ -116,14 +95,8 @@
                                             0.0,
                                             0.0
                                         ],
-                                        "temperature_range_max": {
-                                            "units": "K",
-                                            "value": 6000.0
-                                        },
-                                        "temperature_range_min": {
-                                            "units": "K",
-                                            "value": 200.0
-                                        },
+                                        "temperature_range_max": 6000.0,
+                                        "temperature_range_min": 200.0,
                                         "type_name": "NASA9CoefficientSet"
                                     }
                                 ],
@@ -208,18 +181,9 @@
                 "density": 1.225,
                 "material": {
                     "dynamic_viscosity": {
-                        "effective_temperature": {
-                            "units": "K",
-                            "value": 110.4
-                        },
-                        "reference_temperature": {
-                            "units": "K",
-                            "value": 273.15
-                        },
-                        "reference_viscosity": {
-                            "units": "Pa*s",
-                            "value": 1.716e-05
-                        }
+                        "effective_temperature": 110.4,
+                        "reference_temperature": 273.15,
+                        "reference_viscosity": 1.716e-05
                     },
                     "name": "air",
                     "prandtl_number": 0.72,
@@ -242,14 +206,8 @@
                                                 0.0,
                                                 0.0
                                             ],
-                                            "temperature_range_max": {
-                                                "units": "K",
-                                                "value": 6000.0
-                                            },
-                                            "temperature_range_min": {
-                                                "units": "K",
-                                                "value": 200.0
-                                            },
+                                            "temperature_range_max": 6000.0,
+                                            "temperature_range_min": 200.0,
                                             "type_name": "NASA9CoefficientSet"
                                         }
                                     ],
@@ -273,18 +231,9 @@
             "density": 1.225,
             "material": {
                 "dynamic_viscosity": {
-                    "effective_temperature": {
-                        "units": "K",
-                        "value": 110.4
-                    },
-                    "reference_temperature": {
-                        "units": "K",
-                        "value": 273.15
-                    },
-                    "reference_viscosity": {
-                        "units": "Pa*s",
-                        "value": 1.716e-05
-                    }
+                    "effective_temperature": 110.4,
+                    "reference_temperature": 273.15,
+                    "reference_viscosity": 1.716e-05
                 },
                 "name": "air",
                 "prandtl_number": 0.72,
@@ -307,14 +256,8 @@
                                             0.0,
                                             0.0
                                         ],
-                                        "temperature_range_max": {
-                                            "units": "K",
-                                            "value": 6000.0
-                                        },
-                                        "temperature_range_min": {
-                                            "units": "K",
-                                            "value": 200.0
-                                        },
+                                        "temperature_range_max": 6000.0,
+                                        "temperature_range_min": 200.0,
                                         "type_name": "NASA9CoefficientSet"
                                     }
                                 ],

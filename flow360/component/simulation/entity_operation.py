@@ -4,12 +4,13 @@ from typing import Literal, Optional, Tuple
 
 import numpy as np
 import pydantic as pd
+from flow360_schema.framework.physical_dimensions import Angle
 from pydantic import PositiveFloat
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_utils import generate_uuid
-from flow360.component.simulation.unit_system import AngleType, LengthType
+from flow360.component.simulation.unit_system import LengthType
 from flow360.component.types import Axis
 from flow360.exceptions import Flow360ValueError
 
@@ -36,7 +37,7 @@ def _build_transformation_matrix(
     *,
     origin: LengthType.Point,
     axis_of_rotation: Axis,
-    angle_of_rotation: AngleType,
+    angle_of_rotation: Angle.Float64,
     scale: Tuple[PositiveFloat, PositiveFloat, PositiveFloat],
     translation: LengthType.Point,
 ) -> np.ndarray:
@@ -65,7 +66,7 @@ def _resolve_transformation_matrix(  # pylint:disable=too-many-arguments
     # pylint: disable=no-member
     origin: LengthType.Point,
     axis_of_rotation: Axis,
-    angle_of_rotation: AngleType,
+    angle_of_rotation: Angle.Float64,
     scale: Tuple[PositiveFloat, PositiveFloat, PositiveFloat],
     translation: LengthType.Point,
     private_attribute_matrix: Optional[list[float]] = None,
@@ -288,7 +289,7 @@ class Transformation(Flow360BaseModel):
     )
 
     axis_of_rotation: Axis = pd.Field((1, 0, 0))
-    angle_of_rotation: AngleType = pd.Field(0 * u.deg)  # pylint:disable=no-member
+    angle_of_rotation: Angle.Float64 = pd.Field(0 * u.deg)  # pylint:disable=no-member
 
     scale: Tuple[PositiveFloat, PositiveFloat, PositiveFloat] = pd.Field((1, 1, 1))
 
@@ -355,7 +356,7 @@ class CoordinateSystem(Flow360BaseModel):
     )
 
     axis_of_rotation: Axis = pd.Field((1, 0, 0))
-    angle_of_rotation: AngleType = pd.Field(0 * u.deg)  # pylint:disable=no-member
+    angle_of_rotation: Angle.Float64 = pd.Field(0 * u.deg)  # pylint:disable=no-member
 
     scale: Tuple[PositiveFloat, PositiveFloat, PositiveFloat] = pd.Field((1, 1, 1))
 

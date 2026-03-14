@@ -1,6 +1,7 @@
 import copy
 import json
 import re
+from typing import get_args
 
 import pytest
 from unyt import Unit
@@ -11,7 +12,7 @@ from flow360.component.simulation.entity_info import GeometryEntityInfo
 from flow360.component.simulation.exposed_units import supported_units_by_front_end
 from flow360.component.simulation.framework.updater_utils import compare_values
 from flow360.component.simulation.services_report import get_default_report_config
-from flow360.component.simulation.unit_system import _PredefinedUnitSystem
+from flow360.component.simulation.unit_system import DimensionedTypes
 from flow360.component.simulation.user_code.core.types import UserVariable
 from flow360.component.simulation.validation.validation_context import (
     CASE,
@@ -106,8 +107,8 @@ def test_validate_service():
     params_data_from_geo = params_data_from_vm
     params_data_from_geo["meshing"]["defaults"] = {
         "surface_edge_growth_rate": 1.5,
-        "boundary_layer_first_layer_thickness": "1*m",
-        "surface_max_edge_length": "1*m",
+        "boundary_layer_first_layer_thickness": {"value": 1, "units": "m"},
+        "surface_max_edge_length": {"value": 1, "units": "m"},
     }
     params_data_from_geo["version"] = "24.11.0"
 
@@ -252,8 +253,8 @@ def test_validate_multiple_errors():
             "gap_treatment_strength": 0.2,
             "defaults": {
                 "surface_edge_growth_rate": 1.5,
-                "boundary_layer_first_layer_thickness": "1*m",
-                "surface_max_edge_length": "1*s",
+                "boundary_layer_first_layer_thickness": {"value": 1, "units": "m"},
+                "surface_max_edge_length": {"value": 1, "units": "s"},
             },
             "refinements": [],
             "volume_zones": [
@@ -686,7 +687,8 @@ def test_init():
     assert data["reference_geometry"]["moment_length"]["units"] == "cm"
     assert data["private_attribute_asset_cache"]["project_length_unit"]["units"] == "cm"
 
-    assert data["models"][0]["roughness_height"]["units"] == "cm"
+    # roughness_height now serializes as bare SI float (new dimension types)
+    assert data["models"][0]["roughness_height"] == 0.0
     remove_model_and_output_id_in_default_dict(data)
     # to convert tuples to lists:
     data = json.loads(json.dumps(data))
@@ -802,8 +804,8 @@ def test_front_end_JSON_with_multi_constructor():
     params_data = {
         "meshing": {
             "defaults": {
-                "boundary_layer_first_layer_thickness": "1*m",
-                "surface_max_edge_length": "1*m",
+                "boundary_layer_first_layer_thickness": {"value": 1, "units": "m"},
+                "surface_max_edge_length": {"value": 1, "units": "m"},
             },
             "refinement_factor": 1.45,
             "refinements": [
@@ -1027,7 +1029,7 @@ def test_generate_process_json():
         },
     }
 
-    params_data["meshing"]["defaults"]["surface_max_edge_length"] = "1*m"
+    params_data["meshing"]["defaults"]["surface_max_edge_length"] = {"value": 1, "units": "m"}
     res1, res2, res3 = services.generate_process_json(
         simulation_json=json.dumps(params_data), root_item_type="Geometry", up_to="SurfaceMesh"
     )
@@ -1036,7 +1038,10 @@ def test_generate_process_json():
     assert res2 is None
     assert res3 is None
 
-    params_data["meshing"]["defaults"]["boundary_layer_first_layer_thickness"] = "1*m"
+    params_data["meshing"]["defaults"]["boundary_layer_first_layer_thickness"] = {
+        "value": 1,
+        "units": "m",
+    }
     res1, res2, res3 = services.generate_process_json(
         simulation_json=json.dumps(params_data), root_item_type="Geometry", up_to="VolumeMesh"
     )
@@ -1328,14 +1333,13 @@ def test_unit_conversion_front_end_compatibility():
                 raise ValueError(f"Unit {unit} is not valid for dimension {dimension}")
 
     ##### 2.  Ensure that all units supported have set their front-end approved units
-    for field_name, field_info in _PredefinedUnitSystem.model_fields.items():
-        if field_name == "name":
-            continue
-        unit_system_dimension_string = str(field_info.annotation.dim)
-        # for unit_name in unit:
+    for dim_type in get_args(DimensionedTypes):
+        inner_type = get_args(dim_type)[0]  # unwrap Annotated
+        unit_system_dimension_string = str(inner_type.dim)
+        dim_name = inner_type.dim_name
         if unit_system_dimension_string not in supported_units_by_front_end.keys():
             raise ValueError(
-                f"Unit {unit_system_dimension_string} (A.K.A {field_name}) is not supported by the front-end.",
+                f"Unit {unit_system_dimension_string} (A.K.A {dim_name}) is not supported by the front-end.",
                 "Please ensure front end team is aware of this new unit and add its support.",
             )
 

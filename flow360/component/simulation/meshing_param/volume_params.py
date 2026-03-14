@@ -7,6 +7,7 @@ Meshing settings that applies to volumes.
 from typing import Literal, Optional, Union
 
 import pydantic as pd
+from flow360_schema.framework.physical_dimensions import Length
 from typing_extensions import deprecated
 
 import flow360.component.simulation.units as u
@@ -74,7 +75,7 @@ class UniformRefinement(Flow360BaseModel):
         + "and :class:`~flow360.Sphere` regions."
     )
     # pylint: disable=no-member
-    spacing: LengthType.Positive = pd.Field(description="The required refinement spacing.")
+    spacing: Length.PositiveFloat64 = pd.Field(description="The required refinement spacing.")
     project_to_surface: Optional[bool] = pd.Field(
         None,
         description="Whether to include the refinement in the surface mesh. Defaults to True when using snappy.",
@@ -145,13 +146,13 @@ class StructuredBoxRefinement(Flow360BaseModel):
     )
     entities: EntityList[Box] = pd.Field()
 
-    spacing_axis1: LengthType.Positive = pd.Field(
+    spacing_axis1: Length.PositiveFloat64 = pd.Field(
         description="Spacing along the first axial direction."
     )
-    spacing_axis2: LengthType.Positive = pd.Field(
+    spacing_axis2: Length.PositiveFloat64 = pd.Field(
         description="Spacing along the second axial direction."
     )
-    spacing_normal: LengthType.Positive = pd.Field(
+    spacing_normal: Length.PositiveFloat64 = pd.Field(
         description="Spacing along the normal axial direction."
     )
 
@@ -194,11 +195,13 @@ class AxisymmetricRefinement(Flow360BaseModel):
     )
     entities: EntityList[Cylinder] = pd.Field()
     # pylint: disable=no-member
-    spacing_axial: LengthType.Positive = pd.Field(description="Spacing along the axial direction.")
-    spacing_radial: LengthType.Positive = pd.Field(
+    spacing_axial: Length.PositiveFloat64 = pd.Field(
+        description="Spacing along the axial direction."
+    )
+    spacing_radial: Length.PositiveFloat64 = pd.Field(
         description="Spacing along the radial direction."
     )
-    spacing_circumferential: LengthType.Positive = pd.Field(
+    spacing_circumferential: Length.PositiveFloat64 = pd.Field(
         description="Spacing along the circumferential direction."
     )
 
@@ -418,11 +421,13 @@ class RotationVolume(_RotationVolumeBase):
     name: Optional[str] = pd.Field("Rotation Volume", description="Name to display in the GUI.")
     entities: EntityList[Cylinder, AxisymmetricBody] = pd.Field()
     # pylint: disable=no-member
-    spacing_axial: LengthType.Positive = pd.Field(description="Spacing along the axial direction.")
-    spacing_radial: LengthType.Positive = pd.Field(
+    spacing_axial: Length.PositiveFloat64 = pd.Field(
+        description="Spacing along the axial direction."
+    )
+    spacing_radial: Length.PositiveFloat64 = pd.Field(
         description="Spacing along the radial direction."
     )
-    spacing_circumferential: LengthType.Positive = pd.Field(
+    spacing_circumferential: Length.PositiveFloat64 = pd.Field(
         description="Spacing along the circumferential direction."
     )
 
@@ -466,7 +471,7 @@ class RotationSphere(_RotationVolumeBase):
     name: Optional[str] = pd.Field("Rotation Sphere", description="Name to display in the GUI.")
     entities: EntityList[Sphere] = pd.Field()
     # pylint: disable=no-member
-    spacing_circumferential: LengthType.Positive = pd.Field(
+    spacing_circumferential: Length.PositiveFloat64 = pd.Field(
         description="Uniform spacing on the spherical interface."
     )
 
@@ -795,7 +800,7 @@ class StaticFloor(Flow360BaseModel):
     friction_patch_x_range: LengthType.Range = pd.Field(
         default=(-3, 6) * u.m, description="(Minimum, maximum) x of friction patch."
     )
-    friction_patch_width: LengthType.Positive = pd.Field(
+    friction_patch_width: Length.PositiveFloat64 = pd.Field(
         default=2 * u.m, description="Width of friction patch."
     )
 
@@ -818,7 +823,7 @@ class CentralBelt(Flow360BaseModel):
     central_belt_x_range: LengthType.Range = pd.Field(
         default=(-2, 2) * u.m, description="(Minimum, maximum) x of central belt."
     )
-    central_belt_width: LengthType.Positive = pd.Field(
+    central_belt_width: Length.PositiveFloat64 = pd.Field(
         default=1.2 * u.m, description="Width of central belt."
     )
 
@@ -907,17 +912,21 @@ class WindTunnelFarfield(_FarfieldBase):
     name: str = pd.Field("Wind Tunnel Farfield", description="Name of the wind tunnel farfield.")
 
     # Tunnel parameters
-    width: LengthType.Positive = pd.Field(default=10 * u.m, description="Width of the wind tunnel.")
-    height: LengthType.Positive = pd.Field(
+    width: Length.PositiveFloat64 = pd.Field(
+        default=10 * u.m, description="Width of the wind tunnel."
+    )
+    height: Length.PositiveFloat64 = pd.Field(
         default=6 * u.m, description="Height of the wind tunnel."
     )
-    inlet_x_position: LengthType = pd.Field(
+    inlet_x_position: Length.Float64 = pd.Field(
         default=-20 * u.m, description="X-position of the inlet."
     )
-    outlet_x_position: LengthType = pd.Field(
+    outlet_x_position: Length.Float64 = pd.Field(
         default=40 * u.m, description="X-position of the outlet."
     )
-    floor_z_position: LengthType = pd.Field(default=0 * u.m, description="Z-position of the floor.")
+    floor_z_position: Length.Float64 = pd.Field(
+        default=0 * u.m, description="Z-position of the floor."
+    )
 
     floor_type: Union[
         StaticFloor,
@@ -1160,7 +1169,7 @@ class MeshSliceOutput(Flow360BaseModel):
         default=False,
         description="Generate crinkled slices in addition to flat slices.",
     )
-    cutoff_radius: Optional[LengthType.Positive] = pd.Field(
+    cutoff_radius: Optional[Length.PositiveFloat64] = pd.Field(
         default=None,
         description="Cutoff radius of the slice output. If not specified, "
         "the slice extends to the boundaries of the volume mesh.",

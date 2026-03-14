@@ -934,21 +934,21 @@ def test_user_defined_farfield_ghost_symmetry_passes_without_explicit_domain_typ
                 },
             ),
         )
-        params_as_dict = params.model_dump(mode="json", exclude_none=True)
-        info = ParamsValidationInfo(param_as_dict=params_as_dict, referenced_expressions=[])
-        with ValidationContext(levels=VOLUME_MESH, info=info):
-            PassiveSpacing(entities=[GhostCircularPlane(name="symmetric")], type="projected")
+    params_as_dict = params.model_dump(mode="json", exclude_none=True)
+    info = ParamsValidationInfo(param_as_dict=params_as_dict, referenced_expressions=[])
+    with ValidationContext(levels=VOLUME_MESH, info=info):
+        PassiveSpacing(entities=[GhostCircularPlane(name="symmetric")], type="projected")
 
-        _replace_ghost_surfaces(params)  # ensure that replacing ghost surfaces is successful
-        params_as_dict = params.model_dump(mode="json", exclude_none=True)
+    _replace_ghost_surfaces(params)  # ensure that replacing ghost surfaces is successful
+    params_as_dict = params.model_dump(mode="json", exclude_none=True)
 
-        _, errors, _ = validate_model(
-            params_as_dict=params_as_dict,
-            validated_by=ValidationCalledBy.LOCAL,
-            root_item_type="Geometry",
-            validation_level=VOLUME_MESH,
-        )
-        assert errors is None
+    _, errors, _ = validate_model(
+        params_as_dict=params_as_dict,
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="Geometry",
+        validation_level=VOLUME_MESH,
+    )
+    assert errors is None
 
 
 def test_user_defined_farfield_ghost_symmetry_fails_without_explicit_domain_type_bad_bbox():

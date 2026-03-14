@@ -25,7 +25,6 @@ from flow360.component.results.results_utils import (
     DiskCoefficientsComputation,
     PorousMediumCoefficientsComputation,
 )
-from flow360.component.simulation.conversion import unit_converter as unit_converter_v2
 from flow360.component.simulation.outputs.output_fields import (
     _CD_PER_STRIP,
     _CUMULATIVE_CD_CURVE,
@@ -48,14 +47,7 @@ from flow360.component.simulation.outputs.output_fields import (
     _CMz_PER_SPAN,
 )
 from flow360.component.simulation.simulation_params import SimulationParams
-from flow360.component.simulation.unit_system import (
-    Flow360UnitSystem,
-    ForceType,
-    MomentType,
-    PowerType,
-    is_flow360_unit,
-)
-from flow360.component.v1.conversions import unit_converter as unit_converter_v1
+from flow360.component.simulation.unit_system import ForceType, MomentType, PowerType
 from flow360.component.v1.flow360_params import Flow360Params
 from flow360.exceptions import Flow360NotImplementedError, Flow360ValueError
 from flow360.log import log
@@ -499,31 +491,35 @@ class _DimensionedCSVResultModel(pd.BaseModel):
 
     _name: str
 
-    def _in_base_component(self, base, component, component_name, params):
-        log.debug(f"   -> need conversion for: {component_name} = {component}")
+    @staticmethod
+    def _build_flow360_unit_system(params):
+        """Build a schema UnitSystem from V1 or V2 params for unit inference context."""
+        # pylint: disable=import-outside-toplevel
+        from flow360_schema.framework.unit_system import create_flow360_unit_system
 
         if isinstance(params, SimulationParams):
-            flow360_conv_system = unit_converter_v2(
-                component.units.dimensions,
-                params=params,
-                required_by=[self._name, component_name],
+            return create_flow360_unit_system(
+                length=params.base_length,
+                velocity=params.base_velocity,
+                density=params.base_density,
+                temperature=params.base_temperature,
             )
-        elif isinstance(params, Flow360Params):
-            flow360_conv_system = unit_converter_v1(
-                component.units.dimensions,
-                params=params,
-                required_by=[self._name, component_name],
+        if isinstance(params, Flow360Params):
+            fp = params.fluid_properties.to_fluid_properties()
+            return create_flow360_unit_system(
+                length=params.geometry.mesh_unit.to("m"),
+                velocity=params.fluid_properties.speed_of_sound().to("m/s"),
+                density=fp.density.to("kg/m**3"),
+                temperature=fp.temperature.to("K"),
             )
-        else:
-            raise Flow360ValueError(
-                f"Unknown type of params: {type(params)=}, expected one of (Flow360Params, SimulationParams)"
-            )
+        raise Flow360ValueError(
+            f"Unknown type of params: {type(params)=}, "
+            "expected one of (Flow360Params, SimulationParams)"
+        )
 
-        if is_flow360_unit(component):
-            converted = component.in_base(base, flow360_conv_system)
-        else:
-            component.units.registry = flow360_conv_system.registry  # pylint:disable=no-member
-            converted = component.in_base(unit_system=base)
+    def _in_base_component(self, base, component, component_name):
+        log.debug(f"   -> need conversion for: {component_name} = {component}")
+        converted = component.in_base(unit_system=base)
         log.debug(f"      converted to: {converted}")
         return converted
 
@@ -554,7 +550,7 @@ class _ActuatorDiskResults(_DimensionedCSVResultModel):
     moment: MomentType.Array = pd.Field()
     _name = "actuator_disks"
 
-    def to_base(self, base: str, params: Flow360Params):
+    def to_base(self, base: str):
         """
         Convert the results to the specified base system.
 
@@ -562,13 +558,11 @@ class _ActuatorDiskResults(_DimensionedCSVResultModel):
         ----------
         base : str
             The base system to convert the results to, for example SI.
-        params : Flow360Params
-            Case parameters for the conversion.
         """
 
-        self.power = self._in_base_component(base, self.power, "power", params)
-        self.force = self._in_base_component(base, self.force, "force", params)
-        self.moment = self._in_base_component(base, self.moment, "moment", params)
+        self.power = self._in_base_component(base, self.power, "power")
+        self.force = self._in_base_component(base, self.force, "force")
+        self.moment = self._in_base_component(base, self.moment, "moment")
 
 
 class OptionallyDownloadableResultCSVModel(ResultCSVModel):
@@ -636,7 +630,7 @@ class ActuatorDiskResultCSVModel(OptionallyDownloadableResultCSVModel):
     remote_file_name: str = pd.Field(CaseDownloadable.ACTUATOR_DISKS.value, frozen=True)
     _err_msg = "Case does not have any actuator disks."
 
-    def to_base(self, base: str, params: Flow360Params = None):
+    def to_base(self, base: str, params: Flow360Params | SimulationParams | None = None):
         """
         Convert the results to the specified base system.
 
@@ -644,7 +638,7 @@ class ActuatorDiskResultCSVModel(OptionallyDownloadableResultCSVModel):
         ----------
         base : str
             The base system to convert the results to. For example SI.
-        params : Flow360Params, optional
+        params : Flow360Params | SimulationParams, optional
             Case parameters for the conversion.
         """
 
@@ -653,14 +647,16 @@ class ActuatorDiskResultCSVModel(OptionallyDownloadableResultCSVModel):
         disk_names = np.unique(
             [v.split("_")[0] for v in self.values.keys() if v.startswith("Disk")]
         )
-        with Flow360UnitSystem(verbose=False):
+        with _ActuatorDiskResults._build_flow360_unit_system(  # pylint:disable=protected-access
+            params
+        ):
             for disk_name in disk_names:
                 disk = _ActuatorDiskResults(
                     power=self.values[f"{disk_name}_Power"],
                     force=self.values[f"{disk_name}_Force"],
                     moment=self.values[f"{disk_name}_Moment"],
                 )
-                disk.to_base(base, params)
+                disk.to_base(base)
                 self.values[f"{disk_name}_Power"] = disk.power
                 self.values[f"{disk_name}_Force"] = disk.force
                 self.values[f"{disk_name}_Moment"] = disk.moment
@@ -763,7 +759,7 @@ class _BETDiskResults(_DimensionedCSVResultModel):
 
     _name = "bet_forces"
 
-    def to_base(self, base: str, params: Flow360Params):
+    def to_base(self, base: str):
         """
         Convert the results to the specified base system.
 
@@ -771,16 +767,14 @@ class _BETDiskResults(_DimensionedCSVResultModel):
         ----------
         base : str
             The base system to convert the results to, for example SI.
-        params : Flow360Params
-            Case parameters for the conversion.
         """
 
-        self.force_x = self._in_base_component(base, self.force_x, "force_x", params)
-        self.force_y = self._in_base_component(base, self.force_y, "force_y", params)
-        self.force_z = self._in_base_component(base, self.force_z, "force_z", params)
-        self.moment_x = self._in_base_component(base, self.moment_x, "moment_x", params)
-        self.moment_y = self._in_base_component(base, self.moment_y, "moment_y", params)
-        self.moment_z = self._in_base_component(base, self.moment_z, "moment_z", params)
+        self.force_x = self._in_base_component(base, self.force_x, "force_x")
+        self.force_y = self._in_base_component(base, self.force_y, "force_y")
+        self.force_z = self._in_base_component(base, self.force_z, "force_z")
+        self.moment_x = self._in_base_component(base, self.moment_x, "moment_x")
+        self.moment_y = self._in_base_component(base, self.moment_y, "moment_y")
+        self.moment_z = self._in_base_component(base, self.moment_z, "moment_z")
 
 
 class BETForcesResultCSVModel(OptionallyDownloadableResultCSVModel):
@@ -798,7 +792,7 @@ class BETForcesResultCSVModel(OptionallyDownloadableResultCSVModel):
     remote_file_name: str = pd.Field(CaseDownloadable.BET_FORCES.value, frozen=True)
     _err_msg = "Case does not have any BET disks."
 
-    def to_base(self, base: str, params: Flow360Params = None):
+    def to_base(self, base: str, params: Flow360Params | SimulationParams | None = None):
         """
         Convert the results to the specified base system.
 
@@ -815,7 +809,7 @@ class BETForcesResultCSVModel(OptionallyDownloadableResultCSVModel):
         disk_names = np.unique(
             [v.split("_")[0] for v in self.values.keys() if v.startswith("Disk")]
         )
-        with Flow360UnitSystem(verbose=False):
+        with _BETDiskResults._build_flow360_unit_system(params):  # pylint:disable=protected-access
             for disk_name in disk_names:
                 bet = _BETDiskResults(
                     force_x=self.values[f"{disk_name}_Force_x"],
@@ -825,7 +819,7 @@ class BETForcesResultCSVModel(OptionallyDownloadableResultCSVModel):
                     moment_y=self.values[f"{disk_name}_Moment_y"],
                     moment_z=self.values[f"{disk_name}_Moment_z"],
                 )
-                bet.to_base(base, params)
+                bet.to_base(base)
 
                 self.values[f"{disk_name}_Force_x"] = bet.force_x
                 self.values[f"{disk_name}_Force_y"] = bet.force_y

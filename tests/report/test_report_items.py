@@ -569,7 +569,8 @@ def test_dimensioned_limits(cases):
     assert chart.limits == (0 * u.m / u.s, 100 * u.m / u.s)
 
     converted_limits = chart._get_limits(case)
-    assert converted_limits == (0, 0.2938635365101296)
+    assert converted_limits[0] == 0
+    assert np.isclose(converted_limits[1], 0.2938635365101296, rtol=1e-12, atol=0)
 
     chart = Chart3D(
         field="velocity_m_per_s",

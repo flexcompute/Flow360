@@ -1666,6 +1666,6 @@ def compute_surface_integral_unit(variable: UserVariable, params) -> str:
         # Fallback if output_units is not set for expression or if it is a number
         base_unit = u.Unit("dimensionless")
 
-    area_unit = params.unit_system["area"].units
+    area_unit = params.unit_system.resolve()["area"].units
     result_unit = base_unit * area_unit
     return str(result_unit)
