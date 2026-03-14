@@ -18,6 +18,7 @@ from typing import (
 )
 
 import pydantic as pd
+from flow360_schema.framework.validation.context import DeserializationContext
 from pydantic_core import ErrorDetails
 
 # Required for correct global scope initialization
@@ -482,7 +483,10 @@ def validate_model(  # pylint: disable=too-many-locals
             {"private_attribute_asset_cache": {"project_length_unit": project_length_unit_dict}},
             [],
         )
-        with ValidationContext(levels=validation_levels_to_use, info=parse_model_info):
+        with (
+            ValidationContext(levels=validation_levels_to_use, info=parse_model_info),
+            DeserializationContext(),
+        ):
             # Multi-constructor model support
             updated_param_as_dict = parse_model_dict(params_as_dict, globals())
         return updated_param_as_dict
@@ -585,20 +589,16 @@ def validate_model(  # pylint: disable=too-many-locals
             info=validation_info,
         ) as context:
             validation_context = context
-            unit_system = updated_param_as_dict.get("unit_system")
-            with UnitSystem.from_dict(  # pylint: disable=not-context-manager
-                verbose=False, **unit_system
-            ):
-                # Reuse pre-deserialized entity_info to avoid double deserialization
-                pre_deserialized_entity_info = validation_info.get_entity_info()
-                if pre_deserialized_entity_info is not None:
-                    # Create shallow copy with entity_info substituted
-                    updated_param_as_dict = {**updated_param_as_dict}
-                    updated_param_as_dict["private_attribute_asset_cache"] = {
-                        **updated_param_as_dict["private_attribute_asset_cache"],
-                        "project_entity_info": pre_deserialized_entity_info,
-                    }
-
+            # Reuse pre-deserialized entity_info to avoid double deserialization
+            pre_deserialized_entity_info = validation_info.get_entity_info()
+            if pre_deserialized_entity_info is not None:
+                # Create shallow copy with entity_info substituted
+                updated_param_as_dict = {**updated_param_as_dict}
+                updated_param_as_dict["private_attribute_asset_cache"] = {
+                    **updated_param_as_dict["private_attribute_asset_cache"],
+                    "project_entity_info": pre_deserialized_entity_info,
+                }
+            with DeserializationContext():
                 validated_param = SimulationParams.model_validate(updated_param_as_dict)
 
     except pd.ValidationError as err:

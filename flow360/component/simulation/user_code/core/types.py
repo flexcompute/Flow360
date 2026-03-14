@@ -22,6 +22,7 @@ from typing import (
 import numpy as np
 import pydantic as pd
 import unyt as u
+from flow360_schema import StrictUnitContext
 from pydantic import BeforeValidator, Discriminator, PlainSerializer, Tag
 from pydantic_core import InitErrorDetails, core_schema
 from typing_extensions import Self
@@ -1253,12 +1254,11 @@ class ValueOrExpression(Expression, Generic[T]):
                         "Run-time expression is not allowed in this field. "
                         "Please ensure this field does not depend on any control or solver variables."
                     )
-            # Temporary suspend unit system to expose dimension problem
-            unit_system_manager.suspend()
-            pd.TypeAdapter(typevar_values).validate_python(
-                result, context={"allow_inf_nan": allow_run_time_expression}
-            )
-            unit_system_manager.resume()
+            # Suspend unit system for legacy types; strict mode rejects bare numbers for new composed types
+            with unit_system_manager.suspended(), StrictUnitContext():
+                pd.TypeAdapter(typevar_values).validate_python(
+                    result, context={"allow_inf_nan": allow_run_time_expression}
+                )
             return value
 
         expr_type = Annotated[Expression, pd.AfterValidator(_internal_validator)]

@@ -50,53 +50,9 @@ u.unit_systems.imperial_unit_system["delta_temperature"] = u.Unit("delta_degF").
 u.unit_systems.mks_unit_system["delta_temperature"] = u.Unit("K").expr
 u.unit_systems.cgs_unit_system["delta_temperature"] = u.Unit("K").expr
 
-
-class UnitSystemManager:
-    """
-    :class: Class to manage global unit system context and switch currently used unit systems
-    """
-
-    __slots__ = ("_current", "_suspended")
-
-    def __init__(self):
-        """
-        Initialize the UnitSystemManager.
-        """
-        self._current = None
-        self._suspended = None
-
-    @property
-    def current(self) -> UnitSystem:
-        """
-        Get the current UnitSystem.
-        :return: UnitSystem
-        """
-
-        return self._current
-
-    def set_current(self, unit_system: UnitSystem):
-        """
-        Set the current UnitSystem.
-        :param unit_system:
-        :return:
-        """
-        self._current = unit_system
-
-    def suspend(self):
-        """
-        Suspend the current UnitSystem.
-        """
-        self._suspended = self._current
-        self._current = None
-
-    def resume(self):
-        """
-        Resume the current UnitSystem.
-        """
-        self._current = self._suspended
-
-
-unit_system_manager = UnitSystemManager()
+# Register with flow360-schema so new schema types respect unit system context
+# pylint: disable=wrong-import-position,wrong-import-order
+from flow360_schema.framework.validation.context import unit_system_manager
 
 
 def _encode_ndarray(x):
@@ -1624,6 +1580,7 @@ class UnitSystem(pd.BaseModel):
     name: Literal["Custom"] = pd.Field("Custom")
 
     _verbose: bool = pd.PrivateAttr(True)
+    _context_token: Any = pd.PrivateAttr(None)
 
     @staticmethod
     def __get_unit(system, dim_name, unit):
@@ -1738,15 +1695,42 @@ class UnitSystem(pd.BaseModel):
 
         return str_repr
 
+    def _assert_no_active_unit_system(self):
+        active_unit_system = unit_system_manager.current
+        if active_unit_system is None:
+            return
+        active_name = (
+            active_unit_system.system_repr()
+            if hasattr(active_unit_system, "system_repr")
+            else str(active_unit_system)
+        )
+        raise RuntimeError(
+            "Nested unit system context is not allowed. "
+            f"Active unit system: {active_name}. "
+            f"Attempted: {self.system_repr()}. "
+            "Please remove the inner unit system context."
+        )
+
     def __enter__(self):
         _lock.acquire()
-        if self._verbose:
-            log.info(f"using: {self.system_repr()} unit system for unit inference.")
-        unit_system_manager.set_current(self)
+        try:
+            self._assert_no_active_unit_system()
+            if self._verbose:
+                log.info(f"using: {self.system_repr()} unit system for unit inference.")
+            self._context_token = unit_system_manager.set_current(self)
+            return self
+        except Exception:
+            _lock.release()
+            raise
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        _lock.release()
-        unit_system_manager.set_current(None)
+        try:
+            if self._context_token is None:
+                raise RuntimeError("Unit system context exit called without a matching enter.")
+            unit_system_manager.reset_current(self._context_token)
+            self._context_token = None
+        finally:
+            _lock.release()
 
 
 _SI_system = u.unit_systems.mks_unit_system

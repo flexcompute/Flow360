@@ -128,29 +128,14 @@
         }
     ],
     "operating_condition": {
-        "alpha": {
-            "units": "degree",
-            "value": 0.0
-        },
-        "beta": {
-            "units": "degree",
-            "value": 0.0
-        },
+        "alpha": 0.0,
+        "beta": 0.0,
         "private_attribute_constructor": "default",
         "private_attribute_input_cache": {
-            "alpha": {
-                "units": "degree",
-                "value": 0.0
-            },
-            "beta": {
-                "units": "degree",
-                "value": 0.0
-            },
+            "alpha": 0.0,
+            "beta": 0.0,
             "thermal_state": {
-                "density": {
-                    "units": "kg/m**3",
-                    "value": 1.225
-                },
+                "density": 1.225,
                 "material": {
                     "dynamic_viscosity": {
                         "effective_temperature": {
@@ -210,22 +195,13 @@
                 },
                 "private_attribute_constructor": "default",
                 "private_attribute_input_cache": {},
-                "temperature": {
-                    "units": "K",
-                    "value": 288.15
-                },
+                "temperature": 288.15,
                 "type_name": "ThermalState"
             }
         },
-        "reference_velocity_magnitude": {
-            "units": "m/s",
-            "value": 10.0
-        },
+        "reference_velocity_magnitude": 10.0,
         "thermal_state": {
-            "density": {
-                "units": "kg/m**3",
-                "value": 1.225
-            },
+            "density": 1.225,
             "material": {
                 "dynamic_viscosity": {
                     "effective_temperature": {
@@ -285,10 +261,7 @@
             },
             "private_attribute_constructor": "default",
             "private_attribute_input_cache": {},
-            "temperature": {
-                "units": "K",
-                "value": 288.15
-            },
+            "temperature": 288.15,
             "type_name": "ThermalState"
         },
         "type_name": "AerospaceCondition",

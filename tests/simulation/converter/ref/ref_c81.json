@@ -753,27 +753,15 @@
                     0.0,
                     1.0
                 ],
-                "center": {
-                    "units": "ft",
-                    "value": [
-                        0.0,
-                        0.0,
-                        0.0
-                    ]
-                },
-                "height": {
-                    "units": "ft",
-                    "value": 15.0
-                },
-                "inner_radius": {
-                    "units": "m",
-                    "value": 0.0
-                },
+                "center": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "height": 4.572,
+                "inner_radius": 0.0,
                 "name": "BET_cylinder",
-                "outer_radius": {
-                    "units": "ft",
-                    "value": 150.0
-                },
+                "outer_radius": 45.72,
                 "private_attribute_entity_type_name": "Cylinder",
                 "private_attribute_full_name": null,
                 "private_attribute_zone_boundary_names": {

@@ -1,4 +1,7 @@
+import os
+import tempfile
 from abc import ABCMeta
+from numbers import Number
 
 import numpy as np
 import pytest
@@ -7,6 +10,39 @@ import unyt
 from flow360.component.simulation import unit_system
 from flow360.component.simulation.framework.entity_base import EntityBase
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
+
+
+def _approx_equal(a, b, rel_tol=1e-12):
+    """Recursively compare nested structures with float tolerance."""
+    if isinstance(a, dict) and isinstance(b, dict):
+        if a.keys() != b.keys():
+            return False
+        return all(_approx_equal(a[k], b[k], rel_tol) for k in a)
+    if isinstance(a, (list, tuple)) and isinstance(b, (list, tuple)):
+        if len(a) != len(b):
+            return False
+        return all(_approx_equal(ai, bi, rel_tol) for ai, bi in zip(a, b))
+    if isinstance(a, bool) or isinstance(b, bool):
+        return isinstance(a, bool) and isinstance(b, bool) and a == b
+    if isinstance(a, Number) and isinstance(b, Number):
+        if a == b:
+            return True
+        return abs(a - b) <= rel_tol * max(abs(a), abs(b))
+    return a == b
+
+
+def to_file_from_file_test_approx(obj):
+    """v2 serialization round-trip test with float tolerance."""
+    test_extentions = ["yaml", "json"]
+    factory = obj.__class__
+    with tempfile.TemporaryDirectory() as tmpdir:
+        for ext in test_extentions:
+            obj_filename = os.path.join(tmpdir, f"obj.{ext}")
+            obj.to_file(obj_filename)
+            obj_read = factory.from_file(obj_filename)
+            assert _approx_equal(obj.model_dump(), obj_read.model_dump())
+            obj_read = factory(filename=obj_filename)
+            assert _approx_equal(obj.model_dump(), obj_read.model_dump())
 
 
 class AssetBase(metaclass=ABCMeta):

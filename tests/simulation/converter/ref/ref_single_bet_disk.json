@@ -424,27 +424,15 @@
                     0.0,
                     1.0
                 ],
-                "center": {
-                    "units": "cm",
-                    "value": [
-                        0.0,
-                        0.0,
-                        0.0
-                    ]
-                },
-                "height": {
-                    "units": "cm",
-                    "value": 15.0
-                },
-                "inner_radius": {
-                    "units": "cm",
-                    "value": 0.0
-                },
+                "center": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "height": 0.15,
+                "inner_radius": 0.0,
                 "name": "bet_cylinder_MyBETDisk",
-                "outer_radius": {
-                    "units": "cm",
-                    "value": 150.0
-                },
+                "outer_radius": 1.5,
                 "private_attribute_entity_type_name": "Cylinder",
                 "private_attribute_full_name": null,
                 "private_attribute_zone_boundary_names": {
@@ -481,27 +469,15 @@
                         0.0,
                         1.0
                     ],
-                    "center": {
-                        "units": "cm",
-                        "value": [
-                            0.0,
-                            0.0,
-                            0.0
-                        ]
-                    },
-                    "height": {
-                        "units": "cm",
-                        "value": 15.0
-                    },
-                    "inner_radius": {
-                        "units": "cm",
-                        "value": 0.0
-                    },
+                    "center": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "height": 0.15,
+                    "inner_radius": 0.0,
                     "name": "bet_cylinder_MyBETDisk",
-                    "outer_radius": {
-                        "units": "cm",
-                        "value": 150.0
-                    },
+                    "outer_radius": 1.5,
                     "private_attribute_entity_type_name": "Cylinder",
                     "private_attribute_full_name": null,
                     "private_attribute_zone_boundary_names": {

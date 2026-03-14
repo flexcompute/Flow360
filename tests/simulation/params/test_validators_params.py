@@ -4,6 +4,7 @@ import unittest
 
 import pydantic as pd
 import pytest
+from flow360_schema.framework.validation.context import DeserializationContext
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.draft_context.coordinate_system_manager import (
@@ -53,6 +54,7 @@ from flow360.component.simulation.models.solver_numerics import (
     DetachedEddySimulation,
     KOmegaSST,
     KOmegaSSTModelConstants,
+    LinearSolver,
     SpalartAllmaras,
     SpalartAllmarasModelConstants,
     TransitionModelSolver,
@@ -646,6 +648,20 @@ def test_transition_model_solver_settings_validator():
         )
         assert params.models[0].transition_model_solver.N_crit == 2.3598473252999543
         assert params.models[0].transition_model_solver.turbulence_intensity_percent is None
+
+
+def test_linear_solver_tolerance_conflict():
+    with pytest.raises(pd.ValidationError, match="absolute_tolerance and relative_tolerance"):
+        LinearSolver(absolute_tolerance=1e-10, relative_tolerance=1e-6)
+
+    # Only one is fine
+    ls = LinearSolver(absolute_tolerance=1e-10)
+    assert ls.absolute_tolerance == 1e-10
+    assert ls.relative_tolerance is None
+
+    ls = LinearSolver(relative_tolerance=1e-6)
+    assert ls.relative_tolerance == 1e-6
+    assert ls.absolute_tolerance is None
 
 
 def test_BC_geometry():
@@ -1804,12 +1820,14 @@ def test_wall_deserialization():
     # Wall->velocity accept discriminated AND non-discriminated unions.
     # Need to check if all works when deserializing.
     dummy_boundary = Surface(name="chameleon")
-    simple_wall = Wall(**Wall(entities=dummy_boundary).model_dump(mode="json"))
+    with DeserializationContext():
+        simple_wall = Wall(**Wall(entities=dummy_boundary).model_dump(mode="json"))
     assert simple_wall.velocity is None
 
-    const_vel_wall = Wall(
-        **Wall(entities=dummy_boundary, velocity=[1, 2, 3] * u.m / u.s).model_dump(mode="json")
-    )
+    with DeserializationContext():
+        const_vel_wall = Wall(
+            **Wall(entities=dummy_boundary, velocity=[1, 2, 3] * u.m / u.s).model_dump(mode="json")
+        )
     assert all(const_vel_wall.velocity == [1, 2, 3] * u.m / u.s)
 
     slater_bleed_wall = Wall(

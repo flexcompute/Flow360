@@ -3,6 +3,7 @@ from copy import deepcopy
 
 import pydantic as pd
 import pytest
+from flow360_schema.framework.validation.context import DeserializationContext
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
@@ -17,7 +18,6 @@ from flow360.component.simulation.operating_condition.operating_condition import
 )
 from flow360.component.simulation.primitives import Box, Cylinder
 from flow360.component.simulation.unit_system import SI_unit_system
-from flow360.component.simulation.utils import model_attribute_unlock
 from tests.simulation.converter.test_bet_translator import generate_BET_param
 
 
@@ -62,8 +62,9 @@ def get_aerospace_condition_using_from_mach_reynolds():
 
 
 def compare_objects_from_dict(dict1: dict, dict2: dict, object_class: type[Flow360BaseModel]):
-    obj1 = object_class.model_validate(dict1)
-    obj2 = object_class.model_validate(dict2)
+    with DeserializationContext():
+        obj1 = object_class.model_validate(dict1)
+        obj2 = object_class.model_validate(dict2)
     assert obj1.model_dump_json() == obj2.model_dump_json()
 
 
