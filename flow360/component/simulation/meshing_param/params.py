@@ -484,12 +484,12 @@ class MeshingParams(Flow360BaseModel):
             return self
         if self.volume_zones is None:
             return self
-        count = sum(
-            isinstance(
-                zone, (AutomatedFarfield, WindTunnelFarfield, UserDefinedFarfield, CustomZones)
-            )
-            for zone in self.volume_zones  # pylint: disable=not-an-iterable
-        )
+        count = 0
+        for zone in self.volume_zones:  # pylint: disable=not-an-iterable
+            if isinstance(zone, (AutomatedFarfield, WindTunnelFarfield, UserDefinedFarfield)):
+                count += 1
+            elif isinstance(zone, CustomZones):
+                count += len(zone.entities.stored_entities)
         if count > 1:
             add_validation_warning(
                 "Multiple farfield/custom volume zones detected. Removal of hidden geometry "
