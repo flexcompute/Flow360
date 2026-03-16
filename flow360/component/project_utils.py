@@ -162,7 +162,7 @@ def deep_copy_entity_info(entity_info: Flow360BaseModel) -> Flow360BaseModel:
     """
 
     entity_info_dict = entity_info.model_dump(mode="json")
-    return type(entity_info).model_validate(entity_info_dict)
+    return type(entity_info).deserialize(entity_info_dict)
 
 
 def apply_and_inform_grouping_selections(

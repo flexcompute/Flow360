@@ -692,8 +692,10 @@ def test_box_validation():
         Box.from_principal_axes(
             name="box6", center=(0, 0, 0) * u.m, size=(1, 1, 1) * u.m, axes=((1, 0, 0), (1, 0, 0))
         )
-
-    with pytest.raises(ValueError, match=re.escape("'[  1   1 -10] m' cannot have negative value")):
+    with pytest.raises(
+        ValueError,
+        match=re.escape("All vector components must be positive (>0), got -10.0"),
+    ):
         Box(
             name="box6",
             center=(0, 0, 0) * u.m,

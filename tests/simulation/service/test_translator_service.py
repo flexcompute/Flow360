@@ -509,7 +509,7 @@ def test_simulation_to_case_json():
             ],
         },
         "private_attribute_asset_cache": {
-            "project_length_unit": "m",
+            "project_length_unit": 1.0,
             "project_entity_info": {
                 "type_name": "GeometryEntityInfo",
                 "face_ids": ["face_x_1", "face_x_2", "face_x_3"],
@@ -782,7 +782,7 @@ def test_simulation_to_all_translation_2():
         ],
         "unit_system": {"name": "SI"},
         "private_attribute_asset_cache": {
-            "project_length_unit": "m",
+            "project_length_unit": 1.0,
             "project_entity_info": {
                 "type_name": "GeometryEntityInfo",
                 "face_ids": ["face_x_1", "face_x_2", "face_x_3"],

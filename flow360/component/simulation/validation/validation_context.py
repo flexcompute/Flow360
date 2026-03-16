@@ -23,13 +23,13 @@ from types import SimpleNamespace
 from typing import Any, Callable, List, Literal, Union
 
 import pydantic as pd
+from flow360_schema.framework.physical_dimensions import Length
 from flow360_schema.framework.validation.context import (  # noqa: F401 — re-used, not redefined
+    DeserializationContext,
     _validation_level_ctx,
 )
 from pydantic import Field, TypeAdapter
 
-from flow360_schema.framework.physical_dimensions import Length
-from flow360_schema.framework.validation.context import DeserializationContext
 from flow360.component.simulation.utils import BoundingBoxType
 
 SURFACE_MESH = "SurfaceMesh"

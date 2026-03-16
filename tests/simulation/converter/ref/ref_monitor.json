@@ -117,14 +117,11 @@
             "entities": {
                 "stored_entities": [
                     {
-                        "location": {
-                            "units": "m",
-                            "value": [
-                                2.694298,
-                                0.0,
-                                1.0195910000000001
-                            ]
-                        },
+                        "location": [
+                            2.694298,
+                            0.0,
+                            1.0195910000000001
+                        ],
                         "name": "Point-0",
                         "private_attribute_entity_type_name": "Point"
                     }
@@ -142,38 +139,29 @@
             "entities": {
                 "stored_entities": [
                     {
-                        "location": {
-                            "units": "m",
-                            "value": [
-                                4.007,
-                                0.0,
-                                -0.31760000000000005
-                            ]
-                        },
+                        "location": [
+                            4.007,
+                            0.0,
+                            -0.31760000000000005
+                        ],
                         "name": "Point-1",
                         "private_attribute_entity_type_name": "Point"
                     },
                     {
-                        "location": {
-                            "units": "m",
-                            "value": [
-                                4.007,
-                                0.0,
-                                -0.29760000000000003
-                            ]
-                        },
+                        "location": [
+                            4.007,
+                            0.0,
+                            -0.29760000000000003
+                        ],
                         "name": "Point-2",
                         "private_attribute_entity_type_name": "Point"
                     },
                     {
-                        "location": {
-                            "units": "m",
-                            "value": [
-                                4.007,
-                                0.0,
-                                -0.2776
-                            ]
-                        },
+                        "location": [
+                            4.007,
+                            0.0,
+                            -0.2776
+                        ],
                         "name": "Point-3",
                         "private_attribute_entity_type_name": "Point"
                     }
@@ -206,5 +194,6 @@
     "unit_system": {
         "name": "SI"
     },
-    "user_defined_fields": []
+    "user_defined_fields": [],
+    "version": "25.9.2b1"
 }

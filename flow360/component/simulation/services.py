@@ -1283,7 +1283,7 @@ def merge_geometry_entity_info(
     if draft_param_entity_info_dict.get("type_name") != "GeometryEntityInfo":
         return draft_param_as_dict
 
-    current_entity_info = GeometryEntityInfo.model_validate(draft_param_entity_info_dict)
+    current_entity_info = GeometryEntityInfo.deserialize(draft_param_entity_info_dict)
 
     entity_info_components = []
     for geometry_param_as_dict in geometry_dependencies_param_as_dict:
@@ -1292,9 +1292,7 @@ def merge_geometry_entity_info(
         ).get("project_entity_info", {})
         if dependency_entity_info_dict.get("type_name") != "GeometryEntityInfo":
             continue
-        entity_info_components.append(
-            GeometryEntityInfo.model_validate(dependency_entity_info_dict)
-        )
+        entity_info_components.append(GeometryEntityInfo.deserialize(dependency_entity_info_dict))
 
     merged_entity_info = merge_geometry_entity_info_obj(
         current_entity_info=current_entity_info,

@@ -685,7 +685,7 @@ def test_init():
     assert data["reference_geometry"]["area"]["units"] == "cm**2"
     assert data["reference_geometry"]["moment_center"]["units"] == "cm"
     assert data["reference_geometry"]["moment_length"]["units"] == "cm"
-    assert data["private_attribute_asset_cache"]["project_length_unit"]["units"] == "cm"
+    assert data["private_attribute_asset_cache"]["project_length_unit"] == 0.01
 
     # roughness_height now serializes as bare SI float (new dimension types)
     assert data["models"][0]["roughness_height"] == 0.0
@@ -871,7 +871,7 @@ def test_front_end_JSON_with_multi_constructor():
         "unit_system": {"name": "SI"},
         "version": "24.2.0",
         "private_attribute_asset_cache": {
-            "project_length_unit": "m",
+            "project_length_unit": 1.0,
             "project_entity_info": {
                 "type_name": "GeometryEntityInfo",
                 "face_ids": ["face_x_1", "face_x_2", "face_x_3"],
@@ -1004,7 +1004,7 @@ def test_generate_process_json():
             }
         ],
         "private_attribute_asset_cache": {
-            "project_length_unit": "m",
+            "project_length_unit": 1.0,
             "project_entity_info": {
                 "type_name": "GeometryEntityInfo",
                 "face_ids": ["face_x_1", "face_x_2", "face_x_3"],
@@ -1425,19 +1425,19 @@ def test_merge_geometry_entity_info():
     # Load test data
     with open("data/root_geometry_cube_simulation.json", "r") as f:
         root_cube_simulation_dict = json.load(f)
-        root_cube_entity_info = GeometryEntityInfo.model_validate(
+        root_cube_entity_info = GeometryEntityInfo.deserialize(
             root_cube_simulation_dict["private_attribute_asset_cache"]["project_entity_info"]
         )
     with open("data/dependency_geometry_sphere1_simulation.json", "r") as f:
         dependency_sphere1_simulation_dict = json.load(f)
-        dependency_sphere1_entity_info = GeometryEntityInfo.model_validate(
+        dependency_sphere1_entity_info = GeometryEntityInfo.deserialize(
             dependency_sphere1_simulation_dict["private_attribute_asset_cache"][
                 "project_entity_info"
             ]
         )
     with open("data/dependency_geometry_sphere2_simulation.json", "r") as f:
         dependency_sphere2_simulation_dict = json.load(f)
-        dependency_sphere2_entity_info = GeometryEntityInfo.model_validate(
+        dependency_sphere2_entity_info = GeometryEntityInfo.deserialize(
             dependency_sphere2_simulation_dict["private_attribute_asset_cache"][
                 "project_entity_info"
             ]
@@ -1452,7 +1452,7 @@ def test_merge_geometry_entity_info():
             dependency_sphere1_simulation_dict,
         ],
     )
-    result_entity_info1 = GeometryEntityInfo.model_validate(result_entity_info_dict1)
+    result_entity_info1 = GeometryEntityInfo.deserialize(result_entity_info_dict1)
 
     # Load expected result for test 1
     with open("data/result_merged_geometry_entity_info1.json", "r") as f:
@@ -1509,7 +1509,7 @@ def test_merge_geometry_entity_info():
         result_entity_info_dict2, expected_result2
     ), "Test 2 failed: Merged entity info with replaced dependency does not match expected result"
 
-    result_entity_info2 = GeometryEntityInfo.model_validate(result_entity_info_dict2)
+    result_entity_info2 = GeometryEntityInfo.deserialize(result_entity_info_dict2)
 
     # Verify key properties are preserved using helper function
     check_setting_preserved(

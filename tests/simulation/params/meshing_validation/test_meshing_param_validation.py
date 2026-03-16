@@ -141,7 +141,7 @@ def test_disable_invalid_axisymmetric_body_construction():
 
     with pytest.raises(
         pd.ValidationError,
-        match=re.escape("Value error, arg '(-1, 1, 3)' needs to be a collection of 2 values"),
+        match=re.escape("Vector must have exactly 2 components, got 3"),
     ):
         with CGS_unit_system:
             cylinder_1 = AxisymmetricBody(
@@ -1777,14 +1777,14 @@ def test_wind_tunnel_invalid_dimensions():
         # invalid floors
         with pytest.raises(
             pd.ValidationError,
-            match=r"is not strictly increasing",
+            match=r"strictly increasing",
         ):
             # invalid range
             _ = StaticFloor(friction_patch_x_range=(-100, -200), friction_patch_width=42)
 
         with pytest.raises(
             pd.ValidationError,
-            match=r"cannot have negative value",
+            match=r"All values must be positive",
         ):
             # invalid positive range
             _ = WheelBelts(

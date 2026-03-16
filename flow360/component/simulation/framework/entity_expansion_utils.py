@@ -35,10 +35,7 @@ def _register_mirror_entities_in_registry(registry: "EntityRegistry", mirror_sta
 
     # Dict path: deserialize to MirrorStatus
     if isinstance(mirror_status, dict):
-        from flow360_schema.framework.validation.context import DeserializationContext
-
-        with DeserializationContext():
-            mirror_status = MirrorStatus.model_validate(mirror_status)
+        mirror_status = MirrorStatus.deserialize(mirror_status)
 
     # Object path: MirrorStatus (or compatible) with is_empty()
     if hasattr(mirror_status, "is_empty") and mirror_status.is_empty():
@@ -112,10 +109,8 @@ def expand_entity_list_in_context(
     # This ensures consistency with the centralized filtering architecture
     if stored_entities:
         try:
-            # Use model_validate to trigger field validator which filters by type
-            validated_list = entity_list.__class__.model_validate(
-                {"stored_entities": stored_entities}
-            )
+            # Use deserialize to trigger field validator which filters by type
+            validated_list = entity_list.__class__.deserialize({"stored_entities": stored_entities})
             stored_entities = validated_list.stored_entities
         except pd.ValidationError as exc:
             raise Flow360ValueError(

@@ -216,7 +216,7 @@ def get_om6Wing_tutorial_param():
         face_group_tag="default",
         grouped_faces=[[my_wall, my_symmetry_plane, my_freestream]],
     )
-    asset_cache = AssetCache(project_entity_info=entity_info, project_length_unit="m")
+    asset_cache = AssetCache(project_entity_info=entity_info, project_length_unit=1 * u.m)
 
     with SI_unit_system:
         param = SimulationParams(

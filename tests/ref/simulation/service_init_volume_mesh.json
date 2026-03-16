@@ -267,10 +267,7 @@
         }
     ],
     "private_attribute_asset_cache": {
-        "project_length_unit": {
-            "units": "m",
-            "value": 1.0
-        },
+        "project_length_unit": 1.0,
         "use_geometry_AI": false,
         "use_inhouse_mesher": false
     },

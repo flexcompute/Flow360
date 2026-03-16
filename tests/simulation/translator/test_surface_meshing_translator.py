@@ -2,7 +2,6 @@ import json
 import os
 
 import pytest
-
 from flow360_schema.framework.validation.context import DeserializationContext
 
 import flow360.component.simulation.units as u
@@ -1283,9 +1282,7 @@ def test_gai_analytic_wind_tunnel_farfield():
             ),
             "r",
         ) as fh:
-            asset_cache = AssetCache.model_validate(
-                json.load(fh).pop("private_attribute_asset_cache")
-            )
+            asset_cache = AssetCache.deserialize(json.load(fh).pop("private_attribute_asset_cache"))
 
         params = SimulationParams(
             meshing=meshing_params,
@@ -1326,7 +1323,7 @@ def test_sliding_interface_tolerance_gai():
         ),
         "r",
     ) as fh:
-        asset_cache = AssetCache.model_validate(json.load(fh).pop("private_attribute_asset_cache"))
+        asset_cache = AssetCache.deserialize(json.load(fh).pop("private_attribute_asset_cache"))
 
     with SI_unit_system:
         farfield = AutomatedFarfield(domain_type="half_body_positive_y")
@@ -1721,7 +1718,7 @@ def test_gai_no_stationary_enclosed_entities():
 
         params = SimulationParams(
             meshing=meshing,
-            private_attribute_asset_cache=AssetCache.model_validate(
+            private_attribute_asset_cache=AssetCache.deserialize(
                 param_dict["private_attribute_asset_cache"]
             ),
         )
@@ -1754,7 +1751,7 @@ def test_gai_target_surface_node_count_set():
                 ),
                 volume_zones=[AutomatedFarfield()],
             ),
-            private_attribute_asset_cache=AssetCache.model_validate(
+            private_attribute_asset_cache=AssetCache.deserialize(
                 param_dict["private_attribute_asset_cache"]
             ),
         )
@@ -1785,7 +1782,7 @@ def test_gai_target_surface_node_count_absent():
                 ),
                 volume_zones=[AutomatedFarfield()],
             ),
-            private_attribute_asset_cache=AssetCache.model_validate(
+            private_attribute_asset_cache=AssetCache.deserialize(
                 param_dict["private_attribute_asset_cache"]
             ),
         )

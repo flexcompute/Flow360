@@ -1275,7 +1275,7 @@ def test_output_frequency_settings_in_steady_simulation():
         "r",
     ) as fh:
         asset_cache_data = json.load(fh).pop("private_attribute_asset_cache")
-    asset_cache = AssetCache.model_validate(asset_cache_data)
+    asset_cache = AssetCache.deserialize(asset_cache_data)
     with imperial_unit_system:
         params = SimulationParams(
             models=[Wall(name="wall", entities=volume_mesh["*"])],

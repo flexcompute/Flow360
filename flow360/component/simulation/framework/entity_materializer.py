@@ -309,7 +309,7 @@ def _materialize_selectors_list_in_node(
             # At local validation, `selector_lookup` is empty.
             # Since it is presubmit, no need to "materialize", "deserialize" is fine.
             try:
-                materialized_selectors.append(EntitySelector.model_validate(selector_item))
+                materialized_selectors.append(EntitySelector.deserialize(selector_item))
             except pd.ValidationError:
                 # Keep the invalid dict as-is, let SimulationParams.model_validate handle the error.
                 # This preserves the full error location path (e.g., "models.0.entities.selectors.0.children...")

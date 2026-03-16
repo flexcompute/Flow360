@@ -116,7 +116,7 @@ def test_snappy_refinements_validators(mock_validation_context):
 
 
 def test_snappy_edge_refinement_validators():
-    message = "When using a distance spacing specification both spacing (2.0 mm) and distances ([5] mm) fields must be arrays and the same length."
+    message = "When using a distance spacing specification both spacing (2.0 mm) and distances ([5.] mm) fields must be arrays and the same length."
     with pytest.raises(
         ValueError,
         match=re.escape(message),
@@ -137,7 +137,7 @@ def test_snappy_edge_refinement_validators():
             spacing=2 * u.mm, distances=5 * u.mm, entities=[Surface(name="test")]
         )
 
-    message = "When using a distance spacing specification both spacing ([2] mm) and distances (None) fields must be arrays and the same length."
+    message = "When using a distance spacing specification both spacing ([2.] mm) and distances (None) fields must be arrays and the same length."
     with pytest.raises(
         ValueError,
         match=re.escape(message),

@@ -908,7 +908,7 @@ def merge_geometry_entity_info(
             # Create a copy with updated user settings
             entity_data = entity.model_dump()
             entity_data.update(user_settings_map[attr_name][entity_id])
-            return entity.__class__.model_validate(entity_data)
+            return entity.__class__.deserialize(entity_data)
 
         return entity
 

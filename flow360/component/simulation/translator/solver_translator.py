@@ -1424,7 +1424,9 @@ def actuator_disk_translator(model: ActuatorDisk):
     }
     if model.reference_velocity is not None:
         ref_vel = remove_units_in_dict(
-            model.model_dump(by_alias=True, include={"reference_velocity"})
+            model.model_dump(
+                by_alias=True, include={"reference_velocity"}, context={"no_unit": True}
+            )
         )
         result["referenceVelocity"] = convert_tuples_to_lists(ref_vel["referenceVelocity"])
     return result

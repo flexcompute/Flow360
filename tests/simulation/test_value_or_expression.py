@@ -71,7 +71,7 @@ def asset_cache():
         "r",
     ) as fh:
         asset_cache_data = json.load(fh).pop("private_attribute_asset_cache")
-    return AssetCache.model_validate(asset_cache_data)
+    return AssetCache.deserialize(asset_cache_data)
 
 
 def operating_condition_with_expression():

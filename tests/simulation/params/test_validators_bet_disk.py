@@ -39,8 +39,7 @@ def test_bet_disk_blade_line_chord(create_steady_bet_disk):
 
 def test_bet_disk_initial_blade_direction(create_steady_bet_disk):
     bet_disk = create_steady_bet_disk
-    with DeserializationContext():
-        BETDisk.model_validate(bet_disk)
+    BETDisk.model_validate(bet_disk)
 
     with pytest.raises(
         ValueError,
@@ -77,7 +76,7 @@ def test_bet_disk_duplicate_chords(create_steady_bet_disk):
     bet_disk = create_steady_bet_disk
     with pytest.raises(
         ValueError,
-        match="BETDisk with name 'diskABC': it has duplicated radius at 150.0348189415042 in chords.",
+        match=r"BETDisk with name 'diskABC': it has duplicated radius at .+ in chords\.",
     ):
         bet_disk.name = "diskABC"
         bet_disk.chords.append(bet_disk.chords[-1])
@@ -89,7 +88,7 @@ def test_bet_disk_duplicate_twists(create_steady_bet_disk):
     bet_disk = create_steady_bet_disk
     with pytest.raises(
         ValueError,
-        match="BETDisk with name 'diskABC': it has duplicated radius at 150.0 in twists.",
+        match=r"BETDisk with name 'diskABC': it has duplicated radius at .+ in twists\.",
     ):
         bet_disk.name = "diskABC"
         bet_disk.twists.append(bet_disk.twists[-1])
@@ -105,12 +104,11 @@ def test_bet_disk_nonequal_sectional_radiuses_and_polars(create_steady_bet_disk)
     ):
         bet_disk.name = "diskABC"
         bet_disk_dict = bet_disk.model_dump()
-        bet_disk_dict["sectional_radiuses"]["value"] = bet_disk_dict["sectional_radiuses"][
-            "value"
-        ] + (bet_disk.sectional_radiuses[-1],)
+        bet_disk_dict["sectional_radiuses"] = bet_disk_dict["sectional_radiuses"] + [
+            bet_disk_dict["sectional_radiuses"][-1],
+        ]
         with DeserializationContext():
-            bet_disk_error = BETDisk.model_validate(bet_disk_dict)
-        BETDisk.model_validate(bet_disk_error)
+            BETDisk.model_validate(bet_disk_dict)
 
 
 def test_bet_disk_3d_coefficients_dimension_wrong_mach_numbers(create_steady_bet_disk):
@@ -121,8 +119,7 @@ def test_bet_disk_3d_coefficients_dimension_wrong_mach_numbers(create_steady_bet
     ):
         bet_disk.name = "diskABC"
         bet_disk.mach_numbers.append(bet_disk.mach_numbers[-1])
-        with DeserializationContext():
-            BETDisk.model_validate(bet_disk)
+        BETDisk.model_validate(bet_disk)
 
 
 def test_bet_disk_3d_coefficients_dimension_wrong_re_numbers(create_steady_bet_disk):
@@ -144,7 +141,6 @@ def test_bet_disk_3d_coefficients_dimension_wrong_alpha_numbers(create_steady_be
     ):
         bet_disk.name = "diskABC"
         bet_disk_dict = bet_disk.model_dump()
-        bet_disk_dict["alphas"]["value"] = bet_disk_dict["alphas"]["value"] + (bet_disk.alphas[-1],)
+        bet_disk_dict["alphas"] = bet_disk_dict["alphas"] + [bet_disk_dict["alphas"][-1]]
         with DeserializationContext():
-            bet_disk_error = BETDisk.model_validate(bet_disk_dict)
-        BETDisk.model_validate(bet_disk_error)
+            BETDisk.model_validate(bet_disk_dict)

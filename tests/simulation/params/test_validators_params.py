@@ -846,7 +846,7 @@ def test_incomplete_BC_volume_mesh():
     )
 
     asset_cache = AssetCache(
-        project_length_unit="inch",
+        project_length_unit=1 * u.inch,
         project_entity_info=VolumeMeshEntityInfo(
             boundaries=[wall_1, periodic_1, periodic_2, i_exist, some_interface, no_bc]
         ),
@@ -946,7 +946,7 @@ def test_incomplete_BC_surface_mesh():
     auto_farfield = AutomatedFarfield(name="my_farfield")
 
     asset_cache = AssetCache(
-        project_length_unit="inch",
+        project_length_unit=1 * u.inch,
         project_entity_info=SurfaceMeshEntityInfo(
             boundaries=[wall_1, periodic_1, periodic_2, i_exist, no_bc, i_will_be_deleted],
             ghost_entities=[
@@ -1652,7 +1652,7 @@ def test_rotation_parent_volumes(mock_case_validation_context):
                     Wall(entities=[my_wall]),
                 ],
                 private_attribute_asset_cache=AssetCache(
-                    project_length_unit="cm",
+                    project_length_unit=1 * u.cm,
                     project_entity_info=VolumeMeshEntityInfo(boundaries=[my_wall]),
                 ),
             )
@@ -1720,7 +1720,7 @@ def test_rotating_reference_frame_model_flag():
                     ],
                     time_stepping=timestepping_steady,
                     private_attribute_asset_cache=AssetCache(
-                        project_length_unit="cm",
+                        project_length_unit=1 * u.cm,
                         project_entity_info=VolumeMeshEntityInfo(boundaries=[my_wall]),
                     ),
                 )
@@ -1746,7 +1746,7 @@ def test_rotating_reference_frame_model_flag():
                 ],
                 time_stepping=timestepping_unsteady,
                 private_attribute_asset_cache=AssetCache(
-                    project_length_unit="cm",
+                    project_length_unit=1 * u.cm,
                     project_entity_info=VolumeMeshEntityInfo(boundaries=[my_wall]),
                 ),
             )
@@ -3205,7 +3205,7 @@ def test_auto_farfield_full_body_surface_on_y0_not_marked_deleted():
     )
 
     asset_cache = AssetCache(
-        project_length_unit="m",
+        project_length_unit=1 * u.m,
         use_inhouse_mesher=True,
         use_geometry_AI=True,
         project_entity_info=SurfaceMeshEntityInfo(
@@ -3266,7 +3266,7 @@ def test_auto_farfield_half_body_surface_on_y0_marked_deleted():
     )
 
     asset_cache = AssetCache(
-        project_length_unit="m",
+        project_length_unit=1 * u.m,
         use_inhouse_mesher=True,
         use_geometry_AI=True,
         project_entity_info=SurfaceMeshEntityInfo(
@@ -3340,7 +3340,7 @@ def test_deleted_surfaces_domain_type():
     )
 
     asset_cache = AssetCache(
-        project_length_unit="m",
+        project_length_unit=1 * u.m,
         use_inhouse_mesher=True,
         use_geometry_AI=True,
         project_entity_info=SurfaceMeshEntityInfo(
@@ -3522,7 +3522,7 @@ def test_coordinate_system_requires_geometry_ai():
 
     # Asset cache with GAI disabled but coordinate system used
     asset_cache_no_gai = AssetCache(
-        project_length_unit="m",
+        project_length_unit=1 * u.m,
         use_inhouse_mesher=True,
         use_geometry_AI=False,
         coordinate_system_status=cs_status,
@@ -3549,7 +3549,7 @@ def test_coordinate_system_requires_geometry_ai():
 
     # Test with GAI enabled - should pass
     asset_cache_with_gai = AssetCache(
-        project_length_unit="m",
+        project_length_unit=1 * u.m,
         use_inhouse_mesher=True,
         use_geometry_AI=True,
         coordinate_system_status=cs_status,
@@ -3592,7 +3592,7 @@ def test_mirroring_requires_geometry_ai():
 
     # Asset cache with GAI disabled but mirroring used
     asset_cache_no_gai = AssetCache(
-        project_length_unit="m",
+        project_length_unit=1 * u.m,
         use_inhouse_mesher=True,
         use_geometry_AI=False,
         mirror_status=mirror_status,
@@ -3615,7 +3615,7 @@ def test_mirroring_requires_geometry_ai():
 
     # Test with GAI enabled - should pass
     asset_cache_with_gai = AssetCache(
-        project_length_unit="m",
+        project_length_unit=1 * u.m,
         use_inhouse_mesher=True,
         use_geometry_AI=True,
         mirror_status=mirror_status,
@@ -3655,7 +3655,7 @@ def test_mirror_missing_boundary_condition_downgraded_to_warning():
     )
 
     asset_cache = AssetCache(
-        project_length_unit="m",
+        project_length_unit=1 * u.m,
         use_inhouse_mesher=True,
         use_geometry_AI=True,
         project_entity_info=VolumeMeshEntityInfo(boundaries=[front]),
@@ -3701,7 +3701,7 @@ def test_mirror_unknown_boundary_still_raises_error():
     )
 
     asset_cache = AssetCache(
-        project_length_unit="m",
+        project_length_unit=1 * u.m,
         use_inhouse_mesher=True,
         use_geometry_AI=True,
         project_entity_info=VolumeMeshEntityInfo(boundaries=[front]),
@@ -3743,7 +3743,7 @@ def test_domain_type_bbox_mismatch_downgraded_to_warning_when_transformed():
 
     # Global bbox fully on -Y side; choosing half_body_positive_y should normally raise.
     asset_cache = AssetCache(
-        project_length_unit="m",
+        project_length_unit=1 * u.m,
         use_inhouse_mesher=True,
         use_geometry_AI=True,
         project_entity_info=SurfaceMeshEntityInfo(
@@ -3790,7 +3790,7 @@ def test_incomplete_BC_with_geometry_AI():
     )
 
     asset_cache = AssetCache(
-        project_length_unit="m",
+        project_length_unit=1 * u.m,
         project_entity_info=VolumeMeshEntityInfo(boundaries=[wall, no_bc]),
         use_geometry_AI=True,  # Enable GAI
     )
@@ -3836,7 +3836,7 @@ def test_incomplete_BC_without_geometry_AI():
     )
 
     asset_cache = AssetCache(
-        project_length_unit="m",
+        project_length_unit=1 * u.m,
         project_entity_info=VolumeMeshEntityInfo(boundaries=[wall, no_bc]),
         use_geometry_AI=False,  # Disable GAI
     )
