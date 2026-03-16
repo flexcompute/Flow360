@@ -5,6 +5,7 @@ from collections import defaultdict
 from typing import Annotated, Any, Dict, List, Literal, Optional, Union
 
 import pydantic as pd
+from flow360_schema.framework.validation.context import DeserializationContext
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_registry import (
@@ -726,13 +727,14 @@ EntityInfoUnion = Annotated[
 ]
 
 
-def parse_entity_info_model(data) -> EntityInfoUnion:
+def parse_entity_info_model(data: dict) -> EntityInfoUnion:
     """
     parse entity info data and return one of [GeometryEntityInfo, VolumeMeshEntityInfo, SurfaceMeshEntityInfo]
 
     # TODO: Add a fast mode by popping entities that are not needed due to wrong grouping tags before deserialization.
     """
-    return pd.TypeAdapter(EntityInfoUnion).validate_python(data)
+    with DeserializationContext():
+        return pd.TypeAdapter(EntityInfoUnion).validate_python(data)
 
 
 def merge_geometry_entity_info(

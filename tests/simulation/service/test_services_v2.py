@@ -1,3 +1,4 @@
+import copy
 import json
 import re
 
@@ -396,12 +397,9 @@ def test_validate_error_from_multi_constructor():
                 "private_attribute_input_cache",
                 "thermal_state",
                 "density",
-                "value",
             ),
-            "type": "greater_than",
-            "msg": "Input should be greater than 0",
-            "input": -2,
-            "ctx": {"gt": "0.0"},
+            "type": "value_error",
+            "msg": "Value error, Value must be positive (>0), got -2.0",
         },
     ]
     _compare_validation_errors(errors, expected_errors)
@@ -493,12 +491,9 @@ def test_validate_error_from_multi_constructor():
                 "stored_entities",
                 0,
                 "height",
-                "value",
             ),
-            "type": "greater_than",
-            "msg": "Input should be greater than 0",
-            "input": -15,
-            "ctx": {"gt": "0.0"},
+            "type": "value_error",
+            "msg": "Value error, Value must be positive (>0), got -15.0",
         },
     ]
 
@@ -646,9 +641,9 @@ def test_validate_error_from_multi_constructor():
                 "private_attribute_input_cache",
                 "altitude",
             ),
-            "msg": "Value error, arg '100.0 K' does not match (length) dimension.",
-            "input": None,
-            "ctx": {"error": "arg '100.0 K' does not match (length) dimension."},
+            "msg": "Value error, Dimension mismatch: expected length (meter), got (temperature)",
+            "input": {"units": "K", "value": 100.0},
+            "ctx": {"error": "Dimension mismatch: expected length (meter), got (temperature)"},
         }
     ]
     _compare_validation_errors(errors, expected_errors)
@@ -664,8 +659,7 @@ def test_init():
     data = services.get_default_params(
         unit_system_name="SI", length_unit="m", root_item_type="Geometry"
     )
-    assert data["operating_condition"]["alpha"]["value"] == 0
-    assert data["operating_condition"]["alpha"]["units"] == "degree"
+    assert data["operating_condition"]["alpha"] == 0
     assert "velocity_magnitude" not in data["operating_condition"].keys()
     remove_model_and_output_id_in_default_dict(data)
     # to convert tuples to lists:
@@ -1664,3 +1658,24 @@ def test_validate_error_location_with_selector():
     )
 
     # Verify key path components are present for tokenized selectors in used_selectors
+
+
+@pytest.mark.parametrize("unit_system_name", ["SI", "Imperial", "CGS"])
+def test_validate_model_preserves_unit_system(unit_system_name):
+    """validate_model must not mutate the unit_system entry in the input dict."""
+    with open("data/simulation.json", "r") as fp:
+        params_data = json.load(fp)
+
+    # Convert to the target unit system so all values carry matching units
+    services.change_unit_system(data=params_data, target_unit_system=unit_system_name)
+    unit_system_before = copy.deepcopy(params_data["unit_system"])
+
+    validated_param, errors, _ = services.validate_model(
+        params_as_dict=params_data,
+        validated_by=services.ValidationCalledBy.LOCAL,
+        root_item_type="VolumeMesh",
+    )
+
+    assert params_data["unit_system"] == unit_system_before
+    if validated_param is not None:
+        assert validated_param.unit_system.name == unit_system_name

@@ -46,8 +46,8 @@ def operating_condition_from_mach_muref(
         Freestream reference dynamic viscosity defined with mesh unit (must be positive).
     project_length_unit: LengthType.Positive
         Project length unit.
-    temperature : TemperatureType.Positive, optional
-        Freestream static temperature (must be a positive temperature value). Default is 288.15 Kelvin.
+    temperature : AbsoluteTemperatureType, optional
+        Freestream static temperature (must be above absolute zero, 0 K). Default is 288.15 Kelvin.
     alpha : AngleType, optional
         Angle of attack. Default is 0 degrees.
     beta : AngleType, optional

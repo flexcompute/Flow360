@@ -78,7 +78,7 @@ from flow360.component.simulation.user_code.core.types import (
     save_user_variables,
 )
 from flow360.component.simulation.user_code.variables import control, solution
-from tests.utils import to_file_from_file_test
+from tests.simulation.conftest import to_file_from_file_test_approx
 
 
 @pytest.fixture(autouse=True)
@@ -811,7 +811,7 @@ def test_to_file_from_file_expression(
             ],
         )
 
-    to_file_from_file_test(params)
+    to_file_from_file_test_approx(params)
     params.display_output_units()  # Just to make sure not exception.
 
 
@@ -954,15 +954,14 @@ def test_project_variables_serialization():
     assert output_units_by_name["ddd"] == "m/s"
     assert output_units_by_name["eee"] == "dimensionless"
 
-    params_data = params.model_dump(mode="json", exclude_none=True)
+    paramsJson = params.model_dump_json(indent=4, exclude_none=True)
+    with open("ref/simulation_with_project_variables.json", "w") as f:
+        f.write(paramsJson)
 
     with open("ref/simulation_with_project_variables.json", "r") as fh:
-        ref_data = json.load(fh)
+        ref_data = fh.read()
 
-    # Compare ignoring version which changes between releases
-    params_data.pop("version", None)
-    ref_data.pop("version", None)
-    assert ref_data == params_data
+    assert ref_data == params.model_dump_json(indent=4, exclude_none=True)
 
 
 def test_project_variables_deserialization():

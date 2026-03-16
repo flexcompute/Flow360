@@ -7,6 +7,7 @@ from abc import ABCMeta
 from typing import Annotated, Dict, List, Literal, Optional, Union
 
 import pydantic as pd
+from flow360_schema.framework.validation.context import DeserializationContext
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
@@ -989,7 +990,8 @@ class BETDisk(MultiConstructorBaseModel):
             raise Flow360ValueError(f"Invalid keyword arguments for {cls.__name__}: {invalid_keys}")
 
         model_dict.update(kwargs)
-        return cls(**model_dict)
+        with DeserializationContext():
+            return cls.model_validate(model_dict)
 
     # pylint: disable=too-many-arguments, no-self-argument, not-callable
     @MultiConstructorBaseModel.model_constructor

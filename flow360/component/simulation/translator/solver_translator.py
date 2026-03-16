@@ -154,7 +154,9 @@ from flow360.exceptions import Flow360TranslationError
 def dump_dict(input_params, exclude_none=True):
     """Dumping param/model to dictionary."""
 
-    result = input_params.model_dump(by_alias=True, exclude_none=exclude_none)
+    result = input_params.model_dump(
+        by_alias=True, exclude_none=exclude_none, context={"no_unit": True}
+    )
     if result.pop("privateAttributeDict", None) is not None:
         result.update(input_params.private_attribute_dict)
     return result
@@ -213,7 +215,9 @@ def init_output_base(obj_list, class_type: Type, is_average: bool):
         "output_format",
     )
     assert output_format is not None
-    base["outputFormat"] = ",".join(sorted(output_format))
+    if output_format == "both":
+        output_format = "paraview,tecplot"
+    base["outputFormat"] = output_format
 
     if is_average:
         base = init_average_output(base, obj_list, class_type)

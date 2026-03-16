@@ -1451,6 +1451,29 @@ files = [
 ]
 
 [[package]]
+name = "flow360-schema"
+version = "0.1.12+feat.2ndstageunitmigrationfoll.5053b95"
+description = "Pure Pydantic schemas for Flow360 - Single Source of Truth"
+optional = false
+python-versions = ">=3.10,<4.0"
+groups = ["main"]
+files = [
+    {file = "flow360_schema-0.1.12+feat.2ndstageunitmigrationfoll.5053b95-py3-none-any.whl", hash = "sha256:7fb3784689220885a2c418f4e5c3a99591d940da6d2a4c2f59814385ab3fe8e1"},
+    {file = "flow360_schema-0.1.12+feat.2ndstageunitmigrationfoll.5053b95.tar.gz", hash = "sha256:33c0458f552e48114f9c41add8959c42c0b8d2f02537047d13a6534edd260af2"},
+]
+
+[package.dependencies]
+pydantic = ">=2.8,<3.0"
+
+[package.extras]
+unyt = ["unyt (>=2.9.0)"]
+
+[package.source]
+type = "legacy"
+url = "https://flexcompute-625554095313.d.codeartifact.us-east-1.amazonaws.com/pypi/pypi-releases/simple"
+reference = "codeartifact"
+
+[[package]]
 name = "fonttools"
 version = "4.62.1"
 description = "Tools to manipulate font files"
@@ -6487,4 +6510,4 @@ docs = ["autodoc_pydantic", "cairosvg", "ipython", "jinja2", "jupyter", "myst-pa
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<3.14"
-content-hash = "789bc664b22914a4c4e4190068e73952827e861504c5224d84bc31c92fd985be"
+content-hash = "0b9e8f9b56c45b31e77157cb628fcce597cf484b650ad8821a41a66642f232d6"

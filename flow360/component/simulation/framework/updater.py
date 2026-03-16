@@ -593,12 +593,12 @@ def _to_25_8_4(params_as_dict):
 
     def fix_write_single_file_for_paraview_format(params_as_dict):
         """
-        Fix write_single_file incompatibility with paraview-only format.
+        Fix write_single_file incompatibility with Paraview format.
 
         Before validation was added, users could set write_single_file=True with
-        output_format="paraview". This is not supported for paraview-only output.
-        Silently reset write_single_file to False when paraview-only format is used.
-        write_single_file is supported by tecplot, vtkhdf, and combination formats.
+        output_format="paraview". This is invalid because write_single_file only
+        works with Tecplot format. Silently reset write_single_file to False when
+        Paraview-only format is used.
 
         Also handles the edge case where output_format is missing from JSON
         (e.g., hand-edited files or very old JSONs), in which case we assume
@@ -789,37 +789,6 @@ def _to_25_9_3(params_as_dict):
     return params_as_dict
 
 
-def _to_25_10_0(params_as_dict):
-    """Migrate to 25.10.0: output_format string to list, add vtkhdf/ensight support."""
-
-    def _migrate_output_format_to_list(params_as_dict):
-        """Convert string ``output_format`` values to list form.
-
-        ``"both"`` becomes ``["paraview", "tecplot"]``, comma-separated strings are
-        split, and bare strings are wrapped in a list.
-        """
-        outputs = params_as_dict.get("outputs")
-        if not outputs:
-            return
-
-        for output in outputs:
-            fmt = output.get("output_format")
-            if isinstance(fmt, list):
-                output["output_format"] = sorted(set(fmt))
-                continue
-            if not isinstance(fmt, str):
-                continue
-            if fmt == "both":
-                output["output_format"] = ["paraview", "tecplot"]
-            elif "," in fmt:
-                output["output_format"] = sorted(set(v.strip() for v in fmt.split(",")))
-            else:
-                output["output_format"] = [fmt]
-
-    _migrate_output_format_to_list(params_as_dict)
-    return params_as_dict
-
-
 VERSION_MILESTONES = [
     (Flow360Version("24.11.1"), _to_24_11_1),
     (Flow360Version("24.11.7"), _to_24_11_7),
@@ -843,7 +812,6 @@ VERSION_MILESTONES = [
     (Flow360Version("25.9.1"), _to_25_9_1),
     (Flow360Version("25.9.2"), _to_25_9_2),
     (Flow360Version("25.9.3"), _to_25_9_3),
-    (Flow360Version("25.10.0"), _to_25_10_0),
 ]  # A list of the Python API version tuple with their corresponding updaters.
 
 
