@@ -2,7 +2,6 @@ import json
 import os
 
 import pytest
-from flow360_schema.framework.validation.context import DeserializationContext
 
 import flow360.component.simulation.units as u
 from flow360.component.geometry import Geometry, GeometryMeta
@@ -1459,8 +1458,7 @@ def test_gai_mirror_status_translation():
 
     # Add mirror_status to asset_cache
     asset_cache_dict["mirror_status"] = mirror_status.model_dump(mode="json")
-    with DeserializationContext():
-        asset_cache = AssetCache.model_validate(asset_cache_dict)
+    asset_cache = AssetCache.deserialize(asset_cache_dict)
 
     with SI_unit_system:
         farfield = AutomatedFarfield(domain_type="half_body_positive_y")
@@ -1587,8 +1585,7 @@ def test_gai_mirror_status_translation_idempotency():
         )
 
         asset_cache_dict["mirror_status"] = mirror_status.model_dump(mode="json")
-        with DeserializationContext():
-            asset_cache = AssetCache.model_validate(asset_cache_dict)
+        asset_cache = AssetCache.deserialize(asset_cache_dict)
 
         with SI_unit_system:
             farfield = AutomatedFarfield(domain_type="half_body_positive_y")

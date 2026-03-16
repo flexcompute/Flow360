@@ -4,7 +4,6 @@ Support class and functions for project interface.
 
 from typing import Optional, Type, TypeVar, get_args
 
-from flow360_schema.framework.validation.context import DeserializationContext
 from pydantic import ValidationError
 
 from flow360.component.simulation import services
@@ -145,8 +144,7 @@ def load_status_from_asset(
         return None
 
     try:
-        with DeserializationContext():
-            return status_class.model_validate(status_dict)
+        return status_class.deserialize(status_dict)
     except ValidationError as exc:  # pragma: no cover - raises immediately
         status_name = cache_key.replace("_", " ")
         raise Flow360RuntimeError(

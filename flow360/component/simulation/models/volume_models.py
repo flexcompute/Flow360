@@ -19,8 +19,6 @@ from flow360_schema.framework.physical_dimensions import (
     Pressure,
     Velocity,
 )
-from flow360_schema.framework.validation.context import DeserializationContext
-
 import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
@@ -991,8 +989,7 @@ class BETDisk(MultiConstructorBaseModel):
             raise Flow360ValueError(f"Invalid keyword arguments for {cls.__name__}: {invalid_keys}")
 
         model_dict.update(kwargs)
-        with DeserializationContext():
-            return cls.model_validate(model_dict)
+        return cls.deserialize(model_dict)
 
     # pylint: disable=too-many-arguments, no-self-argument, not-callable
     @MultiConstructorBaseModel.model_constructor

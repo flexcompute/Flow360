@@ -248,8 +248,7 @@ class _ParamModelBase(Flow360BaseModel):
         model_dict = cls._handle_file(filename=filename)
         model_dict = cls._sanitize_params_dict(model_dict)
         model_dict, _ = cls._update_param_dict(model_dict)
-        with DeserializationContext():
-            return cls.model_validate(model_dict)
+        return cls.deserialize(model_dict)
 
     def _init_no_unit_context(self, filename, file_content, **kwargs):
         """
