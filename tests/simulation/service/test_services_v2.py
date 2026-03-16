@@ -471,11 +471,9 @@ def test_validate_error_from_multi_constructor():
 
     expected_errors = [
         {
-            "loc": ("models", 0, "private_attribute_input_cache", "chord_ref", "value"),
-            "type": "greater_than",
-            "msg": "Input should be greater than 0",
-            "input": -14,
-            "ctx": {"gt": "0.0"},
+            "loc": ("models", 0, "private_attribute_input_cache", "chord_ref"),
+            "type": "value_error",
+            "msg": "Value error, Value must be positive (>0), got -14.0",
         },
         {
             "type": "missing_argument",
@@ -561,9 +559,7 @@ def test_validate_error_from_multi_constructor():
                 "private_attribute_input_cache",
                 "size",
             ),
-            "msg": "Value error, arg '[ 0.2  0.3 -2. ] m' cannot have negative value",
-            "input": {"units": "m", "value": [0.2, 0.3, -2.0]},
-            "ctx": {"error": "arg '[ 0.2  0.3 -2. ] m' cannot have negative value"},
+            "msg": "Value error, All vector components must be positive (>0), got -2.0",
         }
     ]
     _compare_validation_errors(errors, expected_errors)
@@ -683,8 +679,9 @@ def test_init():
         unit_system_name="SI", length_unit="cm", root_item_type="SurfaceMesh"
     )
     assert data["reference_geometry"]["area"]["units"] == "cm**2"
-    assert data["reference_geometry"]["moment_center"]["units"] == "cm"
-    assert data["reference_geometry"]["moment_length"]["units"] == "cm"
+    # New schema types serialize moment_center/moment_length as bare SI values
+    assert data["reference_geometry"]["moment_center"] == [0.0, 0.0, 0.0]
+    assert data["reference_geometry"]["moment_length"] == [0.01, 0.01, 0.01]
     assert data["private_attribute_asset_cache"]["project_length_unit"] == 0.01
 
     # roughness_height now serializes as bare SI float (new dimension types)

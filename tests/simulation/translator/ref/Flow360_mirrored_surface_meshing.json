@@ -17,43 +17,13 @@
         "volume_zones": [
             {
                 "floor_type": {
+                    "type_name": "WheelBelts",
+                    "central_belt_x_range": [-1.0, 6.0],
                     "central_belt_width": 1.2,
-                    "central_belt_x_range": {
-                        "units": "1.0*m",
-                        "value": [
-                            -1.0,
-                            6.0
-                        ]
-                    },
-                    "front_wheel_belt_x_range": {
-                        "units": "1.0*m",
-                        "value": [
-                            -0.3,
-                            0.5
-                        ]
-                    },
-                    "front_wheel_belt_y_range": {
-                        "units": "1.0*m",
-                        "value": [
-                            0.7,
-                            1.2
-                        ]
-                    },
-                    "rear_wheel_belt_x_range": {
-                        "units": "1.0*m",
-                        "value": [
-                            2.6,
-                            3.8
-                        ]
-                    },
-                    "rear_wheel_belt_y_range": {
-                        "units": "1.0*m",
-                        "value": [
-                            0.7,
-                            1.2
-                        ]
-                    },
-                    "type_name": "WheelBelts"
+                    "front_wheel_belt_x_range": [-0.3, 0.5],
+                    "front_wheel_belt_y_range": [0.7, 1.2],
+                    "rear_wheel_belt_x_range": [2.6, 3.8],
+                    "rear_wheel_belt_y_range": [0.7, 1.2]
                 },
                 "floor_z_position": 0.0,
                 "height": 10.0,
@@ -69,14 +39,7 @@
         "mirror_status": {
             "mirror_planes": [
                 {
-                    "center": {
-                        "units": "1.0*m",
-                        "value": [
-                            1.6,
-                            0.0,
-                            0.0
-                        ]
-                    },
+                    "center": [1.6, 0.0, 0.0],
                     "name": "mirror_local",
                     "normal": [
                         1.0,

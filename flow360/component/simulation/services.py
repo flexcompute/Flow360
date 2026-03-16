@@ -944,7 +944,8 @@ def generate_process_json(
     """
 
     params_as_dict = json.loads(simulation_json)
-    mesh_unit = _get_mesh_unit(params_as_dict)
+    # Pre-check that project_length_unit exists before validation
+    _get_mesh_unit(params_as_dict)
 
     # Note: There should not be any validation error for params_as_dict. Here is just a deserialization of the JSON
     params, errors, _ = validate_model(
@@ -958,6 +959,10 @@ def generate_process_json(
 
     if errors is not None:
         raise ValueError(str(errors))
+
+    # Extract the validated mesh_unit (a proper unyt quantity) from the params object,
+    # not from the raw dict which may be a bare number.
+    mesh_unit = params.private_attribute_asset_cache.project_length_unit
 
     surface_mesh_res = _process_surface_mesh(params, root_item_type, mesh_unit)
     volume_mesh_res = _process_volume_mesh(params, root_item_type, mesh_unit, up_to)

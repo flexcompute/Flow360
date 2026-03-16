@@ -316,22 +316,16 @@
             "units": "cm**2",
             "value": 1.0
         },
-        "moment_center": {
-            "units": "cm",
-            "value": [
-                0.0,
-                0.0,
-                0.0
-            ]
-        },
-        "moment_length": {
-            "units": "cm",
-            "value": [
-                1.0,
-                1.0,
-                1.0
-            ]
-        }
+        "moment_center": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "moment_length": [
+            0.01,
+            0.01,
+            0.01
+        ]
     },
     "time_stepping": {
         "CFL": {

@@ -156,7 +156,10 @@ class SurfaceEdgeRefinement(Flow360BaseModel):
     @pd.field_validator("spacing", "distances", mode="before")
     @classmethod
     def _convert_list_to_unyt_array(cls, value):
-        if isinstance(value, List):
+        # Only coalesce lists of unyt quantities (e.g., [4*u.mm, 5*u.mm]) into a
+        # single unyt_array. Bare numeric lists (e.g., [0.004]) must NOT be wrapped
+        # so that the schema type validator can attach the correct SI unit.
+        if isinstance(value, List) and all(isinstance(v, u.unyt.unyt_quantity) for v in value):
             return u.unyt.unyt_array(value)
         return value
 
