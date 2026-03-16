@@ -640,16 +640,17 @@ class _FarfieldAllowingEnclosedEntities(_FarfieldBase):
         """,
     )
 
-    @contextual_model_validator(mode="after")
-    def _validate_enclosed_entities_no_intersection(self, param_info: ParamsValidationInfo):
+    @contextual_field_validator("enclosed_entities", mode="after")
+    @classmethod
+    def _validate_enclosed_entities_no_intersection(cls, value, param_info: ParamsValidationInfo):
         """Check that no CustomVolume's bounding_entities overlap with sibling entities."""
-        if self.enclosed_entities is None:
-            return self
-        expanded = param_info.expand_entity_list(self.enclosed_entities)
+        if value is None:
+            return value
+        expanded = param_info.expand_entity_list(value)
 
         custom_volumes_in_list = [e for e in expanded if isinstance(e, CustomVolume)]
         if not custom_volumes_in_list:
-            return self
+            return value
 
         non_cv_names = {e.name for e in expanded if not isinstance(e, CustomVolume)}
 
@@ -663,7 +664,7 @@ class _FarfieldAllowingEnclosedEntities(_FarfieldBase):
                     f"A `CustomVolume`'s bounding entities must be disjoint from its siblings."
                 )
 
-        return self
+        return value
 
     @contextual_field_validator("enclosed_entities", mode="after")
     @classmethod
