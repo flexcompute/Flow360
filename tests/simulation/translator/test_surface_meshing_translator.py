@@ -60,6 +60,7 @@ from flow360.component.simulation.primitives import (
     MirroredGeometryBodyGroup,
     MirroredSurface,
     SeedpointVolume,
+    Sphere,
     Surface,
 )
 from flow360.component.simulation.simulation_params import SimulationParams
@@ -767,6 +768,51 @@ def snappy_coupled_refinements():
 
 
 @pytest.fixture()
+def snappy_coupled_refinements_with_sphere():
+    test_geometry = TempGeometry("tester.stl", True)
+    with SI_unit_system:
+        surf_meshing_params = snappy.SurfaceMeshingParams(
+            defaults=snappy.SurfaceMeshingDefaults(
+                min_spacing=3 * u.mm, max_spacing=4 * u.mm, gap_resolution=1 * u.mm
+            ),
+            octree_spacing=OctreeSpacing(base_spacing=5 * u.mm),
+            refinements=[],
+            smooth_controls=snappy.SmoothControls(),
+        )
+        vol_meshing_params = VolumeMeshingParams(
+            defaults=VolumeMeshingDefaults(
+                boundary_layer_first_layer_thickness=1 * u.mm, boundary_layer_growth_rate=1.2
+            ),
+            refinements=[
+                UniformRefinement(
+                    spacing=2 * u.mm,
+                    entities=[
+                        Sphere(name="sphere0", center=[5, 10, 15] * u.mm, radius=25 * u.mm),
+                    ],
+                    project_to_surface=True,
+                ),
+            ],
+        )
+        param = SimulationParams(
+            private_attribute_asset_cache=AssetCache(
+                project_entity_info=test_geometry._get_entity_info(),
+                project_length_unit=1 * u.mm,
+                use_inhouse_mesher=True,
+            ),
+            meshing=ModularMeshingWorkflow(
+                surface_meshing=surf_meshing_params,
+                volume_meshing=vol_meshing_params,
+                zones=[
+                    CustomZones(
+                        entities=[SeedpointVolume(name="farfield", point_in_mesh=[0, 0, 0] * u.mm)]
+                    )
+                ],
+            ),
+        )
+    return param
+
+
+@pytest.fixture()
 def snappy_refinements_multiple_regions():
     test_geometry = TempGeometry("tester.stl", True)
     with SI_unit_system:
@@ -1072,6 +1118,15 @@ def test_snappy_coupled(get_snappy_geometry, snappy_coupled_refinements):
         snappy_coupled_refinements,
         get_snappy_geometry.mesh_unit,
         "snappy_coupled_refinements.json",
+        atol=1e-6,
+    )
+
+
+def test_snappy_coupled_with_sphere(get_snappy_geometry, snappy_coupled_refinements_with_sphere):
+    _translate_and_compare(
+        snappy_coupled_refinements_with_sphere,
+        get_snappy_geometry.mesh_unit,
+        "snappy_coupled_refinements_with_sphere.json",
         atol=1e-6,
     )
 

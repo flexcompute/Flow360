@@ -778,6 +778,17 @@ def _to_25_9_2(params_as_dict):
     return params_as_dict
 
 
+def _to_25_9_3(params_as_dict):
+    """Rename ``type_name`` to ``wall_function_type`` in ``use_wall_function`` dicts."""
+    for model in params_as_dict.get("models", []):
+        if model.get("type") != "Wall":
+            continue
+        wall_fn = model.get("use_wall_function")
+        if isinstance(wall_fn, dict) and "type_name" in wall_fn:
+            wall_fn["wall_function_type"] = wall_fn.pop("type_name")
+    return params_as_dict
+
+
 def _to_25_10_0(params_as_dict):
     """Migrate to 25.10.0: output_format string to list, add vtkhdf/ensight support."""
 
@@ -831,6 +842,7 @@ VERSION_MILESTONES = [
     (Flow360Version("25.9.0"), _to_25_9_0),
     (Flow360Version("25.9.1"), _to_25_9_1),
     (Flow360Version("25.9.2"), _to_25_9_2),
+    (Flow360Version("25.9.3"), _to_25_9_3),
     (Flow360Version("25.10.0"), _to_25_10_0),
 ]  # A list of the Python API version tuple with their corresponding updaters.
 
