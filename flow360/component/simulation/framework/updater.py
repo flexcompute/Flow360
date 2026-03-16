@@ -652,7 +652,7 @@ def _migrate_wall_function_bool(params_as_dict):
             continue
         wall_fn = model.get("use_wall_function")
         if wall_fn is True:
-            model["use_wall_function"] = {"type_name": "BoundaryLayer"}
+            model["use_wall_function"] = {"wall_function_type": "BoundaryLayer"}
         elif wall_fn is False:
             model.pop("use_wall_function", None)
 

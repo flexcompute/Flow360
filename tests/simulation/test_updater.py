@@ -1623,7 +1623,7 @@ def test_updater_to_25_9_0_convert_use_wall_function_bool():
     params_new = _to_25_9_0(params_as_dict)
     models = params_new["models"]
 
-    assert models[0]["use_wall_function"] == {"type_name": "BoundaryLayer"}
+    assert models[0]["use_wall_function"] == {"wall_function_type": "BoundaryLayer"}
     assert "use_wall_function" not in models[1]
     assert "use_wall_function" not in models[2]
     assert models[3].get("type") == "Freestream"
