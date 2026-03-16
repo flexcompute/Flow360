@@ -23,7 +23,7 @@ from flow360.component.simulation.meshing_param.volume_params import (
     UniformRefinement,
     UserDefinedFarfield,
     WindTunnelFarfield,
-    _FarfieldsAllowingEnclosedEntities,
+    _FarfieldAllowingEnclosedEntities,
 )
 from flow360.component.simulation.primitives import (
     AxisymmetricBody,
@@ -269,7 +269,7 @@ def _build_farfield_zone(volume_zones: list):
     """
     for zone in volume_zones:
         if (
-            isinstance(zone, _FarfieldsAllowingEnclosedEntities)
+            isinstance(zone, _FarfieldAllowingEnclosedEntities)
             and zone.enclosed_entities is not None
         ):
             patch_names: set[str] = set()

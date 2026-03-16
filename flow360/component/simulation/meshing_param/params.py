@@ -38,7 +38,7 @@ from flow360.component.simulation.meshing_param.volume_params import (
     UniformRefinement,
     UserDefinedFarfield,
     WindTunnelFarfield,
-    _FarfieldsAllowingEnclosedEntities,
+    _FarfieldAllowingEnclosedEntities,
 )
 from flow360.component.simulation.primitives import (
     AxisymmetricBody,
@@ -125,7 +125,7 @@ def _validate_farfield_enclosed_entities(
     Only applies to farfield types that support enclosed_entities (Automated, WindTunnel).
     """
     for zone in zones:
-        if not isinstance(zone, _FarfieldsAllowingEnclosedEntities):
+        if not isinstance(zone, _FarfieldAllowingEnclosedEntities):
             continue
 
         if zone.enclosed_entities is None:

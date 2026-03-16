@@ -626,7 +626,7 @@ class _FarfieldBase(Flow360BaseModel):
         raise ValueError(message)
 
 
-class _FarfieldsAllowingEnclosedEntities(_FarfieldBase):
+class _FarfieldAllowingEnclosedEntities(_FarfieldBase):
     """Intermediate class for farfield types that support enclosed_entities (Automated, WindTunnel)."""
 
     enclosed_entities: Optional[
@@ -683,7 +683,7 @@ class _FarfieldsAllowingEnclosedEntities(_FarfieldBase):
         return validate_entity_list_surface_existence(value, param_info)
 
 
-class AutomatedFarfield(_FarfieldsAllowingEnclosedEntities):
+class AutomatedFarfield(_FarfieldAllowingEnclosedEntities):
     """
     Settings for automatic farfield volume zone generation.
 
@@ -902,7 +902,7 @@ class WheelBelts(CentralBelt):
 
 
 # pylint: disable=no-member
-class WindTunnelFarfield(_FarfieldsAllowingEnclosedEntities):
+class WindTunnelFarfield(_FarfieldAllowingEnclosedEntities):
     """
     Settings for analytic wind tunnel farfield generation.
     The user only needs to provide tunnel dimensions and floor type and dimensions, rather than a geometry.
