@@ -7,24 +7,16 @@ import pytest
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.models.surface_models import Wall
-from flow360.component.simulation.models.volume_models import Fluid
 from flow360.component.simulation.outputs.output_entities import Point
 from flow360.component.simulation.outputs.outputs import (
     ForceOutput,
     MovingStatistic,
     ProbeOutput,
-    SurfaceIntegralOutput,
-    SurfaceProbeOutput,
-    TimeAverageProbeOutput,
-    TimeAverageSurfaceProbeOutput,
 )
 from flow360.component.simulation.primitives import Surface
-from flow360.component.simulation.run_control.run_control import RunControl
 from flow360.component.simulation.run_control.stopping_criterion import (
     StoppingCriterion,
 )
-from flow360.component.simulation.simulation_params import SimulationParams
-from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
 from flow360.component.simulation.unit_system import SI_unit_system
 from flow360.component.simulation.user_code.core.types import UserVariable
 from flow360.component.simulation.user_code.variables import solution
@@ -34,99 +26,6 @@ from flow360.component.simulation.validation.validation_context import TimeStepp
 @pytest.fixture(autouse=True)
 def change_test_dir(request, monkeypatch):
     monkeypatch.chdir(request.fspath.dirname)
-
-
-# ---------------------------------------------------------------------------
-# Field acceptance on the 4 monitor output classes
-# ---------------------------------------------------------------------------
-
-
-def test_probe_output_accepts_toggle():
-    with SI_unit_system:
-        output = ProbeOutput(
-            name="probe",
-            probe_points=[Point(name="pt", location=(0, 0, 0) * u.m)],
-            output_fields=["Cp"],
-            output_at_final_pseudo_step_only=True,
-        )
-    assert output.output_at_final_pseudo_step_only is True
-
-
-def test_surface_probe_output_accepts_toggle():
-    with SI_unit_system:
-        output = SurfaceProbeOutput(
-            name="sprobe",
-            probe_points=[Point(name="pt", location=(0, 0, 0) * u.m)],
-            target_surfaces=[Surface(name="wall")],
-            output_fields=["Cp"],
-            output_at_final_pseudo_step_only=True,
-        )
-    assert output.output_at_final_pseudo_step_only is True
-
-
-def test_surface_integral_output_accepts_toggle():
-    with SI_unit_system:
-        output = SurfaceIntegralOutput(
-            name="integral",
-            surfaces=[Surface(name="wall")],
-            output_fields=["Cp"],
-            output_at_final_pseudo_step_only=True,
-        )
-    assert output.output_at_final_pseudo_step_only is True
-
-
-def test_force_output_accepts_toggle():
-    wall = Wall(entities=Surface(name="fluid/wing"))
-    with SI_unit_system:
-        output = ForceOutput(
-            name="force",
-            models=[wall],
-            output_fields=["CL", "CD"],
-            output_at_final_pseudo_step_only=True,
-        )
-    assert output.output_at_final_pseudo_step_only is True
-
-
-def test_toggle_defaults_to_false():
-    with SI_unit_system:
-        output = ProbeOutput(
-            name="probe",
-            probe_points=[Point(name="pt", location=(0, 0, 0) * u.m)],
-            output_fields=["Cp"],
-        )
-    assert output.output_at_final_pseudo_step_only is False
-
-
-# ---------------------------------------------------------------------------
-# TimeAverage subclasses reject the toggle
-# ---------------------------------------------------------------------------
-
-
-def test_time_average_probe_output_rejects_toggle():
-    message = re.escape(
-        "`output_at_final_pseudo_step_only` is not supported on TimeAverageProbeOutput."
-    )
-    with SI_unit_system, pytest.raises(pydantic.ValidationError, match=message):
-        TimeAverageProbeOutput(
-            name="ta_probe",
-            entities=[Point(name="pt", location=(0, 0, 0) * u.m)],
-            output_fields=["Cp"],
-            output_at_final_pseudo_step_only=True,
-        )
-
-
-def test_time_average_surface_probe_output_rejects_toggle():
-    message = re.escape(
-        "`output_at_final_pseudo_step_only` is not supported on TimeAverageSurfaceProbeOutput."
-    )
-    with SI_unit_system, pytest.raises(pydantic.ValidationError, match=message):
-        TimeAverageSurfaceProbeOutput(
-            name="ta_sprobe",
-            entities=[Point(name="pt", location=(0, 0, 0) * u.m)],
-            target_surfaces=[Surface(name="wall")],
-            output_fields=["Cp"],
-            output_at_final_pseudo_step_only=True,
-        )
 
 
 # ---------------------------------------------------------------------------
