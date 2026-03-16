@@ -269,10 +269,8 @@ class MeshingParams(Flow360BaseModel):
             )
             for volume_zone in v
         )
-        if total_farfield == 0 and not _collect_all_custom_volumes(v):
-            raise ValueError(
-                "A farfield zone or `CustomVolume` entities are required in `volume_zones`."
-            )
+        if total_farfield == 0:
+            raise ValueError("Farfield zone is required in `volume_zones`.")
 
         if total_farfield > 1:
             raise ValueError("Only one farfield zone is allowed in `volume_zones`.")
@@ -507,7 +505,6 @@ class MeshingParams(Flow360BaseModel):
     def farfield_method(self):
         """Returns the farfield method used."""
         if self.volume_zones:
-            has_custom_zones = False
             for zone in self.volume_zones:  # pylint: disable=not-an-iterable
                 if isinstance(zone, AutomatedFarfield):
                     return zone.method
@@ -515,10 +512,6 @@ class MeshingParams(Flow360BaseModel):
                     return "wind-tunnel"
                 if isinstance(zone, UserDefinedFarfield):
                     return "user-defined"
-                if isinstance(zone, CustomZones):
-                    has_custom_zones = True
-            if has_custom_zones:  # CV + no FF => implicit UD
-                return "user-defined"
         return None
 
 
