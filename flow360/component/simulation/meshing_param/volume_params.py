@@ -28,7 +28,6 @@ from flow360.component.simulation.primitives import (
     WindTunnelGhostSurface,
     compute_bbox_tolerance,
 )
-from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.validation.validation_context import (
     ParamsValidationInfo,
     add_validation_warning,
@@ -797,7 +796,7 @@ class StaticFloor(Flow360BaseModel):
     type_name: Literal["StaticFloor"] = pd.Field(
         "StaticFloor", description="Static floor with friction patch.", frozen=True
     )
-    friction_patch_x_range: LengthType.Range = pd.Field(
+    friction_patch_x_range: Length.StrictlyIncreasingVector2 = pd.Field(
         default=(-3, 6) * u.m, description="(Minimum, maximum) x of friction patch."
     )
     friction_patch_width: Length.PositiveFloat64 = pd.Field(
@@ -820,7 +819,7 @@ class CentralBelt(Flow360BaseModel):
     type_name: Literal["CentralBelt"] = pd.Field(
         "CentralBelt", description="Floor with central belt.", frozen=True
     )
-    central_belt_x_range: LengthType.Range = pd.Field(
+    central_belt_x_range: Length.StrictlyIncreasingVector2 = pd.Field(
         default=(-2, 2) * u.m, description="(Minimum, maximum) x of central belt."
     )
     central_belt_width: Length.PositiveFloat64 = pd.Field(
@@ -837,16 +836,16 @@ class WheelBelts(CentralBelt):
         frozen=True,
     )
     # No defaults for the below; user must specify
-    front_wheel_belt_x_range: LengthType.Range = pd.Field(
+    front_wheel_belt_x_range: Length.StrictlyIncreasingVector2 = pd.Field(
         description="(Minimum, maximum) x of front wheel belt."
     )
-    front_wheel_belt_y_range: LengthType.PositiveRange = pd.Field(
+    front_wheel_belt_y_range: Length.PositiveStrictlyIncreasingVector2 = pd.Field(
         description="(Inner, outer) y of front wheel belt."
     )
-    rear_wheel_belt_x_range: LengthType.Range = pd.Field(
+    rear_wheel_belt_x_range: Length.StrictlyIncreasingVector2 = pd.Field(
         description="(Minimum, maximum) x of rear wheel belt."
     )
-    rear_wheel_belt_y_range: LengthType.PositiveRange = pd.Field(
+    rear_wheel_belt_y_range: Length.PositiveStrictlyIncreasingVector2 = pd.Field(
         description="(Inner, outer) y of rear wheel belt."
     )
 

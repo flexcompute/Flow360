@@ -11,7 +11,6 @@ from flow360_schema.framework.physical_dimensions import Angle, Length, Time
 import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.outputs.output_fields import CommonFieldNames
-from flow360.component.simulation.unit_system import AngleType, LengthType
 from flow360.component.simulation.user_code.core.types import (
     Expression,
     UnytQuantity,
@@ -44,9 +43,9 @@ class StaticView(Flow360BaseModel):
 
     type_name: Literal["StaticView"] = pd.Field("StaticView", frozen=True)
     # pylint: disable=no-member
-    position: LengthType.Point = pd.Field(description="Position of the camera in the scene")
+    position: Length.Vector3 = pd.Field(description="Position of the camera in the scene")
     # pylint: disable=no-member
-    target: LengthType.Point = pd.Field(description="Target point of the camera")
+    target: Length.Vector3 = pd.Field(description="Target point of the camera")
     up: Optional[Vector] = pd.Field(
         default=(0, 0, 1), description="Up vector, if not specified assume Z+"
     )
@@ -779,11 +778,11 @@ class SceneTransform(Flow360BaseModel):
 
     type_name: Literal["SceneTransform"] = pd.Field("SceneTransform", frozen=True)
     # pylint: disable=no-member
-    translation: LengthType.Point = pd.Field(
+    translation: Length.Vector3 = pd.Field(
         (0, 0, 0) * u.m, description="Translation applied to all scene objects"
     )
     # pylint: disable=no-member
-    rotation: AngleType.Vector = pd.Field(
+    rotation: Angle.Vector3 = pd.Field(
         (0, 0, 0) * u.deg, description="Rotation applied to all scene objects (Euler XYZ)"
     )
     scale: Vector = pd.Field((1, 1, 1), description="Scaling applied to all scene objects")

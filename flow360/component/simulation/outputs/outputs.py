@@ -10,7 +10,7 @@ import re
 from typing import Annotated, ClassVar, List, Literal, Optional, Tuple, Union, get_args
 
 import pydantic as pd
-from flow360_schema.framework.physical_dimensions import Time
+from flow360_schema.framework.physical_dimensions import Length, Time
 from typing_extensions import deprecated
 
 import flow360.component.simulation.units as u
@@ -60,7 +60,6 @@ from flow360.component.simulation.primitives import (
     Surface,
     WindTunnelGhostSurface,
 )
-from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.user_code.core.types import (
     Expression,
     UserVariable,
@@ -1401,7 +1400,7 @@ class Observer(Flow360BaseModel):
     """
 
     # pylint: disable=no-member
-    position: LengthType.Point = pd.Field(
+    position: Length.Vector3 = pd.Field(
         description="Position at which time history of acoustic pressure signal "
         + "is stored in aeroacoustic output file. The observer position can be outside the simulation domain, "
         + "but cannot be on or inside the solid surfaces of the simulation domain."

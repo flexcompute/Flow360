@@ -44,7 +44,6 @@ from flow360.component.simulation.primitives import (
     SurfacePair,
     WindTunnelGhostSurface,
 )
-from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.validation.validation_context import (
     ParamsValidationInfo,
     contextual_field_validator,
@@ -313,7 +312,7 @@ class WallRotation(Flow360BaseModel):
     """
 
     # pylint: disable=no-member
-    center: LengthType.Point = pd.Field(description="The center of rotation")
+    center: Length.Vector3 = pd.Field(description="The center of rotation")
     axis: Axis = pd.Field(description="The axis of rotation.")
     angular_velocity: AngularVelocity.Float64 = pd.Field("The value of the angular velocity.")
     type_name: Literal["WallRotation"] = pd.Field("WallRotation", frozen=True)

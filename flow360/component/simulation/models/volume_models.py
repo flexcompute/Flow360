@@ -7,7 +7,16 @@ from abc import ABCMeta
 from typing import Annotated, Dict, List, Literal, Optional, Union
 
 import pydantic as pd
-from flow360_schema.framework.physical_dimensions import Acceleration, HeatSource
+from flow360_schema.framework.physical_dimensions import (
+    Acceleration,
+    Angle,
+    HeatSource,
+    InverseArea,
+    InverseLength,
+    Length,
+    Pressure,
+    Velocity,
+)
 from flow360_schema.framework.validation.context import DeserializationContext
 
 import flow360.component.simulation.units as u
@@ -67,11 +76,7 @@ from flow360.component.simulation.primitives import (
 from flow360.component.simulation.unit_system import (
     AngleType,
     AngularVelocityType,
-    InverseAreaType,
-    InverseLengthType,
     LengthType,
-    PressureType,
-    VelocityType,
     u,
 )
 from flow360.component.simulation.user_code.core.types import ValueOrExpression
@@ -482,16 +487,16 @@ class ForcePerArea(Flow360BaseModel):
     """
 
     # pylint: disable=no-member
-    radius: LengthType.NonNegativeArray = pd.Field(
+    radius: Length.NonNegativeArray = pd.Field(
         description="Radius of the sampled locations in grid unit."
     )
     # pylint: disable=no-member
-    thrust: PressureType.Array = pd.Field(
+    thrust: Pressure.Array = pd.Field(
         description="Dimensional force per area in the axial direction, positive means the axial "
         + "force follows the same direction as the thrust axis. "
     )
     # pylint: disable=no-member
-    circumferential: PressureType.Array = pd.Field(
+    circumferential: Pressure.Array = pd.Field(
         description="Dimensional force per area in the circumferential direction, positive means the "
         + "circumferential force follows the same direction as the thrust axis with the right hand rule. "
     )
@@ -552,7 +557,7 @@ class ActuatorDisk(Flow360BaseModel):
         description="The force per area input for the `ActuatorDisk` model. "
         + "See :class:`ForcePerArea` documentation."
     )
-    reference_velocity: Optional[VelocityType.Vector] = pd.Field(  # pylint: disable=no-member
+    reference_velocity: Optional[Velocity.Vector3] = pd.Field(  # pylint: disable=no-member
         None,
         description="Reference velocity [Vx, Vy, Vz] for power calculation. "
         + "When provided, uses this velocity instead of local flow velocity "
@@ -833,7 +838,7 @@ class BETDisk(MultiConstructorBaseModel):
         + "provided in :class:`BETDiskSectionalPolar`.",
         frozen=True,
     )
-    alphas: AngleType.Array = pd.Field(
+    alphas: Angle.Array = pd.Field(
         description="Alphas associated with airfoil polars provided in "
         + ":class:`BETDiskSectionalPolar`.",
         frozen=True,
@@ -853,7 +858,7 @@ class BETDisk(MultiConstructorBaseModel):
         + ":py:attr:`sectional_radiuses`.",
         frozen=True,
     )
-    sectional_radiuses: LengthType.NonNegativeArray = pd.Field(
+    sectional_radiuses: Length.NonNegativeArray = pd.Field(
         description="A list of the radial locations in grid units at which :math:`C_l` "
         + "and :math:`C_d` are specified in :class:`BETDiskSectionalPolar`.",
         frozen=True,
@@ -1491,12 +1496,12 @@ class PorousMedium(Flow360BaseModel):
         + "porous medium material model.",
     )
 
-    darcy_coefficient: InverseAreaType.Point = pd.Field(
+    darcy_coefficient: InverseArea.Vector3 = pd.Field(
         description="Darcy coefficient of the porous media model which determines the scaling of the "
         + "viscous loss term. The 3 values define the coefficient for each of the 3 axes defined by "
         + "the reference frame of the volume zone."
     )
-    forchheimer_coefficient: InverseLengthType.Point = pd.Field(
+    forchheimer_coefficient: InverseLength.Vector3 = pd.Field(
         description="Forchheimer coefficient of the porous media model which determines "
         + "the scaling of the inertial loss term."
     )

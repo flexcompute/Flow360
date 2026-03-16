@@ -4,13 +4,12 @@ from typing import Literal, Optional, Tuple
 
 import numpy as np
 import pydantic as pd
-from flow360_schema.framework.physical_dimensions import Angle
+from flow360_schema.framework.physical_dimensions import Angle, Length
 from pydantic import PositiveFloat
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_utils import generate_uuid
-from flow360.component.simulation.unit_system import LengthType
 from flow360.component.types import Axis
 from flow360.exceptions import Flow360ValueError
 
@@ -35,11 +34,11 @@ def rotation_matrix_from_axis_and_angle(axis, angle):
 
 def _build_transformation_matrix(
     *,
-    origin: LengthType.Point,
+    origin: Length.Vector3,
     axis_of_rotation: Axis,
     angle_of_rotation: Angle.Float64,
     scale: Tuple[PositiveFloat, PositiveFloat, PositiveFloat],
-    translation: LengthType.Point,
+    translation: Length.Vector3,
 ) -> np.ndarray:
     """
     Derive a 3(row) x 4(column) transformation matrix and store as row major.
@@ -64,11 +63,11 @@ def _build_transformation_matrix(
 def _resolve_transformation_matrix(  # pylint:disable=too-many-arguments
     *,
     # pylint: disable=no-member
-    origin: LengthType.Point,
+    origin: Length.Vector3,
     axis_of_rotation: Axis,
     angle_of_rotation: Angle.Float64,
     scale: Tuple[PositiveFloat, PositiveFloat, PositiveFloat],
-    translation: LengthType.Point,
+    translation: Length.Vector3,
     private_attribute_matrix: Optional[list[float]] = None,
 ) -> np.ndarray:
     """
@@ -282,7 +281,7 @@ class Transformation(Flow360BaseModel):
 
     type_name: Literal["BodyGroupTransformation"] = pd.Field("BodyGroupTransformation", frozen=True)
 
-    origin: LengthType.Point = pd.Field(  # pylint:disable=no-member
+    origin: Length.Vector3 = pd.Field(  # pylint:disable=no-member
         (0, 0, 0) * u.m,  # pylint:disable=no-member
         description="The origin for geometry transformation in the order of scale,"
         " rotation and translation.",
@@ -293,7 +292,7 @@ class Transformation(Flow360BaseModel):
 
     scale: Tuple[PositiveFloat, PositiveFloat, PositiveFloat] = pd.Field((1, 1, 1))
 
-    translation: LengthType.Point = pd.Field((0, 0, 0) * u.m)  # pylint:disable=no-member
+    translation: Length.Vector3 = pd.Field((0, 0, 0) * u.m)  # pylint:disable=no-member
 
     private_attribute_matrix: Optional[list[float]] = pd.Field(None)
 
@@ -349,7 +348,7 @@ class CoordinateSystem(Flow360BaseModel):
     type_name: Literal["CoordinateSystem"] = pd.Field("CoordinateSystem", frozen=True)
 
     name: str = pd.Field(description="Name of the coordinate system.")
-    reference_point: LengthType.Point = pd.Field(  # pylint:disable=no-member
+    reference_point: Length.Vector3 = pd.Field(  # pylint:disable=no-member
         (0, 0, 0) * u.m,  # pylint:disable=no-member
         description="Reference point about which scaling and rotation are performed. "
         "Translation is applied after scale and rotation.",
@@ -360,7 +359,7 @@ class CoordinateSystem(Flow360BaseModel):
 
     scale: Tuple[PositiveFloat, PositiveFloat, PositiveFloat] = pd.Field((1, 1, 1))
 
-    translation: LengthType.Point = pd.Field((0, 0, 0) * u.m)  # pylint:disable=no-member
+    translation: Length.Vector3 = pd.Field((0, 0, 0) * u.m)  # pylint:disable=no-member
     private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
 
     def _get_local_matrix(self) -> np.ndarray:

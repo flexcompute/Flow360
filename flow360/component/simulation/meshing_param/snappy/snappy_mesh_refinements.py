@@ -4,7 +4,7 @@ from abc import ABCMeta
 from typing import Annotated, List, Literal, Optional, Union
 
 import pydantic as pd
-from flow360_schema.framework.physical_dimensions import Length
+from flow360_schema.framework.physical_dimensions import Angle, Length
 from typing_extensions import Self
 
 import flow360.component.simulation.units as u
@@ -12,7 +12,6 @@ from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.meshing_param.volume_params import UniformRefinement
 from flow360.component.simulation.primitives import SnappyBody, Surface
-from flow360.component.simulation.unit_system import AngleType, LengthType
 from flow360.log import log
 
 
@@ -94,10 +93,10 @@ class SurfaceEdgeRefinement(Flow360BaseModel):
     refinement_type: Literal["SnappySurfaceEdgeRefinement"] = pd.Field(
         "SnappySurfaceEdgeRefinement", frozen=True
     )
-    spacing: Optional[Union[LengthType.PositiveArray, Length.PositiveFloat64]] = pd.Field(
+    spacing: Optional[Union[Length.PositiveArray, Length.PositiveFloat64]] = pd.Field(
         None, description="Spacing on and close to the edges. Defaults to default min_spacing."
     )
-    distances: Optional[LengthType.PositiveArray] = pd.Field(
+    distances: Optional[Length.PositiveArray] = pd.Field(
         None, description="Distance from the edge where the spacing will be applied."
     )
     min_elem: Optional[pd.NonNegativeInt] = pd.Field(
@@ -106,7 +105,7 @@ class SurfaceEdgeRefinement(Flow360BaseModel):
     min_len: Optional[Length.NonNegativeFloat64] = pd.Field(
         None, description="Minimum length of the edge to apply edge refinement."
     )
-    included_angle: AngleType.Positive = pd.Field(
+    included_angle: Angle.PositiveFloat64 = pd.Field(
         150 * u.deg,
         description="If the angle between two elements is less than this value, the edge is extracted as a feature.",
     )
