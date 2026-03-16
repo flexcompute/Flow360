@@ -712,7 +712,8 @@ def _to_25_9_1(params_as_dict):
 
 def _to_25_9_2(params_as_dict):
     """
-    Migrate sphere-based rotation zones from ``RotationVolume`` to ``RotationSphere``.
+    - Migrate sphere-based rotation zones from ``RotationVolume`` to ``RotationSphere``.
+    - Rename ``boundaries`` to ``bounding_entities`` on ``CustomVolume`` dicts.
 
     Applies to both ``meshing.volume_zones`` and ``meshing.zones``.
     """
@@ -742,8 +743,49 @@ def _to_25_9_2(params_as_dict):
                 zone.pop("spacing_axial", None)
                 zone.pop("spacing_radial", None)
 
-    _migrate_rotation_volume_to_rotation_sphere(params_as_dict)
+    def _rename_custom_volume_boundaries(params_dict):
+        def _rename_in_entity(entity):
+            if not isinstance(entity, dict):
+                return
+            if entity.get("private_attribute_entity_type_name") != "CustomVolume":
+                return
+            if "boundaries" in entity and "bounding_entities" not in entity:
+                entity["bounding_entities"] = entity.pop("boundaries")
 
+        meshing = params_dict.get("meshing")
+        if not isinstance(meshing, dict):
+            return
+
+        for zone_key in ("volume_zones", "zones"):
+            zones = meshing.get(zone_key)
+            if not isinstance(zones, list):
+                continue
+
+            for zone in zones:
+                if not isinstance(zone, dict):
+                    continue
+
+                for container_key in ("entities", "enclosed_entities"):
+                    container = zone.get(container_key)
+                    if not isinstance(container, dict):
+                        continue
+                    for entity in container.get("stored_entities", []):
+                        _rename_in_entity(entity)
+
+    _migrate_rotation_volume_to_rotation_sphere(params_as_dict)
+    _rename_custom_volume_boundaries(params_as_dict)
+
+    return params_as_dict
+
+
+def _to_25_9_3(params_as_dict):
+    """Rename ``type_name`` to ``wall_function_type`` in ``use_wall_function`` dicts."""
+    for model in params_as_dict.get("models", []):
+        if model.get("type") != "Wall":
+            continue
+        wall_fn = model.get("use_wall_function")
+        if isinstance(wall_fn, dict) and "type_name" in wall_fn:
+            wall_fn["wall_function_type"] = wall_fn.pop("type_name")
     return params_as_dict
 
 
@@ -769,6 +811,7 @@ VERSION_MILESTONES = [
     (Flow360Version("25.9.0"), _to_25_9_0),
     (Flow360Version("25.9.1"), _to_25_9_1),
     (Flow360Version("25.9.2"), _to_25_9_2),
+    (Flow360Version("25.9.3"), _to_25_9_3),
 ]  # A list of the Python API version tuple with their corresponding updaters.
 
 

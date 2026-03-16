@@ -1,16 +1,20 @@
 {
+    "boundaries": {
+        "body01_face001": {
+            "boundaryName": "wing"
+        }
+    },
     "curvatureResolutionAngle": 10,
-    "growthRate": 1.07,
     "edges": {
         "body01_edge001": {
-            "type": "aniso",
             "method": "height",
-            "value": 3e-4
+            "type": "aniso",
+            "value": 0.0003
         },
         "body01_edge002": {
-            "type": "aniso",
             "method": "height",
-            "value": 3e-4
+            "type": "aniso",
+            "value": 0.0003
         },
         "body01_edge003": {
             "type": "projectAnisoSpacing"
@@ -24,9 +28,5 @@
             "maxEdgeLength": 0.15
         }
     },
-    "boundaries": {
-        "body01_face001": {
-            "boundaryName": "wing"
-        }
-    }
+    "growthRate": 1.07
 }

@@ -1,37 +1,36 @@
 {
-  "data": {
-    "credit": 100000000000.0,
-    "s3Usage": 0,
-    "totalTaskCount": 0,
-    "monthlyTaskCount": 0,
-    "creditExpiration": "2029-05-31T07:28:31.829Z",
-    "accountType": "tenant",
-    "tenantId": "0000000-0000-0000-0000-000000000000",
-    "tenantName": "Test",
-    "clientAdmin": true,
-    "allowanceCurrentCycleAmount": null,
-    "allowanceCurrentCycleTotalAmount": null,
-    "allowanceCurrentCycleStartDate": null,
-    "allowanceCurrentCycleEndDate": null,
-    "allowanceNextCycleStartDate": null,
-    "allowanceAllCycleStartDate": null,
-    "allowanceAllCycleEndDate": null,
-    "tenantMembers": [
-        {
-            "userIdentity": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
-            "userId": "AAAAAAAAAAAAAAAAAAAAA",
-            "userEmail": "user1@test.com"
-        },
-        {
-            "userIdentity": "us-east-1:bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
-            "userId": "BBBBBBBBBBBBBBBBBBBBB",
-            "userEmail": "user2@test.com"
-        }
-    ],
-    "intraCompanySharingEnabled": true,
-    "taskDeInfo": null,
-    "userId": "ABCDEFGHIJKLMNOPRSTUV",
-    "internal": true
-  }
+    "data": {
+        "accountType": "tenant",
+        "allowanceAllCycleEndDate": null,
+        "allowanceAllCycleStartDate": null,
+        "allowanceCurrentCycleAmount": null,
+        "allowanceCurrentCycleEndDate": null,
+        "allowanceCurrentCycleStartDate": null,
+        "allowanceCurrentCycleTotalAmount": null,
+        "allowanceNextCycleStartDate": null,
+        "clientAdmin": true,
+        "credit": 100000000000.0,
+        "creditExpiration": "2029-05-31T07:28:31.829Z",
+        "internal": true,
+        "intraCompanySharingEnabled": true,
+        "monthlyTaskCount": 0,
+        "s3Usage": 0,
+        "taskDeInfo": null,
+        "tenantId": "0000000-0000-0000-0000-000000000000",
+        "tenantMembers": [
+            {
+                "userEmail": "user1@test.com",
+                "userId": "AAAAAAAAAAAAAAAAAAAAA",
+                "userIdentity": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+            },
+            {
+                "userEmail": "user2@test.com",
+                "userId": "BBBBBBBBBBBBBBBBBBBBB",
+                "userIdentity": "us-east-1:bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
+            }
+        ],
+        "tenantName": "Test",
+        "totalTaskCount": 0,
+        "userId": "ABCDEFGHIJKLMNOPRSTUV"
+    }
 }
-

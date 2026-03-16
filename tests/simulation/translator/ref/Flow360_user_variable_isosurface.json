@@ -9,6 +9,10 @@
             "type": "Freestream"
         }
     },
+    "fluidProperties": {
+        "prandtlNumber": 0.72,
+        "turbulentPrandtlNumber": 0.9
+    },
     "freestream": {
         "Mach": 0.049999999999999996,
         "Temperature": 288.15,
@@ -16,30 +20,8 @@
         "betaAngle": 0.0,
         "muRef": 4e-08
     },
-    "fluidProperties": {
-        "prandtlNumber": 0.72,
-        "turbulentPrandtlNumber": 0.9
-    },
-    "thermallyPerfectGasModel": {
-        "temperatureRanges": [
-            {
-                "temperatureRangeMin": 0.694082942911678,
-                "temperatureRangeMax": 20.82248828735034,
-                "coefficients": [
-                    0.0,
-                    0.0,
-                    3.5,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    7.890809489614162e-16,
-                    0.0
-                ]
-            }
-        ]
-    },
     "geometry": {
+        "interfaceInterpolationTolerance": 0.2,
         "momentCenter": [
             0.45,
             0.0,
@@ -50,8 +32,7 @@
             1.2,
             1.2
         ],
-        "refArea": 0.016286016316209486,
-        "interfaceInterpolationTolerance": 0.2
+        "refArea": 0.016286016316209486
     },
     "initialCondition": {
         "p": "p",
@@ -123,6 +104,28 @@
     },
     "outputRescale": {
         "velocityScale": 1.0
+    },
+    "runControl": {
+        "externalProcessMonitorOutput": false
+    },
+    "thermallyPerfectGasModel": {
+        "temperatureRanges": [
+            {
+                "coefficients": [
+                    0.0,
+                    0.0,
+                    3.5,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    7.890809489614162e-16,
+                    0.0
+                ],
+                "temperatureRangeMax": 20.82248828735034,
+                "temperatureRangeMin": 0.694082942911678
+            }
+        ]
     },
     "timeStepping": {
         "CFL": {
@@ -219,8 +222,5 @@
             "name": "velocity_km_per_hr"
         }
     ],
-    "usingLiquidAsMaterial": false,
-    "runControl": {
-        "externalProcessMonitorOutput": false
-    }
+    "usingLiquidAsMaterial": false
 }

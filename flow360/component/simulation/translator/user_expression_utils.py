@@ -140,7 +140,7 @@ udf_prepending_code = {
     + "double ___temperatureTmp = "
     + "primitiveVars[4] / (primitiveVars[0] * 1.0 / 1.4);"
     + "double ___temperatureTotal = 1.0 + (1.4 - 1.0) / 2.0 * MachRef * MachRef;"
-    + f"double ___epsilon = {np.finfo(np.float64).eps};"
+    + f"double ___epsilon = {np.finfo(np.float64).eps};"  # pylint: disable=no-member
     + "double ___temperatureSafeDivide = (___temperatureTmp - ___temperatureTotal < 0) ? "
     + "___temperatureTmp - ___temperatureTotal - ___epsilon : "
     + "___temperatureTmp - ___temperatureTotal + ___epsilon;"

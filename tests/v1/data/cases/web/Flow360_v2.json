@@ -1,80 +1,99 @@
 {
-	"geometry": {
-		"refArea": 1,
-		"momentCenter": [0,0,0],
-		"momentLength": [1,1,1]
-	},
-	"freestream": {
-		"muRef": 4.2925193198151646e-8,
-		"Mach": 0.1,
-		"Temperature": 288.15,
-		"alphaAngle": 0,
-		"betaAngle": 0
-	},
-	"boundaries": {
-		"fluid/centerbody": {
-			"type": "NoSlipWall"
-		},
-		"fluid/farfield": {
-			"type": "Freestream"
-		},
-		"solid/adiabatic": {
-			"type": "SolidAdiabaticWall"
-		}
-	},
-	"volumeZones": {
-		"fluid": {
-			"modelType": "FluidDynamics"
-		},
-		"solid": {
-			"modelType": "HeatTransfer",
-			"thermalConductivity": 0.00238,
-			"volumetricHeatSource": "0.00826"
-		}
-	},
-	"timeStepping": {
-		"maxPseudoSteps": 10000,
-		"CFL": {
-			"type": "ramp",
-			"initial": 1,
-			"final": 100,
-			"rampSteps": 1000
-		},
-		"physicalSteps": 1,
-		"timeStepSize": "inf",
-		"comments": {}
-	},
-	"navierStokesSolver": {
-		"absoluteTolerance": 1e-9,
-		"linearSolverConfig": {
-			"maxIterations": 35
-		},
-		"kappaMUSCL": -1,
-		"orderOfAccuracy": 2
-	},
-	"turbulenceModelSolver": {
-		"modelType": "SpalartAllmaras",
-		"absoluteTolerance": 1e-8,
-		"linearSolverConfig": {
-			"maxIterations": 25
-		},
-		"equationEvalFrequency": 4,
-		"orderOfAccuracy": 2
-	},
-	"heatEquationSolver": {
-		"absoluteTolerance": 1e-11,
-		"linearSolverConfig": {
-			"maxIterations": 25,
-			"absoluteTolerance": 1e-12
-		},
-		"equationEvalFrequency": 10
-	},
-	"volumeOutput": {
-		"outputFormat": "tecplot",
-		"outputFields": ["primitiveVars","T","Cp","Mach"]
-	},
-	"surfaceOutput": {
-		"outputFormat": "tecplot",
-		"outputFields": ["primitiveVars","T","Cp","Cf","CfVec"]
-	}
+    "boundaries": {
+        "fluid/centerbody": {
+            "type": "NoSlipWall"
+        },
+        "fluid/farfield": {
+            "type": "Freestream"
+        },
+        "solid/adiabatic": {
+            "type": "SolidAdiabaticWall"
+        }
+    },
+    "freestream": {
+        "Mach": 0.1,
+        "Temperature": 288.15,
+        "alphaAngle": 0,
+        "betaAngle": 0,
+        "muRef": 4.2925193198151646e-08
+    },
+    "geometry": {
+        "momentCenter": [
+            0,
+            0,
+            0
+        ],
+        "momentLength": [
+            1,
+            1,
+            1
+        ],
+        "refArea": 1
+    },
+    "heatEquationSolver": {
+        "absoluteTolerance": 1e-11,
+        "equationEvalFrequency": 10,
+        "linearSolverConfig": {
+            "absoluteTolerance": 1e-12,
+            "maxIterations": 25
+        }
+    },
+    "navierStokesSolver": {
+        "absoluteTolerance": 1e-09,
+        "kappaMUSCL": -1,
+        "linearSolverConfig": {
+            "maxIterations": 35
+        },
+        "orderOfAccuracy": 2
+    },
+    "surfaceOutput": {
+        "outputFields": [
+            "primitiveVars",
+            "T",
+            "Cp",
+            "Cf",
+            "CfVec"
+        ],
+        "outputFormat": "tecplot"
+    },
+    "timeStepping": {
+        "CFL": {
+            "final": 100,
+            "initial": 1,
+            "rampSteps": 1000,
+            "type": "ramp"
+        },
+        "comments": {},
+        "maxPseudoSteps": 10000,
+        "physicalSteps": 1,
+        "timeStepSize": "inf"
+    },
+    "turbulenceModelSolver": {
+        "absoluteTolerance": 1e-08,
+        "equationEvalFrequency": 4,
+        "linearSolverConfig": {
+            "maxIterations": 25
+        },
+        "modelType": "SpalartAllmaras",
+        "orderOfAccuracy": 2
+    },
+    "volumeOutput": {
+        "outputFields": [
+            "primitiveVars",
+            "T",
+            "Cp",
+            "Mach"
+        ],
+        "outputFormat": "tecplot"
+    },
+    "volumeZones": {
+        "fluid": {
+            "modelType": "FluidDynamics"
+        },
+        "solid": {
+            "modelType": "HeatTransfer",
+            "thermalConductivity": 0.00238,
+            "volumetricHeatSource": "0.00826"
+        }
+    }
 }

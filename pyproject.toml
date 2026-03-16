@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "flow360"
-version = "v25.9.2b1"
+version = "v25.9.3b1"
 description = "Flow360 Python Client"
 authors = ["Flexcompute <support@flexcompute.com>"]
 
@@ -35,7 +35,7 @@ jupyter = {version="*", optional = true}
 jinja2 = {version = ">=3.1.2", optional = true}
 ipython = {version="*", optional = true}
 nbconvert = {version = ">=7.11.0", optional = true}
-sphinx = {version=">=7", optional = true}
+sphinx = {version=">=7,<9", optional = true}
 nbsphinx = {version = ">=0.8.7", optional = true}
 sphinx-copybutton = {version=">=0.5.2", optional = true}
 sphinx-book-theme = {version = ">=1.0.1", optional = true}

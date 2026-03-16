@@ -665,7 +665,10 @@ def test_wall_model_type_translation():
             operating_condition=AerospaceCondition.from_mach(mach=0.84),
             models=[
                 Fluid(),
-                Wall(surfaces=[my_wall], use_wall_function=WallFunction(type_name="InnerLayer")),
+                Wall(
+                    surfaces=[my_wall],
+                    use_wall_function=WallFunction(wall_function_type="InnerLayer"),
+                ),
                 Freestream(entities=[my_freestream]),
             ],
             time_stepping=Steady(CFL=RampCFL(initial=5, final=200, ramp_steps=40)),
@@ -681,7 +684,7 @@ def test_wall_model_type_translation():
                 Fluid(),
                 Wall(
                     surfaces=[my_wall],
-                    use_wall_function=WallFunction(type_name="BoundaryLayer"),
+                    use_wall_function=WallFunction(wall_function_type="BoundaryLayer"),
                 ),
                 Freestream(entities=[my_freestream]),
             ],
@@ -1523,7 +1526,7 @@ def test_auto_ref_area_settings():
 
 
 def test_custom_volume_translation():
-    zone_2 = CustomVolume(name="zone2", boundaries=[Surface(name="face2")])
+    zone_2 = CustomVolume(name="zone2", bounding_entities=[Surface(name="face2")])
     zone_2.axes = [(1, 0, 0), (0, 1, 0)]
 
     with SI_unit_system:
@@ -1537,11 +1540,13 @@ def test_custom_volume_translation():
                     CustomZones(
                         name="custom_zones",
                         entities=[
-                            CustomVolume(name="zone1", boundaries=[Surface(name="face1")]),
+                            CustomVolume(name="zone1", bounding_entities=[Surface(name="face1")]),
                             zone_2,
                         ],
                     ),
-                    UserDefinedFarfield(),
+                    UserDefinedFarfield(
+                        enclosed_entities=[Surface(name="face1"), Surface(name="face2")],
+                    ),
                 ],
             ),
             operating_condition=AerospaceCondition(velocity_magnitude=10),

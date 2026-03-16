@@ -1,5 +1,5 @@
 {
-    "fluid\/farfield": {
+    "fluid/farfield": {
         "xmax": 200.0,
         "xmin": -200.0,
         "ymax": 200.0,
@@ -7,7 +7,7 @@
         "zmax": 0.0,
         "zmin": -10.0
     },
-    "fluid\/periodic_0_l": {
+    "fluid/periodic_0_l": {
         "xmax": 200.0,
         "xmin": -200.0,
         "ymax": 200.0,
@@ -15,7 +15,7 @@
         "zmax": -10.0,
         "zmin": -10.0
     },
-    "fluid\/periodic_0_r": {
+    "fluid/periodic_0_r": {
         "xmax": 200.0,
         "xmin": -200.0,
         "ymax": 200.0,
@@ -23,7 +23,7 @@
         "zmax": 0.0,
         "zmin": 0.0
     },
-    "fluid\/wall": {
+    "fluid/wall": {
         "xmax": 1.0,
         "xmin": -1.0,
         "ymax": 1.0,

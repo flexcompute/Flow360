@@ -923,7 +923,8 @@ class Flow360BaseModel(BaseModel):
         if self.Config.include_hash:
             model_dict["hash"] = self._calculate_hash(model_dict)
         with open(filename, "w+", encoding="utf-8") as file_handle:
-            json.dump(model_dict, file_handle, indent=4)
+            json.dump(model_dict, file_handle, indent=4, sort_keys=True)
+            file_handle.write("\n")
 
     @classmethod
     def from_yaml(cls, filename: str, **parse_obj_kwargs) -> Flow360BaseModel:

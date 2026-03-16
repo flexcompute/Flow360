@@ -1,57 +1,59 @@
 {
-	"monitorOutput": {
-		"monitors": {
-			"R1": {
-				"type": "probe",
-				"monitorLocations": [
-					[
-						2.694298,
-						0,
-						1.0195910000000001
-					]
-				],
-				"outputFields": [
-					"primitiveVars"
-				]
-			},
-			"V3": {
-				"type": "probe",
-				"monitorLocations": [
-					[
-						4.007,
-						0,
-						-0.31760000000000005
-					],
-					[
-						4.007,
-						0,
-						-0.29760000000000003
-					],
-					[
-						4.007,
-						0,
-						-0.2776
-					]
-				],
-				"outputFields": [
-					"mut"
-				]
-			},
-			"MySurfaceIntegral": {
-				"type": "surfaceIntegral",
-				"surfaces": [
-					"NoSlipWall1",
-					"NoSlipWall2"
-				],
-				"outputFields": [ "Area" ]
-			}
-		}
-	},
-	"userDefinedFields": [
-		{
-			"name": "Area",
-			"expression": "Area = magnitude(nodeNormals);",
-			"comment":"computes nodal surface area."
-		}
-	]
+    "monitorOutput": {
+        "monitors": {
+            "MySurfaceIntegral": {
+                "outputFields": [
+                    "Area"
+                ],
+                "surfaces": [
+                    "NoSlipWall1",
+                    "NoSlipWall2"
+                ],
+                "type": "surfaceIntegral"
+            },
+            "R1": {
+                "monitorLocations": [
+                    [
+                        2.694298,
+                        0,
+                        1.0195910000000001
+                    ]
+                ],
+                "outputFields": [
+                    "primitiveVars"
+                ],
+                "type": "probe"
+            },
+            "V3": {
+                "monitorLocations": [
+                    [
+                        4.007,
+                        0,
+                        -0.31760000000000005
+                    ],
+                    [
+                        4.007,
+                        0,
+                        -0.29760000000000003
+                    ],
+                    [
+                        4.007,
+                        0,
+                        -0.2776
+                    ]
+                ],
+                "outputFields": [
+                    "mut"
+                ],
+                "type": "probe"
+            }
+        }
+    },
+    "userDefinedFields": [
+        {
+            "comment": "computes nodal surface area.",
+            "expression": "Area = magnitude(nodeNormals);",
+            "name": "Area"
+        }
+    ]
 }

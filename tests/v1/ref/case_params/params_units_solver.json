@@ -1,145 +1,145 @@
 {
-  "geometry": {
-    "refArea": 1.0,
-    "momentCenter": [
-      1,
-      2,
-      3
-    ],
-    "momentLength": [
-      37.490908,
-      20.362493146213485,
-      37.490908
-    ]
-  },
-  "boundaries": {
-    "2": {
-      "type": "SlipWall",
-      "name": "symmetry"
+    "boundaries": {
+        "1": {
+            "Velocity": [
+                0.0008162876014170267,
+                0.0016325752028340534,
+                0.0024488628042510802
+            ],
+            "name": "wing",
+            "type": "NoSlipWall"
+        },
+        "2": {
+            "name": "symmetry",
+            "type": "SlipWall"
+        },
+        "3": {
+            "name": "freestream",
+            "type": "Freestream"
+        }
     },
-    "1": {
-      "type": "NoSlipWall",
-      "name": "wing",
-      "Velocity": [
-        0.0008162876014170267,
-        0.0016325752028340534,
-        0.0024488628042510802
-      ]
+    "freestream": {
+        "Mach": 0.8404497144189705,
+        "Temperature": 288.15,
+        "alphaAngle": 3.06,
+        "betaAngle": 0.0,
+        "muRef": 4.292519319815164e-05
     },
-    "3": {
-      "type": "Freestream",
-      "name": "freestream"
-    }
-  },
-  "timeStepping": {
-    "maxPseudoSteps": 500,
-    "orderOfAccuracy": 2,
-    "CFL": {
-      "type": "adaptive",
-      "min": 0.1,
-      "max": 1000000.0,
-      "maxRelativeChange": 50.0,
-      "convergenceLimitingFactor": 1.0
-    },
-    "physicalSteps": 20,
-    "timeStepSize": 408352.8069698554
-  },
-  "freestream": {
-    "alphaAngle": 3.06,
-    "betaAngle": 0.0,
-    "Mach": 0.8404497144189705,
-    "muRef": 4.292519319815164e-05,
-    "Temperature": 288.15
-  },
-  "surfaceOutput": {
-    "outputFormat": "paraview",
-    "animationFrequency": -1,
-    "animationFrequencyOffset": 0,
-    "computeTimeAverages": false,
-    "animationFrequencyTimeAverage": -1,
-    "animationFrequencyTimeAverageOffset": 0,
-    "startAverageIntegrationStep": -1,
-    "writeSingleFile": false,
-    "outputFields": [],
-    "surfaces": {
-      "freestream": {
-        "outputFields": []
-      },
-      "symmetry": {
-        "outputFields": []
-      },
-      "wing": {
-        "outputFields": []
-      }
-    }
-  },
-  "volumeZones": {
-    "zone3": {
-      "modelType": "FluidDynamics",
-      "referenceFrame": {
-        "omegaRadians": 3.077331758193797e-06,
-        "centerOfRotation": [
-          0.0,
-          0.0,
-          0.0
+    "geometry": {
+        "momentCenter": [
+            1,
+            2,
+            3
         ],
-        "axisOfRotation": [
-          1,
-          0,
-          0
-        ]
-      }
-    },
-    "zone1": {
-      "modelType": "FluidDynamics",
-      "referenceFrame": {
-        "omegaRadians": 3.0773317581937964e-06,
-        "centerOfRotation": [
-          0.0,
-          0.0,
-          0.0
+        "momentLength": [
+            37.490908,
+            20.362493146213485,
+            37.490908
         ],
-        "axisOfRotation": [
-          1,
-          0,
-          0
-        ]
-      }
+        "refArea": 1.0
     },
-    "zone2": {
-      "modelType": "FluidDynamics",
-      "referenceFrame": {
-        "omegaRadians": 3.0773317581937964e-06,
-        "centerOfRotation": [
-          0.0,
-          0.0,
-          0.0
-        ],
-        "axisOfRotation": [
-          1,
-          0,
-          0
-        ]
-      }
+    "navierStokesSolver": {
+        "CFLMultiplier": 1.0,
+        "absoluteTolerance": 1e-10,
+        "equationEvalFrequency": 1,
+        "kappaMUSCL": -1.0,
+        "limitPressureDensity": false,
+        "limitVelocity": false,
+        "linearSolver": {
+            "maxIterations": 30
+        },
+        "lowDissipationControlFactors": [],
+        "lowMachPreconditioner": false,
+        "maxForceJacUpdatePhysicalSteps": 0,
+        "modelType": "Compressible",
+        "numericalDissipationFactor": 1.0,
+        "orderOfAccuracy": 2,
+        "relativeTolerance": 0.0,
+        "updateJacobianFrequency": 4
+    },
+    "surfaceOutput": {
+        "animationFrequency": -1,
+        "animationFrequencyOffset": 0,
+        "animationFrequencyTimeAverage": -1,
+        "animationFrequencyTimeAverageOffset": 0,
+        "computeTimeAverages": false,
+        "outputFields": [],
+        "outputFormat": "paraview",
+        "startAverageIntegrationStep": -1,
+        "surfaces": {
+            "freestream": {
+                "outputFields": []
+            },
+            "symmetry": {
+                "outputFields": []
+            },
+            "wing": {
+                "outputFields": []
+            }
+        },
+        "writeSingleFile": false
+    },
+    "timeStepping": {
+        "CFL": {
+            "convergenceLimitingFactor": 1.0,
+            "max": 1000000.0,
+            "maxRelativeChange": 50.0,
+            "min": 0.1,
+            "type": "adaptive"
+        },
+        "maxPseudoSteps": 500,
+        "orderOfAccuracy": 2,
+        "physicalSteps": 20,
+        "timeStepSize": 408352.8069698554
+    },
+    "volumeZones": {
+        "zone1": {
+            "modelType": "FluidDynamics",
+            "referenceFrame": {
+                "axisOfRotation": [
+                    1,
+                    0,
+                    0
+                ],
+                "centerOfRotation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "omegaRadians": 3.0773317581937964e-06
+            }
+        },
+        "zone2": {
+            "modelType": "FluidDynamics",
+            "referenceFrame": {
+                "axisOfRotation": [
+                    1,
+                    0,
+                    0
+                ],
+                "centerOfRotation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "omegaRadians": 3.0773317581937964e-06
+            }
+        },
+        "zone3": {
+            "modelType": "FluidDynamics",
+            "referenceFrame": {
+                "axisOfRotation": [
+                    1,
+                    0,
+                    0
+                ],
+                "centerOfRotation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "omegaRadians": 3.077331758193797e-06
+            }
+        }
     }
-  },
-  "navierStokesSolver": {
-    "CFLMultiplier": 1.0,
-    "absoluteTolerance": 1e-10,
-    "equationEvalFrequency": 1,
-    "kappaMUSCL": -1.0,
-    "limitPressureDensity": false,
-    "limitVelocity": false,
-    "linearSolver": {
-      "maxIterations": 30
-    },
-    "lowMachPreconditioner": false,
-    "maxForceJacUpdatePhysicalSteps": 0,
-    "modelType": "Compressible",
-    "numericalDissipationFactor": 1.0,
-    "orderOfAccuracy": 2,
-    "relativeTolerance": 0.0,
-    "updateJacobianFrequency": 4,
-    "lowDissipationControlFactors": []
-  }
 }
