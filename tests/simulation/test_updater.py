@@ -2109,3 +2109,28 @@ def test_updater_to_25_9_2_custom_volume_boundaries_via_updater():
 
     assert "boundaries" not in cv
     assert "bounding_entities" in cv
+
+
+def test_updater_to_25_9_3_rename_wall_function_type_name():
+    """Test 25.9.3 updater renames type_name to wall_function_type in use_wall_function."""
+
+    params_as_dict = {
+        "version": "25.9.2",
+        "unit_system": {"name": "SI"},
+        "models": [
+            {"type": "Wall", "use_wall_function": {"type_name": "BoundaryLayer"}, "name": "w1"},
+            {"type": "Wall", "use_wall_function": {"type_name": "InnerLayer"}, "name": "w2"},
+            {"type": "Wall", "use_wall_function": None, "name": "w3"},
+            {"type": "Wall", "name": "w4"},
+            {"type": "Freestream"},
+        ],
+    }
+
+    params_new = updater("25.9.2", "25.9.3", params_as_dict)
+    models = params_new["models"]
+
+    assert models[0]["use_wall_function"] == {"wall_function_type": "BoundaryLayer"}
+    assert models[1]["use_wall_function"] == {"wall_function_type": "InnerLayer"}
+    assert models[2]["use_wall_function"] is None
+    assert "use_wall_function" not in models[3]
+    assert models[4].get("type") == "Freestream"
