@@ -512,7 +512,11 @@ def _build_deduplicated_entity_registry_from_params(params: SimulationParams) ->
     seen_keys = set()
     for entity_type, entities in params.used_entity_registry.internal_registry.items():
         for entity in entities:
-            identifier = entity.private_attribute_id if entity.private_attribute_id is not None else entity.name
+            identifier = (
+                entity.private_attribute_id
+                if entity.private_attribute_id is not None
+                else entity.name
+            )
             key = (entity_type, identifier)
             if key not in seen_keys:
                 registry.register(entity)
