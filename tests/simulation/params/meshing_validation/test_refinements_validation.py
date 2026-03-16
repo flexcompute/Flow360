@@ -352,9 +352,9 @@ def test_volume_uniform_refinement_cylinder_none_inner_radius_project_to_surface
         validation_level="VolumeMesh",
     )
 
-    assert errors is None, (
-        "Cylinder with inner_radius=None is a full cylinder and should pass snappy validation"
-    )
+    assert (
+        errors is None
+    ), "Cylinder with inner_radius=None is a full cylinder and should pass snappy validation"
 
 
 def test_volume_uniform_refinement_default_project_to_surface():
