@@ -28,7 +28,8 @@ from flow360_schema.framework.validation.context import (  # noqa: F401 — re-u
 )
 from pydantic import Field, TypeAdapter
 
-from flow360.component.simulation.unit_system import LengthType
+from flow360_schema.framework.physical_dimensions import Length
+from flow360_schema.framework.validation.context import DeserializationContext
 from flow360.component.simulation.utils import BoundingBoxType
 
 SURFACE_MESH = "SurfaceMesh"
@@ -262,8 +263,11 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
                 "project_length_unit"
             ]
             if project_length_unit_dict:
-                # pylint: disable=no-member
-                return LengthType.validate(project_length_unit_dict)
+                # Serialized value is a bare float (SI), use DeserializationContext
+                # so the schema validator interprets it as SI meters.
+                adapter = TypeAdapter(Length.PositiveFloat64)
+                with DeserializationContext():
+                    return adapter.validate_python(project_length_unit_dict)
             return None
         except KeyError:
             return None

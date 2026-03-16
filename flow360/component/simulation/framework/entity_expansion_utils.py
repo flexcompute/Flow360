@@ -35,7 +35,10 @@ def _register_mirror_entities_in_registry(registry: "EntityRegistry", mirror_sta
 
     # Dict path: deserialize to MirrorStatus
     if isinstance(mirror_status, dict):
-        mirror_status = MirrorStatus.model_validate(mirror_status)
+        from flow360_schema.framework.validation.context import DeserializationContext
+
+        with DeserializationContext():
+            mirror_status = MirrorStatus.model_validate(mirror_status)
 
     # Object path: MirrorStatus (or compatible) with is_empty()
     if hasattr(mirror_status, "is_empty") and mirror_status.is_empty():

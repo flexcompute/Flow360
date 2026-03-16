@@ -3,6 +3,8 @@ import os
 
 import pytest
 
+from flow360_schema.framework.validation.context import DeserializationContext
+
 import flow360.component.simulation.units as u
 from flow360.component.geometry import Geometry, GeometryMeta
 from flow360.component.project import create_draft
@@ -1460,7 +1462,8 @@ def test_gai_mirror_status_translation():
 
     # Add mirror_status to asset_cache
     asset_cache_dict["mirror_status"] = mirror_status.model_dump(mode="json")
-    asset_cache = AssetCache.model_validate(asset_cache_dict)
+    with DeserializationContext():
+        asset_cache = AssetCache.model_validate(asset_cache_dict)
 
     with SI_unit_system:
         farfield = AutomatedFarfield(domain_type="half_body_positive_y")
@@ -1500,17 +1503,11 @@ def test_gai_mirror_status_translation():
     assert plane_json["name"] == "y_symmetry_plane"
     assert plane_json["normal"] == [0.0, 1.0, 0.0]
 
-    # KEY ASSERTION: Verify dimensional value (center) has proper units format
+    # KEY ASSERTION: Verify dimensional value (center) is serialized as SI values
     assert "center" in plane_json
     center = plane_json["center"]
-    assert isinstance(center, dict), "center should be a dict with value and units"
-    assert "value" in center, "center must have 'value' key"
-    assert "units" in center, "center must have 'units' key"
-
-    # Verify the values are correct (converted to Flow360 units - meters)
-    assert center["value"] == [0.5, 0.0, 0.25], f"Expected [0.5, 0.0, 0.25], got {center['value']}"
-    # Units should be in meter format (could be "m" or "1.0*m" depending on serialization)
-    assert "m" in center["units"], f"Expected meter units, got {center['units']}"
+    # Schema-side serialization outputs bare SI values (meters) as a list/tuple
+    assert center == [0.5, 0.0, 0.25], f"Expected [0.5, 0.0, 0.25], got {center}"
 
     # Assert mirrored entities are present
     assert "mirrored_geometry_body_groups" in mirror_status_json
@@ -1593,7 +1590,8 @@ def test_gai_mirror_status_translation_idempotency():
         )
 
         asset_cache_dict["mirror_status"] = mirror_status.model_dump(mode="json")
-        asset_cache = AssetCache.model_validate(asset_cache_dict)
+        with DeserializationContext():
+            asset_cache = AssetCache.model_validate(asset_cache_dict)
 
         with SI_unit_system:
             farfield = AutomatedFarfield(domain_type="half_body_positive_y")

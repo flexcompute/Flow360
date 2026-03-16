@@ -5,6 +5,7 @@ from collections import defaultdict
 from typing import Annotated, Any, Dict, List, Literal, Optional, Union
 
 import pydantic as pd
+from flow360_schema.framework.physical_dimensions import Length
 from flow360_schema.framework.validation.context import DeserializationContext
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
@@ -33,7 +34,6 @@ from flow360.component.simulation.primitives import (
     Surface,
     WindTunnelGhostSurface,
 )
-from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.utils import BoundingBoxType, model_attribute_unlock
 from flow360.component.utils import GeometryFiles
 from flow360.exceptions import Flow360ValueError
@@ -173,8 +173,7 @@ class GeometryEntityInfo(EntityInfoModel):
 
     global_bounding_box: Optional[BoundingBoxType] = pd.Field(None)
 
-    # pylint: disable=no-member
-    default_geometry_accuracy: Optional[LengthType.Positive] = pd.Field(
+    default_geometry_accuracy: Optional[Length.PositiveFloat64] = pd.Field(
         None,
         description="The default value based on uploaded geometry for geometry_accuracy.",
     )

@@ -8,6 +8,7 @@ from typing import Type, Union, get_args
 
 import numpy as np
 import unyt as u
+from flow360_schema.framework.physical_dimensions import Length
 
 from flow360.component.simulation.conversion import (
     LIQUID_IMAGINARY_FREESTREAM_MACH,
@@ -132,7 +133,6 @@ from flow360.component.simulation.translator.utils import (
     translate_setting_and_apply_to_all_entities,
     translate_value_or_expression_object,
 )
-from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.user_code.core.types import (
     Expression,
     UserVariable,
@@ -2134,7 +2134,7 @@ def translate_thermally_perfect_gas(  # pylint: disable=too-many-locals
 def get_solver_json(
     input_params: SimulationParams,
     # pylint: disable=no-member,unused-argument
-    mesh_unit: LengthType.Positive,
+    mesh_unit: Length.PositiveFloat64,
 ):
     """
     Get the solver json from the simulation parameters.
@@ -2572,7 +2572,7 @@ def get_solver_json(
 def get_columnar_data_processor_json(
     input_params: SimulationParams,
     # pylint: disable=no-member,unused-argument
-    mesh_unit: LengthType.Positive,
+    mesh_unit: Length.PositiveFloat64,
 ):
     """
     Get the columnar data processor json from the simulation parameters.

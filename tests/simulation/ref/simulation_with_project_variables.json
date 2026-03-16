@@ -283,14 +283,11 @@
                         "private_attribute_entity_type_name": "Point",
                         "private_attribute_id": "111",
                         "name": "pt1",
-                        "location": {
-                            "value": [
-                                1.0,
-                                2.0,
-                                3.0
-                            ],
-                            "units": "m"
-                        }
+                        "location": [
+                            1.0,
+                            2.0,
+                            3.0
+                        ]
                     }
                 ]
             },

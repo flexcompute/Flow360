@@ -7,9 +7,11 @@ from abc import ABCMeta
 from typing import Annotated, Dict, List, Literal, Optional, Union
 
 import pydantic as pd
+from flow360_schema.framework.physical_dimensions import Acceleration, Angle
 from flow360_schema.framework.physical_dimensions import (
-    Acceleration,
-    Angle,
+    AngularVelocity as AngularVelocityDim,
+)
+from flow360_schema.framework.physical_dimensions import (
     HeatSource,
     InverseArea,
     InverseLength,
@@ -73,12 +75,7 @@ from flow360.component.simulation.primitives import (
     GenericVolume,
     SeedpointVolume,
 )
-from flow360.component.simulation.unit_system import (
-    AngleType,
-    AngularVelocityType,
-    LengthType,
-    u,
-)
+from flow360.component.simulation.unit_system import AngularVelocityType, u
 from flow360.component.simulation.user_code.core.types import ValueOrExpression
 from flow360.component.simulation.utils import sanitize_params_dict
 from flow360.component.simulation.validation.validation_context import (
@@ -581,8 +578,8 @@ class BETDiskTwist(Flow360BaseModel):
     ====
     """
 
-    radius: LengthType.NonNegative = pd.Field(description="The radius of the radial location.")
-    twist: AngleType = pd.Field(description="The twist angle at this radial location.")
+    radius: Length.NonNegativeFloat64 = pd.Field(description="The radius of the radial location.")
+    twist: Angle.Float64 = pd.Field(description="The twist angle at this radial location.")
 
 
 # pylint: disable=no-member
@@ -598,8 +595,8 @@ class BETDiskChord(Flow360BaseModel):
     ====
     """
 
-    radius: LengthType.NonNegative = pd.Field(description="The radius of the radial location.")
-    chord: LengthType.NonNegative = pd.Field(
+    radius: Length.NonNegativeFloat64 = pd.Field(description="The radius of the radial location.")
+    chord: Length.NonNegativeFloat64 = pd.Field(
         description="The blade chord at this radial location. "
     )
 
@@ -744,15 +741,15 @@ class BETDiskCache(Flow360BaseModel):
     name: Optional[str] = None
     file: Optional[BETFileTypes] = None
     rotation_direction_rule: Optional[Literal["leftHand", "rightHand"]] = None
-    omega: Optional[AngularVelocityType.NonNegative] = None
-    chord_ref: Optional[LengthType.Positive] = None
+    omega: Optional[AngularVelocityDim.NonNegativeFloat64] = None
+    chord_ref: Optional[Length.PositiveFloat64] = None
     n_loading_nodes: Optional[pd.StrictInt] = None
     entities: Optional[EntityList[Cylinder]] = None
-    angle_unit: Optional[AngleType] = None
-    length_unit: Optional[LengthType.NonNegative] = None
+    angle_unit: Optional[Angle.Float64] = None
+    length_unit: Optional[Length.NonNegativeFloat64] = None
     number_of_blades: Optional[pd.StrictInt] = None
     initial_blade_direction: Optional[Axis] = None
-    blade_line_chord: Optional[LengthType.NonNegative] = None
+    blade_line_chord: Optional[Length.NonNegativeFloat64] = None
 
 
 class BETDisk(MultiConstructorBaseModel):
@@ -802,8 +799,8 @@ class BETDisk(MultiConstructorBaseModel):
         description='The rule for rotation direction and thrust direction, "rightHand" or "leftHand".',
     )
     number_of_blades: pd.StrictInt = pd.Field(gt=0, le=10, description="Number of blades to model.")
-    omega: AngularVelocityType.NonNegative = pd.Field(description="Rotating speed.")
-    chord_ref: LengthType.Positive = pd.Field(
+    omega: AngularVelocityDim.NonNegativeFloat64 = pd.Field(description="Rotating speed.")
+    chord_ref: Length.PositiveFloat64 = pd.Field(
         description="Dimensional reference chord used to compute sectional blade loadings."
     )
     n_loading_nodes: pd.StrictInt = pd.Field(
@@ -812,7 +809,7 @@ class BETDisk(MultiConstructorBaseModel):
         description="Number of nodes used to compute the sectional thrust and "
         + "torque coefficients :math:`C_t` and :math:`C_q`, defined in :ref:`betDiskLoadingNote`.",
     )
-    blade_line_chord: LengthType.NonNegative = pd.Field(
+    blade_line_chord: Length.NonNegativeFloat64 = pd.Field(
         0 * u.m,
         description="Dimensional chord to use if performing an unsteady BET Line simulation. "
         + "Default of 0.0 is an indication to run a steady BET Disk simulation.",
@@ -822,7 +819,7 @@ class BETDisk(MultiConstructorBaseModel):
         description="Orientation of the first blade in the BET model. "
         + "Must be specified if performing an unsteady BET Line simulation.",
     )
-    tip_gap: Union[Literal["inf"], LengthType.NonNegative] = pd.Field(
+    tip_gap: Union[Literal["inf"], Length.NonNegativeFloat64] = pd.Field(
         "inf",
         description="Dimensional distance between blade tip and solid bodies to "
         + "define a :ref:`tip loss factor <TipGap>`.",
@@ -1004,15 +1001,15 @@ class BETDisk(MultiConstructorBaseModel):
         cls,
         file: C81File,
         rotation_direction_rule: Literal["leftHand", "rightHand"],
-        omega: AngularVelocityType.NonNegative,
-        chord_ref: LengthType.Positive,
+        omega: AngularVelocityDim.NonNegativeFloat64,
+        chord_ref: Length.PositiveFloat64,
         n_loading_nodes: pd.StrictInt,
         entities: EntityList[Cylinder],
         number_of_blades: pd.StrictInt,
-        length_unit: LengthType.NonNegative,
-        angle_unit: AngleType,
+        length_unit: Length.NonNegativeFloat64,
+        angle_unit: Angle.Float64,
         initial_blade_direction: Optional[Axis] = None,
-        blade_line_chord: LengthType.NonNegative = 0 * u.m,
+        blade_line_chord: Length.NonNegativeFloat64 = 0 * u.m,
         name: str = "BET disk",
     ):
         """Constructs a :class: `BETDisk` instance from a given C81 file and additional inputs.
@@ -1091,14 +1088,14 @@ class BETDisk(MultiConstructorBaseModel):
         cls,
         file: DFDCFile,
         rotation_direction_rule: Literal["leftHand", "rightHand"],
-        omega: AngularVelocityType.NonNegative,
-        chord_ref: LengthType.Positive,
+        omega: AngularVelocityDim.NonNegativeFloat64,
+        chord_ref: Length.PositiveFloat64,
         n_loading_nodes: pd.StrictInt,
         entities: EntityList[Cylinder],
-        length_unit: LengthType.NonNegative,
-        angle_unit: AngleType,
+        length_unit: Length.NonNegativeFloat64,
+        angle_unit: Angle.Float64,
         initial_blade_direction: Optional[Axis] = None,
-        blade_line_chord: LengthType.NonNegative = 0 * u.m,
+        blade_line_chord: Length.NonNegativeFloat64 = 0 * u.m,
         name: str = "BET disk",
     ):
         """Constructs a :class: `BETDisk` instance from a given DFDC file and additional inputs.
@@ -1172,15 +1169,15 @@ class BETDisk(MultiConstructorBaseModel):
         cls,
         file: XFOILFile,
         rotation_direction_rule: Literal["leftHand", "rightHand"],
-        omega: AngularVelocityType.NonNegative,
-        chord_ref: LengthType.Positive,
+        omega: AngularVelocityDim.NonNegativeFloat64,
+        chord_ref: Length.PositiveFloat64,
         n_loading_nodes: pd.StrictInt,
         entities: EntityList[Cylinder],
-        length_unit: LengthType.NonNegative,
-        angle_unit: AngleType,
+        length_unit: Length.NonNegativeFloat64,
+        angle_unit: Angle.Float64,
         number_of_blades: pd.StrictInt,
         initial_blade_direction: Optional[Axis],
-        blade_line_chord: LengthType.NonNegative = 0 * u.m,
+        blade_line_chord: Length.NonNegativeFloat64 = 0 * u.m,
         name: str = "BET disk",
     ):
         """Constructs a :class: `BETDisk` instance from a given XROTOR file and additional inputs.
@@ -1261,14 +1258,14 @@ class BETDisk(MultiConstructorBaseModel):
         cls,
         file: XROTORFile,
         rotation_direction_rule: Literal["leftHand", "rightHand"],
-        omega: AngularVelocityType.NonNegative,
-        chord_ref: LengthType.Positive,
+        omega: AngularVelocityDim.NonNegativeFloat64,
+        chord_ref: Length.PositiveFloat64,
         n_loading_nodes: pd.StrictInt,
         entities: EntityList[Cylinder],
-        length_unit: LengthType.NonNegative,
-        angle_unit: AngleType,
+        length_unit: Length.NonNegativeFloat64,
+        angle_unit: Angle.Float64,
         initial_blade_direction: Optional[Axis] = None,
-        blade_line_chord: LengthType.NonNegative = 0 * u.m,
+        blade_line_chord: Length.NonNegativeFloat64 = 0 * u.m,
         name: str = "BET disk",
     ):
         """Constructs a :class: `BETDisk` instance from a given XROTOR file and additional inputs.
