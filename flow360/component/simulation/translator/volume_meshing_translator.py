@@ -23,7 +23,7 @@ from flow360.component.simulation.meshing_param.volume_params import (
     UniformRefinement,
     UserDefinedFarfield,
     WindTunnelFarfield,
-    _FarfieldBase,
+    _FarfieldsAllowingEnclosedEntities,
 )
 from flow360.component.simulation.primitives import (
     AxisymmetricBody,
@@ -262,13 +262,16 @@ def rotation_volume_entity_injector(
 
 
 def _build_farfield_zone(volume_zones: list):
-    """Build the farfield zone dict from enclosed_entities on any farfield type.
+    """Build the farfield zone dict from enclosed_entities on any farfield type supporting it.
 
     CustomVolume entities are unwrapped into their constituent bounding_entities,
     each translated via _translate_enclosed_entity_name. Final patches are deduplicated.
     """
     for zone in volume_zones:
-        if isinstance(zone, _FarfieldBase) and zone.enclosed_entities is not None:
+        if (
+            isinstance(zone, _FarfieldsAllowingEnclosedEntities)
+            and zone.enclosed_entities is not None
+        ):
             patch_names: set[str] = set()
             for entity in zone.enclosed_entities.stored_entities:
                 if isinstance(entity, CustomVolume):

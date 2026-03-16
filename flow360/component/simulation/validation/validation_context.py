@@ -450,7 +450,6 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         for zone in volume_zones:
             if zone.get("type") not in (
                 "AutomatedFarfield",
-                "UserDefinedFarfield",
                 "WindTunnelFarfield",
             ):
                 continue

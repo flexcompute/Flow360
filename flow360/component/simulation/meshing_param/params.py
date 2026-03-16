@@ -35,7 +35,7 @@ from flow360.component.simulation.meshing_param.volume_params import (
     UniformRefinement,
     UserDefinedFarfield,
     WindTunnelFarfield,
-    _FarfieldBase,
+    _FarfieldsAllowingEnclosedEntities,
 )
 from flow360.component.simulation.primitives import (
     AxisymmetricBody,
@@ -118,9 +118,11 @@ def _collect_rotation_entity_names(zones, param_info, zone_types):
 def _validate_farfield_enclosed_entities(
     zones, rotation_entity_names, has_custom_volumes, param_info
 ):
-    """Validate farfield enclosed_entities: require CustomVolumes and rotation-volume association."""
+    """Validate farfield enclosed_entities: require CustomVolumes and rotation-volume association.
+    Only applies to farfield types that support enclosed_entities (Automated, WindTunnel).
+    """
     for zone in zones:
-        if not isinstance(zone, _FarfieldBase):
+        if not isinstance(zone, _FarfieldsAllowingEnclosedEntities):
             continue
 
         if zone.enclosed_entities is None:
