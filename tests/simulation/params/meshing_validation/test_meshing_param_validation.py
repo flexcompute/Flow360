@@ -69,6 +69,10 @@ beta_mesher_context = ParamsValidationInfo({}, [])
 beta_mesher_context.is_beta_mesher = True
 beta_mesher_context.project_length_unit = "mm"
 
+snappy_context = ParamsValidationInfo({}, [])
+snappy_context.use_snappy = True
+snappy_context.is_beta_mesher = True
+
 
 def test_structured_box_only_in_beta_mesher():
     # raises when beta mesher is off
@@ -870,7 +874,20 @@ def test_sphere_in_uniform_refinement():
                 ],
             )
 
-    # raises without beta mesher
+    # also allowed with snappy
+    with ValidationContext(VOLUME_MESH, snappy_context):
+        with CGS_unit_system:
+            sphere = Sphere(
+                name="s_snappy",
+                center=(0, 0, 0),
+                radius=1.0,
+            )
+            UniformRefinement(
+                entities=[sphere],
+                spacing=0.1,
+            )
+
+    # raises without beta mesher or snappy
     with pytest.raises(
         pd.ValidationError,
         match=r"`Sphere` entity for `UniformRefinement` is supported only with beta mesher",
@@ -884,6 +901,45 @@ def test_sphere_in_uniform_refinement():
                 )
                 UniformRefinement(
                     entities=[sphere],
+                    spacing=0.1,
+                )
+
+
+def test_uniform_refinement_snappy_entity_restrictions():
+    """With snappy, UniformRefinement only accepts Box, Cylinder, and Sphere entities."""
+    # Box, Cylinder, Sphere all allowed
+    with ValidationContext(VOLUME_MESH, snappy_context):
+        with CGS_unit_system:
+            UniformRefinement(
+                entities=[
+                    Box(center=(0, 0, 0), size=(1, 1, 1), name="box"),
+                    Cylinder(
+                        name="cyl",
+                        axis=(0, 0, 1),
+                        center=(0, 0, 0),
+                        height=1.0,
+                        outer_radius=0.5,
+                    ),
+                    Sphere(name="sph", center=(0, 0, 0), radius=1.0),
+                ],
+                spacing=0.1,
+            )
+
+    # AxisymmetricBody rejected with snappy
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"`AxisymmetricBody` entity for `UniformRefinement` is not supported with snappyHexMesh",
+    ):
+        with ValidationContext(VOLUME_MESH, snappy_context):
+            with CGS_unit_system:
+                axisymmetric_body = AxisymmetricBody(
+                    name="axisymm",
+                    axis=(0, 0, 1),
+                    center=(0, 0, 0),
+                    profile_curve=[(-1, 0), (-1, 1), (1, 1), (1, 0)],
+                )
+                UniformRefinement(
+                    entities=[axisymmetric_body],
                     spacing=0.1,
                 )
 
@@ -2315,6 +2371,280 @@ def test_per_face_min_passage_size_warning_without_remove_hidden_geometry():
                     GeometryRefinement(
                         geometry_accuracy=0.01 * u.m,
                         faces=[Surface(name="face1")],
+                    ),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(
+                use_geometry_AI=True,
+                use_inhouse_mesher=True,
+                project_length_unit=1 * u.m,
+            ),
+        )
+    _, errors, warnings = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="Geometry",
+        validation_level="SurfaceMesh",
+    )
+    assert errors is None
+    assert warnings == []
+
+
+def test_multi_zone_remove_hidden_geometry_warning():
+    """Test that remove_hidden_geometry with multiple farfield/custom volume zones triggers a warning."""
+
+    # Test 1: remove_hidden_geometry=True with AutomatedFarfield + CustomZones → warning
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    geometry_accuracy=0.01 * u.m,
+                    surface_max_edge_length=0.1 * u.m,
+                    remove_hidden_geometry=True,
+                ),
+                volume_zones=[
+                    AutomatedFarfield(enclosed_entities=[Surface(name="face1")]),
+                    CustomZones(
+                        name="custom_zones",
+                        entities=[
+                            CustomVolume(
+                                name="zone1",
+                                bounding_entities=[Surface(name="face1"), Surface(name="face2")],
+                            )
+                        ],
+                    ),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(
+                use_geometry_AI=True,
+                use_inhouse_mesher=True,
+                project_length_unit=1 * u.m,
+            ),
+        )
+    _, errors, warnings = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="Geometry",
+        validation_level="SurfaceMesh",
+    )
+    assert errors is None
+    assert len(warnings) == 1
+    assert (
+        "removal of hidden geometry for multi-zone cases is not fully supported"
+        in warnings[0]["msg"].lower()
+    )
+
+    # Test 2: remove_hidden_geometry=True with a single AutomatedFarfield zone → no warning
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    geometry_accuracy=0.01 * u.m,
+                    surface_max_edge_length=0.1 * u.m,
+                    remove_hidden_geometry=True,
+                ),
+                volume_zones=[AutomatedFarfield()],
+            ),
+            private_attribute_asset_cache=AssetCache(
+                use_geometry_AI=True,
+                use_inhouse_mesher=True,
+                project_length_unit=1 * u.m,
+            ),
+        )
+    _, errors, warnings = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="Geometry",
+        validation_level="SurfaceMesh",
+    )
+    assert errors is None
+    assert warnings == []
+
+    # Test 3: remove_hidden_geometry=False with AutomatedFarfield + CustomZones → no warning
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    geometry_accuracy=0.01 * u.m,
+                    surface_max_edge_length=0.1 * u.m,
+                    remove_hidden_geometry=False,
+                ),
+                volume_zones=[
+                    AutomatedFarfield(enclosed_entities=[Surface(name="face1")]),
+                    CustomZones(
+                        name="custom_zones",
+                        entities=[
+                            CustomVolume(
+                                name="zone1",
+                                bounding_entities=[Surface(name="face1"), Surface(name="face2")],
+                            )
+                        ],
+                    ),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(
+                use_geometry_AI=True,
+                use_inhouse_mesher=True,
+                project_length_unit=1 * u.m,
+            ),
+        )
+    _, errors, warnings = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="Geometry",
+        validation_level="SurfaceMesh",
+    )
+    assert errors is None
+    assert warnings == []
+
+    # Test 4: remove_hidden_geometry=True with a single CustomZones containing multiple CustomVolumes → warning
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    geometry_accuracy=0.01 * u.m,
+                    surface_max_edge_length=0.1 * u.m,
+                    remove_hidden_geometry=True,
+                ),
+                volume_zones=[
+                    CustomZones(
+                        name="custom_zones",
+                        entities=[
+                            CustomVolume(
+                                name="zone1",
+                                bounding_entities=[Surface(name="face1"), Surface(name="face2")],
+                            ),
+                            CustomVolume(
+                                name="zone2",
+                                bounding_entities=[Surface(name="face3"), Surface(name="face4")],
+                            ),
+                        ],
+                    ),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(
+                use_geometry_AI=True,
+                use_inhouse_mesher=True,
+                project_length_unit=1 * u.m,
+            ),
+        )
+    _, errors, warnings = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="Geometry",
+        validation_level="SurfaceMesh",
+    )
+    assert errors is None
+    assert len(warnings) == 1
+    assert (
+        "removal of hidden geometry for multi-zone cases is not fully supported"
+        in warnings[0]["msg"].lower()
+    )
+
+    # Test 5: remove_hidden_geometry=True with UDF + 1 CV → no warning (UDF doesn't contribute a zone)
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    geometry_accuracy=0.01 * u.m,
+                    surface_max_edge_length=0.1 * u.m,
+                    remove_hidden_geometry=True,
+                ),
+                volume_zones=[
+                    UserDefinedFarfield(
+                        enclosed_entities=[Surface(name="face1"), Surface(name="face2")]
+                    ),
+                    CustomZones(
+                        name="custom_zones",
+                        entities=[
+                            CustomVolume(
+                                name="zone1",
+                                bounding_entities=[Surface(name="face1"), Surface(name="face2")],
+                            )
+                        ],
+                    ),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(
+                use_geometry_AI=True,
+                use_inhouse_mesher=True,
+                project_length_unit=1 * u.m,
+            ),
+        )
+    _, errors, warnings = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="Geometry",
+        validation_level="SurfaceMesh",
+    )
+    assert errors is None
+    assert warnings == []
+
+    # Test 6: remove_hidden_geometry=True with UDF + 2 CVs → warning (2 actual zones)
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    geometry_accuracy=0.01 * u.m,
+                    surface_max_edge_length=0.1 * u.m,
+                    remove_hidden_geometry=True,
+                ),
+                volume_zones=[
+                    UserDefinedFarfield(
+                        enclosed_entities=[Surface(name="face1"), Surface(name="face2")]
+                    ),
+                    CustomZones(
+                        name="custom_zones",
+                        entities=[
+                            CustomVolume(
+                                name="zone1",
+                                bounding_entities=[Surface(name="face1"), Surface(name="face2")],
+                            ),
+                            CustomVolume(
+                                name="zone2",
+                                bounding_entities=[Surface(name="face3"), Surface(name="face4")],
+                            ),
+                        ],
+                    ),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(
+                use_geometry_AI=True,
+                use_inhouse_mesher=True,
+                project_length_unit=1 * u.m,
+            ),
+        )
+    _, errors, warnings = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="Geometry",
+        validation_level="SurfaceMesh",
+    )
+    assert errors is None
+    assert len(warnings) == 1
+    assert (
+        "removal of hidden geometry for multi-zone cases is not fully supported"
+        in warnings[0]["msg"].lower()
+    )
+
+    # Test 7: remove_hidden_geometry=True with a single CV and implicit farfield → no warning (1 actual zone)
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    geometry_accuracy=0.01 * u.m,
+                    surface_max_edge_length=0.1 * u.m,
+                    remove_hidden_geometry=True,
+                ),
+                volume_zones=[
+                    CustomZones(
+                        name="custom_zones",
+                        entities=[
+                            CustomVolume(
+                                name="zone1",
+                                bounding_entities=[Surface(name="face1"), Surface(name="face2")],
+                            )
+                        ],
                     ),
                 ],
             ),

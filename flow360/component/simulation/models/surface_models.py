@@ -341,13 +341,13 @@ class WallFunction(Flow360BaseModel):
 
       >>> fl.Wall(
       ...     entities=volume_mesh["fluid/wall"],
-      ...     use_wall_function=fl.WallFunction(type_name="InnerLayer"),
+      ...     use_wall_function=fl.WallFunction(wall_function_type="InnerLayer"),
       ... )
 
     ====
     """
 
-    type_name: Literal["BoundaryLayer", "InnerLayer"] = pd.Field(
+    wall_function_type: Literal["BoundaryLayer", "InnerLayer"] = pd.Field(
         "BoundaryLayer",
         description="Type of wall function model. "
         + "'BoundaryLayer' uses integral flat plate boundary layer theory to predict wall shear stress. "
@@ -377,7 +377,7 @@ class Wall(BoundaryBase):
 
       >>> fl.Wall(
       ...     entities=volume_mesh["8"],
-      ...     use_wall_function=fl.WallFunction(type_name="InnerLayer"),
+      ...     use_wall_function=fl.WallFunction(wall_function_type="InnerLayer"),
       ... )
 
     - :code:`Wall` with wall function and wall rotation:

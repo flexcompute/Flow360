@@ -2122,7 +2122,7 @@ class Project(pd.BaseModel):
                 job_type=job_type,
                 priority=priority,
             )
-        except RuntimeError:
+        except (RuntimeError, Flow360WebError):
             if raise_on_error:
                 raise ValueError("Submission terminated due to error.") from None
             return None

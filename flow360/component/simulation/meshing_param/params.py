@@ -22,6 +22,9 @@ from flow360.component.simulation.meshing_param.meshing_specs import (
     MeshingDefaults,
     VolumeMeshingDefaults,
 )
+from flow360.component.simulation.meshing_param.meshing_validators import (
+    validate_snappy_uniform_refinement_entities,
+)
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     AxisymmetricRefinement,
@@ -477,6 +480,29 @@ class MeshingParams(Flow360BaseModel):
                 )
         return self
 
+    @contextual_model_validator(mode="after")
+    def _warn_multi_zone_remove_hidden_geometry(self) -> Self:
+        """Warn when remove_hidden_geometry is enabled with multiple farfield/custom volume zones."""
+        if not self.defaults.remove_hidden_geometry:  # pylint: disable=no-member
+            return self
+        if self.volume_zones is None:
+            return self
+        # AF and WTF each generate their own farfield zone but UDF does not,
+        # so it doesn't contribute to the zone count
+        has_non_udf_farfield = any(
+            isinstance(zone, (AutomatedFarfield, WindTunnelFarfield))
+            for zone in self.volume_zones  # pylint: disable=not-an-iterable
+        )
+        count = len(_collect_all_custom_volumes(self.volume_zones)) + (
+            1 if has_non_udf_farfield else 0
+        )
+        if count > 1:
+            add_validation_warning(
+                "Multiple farfield/custom volume zones detected. Removal of hidden geometry "
+                "for multi-zone cases is not fully supported and may not work as intended."
+            )
+        return self
+
     @property
     def farfield_method(self):
         """Returns the farfield method used."""
@@ -559,6 +585,19 @@ class VolumeMeshingParams(Flow360BaseModel):
                         refinement.spacing, type(refinement).__name__
                     )
 
+        return self
+
+    @contextual_model_validator(mode="after")
+    def _check_snappy_uniform_refinement_entities(self, param_info: ParamsValidationInfo):
+        """Validate projected UniformRefinement entities are compatible with snappyHexMesh."""
+        if not param_info.use_snappy:
+            return self
+        for refinement in self.refinements:  # pylint: disable=not-an-iterable
+            if (
+                isinstance(refinement, UniformRefinement)
+                and refinement.project_to_surface is not False
+            ):
+                validate_snappy_uniform_refinement_entities(refinement)
         return self
 
 
