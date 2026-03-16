@@ -79,6 +79,39 @@ def test_root_asset_entity_change_reflection(mock_id, mock_response):
         == "red"
     )
 
+    # VolumeMesh: verify zone center/axis modifications flow through set_up_params_for_uploading
+    # Simulate the customer scenario where self.volume is a DIFFERENT Python object than project._root_asset
+    project_vm = fl.Project.from_cloud(project_id="prj-99cc6f96-15d3-4170-973c-a0cced6bf36b")
+    separate_vm = VolumeMeshV2.from_cloud(id="vm-bff35714-41b1-4251-ac74-46a40b95a330")
+    assert separate_vm is not project_vm._root_asset
+
+    zone = separate_vm["fluid"]
+    zone.center = (1.2, 2.3, 3.4) * u.m
+    zone.axis = (0, 1, 0)
+
+    with fl.SI_unit_system:
+        vm_params = fl.SimulationParams(
+            models=[
+                fl.Rotation(
+                    name="testRotation",
+                    volumes=[zone],
+                    spec=fl.AngularVelocity(100 * fl.u.rpm),
+                ),
+            ],
+        )
+    vm_params = set_up_params_for_uploading(
+        params=vm_params,
+        root_asset=project_vm._root_asset,
+        length_unit=project_vm.length_unit,
+        use_beta_mesher=False,
+        use_geometry_AI=False,
+    )
+
+    entity_info = vm_params.private_attribute_asset_cache.project_entity_info
+    fluid_zone = next(z for z in entity_info.zones if z.name == "fluid")
+    assert all(fluid_zone.center == [1.2, 2.3, 3.4] * u.m)
+    assert fluid_zone.axis == (0, 1, 0)
+
 
 def test_get_asset_with_id(mock_id, mock_response):
     project = fl.Project.from_cloud(project_id="prj-41d2333b-85fd-4bed-ae13-15dcb6da519e")
