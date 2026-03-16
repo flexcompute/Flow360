@@ -15,6 +15,7 @@ from flow360.component.simulation.entity_info import (
 )
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
+from flow360.component.simulation.framework.entity_registry import EntityRegistry
 from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.outputs.outputs import (
     SurfaceIntegralOutput,
@@ -498,6 +499,31 @@ def _set_up_default_reference_geometry(params: SimulationParams, length_unit: Le
     return params
 
 
+def _build_deduplicated_entity_registry_from_params(params: SimulationParams) -> EntityRegistry:
+    """
+    Build a deduplicated entity registry from params' stored entities.
+
+    params.used_entity_registry may contain duplicates (same entity used in multiple
+    models/outputs). This function deduplicates by (entity_type, identifier), where
+    identifier is private_attribute_id when available, falling back to entity name
+    to avoid collapsing distinct entities that share a None id.
+    """
+    registry = EntityRegistry()
+    seen_keys = set()
+    for entity_type, entities in params.used_entity_registry.internal_registry.items():
+        for entity in entities:
+            identifier = (
+                entity.private_attribute_id
+                if entity.private_attribute_id is not None
+                else entity.name
+            )
+            key = (entity_type, identifier)
+            if key not in seen_keys:
+                registry.register(entity)
+                seen_keys.add(key)
+    return registry
+
+
 def set_up_params_for_uploading(  # pylint: disable=too-many-arguments
     root_asset,
     length_unit: LengthType,
@@ -557,12 +583,13 @@ def set_up_params_for_uploading(  # pylint: disable=too-many-arguments
         # Legacy workflow (without DraftContext): use root_asset.entity_info
         # User may have made modifications to the entities which is recorded in asset's entity registry
         # We need to reflect these changes.
-        root_asset.entity_info.update_persistent_entities(
-            asset_entity_registry=root_asset.internal_registry
+        entity_info = root_asset.entity_info
+        entity_info.update_persistent_entities(
+            asset_entity_registry=_build_deduplicated_entity_registry_from_params(params)
         )
 
         # Check if there are any new draft entities that have been added in the params by the user
-        entity_info = _set_up_params_non_persistent_entity_info(root_asset.entity_info, params)
+        entity_info = _set_up_params_non_persistent_entity_info(entity_info, params)
 
         # If the customer just load the param without re-specify the same set of entity grouping tags,
         # we need to update the entity grouping tags to the ones in the SimulationParams.
