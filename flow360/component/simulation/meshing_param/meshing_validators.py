@@ -20,7 +20,11 @@ def validate_snappy_uniform_refinement_entities(refinement: UniformRefinement):
                 "UniformRefinement for snappy accepts only Boxes with axes aligned"
                 + " with the global coordinate system (angle_of_rotation=0)."
             )
-        if isinstance(entity, Cylinder) and entity.inner_radius.to("m") != 0 * u.m:
+        if (
+            isinstance(entity, Cylinder)
+            and entity.inner_radius is not None
+            and entity.inner_radius.to("m") != 0 * u.m
+        ):
             raise ValueError(
                 "UniformRefinement for snappy accepts only full cylinders (where inner_radius = 0)."
             )

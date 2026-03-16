@@ -323,6 +323,40 @@ def test_volume_uniform_refinement_hollow_cylinder_project_to_surface():
     assert any("inner_radius" in msg or "full cylinders" in msg for msg in error_messages)
 
 
+def test_volume_uniform_refinement_cylinder_none_inner_radius_project_to_surface():
+    """
+    A Cylinder with inner_radius=None is a full cylinder (equivalent to inner_radius=0)
+    and must NOT trigger a validation error.
+    """
+    full_cylinder = Cylinder(
+        name="full_cyl_none",
+        inner_radius=None,
+        outer_radius=7 * u.mm,
+        axis=[0, 0, 1],
+        center=[0, 0, 0] * u.m,
+        height=10 * u.mm,
+    )
+
+    refinement = UniformRefinement(
+        spacing=5 * u.mm,
+        entities=[full_cylinder],
+        project_to_surface=True,
+    )
+
+    params = _make_snappy_params_with_volume_uniform_refinement(refinement)
+
+    _, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="Geometry",
+        validation_level="VolumeMesh",
+    )
+
+    assert errors is None, (
+        "Cylinder with inner_radius=None is a full cylinder and should pass snappy validation"
+    )
+
+
 def test_volume_uniform_refinement_default_project_to_surface():
     """
     When project_to_surface is None (the default, which acts as True for snappy),
