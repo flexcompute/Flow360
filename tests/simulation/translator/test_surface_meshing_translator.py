@@ -1238,6 +1238,83 @@ def test_gai_translator_hashing_ignores_id():
     ), f"Hashes should be identical despite different UUIDs:\n  Hash 1: {hashes[0]}\n  Hash 2: {hashes[1]}"
 
 
+def test_gai_translator_selectors_do_not_affect_hash():
+    """Test that selectors (with random selector_id) are removed from GAI translation output,
+    ensuring identical inputs produce identical hashes across runs."""
+
+    from flow360.component.simulation.framework.entity_selector import SurfaceSelector
+
+    hashes = []
+
+    for _ in range(2):
+        geometry = Geometry.from_local_storage(
+            geometry_id="geo-e5c01a98-2180-449e-b255-d60162854a83",
+            local_storage_path=os.path.join(
+                os.path.dirname(__file__), "data", "gai_geometry_entity_info"
+            ),
+            meta_data=GeometryMeta(
+                **local_metadata_builder(
+                    id="geo-e5c01a98-2180-449e-b255-d60162854a83",
+                    name="aaa",
+                    cloud_path_prefix="aaa",
+                    status="processed",
+                )
+            ),
+        )
+        geometry.group_faces_by_tag("faceId")
+        geometry.group_edges_by_tag("edgeId")
+        geometry.group_bodies_by_tag("groupByFile")
+
+        with create_draft(new_run_from=geometry) as draft:
+            with SI_unit_system:
+                selector = SurfaceSelector(name="all_faces").match("*")
+
+                params = SimulationParams(
+                    meshing=MeshingParams(
+                        defaults=MeshingDefaults(
+                            geometry_accuracy=0.05 * u.m,
+                            surface_max_edge_length=0.2,
+                        ),
+                        refinements=[
+                            SurfaceRefinement(
+                                name="selector_based_refinement",
+                                max_edge_length=0.1,
+                                faces=[selector],
+                            ),
+                        ],
+                    ),
+                    operating_condition=AerospaceCondition(
+                        velocity_magnitude=10 * u.m / u.s,
+                    ),
+                )
+
+                params = set_up_params_for_uploading(
+                    root_asset=geometry,
+                    length_unit=1 * u.m,
+                    params=params,
+                    use_beta_mesher=True,
+                    use_geometry_AI=True,
+                )
+
+        params, err, _ = validate_params_with_context(params, "Geometry", "SurfaceMesh")
+        assert err is None, f"Validation error: {err}"
+
+        translated = get_surface_meshing_json(params, mesh_unit=1 * u.m)
+
+        # Verify no selectors in translated output
+        translated_str = json.dumps(translated)
+        assert (
+            "selectors" not in translated_str
+        ), "Translated GAI output should not contain selectors after expansion"
+
+        hash_value = SimulationParams._calculate_hash(translated)
+        hashes.append(hash_value)
+
+    assert (
+        hashes[0] == hashes[1]
+    ), f"Hashes should be identical across runs:\n  Hash 1: {hashes[0]}\n  Hash 2: {hashes[1]}"
+
+
 def test_gai_analytic_wind_tunnel_farfield():
     with SI_unit_system:
         wind_tunnel = WindTunnelFarfield(
