@@ -198,8 +198,9 @@ class _ParamModelBase(Flow360BaseModel):
                         unit_system_manager.current.system_repr(),
                     )
                 )
+        else:
+            resolved = unit_system_manager.current
 
-        resolved = kwarg_unit_system or unit_system_manager.current or SI_unit_system
         return resolved, kwargs
 
     @classmethod
@@ -397,6 +398,8 @@ class SimulationParams(_ParamModelBase):
         with model_attribute_unlock(self.private_attribute_asset_cache, "project_length_unit"):
             # pylint: disable=assigning-non-slot
             self.private_attribute_asset_cache.project_length_unit = validated_mesh_unit
+        # Invalidate cached unit system since base_length changed
+        self.__dict__.pop("_cached_flow360_unit_system", None)
 
     @pd.validate_call
     def convert_unit(
@@ -817,17 +820,26 @@ class SimulationParams(_ParamModelBase):
         In meshing-only mode (no operating_condition), returns a RestrictedUnitSystem
         that only supports length conversions. Attempting to convert other dimensions
         raises ValueError.
-        """
-        if self.operating_condition is None:
-            return RestrictedUnitSystem("flow360_nondim", length_unit=self.base_length)
 
-        return RestrictedUnitSystem(
-            "flow360_nondim",
-            length_unit=self.base_length,
-            mass_unit=self.base_mass,
-            time_unit=self.base_time,
-            temperature_unit=self.base_temperature,
-        )
+        Cached per-instance to avoid leaking entries into unyt's global registry.
+        Invalidated by _private_set_length_unit when project_length_unit changes.
+        """
+        cached = self.__dict__.get("_cached_flow360_unit_system")
+        if cached is not None:
+            return cached
+
+        if self.operating_condition is None:
+            result = RestrictedUnitSystem("flow360_nondim", length_unit=self.base_length)
+        else:
+            result = RestrictedUnitSystem(
+                "flow360_nondim",
+                length_unit=self.base_length,
+                mass_unit=self.base_mass,
+                time_unit=self.base_time,
+                temperature_unit=self.base_temperature,
+            )
+        self.__dict__["_cached_flow360_unit_system"] = result
+        return result
 
     @property
     def used_entity_registry(self) -> EntityRegistry:
