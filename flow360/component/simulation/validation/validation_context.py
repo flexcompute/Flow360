@@ -156,6 +156,7 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
     @classmethod
     def _get_farfield_method_(cls, param_as_dict: dict):
         meshing = param_as_dict.get("meshing")
+        modular = False
         if meshing is None:
             # No meshing info.
             return None
@@ -164,8 +165,8 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
             volume_zones = meshing.get("volume_zones")
         else:
             volume_zones = meshing.get("zones")
+            modular = True
         if volume_zones:
-            has_custom_zones = False
             for zone in volume_zones:
                 if zone["type"] == "AutomatedFarfield":
                     return zone["method"]
@@ -173,10 +174,15 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
                     return "user-defined"
                 if zone["type"] == "WindTunnelFarfield":
                     return "wind-tunnel"
-                if zone["type"] in ("CustomZones", "SeedpointVolume"):
-                    has_custom_zones = True
-            if has_custom_zones:  # CV + no FF => implicit UD
-                return "user-defined"
+                if (
+                    zone["type"]
+                    in [
+                        "CustomZones",
+                        "SeedpointVolume",
+                    ]
+                    and modular
+                ):
+                    return "user-defined"
 
         return None
 
@@ -444,7 +450,6 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         for zone in volume_zones:
             if zone.get("type") not in (
                 "AutomatedFarfield",
-                "UserDefinedFarfield",
                 "WindTunnelFarfield",
             ):
                 continue
