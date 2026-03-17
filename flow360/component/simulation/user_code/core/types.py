@@ -22,6 +22,7 @@ from typing import (
 import numpy as np
 import pydantic as pd
 import unyt as u
+from flow360_schema import StrictUnitContext
 from pydantic import BeforeValidator, Discriminator, PlainSerializer, Tag
 from pydantic_core import InitErrorDetails, core_schema
 from typing_extensions import Self
@@ -327,7 +328,7 @@ class Variable(Flow360BaseModel):
 
     @pd.model_validator(mode="before")
     @classmethod
-    def deserialize(cls, values):
+    def preprocess_variable_declaration(cls, values):
         """
         Supporting syntax like `a = fl.Variable(name="a", value=1, description="some description")`.
         """
@@ -1253,12 +1254,11 @@ class ValueOrExpression(Expression, Generic[T]):
                         "Run-time expression is not allowed in this field. "
                         "Please ensure this field does not depend on any control or solver variables."
                     )
-            # Temporary suspend unit system to expose dimension problem
-            unit_system_manager.suspend()
-            pd.TypeAdapter(typevar_values).validate_python(
-                result, context={"allow_inf_nan": allow_run_time_expression}
-            )
-            unit_system_manager.resume()
+            # Suspend unit system for legacy types; strict mode rejects bare numbers for new composed types
+            with unit_system_manager.suspended(), StrictUnitContext():
+                pd.TypeAdapter(typevar_values).validate_python(
+                    result, context={"allow_inf_nan": allow_run_time_expression}
+                )
             return value
 
         expr_type = Annotated[Expression, pd.AfterValidator(_internal_validator)]
@@ -1666,6 +1666,6 @@ def compute_surface_integral_unit(variable: UserVariable, params) -> str:
         # Fallback if output_units is not set for expression or if it is a number
         base_unit = u.Unit("dimensionless")
 
-    area_unit = params.unit_system["area"].units
+    area_unit = params.unit_system.resolve()["area"].units
     result_unit = base_unit * area_unit
     return str(result_unit)

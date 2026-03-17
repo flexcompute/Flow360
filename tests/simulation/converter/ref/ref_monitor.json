@@ -12,18 +12,9 @@
             "interface_interpolation_tolerance": 0.2,
             "material": {
                 "dynamic_viscosity": {
-                    "effective_temperature": {
-                        "units": "K",
-                        "value": 110.4
-                    },
-                    "reference_temperature": {
-                        "units": "K",
-                        "value": 273.15
-                    },
-                    "reference_viscosity": {
-                        "units": "Pa*s",
-                        "value": 1.716e-05
-                    }
+                    "effective_temperature": 110.4,
+                    "reference_temperature": 273.15,
+                    "reference_viscosity": 1.716e-05
                 },
                 "name": "air",
                 "prandtl_number": 0.72,
@@ -46,14 +37,8 @@
                                             0.0,
                                             0.0
                                         ],
-                                        "temperature_range_max": {
-                                            "units": "K",
-                                            "value": 6000.0
-                                        },
-                                        "temperature_range_min": {
-                                            "units": "K",
-                                            "value": 200.0
-                                        },
+                                        "temperature_range_max": 6000.0,
+                                        "temperature_range_min": 200.0,
                                         "type_name": "NASA9CoefficientSet"
                                     }
                                 ],
@@ -132,14 +117,11 @@
             "entities": {
                 "stored_entities": [
                     {
-                        "location": {
-                            "units": "m",
-                            "value": [
-                                2.694298,
-                                0.0,
-                                1.0195910000000001
-                            ]
-                        },
+                        "location": [
+                            2.694298,
+                            0.0,
+                            1.0195910000000001
+                        ],
                         "name": "Point-0",
                         "private_attribute_entity_type_name": "Point"
                     }
@@ -157,38 +139,29 @@
             "entities": {
                 "stored_entities": [
                     {
-                        "location": {
-                            "units": "m",
-                            "value": [
-                                4.007,
-                                0.0,
-                                -0.31760000000000005
-                            ]
-                        },
+                        "location": [
+                            4.007,
+                            0.0,
+                            -0.31760000000000005
+                        ],
                         "name": "Point-1",
                         "private_attribute_entity_type_name": "Point"
                     },
                     {
-                        "location": {
-                            "units": "m",
-                            "value": [
-                                4.007,
-                                0.0,
-                                -0.29760000000000003
-                            ]
-                        },
+                        "location": [
+                            4.007,
+                            0.0,
+                            -0.29760000000000003
+                        ],
                         "name": "Point-2",
                         "private_attribute_entity_type_name": "Point"
                     },
                     {
-                        "location": {
-                            "units": "m",
-                            "value": [
-                                4.007,
-                                0.0,
-                                -0.2776
-                            ]
-                        },
+                        "location": [
+                            4.007,
+                            0.0,
+                            -0.2776
+                        ],
                         "name": "Point-3",
                         "private_attribute_entity_type_name": "Point"
                     }
@@ -221,5 +194,6 @@
     "unit_system": {
         "name": "SI"
     },
-    "user_defined_fields": []
+    "user_defined_fields": [],
+    "version": "25.9.2b1"
 }

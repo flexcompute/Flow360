@@ -10,6 +10,7 @@ from typing import Union
 import numpy as np
 import pydantic as pd
 import unyt as u
+from flow360_schema.framework.physical_dimensions import Length
 
 from flow360.component.simulation.draft_context.coordinate_system_manager import (
     CoordinateSystemManager,
@@ -27,7 +28,7 @@ from flow360.component.simulation.primitives import (
     _VolumeEntityBase,
 )
 from flow360.component.simulation.simulation_params import SimulationParams
-from flow360.component.simulation.unit_system import LengthType
+from flow360.component.simulation.units import validate_length
 from flow360.component.simulation.user_code.core.types import Expression, UserVariable
 from flow360.component.simulation.utils import is_exact_instance
 from flow360.exceptions import Flow360TranslationError
@@ -172,7 +173,7 @@ def preprocess_input(func):
             ]
         else:
             preprocess_exclude = []
-        validated_mesh_unit = LengthType.validate(mesh_unit)
+        validated_mesh_unit = validate_length(mesh_unit)
         processed_input = preprocess_param(input_params, validated_mesh_unit, preprocess_exclude)
 
         apply_coordinate_system_transformations(processed_input)
@@ -189,7 +190,7 @@ def preprocess_input(func):
 
 def preprocess_param(
     input_params: SimulationParams | str | dict,
-    validated_mesh_unit: LengthType,
+    validated_mesh_unit: Length.Float64,
     preprocess_exclude: list[str],
 ):
     """

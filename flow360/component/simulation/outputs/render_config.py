@@ -6,11 +6,11 @@ from enum import Enum
 from typing import List, Literal, Optional, Union
 
 import pydantic as pd
+from flow360_schema.framework.physical_dimensions import Angle, Length, Time
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.outputs.output_fields import CommonFieldNames
-from flow360.component.simulation.unit_system import AngleType, LengthType, TimeType
 from flow360.component.simulation.user_code.core.types import (
     Expression,
     UnytQuantity,
@@ -43,9 +43,9 @@ class StaticView(Flow360BaseModel):
 
     type_name: Literal["StaticView"] = pd.Field("StaticView", frozen=True)
     # pylint: disable=no-member
-    position: LengthType.Point = pd.Field(description="Position of the camera in the scene")
+    position: Length.Vector3 = pd.Field(description="Position of the camera in the scene")
     # pylint: disable=no-member
-    target: LengthType.Point = pd.Field(description="Target point of the camera")
+    target: Length.Vector3 = pd.Field(description="Target point of the camera")
     up: Optional[Vector] = pd.Field(
         default=(0, 0, 1), description="Up vector, if not specified assume Z+"
     )
@@ -64,7 +64,7 @@ class Keyframe(Flow360BaseModel):
     """
 
     type_name: Literal["Keyframe"] = pd.Field("Keyframe", frozen=True)
-    time: TimeType = pd.Field(
+    time: Time.Float64 = pd.Field(
         0, ge=0, description="Timestamp at which the keyframe should be reached"
     )
     view: StaticView = pd.Field(description="Camera parameters at this keyframe")
@@ -119,11 +119,11 @@ class OrthographicProjection(Flow360BaseModel):
     """
 
     type_name: Literal["OrthographicProjection"] = pd.Field("OrthographicProjection", frozen=True)
-    width: LengthType = pd.Field(description="Width of the camera frustum in world units")
-    near: LengthType = pd.Field(
+    width: Length.Float64 = pd.Field(description="Width of the camera frustum in world units")
+    near: Length.Float64 = pd.Field(
         description="Near clipping plane in world units, pixels closer to the camera than this value are culled"
     )
-    far: LengthType = pd.Field(
+    far: Length.Float64 = pd.Field(
         description="Far clipping plane in world units, pixels further from the camera than this value are culled"
     )
 
@@ -142,11 +142,11 @@ class PerspectiveProjection(Flow360BaseModel):
     """
 
     type_name: Literal["PerspectiveProjection"] = pd.Field("PerspectiveProjection", frozen=True)
-    fov: AngleType = pd.Field(description="Field of view of the camera (angle)")
-    near: LengthType = pd.Field(
+    fov: Angle.Float64 = pd.Field(description="Field of view of the camera (angle)")
+    near: Length.Float64 = pd.Field(
         description="Near clipping plane in world units, pixels closer to the camera than this value are culled"
     )
-    far: LengthType = pd.Field(
+    far: Length.Float64 = pd.Field(
         description="Far clipping plane in world units, pixels further from the camera than this value are culled"
     )
 
@@ -778,11 +778,11 @@ class SceneTransform(Flow360BaseModel):
 
     type_name: Literal["SceneTransform"] = pd.Field("SceneTransform", frozen=True)
     # pylint: disable=no-member
-    translation: LengthType.Point = pd.Field(
+    translation: Length.Vector3 = pd.Field(
         (0, 0, 0) * u.m, description="Translation applied to all scene objects"
     )
     # pylint: disable=no-member
-    rotation: AngleType.Vector = pd.Field(
+    rotation: Angle.Vector3 = pd.Field(
         (0, 0, 0) * u.deg, description="Rotation applied to all scene objects (Euler XYZ)"
     )
     scale: Vector = pd.Field((1, 1, 1), description="Scaling applied to all scene objects")

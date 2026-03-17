@@ -7,10 +7,20 @@ on:
   pull_request:
     types: [ opened, synchronize, reopened, ready_for_review ]
   workflow_call:
+    secrets:
+      AWS_CODEARTIFACT_READ_ACCESS_KEY:
+        required: true
+      AWS_CODEARTIFACT_READ_ACCESS_SECRET:
+        required: true
+
+permissions:
+  contents: read
+  pull-requests: write
 
 jobs:
   code-style:
     uses: ./.github/workflows/codestyle.yml
+    secrets: inherit
   testing:
     needs: code-style
     name: test ${{ matrix.python-version }} - ${{ matrix.platform }}
@@ -46,11 +56,62 @@ jobs:
         virtualenvs-in-project: true
         virtualenvs-create: true
 
+    - name: Setup CodeArtifact auth for Poetry
+      uses: ./.github/actions/setup-codeartifact-poetry-auth
+      with:
+        aws-access-key-id: ${{ secrets.AWS_CODEARTIFACT_READ_ACCESS_KEY }}
+        aws-secret-access-key: ${{ secrets.AWS_CODEARTIFACT_READ_ACCESS_SECRET }}
+
     - name: Install dependencies
       run: poetry install
 
+    # Non-coverage matrix combinations: run tests normally
     - name: Run simulation_params tests
+      if: ${{ !(matrix.python-version == '3.10' && matrix.platform == 'ubuntu-latest') }}
       run: poetry run pytest -rA tests/simulation -vv
 
     - name: Run flow360_params tests
+      if: ${{ !(matrix.python-version == '3.10' && matrix.platform == 'ubuntu-latest') }}
       run: poetry run pytest -rA --ignore tests/simulation -vv
+
+    # Coverage matrix combination (Python 3.10 + ubuntu-latest): run tests with coverage
+    - name: Run simulation_params tests with coverage
+      if: matrix.python-version == '3.10' && matrix.platform == 'ubuntu-latest'
+      run: poetry run pytest -rA tests/simulation -vv --cov=flow360 --cov-report=term-missing:skip-covered
+
+    - name: Run flow360_params tests with coverage
+      if: matrix.python-version == '3.10' && matrix.platform == 'ubuntu-latest'
+      run: poetry run pytest -rA --ignore tests/simulation -vv --cov=flow360 --cov-append --cov-report=term-missing:skip-covered
+
+    - name: Upload coverage data
+      if: matrix.python-version == '3.10' && matrix.platform == 'ubuntu-latest'
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-data
+        path: .coverage
+        include-hidden-files: true
+
+  coverage:
+    name: Post Coverage Comment
+    needs: testing
+    if: always() && !cancelled() && github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download coverage data
+        id: download-coverage
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-data
+
+      - name: Post coverage comment
+        if: steps.download-coverage.outcome == 'success'
+        uses: py-cov-action/python-coverage-comment-action@7188638f871f721a365d644f505d1ff3df20d683 # v3.40
+        with:
+          GITHUB_TOKEN: ${{ github.token }}
+          SUBPROJECT_ID: flow360

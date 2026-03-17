@@ -9,10 +9,19 @@ from typing import Annotated, List, Literal, Optional, Union
 
 import pydantic as pd
 import unyt as u
+from flow360_schema.framework.physical_dimensions import (
+    AbsoluteTemperature,
+    Density,
+    Length,
+    Mass,
+    Time,
+    Velocity,
+)
+from flow360_schema.framework.validation.context import DeserializationContext
 
 from flow360.component.simulation.conversion import (
     LIQUID_IMAGINARY_FREESTREAM_MACH,
-    unit_converter,
+    RestrictedUnitSystem,
 )
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.boundary_split import (
@@ -72,19 +81,12 @@ from flow360.component.simulation.primitives import (
 from flow360.component.simulation.run_control.run_control import RunControl
 from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
 from flow360.component.simulation.unit_system import (
-    AbsoluteTemperatureType,
-    DensityType,
     DimensionedTypes,
-    LengthType,
-    MassType,
-    TimeType,
     UnitSystem,
-    UnitSystemType,
-    VelocityType,
-    is_flow360_unit,
+    UnitSystemConfig,
     unit_system_manager,
-    unyt_quantity,
 )
+from flow360.component.simulation.units import validate_length
 from flow360.component.simulation.user_code.core.types import (
     UserVariable,
     batch_get_user_variable_units,
@@ -134,10 +136,7 @@ from flow360.component.simulation.validation.validation_simulation_params import
     _populate_validated_field_to_validation_context,
 )
 from flow360.component.simulation.validation.validation_utils import has_mirroring_usage
-from flow360.error_messages import (
-    unit_system_inconsistent_msg,
-    use_unit_system_for_simulation_msg,
-)
+from flow360.error_messages import unit_system_inconsistent_msg
 from flow360.exceptions import Flow360ConfigurationError, Flow360RuntimeError
 from flow360.log import log
 from flow360.version import __version__
@@ -163,30 +162,44 @@ class _ParamModelBase(Flow360BaseModel):
     """
 
     version: str = pd.Field(__version__, frozen=True)
-    unit_system: UnitSystemType = pd.Field(frozen=True, discriminator="name")
+    unit_system: UnitSystemConfig = pd.Field(frozen=True)
     model_config = pd.ConfigDict(include_hash=True)
 
     @classmethod
     def _init_check_unit_system(cls, **kwargs):
         """
-        Check existence of unit system and raise an error if it is not set or inconsistent.
+        Resolve the unit system from kwargs / active context / SI default.
+        Raises if an explicit kwarg unit_system conflicts with the active context.
+        Returns (resolved_unit_system, remaining_kwargs).
         """
         if unit_system_manager.current is None:
-            raise Flow360RuntimeError(use_unit_system_for_simulation_msg)
-        # pylint: disable=duplicate-code
+            raise Flow360RuntimeError(
+                "Please use a unit system context (e.g. `with SI_unit_system:`) "
+                "when constructing SimulationParams from Python."
+            )
+
         kwarg_unit_system = kwargs.pop("unit_system", None)
         if kwarg_unit_system is not None:
-            if not isinstance(kwarg_unit_system, UnitSystem):
-                kwarg_unit_system = UnitSystem.from_dict(**kwarg_unit_system)
-            if kwarg_unit_system != unit_system_manager.current:
+            # Resolve to UnitSystem for comparison
+            if isinstance(kwarg_unit_system, UnitSystemConfig):
+                resolved = kwarg_unit_system.resolve()
+            elif isinstance(kwarg_unit_system, dict):
+                resolved = UnitSystemConfig.model_validate(kwarg_unit_system).resolve()
+            elif isinstance(kwarg_unit_system, UnitSystem):
+                resolved = kwarg_unit_system
+            else:
+                raise Flow360RuntimeError(f"Unexpected unit_system type: {type(kwarg_unit_system)}")
+            if resolved != unit_system_manager.current:
                 raise Flow360RuntimeError(
                     unit_system_inconsistent_msg(
-                        kwarg_unit_system.system_repr(),
+                        resolved.system_repr(),
                         unit_system_manager.current.system_repr(),
                     )
                 )
+        else:
+            resolved = unit_system_manager.current
 
-        return kwargs
+        return resolved, kwargs
 
     @classmethod
     def _get_version_from_dict(cls, model_dict: dict) -> str:
@@ -228,16 +241,18 @@ class _ParamModelBase(Flow360BaseModel):
         """
         return sanitize_params_dict(model_dict)
 
+    @classmethod
+    def from_file(cls, filename: str):
+        """Override to run sanitizer and version updater before validation."""
+        model_dict = cls._handle_file(filename=filename)
+        model_dict = cls._sanitize_params_dict(model_dict)
+        model_dict, _ = cls._update_param_dict(model_dict)
+        return cls.deserialize(model_dict)
+
     def _init_no_unit_context(self, filename, file_content, **kwargs):
         """
-        Initialize the simulation parameters without a unit context.
+        Initialize the simulation parameters from file or dict content.
         """
-        if unit_system_manager.current is not None:
-            raise Flow360RuntimeError(
-                f"When loading params from file: {self.__class__.__name__}(filename), "
-                "unit context must not be used."
-            )
-
         if filename is not None:
             model_dict = self._handle_file(filename=filename, **kwargs)
         else:
@@ -247,11 +262,7 @@ class _ParamModelBase(Flow360BaseModel):
         # When treating files/file like contents the updater will always be run.
         model_dict, _ = _ParamModelBase._update_param_dict(model_dict)
 
-        unit_system = model_dict.get("unit_system")
-
-        with UnitSystem.from_dict(
-            **unit_system, verbose=False
-        ):  # pylint: disable=not-context-manager
+        with DeserializationContext():
             super().__init__(**model_dict)
 
     def _init_with_unit_context(self, **kwargs):
@@ -260,9 +271,10 @@ class _ParamModelBase(Flow360BaseModel):
         This is the entry when user construct Param with Python script.
         """
         # When treating dicts the updater is skipped.
-        kwargs = _ParamModelBase._init_check_unit_system(**kwargs)
+        _, kwargs = _ParamModelBase._init_check_unit_system(**kwargs)
 
-        super().__init__(unit_system=unit_system_manager.current, **kwargs)
+        current = unit_system_manager.current
+        super().__init__(unit_system=UnitSystemConfig(name=current.name), **kwargs)
 
     # pylint: disable=super-init-not-called
     # pylint: disable=fixme
@@ -270,13 +282,22 @@ class _ParamModelBase(Flow360BaseModel):
     def __init__(self, filename: str = None, file_content: dict = None, **kwargs):
         if filename is not None or file_content is not None:
             self._init_no_unit_context(filename, file_content, **kwargs)
-        else:
+        elif unit_system_manager.current is not None:
             self._init_with_unit_context(**kwargs)
+        elif "unit_system" in kwargs:
+            # Deserialization path (model_validate) — unit_system already in dict
+            with DeserializationContext():
+                super().__init__(**kwargs)
+        else:
+            raise Flow360RuntimeError(
+                "Please use a unit system context (e.g. `with SI_unit_system:`) "
+                "when constructing SimulationParams from Python."
+            )
 
     def copy(self, update=None, **kwargs) -> _ParamModelBase:
         if unit_system_manager.current is None:
-            # pylint: disable=not-context-manager
-            with self.unit_system:
+            # pylint: disable=not-context-manager,no-member
+            with self.unit_system.resolve():
                 return super().copy(update=update, **kwargs)
 
         return super().copy(update=update, **kwargs)
@@ -358,10 +379,10 @@ class SimulationParams(_ParamModelBase):
 
         if mesh_unit is None:
             raise Flow360ConfigurationError("Mesh unit has not been supplied.")
-        self._private_set_length_unit(LengthType.validate(mesh_unit))  # pylint: disable=no-member
+        self._private_set_length_unit(validate_length(mesh_unit))
         if unit_system_manager.current is None:
-            # pylint: disable=not-context-manager
-            with self.unit_system:
+            # pylint: disable=not-context-manager,no-member
+            with self.unit_system.resolve():
                 return super().preprocess(
                     params=self,
                     exclude=exclude,
@@ -381,7 +402,7 @@ class SimulationParams(_ParamModelBase):
         self,
         value: DimensionedTypes,
         target_system: Literal["SI", "Imperial", "flow360"],
-        length_unit: Optional[LengthType] = None,
+        length_unit: Optional[Length.Float64] = None,
     ):
         """
         Converts a given value to the specified unit system.
@@ -396,7 +417,7 @@ class SimulationParams(_ParamModelBase):
             unit system.
         target_system : str
             The target unit system for conversion. Common values include "SI", "Imperial", "flow360".
-        length_unit : LengthType, optional
+        length_unit : Length.Float64, optional
             The length unit to use for conversion. If not provided, the method defaults to
             the project length unit stored in the `private_attribute_asset_cache`.
 
@@ -424,23 +445,11 @@ class SimulationParams(_ParamModelBase):
 
         if length_unit is not None:
             # pylint: disable=no-member
-            self._private_set_length_unit(LengthType.validate(length_unit))
+            self._private_set_length_unit(validate_length(length_unit))
 
-        flow360_conv_system = unit_converter(
-            value.units.dimensions,
-            params=self,
-            required_by=[f"{self.__class__.__name__}.convert_unit(value=, target_system=)"],
-        )
-
-        if target_system == "flow360":
-            target_system = "flow360_v2"
-
-        if is_flow360_unit(value) and not isinstance(value, unyt_quantity):
-            converted = value.in_base(target_system, flow360_conv_system)
-        else:
-            value.units.registry = flow360_conv_system.registry  # pylint: disable=no-member
-            converted = value.in_base(unit_system=target_system)
-        return converted
+        if target_system in ("flow360", "flow360_v2"):
+            return value.in_base(unit_system=self.flow360_unit_system)
+        return value.in_base(unit_system=target_system)
 
     # pylint: disable=no-self-argument
     @pd.field_validator("models", mode="after")
@@ -721,13 +730,13 @@ class SimulationParams(_ParamModelBase):
         return registry
 
     @property
-    def base_length(self) -> LengthType:
+    def base_length(self) -> Length.Float64:
         """Get base length unit for non-dimensionalization"""
         # pylint:disable=no-member
         return self.private_attribute_asset_cache.project_length_unit.to("m")
 
     @property
-    def base_temperature(self) -> AbsoluteTemperatureType:
+    def base_temperature(self) -> AbsoluteTemperature.Float64:
         """Get base temperature unit for non-dimensionalization"""
         # pylint:disable=no-member
         if self.operating_condition.type_name == "LiquidOperatingCondition":
@@ -738,7 +747,7 @@ class SimulationParams(_ParamModelBase):
         return self.operating_condition.thermal_state.temperature.to("K")
 
     @property
-    def base_velocity(self) -> VelocityType:
+    def base_velocity(self) -> Velocity.Float64:
         """Get base velocity unit for non-dimensionalization"""
         # pylint:disable=no-member
         if self.operating_condition.type_name == "LiquidOperatingCondition":
@@ -758,7 +767,7 @@ class SimulationParams(_ParamModelBase):
         return self.operating_condition.thermal_state.speed_of_sound.to("m/s")
 
     @property
-    def reference_velocity(self) -> VelocityType:
+    def reference_velocity(self) -> Velocity.Float64:
         """
         This function returns the **reference velocity**.
         Note that the reference velocity is **NOT** the non-dimensionalization velocity scale
@@ -783,7 +792,7 @@ class SimulationParams(_ParamModelBase):
         return reference_velocity
 
     @property
-    def base_density(self) -> DensityType:
+    def base_density(self) -> Density.Float64:
         """Get base density unit for non-dimensionalization"""
         # pylint:disable=no-member
         if self.operating_condition.type_name == "LiquidOperatingCondition":
@@ -791,30 +800,27 @@ class SimulationParams(_ParamModelBase):
         return self.operating_condition.thermal_state.density.to("kg/m**3")
 
     @property
-    def base_mass(self) -> MassType:
+    def base_mass(self) -> Mass.Float64:
         """Get base mass unit for non-dimensionalization"""
         return self.base_density * self.base_length**3
 
     @property
-    def base_time(self) -> TimeType:
+    def base_time(self) -> Time.Float64:
         """Get base time unit for non-dimensionalization"""
         return self.base_length / self.base_velocity
 
     @property
     def flow360_unit_system(self) -> u.UnitSystem:
-        """Get the unit system for non-dimensionalization"""
-        if self.operating_condition is None:
-            # Pure meshing mode
-            return u.UnitSystem(
-                name="flow360_nondim",
-                length_unit=self.base_length,
-                mass_unit=1 * u.kg,  # pylint: disable=no-member
-                time_unit=1 * u.s,  # pylint: disable=no-member
-                temperature_unit=1 * u.K,  # pylint: disable=no-member
-            )
+        """Get the unit system for non-dimensionalization.
 
-        return u.UnitSystem(
-            name="flow360_nondim",
+        In meshing-only mode (no operating_condition), returns a RestrictedUnitSystem
+        that only supports length conversions. Attempting to convert other dimensions
+        raises ValueError.
+        """
+        if self.operating_condition is None:
+            return RestrictedUnitSystem("flow360_nondim", length_unit=self.base_length)
+        return RestrictedUnitSystem(
+            "flow360_nondim",
             length_unit=self.base_length,
             mass_unit=self.base_mass,
             time_unit=self.base_time,

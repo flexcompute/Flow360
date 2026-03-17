@@ -22,6 +22,9 @@ class MockUnitSystem:
     def __getitem__(self, key):
         return self.units[key]
 
+    def resolve(self):
+        return self
+
 
 class MockParams:
     def __init__(self, unit_system_dict, unit_system_name="SI"):

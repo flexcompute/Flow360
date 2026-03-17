@@ -2,6 +2,7 @@ import time
 from copy import deepcopy
 
 import pytest
+import unyt as u
 
 from flow360.component.simulation.entity_info import GeometryEntityInfo
 from flow360.component.simulation.framework.entity_selector import SurfaceSelector
@@ -29,7 +30,7 @@ from flow360.component.simulation.services import (
     validate_model,
 )
 from flow360.component.simulation.simulation_params import SimulationParams
-from flow360.component.simulation.unit_system import SI_unit_system, u
+from flow360.component.simulation.unit_system import SI_unit_system
 from flow360.component.simulation.validation.validation_context import (
     CASE,
     SURFACE_MESH,
@@ -509,7 +510,7 @@ def test_simulation_to_case_json():
             ],
         },
         "private_attribute_asset_cache": {
-            "project_length_unit": "m",
+            "project_length_unit": 1.0,
             "project_entity_info": {
                 "type_name": "GeometryEntityInfo",
                 "face_ids": ["face_x_1", "face_x_2", "face_x_3"],
@@ -782,7 +783,7 @@ def test_simulation_to_all_translation_2():
         ],
         "unit_system": {"name": "SI"},
         "private_attribute_asset_cache": {
-            "project_length_unit": "m",
+            "project_length_unit": 1.0,
             "project_entity_info": {
                 "type_name": "GeometryEntityInfo",
                 "face_ids": ["face_x_1", "face_x_2", "face_x_3"],

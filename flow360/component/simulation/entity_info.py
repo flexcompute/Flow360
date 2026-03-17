@@ -1,10 +1,14 @@
 """Deserializer for entity info retrieved from asset metadata pipeline."""
 
+# pylint: disable=no-member
+
 from abc import ABCMeta, abstractmethod
 from collections import defaultdict
 from typing import Annotated, Any, Dict, List, Literal, Optional, Union
 
 import pydantic as pd
+from flow360_schema.framework.physical_dimensions import Length
+from flow360_schema.framework.validation.context import DeserializationContext
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_registry import (
@@ -32,7 +36,6 @@ from flow360.component.simulation.primitives import (
     Surface,
     WindTunnelGhostSurface,
 )
-from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.utils import BoundingBoxType, model_attribute_unlock
 from flow360.component.utils import GeometryFiles
 from flow360.exceptions import Flow360ValueError
@@ -172,8 +175,7 @@ class GeometryEntityInfo(EntityInfoModel):
 
     global_bounding_box: Optional[BoundingBoxType] = pd.Field(None)
 
-    # pylint: disable=no-member
-    default_geometry_accuracy: Optional[LengthType.Positive] = pd.Field(
+    default_geometry_accuracy: Optional[Length.PositiveFloat64] = pd.Field(
         None,
         description="The default value based on uploaded geometry for geometry_accuracy.",
     )
@@ -726,13 +728,14 @@ EntityInfoUnion = Annotated[
 ]
 
 
-def parse_entity_info_model(data) -> EntityInfoUnion:
+def parse_entity_info_model(data: dict) -> EntityInfoUnion:
     """
     parse entity info data and return one of [GeometryEntityInfo, VolumeMeshEntityInfo, SurfaceMeshEntityInfo]
 
     # TODO: Add a fast mode by popping entities that are not needed due to wrong grouping tags before deserialization.
     """
-    return pd.TypeAdapter(EntityInfoUnion).validate_python(data)
+    with DeserializationContext():
+        return pd.TypeAdapter(EntityInfoUnion).validate_python(data)
 
 
 def merge_geometry_entity_info(
@@ -907,7 +910,7 @@ def merge_geometry_entity_info(
             # Create a copy with updated user settings
             entity_data = entity.model_dump()
             entity_data.update(user_settings_map[attr_name][entity_id])
-            return entity.__class__.model_validate(entity_data)
+            return entity.__class__.deserialize(entity_data)
 
         return entity
 

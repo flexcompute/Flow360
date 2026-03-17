@@ -189,7 +189,10 @@ def test_validate_model_deduplicates_non_point_entities():
     """
     params = {
         "version": "25.7.6b0",
-        "operating_condition": {"type_name": "AerospaceCondition", "velocity_magnitude": 10},
+        "operating_condition": {
+            "type_name": "AerospaceCondition",
+            "velocity_magnitude": {"units": "m/s", "value": 10},
+        },
         "outputs": [
             {
                 "output_type": "SurfaceOutput",
@@ -376,7 +379,10 @@ def test_validate_model_does_not_deduplicate_point_entities():
     """
     params = {
         "version": "25.7.6b0",
-        "operating_condition": {"type_name": "AerospaceCondition", "velocity_magnitude": 10},
+        "operating_condition": {
+            "type_name": "AerospaceCondition",
+            "velocity_magnitude": {"value": 10, "units": "m/s"},
+        },
         "outputs": [
             {
                 "output_type": "StreamlineOutput",
@@ -425,7 +431,10 @@ def test_validate_model_shares_entity_instances_across_lists():
     params = {
         "version": "25.7.6b0",
         "unit_system": {"name": "SI"},
-        "operating_condition": {"type_name": "AerospaceCondition", "velocity_magnitude": 10},
+        "operating_condition": {
+            "type_name": "AerospaceCondition",
+            "velocity_magnitude": {"value": 10, "units": "m/s"},
+        },
         "models": [
             {"type": "Wall", "name": "Wall", "entities": {"stored_entities": [entity_dict]}}
         ],

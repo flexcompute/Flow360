@@ -18,6 +18,9 @@ from typing import (
 )
 
 import pydantic as pd
+from flow360_schema.framework.physical_dimensions import Angle, Length
+from flow360_schema.framework.validation.context import DeserializationContext
+from pydantic import TypeAdapter
 from pydantic_core import ErrorDetails
 
 # Required for correct global scope initialization
@@ -71,17 +74,13 @@ from flow360.component.simulation.translator.volume_meshing_translator import (
     get_volume_meshing_json,
 )
 from flow360.component.simulation.unit_system import (
-    AngleType,
-    CGS_unit_system,
-    LengthType,
-    SI_unit_system,
+    _UNIT_SYSTEMS,
     UnitSystem,
     _dimensioned_type_serializer,
-    flow360_unit_system,
-    imperial_unit_system,
     u,
     unit_system_manager,
 )
+from flow360.component.simulation.units import validate_length
 from flow360.component.simulation.user_code.core.types import (
     UserVariable,
     get_referenced_expressions_and_user_variables,
@@ -102,20 +101,12 @@ from flow360.version import __version__
 # Required for correct global scope initialization
 
 
-unit_system_map = {
-    "SI": SI_unit_system,
-    "CGS": CGS_unit_system,
-    "Imperial": imperial_unit_system,
-    "Flow360": flow360_unit_system,
-}
-
-
 def init_unit_system(unit_system_name) -> UnitSystem:
     """Returns UnitSystem object from string representation.
 
     Parameters
     ----------
-    unit_system_name : ["SI", "CGS", "Imperial", "Flow360"]
+    unit_system_name : ["SI", "CGS", "Imperial"]
         Unit system string representation
 
     Returns
@@ -131,11 +122,10 @@ def init_unit_system(unit_system_name) -> UnitSystem:
         If this function is run inside unit system context
     """
 
-    unit_system = unit_system_map.get(unit_system_name, None)
-    if not isinstance(unit_system, UnitSystem):
+    unit_system = _UNIT_SYSTEMS.get(unit_system_name)
+    if unit_system is None:
         raise ValueError(
-            f"Incorrect unit system provided for {unit_system_name} unit "
-            f"system, got {unit_system=}, expected value of type UnitSystem"
+            f"Unknown unit system: {unit_system_name!r}. " f"Available: {list(_UNIT_SYSTEMS)}"
         )
 
     if unit_system_manager.current is not None:
@@ -156,7 +146,7 @@ def _store_project_length_unit(project_length_unit, params: SimulationParams):
     return params
 
 
-def _get_default_reference_geometry(length_unit: LengthType):
+def _get_default_reference_geometry(length_unit: Length.Float64):
     return ReferenceGeometry(
         area=1 * length_unit**2,
         moment_center=(0, 0, 0) * length_unit,
@@ -190,7 +180,7 @@ def get_default_params(
 
     unit_system = init_unit_system(unit_system_name)
     dummy_value = 0.1
-    project_length_unit = LengthType.validate(length_unit)  # pylint: disable=no-member
+    project_length_unit = validate_length(length_unit)
     with unit_system:
         reference_geometry = _get_default_reference_geometry(project_length_unit)
         operating_condition = AerospaceCondition(velocity_magnitude=dummy_value)
@@ -482,7 +472,10 @@ def validate_model(  # pylint: disable=too-many-locals
             {"private_attribute_asset_cache": {"project_length_unit": project_length_unit_dict}},
             [],
         )
-        with ValidationContext(levels=validation_levels_to_use, info=parse_model_info):
+        with (
+            ValidationContext(levels=validation_levels_to_use, info=parse_model_info),
+            DeserializationContext(),
+        ):
             # Multi-constructor model support
             updated_param_as_dict = parse_model_dict(params_as_dict, globals())
         return updated_param_as_dict
@@ -585,20 +578,16 @@ def validate_model(  # pylint: disable=too-many-locals
             info=validation_info,
         ) as context:
             validation_context = context
-            unit_system = updated_param_as_dict.get("unit_system")
-            with UnitSystem.from_dict(  # pylint: disable=not-context-manager
-                verbose=False, **unit_system
-            ):
-                # Reuse pre-deserialized entity_info to avoid double deserialization
-                pre_deserialized_entity_info = validation_info.get_entity_info()
-                if pre_deserialized_entity_info is not None:
-                    # Create shallow copy with entity_info substituted
-                    updated_param_as_dict = {**updated_param_as_dict}
-                    updated_param_as_dict["private_attribute_asset_cache"] = {
-                        **updated_param_as_dict["private_attribute_asset_cache"],
-                        "project_entity_info": pre_deserialized_entity_info,
-                    }
-
+            # Reuse pre-deserialized entity_info to avoid double deserialization
+            pre_deserialized_entity_info = validation_info.get_entity_info()
+            if pre_deserialized_entity_info is not None:
+                # Create shallow copy with entity_info substituted
+                updated_param_as_dict = {**updated_param_as_dict}
+                updated_param_as_dict["private_attribute_asset_cache"] = {
+                    **updated_param_as_dict["private_attribute_asset_cache"],
+                    "project_entity_info": pre_deserialized_entity_info,
+                }
+            with DeserializationContext():
                 validated_param = SimulationParams.model_validate(updated_param_as_dict)
 
     except pd.ValidationError as err:
@@ -750,8 +739,37 @@ def validate_error_locations(errors: list, params: dict) -> list:
             if not valid:
                 error["loc"] = tuple(loc for loc in error["loc"] if loc != field)
 
+        _normalize_union_branch_error_location(error, current)
         _populate_error_context(error)
     return errors
+
+
+def _normalize_union_branch_error_location(error: dict, current) -> None:
+    """
+    Hide internal tagged-union branch names from user-facing error locations.
+
+    ValueOrExpression uses tagged union branches named ``number`` and ``expression``.
+    Pydantic includes the selected branch tag in ``loc``. When the original input is a
+    legacy ``{\"value\": ..., \"units\": ...}`` payload, restore the old ``value`` leaf.
+    Otherwise, collapse the synthetic branch name to the parent field.
+    """
+    loc = error.get("loc")
+    if not isinstance(loc, tuple) or len(loc) == 0:
+        return
+
+    branch = loc[-1]
+    if branch not in {"number", "expression"}:
+        return
+
+    if isinstance(current, dict):
+        if branch == "number" and "value" in current:
+            error["loc"] = (*loc[:-1], "value")
+            return
+        if branch == "expression" and "expression" in current:
+            error["loc"] = (*loc[:-1], "expression")
+            return
+
+    error["loc"] = loc[:-1]
 
 
 def _traverse_error_location(current, field):
@@ -956,7 +974,8 @@ def generate_process_json(
     """
 
     params_as_dict = json.loads(simulation_json)
-    mesh_unit = _get_mesh_unit(params_as_dict)
+    # Pre-check that project_length_unit exists before validation
+    _get_mesh_unit(params_as_dict)
 
     # Note: There should not be any validation error for params_as_dict. Here is just a deserialization of the JSON
     params, errors, _ = validate_model(
@@ -970,6 +989,10 @@ def generate_process_json(
 
     if errors is not None:
         raise ValueError(str(errors))
+
+    # Extract the validated mesh_unit (a proper unyt quantity) from the params object,
+    # not from the raw dict which may be a bare number.
+    mesh_unit = params.private_attribute_asset_cache.project_length_unit
 
     surface_mesh_res = _process_surface_mesh(params, root_item_type, mesh_unit)
     volume_mesh_res = _process_volume_mesh(params, root_item_type, mesh_unit, up_to)
@@ -1164,15 +1187,32 @@ def _serialize_unit_in_dict(data):
     return data
 
 
-def _validate_unit_string(unit_str: str, unit_type: Union[AngleType, LengthType]) -> bool:
+_angle_adapter = TypeAdapter(Angle.Float64)
+_length_adapter = TypeAdapter(Length.Float64)
+
+_UNIT_TYPE_ADAPTERS = {
+    "angle": _angle_adapter,
+    "length": _length_adapter,
+}
+
+
+def _validate_unit_string(unit_str: str, unit_kind: Literal["angle", "length"]):
     """
-    Validate the unit string from request against the specified unit type.
+    Validate the unit string from request against the specified unit kind.
+
+    Parameters
+    ----------
+    unit_str : str
+        JSON-encoded or plain unit string.
+    unit_kind : str
+        One of "angle" or "length".
     """
+    adapter = _UNIT_TYPE_ADAPTERS[unit_kind]
     try:
         unit_dict = json.loads(unit_str)
-        return unit_type.validate(unit_dict)
+        return adapter.validate_python(unit_dict)
     except json.JSONDecodeError:
-        return unit_type.validate(unit_str)
+        return adapter.validate_python(u.Unit(unit_str))
 
 
 def translate_dfdc_xrotor_bet_disk(
@@ -1190,8 +1230,8 @@ def translate_dfdc_xrotor_bet_disk(
     errors = []
     bet_dict_list = []
     try:
-        length_unit = _validate_unit_string(length_unit, LengthType)
-        angle_unit = _validate_unit_string(angle_unit, AngleType)
+        length_unit = _validate_unit_string(length_unit, "length")
+        angle_unit = _validate_unit_string(angle_unit, "angle")
         bet_disk_dict = translate_xrotor_dfdc_to_bet_dict(
             geometry_file_content=geometry_file_content,
             length_unit=length_unit,
@@ -1221,8 +1261,8 @@ def translate_xfoil_c81_bet_disk(
     errors = []
     bet_dict_list = []
     try:
-        length_unit = _validate_unit_string(length_unit, LengthType)
-        angle_unit = _validate_unit_string(angle_unit, AngleType)
+        length_unit = _validate_unit_string(length_unit, "length")
+        angle_unit = _validate_unit_string(angle_unit, "angle")
         polar_file_name_list = generate_polar_file_name_list(
             geometry_file_content=geometry_file_content
         )
@@ -1295,7 +1335,7 @@ def merge_geometry_entity_info(
     if draft_param_entity_info_dict.get("type_name") != "GeometryEntityInfo":
         return draft_param_as_dict
 
-    current_entity_info = GeometryEntityInfo.model_validate(draft_param_entity_info_dict)
+    current_entity_info = GeometryEntityInfo.deserialize(draft_param_entity_info_dict)
 
     entity_info_components = []
     for geometry_param_as_dict in geometry_dependencies_param_as_dict:
@@ -1304,9 +1344,7 @@ def merge_geometry_entity_info(
         ).get("project_entity_info", {})
         if dependency_entity_info_dict.get("type_name") != "GeometryEntityInfo":
             continue
-        entity_info_components.append(
-            GeometryEntityInfo.model_validate(dependency_entity_info_dict)
-        )
+        entity_info_components.append(GeometryEntityInfo.deserialize(dependency_entity_info_dict))
 
     merged_entity_info = merge_geometry_entity_info_obj(
         current_entity_info=current_entity_info,

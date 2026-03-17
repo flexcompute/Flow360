@@ -4,6 +4,7 @@ from abc import ABCMeta
 from typing import Annotated, List, Literal, Optional, Union
 
 import pydantic as pd
+from flow360_schema.framework.physical_dimensions import Angle, Length
 from typing_extensions import Self
 
 import flow360.component.simulation.units as u
@@ -11,7 +12,6 @@ from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.meshing_param.volume_params import UniformRefinement
 from flow360.component.simulation.primitives import SnappyBody, Surface
-from flow360.component.simulation.unit_system import AngleType, LengthType
 from flow360.log import log
 
 
@@ -21,9 +21,9 @@ class SnappyEntityRefinement(Flow360BaseModel, metaclass=ABCMeta):
     """
 
     # pylint: disable=no-member
-    min_spacing: Optional[LengthType.Positive] = pd.Field(None)
-    max_spacing: Optional[LengthType.Positive] = pd.Field(None)
-    proximity_spacing: Optional[LengthType.Positive] = pd.Field(None)
+    min_spacing: Optional[Length.PositiveFloat64] = pd.Field(None)
+    max_spacing: Optional[Length.PositiveFloat64] = pd.Field(None)
+    proximity_spacing: Optional[Length.PositiveFloat64] = pd.Field(None)
 
     @pd.model_validator(mode="after")
     def _check_spacing_order(self) -> Self:
@@ -51,7 +51,7 @@ class BodyRefinement(SnappyEntityRefinement):
 
     # pylint: disable=no-member
     refinement_type: Literal["SnappyBodyRefinement"] = pd.Field("SnappyBodyRefinement", frozen=True)
-    gap_resolution: Optional[LengthType.NonNegative] = pd.Field(None)
+    gap_resolution: Optional[Length.NonNegativeFloat64] = pd.Field(None)
     entities: EntityList[SnappyBody] = pd.Field(alias="bodies")
 
     @pd.model_validator(mode="after")
@@ -76,8 +76,8 @@ class RegionRefinement(SnappyEntityRefinement):
     """
 
     # pylint: disable=no-member
-    min_spacing: LengthType.Positive = pd.Field()
-    max_spacing: LengthType.Positive = pd.Field()
+    min_spacing: Length.PositiveFloat64 = pd.Field()
+    max_spacing: Length.PositiveFloat64 = pd.Field()
     refinement_type: Literal["SnappySurfaceRefinement"] = pd.Field(
         "SnappySurfaceRefinement", frozen=True
     )
@@ -93,19 +93,19 @@ class SurfaceEdgeRefinement(Flow360BaseModel):
     refinement_type: Literal["SnappySurfaceEdgeRefinement"] = pd.Field(
         "SnappySurfaceEdgeRefinement", frozen=True
     )
-    spacing: Optional[Union[LengthType.PositiveArray, LengthType.Positive]] = pd.Field(
+    spacing: Optional[Union[Length.PositiveArray, Length.PositiveFloat64]] = pd.Field(
         None, description="Spacing on and close to the edges. Defaults to default min_spacing."
     )
-    distances: Optional[LengthType.PositiveArray] = pd.Field(
+    distances: Optional[Length.PositiveArray] = pd.Field(
         None, description="Distance from the edge where the spacing will be applied."
     )
     min_elem: Optional[pd.NonNegativeInt] = pd.Field(
         None, description="Minimum number of elements on the edge to apply the edge refinement."
     )
-    min_len: Optional[LengthType.NonNegative] = pd.Field(
+    min_len: Optional[Length.NonNegativeFloat64] = pd.Field(
         None, description="Minimum length of the edge to apply edge refinement."
     )
-    included_angle: AngleType.Positive = pd.Field(
+    included_angle: Angle.PositiveFloat64 = pd.Field(
         150 * u.deg,
         description="If the angle between two elements is less than this value, the edge is extracted as a feature.",
     )
@@ -156,7 +156,10 @@ class SurfaceEdgeRefinement(Flow360BaseModel):
     @pd.field_validator("spacing", "distances", mode="before")
     @classmethod
     def _convert_list_to_unyt_array(cls, value):
-        if isinstance(value, List):
+        # Only coalesce lists of unyt quantities (e.g., [4*u.mm, 5*u.mm]) into a
+        # single unyt_array. Bare numeric lists (e.g., [0.004]) must NOT be wrapped
+        # so that the schema type validator can attach the correct SI unit.
+        if isinstance(value, List) and all(isinstance(v, u.unyt.unyt_quantity) for v in value):
             return u.unyt.unyt_array(value)
         return value
 
