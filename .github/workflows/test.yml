@@ -94,7 +94,7 @@ jobs:
   coverage:
     name: Post Coverage Comment
     needs: testing
-    if: github.event_name == 'pull_request'
+    if: always() && !cancelled() && github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     permissions:
       contents: read
