@@ -754,6 +754,7 @@ def test_custom_zones_element_type_tetrahedra(get_surface_mesh):
     assert "zones" in translated
     assert len(translated["zones"]) == 1
     assert translated["zones"][0]["name"] == "tetrahedral_zone"
+    assert "farfield" not in {z["name"] for z in translated["zones"]}
     assert "enforceTetrahedralElements" in translated["zones"][0]
     assert translated["zones"][0]["enforceTetrahedralElements"] is True
 
@@ -1579,41 +1580,6 @@ def test_automated_farfield_enclosed_entities(get_surface_mesh):
     assert "zones" in translated
     zones_by_name = {z["name"]: z for z in translated["zones"]}
     # enclosed_entities should produce a "farfield" zone
-    assert "farfield" in zones_by_name
-    assert sorted(zones_by_name["farfield"]["patches"]) == ["left1", "right1"]
-
-
-def test_user_defined_farfield_enclosed_entities(get_surface_mesh):
-    """UserDefinedFarfield.enclosed_entities should create a 'farfield' zone in translated output."""
-    left1 = Surface(name="left1")
-    right1 = Surface(name="right1")
-    with SI_unit_system:
-        params = SimulationParams(
-            meshing=MeshingParams(
-                defaults=MeshingDefaults(
-                    boundary_layer_first_layer_thickness=1e-4,
-                ),
-                volume_zones=[
-                    CustomZones(
-                        name="interior_zone",
-                        entities=[
-                            CustomVolume(
-                                name="inner",
-                                bounding_entities=[left1, right1],
-                            ),
-                        ],
-                    ),
-                    UserDefinedFarfield(
-                        enclosed_entities=[left1, right1],
-                    ),
-                ],
-            ),
-            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
-        )
-
-    translated = get_volume_meshing_json(params, get_surface_mesh.mesh_unit)
-    assert "zones" in translated
-    zones_by_name = {z["name"]: z for z in translated["zones"]}
     assert "farfield" in zones_by_name
     assert sorted(zones_by_name["farfield"]["patches"]) == ["left1", "right1"]
 

@@ -27,9 +27,6 @@ from flow360.component.simulation.services import (
 )
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import SI_unit_system
-from flow360.component.simulation.validation.validation_context import (
-    ParamsValidationInfo,
-)
 
 
 @pytest.fixture(autouse=True)
@@ -41,8 +38,7 @@ def reset_context():
 # Helpers
 # ---------------------------------------------------------------------------
 
-FARFIELD_TYPES_ALL = [AutomatedFarfield, UserDefinedFarfield, WindTunnelFarfield]
-FARFIELD_TYPES_REQUIRING_CUSTOM_ZONES = [UserDefinedFarfield, WindTunnelFarfield]
+FARFIELD_TYPES_WITH_ENCLOSED = [AutomatedFarfield, WindTunnelFarfield]
 
 
 def _make_farfield(farfield_cls, **kwargs):
@@ -107,7 +103,7 @@ def _make_rotor_disk():
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.parametrize("farfield_cls", FARFIELD_TYPES_ALL, ids=lambda c: c.__name__)
+@pytest.mark.parametrize("farfield_cls", FARFIELD_TYPES_WITH_ENCLOSED, ids=lambda c: c.__name__)
 def test_enclosed_entities_beta_mesher_positive(farfield_cls):
     """enclosed_entities with beta mesher should pass validation."""
     with SI_unit_system:
@@ -133,7 +129,7 @@ def test_enclosed_entities_beta_mesher_positive(farfield_cls):
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.parametrize("farfield_cls", FARFIELD_TYPES_ALL, ids=lambda c: c.__name__)
+@pytest.mark.parametrize("farfield_cls", FARFIELD_TYPES_WITH_ENCLOSED, ids=lambda c: c.__name__)
 def test_enclosed_entities_beta_mesher_negative(farfield_cls):
     """enclosed_entities with legacy mesher should fail validation."""
     with SI_unit_system:
@@ -158,7 +154,7 @@ def test_enclosed_entities_beta_mesher_negative(farfield_cls):
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.parametrize("farfield_cls", FARFIELD_TYPES_ALL, ids=lambda c: c.__name__)
+@pytest.mark.parametrize("farfield_cls", FARFIELD_TYPES_WITH_ENCLOSED, ids=lambda c: c.__name__)
 def test_enclosed_entities_rotation_volume_association_negative(farfield_cls):
     """Cylinder in enclosed_entities without a RotationVolume should fail."""
     rotor_disk = _make_rotor_disk()
@@ -198,7 +194,7 @@ def test_enclosed_entities_rotation_volume_association_negative(farfield_cls):
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.parametrize("farfield_cls", FARFIELD_TYPES_ALL, ids=lambda c: c.__name__)
+@pytest.mark.parametrize("farfield_cls", FARFIELD_TYPES_WITH_ENCLOSED, ids=lambda c: c.__name__)
 def test_enclosed_entities_rotation_volume_association_positive(farfield_cls):
     """Cylinder in enclosed_entities that is also in a RotationVolume should pass."""
     rotor_disk = _make_rotor_disk()
@@ -235,24 +231,21 @@ def test_enclosed_entities_rotation_volume_association_positive(farfield_cls):
 
 
 # ---------------------------------------------------------------------------
-# Group E: enclosed_entities without CustomZones = FAIL (UserDefined/WindTunnel only)
+# Group E: enclosed_entities without CustomZones = FAIL (WindTunnel only)
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.parametrize(
-    "farfield_cls", FARFIELD_TYPES_REQUIRING_CUSTOM_ZONES, ids=lambda c: c.__name__
-)
-def test_enclosed_entities_requires_custom_zones(farfield_cls):
-    """enclosed_entities without CustomZones should fail."""
+def test_enclosed_entities_requires_custom_zones():
+    """WindTunnelFarfield enclosed_entities without CustomZones should fail."""
     with SI_unit_system:
         params = SimulationParams(
             meshing=MeshingParams(
-                defaults=_make_defaults(farfield_cls),
+                defaults=_make_defaults(WindTunnelFarfield),
                 volume_zones=[
-                    _make_farfield(farfield_cls, enclosed_entities=[Surface(name="face1")]),
+                    _make_farfield(WindTunnelFarfield, enclosed_entities=[Surface(name="face1")]),
                 ],
             ),
-            private_attribute_asset_cache=_make_asset_cache(farfield_cls),
+            private_attribute_asset_cache=_make_asset_cache(WindTunnelFarfield),
         )
     _, errors, _ = _validate(params)
     assert errors is not None
@@ -260,7 +253,7 @@ def test_enclosed_entities_requires_custom_zones(farfield_cls):
 
 
 # ---------------------------------------------------------------------------
-# AutomatedFarfield-specific tests (not parameterizable)
+# AutomatedFarfield-specific tests — has separate validator with additional checks
 # ---------------------------------------------------------------------------
 
 
@@ -289,6 +282,36 @@ def test_enclosed_entities_surfaces_only_no_rotation_volume_needed():
                     AutomatedFarfield(
                         enclosed_entities=[Surface(name="face1"), Surface(name="face2")],
                     ),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+        )
+    _, errors, _ = _validate(params)
+    assert errors is None
+
+
+# ---------------------------------------------------------------------------
+# UserDefinedFarfield: no enclosed_entities support
+# ---------------------------------------------------------------------------
+
+
+def test_udf_rejects_enclosed_entities():
+    """UserDefinedFarfield should not accept enclosed_entities."""
+    import pydantic as pd
+
+    with pytest.raises(pd.ValidationError, match="Extra inputs are not permitted"):
+        UserDefinedFarfield(enclosed_entities=[Surface(name="face1")])
+
+
+def test_udf_with_custom_volume_no_enclosed_entities():
+    """UDF + CustomVolume without enclosed_entities should pass validation."""
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(boundary_layer_first_layer_thickness=1e-4),
+                volume_zones=[
+                    _make_custom_zones_with_volume(),
+                    UserDefinedFarfield(),
                 ],
             ),
             private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
@@ -484,51 +507,3 @@ def test_farfield_custom_volume_no_intersection_negative():
     assert errors is not None
     assert any("shares bounding entities" in e["msg"] for e in errors)
     assert any("shared" in e["msg"] for e in errors)
-
-
-# ---------------------------------------------------------------------------
-# CustomZones without farfield zone
-# ---------------------------------------------------------------------------
-
-
-def test_custom_zones_without_farfield():
-    """CustomZones only (no farfield zone) should pass and resolve farfield_method to user-defined."""
-    with SI_unit_system:
-        params = SimulationParams(
-            meshing=MeshingParams(
-                defaults=MeshingDefaults(boundary_layer_first_layer_thickness=1e-4),
-                volume_zones=[
-                    _make_custom_zones_with_volume(),
-                ],
-            ),
-            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
-        )
-    _, errors, _ = _validate(params)
-    assert errors is None
-
-    farfield_method = ParamsValidationInfo._get_farfield_method_(params.model_dump(mode="json"))
-    assert farfield_method == "user-defined"
-    assert params.meshing.farfield_method == "user-defined"
-
-
-@pytest.mark.parametrize(
-    "farfield_cls",
-    [UserDefinedFarfield, WindTunnelFarfield],
-    ids=lambda c: c.__name__,
-)
-def test_farfield_with_custom_volumes_requires_enclosed_entities(farfield_cls):
-    """Explicit farfield + CustomZones but no enclosed_entities should fail."""
-    with SI_unit_system:
-        params = SimulationParams(
-            meshing=MeshingParams(
-                defaults=_make_defaults(farfield_cls),
-                volume_zones=[
-                    _make_custom_zones_with_volume(),
-                    _make_farfield(farfield_cls),
-                ],
-            ),
-            private_attribute_asset_cache=_make_asset_cache(farfield_cls),
-        )
-    _, errors, _ = _validate(params)
-    assert errors is not None
-    assert any("`enclosed_entities` for farfield must be specified" in e["msg"] for e in errors)

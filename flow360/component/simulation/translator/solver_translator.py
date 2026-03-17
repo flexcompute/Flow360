@@ -1594,7 +1594,7 @@ def boundary_spec_translator(model: SurfaceModelTypes, op_acoustic_to_static_pre
     if isinstance(model, Wall):
         if model.use_wall_function is not None:
             boundary["type"] = "WallFunction"
-            boundary["wallModelType"] = model.use_wall_function.type_name
+            boundary["wallModelType"] = model.use_wall_function.wall_function_type
         else:
             boundary["type"] = "NoSlipWall"
         if model.velocity is not None:

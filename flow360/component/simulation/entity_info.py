@@ -1,5 +1,7 @@
 """Deserializer for entity info retrieved from asset metadata pipeline."""
 
+# pylint: disable=no-member
+
 from abc import ABCMeta, abstractmethod
 from collections import defaultdict
 from typing import Annotated, Any, Dict, List, Literal, Optional, Union
