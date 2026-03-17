@@ -6,6 +6,7 @@ from typing import List
 from unyt import unyt_array
 
 from flow360.component.simulation.entity_info import GeometryEntityInfo
+from flow360.component.simulation.framework.updater_utils import recursive_remove_key
 from flow360.component.simulation.meshing_param import snappy
 from flow360.component.simulation.meshing_param.edge_params import SurfaceEdgeRefinement
 from flow360.component.simulation.meshing_param.face_params import SurfaceRefinement
@@ -934,15 +935,6 @@ def _inject_body_group_transformations_for_mesher(
             }
 
 
-def _remove_selectors(obj):
-    """Recursively remove all 'selectors' keys from the data structure."""
-    if isinstance(obj, dict):
-        return {k: _remove_selectors(v) for k, v in obj.items() if k != "selectors"}
-    if isinstance(obj, list):
-        return [_remove_selectors(item) for item in obj]
-    return obj
-
-
 def filter_simulation_json(input_params: SimulationParams, mesh_units):
     """
     Filter the simulation JSON to only include the GAI surface meshing parameters.
@@ -965,7 +957,7 @@ def filter_simulation_json(input_params: SimulationParams, mesh_units):
     # @preprocess_input), selectors are redundant — only stored_entities matter
     # for meshing. Selectors contain random UUIDs (selector_id) that would cause
     # hash inconsistency between identical runs.
-    filtered_json = _remove_selectors(filtered_json)
+    recursive_remove_key(filtered_json, "selectors")
 
     return filtered_json
 
