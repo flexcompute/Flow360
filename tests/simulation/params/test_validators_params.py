@@ -2547,9 +2547,7 @@ def test_beta_mesher_only_features(mock_validation_context):
                             )
                         ],
                     ),
-                    UserDefinedFarfield(
-                        enclosed_entities=[Surface(name="face1"), Surface(name="face2")],
-                    ),
+                    UserDefinedFarfield(),
                 ],
             ),
             private_attribute_asset_cache=AssetCache(use_inhouse_mesher=False),
@@ -2560,15 +2558,11 @@ def test_beta_mesher_only_features(mock_validation_context):
         root_item_type="SurfaceMesh",
         validation_level="VolumeMesh",
     )
-    assert len(errors) == 2
+    assert len(errors) == 1
     assert (
         errors[0]["msg"]
         == "Value error, CustomVolume is supported only when the beta mesher is enabled "
         + "and an automated, user-defined, or wind tunnel farfield is enabled."
-    )
-    assert (
-        errors[1]["msg"]
-        == "Value error, `enclosed_entities` is only supported with the beta mesher."
     )
 
     # Unique volume zone names
@@ -2613,12 +2607,7 @@ def test_beta_mesher_only_features(mock_validation_context):
                                 ),
                             ],
                         ),
-                        UserDefinedFarfield(
-                            enclosed_entities=[
-                                Surface(name="face1"),
-                                Surface(name="face2"),
-                            ],
-                        ),
+                        UserDefinedFarfield(),
                     ],
                 ),
                 private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
@@ -2651,9 +2640,7 @@ def test_beta_mesher_only_features(mock_validation_context):
                                 )
                             ],
                         ),
-                        UserDefinedFarfield(
-                            enclosed_entities=[Surface(name="face1")],
-                        ),
+                        UserDefinedFarfield(),
                     ],
                 ),
                 private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
@@ -2677,9 +2664,7 @@ def test_beta_mesher_only_features(mock_validation_context):
                             )
                         ],
                     ),
-                    UserDefinedFarfield(
-                        enclosed_entities=[Surface(name="face1"), Surface(name="face2")],
-                    ),
+                    UserDefinedFarfield(),
                 ],
             ),
             models=[
@@ -2951,9 +2936,7 @@ def test_check_custom_volume_in_volume_zones():
                             CustomVolume(name="zone1", bounding_entities=[Surface(name="face1")])
                         ],
                     ),
-                    UserDefinedFarfield(
-                        enclosed_entities=[Surface(name="face1")],
-                    ),
+                    UserDefinedFarfield(),
                 ],
             ),
             models=[
