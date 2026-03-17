@@ -636,6 +636,12 @@ def legacy_mesher_json(input_params: SimulationParams):
 
     translated["faces"] = face_config
 
+    ##:: >> Step 5.2: Get target_surface_node_count [OPTIONAL]
+    if input_params.meshing.defaults.target_surface_node_count is not None:
+        translated["target_surface_node_count"] = (
+            input_params.meshing.defaults.target_surface_node_count
+        )
+
     ##:: >> Step 6: Tell surface mesher how do we group boundaries.
     translated["boundaries"] = {}
     grouped_faces: List[Surface] = (
