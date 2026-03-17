@@ -2,6 +2,7 @@ import time
 from copy import deepcopy
 
 import pytest
+import unyt as u
 
 from flow360.component.simulation.entity_info import GeometryEntityInfo
 from flow360.component.simulation.framework.entity_selector import SurfaceSelector
@@ -29,7 +30,7 @@ from flow360.component.simulation.services import (
     validate_model,
 )
 from flow360.component.simulation.simulation_params import SimulationParams
-from flow360.component.simulation.unit_system import SI_unit_system, u
+from flow360.component.simulation.unit_system import SI_unit_system
 from flow360.component.simulation.validation.validation_context import (
     CASE,
     SURFACE_MESH,

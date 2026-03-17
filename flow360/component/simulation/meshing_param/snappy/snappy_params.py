@@ -24,7 +24,6 @@ from flow360.component.simulation.meshing_param.snappy.snappy_specs import (
     SurfaceMeshingDefaults,
 )
 from flow360.component.simulation.meshing_param.volume_params import UniformRefinement
-from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.validation.validation_context import (
     ParamsValidationInfo,
     contextual_field_validator,
@@ -177,5 +176,5 @@ class SurfaceMeshingParams(Flow360BaseModel):
             return octree_spacing
 
         # pylint: disable=no-member
-        project_length = 1 * LengthType.validate(param_info.project_length_unit)
+        project_length = 1 * param_info.project_length_unit
         return OctreeSpacing(base_spacing=project_length)

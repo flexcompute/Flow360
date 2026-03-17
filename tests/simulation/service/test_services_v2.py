@@ -304,7 +304,7 @@ def test_validate_multiple_errors():
         },
         {
             "loc": ("reference_geometry", "area", "value"),
-            "type": "greater_than",
+            "type": "value_error",
             "ctx": {"relevant_for": ["Case"]},
         },
     ]

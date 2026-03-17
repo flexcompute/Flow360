@@ -2,6 +2,7 @@ import json
 import os
 
 import pytest
+from flow360_schema.framework.physical_dimensions import Length
 
 import flow360.component.simulation.units as u
 from flow360.component.project_utils import _replace_ghost_surfaces
@@ -53,7 +54,8 @@ from flow360.component.simulation.translator.volume_meshing_translator import (
     _translate_enclosed_entity_name,
     get_volume_meshing_json,
 )
-from flow360.component.simulation.unit_system import LengthType, SI_unit_system
+from flow360.component.simulation.unit_system import SI_unit_system
+from flow360.component.simulation.units import validate_length
 from flow360.component.simulation.utils import model_attribute_unlock
 from flow360.component.simulation.validation.validation_context import VOLUME_MESH
 from tests.simulation.conftest import AssetBase
@@ -63,7 +65,7 @@ class TempSurfaceMesh(AssetBase):
     """Mimicing the final SurfaceMesh class"""
 
     fname: str
-    mesh_unit: LengthType.Positive
+    mesh_unit: Length.PositiveFloat64
 
     def _get_meta_data(self):
         if self.fname == "om6wing.cgns":
@@ -77,7 +79,7 @@ class TempSurfaceMesh(AssetBase):
             raise ValueError("Invalid file name")
 
     def _populate_registry(self):
-        self.mesh_unit = LengthType.validate(self._get_meta_data()["mesh_unit"])
+        self.mesh_unit = validate_length(self._get_meta_data()["mesh_unit"])
         for surface_name in self._get_meta_data()["surfaces"]:
             self.internal_registry.register(Surface(name=surface_name))
 

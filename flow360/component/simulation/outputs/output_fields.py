@@ -24,13 +24,14 @@ Examples:
 
 from typing import List, Literal, get_args, get_origin
 
+import unyt as u
+
 from flow360.component.simulation.conversion import (
     compute_udf_dimensionalization_factor,
 )
 from flow360.component.simulation.operating_condition.operating_condition import (
     LiquidOperatingCondition,
 )
-from flow360.component.simulation.unit_system import u
 
 # pylint:disable=invalid-name
 _CD = "CD"

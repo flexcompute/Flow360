@@ -4,6 +4,7 @@ import numpy as np
 import pydantic as pd
 import pytest
 import unyt as u
+from flow360_schema.framework.physical_dimensions import Velocity
 
 import flow360.component.simulation.user_code.core.context as context
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
@@ -14,7 +15,7 @@ from flow360.component.simulation.operating_condition.operating_condition import
 )
 from flow360.component.simulation.services import clear_context
 from flow360.component.simulation.simulation_params import SimulationParams
-from flow360.component.simulation.unit_system import SI_unit_system, VelocityType
+from flow360.component.simulation.unit_system import SI_unit_system
 from flow360.component.simulation.user_code.core.types import (
     Expression,
     UserVariable,
@@ -54,7 +55,7 @@ def scaling_provider():
 # ---------------------------#
 def test_cross_product():
     class TestModel(Flow360BaseModel):
-        field: ValueOrExpression[VelocityType.Vector] = pd.Field()
+        field: ValueOrExpression[Velocity.Vector3] = pd.Field()
 
     x = UserVariable(name="x", value=[1, 2, 3])
 

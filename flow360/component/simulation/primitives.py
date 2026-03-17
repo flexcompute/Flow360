@@ -9,7 +9,7 @@ from typing import Annotated, ClassVar, List, Literal, Optional, Tuple, Union, f
 
 import numpy as np
 import pydantic as pd
-from flow360_schema.framework.physical_dimensions import Angle, Length
+from flow360_schema.framework.physical_dimensions import Angle, Area, Length
 from pydantic import PositiveFloat
 from typing_extensions import Self
 
@@ -28,7 +28,6 @@ from flow360.component.simulation.framework.multi_constructor_model_base import 
     MultiConstructorBaseModel,
 )
 from flow360.component.simulation.framework.unique_list import UniqueStringList
-from flow360.component.simulation.unit_system import AreaType
 from flow360.component.simulation.user_code.core.types import ValueOrExpression
 from flow360.component.simulation.utils import BoundingBoxType, model_attribute_unlock
 from flow360.component.simulation.validation.validation_context import (
@@ -129,7 +128,7 @@ class ReferenceGeometry(Flow360BaseModel):
     moment_length: Optional[Union[Length.PositiveFloat64, Length.PositiveVector3]] = pd.Field(
         None, description="The x, y, z component-wise moment reference lengths."
     )
-    area: Optional[ValueOrExpression[AreaType.Positive]] = pd.Field(
+    area: Optional[ValueOrExpression[Area.PositiveFloat64]] = pd.Field(
         None, description="The reference area of the geometry."
     )
     private_attribute_area_settings: Optional[dict] = pd.Field(None)

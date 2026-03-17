@@ -2,6 +2,7 @@ import json
 import unittest
 
 import numpy as np
+import pydantic as pd
 import pytest
 
 import flow360.component.simulation.units as u
@@ -407,6 +408,20 @@ def test_subsequent_param_with_different_unit_system():
     assert param_SI.meshing.defaults.boundary_layer_first_layer_thickness == 0.2 * u.m
     assert param_CGS.unit_system.name == "CGS"
     assert param_CGS.meshing.defaults.boundary_layer_first_layer_thickness == 0.3 * u.cm
+
+
+@pytest.mark.parametrize(
+    ("unit_system", "match"),
+    [
+        ({}, "Field required"),
+        ({"name": "Bogus"}, "Input should be 'SI', 'CGS' or 'Imperial'"),
+    ],
+)
+def test_invalid_unit_system_dict_raises_validation_error(unit_system, match):
+    with SI_unit_system, pytest.raises(pd.ValidationError, match=match) as exc_info:
+        SimulationParams(unit_system=unit_system)
+
+    assert not isinstance(exc_info.value, KeyError)
 
 
 def test_mach_reynolds_op_cond():

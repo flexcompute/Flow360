@@ -74,7 +74,6 @@ from flow360.component.simulation.primitives import (
     GenericVolume,
     SeedpointVolume,
 )
-from flow360.component.simulation.unit_system import AngularVelocityType, u
 from flow360.component.simulation.user_code.core.types import ValueOrExpression
 from flow360.component.simulation.utils import sanitize_params_dict
 from flow360.component.simulation.validation.validation_context import (
@@ -146,7 +145,7 @@ class AngularVelocity(SingleAttributeModel):
     """
 
     type_name: Literal["AngularVelocity"] = pd.Field("AngularVelocity", frozen=True)
-    value: ValueOrExpression[AngularVelocityType] = pd.Field(
+    value: ValueOrExpression[AngularVelocityDim.Float64] = pd.Field(
         description="The value of the angular velocity."
     )
 
@@ -1018,9 +1017,9 @@ class BETDisk(MultiConstructorBaseModel):
             C81File class instance containing information about the C81 file.
         rotation_direction_rule: str
             Rule for rotation direction and thrust direction.
-        omega: AngularVelocityType.NonNegative
+        omega: AngularVelocity.NonNegativeFloat64
             Rotating speed of the propeller.
-        chord_ref: LengthType.Positive
+        chord_ref: Length.PositiveFloat64
             Dimensional reference cord used to compute sectional blade loadings.
         n_loading_nodes: Int
             Number of nodes used to compute sectional thrust and torque coefficients.
@@ -1028,14 +1027,14 @@ class BETDisk(MultiConstructorBaseModel):
             List of Cylinder entities used for defining the BET volumes.
         number_of_blades: Int
             Number of blades to model.
-        length_unit: LengthType.NonNegative
+        length_unit: Length.NonNegativeFloat64
             Length unit of the geometry/mesh file.
-        angle_unit: AngleType
-            Angle unit used for AngleType BETDisk parameters.
+        angle_unit: Angle.Float64
+            Angle unit used for Angle BETDisk parameters.
         initial_blade_direction: Axis, optional
             Orientation of the first blade in BET model.
             Must be specified for unsteady BET simulation.
-        blade_line_chord: LengthType.NonNegative
+        blade_line_chord: Length.NonNegativeFloat64
             Dimensional chord used in unsteady BET simulation. Defaults to ``0 * u.m``.
 
 
@@ -1104,22 +1103,22 @@ class BETDisk(MultiConstructorBaseModel):
             DFDCFile class instance containing information about the DFDC file.
         rotation_direction_rule: str
             Rule for rotation direction and thrust direction.
-        omega: AngularVelocityType.NonNegative
+        omega: AngularVelocity.NonNegativeFloat64
             Rotating speed of the propeller.
-        chord_ref: LengthType.Positive
+        chord_ref: Length.PositiveFloat64
             Dimensional reference cord used to compute sectional blade loadings.
         n_loading_nodes: Int
             Number of nodes used to compute sectional thrust and torque coefficients.
         entities: EntityList[Cylinder]
             List of Cylinder entities used for defining the BET volumes.
-        length_unit: LengthType.NonNegative
-            Length unit used for LengthType BETDisk parameters.
-        angle_unit: AngleType
-            Angle unit used for AngleType BETDisk parameters.
+        length_unit: Length.NonNegativeFloat64
+            Length unit used for BETDisk parameters.
+        angle_unit: Angle.Float64
+            Angle unit used for Angle BETDisk parameters.
         initial_blade_direction: Axis, optional
             Orientation of the first blade in BET model.
             Must be specified for unsteady BET simulation.
-        blade_line_chord: LengthType.NonNegative
+        blade_line_chord: Length.NonNegativeFloat64
             Dimensional chord used in unsteady BET simulation. Defaults to ``0 * u.m``.
 
 
@@ -1186,24 +1185,24 @@ class BETDisk(MultiConstructorBaseModel):
             XFOILFile class instance containing information about the XFOIL file.
         rotation_direction_rule: str
             Rule for rotation direction and thrust direction.
-        omega: AngularVelocityType.NonNegative
+        omega: AngularVelocity.NonNegativeFloat64
             Rotating speed of the propeller.
-        chord_ref: LengthType.Positive
+        chord_ref: Length.PositiveFloat64
             Dimensional reference cord used to compute sectional blade loadings.
         n_loading_nodes: Int
             Number of nodes used to compute sectional thrust and torque coefficients.
         entities: EntityList[Cylinder]
             List of Cylinder entities used for defining the BET volumes.
-        length_unit: LengthType.NonNegative
-            Length unit used for LengthType BETDisk parameters.
-        angle_unit: AngleType
-            Angle unit used for AngleType BETDisk parameters.
+        length_unit: Length.NonNegativeFloat64
+            Length unit used for BETDisk parameters.
+        angle_unit: Angle.Float64
+            Angle unit used for Angle BETDisk parameters.
         number_of_blades: Int
             Number of blades to model.
         initial_blade_direction: Axis, optional
             Orientation of the first blade in BET model.
             Must be specified for unsteady BET simulation.
-        blade_line_chord: LengthType.NonNegative
+        blade_line_chord: Length.NonNegativeFloat64
             Dimensional chord used in unsteady BET simulation. Defaults to ``0 * u.m``.
 
 
@@ -1274,22 +1273,22 @@ class BETDisk(MultiConstructorBaseModel):
             XROTORFile class instance containing information about the XROTOR file.
         rotation_direction_rule: str
             Rule for rotation direction and thrust direction.
-        omega: AngularVelocityType.NonNegative
+        omega: AngularVelocity.NonNegativeFloat64
             Rotating speed of the propeller.
-        chord_ref: LengthType.Positive
+        chord_ref: Length.PositiveFloat64
             Dimensional reference cord used to compute sectional blade loadings.
         n_loading_nodes: Int
             Number of nodes used to compute sectional thrust and torque coefficients.
         entities: EntityList[Cylinder]
             List of Cylinder entities used for defining the BET volumes.
-        length_unit: LengthType.NonNegative
-            Length unit used for LengthType BETDisk parameters.
-        angle_unit: AngleType
-            Angle unit used for AngleType BETDisk parameters.
+        length_unit: Length.NonNegativeFloat64
+            Length unit used for BETDisk parameters.
+        angle_unit: Angle.Float64
+            Angle unit used for Angle BETDisk parameters.
         initial_blade_direction: Axis, optional
             Orientation of the first blade in BET model.
             Must be specified for unsteady BET simulation.
-        blade_line_chord: LengthType.NonNegative
+        blade_line_chord: Length.NonNegativeFloat64
             Dimensional chord used in unsteady BET simulation. Defaults to ``0 * u.m``.
 
 

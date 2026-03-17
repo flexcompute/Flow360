@@ -2,6 +2,7 @@ import json
 import os
 
 import pytest
+from flow360_schema.framework.physical_dimensions import Length
 
 import flow360.component.simulation.units as u
 from flow360.component.geometry import Geometry, GeometryMeta
@@ -68,10 +69,10 @@ from flow360.component.simulation.translator.surface_meshing_translator import (
     get_surface_meshing_json,
 )
 from flow360.component.simulation.unit_system import (
-    LengthType,
     SI_unit_system,
     imperial_unit_system,
 )
+from flow360.component.simulation.units import validate_length
 from tests.simulation.conftest import AssetBase
 
 
@@ -79,7 +80,7 @@ class TempGeometry(AssetBase):
     """Mimicing the final VolumeMesh class"""
 
     fname: str
-    mesh_unit: LengthType.Positive
+    mesh_unit: Length.PositiveFloat64
 
     def _get_meta_data(self):
         if self.fname == "om6wing.csm":
@@ -323,7 +324,7 @@ class TempGeometry(AssetBase):
             raise ValueError("Invalid file name")
 
     def _populate_registry(self):
-        self.mesh_unit = LengthType.validate(self._get_meta_data()["mesh_unit"])
+        self.mesh_unit = validate_length(self._get_meta_data()["mesh_unit"])
         if self.snappy:
             self.internal_registry = self._get_entity_info()._group_entity_by_tag(
                 "face", "faceId", self.internal_registry

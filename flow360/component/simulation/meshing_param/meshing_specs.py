@@ -13,7 +13,6 @@ from flow360.component.simulation.framework.updater import (
     DEFAULT_PLANAR_FACE_TOLERANCE,
     DEFAULT_SLIDING_INTERFACE_TOLERANCE,
 )
-from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.validation.validation_context import (
     SURFACE_MESH,
     VOLUME_MESH,
@@ -92,7 +91,7 @@ def set_default_octree_spacing(octree_spacing, param_info: ParamsValidationInfo)
         return octree_spacing
 
     # pylint: disable=no-member
-    project_length = 1 * LengthType.validate(param_info.project_length_unit)
+    project_length = 1 * param_info.project_length_unit
     return OctreeSpacing(base_spacing=project_length)
 
 

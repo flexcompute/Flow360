@@ -7,7 +7,7 @@ This module provides functions for handling unit conversion into flow360 solver 
 import operator
 from functools import reduce
 
-from flow360.component.simulation.unit_system import u
+import unyt as u
 
 from ...exceptions import Flow360ConfigurationError
 
@@ -49,7 +49,7 @@ class RestrictedUnitSystem(u.UnitSystem):
             supported.add(u.dimensions.temperature)
 
         super().__init__(
-            f"{name}_{id(self)}",
+            name,
             length_unit=length_unit,
             mass_unit=mass_unit or 1 * u.kg,
             time_unit=time_unit or 1 * u.s,

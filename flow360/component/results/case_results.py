@@ -9,6 +9,7 @@ from typing import List, Optional, get_args
 
 import numpy as np
 import pydantic as pd
+from flow360_schema.framework.physical_dimensions import Force, Moment, Power
 
 from flow360.component.results.base_results import (
     _PHYSICAL_STEP,
@@ -47,7 +48,6 @@ from flow360.component.simulation.outputs.output_fields import (
     _CMz_PER_SPAN,
 )
 from flow360.component.simulation.simulation_params import SimulationParams
-from flow360.component.simulation.unit_system import ForceType, MomentType, PowerType
 from flow360.component.v1.flow360_params import Flow360Params
 from flow360.exceptions import Flow360NotImplementedError, Flow360ValueError
 from flow360.log import log
@@ -532,11 +532,11 @@ class _ActuatorDiskResults(_DimensionedCSVResultModel):
 
     Attributes
     ----------
-    power : PowerType.Array
+    power : Power.Array
         Array of power values.
-    force : ForceType.Array
+    force : Force.Array
         Array of force values.
-    moment : MomentType.Array
+    moment : Moment.Array
         Array of moment values.
 
     Methods
@@ -545,9 +545,9 @@ class _ActuatorDiskResults(_DimensionedCSVResultModel):
         Convert the results to the specified base system.
     """
 
-    power: PowerType.Array = pd.Field()
-    force: ForceType.Array = pd.Field()
-    moment: MomentType.Array = pd.Field()
+    power: Power.Array = pd.Field()
+    force: Force.Array = pd.Field()
+    moment: Moment.Array = pd.Field()
     _name = "actuator_disks"
 
     def to_base(self, base: str):
@@ -729,17 +729,17 @@ class _BETDiskResults(_DimensionedCSVResultModel):
 
     Attributes
     ----------
-    force_x : ForceType.Array
+    force_x : Force.Array
         Array of force values along the x-axis.
-    force_y : ForceType.Array
+    force_y : Force.Array
         Array of force values along the y-axis.
-    force_z : ForceType.Array
+    force_z : Force.Array
         Array of force values along the z-axis.
-    moment_x : MomentType.Array
+    moment_x : Moment.Array
         Array of moment values about the x-axis.
-    moment_y : MomentType.Array
+    moment_y : Moment.Array
         Array of moment values about the y-axis.
-    moment_z : MomentType.Array
+    moment_z : Moment.Array
         Array of moment values about the z-axis.
     _name : str
         Name of the BET forces result.
@@ -750,12 +750,12 @@ class _BETDiskResults(_DimensionedCSVResultModel):
         Convert the results to the specified base system.
     """
 
-    force_x: ForceType.Array = pd.Field()
-    force_y: ForceType.Array = pd.Field()
-    force_z: ForceType.Array = pd.Field()
-    moment_x: MomentType.Array = pd.Field()
-    moment_y: MomentType.Array = pd.Field()
-    moment_z: MomentType.Array = pd.Field()
+    force_x: Force.Array = pd.Field()
+    force_y: Force.Array = pd.Field()
+    force_z: Force.Array = pd.Field()
+    moment_x: Moment.Array = pd.Field()
+    moment_y: Moment.Array = pd.Field()
+    moment_z: Moment.Array = pd.Field()
 
     _name = "bet_forces"
 

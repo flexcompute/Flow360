@@ -4,6 +4,7 @@ Support class and functions for project interface.
 
 from typing import Optional, Type, TypeVar, get_args
 
+from flow360_schema.framework.physical_dimensions import Length
 from pydantic import ValidationError
 
 from flow360.component.simulation import services
@@ -33,7 +34,6 @@ from flow360.component.simulation.services_utils import (
     strip_selector_matches_and_broken_entities_inplace,
 )
 from flow360.component.simulation.simulation_params import SimulationParams
-from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.user_code.core.types import save_user_variables
 from flow360.component.simulation.utils import model_attribute_unlock
 from flow360.component.simulation.web.asset_base import AssetBase
@@ -477,7 +477,7 @@ def _set_up_default_geometry_accuracy(
     return params
 
 
-def _set_up_default_reference_geometry(params: SimulationParams, length_unit: LengthType):
+def _set_up_default_reference_geometry(params: SimulationParams, length_unit: Length.Float64):
     """
     Setting up the default reference geometry if not provided in params.
     Ensure the simulation.json contains the default settings other than None.
@@ -526,7 +526,7 @@ def _build_deduplicated_entity_registry_from_params(params: SimulationParams) ->
 
 def set_up_params_for_uploading(  # pylint: disable=too-many-arguments
     root_asset,
-    length_unit: LengthType,
+    length_unit: Length.Float64,
     params: SimulationParams,
     use_beta_mesher: bool,
     use_geometry_AI: bool,  # pylint: disable=invalid-name

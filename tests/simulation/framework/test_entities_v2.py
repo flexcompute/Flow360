@@ -5,6 +5,7 @@ from typing import List, Literal, Optional, Union
 import numpy as np
 import pydantic as pd
 import pytest
+from flow360_schema.framework.physical_dimensions import Length
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
@@ -29,7 +30,7 @@ from flow360.component.simulation.simulation_params import (
     SimulationParams,
     _ParamModelBase,
 )
-from flow360.component.simulation.unit_system import LengthType, SI_unit_system
+from flow360.component.simulation.unit_system import SI_unit_system
 from flow360.component.simulation.utils import model_attribute_unlock
 from tests.simulation.conftest import AssetBase
 
@@ -213,7 +214,7 @@ class TempSimulationParam(_ParamModelBase):
     private_attribute_asset_cache: AssetCache = pd.Field(AssetCache(), frozen=True)
 
     @property
-    def base_length(self) -> LengthType:
+    def base_length(self) -> Length.Float64:
         return self.private_attribute_asset_cache.project_length_unit.to("m")
 
     def preprocess(self):
@@ -222,7 +223,7 @@ class TempSimulationParam(_ParamModelBase):
         TempFluidDynamics etc so that the class can perform proper validation
         """
         with model_attribute_unlock(self.private_attribute_asset_cache, "project_length_unit"):
-            self.private_attribute_asset_cache.project_length_unit = LengthType.validate(1 * u.m)
+            self.private_attribute_asset_cache.project_length_unit = 1 * u.m
 
         for model in self.models:
             model.entities.preprocess(params=self)

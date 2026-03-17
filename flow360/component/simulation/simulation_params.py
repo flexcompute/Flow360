@@ -81,14 +81,12 @@ from flow360.component.simulation.primitives import (
 from flow360.component.simulation.run_control.run_control import RunControl
 from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
 from flow360.component.simulation.unit_system import (
-    _UNIT_SYSTEMS,
     DimensionedTypes,
-    LengthType,
-    SI_unit_system,
     UnitSystem,
     UnitSystemConfig,
     unit_system_manager,
 )
+from flow360.component.simulation.units import validate_length
 from flow360.component.simulation.user_code.core.types import (
     UserVariable,
     batch_get_user_variable_units,
@@ -186,7 +184,7 @@ class _ParamModelBase(Flow360BaseModel):
             if isinstance(kwarg_unit_system, UnitSystemConfig):
                 resolved = kwarg_unit_system.resolve()
             elif isinstance(kwarg_unit_system, dict):
-                resolved = _UNIT_SYSTEMS[kwarg_unit_system["name"]]
+                resolved = UnitSystemConfig.model_validate(kwarg_unit_system).resolve()
             elif isinstance(kwarg_unit_system, UnitSystem):
                 resolved = kwarg_unit_system
             else:
@@ -381,7 +379,7 @@ class SimulationParams(_ParamModelBase):
 
         if mesh_unit is None:
             raise Flow360ConfigurationError("Mesh unit has not been supplied.")
-        self._private_set_length_unit(LengthType.validate(mesh_unit))  # pylint: disable=no-member
+        self._private_set_length_unit(validate_length(mesh_unit))
         if unit_system_manager.current is None:
             # pylint: disable=not-context-manager,no-member
             with self.unit_system.resolve():
@@ -398,8 +396,6 @@ class SimulationParams(_ParamModelBase):
         with model_attribute_unlock(self.private_attribute_asset_cache, "project_length_unit"):
             # pylint: disable=assigning-non-slot
             self.private_attribute_asset_cache.project_length_unit = validated_mesh_unit
-        # Invalidate cached unit system since base_length changed
-        self.__dict__.pop("_cached_flow360_unit_system", None)
 
     @pd.validate_call
     def convert_unit(
@@ -449,7 +445,7 @@ class SimulationParams(_ParamModelBase):
 
         if length_unit is not None:
             # pylint: disable=no-member
-            self._private_set_length_unit(LengthType.validate(length_unit))
+            self._private_set_length_unit(validate_length(length_unit))
 
         if target_system in ("flow360", "flow360_v2"):
             return value.in_base(unit_system=self.flow360_unit_system)
@@ -820,26 +816,16 @@ class SimulationParams(_ParamModelBase):
         In meshing-only mode (no operating_condition), returns a RestrictedUnitSystem
         that only supports length conversions. Attempting to convert other dimensions
         raises ValueError.
-
-        Cached per-instance to avoid leaking entries into unyt's global registry.
-        Invalidated by _private_set_length_unit when project_length_unit changes.
         """
-        cached = self.__dict__.get("_cached_flow360_unit_system")
-        if cached is not None:
-            return cached
-
         if self.operating_condition is None:
-            result = RestrictedUnitSystem("flow360_nondim", length_unit=self.base_length)
-        else:
-            result = RestrictedUnitSystem(
-                "flow360_nondim",
-                length_unit=self.base_length,
-                mass_unit=self.base_mass,
-                time_unit=self.base_time,
-                temperature_unit=self.base_temperature,
-            )
-        self.__dict__["_cached_flow360_unit_system"] = result
-        return result
+            return RestrictedUnitSystem("flow360_nondim", length_unit=self.base_length)
+        return RestrictedUnitSystem(
+            "flow360_nondim",
+            length_unit=self.base_length,
+            mass_unit=self.base_mass,
+            time_unit=self.base_time,
+            temperature_unit=self.base_temperature,
+        )
 
     @property
     def used_entity_registry(self) -> EntityRegistry:

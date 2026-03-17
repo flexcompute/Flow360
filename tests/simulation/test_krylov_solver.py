@@ -209,7 +209,7 @@ class TestKrylovSimulationRestrictions:
         with pytest.raises(ValueError, match="Unsteady"):
             _make_sim_params(
                 navier_stokes_solver=NavierStokesSolver(linear_solver=KrylovLinearSolver()),
-                time_stepping=Unsteady(steps=100, step_size=0.1),
+                time_stepping=Unsteady(steps=100, step_size=0.1 * u.s),
             )
 
     def test_krylov_with_steady_is_ok(self):
