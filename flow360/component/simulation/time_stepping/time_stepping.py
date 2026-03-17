@@ -3,9 +3,9 @@
 from typing import Literal, Optional, Union
 
 import pydantic as pd
+from flow360_schema.framework.physical_dimensions import Time
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.simulation.unit_system import TimeType
 from flow360.component.simulation.user_code.core.types import ValueOrExpression
 
 
@@ -186,7 +186,7 @@ class Unsteady(Flow360BaseModel):
     )
     steps: pd.PositiveInt = pd.Field(description="Number of physical steps.")
     # pylint: disable=no-member
-    step_size: ValueOrExpression[TimeType.Positive] = pd.Field(
+    step_size: ValueOrExpression[Time.PositiveFloat64] = pd.Field(
         description="Time step size in physical step marching,"
     )
     # pylint: disable=duplicate-code

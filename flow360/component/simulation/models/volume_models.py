@@ -7,7 +7,18 @@ from abc import ABCMeta
 from typing import Annotated, Dict, List, Literal, Optional, Union
 
 import pydantic as pd
-from flow360_schema.framework.validation.context import DeserializationContext
+from flow360_schema.framework.physical_dimensions import Acceleration, Angle
+from flow360_schema.framework.physical_dimensions import (
+    AngularVelocity as AngularVelocityDim,
+)
+from flow360_schema.framework.physical_dimensions import (
+    HeatSource,
+    InverseArea,
+    InverseLength,
+    Length,
+    Pressure,
+    Velocity,
+)
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
@@ -62,18 +73,6 @@ from flow360.component.simulation.primitives import (
     Cylinder,
     GenericVolume,
     SeedpointVolume,
-)
-from flow360.component.simulation.unit_system import (
-    AccelerationType,
-    AngleType,
-    AngularVelocityType,
-    HeatSourceType,
-    InverseAreaType,
-    InverseLengthType,
-    LengthType,
-    PressureType,
-    VelocityType,
-    u,
 )
 from flow360.component.simulation.user_code.core.types import ValueOrExpression
 from flow360.component.simulation.utils import sanitize_params_dict
@@ -146,7 +145,7 @@ class AngularVelocity(SingleAttributeModel):
     """
 
     type_name: Literal["AngularVelocity"] = pd.Field("AngularVelocity", frozen=True)
-    value: ValueOrExpression[AngularVelocityType] = pd.Field(
+    value: ValueOrExpression[AngularVelocityDim.Float64] = pd.Field(
         description="The value of the angular velocity."
     )
 
@@ -308,7 +307,7 @@ class Gravity(Flow360BaseModel):
         (0, 0, -1),
         description="The direction of the gravitational acceleration vector.",
     )
-    magnitude: AccelerationType = pd.Field(
+    magnitude: Acceleration.Float64 = pd.Field(
         9.81 * u.m / u.s**2,
         description="The magnitude of the gravitational acceleration. "
         + "For Earth's surface gravity, use 9.81 m/s².",
@@ -432,7 +431,7 @@ class Solid(PDEModelBase):
         + ":class:`HeatEquationSolver` documentation.",
     )
     # pylint: disable=no-member
-    volumetric_heat_source: Union[StringExpression, HeatSourceType] = pd.Field(
+    volumetric_heat_source: Union[StringExpression, HeatSource.Float64] = pd.Field(
         0 * u.W / (u.m**3), description="The volumetric heat source."
     )
 
@@ -483,16 +482,16 @@ class ForcePerArea(Flow360BaseModel):
     """
 
     # pylint: disable=no-member
-    radius: LengthType.NonNegativeArray = pd.Field(
+    radius: Length.NonNegativeArray = pd.Field(
         description="Radius of the sampled locations in grid unit."
     )
     # pylint: disable=no-member
-    thrust: PressureType.Array = pd.Field(
+    thrust: Pressure.Array = pd.Field(
         description="Dimensional force per area in the axial direction, positive means the axial "
         + "force follows the same direction as the thrust axis. "
     )
     # pylint: disable=no-member
-    circumferential: PressureType.Array = pd.Field(
+    circumferential: Pressure.Array = pd.Field(
         description="Dimensional force per area in the circumferential direction, positive means the "
         + "circumferential force follows the same direction as the thrust axis with the right hand rule. "
     )
@@ -553,7 +552,7 @@ class ActuatorDisk(Flow360BaseModel):
         description="The force per area input for the `ActuatorDisk` model. "
         + "See :class:`ForcePerArea` documentation."
     )
-    reference_velocity: Optional[VelocityType.Vector] = pd.Field(  # pylint: disable=no-member
+    reference_velocity: Optional[Velocity.Vector3] = pd.Field(  # pylint: disable=no-member
         None,
         description="Reference velocity [Vx, Vy, Vz] for power calculation. "
         + "When provided, uses this velocity instead of local flow velocity "
@@ -577,8 +576,8 @@ class BETDiskTwist(Flow360BaseModel):
     ====
     """
 
-    radius: LengthType.NonNegative = pd.Field(description="The radius of the radial location.")
-    twist: AngleType = pd.Field(description="The twist angle at this radial location.")
+    radius: Length.NonNegativeFloat64 = pd.Field(description="The radius of the radial location.")
+    twist: Angle.Float64 = pd.Field(description="The twist angle at this radial location.")
 
 
 # pylint: disable=no-member
@@ -594,8 +593,8 @@ class BETDiskChord(Flow360BaseModel):
     ====
     """
 
-    radius: LengthType.NonNegative = pd.Field(description="The radius of the radial location.")
-    chord: LengthType.NonNegative = pd.Field(
+    radius: Length.NonNegativeFloat64 = pd.Field(description="The radius of the radial location.")
+    chord: Length.NonNegativeFloat64 = pd.Field(
         description="The blade chord at this radial location. "
     )
 
@@ -740,15 +739,15 @@ class BETDiskCache(Flow360BaseModel):
     name: Optional[str] = None
     file: Optional[BETFileTypes] = None
     rotation_direction_rule: Optional[Literal["leftHand", "rightHand"]] = None
-    omega: Optional[AngularVelocityType.NonNegative] = None
-    chord_ref: Optional[LengthType.Positive] = None
+    omega: Optional[AngularVelocityDim.NonNegativeFloat64] = None
+    chord_ref: Optional[Length.PositiveFloat64] = None
     n_loading_nodes: Optional[pd.StrictInt] = None
     entities: Optional[EntityList[Cylinder]] = None
-    angle_unit: Optional[AngleType] = None
-    length_unit: Optional[LengthType.NonNegative] = None
+    angle_unit: Optional[Angle.Float64] = None
+    length_unit: Optional[Length.NonNegativeFloat64] = None
     number_of_blades: Optional[pd.StrictInt] = None
     initial_blade_direction: Optional[Axis] = None
-    blade_line_chord: Optional[LengthType.NonNegative] = None
+    blade_line_chord: Optional[Length.NonNegativeFloat64] = None
 
 
 class BETDisk(MultiConstructorBaseModel):
@@ -798,8 +797,8 @@ class BETDisk(MultiConstructorBaseModel):
         description='The rule for rotation direction and thrust direction, "rightHand" or "leftHand".',
     )
     number_of_blades: pd.StrictInt = pd.Field(gt=0, le=10, description="Number of blades to model.")
-    omega: AngularVelocityType.NonNegative = pd.Field(description="Rotating speed.")
-    chord_ref: LengthType.Positive = pd.Field(
+    omega: AngularVelocityDim.NonNegativeFloat64 = pd.Field(description="Rotating speed.")
+    chord_ref: Length.PositiveFloat64 = pd.Field(
         description="Dimensional reference chord used to compute sectional blade loadings."
     )
     n_loading_nodes: pd.StrictInt = pd.Field(
@@ -808,7 +807,7 @@ class BETDisk(MultiConstructorBaseModel):
         description="Number of nodes used to compute the sectional thrust and "
         + "torque coefficients :math:`C_t` and :math:`C_q`, defined in :ref:`betDiskLoadingNote`.",
     )
-    blade_line_chord: LengthType.NonNegative = pd.Field(
+    blade_line_chord: Length.NonNegativeFloat64 = pd.Field(
         0 * u.m,
         description="Dimensional chord to use if performing an unsteady BET Line simulation. "
         + "Default of 0.0 is an indication to run a steady BET Disk simulation.",
@@ -818,7 +817,7 @@ class BETDisk(MultiConstructorBaseModel):
         description="Orientation of the first blade in the BET model. "
         + "Must be specified if performing an unsteady BET Line simulation.",
     )
-    tip_gap: Union[Literal["inf"], LengthType.NonNegative] = pd.Field(
+    tip_gap: Union[Literal["inf"], Length.NonNegativeFloat64] = pd.Field(
         "inf",
         description="Dimensional distance between blade tip and solid bodies to "
         + "define a :ref:`tip loss factor <TipGap>`.",
@@ -834,7 +833,7 @@ class BETDisk(MultiConstructorBaseModel):
         + "provided in :class:`BETDiskSectionalPolar`.",
         frozen=True,
     )
-    alphas: AngleType.Array = pd.Field(
+    alphas: Angle.Array = pd.Field(
         description="Alphas associated with airfoil polars provided in "
         + ":class:`BETDiskSectionalPolar`.",
         frozen=True,
@@ -854,7 +853,7 @@ class BETDisk(MultiConstructorBaseModel):
         + ":py:attr:`sectional_radiuses`.",
         frozen=True,
     )
-    sectional_radiuses: LengthType.NonNegativeArray = pd.Field(
+    sectional_radiuses: Length.NonNegativeArray = pd.Field(
         description="A list of the radial locations in grid units at which :math:`C_l` "
         + "and :math:`C_d` are specified in :class:`BETDiskSectionalPolar`.",
         frozen=True,
@@ -990,8 +989,7 @@ class BETDisk(MultiConstructorBaseModel):
             raise Flow360ValueError(f"Invalid keyword arguments for {cls.__name__}: {invalid_keys}")
 
         model_dict.update(kwargs)
-        with DeserializationContext():
-            return cls.model_validate(model_dict)
+        return cls.deserialize(model_dict)
 
     # pylint: disable=too-many-arguments, no-self-argument, not-callable
     @MultiConstructorBaseModel.model_constructor
@@ -1000,15 +998,15 @@ class BETDisk(MultiConstructorBaseModel):
         cls,
         file: C81File,
         rotation_direction_rule: Literal["leftHand", "rightHand"],
-        omega: AngularVelocityType.NonNegative,
-        chord_ref: LengthType.Positive,
+        omega: AngularVelocityDim.NonNegativeFloat64,
+        chord_ref: Length.PositiveFloat64,
         n_loading_nodes: pd.StrictInt,
         entities: EntityList[Cylinder],
         number_of_blades: pd.StrictInt,
-        length_unit: LengthType.NonNegative,
-        angle_unit: AngleType,
+        length_unit: Length.NonNegativeFloat64,
+        angle_unit: Angle.Float64,
         initial_blade_direction: Optional[Axis] = None,
-        blade_line_chord: LengthType.NonNegative = 0 * u.m,
+        blade_line_chord: Length.NonNegativeFloat64 = 0 * u.m,
         name: str = "BET disk",
     ):
         """Constructs a :class: `BETDisk` instance from a given C81 file and additional inputs.
@@ -1019,9 +1017,9 @@ class BETDisk(MultiConstructorBaseModel):
             C81File class instance containing information about the C81 file.
         rotation_direction_rule: str
             Rule for rotation direction and thrust direction.
-        omega: AngularVelocityType.NonNegative
+        omega: AngularVelocity.NonNegativeFloat64
             Rotating speed of the propeller.
-        chord_ref: LengthType.Positive
+        chord_ref: Length.PositiveFloat64
             Dimensional reference cord used to compute sectional blade loadings.
         n_loading_nodes: Int
             Number of nodes used to compute sectional thrust and torque coefficients.
@@ -1029,14 +1027,14 @@ class BETDisk(MultiConstructorBaseModel):
             List of Cylinder entities used for defining the BET volumes.
         number_of_blades: Int
             Number of blades to model.
-        length_unit: LengthType.NonNegative
+        length_unit: Length.NonNegativeFloat64
             Length unit of the geometry/mesh file.
-        angle_unit: AngleType
-            Angle unit used for AngleType BETDisk parameters.
+        angle_unit: Angle.Float64
+            Angle unit used for Angle BETDisk parameters.
         initial_blade_direction: Axis, optional
             Orientation of the first blade in BET model.
             Must be specified for unsteady BET simulation.
-        blade_line_chord: LengthType.NonNegative
+        blade_line_chord: Length.NonNegativeFloat64
             Dimensional chord used in unsteady BET simulation. Defaults to ``0 * u.m``.
 
 
@@ -1087,14 +1085,14 @@ class BETDisk(MultiConstructorBaseModel):
         cls,
         file: DFDCFile,
         rotation_direction_rule: Literal["leftHand", "rightHand"],
-        omega: AngularVelocityType.NonNegative,
-        chord_ref: LengthType.Positive,
+        omega: AngularVelocityDim.NonNegativeFloat64,
+        chord_ref: Length.PositiveFloat64,
         n_loading_nodes: pd.StrictInt,
         entities: EntityList[Cylinder],
-        length_unit: LengthType.NonNegative,
-        angle_unit: AngleType,
+        length_unit: Length.NonNegativeFloat64,
+        angle_unit: Angle.Float64,
         initial_blade_direction: Optional[Axis] = None,
-        blade_line_chord: LengthType.NonNegative = 0 * u.m,
+        blade_line_chord: Length.NonNegativeFloat64 = 0 * u.m,
         name: str = "BET disk",
     ):
         """Constructs a :class: `BETDisk` instance from a given DFDC file and additional inputs.
@@ -1105,22 +1103,22 @@ class BETDisk(MultiConstructorBaseModel):
             DFDCFile class instance containing information about the DFDC file.
         rotation_direction_rule: str
             Rule for rotation direction and thrust direction.
-        omega: AngularVelocityType.NonNegative
+        omega: AngularVelocity.NonNegativeFloat64
             Rotating speed of the propeller.
-        chord_ref: LengthType.Positive
+        chord_ref: Length.PositiveFloat64
             Dimensional reference cord used to compute sectional blade loadings.
         n_loading_nodes: Int
             Number of nodes used to compute sectional thrust and torque coefficients.
         entities: EntityList[Cylinder]
             List of Cylinder entities used for defining the BET volumes.
-        length_unit: LengthType.NonNegative
-            Length unit used for LengthType BETDisk parameters.
-        angle_unit: AngleType
-            Angle unit used for AngleType BETDisk parameters.
+        length_unit: Length.NonNegativeFloat64
+            Length unit used for BETDisk parameters.
+        angle_unit: Angle.Float64
+            Angle unit used for Angle BETDisk parameters.
         initial_blade_direction: Axis, optional
             Orientation of the first blade in BET model.
             Must be specified for unsteady BET simulation.
-        blade_line_chord: LengthType.NonNegative
+        blade_line_chord: Length.NonNegativeFloat64
             Dimensional chord used in unsteady BET simulation. Defaults to ``0 * u.m``.
 
 
@@ -1168,15 +1166,15 @@ class BETDisk(MultiConstructorBaseModel):
         cls,
         file: XFOILFile,
         rotation_direction_rule: Literal["leftHand", "rightHand"],
-        omega: AngularVelocityType.NonNegative,
-        chord_ref: LengthType.Positive,
+        omega: AngularVelocityDim.NonNegativeFloat64,
+        chord_ref: Length.PositiveFloat64,
         n_loading_nodes: pd.StrictInt,
         entities: EntityList[Cylinder],
-        length_unit: LengthType.NonNegative,
-        angle_unit: AngleType,
+        length_unit: Length.NonNegativeFloat64,
+        angle_unit: Angle.Float64,
         number_of_blades: pd.StrictInt,
         initial_blade_direction: Optional[Axis],
-        blade_line_chord: LengthType.NonNegative = 0 * u.m,
+        blade_line_chord: Length.NonNegativeFloat64 = 0 * u.m,
         name: str = "BET disk",
     ):
         """Constructs a :class: `BETDisk` instance from a given XROTOR file and additional inputs.
@@ -1187,24 +1185,24 @@ class BETDisk(MultiConstructorBaseModel):
             XFOILFile class instance containing information about the XFOIL file.
         rotation_direction_rule: str
             Rule for rotation direction and thrust direction.
-        omega: AngularVelocityType.NonNegative
+        omega: AngularVelocity.NonNegativeFloat64
             Rotating speed of the propeller.
-        chord_ref: LengthType.Positive
+        chord_ref: Length.PositiveFloat64
             Dimensional reference cord used to compute sectional blade loadings.
         n_loading_nodes: Int
             Number of nodes used to compute sectional thrust and torque coefficients.
         entities: EntityList[Cylinder]
             List of Cylinder entities used for defining the BET volumes.
-        length_unit: LengthType.NonNegative
-            Length unit used for LengthType BETDisk parameters.
-        angle_unit: AngleType
-            Angle unit used for AngleType BETDisk parameters.
+        length_unit: Length.NonNegativeFloat64
+            Length unit used for BETDisk parameters.
+        angle_unit: Angle.Float64
+            Angle unit used for Angle BETDisk parameters.
         number_of_blades: Int
             Number of blades to model.
         initial_blade_direction: Axis, optional
             Orientation of the first blade in BET model.
             Must be specified for unsteady BET simulation.
-        blade_line_chord: LengthType.NonNegative
+        blade_line_chord: Length.NonNegativeFloat64
             Dimensional chord used in unsteady BET simulation. Defaults to ``0 * u.m``.
 
 
@@ -1257,14 +1255,14 @@ class BETDisk(MultiConstructorBaseModel):
         cls,
         file: XROTORFile,
         rotation_direction_rule: Literal["leftHand", "rightHand"],
-        omega: AngularVelocityType.NonNegative,
-        chord_ref: LengthType.Positive,
+        omega: AngularVelocityDim.NonNegativeFloat64,
+        chord_ref: Length.PositiveFloat64,
         n_loading_nodes: pd.StrictInt,
         entities: EntityList[Cylinder],
-        length_unit: LengthType.NonNegative,
-        angle_unit: AngleType,
+        length_unit: Length.NonNegativeFloat64,
+        angle_unit: Angle.Float64,
         initial_blade_direction: Optional[Axis] = None,
-        blade_line_chord: LengthType.NonNegative = 0 * u.m,
+        blade_line_chord: Length.NonNegativeFloat64 = 0 * u.m,
         name: str = "BET disk",
     ):
         """Constructs a :class: `BETDisk` instance from a given XROTOR file and additional inputs.
@@ -1275,22 +1273,22 @@ class BETDisk(MultiConstructorBaseModel):
             XROTORFile class instance containing information about the XROTOR file.
         rotation_direction_rule: str
             Rule for rotation direction and thrust direction.
-        omega: AngularVelocityType.NonNegative
+        omega: AngularVelocity.NonNegativeFloat64
             Rotating speed of the propeller.
-        chord_ref: LengthType.Positive
+        chord_ref: Length.PositiveFloat64
             Dimensional reference cord used to compute sectional blade loadings.
         n_loading_nodes: Int
             Number of nodes used to compute sectional thrust and torque coefficients.
         entities: EntityList[Cylinder]
             List of Cylinder entities used for defining the BET volumes.
-        length_unit: LengthType.NonNegative
-            Length unit used for LengthType BETDisk parameters.
-        angle_unit: AngleType
-            Angle unit used for AngleType BETDisk parameters.
+        length_unit: Length.NonNegativeFloat64
+            Length unit used for BETDisk parameters.
+        angle_unit: Angle.Float64
+            Angle unit used for Angle BETDisk parameters.
         initial_blade_direction: Axis, optional
             Orientation of the first blade in BET model.
             Must be specified for unsteady BET simulation.
-        blade_line_chord: LengthType.NonNegative
+        blade_line_chord: Length.NonNegativeFloat64
             Dimensional chord used in unsteady BET simulation. Defaults to ``0 * u.m``.
 
 
@@ -1492,16 +1490,16 @@ class PorousMedium(Flow360BaseModel):
         + "porous medium material model.",
     )
 
-    darcy_coefficient: InverseAreaType.Point = pd.Field(
+    darcy_coefficient: InverseArea.Vector3 = pd.Field(
         description="Darcy coefficient of the porous media model which determines the scaling of the "
         + "viscous loss term. The 3 values define the coefficient for each of the 3 axes defined by "
         + "the reference frame of the volume zone."
     )
-    forchheimer_coefficient: InverseLengthType.Point = pd.Field(
+    forchheimer_coefficient: InverseLength.Vector3 = pd.Field(
         description="Forchheimer coefficient of the porous media model which determines "
         + "the scaling of the inertial loss term."
     )
-    volumetric_heat_source: Optional[Union[StringExpression, HeatSourceType]] = pd.Field(
+    volumetric_heat_source: Optional[Union[StringExpression, HeatSource.Float64]] = pd.Field(
         None, description="The volumetric heat source."
     )
     private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
@@ -1524,7 +1522,7 @@ class PorousMedium(Flow360BaseModel):
     @classmethod
     def _validate_volumetric_heat_source_for_liquid(
         cls,
-        value: Optional[Union[StringExpression, HeatSourceType]],
+        value: Optional[Union[StringExpression, HeatSource.Float64]],
         param_info: ParamsValidationInfo,
     ):
         """Disable the volumetric_heat_source when liquid operating condition is used"""

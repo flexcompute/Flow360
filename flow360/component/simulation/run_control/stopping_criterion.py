@@ -3,8 +3,8 @@
 from typing import List, Literal, Optional, Union
 
 import pydantic as pd
+import unyt as u
 
-import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.param_utils import serialize_model_obj_to_id
 from flow360.component.simulation.outputs.output_entities import Point
@@ -15,7 +15,6 @@ from flow360.component.simulation.outputs.outputs import (
     SurfaceIntegralOutput,
     SurfaceProbeOutput,
 )
-from flow360.component.simulation.unit_system import u
 from flow360.component.simulation.user_code.core.types import (
     SolverVariable,
     UnytQuantity,

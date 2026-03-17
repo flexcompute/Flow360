@@ -8,6 +8,7 @@ from typing import Type, Union, get_args
 
 import numpy as np
 import unyt as u
+from flow360_schema.framework.physical_dimensions import Length
 
 from flow360.component.simulation.conversion import (
     LIQUID_IMAGINARY_FREESTREAM_MACH,
@@ -132,7 +133,6 @@ from flow360.component.simulation.translator.utils import (
     translate_setting_and_apply_to_all_entities,
     translate_value_or_expression_object,
 )
-from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.user_code.core.types import (
     Expression,
     UserVariable,
@@ -1424,7 +1424,9 @@ def actuator_disk_translator(model: ActuatorDisk):
     }
     if model.reference_velocity is not None:
         ref_vel = remove_units_in_dict(
-            model.model_dump(by_alias=True, include={"reference_velocity"})
+            model.model_dump(
+                by_alias=True, include={"reference_velocity"}, context={"no_unit": True}
+            )
         )
         result["referenceVelocity"] = convert_tuples_to_lists(ref_vel["referenceVelocity"])
     return result
@@ -1817,11 +1819,13 @@ def calculate_monitor_semaphore_hash(params: SimulationParams):
                     recursive_remove_key(
                         model_dict, "privateAttributeId", "privateAttributeInputCache"
                     )
-                    force_output_models_dict.append(json.dumps(model_dict))
+                    force_output_models_dict.append(json.dumps(model_dict, sort_keys=True))
                 json_string_list.extend(force_output_models_dict)
                 json_string_list.extend(output.output_fields.items)
             if output.moving_statistic is not None:
-                json_string_list.append(json.dumps(dump_dict(output.moving_statistic)))
+                json_string_list.append(
+                    json.dumps(dump_dict(output.moving_statistic), sort_keys=True)
+                )
     combined_string = "".join(sorted(json_string_list))
     hasher = hashlib.sha256()
     hasher.update(combined_string.encode("utf-8"))
@@ -2132,7 +2136,7 @@ def translate_thermally_perfect_gas(  # pylint: disable=too-many-locals
 def get_solver_json(
     input_params: SimulationParams,
     # pylint: disable=no-member,unused-argument
-    mesh_unit: LengthType.Positive,
+    mesh_unit: Length.PositiveFloat64,
 ):
     """
     Get the solver json from the simulation parameters.
@@ -2570,7 +2574,7 @@ def get_solver_json(
 def get_columnar_data_processor_json(
     input_params: SimulationParams,
     # pylint: disable=no-member,unused-argument
-    mesh_unit: LengthType.Positive,
+    mesh_unit: Length.PositiveFloat64,
 ):
     """
     Get the columnar data processor json from the simulation parameters.

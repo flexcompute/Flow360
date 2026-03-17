@@ -48,8 +48,8 @@ def _create_base_simulation_dict(entity_info_type="VolumeMeshEntityInfo", surfac
             "gap_treatment_strength": 0.2,
             "defaults": {
                 "surface_edge_growth_rate": 1.5,
-                "boundary_layer_first_layer_thickness": "1*m",
-                "surface_max_edge_length": "1*m",
+                "boundary_layer_first_layer_thickness": {"value": 1, "units": "m"},
+                "surface_max_edge_length": {"value": 1, "units": "m"},
             },
             "refinements": [],
             "volume_zones": [],

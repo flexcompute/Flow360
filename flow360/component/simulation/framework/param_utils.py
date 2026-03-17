@@ -1,8 +1,11 @@
 """pre processing and post processing utilities for simulation parameters."""
 
+# pylint: disable=no-member
+
 from typing import Annotated, List, Optional, Union
 
 import pydantic as pd
+from flow360_schema.framework.physical_dimensions import Length
 
 from flow360.component.simulation.draft_context.coordinate_system_manager import (
     CoordinateSystemStatus,
@@ -23,7 +26,6 @@ from flow360.component.simulation.primitives import (
     _SurfaceEntityBase,
     _VolumeEntityBase,
 )
-from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.user_code.core.types import (
     VariableContextInfo,
     update_global_context,
@@ -41,8 +43,7 @@ class AssetCache(Flow360BaseModel):
     Cached info from the project asset.
     """
 
-    # pylint: disable=no-member
-    project_length_unit: Optional[LengthType.Positive] = pd.Field(None, frozen=True)
+    project_length_unit: Optional[Length.PositiveFloat64] = pd.Field(None, frozen=True)
     project_entity_info: Optional[
         Union[GeometryEntityInfo, VolumeMeshEntityInfo, SurfaceMeshEntityInfo]
     ] = pd.Field(None, frozen=True, discriminator="type_name")

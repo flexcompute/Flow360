@@ -3,9 +3,10 @@
 from typing import Literal, Optional, Tuple, Union
 
 import pydantic as pd
-from flow360_schema.models.primitives import (
+from flow360_schema.framework.physical_dimensions import (
     AbsoluteTemperature,
     Angle,
+    DeltaTemperature,
     Density,
     Length,
     Pressure,
@@ -24,7 +25,6 @@ from flow360.component.simulation.models.material import Air, Water
 from flow360.component.simulation.operating_condition.atmosphere_model import (
     StandardAtmosphereModel,
 )
-from flow360.component.simulation.unit_system import DeltaTemperatureType
 from flow360.component.simulation.user_code.core.types import (
     Expression,
     ValueOrExpression,
@@ -49,7 +49,7 @@ class ThermalStateCache(Flow360BaseModel):
 
     # pylint: disable=no-member
     altitude: Optional[Length.Float64] = None
-    temperature_offset: Optional[DeltaTemperatureType] = None
+    temperature_offset: Optional[DeltaTemperature.Float64] = None
 
 
 class ThermalState(MultiConstructorBaseModel):
@@ -89,7 +89,7 @@ class ThermalState(MultiConstructorBaseModel):
     def from_standard_atmosphere(
         cls,
         altitude: Length.Float64 = 0 * u.m,
-        temperature_offset: DeltaTemperatureType = 0 * u.K,
+        temperature_offset: DeltaTemperature.Float64 = 0 * u.K,
     ):
         """
         Constructs a :class:`ThermalState` instance from the standard atmosphere model.
@@ -98,7 +98,7 @@ class ThermalState(MultiConstructorBaseModel):
         ----------
         altitude : Length.Float64, optional
             The altitude at which the thermal state is calculated. Defaults to ``0 * u.m``.
-        temperature_offset : DeltaTemperatureType, optional
+        temperature_offset : DeltaTemperature.Float64, optional
             The temperature offset to be applied to the standard temperature at the given altitude.
             Defaults to ``0 * u.K``.
 
@@ -154,7 +154,7 @@ class ThermalState(MultiConstructorBaseModel):
         return self.private_attribute_input_cache.altitude
 
     @property
-    def temperature_offset(self) -> Optional[DeltaTemperatureType]:
+    def temperature_offset(self) -> Optional[DeltaTemperature.Float64]:
         """Return user specified temperature offset."""
         if not self.private_attribute_input_cache.temperature_offset:
             log.warning("Temperature offset not provided from input")

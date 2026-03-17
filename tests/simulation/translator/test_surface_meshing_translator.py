@@ -2,6 +2,7 @@ import json
 import os
 
 import pytest
+from flow360_schema.framework.physical_dimensions import Length
 
 import flow360.component.simulation.units as u
 from flow360.component.geometry import Geometry, GeometryMeta
@@ -68,10 +69,10 @@ from flow360.component.simulation.translator.surface_meshing_translator import (
     get_surface_meshing_json,
 )
 from flow360.component.simulation.unit_system import (
-    LengthType,
     SI_unit_system,
     imperial_unit_system,
 )
+from flow360.component.simulation.units import validate_length
 from tests.simulation.conftest import AssetBase
 
 
@@ -79,7 +80,7 @@ class TempGeometry(AssetBase):
     """Mimicing the final VolumeMesh class"""
 
     fname: str
-    mesh_unit: LengthType.Positive
+    mesh_unit: Length.PositiveFloat64
 
     def _get_meta_data(self):
         if self.fname == "om6wing.csm":
@@ -323,7 +324,7 @@ class TempGeometry(AssetBase):
             raise ValueError("Invalid file name")
 
     def _populate_registry(self):
-        self.mesh_unit = LengthType.validate(self._get_meta_data()["mesh_unit"])
+        self.mesh_unit = validate_length(self._get_meta_data()["mesh_unit"])
         if self.snappy:
             self.internal_registry = self._get_entity_info()._group_entity_by_tag(
                 "face", "faceId", self.internal_registry
@@ -1336,9 +1337,7 @@ def test_gai_analytic_wind_tunnel_farfield():
             ),
             "r",
         ) as fh:
-            asset_cache = AssetCache.model_validate(
-                json.load(fh).pop("private_attribute_asset_cache")
-            )
+            asset_cache = AssetCache.deserialize(json.load(fh).pop("private_attribute_asset_cache"))
 
         params = SimulationParams(
             meshing=meshing_params,
@@ -1379,7 +1378,7 @@ def test_sliding_interface_tolerance_gai():
         ),
         "r",
     ) as fh:
-        asset_cache = AssetCache.model_validate(json.load(fh).pop("private_attribute_asset_cache"))
+        asset_cache = AssetCache.deserialize(json.load(fh).pop("private_attribute_asset_cache"))
 
     with SI_unit_system:
         farfield = AutomatedFarfield(domain_type="half_body_positive_y")
@@ -1439,9 +1438,9 @@ def test_sliding_interface_tolerance_gai():
             ]
         },
         "name": "rotating_volume",
-        "spacing_axial": {"units": "1.0*m", "value": 0.1},
-        "spacing_circumferential": {"units": "1.0*m", "value": 0.1},
-        "spacing_radial": {"units": "1.0*m", "value": 0.1},
+        "spacing_axial": 0.1,
+        "spacing_circumferential": 0.1,
+        "spacing_radial": 0.1,
         "type": "RotationVolume",
     }
 
@@ -1515,7 +1514,7 @@ def test_gai_mirror_status_translation():
 
     # Add mirror_status to asset_cache
     asset_cache_dict["mirror_status"] = mirror_status.model_dump(mode="json")
-    asset_cache = AssetCache.model_validate(asset_cache_dict)
+    asset_cache = AssetCache.deserialize(asset_cache_dict)
 
     with SI_unit_system:
         farfield = AutomatedFarfield(domain_type="half_body_positive_y")
@@ -1555,17 +1554,11 @@ def test_gai_mirror_status_translation():
     assert plane_json["name"] == "y_symmetry_plane"
     assert plane_json["normal"] == [0.0, 1.0, 0.0]
 
-    # KEY ASSERTION: Verify dimensional value (center) has proper units format
+    # KEY ASSERTION: Verify dimensional value (center) is serialized as SI values
     assert "center" in plane_json
     center = plane_json["center"]
-    assert isinstance(center, dict), "center should be a dict with value and units"
-    assert "value" in center, "center must have 'value' key"
-    assert "units" in center, "center must have 'units' key"
-
-    # Verify the values are correct (converted to Flow360 units - meters)
-    assert center["value"] == [0.5, 0.0, 0.25], f"Expected [0.5, 0.0, 0.25], got {center['value']}"
-    # Units should be in meter format (could be "m" or "1.0*m" depending on serialization)
-    assert "m" in center["units"], f"Expected meter units, got {center['units']}"
+    # Schema-side serialization outputs bare SI values (meters) as a list/tuple
+    assert center == [0.5, 0.0, 0.25], f"Expected [0.5, 0.0, 0.25], got {center}"
 
     # Assert mirrored entities are present
     assert "mirrored_geometry_body_groups" in mirror_status_json
@@ -1648,7 +1641,7 @@ def test_gai_mirror_status_translation_idempotency():
         )
 
         asset_cache_dict["mirror_status"] = mirror_status.model_dump(mode="json")
-        asset_cache = AssetCache.model_validate(asset_cache_dict)
+        asset_cache = AssetCache.deserialize(asset_cache_dict)
 
         with SI_unit_system:
             farfield = AutomatedFarfield(domain_type="half_body_positive_y")
@@ -1778,7 +1771,7 @@ def test_gai_no_stationary_enclosed_entities():
 
         params = SimulationParams(
             meshing=meshing,
-            private_attribute_asset_cache=AssetCache.model_validate(
+            private_attribute_asset_cache=AssetCache.deserialize(
                 param_dict["private_attribute_asset_cache"]
             ),
         )
@@ -1811,7 +1804,7 @@ def test_gai_target_surface_node_count_set():
                 ),
                 volume_zones=[AutomatedFarfield()],
             ),
-            private_attribute_asset_cache=AssetCache.model_validate(
+            private_attribute_asset_cache=AssetCache.deserialize(
                 param_dict["private_attribute_asset_cache"]
             ),
         )
@@ -1842,7 +1835,7 @@ def test_gai_target_surface_node_count_absent():
                 ),
                 volume_zones=[AutomatedFarfield()],
             ),
-            private_attribute_asset_cache=AssetCache.model_validate(
+            private_attribute_asset_cache=AssetCache.deserialize(
                 param_dict["private_attribute_asset_cache"]
             ),
         )

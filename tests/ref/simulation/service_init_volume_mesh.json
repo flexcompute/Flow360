@@ -6,16 +6,10 @@
             },
             "heat_spec": {
                 "type_name": "HeatFlux",
-                "value": {
-                    "units": "W/m**2",
-                    "value": 0.0
-                }
-            },
-            "name": "Wall",
-            "roughness_height": {
-                "units": "m",
                 "value": 0.0
             },
+            "name": "Wall",
+            "roughness_height": 0.0,
             "type": "Wall"
         },
         {
@@ -37,18 +31,9 @@
             "interface_interpolation_tolerance": 0.2,
             "material": {
                 "dynamic_viscosity": {
-                    "effective_temperature": {
-                        "units": "K",
-                        "value": 110.4
-                    },
-                    "reference_temperature": {
-                        "units": "K",
-                        "value": 273.15
-                    },
-                    "reference_viscosity": {
-                        "units": "Pa*s",
-                        "value": 1.716e-05
-                    }
+                    "effective_temperature": 110.4,
+                    "reference_temperature": 273.15,
+                    "reference_viscosity": 1.716e-05
                 },
                 "name": "air",
                 "prandtl_number": 0.72,
@@ -71,14 +56,8 @@
                                             0.0,
                                             0.0
                                         ],
-                                        "temperature_range_max": {
-                                            "units": "K",
-                                            "value": 6000.0
-                                        },
-                                        "temperature_range_min": {
-                                            "units": "K",
-                                            "value": 200.0
-                                        },
+                                        "temperature_range_max": 6000.0,
+                                        "temperature_range_min": 200.0,
                                         "type_name": "NASA9CoefficientSet"
                                     }
                                 ],
@@ -163,18 +142,9 @@
                 "density": 1.225,
                 "material": {
                     "dynamic_viscosity": {
-                        "effective_temperature": {
-                            "units": "K",
-                            "value": 110.4
-                        },
-                        "reference_temperature": {
-                            "units": "K",
-                            "value": 273.15
-                        },
-                        "reference_viscosity": {
-                            "units": "Pa*s",
-                            "value": 1.716e-05
-                        }
+                        "effective_temperature": 110.4,
+                        "reference_temperature": 273.15,
+                        "reference_viscosity": 1.716e-05
                     },
                     "name": "air",
                     "prandtl_number": 0.72,
@@ -197,14 +167,8 @@
                                                 0.0,
                                                 0.0
                                             ],
-                                            "temperature_range_max": {
-                                                "units": "K",
-                                                "value": 6000.0
-                                            },
-                                            "temperature_range_min": {
-                                                "units": "K",
-                                                "value": 200.0
-                                            },
+                                            "temperature_range_max": 6000.0,
+                                            "temperature_range_min": 200.0,
                                             "type_name": "NASA9CoefficientSet"
                                         }
                                     ],
@@ -228,18 +192,9 @@
             "density": 1.225,
             "material": {
                 "dynamic_viscosity": {
-                    "effective_temperature": {
-                        "units": "K",
-                        "value": 110.4
-                    },
-                    "reference_temperature": {
-                        "units": "K",
-                        "value": 273.15
-                    },
-                    "reference_viscosity": {
-                        "units": "Pa*s",
-                        "value": 1.716e-05
-                    }
+                    "effective_temperature": 110.4,
+                    "reference_temperature": 273.15,
+                    "reference_viscosity": 1.716e-05
                 },
                 "name": "air",
                 "prandtl_number": 0.72,
@@ -262,14 +217,8 @@
                                             0.0,
                                             0.0
                                         ],
-                                        "temperature_range_max": {
-                                            "units": "K",
-                                            "value": 6000.0
-                                        },
-                                        "temperature_range_min": {
-                                            "units": "K",
-                                            "value": 200.0
-                                        },
+                                        "temperature_range_max": 6000.0,
+                                        "temperature_range_min": 200.0,
                                         "type_name": "NASA9CoefficientSet"
                                     }
                                 ],
@@ -318,10 +267,7 @@
         }
     ],
     "private_attribute_asset_cache": {
-        "project_length_unit": {
-            "units": "m",
-            "value": 1.0
-        },
+        "project_length_unit": 1.0,
         "use_geometry_AI": false,
         "use_inhouse_mesher": false
     },
@@ -331,22 +277,16 @@
             "units": "m**2",
             "value": 1.0
         },
-        "moment_center": {
-            "units": "m",
-            "value": [
-                0.0,
-                0.0,
-                0.0
-            ]
-        },
-        "moment_length": {
-            "units": "m",
-            "value": [
-                1.0,
-                1.0,
-                1.0
-            ]
-        }
+        "moment_center": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "moment_length": [
+            1.0,
+            1.0,
+            1.0
+        ]
     },
     "time_stepping": {
         "CFL": {

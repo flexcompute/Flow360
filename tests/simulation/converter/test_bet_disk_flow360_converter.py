@@ -4,7 +4,6 @@ import re
 from tempfile import NamedTemporaryFile
 
 import pytest
-from flow360_schema.framework.validation.context import DeserializationContext
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.updater_utils import compare_values
@@ -147,8 +146,7 @@ def test_single_polar_flow360_bet_convert():
     # Test that the disk can be serialized and validated successfully
     disk_dict = disk.model_dump()
     # Verify the model can be reconstructed
-    with DeserializationContext():
-        reconstructed_disk = BETDisk.model_validate(disk_dict)
+    reconstructed_disk = BETDisk.deserialize(disk_dict)
     assert isinstance(reconstructed_disk, BETDisk)
 
 
@@ -187,6 +185,5 @@ def test_xrotor_single_polar():
 
     # Test serialization and validation
     disk_dict = bet_disk.model_dump()
-    with DeserializationContext():
-        reconstructed_disk = fl.BETDisk.model_validate(disk_dict)
+    reconstructed_disk = fl.BETDisk.deserialize(disk_dict)
     assert isinstance(reconstructed_disk, fl.BETDisk)

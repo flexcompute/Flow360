@@ -1326,6 +1326,7 @@ def test_force_distribution_output_with_wall_boundaries():
     # Test: Without entities, should use all surfaces with Wall BC
     with SI_unit_system:
         param = SimulationParams(
+            operating_condition=AerospaceCondition(),
             models=[
                 Fluid(),
                 Wall(entities=[wing_surface, fuselage_surface]),
@@ -1356,6 +1357,7 @@ def test_force_distribution_output_with_wall_boundaries():
     # Test: With entities, should use only specified surfaces
     with SI_unit_system:
         param = SimulationParams(
+            operating_condition=AerospaceCondition(),
             models=[
                 Fluid(),
                 Wall(entities=[wing_surface, fuselage_surface]),
@@ -1419,7 +1421,9 @@ def test_time_averaged_force_distribution_output():
 
     with SI_unit_system:
         param = SimulationParams(
-            outputs=param_with_ref[0], time_stepping=Unsteady(steps=1, step_size=0.1)
+            operating_condition=AerospaceCondition(),
+            outputs=param_with_ref[0],
+            time_stepping=Unsteady(steps=1, step_size=0.1),
         )
     param = param._preprocess(mesh_unit=1.0 * u.m, exclude=["models"])
 
@@ -1455,7 +1459,9 @@ def test_time_averaged_force_distribution_output_with_entities_and_segments():
 
     with SI_unit_system:
         param = SimulationParams(
-            outputs=param_with_entities[0], time_stepping=Unsteady(steps=100, step_size=0.1)
+            operating_condition=AerospaceCondition(),
+            outputs=param_with_entities[0],
+            time_stepping=Unsteady(steps=100, step_size=0.1),
         )
     param = param._preprocess(mesh_unit=1.0 * u.m, exclude=["models"])
 
@@ -1486,7 +1492,9 @@ def test_time_averaged_force_distribution_output_with_entities_and_segments():
 
     with SI_unit_system:
         param = SimulationParams(
-            outputs=param_with_segments[0], time_stepping=Unsteady(steps=100, step_size=0.1)
+            operating_condition=AerospaceCondition(),
+            outputs=param_with_segments[0],
+            time_stepping=Unsteady(steps=100, step_size=0.1),
         )
     param = param._preprocess(mesh_unit=1.0 * u.m, exclude=["models"])
 
@@ -1522,7 +1530,9 @@ def test_time_averaged_force_distribution_output_with_entities_and_segments():
 
     with SI_unit_system:
         param = SimulationParams(
-            outputs=param_with_both[0], time_stepping=Unsteady(steps=100, step_size=0.1)
+            operating_condition=AerospaceCondition(),
+            outputs=param_with_both[0],
+            time_stepping=Unsteady(steps=100, step_size=0.1),
         )
     param = param._preprocess(mesh_unit=1.0 * u.m, exclude=["models"])
 

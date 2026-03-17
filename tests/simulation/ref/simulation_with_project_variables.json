@@ -12,18 +12,9 @@
             "interface_interpolation_tolerance": 0.2,
             "material": {
                 "dynamic_viscosity": {
-                    "effective_temperature": {
-                        "units": "K",
-                        "value": 110.4
-                    },
-                    "reference_temperature": {
-                        "units": "K",
-                        "value": 273.15
-                    },
-                    "reference_viscosity": {
-                        "units": "Pa*s",
-                        "value": 1.716e-05
-                    }
+                    "effective_temperature": 110.4,
+                    "reference_temperature": 273.15,
+                    "reference_viscosity": 1.716e-05
                 },
                 "name": "air",
                 "prandtl_number": 0.72,
@@ -46,14 +37,8 @@
                                             0.0,
                                             0.0
                                         ],
-                                        "temperature_range_max": {
-                                            "units": "K",
-                                            "value": 6000.0
-                                        },
-                                        "temperature_range_min": {
-                                            "units": "K",
-                                            "value": 200.0
-                                        },
+                                        "temperature_range_max": 6000.0,
+                                        "temperature_range_min": 200.0,
                                         "type_name": "NASA9CoefficientSet"
                                     }
                                 ],
@@ -138,18 +123,9 @@
                 "density": 1.225,
                 "material": {
                     "dynamic_viscosity": {
-                        "effective_temperature": {
-                            "units": "K",
-                            "value": 110.4
-                        },
-                        "reference_temperature": {
-                            "units": "K",
-                            "value": 273.15
-                        },
-                        "reference_viscosity": {
-                            "units": "Pa*s",
-                            "value": 1.716e-05
-                        }
+                        "effective_temperature": 110.4,
+                        "reference_temperature": 273.15,
+                        "reference_viscosity": 1.716e-05
                     },
                     "name": "air",
                     "prandtl_number": 0.72,
@@ -172,14 +148,8 @@
                                                 0.0,
                                                 0.0
                                             ],
-                                            "temperature_range_max": {
-                                                "units": "K",
-                                                "value": 6000.0
-                                            },
-                                            "temperature_range_min": {
-                                                "units": "K",
-                                                "value": 200.0
-                                            },
+                                            "temperature_range_max": 6000.0,
+                                            "temperature_range_min": 200.0,
                                             "type_name": "NASA9CoefficientSet"
                                         }
                                     ],
@@ -204,18 +174,9 @@
             "density": 1.225,
             "material": {
                 "dynamic_viscosity": {
-                    "effective_temperature": {
-                        "units": "K",
-                        "value": 110.4
-                    },
-                    "reference_temperature": {
-                        "units": "K",
-                        "value": 273.15
-                    },
-                    "reference_viscosity": {
-                        "units": "Pa*s",
-                        "value": 1.716e-05
-                    }
+                    "effective_temperature": 110.4,
+                    "reference_temperature": 273.15,
+                    "reference_viscosity": 1.716e-05
                 },
                 "name": "air",
                 "prandtl_number": 0.72,
@@ -238,14 +199,8 @@
                                             0.0,
                                             0.0
                                         ],
-                                        "temperature_range_max": {
-                                            "units": "K",
-                                            "value": 6000.0
-                                        },
-                                        "temperature_range_min": {
-                                            "units": "K",
-                                            "value": 200.0
-                                        },
+                                        "temperature_range_max": 6000.0,
+                                        "temperature_range_min": 200.0,
                                         "type_name": "NASA9CoefficientSet"
                                     }
                                 ],
@@ -299,14 +254,11 @@
             "entities": {
                 "stored_entities": [
                     {
-                        "location": {
-                            "units": "m",
-                            "value": [
-                                1.0,
-                                2.0,
-                                3.0
-                            ]
-                        },
+                        "location": [
+                            1.0,
+                            2.0,
+                            3.0
+                        ],
                         "name": "pt1",
                         "private_attribute_entity_type_name": "Point",
                         "private_attribute_id": "111"
@@ -391,5 +343,5 @@
         "name": "SI"
     },
     "user_defined_fields": [],
-    "version": "25.9.3b1"
+    "version": "25.11.0b1"
 }

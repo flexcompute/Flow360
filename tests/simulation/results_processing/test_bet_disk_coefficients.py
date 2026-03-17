@@ -182,8 +182,13 @@ def test_bet_disk_real_case_coefficients():
     mach_ref = params.operating_condition.mach
 
     coeff_env = _build_coeff_env(params)
-    assert coeff_env["dynamic_pressure"] == 0.5 * mach_ref * mach_ref
-    assert coeff_env["area"] == (params.reference_geometry.area / (1.0 * fl.u.cm**2)).value
+    assert np.isclose(coeff_env["dynamic_pressure"], 0.5 * mach_ref * mach_ref, rtol=1e-7, atol=0)
+    assert np.isclose(
+        coeff_env["area"],
+        (params.reference_geometry.area / (1.0 * fl.u.cm**2)).value,
+        rtol=1e-7,
+        atol=0,
+    )
     assert np.allclose(coeff_env["moment_length_vec"], [140, 140, 140])
     assert np.allclose(coeff_env["moment_center_global"], [0, 0, 0])
     assert np.allclose(coeff_env["lift_dir"], [-0.25881905, 0.0, 0.96592583])

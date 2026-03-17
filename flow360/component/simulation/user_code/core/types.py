@@ -328,7 +328,7 @@ class Variable(Flow360BaseModel):
 
     @pd.model_validator(mode="before")
     @classmethod
-    def deserialize(cls, values):
+    def preprocess_variable_declaration(cls, values):
         """
         Supporting syntax like `a = fl.Variable(name="a", value=1, description="some description")`.
         """
@@ -1666,6 +1666,6 @@ def compute_surface_integral_unit(variable: UserVariable, params) -> str:
         # Fallback if output_units is not set for expression or if it is a number
         base_unit = u.Unit("dimensionless")
 
-    area_unit = params.unit_system["area"].units
+    area_unit = params.unit_system.resolve()["area"].units
     result_unit = base_unit * area_unit
     return str(result_unit)

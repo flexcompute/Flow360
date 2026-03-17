@@ -23,12 +23,13 @@ from types import SimpleNamespace
 from typing import Any, Callable, List, Literal, Union
 
 import pydantic as pd
+from flow360_schema.framework.physical_dimensions import Length
 from flow360_schema.framework.validation.context import (  # noqa: F401 — re-used, not redefined
+    DeserializationContext,
     _validation_level_ctx,
 )
 from pydantic import Field, TypeAdapter
 
-from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.utils import BoundingBoxType
 
 SURFACE_MESH = "SurfaceMesh"
@@ -158,7 +159,6 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
     @classmethod
     def _get_farfield_method_(cls, param_as_dict: dict):
         meshing = param_as_dict.get("meshing")
-        modular = False
         if meshing is None:
             # No meshing info.
             return None
@@ -167,8 +167,8 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
             volume_zones = meshing.get("volume_zones")
         else:
             volume_zones = meshing.get("zones")
-            modular = True
         if volume_zones:
+            has_custom_zones = False
             for zone in volume_zones:
                 if zone["type"] == "AutomatedFarfield":
                     return zone["method"]
@@ -176,15 +176,10 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
                     return "user-defined"
                 if zone["type"] == "WindTunnelFarfield":
                     return "wind-tunnel"
-                if (
-                    zone["type"]
-                    in [
-                        "CustomZones",
-                        "SeedpointVolume",
-                    ]
-                    and modular
-                ):
-                    return "user-defined"
+                if zone["type"] in ("CustomZones", "SeedpointVolume"):
+                    has_custom_zones = True
+            if has_custom_zones:  # CV + no FF => implicit UD
+                return "user-defined"
 
         return None
 
@@ -268,8 +263,11 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
                 "project_length_unit"
             ]
             if project_length_unit_dict:
-                # pylint: disable=no-member
-                return LengthType.validate(project_length_unit_dict)
+                # Serialized value is a bare float (SI), use DeserializationContext
+                # so the schema validator interprets it as SI meters.
+                adapter = TypeAdapter(Length.PositiveFloat64)
+                with DeserializationContext():
+                    return adapter.validate_python(project_length_unit_dict)
             return None
         except KeyError:
             return None
@@ -452,6 +450,7 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         for zone in volume_zones:
             if zone.get("type") not in (
                 "AutomatedFarfield",
+                "UserDefinedFarfield",
                 "WindTunnelFarfield",
             ):
                 continue

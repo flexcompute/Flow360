@@ -123,8 +123,7 @@ class Flow360BaseModel(_SchemaBaseModel):
         >>> params = Flow360BaseModel.from_file(filename='folder/sim.json') # doctest: +SKIP
         """
         model_dict = cls._handle_file(filename=filename)
-        with DeserializationContext():
-            return cls.model_validate(model_dict)
+        return cls.deserialize(model_dict)
 
     @classmethod
     def _dict_from_file(cls, filename: str) -> dict:

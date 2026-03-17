@@ -5,6 +5,7 @@ from typing import Optional
 
 import numpy as np
 import pydantic as pd
+from flow360_schema.framework.physical_dimensions import Angle, Length
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
@@ -12,7 +13,6 @@ from flow360.component.simulation.framework.updater import (
     DEFAULT_PLANAR_FACE_TOLERANCE,
     DEFAULT_SLIDING_INTERFACE_TOLERANCE,
 )
-from flow360.component.simulation.unit_system import AngleType, LengthType
 from flow360.component.simulation.validation.validation_context import (
     SURFACE_MESH,
     VOLUME_MESH,
@@ -34,7 +34,7 @@ class OctreeSpacing(Flow360BaseModel):
     """
 
     # pylint: disable=no-member
-    base_spacing: LengthType.Positive
+    base_spacing: Length.PositiveFloat64
 
     @pd.model_validator(mode="before")
     @classmethod
@@ -52,7 +52,7 @@ class OctreeSpacing(Flow360BaseModel):
 
     # pylint: disable=no-member
     @pd.validate_call
-    def to_level(self, spacing: LengthType.Positive):
+    def to_level(self, spacing: Length.PositiveFloat64):
         """
         Can be used to check in what refinement level would the given spacing result
         and if it is a direct match in the spacing series.
@@ -65,7 +65,7 @@ class OctreeSpacing(Flow360BaseModel):
 
     # pylint: disable=no-member
     @pd.validate_call
-    def check_spacing(self, spacing: LengthType.Positive, location: str):
+    def check_spacing(self, spacing: Length.PositiveFloat64, location: str):
         """Warn if the given spacing does not align with the octree series."""
         lvl, close = self.to_level(spacing)
         if not close:
@@ -91,7 +91,7 @@ def set_default_octree_spacing(octree_spacing, param_info: ParamsValidationInfo)
         return octree_spacing
 
     # pylint: disable=no-member
-    project_length = 1 * LengthType.validate(param_info.project_length_unit)
+    project_length = 1 * param_info.project_length_unit
     return OctreeSpacing(base_spacing=project_length)
 
 
@@ -114,7 +114,7 @@ class MeshingDefaults(Flow360BaseModel):
     """
 
     # pylint: disable=no-member
-    geometry_accuracy: Optional[LengthType.Positive] = pd.Field(
+    geometry_accuracy: Optional[Length.PositiveFloat64] = pd.Field(
         None,
         description="The smallest length scale that will be resolved accurately by the surface meshing process. "
         "This parameter is only valid when using geometry AI."
@@ -138,7 +138,7 @@ class MeshingDefaults(Flow360BaseModel):
         context=VOLUME_MESH,
     )
     # pylint: disable=no-member
-    boundary_layer_first_layer_thickness: Optional[LengthType.Positive] = ConditionalField(
+    boundary_layer_first_layer_thickness: Optional[Length.PositiveFloat64] = ConditionalField(
         None,
         description="Default first layer thickness for volumetric anisotropic layers."
         " This can be overridden with :class:`~flow360.BoundaryLayer`.",
@@ -174,7 +174,7 @@ class MeshingDefaults(Flow360BaseModel):
     )
 
     ##::    Default surface layer settings
-    surface_max_edge_length: Optional[LengthType.Positive] = ConditionalField(
+    surface_max_edge_length: Optional[Length.PositiveFloat64] = ConditionalField(
         None,
         description="Default maximum edge length for surface cells."
         " This can be overridden with :class:`~flow360.SurfaceRefinement`.",
@@ -202,7 +202,7 @@ class MeshingDefaults(Flow360BaseModel):
         context=SURFACE_MESH,
     )
 
-    curvature_resolution_angle: AngleType.Positive = ContextField(
+    curvature_resolution_angle: Angle.PositiveFloat64 = ContextField(
         12 * u.deg,
         description=(
             "Default maximum angular deviation in degrees. This value will restrict:"
@@ -229,7 +229,7 @@ class MeshingDefaults(Flow360BaseModel):
         + "per face with :class:`~flow360.GeometryRefinement`.",
     )
 
-    sealing_size: LengthType.NonNegative = pd.Field(
+    sealing_size: Length.NonNegativeFloat64 = pd.Field(
         0.0 * u.m,
         description="Threshold size below which all geometry gaps are automatically closed. "
         + "This option is only supported when using geometry AI, and can be overridden "
@@ -242,7 +242,7 @@ class MeshingDefaults(Flow360BaseModel):
         + "This option is only supported when using geometry AI.",
     )
 
-    min_passage_size: Optional[LengthType.Positive] = pd.Field(
+    min_passage_size: Optional[Length.PositiveFloat64] = pd.Field(
         None,
         description="Minimum passage size that hidden geometry removal can resolve. "
         + "Internal regions connected by thin passages smaller than this size may not be detected. "
@@ -378,7 +378,7 @@ class VolumeMeshingDefaults(Flow360BaseModel):
         ge=1,
     )
     # pylint: disable=no-member
-    boundary_layer_first_layer_thickness: LengthType.Positive = pd.Field(
+    boundary_layer_first_layer_thickness: Length.PositiveFloat64 = pd.Field(
         description="Default first layer thickness for volumetric anisotropic layers."
         " This can be overridden with :class:`~flow360.BoundaryLayer`.",
     )
