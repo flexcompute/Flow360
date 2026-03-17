@@ -1,3 +1,4 @@
+# pylint:disable = too-many-lines
 """Surface meshing parameter translator."""
 
 from copy import deepcopy
