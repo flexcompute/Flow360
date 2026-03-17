@@ -81,18 +81,32 @@ jobs:
 
     - name: Run flow360_params tests with coverage
       if: matrix.python-version == '3.10' && matrix.platform == 'ubuntu-latest'
-      run: poetry run pytest -rA --ignore tests/simulation -vv --cov=flow360 --cov-append --cov-report=term-missing:skip-covered --cov-report=xml:coverage.xml
+      run: poetry run pytest -rA --ignore tests/simulation -vv --cov=flow360 --cov-append --cov-report=term-missing:skip-covered
 
-    - name: Fetch base branch for diff coverage
-      if: matrix.python-version == '3.10' && matrix.platform == 'ubuntu-latest' && github.event_name == 'pull_request'
-      run: git fetch origin ${{ github.base_ref }} --depth=1
-
-    - name: Generate coverage summary
-      if: matrix.python-version == '3.10' && matrix.platform == 'ubuntu-latest' && github.event_name == 'pull_request'
-      run: python .github/scripts/coverage_summary.py coverage.xml coverage-summary.md 2 origin/${{ github.base_ref }}
-
-    - name: Post coverage comment
-      if: matrix.python-version == '3.10' && matrix.platform == 'ubuntu-latest' && github.event_name == 'pull_request'
-      uses: marocchino/sticky-pull-request-comment@v2
+    - name: Upload coverage data
+      if: matrix.python-version == '3.10' && matrix.platform == 'ubuntu-latest'
+      uses: actions/upload-artifact@v4
       with:
-        path: coverage-summary.md
+        name: coverage-data
+        path: .coverage
+        include-hidden-files: true
+
+  coverage:
+    name: Post Coverage Comment
+    needs: testing
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Download coverage data
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-data
+
+      - name: Post coverage comment
+        continue-on-error: true
+        uses: py-cov-action/python-coverage-comment-action@7188638f871f721a365d644f505d1ff3df20d683 # v3.40
+        with:
+          GITHUB_TOKEN: ${{ github.token }}
+          SUBPROJECT_ID: flow360
