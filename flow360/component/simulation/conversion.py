@@ -57,8 +57,8 @@ class RestrictedUnitSystem(u.UnitSystem):
             **kwargs,
         )
 
-        # All 4 base dims provided — no restrictions
-        if len(supported) == 4:
+        # All 5 dims provided (length, angle + mass, time, temperature) — no restrictions
+        if len(supported) == 5:
             self._supported_dims = None
             return
 
