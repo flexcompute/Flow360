@@ -328,7 +328,7 @@ class Variable(Flow360BaseModel):
 
     @pd.model_validator(mode="before")
     @classmethod
-    def deserialize(cls, values):
+    def preprocess_variable_declaration(cls, values):
         """
         Supporting syntax like `a = fl.Variable(name="a", value=1, description="some description")`.
         """
