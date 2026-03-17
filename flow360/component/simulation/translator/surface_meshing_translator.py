@@ -934,6 +934,15 @@ def _inject_body_group_transformations_for_mesher(
             }
 
 
+def _remove_selectors(obj):
+    """Recursively remove all 'selectors' keys from the data structure."""
+    if isinstance(obj, dict):
+        return {k: _remove_selectors(v) for k, v in obj.items() if k != "selectors"}
+    if isinstance(obj, list):
+        return [_remove_selectors(item) for item in obj]
+    return obj
+
+
 def filter_simulation_json(input_params: SimulationParams, mesh_units):
     """
     Filter the simulation JSON to only include the GAI surface meshing parameters.
@@ -951,6 +960,12 @@ def filter_simulation_json(input_params: SimulationParams, mesh_units):
 
     # Filter the JSON to only include the GAI surface meshing parameters
     filtered_json = _traverse_and_filter(json_data, whitelist)
+
+    # Remove selectors from the filtered JSON. After selector expansion (done by
+    # @preprocess_input), selectors are redundant — only stored_entities matter
+    # for meshing. Selectors contain random UUIDs (selector_id) that would cause
+    # hash inconsistency between identical runs.
+    filtered_json = _remove_selectors(filtered_json)
 
     return filtered_json
 
