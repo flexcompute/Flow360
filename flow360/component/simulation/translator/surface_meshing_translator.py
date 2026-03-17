@@ -6,6 +6,7 @@ from typing import List
 from unyt import unyt_array
 
 from flow360.component.simulation.entity_info import GeometryEntityInfo
+from flow360.component.simulation.framework.updater_utils import recursive_remove_key
 from flow360.component.simulation.meshing_param import snappy
 from flow360.component.simulation.meshing_param.edge_params import SurfaceEdgeRefinement
 from flow360.component.simulation.meshing_param.face_params import SurfaceRefinement
@@ -951,6 +952,12 @@ def filter_simulation_json(input_params: SimulationParams, mesh_units):
 
     # Filter the JSON to only include the GAI surface meshing parameters
     filtered_json = _traverse_and_filter(json_data, whitelist)
+
+    # Remove selectors from the filtered JSON. After selector expansion (done by
+    # @preprocess_input), selectors are redundant — only stored_entities matter
+    # for meshing. Selectors contain random UUIDs (selector_id) that would cause
+    # hash inconsistency between identical runs.
+    recursive_remove_key(filtered_json, "selectors")
 
     return filtered_json
 
