@@ -1853,8 +1853,34 @@ def test_gai_target_surface_node_count_absent():
     assert "target_surface_node_count" not in translated["meshing"]["defaults"]
 
 
+def test_beta_mesher_target_surface_node_count_set(get_om6wing_geometry):
+    """target_surface_node_count is accepted and translated when using the beta surface mesher."""
+    my_geometry = TempGeometry("om6wing.csm")
+    with SI_unit_system:
+        params = SimulationParams(
+            private_attribute_asset_cache=AssetCache(
+                project_entity_info=my_geometry._get_entity_info(),
+                use_inhouse_mesher=True,
+            ),
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    surface_edge_growth_rate=1.2,
+                    curvature_resolution_angle=12 * u.deg,
+                    surface_max_edge_length=1 * u.m,
+                    target_surface_node_count=50000,
+                    edge_split_layers=0,
+                ),
+            ),
+        )
+
+    params, err, warnings = validate_params_with_context(params, "Geometry", "SurfaceMesh")
+    assert err is None, f"Unexpected validation error: {err}"
+    translated = get_surface_meshing_json(params, mesh_unit=get_om6wing_geometry.mesh_unit)
+    assert translated["target_surface_node_count"] == 50000
+
+
 def test_legacy_target_surface_node_count_rejected(get_om6wing_geometry):
-    """target_surface_node_count is rejected for legacy (non-GAI) flows."""
+    """target_surface_node_count is rejected for the legacy mesher."""
     my_geometry = TempGeometry("om6wing.csm")
     with SI_unit_system:
         params = SimulationParams(
