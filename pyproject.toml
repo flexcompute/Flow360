@@ -134,6 +134,9 @@ pre-commit = ["autohooks.plugins.black", "autohooks.plugins.isort", "autohooks.p
 [tool.autohooks.plugins.pylint]
 arguments = ["--rcfile=.pylintrc"]
 
+[tool.coverage.run]
+relative_files = true
+
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
