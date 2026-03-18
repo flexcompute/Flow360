@@ -2,10 +2,9 @@
 
 from typing import Any
 
+from flow360_schema.framework.expression import EvaluationContext
+from flow360_schema.framework.expression.resolver import CallableResolver
 from unyt import Unit, unit_symbols
-
-from flow360.component.simulation.blueprint.core import EvaluationContext
-from flow360.component.simulation.blueprint.core.resolver import CallableResolver
 
 
 def _unit_list():

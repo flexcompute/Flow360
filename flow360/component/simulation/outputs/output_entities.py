@@ -4,6 +4,7 @@ from typing import Literal, Optional, Union
 
 import numpy as np
 import pydantic as pd
+from flow360_schema.framework.expression.utils import is_runtime_expression
 from flow360_schema.framework.physical_dimensions import Length
 
 from flow360.component.simulation.entity_operation import (
@@ -25,7 +26,6 @@ from flow360.component.simulation.user_code.core.types import (
     is_variable_with_unit_system_as_units,
     solver_variable_to_user_variable,
 )
-from flow360.component.simulation.user_code.core.utils import is_runtime_expression
 from flow360.component.types import Axis
 
 

@@ -5,6 +5,7 @@ from typing import Annotated, Optional
 import numpy as np
 import pydantic as pd
 import pytest
+from flow360_schema.framework.expression.dependency_graph import DependencyGraph
 
 import flow360.component.simulation.user_code.core.context as context
 from flow360 import (
@@ -17,7 +18,6 @@ from flow360 import (
     math,
     u,
 )
-from flow360.component.simulation.blueprint.core.dependency_graph import DependencyGraph
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.framework.updater_utils import compare_lists
@@ -493,9 +493,10 @@ def test_subscript_access():
 
 
 def test_subscript_on_binary_expression_codegen_cpp():
-    from flow360.component.simulation.blueprint.core.generator import expr_to_code
-    from flow360.component.simulation.blueprint.core.parser import expr_to_model
-    from flow360.component.simulation.blueprint.core.types import TargetSyntax
+    from flow360_schema.framework.expression.generator import expr_to_code
+    from flow360_schema.framework.expression.parser import expr_to_model
+    from flow360_schema.framework.expression.types import TargetSyntax
+
     from flow360.component.simulation.user_code.core.context import default_context
 
     # Ensure codegen supports subscript on a BinOp value, e.g., (a * b)[0]
@@ -509,9 +510,10 @@ def test_subscript_on_binary_expression_codegen_cpp():
 
 
 def test_subscript_on_binary_expression_velocity_cpp():
-    from flow360.component.simulation.blueprint.core.generator import expr_to_code
-    from flow360.component.simulation.blueprint.core.parser import expr_to_model
-    from flow360.component.simulation.blueprint.core.types import TargetSyntax
+    from flow360_schema.framework.expression.generator import expr_to_code
+    from flow360_schema.framework.expression.parser import expr_to_model
+    from flow360_schema.framework.expression.types import TargetSyntax
+
     from flow360.component.simulation.user_code.core.context import default_context
 
     expression_str = "(solution.pressure * solution.velocity)[1]"
@@ -522,9 +524,10 @@ def test_subscript_on_binary_expression_velocity_cpp():
 
 
 def test_subscript_on_binary_expression_constant_left_cpp():
-    from flow360.component.simulation.blueprint.core.generator import expr_to_code
-    from flow360.component.simulation.blueprint.core.parser import expr_to_model
-    from flow360.component.simulation.blueprint.core.types import TargetSyntax
+    from flow360_schema.framework.expression.generator import expr_to_code
+    from flow360_schema.framework.expression.parser import expr_to_model
+    from flow360_schema.framework.expression.types import TargetSyntax
+
     from flow360.component.simulation.user_code.core.context import default_context
 
     expression_str = "(2.0 * solution.node_area_vector)[2]"
@@ -535,9 +538,10 @@ def test_subscript_on_binary_expression_constant_left_cpp():
 
 
 def test_subscript_on_binary_expression_dynamic_index_cpp():
-    from flow360.component.simulation.blueprint.core.generator import expr_to_code
-    from flow360.component.simulation.blueprint.core.parser import expr_to_model
-    from flow360.component.simulation.blueprint.core.types import TargetSyntax
+    from flow360_schema.framework.expression.generator import expr_to_code
+    from flow360_schema.framework.expression.parser import expr_to_model
+    from flow360_schema.framework.expression.types import TargetSyntax
+
     from flow360.component.simulation.user_code.core.context import default_context
 
     expression_str = "(solution.pressure * solution.node_area_vector)[control.physicalStep]"
@@ -548,9 +552,10 @@ def test_subscript_on_binary_expression_dynamic_index_cpp():
 
 
 def test_subscript_on_binary_expression_with_left_parens_cpp():
-    from flow360.component.simulation.blueprint.core.generator import expr_to_code
-    from flow360.component.simulation.blueprint.core.parser import expr_to_model
-    from flow360.component.simulation.blueprint.core.types import TargetSyntax
+    from flow360_schema.framework.expression.generator import expr_to_code
+    from flow360_schema.framework.expression.parser import expr_to_model
+    from flow360_schema.framework.expression.types import TargetSyntax
+
     from flow360.component.simulation.user_code.core.context import default_context
 
     expression_str = "((solution.pressure + 1) * solution.node_area_vector)[2]"
@@ -954,14 +959,18 @@ def test_project_variables_serialization():
     assert output_units_by_name["ddd"] == "m/s"
     assert output_units_by_name["eee"] == "dimensionless"
 
-    paramsJson = params.model_dump_json(indent=4, exclude_none=True)
+    paramsJson = json.dumps(
+        json.loads(params.model_dump_json(exclude_none=True)), indent=4, sort_keys=True
+    )
     with open("ref/simulation_with_project_variables.json", "w") as f:
         f.write(paramsJson)
 
     with open("ref/simulation_with_project_variables.json", "r") as fh:
         ref_data = fh.read()
 
-    assert ref_data == params.model_dump_json(indent=4, exclude_none=True)
+    assert ref_data == json.dumps(
+        json.loads(params.model_dump_json(exclude_none=True)), indent=4, sort_keys=True
+    )
 
 
 def test_project_variables_deserialization():

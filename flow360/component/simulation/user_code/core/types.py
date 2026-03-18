@@ -23,25 +23,26 @@ import numpy as np
 import pydantic as pd
 import unyt as u
 from flow360_schema import StrictUnitContext
-from pydantic import BeforeValidator, Discriminator, PlainSerializer, Tag
-from pydantic_core import InitErrorDetails, core_schema
-from typing_extensions import Self
-from unyt import Unit, dimensions, unyt_array, unyt_quantity
-
-from flow360.component.simulation.blueprint import Evaluable, expr_to_model
-from flow360.component.simulation.blueprint.core import EvaluationContext, expr_to_code
-from flow360.component.simulation.blueprint.core.types import TargetSyntax
-from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.simulation.framework.updater_utils import deprecation_reminder
-from flow360.component.simulation.unit_system import unit_system_manager
-from flow360.component.simulation.user_code.core.context import default_context
-from flow360.component.simulation.user_code.core.utils import (
-    SOLVER_INTERNAL_VARIABLES,
+from flow360_schema.framework.expression import Evaluable, EvaluationContext
+from flow360_schema.framework.expression.generator import expr_to_code
+from flow360_schema.framework.expression.parser import expr_to_model
+from flow360_schema.framework.expression.types import TargetSyntax
+from flow360_schema.framework.expression.utils import (
     handle_syntax_error,
     is_number_string,
     is_runtime_expression,
     split_keep_delimiters,
 )
+from pydantic import BeforeValidator, Discriminator, PlainSerializer, Tag
+from pydantic_core import InitErrorDetails, core_schema
+from typing_extensions import Self
+from unyt import Unit, dimensions, unyt_array, unyt_quantity
+
+from flow360.component.simulation.framework.base_model import Flow360BaseModel
+from flow360.component.simulation.framework.updater_utils import deprecation_reminder
+from flow360.component.simulation.unit_system import unit_system_manager
+from flow360.component.simulation.user_code.core.context import default_context
+from flow360.component.simulation.user_code.core.utils import SOLVER_INTERNAL_VARIABLES
 from flow360.component.simulation.validation.validation_context import (
     ParamsValidationInfo,
     contextual_model_validator,
@@ -75,7 +76,7 @@ def update_global_context(value: List[VariableContextInfo]):
     """Once the project variables are validated, update the global context."""
 
     for item in value:
-        default_context.set(item.name, item.value)
+        default_context.set_value(item.name, item.value)
     return value
 
 
@@ -324,7 +325,7 @@ class Variable(Flow360BaseModel):
             ValueOrExpression.configure(allow_run_time_expression=True)[AnyNumericType]
         ).validate_python(value)
         # Not checking overwrite here since it is user controlled explicit assignment operation
-        default_context.set(self.name, new_value)
+        default_context.set_value(self.name, new_value)
 
     @pd.model_validator(mode="before")
     @classmethod
@@ -361,7 +362,7 @@ class Variable(Flow360BaseModel):
                     )
             else:
                 # No conflict, call the setter
-                default_context.set(
+                default_context.set_value(
                     values["name"],
                     new_value,
                 )
@@ -625,7 +626,7 @@ class SolverVariable(Variable):
     @pd.model_validator(mode="after")
     def update_context(self):
         """Auto updating context when new variable is declared"""
-        default_context.set(self.name, self.value, Variable)
+        default_context.set_value(self.name, self.value, Variable)
         _solver_variables.update({self.name: self.variable_type})
         if self.solver_name:
             default_context.set_alias(self.name, self.solver_name)
