@@ -1,7 +1,7 @@
 import json
 import os
 import re
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pydantic as pd
 import pytest
@@ -12,7 +12,9 @@ from flow360 import log
 from flow360.component.geometry import Geometry, GeometryMeta
 from flow360.component.project_utils import set_up_params_for_uploading
 from flow360.component.resource_base import local_metadata_builder
+from flow360.component.simulation.primitives import ImportedSurface
 from flow360.component.simulation.services import ValidationCalledBy, validate_model
+from flow360.component.simulation.utils import model_attribute_unlock
 from flow360.component.volume_mesh import VolumeMeshV2
 from flow360.exceptions import Flow360ConfigurationError, Flow360ValueError
 
@@ -312,3 +314,87 @@ def test_interpolate_to_mesh_uses_vm_project_root_asset(mock_response):
     assert (
         captured_root_asset.project_id == project_vm.id
     ), f"Root asset should be from VM project {project_vm.id}, got {captured_root_asset.project_id}"
+
+
+def _build_params_with_imported_surfaces(imported_surfaces):
+    """Build a minimal SimulationParams with imported_surfaces set in asset cache."""
+    with fl.SI_unit_system:
+        params = fl.SimulationParams()
+    with model_attribute_unlock(params.private_attribute_asset_cache, "imported_surfaces"):
+        params.private_attribute_asset_cache.imported_surfaces = imported_surfaces
+    return params
+
+
+class TestImportedSurfaceRequiresDraftContext:
+    """Validate that using ImportedSurface without an active DraftContext raises an error."""
+
+    def _call_run_guard(self, project, params):
+        """
+        Call project._run() with enough mocking to reach the guard clause.
+        Everything before the guard (set_up_params_for_uploading, validate_params_with_context,
+        Draft.create) is patched out.
+        """
+        mock_draft = MagicMock()
+        mock_draft.submit.return_value = mock_draft
+
+        with (
+            patch.object(project, "_root_asset", create=True),
+            patch(
+                "flow360.component.project.set_up_params_for_uploading",
+                return_value=params,
+            ),
+            patch(
+                "flow360.component.project.validate_params_with_context",
+                return_value=(params, None, None),
+            ),
+            patch(
+                "flow360.component.simulation.web.draft.Draft.create",
+                return_value=mock_draft,
+            ),
+        ):
+            project._run(
+                params=params,
+                target=MagicMock(_cloud_resource_type_name="Case"),
+                draft_name="test",
+                fork_from=None,
+                interpolate_to_mesh=None,
+                run_async=True,
+                solver_version=None,
+                use_beta_mesher=False,
+                use_geometry_AI=False,
+                raise_on_error=True,
+                tags=None,
+                draft_only=True,
+            )
+
+    def test_imported_surface_without_draft_context_raises(self, mock_id, mock_response):
+        project = fl.Project.from_cloud(project_id="prj-41d2333b-85fd-4bed-ae13-15dcb6da519e")
+        params = _build_params_with_imported_surfaces(
+            [ImportedSurface(name="test_surface", surface_mesh_id="sm-123")]
+        )
+
+        with pytest.raises(
+            Flow360ValueError, match="ImportedSurface feature requires an active DraftContext"
+        ):
+            self._call_run_guard(project, params)
+
+    def test_no_imported_surface_without_draft_context_passes(self, mock_id, mock_response):
+        project = fl.Project.from_cloud(project_id="prj-41d2333b-85fd-4bed-ae13-15dcb6da519e")
+        params = _build_params_with_imported_surfaces([])
+
+        # Should not raise - no imported surfaces, no draft context is fine
+        self._call_run_guard(project, params)
+
+    def test_imported_surface_with_draft_context_passes(
+        self, mock_id, mock_response, mock_surface_mesh
+    ):
+        project = fl.Project.from_cloud(project_id="prj-41d2333b-85fd-4bed-ae13-15dcb6da519e")
+        params = _build_params_with_imported_surfaces(
+            [ImportedSurface(name="test_surface", surface_mesh_id="sm-123")]
+        )
+
+        from flow360.component.project import create_draft
+
+        with create_draft(new_run_from=mock_surface_mesh):
+            # Should not raise - draft context is active
+            self._call_run_guard(project, params)

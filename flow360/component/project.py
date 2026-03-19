@@ -2100,6 +2100,12 @@ class Project(pd.BaseModel):
         params.pre_submit_summary()
 
         active_draft = get_active_draft()
+        if active_draft is None and params.private_attribute_asset_cache.imported_surfaces:
+            raise Flow360ValueError(
+                "ImportedSurface feature requires an active DraftContext. "
+                "Please use `with project.create_draft(imported_surfaces=[...]):` "
+                "before calling run(). Or ensure that the submission call is inside the `with` block, not after it."
+            )
         draft.activate_dependencies(active_draft)
         draft.update_simulation_params(params)
 
