@@ -53,7 +53,7 @@ def uniform_refinement_translator(obj: UniformRefinement):
     Translate UniformRefinement.
     """
     result = {"spacing": obj.spacing.value.item()}
-    if obj.face_spacing:  # temporary
+    if obj.face_spacing:
         result["_face_spacing"] = {
             name: {idx: s.value.item() for idx, s in overrides.items()}
             for name, overrides in obj.face_spacing.items()

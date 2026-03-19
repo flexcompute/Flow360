@@ -2204,3 +2204,35 @@ def test_face_spacing_mixed_entities(get_surface_mesh):
 
     body2_ref = refs[2]
     assert body2_ref["faceSpacings"] == [1.0, 0.2, 0.3]
+
+
+def test_face_spacing_mixed_units(get_surface_mesh):
+    """face_spacing values in different units are converted to mesh units."""
+    with SI_unit_system:
+        body = AxisymmetricBody(
+            name="body",
+            axis=(1, 0, 0),
+            center=(0, 0, 0),
+            profile_curve=[(0, 0), (0, 1), (1, 1), (1, 0)],
+        )
+        param = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-4 * u.m,
+                ),
+                volume_zones=[AutomatedFarfield()],
+                refinements=[
+                    UniformRefinement(
+                        entities=[body],
+                        spacing=0.5 * u.m,
+                        face_spacing={"body": {0: 10 * u.cm, 2: 200 * u.mm}},
+                    ),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+        )
+
+    translated = get_volume_meshing_json(param, get_surface_mesh.mesh_unit)
+    ref = translated["refinement"][0]
+    assert ref["spacing"] == 0.5
+    assert ref["faceSpacings"] == pytest.approx([0.1, 0.5, 0.2])

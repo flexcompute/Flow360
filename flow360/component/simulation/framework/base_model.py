@@ -60,6 +60,19 @@ def _preprocess_nested_list(value, required_by, params, exclude, flow360_unit_sy
     return new_list
 
 
+def _preprocess_nested_dict(value, flow360_unit_system):
+    """Recursively convert dimensioned values inside dicts."""
+    result = {}
+    for k, v in value.items():
+        if isinstance(v, dict):
+            result[k] = _preprocess_nested_dict(v, flow360_unit_system)
+        elif need_conversion(v):
+            result[k] = v.in_base(flow360_unit_system)
+        else:
+            result[k] = v
+    return result
+
+
 class Conflicts(pd.BaseModel):
     """
     Wrapper for handling fields that cannot be specified simultaneously
@@ -683,5 +696,7 @@ class Flow360BaseModel(pd.BaseModel):
                 solver_values[property_name] = _preprocess_nested_list(
                     value, [loc_name], params, exclude, flow360_unit_system
                 )
+            elif isinstance(value, dict):
+                solver_values[property_name] = _preprocess_nested_dict(value, flow360_unit_system)
 
         return self.__class__(**solver_values)
