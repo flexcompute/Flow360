@@ -493,9 +493,9 @@ def test_subscript_access():
 
 
 def test_subscript_on_binary_expression_codegen_cpp():
-    from flow360_schema.framework.expression.generator import expr_to_code
-    from flow360_schema.framework.expression.parser import expr_to_model
-    from flow360_schema.framework.expression.types import TargetSyntax
+    from flow360_schema.framework.expression.engine.generator import expr_to_code
+    from flow360_schema.framework.expression.engine.parser import expr_to_model
+    from flow360_schema.framework.expression.engine.types import TargetSyntax
 
     from flow360.component.simulation.user_code.core.context import default_context
 
@@ -510,9 +510,9 @@ def test_subscript_on_binary_expression_codegen_cpp():
 
 
 def test_subscript_on_binary_expression_velocity_cpp():
-    from flow360_schema.framework.expression.generator import expr_to_code
-    from flow360_schema.framework.expression.parser import expr_to_model
-    from flow360_schema.framework.expression.types import TargetSyntax
+    from flow360_schema.framework.expression.engine.generator import expr_to_code
+    from flow360_schema.framework.expression.engine.parser import expr_to_model
+    from flow360_schema.framework.expression.engine.types import TargetSyntax
 
     from flow360.component.simulation.user_code.core.context import default_context
 
@@ -524,9 +524,9 @@ def test_subscript_on_binary_expression_velocity_cpp():
 
 
 def test_subscript_on_binary_expression_constant_left_cpp():
-    from flow360_schema.framework.expression.generator import expr_to_code
-    from flow360_schema.framework.expression.parser import expr_to_model
-    from flow360_schema.framework.expression.types import TargetSyntax
+    from flow360_schema.framework.expression.engine.generator import expr_to_code
+    from flow360_schema.framework.expression.engine.parser import expr_to_model
+    from flow360_schema.framework.expression.engine.types import TargetSyntax
 
     from flow360.component.simulation.user_code.core.context import default_context
 
@@ -538,9 +538,9 @@ def test_subscript_on_binary_expression_constant_left_cpp():
 
 
 def test_subscript_on_binary_expression_dynamic_index_cpp():
-    from flow360_schema.framework.expression.generator import expr_to_code
-    from flow360_schema.framework.expression.parser import expr_to_model
-    from flow360_schema.framework.expression.types import TargetSyntax
+    from flow360_schema.framework.expression.engine.generator import expr_to_code
+    from flow360_schema.framework.expression.engine.parser import expr_to_model
+    from flow360_schema.framework.expression.engine.types import TargetSyntax
 
     from flow360.component.simulation.user_code.core.context import default_context
 
@@ -552,9 +552,9 @@ def test_subscript_on_binary_expression_dynamic_index_cpp():
 
 
 def test_subscript_on_binary_expression_with_left_parens_cpp():
-    from flow360_schema.framework.expression.generator import expr_to_code
-    from flow360_schema.framework.expression.parser import expr_to_model
-    from flow360_schema.framework.expression.types import TargetSyntax
+    from flow360_schema.framework.expression.engine.generator import expr_to_code
+    from flow360_schema.framework.expression.engine.parser import expr_to_model
+    from flow360_schema.framework.expression.engine.types import TargetSyntax
 
     from flow360.component.simulation.user_code.core.context import default_context
 
@@ -705,15 +705,18 @@ def test_solver_translation():
 
         # 1. Units are converted to flow360 unit system using the provided params (1m**2 -> 0.25 because of length unit)
         # 2. User variables are inlined (for numeric value types)
-        assert expression.to_solver_code(params) == "(4.0 * pow(0.5, 2))"
+        assert expression.to_solver_code(params.flow360_unit_system) == "(4.0 * pow(0.5, 2))"
 
         # 3. User variables are inlined (for expression value types)
         expression = Expression.model_validate(y * u.m**2)
-        assert expression.to_solver_code(params) == "(5.0 * pow(0.5, 2))"
+        assert expression.to_solver_code(params.flow360_unit_system) == "(5.0 * pow(0.5, 2))"
 
         # 4. For solver variables, the units are stripped (assumed to be in solver units so factor == 1.0)
         expression = Expression.model_validate(y * u.m / u.s + control.MachRef)
-        assert expression.to_solver_code(params) == "(((5.0 * 0.5) / 500.0) + machRef)"
+        assert (
+            expression.to_solver_code(params.flow360_unit_system)
+            == "(((5.0 * 0.5) / 500.0) + machRef)"
+        )
 
 
 def test_cyclic_dependencies():
@@ -1143,15 +1146,16 @@ def test_unique_dimensions():
         ("area", "'area' is a reserved solver side variable name."),
         (
             "velocity",
-            "'velocity' is a reserved (legacy) output field name. It cannot be used in expressions.",
+            # TOAI: Why are you changing my error message?
+            "'velocity' is a reserved solver side variable name.",
         ),
         (
             "mut",
-            "'mut' is a reserved (legacy) output field name. It cannot be used in expressions.",
+            "'mut' is a reserved solver side variable name.",
         ),
         (
             "pressure",
-            "'pressure' is a reserved (legacy) output field name. It cannot be used in expressions.",
+            "'pressure' is a reserved solver side variable name.",
         ),
     ],
 )

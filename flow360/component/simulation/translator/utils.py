@@ -29,7 +29,11 @@ from flow360.component.simulation.primitives import (
 )
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.units import validate_length
-from flow360.component.simulation.user_code.core.types import Expression, UserVariable
+from flow360.component.simulation.user_code.core.types import (
+    Expression,
+    ExpressionBase,
+    UserVariable,
+)
 from flow360.component.simulation.utils import is_exact_instance
 from flow360.exceptions import Flow360TranslationError
 
@@ -310,7 +314,7 @@ def translate_value_or_expression_object(
     obj: Union[Expression, u.unyt_quantity, u.unyt_array], input_params: SimulationParams
 ):
     """Translate for an ValueOrExpression object"""
-    if isinstance(obj, Expression):
+    if isinstance(obj, ExpressionBase):
         # Only allowing client-time evaluable expressions
         evaluated = obj.evaluate(raise_on_non_evaluable=True)
         converted = evaluated.in_base(unit_system=input_params.flow360_unit_system).v.item()
