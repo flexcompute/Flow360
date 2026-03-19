@@ -6,13 +6,14 @@ from enum import Enum
 from typing import List, Literal, Optional, Union
 
 import pydantic as pd
+from flow360_schema.framework.expression.utils import is_runtime_expression
 from flow360_schema.framework.physical_dimensions import Angle, Length, Time
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.outputs.output_fields import CommonFieldNames
 from flow360.component.simulation.user_code.core.types import (
-    Expression,
+    ExpressionBase,
     UnytQuantity,
     UserVariable,
     ValueOrExpression,
@@ -22,7 +23,6 @@ from flow360.component.simulation.user_code.core.types import (
     is_variable_with_unit_system_as_units,
     solver_variable_to_user_variable,
 )
-from flow360.component.simulation.user_code.core.utils import is_runtime_expression
 from flow360.component.types import Axis, Color, Vector
 
 
@@ -556,7 +556,7 @@ class FieldMaterial(MaterialBase):
     @pd.field_validator("output_field", mode="before")
     @classmethod
     def _preprocess_expression_and_solver_variable(cls, value):
-        if isinstance(value, Expression):
+        if isinstance(value, ExpressionBase):
             raise ValueError(
                 f"Expression ({value}) cannot be directly used as output field, "
                 "please define a UserVariable first."
@@ -568,7 +568,7 @@ class FieldMaterial(MaterialBase):
     def check_runtime_expression(cls, v):
         """Ensure the output field is a runtime expression but not a constant value."""
         if isinstance(v, UserVariable):
-            if not isinstance(v.value, Expression):
+            if not isinstance(v.value, ExpressionBase):
                 raise ValueError(f"The output field ({v}) cannot be a constant value.")
             try:
                 result = v.value.evaluate(raise_on_non_evaluable=False, force_evaluate=True)

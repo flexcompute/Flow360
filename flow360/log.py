@@ -1,5 +1,6 @@
 """Logging for Flow360."""
 
+import logging as _logging
 import os
 from datetime import datetime
 from typing import Union
@@ -334,6 +335,25 @@ def toggle_rotation(rotate: bool):
 
 # Set default logging output
 set_logging_console()
+
+
+# Bridge stdlib logging from flow360_schema to Flow360's custom Logger.
+# Schema package uses logging.getLogger(__name__); this handler routes
+# those messages through our rich-based Logger so presentation is consistent.
+
+
+class _BridgeHandler(_logging.Handler):
+    """Routes stdlib logging records to Flow360's custom Logger."""
+
+    def emit(self, record: _logging.LogRecord) -> None:
+        level_name = record.levelname.upper()
+        log.log(level_name, record.getMessage())
+
+
+_schema_logger = _logging.getLogger("flow360_schema")
+_schema_logger.addHandler(_BridgeHandler())
+_schema_logger.setLevel(_logging.DEBUG)
+
 
 log_dir = flow360_dir + "logs"
 try:

@@ -135,6 +135,7 @@ from flow360.component.simulation.translator.utils import (
 )
 from flow360.component.simulation.user_code.core.types import (
     Expression,
+    ExpressionBase,
     UserVariable,
     _convert_numeric,
     compute_surface_integral_unit,
@@ -915,7 +916,7 @@ def user_variable_to_udf(
 ):  # pylint:disable=too-many-branches
     # pylint:disable=too-many-statements
     """Convert user variable to UDF"""
-    if not isinstance(variable.value, Expression):
+    if not isinstance(variable.value, ExpressionBase):
         expression = Expression.model_validate(_convert_numeric(variable.value))
     else:
         expression = variable.value
@@ -952,10 +953,10 @@ def user_variable_to_udf(
             expression = (expression + offset) * coefficient
         else:
             expression = expression * coefficient
-        if not isinstance(expression, Expression):
+        if not isinstance(expression, ExpressionBase):
             # Enforce constant as Expression
             expression = Expression.model_validate(_convert_numeric(expression))
-        expression = expression.to_solver_code(params=input_params)
+        expression = expression.to_solver_code(input_params.flow360_unit_system)
         return UserDefinedField(
             name=variable.name, expression=f"{prepending_code}{variable.name} = " + expression + ";"
         )
@@ -970,11 +971,11 @@ def user_variable_to_udf(
     else:
         expression = [item * coefficient for item in expression]
     for i, item in enumerate(expression):
-        if isinstance(item, Expression):
-            expression[i] = item.to_solver_code(params=input_params)
+        if isinstance(item, ExpressionBase):
+            expression[i] = item.to_solver_code(input_params.flow360_unit_system)
         else:
             expression[i] = Expression.model_validate(_convert_numeric(item)).to_solver_code(
-                params=input_params
+                input_params.flow360_unit_system
             )
 
     expression = [f"{variable.name}[{i}] = " + item for i, item in enumerate(expression)]

@@ -25,7 +25,9 @@ from flow360.component.simulation.outputs.output_fields import (
     _CMz,
 )
 from flow360.component.simulation.simulation_params import SimulationParams
-from flow360.component.simulation.user_code.core.types import Expression
+from flow360.component.simulation.user_code.core.types import (
+    ExpressionBase as Expression,
+)
 from flow360.exceptions import Flow360ValueError
 from flow360.log import log
 
