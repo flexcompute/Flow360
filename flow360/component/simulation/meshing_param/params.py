@@ -22,6 +22,9 @@ from flow360.component.simulation.meshing_param.meshing_specs import (
     MeshingDefaults,
     VolumeMeshingDefaults,
 )
+from flow360.component.simulation.meshing_param.meshing_validators import (
+    validate_snappy_uniform_refinement_entities,
+)
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     AxisymmetricRefinement,
@@ -35,7 +38,7 @@ from flow360.component.simulation.meshing_param.volume_params import (
     UniformRefinement,
     UserDefinedFarfield,
     WindTunnelFarfield,
-    _FarfieldBase,
+    _FarfieldAllowingEnclosedEntities,
 )
 from flow360.component.simulation.primitives import (
     AxisymmetricBody,
@@ -118,9 +121,11 @@ def _collect_rotation_entity_names(zones, param_info, zone_types):
 def _validate_farfield_enclosed_entities(
     zones, rotation_entity_names, has_custom_volumes, param_info
 ):
-    """Validate farfield enclosed_entities: require CustomVolumes and rotation-volume association."""
+    """Validate farfield enclosed_entities: require CustomVolumes and rotation-volume association.
+    Only applies to farfield types that support enclosed_entities (Automated, WindTunnel).
+    """
     for zone in zones:
-        if not isinstance(zone, _FarfieldBase):
+        if not isinstance(zone, _FarfieldAllowingEnclosedEntities):
             continue
 
         if zone.enclosed_entities is None:
@@ -266,10 +271,8 @@ class MeshingParams(Flow360BaseModel):
             )
             for volume_zone in v
         )
-        if total_farfield == 0 and not _collect_all_custom_volumes(v):
-            raise ValueError(
-                "A farfield zone or `CustomVolume` entities are required in `volume_zones`."
-            )
+        if total_farfield == 0:
+            raise ValueError("Farfield zone is required in `volume_zones`.")
 
         if total_farfield > 1:
             raise ValueError("Only one farfield zone is allowed in `volume_zones`.")
@@ -477,11 +480,33 @@ class MeshingParams(Flow360BaseModel):
                 )
         return self
 
+    @contextual_model_validator(mode="after")
+    def _warn_multi_zone_remove_hidden_geometry(self) -> Self:
+        """Warn when remove_hidden_geometry is enabled with multiple farfield/custom volume zones."""
+        if not self.defaults.remove_hidden_geometry:  # pylint: disable=no-member
+            return self
+        if self.volume_zones is None:
+            return self
+        # AF and WTF each generate their own farfield zone but UDF does not,
+        # so it doesn't contribute to the zone count
+        has_non_udf_farfield = any(
+            isinstance(zone, (AutomatedFarfield, WindTunnelFarfield))
+            for zone in self.volume_zones  # pylint: disable=not-an-iterable
+        )
+        count = len(_collect_all_custom_volumes(self.volume_zones)) + (
+            1 if has_non_udf_farfield else 0
+        )
+        if count > 1:
+            add_validation_warning(
+                "Multiple farfield/custom volume zones detected. Removal of hidden geometry "
+                "for multi-zone cases is not fully supported and may not work as intended."
+            )
+        return self
+
     @property
     def farfield_method(self):
         """Returns the farfield method used."""
         if self.volume_zones:
-            has_custom_zones = False
             for zone in self.volume_zones:  # pylint: disable=not-an-iterable
                 if isinstance(zone, AutomatedFarfield):
                     return zone.method
@@ -489,10 +514,6 @@ class MeshingParams(Flow360BaseModel):
                     return "wind-tunnel"
                 if isinstance(zone, UserDefinedFarfield):
                     return "user-defined"
-                if isinstance(zone, CustomZones):
-                    has_custom_zones = True
-            if has_custom_zones:  # CV + no FF => implicit UD
-                return "user-defined"
         return None
 
 
@@ -564,6 +585,19 @@ class VolumeMeshingParams(Flow360BaseModel):
                         refinement.spacing, type(refinement).__name__
                     )
 
+        return self
+
+    @contextual_model_validator(mode="after")
+    def _check_snappy_uniform_refinement_entities(self, param_info: ParamsValidationInfo):
+        """Validate projected UniformRefinement entities are compatible with snappyHexMesh."""
+        if not param_info.use_snappy:
+            return self
+        for refinement in self.refinements:  # pylint: disable=not-an-iterable
+            if (
+                isinstance(refinement, UniformRefinement)
+                and refinement.project_to_surface is not False
+            ):
+                validate_snappy_uniform_refinement_entities(refinement)
         return self
 
 

@@ -1,3 +1,4 @@
+# pylint:disable = too-many-lines
 """Surface meshing parameter translator."""
 
 from copy import deepcopy
@@ -6,6 +7,7 @@ from typing import List
 from unyt import unyt_array
 
 from flow360.component.simulation.entity_info import GeometryEntityInfo
+from flow360.component.simulation.framework.updater_utils import recursive_remove_key
 from flow360.component.simulation.meshing_param import snappy
 from flow360.component.simulation.meshing_param.edge_params import SurfaceEdgeRefinement
 from flow360.component.simulation.meshing_param.face_params import SurfaceRefinement
@@ -636,6 +638,12 @@ def legacy_mesher_json(input_params: SimulationParams):
 
     translated["faces"] = face_config
 
+    ##:: >> Step 5.2: Get target_surface_node_count [OPTIONAL]
+    if input_params.meshing.defaults.target_surface_node_count is not None:
+        translated["target_surface_node_count"] = (
+            input_params.meshing.defaults.target_surface_node_count
+        )
+
     ##:: >> Step 6: Tell surface mesher how do we group boundaries.
     translated["boundaries"] = {}
     grouped_faces: List[Surface] = (
@@ -670,6 +678,7 @@ def _get_volume_zones(volume_zones_list: list[dict]):
             "AutomatedFarfield",
             "UserDefinedFarfield",
             "WindTunnelFarfield",
+            "CustomZones",
         ):
             volume_zones_translated.append(item)
         elif item["type"] in (
@@ -963,6 +972,12 @@ def filter_simulation_json(input_params: SimulationParams, mesh_units):
 
     # Filter the JSON to only include the GAI surface meshing parameters
     filtered_json = _traverse_and_filter(json_data, whitelist)
+
+    # Remove selectors from the filtered JSON. After selector expansion (done by
+    # @preprocess_input), selectors are redundant — only stored_entities matter
+    # for meshing. Selectors contain random UUIDs (selector_id) that would cause
+    # hash inconsistency between identical runs.
+    recursive_remove_key(filtered_json, "selectors")
 
     return filtered_json
 

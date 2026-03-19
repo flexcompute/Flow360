@@ -114,6 +114,26 @@ class UniformRefinement(Flow360BaseModel):
 
         return values
 
+    @contextual_field_validator("entities", mode="after")
+    @classmethod
+    def check_entities_used_with_snappy(cls, values, param_info: ParamsValidationInfo):
+        """Check that only Box, Cylinder, and Sphere entities are used with snappyHexMesh."""
+
+        if values is None:
+            return values
+        if not param_info.use_snappy:
+            return values
+
+        expanded = param_info.expand_entity_list(values)
+        for entity in expanded:
+            if not isinstance(entity, (Box, Cylinder, Sphere)):
+                raise ValueError(
+                    f"`{type(entity).__name__}` entity for `UniformRefinement` is not supported "
+                    "with snappyHexMesh. Only `Box`, `Cylinder`, and `Sphere` are allowed."
+                )
+
+        return values
+
     @contextual_model_validator(mode="after")
     def check_project_to_surface_with_snappy(self, param_info: ParamsValidationInfo):
         """Check that project_to_surface is used only with snappy."""
@@ -584,59 +604,6 @@ class _FarfieldBase(Flow360BaseModel):
         )
     )
 
-    enclosed_entities: Optional[
-        EntityList[Surface, Cylinder, AxisymmetricBody, Sphere, CustomVolume]
-    ] = pd.Field(
-        None,
-        description="""
-        The surfaces/surface groups that are the interior boundaries of the `farfield` zone when defining custom volumes.
-        - Only allowed when using one or more `CustomZone`(s) to define volume zone(s) in meshing parameters
-        - Cylinder, AxisymmetricBody, Sphere entities must be associated with `RotationVolume`(s)
-        """,
-    )
-
-    @contextual_model_validator(mode="after")
-    def _validate_enclosed_entities_no_intersection(self, param_info: ParamsValidationInfo):
-        """Check that no CustomVolume's bounding_entities overlap with sibling entities."""
-        if self.enclosed_entities is None:
-            return self
-        expanded = param_info.expand_entity_list(self.enclosed_entities)
-
-        custom_volumes_in_list = [e for e in expanded if isinstance(e, CustomVolume)]
-        if not custom_volumes_in_list:
-            return self
-
-        non_cv_names = {e.name for e in expanded if not isinstance(e, CustomVolume)}
-
-        for cv in custom_volumes_in_list:
-            cv_child_names = {e.name for e in param_info.expand_entity_list(cv.bounding_entities)}
-            overlap = cv_child_names & non_cv_names
-            if overlap:
-                raise ValueError(
-                    f"`CustomVolume` `{cv.name}` shares bounding entities "
-                    f"({sorted(overlap)}) with sibling `CustomVolume`. "
-                    f"A `CustomVolume`'s bounding entities must be disjoint from its siblings."
-                )
-
-        return self
-
-    @contextual_field_validator("enclosed_entities", mode="after")
-    @classmethod
-    def _validate_enclosed_entities_beta_mesher_only(cls, value, param_info: ParamsValidationInfo):
-        """Ensure enclosed_entities is only used with the beta mesher."""
-        if value is None:
-            return value
-        if param_info.is_beta_mesher:
-            return value
-
-        raise ValueError("`enclosed_entities` is only supported with the beta mesher.")
-
-    @contextual_field_validator("enclosed_entities", mode="after")
-    @classmethod
-    def _validate_enclosed_entity_existence(cls, value, param_info: ParamsValidationInfo):
-        """Ensure all boundaries will be present after mesher."""
-        return validate_entity_list_surface_existence(value, param_info)
-
     @contextual_field_validator("domain_type", mode="after")
     @classmethod
     def _validate_only_in_beta_mesher(cls, value, param_info: ParamsValidationInfo):
@@ -700,7 +667,65 @@ class _FarfieldBase(Flow360BaseModel):
         raise ValueError(message)
 
 
-class AutomatedFarfield(_FarfieldBase):
+class _FarfieldAllowingEnclosedEntities(_FarfieldBase):
+    """Intermediate class for farfield types that support enclosed_entities (Automated, WindTunnel)."""
+
+    enclosed_entities: Optional[
+        EntityList[Surface, Cylinder, AxisymmetricBody, Sphere, CustomVolume]
+    ] = pd.Field(
+        None,
+        description="""
+        The surfaces/surface groups that are the interior boundaries of the `farfield` zone when defining custom volumes.
+        - Only allowed when using one or more `CustomZone`(s) to define volume zone(s) in meshing parameters
+        - Cylinder, AxisymmetricBody, Sphere entities must be associated with `RotationVolume`(s)
+        """,
+    )
+
+    @contextual_field_validator("enclosed_entities", mode="after")
+    @classmethod
+    def _validate_enclosed_entities_no_intersection(cls, value, param_info: ParamsValidationInfo):
+        """Check that no CustomVolume's bounding_entities overlap with sibling entities."""
+        if value is None:
+            return value
+        expanded = param_info.expand_entity_list(value)
+
+        custom_volumes_in_list = [e for e in expanded if isinstance(e, CustomVolume)]
+        if not custom_volumes_in_list:
+            return value
+
+        non_cv_names = {e.name for e in expanded if not isinstance(e, CustomVolume)}
+
+        for cv in custom_volumes_in_list:
+            cv_child_names = {e.name for e in param_info.expand_entity_list(cv.bounding_entities)}
+            overlap = cv_child_names & non_cv_names
+            if overlap:
+                raise ValueError(
+                    f"`CustomVolume` `{cv.name}` shares bounding entities "
+                    f"({sorted(overlap)}) with sibling `CustomVolume`. "
+                    f"A `CustomVolume`'s bounding entities must be disjoint from its siblings."
+                )
+
+        return value
+
+    @contextual_field_validator("enclosed_entities", mode="after")
+    @classmethod
+    def _validate_enclosed_entities_beta_mesher_only(cls, value, param_info: ParamsValidationInfo):
+        """Ensure enclosed_entities is only used with the beta mesher."""
+        if value is None:
+            return value
+        if param_info.is_beta_mesher:
+            return value
+
+        raise ValueError("`enclosed_entities` is only supported with the beta mesher.")
+
+    @contextual_field_validator("enclosed_entities", mode="after")
+    @classmethod
+    def _validate_enclosed_entity_existence(cls, value, param_info: ParamsValidationInfo):
+        """Ensure all boundaries will be present after mesher."""
+        return validate_entity_list_surface_existence(value, param_info)
+
+
+class AutomatedFarfield(_FarfieldAllowingEnclosedEntities):
     """
     Settings for automatic farfield volume zone generation.
 
@@ -919,7 +944,7 @@ class WheelBelts(CentralBelt):
 
 
 # pylint: disable=no-member
-class WindTunnelFarfield(_FarfieldBase):
+class WindTunnelFarfield(_FarfieldAllowingEnclosedEntities):
     """
     Settings for analytic wind tunnel farfield generation.
     The user only needs to provide tunnel dimensions and floor type and dimensions, rather than a geometry.

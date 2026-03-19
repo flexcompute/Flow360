@@ -60,6 +60,7 @@ from flow360.component.simulation.primitives import (
     MirroredGeometryBodyGroup,
     MirroredSurface,
     SeedpointVolume,
+    Sphere,
     Surface,
 )
 from flow360.component.simulation.simulation_params import SimulationParams
@@ -767,6 +768,51 @@ def snappy_coupled_refinements():
 
 
 @pytest.fixture()
+def snappy_coupled_refinements_with_sphere():
+    test_geometry = TempGeometry("tester.stl", True)
+    with SI_unit_system:
+        surf_meshing_params = snappy.SurfaceMeshingParams(
+            defaults=snappy.SurfaceMeshingDefaults(
+                min_spacing=3 * u.mm, max_spacing=4 * u.mm, gap_resolution=1 * u.mm
+            ),
+            octree_spacing=OctreeSpacing(base_spacing=5 * u.mm),
+            refinements=[],
+            smooth_controls=snappy.SmoothControls(),
+        )
+        vol_meshing_params = VolumeMeshingParams(
+            defaults=VolumeMeshingDefaults(
+                boundary_layer_first_layer_thickness=1 * u.mm, boundary_layer_growth_rate=1.2
+            ),
+            refinements=[
+                UniformRefinement(
+                    spacing=2 * u.mm,
+                    entities=[
+                        Sphere(name="sphere0", center=[5, 10, 15] * u.mm, radius=25 * u.mm),
+                    ],
+                    project_to_surface=True,
+                ),
+            ],
+        )
+        param = SimulationParams(
+            private_attribute_asset_cache=AssetCache(
+                project_entity_info=test_geometry._get_entity_info(),
+                project_length_unit=1 * u.mm,
+                use_inhouse_mesher=True,
+            ),
+            meshing=ModularMeshingWorkflow(
+                surface_meshing=surf_meshing_params,
+                volume_meshing=vol_meshing_params,
+                zones=[
+                    CustomZones(
+                        entities=[SeedpointVolume(name="farfield", point_in_mesh=[0, 0, 0] * u.mm)]
+                    )
+                ],
+            ),
+        )
+    return param
+
+
+@pytest.fixture()
 def snappy_refinements_multiple_regions():
     test_geometry = TempGeometry("tester.stl", True)
     with SI_unit_system:
@@ -1076,6 +1122,15 @@ def test_snappy_coupled(get_snappy_geometry, snappy_coupled_refinements):
     )
 
 
+def test_snappy_coupled_with_sphere(get_snappy_geometry, snappy_coupled_refinements_with_sphere):
+    _translate_and_compare(
+        snappy_coupled_refinements_with_sphere,
+        get_snappy_geometry.mesh_unit,
+        "snappy_coupled_refinements_with_sphere.json",
+        atol=1e-6,
+    )
+
+
 def test_snappy_multiple_regions(get_snappy_geometry, snappy_refinements_multiple_regions):
     _translate_and_compare(
         snappy_refinements_multiple_regions,
@@ -1244,6 +1299,83 @@ def test_gai_translator_hashing_ignores_id():
     assert (
         hashes[0] == hashes[1]
     ), f"Hashes should be identical despite different UUIDs:\n  Hash 1: {hashes[0]}\n  Hash 2: {hashes[1]}"
+
+
+def test_gai_translator_selectors_do_not_affect_hash():
+    """Test that selectors (with random selector_id) are removed from GAI translation output,
+    ensuring identical inputs produce identical hashes across runs."""
+
+    from flow360.component.simulation.framework.entity_selector import SurfaceSelector
+
+    hashes = []
+
+    for _ in range(2):
+        geometry = Geometry.from_local_storage(
+            geometry_id="geo-e5c01a98-2180-449e-b255-d60162854a83",
+            local_storage_path=os.path.join(
+                os.path.dirname(__file__), "data", "gai_geometry_entity_info"
+            ),
+            meta_data=GeometryMeta(
+                **local_metadata_builder(
+                    id="geo-e5c01a98-2180-449e-b255-d60162854a83",
+                    name="aaa",
+                    cloud_path_prefix="aaa",
+                    status="processed",
+                )
+            ),
+        )
+        geometry.group_faces_by_tag("faceId")
+        geometry.group_edges_by_tag("edgeId")
+        geometry.group_bodies_by_tag("groupByFile")
+
+        with create_draft(new_run_from=geometry) as draft:
+            with SI_unit_system:
+                selector = SurfaceSelector(name="all_faces").match("*")
+
+                params = SimulationParams(
+                    meshing=MeshingParams(
+                        defaults=MeshingDefaults(
+                            geometry_accuracy=0.05 * u.m,
+                            surface_max_edge_length=0.2,
+                        ),
+                        refinements=[
+                            SurfaceRefinement(
+                                name="selector_based_refinement",
+                                max_edge_length=0.1,
+                                faces=[selector],
+                            ),
+                        ],
+                    ),
+                    operating_condition=AerospaceCondition(
+                        velocity_magnitude=10 * u.m / u.s,
+                    ),
+                )
+
+                params = set_up_params_for_uploading(
+                    root_asset=geometry,
+                    length_unit=1 * u.m,
+                    params=params,
+                    use_beta_mesher=True,
+                    use_geometry_AI=True,
+                )
+
+        params, err, _ = validate_params_with_context(params, "Geometry", "SurfaceMesh")
+        assert err is None, f"Validation error: {err}"
+
+        translated = get_surface_meshing_json(params, mesh_unit=1 * u.m)
+
+        # Verify no selectors in translated output
+        translated_str = json.dumps(translated)
+        assert (
+            "selectors" not in translated_str
+        ), "Translated GAI output should not contain selectors after expansion"
+
+        hash_value = SimulationParams._calculate_hash(translated)
+        hashes.append(hash_value)
+
+    assert (
+        hashes[0] == hashes[1]
+    ), f"Hashes should be identical across runs:\n  Hash 1: {hashes[0]}\n  Hash 2: {hashes[1]}"
 
 
 def test_gai_analytic_wind_tunnel_farfield():
@@ -1798,8 +1930,34 @@ def test_gai_target_surface_node_count_absent():
     assert "target_surface_node_count" not in translated["meshing"]["defaults"]
 
 
+def test_beta_mesher_target_surface_node_count_set(get_om6wing_geometry):
+    """target_surface_node_count is accepted and translated when using the beta surface mesher."""
+    my_geometry = TempGeometry("om6wing.csm")
+    with SI_unit_system:
+        params = SimulationParams(
+            private_attribute_asset_cache=AssetCache(
+                project_entity_info=my_geometry._get_entity_info(),
+                use_inhouse_mesher=True,
+            ),
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    surface_edge_growth_rate=1.2,
+                    curvature_resolution_angle=12 * u.deg,
+                    surface_max_edge_length=1 * u.m,
+                    target_surface_node_count=50000,
+                    edge_split_layers=0,
+                ),
+            ),
+        )
+
+    params, err, warnings = validate_params_with_context(params, "Geometry", "SurfaceMesh")
+    assert err is None, f"Unexpected validation error: {err}"
+    translated = get_surface_meshing_json(params, mesh_unit=get_om6wing_geometry.mesh_unit)
+    assert translated["target_surface_node_count"] == 50000
+
+
 def test_legacy_target_surface_node_count_rejected(get_om6wing_geometry):
-    """target_surface_node_count is rejected for legacy (non-GAI) flows."""
+    """target_surface_node_count is rejected for the legacy mesher."""
     my_geometry = TempGeometry("om6wing.csm")
     with SI_unit_system:
         params = SimulationParams(

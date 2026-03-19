@@ -298,7 +298,7 @@ def test_wall_function_type_interface():
     # True is converted to WallFunction() with default BoundaryLayer and logs deprecation warning
     wall = Wall(surfaces=[surface], use_wall_function=True)
     assert wall.use_wall_function == WallFunction()
-    assert wall.use_wall_function.type_name == "BoundaryLayer"
+    assert wall.use_wall_function.wall_function_type == "BoundaryLayer"
 
     # False is converted to None and logs deprecation warning
     wall = Wall(surfaces=[surface], use_wall_function=False)
@@ -308,13 +308,13 @@ def test_wall_function_type_interface():
     wall = Wall(surfaces=[surface])
     assert wall.use_wall_function is None
 
-    # WallFunction with default type_name
+    # WallFunction with default wall_function_type
     wall = Wall(surfaces=[surface], use_wall_function=WallFunction())
-    assert wall.use_wall_function.type_name == "BoundaryLayer"
+    assert wall.use_wall_function.wall_function_type == "BoundaryLayer"
 
     # WallFunction with InnerLayer
-    wall = Wall(surfaces=[surface], use_wall_function=WallFunction(type_name="InnerLayer"))
-    assert wall.use_wall_function.type_name == "InnerLayer"
+    wall = Wall(surfaces=[surface], use_wall_function=WallFunction(wall_function_type="InnerLayer"))
+    assert wall.use_wall_function.wall_function_type == "InnerLayer"
 
     # SlaterPorousBleed conflict applies to all wall function types
     message = "Using `SlaterPorousBleed` with wall function is not supported currently."
@@ -322,12 +322,12 @@ def test_wall_function_type_interface():
         Wall(
             velocity=SlaterPorousBleed(porosity=0.2, static_pressure=1e5 * u.Pa),
             surfaces=[surface],
-            use_wall_function=WallFunction(type_name="InnerLayer"),
+            use_wall_function=WallFunction(wall_function_type="InnerLayer"),
         )
 
-    # Invalid type_name should be rejected by pydantic
+    # Invalid wall_function_type should be rejected by pydantic
     with pytest.raises(pd.ValidationError):
-        Wall(surfaces=[surface], use_wall_function=WallFunction(type_name="InvalidType"))
+        Wall(surfaces=[surface], use_wall_function=WallFunction(wall_function_type="InvalidType"))
 
 
 def test_low_mach_preconditioner_validator(
@@ -2529,9 +2529,7 @@ def test_beta_mesher_only_features(mock_validation_context):
                             )
                         ],
                     ),
-                    UserDefinedFarfield(
-                        enclosed_entities=[Surface(name="face1"), Surface(name="face2")],
-                    ),
+                    UserDefinedFarfield(),
                 ],
             ),
             private_attribute_asset_cache=AssetCache(use_inhouse_mesher=False),
@@ -2542,15 +2540,11 @@ def test_beta_mesher_only_features(mock_validation_context):
         root_item_type="SurfaceMesh",
         validation_level="VolumeMesh",
     )
-    assert len(errors) == 2
+    assert len(errors) == 1
     assert (
         errors[0]["msg"]
         == "Value error, CustomVolume is supported only when the beta mesher is enabled "
         + "and an automated, user-defined, or wind tunnel farfield is enabled."
-    )
-    assert (
-        errors[1]["msg"]
-        == "Value error, `enclosed_entities` is only supported with the beta mesher."
     )
 
     # Unique volume zone names
@@ -2595,12 +2589,7 @@ def test_beta_mesher_only_features(mock_validation_context):
                                 ),
                             ],
                         ),
-                        UserDefinedFarfield(
-                            enclosed_entities=[
-                                Surface(name="face1"),
-                                Surface(name="face2"),
-                            ],
-                        ),
+                        UserDefinedFarfield(),
                     ],
                 ),
                 private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
@@ -2633,9 +2622,7 @@ def test_beta_mesher_only_features(mock_validation_context):
                                 )
                             ],
                         ),
-                        UserDefinedFarfield(
-                            enclosed_entities=[Surface(name="face1")],
-                        ),
+                        UserDefinedFarfield(),
                     ],
                 ),
                 private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
@@ -2659,9 +2646,7 @@ def test_beta_mesher_only_features(mock_validation_context):
                             )
                         ],
                     ),
-                    UserDefinedFarfield(
-                        enclosed_entities=[Surface(name="face1"), Surface(name="face2")],
-                    ),
+                    UserDefinedFarfield(),
                 ],
             ),
             models=[
@@ -2933,9 +2918,7 @@ def test_check_custom_volume_in_volume_zones():
                             CustomVolume(name="zone1", bounding_entities=[Surface(name="face1")])
                         ],
                     ),
-                    UserDefinedFarfield(
-                        enclosed_entities=[Surface(name="face1")],
-                    ),
+                    UserDefinedFarfield(),
                 ],
             ),
             models=[

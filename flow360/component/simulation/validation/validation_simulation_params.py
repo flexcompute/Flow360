@@ -457,9 +457,12 @@ def _collect_asset_boundary_entities(params, param_info: ParamsValidationInfo) -
         if param_info.will_generate_forced_symmetry_plane():
             asset_boundary_entities += [item for item in ghost_entities if item.name == "symmetric"]
         # pylint: disable=protected-access
+        wind_tunnel = next(
+            z for z in params.meshing.volume_zones if isinstance(z, WindTunnelFarfield)
+        )
         asset_boundary_entities += WindTunnelFarfield._get_valid_ghost_surfaces(
-            params.meshing.volume_zones[0].floor_type.type_name,
-            params.meshing.volume_zones[0].domain_type,
+            wind_tunnel.floor_type.type_name,
+            wind_tunnel.domain_type,
         )
 
     return asset_boundary_entities, has_missing_private_attributes
