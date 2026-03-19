@@ -379,6 +379,11 @@ class CoordinateSystemManager:
 
     @staticmethod
     def _entity_key(entity: EntityBase) -> tuple[str, str]:
+        if entity.private_attribute_id is None:
+            raise Flow360RuntimeError(
+                f"Entity '{entity.name}' ({type(entity).__name__}) is not supported "
+                f"for coordinate system assignment."
+            )
         return (entity.private_attribute_entity_type_name, entity.private_attribute_id)
 
     # Assignment ----------------------------------------------------------------
