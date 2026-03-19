@@ -2507,6 +2507,7 @@ def test_multi_zone_remove_hidden_geometry_warning():
                     remove_hidden_geometry=True,
                 ),
                 volume_zones=[
+                    UserDefinedFarfield(),
                     CustomZones(
                         name="custom_zones",
                         entities=[
@@ -2551,9 +2552,7 @@ def test_multi_zone_remove_hidden_geometry_warning():
                     remove_hidden_geometry=True,
                 ),
                 volume_zones=[
-                    UserDefinedFarfield(
-                        enclosed_entities=[Surface(name="face1"), Surface(name="face2")]
-                    ),
+                    UserDefinedFarfield(),
                     CustomZones(
                         name="custom_zones",
                         entities=[
@@ -2590,9 +2589,7 @@ def test_multi_zone_remove_hidden_geometry_warning():
                     remove_hidden_geometry=True,
                 ),
                 volume_zones=[
-                    UserDefinedFarfield(
-                        enclosed_entities=[Surface(name="face1"), Surface(name="face2")]
-                    ),
+                    UserDefinedFarfield(),
                     CustomZones(
                         name="custom_zones",
                         entities=[
@@ -2637,6 +2634,7 @@ def test_multi_zone_remove_hidden_geometry_warning():
                     remove_hidden_geometry=True,
                 ),
                 volume_zones=[
+                    UserDefinedFarfield(),
                     CustomZones(
                         name="custom_zones",
                         entities=[
