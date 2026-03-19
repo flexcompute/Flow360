@@ -1146,16 +1146,15 @@ def test_unique_dimensions():
         ("area", "'area' is a reserved solver side variable name."),
         (
             "velocity",
-            # TOAI: Why are you changing my error message?
-            "'velocity' is a reserved solver side variable name.",
+            "'velocity' is a reserved (legacy) output field name. It cannot be used in expressions.",
         ),
         (
             "mut",
-            "'mut' is a reserved solver side variable name.",
+            "'mut' is a reserved (legacy) output field name. It cannot be used in expressions.",
         ),
         (
             "pressure",
-            "'pressure' is a reserved solver side variable name.",
+            "'pressure' is a reserved (legacy) output field name. It cannot be used in expressions.",
         ),
     ],
 )

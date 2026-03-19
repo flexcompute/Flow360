@@ -9,17 +9,7 @@ items that have not yet migrated (ValueOrExpression, VariableContextInfo, etc.).
 from __future__ import annotations
 
 from numbers import Number
-from typing import (
-    Annotated,
-    Any,
-    ClassVar,
-    Generic,
-    List,
-    Literal,
-    Optional,
-    TypeVar,
-    Union,
-)
+from typing import Annotated, Any, ClassVar, Generic, List, Optional, TypeVar, Union
 
 import numpy as np
 import pydantic as pd
@@ -27,6 +17,13 @@ import unyt as u
 from flow360_schema import StrictUnitContext
 from flow360_schema.framework.expression.registry import default_context
 from flow360_schema.framework.expression.utils import is_runtime_expression
+from flow360_schema.framework.expression.value_or_expression import (  # pylint: disable=unused-import
+    AnyNumericType,
+    SerializedValueOrExpression,
+    UnytArray,
+    UnytQuantity,
+    register_deprecation_check,
+)
 
 # pylint: disable=unused-import
 from flow360_schema.framework.expression.variable import Expression as _SchemaExpression
@@ -53,7 +50,6 @@ from flow360_schema.framework.expression.variable import (  # noqa: F401 (re-exp
 
 # pylint: enable=unused-import
 from pydantic import BeforeValidator, Discriminator, PlainSerializer, Tag
-from pydantic_core import core_schema
 from typing_extensions import Self
 from unyt import unyt_array, unyt_quantity
 
@@ -64,6 +60,8 @@ from flow360.component.simulation.validation.validation_context import (
     ParamsValidationInfo,
     contextual_model_validator,
 )
+
+register_deprecation_check(deprecation_reminder)
 
 # ---------------------------------------------------------------------------
 # Client subclass: Variable — restores ValueOrExpression in setter/validator
@@ -98,8 +96,9 @@ class Variable(_SchemaVariable):
         """
         Supporting syntax like `a = fl.Variable(name="a", value=1, description="some description")`.
         """
-        # Pass through existing Variable instances (e.g. schema UserVariable used in client context)
-        # TOAI: I am confused, why do we need this change?
+        # MIGRATION-TODO: Remove once client Variable subclass is eliminated and schema Variable
+        # is used directly. This guard handles schema Variable instances passed through client
+        # model_validator (e.g. UserVariable in output_fields).
         if isinstance(values, _SchemaVariable):
             return {"name": values.name}
         if values is None or "name" not in values:
@@ -292,59 +291,6 @@ VariableBase = _SchemaVariable
 # ---------------------------------------------------------------------------
 # Items NOT yet migrated — remain in client
 # ---------------------------------------------------------------------------
-
-
-class SerializedValueOrExpression(Flow360BaseModel):
-    """Serialized frontend-compatible format of an arbitrary value/expression field"""
-
-    type_name: Literal["number", "expression"] = pd.Field()
-    value: Optional[Union[Number, list[Number]]] = pd.Field(None)
-    units: Optional[str] = pd.Field(None)
-    expression: Optional[str] = pd.Field(None)
-    output_units: Optional[str] = pd.Field(None, description="See definition in `Expression`.")
-
-
-class UnytQuantity(unyt_quantity):
-    """UnytQuantity wrapper to enable pydantic compatibility"""
-
-    # pylint: disable=unused-argument
-    @classmethod
-    def __get_pydantic_core_schema__(cls, source_type, handler):
-        return core_schema.no_info_plain_validator_function(cls.validate)
-
-    @classmethod
-    def validate(cls, value: Any):
-        """Minimal validator for pydantic compatibility"""
-        if isinstance(value, unyt_quantity):
-            return value
-        if isinstance(value, unyt_array):
-            # When deserialized unyt_quantity() gives unyt_array
-            if value.shape == ():
-                return unyt_quantity(value.value, value.units)
-        raise ValueError("Input should be a valid unit quantity.")
-
-
-# This is a wrapper to allow using unyt arrays with pydantic models
-class UnytArray(unyt_array):
-    """UnytArray wrapper to enable pydantic compatibility"""
-
-    def __repr__(self):
-        return f"UnytArray({str(self)})"
-
-    # pylint: disable=unused-argument
-    @classmethod
-    def __get_pydantic_core_schema__(cls, source_type, handler):
-        return core_schema.no_info_plain_validator_function(cls.validate)
-
-    @classmethod
-    def validate(cls, value: Any):
-        """Minimal validator for pydantic compatibility"""
-        if isinstance(value, unyt_array):
-            return value
-        raise ValueError(f"Cannot convert {type(value)} to UnytArray")
-
-
-AnyNumericType = Union[float, UnytArray, list]
 
 
 class VariableContextInfo(Flow360BaseModel):
