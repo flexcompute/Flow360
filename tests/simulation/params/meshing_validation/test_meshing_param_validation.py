@@ -857,6 +857,50 @@ def test_axisymmetric_body_in_uniform_refinement():
                 )
 
 
+def test_face_spacing_validation():
+    with SI_unit_system:
+        body = AxisymmetricBody(
+            name="body",
+            axis=(0, 0, 1),
+            center=(0, 0, 0),
+            profile_curve=[(0, 0), (0, 1), (1, 1), (1, 0)],
+        )
+
+        # Valid: override face 1 of 3 faces
+        UniformRefinement(
+            entities=[body],
+            spacing=0.5 * u.m,
+            face_spacing={"body": {1: 0.1 * u.m}},
+        )
+
+        # Invalid: face index out of range
+        with pytest.raises(pd.ValidationError, match="out of range"):
+            UniformRefinement(
+                entities=[body],
+                spacing=0.5 * u.m,
+                face_spacing={"body": {5: 0.1 * u.m}},
+            )
+
+        # Invalid: entity name not found
+        with pytest.raises(pd.ValidationError, match="does not match any AxisymmetricBody"):
+            UniformRefinement(
+                entities=[body],
+                spacing=0.5 * u.m,
+                face_spacing={"invalid_name": {0: 0.1 * u.m}},
+            )
+
+        # Invalid: non-AxisymmetricBody entity name
+        box = Box.from_principal_axes(
+            name="mybox", center=(0, 0, 0), size=(1, 1, 1), axes=((1, 0, 0), (0, 1, 0))
+        )
+        with pytest.raises(pd.ValidationError, match="does not match any AxisymmetricBody"):
+            UniformRefinement(
+                entities=[box],
+                spacing=0.5 * u.m,
+                face_spacing={"mybox": {0: 0.1 * u.m}},
+            )
+
+
 def test_sphere_in_uniform_refinement():
     with ValidationContext(VOLUME_MESH, beta_mesher_context):
         with CGS_unit_system:
