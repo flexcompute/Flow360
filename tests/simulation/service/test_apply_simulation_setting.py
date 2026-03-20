@@ -80,14 +80,15 @@ def _create_base_simulation_dict(entity_info_type="VolumeMeshEntityInfo", surfac
 
 def _create_surface_entity(name, private_attribute_id=None):
     """Helper to create a surface entity dict."""
-    return {
-        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+    result = {
         "private_attribute_entity_type_name": "Surface",
         "name": name,
-        "private_attribute_id": private_attribute_id or name,
-        "private_attribute_is_interface": False,
         "private_attribute_sub_components": [],
+        "private_attribute_is_interface": False,
     }
+    if private_attribute_id is not None:
+        result["private_attribute_id"] = private_attribute_id
+    return result
 
 
 def _create_box_entity(name, center=None):
@@ -180,6 +181,47 @@ class TestMergeEntityInfoIntoSimulation:
         assert draft[0]["name"] == "my_box"
 
         assert warnings == []
+
+
+    def test_expressions_preserved_without_deserialization(self):
+        """When simulation_dict contains expressions/variables, merge should
+        preserve them as-is without attempting to resolve or validate them."""
+        simulation_dict = _create_base_simulation_dict()
+        # Add expression-based operating condition and variable context
+        simulation_dict["operating_condition"] = {
+            "type_name": "AerospaceCondition",
+            "velocity_magnitude": {
+                "type_name": "expression",
+                "expression": "velocityMag",
+            },
+        }
+        simulation_dict["private_attribute_asset_cache"]["variable_context"] = [
+            {
+                "name": "velocityMag",
+                "value": {"type_name": "number", "value": 100, "units": "m/s"},
+            }
+        ]
+
+        new_entity_info = {
+            "draft_entities": [],
+            "ghost_entities": [],
+            "type_name": "VolumeMeshEntityInfo",
+            "zones": [],
+            "boundaries": [_create_surface_entity("wing", "new_id")],
+        }
+
+        result_dict, warnings = services.merge_entity_info_into_simulation(
+            simulation_dict=copy.deepcopy(simulation_dict),
+            new_entity_info=copy.deepcopy(new_entity_info),
+        )
+
+        # Expressions and variables should be preserved untouched
+        assert result_dict["operating_condition"]["velocity_magnitude"]["expression"] == "velocityMag"
+        assert result_dict["private_attribute_asset_cache"]["variable_context"][0]["name"] == "velocityMag"
+
+        # Entity info should still be merged
+        result_entity_info = result_dict["private_attribute_asset_cache"]["project_entity_info"]
+        assert result_entity_info["boundaries"][0]["name"] == "wing"
 
 
 class TestApplySimulationSettingBasic:

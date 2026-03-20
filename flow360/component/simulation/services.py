@@ -1455,6 +1455,11 @@ def merge_entity_info_into_simulation(
     | ghost_entities         |                       | used                  | From target geometry                  |
     | grouping_tags          | preferred             | fallback              | Source's tag if exists in target attrs|
     | used_selectors (cache) | kept                  |                       | Preserved from source                 |
+    | expressions/variables  | kept (as-is)          |                       | Not deserialized, not validated       |
+
+    Only deserializes entity_info related parts (project_entity_info) using Pydantic
+    models for schema safety. All other fields (expressions, variables, selectors, etc.)
+    are preserved as-is without deserialization or validation.
 
     Parameters
     ----------
