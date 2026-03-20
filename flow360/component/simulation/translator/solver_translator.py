@@ -340,6 +340,8 @@ def monitor_translator(
         monitor_group["animationFrequencyTimeAverage"] = output_model.frequency
         monitor_group["animationFrequencyTimeAverageOffset"] = output_model.frequency_offset
         monitor_group["startAverageIntegrationStep"] = output_model.start_step
+    if getattr(output_model, "output_at_final_pseudo_step_only", False):
+        monitor_group["outputAtFinalPseudoStepOnly"] = True
     return monitor_group
 
 
@@ -1816,6 +1818,8 @@ def calculate_monitor_semaphore_hash(params: SimulationParams):
                     force_output_models_dict.append(json.dumps(model_dict))
                 json_string_list.extend(force_output_models_dict)
                 json_string_list.extend(output.output_fields.items)
+                if output.output_at_final_pseudo_step_only:
+                    json_string_list.append(str(output.output_at_final_pseudo_step_only))
             if output.moving_statistic is not None:
                 json_string_list.append(json.dumps(dump_dict(output.moving_statistic)))
     combined_string = "".join(sorted(json_string_list))

@@ -40,6 +40,7 @@ from flow360.component.simulation.outputs.output_fields import (
     SliceFieldNames,
     SurfaceFieldNames,
     VolumeFieldNames,
+    VolumeProbeFieldNames,
     get_field_values,
 )
 from flow360.component.simulation.outputs.render_config import (
@@ -413,6 +414,21 @@ class _AnimationAndFileFormatSettings(_AnimationSettings):
         if isinstance(value, list):
             return sorted(set(value))
         return value
+
+
+def _validate_final_pseudo_step_only_with_moving_statistic(self, param_info: ParamsValidationInfo):
+    """Reject ``output_at_final_pseudo_step_only=True`` combined with ``moving_statistic``
+    in steady simulations (only one data point would be produced)."""
+    if (
+        self.output_at_final_pseudo_step_only
+        and self.moving_statistic is not None
+        and param_info.time_stepping == TimeSteppingType.STEADY
+    ):
+        raise ValueError(
+            "`output_at_final_pseudo_step_only=True` with `moving_statistic` is not allowed "
+            "for steady simulations (only one data point would be produced)."
+        )
+    return self
 
 
 class SurfaceOutput(_AnimationAndFileFormatSettings, _OutputBase):
@@ -823,6 +839,12 @@ class SurfaceIntegralOutput(_OutputBase):
     moving_statistic: Optional[MovingStatistic] = pd.Field(
         None, description="When specified, report moving statistics of the fields instead."
     )
+    output_at_final_pseudo_step_only: bool = pd.Field(
+        False,
+        description="When True, the result is only written at the final pseudo step "
+        "of each physical step (or once at the end for steady simulations), "
+        "suppressing intermediate pseudo-step writes.",
+    )
     output_type: Literal["SurfaceIntegralOutput"] = pd.Field("SurfaceIntegralOutput", frozen=True)
 
     @contextual_field_validator("entities", mode="after")
@@ -856,6 +878,10 @@ class SurfaceIntegralOutput(_OutputBase):
         )
         return self
 
+    @contextual_model_validator(mode="after")
+    def _validate_final_pseudo_step_only(self, param_info: ParamsValidationInfo):
+        return _validate_final_pseudo_step_only_with_moving_statistic(self, param_info)
+
 
 class ForceOutput(_OutputBase):
     """
@@ -887,6 +913,12 @@ class ForceOutput(_OutputBase):
     )
     moving_statistic: Optional[MovingStatistic] = pd.Field(
         None, description="When specified, report moving statistics of the fields instead."
+    )
+    output_at_final_pseudo_step_only: bool = pd.Field(
+        False,
+        description="When True, the result is only written at the final pseudo step "
+        "of each physical step (or once at the end for steady simulations), "
+        "suppressing intermediate pseudo-step writes.",
     )
     output_type: Literal["ForceOutput"] = pd.Field("ForceOutput", frozen=True)
 
@@ -936,6 +968,10 @@ class ForceOutput(_OutputBase):
             "When ActuatorDisk/BETDisk/PorousMedium is specified, "
             "only CL, CD, CFx, CFy, CFz, CMx, CMy, CMz can be set as output_fields."
         )
+
+    @contextual_model_validator(mode="after")
+    def _validate_final_pseudo_step_only(self, param_info: ParamsValidationInfo):
+        return _validate_final_pseudo_step_only_with_moving_statistic(self, param_info)
 
 
 class RenderOutputGroup(Flow360BaseModel):
@@ -1105,14 +1141,25 @@ class ProbeOutput(_OutputBase):
         + "monitor group. :class:`~flow360.PointArray` is used to "
         + "define monitored points along a line.",
     )
-    output_fields: UniqueItemList[Union[CommonFieldNames, str, UserVariable]] = pd.Field(
-        description="List of output fields. Including :ref:`universal output variables<UniversalVariablesV2>`"
+    output_fields: UniqueItemList[Union[VolumeProbeFieldNames, str, UserVariable]] = pd.Field(
+        description="List of output variables. Including :ref:`universal output variables<UniversalVariablesV2>`,"
+        " :ref:`variables specific to VolumeOutput<VolumeAndSliceSpecificVariablesV2>`"
         " and :class:`UserDefinedField`."
     )
     moving_statistic: Optional[MovingStatistic] = pd.Field(
         None, description="When specified, report moving statistics of the fields instead."
     )
+    output_at_final_pseudo_step_only: bool = pd.Field(
+        False,
+        description="When True, the result is only written at the final pseudo step "
+        "of each physical step (or once at the end for steady simulations), "
+        "suppressing intermediate pseudo-step writes.",
+    )
     output_type: Literal["ProbeOutput"] = pd.Field("ProbeOutput", frozen=True)
+
+    @contextual_model_validator(mode="after")
+    def _validate_final_pseudo_step_only(self, param_info: ParamsValidationInfo):
+        return _validate_final_pseudo_step_only_with_moving_statistic(self, param_info)
 
 
 class SurfaceProbeOutput(_OutputBase):
@@ -1182,6 +1229,12 @@ class SurfaceProbeOutput(_OutputBase):
     moving_statistic: Optional[MovingStatistic] = pd.Field(
         None, description="When specified, report moving statistics of the fields instead."
     )
+    output_at_final_pseudo_step_only: bool = pd.Field(
+        False,
+        description="When True, the result is only written at the final pseudo step "
+        "of each physical step (or once at the end for steady simulations), "
+        "suppressing intermediate pseudo-step writes.",
+    )
     output_type: Literal["SurfaceProbeOutput"] = pd.Field("SurfaceProbeOutput", frozen=True)
 
     @contextual_field_validator("target_surfaces", mode="after")
@@ -1189,6 +1242,10 @@ class SurfaceProbeOutput(_OutputBase):
     def ensure_surface_existence(cls, value, param_info: ParamsValidationInfo):
         """Ensure all boundaries will be present after mesher"""
         return validate_entity_list_surface_existence(value, param_info)
+
+    @contextual_model_validator(mode="after")
+    def _validate_final_pseudo_step_only(self, param_info: ParamsValidationInfo):
+        return _validate_final_pseudo_step_only_with_moving_statistic(self, param_info)
 
 
 class SurfaceSliceOutput(_AnimationAndFileFormatSettings, _OutputBase):
