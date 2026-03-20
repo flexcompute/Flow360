@@ -814,8 +814,10 @@ class BETDisk(MultiConstructorBaseModel):
     )
     initial_blade_direction: Optional[Axis] = pd.Field(
         None,
-        description="Orientation of the first blade in the BET model. "
-        + "Must be specified if performing an unsteady BET Line simulation.",
+        description="Direction of the first blade at the initial time, in the global mesh coordinate "
+        + "system (same frame as the BET cylinder center and axis), not a local BET/disk-fixed frame. "
+        + "Must be orthogonal to the rotation axis (Cylinder.axis). Only the direction is used—the "
+        + "vector need not be unit length. Must be specified for unsteady BET Line (blade_line_chord > 0).",
     )
     tip_gap: Union[Literal["inf"], LengthType.NonNegative] = pd.Field(
         "inf",
@@ -1032,8 +1034,8 @@ class BETDisk(MultiConstructorBaseModel):
         angle_unit: AngleType
             Angle unit used for AngleType BETDisk parameters.
         initial_blade_direction: Axis, optional
-            Orientation of the first blade in BET model.
-            Must be specified for unsteady BET simulation.
+            Direction of the first blade in global mesh coordinates; orthogonal to the rotation axis.
+            Only direction matters (need not be a unit vector). Required for unsteady BET Line.
         blade_line_chord: LengthType.NonNegative
             Dimensional chord used in unsteady BET simulation. Defaults to ``0 * u.m``.
 
@@ -1116,8 +1118,8 @@ class BETDisk(MultiConstructorBaseModel):
         angle_unit: AngleType
             Angle unit used for AngleType BETDisk parameters.
         initial_blade_direction: Axis, optional
-            Orientation of the first blade in BET model.
-            Must be specified for unsteady BET simulation.
+            Direction of the first blade in global mesh coordinates; orthogonal to the rotation axis.
+            Only direction matters (need not be a unit vector). Required for unsteady BET Line.
         blade_line_chord: LengthType.NonNegative
             Dimensional chord used in unsteady BET simulation. Defaults to ``0 * u.m``.
 
@@ -1200,8 +1202,8 @@ class BETDisk(MultiConstructorBaseModel):
         number_of_blades: Int
             Number of blades to model.
         initial_blade_direction: Axis, optional
-            Orientation of the first blade in BET model.
-            Must be specified for unsteady BET simulation.
+            Direction of the first blade in global mesh coordinates; orthogonal to the rotation axis.
+            Only direction matters (need not be a unit vector). Required for unsteady BET Line.
         blade_line_chord: LengthType.NonNegative
             Dimensional chord used in unsteady BET simulation. Defaults to ``0 * u.m``.
 
@@ -1286,8 +1288,8 @@ class BETDisk(MultiConstructorBaseModel):
         angle_unit: AngleType
             Angle unit used for AngleType BETDisk parameters.
         initial_blade_direction: Axis, optional
-            Orientation of the first blade in BET model.
-            Must be specified for unsteady BET simulation.
+            Direction of the first blade in global mesh coordinates; orthogonal to the rotation axis.
+            Only direction matters (need not be a unit vector). Required for unsteady BET Line.
         blade_line_chord: LengthType.NonNegative
             Dimensional chord used in unsteady BET simulation. Defaults to ``0 * u.m``.
 
