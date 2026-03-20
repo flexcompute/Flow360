@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "flow360"
-version = "v25.9.3b1"
+version = "v25.10.0b1"
 description = "Flow360 Python Client"
 authors = ["Flexcompute <support@flexcompute.com>"]
 
