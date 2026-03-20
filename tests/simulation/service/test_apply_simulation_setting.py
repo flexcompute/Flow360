@@ -104,6 +104,84 @@ def _create_box_entity(name, center=None):
     }
 
 
+class TestMergeEntityInfoIntoSimulation:
+    """Tests for merge_entity_info_into_simulation (shared core function)."""
+
+    def test_default_json_degrades_to_simple_overwrite(self):
+        """When simulation_dict has no stored_entities (default JSON), the merge
+        should produce the same result as a simple entity_info overwrite."""
+        # Default simulation dict with no models/stored_entities
+        simulation_dict = _create_base_simulation_dict()
+
+        # New entity_info from geometry (different surfaces)
+        new_surface = _create_surface_entity("wing_from_geometry", "geo_wing_id")
+        new_entity_info = {
+            "draft_entities": [],
+            "ghost_entities": [],
+            "type_name": "VolumeMeshEntityInfo",
+            "zones": [],
+            "boundaries": [new_surface],
+        }
+
+        result_dict, warnings = services.merge_entity_info_into_simulation(
+            simulation_dict=copy.deepcopy(simulation_dict),
+            new_entity_info=copy.deepcopy(new_entity_info),
+        )
+
+        # No warnings expected (no stored_entities to match)
+        assert warnings == []
+
+        # entity_info should be replaced with new one
+        result_entity_info = result_dict["private_attribute_asset_cache"]["project_entity_info"]
+        assert result_entity_info["boundaries"][0]["name"] == "wing_from_geometry"
+        assert result_entity_info["boundaries"][0]["private_attribute_id"] == "geo_wing_id"
+
+    def test_user_setting_json_replaces_stored_entities(self):
+        """When simulation_dict has stored_entities (user setting JSON), they should
+        be matched and replaced using the new entity_info."""
+        # User setting JSON with a model referencing "wing"
+        source_surface = _create_surface_entity("wing", "old_wing_id")
+        simulation_dict = _create_base_simulation_dict(surfaces=[source_surface])
+        simulation_dict["models"] = [
+            {
+                "type": "Wall",
+                "entities": {"stored_entities": [_create_surface_entity("wing", "old_wing_id")]},
+                "use_wall_function": False,
+            }
+        ]
+        simulation_dict["private_attribute_asset_cache"]["project_entity_info"][
+            "draft_entities"
+        ] = [_create_box_entity("my_box")]
+
+        # New entity_info from target geometry
+        new_surface = _create_surface_entity("wing", "new_wing_id")
+        new_entity_info = {
+            "draft_entities": [],
+            "ghost_entities": [],
+            "type_name": "VolumeMeshEntityInfo",
+            "zones": [],
+            "boundaries": [new_surface],
+        }
+
+        result_dict, warnings = services.merge_entity_info_into_simulation(
+            simulation_dict=copy.deepcopy(simulation_dict),
+            new_entity_info=copy.deepcopy(new_entity_info),
+        )
+
+        # stored_entities should reference new geometry's wing
+        stored = result_dict["models"][0]["entities"]["stored_entities"]
+        assert stored[0]["private_attribute_id"] == "new_wing_id"
+
+        # draft_entities should be preserved from source
+        draft = result_dict["private_attribute_asset_cache"]["project_entity_info"][
+            "draft_entities"
+        ]
+        assert len(draft) == 1
+        assert draft[0]["name"] == "my_box"
+
+        assert warnings == []
+
+
 class TestApplySimulationSettingBasic:
     """Basic tests for apply_simulation_setting_to_entity_info."""
 

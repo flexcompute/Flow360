@@ -22,11 +22,15 @@ from pydantic_core import ErrorDetails
 
 # Required for correct global scope initialization
 from flow360.component.simulation.blueprint.core.dependency_graph import DependencyGraph
-from flow360.component.simulation.entity_info import GeometryEntityInfo
+from flow360.component.simulation.entity_info import (
+    GeometryEntityInfo,
+)
 from flow360.component.simulation.entity_info import (
     merge_geometry_entity_info as merge_geometry_entity_info_obj,
 )
-from flow360.component.simulation.entity_info import parse_entity_info_model
+from flow360.component.simulation.entity_info import (
+    parse_entity_info_model,
+)
 from flow360.component.simulation.exposed_units import supported_units_by_front_end
 from flow360.component.simulation.framework.entity_materializer import (
     materialize_entities_and_selectors_in_place,
@@ -1428,6 +1432,85 @@ def _replace_entities_by_type_and_name(
     return template_dict, warnings
 
 
+def merge_entity_info_into_simulation(
+    simulation_dict: dict,
+    new_entity_info: dict,
+) -> Tuple[dict, List[Dict[str, Any]]]:
+    """
+    Merge new entity_info into an existing simulation dict, preserving settings.
+
+    Preprocesses simulation_dict with sanitize/update, then performs a smart merge
+    of entity_info and replaces stored_entities throughout the dict. Does NOT run
+    validation — the caller's downstream process is responsible for that.
+
+    Merge/migration policy::
+
+    | Field                  | Source (setting JSON) | Target (new geometry) | Strategy                              |
+    |------------------------|-----------------------|-----------------------|---------------------------------------|
+    | models / settings      | kept                  |                       | Preserved from source                 |
+    | stored_entities        | matched & replaced    | provides registry     | Match by (type, name); remove if miss |
+    | selectors              | kept                  |                       | Preserved from source (pattern-based) |
+    | draft_entities         | kept                  |                       | Preserved from source (user-defined)  |
+    | persistent entities    |                       | used                  | From target geometry                  |
+    | ghost_entities         |                       | used                  | From target geometry                  |
+    | grouping_tags          | preferred             | fallback              | Source's tag if exists in target attrs|
+    | used_selectors (cache) | kept                  |                       | Preserved from source                 |
+
+    Parameters
+    ----------
+    simulation_dict : dict
+        The simulation.json dict containing settings (source). Modified in place.
+    new_entity_info : dict
+        The entity_info dict from the new/target geometry.
+
+    Returns
+    -------
+    Tuple[dict, List[Dict[str, Any]]]
+        - merged simulation dict
+        - warnings (unmatched entities etc.)
+    """
+    # pylint:disable=protected-access
+    # Preprocess simulation dict
+    simulation_dict = SimulationParams._sanitize_params_dict(simulation_dict)
+    simulation_dict, _ = SimulationParams._update_param_dict(simulation_dict)
+
+    source_entity_info = simulation_dict.get("private_attribute_asset_cache", {}).get(
+        "project_entity_info", {}
+    )
+
+    # Merge entity_info: use target's persistent/ghost entities, preserve source's draft entities
+    merged_entity_info = copy.deepcopy(new_entity_info)
+    merged_entity_info["draft_entities"] = source_entity_info.get("draft_entities", [])
+
+    # Inherit grouping tags from source (only for GeometryEntityInfo)
+    if new_entity_info.get("type_name") == "GeometryEntityInfo":
+        tag_to_attr_names = {
+            "face_group_tag": "face_attribute_names",
+            "body_group_tag": "body_attribute_names",
+            "edge_group_tag": "edge_attribute_names",
+        }
+        for tag_key, attr_names_key in tag_to_attr_names.items():
+            source_tag = source_entity_info.get(tag_key)
+            if source_tag is not None:
+                # Only use source's tag if it exists in target's attribute_names
+                # Otherwise keep target's tag to avoid empty registry
+                target_attr_names = new_entity_info.get(attr_names_key, [])
+                if source_tag in target_attr_names:
+                    merged_entity_info[tag_key] = source_tag
+
+    # Build registry and replace stored_entities
+    merged_entity_info_obj = parse_entity_info_model(merged_entity_info)
+    target_registry = EntityRegistry.from_entity_info(merged_entity_info_obj)
+
+    simulation_dict["private_attribute_asset_cache"]["project_entity_info"] = merged_entity_info
+
+    simulation_dict, entity_warnings = _replace_entities_by_type_and_name(
+        simulation_dict, target_registry
+    )
+
+    return simulation_dict, entity_warnings
+
+
 def apply_simulation_setting_to_entity_info(  # pylint:disable=too-many-locals
     simulation_setting_dict: dict,
     entity_info_dict: dict,
@@ -1470,60 +1553,19 @@ def apply_simulation_setting_to_entity_info(  # pylint:disable=too-many-locals
     are inherited from the source to ensure consistent entity selection.
     """
     # pylint:disable=protected-access
-    # Step 1: Preprocess both input dicts
-    simulation_setting_dict = SimulationParams._sanitize_params_dict(simulation_setting_dict)
-    simulation_setting_dict, _ = SimulationParams._update_param_dict(simulation_setting_dict)
+    # Preprocess entity_info_dict (simulation_setting_dict is preprocessed inside merge_entity_info_into_simulation)
     entity_info_dict = SimulationParams._sanitize_params_dict(entity_info_dict)
     entity_info_dict, _ = SimulationParams._update_param_dict(entity_info_dict)
 
-    # Step 2: Extract entity_info from both dicts
     target_entity_info_data = entity_info_dict.get("private_attribute_asset_cache", {}).get(
         "project_entity_info", {}
     )
-    source_entity_info = simulation_setting_dict.get("private_attribute_asset_cache", {}).get(
-        "project_entity_info", {}
+
+    simulation_setting_dict, entity_warnings = merge_entity_info_into_simulation(
+        simulation_setting_dict, target_entity_info_data
     )
 
-    # Step 3: Merge entity_info (use target's persistent entities, preserve source's draft entities)
-    merged_entity_info = copy.deepcopy(target_entity_info_data)
-    # Preserve draft entities from source (user-defined, not tied to uploaded files)
-    # Ghost entities stay from target as they are associated with the geometry/mesh
-    merged_entity_info["draft_entities"] = source_entity_info.get("draft_entities", [])
-    # Preserve grouping tags from source (only for GeometryEntityInfo)
-    # This ensures the registry is built with the correct grouping selection
-    # Only copy grouping tags if target is also GeometryEntityInfo to avoid invalid keys
-    if target_entity_info_data.get("type_name") == "GeometryEntityInfo":
-        # Map each tag to its corresponding attribute_names field
-        tag_to_attr_names = {
-            "face_group_tag": "face_attribute_names",
-            "body_group_tag": "body_attribute_names",
-            "edge_group_tag": "edge_attribute_names",
-        }
-        for tag_key, attr_names_key in tag_to_attr_names.items():
-            source_tag = source_entity_info.get(tag_key)
-            if source_tag is not None:
-                # Only use source's tag if it exists in target's attribute_names
-                # Otherwise keep target's tag to avoid empty registry
-                target_attr_names = target_entity_info_data.get(attr_names_key, [])
-                if source_tag in target_attr_names:
-                    merged_entity_info[tag_key] = source_tag
-                # else: keep target's original tag (already in merged_entity_info from deepcopy)
-
-    # Step 4: Build registry from merged entity_info (with source's grouping tags)
-    merged_entity_info_obj = parse_entity_info_model(merged_entity_info)
-    target_registry = EntityRegistry.from_entity_info(merged_entity_info_obj)
-
-    # Update simulation_setting_dict with merged entity_info
-    simulation_setting_dict["private_attribute_asset_cache"][
-        "project_entity_info"
-    ] = merged_entity_info
-
-    # Step 5: Replace entities in stored_entities
-    simulation_setting_dict, entity_warnings = _replace_entities_by_type_and_name(
-        simulation_setting_dict, target_registry
-    )
-
-    # Step 6: Validate and return results
+    # Validate merged result
     root_item_type = _parse_root_item_type_from_simulation_json(
         param_as_dict=simulation_setting_dict
     )
