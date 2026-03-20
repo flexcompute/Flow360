@@ -2075,6 +2075,14 @@ class Project(pd.BaseModel):
                 raise ValueError("Submission terminated due to local validation error.")
             return None
 
+        active_draft = get_active_draft()
+        if active_draft is None and params.private_attribute_asset_cache.imported_surfaces:
+            raise Flow360ValueError(
+                "ImportedSurface feature requires an active DraftContext. "
+                "Please use `with project.create_draft(imported_surfaces=[...]):` "
+                "before calling run(). Or ensure that the submission call is inside the `with` block, not after it."
+            )
+
         source_item_type = self.metadata.root_item_type.value if fork_from is None else "Case"
         start_from = kwargs.get("start_from", None)
         job_tags = kwargs.get("job_tags", None)
@@ -2099,7 +2107,6 @@ class Project(pd.BaseModel):
 
         params.pre_submit_summary()
 
-        active_draft = get_active_draft()
         draft.activate_dependencies(active_draft)
         draft.update_simulation_params(params)
 
