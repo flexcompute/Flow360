@@ -12,6 +12,7 @@ from flow360.component.simulation.draft_context.coordinate_system_manager import
     CoordinateSystemStatus,
 )
 from flow360.component.simulation.entity_operation import CoordinateSystem
+from flow360.component.simulation.primitives import Edge, ImportedSurface
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.exceptions import Flow360RuntimeError
 
@@ -464,3 +465,38 @@ def test_coordinate_system_status_round_trip_through_asset_cache(mock_geometry, 
         )
         assert restored_assignment is not None
         assert restored_assignment.name == "child"
+
+
+def test_assign_entity_without_id_raises(mock_geometry):
+    """Assigning a coordinate system to an entity with private_attribute_id=None should raise."""
+    with create_draft(new_run_from=mock_geometry) as draft:
+        cs = draft.coordinate_systems.add(coordinate_system=CoordinateSystem(name="root"))
+        entity_without_id = Edge(name="orphan_edge")
+        assert entity_without_id.private_attribute_id is None
+
+        with pytest.raises(Flow360RuntimeError, match="is not supported for coordinate system"):
+            draft.coordinate_systems.assign(entities=entity_without_id, coordinate_system=cs)
+
+
+def test_imported_surface_has_deterministic_id():
+    """ImportedSurface should auto-populate a deterministic private_attribute_id from name."""
+    with u.SI_unit_system:
+        surface = ImportedSurface(name="normal", file_name="rectangle_normal.cgns")
+    assert surface.private_attribute_id == "normal_defaultBody"
+
+
+def test_imported_surface_same_name_same_id():
+    """Two ImportedSurface instances with the same name should produce the same id."""
+    with u.SI_unit_system:
+        surface_a = ImportedSurface(name="wing", surface_mesh_id="sm-123")
+        surface_b = ImportedSurface(name="wing", surface_mesh_id="sm-123")
+    assert surface_a.private_attribute_id == surface_b.private_attribute_id
+
+
+def test_imported_surface_explicit_id_preserved():
+    """An explicitly provided private_attribute_id should not be overwritten."""
+    with u.SI_unit_system:
+        surface = ImportedSurface(
+            name="surface1", file_name="surface1.cgns", private_attribute_id="custom_id"
+        )
+    assert surface.private_attribute_id == "custom_id"

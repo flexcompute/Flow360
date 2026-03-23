@@ -842,6 +842,19 @@ class ImportedSurface(EntityBase):
     file_name: Optional[str] = None
     surface_mesh_id: Optional[str] = None
 
+    @pd.model_validator(mode="after")
+    def _populate_id_from_name(self) -> "ImportedSurface":
+        """Ensure a deterministic private_attribute_id exists.
+
+        CoordinateSystemManager and MirrorManager use private_attribute_id as
+        a dict key for entity tracking.  A deterministic id derived from name
+        guarantees the same ImportedSurface always resolves to the same id,
+        even when reconstructed from cloud metadata across sessions.
+        """
+        if self.private_attribute_id is None:
+            object.__setattr__(self, "private_attribute_id", f"{self.name}_defaultBody")
+        return self
+
 
 class GhostSurface(_SurfaceEntityBase):
     """

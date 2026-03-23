@@ -858,8 +858,10 @@ def context_validator(context: Literal["SurfaceMesh", "VolumeMesh", "Case"]):
         @wraps(func)
         def wrapper(self: Any, *args, **kwargs):
             current_levels = get_validation_levels()
-            # Run the validator only if the current levels matches the specified context or is ALL
-            if current_levels is None or any(lvl in (context, ALL) for lvl in current_levels):
+            # Run the validator only if the current levels matches the specified context or is ALL.
+            # When current_levels is None (no ValidationContext), skip context-aware validation
+            # — consistent with validate_conditionally_required_field and ConditionalField behavior.
+            if current_levels is not None and any(lvl in (context, ALL) for lvl in current_levels):
                 return func(self, *args, **kwargs)
             return self
 

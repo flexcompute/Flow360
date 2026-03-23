@@ -271,14 +271,14 @@ def _intersect_validation_levels(requested_levels, available_levels):
             if requested_levels in available_levels:
                 validation_levels_to_use = [requested_levels]
             else:
-                validation_levels_to_use = None
+                validation_levels_to_use = []
         else:
             assert isinstance(requested_levels, list)
             validation_levels_to_use = [
                 item for item in requested_levels if item in available_levels
             ]
         return validation_levels_to_use
-    return None
+    return []
 
 
 class ValidationCalledBy(Enum):

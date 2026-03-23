@@ -1366,13 +1366,16 @@ def test_duplicate_entities_in_models():
 
 
 def test_valid_reference_velocity():
+    mock_context = ValidationContext(
+        levels=[CASE], info=ParamsValidationInfo(param_as_dict={}, referenced_expressions=[])
+    )
     with pytest.raises(
         ValueError,
         match=re.escape(
             "Reference velocity magnitude/Mach must be provided when freestream velocity magnitude/Mach is 0."
         ),
     ):
-        with SI_unit_system:
+        with SI_unit_system, mock_context:
             SimulationParams(operating_condition=AerospaceCondition(velocity_magnitude=0))
 
 
