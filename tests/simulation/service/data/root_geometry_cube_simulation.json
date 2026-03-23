@@ -1150,11 +1150,5 @@
     "unit_system": {
         "name": "SI"
     },
-<<<<<<< HEAD
     "user_defined_fields": []
 }
-=======
-    "user_defined_fields": [],
-    "version": "25.8.8"
-}
->>>>>>> 50092b93 (fix(TotalPressure): expression semantics from ratio to Flow360 nondim pressure (#1921))

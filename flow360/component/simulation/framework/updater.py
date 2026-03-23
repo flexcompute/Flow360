@@ -636,7 +636,6 @@ def _to_25_8_4(params_as_dict):
     return params_as_dict
 
 
-<<<<<<< HEAD
 def _remove_non_manifold_faces_key(params_as_dict):
     """Remove deprecated meshing defaults key ``remove_non_manifold_faces``."""
     meshing = params_as_dict.get("meshing")
@@ -790,7 +789,6 @@ def _to_25_9_3(params_as_dict):
     return params_as_dict
 
 
-=======
 def _convert_total_pressure_expression_from_ratio_to_nondim(params_as_dict):
     """Convert TotalPressure string expressions from pressure ratio (P/P∞) to
     Flow360 nondimensional pressure (P/(ρ∞a∞²)).
@@ -820,11 +818,10 @@ def _convert_total_pressure_expression_from_ratio_to_nondim(params_as_dict):
     return params_as_dict
 
 
-def _to_25_8_8(params_as_dict):
+def _to_25_9_5(params_as_dict):
     return _convert_total_pressure_expression_from_ratio_to_nondim(params_as_dict)
 
 
->>>>>>> 50092b93 (fix(TotalPressure): expression semantics from ratio to Flow360 nondim pressure (#1921))
 VERSION_MILESTONES = [
     (Flow360Version("24.11.1"), _to_24_11_1),
     (Flow360Version("24.11.7"), _to_24_11_7),
@@ -844,14 +841,11 @@ VERSION_MILESTONES = [
     (Flow360Version("25.8.1"), _to_25_8_1),
     (Flow360Version("25.8.3"), _to_25_8_3),
     (Flow360Version("25.8.4"), _to_25_8_4),
-<<<<<<< HEAD
     (Flow360Version("25.9.0"), _to_25_9_0),
     (Flow360Version("25.9.1"), _to_25_9_1),
     (Flow360Version("25.9.2"), _to_25_9_2),
     (Flow360Version("25.9.3"), _to_25_9_3),
-=======
-    (Flow360Version("25.8.8"), _to_25_8_8),
->>>>>>> 50092b93 (fix(TotalPressure): expression semantics from ratio to Flow360 nondim pressure (#1921))
+    (Flow360Version("25.9.5"), _to_25_9_5),
 ]  # A list of the Python API version tuple with their corresponding updaters.
 
 
