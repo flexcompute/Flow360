@@ -7,10 +7,7 @@ import pytest
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.outputs.output_entities import Point
-from flow360.component.simulation.outputs.outputs import (
-    MovingStatistic,
-    ProbeOutput,
-)
+from flow360.component.simulation.outputs.outputs import MovingStatistic, ProbeOutput
 from flow360.component.simulation.run_control.stopping_criterion import (
     StoppingCriterion,
 )
