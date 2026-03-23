@@ -4,6 +4,11 @@
             "totalPressureRatio": 0.9,
             "totalTemperatureRatio": 1.0411244143675171,
             "type": "SubsonicInflow",
+<<<<<<< HEAD
+=======
+            "totalTemperatureRatio": "1 + x",
+            "totalPressureRatio": "((1 + sin(y))/1.4) * 1.4",
+>>>>>>> 50092b93 (fix(TotalPressure): expression semantics from ratio to Flow360 nondim pressure (#1921))
             "velocityDirection": [
                 1.0,
                 0.0,

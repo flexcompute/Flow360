@@ -1,6 +1,10 @@
 [tool.poetry]
 name = "flow360"
+<<<<<<< HEAD
 version = "v25.9.4"
+=======
+version = "v25.8.8"
+>>>>>>> 50092b93 (fix(TotalPressure): expression semantics from ratio to Flow360 nondim pressure (#1921))
 description = "Flow360 Python Client"
 authors = ["Flexcompute <support@flexcompute.com>"]
 
