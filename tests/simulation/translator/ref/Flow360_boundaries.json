@@ -13,7 +13,7 @@
         "boundary_name_D": {
             "type": "SubsonicInflow",
             "totalTemperatureRatio": "1 + x",
-            "totalPressureRatio": "1 + sin(y)",
+            "totalPressureRatio": "((1 + sin(y))/1.4) * 1.4",
             "velocityDirection": [
                 0.0,
                 1.0,

@@ -1537,7 +1537,13 @@ def boundary_spec_translator(model: SurfaceModelTypes, op_acoustic_to_static_pre
         if isinstance(model.spec, TotalPressure):
             boundary["type"] = "SubsonicInflow"
             total_pressure_ratio = model_dict["spec"]["value"]
-            if not isinstance(model.spec.value, str):
+            if isinstance(model.spec.value, str):
+                # Expression specifies total pressure in Flow360 nondim units (P/(ρa²)),
+                # convert to ratio (P/P∞) by multiplying by ρa²/P∞
+                total_pressure_ratio = (
+                    f"({total_pressure_ratio}) * {op_acoustic_to_static_pressure_ratio}"
+                )
+            else:
                 total_pressure_ratio *= op_acoustic_to_static_pressure_ratio
             boundary["totalPressureRatio"] = total_pressure_ratio
         if isinstance(model.spec, Supersonic):
