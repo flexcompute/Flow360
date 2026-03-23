@@ -215,6 +215,14 @@ VolumeFieldNames = Literal[
 
 SliceFieldNames = VolumeFieldNames
 
+# BET Metrics
+# BET Metrics per Disk
+VolumeProbeFieldNames = Literal[
+    CommonFieldNames,
+    "betMetrics",
+    "betMetricsPerDisk",
+]
+
 # Pressure
 # Density
 # Mach number
