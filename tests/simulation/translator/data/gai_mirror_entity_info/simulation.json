@@ -1,11 +1,4 @@
 {
-<<<<<<< HEAD
-=======
-    "version": "25.8.8",
-    "unit_system": {
-        "name": "SI"
-    },
->>>>>>> 50092b93 (fix(TotalPressure): expression semantics from ratio to Flow360 nondim pressure (#1921))
     "private_attribute_asset_cache": {
         "project_entity_info": {
             "body_attribute_names": [

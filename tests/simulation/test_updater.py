@@ -1588,7 +1588,6 @@ def test_updater_to_25_8_4_write_single_file_false():
     ), "write_single_file should remain False"
 
 
-<<<<<<< HEAD
 def test_updater_to_25_9_0_remove_deprecated_remove_non_manifold_faces():
     """Test 25.9.0 updater step removes deprecated meshing.defaults.remove_non_manifold_faces key."""
 
@@ -1701,27 +1700,12 @@ def test_updater_to_25_9_1_via_updater():
                     "linear_solver": {
                         "max_iterations": 25,
                     },
-=======
-def test_updater_to_25_8_8_total_pressure_expression():
-    """String expressions are converted from ratio (P/P∞) to Flow360 nondim (P/(ρa²))."""
-    params_as_dict = {
-        "version": "25.8.7",
-        "unit_system": {"name": "SI"},
-        "operating_condition": {"type_name": "AerospaceCondition"},
-        "models": [
-            {
-                "type": "Inflow",
-                "spec": {
-                    "type_name": "TotalPressure",
-                    "value": "1.0 + 0.5 * sin(y)",
->>>>>>> 50092b93 (fix(TotalPressure): expression semantics from ratio to Flow360 nondim pressure (#1921))
                 },
             },
         ],
     }
 
     params_new = updater(
-<<<<<<< HEAD
         version_from="25.9.0",
         version_to="25.9.1",
         params_as_dict=params_as_dict,
@@ -2232,7 +2216,26 @@ def test_updater_to_25_9_3_rename_wall_function_type_name():
     assert models[2]["use_wall_function"] is None
     assert "use_wall_function" not in models[3]
     assert models[4].get("type") == "Freestream"
-=======
+
+
+def test_updater_to_25_8_8_total_pressure_expression():
+    """String expressions are converted from ratio (P/P∞) to Flow360 nondim (P/(ρa²))."""
+    params_as_dict = {
+        "version": "25.8.7",
+        "unit_system": {"name": "SI"},
+        "operating_condition": {"type_name": "AerospaceCondition"},
+        "models": [
+            {
+                "type": "Inflow",
+                "spec": {
+                    "type_name": "TotalPressure",
+                    "value": "1.0 + 0.5 * sin(y)",
+                },
+            },
+        ],
+    }
+
+    params_new = updater(
         version_from="25.8.7",
         version_to="25.8.8",
         params_as_dict=params_as_dict,
@@ -2292,4 +2295,29 @@ def test_updater_to_25_8_8_liquid_skipped():
     )
 
     assert params_new["models"][0]["spec"]["value"] == "1.0 + 0.5 * sin(y)"
->>>>>>> 50092b93 (fix(TotalPressure): expression semantics from ratio to Flow360 nondim pressure (#1921))
+
+
+def test_updater_total_pressure_no_double_conversion():
+    """Upgrading from 25.8.7 to 25.10.0 should only convert once (via 25.8.8), not again at 25.10.0."""
+    params_as_dict = {
+        "version": "25.8.7",
+        "unit_system": {"name": "SI"},
+        "operating_condition": {"type_name": "AerospaceCondition"},
+        "models": [
+            {
+                "type": "Inflow",
+                "spec": {
+                    "type_name": "TotalPressure",
+                    "value": "1.0 + 0.5 * sin(y)",
+                },
+            },
+        ],
+    }
+
+    params_new = updater(
+        version_from="25.8.7",
+        version_to="25.10.0",
+        params_as_dict=params_as_dict,
+    )
+
+    assert params_new["models"][0]["spec"]["value"] == "(1.0 + 0.5 * sin(y)) / 1.4"
