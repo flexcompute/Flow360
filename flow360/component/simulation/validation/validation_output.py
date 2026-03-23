@@ -15,7 +15,7 @@ from flow360.component.simulation.outputs.outputs import (
     TimeAverageForceDistributionOutput,
 )
 from flow360.component.simulation.time_stepping.time_stepping import Steady
-from flow360.component.simulation.user_code.core.types import ExpressionBase
+from flow360.component.simulation.user_code.core.types import Expression
 from flow360.component.simulation.validation.validation_utils import (
     customize_model_validator_error,
 )
@@ -243,7 +243,7 @@ def _check_aero_acoustics_observer_time_step_size(params):
     for output_index, output in enumerate(params.outputs):
         if isinstance(output, AeroAcousticOutput):
             time_step_size = params.time_stepping.step_size
-            if isinstance(params.time_stepping.step_size, ExpressionBase):
+            if isinstance(params.time_stepping.step_size, Expression):
                 time_step_size = params.time_stepping.step_size.evaluate(
                     raise_on_non_evaluable=True, force_evaluate=True
                 )

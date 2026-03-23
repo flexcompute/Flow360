@@ -61,7 +61,7 @@ from flow360.component.simulation.primitives import (
     WindTunnelGhostSurface,
 )
 from flow360.component.simulation.user_code.core.types import (
-    ExpressionBase,
+    Expression,
     UserVariable,
     solver_variable_to_user_variable,
 )
@@ -279,7 +279,7 @@ class _OutputBase(Flow360BaseModel):
             return value
         for output_item in value.items:
             if not isinstance(output_item, UserVariable) or not isinstance(
-                output_item.value, ExpressionBase
+                output_item.value, Expression
             ):
                 continue
             surface_solver_variable_names = output_item.value.solver_variable_names(

@@ -1203,7 +1203,9 @@ def test_param_with_user_variables():
     assert not errors, print(">>>", errors)
 
     translated = get_solver_json(params_validated, mesh_unit=1 * u.m)
-    units = iso_field_random_units.value.get_output_units(input_params=params_validated)
+    units = iso_field_random_units.value.get_output_units(
+        unit_system_name=params_validated.unit_system.name
+    )
     assert units == u.kg * u.m / u.s
     assert (
         translated["isoSurfaceOutput"]["isoSurfaces"]["iso_field_random_units"][

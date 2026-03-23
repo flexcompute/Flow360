@@ -18,9 +18,15 @@ from typing import (
 )
 
 import pydantic as pd
+from flow360_schema.framework.expression.registry import (  # pylint: disable=unused-import
+    clear_context,
+)
+from flow360_schema.framework.expression.variable import (
+    get_referenced_expressions_and_user_variables,
+    restore_variable_space,
+)
 
 # Required for correct global scope initialization
-from flow360_schema.framework.expression.dependency_graph import DependencyGraph
 from flow360_schema.framework.physical_dimensions import Angle, Length
 from flow360_schema.framework.validation.context import DeserializationContext
 from pydantic import TypeAdapter
@@ -82,10 +88,6 @@ from flow360.component.simulation.unit_system import (
     unit_system_manager,
 )
 from flow360.component.simulation.units import validate_length
-from flow360.component.simulation.user_code.core.types import (
-    UserVariable,
-    get_referenced_expressions_and_user_variables,
-)
 from flow360.component.simulation.utils import model_attribute_unlock
 from flow360.component.simulation.validation.validation_context import (
     ALL,
@@ -355,7 +357,7 @@ def _insert_forward_compatibility_notice(
 
 
 def initialize_variable_space(param_as_dict: dict, use_clear_context: bool = False) -> dict:
-    """Load all user variables from private attributes when a simulation params object is initialized"""
+    """Load all user variables from private attributes when a simulation params object is initialized."""
     if "private_attribute_asset_cache" not in param_as_dict.keys():
         return param_as_dict
     asset_cache: dict = param_as_dict["private_attribute_asset_cache"]
@@ -364,67 +366,36 @@ def initialize_variable_space(param_as_dict: dict, use_clear_context: bool = Fal
     if not isinstance(asset_cache["variable_context"], Iterable):
         return param_as_dict
 
-    if use_clear_context:
-        clear_context()
+    variable_context = asset_cache["variable_context"]
 
-    # ==== Build dependency graph and sort variables ====
-    dependency_graph = DependencyGraph()
-    # Pad the project variables into proper schema
-    variable_list = []
-    for var in asset_cache["variable_context"]:
-        if "type_name" in var["value"] and var["value"]["type_name"] == "expression":
-            # Expression type
-            variable_list.append({"name": var["name"], "value": var["value"]["expression"]})
-        else:
-            # Number type (#units ignored since it does not affect the dependency graph)
-            variable_list.append({"name": var["name"], "value": str(var["value"]["value"])})
-    dependency_graph.load_from_list(variable_list)
-    sorted_variables = dependency_graph.topology_sort()
-
-    pre_sort_name_to_index = {
-        var["name"]: idx for idx, var in enumerate(asset_cache["variable_context"])
-    }
-
-    for variable_name in sorted_variables:
-        variable_dict = next(
-            (var for var in asset_cache["variable_context"] if var["name"] == variable_name),
-            None,
-        )
-        if variable_dict is None:
-            continue
-
-        value_or_expression = dict(variable_dict["value"].items())
-
-        try:
-            UserVariable(
-                name=variable_dict["name"],
-                value=value_or_expression,
-                description=variable_dict.get("description", None),
-                metadata=variable_dict.get("metadata", None),
+    try:
+        restore_variable_space(variable_context, clear_first=use_clear_context)
+    except pd.ValidationError as e:
+        # TOAI: This string expression match to derive the error type is too weak
+        # and hacky. Can we refactor restore_variable_space to raise a specific
+        # error type for explicit matching? Do we have to use ValidationError?
+        # Is it for pydantic integration?
+        if "Redeclaring user variable" in str(e):
+            msg = str(e)
+            var_name = msg.split("'")[1] if "'" in msg else "unknown"
+            raise ValueError(  # pylint:disable=raise-missing-from
+                f"Loading user variable '{var_name}' from simulation.json which is "
+                "already defined in local context. Please change your local user variable definition."
             )
-        except pd.ValidationError as e:
-            # pylint:disable = raise-missing-from
-            if "Redeclaring user variable" in str(e):
-                raise ValueError(
-                    f"Loading user variable '{variable_dict['name']}' from simulation.json which is "
-                    "already defined in local context. Please change your local user variable definition."
-                )
-            error_detail: dict = e.errors()[0]
-            raise pd.ValidationError.from_exception_data(
-                "Invalid user variable/expression",
-                line_errors=[
-                    ErrorDetails(
-                        type=error_detail["type"],
-                        loc=(
-                            "private_attribute_asset_cache",
-                            "variable_context",
-                            pre_sort_name_to_index[variable_name],
-                        ),
-                        msg=error_detail.get("msg", "Unknown error"),
-                        ctx=error_detail.get("ctx", {}),
-                    ),
-                ],
-            )
+        # Re-wrap with private_attribute_asset_cache prefix in loc
+        error_detail: dict = e.errors()[0]
+        loc = error_detail.get("loc", ())
+        raise pd.ValidationError.from_exception_data(
+            "Invalid user variable/expression",
+            line_errors=[
+                ErrorDetails(
+                    type=error_detail["type"],
+                    loc=("private_attribute_asset_cache",) + tuple(loc),
+                    msg=error_detail.get("msg", "Unknown error"),
+                    ctx=error_detail.get("ctx", {}),
+                ),
+            ],
+        ) from e
 
     return param_as_dict
 
@@ -1138,24 +1109,6 @@ def update_simulation_json(*, params_as_dict: dict, target_python_api_version: s
         # Expected exceptions
         errors.append(str(e))
     return updated_params_as_dict, errors
-
-
-def clear_context():
-    """
-    Clear out `UserVariable` in the `context` and its dependency graph.
-    """
-
-    from flow360.component.simulation.user_code.core import (  # pylint: disable=import-outside-toplevel
-        context,
-    )
-
-    # pylint: disable=protected-access
-    for name in context.default_context._values.keys():
-        if "." not in name:
-            context.default_context._dependency_graph.remove_variable(name)
-    context.default_context._values = {
-        name: value for name, value in context.default_context._values.items() if "." in name
-    }
 
 
 def _serialize_unit_in_dict(data):

@@ -850,13 +850,17 @@ def test_udf_generator():
     vel_cross_vec = UserVariable(
         name="vel_cross_vec", value=math.cross(solution.velocity, [1, 2, 3] * u.cm)
     ).in_units(new_unit="CGS_unit_system")
-    assert vel_cross_vec.value.get_output_units(input_params=params) == u.cm**2 / u.s
+    # TOAI: Can you do a global search for get_output_units and see if we have replaced/fixed all calls?
+    assert (
+        vel_cross_vec.value.get_output_units(unit_system_name=params.unit_system.name)
+        == u.cm**2 / u.s
+    )
 
     # We disabled degC and degF on the interface and therefore the inferred units should be K or R.
     my_temp = UserVariable(name="my_temperature", value=solution.temperature).in_units(
         new_unit="Imperial_unit_system"
     )
-    assert my_temp.value.get_output_units(input_params=params) == u.R
+    assert my_temp.value.get_output_units(unit_system_name=params.unit_system.name) == u.R
 
     # Test __pow__ on SolverVariable:
     vel_sq = UserVariable(name="vel_sq", value=solution.velocity**2)

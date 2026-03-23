@@ -16,10 +16,7 @@ from flow360.component.simulation.primitives import (
     _SurfaceEntityBase,
     _VolumeEntityBase,
 )
-from flow360.component.simulation.user_code.core.types import (
-    ExpressionBase,
-    UserVariable,
-)
+from flow360.component.simulation.user_code.core.types import Expression, UserVariable
 
 
 def _validator_append_instance_name(func):
@@ -475,9 +472,7 @@ def validate_improper_surface_field_usage_for_imported_surface(
                     "when using imported surfaces."
                 )
         # Check UserVariable fields
-        elif isinstance(output_item, UserVariable) and isinstance(
-            output_item.value, ExpressionBase
-        ):
+        elif isinstance(output_item, UserVariable) and isinstance(output_item.value, Expression):
             surface_solver_variable_names = output_item.value.solver_variable_names(
                 recursive=True, variable_type="Surface"
             )

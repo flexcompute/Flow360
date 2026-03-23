@@ -18,7 +18,6 @@ from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import SI_unit_system
 from flow360.component.simulation.user_code.core.types import (
     Expression,
-    ExpressionBase,
     UserVariable,
     ValueOrExpression,
 )
@@ -426,7 +425,7 @@ def test_add_subtract_edge_cases():
 
     # Add
     result_add = math.add(vec1, vec2)
-    assert isinstance(result_add, ExpressionBase)
+    assert isinstance(result_add, Expression)
     assert str(result_add) == "[x_var + 5 * u.m, 30 * u.m, x_var + 5 * u.m + 3 * u.m]"
     evaluated_add = result_add.evaluate()
     assert isinstance(evaluated_add, list)
@@ -437,7 +436,7 @@ def test_add_subtract_edge_cases():
 
     # Subtract
     result_sub = math.subtract(vec1, vec2)
-    assert isinstance(result_sub, ExpressionBase)
+    assert isinstance(result_sub, Expression)
     assert str(result_sub) == "[x_var - 5 * u.m, 10 * u.m, x_var + 5 * u.m - 3 * u.m]"
     evaluated_sub = result_sub.evaluate()
     assert isinstance(evaluated_sub, list)
@@ -451,14 +450,14 @@ def test_add_subtract_edge_cases():
     num_vec = [1 * u.m / u.s, 2 * u.m / u.s, 3 * u.m / u.s]
 
     result_add_sol = math.add(sol_vec, num_vec)
-    assert isinstance(result_add_sol, ExpressionBase)
+    assert isinstance(result_add_sol, Expression)
     assert (
         str(result_add_sol)
         == "[solution.velocity[0] + 1 * u.m / u.s, solution.velocity[1] + 2 * u.m / u.s, solution.velocity[2] + 3 * u.m / u.s]"
     )
 
     result_sub_sol = math.subtract(sol_vec, num_vec)
-    assert isinstance(result_sub_sol, ExpressionBase)
+    assert isinstance(result_sub_sol, Expression)
     assert (
         str(result_sub_sol)
         == "[solution.velocity[0] - 1 * u.m / u.s, solution.velocity[1] - 2 * u.m / u.s, solution.velocity[2] - 3 * u.m / u.s]"
@@ -1735,33 +1734,33 @@ def test_min_max_edge_cases():
 
     # Scalar and UserVariable
     result = math.min(15, x)
-    assert isinstance(result, ExpressionBase)
+    assert isinstance(result, Expression)
     assert str(result) == "math.min(15, x)"
     assert result.evaluate() == 10
 
     result = math.max(x, 15)
-    assert isinstance(result, ExpressionBase)
+    assert isinstance(result, Expression)
     assert str(result) == "math.max(x, 15)"
     assert result.evaluate() == 15
 
     result = math.min(15 * u.m, y)
-    assert isinstance(result, ExpressionBase)
+    assert isinstance(result, Expression)
     assert str(result) == "math.min(15 * u.m, y)"
     assert result.evaluate() == 5 * u.m
 
     result = math.max(y, 15 * u.m)
-    assert isinstance(result, ExpressionBase)
+    assert isinstance(result, Expression)
     assert str(result) == "math.max(y, 15 * u.m)"
     assert result.evaluate() == 15 * u.m
 
     # Expression and scalar
     result = math.min(Expression(expression="x + 5"), 12)
-    assert isinstance(result, ExpressionBase)
+    assert isinstance(result, Expression)
     assert str(result) == "math.min(x + 5, 12)"
     assert result.evaluate() == 12
 
     result = math.max(Expression(expression="y * 2"), 8 * u.m)
-    assert isinstance(result, ExpressionBase)
+    assert isinstance(result, Expression)
     assert str(result) == "math.max(y * 2, 8 * u.m)"
     assert result.evaluate() == 10 * u.m
 

@@ -373,19 +373,15 @@ def param_with_steady_time_stepping_time_step_size():
     return save_user_variables(params).model_dump(mode="json", exclude_none=True)
 
 
-def param_with_rotation_zone_theta():
+def param_without_rotation_zone_theta():
+    """No Rotation model → control.theta should be disallowed."""
     reset_context()
     vm = volume_mesh()
-    vm["fluid"].axis = (0, 1, 0)
-    vm["fluid"].center = (1, 1, 2) * u.cm
     with SI_unit_system:
         params = SimulationParams(
             models=[
                 Fluid(turbulence_model_solver=SpalartAllmaras()),
                 Wall(name="wall", entities=vm["*"]),
-                Rotation(
-                    name="rotation", entities=vm["fluid"], spec=AngularVelocity(value=100 * u.rpm)
-                ),
             ],
             outputs=[VolumeOutput(name="output", output_fields=[control.theta])],
             private_attribute_asset_cache=asset_cache(),
@@ -393,19 +389,15 @@ def param_with_rotation_zone_theta():
     return save_user_variables(params).model_dump(mode="json", exclude_none=True)
 
 
-def param_with_rotation_zone_omega():
+def param_without_rotation_zone_omega():
+    """No Rotation model → control.omega should be disallowed."""
     reset_context()
     vm = volume_mesh()
-    vm["fluid"].axis = (0, 1, 0)
-    vm["fluid"].center = (1, 1, 2) * u.cm
     with SI_unit_system:
         params = SimulationParams(
             models=[
                 Fluid(turbulence_model_solver=SpalartAllmaras()),
                 Wall(name="wall", entities=vm["*"]),
-                Rotation(
-                    name="rotation", entities=vm["fluid"], spec=AngularVelocity(value=100 * u.rpm)
-                ),
             ],
             outputs=[VolumeOutput(name="output", output_fields=[control.omega])],
             private_attribute_asset_cache=asset_cache(),
@@ -413,19 +405,15 @@ def param_with_rotation_zone_omega():
     return save_user_variables(params).model_dump(mode="json", exclude_none=True)
 
 
-def param_with_rotation_zone_omega_dot():
+def param_without_rotation_zone_omega_dot():
+    """No Rotation model → control.omegaDot should be disallowed."""
     reset_context()
     vm = volume_mesh()
-    vm["fluid"].axis = (0, 1, 0)
-    vm["fluid"].center = (1, 1, 2) * u.cm
     with SI_unit_system:
         params = SimulationParams(
             models=[
                 Fluid(turbulence_model_solver=SpalartAllmaras()),
                 Wall(name="wall", entities=vm["*"]),
-                Rotation(
-                    name="rotation", entities=vm["fluid"], spec=AngularVelocity(value=100 * u.rpm)
-                ),
             ],
             outputs=[VolumeOutput(name="output", output_fields=[control.omegaDot])],
             private_attribute_asset_cache=asset_cache(),
@@ -477,15 +465,15 @@ def param_with_rotation_zone_omega_dot():
             "`control.timeStepSize` cannot be used because Unsteady time stepping is not used.",
         ),
         (
-            param_with_rotation_zone_theta(),
+            param_without_rotation_zone_theta(),
             "`control.theta` cannot be used because Rotation zone is not used.",
         ),
         (
-            param_with_rotation_zone_omega(),
+            param_without_rotation_zone_omega(),
             "`control.omega` cannot be used because Rotation zone is not used.",
         ),
         (
-            param_with_rotation_zone_omega_dot(),
+            param_without_rotation_zone_omega_dot(),
             "`control.omegaDot` cannot be used because Rotation zone is not used.",
         ),
     ],

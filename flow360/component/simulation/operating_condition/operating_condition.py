@@ -26,7 +26,7 @@ from flow360.component.simulation.operating_condition.atmosphere_model import (
     StandardAtmosphereModel,
 )
 from flow360.component.simulation.user_code.core.types import (
-    ExpressionBase,
+    Expression,
     ValueOrExpression,
 )
 from flow360.component.simulation.validation.validation_context import (
@@ -484,7 +484,7 @@ class AerospaceCondition(MultiConstructorBaseModel):
 
     @property
     def _evaluated_velocity_magnitude(self) -> Velocity.PositiveFloat64:
-        if isinstance(self.velocity_magnitude, ExpressionBase):
+        if isinstance(self.velocity_magnitude, Expression):
             return self.velocity_magnitude.evaluate(
                 raise_on_non_evaluable=True, force_evaluate=True
             )
@@ -589,7 +589,7 @@ class LiquidOperatingCondition(Flow360BaseModel):
 
     @property
     def _evaluated_velocity_magnitude(self) -> Velocity.PositiveFloat64:
-        if isinstance(self.velocity_magnitude, ExpressionBase):
+        if isinstance(self.velocity_magnitude, Expression):
             return self.velocity_magnitude.evaluate(
                 raise_on_non_evaluable=True, force_evaluate=True
             )

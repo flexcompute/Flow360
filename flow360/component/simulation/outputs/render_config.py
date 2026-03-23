@@ -13,7 +13,7 @@ import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.outputs.output_fields import CommonFieldNames
 from flow360.component.simulation.user_code.core.types import (
-    ExpressionBase,
+    Expression,
     UnytQuantity,
     UserVariable,
     ValueOrExpression,
@@ -556,7 +556,7 @@ class FieldMaterial(MaterialBase):
     @pd.field_validator("output_field", mode="before")
     @classmethod
     def _preprocess_expression_and_solver_variable(cls, value):
-        if isinstance(value, ExpressionBase):
+        if isinstance(value, Expression):
             raise ValueError(
                 f"Expression ({value}) cannot be directly used as output field, "
                 "please define a UserVariable first."
@@ -568,7 +568,7 @@ class FieldMaterial(MaterialBase):
     def check_runtime_expression(cls, v):
         """Ensure the output field is a runtime expression but not a constant value."""
         if isinstance(v, UserVariable):
-            if not isinstance(v.value, ExpressionBase):
+            if not isinstance(v.value, Expression):
                 raise ValueError(f"The output field ({v}) cannot be a constant value.")
             try:
                 result = v.value.evaluate(raise_on_non_evaluable=False, force_evaluate=True)

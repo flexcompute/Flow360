@@ -29,11 +29,7 @@ from flow360.component.simulation.primitives import (
 )
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.units import validate_length
-from flow360.component.simulation.user_code.core.types import (
-    Expression,
-    ExpressionBase,
-    UserVariable,
-)
+from flow360.component.simulation.user_code.core.types import Expression, UserVariable
 from flow360.component.simulation.utils import is_exact_instance
 from flow360.exceptions import Flow360TranslationError
 
@@ -299,7 +295,7 @@ def remove_units_in_dict(input_dict, skip_keys: list[str] = None):
 def get_units_from_field(field, input_params) -> u.Unit:
     """Get output units from a field, which can be either a UserVariable or a string."""
     if isinstance(field, UserVariable):
-        return field.value.get_output_units(input_params=input_params)
+        return field.value.get_output_units(unit_system_name=input_params.unit_system.name)
     return u.dimensionless  # pylint:disable=no-member
 
 
@@ -314,7 +310,7 @@ def translate_value_or_expression_object(
     obj: Union[Expression, u.unyt_quantity, u.unyt_array], input_params: SimulationParams
 ):
     """Translate for an ValueOrExpression object"""
-    if isinstance(obj, ExpressionBase):
+    if isinstance(obj, Expression):
         # Only allowing client-time evaluable expressions
         evaluated = obj.evaluate(raise_on_non_evaluable=True)
         converted = evaluated.in_base(unit_system=input_params.flow360_unit_system).v.item()
