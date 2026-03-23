@@ -827,7 +827,7 @@ def test_boundaries():
                     total_temperature="1 + x",
                     surfaces=Surface(name="boundary_name_D"),
                     spec=TotalPressure(
-                        value="(1 + sin(y))/1.4",
+                        value="1 + sin(y)",
                     ),
                     velocity_direction=(0, 1, 0),
                 ),
