@@ -1452,14 +1452,14 @@ files = [
 
 [[package]]
 name = "flow360-schema"
-version = "0.1.13+feat.expression.migration.f178504"
+version = "0.1.14+feat.expression.migration.ccda8d2"
 description = "Pure Pydantic schemas for Flow360 - Single Source of Truth"
 optional = false
 python-versions = ">=3.10,<4.0"
 groups = ["main"]
 files = [
-    {file = "flow360_schema-0.1.13+feat.expression.migration.f178504-py3-none-any.whl", hash = "sha256:d65029673ebcd87d85247f541ef25a71de9e45cfbb1d32cad7351c1e7785df2b"},
-    {file = "flow360_schema-0.1.13+feat.expression.migration.f178504.tar.gz", hash = "sha256:442148fc070d2ec2bf003eb0a6472003a07158b9d42afd315a4f25e17a73fd05"},
+    {file = "flow360_schema-0.1.14+feat.expression.migration.ccda8d2-py3-none-any.whl", hash = "sha256:2eab80dbcca2606761dbfcb4ca6d97f71d7c6801894f8a48276649dc2a4a0cfa"},
+    {file = "flow360_schema-0.1.14+feat.expression.migration.ccda8d2.tar.gz", hash = "sha256:7a73c704aca8a05b0487dd91c6c02a0346765d73de3bd25c2f50bba0a5c172b5"},
 ]
 
 [package.dependencies]
