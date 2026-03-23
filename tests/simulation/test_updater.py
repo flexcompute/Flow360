@@ -47,7 +47,7 @@ def test_version_consistency():
 def test_default_solver_version_matches_module_version():
     """For non-beta releases (vA.B.C), the default solver version must be 'release-A.B'."""
     version = Flow360Version(__version__)
-    if "beta" in __version__:
+    if re.search(r"b\d+$", __version__):
         pytest.skip("Beta version, skipping solver version check")
     expected_solver_version = f"release-{version.major}.{version.minor}"
     assert __solver_version__ == expected_solver_version, (
