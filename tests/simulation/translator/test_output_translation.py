@@ -2120,7 +2120,6 @@ def test_imported_surface_with_rotation_and_translation():
 
 def test_output_at_final_pseudo_step_only_translation():
     """Verify outputAtFinalPseudoStepOnly appears in translated monitor JSON when toggle is set."""
-    vel = UserVariable(name="vel_field", value=solution.velocity)
     with SI_unit_system:
         probe_with_toggle = ProbeOutput(
             name="probe_toggle",
@@ -2133,14 +2132,8 @@ def test_output_at_final_pseudo_step_only_translation():
             entities=[Point(name="pt2", location=[1, 1, 1] * u.m)],
             output_fields=["Cp"],
         )
-        integral_with_toggle = SurfaceIntegralOutput(
-            name="integral_toggle",
-            surfaces=[Surface(name="wall")],
-            output_fields=[vel],
-            output_at_final_pseudo_step_only=True,
-        )
         param = SimulationParams(
-            outputs=[probe_with_toggle, probe_without_toggle, integral_with_toggle],
+            outputs=[probe_with_toggle, probe_without_toggle],
         )
 
     param = param._preprocess(mesh_unit=1.0 * u.m, exclude=["models"])
@@ -2154,6 +2147,3 @@ def test_output_at_final_pseudo_step_only_translation():
 
     # Probe without toggle should NOT have the key
     assert "outputAtFinalPseudoStepOnly" not in monitors["probe_no_toggle"]
-
-    # SurfaceIntegral with toggle should have the key
-    assert monitors["integral_toggle"]["outputAtFinalPseudoStepOnly"] is True

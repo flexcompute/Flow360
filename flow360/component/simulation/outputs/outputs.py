@@ -839,12 +839,6 @@ class SurfaceIntegralOutput(_OutputBase):
     moving_statistic: Optional[MovingStatistic] = pd.Field(
         None, description="When specified, report moving statistics of the fields instead."
     )
-    output_at_final_pseudo_step_only: bool = pd.Field(
-        False,
-        description="When True, the result is only written at the final pseudo step "
-        "of each physical step (or once at the end for steady simulations), "
-        "suppressing intermediate pseudo-step writes.",
-    )
     output_type: Literal["SurfaceIntegralOutput"] = pd.Field("SurfaceIntegralOutput", frozen=True)
 
     @contextual_field_validator("entities", mode="after")
@@ -878,10 +872,6 @@ class SurfaceIntegralOutput(_OutputBase):
         )
         return self
 
-    @contextual_model_validator(mode="after")
-    def _validate_final_pseudo_step_only(self, param_info: ParamsValidationInfo):
-        return _validate_final_pseudo_step_only_with_moving_statistic(self, param_info)
-
 
 class ForceOutput(_OutputBase):
     """
@@ -913,12 +903,6 @@ class ForceOutput(_OutputBase):
     )
     moving_statistic: Optional[MovingStatistic] = pd.Field(
         None, description="When specified, report moving statistics of the fields instead."
-    )
-    output_at_final_pseudo_step_only: bool = pd.Field(
-        False,
-        description="When True, the result is only written at the final pseudo step "
-        "of each physical step (or once at the end for steady simulations), "
-        "suppressing intermediate pseudo-step writes.",
     )
     output_type: Literal["ForceOutput"] = pd.Field("ForceOutput", frozen=True)
 
@@ -968,10 +952,6 @@ class ForceOutput(_OutputBase):
             "When ActuatorDisk/BETDisk/PorousMedium is specified, "
             "only CL, CD, CFx, CFy, CFz, CMx, CMy, CMz can be set as output_fields."
         )
-
-    @contextual_model_validator(mode="after")
-    def _validate_final_pseudo_step_only(self, param_info: ParamsValidationInfo):
-        return _validate_final_pseudo_step_only_with_moving_statistic(self, param_info)
 
 
 class RenderOutputGroup(Flow360BaseModel):
@@ -1229,12 +1209,6 @@ class SurfaceProbeOutput(_OutputBase):
     moving_statistic: Optional[MovingStatistic] = pd.Field(
         None, description="When specified, report moving statistics of the fields instead."
     )
-    output_at_final_pseudo_step_only: bool = pd.Field(
-        False,
-        description="When True, the result is only written at the final pseudo step "
-        "of each physical step (or once at the end for steady simulations), "
-        "suppressing intermediate pseudo-step writes.",
-    )
     output_type: Literal["SurfaceProbeOutput"] = pd.Field("SurfaceProbeOutput", frozen=True)
 
     @contextual_field_validator("target_surfaces", mode="after")
@@ -1242,10 +1216,6 @@ class SurfaceProbeOutput(_OutputBase):
     def ensure_surface_existence(cls, value, param_info: ParamsValidationInfo):
         """Ensure all boundaries will be present after mesher"""
         return validate_entity_list_surface_existence(value, param_info)
-
-    @contextual_model_validator(mode="after")
-    def _validate_final_pseudo_step_only(self, param_info: ParamsValidationInfo):
-        return _validate_final_pseudo_step_only_with_moving_statistic(self, param_info)
 
 
 class SurfaceSliceOutput(_AnimationAndFileFormatSettings, _OutputBase):

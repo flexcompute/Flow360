@@ -6,14 +6,11 @@ import pydantic
 import pytest
 
 import flow360.component.simulation.units as u
-from flow360.component.simulation.models.surface_models import Wall
 from flow360.component.simulation.outputs.output_entities import Point
 from flow360.component.simulation.outputs.outputs import (
-    ForceOutput,
     MovingStatistic,
     ProbeOutput,
 )
-from flow360.component.simulation.primitives import Surface
 from flow360.component.simulation.run_control.stopping_criterion import (
     StoppingCriterion,
 )
@@ -112,26 +109,6 @@ def test_stopping_criterion_allows_no_toggle_in_steady(scalar_field, mock_valida
 # ---------------------------------------------------------------------------
 
 
-def test_toggle_with_moving_statistic_rejected_in_steady(mock_validation_context):
-    wall = Wall(entities=Surface(name="fluid/wing"))
-    message = re.escape(
-        "`output_at_final_pseudo_step_only=True` with `moving_statistic` is not allowed "
-        "for steady simulations (only one data point would be produced)."
-    )
-    mock_validation_context.info.time_stepping = TimeSteppingType.STEADY
-    with pytest.raises(pydantic.ValidationError, match=message):
-        with SI_unit_system, mock_validation_context:
-            ForceOutput(
-                name="force",
-                models=[wall],
-                output_fields=["CL", "CD"],
-                output_at_final_pseudo_step_only=True,
-                moving_statistic=MovingStatistic(
-                    method="mean", moving_window_size=10, start_step=100
-                ),
-            )
-
-
 def test_toggle_with_moving_statistic_rejected_in_steady_probe(mock_validation_context):
     message = re.escape(
         "`output_at_final_pseudo_step_only=True` with `moving_statistic` is not allowed "
@@ -157,13 +134,12 @@ def test_toggle_with_moving_statistic_rejected_in_steady_probe(mock_validation_c
 
 
 def test_toggle_with_moving_statistic_allowed_in_unsteady(mock_validation_context):
-    wall = Wall(entities=Surface(name="fluid/wing"))
     mock_validation_context.info.time_stepping = TimeSteppingType.UNSTEADY
     with SI_unit_system, mock_validation_context:
-        output = ForceOutput(
-            name="force",
-            models=[wall],
-            output_fields=["CL", "CD"],
+        output = ProbeOutput(
+            name="probe",
+            probe_points=[Point(name="pt", location=(0, 0, 0) * u.m)],
+            output_fields=["Cp"],
             output_at_final_pseudo_step_only=True,
             moving_statistic=MovingStatistic(method="mean", moving_window_size=10, start_step=100),
         )
@@ -173,13 +149,31 @@ def test_toggle_with_moving_statistic_allowed_in_unsteady(mock_validation_contex
 
 def test_toggle_without_moving_statistic_allowed_in_steady(mock_validation_context):
     """Toggle alone (no MovingStatistic) should be fine in steady."""
-    wall = Wall(entities=Surface(name="fluid/wing"))
     mock_validation_context.info.time_stepping = TimeSteppingType.STEADY
     with SI_unit_system, mock_validation_context:
-        output = ForceOutput(
-            name="force",
-            models=[wall],
-            output_fields=["CL", "CD"],
+        output = ProbeOutput(
+            name="probe",
+            probe_points=[Point(name="pt", location=(0, 0, 0) * u.m)],
+            output_fields=["Cp"],
             output_at_final_pseudo_step_only=True,
         )
+    assert output.output_at_final_pseudo_step_only is True
+
+
+def test_toggle_defaults_to_false():
+    output = ProbeOutput(
+        name="probe",
+        probe_points=[Point(name="pt", location=(0, 0, 0) * u.m)],
+        output_fields=["Cp"],
+    )
+    assert output.output_at_final_pseudo_step_only is False
+
+
+def test_probe_output_accepts_toggle():
+    output = ProbeOutput(
+        name="probe",
+        probe_points=[Point(name="pt", location=(0, 0, 0) * u.m)],
+        output_fields=["Cp"],
+        output_at_final_pseudo_step_only=True,
+    )
     assert output.output_at_final_pseudo_step_only is True
