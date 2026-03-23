@@ -416,21 +416,6 @@ class _AnimationAndFileFormatSettings(_AnimationSettings):
         return value
 
 
-def _validate_final_pseudo_step_only_with_moving_statistic(self, param_info: ParamsValidationInfo):
-    """Reject ``output_at_final_pseudo_step_only=True`` combined with ``moving_statistic``
-    in steady simulations (only one data point would be produced)."""
-    if (
-        self.output_at_final_pseudo_step_only
-        and self.moving_statistic is not None
-        and param_info.time_stepping == TimeSteppingType.STEADY
-    ):
-        raise ValueError(
-            "`output_at_final_pseudo_step_only=True` with `moving_statistic` is not allowed "
-            "for steady simulations (only one data point would be produced)."
-        )
-    return self
-
-
 class SurfaceOutput(_AnimationAndFileFormatSettings, _OutputBase):
     """
 
@@ -1138,8 +1123,21 @@ class ProbeOutput(_OutputBase):
     output_type: Literal["ProbeOutput"] = pd.Field("ProbeOutput", frozen=True)
 
     @contextual_model_validator(mode="after")
-    def _validate_final_pseudo_step_only(self, param_info: ParamsValidationInfo):
-        return _validate_final_pseudo_step_only_with_moving_statistic(self, param_info)
+    def _validate_final_pseudo_step_only_with_moving_statistic(
+        self, param_info: ParamsValidationInfo
+    ):
+        """Reject ``output_at_final_pseudo_step_only=True`` combined with ``moving_statistic``
+        in steady simulations (only one data point would be produced)."""
+        if (
+            self.output_at_final_pseudo_step_only
+            and self.moving_statistic is not None
+            and param_info.time_stepping == TimeSteppingType.STEADY
+        ):
+            raise ValueError(
+                "`output_at_final_pseudo_step_only=True` with `moving_statistic` is not allowed "
+                "for steady simulations (only one data point would be produced)."
+            )
+        return self
 
 
 class SurfaceProbeOutput(_OutputBase):
