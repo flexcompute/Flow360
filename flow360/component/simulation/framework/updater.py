@@ -789,6 +789,9 @@ def _to_25_9_3(params_as_dict):
     return params_as_dict
 
 
+_TOTAL_PRESSURE_CONVERTED_KEY = "__total_pressure_nondim_applied"
+
+
 def _convert_total_pressure_expression_from_ratio_to_nondim(params_as_dict):
     """Convert TotalPressure string expressions from pressure ratio (P/P∞) to
     Flow360 nondimensional pressure (P/(ρ∞a∞²)).
@@ -800,12 +803,12 @@ def _convert_total_pressure_expression_from_ratio_to_nondim(params_as_dict):
     string expressions, γ=1.4 (standard Air) is safe for all legacy data.
     Liquid operating conditions have ratio=1.0, so no conversion is needed.
 
-    This function is referenced by both _to_25_8_8 and _to_25_10_0b1 milestones.
-    A run-once guard ensures it only executes once per updater() call.
+    Referenced by both _to_25_8_8 and _to_25_10_0 milestones.  A sentinel key on
+    the dict itself prevents double-conversion without module-level mutable state.
     """
-    if _convert_total_pressure_expression_from_ratio_to_nondim.has_run:
+    if params_as_dict.get(_TOTAL_PRESSURE_CONVERTED_KEY):
         return params_as_dict
-    _convert_total_pressure_expression_from_ratio_to_nondim.has_run = True
+    params_as_dict[_TOTAL_PRESSURE_CONVERTED_KEY] = True
 
     operating_condition = params_as_dict.get("operating_condition", {})
     if operating_condition.get("type_name") in ("LiquidOperatingCondition",):
@@ -823,9 +826,6 @@ def _convert_total_pressure_expression_from_ratio_to_nondim(params_as_dict):
             spec["value"] = f"({spec['value']}) / {gamma}"
 
     return params_as_dict
-
-
-_convert_total_pressure_expression_from_ratio_to_nondim.has_run = False
 
 
 def _to_25_8_8(params_as_dict):
@@ -963,7 +963,6 @@ def updater(version_from, version_to, params_as_dict) -> dict:
     updates the parameters based on the update path found.
     """
     log.debug(f"Input SimulationParam has version: {version_from}.")
-    _convert_total_pressure_expression_from_ratio_to_nondim.has_run = False
     version_from_is_newer = Flow360Version(version_from) > Flow360Version(version_to)
 
     if version_from_is_newer:
@@ -979,5 +978,6 @@ def updater(version_from, version_to, params_as_dict) -> dict:
         _to_version = re.search(r"_to_(\d+_\d+_\d+)", fun.__name__).group(1)
         log.debug(f"Updating input SimulationParam to {_to_version}...")
         params_as_dict = fun(params_as_dict)
+    params_as_dict.pop(_TOTAL_PRESSURE_CONVERTED_KEY, None)
     params_as_dict["version"] = str(version_to)
     return params_as_dict
