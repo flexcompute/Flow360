@@ -799,7 +799,14 @@ def _convert_total_pressure_expression_from_ratio_to_nondim(params_as_dict):
     Since ThermallyPerfectGas is a new feature that likely will no coexist with old
     string expressions, γ=1.4 (standard Air) is safe for all legacy data.
     Liquid operating conditions have ratio=1.0, so no conversion is needed.
+
+    This function is referenced by both _to_25_8_8 and _to_25_9_5 milestones.
+    A run-once guard ensures it only executes once per updater() call.
     """
+    if _convert_total_pressure_expression_from_ratio_to_nondim.has_run:
+        return params_as_dict
+    _convert_total_pressure_expression_from_ratio_to_nondim.has_run = True
+
     operating_condition = params_as_dict.get("operating_condition", {})
     if operating_condition.get("type_name") in ("LiquidOperatingCondition",):
         return params_as_dict
@@ -816,6 +823,13 @@ def _convert_total_pressure_expression_from_ratio_to_nondim(params_as_dict):
             spec["value"] = f"({spec['value']}) / {gamma}"
 
     return params_as_dict
+
+
+_convert_total_pressure_expression_from_ratio_to_nondim.has_run = False
+
+
+def _to_25_8_8(params_as_dict):
+    return _convert_total_pressure_expression_from_ratio_to_nondim(params_as_dict)
 
 
 def _to_25_9_5(params_as_dict):
@@ -841,6 +855,7 @@ VERSION_MILESTONES = [
     (Flow360Version("25.8.1"), _to_25_8_1),
     (Flow360Version("25.8.3"), _to_25_8_3),
     (Flow360Version("25.8.4"), _to_25_8_4),
+    (Flow360Version("25.8.8"), _to_25_8_8),
     (Flow360Version("25.9.0"), _to_25_9_0),
     (Flow360Version("25.9.1"), _to_25_9_1),
     (Flow360Version("25.9.2"), _to_25_9_2),
@@ -920,6 +935,7 @@ def updater(version_from, version_to, params_as_dict) -> dict:
     updates the parameters based on the update path found.
     """
     log.debug(f"Input SimulationParam has version: {version_from}.")
+    _convert_total_pressure_expression_from_ratio_to_nondim.has_run = False
     version_from_is_newer = Flow360Version(version_from) > Flow360Version(version_to)
 
     if version_from_is_newer:
