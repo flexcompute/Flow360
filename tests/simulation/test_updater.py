@@ -18,7 +18,7 @@ from flow360.component.simulation.framework.updater import (
 from flow360.component.simulation.framework.updater_utils import Flow360Version
 from flow360.component.simulation.services import ValidationCalledBy, validate_model
 from flow360.component.simulation.validation.validation_context import ALL
-from flow360.version import __version__
+from flow360.version import __solver_version__, __version__
 
 
 @pytest.fixture(autouse=True)
@@ -41,6 +41,18 @@ def test_version_consistency():
     assert pyproject_version == "v" + __version__, (
         f"Version mismatch: pyproject.toml version is {pyproject_version}, "
         f"but __version__ is {__version__}"
+    )
+
+
+def test_default_solver_version_matches_module_version():
+    """For non-beta releases (vA.B.C), the default solver version must be 'release-A.B'."""
+    version = Flow360Version(__version__)
+    if re.search(r"b\d+$", __version__):
+        pytest.skip("Beta version, skipping solver version check")
+    expected_solver_version = f"release-{version.major}.{version.minor}"
+    assert __solver_version__ == expected_solver_version, (
+        f"Default solver version mismatch: __solver_version__ is '{__solver_version__}', "
+        f"but expected '{expected_solver_version}' based on __version__ '{__version__}'"
     )
 
 
