@@ -492,6 +492,11 @@ class MirrorManager:
                     "Only GeometryBodyGroup entities are supported by `create()` currently. "
                     f"Received: {type(entity).__name__}."
                 )
+            if entity.private_attribute_id is None:
+                raise Flow360RuntimeError(
+                    f"Entity '{entity.name}' ({type(entity).__name__}) is not supported "
+                    f"for mirror operations."
+                )
 
         if not is_exact_instance(mirror_plane, MirrorPlane):
             raise Flow360RuntimeError(
