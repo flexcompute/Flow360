@@ -198,7 +198,8 @@ class MeshingDefaults(Flow360BaseModel):
         None,
         description="Target number of surface mesh nodes. When specified, the surface mesher "
         "will rescale the meshing parameters to achieve approximately this number of nodes. "
-        "This option is only supported when using geometry AI and can not be overridden per face.",
+        "This option is only supported by the beta surface mesher or when using geometry AI, "
+        "and can not be overridden per face.",
         context=SURFACE_MESH,
     )
 
@@ -337,7 +338,6 @@ class MeshingDefaults(Flow360BaseModel):
     @contextual_field_validator(
         "surface_max_aspect_ratio",
         "surface_max_adaptation_iterations",
-        "target_surface_node_count",
         "resolve_face_boundaries",
         "preserve_thin_geometry",
         "sealing_size",
@@ -349,6 +349,14 @@ class MeshingDefaults(Flow360BaseModel):
     def ensure_geometry_ai_features(cls, value, info, param_info: ParamsValidationInfo):
         """Validate that the feature is only used when Geometry AI is enabled."""
         return check_geometry_ai_features(cls, value, info, param_info)
+
+    @contextual_field_validator("target_surface_node_count", mode="after")
+    @classmethod
+    def ensure_target_surface_node_count_mesher(cls, value, param_info: ParamsValidationInfo):
+        """Validate that target_surface_node_count is only used with geometry AI or beta mesher."""
+        if value is not None and not (param_info.use_geometry_AI or param_info.is_beta_mesher):
+            raise ValueError("target_surface_node_count is not supported by the legacy mesher.")
+        return value
 
     @contextual_field_validator("octree_spacing", mode="after")
     @classmethod

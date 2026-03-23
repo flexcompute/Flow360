@@ -1057,6 +1057,89 @@ def test_generate_process_json():
     assert res3 is not None
 
 
+def test_generate_process_json_skips_case_validation_for_meshing():
+    """velocity_magnitude=0 without reference_velocity should not fail when only generating mesh JSON."""
+    params_data = {
+        "meshing": {
+            "defaults": {"surface_max_edge_length": "1*m"},
+            "volume_zones": [
+                {
+                    "method": "auto",
+                    "type": "AutomatedFarfield",
+                    "private_attribute_entity": {
+                        "private_attribute_registry_bucket_name": "VolumetricEntityType",
+                        "private_attribute_entity_type_name": "GenericVolume",
+                        "name": "automated_farfield_entity",
+                        "private_attribute_zone_boundary_names": {"items": []},
+                    },
+                }
+            ],
+        },
+        "unit_system": {"name": "SI"},
+        "version": "24.11.5",
+        "operating_condition": {
+            "type_name": "AerospaceCondition",
+            "private_attribute_constructor": "default",
+            "private_attribute_input_cache": {},
+            "alpha": {"value": 0, "units": "degree"},
+            "beta": {"value": 0, "units": "degree"},
+            "velocity_magnitude": {"value": 0, "units": "m/s"},
+        },
+        "models": [
+            {
+                "type": "Wall",
+                "entities": {
+                    "stored_entities": [
+                        {
+                            "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                            "private_attribute_entity_type_name": "Surface",
+                            "name": "surface_x",
+                            "private_attribute_is_interface": False,
+                            "private_attribute_sub_components": [
+                                "face_x_1",
+                                "face_x_2",
+                                "face_x_3",
+                            ],
+                        }
+                    ]
+                },
+                "use_wall_function": False,
+            }
+        ],
+        "private_attribute_asset_cache": {
+            "project_length_unit": "m",
+            "project_entity_info": {
+                "type_name": "GeometryEntityInfo",
+                "face_ids": ["face_x_1", "face_x_2", "face_x_3"],
+                "face_group_tag": "some_tag",
+                "face_attribute_names": ["some_tag"],
+                "grouped_faces": [
+                    [
+                        {
+                            "private_attribute_entity_type_name": "Surface",
+                            "name": "surface_x",
+                            "private_attribute_tag_key": "some_tag",
+                            "private_attribute_sub_components": [
+                                "face_x_1",
+                                "face_x_2",
+                                "face_x_3",
+                            ],
+                        }
+                    ]
+                ],
+            },
+        },
+    }
+
+    res1, res2, res3 = services.generate_process_json(
+        simulation_json=json.dumps(params_data), root_item_type="Geometry", up_to="SurfaceMesh"
+    )
+
+    assert res1 is not None
+    assert res2 is None
+    assert res3 is None
+
+
 def test_default_validation_contest():
     "Ensure that the default validation context is None which is the escaper for many validators"
     assert get_validation_info() is None
@@ -1081,6 +1164,11 @@ def test_validation_level_intersection():
         "Case",
         "VolumeMesh",
     ]
+
+    # When validation_level=None, all context-aware validators should be skipped
+    assert get_validation_levels_to_use("Geometry", None) == []
+    assert get_validation_levels_to_use("SurfaceMesh", None) == []
+    assert get_validation_levels_to_use("VolumeMesh", None) == []
 
 
 def test_forward_compatibility_error():
