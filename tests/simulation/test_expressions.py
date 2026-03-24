@@ -15,6 +15,7 @@ from flow360_schema.framework.expression import (
 )
 from flow360_schema.framework.expression.dependency_graph import DependencyGraph
 from flow360_schema.framework.expression.registry import WHITELISTED_CALLABLES
+from flow360_schema.models.variables import control, solution
 
 from flow360 import (
     AerospaceCondition,
@@ -79,7 +80,6 @@ from flow360.component.simulation.user_code.core.types import (
     ValueOrExpression,
     save_user_variables,
 )
-from flow360.component.simulation.user_code.variables import control, solution
 from tests.simulation.conftest import to_file_from_file_test_approx
 
 

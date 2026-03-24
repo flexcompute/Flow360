@@ -15,6 +15,8 @@ from flow360_schema.framework.expression import (
 )
 from flow360_schema.framework.expression.variable import _convert_numeric
 from flow360_schema.framework.physical_dimensions import Length
+from flow360_schema.models.functions import math
+from flow360_schema.models.variables import solution
 
 from flow360.component.simulation.conversion import (
     LIQUID_IMAGINARY_FREESTREAM_MACH,
@@ -139,8 +141,6 @@ from flow360.component.simulation.translator.utils import (
     translate_setting_and_apply_to_all_entities,
     translate_value_or_expression_object,
 )
-from flow360.component.simulation.user_code.functions import math
-from flow360.component.simulation.user_code.variables import solution
 from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
     UserDefinedDynamic,
 )

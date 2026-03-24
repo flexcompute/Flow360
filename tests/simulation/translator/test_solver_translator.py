@@ -6,6 +6,8 @@ import uuid
 import numpy as np
 import pytest
 from flow360_schema.framework.expression import UserVariable
+from flow360_schema.models.functions import math
+from flow360_schema.models.variables import solution
 
 import flow360.component.simulation.units as u
 from flow360.component.geometry import Geometry, GeometryMeta
@@ -118,8 +120,6 @@ from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import RampCFL, Steady
 from flow360.component.simulation.translator.solver_translator import get_solver_json
 from flow360.component.simulation.unit_system import SI_unit_system
-from flow360.component.simulation.user_code.functions import math
-from flow360.component.simulation.user_code.variables import solution
 from flow360.component.simulation.utils import model_attribute_unlock
 from tests.simulation.translator.utils.actuator_disk_param_generator import (
     actuator_disk_create_param,

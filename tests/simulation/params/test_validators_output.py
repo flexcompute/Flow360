@@ -29,6 +29,8 @@ def assert_validation_error_contains(
 
 
 from flow360_schema.framework.expression import UserVariable
+from flow360_schema.models.functions import math
+from flow360_schema.models.variables import solution
 
 from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.models.solver_numerics import (
@@ -68,8 +70,6 @@ from flow360.component.simulation.unit_system import (
     SI_unit_system,
     imperial_unit_system,
 )
-from flow360.component.simulation.user_code.functions import math
-from flow360.component.simulation.user_code.variables import solution
 from flow360.component.simulation.validation.validation_context import (
     CASE,
     ParamsValidationInfo,

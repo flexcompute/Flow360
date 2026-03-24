@@ -6,6 +6,8 @@ import pytest
 import unyt as u
 from flow360_schema.framework.expression import Expression, UserVariable
 from flow360_schema.framework.physical_dimensions import Velocity
+from flow360_schema.models.functions import math
+from flow360_schema.models.variables import solution
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.param_utils import AssetCache
@@ -17,8 +19,6 @@ from flow360.component.simulation.services import clear_context
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import SI_unit_system
 from flow360.component.simulation.user_code.core.types import ValueOrExpression
-from flow360.component.simulation.user_code.functions import math
-from flow360.component.simulation.user_code.variables import solution
 
 
 @pytest.fixture(autouse=True)

@@ -3,12 +3,12 @@ import re
 import pydantic as pd
 import pytest
 from flow360_schema.framework.expression import Expression, UserVariable
+from flow360_schema.models.functions import math
+from flow360_schema.models.variables import solution
 
 from flow360 import SI_unit_system, u
 from flow360.component.simulation.outputs.output_entities import Isosurface
 from flow360.component.simulation.services import clear_context
-from flow360.component.simulation.user_code.functions import math
-from flow360.component.simulation.user_code.variables import solution
 
 
 @pytest.fixture(autouse=True)
