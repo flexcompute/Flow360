@@ -327,6 +327,43 @@ def _getCaseRuntimeStats(case: flow360.Case):
     return os.path.join(RESULTS_PATH, case.name)
 
 
+# Mapping from node name patterns to GPU model names (sourced from postprocessing_utils.py)
+clusterNameToGPUName = {
+    r"cell\d+": "NVIDIA A100-SXM4-80GB",
+    r"h200-\d+": "NVIDIA H200-SXM5-141GB",
+    r"b200-\d+": "NVIDIA B200-SXM-180GB",
+    "dev1": "NVIDIA GeForce RTX 3080-10GB",
+    "dev4": "NVIDIA GeForce RTX 3090 Ti-24GB",
+    "dev001": "NVIDIA RTX A5000-24GB",
+    "dev002": "NVIDIA RTX A5000-24GB",
+}
+
+
+def _getNodesAndMPIRanks(filePath):
+    """Parse solver log to extract node names, MPI rank count, and GPU types."""
+    nodeNames = set()
+    mpiRanks = []
+    with open(filePath, "r") as fh:
+        for line in fh:
+            ret = re.findall(r"\(Rank ([0-9]+)\) Node ([0-9A-Za-z\-]+)", line)
+            if len(ret) > 0:
+                assert len(ret) == 1
+                nodeNames.add(ret[0][1])
+                mpiRanks.append(int(ret[0][0]))
+
+    def compareNodeName(e):
+        ret = re.findall("([0-9]+)", e)
+        return int(ret[0])
+
+    nodeList = sorted(list(nodeNames), key=compareNodeName)
+    GPUList = set()
+    for nodeName in nodeList:
+        for pattern, GPUName in clusterNameToGPUName.items():
+            if re.match(pattern, nodeName):
+                GPUList.add(GPUName)
+    return nodeList, max(mpiRanks) + 1, list(GPUList)
+
+
 def _getSimulationStats(solverOut):
     """
     Parse solver stdout to extract node list, MPI rank count, GPU list, and wall time.
@@ -553,6 +590,89 @@ def main():
 
     figurename = rootfolder + "_forces_coeff_diff" + figure_extname
     plot_forces_comp(rootfolder, diffnames, figurename, diffs, AOAs, forcestoplot, False, xlabel)
+
+    # Collect runtime stats for all cases, print summary, and save as a table figure.
+    # - Timing/worker fields come from case.get() (raw API response)
+    # - GPU type and exact MPI rank count are parsed from the solver log file
+    import glob as _glob
+    runtime_rows = []
+    print("###########################################################")
+    print("Runtime summary:")
+    for i in range(0, ncases):
+        caseID_file = rootfolder + '/caseIDfiles/' + casenames[i] + '_' + releases[i] + '_' + subcases[i] + '.txt'
+        ids = read_caseID(caseID_file)
+        if not ids:
+            continue
+        print(f"  [{cases[i]}]")
+        path = os.path.join(rootfolder, "data", cases[i])
+        for j, case_id in enumerate(ids):
+            aoa = AOAs[j] if j < len(AOAs) else 'N/A'
+            case = fl.Case(case_id)
+            raw = case.get()
+            # Compute elapsed time from start/finish timestamps to explicitly exclude queue wait time.
+            # elapsedTimeInSeconds from the API equals caseFinishTime - caseStartTime (not submit time),
+            # but we recalculate here for clarity.
+            start_str = raw.get('caseStartTime')
+            finish_str = raw.get('caseFinishTime')
+            if start_str and finish_str:
+                from datetime import datetime, timezone
+                fmt = "%Y-%m-%dT%H:%M:%S.%fZ"
+                elapsed_s = (datetime.strptime(finish_str, fmt) - datetime.strptime(start_str, fmt)).total_seconds()
+                elapsed_min = f"{elapsed_s / 60:.1f}"
+            else:
+                elapsed_min = 'N/A'
+            ranks = raw.get('numProcessors', 'N/A')
+            worker = raw.get('worker', 'N/A')
+            # Parse GPU type and exact rank count from solver log
+            logdir = _getCaseRuntimeStats(case)
+            solverLogs = _glob.glob(os.path.join(logdir, 'casePipeline.Flow360Solver.*.log'))
+            if solverLogs:
+                stats = _getSimulationStats(solverLogs[0])
+                ranks = stats['numOfRanks']
+                gpu = ', '.join(stats['GPU']) if stats['GPU'] else 'N/A'
+            else:
+                gpu = 'N/A'
+            # Simplify worker label to GPU family name
+            for tag in ['B200', 'H200', 'A100']:
+                if tag in gpu:
+                    worker = tag
+                    break
+            # Get total pseudo steps from the force CSV:
+            # for each physical step, sum (last pseudo_step - first pseudo_step)
+            csv_file = os.path.join(path, case_id + '_total_forces_v2.csv')
+            if os.path.exists(csv_file):
+                df_tmp = pandas.read_csv(csv_file, skipinitialspace=True)
+                df_tmp.columns = df_tmp.columns.str.strip()
+                grouped = df_tmp.groupby('physical_step')['pseudo_step']
+                total_pseudo_steps = int((grouped.max() - grouped.min()+1).sum())
+            else:
+                total_pseudo_steps = 'N/A'
+            print(f"    {case_id} ({xlabel}={aoa}): elapsedTime={elapsed_min}min  worker={worker}  ranks={ranks}  totalPseudoSteps={total_pseudo_steps}")
+            runtime_rows.append([cases[i], case_id[:13], aoa, elapsed_min, worker, ranks, total_pseudo_steps])
+    print("###########################################################")
+
+    # Save runtime summary as a table figure
+    if runtime_rows:
+        col_labels = ['Case', 'Case ID', xlabel, 'ElapsedTime (min)', 'Worker', 'MPI Ranks', 'Total Pseudo Steps']
+        row_height = 0.1
+        fig, ax = plt.subplots(figsize=(20, max(2, len(runtime_rows) * 0.55 + 1.5)))
+        ax.axis('off')
+        tbl = ax.table(cellText=runtime_rows, colLabels=col_labels, loc='center', cellLoc='center')
+        tbl.auto_set_font_size(False)
+        tbl.set_fontsize(12)
+        tbl.auto_set_column_width(col=list(range(len(col_labels))))
+        for (row, col), cell in tbl.get_celld().items():
+            cell.set_height(row_height)
+        for col in range(len(col_labels)):
+            tbl[0, col].set_facecolor('#d0d0d0')
+            tbl[0, col].set_text_props(fontweight='bold')
+        ax.set_title('Runtime Summary', fontsize=15, pad=10)
+        figurepath = os.path.join(rootfolder, "figures", "forces")
+        os.makedirs(figurepath, exist_ok=True)
+        figurename = os.path.join(figurepath, rootfolder + "_runtime_summary" + figure_extname)
+        print("Runtime table figure:", figurename)
+        plt.savefig(figurename, dpi=200, bbox_inches='tight')
+        plt.close(fig)
 
 
 if __name__ == '__main__':
