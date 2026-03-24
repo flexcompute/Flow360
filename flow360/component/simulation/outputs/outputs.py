@@ -40,6 +40,7 @@ from flow360.component.simulation.outputs.output_fields import (
     SliceFieldNames,
     SurfaceFieldNames,
     VolumeFieldNames,
+    VolumeProbeFieldNames,
     get_field_values,
 )
 from flow360.component.simulation.outputs.render_config import (
@@ -81,6 +82,7 @@ from flow360.component.simulation.validation.validation_utils import (
     validate_improper_surface_field_usage_for_imported_surface,
 )
 from flow360.component.types import Axis
+from flow360.log import log
 
 # Invalid characters for Linux filenames: / is path separator, \0 is null terminator
 _INVALID_FILENAME_CHARS_PATTERN = re.compile(r"[/\0]")
@@ -366,14 +368,52 @@ class _AnimationSettings(Flow360BaseModel):
         return value
 
 
+_OutputFormatOption = Literal["paraview", "tecplot", "vtkhdf", "ensight"]
+
+_LegacyOutputFormatStrings = Literal[
+    "paraview",
+    "tecplot",
+    "both",
+]
+
+
 class _AnimationAndFileFormatSettings(_AnimationSettings):
     """
     Controls how frequently the output files are generated and the file format.
     """
 
-    output_format: Literal["paraview", "tecplot", "both"] = pd.Field(
-        default="paraview", description=":code:`paraview`, :code:`tecplot` or :code:`both`."
+    output_format: Union[List[_OutputFormatOption], _LegacyOutputFormatStrings] = pd.Field(
+        default=["paraview"],
+        min_length=1,
+        description="List of output formats, "
+        "Supported formats: :code:`paraview`, :code:`tecplot`, :code:`vtkhdf`, :code:`ensight`. "
+        "A single string is accepted for backward compatibility but deprecated.",
     )
+
+    @pd.field_validator("output_format", mode="before")
+    @classmethod
+    def _normalize_output_format(cls, value):
+        if isinstance(value, str):
+            if value == "both":
+                log.warning(
+                    '`output_format="both"` is deprecated. '
+                    'Use `output_format=["paraview", "tecplot"]` instead.'
+                )
+                return ["paraview", "tecplot"]
+            if "," in value:
+                log.warning(
+                    f"`output_format` comma-separated strings are deprecated. "
+                    f'Use `output_format={sorted(set(v.strip() for v in value.split(",")))}` instead.'
+                )
+                return sorted(set(v.strip() for v in value.split(",")))
+            log.warning(
+                f"Passing a string to `output_format` is deprecated. "
+                f'Use `output_format=["{value}"]` instead.'
+            )
+            return [value]
+        if isinstance(value, list):
+            return sorted(set(value))
+        return value
 
 
 class SurfaceOutput(_AnimationAndFileFormatSettings, _OutputBase):
@@ -423,10 +463,10 @@ class SurfaceOutput(_AnimationAndFileFormatSettings, _OutputBase):
     )
     write_single_file: bool = pd.Field(
         default=False,
-        description="Enable writing all surface outputs into a single file instead of one file per surface."
-        + "This option currently only supports Tecplot output format."
-        + "Will choose the value of the last instance of this option of the same output type "
-        + "(:class:`SurfaceOutput` or :class:`TimeAverageSurfaceOutput`) in the output list.",
+        description="Enable writing all surface outputs into a single file instead of one file per surface. "
+        "Supported by Tecplot, Paraview, and VTK-HDF output formats. "
+        "Will choose the value of the last instance of this option of the same output type "
+        "(:class:`SurfaceOutput` or :class:`TimeAverageSurfaceOutput`) in the output list.",
     )
     output_fields: UniqueItemList[Union[SurfaceFieldNames, str, UserVariable]] = pd.Field(
         description="List of output variables. Including :ref:`universal output variables<UniversalVariablesV2>`,"
@@ -1066,14 +1106,38 @@ class ProbeOutput(_OutputBase):
         + "monitor group. :class:`~flow360.PointArray` is used to "
         + "define monitored points along a line.",
     )
-    output_fields: UniqueItemList[Union[CommonFieldNames, str, UserVariable]] = pd.Field(
-        description="List of output fields. Including :ref:`universal output variables<UniversalVariablesV2>`"
+    output_fields: UniqueItemList[Union[VolumeProbeFieldNames, str, UserVariable]] = pd.Field(
+        description="List of output variables. Including :ref:`universal output variables<UniversalVariablesV2>`,"
+        " :ref:`variables specific to VolumeOutput<VolumeAndSliceSpecificVariablesV2>`"
         " and :class:`UserDefinedField`."
     )
     moving_statistic: Optional[MovingStatistic] = pd.Field(
         None, description="When specified, report moving statistics of the fields instead."
     )
+    output_at_final_pseudo_step_only: bool = pd.Field(
+        False,
+        description="When True, the result is only written at the final pseudo step "
+        "of each physical step (or once at the end for steady simulations), "
+        "suppressing intermediate pseudo-step writes.",
+    )
     output_type: Literal["ProbeOutput"] = pd.Field("ProbeOutput", frozen=True)
+
+    @contextual_model_validator(mode="after")
+    def _validate_final_pseudo_step_only_with_moving_statistic(
+        self, param_info: ParamsValidationInfo
+    ):
+        """Reject ``output_at_final_pseudo_step_only=True`` combined with ``moving_statistic``
+        in steady simulations (only one data point would be produced)."""
+        if (
+            self.output_at_final_pseudo_step_only
+            and self.moving_statistic is not None
+            and param_info.time_stepping == TimeSteppingType.STEADY
+        ):
+            raise ValueError(
+                "`output_at_final_pseudo_step_only=True` with `moving_statistic` is not allowed "
+                "for steady simulations (only one data point would be produced)."
+            )
+        return self
 
 
 class SurfaceProbeOutput(_OutputBase):
@@ -1166,7 +1230,9 @@ class SurfaceSliceOutput(_AnimationAndFileFormatSettings, _OutputBase):
         description="List of :class:`Surface` entities on which the slice will cut through."
     )
 
-    output_format: Literal["paraview"] = pd.Field(default="paraview")
+    output_format: Union[List[Literal["paraview"]], Literal["paraview"]] = pd.Field(
+        default=["paraview"], min_length=1
+    )
 
     output_fields: UniqueItemList[Union[SurfaceFieldNames, str, UserVariable]] = pd.Field(
         description="List of output variables. Including :ref:`universal output variables<UniversalVariablesV2>`,"

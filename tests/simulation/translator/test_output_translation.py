@@ -2116,3 +2116,34 @@ def test_imported_surface_with_rotation_and_translation():
         atol=1e-10,
         err_msg="Transformation matrix with rotation does not match expected",
     )
+
+
+def test_output_at_final_pseudo_step_only_translation():
+    """Verify outputAtFinalPseudoStepOnly appears in translated monitor JSON when toggle is set."""
+    with SI_unit_system:
+        probe_with_toggle = ProbeOutput(
+            name="probe_toggle",
+            entities=[Point(name="pt", location=[0, 0, 0] * u.m)],
+            output_fields=["Cp"],
+            output_at_final_pseudo_step_only=True,
+        )
+        probe_without_toggle = ProbeOutput(
+            name="probe_no_toggle",
+            entities=[Point(name="pt2", location=[1, 1, 1] * u.m)],
+            output_fields=["Cp"],
+        )
+        param = SimulationParams(
+            outputs=[probe_with_toggle, probe_without_toggle],
+        )
+
+    param = param._preprocess(mesh_unit=1.0 * u.m, exclude=["models"])
+    translated = {"boundaries": {}}
+    translated = translate_output(param, translated)
+
+    monitors = translated["monitorOutput"]["monitors"]
+
+    # Probe with toggle should have the key
+    assert monitors["probe_toggle"]["outputAtFinalPseudoStepOnly"] is True
+
+    # Probe without toggle should NOT have the key
+    assert "outputAtFinalPseudoStepOnly" not in monitors["probe_no_toggle"]

@@ -13,6 +13,7 @@ from flow360.component.simulation.framework.updater import (
     _to_25_9_0,
     _to_25_9_1,
     _to_25_9_2,
+    _to_25_10_0,
     updater,
 )
 from flow360.component.simulation.framework.updater_utils import Flow360Version
@@ -1930,6 +1931,87 @@ def test_updater_to_25_9_2_modular_zones_rotation_volume_sphere_to_rotation_sphe
     assert zone["spacing_circumferential"] == {"value": 0.7, "units": "m"}
 
 
+def test_updater_to_25_10_0_output_format_to_list():
+    """Test 25.10.0 updater converts string output_format to list form."""
+
+    params_as_dict = {
+        "version": "25.9.2",
+        "unit_system": {"name": "SI"},
+        "outputs": [
+            {
+                "output_type": "VolumeOutput",
+                "name": "Volume output",
+                "output_format": "paraview",
+                "output_fields": {"items": ["Mach"]},
+            },
+            {
+                "output_type": "SurfaceOutput",
+                "name": "Surface output both",
+                "output_format": "both",
+                "output_fields": {"items": ["Cp"]},
+                "entities": {"stored_entities": []},
+            },
+            {
+                "output_type": "SliceOutput",
+                "name": "Slice output tecplot",
+                "output_format": "tecplot",
+                "output_fields": {"items": ["Mach"]},
+                "entities": {"stored_entities": []},
+            },
+            {
+                "output_type": "VolumeOutput",
+                "name": "Volume output combo",
+                "output_format": "paraview,vtkhdf",
+                "output_fields": {"items": ["Mach"]},
+            },
+        ],
+    }
+
+    params_new = updater(
+        version_from="25.9.2",
+        version_to="25.10.0",
+        params_as_dict=params_as_dict,
+    )
+
+    assert params_new["version"] == "25.10.0"
+    assert params_new["outputs"][0]["output_format"] == ["paraview"]
+    assert params_new["outputs"][1]["output_format"] == ["paraview", "tecplot"]
+    assert params_new["outputs"][2]["output_format"] == ["tecplot"]
+    assert params_new["outputs"][3]["output_format"] == ["paraview", "vtkhdf"]
+
+
+def test_updater_to_25_10_0_output_format_already_list():
+    """Test 25.10.0 updater is a no-op when output_format is already a list."""
+
+    params_as_dict = {
+        "version": "25.9.2",
+        "unit_system": {"name": "SI"},
+        "outputs": [
+            {
+                "output_type": "VolumeOutput",
+                "name": "Volume output",
+                "output_format": ["paraview", "vtkhdf"],
+                "output_fields": {"items": ["Mach"]},
+            },
+        ],
+    }
+
+    params_new = _to_25_10_0(params_as_dict)
+    assert params_new["outputs"][0]["output_format"] == ["paraview", "vtkhdf"]
+
+
+def test_updater_to_25_10_0_output_format_no_outputs():
+    """Test 25.10.0 updater handles missing or empty outputs for output_format migration."""
+
+    params_no_outputs = {"version": "25.9.2", "unit_system": {"name": "SI"}}
+    params_new = _to_25_10_0(params_no_outputs)
+    assert "outputs" not in params_new
+
+    params_empty = {"version": "25.9.2", "unit_system": {"name": "SI"}, "outputs": []}
+    params_new = _to_25_10_0(params_empty)
+    assert params_new["outputs"] == []
+
+
 def test_updater_to_25_9_2_custom_volume_boundaries_to_bounding_entities():
     """Test 25.9.2 updater renames boundaries -> bounding_entities on CustomVolume."""
     params_as_dict = {
@@ -2134,3 +2216,108 @@ def test_updater_to_25_9_3_rename_wall_function_type_name():
     assert models[2]["use_wall_function"] is None
     assert "use_wall_function" not in models[3]
     assert models[4].get("type") == "Freestream"
+
+
+def test_updater_to_25_8_8_total_pressure_expression():
+    """String expressions are converted from ratio (P/P∞) to Flow360 nondim (P/(ρa²))."""
+    params_as_dict = {
+        "version": "25.8.7",
+        "unit_system": {"name": "SI"},
+        "operating_condition": {"type_name": "AerospaceCondition"},
+        "models": [
+            {
+                "type": "Inflow",
+                "spec": {
+                    "type_name": "TotalPressure",
+                    "value": "1.0 + 0.5 * sin(y)",
+                },
+            },
+        ],
+    }
+
+    params_new = updater(
+        version_from="25.8.7",
+        version_to="25.8.8",
+        params_as_dict=params_as_dict,
+    )
+
+    assert params_new["version"] == "25.8.8"
+    assert params_new["models"][0]["spec"]["value"] == "(1.0 + 0.5 * sin(y)) / 1.4"
+
+
+def test_updater_to_25_8_8_total_pressure_numeric_unchanged():
+    """Numeric (dimensioned) TotalPressure values should not be touched by the updater."""
+    params_as_dict = {
+        "version": "25.8.7",
+        "unit_system": {"name": "SI"},
+        "operating_condition": {"type_name": "AerospaceCondition"},
+        "models": [
+            {
+                "type": "Inflow",
+                "spec": {
+                    "type_name": "TotalPressure",
+                    "value": {"value": 101325.0, "units": "Pa"},
+                },
+            },
+        ],
+    }
+
+    params_new = updater(
+        version_from="25.8.7",
+        version_to="25.8.8",
+        params_as_dict=params_as_dict,
+    )
+
+    assert params_new["models"][0]["spec"]["value"] == {"value": 101325.0, "units": "Pa"}
+
+
+def test_updater_to_25_8_8_liquid_skipped():
+    """LiquidOperatingCondition should skip the conversion (ratio=1.0)."""
+    params_as_dict = {
+        "version": "25.8.7",
+        "unit_system": {"name": "SI"},
+        "operating_condition": {"type_name": "LiquidOperatingCondition"},
+        "models": [
+            {
+                "type": "Inflow",
+                "spec": {
+                    "type_name": "TotalPressure",
+                    "value": "1.0 + 0.5 * sin(y)",
+                },
+            },
+        ],
+    }
+
+    params_new = updater(
+        version_from="25.8.7",
+        version_to="25.8.8",
+        params_as_dict=params_as_dict,
+    )
+
+    assert params_new["models"][0]["spec"]["value"] == "1.0 + 0.5 * sin(y)"
+
+
+def test_updater_total_pressure_no_double_conversion():
+    """Upgrading from 25.8.7 to 25.10.0 should only convert once (via 25.8.8), not again at 25.10.0."""
+    params_as_dict = {
+        "version": "25.8.7",
+        "unit_system": {"name": "SI"},
+        "operating_condition": {"type_name": "AerospaceCondition"},
+        "models": [
+            {
+                "type": "Inflow",
+                "spec": {
+                    "type_name": "TotalPressure",
+                    "value": "1.0 + 0.5 * sin(y)",
+                },
+            },
+        ],
+    }
+
+    params_new = updater(
+        version_from="25.8.7",
+        version_to="25.10.0",
+        params_as_dict=params_as_dict,
+    )
+
+    assert params_new["models"][0]["spec"]["value"] == "(1.0 + 0.5 * sin(y)) / 1.4"

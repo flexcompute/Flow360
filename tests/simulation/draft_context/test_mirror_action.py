@@ -19,7 +19,10 @@ from flow360.component.simulation.draft_context.mirror import (
 )
 from flow360.component.simulation.entity_info import GeometryEntityInfo
 from flow360.component.simulation.framework.param_utils import AssetCache
-from flow360.component.simulation.primitives import MirroredGeometryBodyGroup
+from flow360.component.simulation.primitives import (
+    GeometryBodyGroup,
+    MirroredGeometryBodyGroup,
+)
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.exceptions import Flow360RuntimeError
 
@@ -973,3 +976,23 @@ def test_mirrored_entity_validation_warning_for_missing_mirror_plane(mock_geomet
         "references non-existent mirror plane" in msg and "will be removed" in msg
         for msg in warning_messages
     ), f"Expected warning about missing mirror plane, got: {warning_messages}"
+
+
+def test_mirror_entity_without_id_raises(mock_geometry):
+    """Mirroring an entity with private_attribute_id=None should raise."""
+    with create_draft(new_run_from=mock_geometry) as draft:
+        entity_without_id = GeometryBodyGroup(
+            name="no_id_group",
+            private_attribute_tag_key="groupTag",
+            private_attribute_sub_components=["body1"],
+        )
+        assert entity_without_id.private_attribute_id is None
+
+        mirror_plane = MirrorPlane(
+            name="mirrorX",
+            normal=(1, 0, 0),
+            center=(0, 0, 0) * u.m,
+        )
+
+        with pytest.raises(Flow360RuntimeError, match="is not supported for mirror"):
+            draft.mirror.create_mirror_of(entities=[entity_without_id], mirror_plane=mirror_plane)
