@@ -688,7 +688,7 @@ class AxisymmetricBody(_VolumeEntityBase):
     def face(self, index: int) -> Face:
         """Return a Face reference for the given index."""
         num_faces = len(self.profile_curve) - 1
-        if not (0 <= index < num_faces):
+        if index < 0 or index >= num_faces:
             raise IndexError(f"Face index {index} out of range [0, {num_faces - 1}]")
         return Face(entity_id=self.private_attribute_id, entity_name=self.name, index=index)
 

@@ -857,6 +857,42 @@ def test_axisymmetric_body_in_uniform_refinement():
                 )
 
 
+def test_face_class():
+    with SI_unit_system:
+        body = AxisymmetricBody(
+            name="body1",
+            axis=(1, 0, 0),
+            center=(0, 0, 0),
+            profile_curve=[(0, 0), (0, 1), (2, 1), (2, 0)],
+        )
+
+        f = body.face(0)
+        assert f.entity_id == body.private_attribute_id
+        assert f.entity_name == "body1"
+        assert f.index == 0
+
+        # 3 segments -> indices 0-2 are valid
+        body.face(2)
+        with pytest.raises(IndexError):
+            body.face(3)
+        with pytest.raises(IndexError):
+            body.face(-1)
+
+        # Same entity + index -> equal, so usable as dict key
+        assert body.face(1) == body.face(1)
+        assert body.face(0) != body.face(1)
+        assert {body.face(1): "a"}[body.face(1)] == "a"
+
+        # Different entity, same index -> not equal
+        other = AxisymmetricBody(
+            name="body2",
+            axis=(1, 0, 0),
+            center=(0, 0, 0),
+            profile_curve=[(0, 0), (0, 1), (2, 1), (2, 0)],
+        )
+        assert body.face(0) != other.face(0)
+
+
 def test_face_spacing_validation():
     with SI_unit_system:
         body = AxisymmetricBody(
