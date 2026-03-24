@@ -502,6 +502,10 @@ def main():
         diffs[key] = []
         allforces[key] = []
 
+    # Remove the bootstrap CSV — it was only needed to discover column keys.
+    if datafileexist[0] == 1 and os.path.exists(bootstrap_file):
+        os.remove(bootstrap_file)
+
     # Select which 6 force coefficients to display based on simulation type
     if rotorflag:
         forcestoplot = ['CFx', 'CFy', 'CFz', 'CMx', 'CMy', 'CMz']         # rotor: body-axis forces
