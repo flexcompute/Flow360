@@ -54,9 +54,16 @@ def uniform_refinement_translator(obj: UniformRefinement):
     """
     result = {"spacing": obj.spacing.value.item()}
     if obj.face_spacing:
+        # face_spacing is keyed by private_attribute_id; translated dict uses entity_name
+        id_to_name = {
+            entity.private_attribute_id: entity.name
+            for entity in obj.entities.stored_entities
+            if isinstance(entity, AxisymmetricBody)
+        }
         result["_face_spacing"] = {
-            name: {idx: s.value.item() for idx, s in overrides.items()}
-            for name, overrides in obj.face_spacing.items()
+            id_to_name[entity_id]: {idx: s.value.item() for idx, s in overrides.items()}
+            for entity_id, overrides in obj.face_spacing.items()
+            if entity_id in id_to_name
         }
     return result
 

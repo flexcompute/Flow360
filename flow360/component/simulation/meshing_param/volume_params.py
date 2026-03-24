@@ -18,6 +18,7 @@ from flow360.component.simulation.primitives import (
     Box,
     CustomVolume,
     Cylinder,
+    Face,
     GenericVolume,
     GhostSurface,
     MirroredSurface,
@@ -63,7 +64,7 @@ class UniformRefinement(Flow360BaseModel):
       ...     entities=[cylinder, box, axisymmetric_body, sphere],
       ...     spacing=1*fl.u.cm,
       ...     face_spacing={
-      ...         "axisymmetric_body": {2: 0.2*fl.u.cm},
+      ...         axisymmetric_body.face(2): 0.2*fl.u.cm,
       ...     }
       ... )
 
@@ -86,10 +87,29 @@ class UniformRefinement(Flow360BaseModel):
     face_spacing: Optional[Dict[str, Dict[int, LengthType.Positive]]] = pd.Field(
         None,
         description="Per-face spacing overrides for AxisymmetricBody entities. "
-        "Outer key is the entity name, inner key is the face index "
-        "(0-based, where face i is the segment between profile_curve[i] and profile_curve[i+1]). "
-        "Faces without overrides use the default `spacing`.",
+        "Use `body.face(i)` as keys, where face i is defined by the segment between"
+        "profile_curve[i] and profile_curve[i+1]. Faces without overrides use the default `spacing`.",
     )
+
+    @pd.field_validator("face_spacing", mode="before")
+    @classmethod
+    def _convert_face_spacing(cls, value):
+        """Convert {Face: spacing} to {entity_id: {idx: spacing}} internal format."""
+        if value is None or not isinstance(value, dict):
+            return value
+        result = {}
+        for key, val in value.items():
+            if isinstance(key, Face):
+                result.setdefault(key.entity_id, {})[key.index] = val
+            elif isinstance(key, str) and isinstance(val, dict):
+                # Already in {id: {idx: spacing}} format (e.g., from JSON deserialization)
+                result[key] = {int(k): v for k, v in val.items()}
+            else:
+                raise ValueError(
+                    f"Invalid face_spacing key {key!r}. "
+                    f"Use body.face(i) or provide a valid serialized face_spacing dict."
+                )
+        return result
 
     @contextual_field_validator("entities", mode="after")
     @classmethod
@@ -152,21 +172,20 @@ class UniformRefinement(Flow360BaseModel):
         if self.entities is not None:
             for entity in self.entities.stored_entities:
                 if isinstance(entity, AxisymmetricBody):
-                    entity_map[entity.name] = entity
+                    entity_map[entity.private_attribute_id] = entity
 
-        for entity_name, face_overrides in self.face_spacing.items():
-            if entity_name not in entity_map:
-                axisym_names = list(entity_map.keys())
+        for entity_id, face_overrides in self.face_spacing.items():
+            if entity_id not in entity_map:
                 raise ValueError(
-                    f"face_spacing key '{entity_name}' does not match any "
-                    f"AxisymmetricBody entity. Available: {axisym_names}"
+                    f"face_spacing references an entity (id={entity_id}) that is not an "
+                    f"AxisymmetricBody in this refinement's entities list."
                 )
-            entity = entity_map[entity_name]
+            entity = entity_map[entity_id]
             num_faces = len(entity.profile_curve) - 1
             for face_idx in face_overrides:
-                if face_idx < 0 or face_idx >= num_faces:
+                if face_idx >= num_faces or face_idx < 0:
                     raise ValueError(
-                        f"Face index {face_idx} for entity '{entity_name}' is out of range. "
+                        f"Face index {face_idx} for entity '{entity.name}' is out of range. "
                         f"Valid range: [0, {num_faces - 1}]."
                     )
 

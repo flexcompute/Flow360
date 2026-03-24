@@ -870,34 +870,37 @@ def test_face_spacing_validation():
         UniformRefinement(
             entities=[body],
             spacing=0.5 * u.m,
-            face_spacing={"body": {1: 0.1 * u.m}},
+            face_spacing={body.face(1): 0.1 * u.m},
         )
 
         # Invalid: face index out of range
-        with pytest.raises(pd.ValidationError, match="out of range"):
+        with pytest.raises(IndexError, match="out of range"):
             UniformRefinement(
                 entities=[body],
                 spacing=0.5 * u.m,
-                face_spacing={"body": {5: 0.1 * u.m}},
+                face_spacing={body.face(5): 0.1 * u.m},
             )
 
-        # Invalid: entity name not found
-        with pytest.raises(pd.ValidationError, match="does not match any AxisymmetricBody"):
-            UniformRefinement(
-                entities=[body],
-                spacing=0.5 * u.m,
-                face_spacing={"invalid_name": {0: 0.1 * u.m}},
-            )
-
-        # Invalid: non-AxisymmetricBody entity name
-        box = Box.from_principal_axes(
-            name="mybox", center=(0, 0, 0), size=(1, 1, 1), axes=((1, 0, 0), (0, 1, 0))
+        # Invalid: entity id not in entities list
+        other_body = AxisymmetricBody(
+            name="other",
+            axis=(0, 0, 1),
+            center=(1, 0, 0),
+            profile_curve=[(0, 0), (0, 1), (1, 0)],
         )
-        with pytest.raises(pd.ValidationError, match="does not match any AxisymmetricBody"):
+        with pytest.raises(pd.ValidationError, match="not an AxisymmetricBody in this refinement"):
             UniformRefinement(
-                entities=[box],
+                entities=[body],
                 spacing=0.5 * u.m,
-                face_spacing={"mybox": {0: 0.1 * u.m}},
+                face_spacing={other_body.face(0): 0.1 * u.m},
+            )
+
+        # Invalid: non-Face key
+        with pytest.raises(pd.ValidationError, match="Invalid face_spacing key"):
+            UniformRefinement(
+                entities=[body],
+                spacing=0.5 * u.m,
+                face_spacing={42: 0.1 * u.m},
             )
 
 
