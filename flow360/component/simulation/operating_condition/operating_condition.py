@@ -3,6 +3,7 @@
 from typing import Literal, Optional, Tuple, Union
 
 import pydantic as pd
+from flow360_schema.framework.expression import Expression
 from flow360_schema.framework.physical_dimensions import (
     AbsoluteTemperature,
     Angle,
@@ -25,10 +26,7 @@ from flow360.component.simulation.models.material import Air, Water
 from flow360.component.simulation.operating_condition.atmosphere_model import (
     StandardAtmosphereModel,
 )
-from flow360.component.simulation.user_code.core.types import (
-    Expression,
-    ValueOrExpression,
-)
+from flow360.component.simulation.user_code.core.types import ValueOrExpression
 from flow360.component.simulation.validation.validation_context import (
     CASE,
     CaseField,

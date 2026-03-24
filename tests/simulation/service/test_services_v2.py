@@ -4,6 +4,7 @@ import re
 from typing import get_args
 
 import pytest
+from flow360_schema.framework.expression import UserVariable
 from unyt import Unit
 
 import flow360.component.simulation.units as u
@@ -13,7 +14,6 @@ from flow360.component.simulation.exposed_units import supported_units_by_front_
 from flow360.component.simulation.framework.updater_utils import compare_values
 from flow360.component.simulation.services_report import get_default_report_config
 from flow360.component.simulation.unit_system import DimensionedTypes
-from flow360.component.simulation.user_code.core.types import UserVariable
 from flow360.component.simulation.validation.validation_context import (
     CASE,
     SURFACE_MESH,
@@ -1061,7 +1061,7 @@ def test_generate_process_json_skips_case_validation_for_meshing():
     """velocity_magnitude=0 without reference_velocity should not fail when only generating mesh JSON."""
     params_data = {
         "meshing": {
-            "defaults": {"surface_max_edge_length": "1*m"},
+            "defaults": {"surface_max_edge_length": 1.0},
             "volume_zones": [
                 {
                     "method": "auto",
@@ -1107,7 +1107,7 @@ def test_generate_process_json_skips_case_validation_for_meshing():
             }
         ],
         "private_attribute_asset_cache": {
-            "project_length_unit": "m",
+            "project_length_unit": 1.0,
             "project_entity_info": {
                 "type_name": "GeometryEntityInfo",
                 "face_ids": ["face_x_1", "face_x_2", "face_x_3"],

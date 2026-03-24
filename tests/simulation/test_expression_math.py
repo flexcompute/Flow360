@@ -4,9 +4,9 @@ import numpy as np
 import pydantic as pd
 import pytest
 import unyt as u
+from flow360_schema.framework.expression import Expression, UserVariable
 from flow360_schema.framework.physical_dimensions import Velocity
 
-import flow360.component.simulation.user_code.core.context as context
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.models.material import Water
@@ -16,11 +16,7 @@ from flow360.component.simulation.operating_condition.operating_condition import
 from flow360.component.simulation.services import clear_context
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import SI_unit_system
-from flow360.component.simulation.user_code.core.types import (
-    Expression,
-    UserVariable,
-    ValueOrExpression,
-)
+from flow360.component.simulation.user_code.core.types import ValueOrExpression
 from flow360.component.simulation.user_code.functions import math
 from flow360.component.simulation.user_code.variables import solution
 

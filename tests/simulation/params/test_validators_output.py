@@ -28,6 +28,8 @@ def assert_validation_error_contains(
     assert matching_errors[0]["type"] == "value_error"
 
 
+from flow360_schema.framework.expression import UserVariable
+
 from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.models.solver_numerics import (
     KOmegaSST,
@@ -66,7 +68,6 @@ from flow360.component.simulation.unit_system import (
     SI_unit_system,
     imperial_unit_system,
 )
-from flow360.component.simulation.user_code.core.types import UserVariable
 from flow360.component.simulation.user_code.functions import math
 from flow360.component.simulation.user_code.variables import solution
 from flow360.component.simulation.validation.validation_context import (

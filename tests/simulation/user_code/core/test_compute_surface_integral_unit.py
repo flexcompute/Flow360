@@ -2,15 +2,15 @@ from unittest import mock
 
 import pytest
 import unyt as u
+from flow360_schema.framework.expression import (
+    Expression,
+    UserVariable,
+    compute_surface_integral_unit,
+)
 
 from flow360.component.simulation.services import clear_context
 from flow360.component.simulation.translator.solver_translator import (
     process_output_field_for_integral,
-)
-from flow360.component.simulation.user_code.core.types import (
-    Expression,
-    UserVariable,
-    compute_surface_integral_unit,
 )
 
 
@@ -56,7 +56,9 @@ def mock_params_imperial():
 def test_compute_surface_integral_unit_scalar_si(mock_params_si):
     # Variable with explicit units
     var = UserVariable(name="var", value=10 * u.Pa)
-    unit = compute_surface_integral_unit(var, mock_params_si)
+    unit = compute_surface_integral_unit(
+        var, mock_params_si.unit_system.name, mock_params_si.unit_system.resolve()
+    )
     # Pa * m^2 -> N
     assert u.Unit(unit) == u.N
 
@@ -64,20 +66,26 @@ def test_compute_surface_integral_unit_scalar_si(mock_params_si):
 def test_compute_surface_integral_unit_expression_si(mock_params_si):
     # Variable defined by expression
     var = UserVariable(name="var", value=Expression(expression="10 * u.Pa"))
-    unit = compute_surface_integral_unit(var, mock_params_si)
+    unit = compute_surface_integral_unit(
+        var, mock_params_si.unit_system.name, mock_params_si.unit_system.resolve()
+    )
     assert u.Unit(unit) == u.N
 
 
 def test_compute_surface_integral_unit_dimensionless(mock_params_si):
     var = UserVariable(name="var", value=10)
-    unit = compute_surface_integral_unit(var, mock_params_si)
+    unit = compute_surface_integral_unit(
+        var, mock_params_si.unit_system.name, mock_params_si.unit_system.resolve()
+    )
     # dimensionless * m^2 -> m^2
     assert u.Unit(unit) == u.m**2
 
 
 def test_compute_surface_integral_unit_imperial(mock_params_imperial):
     var = UserVariable(name="var", value=10 * u.lbf / u.ft**2)  # psf
-    unit = compute_surface_integral_unit(var, mock_params_imperial)
+    unit = compute_surface_integral_unit(
+        var, mock_params_imperial.unit_system.name, mock_params_imperial.unit_system.resolve()
+    )
     # (lbf/ft^2) * ft^2 -> lbf
     assert u.Unit(unit) == u.lbf
 
@@ -88,7 +96,9 @@ def test_compute_surface_integral_unit_with_output_units(mock_params_si):
     var = UserVariable(name="var", value=Expression(expression="10 * u.Pa")).in_units(
         new_unit="kPa"
     )
-    unit = compute_surface_integral_unit(var, mock_params_si)
+    unit = compute_surface_integral_unit(
+        var, mock_params_si.unit_system.name, mock_params_si.unit_system.resolve()
+    )
     # kPa * m^2 -> kN (or equivalent)
     assert u.Unit(unit) == u.kN
 
@@ -96,7 +106,9 @@ def test_compute_surface_integral_unit_with_output_units(mock_params_si):
 def test_compute_surface_integral_unit_fallback(mock_params_si):
     # Case where value is a simple number inside an expression
     var = UserVariable(name="var", value=Expression(expression="10"))
-    unit = compute_surface_integral_unit(var, mock_params_si)
+    unit = compute_surface_integral_unit(
+        var, mock_params_si.unit_system.name, mock_params_si.unit_system.resolve()
+    )
     assert u.Unit(unit) == u.m**2
 
 

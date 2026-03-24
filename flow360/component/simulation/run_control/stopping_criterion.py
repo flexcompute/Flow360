@@ -4,6 +4,14 @@ from typing import List, Literal, Optional, Union
 
 import pydantic as pd
 import unyt as u
+from flow360_schema.framework.expression import (
+    SolverVariable,
+    UnytQuantity,
+    UserVariable,
+    get_input_value_dimensions,
+    get_input_value_length,
+    solver_variable_to_user_variable,
+)
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.param_utils import serialize_model_obj_to_id
@@ -16,15 +24,9 @@ from flow360.component.simulation.outputs.outputs import (
     SurfaceProbeOutput,
 )
 from flow360.component.simulation.user_code.core.types import (
-    SolverVariable,
-    UnytQuantity,
-    UserVariable,
     ValueOrExpression,
-    get_input_value_dimensions,
-    get_input_value_length,
     infer_units_by_unit_system,
     is_variable_with_unit_system_as_units,
-    solver_variable_to_user_variable,
 )
 from flow360.component.simulation.validation.validation_context import (
     ParamsValidationInfo,

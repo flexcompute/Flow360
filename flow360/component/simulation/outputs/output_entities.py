@@ -4,6 +4,14 @@ from typing import Literal, Optional, Union
 
 import numpy as np
 import pydantic as pd
+from flow360_schema.framework.expression import (
+    Expression,
+    UnytQuantity,
+    UserVariable,
+    get_input_value_dimensions,
+    get_input_value_length,
+    solver_variable_to_user_variable,
+)
 from flow360_schema.framework.expression.utils import is_runtime_expression
 from flow360_schema.framework.physical_dimensions import Length
 
@@ -16,15 +24,9 @@ from flow360.component.simulation.framework.entity_base import EntityBase
 from flow360.component.simulation.framework.entity_utils import generate_uuid
 from flow360.component.simulation.outputs.output_fields import IsoSurfaceFieldNames
 from flow360.component.simulation.user_code.core.types import (
-    Expression,
-    UnytQuantity,
-    UserVariable,
     ValueOrExpression,
-    get_input_value_dimensions,
-    get_input_value_length,
     infer_units_by_unit_system,
     is_variable_with_unit_system_as_units,
-    solver_variable_to_user_variable,
 )
 from flow360.component.types import Axis
 

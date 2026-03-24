@@ -4,8 +4,12 @@ import re
 
 import pytest
 import unyt as u
+from flow360_schema.framework.expression import (
+    Expression,
+    UserVariable,
+    get_referenced_expressions_and_user_variables,
+)
 
-import flow360.component.simulation.user_code.core.context as context
 from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.framework.updater_utils import compare_values
 from flow360.component.simulation.models.solver_numerics import (
@@ -37,12 +41,7 @@ from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import Unsteady
 from flow360.component.simulation.translator.solver_translator import get_solver_json
 from flow360.component.simulation.unit_system import SI_unit_system
-from flow360.component.simulation.user_code.core.types import (
-    Expression,
-    UserVariable,
-    get_referenced_expressions_and_user_variables,
-    save_user_variables,
-)
+from flow360.component.simulation.user_code.core.types import save_user_variables
 from flow360.component.simulation.user_code.functions import math
 from flow360.component.simulation.user_code.variables import control, solution
 from flow360.component.volume_mesh import VolumeMeshV2

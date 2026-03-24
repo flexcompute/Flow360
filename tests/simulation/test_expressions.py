@@ -2,12 +2,20 @@ import json
 import re
 from typing import Annotated, Optional
 
+import flow360_schema.framework.expression.registry as context
 import numpy as np
 import pydantic as pd
 import pytest
+from flow360_schema.framework.expression import (
+    Expression,
+    SolverVariable,
+    UserVariable,
+    get_user_variable,
+    remove_user_variable,
+)
 from flow360_schema.framework.expression.dependency_graph import DependencyGraph
+from flow360_schema.framework.expression.registry import WHITELISTED_CALLABLES
 
-import flow360.component.simulation.user_code.core.context as context
 from flow360 import (
     AerospaceCondition,
     HeatEquationInitialCondition,
@@ -67,14 +75,8 @@ from flow360.component.simulation.unit_system import (
     VelocityType,
     ViscosityType,
 )
-from flow360.component.simulation.user_code.core.context import WHITELISTED_CALLABLES
 from flow360.component.simulation.user_code.core.types import (
-    Expression,
-    SolverVariable,
-    UserVariable,
     ValueOrExpression,
-    get_user_variable,
-    remove_user_variable,
     save_user_variables,
 )
 from flow360.component.simulation.user_code.variables import control, solution
@@ -496,8 +498,7 @@ def test_subscript_on_binary_expression_codegen_cpp():
     from flow360_schema.framework.expression.engine.generator import expr_to_code
     from flow360_schema.framework.expression.engine.parser import expr_to_model
     from flow360_schema.framework.expression.engine.types import TargetSyntax
-
-    from flow360.component.simulation.user_code.core.context import default_context
+    from flow360_schema.framework.expression.registry import default_context
 
     # Ensure codegen supports subscript on a BinOp value, e.g., (a * b)[0]
     expression_str = "(solution.pressure * solution.node_area_vector)[0]"
@@ -513,8 +514,7 @@ def test_subscript_on_binary_expression_velocity_cpp():
     from flow360_schema.framework.expression.engine.generator import expr_to_code
     from flow360_schema.framework.expression.engine.parser import expr_to_model
     from flow360_schema.framework.expression.engine.types import TargetSyntax
-
-    from flow360.component.simulation.user_code.core.context import default_context
+    from flow360_schema.framework.expression.registry import default_context
 
     expression_str = "(solution.pressure * solution.velocity)[1]"
     expr_model = expr_to_model(expression_str, default_context)
@@ -527,8 +527,7 @@ def test_subscript_on_binary_expression_constant_left_cpp():
     from flow360_schema.framework.expression.engine.generator import expr_to_code
     from flow360_schema.framework.expression.engine.parser import expr_to_model
     from flow360_schema.framework.expression.engine.types import TargetSyntax
-
-    from flow360.component.simulation.user_code.core.context import default_context
+    from flow360_schema.framework.expression.registry import default_context
 
     expression_str = "(2.0 * solution.node_area_vector)[2]"
     expr_model = expr_to_model(expression_str, default_context)
@@ -541,8 +540,7 @@ def test_subscript_on_binary_expression_dynamic_index_cpp():
     from flow360_schema.framework.expression.engine.generator import expr_to_code
     from flow360_schema.framework.expression.engine.parser import expr_to_model
     from flow360_schema.framework.expression.engine.types import TargetSyntax
-
-    from flow360.component.simulation.user_code.core.context import default_context
+    from flow360_schema.framework.expression.registry import default_context
 
     expression_str = "(solution.pressure * solution.node_area_vector)[control.physicalStep]"
     expr_model = expr_to_model(expression_str, default_context)
@@ -555,8 +553,7 @@ def test_subscript_on_binary_expression_with_left_parens_cpp():
     from flow360_schema.framework.expression.engine.generator import expr_to_code
     from flow360_schema.framework.expression.engine.parser import expr_to_model
     from flow360_schema.framework.expression.engine.types import TargetSyntax
-
-    from flow360.component.simulation.user_code.core.context import default_context
+    from flow360_schema.framework.expression.registry import default_context
 
     expression_str = "((solution.pressure + 1) * solution.node_area_vector)[2]"
     expr_model = expr_to_model(expression_str, default_context)
@@ -850,7 +847,6 @@ def test_udf_generator():
     vel_cross_vec = UserVariable(
         name="vel_cross_vec", value=math.cross(solution.velocity, [1, 2, 3] * u.cm)
     ).in_units(new_unit="CGS_unit_system")
-    # TOAI: Can you do a global search for get_output_units and see if we have replaced/fixed all calls?
     assert (
         vel_cross_vec.value.get_output_units(unit_system_name=params.unit_system.name)
         == u.cm**2 / u.s

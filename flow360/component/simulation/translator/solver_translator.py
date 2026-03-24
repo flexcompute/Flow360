@@ -8,6 +8,12 @@ from typing import Type, Union, get_args
 
 import numpy as np
 import unyt as u
+from flow360_schema.framework.expression import (
+    Expression,
+    UserVariable,
+    compute_surface_integral_unit,
+)
+from flow360_schema.framework.expression.variable import _convert_numeric
 from flow360_schema.framework.physical_dimensions import Length
 
 from flow360.component.simulation.conversion import (
@@ -132,12 +138,6 @@ from flow360.component.simulation.translator.utils import (
     replace_dict_key,
     translate_setting_and_apply_to_all_entities,
     translate_value_or_expression_object,
-)
-from flow360.component.simulation.user_code.core.types import (
-    Expression,
-    UserVariable,
-    _convert_numeric,
-    compute_surface_integral_unit,
 )
 from flow360.component.simulation.user_code.functions import math
 from flow360.component.simulation.user_code.variables import solution
@@ -1099,7 +1099,11 @@ def process_output_field_for_integral(output_field, input_params):
                 expression[i] * math.magnitude(solution.node_area_vector)
                 for i in range(expression.length)
             ]
-        new_unit = compute_surface_integral_unit(output_field, input_params)
+        new_unit = compute_surface_integral_unit(
+            output_field,
+            unit_system_name=input_params.unit_system.name,
+            unit_system=input_params.unit_system.resolve(),
+        )
         user_variable = UserVariable(
             name=output_field.name + "_integral",
             value=expression_processed,

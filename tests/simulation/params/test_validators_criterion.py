@@ -4,6 +4,7 @@ import unittest
 
 import pydantic as pd
 import pytest
+from flow360_schema.framework.expression import UserVariable
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.models.volume_models import Fluid
@@ -22,7 +23,6 @@ from flow360.component.simulation.run_control.stopping_criterion import (
 from flow360.component.simulation.services import ValidationCalledBy, validate_model
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import SI_unit_system
-from flow360.component.simulation.user_code.core.types import UserVariable
 from flow360.component.simulation.user_code.functions import math
 from flow360.component.simulation.user_code.variables import solution
 

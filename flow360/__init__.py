@@ -2,6 +2,13 @@
 This module is flow360 for simulation based models
 """
 
+from flow360_schema.framework.expression import (
+    UserVariable,
+    get_user_variable,
+    remove_user_variable,
+    show_user_variables,
+)
+
 from flow360.accounts_utils import Accounts
 from flow360.cli.api_set_func import configure_caller as configure
 from flow360.component.case import Case
@@ -197,12 +204,6 @@ from flow360.component.simulation.unit_system import (
     CGS_unit_system,
     SI_unit_system,
     imperial_unit_system,
-)
-from flow360.component.simulation.user_code.core.types import (
-    UserVariable,
-    get_user_variable,
-    remove_user_variable,
-    show_user_variables,
 )
 from flow360.component.simulation.user_code.functions import math
 from flow360.component.simulation.user_code.variables import solution

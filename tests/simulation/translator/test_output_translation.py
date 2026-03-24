@@ -2,6 +2,7 @@ import json
 
 import numpy as np
 import pytest
+from flow360_schema.framework.expression import UserVariable
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.draft_context.coordinate_system_manager import (
@@ -54,7 +55,6 @@ from flow360.component.simulation.translator.solver_translator import (
     translate_output,
 )
 from flow360.component.simulation.unit_system import SI_unit_system
-from flow360.component.simulation.user_code.core.types import UserVariable
 from flow360.component.simulation.user_code.variables import solution
 
 

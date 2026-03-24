@@ -1,8 +1,8 @@
-# pylint: disable=too-many-lines
-"""This module allows users to write serializable, evaluable symbolic code for use in simulation params.
+"""Client-only adapters for the expression system.
 
 Core types (Variable, UserVariable, SolverVariable, Expression, VariableContextInfo) live in
-flow360-schema. This file re-imports them and adds client-only validators via subclassing.
+flow360-schema. This file provides ValueOrExpression (client subclass) and adapter functions
+that depend on client-specific state (unit_system_manager, deprecation_reminder, params).
 """
 
 from __future__ import annotations
@@ -14,40 +14,17 @@ import numpy as np
 import pydantic as pd
 import unyt as u
 from flow360_schema import StrictUnitContext
-from flow360_schema.framework.expression.registry import default_context
 from flow360_schema.framework.expression.utils import is_runtime_expression
-from flow360_schema.framework.expression.value_or_expression import (  # pylint: disable=unused-import
-    AnyNumericType,
+from flow360_schema.framework.expression.value_or_expression import (
     SerializedValueOrExpression,
-    UnytArray,
-    UnytQuantity,
     register_deprecation_check,
 )
-
-# pylint: disable=unused-import
-from flow360_schema.framework.expression.variable import Expression, SolverVariable
 from flow360_schema.framework.expression.variable import (
-    UserVariable as SchemaUserVariable,
-)
-from flow360_schema.framework.expression.variable import (
+    Expression,
+    UserVariable,
     Variable,
-    VariableContextInfo,
     _check_list_items_are_same_dimensions,
-    _convert_argument,
-    _convert_numeric,
-    _is_array,
-    _solver_variables,
-    check_vector_binary_arithmetic,
-    get_input_value_dimensions,
-    get_input_value_length,
-    get_referenced_expressions_and_user_variables,
-    get_user_variable,
-    remove_user_variable,
-    show_user_variables,
-    update_global_context,
 )
-
-# pylint: enable=unused-import
 from pydantic import BeforeValidator, Discriminator, PlainSerializer, Tag
 from typing_extensions import Self
 from unyt import unyt_array, unyt_quantity
@@ -57,35 +34,10 @@ from flow360.component.simulation.unit_system import unit_system_manager
 
 register_deprecation_check(deprecation_reminder)
 
-# ---------------------------------------------------------------------------
-# Client subclass: UserVariable — adds legacy variable name check
-# MIGRATION-TODO(validation framework migration): Remove this subclass once
-#   AllFieldNames / deprecation_reminder are available in schema.
-# ---------------------------------------------------------------------------
-
-
-class UserVariable(SchemaUserVariable):
-    """Client-side UserVariable with legacy variable name check."""
-
-    @pd.field_validator("name", mode="after")
-    @classmethod
-    @deprecation_reminder("26.2.0")
-    def check_value_is_not_legacy_variable(cls, v):
-        """Check that the value is not a legacy variable"""
-        # pylint:disable=import-outside-toplevel
-        from flow360.component.simulation.outputs.output_fields import AllFieldNames
-
-        all_field_names = set(AllFieldNames.__args__)
-        if v in all_field_names:
-            raise ValueError(
-                f"'{v}' is a reserved (legacy) output field name. It cannot be used in expressions."
-            )
-        return v
-
-
 T = TypeVar("T")
 
 
+# TODO(migration): Migrate to schema once deprecation_reminder is migrated.
 class ValueOrExpression(Expression, Generic[T]):
     """Model accepting both value and expressions"""
 
@@ -232,6 +184,7 @@ class ValueOrExpression(Expression, Generic[T]):
         return union_type
 
 
+# TODO(migration): Migrate to schema once params.outputs structure is available in schema.
 def get_post_processing_variables(params) -> set[str]:
     """
     Get all the post processing related variables from the simulation params.
@@ -250,9 +203,14 @@ def get_post_processing_variables(params) -> set[str]:
     return post_processing_variables
 
 
+# TODO(migration): Migrate to schema once get_post_processing_variables and
+# params.private_attribute_asset_cache are available in schema.
 def save_user_variables(params):
     """Client adapter: extract data from params, delegate to schema."""
     # pylint:disable = import-outside-toplevel
+    from flow360_schema.framework.expression.variable import (
+        batch_get_user_variable_units as _schema_batch_get_user_variable_units,
+    )
     from flow360_schema.framework.expression.variable import (
         save_user_variables as _schema_save_user_variables,
     )
@@ -262,8 +220,8 @@ def save_user_variables(params):
     if post_processing_variables:
         output_units = {
             name: str(unit)
-            for name, unit in batch_get_user_variable_units(
-                list(post_processing_variables), params
+            for name, unit in _schema_batch_get_user_variable_units(
+                list(post_processing_variables), params.unit_system.name
             ).items()
         }
 
@@ -274,44 +232,6 @@ def save_user_variables(params):
     )
     params.private_attribute_asset_cache.variable_context = result
     return params
-
-
-def batch_get_user_variable_units(variable_names: list[str], params):
-    """
-    Return output units for a list of user variable names.
-
-    For each name, the value is pulled from `default_context` and converted to a unit:
-    - Expression: `Expression.get_output_units(unit_system_name)` (respects explicit output_units or
-      infers from unit system name).
-    - unyt_array/unyt_quantity: their `units`.
-    - Number: "dimensionless".
-
-    Returns a dict mapping variable name to a `unyt.Unit` (or the string "dimensionless").
-    Raises `ValueError` if a name resolves to an unsupported type.
-    """
-    result = {}
-    for name in variable_names:
-        value = default_context.get(name)
-        if isinstance(value, Expression):
-            result[name] = value.get_output_units(unit_system_name=params.unit_system.name)
-        elif isinstance(value, unyt_array):
-            result[name] = value.units
-        elif isinstance(value, Number):
-            result[name] = "dimensionless"
-        else:
-            raise ValueError(f"Unknown variable type: {value}")
-    return result
-
-
-def solver_variable_to_user_variable(item):
-    """Convert the solver variable to a user variable using the current unit system."""
-    if isinstance(item, SolverVariable):
-        if unit_system_manager.current is None:
-            raise ValueError(f"Solver variable {item.name} cannot be used without a unit system.")
-        unit_system_name = unit_system_manager.current.name
-        name = item.name.split(".")[-1] if "." in item.name else item.name
-        return UserVariable(name=f"{name}_{unit_system_name}", value=item)
-    return item
 
 
 def is_variable_with_unit_system_as_units(value: dict) -> bool:
@@ -341,17 +261,3 @@ def infer_units_by_unit_system(value: dict, unit_system: str, value_dimensions):
     if unit_system == "CGS_unit_system":
         value["units"] = u.unit_systems.cgs_unit_system[value_dimensions]
     return value
-
-
-def compute_surface_integral_unit(variable: UserVariable, params) -> str:
-    """Client adapter: extract unit_system from params, delegate to schema."""
-    # pylint:disable = import-outside-toplevel
-    from flow360_schema.framework.expression.variable import (
-        compute_surface_integral_unit as _schema_compute_surface_integral_unit,
-    )
-
-    return _schema_compute_surface_integral_unit(
-        variable=variable,
-        unit_system_name=params.unit_system.name,
-        unit_system=params.unit_system.resolve(),
-    )
