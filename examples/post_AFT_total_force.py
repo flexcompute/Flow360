@@ -146,7 +146,7 @@ def get_data_last_aver_npseudo_step(filename, npseduo):
     return data
 
 
-def plot_line(i, j, coll, forces, forcename, label, axs, colori, case):
+def plot_line(i, j, coll, forces, forcename, label, axs, case, colori=0):
     """
     Plot a single force coefficient curve onto subplot axs[i, j].
 
@@ -154,9 +154,9 @@ def plot_line(i, j, coll, forces, forcename, label, axs, colori, case):
     allowing up to 8 distinguishable curves.
     """
     if colori < 4:
-        axs[i, j].plot(coll, forces[forcename], '-', label=case, color=cmap.colors[colori])
+        axs[i, j].plot(coll, forces[forcename], '-', label=case, color=cmap.colors[colori], linewidth=3)
     else:
-        axs[i, j].plot(coll, forces[forcename], '--', label=case, color=cmap.colors[colori - 4])
+        axs[i, j].plot(coll, forces[forcename], '--', label=case, color=cmap.colors[colori - 4], linewidth=3)
     axs[i, j].set_ylabel(label)
 
 
@@ -175,7 +175,7 @@ def plot_forces(folder, case, forces, coll, forcestoplot):
     for i in irange:
         for j in jrange:
             index = i * nj + j
-            plot_line(i, j, coll, forces, forcestoplot[index], labels[index], axs, 0, case)
+            plot_line(i, j, coll, forces, forcestoplot[index], labels[index], axs, case)
             axs[i, j].set_xlabel('alpha [deg]')
             axs[i, j].grid()
             axs[i, j].tick_params(axis='both', labelsize=14)
@@ -200,7 +200,7 @@ def plot_forces_diff(folder, case, forces, coll, forcestoplot):
     for i in irange:
         for j in jrange:
             index = i * nj + j
-            plot_line(i, j, coll, forces, forcestoplot[index], labels[index], axs, 0, case)
+            plot_line(i, j, coll, forces, forcestoplot[index], labels[index], axs, case)
             axs[i, j].set_xlabel('alpha [deg]')
             axs[i, j].grid()
     figurename = folder + "/" + case + "/figures/" + folder + "_delta_forces_coeff.png"
@@ -272,21 +272,25 @@ def plot_forces_comp(folder, cases, fname, forces, coll, forcestoplot, testdata,
         for i in irange:
             for j in jrange:
                 index = i * nj + j
-                plot_line(i, j, coll, forces[ii], forcestoplot[index], labels[index], axs, ii, cases[ii])
+                plot_line(i, j, coll, forces[ii], forcestoplot[index], labels[index], axs, cases[ii], ii)
 
     # adding reference test data for comparison
     if testdata:
         testAOA, testCL, testCD, testCMy = readtestdata()
         axs[0, 0].plot(testAOA, testCL, 'o', label='test', color='k')
         axs[0, 1].plot(testAOA, testCD, 'o', label='test', color='k')
-        axs[1, 2].plot(testAOA, testCMy, 'o', label='test', color='k')
+        if 'CMy' in forcestoplot:
+            idx = forcestoplot.index('CMy')
+            axs[idx // nj, idx % nj].plot(testAOA, testCMy, 'o', label='test', color='k')
 
-    axs[0, 1].set_title(folder, fontsize=20)
-    axs[0, 0].legend(fontsize=16)
+    axs[0, 1].set_title("Solver release test", fontsize=24)
+    axs[0, 0].legend(fontsize=18, framealpha=0.8)
 
     for i in [0, 1]:
         for j in [0, 1, 2]:
-            axs[i, j].set_xlabel(xlabel)
+            axs[i, j].set_xlabel(xlabel, fontsize=18, fontweight='bold')
+            axs[i, j].set_ylabel(axs[i, j].get_ylabel(), fontsize=18, fontweight='bold')
+            axs[i, j].tick_params(axis='both', labelsize=16)
             axs[i, j].grid()
 
     figurename = folder + "/figures/forces/" + fname + ".png"
@@ -415,8 +419,11 @@ def main():
     4. Produce a multi-case overlay comparison figure.
     5. Produce pairwise difference figures between consecutive cases.
     """
-    allforces = {}
-    diffs = {}
+
+
+    # Note: the following config fields are deprecated but retained for backward compatibility:
+    #   - npseduos: replaced by automatically averaging the last 10% of pseudo-steps
+    #   - datafileexist: replaced by automatic detection of existing local CSV files
 
     config_file = "./config_files/config.json"
     config = read_case_config(config_file)
@@ -450,19 +457,26 @@ def main():
     if datafileexist[0] == 1:
         bootstrap_file = fetch_data(bootstrap_case_id)
     forces = get_data_at_last_pseudo_step(bootstrap_file)
+
+    ### initalize the data.
+    allforces = {}
+    diffs = {}
     for key in forces.keys():
         diffs[key] = []
         allforces[key] = []
 
     # Select which 6 force coefficients to display based on simulation type
-    forcestoplot = ['CL', 'CD', 'CFy', 'CMx', 'CMy', 'CMz']
     if rotorflag:
-        forcestoplot = ['CFx', 'CFy', 'CFz', 'CMx', 'CMy', 'CMz']
-    if wholeplane:
-        forcestoplot = ['CL', 'CD', 'CDSkinFriction', 'CDPressure', 'CMx', 'CMy']
+        forcestoplot = ['CFx', 'CFy', 'CFz', 'CMx', 'CMy', 'CMz']         # rotor: body-axis forces
+    elif wholeplane:
+        forcestoplot = ['CL', 'CD', 'CDSkinFriction', 'CDPressure', 'CMx', 'CMy']  # full aircraft: include drag breakdown
+    else:
+        forcestoplot = ['CL', 'CD', 'CFy', 'CMx', 'CMy', 'CMz']           # default: wing/component
 
     cases = []
     ncases = len(casenames)
+    print("############################################")
+    print("   total ", ncases, " cases are compared in these test")
 
     for i in range(0, ncases):
         scale = scales[i] ## scale is used when the data from different case use diff reference.
@@ -474,19 +488,17 @@ def main():
         cases.append(casenames[i] + '_' + releases[i])
         path = os.path.join(rootfolder, "data", casenames[i] + '_' + releases[i])
         print("##############################################################")
-        print("this part read in data of case:", i)
-        print("PATH=", path)
-
+        print("Case:", i, "PATH=", path)
         figurepath = os.path.join(path, "figures")
-        try:
-            os.makedirs(path, exist_ok=False)
-            os.makedirs(figurepath, exist_ok=False)
-            print(f"Folder '{casenames[i]}' created successfully at {path}")
-        except OSError as error:
-            print(f"Error creating folder '{casenames[i]}': {error}")
+        for folder in [path, figurepath]:
+            if not os.path.exists(folder):
+                os.makedirs(folder)
+                print(f"Folder created: {folder}")
+            else:
+                print(f"Folder already exists: {folder}")
 
         caseID_file = rootfolder + '/caseIDfiles/' + casenames[i] + '_' + releases[i] + '_' + subcases[i] + '.txt'
-        print("caseID_file=", caseID_file)
+        print("read caseID_file=", caseID_file)
         case_ids = read_caseID(caseID_file)
 
         if case_ids is not None:
@@ -540,7 +552,7 @@ def main():
         diffnames.append(cases[i] + '-' + cases[i + 1])
 
     figurename = rootfolder + "_forces_coeff_diff" + figure_extname
-    plot_forces_comp(rootfolder, diffnames, figurename, diffs, AOAs, forcestoplot, testdata, xlabel)
+    plot_forces_comp(rootfolder, diffnames, figurename, diffs, AOAs, forcestoplot, False, xlabel)
 
 
 if __name__ == '__main__':
