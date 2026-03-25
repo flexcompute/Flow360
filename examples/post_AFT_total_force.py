@@ -655,28 +655,34 @@ def main():
             runtime_rows.append([cases[i], case_id[:13], aoa, elapsed_min, worker, ranks, total_pseudo_steps])
     print("###########################################################")
 
-    # Save runtime summary as a table figure
+    # Save runtime summary as table figures (max 9 rows per table)
     if runtime_rows:
         col_labels = ['Case', 'Case ID', xlabel, 'ElapsedTime (min)', 'Worker', 'MPI Ranks', 'Total Pseudo Steps']
         row_height = 0.1
-        fig, ax = plt.subplots(figsize=(20, max(2, len(runtime_rows) * 0.55 + 1.5)))
-        ax.axis('off')
-        tbl = ax.table(cellText=runtime_rows, colLabels=col_labels, loc='center', cellLoc='center')
-        tbl.auto_set_font_size(False)
-        tbl.set_fontsize(12)
-        tbl.auto_set_column_width(col=list(range(len(col_labels))))
-        for (row, col), cell in tbl.get_celld().items():
-            cell.set_height(row_height)
-        for col in range(len(col_labels)):
-            tbl[0, col].set_facecolor('#d0d0d0')
-            tbl[0, col].set_text_props(fontweight='bold')
-        ax.set_title('Runtime Summary', fontsize=15, pad=10)
         figurepath = os.path.join(rootfolder, "figures", "forces")
         os.makedirs(figurepath, exist_ok=True)
-        figurename = os.path.join(figurepath, rootfolder + "_runtime_summary" + figure_extname)
-        print("Runtime table figure:", figurename)
-        plt.savefig(figurename, dpi=200, bbox_inches='tight')
-        plt.close(fig)
+        max_rows_per_table = 9
+        num_tables = (len(runtime_rows) + max_rows_per_table - 1) // max_rows_per_table
+        for t in range(num_tables):
+            chunk = runtime_rows[t * max_rows_per_table:(t + 1) * max_rows_per_table]
+            fig, ax = plt.subplots(figsize=(20, max(2, len(chunk) * 0.55 + 1.5)))
+            ax.axis('off')
+            tbl = ax.table(cellText=chunk, colLabels=col_labels, loc='center', cellLoc='center')
+            tbl.auto_set_font_size(False)
+            tbl.set_fontsize(12)
+            tbl.auto_set_column_width(col=list(range(len(col_labels))))
+            for (row, col), cell in tbl.get_celld().items():
+                cell.set_height(row_height)
+            for col in range(len(col_labels)):
+                tbl[0, col].set_facecolor('#d0d0d0')
+                tbl[0, col].set_text_props(fontweight='bold')
+            title = f'Runtime Summary ({t + 1}/{num_tables})' if num_tables > 1 else 'Runtime Summary'
+            ax.set_title(title, fontsize=15, pad=10)
+            suffix = f"_part{t + 1}" if num_tables > 1 else ""
+            figurename = os.path.join(figurepath, rootfolder + f"_runtime_summary{suffix}" + figure_extname)
+            print("Runtime table figure:", figurename)
+            plt.savefig(figurename, dpi=200, bbox_inches='tight')
+            plt.close(fig)
 
 
 if __name__ == '__main__':
