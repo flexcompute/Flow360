@@ -94,15 +94,15 @@ class UniformRefinement(Flow360BaseModel):
     @pd.field_validator("face_spacing", mode="before")
     @classmethod
     def _convert_face_spacing(cls, value):
-        """Convert {Face: spacing} to {entity_id: {idx: spacing}} internal format."""
+        """Convert {Face: spacing} to {entity_name: {idx: spacing}} internal format."""
         if value is None or not isinstance(value, dict):
             return value
         result = {}
         for key, val in value.items():
             if isinstance(key, Face):
-                result.setdefault(key.entity_id, {})[key.index] = val
+                result.setdefault(key.entity_name, {})[key.index] = val
             elif isinstance(key, str) and isinstance(val, dict):
-                # Already in {id: {idx: spacing}} format (e.g., from JSON deserialization)
+                # Already in {name: {idx: spacing}} format (e.g., from JSON deserialization)
                 result[key] = {int(k): v for k, v in val.items()}
             else:
                 raise ValueError(
@@ -172,15 +172,15 @@ class UniformRefinement(Flow360BaseModel):
         if self.entities is not None:
             for entity in self.entities.stored_entities:
                 if isinstance(entity, AxisymmetricBody):
-                    entity_map[entity.private_attribute_id] = entity
+                    entity_map[entity.name] = entity
 
-        for entity_id, face_overrides in self.face_spacing.items():
-            if entity_id not in entity_map:
+        for entity_name, face_overrides in self.face_spacing.items():
+            if entity_name not in entity_map:
                 raise ValueError(
-                    f"face_spacing references an entity (id={entity_id}) that is not an "
+                    f"face_spacing references '{entity_name}' which is not an "
                     f"AxisymmetricBody in this refinement's entities list."
                 )
-            entity = entity_map[entity_id]
+            entity = entity_map[entity_name]
             num_faces = len(entity.profile_curve) - 1
             for face_idx in face_overrides:
                 if face_idx >= num_faces or face_idx < 0:
