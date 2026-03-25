@@ -26,33 +26,82 @@ from ..error_messages import shared_submit_warning
 from ..exceptions import Flow360RuntimeError, Flow360TypeError, Flow360ValueError
 from ..log import log
 
+# Keep in sync with GeometryAcceptItems in the WebUI:
+# flex/frontend/flow360-ui-next/src/pages/workbench/components/
+#   resource-management-panel/components/resource-upload-panel/index.tsx
 SUPPORTED_GEOMETRY_FILE_PATTERNS = [
+    # ESP / EGADS
     ".csm",
     ".egads",
+    # STEP
+    ".stp",
+    ".step",
+    ".stpz",
+    # IGES
+    ".iges",
+    ".igs",
+    # ACIS
     ".sat",
     ".sab",
     ".asat",
     ".asab",
+    # AutoCAD-3D
+    ".dwg",
+    ".dxf",
+    # Autodesk Inventor
+    ".ipt",
     ".iam",
+    # CATIA V4
+    ".model",
+    ".session",
+    ".dlv",
+    ".exp",
+    # CATIA V5
+    ".catdrawing",
     ".catpart",
     ".catproduct",
-    ".gt",
+    ".catshape",
+    ".cgr",
+    # CATIA V6 / 3DExperience
+    ".3dxml",
+    # Creo-Pro/E
+    ".asm",
+    ".asm.*",
     ".prt",
     ".prt.*",
-    ".asm.*",
-    ".par",
-    ".asm",
-    ".psm",
-    ".sldprt",
-    ".sldasm",
-    ".stp",
-    ".step",
-    ".x_t",
-    ".xmt_txt",
+    ".neu",
+    ".xas",
+    ".xpr",
+    # I-deas
+    ".mf1",
+    ".arc",
+    ".unv",
+    ".pkg",
+    # IFC
+    ".ifc",
+    ".ifczip",
+    # Parasolid
     ".x_b",
+    ".x_t",
+    ".xmt",
+    ".xmt_txt",
     ".xmt_bin",
+    # Revit
+    ".rvt",
+    ".rfa",
+    # Rhino 3D
     ".3dm",
-    ".ipt",
+    # Solid Edge
+    ".par",
+    ".pwd",
+    ".psm",
+    # SolidWorks
+    ".sldasm",
+    ".sldprt",
+    # VDA-FS
+    ".vda",
+    # Granite (PTC internal kernel)
+    ".gt",
 ]
 
 
