@@ -348,7 +348,7 @@ class _BridgeHandler(_logging.Handler):
     def emit(self, record: _logging.LogRecord) -> None:
         level_name = record.levelname.upper()
         level = _get_level_int(level_name)
-        log._log(level, level_name, record.getMessage())
+        log._log(level, level_name, record.getMessage())  # pylint:disable = protected-access
 
 
 _schema_logger = _logging.getLogger("flow360_schema")
