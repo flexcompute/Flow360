@@ -160,11 +160,11 @@ def plot_line(i, j, coll, forces, forcename, label, axs, case, colori=0):
     axs[i, j].set_ylabel(label)
 
 
-def plot_forces(folder, case, forces, coll, forcestoplot):
+def plot_forces(folder, case, forces, coll, forcestoplot, figure_extname):
     """
     Plot a 2x3 grid of force coefficients for a single case and save to disk.
 
-    The figure is saved under <folder>/data/<case>/figures/.
+    The figure is saved under <folder>/figures/<figure_extname>/total_force/.
     """
     labels = forcestoplot
     jrange = [0, 1, 2]
@@ -179,17 +179,17 @@ def plot_forces(folder, case, forces, coll, forcestoplot):
             axs[i, j].set_xlabel('alpha [deg]')
             axs[i, j].grid()
             axs[i, j].tick_params(axis='both', labelsize=14)
-    figurename = folder + "/data/" + case + "/figures/" + folder + "_forces_coeff.png"
+    figurename = os.path.join(folder, "figures", figure_extname, "total_force", case + "_forces_coeff.png")
     print(figurename)
     plt.savefig(figurename, dpi=500, bbox_inches='tight')
 
 
-def plot_forces_diff(folder, case, forces, coll, forcestoplot):
+def plot_forces_diff(folder, case, forces, coll, forcestoplot, figure_extname):
     """
     Plot a 2x3 grid of force coefficient differences (delta values) and save to disk.
 
     Used to visualize the deviation between two solver versions or configurations.
-    The figure is saved under <folder>/<case>/figures/.
+    The figure is saved under <folder>/figures/<figure_extname>/total_force/.
     """
     labels = ['delta_CL', 'delta_CD', 'delta_CFy', 'delta_CMx', 'delta_CMy', 'delta_CMz']
     jrange = [0, 1, 2]
@@ -203,7 +203,7 @@ def plot_forces_diff(folder, case, forces, coll, forcestoplot):
             plot_line(i, j, coll, forces, forcestoplot[index], labels[index], axs, case)
             axs[i, j].set_xlabel('alpha [deg]')
             axs[i, j].grid()
-    figurename = folder + "/" + case + "/figures/" + folder + "_delta_forces_coeff.png"
+    figurename = os.path.join(folder, "figures", figure_extname, "total_force", case + "_delta_forces_coeff.png")
     print(figurename)
     plt.savefig(figurename, dpi=500, bbox_inches='tight')
 
@@ -242,7 +242,7 @@ def readvolantdata():
     return testAOA, testCFz, testCMz
 
 
-def plot_forces_comp(folder, cases, fname, forces, coll, forcestoplot, testdata, xlabel):
+def plot_forces_comp(folder, cases, fname, forces, coll, forcestoplot, testdata, xlabel, figure_extname):
     """
     Plot overlaid force coefficient curves for multiple cases and save to disk.
 
@@ -293,7 +293,7 @@ def plot_forces_comp(folder, cases, fname, forces, coll, forcestoplot, testdata,
             axs[i, j].tick_params(axis='both', labelsize=16)
             axs[i, j].grid()
 
-    figurename = folder + "/figures/forces/" + fname + ".png"
+    figurename = os.path.join(folder, "figures", figure_extname, "total_force", fname + ".png")
     print("figure name=", figurename)
     plt.savefig(figurename, dpi=500, bbox_inches='tight')
 
@@ -514,6 +514,11 @@ def main():
     else:
         forcestoplot = ['CL', 'CD', 'CFy', 'CMx', 'CMy', 'CMz']           # default: wing/component
 
+    # Create figure output subdirectories
+    for subdir in ["total_force", "residual", "forcehistory"]:
+        path = os.path.join(rootfolder, "figures", figure_extname, subdir)
+        os.makedirs(path, exist_ok=True)
+
     cases = []
     ncases = len(casenames)
     print("############################################")
@@ -570,7 +575,7 @@ def main():
                     forcearray[key].append(forces[key][-1] / scale)
                 
 
-        plot_forces(rootfolder, cases[i], forcearray, AOAs, forcestoplot)
+        plot_forces(rootfolder, cases[i], forcearray, AOAs, forcestoplot, figure_extname)
         allforces[i] = forcearray
 
     print("###########################################################")
@@ -582,7 +587,7 @@ def main():
 
     # Multi-case overlay comparison figure
     figurename = rootfolder + "_forces_coeff_compare" + figure_extname
-    plot_forces_comp(rootfolder, cases, figurename, allforces, AOAs, forcestoplot, testdata, xlabel)
+    plot_forces_comp(rootfolder, cases, figurename, allforces, AOAs, forcestoplot, testdata, xlabel, figure_extname)
 
     # Pairwise difference figures: each consecutive pair of cases
     diffs = {}
@@ -593,7 +598,7 @@ def main():
         diffnames.append(cases[i] + '-' + cases[i + 1])
 
     figurename = rootfolder + "_forces_coeff_diff" + figure_extname
-    plot_forces_comp(rootfolder, diffnames, figurename, diffs, AOAs, forcestoplot, False, xlabel)
+    plot_forces_comp(rootfolder, diffnames, figurename, diffs, AOAs, forcestoplot, False, xlabel, figure_extname)
 
     # Collect runtime stats for all cases, print summary, and save as a table figure.
     # - Timing/worker fields come from case.get() (raw API response)
@@ -659,7 +664,7 @@ def main():
     if runtime_rows:
         col_labels = ['Case', 'Case ID', xlabel, 'ElapsedTime (min)', 'Worker', 'MPI Ranks', 'Total Pseudo Steps']
         row_height = 0.1
-        figurepath = os.path.join(rootfolder, "figures", "forces")
+        figurepath = os.path.join(rootfolder, "figures", figure_extname, "total_force")
         os.makedirs(figurepath, exist_ok=True)
         max_rows_per_table = 9
         num_tables = (len(runtime_rows) + max_rows_per_table - 1) // max_rows_per_table

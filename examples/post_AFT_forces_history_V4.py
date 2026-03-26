@@ -185,9 +185,11 @@ def plot_convergence_comparison(folder, cases, forces, AOA, step, forcestoplot,
     axs[0, 0].legend(fontsize=16, loc='upper center')
 
     if totforce_flag:
-        figurename = f"{folder}/figures/{figure_extname}force_history_{xlabel}{AOA}_last{step}step.png"
+        figurename = os.path.join(folder, "figures", figure_extname, "forcehistory",
+                                  f"{figure_extname}force_history_{xlabel}{AOA}_last{step}step.png")
     else:
-        figurename = f"{folder}/figures/{figure_extname}residual_{xlabel}{AOA}_last{step}step.png"
+        figurename = os.path.join(folder, "figures", figure_extname, "residual",
+                                  f"{figure_extname}residual_{xlabel}{AOA}_last{step}step.png")
     print("figurename:", figurename)
     plt.savefig(figurename, dpi=500, bbox_inches='tight')
     plt.close()
@@ -249,9 +251,11 @@ def plot_convergence_comparison_range(folder, cases, forces, AOA, step, forcesto
     axs[0, 1].legend(fontsize=14, loc='upper center')
 
     if totforce_flag:
-        figurename = f"{folder}/figures/{figure_extname}range_force_history_{xlabel}{AOA}_last{step}step.png"
+        figurename = os.path.join(folder, "figures", figure_extname, "forcehistory",
+                                  f"{figure_extname}range_force_history_{xlabel}{AOA}_last{step}step.png")
     else:
-        figurename = f"{folder}/figures/{figure_extname}range_residual_{xlabel}{AOA}_last{step}step.png"
+        figurename = os.path.join(folder, "figures", figure_extname, "residual",
+                                  f"{figure_extname}range_residual_{xlabel}{AOA}_last{step}step.png")
     print("figurename:", figurename)
     plt.savefig(figurename, dpi=500, bbox_inches='tight')
     plt.close()
@@ -341,13 +345,16 @@ def main():
     ncases = len(casenames)
     nAOAs = len(AOAs)
 
-    # Create top-level output folders
+    # Create top-level output folders and figure subdirectories
     for folder in [rootfolder, os.path.join(rootfolder, "figures")]:
         if not os.path.exists(folder):
             os.makedirs(folder)
             print(f"Folder created: {folder}")
         else:
             print(f"Folder already exists: {folder}")
+    for subdir in ["forcehistory", "residual"]:
+        path = os.path.join(rootfolder, "figures", figure_extname, subdir)
+        os.makedirs(path, exist_ok=True)
 
     # Read all case ID files upfront
     caseIDarray = {}
