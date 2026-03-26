@@ -10,6 +10,11 @@ import re
 from typing import Annotated, ClassVar, List, Literal, Optional, Tuple, Union, get_args
 
 import pydantic as pd
+from flow360_schema.framework.expression import (
+    Expression,
+    UserVariable,
+    solver_variable_to_user_variable,
+)
 from flow360_schema.framework.physical_dimensions import Length, Time
 from typing_extensions import deprecated
 
@@ -60,11 +65,6 @@ from flow360.component.simulation.primitives import (
     MirroredSurface,
     Surface,
     WindTunnelGhostSurface,
-)
-from flow360.component.simulation.user_code.core.types import (
-    Expression,
-    UserVariable,
-    solver_variable_to_user_variable,
 )
 from flow360.component.simulation.validation.validation_context import (
     ALL,

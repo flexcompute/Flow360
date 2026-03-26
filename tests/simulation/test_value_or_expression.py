@@ -4,8 +4,14 @@ import re
 
 import pytest
 import unyt as u
+from flow360_schema.framework.expression import (
+    Expression,
+    UserVariable,
+    get_referenced_expressions_and_user_variables,
+)
+from flow360_schema.models.functions import math
+from flow360_schema.models.variables import control, solution
 
-import flow360.component.simulation.user_code.core.context as context
 from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.framework.updater_utils import compare_values
 from flow360.component.simulation.models.solver_numerics import (
@@ -37,14 +43,7 @@ from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import Unsteady
 from flow360.component.simulation.translator.solver_translator import get_solver_json
 from flow360.component.simulation.unit_system import SI_unit_system
-from flow360.component.simulation.user_code.core.types import (
-    Expression,
-    UserVariable,
-    get_referenced_expressions_and_user_variables,
-    save_user_variables,
-)
-from flow360.component.simulation.user_code.functions import math
-from flow360.component.simulation.user_code.variables import control, solution
+from flow360.component.simulation.user_code.core.types import save_user_variables
 from flow360.component.volume_mesh import VolumeMeshV2
 
 
@@ -373,19 +372,15 @@ def param_with_steady_time_stepping_time_step_size():
     return save_user_variables(params).model_dump(mode="json", exclude_none=True)
 
 
-def param_with_rotation_zone_theta():
+def param_without_rotation_zone_theta():
+    """No Rotation model → control.theta should be disallowed."""
     reset_context()
     vm = volume_mesh()
-    vm["fluid"].axis = (0, 1, 0)
-    vm["fluid"].center = (1, 1, 2) * u.cm
     with SI_unit_system:
         params = SimulationParams(
             models=[
                 Fluid(turbulence_model_solver=SpalartAllmaras()),
                 Wall(name="wall", entities=vm["*"]),
-                Rotation(
-                    name="rotation", entities=vm["fluid"], spec=AngularVelocity(value=100 * u.rpm)
-                ),
             ],
             outputs=[VolumeOutput(name="output", output_fields=[control.theta])],
             private_attribute_asset_cache=asset_cache(),
@@ -393,19 +388,15 @@ def param_with_rotation_zone_theta():
     return save_user_variables(params).model_dump(mode="json", exclude_none=True)
 
 
-def param_with_rotation_zone_omega():
+def param_without_rotation_zone_omega():
+    """No Rotation model → control.omega should be disallowed."""
     reset_context()
     vm = volume_mesh()
-    vm["fluid"].axis = (0, 1, 0)
-    vm["fluid"].center = (1, 1, 2) * u.cm
     with SI_unit_system:
         params = SimulationParams(
             models=[
                 Fluid(turbulence_model_solver=SpalartAllmaras()),
                 Wall(name="wall", entities=vm["*"]),
-                Rotation(
-                    name="rotation", entities=vm["fluid"], spec=AngularVelocity(value=100 * u.rpm)
-                ),
             ],
             outputs=[VolumeOutput(name="output", output_fields=[control.omega])],
             private_attribute_asset_cache=asset_cache(),
@@ -413,19 +404,15 @@ def param_with_rotation_zone_omega():
     return save_user_variables(params).model_dump(mode="json", exclude_none=True)
 
 
-def param_with_rotation_zone_omega_dot():
+def param_without_rotation_zone_omega_dot():
+    """No Rotation model → control.omegaDot should be disallowed."""
     reset_context()
     vm = volume_mesh()
-    vm["fluid"].axis = (0, 1, 0)
-    vm["fluid"].center = (1, 1, 2) * u.cm
     with SI_unit_system:
         params = SimulationParams(
             models=[
                 Fluid(turbulence_model_solver=SpalartAllmaras()),
                 Wall(name="wall", entities=vm["*"]),
-                Rotation(
-                    name="rotation", entities=vm["fluid"], spec=AngularVelocity(value=100 * u.rpm)
-                ),
             ],
             outputs=[VolumeOutput(name="output", output_fields=[control.omegaDot])],
             private_attribute_asset_cache=asset_cache(),
@@ -477,15 +464,15 @@ def param_with_rotation_zone_omega_dot():
             "`control.timeStepSize` cannot be used because Unsteady time stepping is not used.",
         ),
         (
-            param_with_rotation_zone_theta(),
+            param_without_rotation_zone_theta(),
             "`control.theta` cannot be used because Rotation zone is not used.",
         ),
         (
-            param_with_rotation_zone_omega(),
+            param_without_rotation_zone_omega(),
             "`control.omega` cannot be used because Rotation zone is not used.",
         ),
         (
-            param_with_rotation_zone_omega_dot(),
+            param_without_rotation_zone_omega_dot(),
             "`control.omegaDot` cannot be used because Rotation zone is not used.",
         ),
     ],

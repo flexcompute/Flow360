@@ -8,7 +8,15 @@ from typing import Type, Union, get_args
 
 import numpy as np
 import unyt as u
+from flow360_schema.framework.expression import (
+    Expression,
+    UserVariable,
+    compute_surface_integral_unit,
+)
+from flow360_schema.framework.expression.variable import _convert_numeric
 from flow360_schema.framework.physical_dimensions import Length
+from flow360_schema.models.functions import math
+from flow360_schema.models.variables import solution
 
 from flow360.component.simulation.conversion import (
     LIQUID_IMAGINARY_FREESTREAM_MACH,
@@ -133,14 +141,6 @@ from flow360.component.simulation.translator.utils import (
     translate_setting_and_apply_to_all_entities,
     translate_value_or_expression_object,
 )
-from flow360.component.simulation.user_code.core.types import (
-    Expression,
-    UserVariable,
-    _convert_numeric,
-    compute_surface_integral_unit,
-)
-from flow360.component.simulation.user_code.functions import math
-from flow360.component.simulation.user_code.variables import solution
 from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
     UserDefinedDynamic,
 )
@@ -934,7 +934,9 @@ def user_variable_to_udf(
         prepending_code = "".join(prepending_code)
         return prepending_code
 
-    requested_unit: Union[u.Unit, None] = expression.get_output_units(input_params=input_params)
+    requested_unit: Union[u.Unit, None] = expression.get_output_units(
+        unit_system_name=input_params.unit_system.name
+    )
     if requested_unit is None:
         # Number constant output requested
         coefficient = 1
@@ -957,7 +959,7 @@ def user_variable_to_udf(
         if not isinstance(expression, Expression):
             # Enforce constant as Expression
             expression = Expression.model_validate(_convert_numeric(expression))
-        expression = expression.to_solver_code(params=input_params)
+        expression = expression.to_solver_code(input_params.flow360_unit_system)
         return UserDefinedField(
             name=variable.name, expression=f"{prepending_code}{variable.name} = " + expression + ";"
         )
@@ -973,10 +975,10 @@ def user_variable_to_udf(
         expression = [item * coefficient for item in expression]
     for i, item in enumerate(expression):
         if isinstance(item, Expression):
-            expression[i] = item.to_solver_code(params=input_params)
+            expression[i] = item.to_solver_code(input_params.flow360_unit_system)
         else:
             expression[i] = Expression.model_validate(_convert_numeric(item)).to_solver_code(
-                params=input_params
+                input_params.flow360_unit_system
             )
 
     expression = [f"{variable.name}[{i}] = " + item for i, item in enumerate(expression)]
@@ -1099,7 +1101,11 @@ def process_output_field_for_integral(output_field, input_params):
                 expression[i] * math.magnitude(solution.node_area_vector)
                 for i in range(expression.length)
             ]
-        new_unit = compute_surface_integral_unit(output_field, input_params)
+        new_unit = compute_surface_integral_unit(
+            output_field,
+            unit_system_name=input_params.unit_system.name,
+            unit_system=input_params.unit_system.resolve(),
+        )
         user_variable = UserVariable(
             name=output_field.name + "_integral",
             value=expression_processed,

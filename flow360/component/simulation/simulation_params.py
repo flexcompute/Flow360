@@ -9,6 +9,11 @@ from typing import Annotated, List, Literal, Optional, Union
 
 import pydantic as pd
 import unyt as u
+from flow360_schema.framework.expression import (
+    UserVariable,
+    batch_get_user_variable_units,
+    compute_surface_integral_unit,
+)
 from flow360_schema.framework.physical_dimensions import (
     AbsoluteTemperature,
     Density,
@@ -88,9 +93,6 @@ from flow360.component.simulation.unit_system import (
 )
 from flow360.component.simulation.units import validate_length
 from flow360.component.simulation.user_code.core.types import (
-    UserVariable,
-    batch_get_user_variable_units,
-    compute_surface_integral_unit,
     get_post_processing_variables,
 )
 from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
@@ -973,13 +975,19 @@ class SimulationParams(_ParamModelBase):
 
         # Sort for consistent behavior
         post_processing_variables = sorted(post_processing_variables)
-        name_units_pair = batch_get_user_variable_units(post_processing_variables, self)
+        name_units_pair = batch_get_user_variable_units(
+            post_processing_variables, self.unit_system.name  # pylint: disable=no-member
+        )
 
         for output in self.outputs:
             if isinstance(output, SurfaceIntegralOutput):
                 for field in output.output_fields.items:
                     if isinstance(field, UserVariable):
-                        unit = compute_surface_integral_unit(field, self)
+                        unit = compute_surface_integral_unit(
+                            field,
+                            unit_system_name=self.unit_system.name,  # pylint: disable=no-member
+                            unit_system=self.unit_system.resolve(),  # pylint: disable=no-member
+                        )
                         name_units_pair[f"{field.name} (Surface integral)"] = unit
 
         if not name_units_pair:

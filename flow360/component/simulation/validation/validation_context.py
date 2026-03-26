@@ -15,7 +15,6 @@ Features
   information, enabling downstream processes to filter and interpret errors based on scenario-specific requirements.
 """
 
-import contextvars
 import inspect
 from enum import Enum
 from functools import wraps
@@ -24,9 +23,11 @@ from typing import Any, Callable, List, Literal, Union
 
 import pydantic as pd
 from flow360_schema.framework.physical_dimensions import Length
-from flow360_schema.framework.validation.context import (  # noqa: F401 — re-used, not redefined
+from flow360_schema.framework.validation.context import (
     DeserializationContext,
+    _validation_info_ctx,
     _validation_level_ctx,
+    _validation_warnings_ctx,
 )
 from pydantic import Field, TypeAdapter
 
@@ -106,10 +107,6 @@ class FeatureUsageInfo:
 
                 if model["type"] == "BETDisk":
                     self.bet_disk_count += 1
-
-
-_validation_info_ctx = contextvars.ContextVar("validation_info", default=None)
-_validation_warnings_ctx = contextvars.ContextVar("validation_warnings", default=None)
 
 
 class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-instance-attributes

@@ -10,6 +10,7 @@ from typing import Union
 import numpy as np
 import pydantic as pd
 import unyt as u
+from flow360_schema.framework.expression import Expression, UserVariable
 from flow360_schema.framework.physical_dimensions import Length
 
 from flow360.component.simulation.draft_context.coordinate_system_manager import (
@@ -29,7 +30,6 @@ from flow360.component.simulation.primitives import (
 )
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.units import validate_length
-from flow360.component.simulation.user_code.core.types import Expression, UserVariable
 from flow360.component.simulation.utils import is_exact_instance
 from flow360.exceptions import Flow360TranslationError
 
@@ -295,7 +295,7 @@ def remove_units_in_dict(input_dict, skip_keys: list[str] = None):
 def get_units_from_field(field, input_params) -> u.Unit:
     """Get output units from a field, which can be either a UserVariable or a string."""
     if isinstance(field, UserVariable):
-        return field.value.get_output_units(input_params=input_params)
+        return field.value.get_output_units(unit_system_name=input_params.unit_system.name)
     return u.dimensionless  # pylint:disable=no-member
 
 

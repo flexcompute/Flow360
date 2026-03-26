@@ -4,7 +4,10 @@ import unittest
 
 import pydantic as pd
 import pytest
+from flow360_schema.framework.expression import UserVariable
 from flow360_schema.framework.validation.context import DeserializationContext
+from flow360_schema.models.functions import math
+from flow360_schema.models.variables import solution
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.draft_context.coordinate_system_manager import (
@@ -130,9 +133,6 @@ from flow360.component.simulation.services import (
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
 from flow360.component.simulation.unit_system import SI_unit_system
-from flow360.component.simulation.user_code.core.types import UserVariable
-from flow360.component.simulation.user_code.functions import math
-from flow360.component.simulation.user_code.variables import solution
 from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
     UserDefinedDynamic,
 )
