@@ -18,7 +18,7 @@ from flow360.component.simulation.framework.updater import (
 from flow360.component.simulation.framework.updater_utils import Flow360Version
 from flow360.component.simulation.services import ValidationCalledBy, validate_model
 from flow360.component.simulation.validation.validation_context import ALL
-from flow360.version import __version__
+from flow360.version import __solver_version__, __version__
 
 
 @pytest.fixture(autouse=True)
@@ -41,6 +41,18 @@ def test_version_consistency():
     assert pyproject_version == "v" + __version__, (
         f"Version mismatch: pyproject.toml version is {pyproject_version}, "
         f"but __version__ is {__version__}"
+    )
+
+
+def test_default_solver_version_matches_module_version():
+    """For non-beta releases (vA.B.C), the default solver version must be 'release-A.B'."""
+    version = Flow360Version(__version__)
+    if re.search(r"b\d+$", __version__):
+        pytest.skip("Beta version, skipping solver version check")
+    expected_solver_version = f"release-{version.major}.{version.minor}"
+    assert __solver_version__ == expected_solver_version, (
+        f"Default solver version mismatch: __solver_version__ is '{__solver_version__}', "
+        f"but expected '{expected_solver_version}' based on __version__ '{__version__}'"
     )
 
 
@@ -2134,3 +2146,108 @@ def test_updater_to_25_9_3_rename_wall_function_type_name():
     assert models[2]["use_wall_function"] is None
     assert "use_wall_function" not in models[3]
     assert models[4].get("type") == "Freestream"
+
+
+def test_updater_to_25_8_8_total_pressure_expression():
+    """String expressions are converted from ratio (P/P∞) to Flow360 nondim (P/(ρa²))."""
+    params_as_dict = {
+        "version": "25.8.7",
+        "unit_system": {"name": "SI"},
+        "operating_condition": {"type_name": "AerospaceCondition"},
+        "models": [
+            {
+                "type": "Inflow",
+                "spec": {
+                    "type_name": "TotalPressure",
+                    "value": "1.0 + 0.5 * sin(y)",
+                },
+            },
+        ],
+    }
+
+    params_new = updater(
+        version_from="25.8.7",
+        version_to="25.8.8",
+        params_as_dict=params_as_dict,
+    )
+
+    assert params_new["version"] == "25.8.8"
+    assert params_new["models"][0]["spec"]["value"] == "(1.0 + 0.5 * sin(y)) / 1.4"
+
+
+def test_updater_to_25_8_8_total_pressure_numeric_unchanged():
+    """Numeric (dimensioned) TotalPressure values should not be touched by the updater."""
+    params_as_dict = {
+        "version": "25.8.7",
+        "unit_system": {"name": "SI"},
+        "operating_condition": {"type_name": "AerospaceCondition"},
+        "models": [
+            {
+                "type": "Inflow",
+                "spec": {
+                    "type_name": "TotalPressure",
+                    "value": {"value": 101325.0, "units": "Pa"},
+                },
+            },
+        ],
+    }
+
+    params_new = updater(
+        version_from="25.8.7",
+        version_to="25.8.8",
+        params_as_dict=params_as_dict,
+    )
+
+    assert params_new["models"][0]["spec"]["value"] == {"value": 101325.0, "units": "Pa"}
+
+
+def test_updater_to_25_8_8_liquid_skipped():
+    """LiquidOperatingCondition should skip the conversion (ratio=1.0)."""
+    params_as_dict = {
+        "version": "25.8.7",
+        "unit_system": {"name": "SI"},
+        "operating_condition": {"type_name": "LiquidOperatingCondition"},
+        "models": [
+            {
+                "type": "Inflow",
+                "spec": {
+                    "type_name": "TotalPressure",
+                    "value": "1.0 + 0.5 * sin(y)",
+                },
+            },
+        ],
+    }
+
+    params_new = updater(
+        version_from="25.8.7",
+        version_to="25.8.8",
+        params_as_dict=params_as_dict,
+    )
+
+    assert params_new["models"][0]["spec"]["value"] == "1.0 + 0.5 * sin(y)"
+
+
+def test_updater_total_pressure_no_double_conversion():
+    """Upgrading from 25.8.7 to 25.10.0 should only convert once (via 25.8.8), not again at 25.10.0."""
+    params_as_dict = {
+        "version": "25.8.7",
+        "unit_system": {"name": "SI"},
+        "operating_condition": {"type_name": "AerospaceCondition"},
+        "models": [
+            {
+                "type": "Inflow",
+                "spec": {
+                    "type_name": "TotalPressure",
+                    "value": "1.0 + 0.5 * sin(y)",
+                },
+            },
+        ],
+    }
+
+    params_new = updater(
+        version_from="25.8.7",
+        version_to="25.10.0",
+        params_as_dict=params_as_dict,
+    )
+
+    assert params_new["models"][0]["spec"]["value"] == "(1.0 + 0.5 * sin(y)) / 1.4"

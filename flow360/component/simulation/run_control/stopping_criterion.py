@@ -28,6 +28,7 @@ from flow360.component.simulation.user_code.core.types import (
 )
 from flow360.component.simulation.validation.validation_context import (
     ParamsValidationInfo,
+    TimeSteppingType,
     contextual_field_validator,
 )
 
@@ -132,6 +133,25 @@ class StoppingCriterion(Flow360BaseModel):
         # output_dict is None if outputs field had validation errors
         if param_info.output_dict.get(v) is None:
             raise ValueError("The monitor output does not exist in the outputs list.")
+        return v
+
+    @contextual_field_validator("monitor_output", mode="after", required_context=["output_dict"])
+    @classmethod
+    def _check_not_final_pseudo_step_only_in_steady(cls, v, param_info: ParamsValidationInfo):
+        """In steady simulations, stopping criterion requires intermediate pseudo-step data to
+        evaluate convergence, so it cannot reference a monitor that suppresses those writes.
+        In unsteady simulations the check is fine because both the monitor write and
+        stopping criterion evaluation happen at the end of each physical step."""
+        if param_info.time_stepping != TimeSteppingType.STEADY:
+            return v
+        monitor_output = param_info.output_dict.get(v)
+        if monitor_output is not None and getattr(
+            monitor_output, "output_at_final_pseudo_step_only", False
+        ):
+            raise ValueError(
+                "A monitor output with `output_at_final_pseudo_step_only=True` cannot be "
+                "referenced by a StoppingCriterion in a steady simulation."
+            )
         return v
 
     @contextual_field_validator("monitor_output", mode="after", required_context=["output_dict"])

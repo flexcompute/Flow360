@@ -1061,7 +1061,7 @@ def test_generate_process_json_skips_case_validation_for_meshing():
     """velocity_magnitude=0 without reference_velocity should not fail when only generating mesh JSON."""
     params_data = {
         "meshing": {
-            "defaults": {"surface_max_edge_length": "1*m"},
+            "defaults": {"surface_max_edge_length": 1},
             "volume_zones": [
                 {
                     "method": "auto",
@@ -1107,7 +1107,7 @@ def test_generate_process_json_skips_case_validation_for_meshing():
             }
         ],
         "private_attribute_asset_cache": {
-            "project_length_unit": "m",
+            "project_length_unit": 1,
             "project_entity_info": {
                 "type_name": "GeometryEntityInfo",
                 "face_ids": ["face_x_1", "face_x_2", "face_x_3"],

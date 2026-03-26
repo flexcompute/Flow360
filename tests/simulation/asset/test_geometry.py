@@ -52,7 +52,7 @@ def test_draft_geometry_from_file():
     with pytest.raises(
         ex.Flow360FileError,
         match=re.escape(
-            "The given file: file.unsupported is not a supported geometry or surface mesh file. Allowed file suffixes are: ['.csm', '.egads', '.sat', '.sab', '.asat', '.asab', '.iam', '.catpart', '.catproduct', '.gt', '.prt', '.prt.*', '.asm.*', '.par', '.asm', '.psm', '.sldprt', '.sldasm', '.stp', '.step', '.x_t', '.xmt_txt', '.x_b', '.xmt_bin', '.3dm', '.ipt', '.ugrid', '.cgns', '.stl']"
+            "The given file: file.unsupported is not a supported geometry or surface mesh file. Allowed file suffixes are: ['.csm', '.egads', '.stp', '.step', '.stpz', '.iges', '.igs', '.sat', '.sab', '.asat', '.asab', '.dwg', '.dxf', '.ipt', '.iam', '.model', '.session', '.dlv', '.exp', '.catdrawing', '.catpart', '.catproduct', '.catshape', '.cgr', '.3dxml', '.asm', '.asm.*', '.prt', '.prt.*', '.neu', '.xas', '.xpr', '.mf1', '.arc', '.unv', '.pkg', '.ifc', '.ifczip', '.x_b', '.x_t', '.xmt', '.xmt_txt', '.xmt_bin', '.rvt', '.rfa', '.3dm', '.par', '.pwd', '.psm', '.sldasm', '.sldprt', '.vda', '.gt', '.ugrid', '.cgns', '.stl']"
         ),
     ):
         sm = Geometry.from_file("file.unsupported")
