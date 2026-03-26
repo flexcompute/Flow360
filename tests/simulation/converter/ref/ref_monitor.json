@@ -128,6 +128,7 @@
                 ]
             },
             "name": "R1",
+            "output_at_final_pseudo_step_only": false,
             "output_fields": {
                 "items": [
                     "primitiveVars"
@@ -168,6 +169,7 @@
                 ]
             },
             "name": "V3",
+            "output_at_final_pseudo_step_only": false,
             "output_fields": {
                 "items": [
                     "mut"
