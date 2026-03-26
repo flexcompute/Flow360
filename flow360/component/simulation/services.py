@@ -390,7 +390,7 @@ def initialize_variable_space(param_as_dict: dict, use_clear_context: bool = Fal
             line_errors=[
                 ErrorDetails(
                     type=error_detail["type"],
-                    loc=("private_attribute_asset_cache", "variable_context") + tuple(loc),
+                    loc=("private_attribute_asset_cache",) + tuple(loc),
                     msg=error_detail.get("msg", "Unknown error"),
                     ctx=error_detail.get("ctx", {}),
                 ),
