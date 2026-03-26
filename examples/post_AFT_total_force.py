@@ -191,7 +191,7 @@ def plot_forces_diff(folder, case, forces, coll, forcestoplot, figure_extname):
     Used to visualize the deviation between two solver versions or configurations.
     The figure is saved under <folder>/figures/<figure_extname>/total_force/.
     """
-    labels = ['delta_CL', 'delta_CD', 'delta_CFy', 'delta_CMx', 'delta_CMy', 'delta_CMz']
+    labels = [f"delta_{v}" for v in forcestoplot]
     jrange = [0, 1, 2]
     irange = [0, 1]
     ni = len(irange)
@@ -242,7 +242,7 @@ def readvolantdata():
     return testAOA, testCFz, testCMz
 
 
-def plot_forces_comp(folder, cases, fname, forces, coll, forcestoplot, testdata, xlabel, figure_extname):
+def plot_forces_comp(folder, cases, fname, forces, coll, forcestoplot, testdata, xlabel, figure_extname, delta=False):
     """
     Plot overlaid force coefficient curves for multiple cases and save to disk.
 
@@ -260,7 +260,7 @@ def plot_forces_comp(folder, cases, fname, forces, coll, forcestoplot, testdata,
         xlabel: Label string for the x-axis.
     """
     ncase = len(cases)
-    labels = forcestoplot
+    labels = [f"delta_{v}" for v in forcestoplot] if delta else forcestoplot
     jrange = [0, 1, 2]
     irange = [0, 1]
     ni = len(irange)
@@ -598,7 +598,7 @@ def main():
         diffnames.append(cases[i] + '-' + cases[i + 1])
 
     figurename = rootfolder + "_forces_coeff_diff" + figure_extname
-    plot_forces_comp(rootfolder, diffnames, figurename, diffs, AOAs, forcestoplot, False, xlabel, figure_extname)
+    plot_forces_comp(rootfolder, diffnames, figurename, diffs, AOAs, forcestoplot, False, xlabel, figure_extname, delta=True)
 
     # Collect runtime stats for all cases, print summary, and save as a table figure.
     # - Timing/worker fields come from case.get() (raw API response)
