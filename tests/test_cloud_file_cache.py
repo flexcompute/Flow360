@@ -1,0 +1,108 @@
+"""Tests for CloudFileCache size-based LRU disk cache."""
+
+import time
+
+import pytest
+
+from flow360.cloud.file_cache import CloudFileCache
+
+
+@pytest.fixture()
+def cache(tmp_path):
+    """A small cache (1 KB limit) rooted in a temp directory."""
+    return CloudFileCache(cache_root=tmp_path / "cache", max_size_bytes=1024)
+
+
+class TestGetPut:
+    def test_roundtrip(self, cache):
+        data = b"hello world"
+        cache.put("ns", "res1", "file.bin", data)
+        assert cache.get("ns", "res1", "file.bin") == data
+
+    def test_get_miss_returns_none(self, cache):
+        assert cache.get("ns", "nonexistent", "file.bin") is None
+
+    def test_multiple_files_per_resource(self, cache):
+        cache.put("ns", "res1", "a.bin", b"aaa")
+        cache.put("ns", "res1", "b.bin", b"bbb")
+        assert cache.get("ns", "res1", "a.bin") == b"aaa"
+        assert cache.get("ns", "res1", "b.bin") == b"bbb"
+
+    def test_separate_namespaces(self, cache):
+        cache.put("ns1", "res", "f.bin", b"one")
+        cache.put("ns2", "res", "f.bin", b"two")
+        assert cache.get("ns1", "res", "f.bin") == b"one"
+        assert cache.get("ns2", "res", "f.bin") == b"two"
+
+
+class TestEviction:
+    def test_evicts_oldest_when_over_budget(self, tmp_path):
+        # 500-byte budget: writing two 300-byte entries should evict the first
+        cache = CloudFileCache(cache_root=tmp_path / "cache", max_size_bytes=500)
+        cache.put("ns", "old", "f.bin", b"x" * 300)
+        time.sleep(0.05)  # ensure distinct mtime
+        cache.put("ns", "new", "f.bin", b"y" * 300)
+
+        assert cache.get("ns", "old", "f.bin") is None
+        assert cache.get("ns", "new", "f.bin") == b"y" * 300
+
+    def test_lru_order_respected(self, tmp_path):
+        cache = CloudFileCache(cache_root=tmp_path / "cache", max_size_bytes=800)
+
+        cache.put("ns", "A", "f.bin", b"a" * 250)
+        time.sleep(0.05)
+        cache.put("ns", "B", "f.bin", b"b" * 250)
+        time.sleep(0.05)
+
+        # Touch A so B becomes oldest
+        cache.get("ns", "A", "f.bin")
+        time.sleep(0.05)
+
+        # This should evict B (oldest access), not A
+        cache.put("ns", "C", "f.bin", b"c" * 400)
+
+        assert cache.get("ns", "A", "f.bin") == b"a" * 250
+        assert cache.get("ns", "B", "f.bin") is None
+        assert cache.get("ns", "C", "f.bin") == b"c" * 400
+
+    def test_no_eviction_when_within_budget(self, cache):
+        cache.put("ns", "r1", "f.bin", b"x" * 100)
+        cache.put("ns", "r2", "f.bin", b"y" * 100)
+        assert cache.get("ns", "r1", "f.bin") == b"x" * 100
+        assert cache.get("ns", "r2", "f.bin") == b"y" * 100
+
+
+class TestDisabled:
+    def test_disabled_cache_returns_none(self, tmp_path):
+        cache = CloudFileCache(cache_root=tmp_path / "cache", max_size_bytes=1024)
+        cache._disabled = True
+        cache.put("ns", "res", "f.bin", b"data")
+        assert cache.get("ns", "res", "f.bin") is None
+
+    def test_put_on_read_only_fs_disables_cache(self, tmp_path):
+        # Point to a non-writable root
+        bad_root = tmp_path / "no_exist" / "deep" / "path"
+        bad_root.mkdir(parents=True)
+        bad_root.chmod(0o000)
+
+        cache = CloudFileCache(cache_root=bad_root / "cache", max_size_bytes=1024)
+        cache.put("ns", "res", "f.bin", b"data")
+        assert cache._disabled
+
+        # Cleanup: restore permissions so tmp_path cleanup succeeds
+        bad_root.chmod(0o755)
+
+
+class TestLastAccess:
+    def test_put_creates_last_access_sentinel(self, cache, tmp_path):
+        cache.put("ns", "res1", "file.bin", b"data")
+        sentinel = tmp_path / "cache" / "ns" / "res1" / ".last_access"
+        assert sentinel.exists()
+
+    def test_get_updates_last_access_sentinel(self, cache, tmp_path):
+        cache.put("ns", "res1", "file.bin", b"data")
+        sentinel = tmp_path / "cache" / "ns" / "res1" / ".last_access"
+        mtime_before = sentinel.stat().st_mtime
+        time.sleep(0.05)
+        cache.get("ns", "res1", "file.bin")
+        assert sentinel.stat().st_mtime >= mtime_before
