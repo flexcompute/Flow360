@@ -5,6 +5,7 @@ import pytest
 
 from flow360.component.simulation.draft_context.obb.compute import (
     OBBResult,
+    _select_rotation_axis_index,
     compute_obb,
 )
 
@@ -66,11 +67,9 @@ class TestComputeObb:
         verts = _box_vertices(5, 3, 1)
         obb = compute_obb(verts)
 
-        # Each axis should be unit length
         for i in range(3):
             np.testing.assert_allclose(np.linalg.norm(obb.axes[i]), 1.0, atol=1e-10)
 
-        # Axes should be mutually orthogonal
         gram = obb.axes @ obb.axes.T
         np.testing.assert_allclose(gram, np.eye(3), atol=1e-10)
 
@@ -96,78 +95,75 @@ class TestComputeObb:
         sorted_extents = np.sort(obb.extents)[::-1]
         np.testing.assert_allclose(sorted_extents, [4, 1, 1], atol=1e-10)
 
+    def test_result_has_all_fields(self):
+        verts = _box_vertices(3, 2, 1)
+        obb = compute_obb(verts)
+        assert obb.center is not None
+        assert obb.axes is not None
+        assert obb.extents is not None
+        assert obb.axis_of_rotation is not None
+        assert obb.radius is not None
+
 
 # ---------------------------------------------------------------------------
-# OBBResult method tests
+# Rotation axis selection tests
 # ---------------------------------------------------------------------------
 
 
-class TestObbResultRotationAxis:
+class TestRotationAxisSelection:
     def test_hint_selects_closest_axis(self):
-        """axis_of_rotation with a hint should pick the most-aligned OBB axis."""
-        obb = OBBResult(
-            center=np.zeros(3),
-            axes=np.eye(3),  # x, y, z as rows
-            extents=np.array([5.0, 1.0, 1.0]),
-        )
-        axis = obb.axis_of_rotation(rotation_axis_hint=np.array([1, 0, 0]))
-        np.testing.assert_allclose(axis, [1, 0, 0], atol=1e-10)
+        axes = np.eye(3)
+        extents = np.array([5.0, 1.0, 1.0])
+        idx = _select_rotation_axis_index(axes, extents, rotation_axis_hint=np.array([1, 0, 0]))
+        assert idx == 0
 
     def test_hint_handles_non_unit_vector(self):
-        obb = OBBResult(
-            center=np.zeros(3),
-            axes=np.eye(3),
-            extents=np.array([5.0, 1.0, 1.0]),
-        )
-        axis = obb.axis_of_rotation(rotation_axis_hint=np.array([100, 0, 0]))
-        np.testing.assert_allclose(axis, [1, 0, 0], atol=1e-10)
+        axes = np.eye(3)
+        extents = np.array([5.0, 1.0, 1.0])
+        idx = _select_rotation_axis_index(axes, extents, rotation_axis_hint=np.array([100, 0, 0]))
+        assert idx == 0
 
     def test_circularity_heuristic_picks_cylinder_axis(self):
         """Without a hint, the axis whose perpendicular extents are most equal wins."""
-        # Cylinder-like: long along axis 0, circular cross-section (equal extents 1, 2)
-        obb = OBBResult(
-            center=np.zeros(3),
-            axes=np.eye(3),
-            extents=np.array([10.0, 2.0, 2.0]),
-        )
-        axis = obb.axis_of_rotation()
-        np.testing.assert_allclose(axis, [1, 0, 0], atol=1e-10)
+        axes = np.eye(3)
+        extents = np.array([10.0, 2.0, 2.0])
+        idx = _select_rotation_axis_index(axes, extents, rotation_axis_hint=None)
+        assert idx == 0
 
     def test_circularity_with_slight_asymmetry(self):
-        """Even slightly unequal perpendicular extents should still pick the best axis."""
-        obb = OBBResult(
-            center=np.zeros(3),
-            axes=np.eye(3),
-            extents=np.array([10.0, 2.1, 1.9]),
-        )
-        axis = obb.axis_of_rotation()
-        np.testing.assert_allclose(axis, [1, 0, 0], atol=1e-10)
+        axes = np.eye(3)
+        extents = np.array([10.0, 2.1, 1.9])
+        idx = _select_rotation_axis_index(axes, extents, rotation_axis_hint=None)
+        assert idx == 0
 
 
-class TestObbResultRadius:
-    def test_radius_is_average_of_perpendicular_extents(self):
-        obb = OBBResult(
-            center=np.zeros(3),
-            axes=np.eye(3),
-            extents=np.array([10.0, 3.0, 5.0]),
-        )
-        # Rotation axis = index 0 (circularity: perpendicular extents 3, 5 ratio 0.6)
-        # Compare with axis 1 (perp 10, 5, ratio 0.5) and axis 2 (perp 10, 3, ratio 0.3)
-        # So axis 0 wins; radius = (3 + 5) / 2 = 4.0
-        assert obb.radius() == pytest.approx(4.0)
+class TestComputeObbRotationAxis:
+    def test_hint_baked_into_result(self):
+        """rotation_axis_hint at compute_obb time is baked into the result fields."""
+        verts = _cylinder_vertices(radius=5.0, half_height=20.0, axis="z")
+        obb = compute_obb(verts, rotation_axis_hint=[0, 0, 1])
+        assert abs(np.dot(obb.axis_of_rotation, [0, 0, 1])) > 0.99
+
+    def test_default_circularity(self):
+        """Without hint, circularity picks the cylinder axis."""
+        verts = _cylinder_vertices(radius=5.0, half_height=20.0, axis="z")
+        obb = compute_obb(verts)
+        # Z-axis cylinder: rotation axis should align with Z
+        assert abs(np.dot(obb.axis_of_rotation, [0, 0, 1])) > 0.99
 
     def test_radius_with_hint(self):
-        obb = OBBResult(
-            center=np.zeros(3),
-            axes=np.eye(3),
-            extents=np.array([10.0, 3.0, 5.0]),
-        )
-        # Force axis 2 as rotation axis; perpendicular extents are 10.0 and 3.0
-        radius = obb.radius(rotation_axis_hint=np.array([0, 0, 1]))
-        assert radius == pytest.approx(6.5)
+        verts = _box_vertices(10, 3, 5)
+        obb = compute_obb(verts, rotation_axis_hint=[0, 0, 1])
+        # Hint Z → axis 2 → perpendicular extents are 10 and 3 → radius = 6.5
+        assert obb.radius == pytest.approx(6.5)
+
+    def test_radius_default(self):
+        verts = _box_vertices(10, 3, 5)
+        obb = compute_obb(verts)
+        # Circularity: axis 0 (perp 3,5 ratio 0.6) wins → radius = (3+5)/2 = 4.0
+        assert obb.radius == pytest.approx(4.0)
 
     def test_radius_for_perfect_cylinder(self):
         verts = _cylinder_vertices(radius=5.0, half_height=20.0, axis="z")
-        obb = compute_obb(verts)
-        # The radius should be close to 5.0
-        assert obb.radius(rotation_axis_hint=np.array([0, 0, 1])) == pytest.approx(5.0, abs=0.2)
+        obb = compute_obb(verts, rotation_axis_hint=[0, 0, 1])
+        assert obb.radius == pytest.approx(5.0, abs=0.2)

@@ -364,6 +364,7 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
         self,
         entities: Union[Surface, List[Surface], EntityRegistryView, EntitySelector],
         *,
+        rotation_axis_hint=None,
         lod_level: Optional[int] = None,
     ):
         """Compute oriented bounding box for the given surface entities.
@@ -372,10 +373,13 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
             entities: Surface entities or an EntitySelector that resolves to surfaces.
                 Accepts: a single Surface, a list of Surface, an EntityRegistryView,
                 or an EntitySelector.
+            rotation_axis_hint: optional approximate rotation axis direction (e.g. [0, 0, 1]).
+                If provided, the PCA axis most aligned with this hint is chosen as rotation axis.
+                If None, the axis whose perpendicular cross-section is most circular is used.
             lod_level: LOD level override for tessellation data.
 
         Returns:
-            OBBResult with center, axes, extents and derived rotation axis/radius methods.
+            OBBResult with center, axes, extents, axis_of_rotation, and radius as properties.
 
         Raises:
             Flow360RuntimeError: If this draft was not created from a Geometry resource.
@@ -433,7 +437,7 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
         vertices = self._tessellation_loader.load_vertices(face_ids, lod_level)
         log.info(f"OBB: extracted {len(vertices)} vertices, computing PCA...")
 
-        result = compute_obb(vertices)
+        result = compute_obb(vertices, rotation_axis_hint=rotation_axis_hint)
 
         # Apply length unit to dimensioned fields if available
         if self._length_unit is not None:
@@ -441,6 +445,8 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
                 center=result.center * self._length_unit,
                 axes=result.axes,
                 extents=result.extents * self._length_unit,
+                axis_of_rotation=result.axis_of_rotation,
+                radius=result.radius * self._length_unit,
             )
 
         log.info("OBB computation complete.")

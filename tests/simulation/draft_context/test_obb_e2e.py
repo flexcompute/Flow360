@@ -109,13 +109,13 @@ class TestTessellationLoaderE2E:
     def test_radius_matches_poc(self, local_tessellation_loader):
         vertices = local_tessellation_loader.load_vertices(ALL_FACE_IDS)
         result = compute_obb(vertices)
-        assert abs(result.radius() - POC_ALL_FACES["radius"]) < 1e-6
+        assert abs(result.radius - POC_ALL_FACES["radius"]) < 1e-6
 
     def test_rotation_axis_matches_poc(self, local_tessellation_loader):
         vertices = local_tessellation_loader.load_vertices(ALL_FACE_IDS)
         result = compute_obb(vertices)
         poc_rot_axis = POC_ALL_FACES["axes"][POC_ALL_FACES["rotation_axis_index"]]
-        dot = abs(np.dot(result.axis_of_rotation(), poc_rot_axis))
+        dot = abs(np.dot(result.axis_of_rotation, poc_rot_axis))
         assert dot > 0.999
 
     def test_caching_returns_same_result(self, local_tessellation_loader):
@@ -243,8 +243,8 @@ class TestDraftContextComputeObb:
         assert str(result.extents.units) == "m"
 
         # Radius should also carry units
-        radius = result.radius()
-        assert isinstance(radius, unyt.unyt_quantity)
+        assert isinstance(result.radius, unyt.unyt_quantity)
 
-        # Axes should remain dimensionless numpy
+        # Axes and axis_of_rotation should remain dimensionless numpy
         assert not isinstance(result.axes, unyt.unyt_array)
+        assert not isinstance(result.axis_of_rotation, unyt.unyt_array)
