@@ -347,7 +347,8 @@ class _BridgeHandler(_logging.Handler):
 
     def emit(self, record: _logging.LogRecord) -> None:
         level_name = record.levelname.upper()
-        log.log(level_name, record.getMessage())
+        level = _get_level_int(level_name)
+        log._log(level, level_name, record.getMessage())
 
 
 _schema_logger = _logging.getLogger("flow360_schema")

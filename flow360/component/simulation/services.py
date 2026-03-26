@@ -22,6 +22,7 @@ from flow360_schema.framework.expression.registry import (  # pylint: disable=un
     clear_context,
 )
 from flow360_schema.framework.expression.variable import (
+    RedeclaringVariableError,
     get_referenced_expressions_and_user_variables,
     restore_variable_space,
 )
@@ -370,18 +371,12 @@ def initialize_variable_space(param_as_dict: dict, use_clear_context: bool = Fal
 
     try:
         restore_variable_space(variable_context, clear_first=use_clear_context)
+    except RedeclaringVariableError as e:
+        raise ValueError(
+            f"Loading user variable '{e.variable_name}' from simulation.json which is "
+            "already defined in local context. Please change your local user variable definition."
+        ) from e
     except pd.ValidationError as e:
-        # TOAI: This string expression match to derive the error type is too weak
-        # and hacky. Can we refactor restore_variable_space to raise a specific
-        # error type for explicit matching? Do we have to use ValidationError?
-        # Is it for pydantic integration?
-        if "Redeclaring user variable" in str(e):
-            msg = str(e)
-            var_name = msg.split("'")[1] if "'" in msg else "unknown"
-            raise ValueError(  # pylint:disable=raise-missing-from
-                f"Loading user variable '{var_name}' from simulation.json which is "
-                "already defined in local context. Please change your local user variable definition."
-            )
         # Re-wrap with private_attribute_asset_cache prefix in loc
         error_detail: dict = e.errors()[0]
         loc = error_detail.get("loc", ())
