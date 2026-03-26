@@ -7,16 +7,19 @@ arrays in the post-processing config. Creates the post-processing config if it d
 not yet exist.
 
 Usage:
-    python update_postconfig.py <run_config> <post_config>
+    python update_postconfig.py <run_config> <post_config> [--force]
 
 Example:
     python update_postconfig.py run_config/HLPW_ANSAC_release-25.9.4.json config_files/HLPW_ANSAC.json
+    python update_postconfig.py run_config/HLPW_ANSAC_release-25.9.4.json config_files/HLPW_ANSAC.json --force
 
 Arguments:
     run_config   : path to the run_config JSON used with run_sweep_V3.py
     post_config  : path to the post-processing config JSON to create or update
+    --force      : overwrite existing entry if already present
 """
 
+import argparse
 import json
 import os
 import sys
@@ -44,12 +47,15 @@ def save_json(path, data):
 
 
 def main():
-    if len(sys.argv) != 3:
-        print(__doc__)
-        sys.exit(1)
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("run_config",  help="run_config JSON used with run_sweep_V3.py")
+    parser.add_argument("post_config", help="post-processing config JSON to create or update")
+    parser.add_argument("--force", action="store_true", help="overwrite existing entry if already present")
+    args = parser.parse_args()
 
-    run_config_file = sys.argv[1]
-    post_config_file = sys.argv[2]
+    run_config_file  = args.run_config
+    post_config_file = args.post_config
+    force            = args.force
 
     # --- read run config ---
     run_cfg = load_json(run_config_file)
@@ -96,8 +102,17 @@ def main():
     # --- check for duplicate ---
     for i, (cn, rel, sub) in enumerate(zip(cfg["casenames"], cfg["releases"], cfg["subcases"])):
         if cn == caseID and rel == version and sub == subcase:
-            print(f"Already present at index {i}: {caseID} / {version} / {subcase} — skipping update.")
-            sys.exit(0)
+            if not force:
+                print(f"Already present at index {i}: {caseID} / {version} / {subcase} — skipping update.")
+                sys.exit(0)
+            # force: remove existing entry before re-inserting at index 0
+            print(f"Force update: removing existing entry at index {i}: {caseID} / {version} / {subcase}")
+            cfg["casenames"].pop(i)
+            cfg["releases"].pop(i)
+            cfg["subcases"].pop(i)
+            for key in DEFAULTS:
+                cfg[key].pop(i)
+            break
 
     # --- prepend new entry to all per-case arrays ---
     cfg["casenames"].insert(0, caseID)
