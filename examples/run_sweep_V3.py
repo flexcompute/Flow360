@@ -19,6 +19,7 @@ Config fields:
     GAI             : if true, enable geometry AI (use_geometry_AI=True, use_betamesher=True); default false
     feature_krylov  : if true, switch Navier-Stokes solver to KrylovLinearSolver; default false
     feature_gravity : if true, enable gravitational body force (fl.Gravity()) on the Fluid model; default false
+    limit_velocity  : if true, enable limit_velocity on the Navier-Stokes solver; default false
     testflag        : if true, overlay wind-tunnel reference data in post-processing figures; default false
 """
 
@@ -49,10 +50,12 @@ def main():
     sweepvar       = config["sweepvar"]
     sweepvalue     = config["sweepvalue"]
     warmstart      = config["warmstart"]
-    anticlock      = config.get("anticlock", False)
-    GAI            = config.get("GAI", False)
+    anticlock       = config.get("anticlock", False)
+    GAI             = config.get("GAI", False)
     feature_krylov  = config.get("feature_krylov", False)
     feature_gravity = config.get("feature_gravity", False)
+    limit_velocity         = config.get("limit_velocity", False)
+    limit_pressure_density = config.get("limit_pressure_density", False)
 
     parent_case = fl.Case.from_cloud(parent_case_id)
     param = parent_case.params
@@ -77,6 +80,14 @@ def main():
         for m in fluid_models:
             m.gravity = fl.Gravity()
         print("feature_gravity=True: Gravity() applied to Fluid model(s)")
+
+    fluid_models = [m for m in param.models if isinstance(m, fl.Fluid)]
+    if not fluid_models:
+        raise ValueError("No Fluid model found in param.models.")
+    for m in fluid_models:
+        m.navier_stokes_solver.limit_velocity = limit_velocity
+        m.navier_stokes_solver.limit_pressure_density = limit_pressure_density
+    print(f"limit_velocity={limit_velocity}, limit_pressure_density={limit_pressure_density}: NavierStokesSolver limits set")
 
     krylov_tag  = "krylov_"  if feature_krylov  else ""
     gravity_tag = "gravity_" if feature_gravity else ""
