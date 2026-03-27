@@ -59,11 +59,12 @@ def main():
 
     # --- read run config ---
     run_cfg = load_json(run_config_file)
-    caseID  = run_cfg["caseID"]
-    version = run_cfg["version"]
-    subcase = run_cfg["casepost"]
-    AOAs    = run_cfg["sweepvalue"]
-    root    = run_cfg["root"]
+    caseID   = run_cfg["caseID"]
+    version  = run_cfg["version"]
+    subcase  = run_cfg["casepost"]
+    AOAs     = run_cfg["sweepvalue"]
+    root     = run_cfg["root"]
+    testflag = run_cfg.get("testflag", False)
 
     # --- verify caseIDfile exists ---
     caseIDfile = os.path.join(root, "caseIDfiles", f"{caseID}_{version}_{subcase}.txt")
@@ -96,14 +97,16 @@ def main():
         }
         print(f"Creating new config: {post_config_file}")
 
-    # update AOAs if the new run has a different sweep
-    cfg["AOAs"] = AOAs
+    # update AOAs and testdata from run_config (always saved, even for duplicates)
+    cfg["AOAs"]     = AOAs
+    cfg["testdata"] = testflag
 
     # --- check for duplicate ---
     for i, (cn, rel, sub) in enumerate(zip(cfg["casenames"], cfg["releases"], cfg["subcases"])):
         if cn == caseID and rel == version and sub == subcase:
             if not force:
-                print(f"Already present at index {i}: {caseID} / {version} / {subcase} — skipping update.")
+                print(f"Already present at index {i}: {caseID} / {version} / {subcase} — skipping case entry update.")
+                save_json(post_config_file, cfg)
                 sys.exit(0)
             # force: remove existing entry before re-inserting at index 0
             print(f"Force update: removing existing entry at index {i}: {caseID} / {version} / {subcase}")
