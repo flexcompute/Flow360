@@ -5,7 +5,7 @@ from __future__ import annotations
 from contextlib import AbstractContextManager
 from contextvars import ContextVar, Token
 from dataclasses import dataclass
-from typing import List, Optional, get_args
+from typing import TYPE_CHECKING, List, Optional, Union, get_args
 
 from flow360.component.simulation.draft_context.coordinate_system_manager import (
     CoordinateSystemManager,
@@ -38,6 +38,11 @@ from flow360.component.simulation.primitives import (
 from flow360.exceptions import Flow360RuntimeError, Flow360ValueError
 from flow360.log import log
 
+if TYPE_CHECKING:
+    from flow360.component.simulation.draft_context.obb.tessellation_loader import (
+        TessellationFileLoader,
+    )
+
 __all__ = [
     "DraftContext",
     "get_active_draft",
@@ -49,6 +54,13 @@ _ACTIVE_DRAFT: ContextVar[Optional["DraftContext"]] = ContextVar("_ACTIVE_DRAFT"
 _DRAFT_ENTITY_TYPE_TUPLE: tuple[type[EntityBase], ...] = tuple(
     get_args(get_args(DraftEntityTypes)[0])
 )
+
+
+@dataclass
+class _SelectorWrapper:
+    """Minimal wrapper to satisfy expand_entity_list_selectors's entity_list parameter."""
+
+    selectors: List[EntitySelector]
 
 
 def get_active_draft() -> Optional["DraftContext"]:
@@ -77,6 +89,10 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
         "_mirror_status",
         # Lightweight coordinate system relationships storage (compared to entity storages)
         "_coordinate_system_manager",
+        # OBB tessellation data loader (only available for geometry-root drafts)
+        "_tessellation_loader",
+        # Project length unit for dimensioned OBB results
+        "_length_unit",
         "_token",
     )
 
@@ -89,6 +105,8 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
         imported_surfaces: Optional[List[ImportedSurface]] = None,
         mirror_status: Optional[MirrorStatus] = None,
         coordinate_system_status: Optional[CoordinateSystemStatus] = None,
+        tessellation_loader: Optional[TessellationFileLoader] = None,
+        length_unit=None,
     ) -> None:
         """
         Data members:
@@ -106,6 +124,8 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
                 "[Internal] DraftContext requires `entity_info` to initialize."
             )
         self._token: Optional[Token] = None
+        self._tessellation_loader = tessellation_loader
+        self._length_unit = length_unit
 
         # DraftContext owns a deep copy of entity_info and mirror_status (created by create_draft()).
         # This signals transfer of entity ownership from the asset to the draft (context).
@@ -328,15 +348,9 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
                 "Use fl.SurfaceSelector, fl.EdgeSelector, fl.VolumeSelector, or fl.BodyGroupSelector."
             )
 
-        @dataclass
-        class MockEntityList:
-            """Temporary mock for EntityList to avoid metaclass constraints."""
-
-            selectors: List[EntitySelector]
-
         matched_entities = expand_entity_list_selectors(
             registry=self._entity_registry,
-            entity_list=MockEntityList(selectors=[selector]),
+            entity_list=_SelectorWrapper(selectors=[selector]),
         )
 
         if not matched_entities:
@@ -346,5 +360,118 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
         if return_names:
             return [entity.name for entity in matched_entities]
         return matched_entities
+
+    def compute_obb(  # pylint:disable=too-many-branches
+        self,
+        entities: Union[Surface, List[Surface], EntityRegistryView, EntitySelector],
+        *,
+        rotation_axis_hint=None,
+        lod_level: Optional[int] = None,
+    ):
+        """Compute oriented bounding box for the given surface entities.
+
+        Args:
+            entities: Surface entities or an EntitySelector that resolves to surfaces.
+                Accepts: a single Surface, a list of Surface, an EntityRegistryView,
+                or an EntitySelector.
+            rotation_axis_hint: optional approximate rotation axis direction (e.g. [0, 0, 1]).
+                If provided, the PCA axis most aligned with this hint is chosen as rotation axis.
+                If None, the axis whose perpendicular cross-section is most circular is used.
+            lod_level: LOD level override for tessellation data.
+
+        Returns:
+            OBBResult with center, axes, extents, axis_of_rotation, and radius as properties.
+
+        Raises:
+            Flow360RuntimeError: If this draft was not created from a Geometry resource.
+            Flow360ValueError: If no face IDs could be collected from the provided entities.
+        """
+        if self._tessellation_loader is None:
+            raise Flow360RuntimeError(
+                "compute_obb() requires a draft created from a Geometry resource. "
+                "Drafts from SurfaceMesh or VolumeMesh do not have tessellation data."
+            )
+
+        # Resolve entities to a flat list of Surface
+        if isinstance(entities, EntitySelector):
+            if entities.target_class != "Surface":
+                raise Flow360ValueError(
+                    f"compute_obb() requires a SurfaceSelector, "
+                    f"got selector with target_class='{entities.target_class}'."
+                )
+            # pylint: disable=import-outside-toplevel
+            from flow360.component.simulation.framework.entity_selector import (
+                expand_entity_list_selectors,
+            )
+
+            surface_list = expand_entity_list_selectors(
+                registry=self._entity_registry,
+                entity_list=_SelectorWrapper(selectors=[entities]),
+            )
+        elif isinstance(entities, EntityRegistryView):
+            # pylint:disable = protected-access
+            if hasattr(entities, "_entity_type") and not issubclass(entities._entity_type, Surface):
+                raise Flow360ValueError(
+                    f"compute_obb() requires a Surface view, "
+                    f"got EntityRegistryView of {entities._entity_type.__name__}."
+                )
+            surface_list = list(entities)
+        elif isinstance(entities, Surface):
+            surface_list = [entities]
+        elif isinstance(entities, list):
+            surface_list = entities
+        else:
+            raise Flow360ValueError(
+                f"compute_obb() expected Surface, List[Surface], EntityRegistryView, "
+                f"or SurfaceSelector, got {type(entities).__name__}."
+            )
+
+        # Filter to Surface only (selector expansion may include MirroredSurface
+        # which lacks sub_components and has no tessellation data)
+        non_surface = [s for s in surface_list if not isinstance(s, Surface)]
+        if non_surface:
+            names = [getattr(s, "name", type(s).__name__) for s in non_surface]
+            log.warning(
+                f"compute_obb(): skipping {len(non_surface)} non-Surface entity(ies) "
+                f"(e.g. MirroredSurface) — not yet supported: {names}"
+            )
+        surface_list = [s for s in surface_list if isinstance(s, Surface)]
+
+        # Collect face IDs from surface sub-components
+        face_ids = []
+        for surface in surface_list:
+            sub_components = surface.private_attribute_sub_components
+            if sub_components:
+                face_ids.extend(sub_components)
+
+        if not face_ids:
+            raise Flow360ValueError(
+                "No face IDs could be collected from the provided entities. "
+                "Ensure the entities have valid sub-component data."
+            )
+
+        # Lazy import to avoid circular dependency
+        # pylint: disable=import-outside-toplevel
+        from flow360.component.simulation.draft_context.obb.compute import compute_obb
+
+        log.info("Computing Oriented Bounding Box (OBB)...")
+
+        vertices = self._tessellation_loader.load_vertices(face_ids, lod_level)
+        log.info(f"OBB: extracted {len(vertices)} vertices, computing PCA...")
+
+        result = compute_obb(vertices, rotation_axis_hint=rotation_axis_hint)
+
+        # Apply length unit to dimensioned fields if available
+        if self._length_unit is not None:
+            result = type(result)(
+                center=result.center * self._length_unit,
+                axes=result.axes,
+                extents=result.extents * self._length_unit,
+                axis_of_rotation=result.axis_of_rotation,
+                radius=result.radius * self._length_unit,
+            )
+
+        log.info("OBB computation complete.")
+        return result
 
     # endregion ------------------------------------------------------------------------------------
