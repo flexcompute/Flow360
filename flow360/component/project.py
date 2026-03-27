@@ -305,7 +305,9 @@ def create_draft(
         geometry_resources.update(
             {geo.id: geo._webapi for geo in active_geometry_dependencies.values()}
         )
-        tessellation_loader = TessellationFileLoader(geometry_resources, get_shared_cloud_file_cache())
+        tessellation_loader = TessellationFileLoader(
+            geometry_resources, get_shared_cloud_file_cache()
+        )
 
         # Use length unit cached on Geometry during from_cloud (no extra API call)
         length_unit = getattr(new_run_from, "_project_length_unit", None)
