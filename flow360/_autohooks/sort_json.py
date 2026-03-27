@@ -1,6 +1,6 @@
 """Autohooks plugin: sort keys in staged JSON files under tests/."""
 
-import json
+import importlib.util
 from pathlib import Path
 
 from autohooks.api import ok
@@ -11,30 +11,14 @@ from autohooks.api.git import (
 )
 from autohooks.api.path import match
 
+_TOOLS_DIR = Path(__file__).resolve().parent.parent.parent / "tools"
+_spec = importlib.util.spec_from_file_location("sort_ref_json", _TOOLS_DIR / "sort_ref_json.py")
+_module = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_module)
+process_file = _module.process_file
+
 DEFAULT_INCLUDE = ("*.json",)
 TESTS_DIR = Path(__file__).resolve().parent.parent.parent / "tests"
-
-
-def _sort_keys(obj):
-    """Recursively sort dictionary keys. List order is preserved."""
-    if isinstance(obj, dict):
-        return {k: _sort_keys(v) for k, v in sorted(obj.items())}
-    if isinstance(obj, list):
-        return [_sort_keys(item) for item in obj]
-    return obj
-
-
-def _sort_file(path: Path) -> bool:
-    """Sort keys in-place. Returns True if file was already sorted."""
-    raw = path.read_text(encoding="utf-8")
-    data = json.loads(raw)
-    sorted_content = json.dumps(_sort_keys(data), indent=4) + "\n"
-
-    if raw == sorted_content:
-        return True
-
-    path.write_text(sorted_content, encoding="utf-8")
-    return False
 
 
 def precommit(config=None, report_progress=None, **kwargs):  # pylint: disable=unused-argument
@@ -54,14 +38,11 @@ def precommit(config=None, report_progress=None, **kwargs):  # pylint: disable=u
 
     with stash_unstaged_changes(files):
         for f in files:
-            try:
-                already_sorted = _sort_file(f.absolute_path())
-                if already_sorted:
-                    ok(f"Already sorted: {f.path}")
-                else:
-                    ok(f"Sorted keys in: {f.path}")
-            except (json.JSONDecodeError, UnicodeDecodeError):
-                ok(f"Skipped (not valid JSON): {f.path}")
+            already_sorted = process_file(f.absolute_path(), check=False)
+            if already_sorted:
+                ok(f"Already sorted: {f.path}")
+            else:
+                ok(f"Sorted keys in: {f.path}")
 
             if report_progress:
                 report_progress.update()
