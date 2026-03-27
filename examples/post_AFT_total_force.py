@@ -308,23 +308,25 @@ def _getCaseRuntimeStats(case: flow360.Case):
     Download support logs for a case from the admin API and extract runtime info.
 
     Downloads a zip archive of solver support logs to RESULTS_PATH/<case.name>/
-    and returns the path to that directory.
+    and returns the path to that directory.  Skips the download if the zip is
+    already present (cached from a previous run).
     """
-    queryUrl = f"https://admin-api.simulation.cloud/admin/jobs/support/logs/resource/{case.info.user_id}/{case.id}"
-    resp = http.session.get(queryUrl, auth=api_key_auth)
-
     logpath = os.path.join(RESULTS_PATH, case.name)
-    print(logpath)
-
     if not os.path.exists(logpath):
         os.mkdir(logpath)
 
     zipFile = os.path.join(RESULTS_PATH, case.name, "supportLogs.zip")
-    with open(zipFile, "wb") as f:
-        f.write(resp.content)
-    shutil.unpack_archive(zipFile, os.path.join(RESULTS_PATH, case.name))
+    if os.path.exists(zipFile):
+        print(f"  [cache] support logs already downloaded: {zipFile}")
+    else:
+        queryUrl = f"https://admin-api.simulation.cloud/admin/jobs/support/logs/resource/{case.info.user_id}/{case.id}"
+        resp = http.session.get(queryUrl, auth=api_key_auth)
+        with open(zipFile, "wb") as f:
+            f.write(resp.content)
+        shutil.unpack_archive(zipFile, logpath)
 
-    return os.path.join(RESULTS_PATH, case.name)
+    print(logpath)
+    return logpath
 
 
 # Mapping from node name patterns to GPU model names (sourced from postprocessing_utils.py)

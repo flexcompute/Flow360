@@ -49,14 +49,25 @@ def _find_run_configs(case_name):
     Return list of run_config JSON paths for the given case name.
     Excludes config.json (which is a symlink / generic default).
     For 'all'/'ALL', returns every JSON in RUN_CONFIG_DIR except config.json.
-    Otherwise, globs for <case_name>_*.json.
+
+    Regular case (e.g. honda_subsonic):
+      matches only <case_name>_release*.json exactly.
+
+    Feature test (3-part name, e.g. honda_subsonic_gravity):
+      matches <case_name>_release*.json (feature configs)
+      AND <base_name>_release*.json    (base case configs for comparison).
     """
     if case_name.lower() == "all":
         paths = glob.glob(os.path.join(RUN_CONFIG_DIR, "*.json"))
-    else:
-        paths = glob.glob(os.path.join(RUN_CONFIG_DIR, f"{case_name}_*.json"))
+        return sorted(p for p in paths if os.path.basename(p) != "config.json")
 
-    return sorted(p for p in paths if os.path.basename(p) != "config.json")
+    parts = case_name.split("_")
+    paths = glob.glob(os.path.join(RUN_CONFIG_DIR, f"{case_name}_release*.json"))
+    if len(parts) >= 3:
+        base_name = "_".join(parts[:2])
+        paths += glob.glob(os.path.join(RUN_CONFIG_DIR, f"{base_name}_release*.json"))
+
+    return sorted(set(p for p in paths if os.path.basename(p) != "config.json"))
 
 
 def _post_config_for(run_config_file):
@@ -120,7 +131,8 @@ def _init_post_config(run_config_file, post_config_file):
     sst_flag = _detect_sst(parent_case_id)
     print(f"  [_init_post_config] casepost='{casepost}'  nperiod={nperiod_default}  SSTFlag={sst_flag}")
 
-    version = run_cfg["version"]
+    version   = run_cfg["version"]
+    testflag  = run_cfg.get("testflag", False)
 
     # Detect feature test: caseID with 3+ underscore-separated words (e.g. honda_subsonic_gravity).
     # In that case, compare feature case vs base case (first two parts) at the same version.
@@ -155,7 +167,7 @@ def _init_post_config(run_config_file, post_config_file):
         "datafileexist":  datafileexist_list,
         "AOAs":           sweepvalue,
         "figure_extname": case_id,
-        "testdata":       True,
+        "testdata":       testflag,
         "rotorflag":      False,
         "wholeplane":     False,
         "xlabel":         "AOA (deg)",
@@ -279,8 +291,14 @@ def main():
             steps.append((f"Wait for cases  [{rc_label}]", _wait))
             steps.append((f"Update config   [{rc_label}]", _update))
 
-        # use the post-config for the last (or only) run_config as the post-processing input
-        post_cfg_path = _post_config_for(run_configs[-1])
+        # use the post-config for the run_config whose caseID matches args.case (the
+        # feature case for feature tests); fall back to the last run_config otherwise.
+        primary_rc = next(
+            (rc for rc in run_configs
+             if json.load(open(rc)).get("caseID") == args.case),
+            run_configs[-1],
+        )
+        post_cfg_path = _post_config_for(primary_rc)
 
         # update config_files/config.json symlink to point to the case-specific config
         symlink_path = os.path.join(POST_CONFIG_DIR, "config.json")
