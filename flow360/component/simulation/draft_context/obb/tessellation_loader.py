@@ -111,19 +111,21 @@ class TessellationFileLoader:  # pylint: disable=too-few-public-methods
         """
         if self._face_to_geometry is not None:
             return
-        self._face_to_geometry = {}
+        # Build into local to avoid leaving partial state on error
+        index: Dict[str, str] = {}
         for geometry_id, manifest in self._manifest_cache.items():
             for entry in manifest:
                 if entry.get("type") != "Face":
                     continue
                 face_id = entry["id"]
-                existing = self._face_to_geometry.get(face_id)
+                existing = index.get(face_id)
                 if existing is not None and existing != geometry_id:
                     raise ValueError(
                         f"Duplicate face ID '{face_id}' found in geometries "
                         f"'{existing}' and '{geometry_id}'."
                     )
-                self._face_to_geometry[face_id] = geometry_id
+                index[face_id] = geometry_id
+        self._face_to_geometry = index
 
     # ------------------------------------------------------------------
     # Bin file resolution
