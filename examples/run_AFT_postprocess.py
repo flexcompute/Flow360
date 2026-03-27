@@ -72,6 +72,105 @@ def _read_case_ids(caseIDfile):
         return [line.strip() for line in f if line.strip()]
 
 
+def _detect_sst(parent_case_id):
+    """
+    Return True if the parent case uses a k-omega SST turbulence model, False otherwise.
+
+    Checks the class name of param.turbulence_model_solver for 'SST' (case-insensitive).
+    Falls back to False if the attribute is missing or the API call fails.
+    """
+    try:
+        parent_case = fl.Case.from_cloud(parent_case_id)
+        solver = parent_case.params.turbulence_model_solver
+        return "sst" in type(solver).__name__.lower()
+    except Exception as e:
+        print(f"  [_detect_sst] Could not determine turbulence model: {e}")
+        return False
+
+
+def _init_post_config(run_config_file, post_config_file):
+    """
+    Create a skeleton post-processing config from a run_config if it does not exist.
+
+    Derives settings from the run_config:
+      - subcase   : set to casepost
+      - nperiod   : 1 if casepost contains 'steady', else 2 (unsteady default)
+      - SSTFlag   : True if parent case uses k-omega SST, False otherwise
+      - AOAs      : taken from sweepvalue
+
+    Does nothing if the post-config already exists.
+    """
+    if os.path.exists(post_config_file):
+        return
+
+    with open(run_config_file, "r") as f:
+        run_cfg = json.load(f)
+
+    case_id        = run_cfg["caseID"]
+    root           = run_cfg["root"]
+    sweepvalue     = run_cfg["sweepvalue"]
+    casepost       = run_cfg["casepost"]
+    parent_case_id = run_cfg["parent_case_id"]
+
+    # nperiod: steady=1, unsteady=2
+    nperiod_default = 1 if "steady" in casepost.lower() else 2
+
+    # SSTFlag: detect from parent case turbulence model
+    sst_flag = _detect_sst(parent_case_id)
+    print(f"  [_init_post_config] casepost='{casepost}'  nperiod={nperiod_default}  SSTFlag={sst_flag}")
+
+    version = run_cfg["version"]
+
+    # Detect feature test: caseID with 3+ underscore-separated words (e.g. honda_subsonic_gravity).
+    # In that case, compare feature case vs base case (first two parts) at the same version.
+    parts = case_id.split("_")
+    feature_test = len(parts) >= 3
+    if feature_test:
+        base_case_id = "_".join(parts[:2])
+        print(f"  [_init_post_config] Feature test detected: '{case_id}' vs base '{base_case_id}'")
+        casenames_list    = [case_id,          base_case_id]
+        releases_list     = [version,          version]
+        subcases_list     = [casepost,         casepost]
+        datafileexist_list = [1,               1]
+        nperiod_list      = [nperiod_default,  nperiod_default]
+        scales_list       = [1,                1]
+        npseduos_list     = [2,                2]
+        sst_list          = [sst_flag,         sst_flag]
+    else:
+        casenames_list    = [case_id]
+        releases_list     = [version]
+        subcases_list     = [casepost]
+        datafileexist_list = [1]
+        nperiod_list      = [nperiod_default]
+        scales_list       = [1]
+        npseduos_list     = [2]
+        sst_list          = [sst_flag]
+
+    skeleton = {
+        "rootfolder":     root,
+        "casenames":      casenames_list,
+        "releases":       releases_list,
+        "subcases":       subcases_list,
+        "datafileexist":  datafileexist_list,
+        "AOAs":           sweepvalue,
+        "figure_extname": case_id,
+        "testdata":       True,
+        "rotorflag":      False,
+        "wholeplane":     False,
+        "xlabel":         "AOA (deg)",
+        "nperiod":        nperiod_list,
+        "scales":         scales_list,
+        "npseduos":       npseduos_list,
+        "SSTFlag":        sst_list,
+        "feature_test":   feature_test,
+    }
+
+    os.makedirs(os.path.dirname(post_config_file), exist_ok=True)
+    with open(post_config_file, "w") as f:
+        json.dump(skeleton, f, indent=4)
+    print(f"Created new post-processing config: {post_config_file}")
+
+
 def wait_for_cases(run_config_file):
     """
     Poll all cases in caseIDfiles matching <root>/caseIDfiles/<caseID>* until
@@ -166,6 +265,8 @@ def main():
         for rc in run_configs:
             post_cfg = _post_config_for(rc)
             rc_label = os.path.basename(rc)
+
+            _init_post_config(rc, post_cfg)
 
             def _wait(rc=rc):
                 wait_for_cases(rc)

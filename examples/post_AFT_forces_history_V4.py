@@ -136,7 +136,7 @@ def plot_line(i, j, coll, forces, forcename, axs, case, colori=0, residual_flag=
 
 
 def plot_convergence_comparison(folder, cases, forces, AOA, step, forcestoplot,
-                                totforce_flag, residual_flag, figure_extname, xlabel):
+                                totforce_flag, residual_flag, figure_extname, xlabel, title="Solver release test"):
     """
     Plot convergence history for all cases at a given AOA/condition.
 
@@ -181,7 +181,7 @@ def plot_convergence_comparison(folder, cases, forces, AOA, step, forcestoplot,
                 axs[i, j].set_ylim(vmin / 10, vmax * 10)
             axs[i, j].grid(True)
 
-    axs[0, 1].set_title(f"{folder}  {xlabel}={AOA}", fontsize=20)
+    axs[0, 1].set_title(f"{title}  {folder}  {xlabel}={AOA}", fontsize=20)
     axs[0, 0].legend(fontsize=16, loc='upper center')
 
     if totforce_flag:
@@ -196,7 +196,7 @@ def plot_convergence_comparison(folder, cases, forces, AOA, step, forcestoplot,
 
 
 def plot_convergence_comparison_range(folder, cases, forces, AOA, step, forcestoplot,
-                                      totforce_flag, residual_flag, figure_extname, xlabel):
+                                      totforce_flag, residual_flag, figure_extname, xlabel, title="Solver release test"):
     """
     Plot convergence history with y-axis range determined from the last data point
     of each case, with wider padding (±2x span) to show convergence spread.
@@ -247,7 +247,7 @@ def plot_convergence_comparison_range(folder, cases, forces, AOA, step, forcesto
         for j in jrange:
             axs[i, j].grid(True)
 
-    axs[0, 1].set_title(f"{folder}  {xlabel}={AOA}", fontsize=20)
+    axs[0, 1].set_title(f"{title}  {folder}  {xlabel}={AOA}", fontsize=20)
     axs[0, 1].legend(fontsize=14, loc='upper center')
 
     if totforce_flag:
@@ -338,6 +338,8 @@ def main(config_file="./config_files/config.json"):
     scales = config["scales"]
     SST_flags = [bool(f) for f in config.get("SSTFlag", [False] * len(casenames))]
     SST_flags += [False] * (len(casenames) - len(SST_flags))
+    feature_test = config.get("feature_test", False)
+    test_label = "Solver feature test" if feature_test else "Solver release test"
 
     # Note: datafileexist is deprecated — file presence is detected automatically.
 
@@ -359,8 +361,10 @@ def main(config_file="./config_files/config.json"):
     caseIDarray = {}
     cases = []
     for i in range(ncases):
-        cases.append(casenames[i] + '_' + releases[i])
-        path = os.path.join(rootfolder, "data", cases[i])
+        krylov_suffix  = "_krylov"  if "krylov"  in subcases[i].lower() else ""
+        gravity_suffix = "_gravity" if "gravity" in subcases[i].lower() else ""
+        cases.append(casenames[i] + '_' + releases[i] + krylov_suffix + gravity_suffix)
+        path = os.path.join(rootfolder, "data", casenames[i] + '_' + releases[i])
         figurepath = os.path.join(path, "figures")
         for folder in [path, figurepath]:
             if not os.path.exists(folder):
@@ -438,9 +442,9 @@ def main(config_file="./config_files/config.json"):
                 # Steady case
                 print(f"{'#' * 30}  steady case  {xlabel}={AOA}")
                 plot_convergence_comparison(rootfolder, cases, forcearray, AOA, maxphstep,
-                                            forcestoplot, totforce_flag, residual_flag, figure_extname, xlabel)
+                                            forcestoplot, totforce_flag, residual_flag, figure_extname, xlabel, title=test_label)
                 plot_convergence_comparison_range(rootfolder, cases, forcearray, AOA, maxphstep,
-                                                  forcestoplot, totforce_flag, residual_flag, figure_extname, xlabel)
+                                                  forcestoplot, totforce_flag, residual_flag, figure_extname, xlabel, title=test_label)
             else:
                 # Unsteady case: plot at 1%, 10%, and 100% of step span
                 print(f"{'#' * 30}  unsteady case  {xlabel}={AOA}  iaoa={iaoa}")
@@ -448,9 +452,9 @@ def main(config_file="./config_files/config.json"):
                     unsteadyforces = extract_unsteady_convergence(ncases, forcearray, plotscale)
                     extractstep = maxphstep if abs(plotscale - 1) < 1e-3 else max(unsteadyforces[0]['physical_step'])
                     plot_convergence_comparison(rootfolder, cases, unsteadyforces, AOA, extractstep,
-                                                forcestoplot, totforce_flag, residual_flag, figure_extname, xlabel)
+                                                forcestoplot, totforce_flag, residual_flag, figure_extname, xlabel, title=test_label)
                     plot_convergence_comparison_range(rootfolder, cases, unsteadyforces, AOA, extractstep,
-                                                      forcestoplot, totforce_flag, residual_flag, figure_extname, xlabel)
+                                                      forcestoplot, totforce_flag, residual_flag, figure_extname, xlabel, title=test_label)
                     if testdata and rotorflag:
                         testname = os.path.join(path, 'testdata',
                                                 f"rotor_{xlabel}{AOA}_last{extractstep}step_scale{plotscale}.csv")
@@ -458,7 +462,7 @@ def main(config_file="./config_files/config.json"):
                         if os.path.exists(testname):
                             testforces = get_data_at_last_pseudo_step(testname)
                             plot_convergence_comparison(path, cases, [testforces], AOA, extractstep,
-                                                        forcestoplot, totforce_flag, residual_flag, figure_extname, xlabel)
+                                                        forcestoplot, totforce_flag, residual_flag, figure_extname, xlabel, title=test_label)
 
 
 if __name__ == '__main__':

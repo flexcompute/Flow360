@@ -242,7 +242,7 @@ def readvolantdata():
     return testAOA, testCFz, testCMz
 
 
-def plot_forces_comp(folder, cases, fname, forces, coll, forcestoplot, testdata, xlabel, figure_extname, delta=False):
+def plot_forces_comp(folder, cases, fname, forces, coll, forcestoplot, testdata, xlabel, figure_extname, delta=False, title="Solver release test"):
     """
     Plot overlaid force coefficient curves for multiple cases and save to disk.
 
@@ -283,7 +283,7 @@ def plot_forces_comp(folder, cases, fname, forces, coll, forcestoplot, testdata,
             idx = forcestoplot.index('CMy')
             axs[idx // nj, idx % nj].plot(testAOA, testCMy, 'o', label='test', color='k')
 
-    axs[0, 1].set_title("Solver release test", fontsize=24)
+    axs[0, 1].set_title(title, fontsize=24)
     axs[0, 0].legend(fontsize=18, framealpha=0.8)
 
     for i in [0, 1]:
@@ -476,6 +476,8 @@ def main(config_file="./config_files/config.json"):
     nperiod = config["nperiod"]        # number of physical periods to average (>=2 = unsteady)
     scales = config["scales"]          # normalization scale factor per case
     npseduos = config["npseduos"]      # number of pseudo-steps to average per physical step
+    feature_test = config.get("feature_test", False)
+    plot_title = "Solver feature test" if feature_test else "Solver release test"
 
     # Bootstrap: load the first case ID from the first case's ID file to discover
     # all force coefficient column keys without relying on a hardcoded case ID.
@@ -529,7 +531,9 @@ def main(config_file="./config_files/config.json"):
 
         forcearray = {key: [] for key in forces.keys()}
 
-        cases.append(casenames[i] + '_' + releases[i])
+        krylov_suffix  = "_krylov"  if "krylov"  in subcases[i].lower() else ""
+        gravity_suffix = "_gravity" if "gravity" in subcases[i].lower() else ""
+        cases.append(casenames[i] + '_' + releases[i] + krylov_suffix + gravity_suffix)
         path = os.path.join(rootfolder, "data", casenames[i] + '_' + releases[i])
         print("##############################################################")
         print("Case:", i, "PATH=", path)
@@ -585,7 +589,7 @@ def main(config_file="./config_files/config.json"):
 
     # Multi-case overlay comparison figure
     figurename = rootfolder + "_forces_coeff_compare" + figure_extname
-    plot_forces_comp(rootfolder, cases, figurename, allforces, AOAs, forcestoplot, testdata, xlabel, figure_extname)
+    plot_forces_comp(rootfolder, cases, figurename, allforces, AOAs, forcestoplot, testdata, xlabel, figure_extname, title=plot_title)
 
     # Pairwise difference figures: each consecutive pair of cases
     diffs = {}
@@ -596,7 +600,7 @@ def main(config_file="./config_files/config.json"):
         diffnames.append(cases[i] + '-' + cases[i + 1])
 
     figurename = rootfolder + "_forces_coeff_diff" + figure_extname
-    plot_forces_comp(rootfolder, diffnames, figurename, diffs, AOAs, forcestoplot, False, xlabel, figure_extname, delta=True)
+    plot_forces_comp(rootfolder, diffnames, figurename, diffs, AOAs, forcestoplot, False, xlabel, figure_extname, delta=True, title=plot_title)
 
     # Collect runtime stats for all cases, print summary, and save as a table figure.
     # - Timing/worker fields come from case.get() (raw API response)
