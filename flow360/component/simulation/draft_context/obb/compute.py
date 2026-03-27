@@ -33,7 +33,8 @@ def _select_rotation_axis_index(
     best_ratio = -1.0
     for i in range(3):
         others: List[float] = [extents[j] for j in range(3) if j != i]
-        ratio = others[0] / others[1] if others[1] > others[0] else others[1] / others[0]
+        larger = max(others[0], others[1])
+        ratio = min(others[0], others[1]) / larger if larger > 0 else 1.0
         if ratio > best_ratio:
             best_ratio = ratio
             best_index = i
