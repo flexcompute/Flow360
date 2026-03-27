@@ -96,7 +96,10 @@ class CloudFileCache:
     # ------------------------------------------------------------------
 
     def _file_path(self, namespace: str, resource_id: str, file_path: str) -> Path:
-        return self._cache_root / namespace / resource_id / file_path
+        target = (self._cache_root / namespace / resource_id / file_path).resolve()
+        if not target.is_relative_to(self._cache_root.resolve()):
+            raise ValueError(f"Path traversal detected in cache key: {file_path!r}")
+        return target
 
     def _resource_dir(self, namespace: str, resource_id: str) -> Path:
         return self._cache_root / namespace / resource_id

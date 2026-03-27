@@ -417,8 +417,13 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
             surface_list = list(entities)
         elif isinstance(entities, Surface):
             surface_list = [entities]
-        else:
+        elif isinstance(entities, list):
             surface_list = entities
+        else:
+            raise Flow360ValueError(
+                f"compute_obb() expected Surface, List[Surface], EntityRegistryView, "
+                f"or SurfaceSelector, got {type(entities).__name__}."
+            )
 
         # Filter to Surface only (selector expansion may include MirroredSurface
         # which lacks sub_components and has no tessellation data)

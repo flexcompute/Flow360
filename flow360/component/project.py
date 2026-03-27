@@ -310,7 +310,7 @@ def create_draft(
         )
 
         # Use length unit cached on Geometry during from_cloud (no extra API call)
-        length_unit = getattr(new_run_from, "_project_length_unit", None)
+        length_unit = new_run_from._project_length_unit
 
     return DraftContext(
         entity_info=entity_info_copy,
