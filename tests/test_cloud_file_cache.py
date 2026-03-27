@@ -1,6 +1,7 @@
 """Tests for CloudFileCache size-based LRU disk cache."""
 
 import time
+from pathlib import Path
 
 import pytest
 
@@ -117,18 +118,19 @@ class TestDisabled:
         cache.put("ns", "res", "f.bin", b"data")
         assert cache.get("ns", "res", "f.bin") is None
 
-    def test_put_on_read_only_fs_disables_cache(self, tmp_path):
-        # Point to a non-writable root
-        bad_root = tmp_path / "no_exist" / "deep" / "path"
-        bad_root.mkdir(parents=True)
-        bad_root.chmod(0o000)
+    def test_put_on_write_failure_disables_cache(self, tmp_path, monkeypatch):
+        """OSError during write disables the cache (cross-platform)."""
+        cache = CloudFileCache(cache_root=tmp_path / "cache", max_size_bytes=1024)
 
-        cache = CloudFileCache(cache_root=bad_root / "cache", max_size_bytes=1024)
+        original_mkdir = Path.mkdir
+
+        def failing_mkdir(self, *args, **kwargs):
+            raise OSError("simulated disk write failure")
+
+        monkeypatch.setattr(Path, "mkdir", failing_mkdir)
+
         cache.put("ns", "res", "f.bin", b"data")
         assert cache._disabled
-
-        # Cleanup: restore permissions so tmp_path cleanup succeeds
-        bad_root.chmod(0o755)
 
 
 class TestLastAccess:
