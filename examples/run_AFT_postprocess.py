@@ -37,6 +37,7 @@ import flow360 as fl
 import update_postconfig
 import post_AFT_total_force as total_force
 import post_AFT_forces_history_V4 as forces_history
+import create_ppt_report as ppt_report
 
 WAIT_INTERVAL_SECONDS = 30 * 60  # 30 minutes
 RUN_CONFIG_DIR = "run_config"
@@ -289,9 +290,16 @@ def main():
         os.symlink(target, symlink_path)
         print(f"Updated symlink: {symlink_path} -> {target}")
 
+    def _make_ppt(cfg=post_cfg_path):
+        with open(cfg) as f:
+            figure_extname = json.load(f)["figure_extname"]
+        sys.argv = ["create_ppt_report.py", figure_extname]
+        ppt_report.main()
+
     steps += [
         ("Total force coefficients (post_AFT_total_force)", lambda cfg=post_cfg_path: total_force.main(cfg)),
         ("Force/residual history   (post_AFT_forces_history_V4)", lambda cfg=post_cfg_path: forces_history.main(cfg)),
+        ("PPT report               (create_ppt_report)", _make_ppt),
     ]
 
     results = {}

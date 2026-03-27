@@ -577,7 +577,7 @@ def main(config_file="./config_files/config.json"):
                     forcearray[key].append(forces[key][-1] / scale)
                 
 
-        plot_forces(rootfolder, cases[i], forcearray, AOAs, forcestoplot, figure_extname)
+        #plot_forces(rootfolder, cases[i], forcearray, AOAs, forcestoplot, figure_extname)
         allforces[i] = forcearray
 
     print("###########################################################")

@@ -181,7 +181,8 @@ def plot_convergence_comparison(folder, cases, forces, AOA, step, forcestoplot,
                 axs[i, j].set_ylim(vmin / 10, vmax * 10)
             axs[i, j].grid(True)
 
-    axs[0, 1].set_title(f"{title}  {folder}  {xlabel}={AOA}", fontsize=20)
+    plot_type = "Total Force" if totforce_flag else ("Residual" if residual_flag else "")
+    axs[0, 1].set_title(f"{title}  {plot_type}  {xlabel}={AOA}", fontsize=20)
     axs[0, 0].legend(fontsize=16, loc='upper center')
 
     if totforce_flag:
@@ -247,7 +248,8 @@ def plot_convergence_comparison_range(folder, cases, forces, AOA, step, forcesto
         for j in jrange:
             axs[i, j].grid(True)
 
-    axs[0, 1].set_title(f"{title}  {folder}  {xlabel}={AOA}", fontsize=20)
+    plot_type = "Total Force" if totforce_flag else ("Residual" if residual_flag else "")
+    axs[0, 1].set_title(f"{title}  {plot_type}  {xlabel}={AOA}", fontsize=20)
     axs[0, 1].legend(fontsize=14, loc='upper center')
 
     if totforce_flag:
