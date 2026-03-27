@@ -316,7 +316,7 @@ def extract_unsteady_convergence(ncases, forcesarray, steppert):
 # Main
 # ---------------------------------------------------------------------------
 
-def main():
+def main(config_file="./config_files/config.json"):
     """
     Main workflow: read config, load convergence data, and generate history plots.
 
@@ -325,7 +325,6 @@ def main():
       - Steady cases: single convergence plot + range-limited plot
       - Unsteady cases: plots at 1%, 10%, and 100% of the physical step span
     """
-    config_file = "./config_files/config.json"
     config = read_case_config(config_file)
     rootfolder = config["rootfolder"]
     casenames = config["casenames"]

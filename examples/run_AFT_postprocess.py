@@ -127,6 +127,16 @@ def run(label, func):
         print(f"  DONE:  {label}")
         print("=" * 70)
         return True
+    except SystemExit as e:
+        if e.code == 0:
+            print("=" * 70)
+            print(f"  DONE:  {label} (skipped — already up to date)")
+            print("=" * 70)
+            return True
+        print("=" * 70)
+        print(f"  FAILED: {label} (exit code {e.code})")
+        print("=" * 70)
+        return False
     except Exception:
         print("=" * 70)
         print(f"  FAILED: {label}")
@@ -144,6 +154,7 @@ def main():
     args = parser.parse_args()
 
     steps = []
+    post_cfg_path = "./config_files/config.json"  # default if --case not provided
 
     if args.case:
         run_configs = _find_run_configs(args.case)
@@ -166,9 +177,20 @@ def main():
             steps.append((f"Wait for cases  [{rc_label}]", _wait))
             steps.append((f"Update config   [{rc_label}]", _update))
 
+        # use the post-config for the last (or only) run_config as the post-processing input
+        post_cfg_path = _post_config_for(run_configs[-1])
+
+        # update config_files/config.json symlink to point to the case-specific config
+        symlink_path = os.path.join(POST_CONFIG_DIR, "config.json")
+        target = os.path.basename(post_cfg_path)
+        if os.path.islink(symlink_path) or os.path.exists(symlink_path):
+            os.remove(symlink_path)
+        os.symlink(target, symlink_path)
+        print(f"Updated symlink: {symlink_path} -> {target}")
+
     steps += [
-        ("Total force coefficients (post_AFT_total_force)", total_force.main),
-        ("Force/residual history   (post_AFT_forces_history_V4)", forces_history.main),
+        ("Total force coefficients (post_AFT_total_force)", lambda cfg=post_cfg_path: total_force.main(cfg)),
+        ("Force/residual history   (post_AFT_forces_history_V4)", lambda cfg=post_cfg_path: forces_history.main(cfg)),
     ]
 
     results = {}

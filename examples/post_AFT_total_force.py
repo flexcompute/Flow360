@@ -443,7 +443,7 @@ def getRuntimeTable(case: fl.Case, caseRef: fl.Case = None):
     return stats[0]
 
 
-def main():
+def main(config_file="./config_files/config.json"):
     """
     Main workflow: read config, fetch/load force data, and generate comparison plots.
 
@@ -457,12 +457,10 @@ def main():
     5. Produce pairwise difference figures between consecutive cases.
     """
 
-
     # Note: the following config fields are deprecated but retained for backward compatibility:
     #   - npseduos: replaced by automatically averaging the last 10% of pseudo-steps
     #   - datafileexist: replaced by automatic detection of existing local CSV files
 
-    config_file = "./config_files/config.json"
     config = read_case_config(config_file)
     rootfolder = config["rootfolder"]
     casenames = config["casenames"]
