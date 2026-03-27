@@ -636,6 +636,39 @@ def _to_25_8_4(params_as_dict):
     return params_as_dict
 
 
+def _convert_total_pressure_expression_from_ratio_to_nondim(params_as_dict):
+    """Convert TotalPressure string expressions from pressure ratio (P/P∞) to
+    Flow360 nondimensional pressure (P/(ρ∞a∞²)).
+
+    Old semantics: expression = totalPressureRatio = P_total / P∞
+    New semantics: expression = P_total / (ρ∞a∞²) = totalPressureRatio / γ
+
+    Since ThermallyPerfectGas is a new feature that likely will no coexist with old
+    string expressions, γ=1.4 (standard Air) is safe for all legacy data.
+    Liquid operating conditions have ratio=1.0, so no conversion is needed.
+    """
+    operating_condition = params_as_dict.get("operating_condition", {})
+    if operating_condition.get("type_name") in ("LiquidOperatingCondition",):
+        return params_as_dict
+
+    gamma = 1.4
+
+    for model in params_as_dict.get("models", []):
+        if model.get("type") != "Inflow":
+            continue
+        spec = model.get("spec")
+        if not spec or spec.get("type_name") != "TotalPressure":
+            continue
+        if isinstance(spec.get("value"), str):
+            spec["value"] = f"({spec['value']}) / {gamma}"
+
+    return params_as_dict
+
+
+def _to_25_8_8(params_as_dict):
+    return _convert_total_pressure_expression_from_ratio_to_nondim(params_as_dict)
+
+
 VERSION_MILESTONES = [
     (Flow360Version("24.11.1"), _to_24_11_1),
     (Flow360Version("24.11.7"), _to_24_11_7),
@@ -655,6 +688,7 @@ VERSION_MILESTONES = [
     (Flow360Version("25.8.1"), _to_25_8_1),
     (Flow360Version("25.8.3"), _to_25_8_3),
     (Flow360Version("25.8.4"), _to_25_8_4),
+    (Flow360Version("25.8.8"), _to_25_8_8),
 ]  # A list of the Python API version tuple with their corresponding updaters.
 
 
