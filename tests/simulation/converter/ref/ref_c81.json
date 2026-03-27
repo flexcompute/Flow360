@@ -744,6 +744,7 @@
             }
         }
     ],
+    "collective_pitch": null,
     "entities": {
         "selectors": null,
         "stored_entities": [
