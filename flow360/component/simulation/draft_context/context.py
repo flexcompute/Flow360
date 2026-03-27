@@ -420,6 +420,17 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
         else:
             surface_list = entities
 
+        # Filter to Surface only (selector expansion may include MirroredSurface
+        # which lacks sub_components and has no tessellation data)
+        non_surface = [s for s in surface_list if not isinstance(s, Surface)]
+        if non_surface:
+            names = [s.name for s in non_surface]
+            log.warning(
+                f"compute_obb(): skipping {len(non_surface)} non-Surface entity(ies) "
+                f"(e.g. MirroredSurface) — not yet supported: {names}"
+            )
+        surface_list = [s for s in surface_list if isinstance(s, Surface)]
+
         # Collect face IDs from surface sub-components
         face_ids = []
         for surface in surface_list:
