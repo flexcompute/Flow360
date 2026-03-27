@@ -96,6 +96,11 @@ def extract_face_vertices(  # pylint: disable=too-many-locals
                     end_vertex = location["endIndex"] // 3
                     all_vertices.append(position_array[start_vertex:end_vertex])
 
+    if not all_vertices:
+        raise ValueError(
+            f"No vertex data found for face_ids {face_ids}. "
+            f"The faces may have empty buffer locations."
+        )
     return np.concatenate(all_vertices, axis=0)
 
 
