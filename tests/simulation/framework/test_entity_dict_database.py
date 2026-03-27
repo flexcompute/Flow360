@@ -59,7 +59,7 @@ class _DummyParams:
             # pylint: disable=import-outside-toplevel
             from flow360.component.simulation.draft_context.mirror import MirrorStatus
 
-            mirror_status = MirrorStatus.model_validate(mirror_status_dict)
+            mirror_status = MirrorStatus.deserialize(mirror_status_dict)
         self.private_attribute_asset_cache = _AssetCache(
             project_entity_info=entity_info_obj, selectors=selectors, mirror_status=mirror_status
         )

@@ -212,7 +212,7 @@ class AssetBase(metaclass=ABCMeta):
     @property
     def entity_info(self):
         """Return the entity info associated with the asset (copy to prevent unintentional overwrites)"""
-        return self._entity_info.model_validate(self._entity_info.model_dump())
+        return self._entity_info.deserialize(self._entity_info.model_dump())
 
     @property
     def params(self):

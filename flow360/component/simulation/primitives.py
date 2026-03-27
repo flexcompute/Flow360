@@ -9,6 +9,7 @@ from typing import Annotated, ClassVar, List, Literal, Optional, Tuple, Union, f
 
 import numpy as np
 import pydantic as pd
+from flow360_schema.framework.physical_dimensions import Angle, Area, Length
 from pydantic import PositiveFloat
 from typing_extensions import Self
 
@@ -27,7 +28,6 @@ from flow360.component.simulation.framework.multi_constructor_model_base import 
     MultiConstructorBaseModel,
 )
 from flow360.component.simulation.framework.unique_list import UniqueStringList
-from flow360.component.simulation.unit_system import AngleType, AreaType, LengthType
 from flow360.component.simulation.user_code.core.types import ValueOrExpression
 from flow360.component.simulation.utils import BoundingBoxType, model_attribute_unlock
 from flow360.component.simulation.validation.validation_context import (
@@ -122,13 +122,13 @@ class ReferenceGeometry(Flow360BaseModel):
     """
 
     # pylint: disable=no-member
-    moment_center: Optional[LengthType.Point] = pd.Field(
+    moment_center: Optional[Length.Vector3] = pd.Field(
         None, description="The x, y, z coordinate of moment center."
     )
-    moment_length: Optional[Union[LengthType.Positive, LengthType.PositiveVector]] = pd.Field(
+    moment_length: Optional[Union[Length.PositiveFloat64, Length.PositiveVector3]] = pd.Field(
         None, description="The x, y, z component-wise moment reference lengths."
     )
-    area: Optional[ValueOrExpression[AreaType.Positive]] = pd.Field(
+    area: Optional[ValueOrExpression[Area.PositiveFloat64]] = pd.Field(
         None, description="The reference area of the geometry."
     )
     private_attribute_area_settings: Optional[dict] = pd.Field(None)
@@ -318,7 +318,7 @@ class GenericVolume(_VolumeEntityBase):
     axes: Optional[OrthogonalAxes] = pd.Field(None, description="")  # Porous media support
     axis: Optional[Axis] = pd.Field(None)  # Rotation support
     # pylint: disable=no-member
-    center: Optional[LengthType.Point] = pd.Field(None, description="")  # Rotation support
+    center: Optional[Length.Vector3] = pd.Field(None, description="")  # Rotation support
 
 
 class BoxCache(Flow360BaseModel):
@@ -327,8 +327,8 @@ class BoxCache(Flow360BaseModel):
     # `axes` will always exist as it needs to be used. So `axes` is more like a storage than input cache.
     axes: Optional[OrthogonalAxes] = pd.Field(None)
     # pylint: disable=no-member
-    center: Optional[LengthType.Point] = pd.Field(None)
-    size: Optional[LengthType.PositiveVector] = pd.Field(None)
+    center: Optional[Length.Vector3] = pd.Field(None)
+    size: Optional[Length.PositiveVector3] = pd.Field(None)
     name: Optional[str] = pd.Field(None)
 
 
@@ -361,8 +361,8 @@ class Box(MultiConstructorBaseModel, _VolumeEntityBase):
 
     type_name: Literal["Box"] = pd.Field("Box", frozen=True)
     # pylint: disable=no-member
-    center: LengthType.Point = pd.Field(description="The coordinates of the center of the box.")
-    size: LengthType.PositiveVector = pd.Field(
+    center: Length.Vector3 = pd.Field(description="The coordinates of the center of the box.")
+    size: Length.PositiveVector3 = pd.Field(
         description="The dimensions of the box (length, width, height)."
     )
     axis_of_rotation: Axis = pd.Field(
@@ -370,7 +370,7 @@ class Box(MultiConstructorBaseModel, _VolumeEntityBase):
         description="The rotation axis. Cannot change once specified.",
         frozen=True,
     )
-    angle_of_rotation: AngleType = pd.Field(
+    angle_of_rotation: Angle.Float64 = pd.Field(
         default=0 * u.degree,
         description="The rotation angle. Cannot change once specified.",
         frozen=True,
@@ -385,8 +385,8 @@ class Box(MultiConstructorBaseModel, _VolumeEntityBase):
     def from_principal_axes(
         cls,
         name: str,
-        center: LengthType.Point,
-        size: LengthType.PositiveVector,
+        center: Length.Vector3,
+        size: Length.PositiveVector3,
         axes: OrthogonalAxes,
     ):
         """
@@ -507,8 +507,8 @@ class Sphere(_VolumeEntityBase):
 
     private_attribute_entity_type_name: Literal["Sphere"] = pd.Field("Sphere", frozen=True)
     # pylint: disable=no-member
-    center: LengthType.Point = pd.Field(description="The center point of the sphere.")
-    radius: LengthType.Positive = pd.Field(description="The radius of the sphere.")
+    center: Length.Vector3 = pd.Field(description="The center point of the sphere.")
+    radius: Length.PositiveFloat64 = pd.Field(description="The radius of the sphere.")
     axis: Axis = pd.Field(
         default=(0, 0, 1),
         description="The axis of rotation for the sphere (used in sliding interfaces).",
@@ -559,12 +559,12 @@ class Cylinder(_VolumeEntityBase):
     private_attribute_entity_type_name: Literal["Cylinder"] = pd.Field("Cylinder", frozen=True)
     axis: Axis = pd.Field(description="The axis of the cylinder.")
     # pylint: disable=no-member
-    center: LengthType.Point = pd.Field(description="The center point of the cylinder.")
-    height: LengthType.Positive = pd.Field(description="The height of the cylinder.")
-    inner_radius: Optional[LengthType.NonNegative] = pd.Field(
+    center: Length.Vector3 = pd.Field(description="The center point of the cylinder.")
+    height: Length.PositiveFloat64 = pd.Field(description="The height of the cylinder.")
+    inner_radius: Optional[Length.NonNegativeFloat64] = pd.Field(
         0 * u.m, description="The inner radius of the cylinder."
     )
-    outer_radius: LengthType.Positive = pd.Field(description="The outer radius of the cylinder.")
+    outer_radius: Length.PositiveFloat64 = pd.Field(description="The outer radius of the cylinder.")
     private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
 
     @pd.model_validator(mode="after")
@@ -628,8 +628,8 @@ class AxisymmetricBody(_VolumeEntityBase):
     )
     axis: Axis = pd.Field(description="The axis of the body of revolution.")
     # pylint: disable=no-member
-    center: LengthType.Point = pd.Field(description="The center point of the body of revolution.")
-    profile_curve: List[LengthType.Pair] = pd.Field(
+    center: Length.Vector3 = pd.Field(description="The center point of the body of revolution.")
+    profile_curve: List[Length.Vector2] = pd.Field(
         description="The (Axial, Radial) profile of the body of revolution.",
         min_length=2,
     )
@@ -1050,14 +1050,14 @@ class SeedpointVolume(_VolumeEntityBase):
         "SeedpointVolume", frozen=True
     )
     type: Literal["SeedpointVolume"] = pd.Field("SeedpointVolume", frozen=True)
-    point_in_mesh: LengthType.Point = pd.Field(
+    point_in_mesh: Length.Vector3 = pd.Field(
         description="Seedpoint for a main fluid zone in snappyHexMesh."
     )
     axes: Optional[OrthogonalAxes] = pd.Field(
         None, description="Principal axes definition when using with PorousMedium"
     )  # Porous media support
     axis: Optional[Axis] = pd.Field(None)  # Rotation support
-    center: Optional[LengthType.Point] = pd.Field(None, description="")  # Rotation support
+    center: Optional[Length.Vector3] = pd.Field(None, description="")  # Rotation support
     private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
 
     def _per_entity_type_validation(self, param_info: ParamsValidationInfo):
@@ -1120,7 +1120,7 @@ class CustomVolume(_VolumeEntityBase):
     axes: Optional[OrthogonalAxes] = pd.Field(None, description="")  # Porous media support
     axis: Optional[Axis] = pd.Field(None)  # Rotation support
     # pylint: disable=no-member
-    center: Optional[LengthType.Point] = pd.Field(None, description="")  # Rotation support
+    center: Optional[Length.Vector3] = pd.Field(None, description="")  # Rotation support
 
     @pd.model_validator(mode="before")
     @classmethod

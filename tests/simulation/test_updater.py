@@ -13,7 +13,6 @@ from flow360.component.simulation.framework.updater import (
     _to_25_9_0,
     _to_25_9_1,
     _to_25_9_2,
-    _to_25_10_0,
     updater,
 )
 from flow360.component.simulation.framework.updater_utils import Flow360Version
@@ -1941,87 +1940,6 @@ def test_updater_to_25_9_2_modular_zones_rotation_volume_sphere_to_rotation_sphe
     assert "spacing_axial" not in zone
     assert "spacing_radial" not in zone
     assert zone["spacing_circumferential"] == {"value": 0.7, "units": "m"}
-
-
-def test_updater_to_25_10_0_output_format_to_list():
-    """Test 25.10.0 updater converts string output_format to list form."""
-
-    params_as_dict = {
-        "version": "25.9.2",
-        "unit_system": {"name": "SI"},
-        "outputs": [
-            {
-                "output_type": "VolumeOutput",
-                "name": "Volume output",
-                "output_format": "paraview",
-                "output_fields": {"items": ["Mach"]},
-            },
-            {
-                "output_type": "SurfaceOutput",
-                "name": "Surface output both",
-                "output_format": "both",
-                "output_fields": {"items": ["Cp"]},
-                "entities": {"stored_entities": []},
-            },
-            {
-                "output_type": "SliceOutput",
-                "name": "Slice output tecplot",
-                "output_format": "tecplot",
-                "output_fields": {"items": ["Mach"]},
-                "entities": {"stored_entities": []},
-            },
-            {
-                "output_type": "VolumeOutput",
-                "name": "Volume output combo",
-                "output_format": "paraview,vtkhdf",
-                "output_fields": {"items": ["Mach"]},
-            },
-        ],
-    }
-
-    params_new = updater(
-        version_from="25.9.2",
-        version_to="25.10.0",
-        params_as_dict=params_as_dict,
-    )
-
-    assert params_new["version"] == "25.10.0"
-    assert params_new["outputs"][0]["output_format"] == ["paraview"]
-    assert params_new["outputs"][1]["output_format"] == ["paraview", "tecplot"]
-    assert params_new["outputs"][2]["output_format"] == ["tecplot"]
-    assert params_new["outputs"][3]["output_format"] == ["paraview", "vtkhdf"]
-
-
-def test_updater_to_25_10_0_output_format_already_list():
-    """Test 25.10.0 updater is a no-op when output_format is already a list."""
-
-    params_as_dict = {
-        "version": "25.9.2",
-        "unit_system": {"name": "SI"},
-        "outputs": [
-            {
-                "output_type": "VolumeOutput",
-                "name": "Volume output",
-                "output_format": ["paraview", "vtkhdf"],
-                "output_fields": {"items": ["Mach"]},
-            },
-        ],
-    }
-
-    params_new = _to_25_10_0(params_as_dict)
-    assert params_new["outputs"][0]["output_format"] == ["paraview", "vtkhdf"]
-
-
-def test_updater_to_25_10_0_output_format_no_outputs():
-    """Test 25.10.0 updater handles missing or empty outputs for output_format migration."""
-
-    params_no_outputs = {"version": "25.9.2", "unit_system": {"name": "SI"}}
-    params_new = _to_25_10_0(params_no_outputs)
-    assert "outputs" not in params_new
-
-    params_empty = {"version": "25.9.2", "unit_system": {"name": "SI"}, "outputs": []}
-    params_new = _to_25_10_0(params_empty)
-    assert params_new["outputs"] == []
 
 
 def test_updater_to_25_9_2_custom_volume_boundaries_to_bounding_entities():

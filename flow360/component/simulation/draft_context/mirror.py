@@ -4,6 +4,7 @@ from typing import Dict, List, Literal, Optional, Tuple, Union
 
 import numpy as np
 import pydantic as pd
+from flow360_schema.framework.physical_dimensions import Length
 
 from flow360.component.simulation.entity_operation import (
     _transform_direction,
@@ -22,7 +23,6 @@ from flow360.component.simulation.primitives import (
     MirroredSurface,
     Surface,
 )
-from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.utils import is_exact_instance
 from flow360.component.types import Axis
 from flow360.exceptions import Flow360RuntimeError
@@ -59,7 +59,7 @@ class MirrorPlane(EntityBase):
     name: str = pd.Field()
     normal: Axis = pd.Field(description="Normal direction of the plane.")
     # pylint: disable=no-member
-    center: LengthType.Point = pd.Field(description="Center point of the plane.")
+    center: Length.Vector3 = pd.Field(description="Center point of the plane.")
 
     private_attribute_entity_type_name: Literal["MirrorPlane"] = pd.Field(
         "MirrorPlane", frozen=True

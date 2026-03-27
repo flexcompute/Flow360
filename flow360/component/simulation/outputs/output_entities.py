@@ -4,6 +4,16 @@ from typing import Literal, Optional, Union
 
 import numpy as np
 import pydantic as pd
+from flow360_schema.framework.expression import (
+    Expression,
+    UnytQuantity,
+    UserVariable,
+    get_input_value_dimensions,
+    get_input_value_length,
+    solver_variable_to_user_variable,
+)
+from flow360_schema.framework.expression.utils import is_runtime_expression
+from flow360_schema.framework.physical_dimensions import Length
 
 from flow360.component.simulation.entity_operation import (
     _transform_direction,
@@ -13,19 +23,11 @@ from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityBase
 from flow360.component.simulation.framework.entity_utils import generate_uuid
 from flow360.component.simulation.outputs.output_fields import IsoSurfaceFieldNames
-from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.user_code.core.types import (
-    Expression,
-    UnytQuantity,
-    UserVariable,
     ValueOrExpression,
-    get_input_value_dimensions,
-    get_input_value_length,
     infer_units_by_unit_system,
     is_variable_with_unit_system_as_units,
-    solver_variable_to_user_variable,
 )
-from flow360.component.simulation.user_code.core.utils import is_runtime_expression
 from flow360.component.types import Axis
 
 
@@ -69,7 +71,7 @@ class Slice(EntityBase):
     private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
     normal: Axis = pd.Field(description="Normal direction of the slice.")
     # pylint: disable=no-member
-    origin: LengthType.Point = pd.Field(description="A single point on the slice.")
+    origin: Length.Vector3 = pd.Field(description="A single point on the slice.")
 
     def _apply_transformation(self, matrix: np.ndarray) -> "Slice":
         """Apply 3x4 transformation matrix, returning new transformed instance."""
@@ -117,7 +119,7 @@ class Isosurface(_OutputItemBase):
     )
 
     # pylint: disable=no-member
-    wall_distance_clip_threshold: Optional[LengthType.Positive] = pd.Field(
+    wall_distance_clip_threshold: Optional[Length.PositiveFloat64] = pd.Field(
         default=None,
         description="Optional parameter to remove the isosurface within a specified distance from walls.",
     )
@@ -232,7 +234,7 @@ class Point(EntityBase):
     private_attribute_entity_type_name: Literal["Point"] = pd.Field("Point", frozen=True)
     private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
     # pylint: disable=no-member
-    location: LengthType.Point = pd.Field(description="The coordinate of the point.")
+    location: Length.Vector3 = pd.Field(description="The coordinate of the point.")
 
     def _apply_transformation(self, matrix: np.ndarray) -> "Point":
         """Apply 3x4 transformation matrix, returning new transformed instance."""
@@ -265,8 +267,8 @@ class PointArray(EntityBase):
     private_attribute_entity_type_name: Literal["PointArray"] = pd.Field("PointArray", frozen=True)
     private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
     # pylint: disable=no-member
-    start: LengthType.Point = pd.Field(description="The starting point of the line.")
-    end: LengthType.Point = pd.Field(description="The end point of the line.")
+    start: Length.Vector3 = pd.Field(description="The starting point of the line.")
+    end: Length.Vector3 = pd.Field(description="The end point of the line.")
     number_of_points: int = pd.Field(ge=2, description="Number of points along the line.")
 
     def _apply_transformation(self, matrix: np.ndarray) -> "PointArray":
@@ -315,9 +317,13 @@ class PointArray2D(EntityBase):
     )
     private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
     # pylint: disable=no-member
-    origin: LengthType.Point = pd.Field(description="The corner of the parallelogram.")
-    u_axis_vector: LengthType.Axis = pd.Field(description="The scaled u-axis of the parallelogram.")
-    v_axis_vector: LengthType.Axis = pd.Field(description="The scaled v-axis of the parallelogram.")
+    origin: Length.Vector3 = pd.Field(description="The corner of the parallelogram.")
+    u_axis_vector: Length.NonNullVector3 = pd.Field(
+        description="The scaled u-axis of the parallelogram."
+    )
+    v_axis_vector: Length.NonNullVector3 = pd.Field(
+        description="The scaled v-axis of the parallelogram."
+    )
     u_number_of_points: int = pd.Field(ge=2, description="The number of points along the u axis.")
     v_number_of_points: int = pd.Field(ge=2, description="The number of points along the v axis.")
 

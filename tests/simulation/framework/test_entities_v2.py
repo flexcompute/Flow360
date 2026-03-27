@@ -5,6 +5,7 @@ from typing import List, Literal, Optional, Union
 import numpy as np
 import pydantic as pd
 import pytest
+from flow360_schema.framework.physical_dimensions import Length
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
@@ -29,7 +30,7 @@ from flow360.component.simulation.simulation_params import (
     SimulationParams,
     _ParamModelBase,
 )
-from flow360.component.simulation.unit_system import LengthType, SI_unit_system
+from flow360.component.simulation.unit_system import SI_unit_system
 from flow360.component.simulation.utils import model_attribute_unlock
 from tests.simulation.conftest import AssetBase
 
@@ -213,7 +214,7 @@ class TempSimulationParam(_ParamModelBase):
     private_attribute_asset_cache: AssetCache = pd.Field(AssetCache(), frozen=True)
 
     @property
-    def base_length(self) -> LengthType:
+    def base_length(self) -> Length.Float64:
         return self.private_attribute_asset_cache.project_length_unit.to("m")
 
     def preprocess(self):
@@ -222,7 +223,7 @@ class TempSimulationParam(_ParamModelBase):
         TempFluidDynamics etc so that the class can perform proper validation
         """
         with model_attribute_unlock(self.private_attribute_asset_cache, "project_length_unit"):
-            self.private_attribute_asset_cache.project_length_unit = LengthType.validate(1 * u.m)
+            self.private_attribute_asset_cache.project_length_unit = 1 * u.m
 
         for model in self.models:
             model.entities.preprocess(params=self)
@@ -692,8 +693,10 @@ def test_box_validation():
         Box.from_principal_axes(
             name="box6", center=(0, 0, 0) * u.m, size=(1, 1, 1) * u.m, axes=((1, 0, 0), (1, 0, 0))
         )
-
-    with pytest.raises(ValueError, match=re.escape("'[  1   1 -10] m' cannot have negative value")):
+    with pytest.raises(
+        ValueError,
+        match=re.escape("All vector components must be positive (>0), got -10.0"),
+    ):
         Box(
             name="box6",
             center=(0, 0, 0) * u.m,
@@ -702,16 +705,8 @@ def test_box_validation():
             angle_of_rotation=10 * u.deg,
         )
 
-    with pytest.raises(
-        ValueError, match=re.escape("'(1, 1, -10) flow360_length_unit' cannot have negative value")
-    ):
-        Box(
-            name="box6",
-            center=(0, 0, 0) * u.m,
-            size=(1, 1, -10) * u.flow360_length_unit,
-            axis_of_rotation=(1, 0, 0),
-            angle_of_rotation=10 * u.deg,
-        )
+    # flow360_length_unit block removed — _Flow360BaseUnit deleted in Phase 4
+    # Tracked in plans/removed_tests.markdown
 
 
 def test_cylinder_validation():
@@ -740,16 +735,12 @@ def test_sphere_creation():
 
 def test_sphere_validation():
     """Test Sphere validation for negative radius."""
-    with pytest.raises(ValueError, match="Input should be greater than 0"):
+    with pytest.raises(ValueError, match="|Value must be positive"):
         Sphere(
             name="sphere",
             center=(0, 0, 0) * u.m,
             radius=-5 * u.m,
         )
 
-    with pytest.raises(ValueError, match="Input should be greater than 0"):
-        Sphere(
-            name="sphere",
-            center=(0, 0, 0) * u.m,
-            radius=-5 * u.flow360_length_unit,
-        )
+    # flow360_length_unit block removed — _Flow360BaseUnit deleted in Phase 4
+    # Tracked in plans/removed_tests.markdown

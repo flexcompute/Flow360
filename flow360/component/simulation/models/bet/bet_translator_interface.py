@@ -5,9 +5,9 @@ from math import cos, inf, pi, sin, sqrt
 from typing import Literal
 
 import numpy as np
+from flow360_schema.framework.physical_dimensions import Angle, Length
 
 import flow360.component.simulation.units as u
-from flow360.component.simulation.unit_system import AngleType, LengthType
 from flow360.exceptions import Flow360ValueError
 from flow360.log import log
 
@@ -339,7 +339,7 @@ def read_in_c81_polar_csv(polar_file_content):
     return cl_alphas, cl_mach_nums, cl_values, cd_values
 
 
-def read_in_xfoil_polars(bet_disk: dict, polar_file_content_list: list, angle_unit: AngleType):
+def read_in_xfoil_polars(bet_disk: dict, polar_file_content_list: list, angle_unit: Angle.Float64):
     """
     Read in the XFOIL polars and assigns the resulting values correctly into the BETDisk dictionary.
 
@@ -347,7 +347,7 @@ def read_in_xfoil_polars(bet_disk: dict, polar_file_content_list: list, angle_un
     ----------
     bet_disk: dictionary, contains required betdisk data
     polar_file_content_list: list of XFOIL polar file contents
-    angle_unit: AngleType, unit for angle of attack
+    angle_unit: Angle.Float64, unit for angle of attack
 
     Attributes
     ----------
@@ -396,7 +396,7 @@ def read_in_c81_polars(
     bet_disk: dict,
     c81_polar_file_contents: list,
     c81_polar_file_extensions: list,
-    angle_unit: AngleType,
+    angle_unit: Angle.Float64,
 ):
     """
     Read in the C81 polars and assigns the resulting values correctly into the BETDisk dictionary.
@@ -406,7 +406,7 @@ def read_in_c81_polars(
     bet_disk: dictionary, contains required betdisk data
     c81_polar_file_contents: list of C81 polar file contents
     c81_polar_file_extensions: list of C81 polar file contents
-    angle_unit: AngleType, unit for angle of attack
+    angle_unit: Angle.Float64, unit for angle of attack
 
     Attributes
     ----------
@@ -466,8 +466,8 @@ def generate_xfoil_bet_json(
     n_loading_nodes,
     entities,
     number_of_blades,
-    angle_unit: AngleType,
-    length_unit: LengthType,
+    angle_unit: Angle.Float64,
+    length_unit: Length.Float64,
     name,
 ):
     """
@@ -537,7 +537,7 @@ def generate_polar_file_name_list(geometry_file_content: str) -> list[list[str]]
 
 
 def parse_c81_xfoil_geometry_file(
-    geometry_file_content: str, length_unit: LengthType, angle_unit: AngleType
+    geometry_file_content: str, length_unit: Length.Float64, angle_unit: Angle.Float64
 ) -> dict:
     """
     Read in the geometry file. This file is a csv containing the filenames
@@ -627,8 +627,8 @@ def parse_c81_xfoil_geometry_file(
 def translate_xfoil_c81_to_bet_dict(
     geometry_file_content: str,
     polar_file_contents_list: list,
-    length_unit: LengthType,
-    angle_unit: AngleType,
+    length_unit: Length.Float64,
+    angle_unit: Angle.Float64,
     file_format: Literal["xfoil", "c81"],
     polar_file_extensions=None,
 ) -> dict:
@@ -665,8 +665,8 @@ def generate_c81_bet_json(
     chord_ref,
     n_loading_nodes,
     entities,
-    angle_unit: AngleType,
-    length_unit: LengthType,
+    angle_unit: Angle.Float64,
+    length_unit: Length.Float64,
     number_of_blades,
     name,
 ):
@@ -1529,8 +1529,8 @@ def get_polar(xrotor_dict, alphas, machs, rR_station):
 
 def translate_xrotor_dfdc_to_bet_dict(
     geometry_file_content: str,
-    length_unit: LengthType,
-    angle_unit: AngleType,
+    length_unit: Length.Float64,
+    angle_unit: Angle.Float64,
     file_format: Literal["xrotor", "dfdc"],
 ) -> dict:
     """
@@ -1541,8 +1541,8 @@ def translate_xrotor_dfdc_to_bet_dict(
     ----------
     geometry_file_content: string, path to the XROTOR/DFDC file
     bet_disk: dictionary, contains the BETDisk data
-    length_unit: LengthType, grid unit length with units
-    angle_unit: AngleType, unit for the angle of attack
+    length_unit: Length.Float64, grid unit length with units
+    angle_unit: Angle.Float64, unit for the angle of attack
     return: dictionary with BETDisk parameters from XROTOR/DFDC input file only
     """
 
@@ -1583,8 +1583,8 @@ def generate_xrotor_bet_json(
     chord_ref,
     n_loading_nodes,
     entities,
-    angle_unit: AngleType,
-    length_unit: LengthType,
+    angle_unit: Angle.Float64,
+    length_unit: Length.Float64,
     name,
 ) -> dict:
     """
@@ -1629,8 +1629,8 @@ def generate_dfdc_bet_json(
     chord_ref,
     n_loading_nodes,
     entities,
-    angle_unit: AngleType,
-    length_unit: LengthType,
+    angle_unit: Angle.Float64,
+    length_unit: Length.Float64,
     name,
 ) -> dict:
     """

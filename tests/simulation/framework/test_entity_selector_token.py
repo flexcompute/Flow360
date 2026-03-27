@@ -113,7 +113,7 @@ def test_entity_selector_token_round_trip_validation():
 
     # Materialize selector tokens before validation, matching validate_model() preprocessing behavior.
     materialize_entities_and_selectors_in_place(tokenized_params)
-    validated = _ParamsWithAssetCache.model_validate(tokenized_params)
+    validated = _ParamsWithAssetCache.deserialize(tokenized_params)
 
     cache = validated.private_attribute_asset_cache
     assert cache.used_selectors is not None

@@ -10,6 +10,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
 
 import pydantic as pd
+from flow360_schema.framework.validation.context import DeserializationContext
 
 from flow360.component.simulation.draft_context.mirror import MirrorPlane
 from flow360.component.simulation.framework.entity_materialization_context import (
@@ -87,7 +88,8 @@ def _build_entity_instance(entity_dict: dict):
     cls = ENTITY_TYPE_MAP.get(type_name)
     if cls is None:
         raise ValueError(f"[Internal] Unknown entity type: {type_name}")
-    return pd.TypeAdapter(cls).validate_python(entity_dict)
+    with DeserializationContext():
+        return pd.TypeAdapter(cls).validate_python(entity_dict)
 
 
 def _build_registry_index(registry: EntityRegistry) -> dict[tuple[str, str], Any]:
@@ -307,7 +309,7 @@ def _materialize_selectors_list_in_node(
             # At local validation, `selector_lookup` is empty.
             # Since it is presubmit, no need to "materialize", "deserialize" is fine.
             try:
-                materialized_selectors.append(EntitySelector.model_validate(selector_item))
+                materialized_selectors.append(EntitySelector.deserialize(selector_item))
             except pd.ValidationError:
                 # Keep the invalid dict as-is, let SimulationParams.model_validate handle the error.
                 # This preserves the full error location path (e.g., "models.0.entities.selectors.0.children...")

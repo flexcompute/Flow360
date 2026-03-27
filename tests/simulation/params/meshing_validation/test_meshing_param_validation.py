@@ -46,11 +46,7 @@ from flow360.component.simulation.primitives import (
 )
 from flow360.component.simulation.services import ValidationCalledBy, validate_model
 from flow360.component.simulation.simulation_params import SimulationParams
-from flow360.component.simulation.unit_system import (
-    CGS_unit_system,
-    LengthType,
-    SI_unit_system,
-)
+from flow360.component.simulation.unit_system import CGS_unit_system, SI_unit_system
 from flow360.component.simulation.utils import BoundingBox
 from flow360.component.simulation.validation.validation_context import (
     SURFACE_MESH,
@@ -67,7 +63,7 @@ non_gai_context.use_geometry_AI = False
 
 beta_mesher_context = ParamsValidationInfo({}, [])
 beta_mesher_context.is_beta_mesher = True
-beta_mesher_context.project_length_unit = "mm"
+beta_mesher_context.project_length_unit = 1 * u.mm
 
 snappy_context = ParamsValidationInfo({}, [])
 snappy_context.use_snappy = True
@@ -145,7 +141,7 @@ def test_disable_invalid_axisymmetric_body_construction():
 
     with pytest.raises(
         pd.ValidationError,
-        match=re.escape("Value error, arg '(-1, 1, 3)' needs to be a collection of 2 values"),
+        match=re.escape("Vector must have exactly 2 components, got 3"),
     ):
         with CGS_unit_system:
             cylinder_1 = AxisymmetricBody(
@@ -1833,14 +1829,14 @@ def test_wind_tunnel_invalid_dimensions():
         # invalid floors
         with pytest.raises(
             pd.ValidationError,
-            match=r"is not strictly increasing",
+            match=r"strictly increasing",
         ):
             # invalid range
             _ = StaticFloor(friction_patch_x_range=(-100, -200), friction_patch_width=42)
 
         with pytest.raises(
             pd.ValidationError,
-            match=r"cannot have negative value",
+            match=r"All values must be positive",
         ):
             # invalid positive range
             _ = WheelBelts(
@@ -2088,7 +2084,7 @@ def test_meshing_defaults_octree_spacing_auto_set_from_project_length_unit():
             defaults = MeshingDefaults(
                 boundary_layer_first_layer_thickness=0.001,
             )
-            # beta_mesher_context has project_length_unit = "mm"
+            # beta_mesher_context has project_length_unit = 1 * u.mm
             assert defaults.octree_spacing is not None
             assert isinstance(defaults.octree_spacing, OctreeSpacing)
             assert defaults.octree_spacing.base_spacing == 1 * u.mm
@@ -2675,7 +2671,7 @@ def test_geometry_accuracy_with_non_unit_project_length_scale():
     """
     gai_ctx = ParamsValidationInfo({}, [])
     gai_ctx.use_geometry_AI = True
-    gai_ctx.project_length_unit = LengthType.validate(1.2 * u.mm)
+    gai_ctx.project_length_unit = 1.2 * u.mm
     gai_ctx.global_bounding_box = BoundingBox([[-5e5, -5e5, -5e5], [5e5, 5e5, 5e5]])
 
     expected_warning = (
