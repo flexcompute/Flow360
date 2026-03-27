@@ -13,6 +13,7 @@ import pydantic as pd
 import typing_extensions
 from pydantic import PositiveInt
 
+from flow360.cloud.file_cache import get_shared_cloud_file_cache
 from flow360.cloud.flow360_requests import (
     CloneVolumeMeshRequest,
     LengthUnitType,
@@ -49,6 +50,9 @@ from flow360.component.simulation.draft_context.coordinate_system_manager import
     CoordinateSystemStatus,
 )
 from flow360.component.simulation.draft_context.mirror import MirrorStatus
+from flow360.component.simulation.draft_context.obb.tessellation_loader import (
+    TessellationFileLoader,
+)
 from flow360.component.simulation.entity_info import (
     GeometryEntityInfo,
     merge_geometry_entity_info,
@@ -292,12 +296,30 @@ def create_draft(
         cache_key="coordinate_system_status",
     )
 
+    # Build tessellation loader for geometry-root drafts (enables compute_obb)
+    tessellation_loader = None
+    length_unit = None
+    if isinstance(new_run_from, Geometry):
+        # pylint: disable=protected-access
+        geometry_resources: Dict[str, Flow360Resource] = {new_run_from.id: new_run_from._webapi}
+        geometry_resources.update(
+            {geo.id: geo._webapi for geo in active_geometry_dependencies.values()}
+        )
+        tessellation_loader = TessellationFileLoader(
+            geometry_resources, get_shared_cloud_file_cache()
+        )
+
+        # Use length unit cached on Geometry during from_cloud (no extra API call)
+        length_unit = new_run_from._project_length_unit
+
     return DraftContext(
         entity_info=entity_info_copy,
         mirror_status=mirror_status,
         coordinate_system_status=coordinate_system_status,
         imported_surfaces=imported_surfaces,
         imported_geometries=list(active_geometry_dependencies.values()),
+        tessellation_loader=tessellation_loader,
+        length_unit=length_unit,
     )
 
 
