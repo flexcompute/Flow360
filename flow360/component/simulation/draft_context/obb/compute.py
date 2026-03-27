@@ -61,7 +61,7 @@ class OBBResult:
     radius: float
 
 
-def compute_obb(
+def compute_obb(  # pylint:disable = too-many-locals
     vertices: np.ndarray,
     rotation_axis_hint: Optional[np.ndarray] = None,
 ) -> OBBResult:
