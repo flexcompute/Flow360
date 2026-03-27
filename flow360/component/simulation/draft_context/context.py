@@ -361,7 +361,7 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
             return [entity.name for entity in matched_entities]
         return matched_entities
 
-    def compute_obb(
+    def compute_obb(  # pylint:disable=too-many-branches
         self,
         entities: Union[Surface, List[Surface], EntityRegistryView, EntitySelector],
         *,
@@ -409,6 +409,7 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
                 entity_list=_SelectorWrapper(selectors=[entities]),
             )
         elif isinstance(entities, EntityRegistryView):
+            # pylint:disable = protected-access
             if hasattr(entities, "_entity_type") and not issubclass(entities._entity_type, Surface):
                 raise Flow360ValueError(
                     f"compute_obb() requires a Surface view, "
@@ -429,7 +430,7 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
         # which lacks sub_components and has no tessellation data)
         non_surface = [s for s in surface_list if not isinstance(s, Surface)]
         if non_surface:
-            names = [s.name for s in non_surface]
+            names = [getattr(s, "name", type(s).__name__) for s in non_surface]
             log.warning(
                 f"compute_obb(): skipping {len(non_surface)} non-Surface entity(ies) "
                 f"(e.g. MirroredSurface) — not yet supported: {names}"
