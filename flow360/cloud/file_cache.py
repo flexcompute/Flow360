@@ -16,6 +16,16 @@ from ..log import log
 
 CLOUD_FILE_CACHE_MAX_SIZE_MB: int = 2048  # default 2 GB, user-adjustable
 
+_shared_cache_instance: Optional["CloudFileCache"] = None
+
+
+def get_shared_cloud_file_cache() -> "CloudFileCache":
+    """Return the module-level shared CloudFileCache instance (created on first call)."""
+    global _shared_cache_instance  # pylint: disable=global-statement
+    if _shared_cache_instance is None:
+        _shared_cache_instance = CloudFileCache()
+    return _shared_cache_instance
+
 
 class CloudFileCache:
     """Size-based LRU disk cache.
