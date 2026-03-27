@@ -82,6 +82,33 @@ class TestEviction:
         # Existing entry was not evicted
         assert cache.get("ns", "small", "f.bin") == b"x" * 100
 
+    def test_no_self_eviction_during_multi_file_put(self, tmp_path):
+        """Putting a second file for the same resource must not evict the first."""
+        # Budget fits one resource with two files (~600 bytes) but not two resources
+        cache = CloudFileCache(cache_root=tmp_path / "cache", max_size_bytes=700)
+        cache.put("ns", "res", "manifest.json", b"m" * 300)
+        time.sleep(0.05)
+        # Second file for same resource: should NOT evict its own manifest
+        cache.put("ns", "res", "body.bin", b"b" * 300)
+
+        assert cache.get("ns", "res", "manifest.json") == b"m" * 300
+        assert cache.get("ns", "res", "body.bin") == b"b" * 300
+
+    def test_overwrite_accounts_for_existing_size(self, tmp_path):
+        """Overwriting a file should not over-count size pressure."""
+        # Budget = 500. Put 300, then overwrite with 300 again.
+        # Net delta is 0, so no eviction should be needed.
+        cache = CloudFileCache(cache_root=tmp_path / "cache", max_size_bytes=500)
+        cache.put("ns", "other", "f.bin", b"o" * 200)
+        time.sleep(0.05)
+        cache.put("ns", "res", "f.bin", b"x" * 300)
+        time.sleep(0.05)
+        # Overwrite with same size — should not evict "other"
+        cache.put("ns", "res", "f.bin", b"y" * 300)
+
+        assert cache.get("ns", "other", "f.bin") == b"o" * 200
+        assert cache.get("ns", "res", "f.bin") == b"y" * 300
+
 
 class TestDisabled:
     def test_disabled_cache_returns_none(self, tmp_path):

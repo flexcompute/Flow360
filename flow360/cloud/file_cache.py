@@ -66,8 +66,14 @@ class CloudFileCache:
             return
 
         try:
-            self._evict_if_needed(len(data))
+            # Account for the file being overwritten (net size delta, not gross)
             target = self._file_path(namespace, resource_id, file_path)
+            existing_size = target.stat().st_size if target.is_file() else 0
+            net_incoming = len(data) - existing_size
+
+            current_resource_dir = self._resource_dir(namespace, resource_id)
+            self._evict_if_needed(net_incoming, protect=current_resource_dir)
+
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(data)
             self._touch_last_access(namespace, resource_id)
@@ -118,8 +124,12 @@ class CloudFileCache:
                 entries.append((mtime, size, resource_dir))
         return total_size, entries
 
-    def _evict_if_needed(self, incoming_bytes: int) -> None:
-        """Delete oldest resource dirs until total size + *incoming_bytes* fits the budget."""
+    def _evict_if_needed(self, incoming_bytes: int, protect: Optional[Path] = None) -> None:
+        """Delete oldest resource dirs until total size + *incoming_bytes* fits the budget.
+
+        *protect*, if given, is a resource directory that must not be evicted
+        (the resource currently being populated by the caller).
+        """
         current_size, entries = self._collect_resource_dirs()
         if current_size + incoming_bytes <= self._max_size_bytes:
             return
@@ -130,5 +140,7 @@ class CloudFileCache:
         for _mtime, size, resource_dir in entries:
             if current_size + incoming_bytes <= self._max_size_bytes:
                 break
+            if protect is not None and resource_dir == protect:
+                continue
             shutil.rmtree(resource_dir, ignore_errors=True)
             current_size -= size
