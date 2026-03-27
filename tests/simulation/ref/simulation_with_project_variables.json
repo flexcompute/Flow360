@@ -421,5 +421,9 @@
         "name": "SI"
     },
     "user_defined_fields": [],
+<<<<<<< HEAD
     "version": "25.9.3b1"
+=======
+    "version": "25.9.6"
+>>>>>>> fcd9ca7f (Update version (#1940))
 }
