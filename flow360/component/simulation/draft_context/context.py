@@ -56,6 +56,13 @@ _DRAFT_ENTITY_TYPE_TUPLE: tuple[type[EntityBase], ...] = tuple(
 )
 
 
+@dataclass
+class _SelectorWrapper:
+    """Minimal wrapper to satisfy expand_entity_list_selectors's entity_list parameter."""
+
+    selectors: List[EntitySelector]
+
+
 def get_active_draft() -> Optional["DraftContext"]:
     """Return the current active draft context if any."""
     return _ACTIVE_DRAFT.get()
@@ -341,15 +348,9 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
                 "Use fl.SurfaceSelector, fl.EdgeSelector, fl.VolumeSelector, or fl.BodyGroupSelector."
             )
 
-        @dataclass
-        class MockEntityList:
-            """Temporary mock for EntityList to avoid metaclass constraints."""
-
-            selectors: List[EntitySelector]
-
         matched_entities = expand_entity_list_selectors(
             registry=self._entity_registry,
-            entity_list=MockEntityList(selectors=[selector]),
+            entity_list=_SelectorWrapper(selectors=[selector]),
         )
 
         if not matched_entities:
@@ -403,15 +404,9 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
                 expand_entity_list_selectors,
             )
 
-            @dataclass
-            class _MockEntityList:
-                """Temporary wrapper for EntityList to satisfy expand_entity_list_selectors."""
-
-                selectors: List[EntitySelector]
-
             surface_list = expand_entity_list_selectors(
                 registry=self._entity_registry,
-                entity_list=_MockEntityList(selectors=[entities]),
+                entity_list=_SelectorWrapper(selectors=[entities]),
             )
         elif isinstance(entities, EntityRegistryView):
             surface_list = list(entities)
