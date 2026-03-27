@@ -71,6 +71,17 @@ class TestEviction:
         assert cache.get("ns", "r1", "f.bin") == b"x" * 100
         assert cache.get("ns", "r2", "f.bin") == b"y" * 100
 
+    def test_skip_entry_exceeding_total_budget(self, tmp_path):
+        """A single entry larger than the entire cache budget is silently skipped."""
+        cache = CloudFileCache(cache_root=tmp_path / "cache", max_size_bytes=500)
+        cache.put("ns", "small", "f.bin", b"x" * 100)
+        cache.put("ns", "huge", "f.bin", b"y" * 1000)  # exceeds 500-byte budget
+
+        # Oversized entry was not cached
+        assert cache.get("ns", "huge", "f.bin") is None
+        # Existing entry was not evicted
+        assert cache.get("ns", "small", "f.bin") == b"x" * 100
+
 
 class TestDisabled:
     def test_disabled_cache_returns_none(self, tmp_path):

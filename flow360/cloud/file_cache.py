@@ -61,6 +61,10 @@ class CloudFileCache:
         if self._disabled:
             return
 
+        # Skip caching entries that exceed the entire cache budget
+        if len(data) > self._max_size_bytes:
+            return
+
         try:
             self._evict_if_needed(len(data))
             target = self._file_path(namespace, resource_id, file_path)
