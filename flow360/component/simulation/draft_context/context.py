@@ -409,6 +409,11 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
                 entity_list=_SelectorWrapper(selectors=[entities]),
             )
         elif isinstance(entities, EntityRegistryView):
+            if hasattr(entities, "_entity_type") and not issubclass(entities._entity_type, Surface):
+                raise Flow360ValueError(
+                    f"compute_obb() requires a Surface view, "
+                    f"got EntityRegistryView of {entities._entity_type.__name__}."
+                )
             surface_list = list(entities)
         elif isinstance(entities, Surface):
             surface_list = [entities]

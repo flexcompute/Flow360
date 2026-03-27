@@ -129,7 +129,11 @@ class CloudFileCache:
                     continue
                 last_access = resource_dir / ".last_access"
                 mtime = last_access.stat().st_mtime if last_access.exists() else 0.0
-                size = sum(f.stat().st_size for f in resource_dir.rglob("*") if f.is_file())
+                size = sum(
+                    f.stat().st_size
+                    for f in resource_dir.rglob("*")
+                    if f.is_file() and f.name != ".last_access"
+                )
                 total_size += size
                 entries.append((mtime, size, resource_dir))
         return total_size, entries
