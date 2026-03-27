@@ -71,7 +71,12 @@ class TessellationFileLoader:  # pylint: disable=too-few-public-methods
         # Group face_ids by geometry
         geometry_faces: Dict[str, List[str]] = {}
         for fid in face_ids:
-            geometry_id = self._face_to_geometry[fid]
+            geometry_id = self._face_to_geometry.get(fid)
+            if geometry_id is None:
+                raise KeyError(
+                    f"Face ID '{fid}' not found in any loaded geometry manifest. "
+                    f"Available geometries: {list(self._resources.keys())}"
+                )
             geometry_faces.setdefault(geometry_id, []).append(fid)
 
         all_vertices: List[np.ndarray] = []
