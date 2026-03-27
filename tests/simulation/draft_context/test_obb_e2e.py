@@ -207,6 +207,13 @@ class TestDraftContextComputeObb:
         # Glob matches all 6 faces (face00001-face00006)
         np.testing.assert_allclose(result.center, POC_ALL_FACES["center"], atol=1e-6)
 
+    def test_compute_obb_rejects_non_surface_selector(self, draft_with_surfaces):
+        """Passing an EdgeSelector or BodyGroupSelector should raise immediately."""
+        from flow360.component.simulation.framework.entity_selector import EdgeSelector
+
+        with pytest.raises(Exception, match="SurfaceSelector"):
+            draft_with_surfaces.compute_obb(EdgeSelector(name="bad").match("*"))
+
     def test_compute_obb_no_loader_raises(self, draft_with_surfaces):
         """DraftContext without tessellation loader should raise on compute_obb."""
         from flow360.component.simulation.draft_context.context import DraftContext

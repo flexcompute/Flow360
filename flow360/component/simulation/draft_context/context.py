@@ -393,6 +393,11 @@ class DraftContext(  # pylint: disable=too-many-instance-attributes
 
         # Resolve entities to a flat list of Surface
         if isinstance(entities, EntitySelector):
+            if entities.target_class != "Surface":
+                raise Flow360ValueError(
+                    f"compute_obb() requires a SurfaceSelector, "
+                    f"got selector with target_class='{entities.target_class}'."
+                )
             # pylint: disable=import-outside-toplevel
             from flow360.component.simulation.framework.entity_selector import (
                 expand_entity_list_selectors,
