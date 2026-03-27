@@ -819,6 +819,11 @@ class BETDisk(MultiConstructorBaseModel):
         + "Must be orthogonal to the rotation axis (Cylinder.axis). Only the direction is used—the "
         + "vector need not be unit length. Must be specified for unsteady BET Line (blade_line_chord > 0).",
     )
+    collective_pitch: Optional[AngleType] = pd.Field(
+        None,
+        description="Collective pitch angle applied as a uniform offset to all blade twist values. "
+        + "Positive value increases the angle of attack at every radial station.",
+    )
     tip_gap: Union[Literal["inf"], LengthType.NonNegative] = pd.Field(
         "inf",
         description="Dimensional distance between blade tip and solid bodies to "
