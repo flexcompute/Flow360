@@ -31,33 +31,31 @@ DISCRIMINATOR_NAMES = [
 ]
 
 
-def _preprocess_nested_list(value, required_by, params, exclude, flow360_unit_system):
-    new_list = []
-    for i, item in enumerate(value):
-        # Extend the 'required_by' path with the current index.
-        new_required_by = required_by + [f"{i}"]
-        if isinstance(item, list):
-            # Recursively process nested lists.
-            new_list.append(
-                _preprocess_nested_list(item, new_required_by, params, exclude, flow360_unit_system)
-            )
-        elif isinstance(item, Flow360BaseModel):
-            # Process Flow360BaseModel instances.
-            new_list.append(
-                item.preprocess(
-                    params=params,
-                    required_by=new_required_by,
-                    exclude=exclude,
-                    flow360_unit_system=flow360_unit_system,
-                )
-            )
-        elif need_conversion(item):
-            # Convert nested dimensioned values to base unit system
-            new_list.append(item.in_base(flow360_unit_system))
-        else:
-            # Return item unchanged if it doesn't need processing.
-            new_list.append(item)
-    return new_list
+def _preprocess_nested(value, required_by, params, exclude, flow360_unit_system):
+    """Recursively convert dimensioned values inside lists, dicts, and models."""
+    # Recurse into containers
+    if isinstance(value, list):
+        return [
+            _preprocess_nested(item, required_by + [f"{i}"], params, exclude, flow360_unit_system)
+            for i, item in enumerate(value)
+        ]
+    if isinstance(value, dict):
+        return {
+            k: _preprocess_nested(v, required_by + [f"{k}"], params, exclude, flow360_unit_system)
+            for k, v in value.items()
+        }
+    # Process Flow360BaseModel instances
+    if isinstance(value, Flow360BaseModel):
+        return value.preprocess(
+            params=params,
+            required_by=required_by,
+            exclude=exclude,
+            flow360_unit_system=flow360_unit_system,
+        )
+    # Convert dimensioned values to base unit system
+    if need_conversion(value):
+        return value.in_base(flow360_unit_system)
+    return value
 
 
 class Conflicts(pd.BaseModel):
@@ -678,9 +676,8 @@ class Flow360BaseModel(pd.BaseModel):
                     exclude=exclude,
                     flow360_unit_system=flow360_unit_system,
                 )
-            elif isinstance(value, list):
-                # Use the helper to handle nested lists.
-                solver_values[property_name] = _preprocess_nested_list(
+            elif isinstance(value, (list, dict)):
+                solver_values[property_name] = _preprocess_nested(
                     value, [loc_name], params, exclude, flow360_unit_system
                 )
 

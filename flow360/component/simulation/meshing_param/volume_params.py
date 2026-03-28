@@ -4,7 +4,7 @@ Meshing settings that applies to volumes.
 
 # pylint: disable=too-many-lines
 
-from typing import Literal, Optional, Union
+from typing import Dict, Literal, Optional, Union
 
 import pydantic as pd
 from typing_extensions import deprecated
@@ -18,6 +18,7 @@ from flow360.component.simulation.primitives import (
     Box,
     CustomVolume,
     Cylinder,
+    Face,
     GenericVolume,
     GhostSurface,
     MirroredSurface,
@@ -54,13 +55,17 @@ class classproperty:  # pylint: disable=invalid-name,too-few-public-methods
 class UniformRefinement(Flow360BaseModel):
     """
     Uniform spacing refinement inside specified region of mesh.
+    For AxisymmetricBody entities, specify per-face spacing overrides via ``face_spacing``.
 
     Example
     -------
 
       >>> fl.UniformRefinement(
       ...     entities=[cylinder, box, axisymmetric_body, sphere],
-      ...     spacing=1*fl.u.cm
+      ...     spacing=1*fl.u.cm,
+      ...     face_spacing={
+      ...         axisymmetric_body.face(2): 0.2*fl.u.cm,
+      ...     }
       ... )
 
     ====
@@ -79,6 +84,32 @@ class UniformRefinement(Flow360BaseModel):
         None,
         description="Whether to include the refinement in the surface mesh. Defaults to True when using snappy.",
     )
+    face_spacing: Optional[Dict[str, Dict[int, LengthType.Positive]]] = pd.Field(
+        None,
+        description="Per-face spacing overrides for AxisymmetricBody entities. "
+        "Use `body.face(i)` as keys, where face i is defined by the segment between"
+        "profile_curve[i] and profile_curve[i+1]. Faces without overrides use the default `spacing`.",
+    )
+
+    @pd.field_validator("face_spacing", mode="before")
+    @classmethod
+    def _convert_face_spacing(cls, value):
+        """Convert {Face: spacing} to {entity_name: {idx: spacing}} internal format."""
+        if value is None or not isinstance(value, dict):
+            return value
+        result = {}
+        for key, val in value.items():
+            if isinstance(key, Face):
+                result.setdefault(key.entity_name, {})[key.index] = val
+            elif isinstance(key, str) and isinstance(val, dict):
+                # Already in {name: {idx: spacing}} format (e.g., from JSON deserialization)
+                result[key] = {int(k): v for k, v in val.items()}
+            else:
+                raise ValueError(
+                    f"Invalid face_spacing key {key!r}. "
+                    f"Use body.face(i) or provide a valid serialized face_spacing dict."
+                )
+        return result
 
     @contextual_field_validator("entities", mode="after")
     @classmethod
@@ -128,6 +159,35 @@ class UniformRefinement(Flow360BaseModel):
         """Check that project_to_surface is used only with snappy."""
         if not param_info.use_snappy and self.project_to_surface is not None:
             raise ValueError("project_to_surface is supported only for snappyHexMesh.")
+
+        return self
+
+    @pd.model_validator(mode="after")
+    def check_face_spacing(self):
+        """Validate face_spacing keys match AxisymmetricBody entities."""
+        if self.face_spacing is None:
+            return self
+
+        entity_map = {}
+        if self.entities is not None:
+            for entity in self.entities.stored_entities:
+                if isinstance(entity, AxisymmetricBody):
+                    entity_map[entity.name] = entity
+
+        for entity_name, face_overrides in self.face_spacing.items():
+            if entity_name not in entity_map:
+                raise ValueError(
+                    f"face_spacing references '{entity_name}' which is not an "
+                    f"AxisymmetricBody in this refinement's entities list."
+                )
+            entity = entity_map[entity_name]
+            num_faces = len(entity.profile_curve) - 1
+            for face_idx in face_overrides:
+                if face_idx >= num_faces or face_idx < 0:
+                    raise ValueError(
+                        f"Face index {face_idx} for entity '{entity.name}' is out of range. "
+                        f"Valid range: [0, {num_faces - 1}]."
+                    )
 
         return self
 
