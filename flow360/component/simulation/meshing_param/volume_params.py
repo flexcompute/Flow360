@@ -635,8 +635,8 @@ class _FarfieldAllowingEnclosedEntities(_FarfieldBase):
         None,
         description="""
         The surfaces/surface groups that are the interior boundaries of the `farfield` zone when defining custom volumes.
-        - Only allowed when using one or more `CustomZone`(s) to define volume zone(s) in meshing parameters
-        - Cylinder, AxisymmetricBody, Sphere entities must be associated with `RotationVolume`(s)
+        - Only allowed when using one or more ``CustomZone(s)`` to define volume zone(s) in meshing parameters
+        - Cylinder, AxisymmetricBody, Sphere entities must be associated with ``RotationVolume(s)``
         """,
     )
 
