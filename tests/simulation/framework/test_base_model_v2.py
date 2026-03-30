@@ -4,7 +4,6 @@ import tempfile
 
 import pydantic as pd
 import pytest
-import yaml
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
