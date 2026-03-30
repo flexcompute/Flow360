@@ -534,7 +534,7 @@ class Air(MaterialBase):
 
         For thermally perfect gas, gamma = cp/cv = (cp/R) / (cp/R - 1) varies with temperature.
         The cp/R is computed from the NASA 9-coefficient polynomial:
-            cp/R = a0*T^-2 + a1*T^-1 + a2 + a3*T + a4*T^2 + a5*T^3 + a6*T^4
+        cp/R = a0*T^-2 + a1*T^-1 + a2 + a3*T + a4*T^2 + a5*T^3 + a6*T^4
 
         Parameters
         ----------

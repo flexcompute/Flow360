@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "flow360"
-version = "v25.9.5"
+version = "v25.9.6"
 description = "Flow360 Python Client"
 authors = ["Flexcompute <support@flexcompute.com>"]
 
@@ -119,7 +119,7 @@ exclude = '''
 
 [tool.autohooks]
 mode = "poetry"
-pre-commit = ["autohooks.plugins.black", "autohooks.plugins.isort", "autohooks.plugins.pylint"]
+pre-commit = ["autohooks.plugins.black", "autohooks.plugins.isort", "autohooks.plugins.pylint", "flow360._autohooks.sort_json"]
 
 [tool.autohooks.plugins.pylint]
 arguments = ["--rcfile=.pylintrc"]
