@@ -366,7 +366,6 @@ class WallFunction(Flow360BaseModel):
 class Wall(BoundaryBase):
     """
     :class:`Wall` class defines the wall boundary condition based on the inputs.
-    Refer  :ref:`here <wall_formulations>` for formulation details.
 
     Example
     -------

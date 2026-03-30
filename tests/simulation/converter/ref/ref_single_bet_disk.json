@@ -382,6 +382,7 @@
             "radius": 1.500348189415042
         }
     ],
+    "collective_pitch": null,
     "entities": {
         "selectors": null,
         "stored_entities": [
@@ -421,6 +422,7 @@
         "angle_unit": null,
         "blade_line_chord": null,
         "chord_ref": 0.14,
+        "collective_pitch": null,
         "entities": {
             "selectors": null,
             "stored_entities": [

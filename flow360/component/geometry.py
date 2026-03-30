@@ -10,6 +10,9 @@ from enum import Enum
 from typing import Any, List, Literal, Optional, Union
 
 import pydantic as pd
+from flow360_schema.framework.physical_dimensions import Length
+from flow360_schema.framework.validation.context import DeserializationContext
+from pydantic import TypeAdapter
 
 from flow360.cloud.flow360_requests import (
     GeometryFileMeta,
@@ -388,6 +391,7 @@ class Geometry(AssetBase):
     def __init__(self, id: Union[str, None]):
         super().__init__(id)
         self.snappy_body_registry = None
+        self._project_length_unit = None
 
     @property
     def face_group_tag(self):
@@ -444,6 +448,16 @@ class Geometry(AssetBase):
             if self._entity_info.default_geometry_accuracy
             else _get_default_geometry_accuracy(simulation_dict=simulation_dict)
         )
+
+        # Cache project length unit for OBB (avoids extra API call in create_draft)
+        asset_cache = simulation_dict.get("private_attribute_asset_cache", {})
+        length_unit_raw = asset_cache.get("project_length_unit")
+        if length_unit_raw is not None:
+            adapter = TypeAdapter(Length.PositiveFloat64)
+            with DeserializationContext():
+                self._project_length_unit = adapter.validate_python(length_unit_raw)
+        else:
+            self._project_length_unit = None
 
     @classmethod
     # pylint: disable=redefined-builtin
