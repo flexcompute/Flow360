@@ -269,44 +269,77 @@ def main():
     post_cfg_path = "./config_files/config.json"  # default if --case not provided
 
     if args.case:
-        run_configs = _find_run_configs(args.case)
+        run_configs = _find_run_configs(args.case) if os.path.isdir(RUN_CONFIG_DIR) else []
         if not run_configs:
-            print(f"ERROR: no run_config files found for case '{args.case}' in {RUN_CONFIG_DIR}/")
-            sys.exit(1)
-        print(f"Found {len(run_configs)} run_config(s): {[os.path.basename(p) for p in run_configs]}")
+            # Fallback: look for post-processing configs directly in config_files/
+            if args.case.lower() == "all":
+                fallback_cfgs = sorted(
+                    p for p in glob.glob(os.path.join(POST_CONFIG_DIR, "*.json"))
+                    if os.path.basename(p) != "config.json"
+                )
+            else:
+                fallback_cfgs = glob.glob(os.path.join(POST_CONFIG_DIR, f"{args.case}.json"))
 
-        for rc in run_configs:
-            post_cfg = _post_config_for(rc)
-            rc_label = os.path.basename(rc)
+            if fallback_cfgs:
+                print(
+                    f"No run_config found in '{RUN_CONFIG_DIR}/'; "
+                    f"using post-processing config(s) from '{POST_CONFIG_DIR}/' directly."
+                )
+                post_cfg_path = fallback_cfgs[0] if len(fallback_cfgs) == 1 else fallback_cfgs[-1]
+                # For "all", run post-processing for each config independently
+                if args.case.lower() == "all":
+                    for cfg in fallback_cfgs:
+                        steps_local = [
+                            ("Total force coefficients (post_AFT_total_force)", lambda c=cfg: total_force.main(c)),
+                            ("Force/residual history   (post_AFT_forces_history_V4)", lambda c=cfg: forces_history.main(c)),
+                        ]
+                        for label, func in steps_local:
+                            run(label, func)
+                    sys.exit(0)
+                # Single case: just set post_cfg_path and fall through to post-processing steps
+                post_cfg_path = fallback_cfgs[0]
+            else:
+                print(
+                    f"ERROR: no run_config files found in '{RUN_CONFIG_DIR}/' "
+                    f"and no post-processing config found in '{POST_CONFIG_DIR}/' "
+                    f"for case '{args.case}'."
+                )
+                sys.exit(1)
+        else:
+            print(f"Found {len(run_configs)} run_config(s): {[os.path.basename(p) for p in run_configs]}")
 
-            _init_post_config(rc, post_cfg)
+            for rc in run_configs:
+                post_cfg = _post_config_for(rc)
+                rc_label = os.path.basename(rc)
 
-            def _wait(rc=rc):
-                wait_for_cases(rc)
+                _init_post_config(rc, post_cfg)
 
-            def _update(rc=rc, post_cfg=post_cfg):
-                sys.argv = ["update_postconfig.py", rc, post_cfg] + (["--force"] if args.force else [])
-                update_postconfig.main()
+                def _wait(rc=rc):
+                    wait_for_cases(rc)
 
-            steps.append((f"Wait for cases  [{rc_label}]", _wait))
-            steps.append((f"Update config   [{rc_label}]", _update))
+                def _update(rc=rc, post_cfg=post_cfg):
+                    sys.argv = ["update_postconfig.py", rc, post_cfg] + (["--force"] if args.force else [])
+                    update_postconfig.main()
 
-        # use the post-config for the run_config whose caseID matches args.case (the
-        # feature case for feature tests); fall back to the last run_config otherwise.
-        primary_rc = next(
-            (rc for rc in run_configs
-             if json.load(open(rc)).get("caseID") == args.case),
-            run_configs[-1],
-        )
-        post_cfg_path = _post_config_for(primary_rc)
+                steps.append((f"Wait for cases  [{rc_label}]", _wait))
+                steps.append((f"Update config   [{rc_label}]", _update))
 
-        # update config_files/config.json symlink to point to the case-specific config
-        symlink_path = os.path.join(POST_CONFIG_DIR, "config.json")
-        target = os.path.basename(post_cfg_path)
-        if os.path.islink(symlink_path) or os.path.exists(symlink_path):
-            os.remove(symlink_path)
-        os.symlink(target, symlink_path)
-        print(f"Updated symlink: {symlink_path} -> {target}")
+            # use the post-config for the run_config whose caseID matches args.case (the
+            # feature case for feature tests); fall back to the last run_config otherwise.
+            primary_rc = next(
+                (rc for rc in run_configs
+                 if json.load(open(rc)).get("caseID") == args.case),
+                run_configs[-1],
+            )
+            post_cfg_path = _post_config_for(primary_rc)
+
+            # update config_files/config.json symlink to point to the case-specific config
+            symlink_path = os.path.join(POST_CONFIG_DIR, "config.json")
+            target = os.path.basename(post_cfg_path)
+            if os.path.islink(symlink_path) or os.path.exists(symlink_path):
+                os.remove(symlink_path)
+            os.symlink(target, symlink_path)
+            print(f"Updated symlink: {symlink_path} -> {target}")
 
     def _make_ppt(cfg=post_cfg_path):
         with open(cfg) as f:

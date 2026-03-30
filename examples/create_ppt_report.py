@@ -135,18 +135,9 @@ def add_section_header(prs, section_title):
 def add_figure_slide(prs, img_path):
     slide = _blank_slide(prs)
 
-    # Figure name as subtitle (strip extension)
-    fig_name = os.path.splitext(os.path.basename(img_path))[0]
-    _add_textbox(
-        slide, fig_name,
-        left=Inches(0.2), top=Inches(0.05),
-        width=Inches(12.93), height=Inches(0.45),
-        font_size=13, bold=False, color=COLOR_DARK, align=PP_ALIGN.LEFT,
-    )
-
-    # Place image to fill the slide below the title bar
-    img_top    = Inches(0.55)
-    img_height = SLIDE_H - img_top - Inches(0.1)
+    # Place image to fill the full slide
+    img_top    = Inches(0.1)
+    img_height = SLIDE_H - Inches(0.2)
     img_width  = SLIDE_W - Inches(0.4)
     _place_picture(slide, img_path, Inches(0.2), img_top, img_width, img_height)
 
@@ -174,18 +165,12 @@ def add_dual_figure_slide(prs, img_path_left, img_path_right):
     slide = _blank_slide(prs)
 
     padding    = Inches(0.15)
-    top        = Inches(0.55)
+    top        = Inches(0.1)
     half_w     = (SLIDE_W - padding * 3) // 2
     img_height = SLIDE_H - top - Inches(0.1)
 
-    # Labels
     for i, img_path in enumerate((img_path_left, img_path_right)):
-        label = os.path.splitext(os.path.basename(img_path))[0]
-        left  = padding + i * (half_w + padding)
-        _add_textbox(slide, label,
-                     left=left, top=Inches(0.05),
-                     width=half_w, height=Inches(0.45),
-                     font_size=11, bold=False, color=COLOR_DARK, align=PP_ALIGN.LEFT)
+        left = padding + i * (half_w + padding)
         _place_picture(slide, img_path, left, top, half_w, img_height)
 
 

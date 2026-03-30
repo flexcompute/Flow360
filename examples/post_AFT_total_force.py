@@ -37,6 +37,9 @@ SOLVER_VERSION_REF = os.environ.get("solverVersionRef", "")
 RESULTS_PATH = "./resultsPath"
 
 UserConfig.set_profile("rui.cheng@flexcompute.com")
+
+PROFILES = ["rui.cheng@flexcompute.com", "auto_test_1"]
+
 set_logging_level("INFO")
 
 flow360.Env.prod.active()
@@ -68,13 +71,56 @@ def read_caseID(file_name):
         return None
 
 
+def _get_case(case_id):
+    """Return (case, raw) trying each profile in PROFILES until the case is accessible.
+    Suppresses flow360 error logs for non-final attempts; errors only shown if all profiles fail."""
+    last_exc = None
+    for i, profile in enumerate(PROFILES):
+        is_last = (i == len(PROFILES) - 1)
+        UserConfig.set_profile(profile)
+        if not is_last:
+            set_logging_level("CRITICAL")
+        try:
+            case = fl.Case(case_id)
+            raw = case.get()
+            if not is_last:
+                set_logging_level("INFO")
+            return case, raw
+        except Exception as e:
+            if not is_last:
+                set_logging_level("INFO")
+            if "not found" in str(e).lower() or "4040000001" in str(e):
+                last_exc = e
+            else:
+                raise
+    raise RuntimeError(f"Case {case_id} not found with any of: {PROFILES}") from last_exc
+
+
 def fetch_data(case_id):
-    """Download total_forces_v2.csv for a case and rename it with the case ID prefix."""
-    case = flow360.Case(case_id)
-    case.results.download(total_forces=True, surface_forces=False, bet_forces=False, cfl=False)
-    forcename = case_id + '_total_forces_v2.csv'
-    os.rename('total_forces_v2.csv', forcename)
-    return forcename
+    """Download total_forces_v2.csv for a case and rename it with the case ID prefix.
+    Suppresses flow360 error logs for non-final attempts; errors only shown if all profiles fail."""
+    last_exc = None
+    for i, profile in enumerate(PROFILES):
+        is_last = (i == len(PROFILES) - 1)
+        UserConfig.set_profile(profile)
+        if not is_last:
+            set_logging_level("CRITICAL")
+        try:
+            case = flow360.Case(case_id)
+            case.results.download(total_forces=True, surface_forces=False, bet_forces=False, cfl=False)
+            forcename = case_id + '_total_forces_v2.csv'
+            os.rename('total_forces_v2.csv', forcename)
+            if not is_last:
+                set_logging_level("INFO")
+            return forcename
+        except Exception as e:
+            if not is_last:
+                set_logging_level("INFO")
+            if "not found" in str(e).lower() or "4040000001" in str(e):
+                last_exc = e
+            else:
+                raise
+    raise RuntimeError(f"Case {case_id} not found with any of: {PROFILES}") from last_exc
 
 
 def get_data_at_last_pseudo_step(filename):
@@ -487,6 +533,7 @@ def main(config_file="./config_files/config.json"):
         rootfolder + '/caseIDfiles/'
         + casenames[0] + '_' + releases[0] + '_' + subcases[0] + '.txt'
     )
+    print(bootstrap_caseID_file)
     bootstrap_case_ids = read_caseID(bootstrap_caseID_file)
     bootstrap_case_id = bootstrap_case_ids[0]
     bootstrap_file = (
@@ -620,48 +667,51 @@ def main(config_file="./config_files/config.json"):
         path = os.path.join(rootfolder, "data", cases[i])
         for j, case_id in enumerate(ids):
             aoa = AOAs[j] if j < len(AOAs) else 'N/A'
-            case = fl.Case(case_id)
-            raw = case.get()
-            # Compute elapsed time from start/finish timestamps to explicitly exclude queue wait time.
-            # elapsedTimeInSeconds from the API equals caseFinishTime - caseStartTime (not submit time),
-            # but we recalculate here for clarity.
-            start_str = raw.get('caseStartTime')
-            finish_str = raw.get('caseFinishTime')
-            if start_str and finish_str:
-                from datetime import datetime, timezone
-                fmt = "%Y-%m-%dT%H:%M:%S.%fZ"
-                elapsed_s = (datetime.strptime(finish_str, fmt) - datetime.strptime(start_str, fmt)).total_seconds()
-                elapsed_min = f"{elapsed_s / 60:.1f}"
-            else:
-                elapsed_min = 'N/A'
-            ranks = raw.get('numProcessors', 'N/A')
-            worker = raw.get('worker', 'N/A')
-            # Parse GPU type and exact rank count from solver log
-            logdir = _getCaseRuntimeStats(case)
-            solverLogs = _glob.glob(os.path.join(logdir, 'casePipeline.Flow360Solver.*.log'))
-            if solverLogs:
-                stats = _getSimulationStats(solverLogs[0])
-                ranks = stats['numOfRanks']
-                gpu = ', '.join(stats['GPU']) if stats['GPU'] else 'N/A'
-            else:
-                gpu = 'N/A'
-            # Simplify worker label to GPU family name
-            for tag in ['B200', 'H200', 'A100']:
-                if tag in gpu:
-                    worker = tag
-                    break
-            # Get total pseudo steps from the force CSV:
-            # for each physical step, sum (last pseudo_step - first pseudo_step)
-            csv_file = os.path.join(path, case_id + '_total_forces_v2.csv')
-            if os.path.exists(csv_file):
-                df_tmp = pandas.read_csv(csv_file, skipinitialspace=True)
-                df_tmp.columns = df_tmp.columns.str.strip()
-                grouped = df_tmp.groupby('physical_step')['pseudo_step']
-                total_pseudo_steps = int((grouped.max() - grouped.min()+1).sum())
-            else:
-                total_pseudo_steps = 'N/A'
-            print(f"    {case_id} ({xlabel}={aoa}): elapsedTime={elapsed_min}min  worker={worker}  ranks={ranks}  totalPseudoSteps={total_pseudo_steps}")
-            runtime_rows.append([cases[i], case_id[:13], aoa, elapsed_min, worker, ranks, total_pseudo_steps])
+            try:
+                case, raw = _get_case(case_id)
+                # Compute elapsed time from start/finish timestamps to explicitly exclude queue wait time.
+                # elapsedTimeInSeconds from the API equals caseFinishTime - caseStartTime (not submit time),
+                # but we recalculate here for clarity.
+                start_str = raw.get('caseStartTime')
+                finish_str = raw.get('caseFinishTime')
+                if start_str and finish_str:
+                    from datetime import datetime, timezone
+                    fmt = "%Y-%m-%dT%H:%M:%S.%fZ"
+                    elapsed_s = (datetime.strptime(finish_str, fmt) - datetime.strptime(start_str, fmt)).total_seconds()
+                    elapsed_min = f"{elapsed_s / 60:.1f}"
+                else:
+                    elapsed_min = 'N/A'
+                ranks = raw.get('numProcessors', 'N/A')
+                worker = raw.get('worker', 'N/A')
+                # Parse GPU type and exact rank count from solver log
+                logdir = _getCaseRuntimeStats(case)
+                solverLogs = _glob.glob(os.path.join(logdir, 'casePipeline.Flow360Solver.*.log'))
+                if solverLogs:
+                    stats = _getSimulationStats(solverLogs[0])
+                    ranks = stats['numOfRanks']
+                    gpu = ', '.join(stats['GPU']) if stats['GPU'] else 'N/A'
+                else:
+                    gpu = 'N/A'
+                # Simplify worker label to GPU family name
+                for tag in ['B200', 'H200', 'A100']:
+                    if tag in gpu:
+                        worker = tag
+                        break
+                # Get total pseudo steps from the force CSV:
+                # for each physical step, sum (last pseudo_step - first pseudo_step)
+                csv_file = os.path.join(path, case_id + '_total_forces_v2.csv')
+                if os.path.exists(csv_file):
+                    df_tmp = pandas.read_csv(csv_file, skipinitialspace=True)
+                    df_tmp.columns = df_tmp.columns.str.strip()
+                    grouped = df_tmp.groupby('physical_step')['pseudo_step']
+                    total_pseudo_steps = int((grouped.max() - grouped.min()+1).sum())
+                else:
+                    total_pseudo_steps = 'N/A'
+                print(f"    {case_id} ({xlabel}={aoa}): elapsedTime={elapsed_min}min  worker={worker}  ranks={ranks}  totalPseudoSteps={total_pseudo_steps}")
+                runtime_rows.append([cases[i], case_id[:13], aoa, elapsed_min, worker, ranks, total_pseudo_steps])
+            except Exception as e:
+                print(f"    {case_id} ({xlabel}={aoa}): skipped — {e}")
+                runtime_rows.append([cases[i], case_id[:13], aoa, 'N/A', 'N/A', 'N/A', 'N/A'])
     print("###########################################################")
 
     # Save runtime summary as table figures (max 9 rows per table)
@@ -688,7 +738,7 @@ def main(config_file="./config_files/config.json"):
             title = f'Runtime Summary ({t + 1}/{num_tables})' if num_tables > 1 else 'Runtime Summary'
             ax.set_title(title, fontsize=15, pad=10)
             suffix = f"_part{t + 1}" if num_tables > 1 else ""
-            figurename = os.path.join(figurepath, rootfolder + f"_runtime_summary{suffix}" + figure_extname)
+            figurename = os.path.join(figurepath, rootfolder + f"_runtime_summary{suffix}" + figure_extname + ".png")
             print("Runtime table figure:", figurename)
             plt.savefig(figurename, dpi=200, bbox_inches='tight')
             plt.close(fig)
