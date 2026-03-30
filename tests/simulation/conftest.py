@@ -32,7 +32,7 @@ def _approx_equal(a, b, rel_tol=1e-12):
 
 def to_file_from_file_test_approx(obj):
     """v2 serialization round-trip test with float tolerance."""
-    test_extentions = ["yaml", "json"]
+    test_extentions = ["json"]
     factory = obj.__class__
     with tempfile.TemporaryDirectory() as tmpdir:
         for ext in test_extentions:

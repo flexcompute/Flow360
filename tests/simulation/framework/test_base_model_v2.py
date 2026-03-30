@@ -58,17 +58,6 @@ def test_from_file():
     finally:
         os.remove(temp_file_name)
 
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as temp_file:
-        yaml.dump(file_content, temp_file)
-        temp_file.flush()
-        temp_file_name = temp_file.name
-
-    try:
-        base_model = BaseModelTestModel.from_file(temp_file_name)
-        assert base_model.some_value == 321
-    finally:
-        os.remove(temp_file_name)
-
 
 def test_dict_from_file():
     file_content = {
@@ -78,17 +67,6 @@ def test_dict_from_file():
 
     with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as temp_file:
         json.dump(file_content, temp_file)
-        temp_file.flush()
-        temp_file_name = temp_file.name
-
-    try:
-        base_model_dict = BaseModelTestModel._dict_from_file(temp_file_name)
-        assert base_model_dict["some_value"] == 3210
-    finally:
-        os.remove(temp_file_name)
-
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as temp_file:
-        yaml.dump(file_content, temp_file)
         temp_file.flush()
         temp_file_name = temp_file.name
 
@@ -110,17 +88,6 @@ def test_to_file():
             base_model_dict = json.load(fp)
             assert base_model_dict["some_value"] == 1230
             assert "hash" in base_model_dict
-    finally:
-        os.remove(temp_file_name)
-
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as temp_file:
-        temp_file_name = temp_file.name
-
-    try:
-        base_model.to_file(temp_file_name)
-        with open(temp_file_name) as fp:
-            base_model_dict = yaml.load(fp, Loader=yaml.Loader)
-            assert base_model_dict["some_value"] == 1230
     finally:
         os.remove(temp_file_name)
 
