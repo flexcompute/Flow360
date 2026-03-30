@@ -1473,10 +1473,8 @@ description = "Pure Pydantic schemas for Flow360 - Single Source of Truth"
 optional = false
 python-versions = ">=3.10,<4.0"
 groups = ["main"]
-files = [
-    {file = "flow360_schema-0.1.17-py3-none-any.whl", hash = "sha256:ffdff16f651f4a40c7cf653af200ac3b93719c3cc826ecc1cc7b7e7554c6ce52"},
-    {file = "flow360_schema-0.1.17.tar.gz", hash = "sha256:42054361a82cb67391fc1cc12fa6d103b58d836601f906796ca6634e6f5721b6"},
-]
+files = []
+develop = true
 
 [package.dependencies]
 pydantic = ">=2.8,<3.0"
@@ -1485,9 +1483,8 @@ pydantic = ">=2.8,<3.0"
 unyt = ["unyt (>=2.9.0)"]
 
 [package.source]
-type = "legacy"
-url = "https://flexcompute-625554095313.d.codeartifact.us-east-1.amazonaws.com/pypi/pypi-releases/simple"
-reference = "codeartifact"
+type = "directory"
+url = "../flex/share/flow360-schema"
 
 [[package]]
 name = "fonttools"
@@ -6527,4 +6524,4 @@ docs = ["autodoc_pydantic", "cairosvg", "ipython", "jinja2", "jupyter", "myst-pa
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<3.14"
-content-hash = "d6456dbd7d96755a313d46a1ccba9d108923ce844d4199729df3974836efc12d"
+content-hash = "7201e81119a07b804606b29b27fa4ff0595b9727bf6f85b911fbc998652a3269"

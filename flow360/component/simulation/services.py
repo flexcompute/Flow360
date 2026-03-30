@@ -1311,6 +1311,7 @@ def merge_geometry_entity_info(
 def _get_draft_entity_type_names() -> set:
     """Extract entity type names from DraftEntityTypes in entity_info.py."""
     # pylint: disable=import-outside-toplevel
+    import types
     from typing import get_args, get_origin
 
     from flow360.component.simulation.entity_info import EntityInfoModel
@@ -1327,7 +1328,8 @@ def _get_draft_entity_type_names() -> set:
     union_args = get_args(inner_type)  # Get Annotated args
     if union_args:
         actual_union = union_args[0]  # First arg is the Union
-        if get_origin(actual_union) is Union:
+        # Support both typing.Union and types.UnionType (X | Y syntax in Python 3.10+)
+        if get_origin(actual_union) is Union or isinstance(actual_union, types.UnionType):
             for cls in get_args(actual_union):
                 type_names.add(cls.__name__)
 
