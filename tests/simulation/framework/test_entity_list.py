@@ -176,6 +176,7 @@ def test_force_set_attr_marks_entity_dirty_and_updates_hash():
 
     entity._force_set_attr("private_attribute_full_name", "fluid/zone")
 
+    assert entity.model_dump(exclude_unset=True)["private_attribute_full_name"] == "fluid/zone"
     assert entity._dirty is True
     assert entity._get_hash() != original_hash
     assert entity._dirty is False
