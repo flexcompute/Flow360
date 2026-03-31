@@ -41,7 +41,9 @@ SLIDE_H = Inches(7.5)
 
 # ── section metadata ──────────────────────────────────────────────────────────
 SECTIONS = [
+    ("user_define",  "User Define"),
     ("total_force",  "Total Force Coefficients"),
+    ("runtime",      "Runtime Summary"),
     ("residual",     "Residuals"),
     ("forcehistory", "Force History"),
 ]
@@ -192,6 +194,7 @@ def main():
     print(f"Input:  {figures_dir}")
     print(f"Output: {output_path}")
 
+
     prs = Presentation()
     prs.slide_width  = SLIDE_W
     prs.slide_height = SLIDE_H
@@ -227,6 +230,29 @@ def main():
             for img_file in images:
                 if img_file in paired:
                     continue          # handled separately below
+                img_path = os.path.join(section_dir, img_file)
+                print(f"    + {img_file}")
+                add_figure_slide(prs, img_path)
+                total_figures += 1
+
+            if compare_img and diff_img:
+                print(f"    + [paired] {os.path.basename(compare_img)}  |  {os.path.basename(diff_img)}")
+                add_dual_figure_slide(prs, compare_img, diff_img)
+                total_figures += 1
+            else:
+                for img_path in filter(None, (compare_img, diff_img)):
+                    print(f"    + {os.path.basename(img_path)}")
+                    add_figure_slide(prs, img_path)
+                    total_figures += 1
+        elif subfolder == "user_define":
+            # Pair 'compare' and 'diff' figures onto one slide; show the rest normally
+            compare_img = next((os.path.join(section_dir, f) for f in images if "compare" in f.lower()), None)
+            diff_img    = next((os.path.join(section_dir, f) for f in images if "diff"    in f.lower()), None)
+            paired = {os.path.basename(p) for p in (compare_img, diff_img) if p}
+
+            for img_file in images:
+                if img_file in paired:
+                    continue
                 img_path = os.path.join(section_dir, img_file)
                 print(f"    + {img_file}")
                 add_figure_slide(prs, img_path)
