@@ -442,9 +442,9 @@ def _replace_with_actual_entities(
 
     def _set_entity_full_name(entity: _SurfaceEntityBase, full_name: str) -> None:
         """Set the full_name on an entity."""
-        entity._force_set_attr( # pylint:disable=protected-access 
+        entity._force_set_attr(  # pylint:disable=protected-access
             "private_attribute_full_name", full_name
-        )  
+        )
 
     def _create_entity_parts(
         original: _SurfaceEntityBase,
