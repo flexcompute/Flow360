@@ -170,6 +170,16 @@ def test_entity_list_invalid_inputs():
             EntityList[Surface].model_validate([GenericVolume(name="a_volume")])
 
 
+def test_force_set_attr_marks_entity_dirty_and_updates_hash():
+    entity = GenericVolume(name="zone")
+    original_hash = entity._get_hash()
+
+    entity._force_set_attr("private_attribute_full_name", "fluid/zone")
+
+    assert entity._dirty is True
+    assert entity._get_hash() != original_hash
+
+
 def test_preview_selection_returns_names_by_default():
     _, draft = _build_preview_context(["tail", "wing_leading", "wing_trailing"])
     selector = SurfaceSelector(name="wing_surfaces").match("wing*")

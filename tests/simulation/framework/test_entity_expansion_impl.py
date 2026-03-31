@@ -2,6 +2,8 @@ import copy
 import json
 import os
 
+import pytest
+
 from flow360.component.simulation.framework.entity_expansion_utils import (
     expand_all_entity_lists_in_place,
 )
@@ -246,3 +248,15 @@ def test_entity_registry_view_glob_uses_full_string_matching():
     matched = registry.view(Surface)["{a,b}"]
 
     assert [entity.name for entity in matched] == ["a", "b"]
+
+
+def test_compile_glob_cached_rejects_empty_regex_parts(monkeypatch):
+    from wcmatch import fnmatch as wfnmatch
+
+    compile_glob_cached.cache_clear()
+    monkeypatch.setattr(wfnmatch, "translate", lambda pattern, flags: ([], flags))
+
+    with pytest.raises(ValueError, match="returned no regex parts"):
+        compile_glob_cached("wing*")
+
+    compile_glob_cached.cache_clear()
