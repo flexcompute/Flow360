@@ -389,6 +389,7 @@ class Geometry(AssetBase):
     def __init__(self, id: Union[str, None]):
         super().__init__(id)
         self.snappy_body_registry = None
+        self._project_length_unit = None
 
     @property
     def face_group_tag(self):
@@ -445,6 +446,14 @@ class Geometry(AssetBase):
             self._entity_info.default_geometry_accuracy
             if self._entity_info.default_geometry_accuracy
             else _get_default_geometry_accuracy(simulation_dict=simulation_dict)
+        )
+
+        # Cache project length unit for OBB (avoids extra API call in create_draft)
+        asset_cache = simulation_dict.get("private_attribute_asset_cache", {})
+        length_unit_raw = asset_cache.get("project_length_unit")
+        # pylint: disable=no-member
+        self._project_length_unit = (
+            LengthType.validate(length_unit_raw) if length_unit_raw is not None else None
         )
 
     @classmethod
