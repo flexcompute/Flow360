@@ -89,7 +89,6 @@ from flow360.component.simulation.unit_system import (
     unit_system_manager,
 )
 from flow360.component.simulation.units import validate_length
-from flow360.component.simulation.utils import model_attribute_unlock
 from flow360.component.simulation.validation.validation_context import (
     ALL,
     ParamsValidationInfo,
@@ -144,9 +143,10 @@ def _store_project_length_unit(project_length_unit, params: SimulationParams):
         # Store the length unit so downstream services/pipelines can use it
         # pylint: disable=fixme
         # TODO: client does not call this. We need to start using new webAPI for that
-        with model_attribute_unlock(params.private_attribute_asset_cache, "project_length_unit"):
-            # pylint: disable=assigning-non-slot,no-member
-            params.private_attribute_asset_cache.project_length_unit = project_length_unit
+        # pylint: disable=assigning-non-slot,no-member
+        params.private_attribute_asset_cache._force_set_attr(  # pylint:disable=protected-access
+            "project_length_unit", project_length_unit
+        )
     return params
 
 

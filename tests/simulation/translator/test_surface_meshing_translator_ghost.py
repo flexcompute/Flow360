@@ -11,7 +11,6 @@ from flow360.component.simulation.translator.surface_meshing_translator import (
     get_surface_meshing_json,
 )
 from flow360.component.simulation.unit_system import SI_unit_system
-from flow360.component.simulation.utils import model_attribute_unlock
 
 
 def _minimal_geometry_entity_info():
@@ -35,8 +34,7 @@ def _minimal_geometry_entity_info():
         edge_attribute_names=[],
         grouped_edges=[[]],
     )
-    with model_attribute_unlock(info, "body_group_tag"):
-        info.body_group_tag = "groupByFile"
+    info._force_set_attr("body_group_tag", "groupByFile")
     return info
 
 

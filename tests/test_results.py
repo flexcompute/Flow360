@@ -34,7 +34,6 @@ from flow360.component.simulation.operating_condition.operating_condition import
     AerospaceCondition,
 )
 from flow360.component.simulation.simulation_params import SimulationParams
-from flow360.component.simulation.utils import model_attribute_unlock
 
 # log.set_logging_level("DEBUG")
 
@@ -214,8 +213,7 @@ def test_bet_disk_results_with_simulation_interface(mock_id, mock_response, data
 
     with u2.SI_unit_system:
         params = SimulationParams(operating_condition=AerospaceCondition(velocity_magnitude=286))
-        with model_attribute_unlock(params.private_attribute_asset_cache, "project_length_unit"):
-            params.private_attribute_asset_cache.project_length_unit = 1 * u2.m
+        params.private_attribute_asset_cache._force_set_attr("project_length_unit", 1 * u2.m)
 
     results = case.results
     results.bet_forces.load_from_local(os.path.join(data_path, "results", "bet_forces_v2.csv"))

@@ -98,10 +98,7 @@ from flow360.component.simulation.user_code.core.types import (
 from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
     UserDefinedDynamic,
 )
-from flow360.component.simulation.utils import (
-    model_attribute_unlock,
-    sanitize_params_dict,
-)
+from flow360.component.simulation.utils import sanitize_params_dict
 from flow360.component.simulation.validation.validation_output import (
     _check_aero_acoustics_observer_time_step_size,
     _check_local_cfl_output,
@@ -395,9 +392,10 @@ class SimulationParams(_ParamModelBase):
         )
 
     def _private_set_length_unit(self, validated_mesh_unit):
-        with model_attribute_unlock(self.private_attribute_asset_cache, "project_length_unit"):
-            # pylint: disable=assigning-non-slot
-            self.private_attribute_asset_cache.project_length_unit = validated_mesh_unit
+        # pylint: disable=assigning-non-slot, no-member
+        self.private_attribute_asset_cache._force_set_attr(  # pylint:disable=protected-access
+            "project_length_unit", validated_mesh_unit
+        )
 
     @pd.validate_call
     def convert_unit(

@@ -3,9 +3,7 @@
 # pylint: disable=unused-import
 from typing import Annotated, Union, get_args, get_origin
 
-# Re-export from schema package for backward compatibility
 from flow360_schema.framework.bounding_box import BoundingBox, BoundingBoxType
-from flow360_schema.framework.entity.utils import model_attribute_unlock
 
 from flow360.component.simulation.framework.updater_utils import recursive_remove_key
 

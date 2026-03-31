@@ -229,3 +229,20 @@ def test_compile_glob_cached_extended_syntax_support():
     assert match(r"literal\*star") == ["literal*star"]
     assert match(r"foo\.bar") == ["foo.bar"]
     assert match("foo[.]bar") == ["foo.bar"]
+
+
+def test_compile_glob_cached_combined_patterns_do_not_partial_match():
+    regex = compile_glob_cached("{a,b}")
+
+    assert regex.match("a") is not None
+    assert regex.match("b") is not None
+    assert regex.match("ab") is None
+    assert regex.match("xb") is None
+
+
+def test_entity_registry_view_glob_uses_full_string_matching():
+    registry = _make_registry(surfaces=_mk_pool(["a", "ab", "b", "xb"], "Surface"))
+
+    matched = registry.view(Surface)["{a,b}"]
+
+    assert [entity.name for entity in matched] == ["a", "b"]

@@ -1,5 +1,5 @@
 import re
-from typing import ClassVar, Literal
+from typing import  Literal
 
 import pydantic as pd
 import pytest
@@ -157,7 +157,7 @@ def test_entity_list_invalid_inputs():
     # 3. Test None input
     with pytest.raises(
         pd.ValidationError,
-        match="Input should be a valid list",
+        match=re.escape("None is not a valid input to `entities`."),
     ):
         EntityList[Surface].model_validate(None)
 
