@@ -11,6 +11,11 @@ class CADFeature(Flow360BaseModel):
     """A single CAD feature (e.g., fillet, chamfer, extrusion) from the CAD feature tree."""
 
     id: str = pd.Field(description="Deterministic UUID identifying this feature.")
+    native_id: str = pd.Field(
+        "",
+        description="Persistent GUID assigned by the authoring tool (A3DBIMRootData.m_pcGUID). "
+        "Empty for formats that do not expose a stable native identifier.",
+    )
     name: str = pd.Field(description="Feature name as reported by the CAD kernel.")
     cad_type: str = pd.Field(description="CAD feature type string (e.g., 'Fillet', 'Extrude').")
     parent_id: str = pd.Field(
