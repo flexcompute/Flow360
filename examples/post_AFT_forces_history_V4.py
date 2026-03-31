@@ -214,14 +214,18 @@ def plot_convergence_comparison_range(folder, cases, forces, AOA, step, forcesto
     maxphstep = max(forces[0]['physical_step'])
     lim = np.zeros((len(forcestoplot), 2))
 
-    # Pre-pass: set limits from the last value of each case
+    # Pre-pass: set limits from the last 10% of values across all cases
     for i in irange:
         for j in jrange:
             index = i * nj + j
             forcename = forcestoplot[index]
-            last_values = [forces[icase][forcename][-1] for icase in range(ncases)]
-            vmin = min(last_values)
-            vmax = max(last_values)
+            tail_values = []
+            for icase in range(ncases):
+                vals = forces[icase][forcename]
+                n_tail = max(1, int(len(vals) * 0.1))
+                tail_values.extend(vals[-n_tail:])
+            vmin = min(tail_values)
+            vmax = max(tail_values)
             if totforce_flag:
                 span = vmax - vmin
                 lim[index][0] = vmin - 2 * span

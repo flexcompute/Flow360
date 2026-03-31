@@ -33,6 +33,8 @@ import time
 import traceback
 
 import flow360 as fl
+from flow360.user_config import UserConfig
+from flow360.log import set_logging_level
 
 import update_postconfig
 import post_AFT_total_force as total_force
@@ -42,6 +44,31 @@ import create_ppt_report as ppt_report
 WAIT_INTERVAL_SECONDS = 30 * 60  # 30 minutes
 RUN_CONFIG_DIR = "run_config"
 POST_CONFIG_DIR = "config_files"
+PROFILES = ["rui.cheng@flexcompute.com", "auto_test_1"]
+
+
+def _get_case(case_id):
+    """Try each profile in order; only raise if all profiles fail."""
+    last_exc = None
+    for i, profile in enumerate(PROFILES):
+        is_last = (i == len(PROFILES) - 1)
+        UserConfig.set_profile(profile)
+        if not is_last:
+            set_logging_level("CRITICAL")
+        try:
+            case = fl.Case(case_id)
+            _ = case.get()
+            if not is_last:
+                set_logging_level("INFO")
+            return case
+        except Exception as e:
+            if not is_last:
+                set_logging_level("INFO")
+            if "not found" in str(e).lower() or "4040000001" in str(e):
+                last_exc = e
+            else:
+                raise
+    raise RuntimeError(f"Case {case_id} not found under any profile.") from last_exc
 
 
 def _find_run_configs(case_name):
@@ -211,7 +238,7 @@ def wait_for_cases(run_config_file):
     while True:
         pending = []
         for cid in all_case_ids:
-            case = fl.Case(cid)
+            case = _get_case(cid)
             status = case.status
             if not status.is_final():
                 pending.append((cid, str(status)))

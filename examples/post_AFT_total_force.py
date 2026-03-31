@@ -123,6 +123,36 @@ def fetch_data(case_id):
     raise RuntimeError(f"Case {case_id} not found with any of: {PROFILES}") from last_exc
 
 
+def fetch_user_define_data(case_id, user_define):
+    """Download force_output_{user_define}_v2.csv for a case, using profile fallback."""
+    src_filename = f"force_output_{user_define}_v2.csv"
+    local_name = f"{case_id}_{src_filename}"
+    last_exc = None
+    for i, profile in enumerate(PROFILES):
+        is_last = (i == len(PROFILES) - 1)
+        UserConfig.set_profile(profile)
+        if not is_last:
+            set_logging_level("CRITICAL")
+        try:
+            case = flow360.Case(case_id)
+            case.results.download(custom_forces=True, surface_forces=False, bet_forces=False, cfl=False)
+            if os.path.exists(src_filename):
+                os.rename(src_filename, local_name)
+            if not is_last:
+                set_logging_level("INFO")
+            return local_name
+        except Exception as e:
+            if not is_last:
+                set_logging_level("INFO")
+            if "not found" in str(e).lower() or "4040000001" in str(e):
+                last_exc = e
+            else:
+                raise
+    raise RuntimeError(
+        f"Custom force file '{src_filename}' for case {case_id} not found with any of: {PROFILES}"
+    ) from last_exc
+
+
 def get_data_at_last_pseudo_step(filename):
     """
     Extract force data at the last pseudo-step of each physical step.
@@ -288,7 +318,7 @@ def readvolantdata():
     return testAOA, testCFz, testCMz
 
 
-def plot_forces_comp(folder, cases, fname, forces, coll, forcestoplot, testdata, xlabel, figure_extname, delta=False, title="Solver release test"):
+def plot_forces_comp(folder, cases, fname, forces, coll, forcestoplot, testdata, xlabel, figure_extname, delta=False, title="Solver release test", subdir="total_force", coll_per_case=None):
     """
     Plot overlaid force coefficient curves for multiple cases and save to disk.
 
@@ -315,10 +345,11 @@ def plot_forces_comp(folder, cases, fname, forces, coll, forcestoplot, testdata,
     plt.subplots_adjust(wspace=0.22, hspace=0.2)
 
     for ii in range(0, ncase):
+        case_coll = coll_per_case[ii] if (coll_per_case and ii in coll_per_case) else coll
         for i in irange:
             for j in jrange:
                 index = i * nj + j
-                plot_line(i, j, coll, forces[ii], forcestoplot[index], labels[index], axs, cases[ii], ii)
+                plot_line(i, j, case_coll, forces[ii], forcestoplot[index], labels[index], axs, cases[ii], ii)
 
     # adding reference test data for comparison
     if testdata:
@@ -339,9 +370,62 @@ def plot_forces_comp(folder, cases, fname, forces, coll, forcestoplot, testdata,
             axs[i, j].tick_params(axis='both', labelsize=16)
             axs[i, j].grid()
 
-    figurename = os.path.join(folder, "figures", figure_extname, "total_force", fname + ".png")
+    figurename = os.path.join(folder, "figures", figure_extname, subdir, fname + ".png")
     print("figure name=", figurename)
     plt.savefig(figurename, dpi=500, bbox_inches='tight')
+
+
+def plot_user_define_comp(folder, cases, fname, forces, forcestoplot, xlabel, figure_extname,
+                          delta=False, title="User Define", subdir="user_define", coll_per_case=None, coll=None):
+    """
+    Plot overlaid curves for user-defined force columns, using a grid sized to the
+    actual number of columns (no padding).  1 column → 1×1, 2-3 → 1×N, 4 → 2×2, 5-6 → 2×3.
+    """
+    import math
+    ncase = len(cases)
+    ncols_data = len(forcestoplot)
+    if ncols_data == 0:
+        return
+
+    # Determine subplot grid
+    if ncols_data <= 3:
+        nrows, ncols_grid = 1, ncols_data
+    elif ncols_data == 4:
+        nrows, ncols_grid = 2, 2
+    else:
+        nrows, ncols_grid = 2, 3
+
+    fig_w = max(10, ncols_grid * 9)
+    fig_h = max(5,  nrows * 7)
+    fig, axs_raw = plt.subplots(nrows, ncols_grid, figsize=(fig_w, fig_h), squeeze=False)
+    plt.subplots_adjust(wspace=0.25, hspace=0.25)
+    axs = axs_raw.flatten()
+
+    labels = [f"delta_{v}" for v in forcestoplot] if delta else forcestoplot
+
+    for ii in range(ncase):
+        case_coll = (coll_per_case[ii] if (coll_per_case and ii in coll_per_case) else coll) or []
+        for idx, col in enumerate(forcestoplot):
+            axs[idx].plot(case_coll, forces[ii][col], '-' if ii < 4 else '--',
+                          label=cases[ii], color=cmap.colors[ii % 4], linewidth=3)
+
+    for idx, col in enumerate(forcestoplot):
+        axs[idx].set_ylabel(labels[idx], fontsize=14, fontweight='bold')
+        axs[idx].set_xlabel(xlabel, fontsize=14, fontweight='bold')
+        axs[idx].tick_params(axis='both', labelsize=13)
+        axs[idx].grid(True, linestyle='--', alpha=0.6)
+
+    # Hide unused subplots
+    for idx in range(ncols_data, nrows * ncols_grid):
+        axs[idx].set_visible(False)
+
+    axs[0].legend(fontsize=14, framealpha=0.8)
+    fig.suptitle(title, fontsize=22, fontweight='bold', y=1.02)
+
+    figurename = os.path.join(folder, "figures", figure_extname, subdir, fname + ".png")
+    print("figure name=", figurename)
+    plt.savefig(figurename, dpi=500, bbox_inches='tight')
+    plt.close(fig)
 
 
 def list_difference(list1, list2):
@@ -359,7 +443,7 @@ def _getCaseRuntimeStats(case: flow360.Case):
     """
     logpath = os.path.join(RESULTS_PATH, case.name)
     if not os.path.exists(logpath):
-        os.mkdir(logpath)
+        os.makedirs(logpath, exist_ok=True)
 
     zipFile = os.path.join(RESULTS_PATH, case.name, "supportLogs.zip")
     if os.path.exists(zipFile):
@@ -651,6 +735,99 @@ def main(config_file="./config_files/config.json"):
     figurename = rootfolder + "_forces_coeff_diff" + figure_extname
     plot_forces_comp(rootfolder, diffnames, figurename, diffs, AOAs, forcestoplot, False, xlabel, figure_extname, delta=True, title=plot_title)
 
+    # --- User-defined force output (optional) ---
+    user_define = config.get("user_define", None)
+    user_define_title = config.get("user_define_title", user_define)
+    if user_define:
+        print("###########################################################")
+        print(f"Processing user_define: {user_define}")
+        src_filename_pattern = f"force_output_{user_define}_v2.csv"
+        ud_subdir = "user_define"
+        os.makedirs(os.path.join(rootfolder, "figures", figure_extname, ud_subdir), exist_ok=True)
+
+        # Step columns to exclude when detecting force columns
+        _step_cols = {'physical_step', 'pseudo_step', 'time', 'time_step'}
+        ud_allforces = {}
+        ud_aoas_per_case = {}   # tracks which AOAs had data for each case index
+        ud_forcestoplot = None
+
+        for i in range(ncases):
+            scale = scales[i]
+            n_physicalstep = nperiod[i]
+            npseduo = npseduos[i]
+            path = os.path.join(rootfolder, "data", casenames[i] + '_' + releases[i])
+            caseID_file = rootfolder + '/caseIDfiles/' + casenames[i] + '_' + releases[i] + '_' + subcases[i] + '.txt'
+            case_ids = read_caseID(caseID_file)
+            if not case_ids:
+                continue
+
+            ud_forcearray = None
+            ud_aoas = []
+            for j, case_id in enumerate(case_ids):
+                aoa = AOAs[j] if j < len(AOAs) else j
+                newname = os.path.join(path, f"{case_id}_{src_filename_pattern}")
+                if not os.path.exists(newname):
+                    try:
+                        csvfile = fetch_user_define_data(case_id, user_define)
+                        shutil.move(csvfile, newname)
+                    except Exception as e:
+                        print(f"  [user_define] {case_id}: skipped — {e}")
+                        continue
+                else:
+                    print(f"Using existing local file: {newname}")
+
+                if n_physicalstep >= 2:
+                    ud_forces = get_data_at_last_pseudo_step(newname)
+                else:
+                    ud_forces = get_data_last_aver_npseudo_step(newname, npseduo)
+
+                if ud_forcestoplot is None:
+                    ud_forcestoplot = [k for k in ud_forces.keys() if k not in _step_cols]
+
+                if ud_forcearray is None:
+                    ud_forcearray = {key: [] for key in ud_forces.keys()}
+
+                for key in ud_forces.keys():
+                    if n_physicalstep >= 2:
+                        val = sum(ud_forces[key][-(n_physicalstep + 1):-1]) / n_physicalstep / scale
+                    else:
+                        val = ud_forces[key][-1] / scale
+                    ud_forcearray[key].append(val)
+                ud_aoas.append(aoa)
+
+            if ud_forcearray is not None:
+                ud_allforces[i] = ud_forcearray
+                ud_aoas_per_case[i] = ud_aoas
+
+        if ud_forcestoplot and ud_allforces:
+            cols = ud_forcestoplot  # use only the columns actually present — no padding
+
+            # Remap to sequential indices so plot functions can iterate 0..N-1
+            ud_orig_indices     = sorted(ud_allforces.keys())
+            ud_cases_filtered   = [cases[i] for i in ud_orig_indices]
+            ud_forces_seq       = {seq: ud_allforces[orig]      for seq, orig in enumerate(ud_orig_indices)}
+            ud_aoas_seq         = {seq: ud_aoas_per_case[orig]  for seq, orig in enumerate(ud_orig_indices)}
+
+            ud_figurename = rootfolder + f"_user_define_{user_define}_compare" + figure_extname
+            plot_user_define_comp(rootfolder, ud_cases_filtered, ud_figurename, ud_forces_seq, cols,
+                                  xlabel, figure_extname, title=f"User Define: {user_define_title}",
+                                  subdir=ud_subdir, coll_per_case=ud_aoas_seq)
+
+            if len(ud_forces_seq) > 1:
+                ud_diffs = {}
+                ud_diffnames = []
+                ud_keys = list(ud_forces_seq[0].keys())
+                for seq in range(len(ud_forces_seq) - 1):
+                    ud_diffs[seq] = {k: list_difference(ud_forces_seq[seq][k], ud_forces_seq[seq + 1][k])
+                                     for k in ud_keys}
+                    ud_diffnames.append(ud_cases_filtered[seq] + '-' + ud_cases_filtered[seq + 1])
+                ud_diff_figurename = rootfolder + f"_user_define_{user_define}_diff" + figure_extname
+                plot_user_define_comp(rootfolder, ud_diffnames, ud_diff_figurename, ud_diffs, cols,
+                                      xlabel, figure_extname, delta=True,
+                                      title=f"User Define diff: {user_define_title}", subdir=ud_subdir,
+                                      coll_per_case=ud_aoas_seq)
+        print("###########################################################")
+
     # Collect runtime stats for all cases, print summary, and save as a table figure.
     # - Timing/worker fields come from case.get() (raw API response)
     # - GPU type and exact MPI rank count are parsed from the solver log file
@@ -683,6 +860,8 @@ def main(config_file="./config_files/config.json"):
                     elapsed_min = 'N/A'
                 ranks = raw.get('numProcessors', 'N/A')
                 worker = raw.get('worker', 'N/A')
+                mesh_node_size = raw.get('meshNodeSize')
+                vnode_count = f"{mesh_node_size / 1e6:.2f}" if mesh_node_size else 'N/A'
                 # Parse GPU type and exact rank count from solver log
                 logdir = _getCaseRuntimeStats(case)
                 solverLogs = _glob.glob(os.path.join(logdir, 'casePipeline.Flow360Solver.*.log'))
@@ -707,24 +886,24 @@ def main(config_file="./config_files/config.json"):
                     total_pseudo_steps = int((grouped.max() - grouped.min()+1).sum())
                 else:
                     total_pseudo_steps = 'N/A'
-                print(f"    {case_id} ({xlabel}={aoa}): elapsedTime={elapsed_min}min  worker={worker}  ranks={ranks}  totalPseudoSteps={total_pseudo_steps}")
-                runtime_rows.append([cases[i], case_id[:13], aoa, elapsed_min, worker, ranks, total_pseudo_steps])
+                print(f"    {case_id} ({xlabel}={aoa}): elapsedTime={elapsed_min}min  worker={worker}  ranks={ranks}  totalPseudoSteps={total_pseudo_steps}  Vnode_count={vnode_count}M")
+                runtime_rows.append([cases[i], case_id[:13], aoa, elapsed_min, worker, ranks, total_pseudo_steps, vnode_count])
             except Exception as e:
                 print(f"    {case_id} ({xlabel}={aoa}): skipped — {e}")
-                runtime_rows.append([cases[i], case_id[:13], aoa, 'N/A', 'N/A', 'N/A', 'N/A'])
+                runtime_rows.append([cases[i], case_id[:13], aoa, 'N/A', 'N/A', 'N/A', 'N/A', 'N/A'])
     print("###########################################################")
 
     # Save runtime summary as table figures (max 9 rows per table)
     if runtime_rows:
-        col_labels = ['Case', 'Case ID', xlabel, 'ElapsedTime (min)', 'Worker', 'MPI Ranks', 'Total Pseudo Steps']
+        col_labels = ['Case', 'Case ID', xlabel, 'ElapsedTime (min)', 'Worker', 'MPI Ranks', 'Total Pseudo Steps', 'Vnode_count (M)']
         row_height = 0.1
-        figurepath = os.path.join(rootfolder, "figures", figure_extname, "total_force")
+        figurepath = os.path.join(rootfolder, "figures", figure_extname, "runtime")
         os.makedirs(figurepath, exist_ok=True)
         max_rows_per_table = 9
         num_tables = (len(runtime_rows) + max_rows_per_table - 1) // max_rows_per_table
         for t in range(num_tables):
             chunk = runtime_rows[t * max_rows_per_table:(t + 1) * max_rows_per_table]
-            fig, ax = plt.subplots(figsize=(20, max(2, len(chunk) * 0.55 + 1.5)))
+            fig, ax = plt.subplots(figsize=(16, max(1.6, len(chunk) * 0.44 + 1.2)))
             ax.axis('off')
             tbl = ax.table(cellText=chunk, colLabels=col_labels, loc='center', cellLoc='center')
             tbl.auto_set_font_size(False)
@@ -742,6 +921,76 @@ def main(config_file="./config_files/config.json"):
             print("Runtime table figure:", figurename)
             plt.savefig(figurename, dpi=200, bbox_inches='tight')
             plt.close(fig)
+
+        # Runtime scaling figure: scaled runtime vs Vnode_count
+        _WORKER_SCALE = {'B200': 1.0, 'H200': 0.75, 'A100': 0.5}
+        _BASE_RANKS = 8
+        plot_data = {}  # {case_label: {'aoa': [], 'xval': [], 'scaled_time': [], 'vnode': []}}
+        for row in runtime_rows:
+            case_label, case_id_short, aoa, elapsed_min, worker, ranks, _pseudo, vnode_count = row
+            try:
+                elapsed        = float(elapsed_min) * 60.0  # convert min → sec
+                vnode          = float(vnode_count)
+                xval           = float(aoa)
+                mpi_ranks      = int(ranks)
+                pseudo_steps   = int(_pseudo)
+                w_scale        = _WORKER_SCALE.get(str(worker), 1.0)
+                scaled_time    = elapsed * (mpi_ranks / _BASE_RANKS) * w_scale / pseudo_steps
+            except (ValueError, TypeError):
+                continue
+            if case_label not in plot_data:
+                plot_data[case_label] = {'xval': [], 'scaled_time': [], 'vnode': []}
+            plot_data[case_label]['xval'].append(xval)
+            plot_data[case_label]['scaled_time'].append(scaled_time)
+            plot_data[case_label]['vnode'].append(vnode)
+
+        if plot_data:
+            fig, ax = plt.subplots(figsize=(8, 5.6))
+            for idx, (label, data) in enumerate(plot_data.items()):
+                pairs = sorted(zip(data['xval'], data['scaled_time']), key=lambda x: x[0])
+                sorted_xvals = [p[0] for p in pairs]
+                sorted_times = [p[1] for p in pairs]
+                color = cmap.colors[idx % 10]
+                ax.plot(sorted_xvals, sorted_times, '-o', label=label,
+                        color=color, markersize=8, linewidth=1.5, zorder=3)
+            ax.set_xlabel(xlabel, fontsize=14, fontweight='bold')
+            ax.set_ylabel('Scaled Runtime per Pseudo Step (sec)', fontsize=14, fontweight='bold')
+            ax.set_title(
+                f'Scaled Runtime vs {xlabel}\n'
+                'Scaled Runtime = ElapsedTime × (MPI_Ranks / 8) × Worker_Scale / PseudoSteps\n'
+                'Worker scale:  B200 = 1.0,  H200 = 0.75,  A100 = 0.5',
+                fontsize=13, fontweight='bold', linespacing=1.6,
+            )
+            ax.legend(fontsize=12, framealpha=0.8)
+            ax.grid(True, linestyle='--', alpha=0.6)
+            scaling_fig = os.path.join(figurepath, rootfolder + "_runtime_zzscaling1" + figure_extname + ".png")
+            print("Runtime scaling figure:", scaling_fig)
+            plt.savefig(scaling_fig, dpi=200, bbox_inches='tight')
+            plt.close(fig)
+
+            # Second figure: further divide by Vnode_count (M)
+            fig2, ax2 = plt.subplots(figsize=(8, 5.6))
+            for idx, (label, data) in enumerate(plot_data.items()):
+                pairs = sorted(zip(data['xval'], data['scaled_time'], data['vnode']), key=lambda x: x[0])
+                sorted_xvals = [p[0] for p in pairs]
+                sorted_times = [p[1] / p[2] for p in pairs]
+                color = cmap.colors[idx % 10]
+                ax2.plot(sorted_xvals, sorted_times, '-o', label=label,
+                         color=color, markersize=8, linewidth=1.5, zorder=3)
+            ax2.set_xlabel(xlabel, fontsize=14, fontweight='bold')
+            ax2.set_ylabel('Scaled Runtime per Pseudo Step per M-Vnode (sec/M)', fontsize=12, fontweight='bold')
+            ax2.set_title(
+                f'Scaled Runtime Efficiency vs {xlabel}\n'
+                'Scaled Runtime = ElapsedTime × (MPI_Ranks / 8) × Worker_Scale / PseudoSteps / Vnode_count\n'
+                'Worker scale:  B200 = 1.0,  H200 = 0.75,  A100 = 0.5',
+                fontsize=13, fontweight='bold', linespacing=1.6,
+            )
+            ax2.legend(fontsize=12, framealpha=0.8)
+            ax2.grid(True, linestyle='--', alpha=0.6)
+            efficiency_fig = os.path.join(figurepath, rootfolder + "_runtime_zzscaling2" + figure_extname + ".png")
+            print("Runtime efficiency figure:", efficiency_fig)
+            plt.savefig(efficiency_fig, dpi=200, bbox_inches='tight')
+            plt.close(fig2)
 
 
 if __name__ == '__main__':
