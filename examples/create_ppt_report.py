@@ -91,7 +91,7 @@ def add_title_slide(prs, case_name):
 
     # Main title
     _add_textbox(
-        slide, f"Flow360 Post-Processing Report",
+        slide, f"Flow360 Solver Release Test",
         left=Inches(1), top=Inches(2.2),
         width=Inches(11.33), height=Inches(1.2),
         font_size=40, bold=True, color=COLOR_WHITE, align=PP_ALIGN.CENTER,
