@@ -31,7 +31,6 @@ from flow360.component.resource_base import (
 )
 from flow360.component.simulation.folder import Folder
 from flow360.component.simulation.primitives import Edge, GeometryBodyGroup, Surface
-from flow360.component.simulation.utils import model_attribute_unlock
 from flow360.component.simulation.web.asset_base import AssetBase
 from flow360.component.utils import (
     GeometryFiles,
@@ -724,8 +723,7 @@ class Geometry(AssetBase):
                 raise Flow360ValueError(
                     f"Renaming failed: An entity with the new name: {new_name} already exists."
                 )
-            with model_attribute_unlock(entity, "name"):
-                entity.name = new_name
+            entity._force_set_attr("name", new_name)  # pylint:disable=protected-access
 
     def rename_edges(self, current_name_pattern: str, new_name_prefix: str):
         """

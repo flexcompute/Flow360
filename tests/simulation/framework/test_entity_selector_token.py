@@ -144,3 +144,31 @@ def test_entity_selector_unknown_token_raises_error():
 
     with pytest.raises(ValueError, match=r"Selector token not found.*unknown-selector-id"):
         materialize_entities_and_selectors_in_place(params)
+
+
+def test_entity_selector_token_generates_missing_selector_id():
+    params_as_dict = {
+        "private_attribute_asset_cache": {},
+        "models": [
+            {
+                "name": "m1",
+                "selectors": [
+                    {
+                        "target_class": "Surface",
+                        "name": "sel1",
+                        "children": [
+                            {"attribute": "name", "operator": "matches", "value": "wing*"}
+                        ],
+                    }
+                ],
+            }
+        ],
+    }
+
+    tokenized_params = collect_and_tokenize_selectors_in_place(copy.deepcopy(params_as_dict))
+
+    generated_token = tokenized_params["models"][0]["selectors"][0]
+    used_selector = tokenized_params["private_attribute_asset_cache"]["used_selectors"][0]
+
+    assert generated_token is not None
+    assert used_selector["selector_id"] == generated_token

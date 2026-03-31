@@ -1,5 +1,5 @@
 import re
-from typing import ClassVar, Literal
+from typing import Literal
 
 import pydantic as pd
 import pytest
@@ -157,7 +157,7 @@ def test_entity_list_invalid_inputs():
     # 3. Test None input
     with pytest.raises(
         pd.ValidationError,
-        match="Input should be a valid list",
+        match=re.escape("None is not a valid input to `entities`."),
     ):
         EntityList[Surface].model_validate(None)
 
@@ -168,6 +168,19 @@ def test_entity_list_invalid_inputs():
     ):
         with fl.SI_unit_system:
             EntityList[Surface].model_validate([GenericVolume(name="a_volume")])
+
+
+def test_force_set_attr_marks_entity_dirty_and_updates_hash():
+    entity = GenericVolume(name="zone")
+    original_hash = entity._get_hash()
+
+    entity._force_set_attr("private_attribute_full_name", "fluid/zone")
+
+    assert entity.model_dump(exclude_unset=True)["private_attribute_full_name"] == "fluid/zone"
+    assert entity._dirty is True
+    assert entity._get_hash() != original_hash
+    assert entity._dirty is False
+    assert "_dirty" not in entity.__dict__
 
 
 def test_preview_selection_returns_names_by_default():

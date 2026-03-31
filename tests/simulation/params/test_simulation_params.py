@@ -73,7 +73,6 @@ from flow360.component.simulation.unit_system import CGS_unit_system, SI_unit_sy
 from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
     UserDefinedDynamic,
 )
-from flow360.component.simulation.utils import model_attribute_unlock
 from tests.simulation.conftest import to_file_from_file_test_approx
 
 assertions = unittest.TestCase("__init__")
@@ -669,8 +668,7 @@ def test_transformation_matrix(mock_geometry):
                 candidate_body_group_tag = tag
                 break
     if candidate_body_group_tag is not None:
-        with model_attribute_unlock(entity_info, "body_group_tag"):
-            entity_info.body_group_tag = candidate_body_group_tag
+        entity_info._force_set_attr("body_group_tag", candidate_body_group_tag)
 
     with create_draft(new_run_from=mock_geometry) as draft:
         body_groups = list(draft.body_groups)

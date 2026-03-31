@@ -36,7 +36,6 @@ from flow360.component.simulation.primitives import (
     Surface,
     _SurfaceEntityBase,
 )
-from flow360.component.simulation.utils import model_attribute_unlock
 from flow360.log import log
 
 if TYPE_CHECKING:
@@ -443,8 +442,9 @@ def _replace_with_actual_entities(
 
     def _set_entity_full_name(entity: _SurfaceEntityBase, full_name: str) -> None:
         """Set the full_name on an entity."""
-        with model_attribute_unlock(entity, "private_attribute_full_name"):
-            entity.private_attribute_full_name = full_name
+        entity._force_set_attr(  # pylint:disable=protected-access
+            "private_attribute_full_name", full_name
+        )
 
     def _create_entity_parts(
         original: _SurfaceEntityBase,

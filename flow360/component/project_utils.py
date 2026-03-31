@@ -35,7 +35,6 @@ from flow360.component.simulation.services_utils import (
 )
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.user_code.core.types import save_user_variables
-from flow360.component.simulation.utils import model_attribute_unlock
 from flow360.component.simulation.web.asset_base import AssetBase
 from flow360.exceptions import (
     Flow360ConfigurationError,
@@ -320,8 +319,9 @@ def _set_up_params_imported_surfaces(params: SimulationParams):
             if isinstance(surface, ImportedSurface) and surface.name not in imported_surfaces:
                 imported_surfaces[surface.name] = surface
 
-    with model_attribute_unlock(params.private_attribute_asset_cache, "imported_surfaces"):
-        params.private_attribute_asset_cache.imported_surfaces = list(imported_surfaces.values())
+    params.private_attribute_asset_cache._force_set_attr(  # pylint:disable=protected-access
+        "imported_surfaces", list(imported_surfaces.values())
+    )
 
     return params
 
@@ -444,8 +444,7 @@ def _update_entity_grouping_tags(entity_info, params: SimulationParams) -> Entit
                 f" and SimulationParams ({used_tags[0]}). "
                 "Ignoring the geometry object and using the one in the SimulationParams."
             )
-            with model_attribute_unlock(entity_info, entity_grouping_tags):
-                setattr(entity_info, entity_grouping_tags, used_tags[0])
+            entity_info._force_set_attr(entity_grouping_tags, used_tags[0])
 
         if len(used_tags) > 1:
             raise Flow360ConfigurationError(
@@ -542,18 +541,19 @@ def set_up_params_for_uploading(  # pylint: disable=too-many-arguments
         use_geometry_AI: Whether to use Geometry AI.
     """
 
-    with model_attribute_unlock(params.private_attribute_asset_cache, "project_length_unit"):
-        params.private_attribute_asset_cache.project_length_unit = length_unit
+    params.private_attribute_asset_cache._force_set_attr(  # pylint:disable=protected-access
+        "project_length_unit", length_unit
+    )
 
-    with model_attribute_unlock(params.private_attribute_asset_cache, "use_inhouse_mesher"):
-        params.private_attribute_asset_cache.use_inhouse_mesher = (
-            use_beta_mesher if use_beta_mesher else False
-        )
+    params.private_attribute_asset_cache._force_set_attr(  # pylint:disable=protected-access
+        "use_inhouse_mesher",
+        use_beta_mesher if use_beta_mesher else False,
+    )
 
-    with model_attribute_unlock(params.private_attribute_asset_cache, "use_geometry_AI"):
-        params.private_attribute_asset_cache.use_geometry_AI = (
-            use_geometry_AI if use_geometry_AI else False
-        )
+    params.private_attribute_asset_cache._force_set_attr(  # pylint:disable=protected-access
+        "use_geometry_AI",
+        use_geometry_AI if use_geometry_AI else False,
+    )
 
     active_draft = get_active_draft()
 
@@ -567,18 +567,15 @@ def set_up_params_for_uploading(  # pylint: disable=too-many-arguments
         # (back compatibility, since the grouping should already have been captured in the draft_entity_info)
         entity_info = _update_entity_grouping_tags(entity_info, params)
 
-        with model_attribute_unlock(params.private_attribute_asset_cache, "mirror_status"):
-            mirror_status = active_draft.mirror._mirror_status
-            if not mirror_status.is_empty():
-                params.private_attribute_asset_cache.mirror_status = mirror_status
-            else:
-                params.private_attribute_asset_cache.mirror_status = None
-        with model_attribute_unlock(
-            params.private_attribute_asset_cache, "coordinate_system_status"
-        ):
-            params.private_attribute_asset_cache.coordinate_system_status = (
-                active_draft.coordinate_systems._to_status()
-            )
+        mirror_status = active_draft.mirror._mirror_status
+        if not mirror_status.is_empty():
+            params.private_attribute_asset_cache._force_set_attr("mirror_status", mirror_status)
+        else:
+            params.private_attribute_asset_cache._force_set_attr("mirror_status", None)
+        params.private_attribute_asset_cache._force_set_attr(
+            "coordinate_system_status",
+            active_draft.coordinate_systems._to_status(),
+        )
     else:
         # Legacy workflow (without DraftContext): use root_asset.entity_info
         # User may have made modifications to the entities which is recorded in asset's entity registry
@@ -595,10 +592,11 @@ def set_up_params_for_uploading(  # pylint: disable=too-many-arguments
         # we need to update the entity grouping tags to the ones in the SimulationParams.
         entity_info = _update_entity_grouping_tags(entity_info, params)
 
-    with model_attribute_unlock(params.private_attribute_asset_cache, "project_entity_info"):
-        # At this point the draft entity info has replaced the SimulationParams's entity info.
-        # So the validation afterwards does not require the access to the draft entity info anymore.
-        params.private_attribute_asset_cache.project_entity_info = entity_info
+    # At this point the draft entity info has replaced the SimulationParams's entity info.
+    # So the validation afterwards does not require the access to the draft entity info anymore.
+    params.private_attribute_asset_cache._force_set_attr(  # pylint:disable=protected-access
+        "project_entity_info", entity_info
+    )
     # Replace the ghost surfaces in the SimulationParams by the real ghost ones from asset metadata.
     # This has to be done after `project_entity_info` is properly set.
     params = _replace_ghost_surfaces(params)

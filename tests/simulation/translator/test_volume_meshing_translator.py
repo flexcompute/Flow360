@@ -56,7 +56,6 @@ from flow360.component.simulation.translator.volume_meshing_translator import (
 )
 from flow360.component.simulation.unit_system import SI_unit_system
 from flow360.component.simulation.units import validate_length
-from flow360.component.simulation.utils import model_attribute_unlock
 from flow360.component.simulation.validation.validation_context import VOLUME_MESH
 from tests.simulation.conftest import AssetBase
 

@@ -89,7 +89,6 @@ from flow360.component.simulation.unit_system import (
     unit_system_manager,
 )
 from flow360.component.simulation.units import validate_length
-from flow360.component.simulation.utils import model_attribute_unlock
 from flow360.component.simulation.validation.validation_context import (
     ALL,
     ParamsValidationInfo,
@@ -144,9 +143,10 @@ def _store_project_length_unit(project_length_unit, params: SimulationParams):
         # Store the length unit so downstream services/pipelines can use it
         # pylint: disable=fixme
         # TODO: client does not call this. We need to start using new webAPI for that
-        with model_attribute_unlock(params.private_attribute_asset_cache, "project_length_unit"):
-            # pylint: disable=assigning-non-slot,no-member
-            params.private_attribute_asset_cache.project_length_unit = project_length_unit
+        # pylint: disable=assigning-non-slot,no-member
+        params.private_attribute_asset_cache._force_set_attr(  # pylint:disable=protected-access
+            "project_length_unit", project_length_unit
+        )
     return params
 
 
@@ -1311,6 +1311,7 @@ def merge_geometry_entity_info(
 def _get_draft_entity_type_names() -> set:
     """Extract entity type names from DraftEntityTypes in entity_info.py."""
     # pylint: disable=import-outside-toplevel
+    import types
     from typing import get_args, get_origin
 
     from flow360.component.simulation.entity_info import EntityInfoModel
@@ -1327,7 +1328,8 @@ def _get_draft_entity_type_names() -> set:
     union_args = get_args(inner_type)  # Get Annotated args
     if union_args:
         actual_union = union_args[0]  # First arg is the Union
-        if get_origin(actual_union) is Union:
+        # Support both typing.Union and types.UnionType (X | Y syntax in Python 3.10+)
+        if get_origin(actual_union) is Union or isinstance(actual_union, types.UnionType):
             for cls in get_args(actual_union):
                 type_names.add(cls.__name__)
 

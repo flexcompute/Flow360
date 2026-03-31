@@ -165,6 +165,36 @@ def test_in_and_not_any_of_chain():
     assert names == ["a", "c"]
 
 
+def test_any_of_string_value_from_json_matches_full_name():
+    """
+    Test: JSON-deserialized any_of predicate accepts a single string value.
+
+    Purpose:
+    - Verify that the schema-side `Predicate.value: str | list[str]` contract is honored.
+    - Verify that a single string is treated as one candidate value, not split into characters.
+    - Verify that selector expansion remains correct for JSON input paths.
+    """
+    registry = _make_registry(surfaces=_mk_pool(["wing", "w", "i", "n", "g"], "Surface"))
+
+    selector = EntitySelector.model_validate(
+        {
+            "name": "t_any_of_string",
+            "target_class": "Surface",
+            "logic": "AND",
+            "children": [
+                {
+                    "attribute": "name",
+                    "operator": "any_of",
+                    "value": "wing",
+                }
+            ],
+        }
+    )
+
+    names = _expand_and_get_names(registry, selector)
+    assert names == ["wing"]
+
+
 def test_edge_class_basic_match():
     """
     Test: EntitySelector with Edge entity type (non-Surface).

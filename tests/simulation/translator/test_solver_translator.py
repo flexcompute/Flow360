@@ -120,7 +120,6 @@ from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import RampCFL, Steady
 from flow360.component.simulation.translator.solver_translator import get_solver_json
 from flow360.component.simulation.unit_system import SI_unit_system
-from flow360.component.simulation.utils import model_attribute_unlock
 from tests.simulation.translator.utils.actuator_disk_param_generator import (
     actuator_disk_create_param,
     actuator_disk_with_reference_velocity_param,
@@ -1004,8 +1003,7 @@ def test_liquid_simulation_translation():
         param, mesh_unit=1 * u.m, ref_json_file="Flow360_liquid_rotation_dd.json", debug=False
     )
 
-    with model_attribute_unlock(param.operating_condition, "reference_velocity_magnitude"):
-        param.operating_condition.reference_velocity_magnitude = 20 * u.m / u.s
+    param.operating_condition._force_set_attr("reference_velocity_magnitude", 20 * u.m / u.s)
     translate_and_compare(
         param,
         mesh_unit=1 * u.m,
