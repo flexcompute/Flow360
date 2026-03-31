@@ -56,6 +56,7 @@ def main():
     feature_gravity = config.get("feature_gravity", False)
     limit_velocity         = config.get("limit_velocity", False)
     limit_pressure_density = config.get("limit_pressure_density", False)
+    pseudo_step            = config.get("pseudo_step", None)
 
     parent_case = fl.Case.from_cloud(parent_case_id)
     param = parent_case.params
@@ -88,6 +89,10 @@ def main():
         m.navier_stokes_solver.limit_velocity = limit_velocity
         m.navier_stokes_solver.limit_pressure_density = limit_pressure_density
     print(f"limit_velocity={limit_velocity}, limit_pressure_density={limit_pressure_density}: NavierStokesSolver limits set")
+
+    if pseudo_step is not None:
+        param.time_stepping.max_steps = pseudo_step
+        print(f"pseudo_step={pseudo_step}: time_stepping.max_steps set")
 
     krylov_tag  = "krylov_"  if feature_krylov  else ""
     gravity_tag = "gravity_" if feature_gravity else ""
