@@ -796,6 +796,9 @@ class UserDefinedFarfield(_FarfieldBase):
         Returns the symmetry plane boundary surface.
 
         Warning: This should only be used when using GAI and beta mesher.
+
+        Note: If your geometry has an explicit symmetry plane, you can reference it
+        directly as geometry["your_face_name"] instead of using this property.
         """
         if self.domain_type not in (
             None,
