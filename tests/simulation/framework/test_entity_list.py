@@ -178,6 +178,8 @@ def test_force_set_attr_marks_entity_dirty_and_updates_hash():
 
     assert entity._dirty is True
     assert entity._get_hash() != original_hash
+    assert entity._dirty is False
+    assert "_dirty" not in entity.__dict__
 
 
 def test_preview_selection_returns_names_by_default():
