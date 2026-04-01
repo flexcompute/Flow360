@@ -66,7 +66,7 @@ class SurfaceMeshingParams(Flow360BaseModel):
                             + f"({self.defaults.min_spacing}), setting proximity spacing to minimal spacing."
                         )
                         refinement.proximity_spacing = self.defaults.min_spacing
-                        
+
                 if refinement.min_spacing is None and self.defaults.min_spacing.to(
                     "m"
                 ) > refinement.max_spacing.to("m"):
