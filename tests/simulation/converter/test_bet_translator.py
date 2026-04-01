@@ -484,6 +484,34 @@ def test_xfoil_params():
     assertions.assertEqual(refbetFlow360["radius"], bet.entities.stored_entities[0].outer_radius)
 
 
+def test_collective_pitch_persists_through_from_xrotor():
+    """collective_pitch set via from_xrotor should survive input cache round-trip."""
+    with fl.SI_unit_system:
+        bet_cylinder = fl.Cylinder(
+            name="BET_cylinder", center=[0, 0, 0], axis=[0, 0, 1], outer_radius=3.81, height=15
+        )
+    prepending_path = os.path.dirname(os.path.abspath(__file__))
+    disk = fl.BETDisk.from_xrotor(
+        file=fl.XROTORFile(
+            file_path=os.path.join(prepending_path, "data", "xv15_like_twist0.xrotor")
+        ),
+        rotation_direction_rule="leftHand",
+        omega=0.0046 * fl.u.deg / fl.u.s,
+        chord_ref=14 * fl.u.m,
+        n_loading_nodes=20,
+        entities=bet_cylinder,
+        angle_unit=fl.u.deg,
+        length_unit=fl.u.m,
+        collective_pitch=5 * fl.u.deg,
+    )
+    assert disk.collective_pitch is not None
+    assert disk.collective_pitch.to("degree").value.item() == pytest.approx(5.0)
+
+    # Verify it's in the input cache
+    cache = disk.private_attribute_input_cache
+    assert cache.collective_pitch is not None
+
+
 def test_file_model():
     """
     Test the C81File model's construction, immutability, and serialization.

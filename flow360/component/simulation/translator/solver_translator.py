@@ -1367,10 +1367,15 @@ def bet_disk_translator(model: BETDisk, is_unsteady: bool):
     """BET disk translator"""
     model_dict = convert_tuples_to_lists(remove_units_in_dict(dump_dict(model)))
     model_dict["alphas"] = [alpha.to("degree").value.item() for alpha in model.alphas]
+    collective_pitch_deg = (
+        model.collective_pitch.to("degree").value.item()
+        if model.collective_pitch is not None
+        else 0
+    )
     model_dict["twists"] = [
         {
             "radius": bet_twist.radius.value.item(),
-            "twist": bet_twist.twist.to("degree").value.item(),
+            "twist": bet_twist.twist.to("degree").value.item() + collective_pitch_deg,
         }
         for bet_twist in model.twists
     ]

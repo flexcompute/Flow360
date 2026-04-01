@@ -415,6 +415,7 @@
             }
         }
     ],
+    "collective_pitch": null,
     "entities": {
         "selectors": null,
         "stored_entities": [
@@ -472,6 +473,7 @@
             "units": "cm",
             "value": 14.0
         },
+        "collective_pitch": null,
         "entities": {
             "selectors": null,
             "stored_entities": [

@@ -59,14 +59,31 @@ Environment ``FLOW360_APIKEY`` variable takes precedence before Flow360 configur
 - You can also run examples without activating shell:
 ``poetry run python examples/case_results.py``
 
-## check in
-1. ``black .`` - performs auto-formatting
-2. ``isort .`` - sorts imports
-3. ``poetry run pylint $(git ls-files "flow360/*.py") --rcfile .pylintrc`` - checks code style
-4. ``poetry run pytest -rA tests/simulation`` - run V2 related tests
-5. ``poetry run pytest -rA --ignore tests/simulation`` - run V1 related tests (cannot be run altogether)
-6. ``pytest -rA tests/simulation --cov-report=html --cov=flow360/component/simulation`` - see test coverage report for V2 client
-7. ``pytest -rA --ignore tests/simulation --cov-report=html --cov=flow360 && open htmlcov/index.html`` - see test coverage report for V1+V2 client
+## pre-commit hooks
+
+This project uses [autohooks](https://github.com/greenbone/autohooks) to run formatting and linting checks automatically before each commit. To activate:
+
+```bash
+poetry run autohooks activate
+```
+
+This installs a git pre-commit hook that runs:
+- **black** — auto-formatting
+- **isort** — import sorting
+- **pylint** — code style checking
+- **sort_json** — sorts keys in `tests/**/*.json` reference files for clean diffs
+
+The hooks only process staged files, so they are fast. If you skip activation, CI will still catch issues.
+
+## check in (manual)
+1. ``black .`` — auto-formatting
+2. ``isort .`` — sorts imports
+3. ``python tools/sort_ref_json.py`` — sorts keys in test reference JSON files
+4. ``poetry run pylint $(git ls-files "flow360/*.py") --rcfile .pylintrc`` — checks code style
+5. ``poetry run pytest -rA tests/simulation`` — run V2 related tests
+6. ``poetry run pytest -rA --ignore tests/simulation`` — run V1 related tests (cannot be run altogether)
+7. ``pytest -rA tests/simulation --cov-report=html --cov=flow360/component/simulation`` — see test coverage report for V2 client
+8. ``pytest -rA --ignore tests/simulation --cov-report=html --cov=flow360 && open htmlcov/index.html`` — see test coverage report for V1+V2 client
 
 ## Documentation Requirements
 
