@@ -23,6 +23,7 @@ from flow360_schema.framework.physical_dimensions import (
     Velocity,
 )
 from flow360_schema.framework.validation.context import DeserializationContext
+from flow360_schema.models.asset_cache import AssetCache
 
 from flow360.component.simulation.conversion import (
     LIQUID_IMAGINARY_FREESTREAM_MACH,
@@ -37,7 +38,6 @@ from flow360.component.simulation.framework.boundary_split import (
 )
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
 from flow360.component.simulation.framework.param_utils import (
-    AssetCache,
     _set_boundary_full_name_with_zone_name,
     _update_entity_full_name,
     _update_zone_boundaries_with_metadata,

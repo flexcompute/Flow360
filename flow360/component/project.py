@@ -12,6 +12,7 @@ from typing import Dict, Iterable, List, Literal, Optional, Union
 import pydantic as pd
 import typing_extensions
 from flow360_schema.framework.physical_dimensions import Length
+from flow360_schema.models.asset_cache import CoordinateSystemStatus, MirrorStatus
 from pydantic import PositiveInt
 
 from flow360.cloud.file_cache import get_shared_cloud_file_cache
@@ -47,10 +48,6 @@ from flow360.component.simulation.draft_context.context import (
     DraftContext,
     get_active_draft,
 )
-from flow360.component.simulation.draft_context.coordinate_system_manager import (
-    CoordinateSystemStatus,
-)
-from flow360.component.simulation.draft_context.mirror import MirrorStatus
 from flow360.component.simulation.draft_context.obb.tessellation_loader import (
     TessellationFileLoader,
 )
