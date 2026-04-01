@@ -59,8 +59,9 @@ class SurfaceMeshingParams(Flow360BaseModel):
                 if refinement.min_spacing is None and refinement.proximity_spacing:
                     if refinement.proximity_spacing > self.defaults.min_spacing:
                         log.warning(
-                            f"Proximity spacing ({refinement.proximity_spacing}) was set higher than the minimal spacing "
-                            + f"({self.defaults.min_spacing}), setting proximity spacing to minimal spacing."
+                            f"Proximity spacing ({refinement.proximity_spacing}) was set higher "
+                            + f"than the minimal spacing ({self.defaults.min_spacing}), "
+                            + "setting proximity spacing to minimal spacing."
                         )
                         refinement.proximity_spacing = self.defaults.min_spacing
 
