@@ -243,7 +243,7 @@ class GeometryDraft(ResourceDraft):
             parent_folder_id=self.folder.id if self.folder else "ROOT.FLOW360",
             length_unit=self.length_unit,
             description=description,
-            use_nextflow_pipelines=self.use_nextflow_pipelines,
+            use_nextflow=self.use_nextflow_pipelines,
         )
 
         resp = RestApi(GeometryInterface.endpoint).post(req.dict())
