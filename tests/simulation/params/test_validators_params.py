@@ -3522,8 +3522,7 @@ def test_udf_symmetry_plane_remap():
     assert any(e.name == "mySymmetry" for e in sym_bc.entities.stored_entities)
     # Check that the ghost entity in entity_info was also remapped
     ghost_names = [
-        g.name
-        for g in validated.private_attribute_asset_cache.project_entity_info.ghost_entities
+        g.name for g in validated.private_attribute_asset_cache.project_entity_info.ghost_entities
     ]
     assert "symmetric" not in ghost_names
     assert "mySymmetry" in ghost_names

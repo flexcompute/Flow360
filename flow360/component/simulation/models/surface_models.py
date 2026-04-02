@@ -1,6 +1,7 @@
 """
-Contains basically only boundary conditons for now. In future we can add new models like 2D equations.
+Contains basically only boundary conditions for now. In future we can add new models like 2D equations.
 """
+# pylint: disable=too-many-lines
 
 from abc import ABCMeta
 from typing import Annotated, Dict, Literal, Optional, Union

@@ -278,8 +278,10 @@ def find_user_symmetry_surfaces(boundaries, global_bounding_box, planar_face_tol
         return []
     tol = global_bounding_box.largest_dimension * (planar_face_tolerance or 1e-6)
     return [
-        b for b in boundaries if isinstance(b, Surface) and b._lies_on(0, tol)
-    ]  # pylint: disable=protected-access
+        b
+        for b in boundaries
+        if isinstance(b, Surface) and b._lies_on(0, tol)  # pylint: disable=protected-access
+    ]
 
 
 def _ghost_surface_names(stored_entities) -> list[str]:
