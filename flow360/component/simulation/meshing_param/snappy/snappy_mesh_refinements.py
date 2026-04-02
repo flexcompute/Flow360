@@ -12,8 +12,6 @@ from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.meshing_param.volume_params import UniformRefinement
 from flow360.component.simulation.primitives import SnappyBody, Surface
 from flow360.component.simulation.unit_system import AngleType, LengthType
-from flow360.log import log
-
 
 class SnappyEntityRefinement(Flow360BaseModel, metaclass=ABCMeta):
     """
@@ -36,11 +34,10 @@ class SnappyEntityRefinement(Flow360BaseModel, metaclass=ABCMeta):
     def _check_proximity_spacing(self) -> Self:
         if self.min_spacing and self.proximity_spacing:
             if self.proximity_spacing > self.min_spacing:
-                log.warning(
+                raise ValueError(
                     f"Proximity spacing ({self.proximity_spacing}) was set higher than the minimal spacing"
-                    + f"({self.min_spacing}), setting proximity spacing to minimal spacing."
+                    + f"({self.min_spacing})."
                 )
-                self.proximity_spacing = self.min_spacing
         return self
 
 

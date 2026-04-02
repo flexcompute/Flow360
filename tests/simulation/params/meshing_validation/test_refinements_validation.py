@@ -209,29 +209,27 @@ def test_snappy_body_refinement_validator():
     )
 
 
-def test_snappy_proximity_spacing_clamped_to_default_min_spacing():
+def test_snappy_proximity_spacing_error_when_exceeds_default_min_spacing():
     """When min_spacing is not set on a BodyRefinement but proximity_spacing exceeds
-    defaults.min_spacing, proximity_spacing should be clamped to defaults.min_spacing."""
-    with SI_unit_system:
-        body = SnappyBody(name="body1", surfaces=[Surface(name="surface")])
-        params = snappy.SurfaceMeshingParams(
+    defaults.min_spacing, a ValueError should be raised."""
+    message = "Proximity spacing for a BodyRefinement (5.0 mm) was set higher than the minimal spacing (3.0 mm)."
+    with SI_unit_system, pytest.raises(pd.ValidationError, match=re.escape(message)):
+        snappy.SurfaceMeshingParams(
             defaults=snappy.SurfaceMeshingDefaults(
                 min_spacing=3 * u.mm, max_spacing=10 * u.mm, gap_resolution=0.1 * u.mm
             ),
             refinements=[
                 snappy.BodyRefinement(
-                    bodies=body,
+                    bodies=SnappyBody(name="body1", surfaces=[Surface(name="surface")]),
                     proximity_spacing=5 * u.mm,
                     max_spacing=10 * u.mm,
                 ),
             ],
         )
-        # proximity_spacing (5 mm) > defaults.min_spacing (3 mm) => clamped to 3 mm
-        assert params.refinements[0].proximity_spacing == 3 * u.mm
 
 
-def test_snappy_proximity_spacing_not_clamped_when_below_default_min_spacing():
-    """When proximity_spacing is already <= defaults.min_spacing, it should remain unchanged."""
+def test_snappy_proximity_spacing_ok_when_below_default_min_spacing():
+    """When proximity_spacing is already <= defaults.min_spacing, no error should be raised."""
     with SI_unit_system:
         body = SnappyBody(name="body1", surfaces=[Surface(name="surface")])
         params = snappy.SurfaceMeshingParams(
@@ -246,27 +244,24 @@ def test_snappy_proximity_spacing_not_clamped_when_below_default_min_spacing():
                 ),
             ],
         )
-        # proximity_spacing (2 mm) <= defaults.min_spacing (3 mm) => unchanged
         assert params.refinements[0].proximity_spacing == 2 * u.mm
 
 
-def test_snappy_proximity_spacing_with_explicit_min_spacing_uses_entity_validator():
-    """When both min_spacing and proximity_spacing are set on the refinement,
-    the entity-level validator clamps proximity_spacing to min_spacing (not defaults)."""
-    with SI_unit_system:
-        body = SnappyBody(name="body1", surfaces=[Surface(name="surface")])
-        refinement = snappy.BodyRefinement(
-            bodies=body,
+def test_snappy_proximity_spacing_error_with_explicit_min_spacing():
+    """When both min_spacing and proximity_spacing are set on the refinement
+    and proximity_spacing > min_spacing, the entity-level validator raises."""
+    message = "Proximity spacing (6.0 mm) was set higher than the minimal spacing(4.0 mm)."
+    with SI_unit_system, pytest.raises(pd.ValidationError, match=re.escape(message)):
+        snappy.BodyRefinement(
+            bodies=SnappyBody(name="body1", surfaces=[Surface(name="surface")]),
             min_spacing=4 * u.mm,
             proximity_spacing=6 * u.mm,
             max_spacing=10 * u.mm,
         )
-        # Entity-level validator: proximity_spacing (6 mm) > min_spacing (4 mm) => clamped to 4 mm
-        assert refinement.proximity_spacing == 4 * u.mm
 
 
-def test_snappy_proximity_spacing_not_clamped_when_min_spacing_is_set():
-    """When min_spacing is explicitly set, the general validator should not interfere."""
+def test_snappy_proximity_spacing_ok_when_min_spacing_is_set():
+    """When min_spacing is explicitly set and proximity_spacing <= min_spacing, no error."""
     with SI_unit_system:
         body = SnappyBody(name="body1", surfaces=[Surface(name="surface")])
         params = snappy.SurfaceMeshingParams(
@@ -282,6 +277,4 @@ def test_snappy_proximity_spacing_not_clamped_when_min_spacing_is_set():
                 ),
             ],
         )
-        # min_spacing is set => general validator skipped, entity validator sees
-        # proximity_spacing (3 mm) < min_spacing (4 mm) => no clamping
         assert params.refinements[0].proximity_spacing == 3 * u.mm
