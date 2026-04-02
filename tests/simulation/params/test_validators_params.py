@@ -29,6 +29,7 @@ from flow360.component.simulation.meshing_param.edge_params import (
 from flow360.component.simulation.meshing_param.face_params import (
     BoundaryLayer,
     GeometryRefinement,
+    PassiveSpacing,
 )
 from flow360.component.simulation.meshing_param.meshing_specs import (
     MeshingDefaults,
@@ -3465,7 +3466,7 @@ def test_udf_wrong_half_deleted():
 
 
 def test_udf_symmetry_plane_remap():
-    """UDF + farfield.symmetry_plane + explicit face: remaps to user's name."""
+    """UDF + farfield.symmetry_plane + explicit face: remaps in both BCs and refinements."""
     surface_sym = Surface(
         name="mySymmetry",
         private_attributes=SurfacePrivateAttributes(bounding_box=[[0, 0, 0], [1, 0, 1]]),
@@ -3474,13 +3475,17 @@ def test_udf_symmetry_plane_remap():
         name="body",
         private_attributes=SurfacePrivateAttributes(bounding_box=[[0, 0.1, 0], [1, 1, 1]]),
     )
-    ghost_sym = GhostCircularPlane(
+    # Ghost entity in entity_info (created by preprocessing, GhostCircularPlane type)
+    ghost_in_entity_info = GhostCircularPlane(
         name="symmetric",
         center=[0.5, 0, 0.5],
         max_radius=50,
         normal_axis=[0, 1, 0],
         private_attribute_id="symmetric",
     )
+    # Ghost entity as returned by farfield.symmetry_plane (GhostSurface type)
+    ghost_from_farfield = GhostSurface(name="symmetric", private_attribute_id="symmetric")
+
     asset_cache = AssetCache(
         project_length_unit="m",
         use_inhouse_mesher=True,
@@ -3488,7 +3493,7 @@ def test_udf_symmetry_plane_remap():
         project_entity_info=SurfaceMeshEntityInfo(
             global_bounding_box=[[0, 0, 0], [1, 1, 1]],
             boundaries=[surface_sym, surface_body],
-            ghost_entities=[ghost_sym],
+            ghost_entities=[ghost_in_entity_info],
         ),
     )
     farfield = UserDefinedFarfield(domain_type="half_body_positive_y")
@@ -3501,12 +3506,13 @@ def test_udf_symmetry_plane_remap():
                     boundary_layer_first_layer_thickness=1e-3,
                 ),
                 volume_zones=[farfield],
+                refinements=[
+                    PassiveSpacing(entities=ghost_from_farfield, type="projected"),
+                ],
             ),
             models=[
                 Wall(entities=[surface_body]),
-                SymmetryPlane(
-                    entities=GhostSurface(name="symmetric", private_attribute_id="symmetric")
-                ),
+                SymmetryPlane(entities=ghost_from_farfield),
             ],
             private_attribute_asset_cache=asset_cache,
         )
@@ -3517,10 +3523,15 @@ def test_udf_symmetry_plane_remap():
         validation_level="All",
     )
     assert errors is None, f"Expected no errors but got: {errors}"
-    # Check that the entity was remapped on the BC model
+    # BC entity replaced with real Surface (not GhostSurface)
     sym_bc = next(m for m in validated.models if isinstance(m, SymmetryPlane))
-    assert any(e.name == "mySymmetry" for e in sym_bc.entities.stored_entities)
-    # Check that the ghost entity in entity_info was also remapped
+    sym_entity = next(e for e in sym_bc.entities.stored_entities if e.name == "mySymmetry")
+    assert isinstance(sym_entity, Surface)
+    # PassiveSpacing entity also replaced
+    ps = validated.meshing.refinements[0]
+    ps_entity = next(e for e in ps.entities.stored_entities if e.name == "mySymmetry")
+    assert isinstance(ps_entity, Surface)
+    # Ghost entity in entity_info remapped
     ghost_names = [
         g.name for g in validated.private_attribute_asset_cache.project_entity_info.ghost_entities
     ]

@@ -11,12 +11,16 @@ from pydantic_core import InitErrorDetails
 from flow360.component.simulation.entity_info import DraftEntityTypes
 from flow360.component.simulation.outputs.output_fields import CommonFieldNames
 from flow360.component.simulation.primitives import (
+    GhostCircularPlane,
+    GhostSurface,
     ImportedSurface,
     Surface,
     _SurfaceEntityBase,
     _VolumeEntityBase,
 )
 from flow360.component.simulation.user_code.core.types import Expression, UserVariable
+from flow360.component.simulation.utils import model_attribute_unlock
+from flow360.log import log
 
 
 def _validator_append_instance_name(func):
@@ -282,6 +286,76 @@ def find_user_symmetry_surfaces(boundaries, global_bounding_box, planar_face_tol
         for b in boundaries
         if isinstance(b, Surface) and b._lies_on(0, tol)  # pylint: disable=protected-access
     ]
+
+
+def remap_symmetric_ghost_entity(value, param_info):
+    """For UDF with GAI, replace any 'symmetric' ghost entity with the actual user Surface.
+    Call in validation on any model that can hold farfield.symmetry_plane (BCs and refinements).
+
+    Downstream validators see the correct entity, allowing users to directly reference
+    their symmetry surface, but we discourage using the legacy 'farfield.symmetry_plane'.
+    """
+
+    if value is None or param_info.farfield_method != "user-defined":
+        return value
+    if not param_info.use_geometry_AI or not param_info.is_beta_mesher:
+        return value
+    if not hasattr(value, "stored_entities") or not value.stored_entities:
+        return value
+
+    ghost_idx = next(
+        (
+            i
+            for i, e in enumerate(value.stored_entities)
+            if isinstance(e, (GhostSurface, GhostCircularPlane)) and e.name == "symmetric"
+        ),
+        None,
+    )
+    if ghost_idx is None:
+        return value
+
+    entity_info = param_info.get_entity_info()
+    if entity_info is None:
+        return value
+
+    sym_surfaces = find_user_symmetry_surfaces(
+        entity_info.get_boundaries(),
+        param_info.global_bounding_box,
+        param_info.planar_face_tolerance,
+    )
+
+    if len(sym_surfaces) == 1:
+        user_surface = sym_surfaces[0]
+        # Replace the ghost entity with the real Surface in the BC/refinement entity list
+        value.stored_entities[ghost_idx] = user_surface
+        # Also rename the ghost entity in entity_info so asset boundary collection matches
+        asset_ghost = next(
+            (
+                g
+                for g in entity_info.ghost_entities
+                if isinstance(g, (GhostSurface, GhostCircularPlane)) and g.name == "symmetric"
+            ),
+            None,
+        )
+        if asset_ghost is not None:
+            with model_attribute_unlock(asset_ghost, "name"):
+                asset_ghost.name = user_surface.name
+            with model_attribute_unlock(asset_ghost, "private_attribute_id"):
+                asset_ghost.private_attribute_id = user_surface.name
+        log.warning(
+            "Your geometry has a symmetry surface '%s'. "
+            "Remapping farfield.symmetry_plane to use this name. "
+            "Consider using geometry['%s'] directly.",
+            user_surface.name,
+            user_surface.name,
+        )
+    elif len(sym_surfaces) > 1:
+        log.warning(
+            "Multiple symmetry surfaces with different names detected. "
+            "Symmetry surface name preservation is not yet supported for this case."
+        )
+
+    return value
 
 
 def _ghost_surface_names(stored_entities) -> list[str]:
