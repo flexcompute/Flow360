@@ -13,6 +13,7 @@ from flow360.component.simulation.meshing_param.volume_params import UniformRefi
 from flow360.component.simulation.primitives import SnappyBody, Surface
 from flow360.component.simulation.unit_system import AngleType, LengthType
 
+
 class SnappyEntityRefinement(Flow360BaseModel, metaclass=ABCMeta):
     """
     Base refinement for snappyHexMesh.
