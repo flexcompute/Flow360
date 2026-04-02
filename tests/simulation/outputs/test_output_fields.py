@@ -2,7 +2,10 @@ import pytest
 
 import flow360 as fl
 from flow360 import SI_unit_system, u
-from flow360.component.simulation.outputs.output_fields import generate_predefined_udf
+from flow360.component.simulation.outputs.output_fields import (
+    generate_predefined_udf,
+    remove_fields_subsumed_by_primitive_vars,
+)
 
 
 @pytest.fixture
@@ -137,3 +140,47 @@ def test_generate_field_udf_no_match(simulation_params):
     """Test behavior when no matching predefined expression is found."""
     result = generate_predefined_udf("non_existent_field_for_udf", simulation_params)
     assert result is None
+
+
+class TestRemoveFieldsSubsumedByPrimitiveVars:
+    def test_removes_pressure_and_velocity_when_primitive_vars_present(self):
+        fields = ["Cp", "primitiveVars", "pressure", "velocity", "Mach"]
+        result = remove_fields_subsumed_by_primitive_vars(fields)
+        assert "primitiveVars" in result
+        assert "pressure" not in result
+        assert "velocity" not in result
+        assert "Cp" in result
+        assert "Mach" in result
+
+    def test_keeps_pressure_and_velocity_when_no_primitive_vars(self):
+        fields = ["pressure", "velocity", "Cp"]
+        result = remove_fields_subsumed_by_primitive_vars(fields)
+        assert result == ["pressure", "velocity", "Cp"]
+
+    def test_preserves_velocity_magnitude_when_velocity_removed(self):
+        fields = ["primitiveVars", "velocity", "velocity_magnitude", "pressure"]
+        result = remove_fields_subsumed_by_primitive_vars(fields)
+        assert "velocity" not in result
+        assert "pressure" not in result
+        assert "velocity_magnitude" in result
+        assert "primitiveVars" in result
+
+    def test_no_op_on_empty_list(self):
+        assert remove_fields_subsumed_by_primitive_vars([]) == []
+
+    def test_primitive_vars_only(self):
+        fields = ["primitiveVars"]
+        result = remove_fields_subsumed_by_primitive_vars(fields)
+        assert result == ["primitiveVars"]
+
+    def test_removes_pressure_only_when_velocity_absent(self):
+        fields = ["primitiveVars", "pressure", "Cp"]
+        result = remove_fields_subsumed_by_primitive_vars(fields)
+        assert "pressure" not in result
+        assert result == ["primitiveVars", "Cp"]
+
+    def test_removes_velocity_only_when_pressure_absent(self):
+        fields = ["primitiveVars", "velocity", "Mach"]
+        result = remove_fields_subsumed_by_primitive_vars(fields)
+        assert "velocity" not in result
+        assert result == ["primitiveVars", "Mach"]
