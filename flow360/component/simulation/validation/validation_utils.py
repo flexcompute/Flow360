@@ -346,7 +346,7 @@ def remap_symmetric_ghost_entity(value, param_info):  # pylint: disable=too-many
             with model_attribute_unlock(asset_ghost, "name"):
                 asset_ghost.name = user_surface.name
             with model_attribute_unlock(asset_ghost, "private_attribute_id"):
-                asset_ghost.private_attribute_id = user_surface.name
+                asset_ghost.private_attribute_id = user_surface.private_attribute_id
         log.warning(
             "Your geometry has a symmetry surface '%s'. "
             "Remapping farfield.symmetry_plane to use this name. "
