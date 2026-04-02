@@ -318,8 +318,13 @@ def remap_symmetric_ghost_entity(value, param_info):
     if entity_info is None:
         return value
 
+    try:  # if entity info is incomplete, skip remap
+        boundaries = entity_info.get_boundaries()
+    except (ValueError, KeyError, AttributeError):
+        return value
+
     sym_surfaces = find_user_symmetry_surfaces(
-        entity_info.get_boundaries(),
+        boundaries,
         param_info.global_bounding_box,
         param_info.planar_face_tolerance,
     )
