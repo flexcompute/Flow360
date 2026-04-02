@@ -250,7 +250,7 @@ def test_snappy_proximity_spacing_ok_when_below_default_min_spacing():
 def test_snappy_proximity_spacing_error_with_explicit_min_spacing():
     """When both min_spacing and proximity_spacing are set on the refinement
     and proximity_spacing > min_spacing, the entity-level validator raises."""
-    message = "Proximity spacing (6.0 mm) was set higher than the minimal spacing(4.0 mm)."
+    message = "Proximity spacing (6.0 mm) was set higher than the minimal spacing (4.0 mm)."
     with SI_unit_system, pytest.raises(pd.ValidationError, match=re.escape(message)):
         snappy.BodyRefinement(
             bodies=SnappyBody(name="body1", surfaces=[Surface(name="surface")]),
