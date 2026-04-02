@@ -118,6 +118,11 @@ class NewGeometryRequest(Flow360RequestsV2):
         alias="lengthUnit", description="project length unit"
     )
     description: str = pd_v2.Field(default="", description="project description")
+    use_nextflow: bool = pd_v2.Field(
+        default=False,
+        alias="useNextflow",
+        description="Route geometry processing through Nextflow pipeline instead of legacy system",
+    )
 
 
 class NewSurfaceMeshRequestV2(Flow360RequestsV2):
