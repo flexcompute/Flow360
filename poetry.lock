@@ -1468,21 +1468,19 @@ files = [
 
 [[package]]
 name = "flow360-schema"
-version = "0.1.18"
+version = "0.1.19"
 description = "Pure Pydantic schemas for Flow360 - Single Source of Truth"
 optional = false
 python-versions = ">=3.10,<4.0"
 groups = ["main"]
 files = [
-    {file = "flow360_schema-0.1.18-py3-none-any.whl", hash = "sha256:739b7c9fef756c820d1e7476a84b726cd8b396b6a0178a5a2afad977c20498fa"},
-    {file = "flow360_schema-0.1.18.tar.gz", hash = "sha256:d4256c3aedd6f599ab0d4970d46d3e4b882b09e4ee43e3b82977811c84add932"},
+    {file = "flow360_schema-0.1.19-py3-none-any.whl", hash = "sha256:5cf3750337a3b58a672314bd3b0ab63ba8e5e43963f4a0d4b87e6976f72a52eb"},
+    {file = "flow360_schema-0.1.19.tar.gz", hash = "sha256:34a40ac032555b9af317e99d877288f3564fbaea0c39340c8a6b811d64482aac"},
 ]
 
 [package.dependencies]
 pydantic = ">=2.8,<3.0"
-
-[package.extras]
-unyt = ["unyt (>=2.9.0)"]
+unyt = ">=2.9.0"
 
 [package.source]
 type = "legacy"

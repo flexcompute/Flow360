@@ -5,6 +5,7 @@ Support class and functions for project interface.
 from typing import Optional, Type, TypeVar, get_args
 
 from flow360_schema.framework.physical_dimensions import Length
+from flow360_schema.models.asset_cache import AssetCache
 from pydantic import ValidationError
 
 from flow360.component.simulation import services
@@ -17,7 +18,6 @@ from flow360.component.simulation.entity_info import (
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
-from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.outputs.outputs import (
     SurfaceIntegralOutput,
     SurfaceOutput,

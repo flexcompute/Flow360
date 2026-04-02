@@ -16,8 +16,8 @@ from flow360_schema.framework.entity.entity_materializer import (
 )
 from flow360_schema.framework.entity.entity_utils import DEFAULT_NOT_MERGED_TYPES
 from flow360_schema.framework.validation.context import DeserializationContext
+from flow360_schema.models.entities import MirrorPlane
 
-from flow360.component.simulation.draft_context.mirror import MirrorPlane
 from flow360.component.simulation.outputs.output_entities import (
     Point,
     PointArray,

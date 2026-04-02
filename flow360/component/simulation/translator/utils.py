@@ -12,6 +12,7 @@ import pydantic as pd
 import unyt as u
 from flow360_schema.framework.expression import Expression, UserVariable
 from flow360_schema.framework.physical_dimensions import Length
+from flow360_schema.models.asset_cache import AssetCache
 
 from flow360.component.simulation.draft_context.coordinate_system_manager import (
     CoordinateSystemManager,
@@ -19,7 +20,6 @@ from flow360.component.simulation.draft_context.coordinate_system_manager import
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.base_model_config import snake_to_camel
 from flow360.component.simulation.framework.entity_base import EntityBase, EntityList
-from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.framework.unique_list import UniqueItemList
 from flow360.component.simulation.meshing_param import snappy
 from flow360.component.simulation.meshing_param.params import ModularMeshingWorkflow

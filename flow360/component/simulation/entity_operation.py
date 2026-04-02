@@ -3,7 +3,6 @@
 # pylint: disable=unused-import
 from flow360_schema.framework.entity.entity_operation import (  # noqa: F401
     CoordinateSystem,
-    Transformation,
     _build_transformation_matrix,
     _compose_transformation_matrices,
     _extract_rotation_matrix,
@@ -15,4 +14,7 @@ from flow360_schema.framework.entity.entity_operation import (  # noqa: F401
     _transform_point,
     _validate_uniform_scale_and_transform_center,
     rotation_matrix_from_axis_and_angle,
+)
+from flow360_schema.framework.entity.legacy_transformation import (  # noqa: F401
+    Transformation,
 )

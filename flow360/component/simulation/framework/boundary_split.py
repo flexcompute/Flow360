@@ -398,7 +398,7 @@ def update_entities_in_model(  # pylint: disable=too-many-branches
     - Lists/tuples containing entities or models
     """
     # pylint: disable=import-outside-toplevel
-    from flow360.component.simulation.framework.param_utils import AssetCache
+    from flow360_schema.models.asset_cache import AssetCache
 
     for field in model.__dict__.values():
         if isinstance(field, AssetCache):
