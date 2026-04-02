@@ -68,6 +68,12 @@ class SurfaceRefinement(Flow360BaseModel):
 
     @contextual_field_validator("entities", mode="after")
     @classmethod
+    def remap_symmetric_to_user_name(cls, value, param_info: ParamsValidationInfo):
+        """Remap 'symmetric' ghost entity to user's symmetry surface name for UDF backward compat."""
+        return remap_symmetric_ghost_entity(value, param_info)
+
+    @contextual_field_validator("entities", mode="after")
+    @classmethod
     def ensure_surface_existence(cls, value, param_info: ParamsValidationInfo):
         """Ensure all boundaries will be present after mesher"""
         expanded = param_info.expand_entity_list(value)
