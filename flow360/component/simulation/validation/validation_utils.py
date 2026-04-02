@@ -288,7 +288,7 @@ def find_user_symmetry_surfaces(boundaries, global_bounding_box, planar_face_tol
     ]
 
 
-def remap_symmetric_ghost_entity(value, param_info):
+def remap_symmetric_ghost_entity(value, param_info):  # pylint: disable=too-many-return-statements
     """For UDF with GAI, replace any 'symmetric' ghost entity with the actual user Surface.
     Call in validation on any model that can hold farfield.symmetry_plane (BCs and refinements).
 
@@ -296,14 +296,11 @@ def remap_symmetric_ghost_entity(value, param_info):
     their symmetry surface, but we discourage using the legacy 'farfield.symmetry_plane'.
     """
 
-    if (
-        value is None
-        or param_info.farfield_method != "user-defined"
-        or not param_info.use_geometry_AI
-        or not param_info.is_beta_mesher
-        or not hasattr(value, "stored_entities")
-        or not value.stored_entities
-    ):
+    if value is None or param_info.farfield_method != "user-defined":
+        return value
+    if not param_info.use_geometry_AI or not param_info.is_beta_mesher:
+        return value
+    if not hasattr(value, "stored_entities") or not value.stored_entities:
         return value
 
     ghost_idx = next(
