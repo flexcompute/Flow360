@@ -36,7 +36,7 @@ class SnappyEntityRefinement(Flow360BaseModel, metaclass=ABCMeta):
         if self.min_spacing and self.proximity_spacing:
             if self.proximity_spacing > self.min_spacing:
                 raise ValueError(
-                    f"Proximity spacing ({self.proximity_spacing}) was set higher than the minimal spacing"
+                    f"Proximity spacing ({self.proximity_spacing}) was set higher than the minimal spacing "
                     + f"({self.min_spacing})."
                 )
         return self
