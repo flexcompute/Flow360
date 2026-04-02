@@ -272,6 +272,16 @@ def check_symmetric_boundary_existence(stored_entities, param_info):
     return stored_entities
 
 
+def find_user_symmetry_surfaces(boundaries, global_bounding_box, planar_face_tolerance):
+    """Return Surface entities that lie on the y=0 symmetry plane (bounding box within tolerance)."""
+    if not global_bounding_box:
+        return []
+    tol = global_bounding_box.largest_dimension * (planar_face_tolerance or 1e-6)
+    return [
+        b for b in boundaries if isinstance(b, Surface) and b._lies_on(0, tol)
+    ]  # pylint: disable=protected-access
+
+
 def _ghost_surface_names(stored_entities) -> list[str]:
     """Collect names of ghost-type boundaries in the list."""
     names = []

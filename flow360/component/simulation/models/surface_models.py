@@ -42,12 +42,14 @@ from flow360.component.simulation.unit_system import (
     MassFlowRateType,
     PressureType,
 )
+from flow360.component.simulation.utils import model_attribute_unlock
 from flow360.component.simulation.validation.validation_context import (
     ParamsValidationInfo,
     contextual_field_validator,
 )
 from flow360.component.simulation.validation.validation_utils import (
     check_deleted_surface_pair,
+    find_user_symmetry_surfaces,
     validate_entity_list_surface_existence,
 )
 
@@ -771,6 +773,74 @@ class SymmetryPlane(BoundaryBase):
         alias="surfaces",
         description="List of boundaries with the `SymmetryPlane` boundary condition imposed.",
     )
+
+    @contextual_field_validator("entities", mode="after")
+    @classmethod
+    def remap_symmetric_to_user_name(cls, value, param_info: ParamsValidationInfo):
+        """For UDF with GAI, remap 'symmetric' ghost entity to ensure solver JSON compatibility.
+        When user geometry has an explicit symmetry face, it can be referenced directly.
+        We discourage but maintain backwards compatibility for the legacy "farfield.symmetry_plane".
+        """
+        if value is None or param_info.farfield_method != "user-defined":
+            return value
+        if not param_info.use_geometry_AI or not param_info.is_beta_mesher:
+            return value
+
+        if not hasattr(value, "stored_entities") or not value.stored_entities:
+            return value
+        # Symmetry plane entity on the BC model (flows to solver JSON)
+        bc_entity = next(
+            (
+                e
+                for e in value.stored_entities
+                if isinstance(e, (GhostSurface, GhostCircularPlane)) and e.name == "symmetric"
+            ),
+            None,
+        )
+        if bc_entity is None:
+            return value
+
+        entity_info = param_info.get_entity_info()
+        if entity_info is None:
+            return value
+        # Symmetry plane entity in entity_info (used by asset boundary collection)
+        ghost_asset = next(
+            (
+                g
+                for g in entity_info.ghost_entities
+                if isinstance(g, (GhostSurface, GhostCircularPlane)) and g.name == "symmetric"
+            ),
+            None,
+        )
+
+        sym_surfaces = find_user_symmetry_surfaces(
+            entity_info.get_boundaries(),
+            param_info.global_bounding_box,
+            param_info.planar_face_tolerance,
+        )
+
+        if len(sym_surfaces) == 1:
+            user_name = sym_surfaces[0].name
+            # Remap both so solver JSON and asset boundary collection agree on the name
+            for entity in (bc_entity, ghost_asset):
+                if entity is None:
+                    continue
+                with model_attribute_unlock(entity, "name"):
+                    entity.name = user_name
+                with model_attribute_unlock(entity, "private_attribute_id"):
+                    entity.private_attribute_id = user_name
+            log.warning(
+                f"Your geometry has a symmetry surface '{user_name}'. "
+                f"Remapping farfield.symmetry_plane to use this name. "
+                f"Consider using geometry['{user_name}'] directly."
+            )
+        elif len(sym_surfaces) > 1:
+            log.warning(
+                "Multiple symmetry surfaces with different names detected. "
+                "Symmetry surface name preservation is not yet supported for this case."
+            )
+
+        return value
 
 
 class Periodic(Flow360BaseModel):
