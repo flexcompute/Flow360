@@ -61,6 +61,7 @@ from flow360.component.simulation.outputs.output_fields import (
     PREDEFINED_UDF_EXPRESSIONS,
     append_component_to_output_fields,
     generate_predefined_udf,
+    remove_fields_subsumed_by_primitive_vars,
 )
 from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
@@ -300,7 +301,12 @@ def translate_output_fields(
             output_fields.append(output_field.name)
     # Filter out the UserVariable Dicts
     output_fields = [item for item in output_fields if isinstance(item, str)]
+<<<<<<< HEAD
     return {"outputFields": sorted(output_fields)}
+=======
+    output_fields = remove_fields_subsumed_by_primitive_vars(output_fields)
+    return {"outputFields": output_fields}
+>>>>>>> c3af3b35 ([BackPort] fix: remove output fields subsumed by primitiveVars to prevent duplic… (#1951))
 
 
 def surface_probe_setting_translation_func(entity: Union[SurfaceProbeOutput, SurfaceSliceOutput]):
@@ -526,6 +532,7 @@ def translate_volume_output(
             output_fields.append(output_field.name)
     # Filter out the UserVariable Dicts
     output_fields = [item for item in output_fields if isinstance(item, str)]
+    output_fields = remove_fields_subsumed_by_primitive_vars(output_fields)
     volume_output.update(
         {
             "outputFields": sorted(output_fields),
