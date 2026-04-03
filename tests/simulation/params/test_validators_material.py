@@ -5,8 +5,10 @@ import pytest
 import flow360 as fl
 from flow360.component.simulation.models.material import (
     FrozenSpecies,
+    Gas,
     NASA9Coefficients,
     NASA9CoefficientSet,
+    Sutherland,
     ThermallyPerfectGas,
 )
 from flow360.component.simulation.unit_system import SI_unit_system
@@ -461,3 +463,143 @@ def test_thermally_perfect_gas_mass_fraction_renormalization():
     # After renormalization, mass fractions should sum to exactly 1.0
     total = sum(s.mass_fraction for s in tpg.species)
     assert total == pytest.approx(1.0, abs=1e-10)
+
+
+# =============================================================================
+# Gas Class Tests
+# =============================================================================
+
+
+def _make_simple_tpg(gamma=1.4):
+    """Helper to create a simple single-species ThermallyPerfectGas."""
+    cp_r = gamma / (gamma - 1)
+    return ThermallyPerfectGas(
+        species=[
+            FrozenSpecies(
+                name="TestGas",
+                nasa_9_coefficients=NASA9Coefficients(
+                    temperature_ranges=[
+                        NASA9CoefficientSet(
+                            temperature_range_min=200.0 * fl.u.K,
+                            temperature_range_max=6000.0 * fl.u.K,
+                            coefficients=[0.0, 0.0, cp_r, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                        ),
+                    ]
+                ),
+                mass_fraction=1.0,
+            )
+        ]
+    )
+
+
+def test_gas_with_custom_properties():
+    """Test creating Gas with custom gas properties (e.g., CO2)."""
+    with SI_unit_system:
+        gas = Gas(
+            gas_constant=188.92 * fl.u.m**2 / fl.u.s**2 / fl.u.K,
+            dynamic_viscosity=1.47e-5 * fl.u.Pa * fl.u.s,
+            thermally_perfect_gas=_make_simple_tpg(gamma=1.3),
+            prandtl_number=0.77,
+        )
+    assert gas.type == "gas"
+    assert gas.gas_constant.to("m**2/s**2/K").v.item() == pytest.approx(188.92)
+    assert gas.prandtl_number == 0.77
+    assert gas.turbulent_prandtl_number == 0.9  # default
+
+
+def test_gas_with_sutherland_viscosity():
+    """Test creating Gas with Sutherland viscosity model."""
+    with SI_unit_system:
+        gas = Gas(
+            gas_constant=188.92 * fl.u.m**2 / fl.u.s**2 / fl.u.K,
+            dynamic_viscosity=Sutherland(
+                reference_viscosity=1.47e-5 * fl.u.Pa * fl.u.s,
+                reference_temperature=293.15 * fl.u.K,
+                effective_temperature=240.0 * fl.u.K,
+            ),
+            thermally_perfect_gas=_make_simple_tpg(),
+            prandtl_number=0.77,
+        )
+    assert isinstance(gas.dynamic_viscosity, Sutherland)
+
+
+def test_gas_speed_of_sound():
+    """Test that Gas computes speed of sound correctly."""
+    with SI_unit_system:
+        gas = Gas(
+            gas_constant=287.0529 * fl.u.m**2 / fl.u.s**2 / fl.u.K,
+            dynamic_viscosity=1.716e-5 * fl.u.Pa * fl.u.s,
+            thermally_perfect_gas=_make_simple_tpg(gamma=1.4),
+            prandtl_number=0.72,
+        )
+    sos = gas.get_speed_of_sound(288.15 * fl.u.K)
+    # For air at 288.15 K: sqrt(1.4 * 287.0529 * 288.15) ≈ 340.29 m/s
+    assert sos.to("m/s").v.item() == pytest.approx(340.29, abs=0.5)
+
+
+def test_gas_get_pressure():
+    """Test that Gas computes pressure correctly via ideal gas law."""
+    with SI_unit_system:
+        gas = Gas(
+            gas_constant=287.0529 * fl.u.m**2 / fl.u.s**2 / fl.u.K,
+            dynamic_viscosity=1.716e-5 * fl.u.Pa * fl.u.s,
+            thermally_perfect_gas=_make_simple_tpg(),
+            prandtl_number=0.72,
+        )
+    # P = rho * R * T = 1.225 * 287.0529 * 288.15 ≈ 101325 Pa
+    pressure = gas.get_pressure(1.225 * fl.u.kg / fl.u.m**3, 288.15 * fl.u.K)
+    assert pressure.to("Pa").v.item() == pytest.approx(101325, rel=0.01)
+
+
+def test_air_inherits_from_gas():
+    """Test that Air inherits from Gas and is recognized as Gas."""
+    with SI_unit_system:
+        air = fl.Air()
+    assert isinstance(air, Gas)
+    assert isinstance(air, fl.Air)
+    assert air.type == "air"
+    assert air.gas_constant.to("m**2/s**2/K").v.item() == pytest.approx(287.0529)
+
+
+def test_air_and_gas_produce_same_results():
+    """Test that Air and Gas with air properties produce identical physics results."""
+    with SI_unit_system:
+        air = fl.Air()
+        gas = Gas(
+            gas_constant=287.0529 * fl.u.m**2 / fl.u.s**2 / fl.u.K,
+            dynamic_viscosity=Sutherland(
+                reference_viscosity=1.716e-5 * fl.u.Pa * fl.u.s,
+                reference_temperature=273.15 * fl.u.K,
+                effective_temperature=110.4 * fl.u.K,
+            ),
+            thermally_perfect_gas=_make_simple_tpg(gamma=1.4),
+            prandtl_number=0.72,
+        )
+    temp = 288.15 * fl.u.K
+    assert air.get_speed_of_sound(temp).to("m/s").v.item() == pytest.approx(
+        gas.get_speed_of_sound(temp).to("m/s").v.item(), rel=1e-6
+    )
+    density = 1.225 * fl.u.kg / fl.u.m**3
+    assert air.get_pressure(density, temp).to("Pa").v.item() == pytest.approx(
+        gas.get_pressure(density, temp).to("Pa").v.item(), rel=1e-6
+    )
+
+
+def test_gas_serialization_roundtrip():
+    """Test that Gas serializes and deserializes correctly."""
+    with SI_unit_system:
+        gas = Gas(
+            gas_constant=188.92 * fl.u.m**2 / fl.u.s**2 / fl.u.K,
+            dynamic_viscosity=1.47e-5 * fl.u.Pa * fl.u.s,
+            thermally_perfect_gas=_make_simple_tpg(),
+            prandtl_number=0.77,
+        )
+    data = gas.model_dump(mode="json")
+    assert data["type"] == "gas"
+    assert data["gas_constant"]["value"] == pytest.approx(188.92)
+
+    # Deserialize
+    with SI_unit_system:
+        gas2 = Gas(**data)
+    assert gas2.type == "gas"
+    assert gas2.gas_constant.to("m**2/s**2/K").v.item() == pytest.approx(188.92)

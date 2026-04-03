@@ -16,6 +16,10 @@ from flow360.component.simulation.unit_system import (
     VelocityType,
     ViscosityType,
 )
+from flow360.component.simulation.validation.validation_context import (
+    add_validation_warning,
+    contextual_model_validator,
+)
 
 # =============================================================================
 # NASA 9-Coefficient Polynomial Utility Functions
@@ -417,7 +421,203 @@ class Sutherland(Flow360BaseModel):
 
 
 # pylint: disable=no-member, missing-function-docstring
-class Air(MaterialBase):
+class Gas(MaterialBase):
+    """
+    Represents a generic gas material with thermally perfect gas properties.
+
+    This class provides configurable gas properties including the specific gas constant,
+    dynamic viscosity, thermally perfect gas model (NASA 9-coefficient polynomials),
+    and Prandtl numbers. All fields must be explicitly specified (no defaults),
+    making it suitable for any gas species.
+
+    For air specifically, use the :class:`Air` subclass which provides standard
+    air defaults.
+
+    Example
+    -------
+
+    >>> fl.Gas(
+    ...     gas_constant=188.92 * fl.u.m**2 / fl.u.s**2 / fl.u.K,
+    ...     dynamic_viscosity=fl.Sutherland(
+    ...         reference_viscosity=1.47e-5 * fl.u.Pa * fl.u.s,
+    ...         reference_temperature=293.15 * fl.u.K,
+    ...         effective_temperature=240.0 * fl.u.K,
+    ...     ),
+    ...     thermally_perfect_gas=fl.ThermallyPerfectGas(
+    ...         species=[
+    ...             fl.FrozenSpecies(
+    ...                 name="CO2",
+    ...                 nasa_9_coefficients=fl.NASA9Coefficients(
+    ...                     temperature_ranges=[
+    ...                         fl.NASA9CoefficientSet(
+    ...                             temperature_range_min=200.0 * fl.u.K,
+    ...                             temperature_range_max=6000.0 * fl.u.K,
+    ...                             coefficients=[0.0, 0.0, 4.46, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+    ...                         ),
+    ...                     ]
+    ...                 ),
+    ...                 mass_fraction=1.0,
+    ...             )
+    ...         ]
+    ...     ),
+    ...     prandtl_number=0.77,
+    ... )
+
+    ====
+    """
+
+    type: Literal["gas"] = pd.Field("gas", frozen=True)
+    name: str = pd.Field("gas")
+    gas_constant: SpecificHeatCapacityType.Positive = pd.Field(
+        description="Specific gas constant (R) in units of energy per mass per temperature. "
+        "For example, air has R = 287.0529 J/(kg*K)."
+    )
+    dynamic_viscosity: Union[Sutherland, ViscosityType.NonNegative] = pd.Field(
+        description="The dynamic viscosity model or constant value for the gas."
+    )
+    thermally_perfect_gas: ThermallyPerfectGas = pd.Field(
+        description=(
+            "Thermally perfect gas model with NASA 9-coefficient polynomials for "
+            "temperature-dependent thermodynamic properties. "
+            "For multi-species gas mixtures, specify multiple FrozenSpecies with their "
+            "respective mass fractions."
+        ),
+    )
+    prandtl_number: pd.PositiveFloat = pd.Field(
+        description="Laminar Prandtl number.",
+    )
+    turbulent_prandtl_number: pd.PositiveFloat = pd.Field(
+        0.9,
+        description="Turbulent Prandtl number. Default is 0.9.",
+    )
+
+    @contextual_model_validator(mode="after")
+    def _warn_if_air_gas_constant(self):
+        if self.type != "gas":
+            return self  # Skip for subclasses like Air
+        gas_constant_value = self.gas_constant.to("m**2/s**2/K").v.item()
+        if abs(gas_constant_value - 287.0529) < 1e-3:
+            add_validation_warning(
+                "The gas_constant value 287.0529 J/(kg*K) corresponds to the standard gas "
+                "constant for air. If you are simulating a different gas, please update the "
+                "gas_constant accordingly."
+            )
+        return self
+
+    def get_specific_heat_ratio(self, temperature: AbsoluteTemperatureType) -> pd.PositiveFloat:
+        """
+        Computes the specific heat ratio (gamma) at a given temperature from NASA polynomial.
+
+        For thermally perfect gas, gamma = cp/cv = (cp/R) / (cp/R - 1) varies with temperature.
+        The cp/R is computed from the NASA 9-coefficient polynomial:
+            cp/R = a0*T^-2 + a1*T^-1 + a2 + a3*T + a4*T^2 + a5*T^3 + a6*T^4
+
+        Parameters
+        ----------
+        temperature : AbsoluteTemperatureType
+            The temperature at which to compute gamma.
+
+        Returns
+        -------
+        pd.PositiveFloat
+            The specific heat ratio at the given temperature.
+        """
+        temp_k = temperature.to("K").v.item()
+        coeffs = self._get_coefficients_at_temperature(temp_k)
+        return compute_gamma_from_coefficients(coeffs, temp_k)
+
+    def _get_coefficients_at_temperature(self, temp_k: float) -> list:
+        """
+        Get the NASA 9 coefficients at a given temperature.
+
+        Coefficients are mass-fraction weighted across all species.
+
+        Parameters
+        ----------
+        temp_k : float
+            Temperature in Kelvin
+
+        Returns
+        -------
+        list
+            NASA 9 coefficients [a0, a1, a2, a3, a4, a5, a6, a7, a8]
+        """
+        # Combine coefficients by mass fraction across species
+        coeffs = [0.0] * 9
+        for species in self.thermally_perfect_gas.species:
+            species_coeffs = species.nasa_9_coefficients.get_coefficients_at_temperature(temp_k)
+            for i in range(9):
+                coeffs[i] += species.mass_fraction * species_coeffs[i]
+        return coeffs
+
+    @pd.validate_call
+    def get_pressure(
+        self, density: DensityType.Positive, temperature: AbsoluteTemperatureType
+    ) -> PressureType.Positive:
+        """
+        Calculates the pressure using the ideal gas law.
+
+        Parameters
+        ----------
+        density : DensityType.Positive
+            The density of the gas.
+        temperature : AbsoluteTemperatureType
+            The temperature of the gas.
+
+        Returns
+        -------
+        PressureType.Positive
+            The calculated pressure.
+        """
+        temperature = temperature.to("K")
+        return density * self.gas_constant * temperature
+
+    @pd.validate_call
+    def get_speed_of_sound(self, temperature: AbsoluteTemperatureType) -> VelocityType.Positive:
+        """
+        Calculates the speed of sound at a given temperature.
+
+        For thermally perfect gas, uses the temperature-dependent gamma from the NASA polynomial.
+
+        Parameters
+        ----------
+        temperature : AbsoluteTemperatureType
+            The temperature at which to calculate the speed of sound.
+
+        Returns
+        -------
+        VelocityType.Positive
+            The speed of sound at the specified temperature.
+        """
+        temperature = temperature.to("K")
+        gamma = self.get_specific_heat_ratio(temperature)
+        return sqrt(gamma * self.gas_constant * temperature)
+
+    @pd.validate_call
+    def get_dynamic_viscosity(
+        self, temperature: AbsoluteTemperatureType
+    ) -> ViscosityType.NonNegative:
+        """
+        Calculates the dynamic viscosity at a given temperature.
+
+        Parameters
+        ----------
+        temperature : AbsoluteTemperatureType
+            The temperature at which to calculate the dynamic viscosity.
+
+        Returns
+        -------
+        ViscosityType.NonNegative
+            The dynamic viscosity at the specified temperature.
+        """
+        if temperature.units is u.degC or temperature.units is u.degF:
+            temperature = temperature.to("K")
+        if isinstance(self.dynamic_viscosity, Sutherland):
+            return self.dynamic_viscosity.get_dynamic_viscosity(temperature)
+        return self.dynamic_viscosity
+
+
+class Air(Gas):
     """
     Represents the material properties for air.
     This sets specific material properties for air,
@@ -478,6 +678,11 @@ class Air(MaterialBase):
 
     type: Literal["air"] = pd.Field("air", frozen=True)
     name: str = pd.Field("air")
+    gas_constant: SpecificHeatCapacityType.Positive = pd.Field(
+        287.0529 * u.m**2 / u.s**2 / u.K,
+        frozen=True,
+        description="Specific gas constant for air (287.0529 J/(kg*K)).",
+    )
     dynamic_viscosity: Union[Sutherland, ViscosityType.NonNegative] = pd.Field(
         Sutherland(
             reference_viscosity=1.716e-5 * u.Pa * u.s,
@@ -523,135 +728,6 @@ class Air(MaterialBase):
         0.72,
         description="Laminar Prandtl number. Default is 0.72 for air.",
     )
-    turbulent_prandtl_number: pd.PositiveFloat = pd.Field(
-        0.9,
-        description="Turbulent Prandtl number. Default is 0.9.",
-    )
-
-    def get_specific_heat_ratio(self, temperature: AbsoluteTemperatureType) -> pd.PositiveFloat:
-        """
-        Computes the specific heat ratio (gamma) at a given temperature from NASA polynomial.
-
-        For thermally perfect gas, gamma = cp/cv = (cp/R) / (cp/R - 1) varies with temperature.
-        The cp/R is computed from the NASA 9-coefficient polynomial:
-        cp/R = a0*T^-2 + a1*T^-1 + a2 + a3*T + a4*T^2 + a5*T^3 + a6*T^4
-
-        Parameters
-        ----------
-        temperature : AbsoluteTemperatureType
-            The temperature at which to compute gamma.
-
-        Returns
-        -------
-        pd.PositiveFloat
-            The specific heat ratio at the given temperature.
-        """
-        temp_k = temperature.to("K").v.item()
-        coeffs = self._get_coefficients_at_temperature(temp_k)
-        return compute_gamma_from_coefficients(coeffs, temp_k)
-
-    def _get_coefficients_at_temperature(self, temp_k: float) -> list:
-        """
-        Get the NASA 9 coefficients at a given temperature.
-
-        Coefficients are mass-fraction weighted across all species.
-
-        Parameters
-        ----------
-        temp_k : float
-            Temperature in Kelvin
-
-        Returns
-        -------
-        list
-            NASA 9 coefficients [a0, a1, a2, a3, a4, a5, a6, a7, a8]
-        """
-        # Combine coefficients by mass fraction across species
-        coeffs = [0.0] * 9
-        for species in self.thermally_perfect_gas.species:
-            species_coeffs = species.nasa_9_coefficients.get_coefficients_at_temperature(temp_k)
-            for i in range(9):
-                coeffs[i] += species.mass_fraction * species_coeffs[i]
-        return coeffs
-
-    @property
-    def gas_constant(self) -> SpecificHeatCapacityType.Positive:
-        """
-        Returns the specific gas constant for air.
-
-        Returns
-        -------
-        SpecificHeatCapacityType.Positive
-            The specific gas constant for air.
-        """
-
-        return 287.0529 * u.m**2 / u.s**2 / u.K
-
-    @pd.validate_call
-    def get_pressure(
-        self, density: DensityType.Positive, temperature: AbsoluteTemperatureType
-    ) -> PressureType.Positive:
-        """
-        Calculates the pressure of air using the ideal gas law.
-
-        Parameters
-        ----------
-        density : DensityType.Positive
-            The density of the air.
-        temperature : AbsoluteTemperatureType
-            The temperature of the air.
-
-        Returns
-        -------
-        PressureType.Positive
-            The calculated pressure.
-        """
-        temperature = temperature.to("K")
-        return density * self.gas_constant * temperature
-
-    @pd.validate_call
-    def get_speed_of_sound(self, temperature: AbsoluteTemperatureType) -> VelocityType.Positive:
-        """
-        Calculates the speed of sound in air at a given temperature.
-
-        For thermally perfect gas, uses the temperature-dependent gamma from the NASA polynomial.
-
-        Parameters
-        ----------
-        temperature : AbsoluteTemperatureType
-            The temperature at which to calculate the speed of sound.
-
-        Returns
-        -------
-        VelocityType.Positive
-            The speed of sound at the specified temperature.
-        """
-        temperature = temperature.to("K")
-        gamma = self.get_specific_heat_ratio(temperature)
-        return sqrt(gamma * self.gas_constant * temperature)
-
-    @pd.validate_call
-    def get_dynamic_viscosity(
-        self, temperature: AbsoluteTemperatureType
-    ) -> ViscosityType.NonNegative:
-        """
-        Calculates the dynamic viscosity of air at a given temperature.
-
-        Parameters
-        ----------
-        temperature : AbsoluteTemperatureType
-            The temperature at which to calculate the dynamic viscosity.
-
-        Returns
-        -------
-        ViscosityType.NonNegative
-            The dynamic viscosity at the specified temperature.
-        """
-        if temperature.units is u.degC or temperature.units is u.degF:
-            temperature = temperature.to("K")
-        if isinstance(self.dynamic_viscosity, Sutherland):
-            return self.dynamic_viscosity.get_dynamic_viscosity(temperature)
-        return self.dynamic_viscosity
 
 
 class SolidMaterial(MaterialBase):
@@ -719,4 +795,4 @@ class Water(MaterialBase):
 
 
 SolidMaterialTypes = SolidMaterial
-FluidMaterialTypes = Union[Air, Water]
+FluidMaterialTypes = Union[Gas, Air, Water]
