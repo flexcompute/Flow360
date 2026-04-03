@@ -4,6 +4,7 @@ import pydantic as pd
 import pytest
 
 from flow360 import u
+from flow360.component.simulation.framework.entity_registry import EntityRegistry
 from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.meshing_param import snappy
 from flow360.component.simulation.meshing_param.face_params import (
@@ -924,6 +925,58 @@ def test_face_spacing_validation():
                 spacing=0.5 * u.m,
                 face_spacing={42: 0.1 * u.m},
             )
+
+
+def test_face_spacing_contextual_validation():
+    with SI_unit_system:
+        body = AxisymmetricBody(
+            name="body",
+            axis=(0, 0, 1),
+            center=(0, 0, 0),
+            profile_curve=[(0, 0), (0, 1), (1, 1), (1, 0)],
+        )
+        other = AxisymmetricBody(
+            name="other",
+            axis=(0, 0, 1),
+            center=(1, 0, 0),
+            profile_curve=[(0, 0), (0, 1), (1, 0)],
+        )
+
+        # Registry contains both bodies
+        registry = EntityRegistry()
+        registry.register(body)
+        registry.register(other)
+        ctx = ParamsValidationInfo({}, [])
+        ctx.is_beta_mesher = True
+        ctx._entity_registry = registry
+
+        # Warning: other exists in registry, but not in this refinement's entities
+        mock_context = ValidationContext(VOLUME_MESH, ctx)
+        with mock_context:
+            UniformRefinement(
+                entities=[body],
+                spacing=0.5 * u.m,
+                face_spacing={other.segment(0): 0.1 * u.m},
+            )
+        assert any(
+            "not in this refinement's entities list" in w["msg"]
+            for w in mock_context.validation_warnings
+        )
+
+        # Error: reference an entity not in registry at all (stale)
+        removed = AxisymmetricBody(
+            name="removed",
+            axis=(0, 0, 1),
+            center=(2, 0, 0),
+            profile_curve=[(0, 0), (0, 1), (1, 0)],
+        )
+        with pytest.raises(pd.ValidationError, match="not a registered AxisymmetricBody"):
+            with ValidationContext(VOLUME_MESH, ctx):
+                UniformRefinement(
+                    entities=[body],
+                    spacing=0.5 * u.m,
+                    face_spacing={removed.segment(0): 0.1 * u.m},
+                )
 
 
 def test_sphere_in_uniform_refinement():

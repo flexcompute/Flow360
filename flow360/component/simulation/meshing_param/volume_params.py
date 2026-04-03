@@ -181,6 +181,13 @@ class UniformRefinement(Flow360BaseModel):
         if registry is None:
             return self
 
+        # Build set of entity ids in this refinement's entities list
+        entity_ids_in_refinement = set()
+        if self.entities is not None:
+            for entity in param_info.expand_entity_list(self.entities):
+                if isinstance(entity, AxisymmetricBody):
+                    entity_ids_in_refinement.add(entity.private_attribute_id)
+
         for seg in self.face_spacing:
             entity = registry.find_by_type_name_and_id(
                 entity_type="AxisymmetricBody",
@@ -190,6 +197,11 @@ class UniformRefinement(Flow360BaseModel):
                 raise ValueError(
                     f"face_spacing references entity '{seg.entity_name}' "
                     f"(id={seg.entity_id}) which is not a registered AxisymmetricBody."
+                )
+            if seg.entity_id not in entity_ids_in_refinement:
+                add_validation_warning(
+                    f"face_spacing references entity '{seg.entity_name}', which is not in "
+                    f"this refinement's entities list. Override will be ignored."
                 )
             num_segments = len(entity.profile_curve) - 1
             if seg.index >= num_segments:
