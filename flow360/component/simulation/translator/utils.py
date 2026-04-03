@@ -584,7 +584,7 @@ def translate_setting_and_apply_to_all_entities(
                                 key_names = getattr(
                                     entity, "private_attribute_sub_components", None
                                 )
-                                if not key_names:
+                                if key_names is None:
                                     key_names = [_get_key_name(entity)]
                             else:
                                 key_names = [
