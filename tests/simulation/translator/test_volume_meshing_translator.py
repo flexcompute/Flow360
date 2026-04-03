@@ -2073,7 +2073,7 @@ def test_face_spacing_single_body(get_surface_mesh):
                     UniformRefinement(
                         entities=[body],
                         spacing=0.5 * u.m,
-                        face_spacing={body.face(1): 0.1 * u.m, body.face(3): 0.2 * u.m},
+                        face_spacing={body.segment(1): 0.1 * u.m, body.segment(3): 0.2 * u.m},
                     ),
                 ],
             ),
@@ -2148,9 +2148,9 @@ def test_face_spacing_mixed_entities(get_surface_mesh):
                         entities=[body1, box, body2],
                         spacing=1.0 * u.m,
                         face_spacing={
-                            body1.face(0): 0.1 * u.m,
-                            body2.face(1): 0.2 * u.m,
-                            body2.face(2): 0.3 * u.m,
+                            body1.segment(0): 0.1 * u.m,
+                            body2.segment(1): 0.2 * u.m,
+                            body2.segment(2): 0.3 * u.m,
                         },
                     ),
                 ],
@@ -2192,7 +2192,7 @@ def test_face_spacing_mixed_units(get_surface_mesh):
                     UniformRefinement(
                         entities=[body],
                         spacing=0.5 * u.m,
-                        face_spacing={body.face(0): 10 * u.cm, body.face(2): 200 * u.mm},
+                        face_spacing={body.segment(0): 10 * u.cm, body.segment(2): 200 * u.mm},
                     ),
                 ],
             ),
@@ -2224,7 +2224,7 @@ def test_face_spacing_round_trip(get_surface_mesh):
                     UniformRefinement(
                         entities=[body],
                         spacing=0.5 * u.m,
-                        face_spacing={body.face(1): 0.1 * u.m, body.face(3): 0.2 * u.m},
+                        face_spacing={body.segment(1): 0.1 * u.m, body.segment(3): 0.2 * u.m},
                     ),
                 ],
             ),

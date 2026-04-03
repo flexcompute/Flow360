@@ -857,7 +857,7 @@ def test_axisymmetric_body_in_uniform_refinement():
                 )
 
 
-def test_face_class():
+def test_axisymmetric_segment_class():
     with SI_unit_system:
         body = AxisymmetricBody(
             name="body1",
@@ -866,22 +866,22 @@ def test_face_class():
             profile_curve=[(0, 0), (0, 1), (2, 1), (2, 0)],
         )
 
-        f = body.face(0)
+        f = body.segment(0)
         assert f.entity_id == body.private_attribute_id
         assert f.entity_name == "body1"
         assert f.index == 0
 
         # 3 segments -> indices 0-2 are valid
-        body.face(2)
+        body.segment(2)
         with pytest.raises(IndexError):
-            body.face(3)
+            body.segment(3)
         with pytest.raises(IndexError):
-            body.face(-1)
+            body.segment(-1)
 
         # Same entity + index -> equal, so usable as dict key
-        assert body.face(1) == body.face(1)
-        assert body.face(0) != body.face(1)
-        assert {body.face(1): "a"}[body.face(1)] == "a"
+        assert body.segment(1) == body.segment(1)
+        assert body.segment(0) != body.segment(1)
+        assert {body.segment(1): "a"}[body.segment(1)] == "a"
 
         # Different entity, same index -> not equal
         other = AxisymmetricBody(
@@ -890,7 +890,7 @@ def test_face_class():
             center=(0, 0, 0),
             profile_curve=[(0, 0), (0, 1), (2, 1), (2, 0)],
         )
-        assert body.face(0) != other.face(0)
+        assert body.segment(0) != other.segment(0)
 
 
 def test_face_spacing_validation():
@@ -906,7 +906,7 @@ def test_face_spacing_validation():
         UniformRefinement(
             entities=[body],
             spacing=0.5 * u.m,
-            face_spacing={body.face(1): 0.1 * u.m},
+            face_spacing={body.segment(1): 0.1 * u.m},
         )
 
         # Invalid: face index out of range
@@ -914,25 +914,11 @@ def test_face_spacing_validation():
             UniformRefinement(
                 entities=[body],
                 spacing=0.5 * u.m,
-                face_spacing={body.face(5): 0.1 * u.m},
+                face_spacing={body.segment(5): 0.1 * u.m},
             )
 
-        # Invalid: entity id not in entities list
-        other_body = AxisymmetricBody(
-            name="other",
-            axis=(0, 0, 1),
-            center=(1, 0, 0),
-            profile_curve=[(0, 0), (0, 1), (1, 0)],
-        )
-        with pytest.raises(pd.ValidationError, match="not an AxisymmetricBody in this refinement"):
-            UniformRefinement(
-                entities=[body],
-                spacing=0.5 * u.m,
-                face_spacing={other_body.face(0): 0.1 * u.m},
-            )
-
-        # Invalid: non-Face key
-        with pytest.raises(pd.ValidationError, match="Invalid face_spacing key"):
+        # Invalid: non-AxisymmetricSegment key (pydantic type validation rejects it)
+        with pytest.raises(pd.ValidationError):
             UniformRefinement(
                 entities=[body],
                 spacing=0.5 * u.m,

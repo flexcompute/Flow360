@@ -4,9 +4,11 @@ Meshing settings that applies to volumes.
 
 # pylint: disable=too-many-lines
 
-from typing import Dict, Literal, Optional, Union
+from typing import Annotated, Dict, Literal, Optional, Union
 
 import pydantic as pd
+from pydantic.functional_serializers import PlainSerializer
+from pydantic.functional_validators import BeforeValidator
 from typing_extensions import deprecated
 
 import flow360.component.simulation.units as u
@@ -15,10 +17,10 @@ from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.outputs.output_entities import Slice
 from flow360.component.simulation.primitives import (
     AxisymmetricBody,
+    AxisymmetricSegment,
     Box,
     CustomVolume,
     Cylinder,
-    Face,
     GenericVolume,
     GhostSurface,
     MirroredSurface,
@@ -28,7 +30,10 @@ from flow360.component.simulation.primitives import (
     WindTunnelGhostSurface,
     compute_bbox_tolerance,
 )
-from flow360.component.simulation.unit_system import LengthType
+from flow360.component.simulation.unit_system import (
+    LengthType,
+    _dimensioned_type_serializer,
+)
 from flow360.component.simulation.validation.validation_context import (
     ParamsValidationInfo,
     add_validation_warning,
@@ -52,10 +57,34 @@ class classproperty:  # pylint: disable=invalid-name,too-few-public-methods
         return self.func(owner)
 
 
+def _serialize_segment_spacing(d):
+    """Serialize Dict[AxisymmetricSegment, LengthType] as a list of {segment, spacing} pairs."""
+    if d is None:
+        return None
+    return [
+        {"segment": seg.model_dump(), "spacing": _dimensioned_type_serializer(spacing)}
+        for seg, spacing in d.items()
+    ]
+
+
+def _deserialize_segment_spacing(v):
+    """Deserialize list of {segment, spacing} pairs back into Dict[AxisymmetricSegment, LengthType]."""
+    if isinstance(v, list):
+        return {AxisymmetricSegment.model_validate(item["segment"]): item["spacing"] for item in v}
+    return v
+
+
+SegmentSpacingDict = Annotated[
+    Dict[AxisymmetricSegment, LengthType.Positive],  # pylint: disable=no-member
+    BeforeValidator(_deserialize_segment_spacing),
+    PlainSerializer(_serialize_segment_spacing),
+]
+
+
 class UniformRefinement(Flow360BaseModel):
     """
     Uniform spacing refinement inside specified region of mesh.
-    For AxisymmetricBody entities, specify per-face spacing overrides via ``face_spacing``.
+    For AxisymmetricBody entities, specify per-segment spacing overrides via ``face_spacing``.
 
     Example
     -------
@@ -64,7 +93,7 @@ class UniformRefinement(Flow360BaseModel):
       ...     entities=[cylinder, box, axisymmetric_body, sphere],
       ...     spacing=1*fl.u.cm,
       ...     face_spacing={
-      ...         axisymmetric_body.face(2): 0.2*fl.u.cm,
+      ...         axisymmetric_body.segment(2): 0.2*fl.u.cm,
       ...     }
       ... )
 
@@ -84,32 +113,12 @@ class UniformRefinement(Flow360BaseModel):
         None,
         description="Whether to include the refinement in the surface mesh. Defaults to True when using snappy.",
     )
-    face_spacing: Optional[Dict[str, Dict[int, LengthType.Positive]]] = pd.Field(
+    face_spacing: Optional[SegmentSpacingDict] = pd.Field(
         None,
-        description="Per-face spacing overrides for AxisymmetricBody entities. "
-        "Use `body.face(i)` as keys, where face i is defined by the segment between"
-        "profile_curve[i] and profile_curve[i+1]. Faces without overrides use the default `spacing`.",
+        description="Per-segment spacing overrides for AxisymmetricBody entities. "
+        "Use ``body.segment(i)`` as keys, where segment i is defined between "
+        "profile_curve[i] and profile_curve[i+1]. Segments without overrides use the default ``spacing``.",
     )
-
-    @pd.field_validator("face_spacing", mode="before")
-    @classmethod
-    def _convert_face_spacing(cls, value):
-        """Convert {Face: spacing} to {entity_name: {idx: spacing}} internal format."""
-        if value is None or not isinstance(value, dict):
-            return value
-        result = {}
-        for key, val in value.items():
-            if isinstance(key, Face):
-                result.setdefault(key.entity_name, {})[key.index] = val
-            elif isinstance(key, str) and isinstance(val, dict):
-                # Already in {name: {idx: spacing}} format (e.g., from JSON deserialization)
-                result[key] = {int(k): v for k, v in val.items()}
-            else:
-                raise ValueError(
-                    f"Invalid face_spacing key {key!r}. "
-                    f"Use body.face(i) or provide a valid serialized face_spacing dict."
-                )
-        return result
 
     @contextual_field_validator("entities", mode="after")
     @classmethod
@@ -162,32 +171,32 @@ class UniformRefinement(Flow360BaseModel):
 
         return self
 
-    @pd.model_validator(mode="after")
-    def check_face_spacing(self):
-        """Validate face_spacing keys match AxisymmetricBody entities."""
+    @contextual_model_validator(mode="after")
+    def check_face_spacing(self, param_info: ParamsValidationInfo):
+        """Validate face_spacing keys reference registered AxisymmetricBody entities."""
         if self.face_spacing is None:
             return self
 
-        entity_map = {}
-        if self.entities is not None:
-            for entity in self.entities.stored_entities:
-                if isinstance(entity, AxisymmetricBody):
-                    entity_map[entity.name] = entity
+        registry = param_info.get_entity_registry()
+        if registry is None:
+            return self
 
-        for entity_name, face_overrides in self.face_spacing.items():
-            if entity_name not in entity_map:
+        for seg in self.face_spacing:
+            entity = registry.find_by_type_name_and_id(
+                entity_type="AxisymmetricBody",
+                entity_id=seg.entity_id,
+            )
+            if entity is None:
                 raise ValueError(
-                    f"face_spacing references '{entity_name}' which is not an "
-                    f"AxisymmetricBody in this refinement's entities list."
+                    f"face_spacing references entity '{seg.entity_name}' "
+                    f"(id={seg.entity_id}) which is not a registered AxisymmetricBody."
                 )
-            entity = entity_map[entity_name]
-            num_faces = len(entity.profile_curve) - 1
-            for face_idx in face_overrides:
-                if face_idx >= num_faces or face_idx < 0:
-                    raise ValueError(
-                        f"Face index {face_idx} for entity '{entity.name}' is out of range. "
-                        f"Valid range: [0, {num_faces - 1}]."
-                    )
+            num_segments = len(entity.profile_curve) - 1
+            if seg.index >= num_segments:
+                raise ValueError(
+                    f"Segment index {seg.index} for entity '{entity.name}' is out of range. "
+                    f"Valid range: [0, {num_segments - 1}]."
+                )
 
         return self
 
