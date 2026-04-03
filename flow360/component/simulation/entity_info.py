@@ -6,7 +6,6 @@ from typing import Annotated, Any, Dict, List, Literal, Optional, Union
 
 import pydantic as pd
 
-from flow360.component.simulation.design_intent import CADDesignIntent
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_registry import (
     EntityRegistry,
@@ -177,12 +176,6 @@ class GeometryEntityInfo(EntityInfoModel):
     default_geometry_accuracy: Optional[LengthType.Positive] = pd.Field(
         None,
         description="The default value based on uploaded geometry for geometry_accuracy.",
-    )
-
-    design_intent: Optional[CADDesignIntent] = pd.Field(
-        None,
-        description="CAD design intent (feature tree) extracted from a native CAD file. "
-        "Only populated when the geometry was imported from a format that exposes the feature tree.",
     )
 
     @property
