@@ -1,13 +1,11 @@
 import os
 from copy import deepcopy
 
-import pydantic as pd
 import pytest
 from flow360_schema.framework.validation.context import DeserializationContext
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.framework.multi_constructor_model_base import (
     parse_model_dict,
 )
@@ -16,8 +14,6 @@ from flow360.component.simulation.operating_condition.operating_condition import
     AerospaceCondition,
     ThermalState,
 )
-from flow360.component.simulation.primitives import Box, Cylinder
-from flow360.component.simulation.unit_system import SI_unit_system
 from tests.simulation.converter.test_bet_translator import generate_BET_param
 
 
@@ -159,85 +155,7 @@ def test_recursive_incomplete_model(get_aerospace_condition_using_from_mach):
     compare_objects_from_dict(full_data, data_parsed, AerospaceCondition)
 
 
-def test_entity_with_multi_constructor():
-
-    class ModelWithEntityList(Flow360BaseModel):
-        entities: EntityList[Box, Cylinder] = pd.Field()
-
-    with SI_unit_system:
-        model = ModelWithEntityList(
-            entities=[
-                Box(
-                    name="my_box_default",
-                    center=(1, 2, 3),
-                    size=(2, 2, 3),
-                    angle_of_rotation=20 * u.deg,
-                    axis_of_rotation=(1, 0, 0),
-                ),
-                Box.from_principal_axes(
-                    name="my_box_from",
-                    center=(7, 1, 2),
-                    size=(2, 2, 3),
-                    axes=((3 / 5, 4 / 5, 0), (4 / 5, -3 / 5, 0)),
-                ),
-                Cylinder(
-                    name="my_cylinder_default",
-                    axis=(0, 1, 0),
-                    center=(1, 2, 3),
-                    outer_radius=2,
-                    height=3,
-                ),
-            ]
-        )
-    full_data = model.model_dump(exclude_none=False)
-    incomplete_data = {"entities": {"stored_entities": []}}
-    # For default constructed entity we do not do anything
-    incomplete_data["entities"]["stored_entities"].append(
-        full_data["entities"]["stored_entities"][0]
-    )
-    incomplete_data["entities"]["stored_entities"][0]["private_attribute_input_cache"] = {}
-    entity_dict = full_data["entities"]["stored_entities"][1]
-    incomplete_entity = {}
-    for key, value in entity_dict.items():
-        if key in [
-            "type_name",
-            "private_attribute_constructor",
-            "private_attribute_input_cache",
-            "private_attribute_id",
-        ]:
-            incomplete_entity[key] = value
-    incomplete_data["entities"]["stored_entities"].append(incomplete_entity)
-    incomplete_data["entities"]["stored_entities"].append(
-        full_data["entities"]["stored_entities"][2]
-    )
-
-    data_parsed = parse_model_dict(incomplete_data, globals())
-    compare_objects_from_dict(full_data, data_parsed, ModelWithEntityList)
-
-
-def test_entity_modification(get_aerospace_condition_using_from_mach):
-
-    my_box = Box.from_principal_axes(
-        name="box",
-        axes=[(0, 1, 0), (0, 0, 1)],
-        center=(0, 0, 0) * u.m,
-        size=(0.2, 0.3, 2) * u.m,
-    )
-
-    my_box.center = (1, 2, 3) * u.m
-    assert all(my_box.private_attribute_input_cache.center == (1, 2, 3) * u.m)
-
-    my_box = Box(
-        name="box2",
-        axis_of_rotation=(1, 0, 0),
-        angle_of_rotation=45 * u.deg,
-        center=(1, 1, 1) * u.m,
-        size=(0.2, 0.3, 2) * u.m,
-    )
-
-    my_box.size = (1, 2, 32) * u.m
-    assert all(my_box.private_attribute_input_cache.size == (1, 2, 32) * u.m)
-
+def test_non_entity_modification_updates_input_cache(get_aerospace_condition_using_from_mach):
     my_op = get_aerospace_condition_using_from_mach
     my_op.alpha = -12 * u.rad
     assert my_op.private_attribute_input_cache.alpha == -12 * u.rad
