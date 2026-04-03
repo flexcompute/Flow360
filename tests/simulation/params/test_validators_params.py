@@ -29,6 +29,7 @@ from flow360.component.simulation.meshing_param.edge_params import (
 from flow360.component.simulation.meshing_param.face_params import (
     BoundaryLayer,
     GeometryRefinement,
+    PassiveSpacing,
 )
 from flow360.component.simulation.meshing_param.meshing_specs import (
     MeshingDefaults,
@@ -68,6 +69,7 @@ from flow360.component.simulation.models.surface_models import (
     Pressure,
     SlaterPorousBleed,
     SlipWall,
+    SymmetryPlane,
     TotalPressure,
     Translational,
     Wall,
@@ -3377,6 +3379,332 @@ def test_deleted_surfaces_domain_type():
 
     assert len(errors) == 1
     assert "Boundary `pos_surf` will likely be deleted" in errors[0]["msg"]
+
+
+def test_udf_symmetry_face_not_deleted():
+    """UDF (with GAI): surface at y=0 is not deleted."""
+    surface_sym = Surface(
+        name="mySymmetry",
+        private_attributes=SurfacePrivateAttributes(bounding_box=[[0, 0, 0], [1, 0, 1]]),
+    )
+    surface_body = Surface(
+        name="body",
+        private_attributes=SurfacePrivateAttributes(bounding_box=[[0, 0.1, 0], [1, 1, 1]]),
+    )
+    asset_cache = AssetCache(
+        project_length_unit="m",
+        use_inhouse_mesher=True,
+        use_geometry_AI=True,
+        project_entity_info=SurfaceMeshEntityInfo(
+            global_bounding_box=[[0, 0, 0], [1, 1, 1]],
+            boundaries=[surface_sym, surface_body],
+        ),
+    )
+    farfield = UserDefinedFarfield(domain_type="half_body_positive_y")
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    planar_face_tolerance=1e-4,
+                    geometry_accuracy=1e-5,
+                    boundary_layer_first_layer_thickness=1e-3,
+                ),
+                volume_zones=[farfield],
+            ),
+            models=[
+                Wall(entities=[surface_body]),
+                SymmetryPlane(entities=[surface_sym]),
+            ],
+            private_attribute_asset_cache=asset_cache,
+        )
+    _, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="SurfaceMesh",
+        validation_level="All",
+    )
+    assert errors is None, f"Expected no errors but got: {errors}"
+
+
+def test_udf_wrong_half_deleted():
+    """UDF: surface on wrong half is still deleted."""
+    surface_neg = Surface(
+        name="neg_surf",
+        private_attributes=SurfacePrivateAttributes(bounding_box=[[0, -2, 0], [1, -1, 1]]),
+    )
+    asset_cache = AssetCache(
+        project_length_unit="m",
+        use_inhouse_mesher=True,
+        use_geometry_AI=True,
+        project_entity_info=SurfaceMeshEntityInfo(
+            global_bounding_box=[[0, -2, 0], [1, 2, 1]],
+            boundaries=[surface_neg],
+        ),
+    )
+    farfield = UserDefinedFarfield(domain_type="half_body_positive_y")
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    planar_face_tolerance=1e-4,
+                    geometry_accuracy=1e-5,
+                    boundary_layer_first_layer_thickness=1e-3,
+                ),
+                volume_zones=[farfield],
+            ),
+            models=[Wall(entities=[surface_neg])],
+            private_attribute_asset_cache=asset_cache,
+        )
+    _, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="SurfaceMesh",
+        validation_level="All",
+    )
+    assert len(errors) == 1
+    assert "Boundary `neg_surf` will likely be deleted" in errors[0]["msg"]
+
+
+def test_udf_symmetry_plane_remap():
+    """UDF + farfield.symmetry_plane + explicit face: remaps in both BCs and refinements."""
+    surface_sym = Surface(
+        name="mySymmetry",
+        private_attributes=SurfacePrivateAttributes(bounding_box=[[0, 0, 0], [1, 0, 1]]),
+    )
+    surface_body = Surface(
+        name="body",
+        private_attributes=SurfacePrivateAttributes(bounding_box=[[0, 0.1, 0], [1, 1, 1]]),
+    )
+    # Ghost entity in entity_info (created by preprocessing, GhostCircularPlane type)
+    ghost_in_entity_info = GhostCircularPlane(
+        name="symmetric",
+        center=[0.5, 0, 0.5],
+        max_radius=50,
+        normal_axis=[0, 1, 0],
+        private_attribute_id="symmetric",
+    )
+    # Ghost entity as returned by farfield.symmetry_plane (GhostSurface type)
+    ghost_from_farfield = GhostSurface(name="symmetric", private_attribute_id="symmetric")
+
+    asset_cache = AssetCache(
+        project_length_unit="m",
+        use_inhouse_mesher=True,
+        use_geometry_AI=True,
+        project_entity_info=SurfaceMeshEntityInfo(
+            global_bounding_box=[[0, 0, 0], [1, 1, 1]],
+            boundaries=[surface_sym, surface_body],
+            ghost_entities=[ghost_in_entity_info],
+        ),
+    )
+    farfield = UserDefinedFarfield(domain_type="half_body_positive_y")
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    planar_face_tolerance=1e-4,
+                    geometry_accuracy=1e-5,
+                    boundary_layer_first_layer_thickness=1e-3,
+                ),
+                volume_zones=[farfield],
+                refinements=[
+                    PassiveSpacing(entities=ghost_from_farfield, type="projected"),
+                ],
+            ),
+            models=[
+                Wall(entities=[surface_body]),
+                SymmetryPlane(entities=ghost_from_farfield),
+            ],
+            private_attribute_asset_cache=asset_cache,
+        )
+    validated, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="SurfaceMesh",
+        validation_level="All",
+    )
+    assert errors is None, f"Expected no errors but got: {errors}"
+    # BC entity replaced with real Surface (not GhostSurface)
+    sym_bc = next(m for m in validated.models if isinstance(m, SymmetryPlane))
+    sym_entity = next(e for e in sym_bc.entities.stored_entities if e.name == "mySymmetry")
+    assert isinstance(sym_entity, Surface)
+    # PassiveSpacing entity also replaced
+    ps = validated.meshing.refinements[0]
+    ps_entity = next(e for e in ps.entities.stored_entities if e.name == "mySymmetry")
+    assert isinstance(ps_entity, Surface)
+    # Ghost entity in entity_info remapped
+    ghost_names = [
+        g.name for g in validated.private_attribute_asset_cache.project_entity_info.ghost_entities
+    ]
+    assert "symmetric" not in ghost_names
+    assert "mySymmetry" in ghost_names
+
+
+def test_udf_symmetry_plane_no_remap_without_explicit_face():
+    """UDF + farfield.symmetry_plane + no y=0 face: stays 'symmetric'."""
+    ghost_sym = GhostCircularPlane(
+        name="symmetric",
+        center=[0.5, 0, 0.5],
+        max_radius=50,
+        normal_axis=[0, 1, 0],
+        private_attribute_id="symmetric",
+    )
+    # All surfaces are in positive y
+    surface_body = Surface(
+        name="body",
+        private_attributes=SurfacePrivateAttributes(bounding_box=[[0, 0.1, 0], [1, 1, 1]]),
+    )
+    asset_cache = AssetCache(
+        project_length_unit="m",
+        use_inhouse_mesher=True,
+        use_geometry_AI=True,
+        project_entity_info=SurfaceMeshEntityInfo(
+            global_bounding_box=[[0, 0, 0], [1, 1, 1]],
+            boundaries=[surface_body],
+            ghost_entities=[ghost_sym],
+        ),
+    )
+    farfield = UserDefinedFarfield(domain_type="half_body_positive_y")
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    planar_face_tolerance=1e-4,
+                    geometry_accuracy=1e-5,
+                    boundary_layer_first_layer_thickness=1e-3,
+                ),
+                volume_zones=[farfield],
+            ),
+            models=[
+                Wall(entities=[surface_body]),
+                SymmetryPlane(
+                    entities=GhostSurface(name="symmetric", private_attribute_id="symmetric")
+                ),
+            ],
+            private_attribute_asset_cache=asset_cache,
+        )
+    validated, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="SurfaceMesh",
+        validation_level="All",
+    )
+    assert errors is None, f"Expected no errors but got: {errors}"
+    sym_bc = next(m for m in validated.models if isinstance(m, SymmetryPlane))
+    assert any(e.name == "symmetric" for e in sym_bc.entities.stored_entities)
+
+
+def test_auto_farfield_no_remap():
+    """Auto farfield: no remap even with explicit y=0 face."""
+    surface_sym = Surface(
+        name="mySymmetry",
+        private_attributes=SurfacePrivateAttributes(bounding_box=[[0, 0, 0], [1, 0, 1]]),
+    )
+    ghost_farfield = GhostSphere(
+        name="farfield",
+        center=[0, 0, 0],
+        max_radius=50,
+        private_attribute_id="farfield",
+    )
+    ghost_sym = GhostCircularPlane(
+        name="symmetric",
+        center=[0.5, 0, 0.5],
+        max_radius=50,
+        normal_axis=[0, 1, 0],
+        private_attribute_id="symmetric",
+    )
+    asset_cache = AssetCache(
+        project_length_unit="m",
+        use_inhouse_mesher=True,
+        use_geometry_AI=True,
+        project_entity_info=SurfaceMeshEntityInfo(
+            global_bounding_box=[[0, 0, 0], [1, 1, 1]],
+            boundaries=[surface_sym],
+            ghost_entities=[ghost_farfield, ghost_sym],
+        ),
+    )
+    farfield = AutomatedFarfield()
+    with SI_unit_system:
+        params = SimulationParams(
+            operating_condition=AerospaceCondition(velocity_magnitude=1),
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    geometry_accuracy=1e-5,
+                    boundary_layer_first_layer_thickness=1e-3,
+                ),
+                volume_zones=[farfield],
+            ),
+            models=[
+                Freestream(entities=[farfield.farfield]),
+                SymmetryPlane(entities=[farfield.symmetry_plane]),
+            ],
+            private_attribute_asset_cache=asset_cache,
+        )
+    validated, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="SurfaceMesh",
+        validation_level="All",
+    )
+    assert errors is None, f"Expected no errors but got: {errors}"
+    sym_bc = next(m for m in validated.models if isinstance(m, SymmetryPlane))
+    assert any(e.name == "symmetric" for e in sym_bc.entities.stored_entities)
+
+
+def test_udf_symmetry_plane_no_remap_multiple_faces():
+    """UDF + multiple y=0 faces: no remap, stays 'symmetric'."""
+    surface_sym_a = Surface(
+        name="sym_a",
+        private_attributes=SurfacePrivateAttributes(bounding_box=[[-1, 0, 0], [0, 0, 1]]),
+    )
+    surface_sym_b = Surface(
+        name="sym_b",
+        private_attributes=SurfacePrivateAttributes(bounding_box=[[1, 0, 0], [2, 0, 1]]),
+    )
+    ghost_sym = GhostCircularPlane(
+        name="symmetric",
+        center=[0.5, 0, 0.5],
+        max_radius=50,
+        normal_axis=[0, 1, 0],
+        private_attribute_id="symmetric",
+    )
+    asset_cache = AssetCache(
+        project_length_unit="m",
+        use_inhouse_mesher=True,
+        use_geometry_AI=True,
+        project_entity_info=SurfaceMeshEntityInfo(
+            global_bounding_box=[[-1, 0, 0], [2, 1, 1]],
+            boundaries=[surface_sym_a, surface_sym_b],
+            ghost_entities=[ghost_sym],
+        ),
+    )
+    farfield = UserDefinedFarfield(domain_type="half_body_positive_y")
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    planar_face_tolerance=1e-4,
+                    geometry_accuracy=1e-5,
+                    boundary_layer_first_layer_thickness=1e-3,
+                ),
+                volume_zones=[farfield],
+            ),
+            models=[
+                Wall(entities=[surface_sym_a, surface_sym_b]),
+                SymmetryPlane(
+                    entities=GhostSurface(name="symmetric", private_attribute_id="symmetric")
+                ),
+            ],
+            private_attribute_asset_cache=asset_cache,
+        )
+    validated, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="SurfaceMesh",
+        validation_level="All",
+    )
+    assert errors is None, f"Expected no errors but got: {errors}"
+    sym_bc = next(m for m in validated.models if isinstance(m, SymmetryPlane))
+    assert any(e.name == "symmetric" for e in sym_bc.entities.stored_entities)
 
 
 def test_unique_selector_names():

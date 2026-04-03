@@ -58,7 +58,10 @@ from flow360.component.simulation.validation.validation_context import (
     add_validation_warning,
     get_validation_levels,
 )
-from flow360.component.simulation.validation.validation_utils import EntityUsageMap
+from flow360.component.simulation.validation.validation_utils import (
+    EntityUsageMap,
+    find_user_symmetry_surfaces,
+)
 
 
 def _populate_validated_field_to_validation_context(v, param_info, attribute_name):
@@ -423,7 +426,6 @@ def _collect_asset_boundary_entities(params, param_info: ParamsValidationInfo) -
                 half_model_symmetry_plane_center_y=param_info.half_model_symmetry_plane_center_y,
                 quasi_3d_symmetry_planes_center_y=param_info.quasi_3d_symmetry_planes_center_y,
                 farfield_domain_type=param_info.farfield_domain_type,
-                gai_and_beta_mesher=param_info.use_geometry_AI and param_info.is_beta_mesher,
             )
             is False
         ]
@@ -447,12 +449,19 @@ def _collect_asset_boundary_entities(params, param_info: ParamsValidationInfo) -
         ]
     elif farfield_method == "user-defined":
         if param_info.use_geometry_AI and param_info.is_beta_mesher:
-            asset_boundary_entities += [
-                item
-                for item in ghost_entities
-                if item.name == "symmetric"
-                and (param_info.entity_transformation_detected or item.exists(param_info))
-            ]
+            # Skip adding "symmetric" ghost if user geometry has exactly one symmetry plane surface
+            user_sym_surfaces = find_user_symmetry_surfaces(
+                asset_boundary_entities,
+                param_info.global_bounding_box,
+                param_info.planar_face_tolerance,
+            )
+            if len(user_sym_surfaces) != 1:
+                asset_boundary_entities += [
+                    item
+                    for item in ghost_entities
+                    if item.name == "symmetric"
+                    and (param_info.entity_transformation_detected or item.exists(param_info))
+                ]
     elif farfield_method == "wind-tunnel":
         if param_info.will_generate_forced_symmetry_plane():
             asset_boundary_entities += [item for item in ghost_entities if item.name == "symmetric"]

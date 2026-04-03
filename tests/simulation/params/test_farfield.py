@@ -336,10 +336,9 @@ def test_user_defined_farfield_auto_symmetry_plane(surface_mesh):
                 volume_zones=[farfield],
             ),
             models=[
+                # unlike test_user_defined_farfield_symmetry_plane, reference geometry directly
                 Wall(surfaces=[s for s in surface_mesh["*"] if s.name != "preexistingSymmetry"]),
-                SymmetryPlane(
-                    surfaces=farfield.symmetry_plane,
-                ),
+                SymmetryPlane(surfaces=surface_mesh["preexistingSymmetry"]),
             ],
         )
     errors, warnings = _run_validation(
