@@ -2052,3 +2052,189 @@ def test_farfield_enclosed_entities_mixed_direct_and_custom_volume(get_surface_m
         "slidingInterface-ball",
         "slidingInterface-rotor",
     ]
+
+
+def test_face_spacing_single_body(get_surface_mesh):
+    """Per-face spacing overrides produce dense faceSpacings array."""
+    with SI_unit_system:
+        body = AxisymmetricBody(
+            name="axisymm_body",
+            axis=(1, 0, 0),
+            center=(0, 0, 0),
+            profile_curve=[(0, 0), (0, 1), (1, 2), (2, 1), (2, 0)],
+        )
+        param = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-4 * u.m,
+                ),
+                volume_zones=[AutomatedFarfield()],
+                refinements=[
+                    UniformRefinement(
+                        entities=[body],
+                        spacing=0.5 * u.m,
+                        face_spacing={body.segment(1): 0.1 * u.m, body.segment(3): 0.2 * u.m},
+                    ),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+        )
+
+    translated = get_volume_meshing_json(param, get_surface_mesh.mesh_unit)
+    ref = translated["refinement"][0]
+    assert ref["type"] == "Axisymmetric"
+    assert ref["spacing"] == 0.5
+    assert ref["faceSpacings"] == [0.5, 0.1, 0.5, 0.2]
+    assert "_face_spacing" not in ref
+
+
+def test_face_spacing_no_overrides(get_surface_mesh):
+    """Without face_spacing, no faceSpacings key should appear."""
+    with SI_unit_system:
+        body = AxisymmetricBody(
+            name="body",
+            axis=(0, 0, 1),
+            center=(0, 0, 0),
+            profile_curve=[(0, 0), (0, 1), (1, 0)],
+        )
+        param = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-4 * u.m,
+                ),
+                volume_zones=[AutomatedFarfield()],
+                refinements=[
+                    UniformRefinement(entities=[body], spacing=0.5 * u.m),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+        )
+
+    translated = get_volume_meshing_json(param, get_surface_mesh.mesh_unit)
+    ref = translated["refinement"][0]
+    assert "faceSpacings" not in ref
+    assert "_face_spacing" not in ref
+
+
+def test_face_spacing_mixed_entities(get_surface_mesh):
+    """face_spacing with both AxisymmetricBody and Box entities."""
+    with SI_unit_system:
+        body1 = AxisymmetricBody(
+            name="body1",
+            axis=(0, 0, 1),
+            center=(0, 0, 0),
+            profile_curve=[(0, 0), (0, 1), (1, 1), (1, 0)],
+        )
+        body2 = AxisymmetricBody(
+            name="body2",
+            axis=(1, 0, 0),
+            center=(5, 0, 0),
+            profile_curve=[(0, 0), (0, 2), (3, 2), (3, 0)],
+        )
+        box = Box.from_principal_axes(
+            name="mybox",
+            center=(0, 0, 0),
+            size=(1, 1, 1),
+            axes=((1, 0, 0), (0, 1, 0)),
+        )
+        param = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-5 * u.m,
+                ),
+                volume_zones=[AutomatedFarfield()],
+                refinements=[
+                    UniformRefinement(
+                        entities=[body1, box, body2],
+                        spacing=1.0 * u.m,
+                        face_spacing={
+                            body1.segment(0): 0.1 * u.m,
+                            body2.segment(1): 0.2 * u.m,
+                            body2.segment(2): 0.3 * u.m,
+                        },
+                    ),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+        )
+
+    translated = get_volume_meshing_json(param, get_surface_mesh.mesh_unit)
+    refs = translated["refinement"]
+    assert len(refs) == 3
+
+    body1_ref = refs[0]
+    assert body1_ref["faceSpacings"] == [0.1, 1.0, 1.0]
+
+    box_ref = refs[1]
+    assert "faceSpacings" not in box_ref
+    assert "_face_spacing" not in box_ref
+
+    body2_ref = refs[2]
+    assert body2_ref["faceSpacings"] == [1.0, 0.2, 0.3]
+
+
+def test_face_spacing_mixed_units(get_surface_mesh):
+    """face_spacing values in different units are converted to mesh units."""
+    with SI_unit_system:
+        body = AxisymmetricBody(
+            name="body",
+            axis=(1, 0, 0),
+            center=(0, 0, 0),
+            profile_curve=[(0, 0), (0, 1), (1, 1), (1, 0)],
+        )
+        param = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-4 * u.m,
+                ),
+                volume_zones=[AutomatedFarfield()],
+                refinements=[
+                    UniformRefinement(
+                        entities=[body],
+                        spacing=0.5 * u.m,
+                        face_spacing={body.segment(0): 10 * u.cm, body.segment(2): 200 * u.mm},
+                    ),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+        )
+
+    translated = get_volume_meshing_json(param, get_surface_mesh.mesh_unit)
+    ref = translated["refinement"][0]
+    assert ref["spacing"] == 0.5
+    assert ref["faceSpacings"] == pytest.approx([0.1, 0.5, 0.2])
+
+
+def test_face_spacing_round_trip(get_surface_mesh):
+    """Serialize and deserialize SimulationParams with face_spacing; translated output must match."""
+    with SI_unit_system:
+        body = AxisymmetricBody(
+            name="body",
+            axis=(1, 0, 0),
+            center=(0, 0, 0),
+            profile_curve=[(0, 0), (0, 0.5), (2, 1), (4, 0.5), (4, 0)],
+        )
+        param = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-4 * u.m,
+                ),
+                volume_zones=[AutomatedFarfield()],
+                refinements=[
+                    UniformRefinement(
+                        entities=[body],
+                        spacing=0.5 * u.m,
+                        face_spacing={body.segment(1): 0.1 * u.m, body.segment(3): 0.2 * u.m},
+                    ),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+        )
+
+    original_translated = get_volume_meshing_json(param, get_surface_mesh.mesh_unit)
+
+    with SI_unit_system:
+        restored = SimulationParams.model_validate_json(param.model_dump_json())
+    restored_translated = get_volume_meshing_json(restored, get_surface_mesh.mesh_unit)
+
+    assert original_translated["refinement"] == restored_translated["refinement"]

@@ -304,6 +304,17 @@ class Edge(EntityBase):
 
 
 @final
+class AxisymmetricSegment(pd.BaseModel):
+    """Reference to the region bounded by a segment of an AxisymmetricBody profile curve."""
+
+    model_config = pd.ConfigDict(frozen=True)
+    type_name: Literal["AxisymmetricSegment"] = pd.Field("AxisymmetricSegment", frozen=True)
+    entity_id: str = pd.Field(description="The private_attribute_id of the owning entity.")
+    entity_name: str = pd.Field(description="The name of the owning entity.")
+    index: int = pd.Field(ge=0, description="Index along the profile curve (0-based).")
+
+
+@final
 class GenericVolume(_VolumeEntityBase):
     """
     Do not expose.
@@ -671,6 +682,15 @@ class AxisymmetricBody(_VolumeEntityBase):
                 )
 
         return curve
+
+    def segment(self, index: int) -> AxisymmetricSegment:
+        """Return an AxisymmetricSegment reference for the given profile curve segment index."""
+        num_segments = len(self.profile_curve) - 1
+        if index < 0 or index >= num_segments:
+            raise IndexError(f"Segment index {index} out of range [0, {num_segments - 1}]")
+        return AxisymmetricSegment(
+            entity_id=self.private_attribute_id, entity_name=self.name, index=index
+        )
 
     def _apply_transformation(self, matrix: np.ndarray) -> "AxisymmetricBody":
         """Apply 3x4 transformation matrix with uniform scale validation."""
