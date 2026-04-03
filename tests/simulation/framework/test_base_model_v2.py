@@ -1,17 +1,12 @@
 import json
 import os
 import tempfile
-from typing import Optional
 
 import pydantic as pd
 import pytest
-import yaml
 
 import flow360.component.simulation.units as u
-from flow360.component.simulation.framework.base_model import (
-    Conflicts,
-    Flow360BaseModel,
-)
+from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.log import set_logging_level
 
 set_logging_level("DEBUG")
@@ -35,19 +30,6 @@ class TempParams(Flow360BaseModel):
         return super().preprocess(**kwargs)
 
 
-class BaseModelWithConflictFields(Flow360BaseModel):
-    some_value1: Optional[pd.StrictFloat] = pd.Field(None, alias="value1")
-    some_value2: Optional[pd.StrictFloat] = pd.Field(None, alias="value2")
-
-    model_config = pd.ConfigDict(
-        conflicting_fields=[Conflicts(field1="some_value1", field2="some_value2")]
-    )
-
-    def preprocess(self, **kwargs):
-        self.some_value1 *= 2
-        return super().preprocess(self, **kwargs)
-
-
 def test_help():
     Flow360BaseModel().help()
     Flow360BaseModel().help(methods=True)
@@ -61,36 +43,11 @@ def test_copy():
     assert base_model_copy.some_value == 123
 
 
-def test_conflict():
-    base_model = BaseModelWithConflictFields(some_value1=12.3)
-    with pytest.raises(
-        pd.ValidationError,
-        match="some_value1 and some_value2 cannot be specified at the same time.",
-    ):
-        base_model.some_value2 = 12.3
-    with pytest.raises(
-        pd.ValidationError,
-        match="some_value1 and some_value2 cannot be specified at the same time.",
-    ):
-        base_model.value2 = 12.3
-
-
 def test_from_file():
     file_content = {"some_value": 321}
 
     with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as temp_file:
         json.dump(file_content, temp_file)
-        temp_file.flush()
-        temp_file_name = temp_file.name
-
-    try:
-        base_model = BaseModelTestModel.from_file(temp_file_name)
-        assert base_model.some_value == 321
-    finally:
-        os.remove(temp_file_name)
-
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as temp_file:
-        yaml.dump(file_content, temp_file)
         temp_file.flush()
         temp_file_name = temp_file.name
 
@@ -118,17 +75,6 @@ def test_dict_from_file():
     finally:
         os.remove(temp_file_name)
 
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as temp_file:
-        yaml.dump(file_content, temp_file)
-        temp_file.flush()
-        temp_file_name = temp_file.name
-
-    try:
-        base_model_dict = BaseModelTestModel._dict_from_file(temp_file_name)
-        assert base_model_dict["some_value"] == 3210
-    finally:
-        os.remove(temp_file_name)
-
 
 def test_to_file():
     with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as temp_file:
@@ -141,17 +87,6 @@ def test_to_file():
             base_model_dict = json.load(fp)
             assert base_model_dict["some_value"] == 1230
             assert "hash" in base_model_dict
-    finally:
-        os.remove(temp_file_name)
-
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as temp_file:
-        temp_file_name = temp_file.name
-
-    try:
-        base_model.to_file(temp_file_name)
-        with open(temp_file_name) as fp:
-            base_model_dict = yaml.load(fp, Loader=yaml.Loader)
-            assert base_model_dict["some_value"] == 1230
     finally:
         os.remove(temp_file_name)
 

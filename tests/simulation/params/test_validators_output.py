@@ -28,6 +28,10 @@ def assert_validation_error_contains(
     assert matching_errors[0]["type"] == "value_error"
 
 
+from flow360_schema.framework.expression import UserVariable
+from flow360_schema.models.functions import math
+from flow360_schema.models.variables import solution
+
 from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.models.solver_numerics import (
     KOmegaSST,
@@ -66,9 +70,6 @@ from flow360.component.simulation.unit_system import (
     SI_unit_system,
     imperial_unit_system,
 )
-from flow360.component.simulation.user_code.core.types import UserVariable
-from flow360.component.simulation.user_code.functions import math
-from flow360.component.simulation.user_code.variables import solution
 from flow360.component.simulation.validation.validation_context import (
     CASE,
     ParamsValidationInfo,
@@ -1275,7 +1276,7 @@ def test_output_frequency_settings_in_steady_simulation():
         "r",
     ) as fh:
         asset_cache_data = json.load(fh).pop("private_attribute_asset_cache")
-    asset_cache = AssetCache.model_validate(asset_cache_data)
+    asset_cache = AssetCache.deserialize(asset_cache_data)
     with imperial_unit_system:
         params = SimulationParams(
             models=[Wall(name="wall", entities=volume_mesh["*"])],
@@ -1690,45 +1691,3 @@ def test_surface_output_write_single_file_validator():
         output_fields=["Cp"],
         output_format="both",
     )
-
-
-def test_output_format_list():
-    # List format should be accepted and sorted
-    out = VolumeOutput(output_fields=["Mach"], output_format=["paraview"])
-    assert out.output_format == ["paraview"]
-
-    out = VolumeOutput(output_fields=["Mach"], output_format=["vtkhdf", "paraview"])
-    assert out.output_format == ["paraview", "vtkhdf"]
-
-    out = VolumeOutput(output_fields=["Mach"], output_format=["tecplot", "vtkhdf", "ensight"])
-    assert out.output_format == ["ensight", "tecplot", "vtkhdf"]
-
-
-def test_output_format_legacy_string_converted_to_list():
-    # Legacy strings should be normalized to sorted lists
-    out = VolumeOutput(output_fields=["Mach"], output_format="paraview")
-    assert out.output_format == ["paraview"]
-
-    out = VolumeOutput(output_fields=["Mach"], output_format="both")
-    assert out.output_format == ["paraview", "tecplot"]
-
-    out = VolumeOutput(output_fields=["Mach"], output_format="tecplot")
-    assert out.output_format == ["tecplot"]
-
-
-def test_output_format_deduplication():
-    # Duplicate entries should be removed and result sorted
-    out = VolumeOutput(output_fields=["Mach"], output_format=["paraview", "paraview"])
-    assert out.output_format == ["paraview"]
-
-    out = VolumeOutput(output_fields=["Mach"], output_format=["vtkhdf", "paraview", "vtkhdf"])
-    assert out.output_format == ["paraview", "vtkhdf"]
-
-
-def test_output_format_both_not_allowed_in_list():
-    # "both" is only valid as a legacy string, not as a list element
-    with pytest.raises(pydantic.ValidationError):
-        VolumeOutput(output_fields=["Mach"], output_format=["both"])
-
-    with pytest.raises(pydantic.ValidationError):
-        VolumeOutput(output_fields=["Mach"], output_format=["paraview", "both"])

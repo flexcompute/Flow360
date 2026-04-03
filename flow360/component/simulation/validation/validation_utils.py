@@ -5,6 +5,7 @@ validation utility functions
 from functools import wraps
 from typing import Any, Tuple, Union, get_args
 
+from flow360_schema.framework.expression import Expression, UserVariable
 from pydantic import ValidationError
 from pydantic_core import InitErrorDetails
 
@@ -16,7 +17,6 @@ from flow360.component.simulation.primitives import (
     _SurfaceEntityBase,
     _VolumeEntityBase,
 )
-from flow360.component.simulation.user_code.core.types import Expression, UserVariable
 
 
 def _validator_append_instance_name(func):

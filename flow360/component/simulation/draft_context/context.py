@@ -7,14 +7,12 @@ from contextvars import ContextVar, Token
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, List, Optional, Union, get_args
 
+from flow360_schema.models.asset_cache import CoordinateSystemStatus, MirrorStatus
+
 from flow360.component.simulation.draft_context.coordinate_system_manager import (
     CoordinateSystemManager,
-    CoordinateSystemStatus,
 )
-from flow360.component.simulation.draft_context.mirror import (
-    MirrorManager,
-    MirrorStatus,
-)
+from flow360.component.simulation.draft_context.mirror import MirrorManager
 from flow360.component.simulation.entity_info import (
     DraftEntityTypes,
     EntityInfoModel,

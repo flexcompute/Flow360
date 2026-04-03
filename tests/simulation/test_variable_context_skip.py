@@ -1,7 +1,8 @@
-from flow360.component.simulation.services import initialize_variable_space
-from flow360.component.simulation.user_code.core.types import (
+from flow360_schema.framework.expression import (
     get_referenced_expressions_and_user_variables,
 )
+
+from flow360.component.simulation.services import initialize_variable_space
 
 
 def test_skip_variable_context_in_reference_collection():

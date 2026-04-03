@@ -1,124 +1,19 @@
 """pre processing and post processing utilities for simulation parameters."""
 
-from typing import Annotated, List, Optional, Union
+# pylint: disable=no-member
 
-import pydantic as pd
+from typing import Union
 
-from flow360.component.simulation.draft_context.coordinate_system_manager import (
-    CoordinateSystemStatus,
-)
-from flow360.component.simulation.draft_context.mirror import MirrorStatus
-from flow360.component.simulation.entity_info import (
-    GeometryEntityInfo,
-    SurfaceMeshEntityInfo,
-    VolumeMeshEntityInfo,
-)
+from flow360_schema.models.asset_cache import AssetCache
+
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityBase, EntityList
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
-from flow360.component.simulation.framework.entity_selector import EntitySelector
 from flow360.component.simulation.framework.unique_list import UniqueStringList
 from flow360.component.simulation.primitives import (
-    ImportedSurface,
     _SurfaceEntityBase,
     _VolumeEntityBase,
 )
-from flow360.component.simulation.unit_system import LengthType
-from flow360.component.simulation.user_code.core.types import (
-    VariableContextInfo,
-    update_global_context,
-)
-from flow360.component.simulation.utils import model_attribute_unlock
-
-VariableContextList = Annotated[
-    List[VariableContextInfo],
-    pd.AfterValidator(update_global_context),
-]
-
-
-class AssetCache(Flow360BaseModel):
-    """
-    Cached info from the project asset.
-    """
-
-    # pylint: disable=no-member
-    project_length_unit: Optional[LengthType.Positive] = pd.Field(None, frozen=True)
-    project_entity_info: Optional[
-        Union[GeometryEntityInfo, VolumeMeshEntityInfo, SurfaceMeshEntityInfo]
-    ] = pd.Field(None, frozen=True, discriminator="type_name")
-    use_inhouse_mesher: bool = pd.Field(
-        False,
-        description="Flag whether user requested the use of inhouse surface and volume mesher.",
-    )
-    use_geometry_AI: bool = pd.Field(
-        False, description="Flag whether user requested the use of GAI."
-    )
-    variable_context: Optional[VariableContextList] = pd.Field(
-        None,
-        description="List of user variables that are used in all the `Expression` instances.",
-    )
-    used_selectors: Optional[List[EntitySelector]] = pd.Field(
-        None,
-        description="Collected entity selectors for token reference.",
-    )
-    imported_surfaces: Optional[List[ImportedSurface]] = pd.Field(
-        None, description="List of imported surface meshes for post-processing."
-    )
-    mirror_status: Optional[MirrorStatus] = pd.Field(
-        None, description="Status of mirroring operations that are used in the simulation."
-    )
-    coordinate_system_status: Optional[CoordinateSystemStatus] = pd.Field(
-        None, description="Status of coordinate systems used in the simulation."
-    )
-
-    @property
-    def boundaries(self):
-        """
-        Get all boundaries (not just names) from the cached entity info.
-        """
-        if self.project_entity_info is None:
-            return None
-        return self.project_entity_info.get_boundaries()
-
-    @pd.model_validator(mode="after")
-    def _validate_mirror_status_compatible_with_geometry(self):
-        """Raise if mirror_status has mirroring but geometry doesn't support face-to-body-group mapping."""
-        if self.mirror_status is None:
-            return self
-        if not self.mirror_status.mirrored_geometry_body_groups:
-            return self
-        if not isinstance(self.project_entity_info, GeometryEntityInfo):
-            return self
-
-        try:
-            self.project_entity_info.get_face_group_to_body_group_id_map()
-        except ValueError as exc:
-            raise ValueError(
-                "Mirroring is requested but the geometry's face groupings span across body groups. "
-                f"Mirroring cannot be performed: {exc}"
-            ) from exc
-        return self
-
-    def preprocess(
-        self,
-        *,
-        params=None,
-        exclude: List[str] = None,
-        required_by: List[str] = None,
-        flow360_unit_system=None,
-    ) -> Flow360BaseModel:
-        # Exclude variable_context and selectors from preprocessing.
-        # NOTE: coordinate_system_status is NOT excluded, which means it will be
-        # recursively preprocessed. This is CRITICAL because CoordinateSystem objects
-        # contain LengthType fields (origin, translation) that must be nondimensionalized
-        # before transformation matrices are computed in the translator.
-        exclude_asset_cache = exclude + ["variable_context", "selectors"]
-        return super().preprocess(
-            params=params,
-            exclude=exclude_asset_cache,
-            required_by=required_by,
-            flow360_unit_system=flow360_unit_system,
-        )
 
 
 def find_instances(obj, target_type):
@@ -255,10 +150,12 @@ def _update_zone_boundaries_with_metadata(
         for entity in view._entities
     ]:
         if volume_entity.name in volume_mesh_meta_data["zones"]:
-            with model_attribute_unlock(volume_entity, "private_attribute_zone_boundary_names"):
-                volume_entity.private_attribute_zone_boundary_names = UniqueStringList(
+            volume_entity._force_set_attr(  # pylint:disable=protected-access
+                "private_attribute_zone_boundary_names",
+                UniqueStringList(
                     items=volume_mesh_meta_data["zones"][volume_entity.name]["boundaryNames"]
-                )
+                ),
+            )
 
 
 def _set_boundary_full_name_with_zone_name(
@@ -275,8 +172,9 @@ def _set_boundary_full_name_with_zone_name(
                 # Note: We need to figure out how to handle this. Otherwise this may result in wrong
                 # Note: zone name getting prepended.
                 continue
-            with model_attribute_unlock(surface, "private_attribute_full_name"):
-                surface.private_attribute_full_name = f"{give_zone_name}/{surface.name}"
+            surface._force_set_attr(  # pylint:disable=protected-access
+                "private_attribute_full_name", f"{give_zone_name}/{surface.name}"
+            )
 
 
 def serialize_model_obj_to_id(model_obj: Flow360BaseModel) -> str:
