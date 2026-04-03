@@ -581,10 +581,11 @@ def translate_setting_and_apply_to_all_entities(
                                     " when lump_list_of_entities is True"
                                 )
                             if use_sub_item_as_key is True:
-                                # pylint: disable=fixme
-                                # TODO: Make sure when use_sub_item_as_key is True
-                                # TODO: the entity has private_attribute_sub_components
-                                key_names = entity.private_attribute_sub_components
+                                key_names = getattr(
+                                    entity, "private_attribute_sub_components", None
+                                )
+                                if not key_names:
+                                    key_names = [_get_key_name(entity)]
                             else:
                                 key_names = [
                                     (
