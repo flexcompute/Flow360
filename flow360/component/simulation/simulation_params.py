@@ -132,6 +132,7 @@ from flow360.component.simulation.validation.validation_simulation_params import
     _check_unsteadiness_to_use_hybrid_model,
     _check_valid_models_for_liquid,
     _populate_validated_field_to_validation_context,
+    _warn_air_deprecation,
 )
 from flow360.component.simulation.validation.validation_utils import has_mirroring_usage
 from flow360.error_messages import (
@@ -624,6 +625,12 @@ class SimulationParams(_ParamModelBase):
     def check_krylov_solver_restrictions(self):
         """Krylov solver is not compatible with limiters or unsteady time stepping."""
         return _check_krylov_solver_restrictions(self)
+
+    @contextual_model_validator(mode="after")
+    @context_validator(context=CASE)
+    def warn_air_deprecation(self):
+        """Warn that Air class may be deprecated in favor of Gas."""
+        return _warn_air_deprecation(self)
 
     @contextual_model_validator(mode="after")
     @context_validator(context=CASE)

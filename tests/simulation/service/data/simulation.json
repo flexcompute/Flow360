@@ -52,7 +52,11 @@
                     }
                 },
                 "name": "air",
-                "type": "air"
+                "type": "air",
+                "gas_constant": {
+                    "value": 287.0529,
+                    "units": "m**2/(K*s**2)"
+                }
             },
             "navier_stokes_solver": {
                 "CFL_multiplier": 1,
