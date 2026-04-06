@@ -138,7 +138,18 @@ jobs:
 
             # Attempt cherry-pick
             if ! git cherry-pick ${{ steps.get_commit.outputs.sha }} --empty=keep; then
-              echo "Cherry-pick encountered conflicts for $base_branch, attempting to resolve..."
+              echo "Cherry-pick failed for $base_branch, checking for merge conflicts..."
+              CONFLICT_FILES=$(git diff --name-only --diff-filter=U)
+
+              if [[ -z "$CONFLICT_FILES" ]]; then
+                echo "::error::Cherry-pick failed for $base_branch without merge conflicts."
+                git status --short
+                exit 1
+              fi
+
+              echo "Cherry-pick encountered conflicts for $base_branch:"
+              echo "$CONFLICT_FILES"
+              had_conflicts="true"
               git add -A
               # Check if there are actual changes staged after conflict resolution attempt
               if git diff --cached --quiet; then
@@ -147,15 +158,7 @@ jobs:
                   continue # Skip PR creation if no changes after resolution
               fi
               git cherry-pick --continue
-
-              if [ $? -eq 0 ]; then
-                echo "Successfully resolved conflicts for $base_branch"
-                had_conflicts="true"
-              else
-                echo "Failed to resolve conflicts for $base_branch"
-                git cherry-pick --abort
-                continue
-              fi
+              echo "Continuing with conflict hotfix PR for $base_branch"
             else
               echo "Cherry-pick successful for $base_branch"
             fi
@@ -250,14 +253,19 @@ jobs:
             if git push origin "$new_branch"; then
               echo "Successfully pushed branch $new_branch"
 
-              PR_BODY="Hotfix of PR #${PR_NUMBER} (${PR_URL}) to the \`${base_branch}\` branch.
-              Hey @${PR_AUTHOR}, please review this hotfix PR created from your original PR."
+              PR_BODY=$(printf '%s\n' \
+                "Hotfix of PR #${PR_NUMBER} (${PR_URL}) to the \`${base_branch}\` branch." \
+                "Hey @${PR_AUTHOR}, please review this hotfix PR created from your original PR.")
 
               # Add conflict warning if needed
               if [[ "$had_conflicts" == "true" ]]; then
-                PR_BODY="${PR_BODY}
-
-          ### ⚠️ **Note:** This PR had conflicts with the base branch and was resolved automatically. Please review the changes carefully."
+                PR_BODY=$(printf '%s\n\n%s\n\n%s\n%s\n\n%s\n```\n%s\n```' \
+                  "$PR_BODY" \
+                  "### Manual conflict resolution required" \
+                  "This hotfix PR contains cherry-pick conflicts against \`${base_branch}\`." \
+                  "Resolve the conflict markers in this branch and push a follow-up commit before merging." \
+                  "**Conflicted files:**" \
+                  "$CONFLICT_FILES")
               fi
 
               # Create PR using gh cli
