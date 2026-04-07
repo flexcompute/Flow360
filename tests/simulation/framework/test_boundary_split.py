@@ -140,17 +140,19 @@ class TestBoundaryNameLookupTable:
             "zones": {
                 "fluid": {
                     "boundaryNames": [
-                        "fluid/panel_left",
-                        "fluid/panel_right",
+                        "fluid/panel left",
                     ],
                 },
             }
         }
         lookup_table = BoundaryNameLookupTable(mesh_metadata)
 
-        assert lookup_table.get_split_info("panel left") == []
+        split_infos = lookup_table.get_split_info("panel left")
+        assert len(split_infos) == 1
+        assert split_infos[0].full_name == "fluid/panel left"
+
         assert lookup_table.get_split_info("panel  left") == []
-        assert lookup_table.get_split_info("fluid/panel left") == []
+        assert lookup_table.get_split_info("fluid/panel  left") == []
 
     def test_empty_metadata(self):
         """Test with empty metadata."""
