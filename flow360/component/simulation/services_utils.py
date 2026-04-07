@@ -3,7 +3,7 @@
 from typing import TYPE_CHECKING, Any
 
 from flow360.component.simulation.framework.entity_expansion_utils import (
-    get_registry_from_params,
+    get_registry_from_asset_cache,
 )
 from flow360.component.simulation.framework.entity_selector import _process_selectors
 from flow360.component.simulation.framework.entity_utils import (
@@ -74,7 +74,7 @@ def strip_selector_matches_and_broken_entities_inplace(params) -> Any:
         return params
 
     selector_cache: dict = {}
-    registry = get_registry_from_params(params)
+    registry = get_registry_from_asset_cache(asset_cache)
 
     valid_mirrored_registry_keys = {
         (entity.private_attribute_entity_type_name, entity.private_attribute_id)
