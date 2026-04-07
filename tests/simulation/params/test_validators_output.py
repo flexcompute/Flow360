@@ -522,6 +522,23 @@ def test_duplicate_surface_usage(mock_validation_context):
         )
 
 
+def test_surface_output_name_invalid_filename():
+    """SurfaceOutput.name must be a valid filename (no slashes, null bytes, etc.)."""
+    with pytest.raises(pydantic.ValidationError, match="invalid characters"):
+        SurfaceOutput(
+            name="foo/bar",
+            entities=Surface(name="fluid/body"),
+            output_fields=["Cp"],
+        )
+
+    with pytest.raises(pydantic.ValidationError, match="cannot be empty"):
+        SurfaceOutput(
+            name="",
+            entities=Surface(name="fluid/body"),
+            output_fields=["Cp"],
+        )
+
+
 def test_check_moving_statistic_applicability_steady_valid():
     """Test moving_statistic with steady simulation - valid case."""
     wall_1 = Wall(entities=Surface(name="fluid/wing"))
