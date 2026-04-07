@@ -143,98 +143,100 @@
     "runControl": {
         "externalProcessMonitorOutput": false
     },
-    "surfaceOutput": {
-        "animationFrequency": -1,
-        "animationFrequencyOffset": 0,
-        "animationFrequencyTimeAverage": -1,
-        "animationFrequencyTimeAverageOffset": 0,
-        "outputFields": [],
-        "outputFormat": "paraview",
-        "startAverageIntegrationStep": -1,
-        "surfaces": {
-            "farfield/BottomCap": {
-                "outputFields": [
-                    "Cf",
-                    "Cp",
-                    "primitiveVars",
-                    "yPlus"
-                ]
+    "surfaceOutput": [
+        {
+            "animationFrequency": -1,
+            "animationFrequencyOffset": 0,
+            "animationFrequencyTimeAverage": -1,
+            "animationFrequencyTimeAverageOffset": 0,
+            "outputFields": [],
+            "outputFormat": "paraview",
+            "startAverageIntegrationStep": -1,
+            "surfaces": {
+                "farfield/BottomCap": {
+                    "outputFields": [
+                        "Cf",
+                        "Cp",
+                        "primitiveVars",
+                        "yPlus"
+                    ]
+                },
+                "farfield/BottomCap_<mirror>": {
+                    "outputFields": [
+                        "Cf",
+                        "Cp",
+                        "primitiveVars",
+                        "yPlus"
+                    ]
+                },
+                "farfield/Curved": {
+                    "outputFields": [
+                        "Cf",
+                        "Cp",
+                        "primitiveVars",
+                        "yPlus"
+                    ]
+                },
+                "farfield/Curved_<mirror>": {
+                    "outputFields": [
+                        "Cf",
+                        "Cp",
+                        "primitiveVars",
+                        "yPlus"
+                    ]
+                },
+                "farfield/TopCap": {
+                    "outputFields": [
+                        "Cf",
+                        "Cp",
+                        "primitiveVars",
+                        "yPlus"
+                    ]
+                },
+                "farfield/TopCap_<mirror>": {
+                    "outputFields": [
+                        "Cf",
+                        "Cp",
+                        "primitiveVars",
+                        "yPlus"
+                    ]
+                },
+                "farfield/windTunnelCentralBelt": {
+                    "outputFields": [
+                        "Cf",
+                        "Cp",
+                        "primitiveVars",
+                        "yPlus"
+                    ]
+                },
+                "farfield/windTunnelFloor": {
+                    "outputFields": [
+                        "Cf",
+                        "Cp",
+                        "primitiveVars",
+                        "yPlus"
+                    ]
+                },
+                "farfield/windTunnelFrontWheelBelt": {
+                    "outputFields": [
+                        "Cf",
+                        "Cp",
+                        "primitiveVars",
+                        "yPlus"
+                    ]
+                },
+                "farfield/windTunnelRearWheelBelt": {
+                    "outputFields": [
+                        "Cf",
+                        "Cp",
+                        "primitiveVars",
+                        "yPlus"
+                    ]
+                }
             },
-            "farfield/BottomCap_<mirror>": {
-                "outputFields": [
-                    "Cf",
-                    "Cp",
-                    "primitiveVars",
-                    "yPlus"
-                ]
-            },
-            "farfield/Curved": {
-                "outputFields": [
-                    "Cf",
-                    "Cp",
-                    "primitiveVars",
-                    "yPlus"
-                ]
-            },
-            "farfield/Curved_<mirror>": {
-                "outputFields": [
-                    "Cf",
-                    "Cp",
-                    "primitiveVars",
-                    "yPlus"
-                ]
-            },
-            "farfield/TopCap": {
-                "outputFields": [
-                    "Cf",
-                    "Cp",
-                    "primitiveVars",
-                    "yPlus"
-                ]
-            },
-            "farfield/TopCap_<mirror>": {
-                "outputFields": [
-                    "Cf",
-                    "Cp",
-                    "primitiveVars",
-                    "yPlus"
-                ]
-            },
-            "farfield/windTunnelCentralBelt": {
-                "outputFields": [
-                    "Cf",
-                    "Cp",
-                    "primitiveVars",
-                    "yPlus"
-                ]
-            },
-            "farfield/windTunnelFloor": {
-                "outputFields": [
-                    "Cf",
-                    "Cp",
-                    "primitiveVars",
-                    "yPlus"
-                ]
-            },
-            "farfield/windTunnelFrontWheelBelt": {
-                "outputFields": [
-                    "Cf",
-                    "Cp",
-                    "primitiveVars",
-                    "yPlus"
-                ]
-            },
-            "farfield/windTunnelRearWheelBelt": {
-                "outputFields": [
-                    "Cf",
-                    "Cp",
-                    "primitiveVars",
-                    "yPlus"
-                ]
-            }
-        },
-        "writeSingleFile": false
-    },
+            "writeSingleFile": false
+        }
+    ],
     "thermallyPerfectGasModel": {
         "temperatureRanges": [
             {

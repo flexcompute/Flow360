@@ -132,26 +132,28 @@
         "externalProcessMonitorOutput": true,
         "monitorProcessorHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
-    "surfaceOutput": {
-        "animationFrequency": -1,
-        "animationFrequencyOffset": 0,
-        "animationFrequencyTimeAverage": -1,
-        "animationFrequencyTimeAverageOffset": 0,
-        "outputFields": [],
-        "outputFormat": "paraview",
-        "startAverageIntegrationStep": -1,
-        "surfaces": {
-            "fluid/body": {
-                "outputFields": [
-                    "cos_deg_res",
-                    "exp_res",
-                    "sin_float_res",
-                    "tan_rad_res"
-                ]
-            }
-        },
-        "writeSingleFile": false
-    },
+    "surfaceOutput": [
+        {
+            "animationFrequency": -1,
+            "animationFrequencyOffset": 0,
+            "animationFrequencyTimeAverage": -1,
+            "animationFrequencyTimeAverageOffset": 0,
+            "outputFields": [],
+            "outputFormat": "paraview",
+            "startAverageIntegrationStep": -1,
+            "surfaces": {
+                "fluid/body": {
+                    "outputFields": [
+                        "cos_deg_res",
+                        "exp_res",
+                        "sin_float_res",
+                        "tan_rad_res"
+                    ]
+                }
+            },
+            "writeSingleFile": false
+        }
+    ],
     "timeStepping": {
         "CFL": {
             "convergenceLimitingFactor": 1.0,

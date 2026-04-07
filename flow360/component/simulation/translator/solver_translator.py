@@ -1175,10 +1175,9 @@ def translate_output(input_params: SimulationParams, translated: dict):
     for output_class, output_key in surface_output_configs:
         if has_instance_in_list(outputs, output_class):
             configs = translate_surface_output(outputs, output_class, translated)
-            configs = [add_unused_output_settings_for_comparison(c) for c in configs]
-            # Single instance: emit a plain object for backward compatibility with the solver.
-            # Multiple instances: emit an array.
-            translated[output_key] = configs[0] if len(configs) == 1 else configs
+            translated[output_key] = [
+                add_unused_output_settings_for_comparison(c) for c in configs
+            ]
 
     ##:: Step3: Get translated["sliceOutput"]
     slice_output_configs = [

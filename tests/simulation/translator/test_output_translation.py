@@ -396,8 +396,8 @@ def test_multiple_surface_outputs_same_surface_different_freq():
     assert set(fine["surfaces"]["propeller"]["outputFields"]) == {"Cp", "primitiveVars"}
 
 
-def test_single_surface_output_backward_compat():
-    """Single SurfaceOutput should produce a single object (not an array) for backward compat."""
+def test_single_surface_output_emits_array():
+    """Even a single SurfaceOutput should produce an array (solver handles both formats)."""
     with SI_unit_system:
         param = SimulationParams(
             outputs=[
@@ -411,9 +411,10 @@ def test_single_surface_output_backward_compat():
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
 
-    assert isinstance(translated["surfaceOutput"], dict)
-    assert "name" not in translated["surfaceOutput"]
-    assert "wing" in translated["surfaceOutput"]["surfaces"]
+    assert isinstance(translated["surfaceOutput"], list)
+    assert len(translated["surfaceOutput"]) == 1
+    assert "name" not in translated["surfaceOutput"][0]
+    assert "wing" in translated["surfaceOutput"][0]["surfaces"]
 
 
 @pytest.fixture()
@@ -1763,7 +1764,7 @@ def test_dimensioned_output_fields_translation(vel_in_km_per_hr):
     ]
 
     assert set(solver_json["volumeOutput"]["outputFields"]) == set(expected_fields_v)
-    assert set(solver_json["surfaceOutput"]["surfaces"]["surface11"]["outputFields"]) == set(
+    assert set(solver_json["surfaceOutput"][0]["surfaces"]["surface11"]["outputFields"]) == set(
         expected_fields_s
     )
 

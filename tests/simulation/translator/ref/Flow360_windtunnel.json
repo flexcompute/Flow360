@@ -99,50 +99,52 @@
     "runControl": {
         "externalProcessMonitorOutput": false
     },
-    "surfaceOutput": {
-        "animationFrequency": -1,
-        "animationFrequencyOffset": 0,
-        "animationFrequencyTimeAverage": -1,
-        "animationFrequencyTimeAverageOffset": 0,
-        "outputFields": [],
-        "outputFormat": "paraview",
-        "startAverageIntegrationStep": -1,
-        "surfaces": {
-            "windTunnelCentralBelt": {
-                "outputFields": [
-                    "Cf",
-                    "Cp",
-                    "primitiveVars",
-                    "yPlus"
-                ]
+    "surfaceOutput": [
+        {
+            "animationFrequency": -1,
+            "animationFrequencyOffset": 0,
+            "animationFrequencyTimeAverage": -1,
+            "animationFrequencyTimeAverageOffset": 0,
+            "outputFields": [],
+            "outputFormat": "paraview",
+            "startAverageIntegrationStep": -1,
+            "surfaces": {
+                "windTunnelCentralBelt": {
+                    "outputFields": [
+                        "Cf",
+                        "Cp",
+                        "primitiveVars",
+                        "yPlus"
+                    ]
+                },
+                "windTunnelFloor": {
+                    "outputFields": [
+                        "Cf",
+                        "Cp",
+                        "primitiveVars",
+                        "yPlus"
+                    ]
+                },
+                "windTunnelFrontWheelBelt": {
+                    "outputFields": [
+                        "Cf",
+                        "Cp",
+                        "primitiveVars",
+                        "yPlus"
+                    ]
+                },
+                "windTunnelRearWheelBelt": {
+                    "outputFields": [
+                        "Cf",
+                        "Cp",
+                        "primitiveVars",
+                        "yPlus"
+                    ]
+                }
             },
-            "windTunnelFloor": {
-                "outputFields": [
-                    "Cf",
-                    "Cp",
-                    "primitiveVars",
-                    "yPlus"
-                ]
-            },
-            "windTunnelFrontWheelBelt": {
-                "outputFields": [
-                    "Cf",
-                    "Cp",
-                    "primitiveVars",
-                    "yPlus"
-                ]
-            },
-            "windTunnelRearWheelBelt": {
-                "outputFields": [
-                    "Cf",
-                    "Cp",
-                    "primitiveVars",
-                    "yPlus"
-                ]
-            }
-        },
-        "writeSingleFile": false
-    },
+            "writeSingleFile": false
+        }
+    ],
     "thermallyPerfectGasModel": {
         "temperatureRanges": [
             {

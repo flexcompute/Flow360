@@ -79,73 +79,75 @@
     "runControl": {
         "externalProcessMonitorOutput": false
     },
-    "surfaceOutput": {
-        "animationFrequency": -1,
-        "animationFrequencyOffset": 0,
-        "animationFrequencyTimeAverage": -1,
-        "animationFrequencyTimeAverageOffset": 0,
-        "outputFields": [],
-        "outputFormat": "paraview",
-        "startAverageIntegrationStep": -1,
-        "surfaces": {
-            "blk-1/outflow": {
-                "outputFields": [
-                    "Cf",
-                    "CfVec",
-                    "Cp",
-                    "Mach",
-                    "primitiveVars",
-                    "wallDistance",
-                    "yPlus"
-                ]
+    "surfaceOutput": [
+        {
+            "animationFrequency": -1,
+            "animationFrequencyOffset": 0,
+            "animationFrequencyTimeAverage": -1,
+            "animationFrequencyTimeAverageOffset": 0,
+            "outputFields": [],
+            "outputFormat": "paraview",
+            "startAverageIntegrationStep": -1,
+            "surfaces": {
+                "blk-1/outflow": {
+                    "outputFields": [
+                        "Cf",
+                        "CfVec",
+                        "Cp",
+                        "Mach",
+                        "primitiveVars",
+                        "wallDistance",
+                        "yPlus"
+                    ]
+                },
+                "blk-1/slip": {
+                    "outputFields": [
+                        "Cf",
+                        "CfVec",
+                        "Cp",
+                        "Mach",
+                        "primitiveVars",
+                        "wallDistance",
+                        "yPlus"
+                    ]
+                },
+                "blk-2/slip": {
+                    "outputFields": [
+                        "Cf",
+                        "CfVec",
+                        "Cp",
+                        "Mach",
+                        "primitiveVars",
+                        "wallDistance",
+                        "yPlus"
+                    ]
+                },
+                "blk-3/inflow": {
+                    "outputFields": [
+                        "Cf",
+                        "CfVec",
+                        "Cp",
+                        "Mach",
+                        "primitiveVars",
+                        "wallDistance",
+                        "yPlus"
+                    ]
+                },
+                "blk-3/slip": {
+                    "outputFields": [
+                        "Cf",
+                        "CfVec",
+                        "Cp",
+                        "Mach",
+                        "primitiveVars",
+                        "wallDistance",
+                        "yPlus"
+                    ]
+                }
             },
-            "blk-1/slip": {
-                "outputFields": [
-                    "Cf",
-                    "CfVec",
-                    "Cp",
-                    "Mach",
-                    "primitiveVars",
-                    "wallDistance",
-                    "yPlus"
-                ]
-            },
-            "blk-2/slip": {
-                "outputFields": [
-                    "Cf",
-                    "CfVec",
-                    "Cp",
-                    "Mach",
-                    "primitiveVars",
-                    "wallDistance",
-                    "yPlus"
-                ]
-            },
-            "blk-3/inflow": {
-                "outputFields": [
-                    "Cf",
-                    "CfVec",
-                    "Cp",
-                    "Mach",
-                    "primitiveVars",
-                    "wallDistance",
-                    "yPlus"
-                ]
-            },
-            "blk-3/slip": {
-                "outputFields": [
-                    "Cf",
-                    "CfVec",
-                    "Cp",
-                    "Mach",
-                    "primitiveVars",
-                    "wallDistance",
-                    "yPlus"
-                ]
-            }
-        },
-        "writeSingleFile": false
-    },
+            "writeSingleFile": false
+        }
+    ],
     "thermallyPerfectGasModel": {
         "temperatureRanges": [
             {
