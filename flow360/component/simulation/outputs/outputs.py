@@ -2,7 +2,8 @@
 Caveats:
 1. Check if we support non-average and average output specified at the same time in solver.
 (Yes but they share the same output_fields)
-2. We do not support multiple output frequencies/file format for the same type of output.
+2. Multiple SurfaceOutput instances with different frequencies/formats are supported.
+   When the same surface appears in multiple outputs, each output must have a unique `name`.
 """
 
 # pylint: disable=too-many-lines
@@ -83,6 +84,13 @@ from flow360.component.simulation.validation.validation_utils import (
 )
 from flow360.component.types import Axis
 from flow360.log import log
+
+# Default names that indicate the user did not explicitly set a name on a SurfaceOutput.
+# Used by validation (to require unique names when surfaces overlap) and by the translator
+# (to omit the name field from JSON when it's a default).
+SURFACE_OUTPUT_DEFAULT_NAMES = frozenset(
+    {"Surface output", "Time average surface output", "", None}
+)
 
 # Invalid characters for Linux filenames: / is path separator, \0 is null terminator
 _INVALID_FILENAME_CHARS_PATTERN = re.compile(r"[/\0]")
@@ -442,13 +450,35 @@ class SurfaceOutput(_AnimationAndFileFormatSettings, _OutputBase):
       ...     output_fields=["vorticity", "T"],
       ... )
 
+    - Define multiple :class:`SurfaceOutput` instances on the same surface with different
+      frequencies and formats. Each must have a unique :code:`name`.
+
+      >>> fl.SurfaceOutput(
+      ...     name="propeller_coarse",
+      ...     entities=[volume_mesh["propeller"]],
+      ...     output_format="tecplot",
+      ...     output_fields=["Cp"],
+      ...     frequency=100,
+      ... )
+      >>> fl.SurfaceOutput(
+      ...     name="propeller_fine",
+      ...     entities=[volume_mesh["propeller"]],
+      ...     output_format="paraview",
+      ...     output_fields=["Cp", "primitiveVars"],
+      ...     frequency=10,
+      ... )
+
     ====
     """
 
     # pylint: disable=fixme
     # TODO: entities is None --> use all surfaces. This is not implemented yet.
 
-    name: Optional[str] = pd.Field("Surface output", description="Name of the `SurfaceOutput`.")
+    name: Optional[str] = pd.Field(
+        "Surface output",
+        description="Name of the `SurfaceOutput`. Must be unique across all `SurfaceOutput` "
+        "instances that share the same surface entity.",
+    )
     entities: EntityList[  # pylint: disable=duplicate-code
         Surface,
         MirroredSurface,
@@ -464,9 +494,7 @@ class SurfaceOutput(_AnimationAndFileFormatSettings, _OutputBase):
     write_single_file: bool = pd.Field(
         default=False,
         description="Enable writing all surface outputs into a single file instead of one file per surface. "
-        "Supported by Tecplot, Paraview, and VTK-HDF output formats. "
-        "Will choose the value of the last instance of this option of the same output type "
-        "(:class:`SurfaceOutput` or :class:`TimeAverageSurfaceOutput`) in the output list.",
+        "Supported by Tecplot, Paraview, and VTK-HDF output formats.",
     )
     output_fields: UniqueItemList[Union[SurfaceFieldNames, str, UserVariable]] = pd.Field(
         description="List of output variables. Including :ref:`universal output variables<UniversalVariablesV2>`,"
@@ -517,7 +545,9 @@ class TimeAverageSurfaceOutput(SurfaceOutput):
     """
 
     name: Optional[str] = pd.Field(
-        "Time average surface output", description="Name of the `TimeAverageSurfaceOutput`."
+        "Time average surface output",
+        description="Name of the `TimeAverageSurfaceOutput`. Must be unique across all "
+        "`TimeAverageSurfaceOutput` instances that share the same surface entity.",
     )
 
     start_step: Union[pd.NonNegativeInt, Literal[-1]] = pd.Field(
