@@ -125,6 +125,35 @@ class TestBoundaryNameLookupTable:
         assert len(split_infos) == 1
         assert split_infos[0].full_name == "fluid/wing"
 
+    def test_lookup_trims_leading_and_trailing_whitespace(self, single_zone_mesh_metadata):
+        """Test that leading/trailing whitespace is ignored during lookup."""
+        lookup_table = BoundaryNameLookupTable(single_zone_mesh_metadata)
+
+        for candidate in (" wing", "wing ", " wing ", " fluid/wing ", "\twing\n"):
+            split_infos = lookup_table.get_split_info(candidate)
+            assert len(split_infos) == 1
+            assert split_infos[0].full_name == "fluid/wing"
+
+    def test_lookup_does_not_normalize_internal_whitespace(self):
+        """Test that internal whitespace differences do not match."""
+        mesh_metadata = {
+            "zones": {
+                "fluid": {
+                    "boundaryNames": [
+                        "fluid/panel left",
+                    ],
+                },
+            }
+        }
+        lookup_table = BoundaryNameLookupTable(mesh_metadata)
+
+        split_infos = lookup_table.get_split_info("panel left")
+        assert len(split_infos) == 1
+        assert split_infos[0].full_name == "fluid/panel left"
+
+        assert lookup_table.get_split_info("panel  left") == []
+        assert lookup_table.get_split_info("fluid/panel  left") == []
+
     def test_empty_metadata(self):
         """Test with empty metadata."""
         lookup_table = BoundaryNameLookupTable({})
