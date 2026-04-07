@@ -170,10 +170,7 @@ def test_volume_output(volume_output_config, avg_volume_output_config):
                 "betMetrics",
                 "primitiveVars",
                 "qcriterion",
-<<<<<<< HEAD
                 "velocity_in_km_per_hr",
-=======
->>>>>>> c3af3b35 ([BackPort] fix: remove output fields subsumed by primitiveVars to prevent duplic… (#1951))
                 "velocity_magnitude",
                 "vorticity",
                 "vorticityMagnitude",
