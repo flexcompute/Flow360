@@ -12,6 +12,12 @@ from flow360_schema.framework.expression import (
 from flow360_schema.framework.expression.value_or_expression import (
     register_deprecation_check,
 )
+from flow360_schema.framework.expression.variable import (
+    batch_get_user_variable_units as _schema_batch_get_user_variable_units,
+)
+from flow360_schema.framework.expression.variable import (
+    save_user_variables as _schema_save_user_variables,
+)
 
 from flow360.component.simulation.framework.updater_utils import deprecation_reminder
 
@@ -38,13 +44,6 @@ def get_post_processing_variables(params) -> set[str]:
 
 def save_user_variables(params):
     """Client adapter: extract data from params, delegate to schema."""
-    from flow360_schema.framework.expression.variable import (
-        batch_get_user_variable_units as _schema_batch_get_user_variable_units,
-    )
-    from flow360_schema.framework.expression.variable import (
-        save_user_variables as _schema_save_user_variables,
-    )
-
     post_processing_variables = get_post_processing_variables(params)
     output_units = {}
     if post_processing_variables:

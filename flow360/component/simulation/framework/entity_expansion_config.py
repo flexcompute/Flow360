@@ -6,3 +6,10 @@ from flow360_schema.framework.entity.entity_expansion_config import (
     TargetClassExpansionMap,
     get_expansion_map,
 )
+
+__all__ = [
+    "DEFAULT_TARGET_CLASS_EXPANSION_MAP",
+    "MIRROR_CONTEXT_EXPANSION_MAP",
+    "TargetClassExpansionMap",
+    "get_expansion_map",
+]
