@@ -4,6 +4,10 @@ import unittest
 
 import pydantic as pd
 import pytest
+from flow360_schema.framework.expression import UserVariable
+from flow360_schema.framework.validation.context import DeserializationContext
+from flow360_schema.models.functions import math
+from flow360_schema.models.variables import solution
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.draft_context.coordinate_system_manager import (
@@ -53,6 +57,7 @@ from flow360.component.simulation.models.solver_numerics import (
     DetachedEddySimulation,
     KOmegaSST,
     KOmegaSSTModelConstants,
+    LinearSolver,
     SpalartAllmaras,
     SpalartAllmarasModelConstants,
     TransitionModelSolver,
@@ -128,9 +133,6 @@ from flow360.component.simulation.services import (
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
 from flow360.component.simulation.unit_system import SI_unit_system
-from flow360.component.simulation.user_code.core.types import UserVariable
-from flow360.component.simulation.user_code.functions import math
-from flow360.component.simulation.user_code.variables import solution
 from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
     UserDefinedDynamic,
 )
@@ -648,6 +650,20 @@ def test_transition_model_solver_settings_validator():
         assert params.models[0].transition_model_solver.turbulence_intensity_percent is None
 
 
+def test_linear_solver_tolerance_conflict():
+    with pytest.raises(pd.ValidationError, match="absolute_tolerance and relative_tolerance"):
+        LinearSolver(absolute_tolerance=1e-10, relative_tolerance=1e-6)
+
+    # Only one is fine
+    ls = LinearSolver(absolute_tolerance=1e-10)
+    assert ls.absolute_tolerance == 1e-10
+    assert ls.relative_tolerance is None
+
+    ls = LinearSolver(relative_tolerance=1e-6)
+    assert ls.relative_tolerance == 1e-6
+    assert ls.absolute_tolerance is None
+
+
 def test_BC_geometry():
     """For a quasi 3D geometry test the check for the"""
     # --------------------------------------------------------#
@@ -830,7 +846,7 @@ def test_incomplete_BC_volume_mesh():
     )
 
     asset_cache = AssetCache(
-        project_length_unit="inch",
+        project_length_unit=1 * u.inch,
         project_entity_info=VolumeMeshEntityInfo(
             boundaries=[wall_1, periodic_1, periodic_2, i_exist, some_interface, no_bc]
         ),
@@ -930,7 +946,7 @@ def test_incomplete_BC_surface_mesh():
     auto_farfield = AutomatedFarfield(name="my_farfield")
 
     asset_cache = AssetCache(
-        project_length_unit="inch",
+        project_length_unit=1 * u.inch,
         project_entity_info=SurfaceMeshEntityInfo(
             boundaries=[wall_1, periodic_1, periodic_2, i_exist, no_bc, i_will_be_deleted],
             ghost_entities=[
@@ -1059,9 +1075,9 @@ def test_porousJump_entities_is_interface(mock_validation_context):
     with mock_validation_context, pytest.raises(ValueError, match=re.escape(error_message)):
         PorousJump(
             entity_pairs=[(surface_2_is_not_interface, surface_1_is_interface)],
-            darcy_coefficient=1e6,
-            forchheimer_coefficient=1e3,
-            thickness=0.01,
+            darcy_coefficient=1e6 / (u.m * u.m),
+            forchheimer_coefficient=1e3 / u.m,
+            thickness=0.01 * u.m,
         )
 
     PorousJump(
@@ -1639,7 +1655,7 @@ def test_rotation_parent_volumes(mock_case_validation_context):
                     Wall(entities=[my_wall]),
                 ],
                 private_attribute_asset_cache=AssetCache(
-                    project_length_unit="cm",
+                    project_length_unit=1 * u.cm,
                     project_entity_info=VolumeMeshEntityInfo(boundaries=[my_wall]),
                 ),
             )
@@ -1707,7 +1723,7 @@ def test_rotating_reference_frame_model_flag():
                     ],
                     time_stepping=timestepping_steady,
                     private_attribute_asset_cache=AssetCache(
-                        project_length_unit="cm",
+                        project_length_unit=1 * u.cm,
                         project_entity_info=VolumeMeshEntityInfo(boundaries=[my_wall]),
                     ),
                 )
@@ -1733,7 +1749,7 @@ def test_rotating_reference_frame_model_flag():
                 ],
                 time_stepping=timestepping_unsteady,
                 private_attribute_asset_cache=AssetCache(
-                    project_length_unit="cm",
+                    project_length_unit=1 * u.cm,
                     project_entity_info=VolumeMeshEntityInfo(boundaries=[my_wall]),
                 ),
             )
@@ -1807,20 +1823,23 @@ def test_wall_deserialization():
     # Wall->velocity accept discriminated AND non-discriminated unions.
     # Need to check if all works when deserializing.
     dummy_boundary = Surface(name="chameleon")
-    simple_wall = Wall(**Wall(entities=dummy_boundary).model_dump(mode="json"))
+    with DeserializationContext():
+        simple_wall = Wall(**Wall(entities=dummy_boundary).model_dump(mode="json"))
     assert simple_wall.velocity is None
 
-    const_vel_wall = Wall(
-        **Wall(entities=dummy_boundary, velocity=[1, 2, 3] * u.m / u.s).model_dump(mode="json")
-    )
+    with DeserializationContext():
+        const_vel_wall = Wall(
+            **Wall(entities=dummy_boundary, velocity=[1, 2, 3] * u.m / u.s).model_dump(mode="json")
+        )
     assert all(const_vel_wall.velocity == [1, 2, 3] * u.m / u.s)
 
-    slater_bleed_wall = Wall(
-        **Wall(
-            entities=dummy_boundary,
-            velocity=SlaterPorousBleed(porosity=0.2, static_pressure=0.1 * u.Pa),
-        ).model_dump(mode="json")
-    )
+    with DeserializationContext():
+        slater_bleed_wall = Wall(
+            **Wall(
+                entities=dummy_boundary,
+                velocity=SlaterPorousBleed(porosity=0.2, static_pressure=0.1 * u.Pa),
+            ).model_dump(mode="json")
+        )
     assert slater_bleed_wall.velocity.porosity == 0.2
     assert slater_bleed_wall.velocity.static_pressure == 0.1 * u.Pa
 
@@ -3172,7 +3191,7 @@ def test_auto_farfield_full_body_surface_on_y0_not_marked_deleted():
     )
 
     asset_cache = AssetCache(
-        project_length_unit="m",
+        project_length_unit=1 * u.m,
         use_inhouse_mesher=True,
         use_geometry_AI=True,
         project_entity_info=SurfaceMeshEntityInfo(
@@ -3233,7 +3252,7 @@ def test_auto_farfield_half_body_surface_on_y0_marked_deleted():
     )
 
     asset_cache = AssetCache(
-        project_length_unit="m",
+        project_length_unit=1 * u.m,
         use_inhouse_mesher=True,
         use_geometry_AI=True,
         project_entity_info=SurfaceMeshEntityInfo(
@@ -3307,7 +3326,7 @@ def test_deleted_surfaces_domain_type():
     )
 
     asset_cache = AssetCache(
-        project_length_unit="m",
+        project_length_unit=1 * u.m,
         use_inhouse_mesher=True,
         use_geometry_AI=True,
         project_entity_info=SurfaceMeshEntityInfo(
@@ -3489,7 +3508,7 @@ def test_coordinate_system_requires_geometry_ai():
 
     # Asset cache with GAI disabled but coordinate system used
     asset_cache_no_gai = AssetCache(
-        project_length_unit="m",
+        project_length_unit=1 * u.m,
         use_inhouse_mesher=True,
         use_geometry_AI=False,
         coordinate_system_status=cs_status,
@@ -3516,7 +3535,7 @@ def test_coordinate_system_requires_geometry_ai():
 
     # Test with GAI enabled - should pass
     asset_cache_with_gai = AssetCache(
-        project_length_unit="m",
+        project_length_unit=1 * u.m,
         use_inhouse_mesher=True,
         use_geometry_AI=True,
         coordinate_system_status=cs_status,
@@ -3559,7 +3578,7 @@ def test_mirroring_requires_geometry_ai():
 
     # Asset cache with GAI disabled but mirroring used
     asset_cache_no_gai = AssetCache(
-        project_length_unit="m",
+        project_length_unit=1 * u.m,
         use_inhouse_mesher=True,
         use_geometry_AI=False,
         mirror_status=mirror_status,
@@ -3582,7 +3601,7 @@ def test_mirroring_requires_geometry_ai():
 
     # Test with GAI enabled - should pass
     asset_cache_with_gai = AssetCache(
-        project_length_unit="m",
+        project_length_unit=1 * u.m,
         use_inhouse_mesher=True,
         use_geometry_AI=True,
         mirror_status=mirror_status,
@@ -3622,7 +3641,7 @@ def test_mirror_missing_boundary_condition_downgraded_to_warning():
     )
 
     asset_cache = AssetCache(
-        project_length_unit="m",
+        project_length_unit=1 * u.m,
         use_inhouse_mesher=True,
         use_geometry_AI=True,
         project_entity_info=VolumeMeshEntityInfo(boundaries=[front]),
@@ -3668,7 +3687,7 @@ def test_mirror_unknown_boundary_still_raises_error():
     )
 
     asset_cache = AssetCache(
-        project_length_unit="m",
+        project_length_unit=1 * u.m,
         use_inhouse_mesher=True,
         use_geometry_AI=True,
         project_entity_info=VolumeMeshEntityInfo(boundaries=[front]),
@@ -3710,7 +3729,7 @@ def test_domain_type_bbox_mismatch_downgraded_to_warning_when_transformed():
 
     # Global bbox fully on -Y side; choosing half_body_positive_y should normally raise.
     asset_cache = AssetCache(
-        project_length_unit="m",
+        project_length_unit=1 * u.m,
         use_inhouse_mesher=True,
         use_geometry_AI=True,
         project_entity_info=SurfaceMeshEntityInfo(
@@ -3757,7 +3776,7 @@ def test_incomplete_BC_with_geometry_AI():
     )
 
     asset_cache = AssetCache(
-        project_length_unit="m",
+        project_length_unit=1 * u.m,
         project_entity_info=VolumeMeshEntityInfo(boundaries=[wall, no_bc]),
         use_geometry_AI=True,  # Enable GAI
     )
@@ -3803,7 +3822,7 @@ def test_incomplete_BC_without_geometry_AI():
     )
 
     asset_cache = AssetCache(
-        project_length_unit="m",
+        project_length_unit=1 * u.m,
         project_entity_info=VolumeMeshEntityInfo(boundaries=[wall, no_bc]),
         use_geometry_AI=False,  # Disable GAI
     )

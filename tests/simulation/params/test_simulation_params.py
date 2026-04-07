@@ -2,6 +2,7 @@ import json
 import unittest
 
 import numpy as np
+import pydantic as pd
 import pytest
 
 import flow360.component.simulation.units as u
@@ -72,8 +73,7 @@ from flow360.component.simulation.unit_system import CGS_unit_system, SI_unit_sy
 from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
     UserDefinedDynamic,
 )
-from flow360.component.simulation.utils import model_attribute_unlock
-from tests.utils import to_file_from_file_test
+from tests.simulation.conftest import to_file_from_file_test_approx
 
 assertions = unittest.TestCase("__init__")
 
@@ -258,7 +258,7 @@ def get_param_with_list_of_lengths():
 
 @pytest.mark.usefixtures("array_equality_override")
 def test_simulation_params_serialization(get_the_param):
-    to_file_from_file_test(get_the_param)
+    to_file_from_file_test_approx(get_the_param)
 
 
 @pytest.mark.usefixtures("array_equality_override")
@@ -407,6 +407,20 @@ def test_subsequent_param_with_different_unit_system():
     assert param_SI.meshing.defaults.boundary_layer_first_layer_thickness == 0.2 * u.m
     assert param_CGS.unit_system.name == "CGS"
     assert param_CGS.meshing.defaults.boundary_layer_first_layer_thickness == 0.3 * u.cm
+
+
+@pytest.mark.parametrize(
+    ("unit_system", "match"),
+    [
+        ({}, "Field required"),
+        ({"name": "Bogus"}, "Input should be 'SI', 'CGS' or 'Imperial'"),
+    ],
+)
+def test_invalid_unit_system_dict_raises_validation_error(unit_system, match):
+    with SI_unit_system, pytest.raises(pd.ValidationError, match=match) as exc_info:
+        SimulationParams(unit_system=unit_system)
+
+    assert not isinstance(exc_info.value, KeyError)
 
 
 def test_mach_reynolds_op_cond():
@@ -654,8 +668,7 @@ def test_transformation_matrix(mock_geometry):
                 candidate_body_group_tag = tag
                 break
     if candidate_body_group_tag is not None:
-        with model_attribute_unlock(entity_info, "body_group_tag"):
-            entity_info.body_group_tag = candidate_body_group_tag
+        entity_info._force_set_attr("body_group_tag", candidate_body_group_tag)
 
     with create_draft(new_run_from=mock_geometry) as draft:
         body_groups = list(draft.body_groups)

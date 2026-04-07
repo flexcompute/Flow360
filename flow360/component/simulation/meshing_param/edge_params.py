@@ -3,11 +3,11 @@
 from typing import Literal, Optional, Union
 
 import pydantic as pd
+from flow360_schema.framework.physical_dimensions import Angle, Length
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.primitives import Edge
-from flow360.component.simulation.unit_system import AngleType, LengthType
 from flow360.component.simulation.validation.validation_context import (
     ParamsValidationInfo,
     contextual_model_validator,
@@ -27,7 +27,7 @@ class AngleBasedRefinement(Flow360BaseModel):
     """
 
     type: Literal["angle"] = pd.Field("angle", frozen=True)
-    value: AngleType = pd.Field()
+    value: Angle.Float64 = pd.Field()
 
 
 class HeightBasedRefinement(Flow360BaseModel):
@@ -44,7 +44,7 @@ class HeightBasedRefinement(Flow360BaseModel):
 
     type: Literal["height"] = pd.Field("height", frozen=True)
     # pylint: disable=no-member
-    value: LengthType.Positive = pd.Field()
+    value: Length.PositiveFloat64 = pd.Field()
 
 
 class AspectRatioBasedRefinement(Flow360BaseModel):

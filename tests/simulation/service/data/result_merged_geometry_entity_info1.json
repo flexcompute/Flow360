@@ -44,10 +44,7 @@
         "body00001",
         "sphere1_body00001"
     ],
-    "default_geometry_accuracy": {
-        "units": "m",
-        "value": 0.0001
-    },
+    "default_geometry_accuracy": 0.0001,
     "draft_entities": [],
     "edge_attribute_names": [
         "name",

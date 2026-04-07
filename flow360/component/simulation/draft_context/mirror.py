@@ -1,137 +1,23 @@
 """Mirror plane, mirrored entities and helpers."""
 
-from typing import Dict, List, Literal, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
-import numpy as np
-import pydantic as pd
+from flow360_schema.models.asset_cache import MirrorStatus
+from flow360_schema.models.entities import MirrorPlane
 
-from flow360.component.simulation.entity_operation import (
-    _transform_direction,
-    _transform_point,
-)
-from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.simulation.framework.entity_base import EntityBase
 from flow360.component.simulation.framework.entity_registry import (
     EntityRegistry,
     EntityRegistryView,
 )
-from flow360.component.simulation.framework.entity_utils import generate_uuid
 from flow360.component.simulation.primitives import (
     GeometryBodyGroup,
     MirroredGeometryBodyGroup,
     MirroredSurface,
     Surface,
 )
-from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.utils import is_exact_instance
-from flow360.component.types import Axis
 from flow360.exceptions import Flow360RuntimeError
 from flow360.log import log
-
-
-class MirrorPlane(EntityBase):
-    """
-    Define a mirror plane used by `MirrorManager` to create mirrored draft entities.
-
-    A `MirrorPlane` is a draft entity representing an infinite plane defined by a center point
-    and a normal direction. Mirror operations use this plane to derive mirrored entities.
-
-    Parameters
-    ----------
-    name : str
-        Mirror plane name. Must be unique within the draft.
-    normal : Axis
-        Normal direction of the mirror plane.
-    center : LengthType.Point
-        Center point of the mirror plane.
-
-    Example
-    -------
-
-    >>> import flow360 as fl
-    >>> plane = fl.MirrorPlane(
-    ...     name="MirrorPlane",
-    ...     normal=(0, 1, 0),
-    ...     center=(0, 0, 0) * fl.u.m,
-    ... )
-    """
-
-    name: str = pd.Field()
-    normal: Axis = pd.Field(description="Normal direction of the plane.")
-    # pylint: disable=no-member
-    center: LengthType.Point = pd.Field(description="Center point of the plane.")
-
-    private_attribute_entity_type_name: Literal["MirrorPlane"] = pd.Field(
-        "MirrorPlane", frozen=True
-    )
-    private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
-
-    def _apply_transformation(self, matrix: np.ndarray) -> "MirrorPlane":
-        """Apply 3x4 transformation matrix, returning new transformed instance."""
-        # Transform the center point
-        center_array = np.asarray(self.center.value)
-        new_center_array = _transform_point(center_array, matrix)
-        new_center = type(self.center)(new_center_array, self.center.units)
-
-        # Transform and normalize the normal direction
-        normal_array = np.asarray(self.normal)
-        transformed_normal = _transform_direction(normal_array, matrix)
-        new_normal = tuple(transformed_normal / np.linalg.norm(transformed_normal))
-
-        return self.model_copy(update={"center": new_center, "normal": new_normal})
-
-
-# region -----------------------------Internal Model Below-------------------------------------
-class MirrorStatus(Flow360BaseModel):
-    """
-    Serializable snapshot of mirror state stored in the asset cache.
-
-    Notes
-    -----
-    This status stores both:
-    - User-authored inputs: `mirror_planes`
-    - Derived draft-only entities: `mirrored_geometry_body_groups` and `mirrored_surfaces`
-
-    The derived entities are generated from mirror actions and are registered into the draft's
-    entity registry when a draft is created/restored.
-    """
-
-    # Note: We can do similar thing as entityList to support mirroring with EntitySelectors.
-    mirror_planes: List[MirrorPlane] = pd.Field(description="List of mirror planes to mirror.")
-    mirrored_geometry_body_groups: List[MirroredGeometryBodyGroup] = pd.Field(
-        description="List of mirrored geometry body groups."
-    )
-    mirrored_surfaces: List[MirroredSurface] = pd.Field(description="List of mirrored surfaces.")
-
-    @pd.model_validator(mode="after")
-    def _validate_unique_mirror_plane_names(self):
-        """Validate that all mirror plane names are unique."""
-        seen_names = set()
-        for plane in self.mirror_planes:
-            if plane.name in seen_names:
-                raise ValueError(
-                    f"Duplicate mirror plane name '{plane.name}' found in mirror status."
-                )
-            seen_names.add(plane.name)
-        return self
-
-    def is_empty(self) -> bool:
-        """
-        Return True if no mirror planes or mirrored entities exist in this status.
-
-        Returns
-        -------
-        bool
-            True when no mirroring is configured.
-        """
-        return (
-            not self.mirror_planes
-            and not self.mirrored_geometry_body_groups
-            and not self.mirrored_surfaces
-        )
-
-
-# endregion -------------------------------------------------------------------------------------
 
 MIRROR_SUFFIX = "_<mirror>"
 

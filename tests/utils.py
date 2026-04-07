@@ -3,7 +3,6 @@ import json
 import os
 import shutil
 import tempfile
-from numbers import Number
 
 import numpy as np
 import pytest

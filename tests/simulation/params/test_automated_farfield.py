@@ -556,7 +556,7 @@ def test_domain_type_bounding_box_check():
     dummy_boundary = Surface(name="dummy", private_attribute_id="test-dummy-surface-id")
 
     asset_cache_positive = AssetCache(
-        project_length_unit="m",
+        project_length_unit=1 * u.m,
         use_inhouse_mesher=True,
         use_geometry_AI=True,
         project_entity_info=SurfaceMeshEntityInfo(
@@ -639,7 +639,7 @@ def test_legacy_asset_missing_private_attributes():
     missing_surface.private_attributes = None
 
     asset_cache = AssetCache(
-        project_length_unit="m",
+        project_length_unit=1 * u.m,
         use_inhouse_mesher=True,
         use_geometry_AI=False,
         project_entity_info=SurfaceMeshEntityInfo(

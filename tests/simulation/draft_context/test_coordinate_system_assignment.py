@@ -281,41 +281,6 @@ def test_from_status_validation_errors(mock_geometry):
             )
 
 
-def test_from_status_rejects_duplicate_cs_id(mock_geometry):
-    """Test that CoordinateSystemStatus rejects duplicate coordinate system IDs via Pydantic validation."""
-    from pydantic import ValidationError
-
-    with create_draft(new_run_from=mock_geometry) as draft:
-        cs = CoordinateSystem(name="cs")
-        with pytest.raises(
-            ValidationError,
-            match="Duplicate coordinate system id",
-        ):
-            CoordinateSystemStatus(
-                coordinate_systems=[cs, cs],
-                parents=[],
-                assignments=[],
-            )
-
-
-def test_from_status_rejects_duplicate_cs_name(mock_geometry):
-    """Test that CoordinateSystemStatus rejects duplicate coordinate system names via Pydantic validation."""
-    from pydantic import ValidationError
-
-    with create_draft(new_run_from=mock_geometry) as draft:
-        cs1 = CoordinateSystem(name="duplicate")
-        cs2 = CoordinateSystem(name="duplicate")
-        with pytest.raises(
-            ValidationError,
-            match="Duplicate coordinate system name 'duplicate'",
-        ):
-            CoordinateSystemStatus(
-                coordinate_systems=[cs1, cs2],
-                parents=[],
-                assignments=[],
-            )
-
-
 def test_from_status_rejects_assignment_unknown_cs(mock_geometry):
     with create_draft(new_run_from=mock_geometry) as draft:
         status = CoordinateSystemStatus(

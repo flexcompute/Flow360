@@ -4,6 +4,7 @@
 from copy import deepcopy
 from typing import List
 
+from flow360_schema.framework.physical_dimensions import Length
 from unyt import unyt_array
 
 from flow360.component.simulation.entity_info import GeometryEntityInfo
@@ -33,7 +34,6 @@ from flow360.component.simulation.translator.utils import (
     translate_setting_and_apply_to_all_entities,
     using_snappy,
 )
-from flow360.component.simulation.unit_system import LengthType
 from flow360.exceptions import Flow360TranslationError
 from flow360.log import log
 
@@ -91,7 +91,7 @@ def SurfaceRefinement_to_faces(
     }
 
 
-def remove_numerical_noise_from_spacing(spacing: LengthType, spacing_system: OctreeSpacing):
+def remove_numerical_noise_from_spacing(spacing: Length.Float64, spacing_system: OctreeSpacing):
     """
     If the spacing is in the proximity of 1e-8 to one of the octree series spacing casts that spacing onto the series.
     """

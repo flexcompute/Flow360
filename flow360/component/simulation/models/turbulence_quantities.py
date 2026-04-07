@@ -8,14 +8,14 @@ from functools import wraps
 from typing import Annotated, Literal, Optional, Union
 
 import pydantic as pd
+from flow360_schema.framework.physical_dimensions import (
+    Frequency,
+    KinematicViscosity,
+    Length,
+    SpecificEnergy,
+)
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.simulation.unit_system import (
-    FrequencyType,
-    KinematicViscosityType,
-    LengthType,
-    SpecificEnergyType,
-)
 
 
 class TurbulentKineticEnergy(Flow360BaseModel):
@@ -26,7 +26,7 @@ class TurbulentKineticEnergy(Flow360BaseModel):
 
     type_name: Literal["TurbulentKineticEnergy"] = pd.Field("TurbulentKineticEnergy", frozen=True)
     # pylint: disable=no-member
-    turbulent_kinetic_energy: SpecificEnergyType.NonNegative = pd.Field()
+    turbulent_kinetic_energy: SpecificEnergy.NonNegativeFloat64 = pd.Field()
 
 
 class TurbulentIntensity(Flow360BaseModel):
@@ -50,7 +50,7 @@ class _SpecificDissipationRate(Flow360BaseModel, metaclass=ABCMeta):
 
     type_name: Literal["SpecificDissipationRate"] = pd.Field("SpecificDissipationRate", frozen=True)
     # pylint: disable=no-member
-    specific_dissipation_rate: FrequencyType.NonNegative = pd.Field()
+    specific_dissipation_rate: Frequency.NonNegativeFloat64 = pd.Field()
 
 
 class TurbulentViscosityRatio(Flow360BaseModel):
@@ -75,7 +75,7 @@ class TurbulentLengthScale(Flow360BaseModel, metaclass=ABCMeta):
 
     type_name: Literal["TurbulentLengthScale"] = pd.Field("TurbulentLengthScale", frozen=True)
     # pylint: disable=no-member
-    turbulent_length_scale: LengthType.Positive = pd.Field()
+    turbulent_length_scale: Length.PositiveFloat64 = pd.Field()
 
 
 class ModifiedTurbulentViscosityRatio(Flow360BaseModel):
@@ -101,7 +101,7 @@ class ModifiedTurbulentViscosity(Flow360BaseModel):
         "ModifiedTurbulentViscosity", frozen=True
     )
     # pylint: disable=no-member
-    modified_turbulent_viscosity: Optional[KinematicViscosityType.Positive] = pd.Field()
+    modified_turbulent_viscosity: Optional[KinematicViscosity.PositiveFloat64] = pd.Field()
 
 
 # pylint: disable=missing-class-docstring

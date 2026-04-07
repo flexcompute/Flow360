@@ -3,99 +3,25 @@
 from __future__ import annotations
 
 import collections
-from typing import Dict, List, Literal, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
-import pydantic as pd
+from flow360_schema.models.asset_cache import (
+    CoordinateSystemAssignmentGroup,
+    CoordinateSystemEntityRef,
+    CoordinateSystemParent,
+    CoordinateSystemStatus,
+)
 
 from flow360.component.simulation.entity_operation import (
     CoordinateSystem,
     _compose_transformation_matrices,
 )
-from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityBase
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
 from flow360.component.simulation.utils import is_exact_instance
 from flow360.exceptions import Flow360RuntimeError
 from flow360.log import log
-
-
-class CoordinateSystemParent(Flow360BaseModel):
-    """
-    Parent relationship for a coordinate system.
-
-    This is a lightweight, serializable representation of a coordinate system hierarchy edge
-    used by `CoordinateSystemStatus`.
-    """
-
-    type_name: Literal["CoordinateSystemParent"] = pd.Field("CoordinateSystemParent", frozen=True)
-    coordinate_system_id: str
-    parent_id: Optional[str] = pd.Field(None)
-
-
-class CoordinateSystemEntityRef(Flow360BaseModel):
-    """
-    Entity reference used in assignment serialization.
-
-    Notes
-    -----
-    This stores an `(entity_type, entity_id)` pair instead of a direct entity instance so that
-    the status can be serialized and later restored against a draft's entity registry.
-    """
-
-    type_name: Literal["CoordinateSystemEntityRef"] = pd.Field(
-        "CoordinateSystemEntityRef", frozen=True
-    )
-    entity_type: str
-    entity_id: str
-
-
-class CoordinateSystemAssignmentGroup(Flow360BaseModel):
-    """
-    Grouped entity assignments for a coordinate system.
-
-    A single coordinate system can be assigned to multiple entities. This model groups the
-    entity references to keep the status payload compact and easy to validate.
-    """
-
-    type_name: Literal["CoordinateSystemAssignmentGroup"] = pd.Field(
-        "CoordinateSystemAssignmentGroup", frozen=True
-    )
-    coordinate_system_id: str
-    entities: List[CoordinateSystemEntityRef]
-
-
-class CoordinateSystemStatus(Flow360BaseModel):
-    """
-    Serializable snapshot for front end/asset cache.
-
-    This status is stored in an asset's private cache and restored into a `DraftContext` so
-    that coordinate system definitions and assignments can persist across sessions.
-    """
-
-    type_name: Literal["CoordinateSystemStatus"] = pd.Field("CoordinateSystemStatus", frozen=True)
-    coordinate_systems: List[CoordinateSystem]
-    parents: List[CoordinateSystemParent]
-    assignments: List[CoordinateSystemAssignmentGroup]
-
-    @pd.model_validator(mode="after")
-    def _validate_unique_coordinate_system_ids_and_names(self):
-        """Validate that all coordinate system IDs and names are unique."""
-        seen_ids = set()
-        seen_names = set()
-        for cs in self.coordinate_systems:
-            # Check IDs first to match the order of validation in _from_status
-            if cs.private_attribute_id in seen_ids:
-                raise ValueError(
-                    f"[Internal] Duplicate coordinate system id '{cs.private_attribute_id}' in status."
-                )
-            if cs.name in seen_names:
-                raise ValueError(
-                    f"[Internal] Duplicate coordinate system name '{cs.name}' in status."
-                )
-            seen_ids.add(cs.private_attribute_id)
-            seen_names.add(cs.name)
-        return self
 
 
 class CoordinateSystemManager:

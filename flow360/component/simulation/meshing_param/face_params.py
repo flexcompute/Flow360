@@ -3,6 +3,7 @@
 from typing import Literal, Optional
 
 import pydantic as pd
+from flow360_schema.framework.physical_dimensions import Angle, Length
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
@@ -13,7 +14,6 @@ from flow360.component.simulation.primitives import (
     Surface,
     WindTunnelGhostSurface,
 )
-from flow360.component.simulation.unit_system import AngleType, LengthType
 from flow360.component.simulation.validation.validation_context import (
     ParamsValidationInfo,
     contextual_field_validator,
@@ -47,11 +47,11 @@ class SurfaceRefinement(Flow360BaseModel):
         Surface, MirroredSurface, WindTunnelGhostSurface, GhostSurface, GhostCircularPlane
     ] = pd.Field(alias="faces")
     # pylint: disable=no-member
-    max_edge_length: Optional[LengthType.Positive] = pd.Field(
+    max_edge_length: Optional[Length.PositiveFloat64] = pd.Field(
         None, description="Maximum edge length of surface cells."
     )
 
-    curvature_resolution_angle: Optional[AngleType.Positive] = pd.Field(
+    curvature_resolution_angle: Optional[Angle.PositiveFloat64] = pd.Field(
         None,
         description=(
             "Default maximum angular deviation in degrees. "
@@ -129,7 +129,7 @@ class GeometryRefinement(Flow360BaseModel):
     entities: EntityList[Surface, MirroredSurface, WindTunnelGhostSurface] = pd.Field(alias="faces")
     # pylint: disable=no-member
 
-    geometry_accuracy: Optional[LengthType.Positive] = pd.Field(
+    geometry_accuracy: Optional[Length.PositiveFloat64] = pd.Field(
         None,
         description="The smallest length scale that will be resolved accurately by the surface meshing process. ",
     )
@@ -140,12 +140,12 @@ class GeometryRefinement(Flow360BaseModel):
         + "to geometry_accuracy should be resolved accurately during the surface meshing process.",
     )
 
-    sealing_size: Optional[LengthType.NonNegative] = pd.Field(
+    sealing_size: Optional[Length.NonNegativeFloat64] = pd.Field(
         None,
         description="Threshold size below which all geometry gaps are automatically closed.",
     )
 
-    min_passage_size: Optional[LengthType.Positive] = pd.Field(
+    min_passage_size: Optional[Length.PositiveFloat64] = pd.Field(
         None,
         description="Minimum passage size that hidden geometry removal can resolve for this face group. "
         "Internal regions connected by thin passages smaller than this size may not be detected. "
@@ -225,7 +225,7 @@ class BoundaryLayer(Flow360BaseModel):
     refinement_type: Literal["BoundaryLayer"] = pd.Field("BoundaryLayer", frozen=True)
     entities: EntityList[Surface, MirroredSurface, WindTunnelGhostSurface] = pd.Field(alias="faces")
     # pylint: disable=no-member
-    first_layer_thickness: Optional[LengthType.Positive] = pd.Field(
+    first_layer_thickness: Optional[Length.PositiveFloat64] = pd.Field(
         None,
         description="First layer thickness for volumetric anisotropic layers grown from given `Surface` (s).",
     )

@@ -5,6 +5,8 @@ Validation for output parameters
 import math
 from typing import List, Literal, Union, get_args, get_origin
 
+from flow360_schema.framework.expression import Expression
+
 from flow360.component.simulation.models.volume_models import Fluid
 from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
@@ -15,7 +17,6 @@ from flow360.component.simulation.outputs.outputs import (
     TimeAverageForceDistributionOutput,
 )
 from flow360.component.simulation.time_stepping.time_stepping import Steady
-from flow360.component.simulation.user_code.core.types import Expression
 from flow360.component.simulation.validation.validation_utils import (
     customize_model_validator_error,
 )

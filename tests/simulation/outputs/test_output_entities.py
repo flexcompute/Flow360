@@ -2,13 +2,13 @@ import re
 
 import pydantic as pd
 import pytest
+from flow360_schema.framework.expression import Expression, UserVariable
+from flow360_schema.models.functions import math
+from flow360_schema.models.variables import solution
 
 from flow360 import SI_unit_system, u
 from flow360.component.simulation.outputs.output_entities import Isosurface
 from flow360.component.simulation.services import clear_context
-from flow360.component.simulation.user_code.core.types import Expression, UserVariable
-from flow360.component.simulation.user_code.functions import math
-from flow360.component.simulation.user_code.variables import solution
 
 
 @pytest.fixture(autouse=True)
@@ -88,12 +88,7 @@ def test_isosurface_wall_distance_clip():
     # Test that an Isosurface field must have length units
     with pytest.raises(
         pd.ValidationError,
-        match=re.escape(
-            "1 validation error for Isosurface\n"
-            "wall_distance_clip_threshold\n"
-            "  Value error, arg '0.0 1/s' does not match (length) dimension."
-            " [type=value_error, input_value=None, input_type=NoneType]"
-        ),
+        match="wall_distance_clip_threshold",
     ):
         Isosurface(
             name="test_iso_vorticity_component",
@@ -102,30 +97,11 @@ def test_isosurface_wall_distance_clip():
             wall_distance_clip_threshold=0.0 / u.s,
         )
 
-    with pytest.raises(
-        pd.ValidationError,
-        match=re.escape(
-            "1 validation error for Isosurface\n"
-            "wall_distance_clip_threshold\n"
-            "  Value error, arg '0.0' does not match (length) dimension."
-            " [type=value_error, input_value=None, input_type=NoneType]"
-        ),
-    ):
-        Isosurface(
-            name="test_iso_vorticity_component",
-            field="T",
-            iso_value=0.5,
-            wall_distance_clip_threshold=0.0,
-        )
+    # Bare numeric 0.0 is now accepted as SI (0 meters) — no longer a validation error.
 
     with pytest.raises(
         pd.ValidationError,
-        match=re.escape(
-            "1 validation error for Isosurface\n"
-            "wall_distance_clip_threshold.value\n"
-            "  Input should be greater than 0"
-            " [type=greater_than, input_value=array(-0.1), input_type=ndarray]"
-        ),
+        match="wall_distance_clip_threshold",
     ):
         Isosurface(
             name="test_iso_vorticity_component",

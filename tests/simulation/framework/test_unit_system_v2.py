@@ -110,144 +110,15 @@ def test_unit_access():
 
 
 def test_unit_systems_compare():
-    # For some reason this fails but only when run with pytest -rA if we switch order
-    assert u.flow360_unit_system != u.SI_unit_system
     assert u.SI_unit_system != u.CGS_unit_system
 
     assert u.SI_unit_system == u.SI_unit_system
-    assert u.flow360_unit_system == u.flow360_unit_system
 
-    assert u.flow360_unit_system == u.UnitSystem(base_system="Flow360")
     assert u.SI_unit_system == u.UnitSystem(base_system="SI")
 
 
-@pytest.mark.usefixtures("array_equality_override")
-def test_flow360_unit_arithmetic():
-    assert 1 * u.flow360_area_unit
-    assert u.flow360_area_unit * 1
-
-    assert u.flow360_area_unit == u.flow360_area_unit
-    assert u.flow360_area_unit != u.flow360_density_unit
-    assert 1 * u.flow360_area_unit == u.flow360_area_unit * 1
-    assert 1 * u.flow360_area_unit != 1 * u.flow360_density_unit
-    assert 1 * u.flow360_area_unit != 1
-
-    assert (
-        6 * u.flow360_area_unit
-        == 1.0 * u.flow360_area_unit + 2.0 * u.flow360_area_unit + 3.0 * u.flow360_area_unit
-    )
-    assert -3 * u.flow360_area_unit == 1.0 * u.flow360_area_unit - 4.0 * u.flow360_area_unit
-    assert -3 * u.flow360_area_unit == 1.0 * u.flow360_area_unit - 4.0 * u.flow360_area_unit
-    assert -3 * u.flow360_area_unit == -1.0 * u.flow360_area_unit - 2.0 * u.flow360_area_unit
-    assert 2.5 * u.flow360_mass_flow_rate_unit == (5 - 2.5) * u.flow360_mass_flow_rate_unit
-    assert 2 * 8 * u.flow360_specific_energy_unit == 2**4 * u.flow360_specific_energy_unit
-    assert (5 * 5) * u.flow360_frequency_unit == 5**2 * u.flow360_frequency_unit
-
-    with pytest.raises(TypeError):
-        1 * u.flow360_area_unit + 2
-
-    with pytest.raises(TypeError):
-        1 * u.flow360_area_unit - 2
-
-    with pytest.raises(TypeError):
-        2 + 1 * u.flow360_area_unit
-
-    with pytest.raises(TypeError):
-        2 - 1 * u.flow360_area_unit
-
-    with pytest.raises(ValueError):
-        2 - u.flow360_area_unit
-
-    with pytest.raises(ValueError):
-        2 + u.flow360_area_unit
-
-    with pytest.raises(TypeError):
-        1 * u.flow360_area_unit + 2 * u.flow360_density_unit
-
-    with pytest.raises(TypeError):
-        1 * u.flow360_area_unit - 2 * u.flow360_density_unit
-
-    with pytest.raises(TypeError):
-        1 * u.flow360_area_unit - 2 * u.m**2
-
-    with pytest.raises(TypeError):
-        1 * u.flow360_area_unit * u.flow360_area_unit
-
-    with pytest.raises(TypeError):
-        1 * u.flow360_viscosity_unit + 1 * u.Pa * u.s
-
-    with pytest.raises(TypeError):
-        1 * u.flow360_angular_velocity_unit - 1 * u.rad / u.s
-
-    assert (1, 1, 1) * u.flow360_area_unit
-    assert u.flow360_area_unit * (1, 1, 1)
-    assert (1, 1, 1) * u.flow360_mass_unit + (1, 1, 1) * u.flow360_mass_unit
-    assert (1, 1, 1) * u.flow360_mass_unit - (1, 1, 1) * u.flow360_mass_unit
-
-    with pytest.raises(TypeError):
-        assert (1, 1, 1) * u.flow360_mass_unit * (1, 1, 1) * u.flow360_mass_unit
-
-    with pytest.raises(TypeError):
-        assert (1, 1, 1) * u.flow360_mass_unit * u.flow360_mass_unit
-
-    with pytest.raises(TypeError):
-        assert (1, 1, 1) * u.flow360_mass_unit + (1, 1, 1) * u.flow360_length_unit
-
-    data = VectorDataWithUnits(
-        pt=(1, 1, 1) * u.flow360_length_unit,
-        vec=(1, 1, 1) * u.flow360_velocity_unit,
-        ax=(1, 1, 1) * u.flow360_length_unit,
-        omega=(1, 1, 1) * u.flow360_angular_velocity_unit,
-        lp=(1, 1, 1) * u.flow360_length_unit,
-    )
-
-    with u.flow360_unit_system:
-        data_flow360 = VectorDataWithUnits(
-            pt=(1, 1, 1),
-            vec=(1, 1, 1),
-            ax=(1, 1, 1),
-            omega=(1, 1, 1) * u.flow360_angular_velocity_unit,
-            lp=(1, 1, 1),
-        )
-    assert data == data_flow360
-
-    with pytest.raises(TypeError):
-        data.pt + (1, 1, 1) * u.m
-
-    with pytest.raises(TypeError):
-        data.vec + (1, 1, 1) * u.m / u.s
-
-    data = ArrayDataWithUnits(
-        l_arr=[1, 1, 1, 1] * u.flow360_angle_unit,
-        l_arr_nonneg=[1, 0, 0, 0] * u.flow360_length_unit,
-    )
-
-    with u.flow360_unit_system:
-        data_flow360 = ArrayDataWithUnits(
-            l_arr=[1, 1, 1, 1] * u.flow360_angle_unit, l_arr_nonneg=[1, 0, 0, 0]
-        )
-    assert data == data_flow360
-
-    with pytest.raises(TypeError):
-        data.l_arr + [1, 1, 1, 1] * u.rad
-
-    with pytest.raises(TypeError):
-        data.l_arr_nonneg + [1, 1, 1, 1] * u.m
-
-    data = MatrixDataWithUnits(
-        locations=[[1, 1, 1], [2, 3, 4]] * u.flow360_length_unit,
-        locationsT=[[1, 2], [1, 3], [1, 4]] * u.flow360_length_unit,
-    )
-
-    with u.flow360_unit_system:
-        data_flow360 = MatrixDataWithUnits(
-            locations=[[1, 1, 1], [2, 3, 4]],
-            locationsT=[[1, 2], [1, 3], [1, 4]],
-        )
-    assert data == data_flow360
-
-    with pytest.raises(TypeError):
-        data.locations + [[1, 1, 1], [2, 2, 2]] * u.rad
+# test_flow360_unit_arithmetic: REMOVED — tested _Flow360BaseUnit arithmetic (deleted in Phase 4)
+# Tracked in plans/removed_tests.markdown for future migration to schema side.
 
 
 def _assert_exact_same_unyt(input, ref):
@@ -368,26 +239,8 @@ def test_unit_system():
         _assert_exact_same_unyt(data.v_sq, 123 * u.ft**2 / u.s**2)
         _assert_exact_same_unyt(data.fqc, 1111 / u.s)
 
-    # Flow360
-    with u.flow360_unit_system:
-        data = DataWithUnits(
-            **input, a=1 * u.flow360_angle_unit, omega=1 * u.flow360_angular_velocity_unit
-        )
-
-        assert data.L == 1 * u.flow360_length_unit
-        assert data.m == 2 * u.flow360_mass_unit
-        assert data.t == 3 * u.flow360_time_unit
-        assert data.T == 300 * u.flow360_temperature_unit
-        assert data.v == 2 / 3 * u.flow360_velocity_unit
-        assert data.A == 6 * u.flow360_area_unit
-        assert data.F == 4 * u.flow360_force_unit
-        assert data.p == 5 * u.flow360_pressure_unit
-        assert data.r == 2 * u.flow360_density_unit
-        assert data.mu == 3 * u.flow360_viscosity_unit
-        assert data.nu == 4 * u.flow360_kinematic_viscosity_unit
-        assert data.m_dot == 11 * u.flow360_mass_flow_rate_unit
-        assert data.v_sq == 123 * u.flow360_specific_energy_unit
-        assert data.fqc == 1111 * u.flow360_frequency_unit
+    # Flow360 section removed — tested _Flow360BaseUnit inference (deleted in Phase 4)
+    # Tracked in plans/removed_tests.markdown
 
     correct_input = {
         "L": 1,
@@ -573,9 +426,10 @@ def test_unit_system():
         lp={"value": [1, 1, 1], "units": "m"},
     )
 
+    # Nested dict with wrong inner shape — rejected as not 3 values
     with pytest.raises(
         pd.ValidationError,
-        match=r"Value error, No class found for unit_name: N \[type=value_error, input_value={'value': {'value': \[1, 2... 'wrong'}, 'units': 'N'}, input_type=dict\]",
+        match=r"needs to be a collection of 3 values",
     ):
         data = VectorDataWithUnits(
             pt=None,
@@ -584,6 +438,13 @@ def test_unit_system():
             omega={"value": [1, 1, 1], "units": "rad/s"},
             lp={"value": [1, 1, 1], "units": "m"},
         )
+
+    # Invalid unit name — rejected as dimension mismatch
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"does not match \(length\) dimension",
+    ):
+        Flow360DataWithUnits(l={"value": 1.0, "units": "bogus_unit"}, lp=[1, 2, 3] * u.m, lc=u.m)
 
     with pytest.raises(
         pd.ValidationError,
@@ -784,36 +645,8 @@ def test_units_schema():
 
 
 def test_unit_system_init():
-    unit_system_dict = {
-        "mass": {"value": 1.0, "units": "kg"},
-        "length": {"value": 1.0, "units": "m"},
-        "angle": {"value": 1.0, "units": "rad"},
-        "time": {"value": 1.0, "units": "s"},
-        "temperature": {"value": 1.0, "units": "K"},
-        "delta_temperature": {"value": 1.0, "units": "K"},
-        "velocity": {"value": 1.0, "units": "m/s"},
-        "acceleration": {"value": 1.0, "units": "m/s**2"},
-        "area": {"value": 1.0, "units": "m**2"},
-        "force": {"value": 1.0, "units": "N"},
-        "pressure": {"value": 1.0, "units": "Pa"},
-        "density": {"value": 1.0, "units": "kg/m**3"},
-        "viscosity": {"value": 1.0, "units": "Pa*s"},
-        "kinematic_viscosity": {"value": 1.0, "units": "m**2/s"},
-        "power": {"value": 1.0, "units": "W"},
-        "moment": {"value": 1.0, "units": "N*m"},
-        "angular_velocity": {"value": 1.0, "units": "rad/s"},
-        "heat_flux": {"value": 1.0, "units": "kg/s**3"},
-        "heat_source": {"value": 1.0, "units": "kg/s**3/m"},
-        "specific_heat_capacity": {"value": 1.0, "units": "m**2/s**2/K"},
-        "thermal_conductivity": {"value": 1.0, "units": "kg/s**3*m/K"},
-        "inverse_length": {"value": 1.0, "units": "m**(-1)"},
-        "inverse_area": {"value": 1.0, "units": "m**(-2)"},
-        "mass_flow_rate": {"value": 1.0, "units": "kg/s"},
-        "specific_energy": {"value": 1.0, "units": "m**2/s**2"},
-        "frequency": {"value": 1.0, "units": "s**(-1)"},
-        "angle": {"value": 1.0, "units": "rad"},
-    }
-    us = u.UnitSystem(**unit_system_dict)
+    # NEW UnitSystem only accepts base_system or 5 base dimensions
+    us = u.UnitSystem(base_system="SI")
     assert us == u.SI_unit_system
 
 

@@ -4,6 +4,7 @@ import re
 
 import pydantic
 import pytest
+from flow360_schema.models.variables import solution
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.outputs.output_entities import Point
@@ -13,7 +14,6 @@ from flow360.component.simulation.run_control.stopping_criterion import (
 )
 from flow360.component.simulation.unit_system import SI_unit_system
 from flow360.component.simulation.user_code.core.types import UserVariable
-from flow360.component.simulation.user_code.variables import solution
 from flow360.component.simulation.validation.validation_context import TimeSteppingType
 
 

@@ -10,6 +10,12 @@ import re
 from typing import Annotated, ClassVar, List, Literal, Optional, Tuple, Union, get_args
 
 import pydantic as pd
+from flow360_schema.framework.expression import (
+    Expression,
+    UserVariable,
+    solver_variable_to_user_variable,
+)
+from flow360_schema.framework.physical_dimensions import Length, Time
 from typing_extensions import deprecated
 
 import flow360.component.simulation.units as u
@@ -60,12 +66,6 @@ from flow360.component.simulation.primitives import (
     Surface,
     WindTunnelGhostSurface,
 )
-from flow360.component.simulation.unit_system import LengthType, TimeType
-from flow360.component.simulation.user_code.core.types import (
-    Expression,
-    UserVariable,
-    solver_variable_to_user_variable,
-)
 from flow360.component.simulation.validation.validation_context import (
     ALL,
     CASE,
@@ -82,7 +82,6 @@ from flow360.component.simulation.validation.validation_utils import (
     validate_improper_surface_field_usage_for_imported_surface,
 )
 from flow360.component.types import Axis
-from flow360.log import log
 
 # Invalid characters for Linux filenames: / is path separator, \0 is null terminator
 _INVALID_FILENAME_CHARS_PATTERN = re.compile(r"[/\0]")
@@ -368,52 +367,14 @@ class _AnimationSettings(Flow360BaseModel):
         return value
 
 
-_OutputFormatOption = Literal["paraview", "tecplot", "vtkhdf", "ensight"]
-
-_LegacyOutputFormatStrings = Literal[
-    "paraview",
-    "tecplot",
-    "both",
-]
-
-
 class _AnimationAndFileFormatSettings(_AnimationSettings):
     """
     Controls how frequently the output files are generated and the file format.
     """
 
-    output_format: Union[List[_OutputFormatOption], _LegacyOutputFormatStrings] = pd.Field(
-        default=["paraview"],
-        min_length=1,
-        description="List of output formats, "
-        "Supported formats: :code:`paraview`, :code:`tecplot`, :code:`vtkhdf`, :code:`ensight`. "
-        "A single string is accepted for backward compatibility but deprecated.",
+    output_format: Literal["paraview", "tecplot", "both"] = pd.Field(
+        default="paraview", description=":code:`paraview`, :code:`tecplot` or :code:`both`."
     )
-
-    @pd.field_validator("output_format", mode="before")
-    @classmethod
-    def _normalize_output_format(cls, value):
-        if isinstance(value, str):
-            if value == "both":
-                log.warning(
-                    '`output_format="both"` is deprecated. '
-                    'Use `output_format=["paraview", "tecplot"]` instead.'
-                )
-                return ["paraview", "tecplot"]
-            if "," in value:
-                log.warning(
-                    f"`output_format` comma-separated strings are deprecated. "
-                    f'Use `output_format={sorted(set(v.strip() for v in value.split(",")))}` instead.'
-                )
-                return sorted(set(v.strip() for v in value.split(",")))
-            log.warning(
-                f"Passing a string to `output_format` is deprecated. "
-                f'Use `output_format=["{value}"]` instead.'
-            )
-            return [value]
-        if isinstance(value, list):
-            return sorted(set(value))
-        return value
 
 
 class SurfaceOutput(_AnimationAndFileFormatSettings, _OutputBase):
@@ -463,10 +424,10 @@ class SurfaceOutput(_AnimationAndFileFormatSettings, _OutputBase):
     )
     write_single_file: bool = pd.Field(
         default=False,
-        description="Enable writing all surface outputs into a single file instead of one file per surface. "
-        "Supported by Tecplot, Paraview, and VTK-HDF output formats. "
-        "Will choose the value of the last instance of this option of the same output type "
-        "(:class:`SurfaceOutput` or :class:`TimeAverageSurfaceOutput`) in the output list.",
+        description="Enable writing all surface outputs into a single file instead of one file per surface."
+        + "This option currently only supports Tecplot output format."
+        + "Will choose the value of the last instance of this option of the same output type "
+        + "(:class:`SurfaceOutput` or :class:`TimeAverageSurfaceOutput`) in the output list.",
     )
     output_fields: UniqueItemList[Union[SurfaceFieldNames, str, UserVariable]] = pd.Field(
         description="List of output variables. Including :ref:`universal output variables<UniversalVariablesV2>`,"
@@ -1230,9 +1191,7 @@ class SurfaceSliceOutput(_AnimationAndFileFormatSettings, _OutputBase):
         description="List of :class:`Surface` entities on which the slice will cut through."
     )
 
-    output_format: Union[List[Literal["paraview"]], Literal["paraview"]] = pd.Field(
-        default=["paraview"], min_length=1
-    )
+    output_format: Literal["paraview"] = pd.Field(default="paraview")
 
     output_fields: UniqueItemList[Union[SurfaceFieldNames, str, UserVariable]] = pd.Field(
         description="List of output variables. Including :ref:`universal output variables<UniversalVariablesV2>`,"
@@ -1466,7 +1425,7 @@ class Observer(Flow360BaseModel):
     """
 
     # pylint: disable=no-member
-    position: LengthType.Point = pd.Field(
+    position: Length.Vector3 = pd.Field(
         description="Position at which time history of acoustic pressure signal "
         + "is stored in aeroacoustic output file. The observer position can be outside the simulation domain, "
         + "but cannot be on or inside the solid surfaces of the simulation domain."
@@ -1532,13 +1491,13 @@ class AeroAcousticOutput(Flow360BaseModel):
         description="Enable writing of aeroacoustic results on a per-surface basis, "
         + "in addition to results for all wall surfaces combined.",
     )
-    observer_time_step_size: Optional[TimeType.Positive] = pd.Field(
+    observer_time_step_size: Optional[Time.PositiveFloat64] = pd.Field(
         None,
         description="Time step size for aeroacoustic output. "
         + "A valid value is smaller than or equal to the time step size of the CFD simulation. "
         + "Defaults to time step size of CFD.",
     )
-    aeroacoustic_solver_start_time: TimeType.NonNegative = pd.Field(
+    aeroacoustic_solver_start_time: Time.NonNegativeFloat64 = pd.Field(
         0 * u.s,
         description="Time to start the aeroacoustic solver. "
         + "Signals emitted after this start time at the source surfaces are included in the output.",

@@ -3,19 +3,19 @@
 from typing import List, Literal, Optional, Union
 
 import pydantic as pd
+from flow360_schema.framework.physical_dimensions import (
+    AbsoluteTemperature,
+    Density,
+    Pressure,
+    SpecificHeatCapacity,
+    ThermalConductivity,
+    Velocity,
+    Viscosity,
+)
 from numpy import sqrt
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.simulation.unit_system import (
-    AbsoluteTemperatureType,
-    DensityType,
-    PressureType,
-    SpecificHeatCapacityType,
-    ThermalConductivityType,
-    VelocityType,
-    ViscosityType,
-)
 
 # =============================================================================
 # NASA 9-Coefficient Polynomial Utility Functions
@@ -116,10 +116,10 @@ class NASA9CoefficientSet(Flow360BaseModel):
     """
 
     type_name: Literal["NASA9CoefficientSet"] = pd.Field("NASA9CoefficientSet", frozen=True)
-    temperature_range_min: AbsoluteTemperatureType = pd.Field(
+    temperature_range_min: AbsoluteTemperature.Float64 = pd.Field(
         description="Minimum temperature for which this coefficient set is valid."
     )
-    temperature_range_max: AbsoluteTemperatureType = pd.Field(
+    temperature_range_max: AbsoluteTemperature.Float64 = pd.Field(
         description="Maximum temperature for which this coefficient set is valid."
     )
     coefficients: List[float] = pd.Field(
@@ -382,20 +382,20 @@ class Sutherland(Flow360BaseModel):
     """
 
     # pylint: disable=no-member
-    reference_viscosity: ViscosityType.NonNegative = pd.Field(
+    reference_viscosity: Viscosity.NonNegativeFloat64 = pd.Field(
         description="The reference dynamic viscosity at the reference temperature."
     )
-    reference_temperature: AbsoluteTemperatureType = pd.Field(
+    reference_temperature: AbsoluteTemperature.Float64 = pd.Field(
         description="The reference temperature associated with the reference viscosity."
     )
-    effective_temperature: AbsoluteTemperatureType = pd.Field(
+    effective_temperature: AbsoluteTemperature.Float64 = pd.Field(
         description="The effective temperature constant used in Sutherland's formula."
     )
 
     @pd.validate_call
     def get_dynamic_viscosity(
-        self, temperature: AbsoluteTemperatureType
-    ) -> ViscosityType.NonNegative:
+        self, temperature: AbsoluteTemperature.Float64
+    ) -> Viscosity.NonNegativeFloat64:
         """
         Calculates the dynamic viscosity at a given temperature using Sutherland's law.
 
@@ -478,7 +478,7 @@ class Air(MaterialBase):
 
     type: Literal["air"] = pd.Field("air", frozen=True)
     name: str = pd.Field("air")
-    dynamic_viscosity: Union[Sutherland, ViscosityType.NonNegative] = pd.Field(
+    dynamic_viscosity: Union[Sutherland, Viscosity.NonNegativeFloat64] = pd.Field(
         Sutherland(
             reference_viscosity=1.716e-5 * u.Pa * u.s,
             reference_temperature=273.15 * u.K,
@@ -528,7 +528,7 @@ class Air(MaterialBase):
         description="Turbulent Prandtl number. Default is 0.9.",
     )
 
-    def get_specific_heat_ratio(self, temperature: AbsoluteTemperatureType) -> pd.PositiveFloat:
+    def get_specific_heat_ratio(self, temperature: AbsoluteTemperature.Float64) -> pd.PositiveFloat:
         """
         Computes the specific heat ratio (gamma) at a given temperature from NASA polynomial.
 
@@ -575,7 +575,7 @@ class Air(MaterialBase):
         return coeffs
 
     @property
-    def gas_constant(self) -> SpecificHeatCapacityType.Positive:
+    def gas_constant(self) -> SpecificHeatCapacity.PositiveFloat64:
         """
         Returns the specific gas constant for air.
 
@@ -589,8 +589,8 @@ class Air(MaterialBase):
 
     @pd.validate_call
     def get_pressure(
-        self, density: DensityType.Positive, temperature: AbsoluteTemperatureType
-    ) -> PressureType.Positive:
+        self, density: Density.PositiveFloat64, temperature: AbsoluteTemperature.Float64
+    ) -> Pressure.PositiveFloat64:
         """
         Calculates the pressure of air using the ideal gas law.
 
@@ -610,7 +610,9 @@ class Air(MaterialBase):
         return density * self.gas_constant * temperature
 
     @pd.validate_call
-    def get_speed_of_sound(self, temperature: AbsoluteTemperatureType) -> VelocityType.Positive:
+    def get_speed_of_sound(
+        self, temperature: AbsoluteTemperature.Float64
+    ) -> Velocity.PositiveFloat64:
         """
         Calculates the speed of sound in air at a given temperature.
 
@@ -632,8 +634,8 @@ class Air(MaterialBase):
 
     @pd.validate_call
     def get_dynamic_viscosity(
-        self, temperature: AbsoluteTemperatureType
-    ) -> ViscosityType.NonNegative:
+        self, temperature: AbsoluteTemperature.Float64
+    ) -> Viscosity.NonNegativeFloat64:
         """
         Calculates the dynamic viscosity of air at a given temperature.
 
@@ -673,13 +675,13 @@ class SolidMaterial(MaterialBase):
 
     type: Literal["solid"] = pd.Field("solid", frozen=True)
     name: str = pd.Field(frozen=True, description="Name of the solid material.")
-    thermal_conductivity: ThermalConductivityType.Positive = pd.Field(
+    thermal_conductivity: ThermalConductivity.PositiveFloat64 = pd.Field(
         frozen=True, description="Thermal conductivity of the material."
     )
-    density: Optional[DensityType.Positive] = pd.Field(
+    density: Optional[Density.PositiveFloat64] = pd.Field(
         None, frozen=True, description="Density of the material."
     )
-    specific_heat_capacity: Optional[SpecificHeatCapacityType.Positive] = pd.Field(
+    specific_heat_capacity: Optional[SpecificHeatCapacity.PositiveFloat64] = pd.Field(
         None, frozen=True, description="Specific heat capacity of the material."
     )
 
@@ -710,10 +712,10 @@ class Water(MaterialBase):
 
     type: Literal["water"] = pd.Field("water", frozen=True)
     name: str = pd.Field(frozen=True, description="Custom name of the water with given property.")
-    density: Optional[DensityType.Positive] = pd.Field(
+    density: Optional[Density.PositiveFloat64] = pd.Field(
         1000 * u.kg / u.m**3, frozen=True, description="Density of the water."
     )
-    dynamic_viscosity: ViscosityType.NonNegative = pd.Field(
+    dynamic_viscosity: Viscosity.NonNegativeFloat64 = pd.Field(
         0.001002 * u.kg / u.m / u.s, frozen=True, description="Dynamic viscosity of the water."
     )
 

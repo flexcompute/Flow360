@@ -206,12 +206,11 @@ class TestKrylovSimulationRestrictions:
             )
 
     def test_error_krylov_with_unsteady(self):
-        with SI_unit_system:
-            with pytest.raises(ValueError, match="Unsteady"):
-                _make_sim_params(
-                    navier_stokes_solver=NavierStokesSolver(linear_solver=KrylovLinearSolver()),
-                    time_stepping=Unsteady(steps=100, step_size=0.1),
-                )
+        with pytest.raises(ValueError, match="Unsteady"):
+            _make_sim_params(
+                navier_stokes_solver=NavierStokesSolver(linear_solver=KrylovLinearSolver()),
+                time_stepping=Unsteady(steps=100, step_size=0.1 * u.s),
+            )
 
     def test_krylov_with_steady_is_ok(self):
         param = _make_sim_params(
