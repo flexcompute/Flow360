@@ -1468,14 +1468,14 @@ files = [
 
 [[package]]
 name = "flow360-schema"
-version = "0.1.21"
+version = "0.1.22"
 description = "Pure Pydantic schemas for Flow360 - Single Source of Truth"
 optional = false
 python-versions = ">=3.10,<4.0"
 groups = ["main"]
 files = [
-    {file = "flow360_schema-0.1.21-py3-none-any.whl", hash = "sha256:bf659ce35c4a551b85529cebdec3f4146fd702d0d9584f35213b99d83abd0ec4"},
-    {file = "flow360_schema-0.1.21.tar.gz", hash = "sha256:5337872e951569f95cc07b5cb1c4490cd622b7c7276fdc014730223f89a60302"},
+    {file = "flow360_schema-0.1.22-py3-none-any.whl", hash = "sha256:b3f84e445a0aa9b973d682f9b0547f6b6e706dacb2bed12efe003c726ec645b5"},
+    {file = "flow360_schema-0.1.22.tar.gz", hash = "sha256:73d55b2cfc99c673612decb6f1de5f2b46b8d46a0cf55c32619550cccc858bde"},
 ]
 
 [package.dependencies]

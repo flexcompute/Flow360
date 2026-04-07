@@ -233,43 +233,58 @@ def _replace_ghost_surfaces(params: SimulationParams):
             " Please double check the use of ghost surfaces."
         )
 
+    def _replace_in_value(*, value, ghost_entities_from_metadata):
+        if isinstance(value, GhostSurface):
+            return _replace_the_ghost_surface(
+                ghost_surface=value,
+                ghost_entities_from_metadata=ghost_entities_from_metadata,
+            )
+
+        if isinstance(value, EntityList):
+            if value.stored_entities:
+                for entity_index, entity in enumerate(value.stored_entities):
+                    value.stored_entities[entity_index] = _replace_in_value(
+                        value=entity,
+                        ghost_entities_from_metadata=ghost_entities_from_metadata,
+                    )
+            return value
+
+        if isinstance(value, list):
+            for item_index, item in enumerate(value):
+                value[item_index] = _replace_in_value(
+                    value=item,
+                    ghost_entities_from_metadata=ghost_entities_from_metadata,
+                )
+            return value
+
+        if isinstance(value, tuple):
+            return tuple(
+                _replace_in_value(
+                    value=item,
+                    ghost_entities_from_metadata=ghost_entities_from_metadata,
+                )
+                for item in value
+            )
+
+        if isinstance(value, Flow360BaseModel):
+            _find_ghost_surfaces(
+                model=value,
+                ghost_entities_from_metadata=ghost_entities_from_metadata,
+            )
+            return value
+
+        return value
+
     def _find_ghost_surfaces(*, model, ghost_entities_from_metadata):
-        for field in model.__dict__.values():
-            if isinstance(field, GhostSurface):
-                # pylint: disable=protected-access
-                field = _replace_the_ghost_surface(
-                    ghost_surface=field,
-                    ghost_entities_from_metadata=ghost_entities_from_metadata,
-                )
-
-            if isinstance(field, EntityList):
-                if field.stored_entities:
-                    for entity_index, _ in enumerate(field.stored_entities):
-                        if isinstance(field.stored_entities[entity_index], GhostSurface):
-                            field.stored_entities[entity_index] = _replace_the_ghost_surface(
-                                ghost_surface=field.stored_entities[entity_index],
-                                ghost_entities_from_metadata=ghost_entities_from_metadata,
-                            )
-
-            elif isinstance(field, (list, tuple)):
-                for item in field:
-                    if isinstance(item, GhostSurface):
-                        # pylint: disable=protected-access
-                        item = _replace_the_ghost_surface(
-                            ghost_surface=item,
-                            ghost_entities_from_metadata=ghost_entities_from_metadata,
-                        )
-                    elif isinstance(item, Flow360BaseModel):
-                        _find_ghost_surfaces(
-                            model=item,
-                            ghost_entities_from_metadata=ghost_entities_from_metadata,
-                        )
-
-            elif isinstance(field, Flow360BaseModel):
-                _find_ghost_surfaces(
-                    model=field,
-                    ghost_entities_from_metadata=ghost_entities_from_metadata,
-                )
+        for field_name, field in model.__dict__.items():
+            updated_field = _replace_in_value(
+                value=field,
+                ghost_entities_from_metadata=ghost_entities_from_metadata,
+            )
+            if updated_field is field:
+                continue
+            # pylint: disable=protected-access
+            model._force_set_attr(field_name, updated_field)
 
     ghost_entities_from_metadata = (
         params.private_attribute_asset_cache.project_entity_info.ghost_entities
