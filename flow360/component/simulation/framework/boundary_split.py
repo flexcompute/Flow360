@@ -374,7 +374,15 @@ class BoundaryNameLookupTable:
 
     def get_split_info(self, base_name: str) -> List[BoundarySplitInfo]:
         """Get all split info for a base boundary name."""
-        return self._mapping.get(base_name, [])
+        split_infos = self._mapping.get(base_name, [])
+        if split_infos:
+            return split_infos
+
+        normalized_name = base_name.strip()
+        if normalized_name != base_name:
+            return self._mapping.get(normalized_name, [])
+
+        return []
 
 
 # --- Entity update functions (external entry point) ---

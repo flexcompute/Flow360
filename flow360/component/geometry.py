@@ -108,6 +108,7 @@ class GeometryDraft(ResourceDraft):
         length_unit: LengthUnitType = "m",
         tags: List[str] = None,
         folder: Optional[Folder] = None,
+        use_nextflow_pipelines: bool = False,
     ):
         """
         Initialize a GeometryDraft with common attributes.
@@ -139,6 +140,7 @@ class GeometryDraft(ResourceDraft):
         self.length_unit = length_unit
         self.solver_version = solver_version
         self.folder = folder
+        self.use_nextflow_pipelines = use_nextflow_pipelines
 
         # pylint: disable=fixme
         # TODO: create a DependableResourceDraft for GeometryDraft and SurfaceMeshDraft
@@ -242,6 +244,7 @@ class GeometryDraft(ResourceDraft):
             parent_folder_id=self.folder.id if self.folder else "ROOT.FLOW360",
             length_unit=self.length_unit,
             description=description,
+            use_nextflow=self.use_nextflow_pipelines,
         )
 
         resp = RestApi(GeometryInterface.endpoint).post(req.dict())
@@ -475,10 +478,16 @@ class Geometry(AssetBase):
         length_unit: LengthUnitType = "m",
         tags: List[str] = None,
         folder: Optional[Folder] = None,
+        use_nextflow_pipelines: bool = False,
     ) -> GeometryDraft:
-        # For type hint only but proper fix is to fully abstract the Draft class too.
-        return super().from_file(
-            file_names, project_name, solver_version, length_unit, tags, folder=folder
+        return GeometryDraft(
+            file_names=file_names,
+            project_name=project_name,
+            solver_version=solver_version,
+            length_unit=length_unit,
+            tags=tags,
+            folder=folder,
+            use_nextflow_pipelines=use_nextflow_pipelines,
         )
 
     @classmethod
