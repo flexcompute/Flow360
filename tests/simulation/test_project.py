@@ -57,6 +57,50 @@ def test_from_cloud(mock_id, mock_response):
         project.get_case(asset_id=current_case_id)
 
 
+def test_from_geometry_passes_beta_geometry_processor(monkeypatch):
+    Cylinder3D.get_files()
+    captured = {}
+
+    class _MockDraft:
+        def submit(self, run_async=False):
+            assert run_async is True
+            return MagicMock(project_id="prj-test-project-id")
+
+    def _mock_from_file(
+        file_names,
+        project_name=None,
+        solver_version=None,
+        length_unit="m",
+        tags=None,
+        folder=None,
+        use_nextflow_pipelines=False,
+    ):
+        captured["file_names"] = file_names
+        captured["project_name"] = project_name
+        captured["solver_version"] = solver_version
+        captured["length_unit"] = length_unit
+        captured["use_nextflow_pipelines"] = use_nextflow_pipelines
+        return _MockDraft()
+
+    monkeypatch.setattr("flow360.component.project.Geometry.from_file", _mock_from_file)
+
+    project_id = fl.Project.from_geometry(
+        Cylinder3D.geometry,
+        name="beta-geo-project",
+        solver_version="release-test",
+        length_unit="cm",
+        run_async=True,
+        beta_geometry_processor=True,
+    )
+
+    assert project_id == "prj-test-project-id"
+    assert captured["file_names"] == [Cylinder3D.geometry]
+    assert captured["project_name"] == "beta-geo-project"
+    assert captured["solver_version"] == "release-test"
+    assert captured["length_unit"] == "cm"
+    assert captured["use_nextflow_pipelines"] is True
+
+
 def test_root_asset_entity_change_reflection(mock_id, mock_response):
     project = fl.Project.from_cloud(project_id="prj-41d2333b-85fd-4bed-ae13-15dcb6da519e")
     geo = project.geometry

@@ -931,6 +931,7 @@ class Project(pd.BaseModel):
         tags: List[str] = None,
         run_async: bool = False,
         folder: Optional[Folder] = None,
+        beta_geometry_processor: bool = False,
     ):
         """
         Initializes a project from a file.
@@ -969,7 +970,13 @@ class Project(pd.BaseModel):
 
         if isinstance(files, GeometryFiles):
             draft = Geometry.from_file(
-                files.file_names, name, solver_version, length_unit, tags, folder=folder
+                files.file_names,
+                name,
+                solver_version,
+                length_unit,
+                tags,
+                folder=folder,
+                use_nextflow_pipelines=beta_geometry_processor,
             )
         elif isinstance(files, SurfaceMeshFile):
             draft = SurfaceMeshV2.from_file(
@@ -1150,6 +1157,7 @@ class Project(pd.BaseModel):
         tags: List[str] = None,
         run_async: bool = False,
         folder: Optional[Folder] = None,
+        beta_geometry_processor: bool = False,
     ):
         """
         Initializes a project from local geometry files.
@@ -1170,6 +1178,9 @@ class Project(pd.BaseModel):
             Whether to create project asynchronously (default is False).
         folder : Optional[Folder], optional
             Parent folder for the project. If None, creates in root.
+        beta_geometry_processor : bool, optional
+            Route geometry processing through the beta Nextflow-based geometry
+            processor instead of the legacy geometry pipeline (default is False).
 
         Returns
         -------
@@ -1205,6 +1216,7 @@ class Project(pd.BaseModel):
             tags=tags,
             run_async=run_async,
             folder=folder,
+            beta_geometry_processor=beta_geometry_processor,
         )
 
     @classmethod
