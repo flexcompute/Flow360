@@ -1,30 +1,17 @@
-"""Shared validation helpers for meshing parameters."""
+"""Meshing validators — re-import relay."""
 
-import flow360.component.simulation.units as u
-from flow360.component.simulation.meshing_param.volume_params import UniformRefinement
-from flow360.component.simulation.primitives import Box, Cylinder
+from importlib import import_module
+
+_EXPORTED_NAMES = {"validate_snappy_uniform_refinement_entities"}
 
 
-def validate_snappy_uniform_refinement_entities(refinement: UniformRefinement):
-    """Validate that a UniformRefinement's entities are compatible with snappyHexMesh.
+def __getattr__(name):
+    if name not in _EXPORTED_NAMES:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
-    Raises ValueError if any Box has a non-axis-aligned rotation or any Cylinder is hollow.
-    """
-    # pylint: disable=no-member
-    for entity in refinement.entities.stored_entities:
-        if (
-            isinstance(entity, Box)
-            and entity.angle_of_rotation.to("deg") % (360 * u.deg) != 0 * u.deg
-        ):
-            raise ValueError(
-                "UniformRefinement for snappy accepts only Boxes with axes aligned"
-                + " with the global coordinate system (angle_of_rotation=0)."
-            )
-        if (
-            isinstance(entity, Cylinder)
-            and entity.inner_radius is not None
-            and entity.inner_radius.to("m") != 0 * u.m
-        ):
-            raise ValueError(
-                "UniformRefinement for snappy accepts only full cylinders (where inner_radius = 0)."
-            )
+    schema_module = import_module(
+        "flow360_schema.models.simulation.meshing_param.meshing_validators"
+    )
+    value = getattr(schema_module, name)
+    globals()[name] = value
+    return value
