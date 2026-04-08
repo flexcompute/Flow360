@@ -3,7 +3,7 @@
 from typing import Dict, List, Optional, Tuple, Union
 
 from flow360_schema.models.asset_cache import MirrorStatus
-from flow360_schema.models.entities import MirrorPlane
+from flow360_schema.models.entities.geometry_entities import MirrorPlane
 
 from flow360.component.simulation.framework.entity_registry import (
     EntityRegistry,

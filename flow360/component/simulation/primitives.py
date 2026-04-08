@@ -1,7 +1,8 @@
 """
 Primitive type definitions for simulation entities.
 
-Re-import relay: all entity classes are defined in flow360_schema.models.entities.
+Re-import relay: entity classes are defined in concrete modules under
+flow360_schema.models.entities.
 Only ReferenceGeometry and VolumeEntityTypes remain client-owned.
 """
 
@@ -10,16 +11,22 @@ from typing import Optional, Union
 
 import pydantic as pd
 from flow360_schema.framework.physical_dimensions import Area, Length
-from flow360_schema.models.entities import (
+from flow360_schema.models.entities.base import (
     BOUNDARY_FULL_NAME_WHEN_NOT_FOUND,
-    AxisymmetricBody,
-    Box,
-    BoxCache,
-    CustomVolume,
-    Cylinder,
+    OrthogonalAxes,
+    SurfacePrivateAttributes,
+    _auto_symmetric_plane_exists_from_bbox,
+    _check_axis_is_orthogonal,
+    _get_generated_boundary_names,
+    _SurfaceEntityBase,
+    _VolumeEntityBase,
+)
+from flow360_schema.models.entities.geometry_entities import (
     Edge,
-    GenericVolume,
     GeometryBodyGroup,
+    SnappyBody,
+)
+from flow360_schema.models.entities.surface_entities import (
     GhostCircularPlane,
     GhostSphere,
     GhostSurface,
@@ -27,22 +34,22 @@ from flow360_schema.models.entities import (
     ImportedSurface,
     MirroredGeometryBodyGroup,
     MirroredSurface,
-    OrthogonalAxes,
-    SeedpointVolume,
-    SnappyBody,
-    Sphere,
     Surface,
     SurfacePair,
     SurfacePairBase,
-    SurfacePrivateAttributes,
     WindTunnelGhostSurface,
-    _auto_symmetric_plane_exists_from_bbox,
-    _check_axis_is_orthogonal,
-    _get_generated_boundary_names,
     _MirroredEntityBase,
-    _SurfaceEntityBase,
-    _VolumeEntityBase,
     compute_bbox_tolerance,
+)
+from flow360_schema.models.entities.volume_entities import (
+    AxisymmetricBody,
+    Box,
+    BoxCache,
+    CustomVolume,
+    Cylinder,
+    GenericVolume,
+    SeedpointVolume,
+    Sphere,
 )
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
