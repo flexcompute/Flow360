@@ -422,6 +422,8 @@ def test_volume_uniform_refinement_project_to_surface_false_skips_validation():
     )
 
     assert errors is None, "No snappy validation error expected when project_to_surface=False"
+
+
 def test_snappy_proximity_spacing_error_when_exceeds_default_min_spacing():
     """When min_spacing is not set on a BodyRefinement but proximity_spacing exceeds
     defaults.min_spacing, a ValueError should be raised."""
