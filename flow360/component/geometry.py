@@ -4,6 +4,7 @@ Geometry component
 
 from __future__ import annotations
 
+import json
 import os
 import threading
 from enum import Enum
@@ -19,6 +20,14 @@ from flow360.cloud.flow360_requests import (
 )
 from flow360.cloud.heartbeat import post_upload_heartbeat
 from flow360.cloud.rest_api import RestApi
+
+# Re-exports for face grouping API
+from flow360.component.geometry_tree import (
+    GeometryTreeNode,
+    GeometryTreeNodeSet,
+    TreeBackend,
+)
+from flow360.component.geometry_tree.face_group import FaceGroup
 from flow360.component.interfaces import GeometryInterface
 from flow360.component.resource_base import (
     AssetMetaBaseModelV2,
@@ -377,7 +386,7 @@ class GeometryDraft(ResourceDraft):
         return Geometry.from_cloud(info.id)
 
 
-class Geometry(AssetBase):
+class Geometry(AssetBase):  # pylint: disable=too-many-public-methods
     """
     Geometry component for workbench (simulation V2)
     """
@@ -390,9 +399,150 @@ class Geometry(AssetBase):
 
     # pylint: disable=redefined-builtin
     def __init__(self, id: Union[str, None]):
+        self._tree = None  # TreeBackend for tree navigation and face grouping
+        self._face_groups = {}  # name -> FaceGroup
         super().__init__(id)
         self.snappy_body_registry = None
         self._project_length_unit = None
+
+    @classmethod
+    def from_local_tree(
+        cls, tree_json_path: str = "geometryHierarchicalMetadata.json"
+    ) -> "Geometry":
+        """
+        Create a Geometry from a local hierarchical metadata JSON file.
+
+        Loads the tree directly from a local JSON file, without requiring
+        cloud upload.
+
+        Parameters
+        ----------
+        tree_json_path : str
+            Path to the hierarchical metadata JSON file.
+
+        Returns
+        -------
+        Geometry
+            Geometry with tree loaded (supports faces(), create_face_group(), etc.)
+        """
+        geo = cls(id=None)
+        geo.snappy_body_registry = None
+        with open(tree_json_path, "r", encoding="utf-8") as f:
+            tree_data = json.load(f)
+        geo._tree = TreeBackend()
+        geo._tree.load_from_json(tree_data)
+        log.info(f"Geometry loaded from local tree: {len(geo.faces())} faces")
+        return geo
+
+    # ================================================================
+    # Tree Navigation Methods
+    # ================================================================
+
+    def root_node(self) -> GeometryTreeNode:
+        """Get the root node of the geometry tree."""
+        if self._tree is None:
+            raise Flow360ValueError(
+                "Geometry tree not loaded. Use Geometry(file_path) to load from file."
+            )
+        root_id = self._tree.get_root()
+        return GeometryTreeNode(self, self._tree, root_id)
+
+    def children(self, **filters) -> GeometryTreeNodeSet:
+        """Get direct children of the root node."""
+        return self.root_node().children(**filters)
+
+    def descendants(self, **filters) -> GeometryTreeNodeSet:
+        """Get all descendants of the root."""
+        return self.root_node().descendants(**filters)
+
+    def faces(self, **filters) -> GeometryTreeNodeSet:
+        """Get all face nodes in the geometry."""
+        return self.root_node().faces(**filters)
+
+    # ================================================================
+    # Face Group Management
+    # ================================================================
+
+    def create_face_group(self, name: str, selection: GeometryTreeNodeSet) -> FaceGroup:
+        """
+        Create a named face group from a selection.
+
+        Each face can only belong to one group. Faces in the selection
+        are removed from any previous group they belonged to.
+        """
+        if name in self._face_groups:
+            raise ValueError(f"Group '{name}' already exists")
+
+        # Extract face node IDs from the selection
+        face_nodes = selection.faces()
+        face_node_ids = face_nodes._node_ids  # pylint: disable=protected-access
+
+        # Remove these faces from any existing groups (exclusive ownership)
+        for group in self._face_groups.values():
+            group._node_ids -= face_node_ids
+
+        group = FaceGroup(name, face_node_ids)
+        self._face_groups[name] = group
+        return group
+
+    def get_face_group(self, name: str) -> FaceGroup:
+        """Get a face group by name."""
+        if name not in self._face_groups:
+            raise KeyError(f"Group '{name}' not found")
+        return self._face_groups[name]
+
+    def list_groups(self):
+        """List all group names."""
+        return list(self._face_groups.keys())
+
+    def clear_groups(self) -> None:
+        """Remove all face groups."""
+        self._face_groups.clear()
+
+    def _build_face_grouping_config(self) -> dict:
+        """Build versioned face grouping config.
+
+        Returns a dict with structure:
+            {"version": "1.0", "face_group_mapping": {uuid: group_name, ...}}
+        """
+        face_group_mapping = {}
+        for group_name, group in self._face_groups.items():
+            for node_id in group._node_ids:  # pylint: disable=protected-access
+                face_group_mapping[node_id] = group_name
+        return {"version": "1.0", "face_group_mapping": face_group_mapping}
+
+    def export_face_grouping_config(self, output_path: str) -> None:
+        """
+        Save face groups to a versioned local JSON file.
+
+        Parameters
+        ----------
+        output_path : str
+            Path to write the face grouping JSON file.
+        """
+        face_grouping_config = self._build_face_grouping_config()
+        with open(output_path, "w", encoding="utf-8") as fh:
+            json.dump(face_grouping_config, fh, indent=4)
+        mapping = face_grouping_config["face_group_mapping"]
+        log.info(f"Saved {len(mapping)} face group entries to {output_path}")
+
+    # ================================================================
+    # Set Operations
+    # ================================================================
+
+    def __sub__(self, other) -> GeometryTreeNodeSet:
+        """Subtract faces from total geometry (geometry - FaceGroup)."""
+        all_faces = self.faces()
+        if isinstance(other, FaceGroup):
+            other_nodes = GeometryTreeNodeSet(
+                self, self._tree, other._node_ids
+            )  # pylint: disable=protected-access
+            return all_faces - other_nodes
+        if isinstance(other, GeometryTreeNodeSet):
+            raise Flow360ValueError(
+                "Geometry subtraction with GeometryTreeNodeSet is not supported. "
+            )
+        return NotImplemented
 
     @property
     def face_group_tag(self):
