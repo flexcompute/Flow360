@@ -56,8 +56,16 @@ class SurfaceMeshingParams(Flow360BaseModel):
             return self
         for refinement in self.refinements:
             if isinstance(refinement, BodyRefinement):
+                if refinement.min_spacing is None and refinement.proximity_spacing:
+                    if refinement.proximity_spacing > self.defaults.min_spacing:
+                        raise ValueError(
+                            f"Proximity spacing for a BodyRefinement ({refinement.proximity_spacing}) was set higher "
+                            + f"than the minimal spacing ({self.defaults.min_spacing})."
+                        )
+
                 if refinement.min_spacing is None and refinement.max_spacing is None:
                     continue
+
                 if refinement.min_spacing is None and self.defaults.min_spacing.to(
                     "m"
                 ) > refinement.max_spacing.to("m"):
