@@ -748,6 +748,7 @@ class BETDiskCache(Flow360BaseModel):
     number_of_blades: Optional[pd.StrictInt] = None
     initial_blade_direction: Optional[Axis] = None
     blade_line_chord: Optional[LengthType.NonNegative] = None
+    collective_pitch: Optional[AngleType] = None
 
 
 class BETDisk(MultiConstructorBaseModel):
@@ -814,8 +815,15 @@ class BETDisk(MultiConstructorBaseModel):
     )
     initial_blade_direction: Optional[Axis] = pd.Field(
         None,
-        description="Orientation of the first blade in the BET model. "
-        + "Must be specified if performing an unsteady BET Line simulation.",
+        description="Direction of the first blade at the initial time, in the global mesh coordinate "
+        + "system (same frame as the BET cylinder center and axis), not a local BET/disk-fixed frame. "
+        + "Must be orthogonal to the rotation axis (Cylinder.axis). Only the direction is used—the "
+        + "vector need not be unit length. Must be specified for unsteady BET Line (blade_line_chord > 0).",
+    )
+    collective_pitch: Optional[AngleType] = pd.Field(
+        None,
+        description="Collective pitch angle applied as a uniform offset to all blade twist values. "
+        + "Positive value increases the angle of attack at every radial station.",
     )
     tip_gap: Union[Literal["inf"], LengthType.NonNegative] = pd.Field(
         "inf",
@@ -910,6 +918,7 @@ class BETDisk(MultiConstructorBaseModel):
         "number_of_blades",
         "entities",
         "initial_blade_direction",
+        "collective_pitch",
         mode="after",
     )
     @classmethod
@@ -1007,6 +1016,7 @@ class BETDisk(MultiConstructorBaseModel):
         angle_unit: AngleType,
         initial_blade_direction: Optional[Axis] = None,
         blade_line_chord: LengthType.NonNegative = 0 * u.m,
+        collective_pitch: Optional[AngleType] = None,
         name: str = "BET disk",
     ):
         """Constructs a :class: `BETDisk` instance from a given C81 file and additional inputs.
@@ -1032,10 +1042,12 @@ class BETDisk(MultiConstructorBaseModel):
         angle_unit: AngleType
             Angle unit used for AngleType BETDisk parameters.
         initial_blade_direction: Axis, optional
-            Orientation of the first blade in BET model.
-            Must be specified for unsteady BET simulation.
+            Direction of the first blade in global mesh coordinates; orthogonal to the rotation axis.
+            Only direction matters (need not be a unit vector). Required for unsteady BET Line.
         blade_line_chord: LengthType.NonNegative
             Dimensional chord used in unsteady BET simulation. Defaults to ``0 * u.m``.
+        collective_pitch: AngleType, optional
+            Collective pitch angle applied as a uniform offset to all blade twist values.
 
 
         Returns
@@ -1075,6 +1087,8 @@ class BETDisk(MultiConstructorBaseModel):
             number_of_blades=number_of_blades,
             name=name,
         )
+        if collective_pitch is not None:
+            params["collective_pitch"] = collective_pitch
 
         return cls(**params)
 
@@ -1093,6 +1107,7 @@ class BETDisk(MultiConstructorBaseModel):
         angle_unit: AngleType,
         initial_blade_direction: Optional[Axis] = None,
         blade_line_chord: LengthType.NonNegative = 0 * u.m,
+        collective_pitch: Optional[AngleType] = None,
         name: str = "BET disk",
     ):
         """Constructs a :class: `BETDisk` instance from a given DFDC file and additional inputs.
@@ -1116,10 +1131,12 @@ class BETDisk(MultiConstructorBaseModel):
         angle_unit: AngleType
             Angle unit used for AngleType BETDisk parameters.
         initial_blade_direction: Axis, optional
-            Orientation of the first blade in BET model.
-            Must be specified for unsteady BET simulation.
+            Direction of the first blade in global mesh coordinates; orthogonal to the rotation axis.
+            Only direction matters (need not be a unit vector). Required for unsteady BET Line.
         blade_line_chord: LengthType.NonNegative
             Dimensional chord used in unsteady BET simulation. Defaults to ``0 * u.m``.
+        collective_pitch: AngleType, optional
+            Collective pitch angle applied as a uniform offset to all blade twist values.
 
 
         Returns
@@ -1156,6 +1173,8 @@ class BETDisk(MultiConstructorBaseModel):
             length_unit=length_unit,
             name=name,
         )
+        if collective_pitch is not None:
+            params["collective_pitch"] = collective_pitch
 
         return cls(**params)
 
@@ -1175,6 +1194,7 @@ class BETDisk(MultiConstructorBaseModel):
         number_of_blades: pd.StrictInt,
         initial_blade_direction: Optional[Axis],
         blade_line_chord: LengthType.NonNegative = 0 * u.m,
+        collective_pitch: Optional[AngleType] = None,
         name: str = "BET disk",
     ):
         """Constructs a :class: `BETDisk` instance from a given XROTOR file and additional inputs.
@@ -1200,10 +1220,12 @@ class BETDisk(MultiConstructorBaseModel):
         number_of_blades: Int
             Number of blades to model.
         initial_blade_direction: Axis, optional
-            Orientation of the first blade in BET model.
-            Must be specified for unsteady BET simulation.
+            Direction of the first blade in global mesh coordinates; orthogonal to the rotation axis.
+            Only direction matters (need not be a unit vector). Required for unsteady BET Line.
         blade_line_chord: LengthType.NonNegative
             Dimensional chord used in unsteady BET simulation. Defaults to ``0 * u.m``.
+        collective_pitch: AngleType, optional
+            Collective pitch angle applied as a uniform offset to all blade twist values.
 
 
         Returns
@@ -1245,6 +1267,8 @@ class BETDisk(MultiConstructorBaseModel):
             number_of_blades=number_of_blades,
             name=name,
         )
+        if collective_pitch is not None:
+            params["collective_pitch"] = collective_pitch
 
         return cls(**params)
 
@@ -1263,6 +1287,7 @@ class BETDisk(MultiConstructorBaseModel):
         angle_unit: AngleType,
         initial_blade_direction: Optional[Axis] = None,
         blade_line_chord: LengthType.NonNegative = 0 * u.m,
+        collective_pitch: Optional[AngleType] = None,
         name: str = "BET disk",
     ):
         """Constructs a :class: `BETDisk` instance from a given XROTOR file and additional inputs.
@@ -1286,10 +1311,12 @@ class BETDisk(MultiConstructorBaseModel):
         angle_unit: AngleType
             Angle unit used for AngleType BETDisk parameters.
         initial_blade_direction: Axis, optional
-            Orientation of the first blade in BET model.
-            Must be specified for unsteady BET simulation.
+            Direction of the first blade in global mesh coordinates; orthogonal to the rotation axis.
+            Only direction matters (need not be a unit vector). Required for unsteady BET Line.
         blade_line_chord: LengthType.NonNegative
             Dimensional chord used in unsteady BET simulation. Defaults to ``0 * u.m``.
+        collective_pitch: AngleType, optional
+            Collective pitch angle applied as a uniform offset to all blade twist values.
 
 
         Returns
@@ -1326,6 +1353,8 @@ class BETDisk(MultiConstructorBaseModel):
             length_unit=length_unit,
             name=name,
         )
+        if collective_pitch is not None:
+            params["collective_pitch"] = collective_pitch
 
         return cls(**params)
 

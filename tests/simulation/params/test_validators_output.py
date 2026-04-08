@@ -1690,3 +1690,45 @@ def test_surface_output_write_single_file_validator():
         output_fields=["Cp"],
         output_format="both",
     )
+
+
+def test_output_format_list():
+    # List format should be accepted and sorted
+    out = VolumeOutput(output_fields=["Mach"], output_format=["paraview"])
+    assert out.output_format == ["paraview"]
+
+    out = VolumeOutput(output_fields=["Mach"], output_format=["vtkhdf", "paraview"])
+    assert out.output_format == ["paraview", "vtkhdf"]
+
+    out = VolumeOutput(output_fields=["Mach"], output_format=["tecplot", "vtkhdf", "ensight"])
+    assert out.output_format == ["ensight", "tecplot", "vtkhdf"]
+
+
+def test_output_format_legacy_string_converted_to_list():
+    # Legacy strings should be normalized to sorted lists
+    out = VolumeOutput(output_fields=["Mach"], output_format="paraview")
+    assert out.output_format == ["paraview"]
+
+    out = VolumeOutput(output_fields=["Mach"], output_format="both")
+    assert out.output_format == ["paraview", "tecplot"]
+
+    out = VolumeOutput(output_fields=["Mach"], output_format="tecplot")
+    assert out.output_format == ["tecplot"]
+
+
+def test_output_format_deduplication():
+    # Duplicate entries should be removed and result sorted
+    out = VolumeOutput(output_fields=["Mach"], output_format=["paraview", "paraview"])
+    assert out.output_format == ["paraview"]
+
+    out = VolumeOutput(output_fields=["Mach"], output_format=["vtkhdf", "paraview", "vtkhdf"])
+    assert out.output_format == ["paraview", "vtkhdf"]
+
+
+def test_output_format_both_not_allowed_in_list():
+    # "both" is only valid as a legacy string, not as a list element
+    with pytest.raises(pydantic.ValidationError):
+        VolumeOutput(output_fields=["Mach"], output_format=["both"])
+
+    with pytest.raises(pydantic.ValidationError):
+        VolumeOutput(output_fields=["Mach"], output_format=["paraview", "both"])

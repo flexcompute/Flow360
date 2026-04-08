@@ -67,6 +67,7 @@ from flow360.component.simulation.outputs.output_fields import (
     PREDEFINED_UDF_EXPRESSIONS,
     append_component_to_output_fields,
     generate_predefined_udf,
+    remove_fields_subsumed_by_primitive_vars,
 )
 from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
@@ -213,9 +214,7 @@ def init_output_base(obj_list, class_type: Type, is_average: bool):
         "output_format",
     )
     assert output_format is not None
-    if output_format == "both":
-        output_format = "paraview,tecplot"
-    base["outputFormat"] = output_format
+    base["outputFormat"] = ",".join(sorted(output_format))
 
     if is_average:
         base = init_average_output(base, obj_list, class_type)
@@ -306,6 +305,7 @@ def translate_output_fields(
             output_fields.append(output_field.name)
     # Filter out the UserVariable Dicts
     output_fields = [item for item in output_fields if isinstance(item, str)]
+    output_fields = remove_fields_subsumed_by_primitive_vars(output_fields)
     return {"outputFields": sorted(output_fields)}
 
 
@@ -342,6 +342,8 @@ def monitor_translator(
         monitor_group["animationFrequencyTimeAverage"] = output_model.frequency
         monitor_group["animationFrequencyTimeAverageOffset"] = output_model.frequency_offset
         monitor_group["startAverageIntegrationStep"] = output_model.start_step
+    if getattr(output_model, "output_at_final_pseudo_step_only", False):
+        monitor_group["outputAtFinalPseudoStepOnly"] = True
     return monitor_group
 
 
@@ -532,6 +534,7 @@ def translate_volume_output(
             output_fields.append(output_field.name)
     # Filter out the UserVariable Dicts
     output_fields = [item for item in output_fields if isinstance(item, str)]
+    output_fields = remove_fields_subsumed_by_primitive_vars(output_fields)
     volume_output.update(
         {
             "outputFields": sorted(output_fields),
@@ -1367,10 +1370,15 @@ def bet_disk_translator(model: BETDisk, is_unsteady: bool):
     """BET disk translator"""
     model_dict = convert_tuples_to_lists(remove_units_in_dict(dump_dict(model)))
     model_dict["alphas"] = [alpha.to("degree").value.item() for alpha in model.alphas]
+    collective_pitch_deg = (
+        model.collective_pitch.to("degree").value.item()
+        if model.collective_pitch is not None
+        else 0
+    )
     model_dict["twists"] = [
         {
             "radius": bet_twist.radius.value.item(),
-            "twist": bet_twist.twist.to("degree").value.item(),
+            "twist": bet_twist.twist.to("degree").value.item() + collective_pitch_deg,
         }
         for bet_twist in model.twists
     ]
@@ -1634,7 +1642,13 @@ def boundary_spec_translator(model: SurfaceModelTypes, op_acoustic_to_static_pre
         if isinstance(model.spec, TotalPressure):
             boundary["type"] = "SubsonicInflow"
             total_pressure_ratio = model_dict["spec"]["value"]
-            if not isinstance(model.spec.value, str):
+            if isinstance(model.spec.value, str):
+                # Expression specifies total pressure in Flow360 nondim units (P/(ρa²)),
+                # convert to ratio (P/P∞) by multiplying by ρa²/P∞
+                total_pressure_ratio = (
+                    f"({total_pressure_ratio}) * {op_acoustic_to_static_pressure_ratio}"
+                )
+            else:
                 total_pressure_ratio *= op_acoustic_to_static_pressure_ratio
             boundary["totalPressureRatio"] = total_pressure_ratio
         if isinstance(model.spec, Supersonic):

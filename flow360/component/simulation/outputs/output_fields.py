@@ -215,6 +215,14 @@ VolumeFieldNames = Literal[
 
 SliceFieldNames = VolumeFieldNames
 
+# BET Metrics
+# BET Metrics per Disk
+VolumeProbeFieldNames = Literal[
+    CommonFieldNames,
+    "betMetrics",
+    "betMetricsPerDisk",
+]
+
 # Pressure
 # Density
 # Mach number
@@ -567,3 +575,33 @@ def append_component_to_output_fields(output_fields: List[str]) -> List[str]:
         if field == "vorticity" and "vorticityMagnitude" not in output_fields:
             output_fields_with_component.append("vorticityMagnitude")
     return output_fields_with_component
+
+
+# In the C++ solver, "primitiveVars" expands to DataArrays named "rho", "velocity", and "p".
+# "pressure" and "velocity" individually produce DataArrays with the same names ("p" and
+# "velocity"). Having both creates duplicate DataArray names in VTK output, which causes
+# ParaView to fail when loading a subset of fields.
+_FIELDS_SUBSUMED_BY_PRIMITIVE_VARS = {"pressure", "velocity"}
+
+
+def remove_fields_subsumed_by_primitive_vars(output_fields: List[str]) -> List[str]:
+    """
+    Remove output fields that are already included as sub-fields of ``primitiveVars``.
+
+    Must be called after :func:`append_component_to_output_fields` so that auto-appended
+    fields like ``velocity_magnitude`` are already in the list before ``velocity`` is removed.
+
+    Parameters:
+    -----------
+    output_fields : List[str]
+        The list of output fields to deduplicate.
+
+    Returns:
+    --------
+    List[str]
+        The deduplicated list with ``pressure`` and ``velocity`` removed when
+        ``primitiveVars`` is present.
+    """
+    if "primitiveVars" not in output_fields:
+        return output_fields
+    return [f for f in output_fields if f not in _FIELDS_SUBSUMED_BY_PRIMITIVE_VARS]

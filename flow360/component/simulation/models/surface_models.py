@@ -138,10 +138,10 @@ class TotalPressure(Flow360BaseModel):
       ...     value = 1.04e6 * fl.u.Pa,
       ... )
 
-    - Using an expression (nondimensionalized by operating condition pressure):
+    - Using an expression (nondimensionalized by Flow360 pressure unit, rho * a^2):
 
       >>> fl.TotalPressure(
-      ...     value = "pow(1.0+0.2*pow(0.1*(1.0-y*y),2.0),1.4/0.4)",
+      ...     value = "pow(1.0+0.2*pow(0.1*(1.0-y*y),2.0),1.4/0.4) / 1.4",
       ... )
 
     ====
@@ -151,7 +151,7 @@ class TotalPressure(Flow360BaseModel):
     # pylint: disable=no-member
     value: Union[StringExpression, PressureType.Positive] = pd.Field(
         description="The total pressure value. When a string expression is supplied the value"
-        + " needs to nondimensionalized by the pressure defined in `operating_condition`."
+        + " needs to be nondimensionalized by the Flow360 pressure unit (rho_inf * a_inf^2)."
     )
 
 
@@ -360,7 +360,6 @@ class WallFunction(Flow360BaseModel):
 class Wall(BoundaryBase):
     """
     :class:`Wall` class defines the wall boundary condition based on the inputs.
-    Refer  :ref:`here <wall_formulations>` for formulation details.
 
     Example
     -------
