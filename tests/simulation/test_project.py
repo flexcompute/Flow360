@@ -95,7 +95,7 @@ def test_from_geometry_passes_beta_geometry_processor(monkeypatch):
     )
 
     assert project_id == "prj-test-project-id"
-    assert captured["file_names"] == [Cylinder3D.geometry]
+    assert captured["file_names"] == Cylinder3D.geometry
     assert captured["project_name"] == "beta-geo-project"
     assert captured["solver_version"] == "release-test"
     assert captured["length_unit"] == "cm"
