@@ -225,7 +225,6 @@ def test_snappy_body_refinement_validator():
     )
 
 
-<<<<<<< HEAD
 def _make_snappy_params_with_volume_uniform_refinement(refinement):
     """Helper to build SimulationParams with a UniformRefinement in volume meshing."""
     with SI_unit_system:
@@ -423,7 +422,6 @@ def test_volume_uniform_refinement_project_to_surface_false_skips_validation():
     )
 
     assert errors is None, "No snappy validation error expected when project_to_surface=False"
-=======
 def test_snappy_proximity_spacing_error_when_exceeds_default_min_spacing():
     """When min_spacing is not set on a BodyRefinement but proximity_spacing exceeds
     defaults.min_spacing, a ValueError should be raised."""
@@ -493,4 +491,3 @@ def test_snappy_proximity_spacing_ok_when_min_spacing_is_set():
             ],
         )
         assert params.refinements[0].proximity_spacing == 3 * u.mm
->>>>>>> c5d8457a ([Snappy] Proximity spacing additional validator (#1949))
