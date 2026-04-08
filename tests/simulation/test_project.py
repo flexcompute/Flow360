@@ -16,6 +16,7 @@ from flow360.component.simulation.primitives import ImportedSurface
 from flow360.component.simulation.services import ValidationCalledBy, validate_model
 from flow360.component.simulation.utils import model_attribute_unlock
 from flow360.component.volume_mesh import VolumeMeshV2
+from flow360.examples import Cylinder3D
 from flow360.exceptions import Flow360ConfigurationError, Flow360ValueError
 
 log.set_logging_level("DEBUG")
