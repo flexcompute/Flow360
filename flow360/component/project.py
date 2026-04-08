@@ -1179,8 +1179,9 @@ class Project(pd.BaseModel):
         folder : Optional[Folder], optional
             Parent folder for the project. If None, creates in root.
         beta_geometry_processor : bool, optional
-            Route geometry processing through the beta Nextflow-based geometry
-            processor instead of the legacy geometry pipeline (default is False).
+            Use the beta geometry processor for project geometry preparation,
+            intended for downstream meshing workflows such as GAI and snappy
+            meshing (default is False).
 
         Returns
         -------
