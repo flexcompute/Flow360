@@ -210,7 +210,11 @@
                     }
                 },
                 "name": "air",
-                "type": "air"
+                "type": "air",
+                "gas_constant": {
+                    "value": 287.0529,
+                    "units": "m**2/(K*s**2)"
+                }
             },
             "navier_stokes_solver": {
                 "CFL_multiplier": 1,
@@ -317,7 +321,11 @@
                         }
                     },
                     "name": "air",
-                    "type": "air"
+                    "type": "air",
+                    "gas_constant": {
+                        "value": 287.0529,
+                        "units": "m**2/(K*s**2)"
+                    }
                 },
                 "private_attribute_constructor": "default",
                 "private_attribute_input_cache": {
@@ -353,7 +361,11 @@
                     }
                 },
                 "name": "air",
-                "type": "air"
+                "type": "air",
+                "gas_constant": {
+                    "value": 287.0529,
+                    "units": "m**2/(K*s**2)"
+                }
             },
             "private_attribute_constructor": "default",
             "private_attribute_input_cache": {

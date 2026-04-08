@@ -20,7 +20,7 @@ from flow360.component.simulation.meshing_param.volume_params import (
     CustomZones,
     WindTunnelFarfield,
 )
-from flow360.component.simulation.models.material import Air
+from flow360.component.simulation.models.material import Air, Gas
 from flow360.component.simulation.models.solver_numerics import (
     KrylovLinearSolver,
     NoneSolver,
@@ -923,15 +923,15 @@ def _uses_compressible_isentropic_solver(params):
     return False
 
 
-def _get_air_material(params):
-    """Get Air material from operating condition, or None if not applicable."""
+def _get_gas_material(params):
+    """Get Gas material from operating condition, or None if not applicable."""
     if params.operating_condition is None:
         return None
     op = params.operating_condition
     if not hasattr(op, "thermal_state") or op.thermal_state is None:
         return None
     material = op.thermal_state.material
-    if isinstance(material, Air):
+    if isinstance(material, Gas):
         return material
     return None
 
@@ -990,7 +990,7 @@ def _check_tpg_not_with_isentropic_solver(params):
     if not _uses_compressible_isentropic_solver(params):
         return params
 
-    material = _get_air_material(params)
+    material = _get_gas_material(params)
     if material is None:
         return params
 
@@ -1003,4 +1003,17 @@ def _check_tpg_not_with_isentropic_solver(params):
             "Please use type_name='Compressible' in NavierStokesSolver for thermally perfect gas simulations."
         )
 
+    return params
+
+
+def _warn_air_deprecation(params):
+    """Warn if the Air class is used instead of Gas."""
+    material = _get_gas_material(params)
+    if material is None:
+        return params
+    if isinstance(material, Air):
+        add_validation_warning(
+            "The `Air` class may be deprecated in a future release. "
+            "The use of the `Gas` class is preferred."
+        )
     return params

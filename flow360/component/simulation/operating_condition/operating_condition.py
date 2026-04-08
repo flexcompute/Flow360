@@ -11,7 +11,7 @@ from flow360.component.simulation.framework.expressions import StringExpression
 from flow360.component.simulation.framework.multi_constructor_model_base import (
     MultiConstructorBaseModel,
 )
-from flow360.component.simulation.models.material import Air, Water
+from flow360.component.simulation.models.material import Air, Gas, Water
 from flow360.component.simulation.operating_condition.atmosphere_model import (
     StandardAtmosphereModel,
 )
@@ -77,7 +77,9 @@ class ThermalState(MultiConstructorBaseModel):
     density: DensityType.Positive = pd.Field(
         1.225 * u.kg / u.m**3, frozen=True, description="The density of the fluid."
     )
-    material: Air = pd.Field(Air(), frozen=True, description="The material of the fluid.")
+    material: Union[Gas, Air] = pd.Field(
+        Air(), frozen=True, discriminator="type", description="The material of the fluid."
+    )
     private_attribute_input_cache: ThermalStateCache = ThermalStateCache()
     private_attribute_constructor: Literal["from_standard_atmosphere", "default"] = pd.Field(
         default="default", frozen=True

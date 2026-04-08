@@ -17,6 +17,7 @@ from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.framework.updater_utils import recursive_remove_key
 from flow360.component.simulation.models.material import (
     Air,
+    Gas,
     Sutherland,
     ThermallyPerfectGas,
     compute_gamma_from_coefficients,
@@ -2192,7 +2193,7 @@ def get_solver_json(
     ##:: Step 2.5: Get NASA 9-coefficient polynomial for gas model (Air material)
     # Always output thermallyPerfectGasModel for Air - even for CPG (constant gamma=1.4),
     # which uses default NASA9 coefficients [0, 0, 3.5, 0, 0, 0, 0, 0, 0]
-    if not isinstance(op, LiquidOperatingCondition) and isinstance(op.thermal_state.material, Air):
+    if not isinstance(op, LiquidOperatingCondition) and isinstance(op.thermal_state.material, Gas):
         # Get reference temperature for non-dimensionalization (freestream temperature)
         reference_temperature = op.thermal_state.temperature.to("K").v.item()
 
@@ -2208,7 +2209,7 @@ def get_solver_json(
             "prandtlNumber": 7.0,
             "turbulentPrandtlNumber": 0.9,
         }
-    elif isinstance(op.thermal_state.material, Air):
+    elif isinstance(op.thermal_state.material, Gas):
         translated["fluidProperties"] = {
             "prandtlNumber": op.thermal_state.material.prandtl_number,
             "turbulentPrandtlNumber": op.thermal_state.material.turbulent_prandtl_number,
