@@ -1180,7 +1180,8 @@ class Project(pd.BaseModel):
             Parent folder for the project. If None, creates in root.
         workflow : {"standard", "catalyst"}, optional
             Workflow used for project geometry preparation. Use `"catalyst"`
-            for Catalyst-backed geometry processing (default is `"standard"`).
+            for geometry preparation recommended for GAI and snappy workflows
+            (default is `"standard"`).
 
         Returns
         -------

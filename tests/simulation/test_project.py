@@ -154,8 +154,9 @@ def test_catalyst_workflow_reaches_api_payload(monkeypatch):
     draft.submit(run_async=True)
 
     assert (
-        captured_payload.get("useNextflow") is True
-    ), f"Expected Catalyst workflow to set the compatibility flag, got: {captured_payload}"
+        captured_payload.get("useCatalyst") is True
+    ), f"Expected Catalyst workflow to set useCatalyst=true, got: {captured_payload}"
+    assert set(captured_payload) >= {"useCatalyst"}
 
 
 def test_standard_workflow_is_default(monkeypatch):
@@ -187,8 +188,9 @@ def test_standard_workflow_is_default(monkeypatch):
     draft.submit(run_async=True)
 
     assert (
-        captured_payload.get("useNextflow") is False
-    ), f"Expected standard workflow to keep the compatibility flag disabled, got: {captured_payload}"
+        captured_payload.get("useCatalyst") is False
+    ), f"Expected standard workflow to keep useCatalyst=false, got: {captured_payload}"
+    assert set(captured_payload) >= {"useCatalyst"}
 
 
 def test_root_asset_entity_change_reflection(mock_id, mock_response):

@@ -120,7 +120,6 @@ class NewGeometryRequest(Flow360RequestsV2):
     description: str = pd_v2.Field(default="", description="project description")
     use_catalyst: bool = pd_v2.Field(
         default=False,
-        alias="useNextflow",
         description="Use the Catalyst workflow for geometry processing",
     )
 
