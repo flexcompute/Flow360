@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-import collections
-from typing import Dict, List, Optional, Tuple, Union
+from typing import List, Optional, Union
 
-import numpy as np
+from flow360_schema.framework.entity.coordinate_system_state import (
+    CoordinateSystemState,
+)
 from flow360_schema.models.asset_cache import (
     CoordinateSystemAssignmentGroup,
     CoordinateSystemEntityRef,
@@ -13,15 +14,25 @@ from flow360_schema.models.asset_cache import (
     CoordinateSystemStatus,
 )
 
-from flow360.component.simulation.entity_operation import (
-    CoordinateSystem,
-    _compose_transformation_matrices,
-)
+from flow360.component.simulation.entity_operation import CoordinateSystem
 from flow360.component.simulation.framework.entity_base import EntityBase
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
 from flow360.component.simulation.utils import is_exact_instance
-from flow360.exceptions import Flow360RuntimeError
+from flow360.exceptions import Flow360ValueError
 from flow360.log import log
+
+# pylint: disable=protected-access,unused-import
+
+
+
+
+__all__ = [
+    "CoordinateSystemAssignmentGroup",
+    "CoordinateSystemEntityRef",
+    "CoordinateSystemManager",
+    "CoordinateSystemParent",
+    "CoordinateSystemStatus",
+]
 
 
 class CoordinateSystemManager:
@@ -40,39 +51,47 @@ class CoordinateSystemManager:
     asset cache.
     """
 
-    __slots__ = (
-        "_coordinate_systems",
-        "_coordinate_system_parents",
-        "_entity_key_to_coordinate_system_id",
-    )
+    # Keep the manager as a thin client-facing facade. We intentionally use composition
+    # instead of inheriting from CoordinateSystemState so the client does not implicitly
+    # expose every schema-core helper as part of its API surface.
+    __slots__ = ("_state",)
 
-    def __init__(self) -> None:
-        self._coordinate_systems: list[CoordinateSystem] = []
-        self._coordinate_system_parents: dict[str, Optional[str]] = {}
-        self._entity_key_to_coordinate_system_id: dict[Tuple[str, str], str] = {}
+    def __init__(self, *, state: Optional[CoordinateSystemState] = None) -> None:
+        self._state = CoordinateSystemState() if state is None else state
 
     @property
-    def _known_ids(self) -> set[str]:
-        """Return set of registered coordinate system IDs for O(1) lookups."""
-        return {cs.private_attribute_id for cs in self._coordinate_systems}
+    def _coordinate_systems(self) -> list[CoordinateSystem]:
+        """Read-only compatibility surface for existing tests and draft internals."""
+        return self._state._coordinate_systems
 
-    def _contains(self, coordinate_system: CoordinateSystem) -> bool:
-        return coordinate_system.private_attribute_id in self._known_ids
+    @property
+    def _coordinate_system_parents(self) -> dict[str, Optional[str]]:
+        """Read-only compatibility surface for existing tests and draft internals."""
+        return self._state._coordinate_system_parents
 
-    def _register_coordinate_system(
-        self, *, coordinate_system: CoordinateSystem, parent_id: Optional[str]
-    ) -> None:
-        """Internal helper to register a coordinate system without graph validation."""
-        if self._contains(coordinate_system):
-            return  # Already registered, skip
-        if any(existing.name == coordinate_system.name for existing in self._coordinate_systems):
-            raise Flow360RuntimeError(
-                f"Coordinate system name '{coordinate_system.name}' already registered."
-            )
-        self._coordinate_systems.append(coordinate_system)
-        self._coordinate_system_parents[coordinate_system.private_attribute_id] = parent_id
+    @property
+    def _entity_key_to_coordinate_system_id(self) -> dict[tuple[str, str], str]:
+        """Read-only compatibility surface for existing tests and draft internals."""
+        return self._state._entity_key_to_coordinate_system_id
 
-    # region Registration and hierarchy -------------------------------------------------
+    def _get_coordinate_system_by_id(self, coordinate_system_id: str) -> Optional[CoordinateSystem]:
+        return self._state._get_coordinate_system_by_id(coordinate_system_id)
+
+    def _get_coordinate_system_matrix(self, *, coordinate_system: CoordinateSystem):
+        return self._state._get_coordinate_system_matrix(coordinate_system=coordinate_system)
+
+    def _get_coordinate_system_for_entity(self, *, entity: EntityBase):
+        return self._state._get_coordinate_system_for_entity(entity=entity)
+
+    def _get_matrix_for_entity(self, *, entity: EntityBase):
+        return self._state._get_matrix_for_entity(entity=entity)
+
+    def _get_matrix_for_entity_key(self, *, entity_type: str, entity_id: str):
+        return self._state._get_matrix_for_entity_key(entity_type=entity_type, entity_id=entity_id)
+
+    def _to_status(self) -> CoordinateSystemStatus:
+        return self._state._to_status()
+
     def add(
         self, coordinate_system: CoordinateSystem, *, parent: Optional[CoordinateSystem] = None
     ) -> CoordinateSystem:
@@ -94,32 +113,31 @@ class CoordinateSystemManager:
 
         Raises
         ------
-        Flow360RuntimeError
+        Flow360ValueError
             If `coordinate_system` is not an exact `CoordinateSystem` instance, if the id or
             name is already registered, or if the resulting parent graph is invalid (e.g. cycle).
         """
         if not is_exact_instance(coordinate_system, CoordinateSystem):
-            raise Flow360RuntimeError(
+            raise Flow360ValueError(
                 f"coordinate_system must be a CoordinateSystem. Received: {type(coordinate_system).__name__}."
             )
         cs = coordinate_system
 
-        # Auto-register parent as root if not already registered
         if parent is not None:
-            self._register_coordinate_system(coordinate_system=parent, parent_id=None)
+            self._state._register_coordinate_system(coordinate_system=parent, parent_id=None)
 
-        if self._contains(cs):
-            raise Flow360RuntimeError(
+        if self._state._contains(cs):
+            raise Flow360ValueError(
                 f"Coordinate system id '{cs.private_attribute_id}' already registered."
             )
-        if any(existing.name == cs.name for existing in self._coordinate_systems):
-            raise Flow360RuntimeError(f"Coordinate system name '{cs.name}' already registered.")
+        if any(existing.name == cs.name for existing in self._state._coordinate_systems):
+            raise Flow360ValueError(f"Coordinate system name '{cs.name}' already registered.")
 
-        self._coordinate_systems.append(cs)
-        self._coordinate_system_parents[cs.private_attribute_id] = (
+        self._state._coordinate_systems.append(cs)
+        self._state._coordinate_system_parents[cs.private_attribute_id] = (
             parent.private_attribute_id if parent is not None else None
         )
-        self._validate_coordinate_system_graph()
+        self._state._validate_coordinate_system_graph()
         return cs
 
     def update_parent(
@@ -138,24 +156,26 @@ class CoordinateSystemManager:
 
         Raises
         ------
-        Flow360RuntimeError
+        Flow360ValueError
             If `coordinate_system` is not registered, or if updating the parent would make the
             parent graph invalid (e.g. introduce a cycle). In that case, the change is rolled back.
         """
-        if not self._contains(coordinate_system):
-            raise Flow360RuntimeError("Coordinate system must be part of the draft to be updated.")
-        # Auto-register parent as root if not already registered
-        if parent is not None:
-            self._register_coordinate_system(coordinate_system=parent, parent_id=None)
+        if not self._state._contains(coordinate_system):
+            raise Flow360ValueError("Coordinate system must be part of the draft to be updated.")
 
-        cs_id = coordinate_system.private_attribute_id
-        original_parent = self._coordinate_system_parents.get(cs_id)
-        self._coordinate_system_parents[cs_id] = parent.private_attribute_id if parent else None
+        if parent is not None:
+            self._state._register_coordinate_system(coordinate_system=parent, parent_id=None)
+
+        coordinate_system_id = coordinate_system.private_attribute_id
+        original_parent = self._state._coordinate_system_parents.get(coordinate_system_id)
+        self._state._coordinate_system_parents[coordinate_system_id] = (
+            parent.private_attribute_id if parent else None
+        )
 
         try:
-            self._validate_coordinate_system_graph()
-        except Exception:
-            self._coordinate_system_parents[cs_id] = original_parent
+            self._state._validate_coordinate_system_graph()
+        except Flow360ValueError:
+            self._state._coordinate_system_parents[coordinate_system_id] = original_parent
             raise
 
     def remove(self, coordinate_system: CoordinateSystem) -> None:
@@ -171,143 +191,41 @@ class CoordinateSystemManager:
 
         Raises
         ------
-        Flow360RuntimeError
+        Flow360ValueError
             If the coordinate system is not registered, or if other registered coordinate systems
             depend on it (i.e. it is a parent).
         """
-        if not self._contains(coordinate_system):
-            raise Flow360RuntimeError("Coordinate system is not registered in this draft.")
+        if not self._state._contains(coordinate_system):
+            raise Flow360ValueError("Coordinate system is not registered in this draft.")
 
-        cs_id = coordinate_system.private_attribute_id
+        coordinate_system_id = coordinate_system.private_attribute_id
         dependents = [
             child_id
-            for child_id, parent_id in self._coordinate_system_parents.items()
-            if parent_id == cs_id
+            for child_id, parent_id in self._state._coordinate_system_parents.items()
+            if parent_id == coordinate_system_id
         ]
         if dependents:
             names = ", ".join(
-                cs.name for cs in self._coordinate_systems if cs.private_attribute_id in dependents
+                coordinate_system.name
+                for coordinate_system in self._state._coordinate_systems
+                if coordinate_system.private_attribute_id in dependents
             )
-            raise Flow360RuntimeError(
+            raise Flow360ValueError(
                 f"Cannot remove coordinate system '{coordinate_system.name}' because dependents exist: {names}"
             )
 
-        self._coordinate_systems = [
-            cs
-            for cs in self._coordinate_systems
-            if cs.private_attribute_id != coordinate_system.private_attribute_id
+        self._state._coordinate_systems = [
+            existing
+            for existing in self._state._coordinate_systems
+            if existing.private_attribute_id != coordinate_system.private_attribute_id
         ]
-        self._coordinate_system_parents.pop(cs_id, None)
-        # Drop assignments referencing this coordinate system.
-        self._entity_key_to_coordinate_system_id = {
+        self._state._coordinate_system_parents.pop(coordinate_system_id, None)
+        self._state._entity_key_to_coordinate_system_id = {
             entity_id: assigned_id
-            for entity_id, assigned_id in self._entity_key_to_coordinate_system_id.items()
-            if assigned_id != cs_id
+            for entity_id, assigned_id in self._state._entity_key_to_coordinate_system_id.items()
+            if assigned_id != coordinate_system_id
         }
 
-    # endregion ------------------------------------------------------------------------------------
-
-    def _validate_coordinate_system_graph(self) -> None:
-        """Validate parent references exist and detect cycles using Kahn's algorithm."""
-        id_to_cs: Dict[str, CoordinateSystem] = {}
-        for cs in self._coordinate_systems:
-            if cs.private_attribute_id in id_to_cs:
-                raise Flow360RuntimeError(
-                    f"Duplicate coordinate system id '{cs.private_attribute_id}' detected."
-                )
-            if cs.name in (existing.name for existing in id_to_cs.values()):
-                raise Flow360RuntimeError(f"Coordinate system name '{cs.name}' already registered.")
-            id_to_cs[cs.private_attribute_id] = cs
-
-        # Validate all parent references exist
-        for cs_id, cs in id_to_cs.items():
-            parent_id = self._coordinate_system_parents.get(cs_id)
-            if parent_id is not None and parent_id not in id_to_cs:
-                raise Flow360RuntimeError(
-                    f"Parent coordinate system '{parent_id}' not found for '{cs.name}'."
-                )
-
-        # Kahn's algorithm for cycle detection
-        in_degree = {cs_id: 0 for cs_id in id_to_cs}
-        for cs_id in id_to_cs:
-            parent_id = self._coordinate_system_parents.get(cs_id)
-            if parent_id is not None:
-                in_degree[cs_id] += 1
-
-        queue = collections.deque([cs_id for cs_id, degree in in_degree.items() if degree == 0])
-        processed = 0
-
-        while queue:
-            current = queue.popleft()
-            processed += 1
-            for cs_id, parent_id in self._coordinate_system_parents.items():
-                if parent_id == current:
-                    in_degree[cs_id] -= 1
-                    if in_degree[cs_id] == 0:
-                        queue.append(cs_id)
-
-        if processed != len(id_to_cs):
-            cycle_nodes = [cs_id for cs_id, degree in in_degree.items() if degree > 0]
-            raise Flow360RuntimeError(
-                f"Cycle detected in coordinate system inheritance among: {sorted(cycle_nodes)}"
-            )
-
-    def _get_coordinate_system_matrix(self, *, coordinate_system: CoordinateSystem) -> np.ndarray:
-        """Return the composed matrix for a registered coordinate system (parents applied)."""
-        if not self._contains(coordinate_system):
-            raise Flow360RuntimeError("Coordinate system must be registered to compute its matrix.")
-
-        cs_id = coordinate_system.private_attribute_id
-        combined_matrix = coordinate_system._get_local_matrix()  # pylint:disable=protected-access
-
-        # Graph is validated, parent guaranteed to exist and no cycles
-        parent_id = self._coordinate_system_parents.get(cs_id)
-        while parent_id is not None:
-            parent = self._get_coordinate_system_by_id(parent_id)
-            combined_matrix = _compose_transformation_matrices(
-                parent=parent._get_local_matrix(),  # pylint:disable=protected-access
-                child=combined_matrix,
-            )
-            parent_id = self._coordinate_system_parents.get(parent_id)
-
-        return combined_matrix
-
-    # --------------------------------------------------------------------
-    def get_by_name(self, name: str) -> CoordinateSystem:
-        """
-        Retrieve a registered coordinate system by name.
-
-        Parameters
-        ----------
-        name : str
-            Coordinate system name.
-
-        Returns
-        -------
-        CoordinateSystem
-            The matching coordinate system.
-
-        Raises
-        ------
-        Flow360RuntimeError
-            If no coordinate system with the given name exists in this draft.
-        """
-        for cs in self._coordinate_systems:
-            if cs.name == name:
-                return cs
-        raise Flow360RuntimeError(f"Coordinate system '{name}' not found in the draft.")
-
-    def _get_coordinate_system_by_id(self, cs_id: str) -> Optional[CoordinateSystem]:
-        for cs in self._coordinate_systems:
-            if cs.private_attribute_id == cs_id:
-                return cs
-        return None
-
-    @staticmethod
-    def _entity_key(entity: EntityBase) -> tuple[str, Optional[str]]:
-        return (entity.private_attribute_entity_type_name, entity.private_attribute_id)
-
-    # Assignment ----------------------------------------------------------------
     def assign(
         self,
         *,
@@ -327,7 +245,7 @@ class CoordinateSystemManager:
 
         Raises
         ------
-        Flow360RuntimeError
+        Flow360ValueError
             If `coordinate_system` is not an exact `CoordinateSystem` instance or if any item
             in `entities` is not an entity instance.
 
@@ -337,11 +255,10 @@ class CoordinateSystemManager:
         overwritten and a warning is logged.
         """
         if not is_exact_instance(coordinate_system, CoordinateSystem):
-            raise Flow360RuntimeError(
+            raise Flow360ValueError(
                 f"`coordinate_system` must be a CoordinateSystem. Received: {type(coordinate_system).__name__}."
             )
 
-        # Normalize to list for uniform validation.
         if isinstance(entities, list):
             normalized_entities = entities
         else:
@@ -349,20 +266,20 @@ class CoordinateSystemManager:
 
         for entity in normalized_entities:
             if not isinstance(entity, EntityBase):
-                raise Flow360RuntimeError(
+                raise Flow360ValueError(
                     f"Only entities can be assigned a coordinate system. Received: {type(entity).__name__}."
                 )
             if entity.private_attribute_id is None:
-                raise Flow360RuntimeError(
+                raise Flow360ValueError(
                     f"Entity '{entity.name}' ({type(entity).__name__}) is not supported "
                     f"for coordinate system assignment."
                 )
 
-        self._register_coordinate_system(coordinate_system=coordinate_system, parent_id=None)
+        self._state._register_coordinate_system(coordinate_system=coordinate_system, parent_id=None)
 
         for entity in normalized_entities:
-            entity_key = self._entity_key(entity)
-            previous = self._entity_key_to_coordinate_system_id.get(entity_key)
+            entity_key = self._state._entity_key(entity)
+            previous = self._state._entity_key_to_coordinate_system_id.get(entity_key)
             if previous is not None and previous != coordinate_system.private_attribute_id:
                 log.warning(
                     "Entity '%s' already had a coordinate system '%s'; overwriting to '%s'.",
@@ -370,7 +287,7 @@ class CoordinateSystemManager:
                     previous,
                     coordinate_system.private_attribute_id,
                 )
-            self._entity_key_to_coordinate_system_id[entity_key] = (
+            self._state._entity_key_to_coordinate_system_id[entity_key] = (
                 coordinate_system.private_attribute_id
             )
 
@@ -383,72 +300,28 @@ class CoordinateSystemManager:
         entity : EntityBase
             The entity whose coordinate system assignment should be cleared.
         """
-        self._entity_key_to_coordinate_system_id.pop(self._entity_key(entity), None)
+        self._state._entity_key_to_coordinate_system_id.pop(self._state._entity_key(entity), None)
 
-    def _get_coordinate_system_for_entity(
-        self, *, entity: EntityBase
-    ) -> Optional[CoordinateSystem]:
-        """Return the coordinate system assigned to the entity, if any."""
-        cs_id = self._entity_key_to_coordinate_system_id.get(self._entity_key(entity))
-        if cs_id is None:
-            return None
-        cs = self._get_coordinate_system_by_id(cs_id)
-        if cs is None:
-            raise Flow360RuntimeError(
-                f"Coordinate system id '{cs_id}' assigned to entity '{entity.name}' is not registered."
-            )
-        return cs
+    def get_by_name(self, name: str) -> CoordinateSystem:
+        """
+        Retrieve a registered coordinate system by name.
 
-    def _get_matrix_for_entity(self, *, entity: EntityBase) -> Optional[np.ndarray]:
-        """Return the composed 3x4 transformation matrix for an entity, if assigned."""
-        cs = self._get_coordinate_system_for_entity(entity=entity)
-        if cs is None:
-            return None
-        return self._get_coordinate_system_matrix(coordinate_system=cs)
-
-    def _get_matrix_for_entity_key(
-        self, *, entity_type: str, entity_id: str
-    ) -> Optional[np.ndarray]:
-        """Return the composed 3x4 matrix for an entity reference, if assigned."""
-        cs_id = self._entity_key_to_coordinate_system_id.get((entity_type, entity_id))
-        if cs_id is None:
-            return None
-        cs = self._get_coordinate_system_by_id(cs_id)
-        if cs is None:
-            raise Flow360RuntimeError(
-                f"Coordinate system id '{cs_id}' assigned to entity '{entity_type}:{entity_id}' is not registered."
-            )
-        return self._get_coordinate_system_matrix(coordinate_system=cs)
-
-    # Serialization ----------------------------------------------------------------
-    def _to_status(self) -> CoordinateSystemStatus:
-        """Build a serializable status snapshot.
+        Parameters
+        ----------
+        name : str
+            Coordinate system name.
 
         Returns
         -------
-        CoordinateSystemStatus
-            The serialized status.
+        CoordinateSystem
+            The matching coordinate system.
+
+        Raises
+        ------
+        Flow360ValueError
+            If no coordinate system with the given name exists in this draft.
         """
-        parents = [
-            CoordinateSystemParent(coordinate_system_id=cs_id, parent_id=parent_id)
-            for cs_id, parent_id in self._coordinate_system_parents.items()
-        ]
-
-        grouped: Dict[str, List[CoordinateSystemEntityRef]] = {}
-        for (entity_type, entity_id), cs_id in self._entity_key_to_coordinate_system_id.items():
-            grouped.setdefault(cs_id, []).append(
-                CoordinateSystemEntityRef(entity_type=entity_type, entity_id=entity_id)
-            )
-
-        assignments = [
-            CoordinateSystemAssignmentGroup(coordinate_system_id=cs_id, entities=entities)
-            for cs_id, entities in grouped.items()
-        ]
-        return CoordinateSystemStatus(
-            coordinate_systems=self._coordinate_systems,
-            parents=parents,
-            assignments=assignments,
-        )
+        return self._state.get_by_name(name)
 
     @classmethod
     def _from_status(
@@ -457,7 +330,8 @@ class CoordinateSystemManager:
         status: Optional[CoordinateSystemStatus],
         entity_registry: Optional[EntityRegistry] = None,
     ) -> CoordinateSystemManager:
-        """Restore manager from a status snapshot.
+        """
+        Restore manager from a status snapshot.
 
         Parameters
         ----------
@@ -470,59 +344,9 @@ class CoordinateSystemManager:
         CoordinateSystemManager
             The restored manager.
         """
-        mgr = cls()
-        if status is None:
-            return mgr
-
-        # Build set of IDs for validation of parent/assignment references.
-        existing_ids: set[str] = set()
-        for cs in status.coordinate_systems:
-            mgr._coordinate_systems.append(cs)
-            existing_ids.add(cs.private_attribute_id)
-
-        for parent in status.parents:
-            if parent.coordinate_system_id not in existing_ids:
-                raise Flow360RuntimeError(
-                    f"Parent record references unknown coordinate system '{parent.coordinate_system_id}'."
-                )
-            if parent.parent_id is not None and parent.parent_id not in existing_ids:
-                raise Flow360RuntimeError(
-                    f"Parent coordinate system '{parent.parent_id}' not found for '{parent.coordinate_system_id}'."
-                )
-            mgr._coordinate_system_parents[parent.coordinate_system_id] = parent.parent_id
-
-        seen_entity_keys: set[Tuple[str, str]] = set()
-        for assignment in status.assignments:
-            if assignment.coordinate_system_id not in existing_ids:
-                raise Flow360RuntimeError(
-                    f"Assignment references unknown coordinate system '{assignment.coordinate_system_id}'."
-                )
-            for entity in assignment.entities:
-                key = (entity.entity_type, entity.entity_id)
-                # Sanitize invalid assignments due to entity not being in scope anymore.
-                if (
-                    entity_registry  # Fast lane: entity_registry None indicates that no validation is needed
-                    and (
-                        entity_registry.find_by_type_name_and_id(
-                            entity_type=entity.entity_type, entity_id=entity.entity_id
-                        )
-                        is None
-                    )
-                ):
-                    log.warning(
-                        "Entity '%s:%s' assigned to coordinate system '%s' is not in the draft registry; "
-                        "skipping this coordinate system assignment.",
-                        entity.entity_type,
-                        entity.entity_id,
-                        assignment.coordinate_system_id,
-                    )
-                    continue
-                if key in seen_entity_keys:
-                    raise Flow360RuntimeError(
-                        f"Duplicate entity assignment for entity '{entity.entity_type}:{entity.entity_id}'."
-                    )
-                seen_entity_keys.add(key)
-                mgr._entity_key_to_coordinate_system_id[key] = assignment.coordinate_system_id
-
-        mgr._validate_coordinate_system_graph()
-        return mgr
+        return cls(
+            state=CoordinateSystemState._from_status(
+                status=status,
+                entity_registry=entity_registry,
+            )
+        )
