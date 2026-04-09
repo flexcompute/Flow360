@@ -3650,8 +3650,8 @@ def test_auto_farfield_no_remap():
     assert any(e.name == "symmetric" for e in sym_bc.entities.stored_entities)
 
 
-def test_udf_symmetry_plane_no_remap_multiple_faces():
-    """UDF + multiple y=0 faces: no remap, stays 'symmetric'."""
+def test_udf_multi_patch_symmetry():
+    """UDF + multiple y=0 faces: direct refs pass, farfield.symmetry_plane errors."""
     surface_sym_a = Surface(
         name="sym_a",
         private_attributes=SurfacePrivateAttributes(bounding_box=[[-1, 0, 0], [0, 0, 1]]),
@@ -3678,16 +3678,36 @@ def test_udf_symmetry_plane_no_remap_multiple_faces():
         ),
     )
     farfield = UserDefinedFarfield(domain_type="half_body_positive_y")
+
+    # Direct geometry refs should pass
     with SI_unit_system:
+        defaults = MeshingDefaults(
+            planar_face_tolerance=1e-4,
+            geometry_accuracy=1e-5,
+            boundary_layer_first_layer_thickness=1e-3,
+        )
         params = SimulationParams(
-            meshing=MeshingParams(
-                defaults=MeshingDefaults(
-                    planar_face_tolerance=1e-4,
-                    geometry_accuracy=1e-5,
-                    boundary_layer_first_layer_thickness=1e-3,
-                ),
-                volume_zones=[farfield],
-            ),
+            meshing=MeshingParams(defaults=defaults, volume_zones=[farfield]),
+            models=[SymmetryPlane(entities=[surface_sym_a, surface_sym_b])],
+            private_attribute_asset_cache=asset_cache,
+        )
+    _, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="SurfaceMesh",
+        validation_level="All",
+    )
+    assert errors is None, f"Expected no errors for direct refs but got: {errors}"
+
+    # farfield.symmetry_plane (ghost) should error
+    with SI_unit_system:
+        defaults = MeshingDefaults(
+            planar_face_tolerance=1e-4,
+            geometry_accuracy=1e-5,
+            boundary_layer_first_layer_thickness=1e-3,
+        )
+        params = SimulationParams(
+            meshing=MeshingParams(defaults=defaults, volume_zones=[farfield]),
             models=[
                 Wall(entities=[surface_sym_a, surface_sym_b]),
                 SymmetryPlane(
@@ -3696,15 +3716,14 @@ def test_udf_symmetry_plane_no_remap_multiple_faces():
             ],
             private_attribute_asset_cache=asset_cache,
         )
-    validated, errors, _ = validate_model(
+    _, errors, _ = validate_model(
         params_as_dict=params.model_dump(mode="json"),
         validated_by=ValidationCalledBy.LOCAL,
         root_item_type="SurfaceMesh",
         validation_level="All",
     )
-    assert errors is None, f"Expected no errors but got: {errors}"
-    sym_bc = next(m for m in validated.models if isinstance(m, SymmetryPlane))
-    assert any(e.name == "symmetric" for e in sym_bc.entities.stored_entities)
+    assert errors is not None, "Expected error for farfield.symmetry_plane with multiple y=0 faces"
+    assert "farfield.symmetry_plane cannot be used with multiple symmetry surfaces" in str(errors)
 
 
 def test_unique_selector_names():

@@ -355,9 +355,9 @@ def remap_symmetric_ghost_entity(value, param_info):  # pylint: disable=too-many
             user_surface.name,
         )
     elif len(sym_surfaces) > 1:
-        log.warning(
-            "Multiple symmetry surfaces with different names detected. "
-            "Symmetry surface name preservation is not yet supported for this case."
+        raise ValueError(
+            "farfield.symmetry_plane cannot be used with multiple symmetry surfaces. "
+            "Use geometry['name'] to reference individual symmetry surfaces directly."
         )
 
     return value

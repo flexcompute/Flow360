@@ -449,13 +449,13 @@ def _collect_asset_boundary_entities(params, param_info: ParamsValidationInfo) -
         ]
     elif farfield_method == "user-defined":
         if param_info.use_geometry_AI and param_info.is_beta_mesher:
-            # Skip adding "symmetric" ghost if user geometry has exactly one symmetry plane surface
+            # Skip adding "symmetric" ghost if user geometry has y=0 surfaces
             user_sym_surfaces = find_user_symmetry_surfaces(
                 asset_boundary_entities,
                 param_info.global_bounding_box,
                 param_info.planar_face_tolerance,
             )
-            if len(user_sym_surfaces) != 1:
+            if len(user_sym_surfaces) == 0:
                 asset_boundary_entities += [
                     item
                     for item in ghost_entities
