@@ -23,6 +23,7 @@ from flow360.component.simulation.validation.validation_utils import (
     check_deleted_surface_in_entity_list,
     check_geometry_ai_features,
     check_ghost_surface_usage_policy_for_face_refinements,
+    remap_symmetric_ghost_entity,
 )
 
 
@@ -64,6 +65,12 @@ class SurfaceRefinement(Flow360BaseModel):
         description="Flag to specify whether boundaries between adjacent faces should be resolved "
         + "accurately during the surface meshing process using anisotropic mesh refinement.",
     )
+
+    @contextual_field_validator("entities", mode="after")
+    @classmethod
+    def remap_symmetric_to_user_name(cls, value, param_info: ParamsValidationInfo):
+        """Remap 'symmetric' ghost entity to user's symmetry surface name for UDF backward compat."""
+        return remap_symmetric_ghost_entity(value, param_info)
 
     @contextual_field_validator("entities", mode="after")
     @classmethod
@@ -192,6 +199,12 @@ class PassiveSpacing(Flow360BaseModel):
     entities: EntityList[
         Surface, MirroredSurface, WindTunnelGhostSurface, GhostSurface, GhostCircularPlane
     ] = pd.Field(alias="faces")
+
+    @contextual_field_validator("entities", mode="after")
+    @classmethod
+    def remap_symmetric_to_user_name(cls, value, param_info: ParamsValidationInfo):
+        """Remap 'symmetric' ghost entity to user's symmetry surface name for UDF backward compat."""
+        return remap_symmetric_ghost_entity(value, param_info)
 
     @contextual_field_validator("entities", mode="after")
     @classmethod

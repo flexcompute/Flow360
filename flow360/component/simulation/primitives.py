@@ -740,7 +740,8 @@ class Surface(_SurfaceEntityBase):
     # Note: private_attribute_id should not be `Optional` anymore.
     # B.C. Updater and geometry pipeline will populate it.
 
-    def _overlaps(self, ghost_surface_center_y: Optional[float], length_tolerance: float) -> bool:
+    def _lies_on(self, ghost_surface_center_y: Optional[float], length_tolerance: float) -> bool:
+        # Check if the surface lies entirely within tolerance of the center y
         if self.private_attributes is None:
             # Legacy cloud asset.
             return False
@@ -764,7 +765,6 @@ class Surface(_SurfaceEntityBase):
         half_model_symmetry_plane_center_y: Optional[float],
         quasi_3d_symmetry_planes_center_y: Optional[tuple[float]],
         farfield_domain_type: Optional[str] = None,
-        gai_and_beta_mesher: Optional[bool] = False,
     ) -> bool:
         """
         Check against the automated farfield method and
@@ -782,6 +782,7 @@ class Surface(_SurfaceEntityBase):
         length_tolerance = global_bounding_box.largest_dimension * planar_face_tolerance
 
         if farfield_domain_type in ("half_body_positive_y", "half_body_negative_y"):
+            # Wrong half
             if self.private_attributes is not None:
                 # pylint: disable=no-member
                 y_min = self.private_attributes.bounding_box.ymin
@@ -793,35 +794,30 @@ class Surface(_SurfaceEntityBase):
                 if farfield_domain_type == "half_body_negative_y" and y_min > length_tolerance:
                     return True
 
-        if farfield_method == "wind-tunnel":
-            # Not applicable to wind tunnel farfield
+        if farfield_method in ("user-defined", "wind-tunnel"):
+            # User-defined: user surfaces are not deleted
+            # Wind-tunnel: not applicable
             return False
 
-        if farfield_method in ("auto", "user-defined"):
+        if farfield_method == "auto":
             if half_model_symmetry_plane_center_y is None:
                 # Legacy schema.
                 return False
-            if farfield_method == "user-defined" and not gai_and_beta_mesher:
-                return False
-            if (
-                farfield_method == "auto"
-                and farfield_domain_type not in ("half_body_positive_y", "half_body_negative_y")
-                and (
-                    not _auto_symmetric_plane_exists_from_bbox(
-                        global_bounding_box=global_bounding_box,
-                        planar_face_tolerance=planar_face_tolerance,
-                    )
+            if farfield_domain_type not in ("half_body_positive_y", "half_body_negative_y") and (
+                not _auto_symmetric_plane_exists_from_bbox(
+                    global_bounding_box=global_bounding_box,
+                    planar_face_tolerance=planar_face_tolerance,
                 )
             ):
                 return False
-            return self._overlaps(half_model_symmetry_plane_center_y, length_tolerance)
+            return self._lies_on(half_model_symmetry_plane_center_y, length_tolerance)
 
         if farfield_method in ("quasi-3d", "quasi-3d-periodic"):
             if quasi_3d_symmetry_planes_center_y is None:
                 # Legacy schema.
                 return False
             for plane_center_y in quasi_3d_symmetry_planes_center_y:
-                if self._overlaps(plane_center_y, length_tolerance):
+                if self._lies_on(plane_center_y, length_tolerance):
                     return True
             return False
 
@@ -936,7 +932,7 @@ class GhostCircularPlane(_SurfaceEntityBase):
         """For automated farfield, check mesher logic for symmetric plane existence."""
 
         if self.name != "symmetric":
-            # Quasi-3D mode, no need to check existence.
+            # Quasi-3D mode or user-named symmetry patch (exists by definition)
             return True
 
         if validation_info is None:
