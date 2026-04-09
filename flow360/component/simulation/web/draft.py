@@ -33,6 +33,34 @@ if TYPE_CHECKING:
     from flow360.component.simulation.simulation_params import SimulationParams
 
 
+def _trim_geometry_entity_info_groupings_for_upload(params_dict: dict) -> dict:
+    """Keep only the active geometry grouping payloads in the upload JSON."""
+    asset_cache = params_dict.get("private_attribute_asset_cache")
+    if not isinstance(asset_cache, dict):
+        return params_dict
+
+    entity_info = asset_cache.get("project_entity_info")
+    if not isinstance(entity_info, dict) or entity_info.get("type_name") != "GeometryEntityInfo":
+        return params_dict
+
+    def _retain_active_grouping(tag_key: str, names_key: str, groups_key: str) -> None:
+        group_tag = entity_info.get(tag_key)
+        if group_tag is None:
+            return
+
+        attribute_names = entity_info[names_key]
+        grouped_entities = entity_info[groups_key]
+        selected_group_index = attribute_names.index(group_tag)
+        entity_info[names_key] = [group_tag]
+        entity_info[groups_key] = [grouped_entities[selected_group_index]]
+
+    _retain_active_grouping("face_group_tag", "face_attribute_names", "grouped_faces")
+    _retain_active_grouping("edge_group_tag", "edge_attribute_names", "grouped_edges")
+    _retain_active_grouping("body_group_tag", "body_attribute_names", "grouped_bodies")
+
+    return params_dict
+
+
 class DraftMetaModel(BaseModel):
     """Draft metadata deserializer"""
 
@@ -139,6 +167,7 @@ class Draft(Flow360Resource):
         """update the SimulationParams of the draft"""
         params_dict = params.model_dump(mode="json", exclude_none=True)
         params_dict = strip_implicit_edge_split_layers_inplace(params, params_dict)
+        params_dict = _trim_geometry_entity_info_groupings_for_upload(params_dict)
         params_dict = collect_and_tokenize_selectors_in_place(params_dict)
 
         self.post(
