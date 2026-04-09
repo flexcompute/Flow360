@@ -655,11 +655,6 @@ def test_validate_error_from_multi_constructor():
 
 
 def test_init():
-    def remove_model_and_output_id_in_default_dict(data):
-        data["outputs"][0].pop("private_attribute_id", None)
-        data["models"][0].pop("private_attribute_id", None)
-        data["models"][1].pop("private_attribute_id", None)
-
     ##1: test default values for geometry starting point
     data = services.get_default_params(
         unit_system_name="SI", length_unit="m", root_item_type="Geometry"
@@ -667,7 +662,7 @@ def test_init():
     assert data["operating_condition"]["alpha"]["value"] == 0
     assert data["operating_condition"]["alpha"]["units"] == "degree"
     assert "velocity_magnitude" not in data["operating_condition"].keys()
-    remove_model_and_output_id_in_default_dict(data)
+    _remove_default_model_and_output_ids(data)
     # to convert tuples to lists:
     data = json.loads(json.dumps(data))
 
@@ -678,7 +673,7 @@ def test_init():
         unit_system_name="SI", length_unit="m", root_item_type="VolumeMesh"
     )
     assert "meshing" not in data
-    remove_model_and_output_id_in_default_dict(data)
+    _remove_default_model_and_output_ids(data)
     # to convert tuples to lists:
     data = json.loads(json.dumps(data))
     compare_dict_to_ref(data, "../../ref/simulation/service_init_volume_mesh.json")
@@ -693,10 +688,44 @@ def test_init():
     assert data["private_attribute_asset_cache"]["project_length_unit"]["units"] == "cm"
 
     assert data["models"][0]["roughness_height"]["units"] == "cm"
-    remove_model_and_output_id_in_default_dict(data)
+    _remove_default_model_and_output_ids(data)
     # to convert tuples to lists:
     data = json.loads(json.dumps(data))
     compare_dict_to_ref(data, "../../ref/simulation/service_init_surface_mesh.json")
+
+
+def _remove_default_model_and_output_ids(data):
+    if data.get("outputs"):
+        data["outputs"][0].pop("private_attribute_id", None)
+    if len(data.get("models", [])) > 0:
+        data["models"][0].pop("private_attribute_id", None)
+    if len(data.get("models", [])) > 1:
+        data["models"][1].pop("private_attribute_id", None)
+
+
+def test_init_template_dispatch_flow360():
+    import sys
+    from pathlib import Path
+
+    scripts_path = Path(__file__).resolve().parents[4] / "Scripts"
+    if str(scripts_path) not in sys.path:
+        sys.path.insert(0, str(scripts_path))
+
+    from flow360validation.workbench.init_templates import get_default_params_for_template
+
+    default_data = services.get_default_params(
+        unit_system_name="SI", length_unit="m", root_item_type="Geometry"
+    )
+    flow360_data = get_default_params_for_template(
+        unit_system_name="SI",
+        length_unit="m",
+        root_item_type="Geometry",
+        template_type="Flow360",
+    )
+    for data in (default_data, flow360_data):
+        _remove_default_model_and_output_ids(data)
+
+    assert compare_values(flow360_data, default_data)
 
 
 def test_validate_init_data_errors():
