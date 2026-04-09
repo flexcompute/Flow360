@@ -27,7 +27,7 @@ from flow360.component.cloud_examples import (
     fetch_examples,
     find_example_by_name,
 )
-from flow360.component.geometry import Geometry
+from flow360.component.geometry import Geometry, GeometryWorkflow
 from flow360.component.interfaces import (
     GeometryInterface,
     ProjectInterface,
@@ -931,7 +931,7 @@ class Project(pd.BaseModel):
         tags: List[str] = None,
         run_async: bool = False,
         folder: Optional[Folder] = None,
-        workflow: Literal["standard", "catalyst"] = "standard",
+        workflow: GeometryWorkflow = "standard",
     ):
         """
         Initializes a project from a file.
@@ -1157,7 +1157,7 @@ class Project(pd.BaseModel):
         tags: List[str] = None,
         run_async: bool = False,
         folder: Optional[Folder] = None,
-        workflow: Literal["standard", "catalyst"] = "standard",
+        workflow: GeometryWorkflow = "standard",
     ):
         """
         Initializes a project from local geometry files.
