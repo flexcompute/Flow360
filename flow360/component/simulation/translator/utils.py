@@ -123,9 +123,19 @@ def _apply_transformations_to_model(
                 setattr(model, field_name, new_entity_list)
 
         elif isinstance(field_value, (list, tuple)):
-            new_items = [_transform_sequence_item(item, manager) for item in field_value]
-            new_value = new_items if isinstance(field_value, list) else tuple(new_items)
-            setattr(model, field_name, new_value)
+            transformed_items = None
+            for index, item in enumerate(field_value):
+                transformed = _transform_sequence_item(item, manager)
+                if transformed is not item:
+                    if transformed_items is None:
+                        transformed_items = list(field_value)
+                    transformed_items[index] = transformed
+
+            if transformed_items is not None:
+                new_value = (
+                    transformed_items if isinstance(field_value, list) else tuple(transformed_items)
+                )
+                setattr(model, field_name, new_value)
 
         elif isinstance(field_value, Flow360BaseModel):
             _apply_transformations_to_model(field_value, manager)
