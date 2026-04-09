@@ -312,8 +312,9 @@ def _get_custom_volumes(volume_zones: list):
                     custom_volumes.append(
                         {
                             "name": custom_volume.name,
-                            "pointInMesh": [
-                                coord.value.item() for coord in custom_volume.point_in_mesh
+                            "seedPoints": [
+                                [coord.value.item() for coord in seed_point]
+                                for seed_point in custom_volume.point_in_mesh
                             ],
                         }
                     )
@@ -336,26 +337,6 @@ def translate_mesh_slice_fields(
     if model.cutoff_radius is not None:
         mesh_slice_fields["cutoffRadius"] = model.cutoff_radius.value.item()
     return mesh_slice_fields
-
-
-# def _get_seedpoint_zones(volume_zones: list):
-#     """
-#     Get translated seedpoint volumes from volume zones.
-#     To be later filled with data from snappyHexMesh.
-#     """
-#     seedpoint_zones = []
-#     for zone in volume_zones:
-#         if isinstance(zone, SeedpointVolume):
-#             seedpoint_zones.append(
-#                 {
-#                     "name": zone.name,
-#                     "pointInMesh": [coord.value.item() for coord in zone.point_in_mesh],
-#                 }
-#             )
-#     if seedpoint_zones:
-#         # Sort custom volumes by name
-#         seedpoint_zones.sort(key=lambda x: x["name"])
-#     return seedpoint_zones
 
 
 def translate_mesh_slice_output(

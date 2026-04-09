@@ -650,7 +650,7 @@ def test_user_defined_farfield(get_test_param, get_surface_mesh):
             "gapTreatmentStrength": 0.0,
         },
         "faces": {},
-        "zones": [{"name": "farfield", "pointInMesh": [0, 0, 0]}],
+        "zones": [{"name": "farfield", "seedPoints": [[0, 0, 0]]}],
     }
     assert sorted(translated.items()) == sorted(reference_standard.items())
     assert sorted(translated_modular.items()) == sorted(reference_snappy_modular.items())
@@ -661,6 +661,7 @@ def test_seedpoint_zones(get_test_param_w_seedpoints, get_surface_mesh):
         get_test_param_w_seedpoints, get_surface_mesh.mesh_unit
     )
 
+    # Contract: volume custom zones use list-of-points selector key `seedPoints`.
     reference = {
         "refinementFactor": 1.45,
         "farfield": {"type": "user-defined"},
@@ -677,16 +678,57 @@ def test_seedpoint_zones(get_test_param_w_seedpoints, get_surface_mesh):
         "zones": [
             {
                 "name": "fluid",
-                "pointInMesh": [0, 0, 0],
+                "seedPoints": [[0, 0, 0]],
             },
             {
                 "name": "radiator",
-                "pointInMesh": [1, 1, 1],
+                "seedPoints": [[1, 1, 1]],
             },
         ],
     }
 
     assert sorted(translated_modular.items()) == sorted(reference.items())
+
+
+def test_seedpoint_zone_multiple_points_emits_seedpoints(get_surface_mesh):
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=ModularMeshingWorkflow(
+                surface_meshing=snappy.SurfaceMeshingParams(
+                    defaults=snappy.SurfaceMeshingDefaults(
+                        min_spacing=1, max_spacing=2, gap_resolution=1
+                    )
+                ),
+                volume_meshing=VolumeMeshingParams(
+                    defaults=VolumeMeshingDefaults(
+                        boundary_layer_first_layer_thickness=1.35e-06 * u.m,
+                        boundary_layer_growth_rate=1 + 0.04,
+                    ),
+                    refinement_factor=1.45,
+                    refinements=[],
+                ),
+                zones=[
+                    CustomZones(
+                        entities=[
+                            SeedpointVolume(
+                                name="fluid",
+                                point_in_mesh=[[0, 0, 0], [1, 1, 1]] * u.m,
+                            )
+                        ]
+                    )
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+        )
+
+    translated = get_volume_meshing_json(params, get_surface_mesh.mesh_unit)
+    # Contract: a single SeedpointVolume may carry multiple points in volume JSON.
+    assert translated["zones"] == [
+        {
+            "name": "fluid",
+            "seedPoints": [[0, 0, 0], [1, 1, 1]],
+        }
+    ]
 
 
 def test_param_to_json_legacy_mesher(get_test_param, get_surface_mesh):

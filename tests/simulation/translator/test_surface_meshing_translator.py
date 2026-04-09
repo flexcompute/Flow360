@@ -72,6 +72,7 @@ from flow360.component.simulation.unit_system import (
     SI_unit_system,
     imperial_unit_system,
 )
+from flow360.exceptions import Flow360TranslationError
 from tests.simulation.conftest import AssetBase
 
 
@@ -1159,6 +1160,37 @@ def test_snappy_no_refinements(get_snappy_geometry, snappy_refinements_no_region
         "snappy_no_regions.json",
         atol=1e-6,
     )
+
+
+def test_snappy_seedpoint_zone_rejects_multiple_points(get_snappy_geometry):
+    test_geometry = TempGeometry("tester.stl", True)
+    with SI_unit_system:
+        params = SimulationParams(
+            private_attribute_asset_cache=AssetCache(
+                project_entity_info=test_geometry._get_entity_info(), project_length_unit=1 * u.mm
+            ),
+            meshing=ModularMeshingWorkflow(
+                surface_meshing=snappy.SurfaceMeshingParams(
+                    defaults=snappy.SurfaceMeshingDefaults(
+                        min_spacing=3 * u.mm, max_spacing=4 * u.mm, gap_resolution=1 * u.mm
+                    ),
+                    octree_spacing=OctreeSpacing(base_spacing=3 * u.mm),
+                ),
+                zones=[
+                    CustomZones(
+                        entities=[
+                            SeedpointVolume(
+                                name="fluid", point_in_mesh=[[0, 0, 0], [1, 0, 0]] * u.mm
+                            )
+                        ]
+                    )
+                ],
+            ),
+        )
+
+    # Contract: snappy `locationInMesh` supports exactly one point per SeedpointVolume.
+    with pytest.raises(Flow360TranslationError, match="must provide exactly one point"):
+        get_surface_meshing_json(params, mesh_unit=get_snappy_geometry.mesh_unit)
 
 
 def test_gai_surface_mesher_refinements():

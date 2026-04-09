@@ -572,10 +572,18 @@ def snappy_mesher_json(input_params: SimulationParams):
 
     # points in mesh
     if all_seedpoint_zones and translated["cadIsFluid"]:
-        translated["locationInMesh"] = {
-            zone.name: [point.value.item() for point in zone.point_in_mesh]
-            for zone in all_seedpoint_zones
-        }
+        location_in_mesh = {}
+        for zone in all_seedpoint_zones:
+            if len(zone.point_in_mesh) != 1:
+                raise Flow360TranslationError(
+                    f"SeedpointVolume '{zone.name}' must provide exactly one point for "
+                    + "snappyHexMeshing locationInMesh.",
+                    zone.point_in_mesh,
+                    ["meshing", "zones"],
+                )
+            location_in_mesh[zone.name] = [point.value.item() for point in zone.point_in_mesh[0]]
+
+        translated["locationInMesh"] = location_in_mesh
 
     return translated
 
