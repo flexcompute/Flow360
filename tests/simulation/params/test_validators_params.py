@@ -3726,6 +3726,62 @@ def test_udf_multi_patch_symmetry():
     assert "farfield.symmetry_plane cannot be used with multiple symmetry surfaces" in str(errors)
 
 
+def test_udf_multi_patch_warn_conflicting_bc():
+    """UDF + multiple y=0 faces with different BC types: should warn."""
+    surface_sym_a = Surface(
+        name="sym_a",
+        private_attributes=SurfacePrivateAttributes(bounding_box=[[-1, 0, 0], [0, 0, 1]]),
+    )
+    surface_sym_b = Surface(
+        name="sym_b",
+        private_attributes=SurfacePrivateAttributes(bounding_box=[[1, 0, 0], [2, 0, 1]]),
+    )
+    ghost_sym = GhostCircularPlane(
+        name="symmetric",
+        center=[0.5, 0, 0.5],
+        max_radius=50,
+        normal_axis=[0, 1, 0],
+        private_attribute_id="symmetric",
+    )
+    asset_cache = AssetCache(
+        project_length_unit="m",
+        use_inhouse_mesher=True,
+        use_geometry_AI=True,
+        project_entity_info=SurfaceMeshEntityInfo(
+            global_bounding_box=[[-1, 0, 0], [2, 1, 1]],
+            boundaries=[surface_sym_a, surface_sym_b],
+            ghost_entities=[ghost_sym],
+        ),
+    )
+    farfield = UserDefinedFarfield(domain_type="half_body_positive_y")
+
+    with SI_unit_system:
+        defaults = MeshingDefaults(
+            planar_face_tolerance=1e-4,
+            geometry_accuracy=1e-5,
+            boundary_layer_first_layer_thickness=1e-3,
+        )
+        params = SimulationParams(
+            meshing=MeshingParams(defaults=defaults, volume_zones=[farfield]),
+            models=[
+                SymmetryPlane(entities=[surface_sym_a]),
+                SlipWall(entities=[surface_sym_b]),
+            ],
+            private_attribute_asset_cache=asset_cache,
+        )
+    _, errors, val_warnings = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="SurfaceMesh",
+        validation_level="All",
+    )
+    assert errors is None
+    assert any(
+        "Multiple symmetry plane surfaces have different boundary conditions" in w.get("msg", "")
+        for w in val_warnings
+    )
+
+
 def test_unique_selector_names():
     """Test that duplicate selector names are detected and raise an error."""
     from flow360.component.simulation.framework.entity_selector import (

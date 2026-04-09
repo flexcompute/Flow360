@@ -610,6 +610,28 @@ def _check_complete_boundary_condition_and_unknown_surface(
     )
     used_boundaries = _collect_used_boundary_names(params, param_info)
 
+    # Warn if multiple y=0 surfaces have different BC types
+    if param_info.farfield_method == "user-defined":
+        sym_surfaces = find_user_symmetry_surfaces(
+            asset_boundary_entities,
+            param_info.global_bounding_box,
+            param_info.planar_face_tolerance,
+        )
+        if len(sym_surfaces) > 1:
+            sym_names = {s.name for s in sym_surfaces}
+            bc_types = {
+                type(m).__name__
+                for m in params.models
+                if isinstance(m, get_args(SurfaceModelTypes))
+                and hasattr(m, "entities")
+                and any(e.name in sym_names for e in param_info.expand_entity_list(m.entities))
+            }
+            if len(bc_types) > 1:
+                add_validation_warning(
+                    f"Multiple symmetry plane surfaces have different boundary conditions "
+                    f"({', '.join(sorted(bc_types))}). Please check if this is intended."
+                )
+
     # Step 4: Validate set differences with policy
     _validate_boundary_completeness(
         asset_boundaries=asset_boundaries,
