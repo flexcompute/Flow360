@@ -422,3 +422,74 @@ def test_volume_uniform_refinement_project_to_surface_false_skips_validation():
     )
 
     assert errors is None, "No snappy validation error expected when project_to_surface=False"
+
+
+def test_snappy_proximity_spacing_error_when_exceeds_default_min_spacing():
+    """When min_spacing is not set on a BodyRefinement but proximity_spacing exceeds
+    defaults.min_spacing, a ValueError should be raised."""
+    message = "Proximity spacing for a BodyRefinement (5.0 mm) was set higher than the minimal spacing (3.0 mm)."
+    with SI_unit_system, pytest.raises(pd.ValidationError, match=re.escape(message)):
+        snappy.SurfaceMeshingParams(
+            defaults=snappy.SurfaceMeshingDefaults(
+                min_spacing=3 * u.mm, max_spacing=10 * u.mm, gap_resolution=0.1 * u.mm
+            ),
+            refinements=[
+                snappy.BodyRefinement(
+                    bodies=SnappyBody(name="body1", surfaces=[Surface(name="surface")]),
+                    proximity_spacing=5 * u.mm,
+                    max_spacing=10 * u.mm,
+                ),
+            ],
+        )
+
+
+def test_snappy_proximity_spacing_ok_when_below_default_min_spacing():
+    """When proximity_spacing is already <= defaults.min_spacing, no error should be raised."""
+    with SI_unit_system:
+        body = SnappyBody(name="body1", surfaces=[Surface(name="surface")])
+        params = snappy.SurfaceMeshingParams(
+            defaults=snappy.SurfaceMeshingDefaults(
+                min_spacing=3 * u.mm, max_spacing=10 * u.mm, gap_resolution=0.1 * u.mm
+            ),
+            refinements=[
+                snappy.BodyRefinement(
+                    bodies=body,
+                    proximity_spacing=2 * u.mm,
+                    max_spacing=10 * u.mm,
+                ),
+            ],
+        )
+        assert params.refinements[0].proximity_spacing == 2 * u.mm
+
+
+def test_snappy_proximity_spacing_error_with_explicit_min_spacing():
+    """When both min_spacing and proximity_spacing are set on the refinement
+    and proximity_spacing > min_spacing, the entity-level validator raises."""
+    message = "Proximity spacing (6.0 mm) was set higher than the minimal spacing (4.0 mm)."
+    with SI_unit_system, pytest.raises(pd.ValidationError, match=re.escape(message)):
+        snappy.BodyRefinement(
+            bodies=SnappyBody(name="body1", surfaces=[Surface(name="surface")]),
+            min_spacing=4 * u.mm,
+            proximity_spacing=6 * u.mm,
+            max_spacing=10 * u.mm,
+        )
+
+
+def test_snappy_proximity_spacing_ok_when_min_spacing_is_set():
+    """When min_spacing is explicitly set and proximity_spacing <= min_spacing, no error."""
+    with SI_unit_system:
+        body = SnappyBody(name="body1", surfaces=[Surface(name="surface")])
+        params = snappy.SurfaceMeshingParams(
+            defaults=snappy.SurfaceMeshingDefaults(
+                min_spacing=1 * u.mm, max_spacing=10 * u.mm, gap_resolution=0.1 * u.mm
+            ),
+            refinements=[
+                snappy.BodyRefinement(
+                    bodies=body,
+                    min_spacing=4 * u.mm,
+                    proximity_spacing=3 * u.mm,
+                    max_spacing=10 * u.mm,
+                ),
+            ],
+        )
+        assert params.refinements[0].proximity_spacing == 3 * u.mm
