@@ -47,6 +47,7 @@ from flow360.component.simulation.meshing_param.volume_params import (
     CustomZones,
     RotationVolume,
     UniformRefinement,
+    UserDefinedFarfield,
     WheelBelts,
     WindTunnelFarfield,
 )
@@ -1278,6 +1279,49 @@ def test_gai_surface_mesher_refinements():
         1 * u.m,
         "gai_surface_mesher.json",
     )
+
+
+def test_gai_seedpoint_zones_emit_seedpoints():
+    """GAI filtered JSON should emit meshing.defaults.seed_points from SeedpointVolume."""
+    param_dict = {
+        "private_attribute_asset_cache": {
+            "use_inhouse_mesher": True,
+            "use_geometry_AI": True,
+            "project_entity_info": {"type_name": "GeometryEntityInfo"},
+        },
+    }
+
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    surface_max_edge_length=0.1,
+                    geometry_accuracy=0.01,
+                ),
+                volume_zones=[
+                    UserDefinedFarfield(),
+                    CustomZones(
+                        entities=[
+                            SeedpointVolume(name="fluid", point_in_mesh=[0, 0, 0] * u.m),
+                            SeedpointVolume(
+                                name="radiator",
+                                point_in_mesh=[[1, 2, 3], [4, 5, 6]] * u.m,
+                            ),
+                        ]
+                    ),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache.model_validate(
+                param_dict["private_attribute_asset_cache"]
+            ),
+        )
+
+    translated = get_surface_meshing_json(params, 1 * u.m)
+    assert translated["meshing"]["defaults"]["seed_points"] == [
+        [0, 0, 0],
+        [1, 2, 3],
+        [4, 5, 6],
+    ]
 
 
 def test_gai_translator_hashing_ignores_id():

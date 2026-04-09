@@ -700,6 +700,27 @@ def _get_volume_zones(volume_zones_list: list[dict]):
     return volume_zones_translated
 
 
+def _get_gai_seed_points(input_params: SimulationParams) -> list[list[float]]:
+    """Collect all SeedpointVolume points for GAI defaults.seed_points."""
+    volume_zones = getattr(input_params.meshing, "volume_zones", None)
+    if volume_zones is None:
+        volume_zones = getattr(input_params.meshing, "zones", None)
+    if volume_zones is None:
+        return []
+
+    seed_points: list[list[float]] = []
+    for zone in volume_zones:
+        if not isinstance(zone, CustomZones):
+            continue
+        for entity in zone.entities.stored_entities:
+            if not isinstance(entity, SeedpointVolume):
+                continue
+            seed_points.extend(
+                [[coord.value.item() for coord in point] for point in entity.point_in_mesh]
+            )
+    return seed_points
+
+
 def _filter_mirror_status(data):
     """Process mirror_status to ensure idempotency while preserving mirroring relationships.
 
@@ -811,6 +832,7 @@ def _get_gai_setting_whitelist(input_params: SimulationParams) -> dict:
         "remove_hidden_geometry": None,
         "min_passage_size": None,
         "planar_face_tolerance": None,
+        "seed_points": None,
     }
 
     # Conditionally add sliding_interface_tolerance only when rotation zones are present
@@ -974,6 +996,10 @@ def filter_simulation_json(input_params: SimulationParams, mesh_units):
     _inject_body_group_transformations_for_mesher(
         json_data=json_data, input_params=input_params, mesh_unit=mesh_units
     )
+
+    seed_points = _get_gai_seed_points(input_params)
+    if seed_points:
+        json_data.setdefault("meshing", {}).setdefault("defaults", {})["seed_points"] = seed_points
 
     # Generate whitelist based on simulation context
     whitelist = _get_gai_setting_whitelist(input_params)
