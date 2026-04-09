@@ -47,6 +47,7 @@ from flow360.component.simulation.meshing_param.volume_params import (
     CustomZones,
     RotationVolume,
     UniformRefinement,
+    UserDefinedFarfield,
     WheelBelts,
     WindTunnelFarfield,
 )
@@ -72,6 +73,7 @@ from flow360.component.simulation.unit_system import (
     SI_unit_system,
     imperial_unit_system,
 )
+from flow360.exceptions import Flow360TranslationError
 from tests.simulation.conftest import AssetBase
 
 
@@ -1161,6 +1163,37 @@ def test_snappy_no_refinements(get_snappy_geometry, snappy_refinements_no_region
     )
 
 
+def test_snappy_seedpoint_zone_rejects_multiple_points(get_snappy_geometry):
+    test_geometry = TempGeometry("tester.stl", True)
+    with SI_unit_system:
+        params = SimulationParams(
+            private_attribute_asset_cache=AssetCache(
+                project_entity_info=test_geometry._get_entity_info(), project_length_unit=1 * u.mm
+            ),
+            meshing=ModularMeshingWorkflow(
+                surface_meshing=snappy.SurfaceMeshingParams(
+                    defaults=snappy.SurfaceMeshingDefaults(
+                        min_spacing=3 * u.mm, max_spacing=4 * u.mm, gap_resolution=1 * u.mm
+                    ),
+                    octree_spacing=OctreeSpacing(base_spacing=3 * u.mm),
+                ),
+                zones=[
+                    CustomZones(
+                        entities=[
+                            SeedpointVolume(
+                                name="fluid", point_in_mesh=[[0, 0, 0], [1, 0, 0]] * u.mm
+                            )
+                        ]
+                    )
+                ],
+            ),
+        )
+
+    # Contract: snappy `locationInMesh` supports exactly one point per SeedpointVolume.
+    with pytest.raises(Flow360TranslationError, match="must provide exactly one point"):
+        get_surface_meshing_json(params, mesh_unit=get_snappy_geometry.mesh_unit)
+
+
 def test_gai_surface_mesher_refinements():
     geometry = Geometry.from_local_storage(
         geometry_id="geo-e5c01a98-2180-449e-b255-d60162854a83",
@@ -1246,6 +1279,49 @@ def test_gai_surface_mesher_refinements():
         1 * u.m,
         "gai_surface_mesher.json",
     )
+
+
+def test_gai_seedpoint_zones_emit_seedpoints():
+    """GAI filtered JSON should emit meshing.defaults.seed_points from SeedpointVolume."""
+    param_dict = {
+        "private_attribute_asset_cache": {
+            "use_inhouse_mesher": True,
+            "use_geometry_AI": True,
+            "project_entity_info": {"type_name": "GeometryEntityInfo"},
+        },
+    }
+
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    surface_max_edge_length=0.1,
+                    geometry_accuracy=0.01,
+                ),
+                volume_zones=[
+                    UserDefinedFarfield(),
+                    CustomZones(
+                        entities=[
+                            SeedpointVolume(name="fluid", point_in_mesh=[0, 0, 0] * u.m),
+                            SeedpointVolume(
+                                name="radiator",
+                                point_in_mesh=[[1, 2, 3], [4, 5, 6]] * u.m,
+                            ),
+                        ]
+                    ),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache.model_validate(
+                param_dict["private_attribute_asset_cache"]
+            ),
+        )
+
+    translated = get_surface_meshing_json(params, 1 * u.m)
+    assert translated["meshing"]["defaults"]["seed_points"] == [
+        [0, 0, 0],
+        [1, 2, 3],
+        [4, 5, 6],
+    ]
 
 
 def test_gai_translator_hashing_ignores_id():

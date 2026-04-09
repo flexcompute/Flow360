@@ -992,6 +992,63 @@ def test_require_mesh_zones():
             )
 
 
+def test_seedpoint_volume_requires_snappy_or_beta_mesher():
+    message = "`SeedpointVolume` is supported only when using snappyHexMeshing or the beta mesher."
+
+    non_beta_context = ParamsValidationInfo({}, [])
+    non_beta_context.is_beta_mesher = False
+    non_beta_context.use_snappy = False
+    non_beta_context.to_be_generated_custom_volumes = {"fluid"}
+
+    beta_context = ParamsValidationInfo({}, [])
+    beta_context.is_beta_mesher = True
+    beta_context.use_snappy = False
+    beta_context.to_be_generated_custom_volumes = {"fluid"}
+
+    with ValidationContext(VOLUME_MESH, non_beta_context):
+        with SI_unit_system, pytest.raises(pd.ValidationError, match=re.escape(message)):
+            MeshingParams(
+                volume_zones=[
+                    UserDefinedFarfield(),
+                    CustomZones(
+                        name="custom_zones",
+                        entities=[SeedpointVolume(name="fluid", point_in_mesh=(0, 0, 0) * u.mm)],
+                    ),
+                ]
+            )
+
+    with ValidationContext(VOLUME_MESH, non_beta_context):
+        with SI_unit_system, pytest.raises(pd.ValidationError, match=re.escape(message)):
+            ModularMeshingWorkflow(
+                zones=[
+                    CustomZones(
+                        name="custom_zones",
+                        entities=[SeedpointVolume(name="fluid", point_in_mesh=(0, 0, 0) * u.mm)],
+                    )
+                ]
+            )
+
+    with ValidationContext(VOLUME_MESH, beta_context):
+        with SI_unit_system:
+            MeshingParams(
+                volume_zones=[
+                    UserDefinedFarfield(),
+                    CustomZones(
+                        name="custom_zones",
+                        entities=[SeedpointVolume(name="fluid", point_in_mesh=(0, 0, 0) * u.mm)],
+                    ),
+                ]
+            )
+            ModularMeshingWorkflow(
+                zones=[
+                    CustomZones(
+                        name="custom_zones",
+                        entities=[SeedpointVolume(name="fluid", point_in_mesh=(0, 0, 0) * u.mm)],
+                    )
+                ]
+            )
+
+
 def test_bad_refinements():
     message = "Default maximum spacing (5.0 mm) is lower than refinement minimum spacing (6.0 mm) and maximum spacing is not provided for BodyRefinement."
     with pytest.raises(

@@ -164,6 +164,25 @@ def _collect_all_custom_volumes(zones):
     return custom_volumes
 
 
+def _collect_all_seedpoint_volumes(zones):
+    """Collect all SeedpointVolume instances from CustomZones."""
+    seedpoint_volumes: list[SeedpointVolume] = []
+    for zone in zones:
+        if isinstance(zone, CustomZones):
+            for volume in zone.entities.stored_entities:
+                if isinstance(volume, SeedpointVolume):
+                    seedpoint_volumes.append(volume)
+    return seedpoint_volumes
+
+
+def _validate_seedpoint_volume_usage(seedpoint_volumes, param_info: ParamsValidationInfo):
+    """Validate SeedpointVolume usage against mesher capabilities."""
+    if seedpoint_volumes and not (param_info.use_snappy or param_info.is_beta_mesher):
+        raise ValueError(
+            "`SeedpointVolume` is supported only when using snappyHexMeshing or the beta mesher."
+        )
+
+
 def _validate_custom_volume_rotation_association(custom_volumes, rotation_entity_names, param_info):
     """Validate that Cylinder/AxisymmetricBody/Sphere in CustomVolume.bounding_entities
     are associated with a RotationVolume or RotationSphere."""
@@ -368,6 +387,16 @@ class MeshingParams(Flow360BaseModel):
                 to_be_generated_volume_zone_names.add(custom_volume.name)
 
         return v
+
+    @contextual_model_validator(mode="after")
+    def _check_seedpoint_volume_usage(self, param_info: ParamsValidationInfo):
+        """Validate SeedpointVolume usage in legacy meshing schema."""
+        if self.volume_zones is None:
+            return self
+        _validate_seedpoint_volume_usage(
+            _collect_all_seedpoint_volumes(self.volume_zones), param_info
+        )
+        return self
 
     @contextual_model_validator(mode="after")
     def _check_no_reused_volume_entities(self) -> Self:
@@ -725,10 +754,12 @@ class ModularMeshingWorkflow(Flow360BaseModel):
                     "snappyHexMeshing requires at least one `SeedpointVolume` when not using `AutomatedFarfield`."
                 )
 
-        else:
-            if total_seedpoint_volumes:
-                raise ValueError("`SeedpointVolume` is applicable only with snappyHexMeshing.")
+        return self
 
+    @contextual_model_validator(mode="after")
+    def _check_seedpoint_volume_usage(self, param_info: ParamsValidationInfo):
+        """Validate SeedpointVolume usage in modular meshing schema."""
+        _validate_seedpoint_volume_usage(_collect_all_seedpoint_volumes(self.zones), param_info)
         return self
 
     @contextual_model_validator(mode="after")

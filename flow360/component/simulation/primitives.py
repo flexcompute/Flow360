@@ -1041,7 +1041,7 @@ class SnappyBody(EntityBase):
 @final
 class SeedpointVolume(_VolumeEntityBase):
     """
-    Represents a separate zone in the mesh, defined by a point inside it.
+    Represents a separate zone in the mesh, defined by one or more interior seed points.
     To be used only with snappyHexMesh.
     """
 
@@ -1050,8 +1050,10 @@ class SeedpointVolume(_VolumeEntityBase):
         "SeedpointVolume", frozen=True
     )
     type: Literal["SeedpointVolume"] = pd.Field("SeedpointVolume", frozen=True)
-    point_in_mesh: LengthType.Point = pd.Field(
-        description="Seedpoint for a main fluid zone in snappyHexMesh."
+    point_in_mesh: List[LengthType.Point] = pd.Field(
+        min_length=1,
+        description="Seed point(s) for this custom volume zone. Accepts either one [x, y, z] point or a "
+        + "list of points [[x, y, z], ...]. Use with Snappy requires exactly one point per zone.",
     )
     axes: Optional[OrthogonalAxes] = pd.Field(
         None, description="Principal axes definition when using with PorousMedium"
@@ -1059,6 +1061,20 @@ class SeedpointVolume(_VolumeEntityBase):
     axis: Optional[Axis] = pd.Field(None)  # Rotation support
     center: Optional[LengthType.Point] = pd.Field(None, description="")  # Rotation support
     private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
+
+    @pd.field_validator("point_in_mesh", mode="before")
+    @classmethod
+    def _normalize_point_in_mesh(cls, value):
+        """
+        Normalize point_in_mesh input to list-of-points.
+        """
+        try:
+            # Reuse LengthType.Point parsing/validation for single-point inputs.
+            single_point = pd.TypeAdapter(LengthType.Point).validate_python(value)
+            return [single_point]
+        except Exception:  # pylint: disable=broad-exception-caught
+            # If this is not a single point, defer to List[LengthType.Point] validation.
+            return value
 
     def _per_entity_type_validation(self, param_info: ParamsValidationInfo):
         """Validate that SeedpointVolume is listed in meshing->volume_zones."""
