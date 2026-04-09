@@ -153,9 +153,9 @@ def test_catalyst_workflow_reaches_api_payload(monkeypatch):
     assert draft.workflow == "catalyst"
     draft.submit(run_async=True)
 
-    assert captured_payload.get("useNextflow") is True, (
-        f"Expected Catalyst workflow to set the compatibility flag, got: {captured_payload}"
-    )
+    assert (
+        captured_payload.get("useNextflow") is True
+    ), f"Expected Catalyst workflow to set the compatibility flag, got: {captured_payload}"
 
 
 def test_standard_workflow_is_default(monkeypatch):
@@ -168,9 +168,7 @@ def test_standard_workflow_is_default(monkeypatch):
 
         def post(self, json_body):
             captured_payload.update(json_body)
-            return _fake_geometry_api_response(
-                geo_id="geo-test-0002", prj_id="prj-test-default"
-            )
+            return _fake_geometry_api_response(geo_id="geo-test-0002", prj_id="prj-test-default")
 
     monkeypatch.setattr("flow360.component.geometry.RestApi", _FakeRestApi)
     monkeypatch.setattr("os.path.exists", lambda _: True)
@@ -188,9 +186,9 @@ def test_standard_workflow_is_default(monkeypatch):
     assert draft.workflow == "standard"
     draft.submit(run_async=True)
 
-    assert captured_payload.get("useNextflow") is False, (
-        f"Expected standard workflow to keep the compatibility flag disabled, got: {captured_payload}"
-    )
+    assert (
+        captured_payload.get("useNextflow") is False
+    ), f"Expected standard workflow to keep the compatibility flag disabled, got: {captured_payload}"
 
 
 def test_root_asset_entity_change_reflection(mock_id, mock_response):
