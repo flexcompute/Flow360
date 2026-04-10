@@ -27,7 +27,7 @@ from flow360.component.cloud_examples import (
     fetch_examples,
     find_example_by_name,
 )
-from flow360.component.geometry import Geometry
+from flow360.component.geometry import Geometry, GeometryWorkflow
 from flow360.component.interfaces import (
     GeometryInterface,
     ProjectInterface,
@@ -931,6 +931,7 @@ class Project(pd.BaseModel):
         tags: List[str] = None,
         run_async: bool = False,
         folder: Optional[Folder] = None,
+        workflow: GeometryWorkflow = "standard",
     ):
         """
         Initializes a project from a file.
@@ -969,7 +970,13 @@ class Project(pd.BaseModel):
 
         if isinstance(files, GeometryFiles):
             draft = Geometry.from_file(
-                files.file_names, name, solver_version, length_unit, tags, folder=folder
+                files.file_names,
+                name,
+                solver_version,
+                length_unit,
+                tags,
+                folder=folder,
+                workflow=workflow,
             )
         elif isinstance(files, SurfaceMeshFile):
             draft = SurfaceMeshV2.from_file(
@@ -1150,6 +1157,7 @@ class Project(pd.BaseModel):
         tags: List[str] = None,
         run_async: bool = False,
         folder: Optional[Folder] = None,
+        workflow: GeometryWorkflow = "standard",
     ):
         """
         Initializes a project from local geometry files.
@@ -1170,6 +1178,10 @@ class Project(pd.BaseModel):
             Whether to create project asynchronously (default is False).
         folder : Optional[Folder], optional
             Parent folder for the project. If None, creates in root.
+        workflow : {"standard", "catalyst"}, optional
+            Workflow used for project geometry preparation. Use `"catalyst"`
+            for geometry preparation recommended for GAI and snappy workflows
+            (default is `"standard"`).
 
         Returns
         -------
@@ -1205,6 +1217,7 @@ class Project(pd.BaseModel):
             tags=tags,
             run_async=run_async,
             folder=folder,
+            workflow=workflow,
         )
 
     @classmethod

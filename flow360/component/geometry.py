@@ -39,6 +39,8 @@ from flow360.component.utils import (
 from flow360.exceptions import Flow360FileError, Flow360ValueError
 from flow360.log import log
 
+GeometryWorkflow = Literal["standard", "catalyst"]
+
 
 class GeometryStatus(Enum):
     """Status of geometry resource, the is_final method is overloaded"""
@@ -107,7 +109,7 @@ class GeometryDraft(ResourceDraft):
         length_unit: LengthUnitType = "m",
         tags: List[str] = None,
         folder: Optional[Folder] = None,
-        use_nextflow_pipelines: bool = False,
+        workflow: GeometryWorkflow = "standard",
     ):
         """
         Initialize a GeometryDraft with common attributes.
@@ -139,7 +141,7 @@ class GeometryDraft(ResourceDraft):
         self.length_unit = length_unit
         self.solver_version = solver_version
         self.folder = folder
-        self.use_nextflow_pipelines = use_nextflow_pipelines
+        self.workflow = workflow
 
         # pylint: disable=fixme
         # TODO: create a DependableResourceDraft for GeometryDraft and SurfaceMeshDraft
@@ -168,6 +170,11 @@ class GeometryDraft(ResourceDraft):
             raise Flow360ValueError(
                 f"specified length_unit : {self.length_unit} is invalid. "
                 f"Valid options are: {list(LengthUnitType.__args__)}"
+            )
+        if self.workflow not in ("standard", "catalyst"):
+            raise Flow360ValueError(
+                f"specified workflow : {self.workflow} is invalid. "
+                "Valid options are: ['standard', 'catalyst']"
             )
 
     def _set_default_project_name(self):
@@ -243,7 +250,7 @@ class GeometryDraft(ResourceDraft):
             parent_folder_id=self.folder.id if self.folder else "ROOT.FLOW360",
             length_unit=self.length_unit,
             description=description,
-            use_nextflow=self.use_nextflow_pipelines,
+            use_catalyst=self.workflow == "catalyst",
         )
 
         resp = RestApi(GeometryInterface.endpoint).post(req.dict())
@@ -476,7 +483,7 @@ class Geometry(AssetBase):
         length_unit: LengthUnitType = "m",
         tags: List[str] = None,
         folder: Optional[Folder] = None,
-        use_nextflow_pipelines: bool = False,
+        workflow: GeometryWorkflow = "standard",
     ) -> GeometryDraft:
         return GeometryDraft(
             file_names=file_names,
@@ -485,7 +492,7 @@ class Geometry(AssetBase):
             length_unit=length_unit,
             tags=tags,
             folder=folder,
-            use_nextflow_pipelines=use_nextflow_pipelines,
+            workflow=workflow,
         )
 
     @classmethod
