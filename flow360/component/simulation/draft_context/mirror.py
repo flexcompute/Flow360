@@ -24,7 +24,6 @@ from flow360.exceptions import Flow360ValueError
 # pylint: disable=protected-access
 
 
-
 __all__ = [
     "MIRROR_SUFFIX",
     "MirrorManager",

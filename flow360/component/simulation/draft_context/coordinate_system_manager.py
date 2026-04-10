@@ -24,8 +24,6 @@ from flow360.log import log
 # pylint: disable=protected-access,unused-import
 
 
-
-
 __all__ = [
     "CoordinateSystemAssignmentGroup",
     "CoordinateSystemEntityRef",
