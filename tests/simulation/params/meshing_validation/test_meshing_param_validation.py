@@ -4,6 +4,7 @@ import pydantic as pd
 import pytest
 
 from flow360 import u
+from flow360.component.simulation.framework.entity_registry import EntityRegistry
 from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.meshing_param import snappy
 from flow360.component.simulation.meshing_param.face_params import (
@@ -854,6 +855,127 @@ def test_axisymmetric_body_in_uniform_refinement():
                 UniformRefinement(
                     entities=[axisymmetric_body],
                     spacing=0.1,
+                )
+
+
+def test_axisymmetric_segment_class():
+    with SI_unit_system:
+        body = AxisymmetricBody(
+            name="body1",
+            axis=(1, 0, 0),
+            center=(0, 0, 0),
+            profile_curve=[(0, 0), (0, 1), (2, 1), (2, 0)],
+        )
+
+        f = body.segment(0)
+        assert f.entity_id == body.private_attribute_id
+        assert f.entity_name == "body1"
+        assert f.index == 0
+
+        # 3 segments -> indices 0-2 are valid
+        body.segment(2)
+        with pytest.raises(IndexError):
+            body.segment(3)
+        with pytest.raises(IndexError):
+            body.segment(-1)
+
+        # Same entity + index -> equal, so usable as dict key
+        assert body.segment(1) == body.segment(1)
+        assert body.segment(0) != body.segment(1)
+        assert {body.segment(1): "a"}[body.segment(1)] == "a"
+
+        # Different entity, same index -> not equal
+        other = AxisymmetricBody(
+            name="body2",
+            axis=(1, 0, 0),
+            center=(0, 0, 0),
+            profile_curve=[(0, 0), (0, 1), (2, 1), (2, 0)],
+        )
+        assert body.segment(0) != other.segment(0)
+
+
+def test_face_spacing_validation():
+    with SI_unit_system:
+        body = AxisymmetricBody(
+            name="body",
+            axis=(0, 0, 1),
+            center=(0, 0, 0),
+            profile_curve=[(0, 0), (0, 1), (1, 1), (1, 0)],
+        )
+
+        # Valid: override face 1 of 3 faces
+        UniformRefinement(
+            entities=[body],
+            spacing=0.5 * u.m,
+            face_spacing={body.segment(1): 0.1 * u.m},
+        )
+
+        # Invalid: face index out of range
+        with pytest.raises(IndexError, match="out of range"):
+            UniformRefinement(
+                entities=[body],
+                spacing=0.5 * u.m,
+                face_spacing={body.segment(5): 0.1 * u.m},
+            )
+
+        # Invalid: non-AxisymmetricSegment key (pydantic type validation rejects it)
+        with pytest.raises(pd.ValidationError):
+            UniformRefinement(
+                entities=[body],
+                spacing=0.5 * u.m,
+                face_spacing={42: 0.1 * u.m},
+            )
+
+
+def test_face_spacing_contextual_validation():
+    with SI_unit_system:
+        body = AxisymmetricBody(
+            name="body",
+            axis=(0, 0, 1),
+            center=(0, 0, 0),
+            profile_curve=[(0, 0), (0, 1), (1, 1), (1, 0)],
+        )
+        other = AxisymmetricBody(
+            name="other",
+            axis=(0, 0, 1),
+            center=(1, 0, 0),
+            profile_curve=[(0, 0), (0, 1), (1, 0)],
+        )
+
+        # Registry contains both bodies
+        registry = EntityRegistry()
+        registry.register(body)
+        registry.register(other)
+        ctx = ParamsValidationInfo({}, [])
+        ctx.is_beta_mesher = True
+        ctx._entity_registry = registry
+
+        # Warning: other exists in registry, but not in this refinement's entities
+        mock_context = ValidationContext(VOLUME_MESH, ctx)
+        with mock_context:
+            UniformRefinement(
+                entities=[body],
+                spacing=0.5 * u.m,
+                face_spacing={other.segment(0): 0.1 * u.m},
+            )
+        assert any(
+            "not in this refinement's entities list" in w["msg"]
+            for w in mock_context.validation_warnings
+        )
+
+        # Error: reference an entity not in registry at all (stale)
+        removed = AxisymmetricBody(
+            name="removed",
+            axis=(0, 0, 1),
+            center=(2, 0, 0),
+            profile_curve=[(0, 0), (0, 1), (1, 0)],
+        )
+        with pytest.raises(pd.ValidationError, match="not a registered AxisymmetricBody"):
+            with ValidationContext(VOLUME_MESH, ctx):
+                UniformRefinement(
+                    entities=[body],
+                    spacing=0.5 * u.m,
+                    face_spacing={removed.segment(0): 0.1 * u.m},
                 )
 
 
