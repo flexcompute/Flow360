@@ -62,6 +62,7 @@
             "animationFrequencyOffset": 0,
             "animationFrequencyTimeAverage": -1,
             "animationFrequencyTimeAverageOffset": 0,
+            "name": "Surface output",
             "outputFields": [],
             "outputFormat": "paraview",
             "startAverageIntegrationStep": -1,
@@ -75,8 +76,7 @@
                     ]
                 }
             },
-            "writeSingleFile": false,
-            "name": "Surface output"
+            "writeSingleFile": false
         }
     ],
     "thermallyPerfectGasModel": {

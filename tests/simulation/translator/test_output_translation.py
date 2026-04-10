@@ -231,6 +231,7 @@ def surface_output_config(vel_in_km_per_hr):
                     "surface2": {"outputFields": ["Cp", "velocity_in_km_per_hr"]},
                 },
                 "writeSingleFile": False,
+                "name": "Surface output",
             },
             {
                 "animationFrequency": 123,
@@ -263,6 +264,7 @@ def surface_output_config(vel_in_km_per_hr):
                     },
                 },
                 "writeSingleFile": False,
+                "name": "Surface output",
             },
         ],
     )
@@ -328,6 +330,7 @@ def test_surface_output(
             "surface2": {"outputFields": ["Cf", "velocity_in_km_per_hr"]},
         },
         "writeSingleFile": False,
+        "name": "Time average surface output",
     }
     ref_avg_1 = {
         "animationFrequency": -1,
@@ -346,6 +349,7 @@ def test_surface_output(
             },
         },
         "writeSingleFile": False,
+        "name": "Time average surface output",
     }
     assert compare_values(ref_avg_0, translated["timeAverageSurfaceOutput"][0])
     assert compare_values(ref_avg_1, translated["timeAverageSurfaceOutput"][1])

@@ -608,8 +608,7 @@ def translate_surface_output(
 ):
     """Translate surface output settings.
 
-    Returns a list of per-instance solver config dicts. The caller is responsible
-    for unwrapping single-element lists into a plain object for backward compatibility.
+    Returns a list of per-instance solver config dicts (one per SurfaceOutput instance).
     """
 
     assert "boundaries" in translated  #  "Boundaries must be translated before surface output"

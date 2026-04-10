@@ -57,6 +57,18 @@ class TestFileNameString:
         ):
             Model(name="test\x00file")
 
+    def test_invalid_percent(self):
+        """Test that filenames with percent signs are rejected (conflicts with solver formatting)."""
+
+        class Model(pd.BaseModel):
+            name: FileNameString
+
+        with pytest.raises(
+            pd.ValidationError,
+            match="Filename contains invalid characters: '%'",
+        ):
+            Model(name="run_%d")
+
     def test_empty_string(self):
         """Test that empty strings are rejected."""
 

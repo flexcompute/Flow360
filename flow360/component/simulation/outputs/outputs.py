@@ -85,8 +85,9 @@ from flow360.component.simulation.validation.validation_utils import (
 from flow360.component.types import Axis
 from flow360.log import log
 
-# Invalid characters for Linux filenames: / is path separator, \0 is null terminator
-_INVALID_FILENAME_CHARS_PATTERN = re.compile(r"[/\0]")
+# Invalid characters for output filenames:
+# / is a path separator, \0 is null terminator, % conflicts with solver printf-style formatting
+_INVALID_FILENAME_CHARS_PATTERN = re.compile(r"[/\0%]")
 
 
 def _validate_filename_string(value: str) -> str:
@@ -105,6 +106,7 @@ def _validate_filename_string(value: str) -> str:
     Notes:
         - Disallows forward slash (/) - path separator
         - Disallows null byte (\\0)
+        - Disallows percent sign (%) - conflicts with solver printf-style formatting
         - Disallows empty strings
         - Disallows reserved names (. and ..)
     """
@@ -123,7 +125,7 @@ def _validate_filename_string(value: str) -> str:
         char_display = ", ".join(repr(c) for c in unique_chars)
         raise ValueError(
             f"Filename contains invalid characters: {char_display}. "
-            f"Linux filenames cannot contain '/' or null bytes. "
+            f"Output names cannot contain '/', '%', or null bytes. "
             f"Got: '{value}'"
         )
 
@@ -498,6 +500,7 @@ class SurfaceOutput(_AnimationAndFileFormatSettings, _OutputBase):
     @property
     def has_default_name(self) -> bool:
         """Whether this output still carries its Pydantic-defined default name."""
+        # pylint: disable=unsubscriptable-object
         return self.name is None or self.name == type(self).model_fields["name"].default
 
     @contextual_field_validator("entities", mode="after")

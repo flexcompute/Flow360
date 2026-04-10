@@ -508,7 +508,7 @@ class SimulationParams(_ParamModelBase):
     @contextual_field_validator("outputs", mode="after")
     @classmethod
     def check_duplicate_surface_usage(cls, outputs, param_info: ParamsValidationInfo):
-        """Disallow the same boundary/surface being used in multiple outputs"""
+        """Require unique non-default names when the same surface appears in multiple outputs"""
         return _check_duplicate_surface_usage_in_surface_output(outputs, param_info)
 
     @contextual_field_validator("outputs", mode="after")
