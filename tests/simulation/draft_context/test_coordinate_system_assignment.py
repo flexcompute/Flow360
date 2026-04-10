@@ -14,7 +14,7 @@ from flow360.component.simulation.draft_context.coordinate_system_manager import
 from flow360.component.simulation.entity_operation import CoordinateSystem
 from flow360.component.simulation.primitives import Edge, ImportedSurface
 from flow360.component.simulation.simulation_params import SimulationParams
-from flow360.exceptions import Flow360RuntimeError
+from flow360.exceptions import Flow360ValueError
 
 
 def _compose(parent: np.ndarray, child: np.ndarray) -> np.ndarray:
@@ -106,7 +106,7 @@ def test_assign_coordinate_system_rejects_cycle(mock_geometry):
         )
 
         with pytest.raises(
-            Flow360RuntimeError, match="Cycle detected in coordinate system inheritance"
+            Flow360ValueError, match="Cycle detected in coordinate system inheritance"
         ):
             draft.coordinate_systems.update_parent(coordinate_system=cs_root, parent=cs_child)
 
@@ -117,7 +117,7 @@ def test_assign_coordinate_system_rejects_duplicate_ids(mock_geometry):
             coordinate_system=CoordinateSystem(name="first", private_attribute_id="dup-id")
         )
         with pytest.raises(
-            Flow360RuntimeError,
+            Flow360ValueError,
             match="Coordinate system id 'dup-id' already registered.",
         ):
             draft.coordinate_systems.add(
@@ -129,7 +129,7 @@ def test_assign_coordinate_system_rejects_duplicate_names(mock_geometry):
     with create_draft(new_run_from=mock_geometry) as draft:
         draft.coordinate_systems.add(coordinate_system=CoordinateSystem(name="dup-name"))
         with pytest.raises(
-            Flow360RuntimeError,
+            Flow360ValueError,
             match="Coordinate system name 'dup-name' already registered.",
         ):
             draft.coordinate_systems.add(coordinate_system=CoordinateSystem(name="dup-name"))
@@ -142,7 +142,7 @@ def test_get_coordinate_system_by_name(mock_geometry):
         assert fetched.private_attribute_id == cs.private_attribute_id
 
         with pytest.raises(
-            Flow360RuntimeError,
+            Flow360ValueError,
             match="Coordinate system 'missing' not found in the draft.",
         ):
             draft.coordinate_systems.get_by_name("missing")
@@ -153,7 +153,7 @@ def test_update_parent_requires_registered_coordinate_system(mock_geometry):
     with create_draft(new_run_from=mock_geometry) as draft:
         cs = CoordinateSystem(name="standalone")
         with pytest.raises(
-            Flow360RuntimeError,
+            Flow360ValueError,
             match="Coordinate system must be part of the draft to be updated.",
         ):
             draft.coordinate_systems.update_parent(coordinate_system=cs, parent=None)
@@ -191,7 +191,7 @@ def test_remove_coordinate_system_errors(mock_geometry):
     with create_draft(new_run_from=mock_geometry) as draft:
         cs = CoordinateSystem(name="not-registered")
         with pytest.raises(
-            Flow360RuntimeError,
+            Flow360ValueError,
             match="Coordinate system is not registered in this draft.",
         ):
             draft.coordinate_systems.remove(coordinate_system=cs)
@@ -201,7 +201,7 @@ def test_remove_coordinate_system_errors(mock_geometry):
             coordinate_system=CoordinateSystem(name="child"), parent=parent
         )
         with pytest.raises(
-            Flow360RuntimeError,
+            Flow360ValueError,
             match="Cannot remove coordinate system 'parent' because dependents exist: child",
         ):
             draft.coordinate_systems.remove(coordinate_system=parent)
@@ -221,7 +221,7 @@ def test_assign_requires_registered_entity(mock_geometry):
         cs = draft.coordinate_systems.add(coordinate_system=CoordinateSystem(name="cs"))
         rogue_entity = CoordinateSystem(name="not-an-entity")  # wrong type
         with pytest.raises(
-            Flow360RuntimeError,
+            Flow360ValueError,
             match="Only entities can be assigned a coordinate system. Received: CoordinateSystem",
         ):
             draft.coordinate_systems.assign(entities=rogue_entity, coordinate_system=cs)
@@ -231,7 +231,7 @@ def test_get_coordinate_system_matrix_requires_registration(mock_geometry):
     with create_draft(new_run_from=mock_geometry) as draft:
         cs = CoordinateSystem(name="unregistered")
         with pytest.raises(
-            Flow360RuntimeError,
+            Flow360ValueError,
             match="Coordinate system must be registered to compute its matrix.",
         ):
             draft.coordinate_systems._get_coordinate_system_matrix(coordinate_system=cs)
@@ -272,7 +272,7 @@ def test_from_status_validation_errors(mock_geometry):
             ],
         )
         with pytest.raises(
-            Flow360RuntimeError,
+            Flow360ValueError,
             match="Parent record references unknown coordinate system 'missing'",
         ):
             CoordinateSystemManager._from_status(
@@ -294,7 +294,7 @@ def test_from_status_rejects_assignment_unknown_cs(mock_geometry):
             ],
         )
         with pytest.raises(
-            Flow360RuntimeError,
+            Flow360ValueError,
             match="Assignment references unknown coordinate system 'missing'",
         ):
             CoordinateSystemManager._from_status(
@@ -327,7 +327,7 @@ def test_from_status_rejects_duplicate_entity_assignment(mock_geometry):
             ],
         )
         with pytest.raises(
-            Flow360RuntimeError,
+            Flow360ValueError,
             match=f"Duplicate entity assignment for entity '{entity_type_name}:{entity_id}'",
         ):
             CoordinateSystemManager._from_status(
@@ -439,7 +439,7 @@ def test_assign_entity_without_id_raises(mock_geometry):
         entity_without_id = Edge(name="orphan_edge")
         assert entity_without_id.private_attribute_id is None
 
-        with pytest.raises(Flow360RuntimeError, match="is not supported for coordinate system"):
+        with pytest.raises(Flow360ValueError, match="is not supported for coordinate system"):
             draft.coordinate_systems.assign(entities=entity_without_id, coordinate_system=cs)
 
 

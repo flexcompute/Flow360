@@ -18,7 +18,7 @@ from flow360.component.simulation.draft_context.mirror import (
 )
 from flow360.component.simulation.primitives import GeometryBodyGroup
 from flow360.component.simulation.simulation_params import SimulationParams
-from flow360.exceptions import Flow360RuntimeError
+from flow360.exceptions import Flow360ValueError
 
 
 def test_mirror_single_call_returns_expected_entities(mock_geometry):
@@ -277,7 +277,7 @@ def test_mirror_create_rejects_duplicate_plane_name(mock_geometry):
         )
 
         with pytest.raises(
-            Flow360RuntimeError,
+            Flow360ValueError,
             match="Mirror plane name 'mirror' already exists in the draft",
         ):
             draft.mirror.create_mirror_of(entities=body_groups[0], mirror_plane=mirror_plane2)
@@ -320,10 +320,22 @@ def test_remove_mirror_of_rejects_invalid_input_type(mock_geometry):
     with create_draft(new_run_from=mock_geometry) as draft:
         # Try to pass something that's neither a GeometryBodyGroup nor a list
         with pytest.raises(
-            Flow360RuntimeError,
+            Flow360ValueError,
             match="`entities` accepts a single entity or a list of entities",
         ):
             draft.mirror.remove_mirror_of(entities="invalid_string")
+
+
+def test_create_mirror_of_rejects_invalid_input_type(mock_geometry):
+    """Test that create_mirror_of rejects invalid input types."""
+    with create_draft(new_run_from=mock_geometry) as draft:
+        mirror_plane = MirrorPlane(name="mirror", normal=(1, 0, 0), center=(0, 0, 0) * u.m)
+
+        with pytest.raises(
+            Flow360ValueError,
+            match="`entities` accepts a single entity or a list of entities",
+        ):
+            draft.mirror.create_mirror_of(entities="invalid_string", mirror_plane=mirror_plane)
 
 
 def test_remove_mirror_of_rejects_invalid_entity_type(mock_geometry):
@@ -333,7 +345,7 @@ def test_remove_mirror_of_rejects_invalid_entity_type(mock_geometry):
         invalid_entity = MirrorPlane(name="invalid", normal=(1, 0, 0), center=(0, 0, 0) * u.m)
 
         with pytest.raises(
-            Flow360RuntimeError,
+            Flow360ValueError,
             match="Only GeometryBodyGroup entities are supported by `remove_mirror_of\\(\\)`",
         ):
             draft.mirror.remove_mirror_of(entities=[invalid_entity])
@@ -534,7 +546,7 @@ def test_mirror_create_raises_when_face_group_to_body_group_is_none(mock_geometr
         )
 
         with pytest.raises(
-            Flow360RuntimeError,
+            Flow360ValueError,
             match="Mirroring is not available because the surface-to-body-group mapping could not be derived",
         ):
             mirror_manager.create_mirror_of(entities=body_group, mirror_plane=mirror_plane)
@@ -796,5 +808,5 @@ def test_mirror_entity_without_id_raises(mock_geometry):
             center=(0, 0, 0) * u.m,
         )
 
-        with pytest.raises(Flow360RuntimeError, match="is not supported for mirror"):
+        with pytest.raises(Flow360ValueError, match="is not supported for mirror"):
             draft.mirror.create_mirror_of(entities=[entity_without_id], mirror_plane=mirror_plane)
