@@ -396,6 +396,32 @@ def test_multiple_surface_outputs_same_surface_different_freq():
     assert set(fine["surfaces"]["propeller"]["outputFields"]) == {"Cp", "primitiveVars"}
 
 
+def test_multiple_surface_outputs_sorted_by_name():
+    """Translated surface outputs are sorted by name so user reordering doesn't cause diffs."""
+    with SI_unit_system:
+        param = SimulationParams(
+            outputs=[
+                SurfaceOutput(
+                    name="z_last",
+                    entities=[Surface(name="wing")],
+                    output_fields=["Cp"],
+                    frequency=10,
+                ),
+                SurfaceOutput(
+                    name="a_first",
+                    entities=[Surface(name="wing")],
+                    output_fields=["Cp"],
+                    frequency=100,
+                ),
+            ],
+        )
+    translated = {"boundaries": {}}
+    translated = translate_output(param, translated)
+
+    names = [c["name"] for c in translated["surfaceOutput"]]
+    assert names == ["a_first", "z_last"]
+
+
 def test_single_surface_output_emits_array():
     """Even a single SurfaceOutput should produce an array (solver handles both formats)."""
     with SI_unit_system:
@@ -413,7 +439,7 @@ def test_single_surface_output_emits_array():
 
     assert isinstance(translated["surfaceOutput"], list)
     assert len(translated["surfaceOutput"]) == 1
-    assert "name" not in translated["surfaceOutput"][0]
+    assert translated["surfaceOutput"][0]["name"] == "Surface output"
     assert "wing" in translated["surfaceOutput"][0]["surfaces"]
 
 

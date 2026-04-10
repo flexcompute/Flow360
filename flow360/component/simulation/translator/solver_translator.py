@@ -70,7 +70,6 @@ from flow360.component.simulation.outputs.output_fields import (
     remove_fields_subsumed_by_primitive_vars,
 )
 from flow360.component.simulation.outputs.outputs import (
-    SURFACE_OUTPUT_DEFAULT_NAMES,
     AeroAcousticOutput,
     ForceDistributionOutput,
     ForceOutput,
@@ -598,8 +597,7 @@ def _translate_single_surface_output(
         ),
     )
     surface_output["writeSingleFile"] = output_instance.write_single_file
-    if output_instance.name not in SURFACE_OUTPUT_DEFAULT_NAMES:
-        surface_output["name"] = output_instance.name
+    surface_output["name"] = output_instance.name
     return surface_output
 
 
@@ -1175,6 +1173,7 @@ def translate_output(input_params: SimulationParams, translated: dict):
     for output_class, output_key in surface_output_configs:
         if has_instance_in_list(outputs, output_class):
             configs = translate_surface_output(outputs, output_class, translated)
+            configs.sort(key=lambda c: c["name"])
             translated[output_key] = [add_unused_output_settings_for_comparison(c) for c in configs]
 
     ##:: Step3: Get translated["sliceOutput"]

@@ -85,11 +85,6 @@ from flow360.component.simulation.validation.validation_utils import (
 from flow360.component.types import Axis
 from flow360.log import log
 
-# Default names that indicate the user did not explicitly set a name on a SurfaceOutput.
-# Used by validation (to require unique names when surfaces overlap) and by the translator
-# (to omit the name field from JSON when it's a default).
-SURFACE_OUTPUT_DEFAULT_NAMES = frozenset({"Surface output", "Time average surface output", None})
-
 # Invalid characters for Linux filenames: / is path separator, \0 is null terminator
 _INVALID_FILENAME_CHARS_PATTERN = re.compile(r"[/\0]")
 
@@ -499,6 +494,11 @@ class SurfaceOutput(_AnimationAndFileFormatSettings, _OutputBase):
         + " :ref:`variables specific to SurfaceOutput<SurfaceSpecificVariablesV2>` and :class:`UserDefinedField`."
     )
     output_type: Literal["SurfaceOutput"] = pd.Field("SurfaceOutput", frozen=True)
+
+    @property
+    def has_default_name(self) -> bool:
+        """Whether this output still carries its Pydantic-defined default name."""
+        return self.name is None or self.name == type(self).model_fields["name"].default
 
     @contextual_field_validator("entities", mode="after")
     @classmethod

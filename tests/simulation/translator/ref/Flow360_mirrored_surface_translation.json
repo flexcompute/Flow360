@@ -234,7 +234,8 @@
                     ]
                 }
             },
-            "writeSingleFile": false
+            "writeSingleFile": false,
+            "name": "Surface output"
         }
     ],
     "thermallyPerfectGasModel": {

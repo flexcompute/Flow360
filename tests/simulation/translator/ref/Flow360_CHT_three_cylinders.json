@@ -129,7 +129,8 @@
                     ]
                 }
             },
-            "writeSingleFile": false
+            "writeSingleFile": false,
+            "name": "Surface output"
         },
         {
             "animationFrequency": -1,
@@ -156,7 +157,8 @@
                     ]
                 }
             },
-            "writeSingleFile": false
+            "writeSingleFile": false,
+            "name": "Surface output"
         }
     ],
     "thermallyPerfectGasModel": {
