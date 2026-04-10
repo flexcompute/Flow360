@@ -145,7 +145,7 @@ class MirrorManager:
                 )
 
         return self._state.create_mirror_of(
-            entities=entities,
+            entities=normalized_entities,
             mirror_plane=mirror_plane,
         )
 
