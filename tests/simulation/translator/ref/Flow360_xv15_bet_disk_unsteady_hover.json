@@ -459,26 +459,29 @@
         "externalProcessMonitorOutput": true,
         "monitorProcessorHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
-    "surfaceOutput": {
-        "animationFrequency": -1,
-        "animationFrequencyOffset": 0,
-        "animationFrequencyTimeAverage": -1,
-        "animationFrequencyTimeAverageOffset": 0,
-        "outputFields": [],
-        "outputFormat": "paraview,tecplot",
-        "startAverageIntegrationStep": -1,
-        "surfaces": {
-            "1": {
-                "outputFields": [
-                    "primitiveVars",
-                    "Cp",
-                    "Cf",
-                    "CfVec"
-                ]
-            }
-        },
-        "writeSingleFile": false
-    },
+    "surfaceOutput": [
+        {
+            "animationFrequency": -1,
+            "animationFrequencyOffset": 0,
+            "animationFrequencyTimeAverage": -1,
+            "animationFrequencyTimeAverageOffset": 0,
+            "name": "",
+            "outputFields": [],
+            "outputFormat": "paraview,tecplot",
+            "startAverageIntegrationStep": -1,
+            "surfaces": {
+                "1": {
+                    "outputFields": [
+                        "primitiveVars",
+                        "Cp",
+                        "Cf",
+                        "CfVec"
+                    ]
+                }
+            },
+            "writeSingleFile": false
+        }
+    ],
     "thermallyPerfectGasModel": {
         "temperatureRanges": [
             {

@@ -2,7 +2,8 @@
 Caveats:
 1. Check if we support non-average and average output specified at the same time in solver.
 (Yes but they share the same output_fields)
-2. We do not support multiple output frequencies/file format for the same type of output.
+2. Multiple SurfaceOutput instances with different frequencies/formats are supported.
+   When the same surface appears in multiple outputs, each output must have a unique `name`.
 """
 
 # pylint: disable=too-many-lines
@@ -84,8 +85,9 @@ from flow360.component.simulation.validation.validation_utils import (
 from flow360.component.types import Axis
 from flow360.log import log
 
-# Invalid characters for Linux filenames: / is path separator, \0 is null terminator
-_INVALID_FILENAME_CHARS_PATTERN = re.compile(r"[/\0]")
+# Invalid characters for output filenames:
+# / is a path separator, \0 is null terminator, % conflicts with solver printf-style formatting
+_INVALID_FILENAME_CHARS_PATTERN = re.compile(r"[/\0%]")
 
 
 def _validate_filename_string(value: str) -> str:
@@ -104,6 +106,7 @@ def _validate_filename_string(value: str) -> str:
     Notes:
         - Disallows forward slash (/) - path separator
         - Disallows null byte (\\0)
+        - Disallows percent sign (%) - conflicts with solver printf-style formatting
         - Disallows empty strings
         - Disallows reserved names (. and ..)
     """
@@ -122,7 +125,7 @@ def _validate_filename_string(value: str) -> str:
         char_display = ", ".join(repr(c) for c in unique_chars)
         raise ValueError(
             f"Filename contains invalid characters: {char_display}. "
-            f"Linux filenames cannot contain '/' or null bytes. "
+            f"Output names cannot contain '/', '%', or null bytes. "
             f"Got: '{value}'"
         )
 
@@ -442,13 +445,36 @@ class SurfaceOutput(_AnimationAndFileFormatSettings, _OutputBase):
       ...     output_fields=["vorticity", "T"],
       ... )
 
+    - Define multiple :class:`SurfaceOutput` instances on the same surface with different
+      frequencies and formats. Each must have a unique :code:`name`.
+
+      >>> fl.SurfaceOutput(
+      ...     name="propeller_coarse",
+      ...     entities=[volume_mesh["propeller"]],
+      ...     output_format="tecplot",
+      ...     output_fields=["Cp"],
+      ...     frequency=100,
+      ... )
+      >>> fl.SurfaceOutput(
+      ...     name="propeller_fine",
+      ...     entities=[volume_mesh["propeller"]],
+      ...     output_format="paraview",
+      ...     output_fields=["Cp", "primitiveVars"],
+      ...     frequency=10,
+      ... )
+
     ====
     """
 
     # pylint: disable=fixme
     # TODO: entities is None --> use all surfaces. This is not implemented yet.
 
-    name: Optional[str] = pd.Field("Surface output", description="Name of the `SurfaceOutput`.")
+    name: FileNameString = pd.Field(
+        "Surface output",
+        description="Name of the `SurfaceOutput`. Used as a suffix in output filenames to "
+        "disambiguate when multiple outputs share the same surface entity. "
+        "Must be unique across all instances that share the same surface.",
+    )
     entities: EntityList[  # pylint: disable=duplicate-code
         Surface,
         MirroredSurface,
@@ -464,15 +490,18 @@ class SurfaceOutput(_AnimationAndFileFormatSettings, _OutputBase):
     write_single_file: bool = pd.Field(
         default=False,
         description="Enable writing all surface outputs into a single file instead of one file per surface. "
-        "Supported by Tecplot, Paraview, and VTK-HDF output formats. "
-        "Will choose the value of the last instance of this option of the same output type "
-        "(:class:`SurfaceOutput` or :class:`TimeAverageSurfaceOutput`) in the output list.",
+        "Supported by Tecplot, Paraview, and VTK-HDF output formats.",
     )
     output_fields: UniqueItemList[Union[SurfaceFieldNames, str, UserVariable]] = pd.Field(
         description="List of output variables. Including :ref:`universal output variables<UniversalVariablesV2>`,"
         + " :ref:`variables specific to SurfaceOutput<SurfaceSpecificVariablesV2>` and :class:`UserDefinedField`."
     )
     output_type: Literal["SurfaceOutput"] = pd.Field("SurfaceOutput", frozen=True)
+
+    @property
+    def has_default_name(self) -> bool:
+        """Whether this output has no custom name assigned."""
+        return self.name == type(self).model_fields["name"].default
 
     @contextual_field_validator("entities", mode="after")
     @classmethod
@@ -516,8 +545,11 @@ class TimeAverageSurfaceOutput(SurfaceOutput):
     ====
     """
 
-    name: Optional[str] = pd.Field(
-        "Time average surface output", description="Name of the `TimeAverageSurfaceOutput`."
+    name: FileNameString = pd.Field(
+        "Time average surface output",
+        description="Name of the `TimeAverageSurfaceOutput`. Used as a suffix in output filenames "
+        "to disambiguate when multiple outputs share the same surface entity. "
+        "Must be unique across all instances that share the same surface.",
     )
 
     start_step: Union[pd.NonNegativeInt, Literal[-1]] = pd.Field(

@@ -387,13 +387,16 @@ def test_surface_user_variables_in_output_fields():
 
 def test_duplicate_surface_usage(mock_validation_context):
     my_var = UserVariable(name="my_var", value=solution.node_forces_per_unit_area[1])
+
+    # Same surface in multiple outputs WITHOUT unique names should fail
     with (
         mock_validation_context,
         pytest.raises(
             ValueError,
             match=re.escape(
-                "The same surface `fluid/body` is used in multiple `SurfaceOutput`s. "
-                "Please specify all settings for the same surface in one output."
+                "The surface `fluid/body` is used in multiple `SurfaceOutput`s. "
+                "Please specify unique `name` values for each output instance "
+                "that shares the same surface."
             ),
         ),
     ):
@@ -407,13 +410,71 @@ def test_duplicate_surface_usage(mock_validation_context):
                 ],
             )
 
+    # Same surface in multiple outputs WITH unique names should succeed
+    with mock_validation_context, imperial_unit_system:
+        SimulationParams(
+            outputs=[
+                SurfaceOutput(
+                    name="body_coarse",
+                    entities=Surface(name="fluid/body"),
+                    output_fields=[my_var],
+                ),
+                SurfaceOutput(
+                    name="body_fine",
+                    entities=Surface(name="fluid/body"),
+                    output_fields=[solution.CfVec],
+                ),
+            ],
+        )
+
+    # Duplicate output names on the same surface should fail
+    with (
+        mock_validation_context,
+        pytest.raises(
+            ValueError,
+            match=re.escape("that have the same name"),
+        ),
+    ):
+        with imperial_unit_system:
+            SimulationParams(
+                outputs=[
+                    SurfaceOutput(
+                        name="body_output",
+                        entities=Surface(name="fluid/body"),
+                        output_fields=[my_var],
+                    ),
+                    SurfaceOutput(
+                        name="body_output",
+                        entities=Surface(name="fluid/body"),
+                        output_fields=[solution.CfVec],
+                    ),
+                ],
+            )
+
+    # Multiple outputs with different surfaces and default names should succeed (backward compat)
+    with mock_validation_context, imperial_unit_system:
+        SimulationParams(
+            outputs=[
+                SurfaceOutput(
+                    entities=Surface(name="fluid/body"),
+                    output_fields=[my_var],
+                ),
+                SurfaceOutput(
+                    entities=Surface(name="fluid/wing"),
+                    output_fields=[solution.CfVec],
+                ),
+            ],
+        )
+
+    # Same surface in multiple TimeAverageSurfaceOutputs WITHOUT unique names should fail
     with (
         mock_validation_context,
         pytest.raises(
             ValueError,
             match=re.escape(
-                "The same surface `fluid/body` is used in multiple `TimeAverageSurfaceOutput`s. "
-                "Please specify all settings for the same surface in one output."
+                "The surface `fluid/body` is used in multiple `TimeAverageSurfaceOutput`s. "
+                "Please specify unique `name` values for each output instance "
+                "that shares the same surface."
             ),
         ),
     ):
@@ -430,6 +491,25 @@ def test_duplicate_surface_usage(mock_validation_context):
                 time_stepping=Unsteady(steps=10, step_size=1e-3),
             )
 
+    # Same surface in multiple TimeAverageSurfaceOutputs WITH unique names should succeed
+    with mock_validation_context, imperial_unit_system:
+        SimulationParams(
+            outputs=[
+                TimeAverageSurfaceOutput(
+                    name="body_avg_coarse",
+                    entities=Surface(name="fluid/body"),
+                    output_fields=[my_var],
+                ),
+                TimeAverageSurfaceOutput(
+                    name="body_avg_fine",
+                    entities=Surface(name="fluid/body"),
+                    output_fields=[solution.CfVec],
+                ),
+            ],
+            time_stepping=Unsteady(steps=10, step_size=1e-3),
+        )
+
+    # Mixing SurfaceOutput and TimeAverageSurfaceOutput on the same surface should still work
     with imperial_unit_system:
         SimulationParams(
             outputs=[
@@ -439,6 +519,23 @@ def test_duplicate_surface_usage(mock_validation_context):
                 ),
             ],
             time_stepping=Unsteady(steps=10, step_size=1e-3),
+        )
+
+
+def test_surface_output_name_invalid_filename():
+    """SurfaceOutput.name must be a valid filename (no slashes, null bytes, etc.)."""
+    with pytest.raises(pydantic.ValidationError, match="invalid characters"):
+        SurfaceOutput(
+            name="foo/bar",
+            entities=Surface(name="fluid/body"),
+            output_fields=["Cp"],
+        )
+
+    with pytest.raises(pydantic.ValidationError, match="cannot be empty"):
+        SurfaceOutput(
+            name="",
+            entities=Surface(name="fluid/body"),
+            output_fields=["Cp"],
         )
 
 

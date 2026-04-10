@@ -731,24 +731,42 @@ def _check_duplicate_isosurface_names(outputs):
     return outputs
 
 
-def _check_duplicate_surface_usage(outputs, param_info: ParamsValidationInfo):
+def _check_duplicate_surface_usage_in_surface_output(outputs, param_info: ParamsValidationInfo):
+    """Validate that when the same surface appears in multiple outputs of the same type,
+    all those outputs have unique, non-default names."""
     if outputs is None:
         return outputs
 
     def _check_surface_usage(
         outputs, output_type: Union[Type[SurfaceOutput], Type[TimeAverageSurfaceOutput]]
     ):
-        surface_names = set()
+        # Map each surface to the list of outputs that reference it
+        surface_to_outputs: dict[str, list[SurfaceOutput]] = {}
         for output in outputs:
             if not is_exact_instance(output, output_type):
                 continue
             for entity in param_info.expand_entity_list(output.entities):
-                if entity.name in surface_names:
+                surface_to_outputs.setdefault(entity.name, []).append(output)
+
+        # Only check outputs that share a surface
+        for surface_name, shared_outputs in surface_to_outputs.items():
+            if len(shared_outputs) <= 1:
+                continue
+            # All outputs sharing a surface must have unique, non-default names
+            for output in shared_outputs:
+                if output.has_default_name:
                     raise ValueError(
-                        f"The same surface `{entity.name}` is used in multiple `{output_type.__name__}`s."
-                        " Please specify all settings for the same surface in one output."
+                        f"The surface `{surface_name}` is used in multiple `{output_type.__name__}`s. "
+                        "Please specify unique `name` values for each output instance "
+                        "that shares the same surface."
                     )
-                surface_names.add(entity.name)
+            names = [o.name for o in shared_outputs]
+            if len(names) != len(set(names)):
+                raise ValueError(
+                    f"The surface `{surface_name}` is used in multiple `{output_type.__name__}`s "
+                    "that have the same name. Please specify unique `name` values for each "
+                    "output instance that shares the same surface."
+                )
 
     _check_surface_usage(outputs, SurfaceOutput)
     _check_surface_usage(outputs, TimeAverageSurfaceOutput)

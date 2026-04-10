@@ -120,7 +120,7 @@ from flow360.component.simulation.validation.validation_simulation_params import
     _check_duplicate_actuator_disk_cylinder_names,
     _check_duplicate_entities_in_models,
     _check_duplicate_isosurface_names,
-    _check_duplicate_surface_usage,
+    _check_duplicate_surface_usage_in_surface_output,
     _check_hybrid_model_to_use_zonal_enforcement,
     _check_krylov_solver_restrictions,
     _check_low_mach_preconditioner_output,
@@ -508,8 +508,8 @@ class SimulationParams(_ParamModelBase):
     @contextual_field_validator("outputs", mode="after")
     @classmethod
     def check_duplicate_surface_usage(cls, outputs, param_info: ParamsValidationInfo):
-        """Disallow the same boundary/surface being used in multiple outputs"""
-        return _check_duplicate_surface_usage(outputs, param_info)
+        """Require unique non-default names when the same surface appears in multiple outputs"""
+        return _check_duplicate_surface_usage_in_surface_output(outputs, param_info)
 
     @contextual_field_validator("outputs", mode="after")
     @classmethod
