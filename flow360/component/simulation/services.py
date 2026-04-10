@@ -195,6 +195,7 @@ def get_default_params(
         reference_geometry = _get_default_reference_geometry(project_length_unit)
         operating_condition = AerospaceCondition(velocity_magnitude=dummy_value)
         surface_output = SurfaceOutput(
+            name="Surface output",
             entities=[Surface(name="*")],
             output_fields=["Cp", "yPlus", "Cf", "CfVec"],
         )

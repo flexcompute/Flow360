@@ -469,8 +469,8 @@ class SurfaceOutput(_AnimationAndFileFormatSettings, _OutputBase):
     # pylint: disable=fixme
     # TODO: entities is None --> use all surfaces. This is not implemented yet.
 
-    name: Optional[FileNameString] = pd.Field(
-        None,
+    name: FileNameString = pd.Field(
+        "Surface output",
         description="Name of the `SurfaceOutput`. Used as a suffix in output filenames to "
         "disambiguate when multiple outputs share the same surface entity. "
         "Must be unique across all instances that share the same surface.",
@@ -501,7 +501,7 @@ class SurfaceOutput(_AnimationAndFileFormatSettings, _OutputBase):
     @property
     def has_default_name(self) -> bool:
         """Whether this output has no custom name assigned."""
-        return self.name is None
+        return self.name == type(self).model_fields["name"].default
 
     @contextual_field_validator("entities", mode="after")
     @classmethod
@@ -545,8 +545,8 @@ class TimeAverageSurfaceOutput(SurfaceOutput):
     ====
     """
 
-    name: Optional[FileNameString] = pd.Field(
-        None,
+    name: FileNameString = pd.Field(
+        "Time average surface output",
         description="Name of the `TimeAverageSurfaceOutput`. Used as a suffix in output filenames "
         "to disambiguate when multiple outputs share the same surface entity. "
         "Must be unique across all instances that share the same surface.",
