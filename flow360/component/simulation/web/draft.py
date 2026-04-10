@@ -5,6 +5,7 @@ from __future__ import annotations
 import ast
 import json
 from functools import cached_property
+from pathlib import Path
 from typing import TYPE_CHECKING, Literal, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -31,6 +32,84 @@ from flow360.log import log
 
 if TYPE_CHECKING:
     from flow360.component.simulation.simulation_params import SimulationParams
+
+
+def _json_size_in_bytes(data) -> int:
+    """Return the serialized JSON size in bytes."""
+    return len(json.dumps(data).encode("utf-8"))
+
+
+def _dump_upload_payload_locally(draft_id: str, payload_json: str) -> Path:
+    """Persist the final upload JSON locally for debugging."""
+    dump_dir = Path("/tmp/flow360_debug")
+    dump_dir.mkdir(parents=True, exist_ok=True)
+    dump_path = dump_dir / f"draft_{draft_id}_simulation_upload.json"
+    dump_path.write_text(payload_json)
+    return dump_path
+
+
+def _get_geometry_entity_info_trim_stats(params_dict: dict) -> Optional[dict]:
+    """Collect geometry entity info size and grouping counts from the payload dict."""
+    entity_info = params_dict.get("private_attribute_asset_cache", {}).get("project_entity_info")
+    if not isinstance(entity_info, dict) or entity_info.get("type_name") != "GeometryEntityInfo":
+        return None
+
+    return {
+        "entity_info_size": _json_size_in_bytes(entity_info),
+        "face_group_count": len(entity_info.get("face_attribute_names", [])),
+        "edge_group_count": len(entity_info.get("edge_attribute_names", [])),
+        "body_group_count": len(entity_info.get("body_attribute_names", [])),
+    }
+
+
+def _log_geometry_upload_trim_summary(
+    draft_id: str,
+    before_trim_stats: Optional[dict],
+    after_trim_stats: Optional[dict],
+    payload_sizes: dict,
+) -> None:
+    """Log geometry trim statistics when geometry entity info exists."""
+    if before_trim_stats is None or after_trim_stats is None:
+        return
+
+    entity_info_trimmed_bytes = (
+        before_trim_stats["entity_info_size"] - after_trim_stats["entity_info_size"]
+    )
+    payload_trimmed_bytes = payload_sizes["before_trim"] - payload_sizes["after_trim"]
+    entity_info_trimmed_percent = (
+        entity_info_trimmed_bytes / before_trim_stats["entity_info_size"] * 100
+        if before_trim_stats["entity_info_size"] > 0
+        else 0.0
+    )
+    payload_trimmed_percent = (
+        payload_trimmed_bytes / payload_sizes["before_trim"] * 100
+        if payload_sizes["before_trim"] > 0
+        else 0.0
+    )
+
+    log.info(
+        "Draft %s geometry upload trim summary: "
+        "project_entity_info %d -> %d bytes (%d bytes, %.2f%%); "
+        "payload %d -> %d bytes before selector tokenization (%d bytes, %.2f%%); "
+        "final upload payload %d bytes. "
+        "Group counts face %d -> %d, edge %d -> %d, body %d -> %d.",
+        draft_id,
+        before_trim_stats["entity_info_size"],
+        after_trim_stats["entity_info_size"],
+        entity_info_trimmed_bytes,
+        entity_info_trimmed_percent,
+        payload_sizes["before_trim"],
+        payload_sizes["after_trim"],
+        payload_trimmed_bytes,
+        payload_trimmed_percent,
+        payload_sizes["final_upload"],
+        before_trim_stats["face_group_count"],
+        after_trim_stats["face_group_count"],
+        before_trim_stats["edge_group_count"],
+        after_trim_stats["edge_group_count"],
+        before_trim_stats["body_group_count"],
+        after_trim_stats["body_group_count"],
+    )
 
 
 def _trim_geometry_entity_info_groupings_for_upload(params_dict: dict) -> dict:
@@ -167,12 +246,31 @@ class Draft(Flow360Resource):
         """update the SimulationParams of the draft"""
         params_dict = params.model_dump(mode="json", exclude_none=True)
         params_dict = strip_implicit_edge_split_layers_inplace(params, params_dict)
+        payload_size_before_trim = _json_size_in_bytes(params_dict)
+        before_trim_stats = _get_geometry_entity_info_trim_stats(params_dict)
         params_dict = _trim_geometry_entity_info_groupings_for_upload(params_dict)
+        payload_size_after_trim = _json_size_in_bytes(params_dict)
+        after_trim_stats = _get_geometry_entity_info_trim_stats(params_dict)
         params_dict = collect_and_tokenize_selectors_in_place(params_dict)
+        upload_payload_json = json.dumps(params_dict)
+        upload_payload_size = len(upload_payload_json.encode("utf-8"))
+        dump_path = _dump_upload_payload_locally(self.id, upload_payload_json)
+        _log_geometry_upload_trim_summary(
+            self.id,
+            before_trim_stats,
+            after_trim_stats,
+            {
+                "before_trim": payload_size_before_trim,
+                "after_trim": payload_size_after_trim,
+                "final_upload": upload_payload_size,
+            },
+        )
+
+        log.info(f"Draft {self.id} upload JSON dumped to {dump_path}")
 
         self.post(
             json={
-                "data": json.dumps(params_dict),
+                "data": upload_payload_json,
                 "type": "simulation",
                 "version": "",
             },
