@@ -132,7 +132,14 @@ class MirrorManager:
         tuple[list[MirroredGeometryBodyGroup], list[MirroredSurface]]
             Mirrored geometry body groups and surfaces.
         """
-        normalized_entities = [entities] if isinstance(entities, GeometryBodyGroup) else entities
+        if isinstance(entities, GeometryBodyGroup):
+            normalized_entities = [entities]
+        elif isinstance(entities, list):
+            normalized_entities = entities
+        else:
+            raise Flow360ValueError(
+                f"`entities` accepts a single entity or a list of entities. Received type: {type(entities).__name__}."
+            )
         for entity in normalized_entities:
             if not is_exact_instance(entity, GeometryBodyGroup):
                 raise Flow360ValueError(

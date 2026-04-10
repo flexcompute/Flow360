@@ -326,6 +326,18 @@ def test_remove_mirror_of_rejects_invalid_input_type(mock_geometry):
             draft.mirror.remove_mirror_of(entities="invalid_string")
 
 
+def test_create_mirror_of_rejects_invalid_input_type(mock_geometry):
+    """Test that create_mirror_of rejects invalid input types."""
+    with create_draft(new_run_from=mock_geometry) as draft:
+        mirror_plane = MirrorPlane(name="mirror", normal=(1, 0, 0), center=(0, 0, 0) * u.m)
+
+        with pytest.raises(
+            Flow360ValueError,
+            match="`entities` accepts a single entity or a list of entities",
+        ):
+            draft.mirror.create_mirror_of(entities="invalid_string", mirror_plane=mirror_plane)
+
+
 def test_remove_mirror_of_rejects_invalid_entity_type(mock_geometry):
     """Test that remove_mirror_of rejects invalid entity types."""
     with create_draft(new_run_from=mock_geometry) as draft:
