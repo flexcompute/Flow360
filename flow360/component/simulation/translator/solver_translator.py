@@ -545,7 +545,7 @@ def translate_volume_output(
 
 def translate_imported_surface_output(
     output_params: list,
-    surface_output_class: Union[SurfaceOutput, TimeAverageSurfaceOutput],
+    surface_output_class: Union[Type[SurfaceOutput], Type[TimeAverageSurfaceOutput]],
     coordinate_system_manager=None,
 ):
     """Translate imported surface output settings."""
@@ -570,7 +570,7 @@ def translate_imported_surface_output(
 
 def _translate_single_surface_output(
     output_instance,
-    surface_output_class: Union[SurfaceOutput, TimeAverageSurfaceOutput],
+    surface_output_class: Union[Type[SurfaceOutput], Type[TimeAverageSurfaceOutput]],
 ):
     """Translate a single SurfaceOutput instance to solver config dict."""
     is_average = surface_output_class is TimeAverageSurfaceOutput
@@ -603,7 +603,7 @@ def _translate_single_surface_output(
 
 def translate_surface_output(
     output_params: list,
-    surface_output_class: Union[SurfaceOutput, TimeAverageSurfaceOutput],
+    surface_output_class: Union[Type[SurfaceOutput], Type[TimeAverageSurfaceOutput]],
     translated: dict,
 ):
     """Translate surface output settings.
