@@ -19,6 +19,7 @@ from flow360.component.simulation.primitives import (
     MirroredGeometryBodyGroup,
     MirroredSurface,
 )
+from flow360.component.simulation.utils import is_exact_instance
 from flow360.exceptions import Flow360ValueError
 
 # pylint: disable=protected-access
@@ -131,6 +132,18 @@ class MirrorManager:
         tuple[list[MirroredGeometryBodyGroup], list[MirroredSurface]]
             Mirrored geometry body groups and surfaces.
         """
+        normalized_entities = [entities] if isinstance(entities, GeometryBodyGroup) else entities
+        for entity in normalized_entities:
+            if not is_exact_instance(entity, GeometryBodyGroup):
+                raise Flow360ValueError(
+                    "Only GeometryBodyGroup entities are supported by `create()` currently. "
+                    f"Received: {type(entity).__name__}."
+                )
+            if entity.private_attribute_id is None:
+                raise Flow360ValueError(
+                    f"Entity '{entity.name}' ({type(entity).__name__}) is not supported for mirror operations."
+                )
+
         return self._state.create_mirror_of(
             entities=entities,
             mirror_plane=mirror_plane,
@@ -172,6 +185,12 @@ class MirrorManager:
         MirrorManager
             Restored mirror manager.
         """
+        if status is None or status.is_empty():
+            return cls(
+                face_group_to_body_group=face_group_to_body_group,
+                entity_registry=entity_registry,
+            )
+
         return cls(
             state=MirrorState._from_status(
                 status=status,

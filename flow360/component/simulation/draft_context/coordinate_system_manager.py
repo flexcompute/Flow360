@@ -172,7 +172,7 @@ class CoordinateSystemManager:
 
         try:
             self._state._validate_coordinate_system_graph()
-        except Flow360ValueError:
+        except Exception:
             self._state._coordinate_system_parents[coordinate_system_id] = original_parent
             raise
 
@@ -204,9 +204,9 @@ class CoordinateSystemManager:
         ]
         if dependents:
             names = ", ".join(
-                coordinate_system.name
-                for coordinate_system in self._state._coordinate_systems
-                if coordinate_system.private_attribute_id in dependents
+                existing.name
+                for existing in self._state._coordinate_systems
+                if existing.private_attribute_id in dependents
             )
             raise Flow360ValueError(
                 f"Cannot remove coordinate system '{coordinate_system.name}' because dependents exist: {names}"
