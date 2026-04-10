@@ -308,7 +308,9 @@ class WallRotation(Flow360BaseModel):
     # pylint: disable=no-member
     center: LengthType.Point = pd.Field(description="The center of rotation")
     axis: Axis = pd.Field(description="The axis of rotation.")
-    angular_velocity: AngularVelocityType = pd.Field("The value of the angular velocity.")
+    angular_velocity: AngularVelocityType = pd.Field(
+        description="The value of the angular velocity."
+    )
     type_name: Literal["WallRotation"] = pd.Field("WallRotation", frozen=True)
     private_attribute_circle_mode: Optional[dict] = pd.Field(None)
 
@@ -321,6 +323,7 @@ class WallRotation(Flow360BaseModel):
 WallVelocityModelTypes = Annotated[
     Union[SlaterPorousBleed, WallRotation], pd.Field(discriminator="type_name")
 ]
+WALL_VELOCITY_MODEL_ADAPTER = pd.TypeAdapter(WallVelocityModelTypes)
 
 
 class WallFunction(Flow360BaseModel):
@@ -474,6 +477,15 @@ class Wall(BoundaryBase):
                 "Use `use_wall_function=None` instead of `False`."
             )
             return None
+        return value
+
+    @pd.field_validator("velocity", mode="before")
+    @classmethod
+    def _normalize_velocity(cls, value):
+        # Sadly we cannot add a discriminator to `velocity` directly because the alternative
+        # branch is `VelocityVectorType`, which compiles to a tuple schema instead of a model variant.
+        if isinstance(value, dict) and value.get("type_name") is not None:
+            return WALL_VELOCITY_MODEL_ADAPTER.validate_python(value)
         return value
 
     @pd.model_validator(mode="after")
