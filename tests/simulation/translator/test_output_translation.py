@@ -231,7 +231,7 @@ def surface_output_config(vel_in_km_per_hr):
                     "surface2": {"outputFields": ["Cp", "velocity_in_km_per_hr"]},
                 },
                 "writeSingleFile": False,
-                "name": "Surface output",
+                "name": "",
             },
             {
                 "animationFrequency": 123,
@@ -264,7 +264,7 @@ def surface_output_config(vel_in_km_per_hr):
                     },
                 },
                 "writeSingleFile": False,
-                "name": "Surface output",
+                "name": "",
             },
         ],
     )
@@ -330,7 +330,7 @@ def test_surface_output(
             "surface2": {"outputFields": ["Cf", "velocity_in_km_per_hr"]},
         },
         "writeSingleFile": False,
-        "name": "Time average surface output",
+        "name": "",
     }
     ref_avg_1 = {
         "animationFrequency": -1,
@@ -349,7 +349,7 @@ def test_surface_output(
             },
         },
         "writeSingleFile": False,
-        "name": "Time average surface output",
+        "name": "",
     }
     assert compare_values(ref_avg_0, translated["timeAverageSurfaceOutput"][0])
     assert compare_values(ref_avg_1, translated["timeAverageSurfaceOutput"][1])
@@ -443,7 +443,7 @@ def test_single_surface_output_emits_array():
 
     assert isinstance(translated["surfaceOutput"], list)
     assert len(translated["surfaceOutput"]) == 1
-    assert translated["surfaceOutput"][0]["name"] == "Surface output"
+    assert translated["surfaceOutput"][0]["name"] == ""
     assert "wing" in translated["surfaceOutput"][0]["surfaces"]
 
 

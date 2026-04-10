@@ -44,7 +44,7 @@
         },
         "frequency": -1,
         "frequency_offset": 0,
-        "name": "Surface output",
+        "name": null,
         "output_fields": {
             "items": [
                 "Cp",

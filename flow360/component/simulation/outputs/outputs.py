@@ -470,9 +470,10 @@ class SurfaceOutput(_AnimationAndFileFormatSettings, _OutputBase):
     # TODO: entities is None --> use all surfaces. This is not implemented yet.
 
     name: Optional[FileNameString] = pd.Field(
-        "Surface output",
-        description="Name of the `SurfaceOutput`. Must be unique across all `SurfaceOutput` "
-        "instances that share the same surface entity.",
+        None,
+        description="Name of the `SurfaceOutput`. Used as a suffix in output filenames to "
+        "disambiguate when multiple outputs share the same surface entity. "
+        "Must be unique across all instances that share the same surface.",
     )
     entities: EntityList[  # pylint: disable=duplicate-code
         Surface,
@@ -499,9 +500,8 @@ class SurfaceOutput(_AnimationAndFileFormatSettings, _OutputBase):
 
     @property
     def has_default_name(self) -> bool:
-        """Whether this output still carries its Pydantic-defined default name."""
-        # pylint: disable=unsubscriptable-object
-        return self.name is None or self.name == type(self).model_fields["name"].default
+        """Whether this output has no custom name assigned."""
+        return self.name is None
 
     @contextual_field_validator("entities", mode="after")
     @classmethod
@@ -546,9 +546,10 @@ class TimeAverageSurfaceOutput(SurfaceOutput):
     """
 
     name: Optional[FileNameString] = pd.Field(
-        "Time average surface output",
-        description="Name of the `TimeAverageSurfaceOutput`. Must be unique across all "
-        "`TimeAverageSurfaceOutput` instances that share the same surface entity.",
+        None,
+        description="Name of the `TimeAverageSurfaceOutput`. Used as a suffix in output filenames "
+        "to disambiguate when multiple outputs share the same surface entity. "
+        "Must be unique across all instances that share the same surface.",
     )
 
     start_step: Union[pd.NonNegativeInt, Literal[-1]] = pd.Field(

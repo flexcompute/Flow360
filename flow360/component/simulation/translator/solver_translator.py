@@ -597,7 +597,7 @@ def _translate_single_surface_output(
         ),
     )
     surface_output["writeSingleFile"] = output_instance.write_single_file
-    surface_output["name"] = output_instance.name
+    surface_output["name"] = output_instance.name if output_instance.name is not None else ""
     return surface_output
 
 

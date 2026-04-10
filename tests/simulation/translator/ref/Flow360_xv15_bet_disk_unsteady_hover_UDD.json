@@ -465,7 +465,7 @@
             "animationFrequencyOffset": 0,
             "animationFrequencyTimeAverage": -1,
             "animationFrequencyTimeAverageOffset": 0,
-            "name": "Surface output",
+            "name": "",
             "outputFields": [],
             "outputFormat": "paraview,tecplot",
             "startAverageIntegrationStep": -1,
