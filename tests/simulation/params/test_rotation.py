@@ -66,15 +66,12 @@ def test_wall_rotation_missing_angular_velocity_reports_required_field():
         )
 
     errors = exc_info.value.errors()
-    angular_velocity_errors = [
-        error for error in errors if error["loc"][-1] == "angular_velocity"
-    ]
+    angular_velocity_errors = [error for error in errors if error["loc"][-1] == "angular_velocity"]
     assert len(angular_velocity_errors) == 1
     assert angular_velocity_errors[0]["msg"] == "Field required"
     assert all(
         not any(
-            isinstance(segment, str)
-            and ("tuple[" in segment or "function-plain[" in segment)
+            isinstance(segment, str) and ("tuple[" in segment or "function-plain[" in segment)
             for segment in error["loc"]
         )
         for error in errors
