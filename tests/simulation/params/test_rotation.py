@@ -1,4 +1,5 @@
 import pytest
+from pydantic import ValidationError
 
 from flow360 import u
 from flow360.component.simulation.models.surface_models import Wall, WallRotation
@@ -46,6 +47,34 @@ def test_wall_angular_velocity():
         surfaces=[my_wall_surface],
         velocity=WallRotation(axis=(0, 0, 1), center=(1, 2, 3) * u.m, angular_velocity=100 * u.rpm),
         use_wall_function=True,
+    )
+
+
+def test_wall_rotation_missing_angular_velocity_reports_required_field():
+    with pytest.raises(ValidationError) as exc_info:
+        Wall.model_validate(
+            {
+                "name": "Wheel Front",
+                "type": "Wall",
+                "entities": {"stored_entities": []},
+                "velocity": {
+                    "axis": [0, -1, 0],
+                    "center": {"value": [0, 0, 0], "units": "m"},
+                    "type_name": "WallRotation",
+                },
+            }
+        )
+
+    errors = exc_info.value.errors()
+    angular_velocity_errors = [error for error in errors if error["loc"][-1] == "angular_velocity"]
+    assert len(angular_velocity_errors) == 1
+    assert angular_velocity_errors[0]["msg"] == "Field required"
+    assert all(
+        not any(
+            isinstance(segment, str) and ("tuple[" in segment or "function-plain[" in segment)
+            for segment in error["loc"]
+        )
+        for error in errors
     )
 
 
