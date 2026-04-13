@@ -2,7 +2,7 @@
 
 from click.testing import CliRunner
 
-import flow360.user_config as user_config
+import flow360.user_config as user_config  # pylint: disable=consider-using-from-import
 from flow360.cli.app import configure
 from flow360.log import log
 
