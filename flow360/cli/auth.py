@@ -13,15 +13,12 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Callable, Dict, Optional
 from urllib.parse import parse_qs, urlencode, urlparse
 
-<<<<<<< HEAD
-import flow360.user_config as user_config
+import flow360.user_config as user_config  # pylint: disable=consider-using-from-import
 from cryptography.exceptions import InvalidTag
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
-
-import flow360.user_config as user_config  # pylint: disable=consider-using-from-import
 from flow360.environment import Env
 from flow360.user_config import store_apikey
 
