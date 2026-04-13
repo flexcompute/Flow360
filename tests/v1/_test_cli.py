@@ -45,7 +45,9 @@ class TestClass:
         result = runner.invoke(flow360, ["logout"])
 
         assert result.exit_code == 0
-        assert result.output == "Removed stored API key for profile 'default' in environment 'prod'.\n"
+        assert (
+            result.output == "Removed stored API key for profile 'default' in environment 'prod'.\n"
+        )
         config = toml.loads(config_path.read_text())
         assert "apikey" not in config.get("default", {})
 
@@ -57,7 +59,9 @@ class TestClass:
         result = runner.invoke(flow360, ["logout", "--dev"])
 
         assert result.exit_code == 0
-        assert result.output == "Removed stored API key for profile 'default' in environment 'dev'.\n"
+        assert (
+            result.output == "Removed stored API key for profile 'default' in environment 'dev'.\n"
+        )
         config = toml.loads(config_path.read_text())
         assert "dev" not in config.get("default", {})
 
@@ -68,4 +72,6 @@ class TestClass:
         result = runner.invoke(flow360, ["logout", "--dev"])
 
         assert result.exit_code == 0
-        assert result.output == "No stored API key found for profile 'default' in environment 'dev'.\n"
+        assert (
+            result.output == "No stored API key found for profile 'default' in environment 'dev'.\n"
+        )

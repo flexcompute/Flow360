@@ -7,13 +7,13 @@ import json
 import secrets
 import socket
 import threading
+import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Callable, Dict, Optional
 from urllib.parse import parse_qs, urlencode, urlparse
-import webbrowser
 
+from flow360 import user_config
 from flow360.environment import Env
-import flow360.user_config as user_config
 from flow360.user_config import store_apikey
 
 LOGIN_PATH = "account/cli-login"
@@ -101,6 +101,7 @@ class _LoginCallbackHandler(BaseHTTPRequestHandler):
         self.server.callback_event.set()
 
     def do_OPTIONS(self):  # pylint: disable=invalid-name
+        """Handle CORS preflight requests for the local callback endpoint."""
         parsed = urlparse(self.path)
         if parsed.path != CALLBACK_PATH:
             self.send_error(404)
@@ -111,6 +112,7 @@ class _LoginCallbackHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):  # pylint: disable=invalid-name
+        """Handle browser redirects to the local callback endpoint."""
         parsed = urlparse(self.path)
         if parsed.path != CALLBACK_PATH:
             self.send_error(404)
@@ -135,6 +137,7 @@ class _LoginCallbackHandler(BaseHTTPRequestHandler):
         self.wfile.write(encoded)
 
     def do_POST(self):  # pylint: disable=invalid-name
+        """Handle background JSON handoffs from the web login page."""
         parsed = urlparse(self.path)
         if parsed.path != CALLBACK_PATH:
             self.send_error(404)
@@ -182,7 +185,7 @@ def wait_for_login(
     timeout: int = 120,
     use_local_ui: bool = False,
     announce_login: Optional[Callable[[Dict[str, str]], None]] = None,
-):
+):  # pylint: disable=too-many-arguments,too-many-locals
     """Run the browser-based login flow and persist the resulting API key."""
     host = "127.0.0.1"
     callback_port = port if port is not None else _find_available_port(host)
@@ -194,12 +197,14 @@ def wait_for_login(
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
 
-    login_url = build_login_url(environment, callback_url, state, profile, use_local_ui=use_local_ui)
+    login_url = build_login_url(
+        environment, callback_url, state, profile, use_local_ui=use_local_ui
+    )
 
     try:
         try:
             opened = webbrowser.open(login_url)
-        except Exception:  # pragma: no cover - platform/browser dependent
+        except webbrowser.Error:  # pragma: no cover - platform/browser dependent
             opened = False
 
         if announce_login is not None:

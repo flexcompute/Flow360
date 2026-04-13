@@ -35,7 +35,9 @@ def write_user_config(config):
         file_handler.write(toml.dumps(config))
 
 
-def store_apikey(apikey: str, profile: str = DEFAULT_PROFILE, environment_name: Optional[str] = None):
+def store_apikey(
+    apikey: str, profile: str = DEFAULT_PROFILE, environment_name: Optional[str] = None
+):
     """Store an API key using the same config layout consumed by UserConfig."""
     config = read_user_config()
 
@@ -44,7 +46,8 @@ def store_apikey(apikey: str, profile: str = DEFAULT_PROFILE, environment_name: 
     else:
         entry = {profile: {environment_name: {"apikey": apikey}}}
 
-    from flow360.cli import dict_utils
+    # Avoid importing CLI modules at import time because the wider package has lazy-import paths.
+    from flow360.cli import dict_utils  # pylint: disable=import-outside-toplevel
 
     dict_utils.merge_overwrite(config, entry)
     write_user_config(config)
