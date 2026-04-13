@@ -96,22 +96,40 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       with:
+        ref: ${{ needs.validate-release-source.outputs.tag_commit_sha }}
         sparse-checkout: |
           .github/scripts
+          flow360/version.py
     - name: Collect and summarize tagged commit CI status
       uses: actions/github-script@v7
       env:
         RELEASE_BRANCH: ${{ needs.validate-release-source.outputs.release_branch }}
+        RELEASE_TAG: ${{ needs.validate-release-source.outputs.release_tag }}
         TAG_COMMIT_SHA: ${{ needs.validate-release-source.outputs.tag_commit_sha }}
       with:
         script: |
+          const fs = require("fs");
           const {
             listCheckRunsForRef,
             getDetailsUrl,
           } = require(`${process.env.GITHUB_WORKSPACE}/.github/scripts/pypi_check_runs.js`);
           const { owner, repo } = context.repo;
           const branch = process.env.RELEASE_BRANCH;
+          const releaseTag = process.env.RELEASE_TAG;
+          const releaseVersion = releaseTag.replace(/^v/, "");
           const tagCommitSha = process.env.TAG_COMMIT_SHA;
+          const versionFilePath = "flow360/version.py";
+          const versionFileContents = fs.readFileSync(
+            `${process.env.GITHUB_WORKSPACE}/${versionFilePath}`,
+            "utf8"
+          );
+          const versionMatch = versionFileContents.match(/^__version__\s*=\s*["']([^"']+)["']/m);
+
+          if (!versionMatch) {
+            throw new Error(`Could not parse __version__ from ${versionFilePath}.`);
+          }
+
+          const packageVersion = versionMatch[1];
 
           const branchInfo = await github.rest.repos.getBranch({ owner, repo, branch });
           const branchHeadSha = branchInfo.data.commit.sha;
@@ -140,12 +158,15 @@ jobs:
           const serverUrl = process.env.GITHUB_SERVER_URL;
           const repoSlug = process.env.GITHUB_REPOSITORY;
           const runId = process.env.GITHUB_RUN_ID;
+          const versionFileUrl = `${serverUrl}/${repoSlug}/blob/${tagCommitSha}/${versionFilePath}`;
 
           const lines = [
             `## PyPI Publish Approval Context`,
             ``,
             `| Field | Value |`,
             `|-------|-------|`,
+            `| Release tag/version | \`${releaseTag}\` / \`${releaseVersion}\` |`,
+            `| flow360/version.py | [${versionFilePath}](${versionFileUrl}) -> \`__version__ = "${packageVersion}"\` |`,
             `| Tag commit SHA | \`${tagCommitSha}\` |`,
             `| Release branch | \`${branch}\` |`,
             `| Branch HEAD SHA | \`${branchHeadSha}\` |`,
