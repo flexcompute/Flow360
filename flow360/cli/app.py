@@ -39,7 +39,9 @@ def flow360():
 @click.option(
     "--apikey", prompt=False if "APIKEY_PRESENT" in globals() else "API Key", help="API Key"
 )
-@click.option("--profile", prompt=False, default="default", help="Profile, e.g., default, secondary.")
+@click.option(
+    "--profile", prompt=False, default="default", help="Profile, e.g., default, secondary."
+)
 @click.option(
     "--dev", prompt=False, type=bool, is_flag=True, help="Only use this apikey in DEV environment."
 )
@@ -90,7 +92,9 @@ def configure(apikey, profile, dev, uat, env, suppress_submit_warning, beta_feat
 
 
 @click.command("login", context_settings={"show_default": True})
-@click.option("--profile", prompt=False, default="default", help="Profile, e.g., default, secondary.")
+@click.option(
+    "--profile", prompt=False, default="default", help="Profile, e.g., default, secondary."
+)
 @click.option("--dev", prompt=False, type=bool, is_flag=True, help="Log in to DEV.")
 @click.option("--uat", prompt=False, type=bool, is_flag=True, help="Log in to UAT.")
 @click.option(
@@ -108,17 +112,22 @@ def configure(apikey, profile, dev, uat, env, suppress_submit_warning, beta_feat
     default=None,
     help="Fixed localhost callback port. Defaults to an ephemeral port.",
 )
-@click.option("--timeout", type=click.IntRange(1, 3600), default=120, help="Login timeout in seconds.")
-def login(profile, dev, uat, local, env, port, timeout):
+@click.option(
+    "--timeout", type=click.IntRange(1, 3600), default=120, help="Login timeout in seconds."
+)
+def login(profile, dev, uat, local, env, port, timeout):  # pylint: disable=too-many-arguments
     """
     Open a browser login flow and store the resulting API key.
     """
+
     def announce_login(details):
         click.echo(f"Starting local login server on {details['callback_url']}.")
         if details["browser_opened"] == "true":
             click.echo("If your browser did not open, navigate to this URL to authenticate:")
         else:
-            click.echo("Could not open your browser automatically. Navigate to this URL to authenticate:")
+            click.echo(
+                "Could not open your browser automatically. Navigate to this URL to authenticate:"
+            )
         click.echo("")
         click.echo(details["login_url"])
         click.echo("")
@@ -143,7 +152,9 @@ def login(profile, dev, uat, local, env, port, timeout):
 
 
 @click.command("logout", context_settings={"show_default": True})
-@click.option("--profile", prompt=False, default="default", help="Profile, e.g., default, secondary.")
+@click.option(
+    "--profile", prompt=False, default="default", help="Profile, e.g., default, secondary."
+)
 @click.option("--dev", prompt=False, type=bool, is_flag=True, help="Remove the DEV login.")
 @click.option("--uat", prompt=False, type=bool, is_flag=True, help="Remove the UAT login.")
 @click.option(
@@ -155,12 +166,14 @@ def login(profile, dev, uat, local, env, port, timeout):
     help="Remove the local DEV login (same stored target as DEV).",
 )
 @click.option("--env", prompt=False, default=None, help="Remove the login for a named environment.")
-def logout(profile, dev, uat, local, env):
+def logout(profile, dev, uat, local, env):  # pylint: disable=too-many-arguments
     """
     Remove a stored Flow360 API key.
     """
     try:
-        environment, storage_environment = resolve_target_environment(dev=dev, uat=uat, env=env, local=local)
+        environment, storage_environment = resolve_target_environment(
+            dev=dev, uat=uat, env=env, local=local
+        )
     except ValueError as error:
         raise click.ClickException(str(error)) from error
 

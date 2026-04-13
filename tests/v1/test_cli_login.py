@@ -6,8 +6,8 @@ import requests
 import toml
 from click.testing import CliRunner
 
-import flow360.cli.auth as auth
 import flow360.cli.app as app
+import flow360.cli.auth as auth
 import flow360.user_config as user_config
 from flow360.cli import flow360
 from flow360.environment import Env
@@ -53,7 +53,10 @@ def test_login_uses_dev_web_url_with_manual_fallback(monkeypatch, tmp_path):
     assert result.exit_code == 0
     assert "Starting local login server on http://127.0.0.1:8765/callback." in result.output
     assert "flow360.dev-simulation.cloud/account/cli-login" in result.output
-    assert "Could not open your browser automatically. Navigate to this URL to authenticate:" in result.output
+    assert (
+        "Could not open your browser automatically. Navigate to this URL to authenticate:"
+        in result.output
+    )
     assert "Successfully logged in as dev@example.com" in result.output
 
 
@@ -95,7 +98,11 @@ def test_login_prints_fallback_message_when_browser_opens(monkeypatch, tmp_path)
         Thread(
             target=lambda: requests.post(
                 callback_url,
-                json={"state": "state123", "apikey": "dev-browser-key", "email": "browser@example.com"},
+                json={
+                    "state": "state123",
+                    "apikey": "dev-browser-key",
+                    "email": "browser@example.com",
+                },
                 timeout=5,
             ),
             daemon=True,
@@ -143,7 +150,11 @@ def test_wait_for_login_stores_dev_apikey(monkeypatch, tmp_path):
         Thread(
             target=lambda: requests.post(
                 callback_url,
-                json={"state": "state123", "apikey": "dev-browser-key", "email": "browser@example.com"},
+                json={
+                    "state": "state123",
+                    "apikey": "dev-browser-key",
+                    "email": "browser@example.com",
+                },
                 timeout=5,
             ),
             daemon=True,
