@@ -1,15 +1,91 @@
 """Output fields — re-import relay."""
 
-from importlib import import_module
+# pylint: disable=unused-import
 
+from flow360_schema.models.simulation.outputs.output_fields import (
+    _CD,
+    _CD_PER_STRIP,
+    _CL,
+    _CUMULATIVE_CD_CURVE,
+    _HEAT_FLUX,
+    _NORMAL_DIRECTION,
+    _X,
+    _Y,
+    PREDEFINED_UDF_EXPRESSIONS,
+    AllFieldNames,
+    CommonFieldNames,
+    ForceOutputCoefficientNames,
+    InvalidOutputFieldsForLiquid,
+    IsoSurfaceFieldNames,
+    SliceFieldNames,
+    SurfaceFieldNames,
+    VolumeFieldNames,
+    VolumeProbeFieldNames,
+    _CFx,
+    _CFx_CUMULATIVE,
+    _CFx_PER_SPAN,
+    _CFy,
+    _CFy_CUMULATIVE,
+    _CFy_PER_SPAN,
+    _CFz,
+    _CFz_CUMULATIVE,
+    _CFz_PER_SPAN,
+    _CMx,
+    _CMx_CUMULATIVE,
+    _CMx_PER_SPAN,
+    _CMy,
+    _CMy_CUMULATIVE,
+    _CMy_PER_SPAN,
+    _CMz,
+    _CMz_CUMULATIVE,
+    _CMz_PER_SPAN,
+    append_component_to_output_fields,
+    generate_predefined_udf,
+    get_field_values,
+    get_unit_for_field,
+    remove_fields_subsumed_by_primitive_vars,
+)
 
-def __getattr__(name):
-    schema_module = import_module("flow360_schema.models.simulation.outputs.output_fields")
-    value = getattr(schema_module, name)
-    globals()[name] = value
-    return value
-
-
-def __dir__():
-    schema_module = import_module("flow360_schema.models.simulation.outputs.output_fields")
-    return sorted(set(globals()) | set(vars(schema_module)))
+__all__ = [
+    "AllFieldNames",
+    "CommonFieldNames",
+    "ForceOutputCoefficientNames",
+    "InvalidOutputFieldsForLiquid",
+    "IsoSurfaceFieldNames",
+    "PREDEFINED_UDF_EXPRESSIONS",
+    "SliceFieldNames",
+    "SurfaceFieldNames",
+    "VolumeFieldNames",
+    "VolumeProbeFieldNames",
+    "_CD",
+    "_CD_PER_STRIP",
+    "_CFx",
+    "_CFx_CUMULATIVE",
+    "_CFx_PER_SPAN",
+    "_CFy",
+    "_CFy_CUMULATIVE",
+    "_CFy_PER_SPAN",
+    "_CFz",
+    "_CFz_CUMULATIVE",
+    "_CFz_PER_SPAN",
+    "_CL",
+    "_CMx",
+    "_CMx_CUMULATIVE",
+    "_CMx_PER_SPAN",
+    "_CMy",
+    "_CMy_CUMULATIVE",
+    "_CMy_PER_SPAN",
+    "_CMz",
+    "_CMz_CUMULATIVE",
+    "_CMz_PER_SPAN",
+    "_CUMULATIVE_CD_CURVE",
+    "_HEAT_FLUX",
+    "_NORMAL_DIRECTION",
+    "_X",
+    "_Y",
+    "append_component_to_output_fields",
+    "generate_predefined_udf",
+    "get_field_values",
+    "get_unit_for_field",
+    "remove_fields_subsumed_by_primitive_vars",
+]

@@ -1,12 +1,14 @@
 """Material classes for the simulation framework — re-import relay."""
 
+# pylint: disable=unused-import
+
 from flow360_schema.models.simulation.models.material import (
     Air,
     FluidMaterialTypes,
     FrozenSpecies,
     MaterialBase,
-    NASA9CoefficientSet,
     NASA9Coefficients,
+    NASA9CoefficientSet,
     SolidMaterial,
     SolidMaterialTypes,
     Sutherland,

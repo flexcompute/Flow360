@@ -1,5 +1,7 @@
 """Relay import for surface boundary condition models."""
 
+# pylint: disable=unused-import
+
 from flow360_schema.models.simulation.models.surface_models import (
     BoundaryBase,
     BoundaryBaseWithTurbulenceQuantities,

@@ -1,5 +1,7 @@
 """Relay import for output validation helpers."""
 
+# pylint: disable=unused-import
+
 from flow360_schema.models.simulation.validation.validation_output import (
     _check_aero_acoustics_observer_time_step_size,
     _check_local_cfl_output,

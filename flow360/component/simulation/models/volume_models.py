@@ -1,5 +1,7 @@
 """Relay import for simulation volume models."""
 
+# pylint: disable=unused-import
+
 from flow360_schema.models.simulation.models.volume_models import (
     ActuatorDisk,
     AngleExpression,

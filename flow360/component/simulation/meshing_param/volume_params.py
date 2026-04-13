@@ -1,5 +1,7 @@
 """Relay import for meshing volume zone models."""
 
+# pylint: disable=unused-import
+
 from flow360_schema.models.entities.volume_entities import CustomVolume
 from flow360_schema.models.simulation.meshing_param.volume_params import (
     AutomatedFarfield,

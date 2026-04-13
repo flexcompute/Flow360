@@ -1,5 +1,7 @@
 """Turbulence quantities parameters — re-import relay."""
 
+# pylint: disable=unused-import
+
 from flow360_schema.models.simulation.models.turbulence_quantities import (
     ModifiedTurbulentViscosity,
     ModifiedTurbulentViscosityRatio,
