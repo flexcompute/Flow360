@@ -13,6 +13,23 @@ from flow360.cli import flow360
 from flow360.environment import Env
 
 
+def _post_callback_with_retry(
+    callback_url: str, payload: dict, attempts: int = 50, delay: float = 0.1
+):
+    last_error = None
+    for _ in range(attempts):
+        try:
+            response = requests.post(callback_url, json=payload, timeout=5)
+            response.raise_for_status()
+            return
+        except requests.RequestException as error:
+            last_error = error
+            sleep(delay)
+
+    if last_error is not None:
+        raise last_error
+
+
 def _patch_config_file(monkeypatch, tmp_path):
     config_path = tmp_path / "config.toml"
     monkeypatch.setattr(user_config, "config_file", str(config_path))
@@ -39,11 +56,9 @@ def test_login_uses_dev_web_url_with_manual_fallback(monkeypatch, tmp_path):
     runner = CliRunner()
 
     def complete_manual_login():
-        sleep(0.2)
-        requests.post(
+        _post_callback_with_retry(
             "http://127.0.0.1:8765/callback",
-            json={"state": "state123", "apikey": "dev-manual-key", "email": "dev@example.com"},
-            timeout=5,
+            {"state": "state123", "apikey": "dev-manual-key", "email": "dev@example.com"},
         )
 
     Thread(target=complete_manual_login, daemon=True).start()
@@ -68,11 +83,9 @@ def test_login_local_uses_local_dev_frontend(monkeypatch, tmp_path):
     runner = CliRunner()
 
     def complete_local_login():
-        sleep(0.2)
-        requests.post(
+        _post_callback_with_retry(
             "http://127.0.0.1:8765/callback",
-            json={"state": "state123", "apikey": "local-dev-key", "email": "local@example.com"},
-            timeout=5,
+            {"state": "state123", "apikey": "local-dev-key", "email": "local@example.com"},
         )
 
     Thread(target=complete_local_login, daemon=True).start()
