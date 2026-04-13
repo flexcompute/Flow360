@@ -2,21 +2,23 @@
 Commandline interface for flow360.
 """
 
-import os.path
+import os
 from datetime import datetime
-from os.path import expanduser
 
 import click
 import toml
 from packaging.version import InvalidVersion, Version
 
-from flow360.cli import dict_utils
+from flow360.cli.auth import LoginError, resolve_target_environment, wait_for_login
 from flow360.environment import Env
+from flow360.user_config import (
+    config_file,
+    delete_apikey,
+    read_user_config,
+    store_apikey,
+    write_user_config,
+)
 from flow360.version import __solver_version__, __version__
-
-home = expanduser("~")
-# pylint: disable=invalid-name
-config_file = f"{home}/.flow360/config.toml"
 
 if os.path.exists(config_file):
     with open(config_file, encoding="utf-8") as current_fh:
@@ -37,7 +39,7 @@ def flow360():
 @click.option(
     "--apikey", prompt=False if "APIKEY_PRESENT" in globals() else "API Key", help="API Key"
 )
-@click.option("--profile", prompt=False, default="default", help="Profile, e.g., default, dev.")
+@click.option("--profile", prompt=False, default="default", help="Profile, e.g., default, secondary.")
 @click.option(
     "--dev", prompt=False, type=bool, is_flag=True, help="Only use this apikey in DEV environment."
 )
@@ -61,52 +63,117 @@ def configure(apikey, profile, dev, uat, env, suppress_submit_warning, beta_feat
     Configure flow360.
     """
     changed = False
-    if not os.path.exists(f"{home}/.flow360"):
-        os.makedirs(f"{home}/.flow360")
-
-    config = {}
-    if os.path.exists(config_file):
-        with open(config_file, encoding="utf-8") as file_handler:
-            config = toml.loads(file_handler.read())
+    config = read_user_config()
+    _, storage_environment = resolve_target_environment(dev=dev, uat=uat, env=env)
 
     if apikey is not None:
-        if dev is True:
-            entry = {profile: {"dev": {"apikey": apikey}}}
-        elif uat is True:
-            entry = {profile: {"uat": {"apikey": apikey}}}
-        elif env:
-            if env == "dev":
-                raise ValueError("Cannot set dev environment with --env, please use --dev instead.")
-            if env == "uat":
-                raise ValueError("Cannot set uat environment with --env, please use --uat instead.")
-            if env == "prod":
-                raise ValueError(
-                    "Cannot set prod environment with --env, please remove --env and its argument."
-                )
-            entry = {profile: {env: {"apikey": apikey}}}
-        else:
-            entry = {profile: {"apikey": apikey}}
-        dict_utils.merge_overwrite(config, entry)
+        config = store_apikey(apikey, profile=profile, environment_name=storage_environment)
         changed = True
 
     if suppress_submit_warning is not None:
-        dict_utils.merge_overwrite(
-            config, {"user": {"config": {"suppress_submit_warning": suppress_submit_warning}}}
-        )
+        config.setdefault("user", {}).setdefault("config", {})[
+            "suppress_submit_warning"
+        ] = suppress_submit_warning
         changed = True
 
     if beta_features is not None:
-        dict_utils.merge_overwrite(config, {"user": {"config": {"beta_features": beta_features}}})
+        config.setdefault("user", {}).setdefault("config", {})["beta_features"] = beta_features
         changed = True
 
-    with open(config_file, "w", encoding="utf-8") as file_handler:
-        file_handler.write(toml.dumps(config))
+    write_user_config(config)
 
     if not changed:
         click.echo("Nothing to do. Your current config:")
         click.echo(toml.dumps(config))
         click.echo("run flow360 configure --help to see options")
     click.echo("done.")
+
+
+@click.command("login", context_settings={"show_default": True})
+@click.option("--profile", prompt=False, default="default", help="Profile, e.g., default, secondary.")
+@click.option("--dev", prompt=False, type=bool, is_flag=True, help="Log in to DEV.")
+@click.option("--uat", prompt=False, type=bool, is_flag=True, help="Log in to UAT.")
+@click.option(
+    "--local",
+    prompt=False,
+    type=bool,
+    is_flag=True,
+    hidden=True,
+    help="Open the local DEV frontend at local.dev-simulation.cloud:3000 and store the key under DEV.",
+)
+@click.option("--env", prompt=False, default=None, help="Log in to a named environment.")
+@click.option(
+    "--port",
+    type=click.IntRange(1, 65535),
+    default=None,
+    help="Fixed localhost callback port. Defaults to an ephemeral port.",
+)
+@click.option("--timeout", type=click.IntRange(1, 3600), default=120, help="Login timeout in seconds.")
+def login(profile, dev, uat, local, env, port, timeout):
+    """
+    Open a browser login flow and store the resulting API key.
+    """
+    def announce_login(details):
+        click.echo(f"Starting local login server on {details['callback_url']}.")
+        if details["browser_opened"] == "true":
+            click.echo("If your browser did not open, navigate to this URL to authenticate:")
+        else:
+            click.echo("Could not open your browser automatically. Navigate to this URL to authenticate:")
+        click.echo("")
+        click.echo(details["login_url"])
+        click.echo("")
+
+    try:
+        environment, _ = resolve_target_environment(dev=dev, uat=uat, env=env, local=local)
+        result = wait_for_login(
+            environment=environment,
+            profile=profile,
+            port=port,
+            timeout=timeout,
+            use_local_ui=local,
+            announce_login=announce_login,
+        )
+    except (LoginError, ValueError) as error:
+        raise click.ClickException(str(error)) from error
+
+    if result.get("email"):
+        click.echo(f"Successfully logged in as {result['email']}")
+    else:
+        click.echo("Successfully logged in")
+
+
+@click.command("logout", context_settings={"show_default": True})
+@click.option("--profile", prompt=False, default="default", help="Profile, e.g., default, secondary.")
+@click.option("--dev", prompt=False, type=bool, is_flag=True, help="Remove the DEV login.")
+@click.option("--uat", prompt=False, type=bool, is_flag=True, help="Remove the UAT login.")
+@click.option(
+    "--local",
+    prompt=False,
+    type=bool,
+    is_flag=True,
+    hidden=True,
+    help="Remove the local DEV login (same stored target as DEV).",
+)
+@click.option("--env", prompt=False, default=None, help="Remove the login for a named environment.")
+def logout(profile, dev, uat, local, env):
+    """
+    Remove a stored Flow360 API key.
+    """
+    try:
+        environment, storage_environment = resolve_target_environment(dev=dev, uat=uat, env=env, local=local)
+    except ValueError as error:
+        raise click.ClickException(str(error)) from error
+
+    removed, _ = delete_apikey(profile=profile, environment_name=storage_environment)
+    if not removed:
+        click.echo(
+            f"No stored API key found for profile '{profile}' in environment '{environment.name}'."
+        )
+        return
+
+    click.echo(
+        f"Removed stored API key for profile '{profile}' in environment '{environment.name}'."
+    )
 
 
 # For displaying all projects
@@ -250,5 +317,7 @@ def version():  # pylint: disable=too-many-locals, too-many-statements
 
 
 flow360.add_command(configure)
+flow360.add_command(login)
+flow360.add_command(logout)
 flow360.add_command(show_projects)
 flow360.add_command(version)

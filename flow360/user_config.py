@@ -3,6 +3,7 @@ User Config
 """
 
 import os
+from typing import Optional
 
 import toml
 
@@ -12,6 +13,68 @@ from .log import log
 
 config_file = os.path.join(flow360_dir, "config.toml")
 DEFAULT_PROFILE = "default"
+
+
+def ensure_config_dir():
+    """Ensure the Flow360 config directory exists."""
+    os.makedirs(os.path.dirname(config_file), exist_ok=True)
+
+
+def read_user_config():
+    """Read the user config file if present."""
+    if os.path.exists(config_file):
+        with open(config_file, encoding="utf-8") as file_handler:
+            return toml.loads(file_handler.read())
+    return {}
+
+
+def write_user_config(config):
+    """Write the user config file."""
+    ensure_config_dir()
+    with open(config_file, "w", encoding="utf-8") as file_handler:
+        file_handler.write(toml.dumps(config))
+
+
+def store_apikey(apikey: str, profile: str = DEFAULT_PROFILE, environment_name: Optional[str] = None):
+    """Store an API key using the same config layout consumed by UserConfig."""
+    config = read_user_config()
+
+    if environment_name in (None, "", prod.name):
+        entry = {profile: {"apikey": apikey}}
+    else:
+        entry = {profile: {environment_name: {"apikey": apikey}}}
+
+    from flow360.cli import dict_utils
+
+    dict_utils.merge_overwrite(config, entry)
+    write_user_config(config)
+    return config
+
+
+def delete_apikey(profile: str = DEFAULT_PROFILE, environment_name: Optional[str] = None):
+    """Delete a stored API key for the selected profile/environment if present."""
+    config = read_user_config()
+    profile_config = config.get(profile)
+
+    if not isinstance(profile_config, dict):
+        return False, config
+
+    removed = False
+    if environment_name in (None, "", prod.name):
+        removed = profile_config.pop("apikey", None) is not None
+    else:
+        env_config = profile_config.get(environment_name)
+        if isinstance(env_config, dict):
+            removed = env_config.pop("apikey", None) is not None
+            if not env_config:
+                profile_config.pop(environment_name, None)
+
+    if not profile_config:
+        config.pop(profile, None)
+
+    if removed:
+        write_user_config(config)
+    return removed, config
 
 
 class BasicUserConfig:
@@ -58,10 +121,7 @@ class BasicUserConfig:
             log.info(f"Using profile={profile} for apikey")
 
     def _read_config(self):
-        self.config = {}
-        if os.path.exists(config_file):
-            with open(config_file, encoding="utf-8") as file_handler:
-                self.config = toml.loads(file_handler.read())
+        self.config = read_user_config()
 
     def apikey(self, env):
         """get apikey
