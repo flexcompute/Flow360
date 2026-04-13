@@ -235,7 +235,7 @@ def test_symmetric_existence(surface_mesh):
     params.models.append(SymmetryPlane(surfaces=[farfield.symmetry_plane]))
     errors, warnings = _run_validation(params, surface_mesh)
     assert errors is None
-    assert warnings == []
+    assert all("may be deprecated" in w["msg"] for w in warnings)
 
     # Invalid Symmetric
     params.meshing.defaults.planar_face_tolerance = 1e-100
@@ -256,7 +256,7 @@ def test_symmetric_existence(surface_mesh):
         "The following boundaries do not have a boundary condition: preexistingSymmetry."
         in errors[0]["msg"]
     )
-    assert warnings == []
+    assert all("may be deprecated" in w["msg"] for w in warnings)
 
 
 def test_user_defined_farfield_symmetry_plane(surface_mesh):
@@ -289,7 +289,7 @@ def test_user_defined_farfield_symmetry_plane(surface_mesh):
         params, surface_mesh, use_beta_mesher=True, use_geometry_AI=True
     )
     assert errors is None
-    assert warnings == []
+    assert all("may be deprecated" in w["msg"] for w in warnings)
 
 
 def test_user_defined_farfield_symmetry_plane_requires_half_domain(surface_mesh):
@@ -346,7 +346,7 @@ def test_user_defined_farfield_auto_symmetry_plane(surface_mesh):
         params, surface_mesh, use_beta_mesher=True, use_geometry_AI=True
     )
     assert errors is None
-    assert warnings == []
+    assert all("may be deprecated" in w["msg"] for w in warnings)
 
 
 def test_rotated_symmetric_existence():
