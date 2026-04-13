@@ -12,7 +12,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Callable, Dict, Optional
 from urllib.parse import parse_qs, urlencode, urlparse
 
-import flow360.user_config as user_config
+import flow360.user_config as user_config  # pylint: disable=consider-using-from-import
 from flow360.environment import Env
 from flow360.user_config import store_apikey
 
