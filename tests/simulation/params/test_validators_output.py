@@ -1297,6 +1297,19 @@ def test_force_output_with_surface_and_volume_models(mock_validation_context):
             )
 
 
+def test_force_output_empty_models():
+    """Test that ForceOutput rejects empty models list."""
+    with pytest.raises(
+        pydantic.ValidationError,
+        match="models",
+    ):
+        fl.ForceOutput(
+            name="force_output",
+            models=[],
+            output_fields=["CL", "CD"],
+        )
+
+
 def test_force_output_duplicate_models():
     """Test that ForceOutput rejects duplicate models."""
     wall_1 = Wall(entities=Surface(name="fluid/wing"))
