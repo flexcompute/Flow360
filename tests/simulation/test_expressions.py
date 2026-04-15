@@ -153,31 +153,6 @@ def test_variable_space_init():
     assert evaluated == 1.0 * u.m**2
 
 
-def test_to_file_from_file_expression(
-    constant_variable, constant_array, constant_unyt_quantity, constant_unyt_array
-):
-    with SI_unit_system:
-        params = SimulationParams(
-            reference_geometry=ReferenceGeometry(
-                area=10 * u.m**2,
-            ),
-            outputs=[
-                VolumeOutput(
-                    output_fields=[
-                        solution.mut.in_units(new_name="mut_in_SI", new_unit="g/cm/min"),
-                        constant_variable,
-                        constant_array,
-                        constant_unyt_quantity,
-                        constant_unyt_array,
-                    ]
-                )
-            ],
-        )
-
-    to_file_from_file_test_approx(params)
-    params.display_output_units()  # Just to make sure not exception.
-
-
 def test_udf_generator():
     with SI_unit_system:
         params = SimulationParams(

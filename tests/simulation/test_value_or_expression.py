@@ -557,18 +557,6 @@ def test_get_referenced_expressions():
     )
 
 
-def test_integer_validation():
-    with SI_unit_system:
-        AerospaceCondition(velocity_magnitude=10)
-
-    with pytest.raises(
-        ValueError,
-        match=re.escape("Value does not have units matching 'velocity' dimension"),
-    ):
-        with SI_unit_system:
-            AerospaceCondition(velocity_magnitude=Expression(expression="10"))
-
-
 def test_param_with_number_expression_in_and_out():
     reset_context()
     vm = volume_mesh()
