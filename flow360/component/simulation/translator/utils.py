@@ -135,7 +135,9 @@ def _apply_transformations_to_model(
                 transformed_items[index] = transformed
 
             if transformed_items is not None:
-                new_value = transformed_items if isinstance(field_value, list) else tuple(transformed_items)
+                new_value = (
+                    transformed_items if isinstance(field_value, list) else tuple(transformed_items)
+                )
                 setattr(model, field_name, new_value)
 
         elif isinstance(field_value, Flow360BaseModel):
