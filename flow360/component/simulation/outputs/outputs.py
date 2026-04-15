@@ -857,6 +857,7 @@ class ForceOutput(_OutputBase):
     )
     models: List[Union[ForceOutputModelType, str]] = pd.Field(
         description="List of surface/volume models (or model ids) whose force contribution will be calculated.",
+        min_length=1,
     )
     moving_statistic: Optional[MovingStatistic] = pd.Field(
         None, description="When specified, report moving statistics of the fields instead."
