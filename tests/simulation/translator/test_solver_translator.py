@@ -946,7 +946,7 @@ def test_boundaries():
 
 
 def test_rotate_velocity_direction_with_mesh():
-    """Verify rotateVelocityDirectionWithMesh is emitted only when overridden to False."""
+    """Verify rotateVelocityDirectionWithMesh is emitted only when set to True."""
     operating_condition = AerospaceCondition(velocity_magnitude=10 * u.m / u.s)
     with SI_unit_system:
         param_default = SimulationParams(
@@ -964,7 +964,7 @@ def test_rotate_velocity_direction_with_mesh():
                 ),
             ],
         )
-        param_disabled = SimulationParams(
+        param_enabled = SimulationParams(
             operating_condition=operating_condition,
             models=[
                 Inflow(
@@ -976,7 +976,7 @@ def test_rotate_velocity_direction_with_mesh():
                         static_pressure=101325 * u.Pa,
                     ),
                     velocity_direction=(0, -1, 0),
-                    rotate_velocity_direction_with_mesh=False,
+                    rotate_velocity_direction_with_mesh=True,
                 ),
             ],
         )
@@ -985,9 +985,9 @@ def test_rotate_velocity_direction_with_mesh():
     bc_default = translated_default["boundaries"]["engine_face"]
     assert "rotateVelocityDirectionWithMesh" not in bc_default
 
-    translated_disabled = get_solver_json(param_disabled, mesh_unit=1 * u.m)
-    bc_disabled = translated_disabled["boundaries"]["engine_face"]
-    assert bc_disabled["rotateVelocityDirectionWithMesh"] is False
+    translated_enabled = get_solver_json(param_enabled, mesh_unit=1 * u.m)
+    bc_enabled = translated_enabled["boundaries"]["engine_face"]
+    assert bc_enabled["rotateVelocityDirectionWithMesh"] is True
 
 
 def test_liquid_simulation_translation():

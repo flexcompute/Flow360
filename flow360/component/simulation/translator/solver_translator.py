@@ -1639,8 +1639,8 @@ def boundary_spec_translator(model: SurfaceModelTypes, op_acoustic_to_static_pre
         boundary["totalTemperatureRatio"] = model_dict["totalTemperature"]
         if model.velocity_direction is not None:
             boundary["velocityDirection"] = list(model_dict["velocityDirection"])
-            if not model.rotate_velocity_direction_with_mesh:
-                boundary["rotateVelocityDirectionWithMesh"] = False
+            if model.rotate_velocity_direction_with_mesh:
+                boundary["rotateVelocityDirectionWithMesh"] = True
         if isinstance(model.spec, TotalPressure):
             boundary["type"] = "SubsonicInflow"
             total_pressure_ratio = model_dict["spec"]["value"]

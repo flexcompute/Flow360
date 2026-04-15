@@ -700,7 +700,7 @@ class Inflow(BoundaryBaseWithTurbulenceQuantities):
         + "into the volume. If unspecified, the direction will be normal to the surface.",
     )
     rotate_velocity_direction_with_mesh: bool = pd.Field(
-        True,
+        False,
         description="When True, the velocity direction vector rotates with the mesh at each "
         + "physical time step. Use this when the inflow boundary is inside a rotating zone and "
         + "the velocity direction should be specified relative to the body frame rather than the "
