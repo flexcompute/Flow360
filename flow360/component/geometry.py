@@ -107,7 +107,7 @@ class GeometryDraft(ResourceDraft):
         length_unit: LengthUnitType = "m",
         tags: List[str] = None,
         folder: Optional[Folder] = None,
-        use_nextflow_pipelines: bool = False,
+        workflow: Literal["catalyst", "standard"] = "standard",
     ):
         """
         Initialize a GeometryDraft with common attributes.
@@ -132,6 +132,9 @@ class GeometryDraft(ResourceDraft):
             Solver version (for project root mode)
         folder : Optional[Folder], optional
             Parent folder (for project root mode)
+        workflow : Literal["catalyst", "standard"], optional
+            Pipeline routing: "catalyst" uses the new pipeline engine,
+            "standard" uses the legacy pipeline (default is "standard").
         """
         self._file_names = file_names
         self.project_name = project_name
@@ -139,7 +142,7 @@ class GeometryDraft(ResourceDraft):
         self.length_unit = length_unit
         self.solver_version = solver_version
         self.folder = folder
-        self.use_nextflow_pipelines = use_nextflow_pipelines
+        self.workflow = workflow
 
         # pylint: disable=fixme
         # TODO: create a DependableResourceDraft for GeometryDraft and SurfaceMeshDraft
@@ -243,7 +246,7 @@ class GeometryDraft(ResourceDraft):
             parent_folder_id=self.folder.id if self.folder else "ROOT.FLOW360",
             length_unit=self.length_unit,
             description=description,
-            use_nextflow=self.use_nextflow_pipelines,
+            use_nextflow=(self.workflow == "catalyst"),
         )
 
         resp = RestApi(GeometryInterface.endpoint).post(req.dict())
@@ -476,7 +479,7 @@ class Geometry(AssetBase):
         length_unit: LengthUnitType = "m",
         tags: List[str] = None,
         folder: Optional[Folder] = None,
-        use_nextflow_pipelines: bool = False,
+        workflow: Literal["catalyst", "standard"] = "standard",
     ) -> GeometryDraft:
         return GeometryDraft(
             file_names=file_names,
@@ -485,7 +488,7 @@ class Geometry(AssetBase):
             length_unit=length_unit,
             tags=tags,
             folder=folder,
-            use_nextflow_pipelines=use_nextflow_pipelines,
+            workflow=workflow,
         )
 
     @classmethod

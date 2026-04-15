@@ -349,6 +349,7 @@ class ProjectMeta(pd.BaseModel, extra="allow"):
     tags: List[str] = pd.Field(default_factory=list)
     root_item_id: str = pd.Field(alias="rootItemId")
     root_item_type: RootType = pd.Field(alias="rootItemType")
+    use_nextflow: bool = pd.Field(default=False, alias="useNextflow")
 
 
 class ProjectTreeNode(pd.BaseModel):
@@ -2202,6 +2203,9 @@ class Project(pd.BaseModel):
         """
         Runs the surface mesher for the project.
 
+        The pipeline workflow (catalyst or standard) is inherited from the project
+        setting established when the geometry was uploaded.
+
         Parameters
         ----------
         params : SimulationParams
@@ -2271,6 +2275,9 @@ class Project(pd.BaseModel):
     ):
         """
         Runs the volume mesher for the project.
+
+        The pipeline workflow (catalyst or standard) is inherited from the project
+        setting established when the geometry was uploaded.
 
         Parameters
         ----------
@@ -2352,6 +2359,9 @@ class Project(pd.BaseModel):
     ):
         """
         Runs a case for the project.
+
+        The pipeline workflow (catalyst or standard) is inherited from the project
+        setting established when the geometry was uploaded.
 
         Parameters
         ----------
