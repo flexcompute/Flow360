@@ -128,11 +128,10 @@ def _apply_transformations_to_model(
             transformed_items = None
             for index, item in enumerate(field_value):
                 transformed = _transform_sequence_item(item, manager)
-                if transformed is item:
-                    continue
-                if transformed_items is None:
-                    transformed_items = list(field_value)
-                transformed_items[index] = transformed
+                if transformed is not item:
+                    if transformed_items is None:
+                        transformed_items = list(field_value)
+                    transformed_items[index] = transformed
 
             if transformed_items is not None:
                 new_value = (

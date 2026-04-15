@@ -165,4 +165,4 @@ def test_volume_uniform_refinement_project_to_surface_false_skips_validation():
         validation_level="VolumeMesh",
     )
 
-    assert errors is None
+    assert errors is None, "No snappy validation error expected when project_to_surface=False"
