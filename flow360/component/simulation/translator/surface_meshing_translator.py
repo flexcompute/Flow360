@@ -961,9 +961,7 @@ def filter_simulation_json(input_params: SimulationParams, mesh_units):
     """
 
     # Get the JSON from the input_params
-    json_data = input_params.model_dump(
-        mode="json", exclude_none=True, context={"no_unit": True}
-    )
+    json_data = input_params.model_dump(mode="json", exclude_none=True, context={"no_unit": True})
 
     _inject_body_group_transformations_for_mesher(
         json_data=json_data, input_params=input_params, mesh_unit=mesh_units
