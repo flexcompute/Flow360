@@ -184,6 +184,7 @@ class Draft(Flow360Resource):
         start_from: Union[None, Literal["SurfaceMesh", "VolumeMesh", "Case"]],
         job_type: Optional[Literal["TIME_SHARED_VGPU", "FLEX_CREDIT"]] = None,
         priority: Optional[int] = None,
+        use_nextflow: bool = False,
     ) -> str:
         """run the draft up to the target asset"""
 
@@ -210,6 +211,7 @@ class Draft(Flow360Resource):
                 up_to=target_asset._cloud_resource_type_name,
                 use_in_house=use_beta_mesher,
                 use_gai=use_geometry_AI,
+                use_nextflow=use_nextflow,
                 force_creation_config=force_creation_config,
                 job_type=job_type,
                 priority=priority,

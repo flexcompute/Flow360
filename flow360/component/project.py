@@ -27,7 +27,7 @@ from flow360.component.cloud_examples import (
     fetch_examples,
     find_example_by_name,
 )
-from flow360.component.geometry import Geometry
+from flow360.component.geometry import Geometry, GeometryWorkflow
 from flow360.component.interfaces import (
     GeometryInterface,
     ProjectInterface,
@@ -622,6 +622,7 @@ class Project(pd.BaseModel):
     _root_webapi: Optional[RestApi] = pd.PrivateAttr(None)
     _project_webapi: Optional[RestApi] = pd.PrivateAttr(None)
     _root_simulation_json: Optional[dict] = pd.PrivateAttr(None)
+    _workflow: GeometryWorkflow = pd.PrivateAttr("standard")
 
     @classmethod
     def show_remote(cls, search_keyword: Union[None, str] = None):
@@ -931,6 +932,7 @@ class Project(pd.BaseModel):
         tags: List[str] = None,
         run_async: bool = False,
         folder: Optional[Folder] = None,
+        workflow: GeometryWorkflow = "standard",
     ):
         """
         Initializes a project from a file.
@@ -951,6 +953,9 @@ class Project(pd.BaseModel):
             Whether to create the project asynchronously (default is False).
         folder : Optional[Folder], optional
             Parent folder for the project. If None, creates in root.
+        workflow : {"standard", "catalyst"}, optional
+            Pipeline used for geometry processing. Only supported when ``files``
+            is ``GeometryFiles``. Defaults to "standard".
 
         Returns
         -------
@@ -969,13 +974,29 @@ class Project(pd.BaseModel):
 
         if isinstance(files, GeometryFiles):
             draft = Geometry.from_file(
-                files.file_names, name, solver_version, length_unit, tags, folder=folder
+                files.file_names,
+                name,
+                solver_version,
+                length_unit,
+                tags,
+                folder=folder,
+                workflow=workflow,
             )
         elif isinstance(files, SurfaceMeshFile):
+            if workflow != "standard":
+                raise Flow360ValueError(
+                    "workflow='catalyst' is only supported when creating a project from geometry. "
+                    "Surface mesh and volume mesh roots must use workflow='standard'."
+                )
             draft = SurfaceMeshV2.from_file(
                 files.file_names, name, solver_version, length_unit, tags, folder=folder
             )
         elif isinstance(files, VolumeMeshFile):
+            if workflow != "standard":
+                raise Flow360ValueError(
+                    "workflow='catalyst' is only supported when creating a project from geometry. "
+                    "Surface mesh and volume mesh roots must use workflow='standard'."
+                )
             draft = VolumeMeshV2.from_file(
                 files.file_names, name, solver_version, length_unit, tags, folder=folder
             )
@@ -1013,6 +1034,7 @@ class Project(pd.BaseModel):
         elif isinstance(files, VolumeMeshFile):
             project._root_webapi = RestApi(VolumeMeshInterfaceV2.endpoint, id=root_asset.id)
         project._root_asset = root_asset
+        project._workflow = workflow
         project._get_root_simulation_json()
         project._get_tree_from_cloud()
         return project
@@ -1150,6 +1172,7 @@ class Project(pd.BaseModel):
         tags: List[str] = None,
         run_async: bool = False,
         folder: Optional[Folder] = None,
+        workflow: GeometryWorkflow = "standard",
     ):
         """
         Initializes a project from local geometry files.
@@ -1170,6 +1193,10 @@ class Project(pd.BaseModel):
             Whether to create project asynchronously (default is False).
         folder : Optional[Folder], optional
             Parent folder for the project. If None, creates in root.
+        workflow : {"standard", "catalyst"}, optional
+            Pipeline used for geometry processing. Use ``"catalyst"`` to route
+            geometry ingestion and any subsequent GAI surface meshing through
+            the Nextflow-backed Catalyst pipeline. Defaults to ``"standard"``.
 
         Returns
         -------
@@ -1205,8 +1232,12 @@ class Project(pd.BaseModel):
             tags=tags,
             run_async=run_async,
             folder=folder,
+            workflow=workflow,
         )
 
+    # TODO(catalyst): add `workflow: GeometryWorkflow = "standard"` parameter and
+    # thread to `_create_project_from_files`, mirroring `from_geometry`. Blocked on
+    # backend Nextflow support for surface-mesh-rooted projects.
     @classmethod
     @pd.validate_call(config={"arbitrary_types_allowed": True})
     def from_surface_mesh(
@@ -1278,6 +1309,9 @@ class Project(pd.BaseModel):
             folder=folder,
         )
 
+    # TODO(catalyst): add `workflow: GeometryWorkflow = "standard"` parameter and
+    # thread to `_create_project_from_files`, mirroring `from_geometry`. Blocked on
+    # backend Nextflow support for volume-mesh-rooted projects.
     @classmethod
     @pd.validate_call(config={"arbitrary_types_allowed": True})
     # pylint: disable=too-many-locals
@@ -1722,6 +1756,7 @@ class Project(pd.BaseModel):
         project_id: str,
         *,
         new_run_from: Optional[Union[Geometry, SurfaceMeshV2, VolumeMeshV2, Case]] = None,
+        workflow: GeometryWorkflow = "standard",
     ):
         """
         Loads a project from the cloud.
@@ -1738,6 +1773,12 @@ class Project(pd.BaseModel):
 
             TODO: We can add 'last' as one option to automatically start
             from the latest created asset within the project.
+        workflow : {"standard", "catalyst"}, optional
+            Pipeline that this project was created with. The backend does not
+            currently return this on project GET, so callers loading an
+            existing Catalyst project must pass ``workflow="catalyst"``
+            explicitly for subsequent meshing calls to route through Nextflow.
+            Defaults to ``"standard"``.
 
         Returns
         -------
@@ -1803,6 +1844,7 @@ class Project(pd.BaseModel):
         elif root_type == RootType.VOLUME_MESH:
             project._root_asset = root_asset
             project._root_webapi = RestApi(VolumeMeshInterfaceV2.endpoint, id=root_asset.id)
+        project._workflow = workflow
         project._get_root_simulation_json()
         project._get_tree_from_cloud()
         return project
@@ -2009,6 +2051,7 @@ class Project(pd.BaseModel):
         draft_only: bool,
         job_type: Optional[Literal["TIME_SHARED_VGPU", "FLEX_CREDIT"]] = None,
         priority: Optional[int] = None,
+        workflow: GeometryWorkflow = "standard",
         **kwargs,
     ):
         """
@@ -2150,6 +2193,7 @@ class Project(pd.BaseModel):
                 start_from=start_from,
                 job_type=job_type,
                 priority=priority,
+                use_nextflow=workflow == "catalyst",
             )
         except (RuntimeError, Flow360WebError):
             if raise_on_error:
@@ -2197,6 +2241,7 @@ class Project(pd.BaseModel):
         raise_on_error: bool = True,
         tags: List[str] = None,
         draft_only: bool = False,
+        workflow: Optional[GeometryWorkflow] = None,
         **kwargs,
     ):
         """
@@ -2222,6 +2267,11 @@ class Project(pd.BaseModel):
             A list of tags to add to the generated surface mesh.
         draft_only: bool, optional
             Whether to only create and submit a draft and not generate the surface mesh.
+        workflow : {"standard", "catalyst"}, optional
+            Pipeline to use for this run. Defaults to the workflow the project
+            was created with (see :py:meth:`from_geometry`). Pass explicitly to
+            override — e.g. to run a GAI surface mesh under Catalyst on a
+            project loaded via :py:meth:`from_cloud`.
 
         Raises
         ------
@@ -2251,6 +2301,7 @@ class Project(pd.BaseModel):
             raise_on_error=raise_on_error,
             tags=tags,
             draft_only=draft_only,
+            workflow=workflow or self._workflow,
             **kwargs,
         )
         return surface_mesh
@@ -2324,6 +2375,7 @@ class Project(pd.BaseModel):
             raise_on_error=raise_on_error,
             tags=tags,
             draft_only=draft_only,
+            workflow=self._workflow,
             **kwargs,
         )
         if draft_only:
@@ -2445,6 +2497,7 @@ class Project(pd.BaseModel):
             draft_only=draft_only,
             job_type=job_type,
             priority=effective_priority,
+            workflow=self._workflow,
             **kwargs,
         )
 

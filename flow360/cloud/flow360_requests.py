@@ -253,6 +253,10 @@ class DraftRunRequest(Flow360RequestsV2):
     up_to: Literal["SurfaceMesh", "VolumeMesh", "Case"] = pd.Field()
     use_in_house: bool = pd.Field()
     use_gai: bool = pd.Field()
+    # TODO(catalyst): the backend should derive this from the project's root geometry
+    # (via GeometryModel/NextflowJobModel) instead of requiring a per-request flag.
+    # Once the draft-run service looks it up server-side, this field can be removed.
+    use_nextflow: bool = pd.Field(default=False)
     force_creation_config: Optional[ForceCreationConfig] = pd.Field(
         None,
     )
