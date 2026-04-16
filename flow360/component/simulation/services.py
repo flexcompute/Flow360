@@ -4,12 +4,10 @@
 import copy
 import json
 import os
-from enum import Enum
 from typing import (
     Any,
     Collection,
     Dict,
-    Iterable,
     List,
     Literal,
     Optional,
@@ -18,20 +16,24 @@ from typing import (
 )
 
 import pydantic as pd
-from flow360_schema.framework.expression.registry import (  # pylint: disable=unused-import
-    clear_context,
-)
-from flow360_schema.framework.expression.variable import (
-    RedeclaringVariableError,
-    get_referenced_expressions_and_user_variables,
-    restore_variable_space,
-)
-
-# Required for correct global scope initialization
 from flow360_schema.framework.physical_dimensions import Angle, Length
-from flow360_schema.framework.validation.context import DeserializationContext
+from flow360_schema.models.simulation.services import (  # pylint: disable=unused-import
+    ValidationCalledBy,
+    _determine_validation_level,
+    _insert_forward_compatibility_notice,
+    _intersect_validation_levels,
+    _normalize_union_branch_error_location,
+    _populate_error_context,
+    _sanitize_stack_trace,
+    _traverse_error_location,
+    clean_unrelated_setting_from_params_dict,
+    clear_context,
+    handle_generic_exception,
+    initialize_variable_space,
+    validate_error_locations,
+    validate_model as _schema_validate_model,
+)
 from pydantic import TypeAdapter
-from pydantic_core import ErrorDetails
 
 from flow360.component.simulation.entity_info import GeometryEntityInfo
 from flow360.component.simulation.entity_info import (
@@ -43,9 +45,6 @@ from flow360.component.simulation.framework.entity_materializer import (
     materialize_entities_and_selectors_in_place,
 )
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
-from flow360.component.simulation.framework.multi_constructor_model_base import (
-    parse_model_dict,
-)
 from flow360.component.simulation.meshing_param.params import MeshingParams
 from flow360.component.simulation.meshing_param.volume_params import AutomatedFarfield
 from flow360.component.simulation.models.bet.bet_translator_interface import (
@@ -89,11 +88,7 @@ from flow360.component.simulation.unit_system import (
     unit_system_manager,
 )
 from flow360.component.simulation.units import validate_length
-from flow360.component.simulation.validation.validation_context import (
-    ALL,
-    ParamsValidationInfo,
-    ValidationContext,
-)
+from flow360.component.simulation.validation.validation_context import ALL
 from flow360.exceptions import (
     Flow360RuntimeError,
     Flow360TranslationError,
@@ -265,136 +260,6 @@ def get_default_params(
     )
 
 
-def _intersect_validation_levels(requested_levels, available_levels):
-    if requested_levels is not None and available_levels is not None:
-        if requested_levels == ALL:
-            validation_levels_to_use = [
-                item for item in ["SurfaceMesh", "VolumeMesh", "Case"] if item in available_levels
-            ]
-        elif isinstance(requested_levels, str):
-            if requested_levels in available_levels:
-                validation_levels_to_use = [requested_levels]
-            else:
-                validation_levels_to_use = []
-        else:
-            assert isinstance(requested_levels, list)
-            validation_levels_to_use = [
-                item for item in requested_levels if item in available_levels
-            ]
-        return validation_levels_to_use
-    return []
-
-
-class ValidationCalledBy(Enum):
-    """
-    Enum as indicator where `validate_model()` is called.
-    """
-
-    LOCAL = "Local"
-    SERVICE = "Service"
-    PIPELINE = "Pipeline"
-
-    def get_forward_compatibility_error_message(self, version_from: str, version_to: str):
-        """
-        Return error message string indicating that the forward compatibility is not guaranteed.
-        """
-        error_suffix = " Errors may occur since forward compatibility is limited."
-        if self == ValidationCalledBy.LOCAL:
-            return {
-                "type": (f"{version_from} > {version_to}"),
-                "loc": [],
-                "msg": "The cloud `SimulationParam` (version: "
-                + version_from
-                + ") is too new for your local Python client (version: "
-                + version_to
-                + ")."
-                + error_suffix,
-                "ctx": {},
-            }
-        if self == ValidationCalledBy.SERVICE:
-            return {
-                "type": (f"{version_from} > {version_to}"),
-                "loc": [],
-                "msg": "Your `SimulationParams` (version: "
-                + version_from
-                + ") is too new for the solver (version: "
-                + version_to
-                + ")."
-                + error_suffix,
-                "ctx": {},
-            }
-        if self == ValidationCalledBy.PIPELINE:
-            # These will only appear in log. Ideally we should not rely on pipelines
-            # to emit useful error messages. Or else the local/service validation is not doing their jobs properly.
-            return {
-                # pylint:disable = protected-access
-                "type": (f"{version_from} > {version_to}"),
-                "loc": [],
-                "msg": "[Internal] Your `SimulationParams` (version: "
-                + version_from
-                + ") is too new for the solver (version: "
-                + version_to
-                + ")."
-                + error_suffix,
-                "ctx": {},
-            }
-        return None
-
-
-def _insert_forward_compatibility_notice(
-    validation_errors: list,
-    params_as_dict: dict,
-    validated_by: ValidationCalledBy,
-    version_to: str = __version__,
-):
-    # If error occurs, inform user that the error message could due to failure in forward compatibility.
-    # pylint:disable=protected-access
-    version_from = SimulationParams._get_version_from_dict(model_dict=params_as_dict)
-    forward_compatibility_failure_error = validated_by.get_forward_compatibility_error_message(
-        version_from=version_from, version_to=version_to
-    )
-    validation_errors.insert(0, forward_compatibility_failure_error)
-    return validation_errors
-
-
-def initialize_variable_space(param_as_dict: dict, use_clear_context: bool = False) -> dict:
-    """Load all user variables from private attributes when a simulation params object is initialized."""
-    if "private_attribute_asset_cache" not in param_as_dict.keys():
-        return param_as_dict
-    asset_cache: dict = param_as_dict["private_attribute_asset_cache"]
-    if "variable_context" not in asset_cache.keys():
-        return param_as_dict
-    if not isinstance(asset_cache["variable_context"], Iterable):
-        return param_as_dict
-
-    variable_context = asset_cache["variable_context"]
-
-    try:
-        restore_variable_space(variable_context, clear_first=use_clear_context)
-    except RedeclaringVariableError as e:
-        raise ValueError(
-            f"Loading user variable '{e.variable_name}' from simulation.json which is "
-            "already defined in local context. Please change your local user variable definition."
-        ) from e
-    except pd.ValidationError as e:
-        # Re-wrap with private_attribute_asset_cache prefix in loc
-        error_detail: dict = e.errors()[0]
-        loc = error_detail.get("loc", ())
-        raise pd.ValidationError.from_exception_data(
-            "Invalid user variable/expression",
-            line_errors=[
-                ErrorDetails(
-                    type=error_detail["type"],
-                    loc=("private_attribute_asset_cache",) + tuple(loc),
-                    msg=error_detail.get("msg", "Unknown error"),
-                    ctx=error_detail.get("ctx", {}),
-                ),
-            ],
-        ) from e
-
-    return param_as_dict
-
-
 def validate_model(  # pylint: disable=too-many-locals
     *,
     params_as_dict,
@@ -427,361 +292,13 @@ def validate_model(  # pylint: disable=too-many-locals
     validation_warnings : list
         A list of validation warnings (empty list if no warnings were recorded).
     """
-
-    def handle_multi_constructor_model(params_as_dict: dict) -> dict:
-        """
-        Handle input cache of multi-constructor models.
-        """
-        project_length_unit_dict = params_as_dict.get("private_attribute_asset_cache", {}).get(
-            "project_length_unit", None
-        )
-        parse_model_info = ParamsValidationInfo(
-            {"private_attribute_asset_cache": {"project_length_unit": project_length_unit_dict}},
-            [],
-        )
-        with (
-            ValidationContext(levels=validation_levels_to_use, info=parse_model_info),
-            DeserializationContext(),
-        ):
-            # Multi-constructor model support
-            updated_param_as_dict = parse_model_dict(params_as_dict, globals())
-        return updated_param_as_dict
-
-    def dict_preprocessing(params_as_dict: dict) -> dict:
-        """
-        Preprocess the parameters dictionary before validation.
-        """
-        # pylint: disable=protected-access
-        params_as_dict = SimulationParams._sanitize_params_dict(params_as_dict)
-        params_as_dict = handle_multi_constructor_model(params_as_dict)
-
-        # Materialize stored_entities (dict -> shared instances) and per-list deduplication
-        # pylint: disable=fixme
-        # TODO: The need for materialization on entities?
-        # *  Ideally stored_entities should store entity IDs only. And we do not even need to materialize them here.
-        # *  This change has to wait for the front end to support entity IDs.
-        # *  Although to be fair having entities esp the draft entities inlined allow copy pasting of
-        # *  the SimulationParams, otherwise user will copy a bunch of links which become stale under a new context.
-        # * Benefits:
-        # * 1. Much shorter JSON.
-        # * 2. Deserialization ALL entities just once, not just the persistent ones.
-        # * 3. Strong requirement that ALL entities must come from entity_info/registry.
-        # * 4. Data structural-wise single source of truth.
-
-        # TODO: Unifying Materialization and Entity Info?
-        # *  As of now entities will still be separate instances when being
-        # *  1. materialized here versus
-        # *  2. deserialized in the entity info.
-        # *  This impacts manually picked entities and all draft entities since they cannot be matched by Selectors.
-        # *  validate_mode() is called in 3 main places:
-        # *  1. Local validation
-        # *  2. Service validation
-        # *  3. Local deserialization of cloud simulation.json
-        # *  Only the last scenario is affected by this issue because in 1 and 2 user has done all the possible
-        # *  editing so keeping data linkage is non-beneficial.
-        # *  Although for the last scenario, if the user makes changes to the entities via create_draft(), the draft's
-        # *  entity_info will be source of truth and the changes should be reflected in
-        # *  both the assignment and the entity_info.
-
-        params_as_dict = materialize_entities_and_selectors_in_place(params_as_dict)
-        return params_as_dict
-
-    validation_errors = None
-    validation_warnings: List[Dict[str, Any]] = []
-    validated_param = None
-    validation_context: Optional[ValidationContext] = None
-
-    params_as_dict = clean_unrelated_setting_from_params_dict(params_as_dict, root_item_type)
-
-    # The final validation levels will be the intersection of the requested levels and the levels available
-    # We always assume we want to run case so that we can expose as many errors as possible
-    available_levels = _determine_validation_level(up_to="Case", root_item_type=root_item_type)
-    validation_levels_to_use = _intersect_validation_levels(validation_level, available_levels)
-    forward_compatibility_mode = False
-
-    # pylint: disable=protected-access
-    # Note: Need to run updater first to accommodate possible schema change in input caches.
-    params_as_dict, forward_compatibility_mode = SimulationParams._update_param_dict(params_as_dict)
-
-    # The private_attribute_asset_cache should have been validated/deserialized here before all
-    # the following processes. And then you would just pass a validated asset cache instant to the SimulationParams.
-    # By design (not explicitly planned but in reality) The AssetCache is a pure context provider of the
-    # SimulationParams and its content does not, for most part, interact with each other or depends on the user setting
-    # part of the simulation.json. Therefore it should be fine for the asset cache to be deserialized independently
-    # before the user setting part of the simulation.json.
-    # ** There are several main benefit:
-    # 1. Validate asset cache gives correct and accurate error location if any. This usually only apply to
-    # front-end forms but it is also the front-end that rely on accurate link of error location for webUI error viewer
-    # to work properly.
-    # 2. We have to deserialize everything during the process anyway. For example the variables, the selectors,
-    # and the entity info. We are already actually doing this step by step but there are always places that we
-    # have not covered yet and thus we have issues like [FXC-5256].
-    # 3. Validated asset cache gives proper type hint and also object interface instead of pure JSON interface.
-    # It is just much easier to work with.
-    # 4. We do not have to validate project_length_unit 10 times here and there. This speeds up the validation process
-    # as well as restrict to single source of truth even though:
-    #       a) user cannot directly interact with the source and
-    #       b) We manage the asset cache (source of truth).
-    # 5. I think this also goes well with the general direction of clear separation of different parts of
-    # simulation.json in terms of responsibility as well as purpose.
-
-    try:
-        updated_param_as_dict = dict_preprocessing(params_as_dict)
-
-        # Initialize variable space
-        use_clear_context = validated_by == ValidationCalledBy.SERVICE
-        initialize_variable_space(updated_param_as_dict, use_clear_context)
-        referenced_expressions = get_referenced_expressions_and_user_variables(
-            updated_param_as_dict
-        )
-
-        validation_info = ParamsValidationInfo(
-            param_as_dict=updated_param_as_dict,
-            referenced_expressions=referenced_expressions,
-        )
-
-        with ValidationContext(
-            levels=validation_levels_to_use,
-            info=validation_info,
-        ) as context:
-            validation_context = context
-            # Reuse pre-deserialized entity_info to avoid double deserialization
-            pre_deserialized_entity_info = validation_info.get_entity_info()
-            if pre_deserialized_entity_info is not None:
-                # Create shallow copy with entity_info substituted
-                updated_param_as_dict = {**updated_param_as_dict}
-                updated_param_as_dict["private_attribute_asset_cache"] = {
-                    **updated_param_as_dict["private_attribute_asset_cache"],
-                    "project_entity_info": pre_deserialized_entity_info,
-                }
-            with DeserializationContext():
-                validated_param = SimulationParams.model_validate(updated_param_as_dict)
-
-    except pd.ValidationError as err:
-        validation_errors = err.errors()
-    except Exception as err:  # pylint: disable=broad-exception-caught
-        import traceback  # pylint: disable=import-outside-toplevel
-
-        stack = traceback.format_exc()
-        validation_errors = handle_generic_exception(
-            err, validation_errors, loc_prefix=None, error_stack=stack
-        )
-    finally:
-        if validation_context is not None:
-            validation_warnings = list(validation_context.validation_warnings)
-
-    if validation_errors is not None:
-        validation_errors = validate_error_locations(validation_errors, params_as_dict)
-
-    if forward_compatibility_mode and validation_errors is not None:
-        # pylint: disable=fixme
-        # TODO: If forward compatibility issue found. Try to tell user how they can get around it.
-        # TODO: Recommend solver/python client version they should use instead.
-        validation_errors = _insert_forward_compatibility_notice(
-            validation_errors, params_as_dict, validated_by
-        )
-
-    return validated_param, validation_errors, validation_warnings
-
-
-def clean_unrelated_setting_from_params_dict(params: dict, root_item_type: str) -> dict:
-    """
-    Cleans the parameters dictionary by removing properties if they do not affect the remaining workflow.
-
-
-    Parameters
-    ----------
-    params : dict
-        The original parameters dictionary.
-    root_item_type : str
-        The root item type determining specific cleaning actions.
-
-    Returns
-    -------
-    dict
-        The cleaned parameters dictionary.
-    """
-
-    if root_item_type == "VolumeMesh":
-        params.pop("meshing", None)
-
-    return params
-
-
-def _sanitize_stack_trace(stack: str) -> str:
-    """
-    Sanitize file paths in stack trace to only show paths starting from 'flow360/'.
-
-    Gracefully returns the original stack if sanitization fails.
-
-    Parameters
-    ----------
-    stack : str
-        The original stack trace string.
-
-    Returns
-    -------
-    str
-        The sanitized stack trace with shortened file paths, or the original
-        stack if sanitization fails.
-    """
-    # pylint: disable=import-outside-toplevel
-    import re
-
-    try:
-        # Remove the "Traceback (most recent call last):\n" prefix
-        stack = re.sub(r"^Traceback \(most recent call last\):\n\s*", "", stack)
-
-        # Pattern to match file paths containing 'flow360/'
-        # Captures everything before 'flow360/' and replaces with just 'flow360/'
-        pattern = r'File "[^"]*[/\\](flow360[/\\][^"]*)"'
-        replacement = r'File "\1"'
-        return re.sub(pattern, replacement, stack)
-    except Exception:  # pylint: disable=broad-exception-caught
-        return stack
-
-
-def handle_generic_exception(
-    err: Exception,
-    validation_errors: Optional[list],
-    loc_prefix: Optional[list[str]] = None,
-    error_stack: Optional[str] = None,
-) -> list:
-    """
-    Handles generic exceptions during validation, adding to validation errors.
-
-    Parameters
-    ----------
-    err : Exception
-        The exception caught during validation.
-    validation_errors : list or None
-        Current list of validation errors, may be None.
-    loc_prefix : list or None
-        Prefix of the location of the generic error to help locate the issue
-    error_stack : str or None
-        The error stack trace, if available.
-
-    Returns
-    -------
-    list
-        The updated list of validation errors including the new error.
-    """
-    if validation_errors is None:
-        validation_errors = []
-
-    error_entry = {
-        "type": err.__class__.__name__.lower().replace("error", "_error"),
-        "loc": ["unknown"] if loc_prefix is None else loc_prefix,
-        "msg": str(err),
-        "ctx": {},
-    }
-
-    if error_stack is not None:
-        error_entry["debug"] = _sanitize_stack_trace(error_stack)
-
-    validation_errors.append(error_entry)
-    return validation_errors
-
-
-def validate_error_locations(errors: list, params: dict) -> list:
-    """
-    Validates the locations in the errors to ensure they correspond to the params dict.
-
-    Parameters
-    ----------
-    errors : list
-        The list of validation errors to process.
-    params : dict
-        The parameters dictionary being validated.
-
-    Returns
-    -------
-    list
-        The updated list of errors with validated locations and context.
-    """
-    for error in errors:
-        current = params
-        for field in error["loc"][:-1]:
-            current, valid = _traverse_error_location(current, field)
-            if not valid:
-                error["loc"] = tuple(loc for loc in error["loc"] if loc != field)
-
-        _normalize_union_branch_error_location(error, current)
-        _populate_error_context(error)
-    return errors
-
-
-def _normalize_union_branch_error_location(error: dict, current) -> None:
-    """
-    Hide internal tagged-union branch names from user-facing error locations.
-
-    ValueOrExpression uses tagged union branches named ``number`` and ``expression``.
-    Pydantic includes the selected branch tag in ``loc``. When the original input is a
-    legacy ``{\"value\": ..., \"units\": ...}`` payload, restore the old ``value`` leaf.
-    Otherwise, collapse the synthetic branch name to the parent field.
-    """
-    loc = error.get("loc")
-    if not isinstance(loc, tuple) or len(loc) == 0:
-        return
-
-    branch = loc[-1]
-    if branch not in {"number", "expression"}:
-        return
-
-    if isinstance(current, dict):
-        if branch == "number" and "value" in current:
-            error["loc"] = (*loc[:-1], "value")
-            return
-        if branch == "expression" and "expression" in current:
-            error["loc"] = (*loc[:-1], "expression")
-            return
-
-    error["loc"] = loc[:-1]
-
-
-def _traverse_error_location(current, field):
-    """
-    Traverse through the error location path within the parameters.
-
-    Parameters
-    ----------
-    current : any
-        The current position in the params dict or list.
-    field : any
-        The current field being validated.
-
-    Returns
-    -------
-    tuple
-        The updated current position and whether the traversal was valid.
-    """
-    if isinstance(field, int) and isinstance(current, list) and field in range(len(current)):
-        return current[field], True
-    if isinstance(field, str) and isinstance(current, dict) and current.get(field):
-        return current.get(field), True
-    return current, False
-
-
-def _populate_error_context(error: dict):
-    """
-    Populates the error context with relevant stringified values.
-
-    Parameters
-    ----------
-    error : dict
-        The error dictionary to update with context information.
-    """
-    ctx = error.get("ctx")
-    if isinstance(ctx, dict):
-        for field_name, context in ctx.items():
-            try:
-                error["ctx"][field_name] = (
-                    [str(item) for item in context] if isinstance(context, list) else str(context)
-                )
-            except Exception:  # pylint: disable=broad-exception-caught
-                error["ctx"][field_name] = "<couldn't stringify>"
-    else:
-        error["ctx"] = {}
+    return _schema_validate_model(
+        params_as_dict=params_as_dict,
+        validated_by=validated_by,
+        root_item_type=root_item_type,
+        validation_level=validation_level,
+        version_to=__version__,
+    )
 
 
 # pylint: disable=too-many-arguments
@@ -871,16 +388,6 @@ def _get_mesh_unit(params_as_dict: dict) -> str:
     if mesh_unit is None:
         raise ValueError("[Internal] failed to acquire length unit from simulation settings.")
     return mesh_unit
-
-
-def _determine_validation_level(
-    up_to: Literal["SurfaceMesh", "VolumeMesh", "Case"],
-    root_item_type: Union[Literal["Geometry", "SurfaceMesh", "VolumeMesh"], None],
-) -> list:
-    if root_item_type is None:
-        return None
-    all_lvls = ["Geometry", "SurfaceMesh", "VolumeMesh", "Case"]
-    return all_lvls[all_lvls.index(root_item_type) + 1 : all_lvls.index(up_to) + 1]
 
 
 def _process_surface_mesh(
