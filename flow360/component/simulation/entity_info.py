@@ -97,6 +97,16 @@ class BodyComponentInfo(Flow360BaseModel):
         None,
         description="A full list of edge IDs that appear in the body. Optional for surface mesh geometry.",
     )
+    body_type: Optional[str] = pd.Field(
+        None,
+        description="Topological body type (SOLIDBODY, SHEETBODY, WIREBODY). "
+        "Populated by the CAD geometry conversion pipeline.",
+    )
+    source_model_file: Optional[str] = pd.Field(
+        None,
+        description="Name of the source CAD file this body originated from. "
+        "Used for multi-file geometry imports.",
+    )
 
 
 class GeometryEntityInfo(EntityInfoModel):
