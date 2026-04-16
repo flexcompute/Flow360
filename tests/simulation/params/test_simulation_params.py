@@ -4,10 +4,8 @@ import unittest
 
 import pytest
 
-import flow360.component.simulation.units as u
 from flow360.component.project import create_draft
 from flow360.component.project_utils import set_up_params_for_uploading
-from flow360.component.simulation import services
 from flow360.component.simulation.entity_info import GeometryEntityInfo
 from flow360.component.simulation.entity_operation import CoordinateSystem
 from flow360.component.simulation.migration.extra_operating_condition import (
@@ -194,20 +192,3 @@ def test_transformation_matrix(mock_geometry):
             1.0,
             0.0,
         ]
-
-
-def test_default_params_for_local_test():
-    with SI_unit_system:
-        param = SimulationParams()
-
-    param = services._store_project_length_unit(1 * u.m, param)
-    param_as_dict = param.model_dump(
-        exclude_none=True,
-        exclude={
-            "operating_condition": {"velocity_magnitude": True},
-            "private_attribute_asset_cache": {"registry": True},
-        },
-    )
-
-    with SI_unit_system:
-        SimulationParams(**param_as_dict)

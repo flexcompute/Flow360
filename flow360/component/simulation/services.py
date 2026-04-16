@@ -17,6 +17,7 @@ import pydantic as pd
 from flow360_schema.framework.physical_dimensions import Angle, Length
 from flow360_schema.models.simulation.services import (  # pylint: disable=unused-import
     ValidationCalledBy,
+    _get_default_reference_geometry,
     _determine_validation_level,
     _insert_forward_compatibility_notice,
     _intersect_validation_levels,
@@ -24,12 +25,15 @@ from flow360_schema.models.simulation.services import (  # pylint: disable=unuse
     _parse_root_item_type_from_simulation_json,
     _populate_error_context,
     _sanitize_stack_trace,
+    _store_project_length_unit,
     _traverse_error_location,
+    apply_simulation_setting_to_entity_info,
     clean_unrelated_setting_from_params_dict,
     clear_context,
+    get_default_params,
     handle_generic_exception,
+    init_unit_system,
     initialize_variable_space,
-    apply_simulation_setting_to_entity_info,
     merge_geometry_entity_info,
     update_simulation_json,
     validate_error_locations,
@@ -41,29 +45,22 @@ from flow360.component.simulation.exposed_units import supported_units_by_front_
 from flow360.component.simulation.framework.entity_materializer import (
     materialize_entities_and_selectors_in_place,
 )
-from flow360.component.simulation.meshing_param.params import MeshingParams
-from flow360.component.simulation.meshing_param.volume_params import AutomatedFarfield
 from flow360.component.simulation.models.bet.bet_translator_interface import (
     generate_polar_file_name_list,
     translate_xfoil_c81_to_bet_dict,
     translate_xrotor_dfdc_to_bet_dict,
 )
-from flow360.component.simulation.models.surface_models import Freestream, Wall
 
 # pylint: disable=unused-import # For parse_model_dict
 from flow360.component.simulation.models.volume_models import BETDisk
 from flow360.component.simulation.operating_condition.operating_condition import (
-    AerospaceCondition,
     GenericReferenceCondition,
     ThermalState,
 )
 from flow360.component.simulation.primitives import Box
 
 # pylint: enable=unused-import
-from flow360.component.simulation.simulation_params import (
-    ReferenceGeometry,
-    SimulationParams,
-)
+from flow360.component.simulation.simulation_params import SimulationParams
 
 # Required for correct global scope initialization
 from flow360.component.simulation.translator.solver_translator import (
@@ -76,184 +73,13 @@ from flow360.component.simulation.translator.surface_meshing_translator import (
 from flow360.component.simulation.translator.volume_meshing_translator import (
     get_volume_meshing_json,
 )
-from flow360.component.simulation.unit_system import (
-    _UNIT_SYSTEMS,
-    UnitSystem,
-    _dimensioned_type_serializer,
-    u,
-    unit_system_manager,
-)
-from flow360.component.simulation.units import validate_length
+from flow360.component.simulation.unit_system import _dimensioned_type_serializer, u
 from flow360.component.simulation.validation.validation_context import ALL
 from flow360.exceptions import (
     Flow360TranslationError,
     Flow360ValueError,
 )
 from flow360.version import __version__
-
-# Required for correct global scope initialization
-
-
-def init_unit_system(unit_system_name) -> UnitSystem:
-    """Returns UnitSystem object from string representation.
-
-    Parameters
-    ----------
-    unit_system_name : ["SI", "CGS", "Imperial"]
-        Unit system string representation
-
-    Returns
-    -------
-    UnitSystem
-        unit system
-
-    Raises
-    ------
-    ValueError
-        If unit system doesn't exist
-    RuntimeError
-        If this function is run inside unit system context
-    """
-
-    unit_system = _UNIT_SYSTEMS.get(unit_system_name)
-    if unit_system is None:
-        raise ValueError(
-            f"Unknown unit system: {unit_system_name!r}. " f"Available: {list(_UNIT_SYSTEMS)}"
-        )
-
-    if unit_system_manager.current is not None:
-        raise RuntimeError(
-            f"Services cannot be used inside unit system context. Used: {unit_system_manager.current.system_repr()}."
-        )
-    return unit_system
-
-
-def _store_project_length_unit(project_length_unit, params: SimulationParams):
-    if project_length_unit is not None:
-        # Store the length unit so downstream services/pipelines can use it
-        # pylint: disable=fixme
-        # TODO: client does not call this. We need to start using new webAPI for that
-        # pylint: disable=assigning-non-slot,no-member
-        params.private_attribute_asset_cache._force_set_attr(  # pylint:disable=protected-access
-            "project_length_unit", project_length_unit
-        )
-    return params
-
-
-def _get_default_reference_geometry(length_unit: Length.Float64):
-    return ReferenceGeometry(
-        area=1 * length_unit**2,
-        moment_center=(0, 0, 0) * length_unit,
-        moment_length=(1, 1, 1) * length_unit,
-    )
-
-
-def get_default_params(
-    unit_system_name, length_unit, root_item_type: Literal["Geometry", "SurfaceMesh", "VolumeMesh"]
-) -> dict:
-    """
-    Returns default parameters in a given unit system. The defaults are not correct SimulationParams object as they may
-    contain empty required values. When generating default case settings:
-    - Use Model() if all fields has defaults or there are no required fields
-    - Use Model.construct() to disable validation - when there are required fields without value
-
-    Parameters
-    ----------
-    unit_system_name : str
-        The name of the unit system to use for parameter initialization.
-
-    Returns
-    -------
-    dict
-        Default parameters for Flow360 simulation stored in a dictionary.
-
-    """
-    # pylint: disable=import-outside-toplevel
-    from flow360.component.simulation.outputs.outputs import SurfaceOutput
-    from flow360.component.simulation.primitives import Surface
-
-    unit_system = init_unit_system(unit_system_name)
-    dummy_value = 0.1
-    project_length_unit = validate_length(length_unit)
-    with unit_system:
-        reference_geometry = _get_default_reference_geometry(project_length_unit)
-        operating_condition = AerospaceCondition(velocity_magnitude=dummy_value)
-        surface_output = SurfaceOutput(
-            name="Surface output",
-            entities=[Surface(name="*")],
-            output_fields=["Cp", "yPlus", "Cf", "CfVec"],
-        )
-
-    if root_item_type in ("Geometry", "SurfaceMesh"):
-        automated_farfield = AutomatedFarfield(name="Farfield")
-        with unit_system:
-            params = SimulationParams(
-                reference_geometry=reference_geometry,
-                meshing=MeshingParams(
-                    volume_zones=[automated_farfield],
-                ),
-                operating_condition=operating_condition,
-                models=[
-                    Wall(
-                        name="Wall",
-                        surfaces=[Surface(name="*")],
-                        roughness_height=0 * project_length_unit,
-                    ),
-                    Freestream(name="Freestream", surfaces=[automated_farfield.farfield]),
-                ],
-                outputs=[surface_output],
-            )
-
-        params = _store_project_length_unit(project_length_unit, params)
-
-        return params.model_dump(
-            mode="json",
-            exclude_none=True,
-            exclude={
-                "operating_condition": {"velocity_magnitude": True},
-                "private_attribute_asset_cache": {"registry": True},
-                "meshing": {
-                    "defaults": {"edge_split_layers": True}
-                },  # Due to beta mesher by default is disabled.
-            },
-        )
-
-    if root_item_type == "VolumeMesh":
-        with unit_system:
-            params = SimulationParams(
-                reference_geometry=reference_geometry,
-                operating_condition=operating_condition,
-                models=[
-                    Wall(
-                        name="Wall",
-                        surfaces=[Surface(name="placeholder1")],
-                        roughness_height=0 * project_length_unit,
-                    ),  # to make it consistent with geo
-                    Freestream(
-                        name="Freestream", surfaces=[Surface(name="placeholder2")]
-                    ),  # to make it consistent with geo
-                ],
-                outputs=[surface_output],
-            )
-        # cleaning up stored entities in default settings to let user decide:
-        params.models[0].entities.stored_entities = []  # pylint: disable=unsubscriptable-object
-        params.models[1].entities.stored_entities = []  # pylint: disable=unsubscriptable-object
-
-        params = _store_project_length_unit(project_length_unit, params)
-
-        return params.model_dump(
-            mode="json",
-            exclude_none=True,
-            exclude={
-                "operating_condition": {"velocity_magnitude": True},
-                "private_attribute_asset_cache": {"registry": True},
-                "meshing": True,
-            },
-        )
-    raise ValueError(
-        f"Unknown root item type: {root_item_type}. Expected one of Geometry or SurfaceMesh or VolumeMesh"
-    )
-
 
 def validate_model(  # pylint: disable=too-many-locals
     *,
@@ -719,4 +545,3 @@ def translate_xfoil_c81_bet_disk(
         # Expected exceptions
         errors.append(str(e))
     return bet_dict_list, errors
-
