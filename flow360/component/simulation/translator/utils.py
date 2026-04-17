@@ -10,6 +10,9 @@ from typing import Union
 import numpy as np
 import pydantic as pd
 import unyt as u
+from flow360_schema.framework.expression import Expression, UserVariable
+from flow360_schema.framework.physical_dimensions import Length
+from flow360_schema.models.asset_cache import AssetCache
 
 from flow360.component.simulation.draft_context.coordinate_system_manager import (
     CoordinateSystemManager,
@@ -17,7 +20,6 @@ from flow360.component.simulation.draft_context.coordinate_system_manager import
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.base_model_config import snake_to_camel
 from flow360.component.simulation.framework.entity_base import EntityBase, EntityList
-from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.framework.unique_list import UniqueItemList
 from flow360.component.simulation.meshing_param import snappy
 from flow360.component.simulation.meshing_param.params import ModularMeshingWorkflow
@@ -27,9 +29,9 @@ from flow360.component.simulation.primitives import (
     _VolumeEntityBase,
 )
 from flow360.component.simulation.simulation_params import SimulationParams
-from flow360.component.simulation.unit_system import LengthType
-from flow360.component.simulation.user_code.core.types import Expression, UserVariable
+from flow360.component.simulation.units import validate_length
 from flow360.component.simulation.utils import is_exact_instance
+from flow360.component.simulation.validation.validation_context import ValidationContext
 from flow360.exceptions import Flow360TranslationError
 
 
@@ -171,6 +173,7 @@ def preprocess_input(func):
         # pylint: disable=no-member
         if func.__name__ == "get_solver_json":
             preprocess_exclude = ["meshing"]
+            preprocess_validation_levels = None
         elif func.__name__ in ("get_surface_meshing_json", "get_volume_meshing_json"):
             preprocess_exclude = [
                 "reference_geometry",
@@ -180,10 +183,20 @@ def preprocess_input(func):
                 "user_defined_dynamics",
                 "outputs",
             ]
+            # Preprocess is a unit-conversion step, not a validation step. Use an
+            # empty validation scope so mesh-only translation skips case validators
+            # without re-triggering conditional required-field checks.
+            preprocess_validation_levels = []
         else:
             preprocess_exclude = []
-        validated_mesh_unit = LengthType.validate(mesh_unit)
-        processed_input = preprocess_param(input_params, validated_mesh_unit, preprocess_exclude)
+            preprocess_validation_levels = None
+        validated_mesh_unit = validate_length(mesh_unit)
+        processed_input = preprocess_param(
+            input_params,
+            validated_mesh_unit,
+            preprocess_exclude,
+            preprocess_validation_levels,
+        )
 
         apply_coordinate_system_transformations(processed_input)
 
@@ -199,8 +212,9 @@ def preprocess_input(func):
 
 def preprocess_param(
     input_params: SimulationParams | str | dict,
-    validated_mesh_unit: LengthType,
+    validated_mesh_unit: Length.Float64,
     preprocess_exclude: list[str],
+    preprocess_validation_levels: list[str] | None,
 ):
     """
     Get the dictionary of `SimulationParams`.
@@ -223,6 +237,9 @@ def preprocess_param(
     if param is not None:
         # pylint: disable=protected-access
         param._private_set_length_unit(validated_mesh_unit)
+        if preprocess_validation_levels is not None:
+            with ValidationContext(levels=preprocess_validation_levels):
+                return param._preprocess(validated_mesh_unit, exclude=preprocess_exclude)
         return param._preprocess(validated_mesh_unit, exclude=preprocess_exclude)
     raise ValueError(f"Invalid input <{input_params.__class__.__name__}> for translator. ")
 
@@ -304,7 +321,7 @@ def remove_units_in_dict(input_dict, skip_keys: list[str] = None):
 def get_units_from_field(field, input_params) -> u.Unit:
     """Get output units from a field, which can be either a UserVariable or a string."""
     if isinstance(field, UserVariable):
-        return field.value.get_output_units(input_params=input_params)
+        return field.value.get_output_units(unit_system_name=input_params.unit_system.name)
     return u.dimensionless  # pylint:disable=no-member
 
 

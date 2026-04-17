@@ -11,6 +11,8 @@ from typing import Dict, Iterable, List, Literal, Optional, Union
 
 import pydantic as pd
 import typing_extensions
+from flow360_schema.framework.physical_dimensions import Length
+from flow360_schema.models.asset_cache import CoordinateSystemStatus, MirrorStatus
 from pydantic import PositiveInt
 
 from flow360.cloud.file_cache import get_shared_cloud_file_cache
@@ -46,10 +48,6 @@ from flow360.component.simulation.draft_context.context import (
     DraftContext,
     get_active_draft,
 )
-from flow360.component.simulation.draft_context.coordinate_system_manager import (
-    CoordinateSystemStatus,
-)
-from flow360.component.simulation.draft_context.mirror import MirrorStatus
 from flow360.component.simulation.draft_context.obb.tessellation_loader import (
     TessellationFileLoader,
 )
@@ -60,7 +58,7 @@ from flow360.component.simulation.entity_info import (
 from flow360.component.simulation.folder import Folder
 from flow360.component.simulation.primitives import ImportedSurface
 from flow360.component.simulation.simulation_params import SimulationParams
-from flow360.component.simulation.unit_system import LengthType
+from flow360.component.simulation.units import validate_length
 from flow360.component.simulation.web.asset_base import AssetBase
 from flow360.component.simulation.web.draft import Draft
 from flow360.component.simulation.web.project_records import (
@@ -660,13 +658,13 @@ class Project(pd.BaseModel):
         return self.metadata.tags
 
     @property
-    def length_unit(self) -> LengthType.Positive:
+    def length_unit(self) -> Length.PositiveFloat64:
         """
         Returns the length unit of the project.
 
         Returns
         -------
-        LengthType.Positive
+        Length.PositiveFloat64
             The length unit.
         """
 
@@ -678,7 +676,7 @@ class Project(pd.BaseModel):
         if cache_key not in defaults or length_key not in defaults[cache_key]:
             raise Flow360ValueError("[Internal] Simulation params do not contain length unit info.")
 
-        return LengthType.validate(defaults[cache_key][length_key])
+        return validate_length(defaults[cache_key][length_key])
 
     @property
     def geometry(self) -> Geometry:

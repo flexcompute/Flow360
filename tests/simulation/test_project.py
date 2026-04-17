@@ -14,7 +14,6 @@ from flow360.component.project_utils import set_up_params_for_uploading
 from flow360.component.resource_base import local_metadata_builder
 from flow360.component.simulation.primitives import ImportedSurface
 from flow360.component.simulation.services import ValidationCalledBy, validate_model
-from flow360.component.simulation.utils import model_attribute_unlock
 from flow360.component.volume_mesh import VolumeMeshV2
 from flow360.examples import Cylinder3D
 from flow360.exceptions import Flow360ConfigurationError, Flow360ValueError
@@ -492,8 +491,7 @@ def _build_params_with_imported_surfaces(imported_surfaces):
     """Build a minimal SimulationParams with imported_surfaces set in asset cache."""
     with fl.SI_unit_system:
         params = fl.SimulationParams()
-    with model_attribute_unlock(params.private_attribute_asset_cache, "imported_surfaces"):
-        params.private_attribute_asset_cache.imported_surfaces = imported_surfaces
+    params.private_attribute_asset_cache._force_set_attr("imported_surfaces", imported_surfaces)
     return params
 
 
