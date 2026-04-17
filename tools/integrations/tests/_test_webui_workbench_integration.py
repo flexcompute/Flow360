@@ -1,6 +1,8 @@
 import json
 import os
 
+import unyt as u
+
 import flow360.v1 as fl
 from flow360.component.simulation.meshing_param.face_params import (
     BoundaryLayer,
@@ -23,7 +25,7 @@ from flow360.component.simulation.simulation_params import (
     SimulationParams,
 )
 from flow360.component.simulation.time_stepping.time_stepping import Steady
-from flow360.component.simulation.unit_system import SI_unit_system, u
+from flow360.component.simulation.unit_system import SI_unit_system
 
 fl.UserConfig.set_profile("auto_test_1")
 fl.Env.dev.active()

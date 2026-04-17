@@ -34,7 +34,6 @@ from flow360.component.simulation.operating_condition.operating_condition import
     AerospaceCondition,
 )
 from flow360.component.simulation.simulation_params import SimulationParams
-from flow360.component.simulation.utils import model_attribute_unlock
 
 # log.set_logging_level("DEBUG")
 
@@ -121,24 +120,49 @@ def test_actuator_disk_results(mock_id, mock_response, data_path):
     assert isinstance(results.actuator_disks.as_dict(), dict)
     assert isinstance(results.actuator_disks.as_numpy(), np.ndarray)
 
-    assert float(results.actuator_disks.values["Disk0_Power"][0].v) == 1451191686.9478528
+    assert np.isclose(
+        float(results.actuator_disks.values["Disk0_Power"][0].v),
+        1451191686.9478528,
+        rtol=1e-12,
+        atol=0,
+    )
     assert str(results.actuator_disks.values["Disk0_Power"][0].units) == "kg*m**2/s**3"
 
-    assert float(results.actuator_disks.values["Disk0_Force"][0].v) == 106613080.32014923
+    assert np.isclose(
+        float(results.actuator_disks.values["Disk0_Force"][0].v),
+        106613080.32014923,
+        rtol=1e-12,
+        atol=0,
+    )
     assert str(results.actuator_disks.values["Disk0_Force"][0].units) == "kg*m/s**2"
 
-    assert float(results.actuator_disks.values["Disk0_Moment"][0].v) == 1494767678.3286672
+    assert np.isclose(
+        float(results.actuator_disks.values["Disk0_Moment"][0].v),
+        1494767678.3286672,
+        rtol=1e-12,
+        atol=0,
+    )
     assert str(results.actuator_disks.values["Disk0_Moment"][0].units) == "kg*m**2/s**2"
 
     # should be no change is calling again:
     results.actuator_disks.to_base("SI", params=params)
 
-    assert float(results.actuator_disks.values["Disk0_Power"][0].v) == 1451191686.9478528
+    assert np.isclose(
+        float(results.actuator_disks.values["Disk0_Power"][0].v),
+        1451191686.9478528,
+        rtol=1e-12,
+        atol=0,
+    )
     assert str(results.actuator_disks.values["Disk0_Power"][0].units) == "kg*m**2/s**3"
 
     results.actuator_disks.to_base("Imperial", params=params)
 
-    assert float(results.actuator_disks.values["Disk0_Power"][0].v) == 34437301746.89787
+    assert np.isclose(
+        float(results.actuator_disks.values["Disk0_Power"][0].v),
+        34437301746.89787,
+        rtol=1e-12,
+        atol=0,
+    )
     assert str(results.actuator_disks.values["Disk0_Power"][0].units) == "ft**2*lb/s**3"
 
 
@@ -167,10 +191,20 @@ def test_bet_disk_results(mock_id, mock_response, data_path):
     assert isinstance(results.bet_forces.as_dict(), dict)
     assert isinstance(results.bet_forces.as_numpy(), np.ndarray)
 
-    assert float(results.bet_forces.values["Disk0_Force_x"][0].v) == -198185092.5822863
+    assert np.isclose(
+        float(results.bet_forces.values["Disk0_Force_x"][0].v),
+        -198185092.5822863,
+        rtol=1e-12,
+        atol=0,
+    )
     assert str(results.bet_forces.values["Disk0_Force_x"][0].units) == "kg*m/s**2"
 
-    assert float(results.bet_forces.values["Disk0_Moment_x"][0].v) == 23068914203.12496
+    assert np.isclose(
+        float(results.bet_forces.values["Disk0_Moment_x"][0].v),
+        23068914203.12496,
+        rtol=1e-12,
+        atol=0,
+    )
     assert str(results.bet_forces.values["Disk0_Moment_x"][0].units) == "kg*m**2/s**2"
 
 
@@ -179,8 +213,7 @@ def test_bet_disk_results_with_simulation_interface(mock_id, mock_response, data
 
     with u2.SI_unit_system:
         params = SimulationParams(operating_condition=AerospaceCondition(velocity_magnitude=286))
-        with model_attribute_unlock(params.private_attribute_asset_cache, "project_length_unit"):
-            params.private_attribute_asset_cache.project_length_unit = 1 * u2.m
+        params.private_attribute_asset_cache._force_set_attr("project_length_unit", 1 * u2.m)
 
     results = case.results
     results.bet_forces.load_from_local(os.path.join(data_path, "results", "bet_forces_v2.csv"))
@@ -194,10 +227,20 @@ def test_bet_disk_results_with_simulation_interface(mock_id, mock_response, data
     assert isinstance(results.bet_forces.as_dict(), dict)
     assert isinstance(results.bet_forces.as_numpy(), np.ndarray)
 
-    assert float(results.bet_forces.values["Disk0_Force_x"][0].v) == -198185092.5822863
+    assert np.isclose(
+        float(results.bet_forces.values["Disk0_Force_x"][0].v),
+        -198185092.5822863,
+        rtol=1e-12,
+        atol=0,
+    )
     assert str(results.bet_forces.values["Disk0_Force_x"][0].units) == "kg*m/s**2"
 
-    assert float(results.bet_forces.values["Disk0_Moment_x"][0].v) == 23068914203.12496
+    assert np.isclose(
+        float(results.bet_forces.values["Disk0_Moment_x"][0].v),
+        23068914203.12496,
+        rtol=1e-12,
+        atol=0,
+    )
     assert str(results.bet_forces.values["Disk0_Moment_x"][0].units) == "kg*m**2/s**2"
 
     results.bet_forces_radial_distribution.load_from_local(

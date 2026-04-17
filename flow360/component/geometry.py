@@ -10,6 +10,9 @@ from enum import Enum
 from typing import Any, List, Literal, Optional, Union
 
 import pydantic as pd
+from flow360_schema.framework.physical_dimensions import Length
+from flow360_schema.framework.validation.context import DeserializationContext
+from pydantic import TypeAdapter
 
 from flow360.cloud.flow360_requests import (
     GeometryFileMeta,
@@ -28,8 +31,6 @@ from flow360.component.resource_base import (
 )
 from flow360.component.simulation.folder import Folder
 from flow360.component.simulation.primitives import Edge, GeometryBodyGroup, Surface
-from flow360.component.simulation.unit_system import LengthType
-from flow360.component.simulation.utils import model_attribute_unlock
 from flow360.component.simulation.web.asset_base import AssetBase
 from flow360.component.utils import (
     GeometryFiles,
@@ -38,6 +39,8 @@ from flow360.component.utils import (
 )
 from flow360.exceptions import Flow360FileError, Flow360ValueError
 from flow360.log import log
+
+GeometryWorkflow = Literal["standard", "catalyst"]
 
 
 class GeometryStatus(Enum):
@@ -107,7 +110,7 @@ class GeometryDraft(ResourceDraft):
         length_unit: LengthUnitType = "m",
         tags: List[str] = None,
         folder: Optional[Folder] = None,
-        use_nextflow_pipelines: bool = False,
+        workflow: GeometryWorkflow = "standard",
     ):
         """
         Initialize a GeometryDraft with common attributes.
@@ -139,7 +142,7 @@ class GeometryDraft(ResourceDraft):
         self.length_unit = length_unit
         self.solver_version = solver_version
         self.folder = folder
-        self.use_nextflow_pipelines = use_nextflow_pipelines
+        self.workflow = workflow
 
         # pylint: disable=fixme
         # TODO: create a DependableResourceDraft for GeometryDraft and SurfaceMeshDraft
@@ -168,6 +171,11 @@ class GeometryDraft(ResourceDraft):
             raise Flow360ValueError(
                 f"specified length_unit : {self.length_unit} is invalid. "
                 f"Valid options are: {list(LengthUnitType.__args__)}"
+            )
+        if self.workflow not in ("standard", "catalyst"):
+            raise Flow360ValueError(
+                f"specified workflow : {self.workflow} is invalid. "
+                "Valid options are: ['standard', 'catalyst']"
             )
 
     def _set_default_project_name(self):
@@ -243,7 +251,7 @@ class GeometryDraft(ResourceDraft):
             parent_folder_id=self.folder.id if self.folder else "ROOT.FLOW360",
             length_unit=self.length_unit,
             description=description,
-            use_nextflow=self.use_nextflow_pipelines,
+            use_catalyst=self.workflow == "catalyst",
         )
 
         resp = RestApi(GeometryInterface.endpoint).post(req.dict())
@@ -434,7 +442,7 @@ class Geometry(AssetBase):
     def get_dynamic_default_settings(self, simulation_dict: dict):
         """Get the default geometry settings from the simulation dict"""
 
-        def _get_default_geometry_accuracy(simulation_dict: dict) -> LengthType.Positive:
+        def _get_default_geometry_accuracy(simulation_dict: dict):
             """Get the default geometry accuracy from the simulation json"""
             if simulation_dict.get("meshing") is None:
                 return None
@@ -442,8 +450,7 @@ class Geometry(AssetBase):
                 return None
             if simulation_dict["meshing"]["defaults"].get("geometry_accuracy") is None:
                 return None
-            # pylint: disable=no-member
-            return LengthType.validate(simulation_dict["meshing"]["defaults"]["geometry_accuracy"])
+            return simulation_dict["meshing"]["defaults"]["geometry_accuracy"]
 
         self.default_settings["geometry_accuracy"] = (
             self._entity_info.default_geometry_accuracy
@@ -454,10 +461,12 @@ class Geometry(AssetBase):
         # Cache project length unit for OBB (avoids extra API call in create_draft)
         asset_cache = simulation_dict.get("private_attribute_asset_cache", {})
         length_unit_raw = asset_cache.get("project_length_unit")
-        # pylint: disable=no-member
-        self._project_length_unit = (
-            LengthType.validate(length_unit_raw) if length_unit_raw is not None else None
-        )
+        if length_unit_raw is not None:
+            adapter = TypeAdapter(Length.PositiveFloat64)
+            with DeserializationContext():
+                self._project_length_unit = adapter.validate_python(length_unit_raw)
+        else:
+            self._project_length_unit = None
 
     @classmethod
     # pylint: disable=redefined-builtin
@@ -476,7 +485,7 @@ class Geometry(AssetBase):
         length_unit: LengthUnitType = "m",
         tags: List[str] = None,
         folder: Optional[Folder] = None,
-        use_nextflow_pipelines: bool = False,
+        workflow: GeometryWorkflow = "standard",
     ) -> GeometryDraft:
         return GeometryDraft(
             file_names=file_names,
@@ -485,7 +494,7 @@ class Geometry(AssetBase):
             length_unit=length_unit,
             tags=tags,
             folder=folder,
-            use_nextflow_pipelines=use_nextflow_pipelines,
+            workflow=workflow,
         )
 
     @classmethod
@@ -730,8 +739,7 @@ class Geometry(AssetBase):
                 raise Flow360ValueError(
                     f"Renaming failed: An entity with the new name: {new_name} already exists."
                 )
-            with model_attribute_unlock(entity, "name"):
-                entity.name = new_name
+            entity._force_set_attr("name", new_name)  # pylint:disable=protected-access
 
     def rename_edges(self, current_name_pattern: str, new_name_prefix: str):
         """

@@ -5,6 +5,9 @@ import uuid
 
 import numpy as np
 import pytest
+from flow360_schema.framework.expression import UserVariable
+from flow360_schema.models.functions import math
+from flow360_schema.models.variables import solution
 
 import flow360.component.simulation.units as u
 from flow360.component.geometry import Geometry, GeometryMeta
@@ -117,10 +120,6 @@ from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import RampCFL, Steady
 from flow360.component.simulation.translator.solver_translator import get_solver_json
 from flow360.component.simulation.unit_system import SI_unit_system
-from flow360.component.simulation.user_code.core.types import UserVariable
-from flow360.component.simulation.user_code.functions import math
-from flow360.component.simulation.user_code.variables import solution
-from flow360.component.simulation.utils import model_attribute_unlock
 from tests.simulation.translator.utils.actuator_disk_param_generator import (
     actuator_disk_create_param,
     actuator_disk_with_reference_velocity_param,
@@ -184,7 +183,6 @@ from tests.simulation.translator.utils.XV15HoverMRF_param_generator import (
 
 assertions = unittest.TestCase("__init__")
 
-import flow360.component.simulation.user_code.core.context as context
 from flow360.component.simulation.framework.entity_selector import SurfaceSelector
 from flow360.component.simulation.framework.updater_utils import compare_values
 from flow360.component.simulation.models.volume_models import (
@@ -216,7 +214,7 @@ def get_om6Wing_tutorial_param():
         face_group_tag="default",
         grouped_faces=[[my_wall, my_symmetry_plane, my_freestream]],
     )
-    asset_cache = AssetCache(project_entity_info=entity_info, project_length_unit="m")
+    asset_cache = AssetCache(project_entity_info=entity_info, project_length_unit=1 * u.m)
 
     with SI_unit_system:
         param = SimulationParams(
@@ -1005,8 +1003,7 @@ def test_liquid_simulation_translation():
         param, mesh_unit=1 * u.m, ref_json_file="Flow360_liquid_rotation_dd.json", debug=False
     )
 
-    with model_attribute_unlock(param.operating_condition, "reference_velocity_magnitude"):
-        param.operating_condition.reference_velocity_magnitude = 20 * u.m / u.s
+    param.operating_condition._force_set_attr("reference_velocity_magnitude", 20 * u.m / u.s)
     translate_and_compare(
         param,
         mesh_unit=1 * u.m,
@@ -1203,7 +1200,9 @@ def test_param_with_user_variables():
     assert not errors, print(">>>", errors)
 
     translated = get_solver_json(params_validated, mesh_unit=1 * u.m)
-    units = iso_field_random_units.value.get_output_units(input_params=params_validated)
+    units = iso_field_random_units.value.get_output_units(
+        unit_system_name=params_validated.unit_system.name
+    )
     assert units == u.kg * u.m / u.s
     assert (
         translated["isoSurfaceOutput"]["isoSurfaces"]["iso_field_random_units"][

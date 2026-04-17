@@ -1,7 +1,10 @@
+import copy
 import json
 import re
+from typing import get_args
 
 import pytest
+from flow360_schema.framework.expression import UserVariable
 from unyt import Unit
 
 import flow360.component.simulation.units as u
@@ -10,8 +13,7 @@ from flow360.component.simulation.entity_info import GeometryEntityInfo
 from flow360.component.simulation.exposed_units import supported_units_by_front_end
 from flow360.component.simulation.framework.updater_utils import compare_values
 from flow360.component.simulation.services_report import get_default_report_config
-from flow360.component.simulation.unit_system import _PredefinedUnitSystem
-from flow360.component.simulation.user_code.core.types import UserVariable
+from flow360.component.simulation.unit_system import DimensionedTypes
 from flow360.component.simulation.validation.validation_context import (
     CASE,
     SURFACE_MESH,
@@ -105,8 +107,8 @@ def test_validate_service():
     params_data_from_geo = params_data_from_vm
     params_data_from_geo["meshing"]["defaults"] = {
         "surface_edge_growth_rate": 1.5,
-        "boundary_layer_first_layer_thickness": "1*m",
-        "surface_max_edge_length": "1*m",
+        "boundary_layer_first_layer_thickness": {"value": 1, "units": "m"},
+        "surface_max_edge_length": {"value": 1, "units": "m"},
     }
     params_data_from_geo["version"] = "24.11.0"
 
@@ -251,8 +253,8 @@ def test_validate_multiple_errors():
             "gap_treatment_strength": 0.2,
             "defaults": {
                 "surface_edge_growth_rate": 1.5,
-                "boundary_layer_first_layer_thickness": "1*m",
-                "surface_max_edge_length": "1*s",
+                "boundary_layer_first_layer_thickness": {"value": 1, "units": "m"},
+                "surface_max_edge_length": {"value": 1, "units": "s"},
             },
             "refinements": [],
             "volume_zones": [
@@ -302,7 +304,7 @@ def test_validate_multiple_errors():
         },
         {
             "loc": ("reference_geometry", "area", "value"),
-            "type": "greater_than",
+            "type": "value_error",
             "ctx": {"relevant_for": ["Case"]},
         },
     ]
@@ -396,12 +398,9 @@ def test_validate_error_from_multi_constructor():
                 "private_attribute_input_cache",
                 "thermal_state",
                 "density",
-                "value",
             ),
-            "type": "greater_than",
-            "msg": "Input should be greater than 0",
-            "input": -2,
-            "ctx": {"gt": "0.0"},
+            "type": "value_error",
+            "msg": "Value error, Value must be positive (>0), got -2.0",
         },
     ]
     _compare_validation_errors(errors, expected_errors)
@@ -472,11 +471,9 @@ def test_validate_error_from_multi_constructor():
 
     expected_errors = [
         {
-            "loc": ("models", 0, "private_attribute_input_cache", "chord_ref", "value"),
-            "type": "greater_than",
-            "msg": "Input should be greater than 0",
-            "input": -14,
-            "ctx": {"gt": "0.0"},
+            "loc": ("models", 0, "private_attribute_input_cache", "chord_ref"),
+            "type": "value_error",
+            "msg": "Value error, Value must be positive (>0), got -14.0",
         },
         {
             "type": "missing_argument",
@@ -493,12 +490,9 @@ def test_validate_error_from_multi_constructor():
                 "stored_entities",
                 0,
                 "height",
-                "value",
             ),
-            "type": "greater_than",
-            "msg": "Input should be greater than 0",
-            "input": -15,
-            "ctx": {"gt": "0.0"},
+            "type": "value_error",
+            "msg": "Value error, Value must be positive (>0), got -15.0",
         },
     ]
 
@@ -565,9 +559,7 @@ def test_validate_error_from_multi_constructor():
                 "private_attribute_input_cache",
                 "size",
             ),
-            "msg": "Value error, arg '[ 0.2  0.3 -2. ] m' cannot have negative value",
-            "input": {"units": "m", "value": [0.2, 0.3, -2.0]},
-            "ctx": {"error": "arg '[ 0.2  0.3 -2. ] m' cannot have negative value"},
+            "msg": "Value error, All vector components must be positive (>0), got -2.0",
         }
     ]
     _compare_validation_errors(errors, expected_errors)
@@ -646,9 +638,9 @@ def test_validate_error_from_multi_constructor():
                 "private_attribute_input_cache",
                 "altitude",
             ),
-            "msg": "Value error, arg '100.0 K' does not match (length) dimension.",
-            "input": None,
-            "ctx": {"error": "arg '100.0 K' does not match (length) dimension."},
+            "msg": "Value error, Dimension mismatch: expected length (meter), got (temperature)",
+            "input": {"units": "K", "value": 100.0},
+            "ctx": {"error": "Dimension mismatch: expected length (meter), got (temperature)"},
         }
     ]
     _compare_validation_errors(errors, expected_errors)
@@ -664,8 +656,7 @@ def test_init():
     data = services.get_default_params(
         unit_system_name="SI", length_unit="m", root_item_type="Geometry"
     )
-    assert data["operating_condition"]["alpha"]["value"] == 0
-    assert data["operating_condition"]["alpha"]["units"] == "degree"
+    assert data["operating_condition"]["alpha"] == 0
     assert "velocity_magnitude" not in data["operating_condition"].keys()
     remove_model_and_output_id_in_default_dict(data)
     # to convert tuples to lists:
@@ -688,11 +679,13 @@ def test_init():
         unit_system_name="SI", length_unit="cm", root_item_type="SurfaceMesh"
     )
     assert data["reference_geometry"]["area"]["units"] == "cm**2"
-    assert data["reference_geometry"]["moment_center"]["units"] == "cm"
-    assert data["reference_geometry"]["moment_length"]["units"] == "cm"
-    assert data["private_attribute_asset_cache"]["project_length_unit"]["units"] == "cm"
+    # New schema types serialize moment_center/moment_length as bare SI values
+    assert data["reference_geometry"]["moment_center"] == [0.0, 0.0, 0.0]
+    assert data["reference_geometry"]["moment_length"] == [0.01, 0.01, 0.01]
+    assert data["private_attribute_asset_cache"]["project_length_unit"] == 0.01
 
-    assert data["models"][0]["roughness_height"]["units"] == "cm"
+    # roughness_height now serializes as bare SI float (new dimension types)
+    assert data["models"][0]["roughness_height"] == 0.0
     remove_model_and_output_id_in_default_dict(data)
     # to convert tuples to lists:
     data = json.loads(json.dumps(data))
@@ -808,8 +801,8 @@ def test_front_end_JSON_with_multi_constructor():
     params_data = {
         "meshing": {
             "defaults": {
-                "boundary_layer_first_layer_thickness": "1*m",
-                "surface_max_edge_length": "1*m",
+                "boundary_layer_first_layer_thickness": {"value": 1, "units": "m"},
+                "surface_max_edge_length": {"value": 1, "units": "m"},
             },
             "refinement_factor": 1.45,
             "refinements": [
@@ -875,7 +868,7 @@ def test_front_end_JSON_with_multi_constructor():
         "unit_system": {"name": "SI"},
         "version": "24.2.0",
         "private_attribute_asset_cache": {
-            "project_length_unit": "m",
+            "project_length_unit": 1.0,
             "project_entity_info": {
                 "type_name": "GeometryEntityInfo",
                 "face_ids": ["face_x_1", "face_x_2", "face_x_3"],
@@ -1008,7 +1001,7 @@ def test_generate_process_json():
             }
         ],
         "private_attribute_asset_cache": {
-            "project_length_unit": "m",
+            "project_length_unit": 1.0,
             "project_entity_info": {
                 "type_name": "GeometryEntityInfo",
                 "face_ids": ["face_x_1", "face_x_2", "face_x_3"],
@@ -1033,7 +1026,7 @@ def test_generate_process_json():
         },
     }
 
-    params_data["meshing"]["defaults"]["surface_max_edge_length"] = "1*m"
+    params_data["meshing"]["defaults"]["surface_max_edge_length"] = {"value": 1, "units": "m"}
     res1, res2, res3 = services.generate_process_json(
         simulation_json=json.dumps(params_data), root_item_type="Geometry", up_to="SurfaceMesh"
     )
@@ -1042,7 +1035,10 @@ def test_generate_process_json():
     assert res2 is None
     assert res3 is None
 
-    params_data["meshing"]["defaults"]["boundary_layer_first_layer_thickness"] = "1*m"
+    params_data["meshing"]["defaults"]["boundary_layer_first_layer_thickness"] = {
+        "value": 1,
+        "units": "m",
+    }
     res1, res2, res3 = services.generate_process_json(
         simulation_json=json.dumps(params_data), root_item_type="Geometry", up_to="VolumeMesh"
     )
@@ -1065,7 +1061,7 @@ def test_generate_process_json_skips_case_validation_for_meshing():
     """velocity_magnitude=0 without reference_velocity should not fail when only generating mesh JSON."""
     params_data = {
         "meshing": {
-            "defaults": {"surface_max_edge_length": "1*m"},
+            "defaults": {"surface_max_edge_length": 1.0},
             "volume_zones": [
                 {
                     "method": "auto",
@@ -1111,7 +1107,7 @@ def test_generate_process_json_skips_case_validation_for_meshing():
             }
         ],
         "private_attribute_asset_cache": {
-            "project_length_unit": "m",
+            "project_length_unit": 1.0,
             "project_entity_info": {
                 "type_name": "GeometryEntityInfo",
                 "face_ids": ["face_x_1", "face_x_2", "face_x_3"],
@@ -1422,14 +1418,13 @@ def test_unit_conversion_front_end_compatibility():
                 raise ValueError(f"Unit {unit} is not valid for dimension {dimension}")
 
     ##### 2.  Ensure that all units supported have set their front-end approved units
-    for field_name, field_info in _PredefinedUnitSystem.model_fields.items():
-        if field_name == "name":
-            continue
-        unit_system_dimension_string = str(field_info.annotation.dim)
-        # for unit_name in unit:
+    for dim_type in get_args(DimensionedTypes):
+        inner_type = get_args(dim_type)[0]  # unwrap Annotated
+        unit_system_dimension_string = str(inner_type.dim)
+        dim_name = inner_type.dim_name
         if unit_system_dimension_string not in supported_units_by_front_end.keys():
             raise ValueError(
-                f"Unit {unit_system_dimension_string} (A.K.A {field_name}) is not supported by the front-end.",
+                f"Unit {unit_system_dimension_string} (A.K.A {dim_name}) is not supported by the front-end.",
                 "Please ensure front end team is aware of this new unit and add its support.",
             )
 
@@ -1515,19 +1510,19 @@ def test_merge_geometry_entity_info():
     # Load test data
     with open("data/root_geometry_cube_simulation.json", "r") as f:
         root_cube_simulation_dict = json.load(f)
-        root_cube_entity_info = GeometryEntityInfo.model_validate(
+        root_cube_entity_info = GeometryEntityInfo.deserialize(
             root_cube_simulation_dict["private_attribute_asset_cache"]["project_entity_info"]
         )
     with open("data/dependency_geometry_sphere1_simulation.json", "r") as f:
         dependency_sphere1_simulation_dict = json.load(f)
-        dependency_sphere1_entity_info = GeometryEntityInfo.model_validate(
+        dependency_sphere1_entity_info = GeometryEntityInfo.deserialize(
             dependency_sphere1_simulation_dict["private_attribute_asset_cache"][
                 "project_entity_info"
             ]
         )
     with open("data/dependency_geometry_sphere2_simulation.json", "r") as f:
         dependency_sphere2_simulation_dict = json.load(f)
-        dependency_sphere2_entity_info = GeometryEntityInfo.model_validate(
+        dependency_sphere2_entity_info = GeometryEntityInfo.deserialize(
             dependency_sphere2_simulation_dict["private_attribute_asset_cache"][
                 "project_entity_info"
             ]
@@ -1542,7 +1537,7 @@ def test_merge_geometry_entity_info():
             dependency_sphere1_simulation_dict,
         ],
     )
-    result_entity_info1 = GeometryEntityInfo.model_validate(result_entity_info_dict1)
+    result_entity_info1 = GeometryEntityInfo.deserialize(result_entity_info_dict1)
 
     # Load expected result for test 1
     with open("data/result_merged_geometry_entity_info1.json", "r") as f:
@@ -1599,7 +1594,7 @@ def test_merge_geometry_entity_info():
         result_entity_info_dict2, expected_result2
     ), "Test 2 failed: Merged entity info with replaced dependency does not match expected result"
 
-    result_entity_info2 = GeometryEntityInfo.model_validate(result_entity_info_dict2)
+    result_entity_info2 = GeometryEntityInfo.deserialize(result_entity_info_dict2)
 
     # Verify key properties are preserved using helper function
     check_setting_preserved(
@@ -1752,3 +1747,24 @@ def test_validate_error_location_with_selector():
     )
 
     # Verify key path components are present for tokenized selectors in used_selectors
+
+
+@pytest.mark.parametrize("unit_system_name", ["SI", "Imperial", "CGS"])
+def test_validate_model_preserves_unit_system(unit_system_name):
+    """validate_model must not mutate the unit_system entry in the input dict."""
+    with open("data/simulation.json", "r") as fp:
+        params_data = json.load(fp)
+
+    # Convert to the target unit system so all values carry matching units
+    services.change_unit_system(data=params_data, target_unit_system=unit_system_name)
+    unit_system_before = copy.deepcopy(params_data["unit_system"])
+
+    validated_param, errors, _ = services.validate_model(
+        params_as_dict=params_data,
+        validated_by=services.ValidationCalledBy.LOCAL,
+        root_item_type="VolumeMesh",
+    )
+
+    assert params_data["unit_system"] == unit_system_before
+    if validated_param is not None:
+        assert validated_param.unit_system.name == unit_system_name

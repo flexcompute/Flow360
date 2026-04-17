@@ -4,7 +4,7 @@ from flow360.version import __solver_version__, __version__
 
 
 def test_version():
-    assert __version__ == "25.10.0b1"
+    assert __version__ == "25.11.0b1"
 
 
 def test_solver_version_matches_module_version():

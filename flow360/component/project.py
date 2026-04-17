@@ -11,6 +11,8 @@ from typing import Dict, Iterable, List, Literal, Optional, Union
 
 import pydantic as pd
 import typing_extensions
+from flow360_schema.framework.physical_dimensions import Length
+from flow360_schema.models.asset_cache import CoordinateSystemStatus, MirrorStatus
 from pydantic import PositiveInt
 
 from flow360.cloud.file_cache import get_shared_cloud_file_cache
@@ -27,7 +29,7 @@ from flow360.component.cloud_examples import (
     fetch_examples,
     find_example_by_name,
 )
-from flow360.component.geometry import Geometry
+from flow360.component.geometry import Geometry, GeometryWorkflow
 from flow360.component.interfaces import (
     GeometryInterface,
     ProjectInterface,
@@ -46,10 +48,6 @@ from flow360.component.simulation.draft_context.context import (
     DraftContext,
     get_active_draft,
 )
-from flow360.component.simulation.draft_context.coordinate_system_manager import (
-    CoordinateSystemStatus,
-)
-from flow360.component.simulation.draft_context.mirror import MirrorStatus
 from flow360.component.simulation.draft_context.obb.tessellation_loader import (
     TessellationFileLoader,
 )
@@ -60,7 +58,7 @@ from flow360.component.simulation.entity_info import (
 from flow360.component.simulation.folder import Folder
 from flow360.component.simulation.primitives import ImportedSurface
 from flow360.component.simulation.simulation_params import SimulationParams
-from flow360.component.simulation.unit_system import LengthType
+from flow360.component.simulation.units import validate_length
 from flow360.component.simulation.web.asset_base import AssetBase
 from flow360.component.simulation.web.draft import Draft
 from flow360.component.simulation.web.project_records import (
@@ -660,13 +658,13 @@ class Project(pd.BaseModel):
         return self.metadata.tags
 
     @property
-    def length_unit(self) -> LengthType.Positive:
+    def length_unit(self) -> Length.PositiveFloat64:
         """
         Returns the length unit of the project.
 
         Returns
         -------
-        LengthType.Positive
+        Length.PositiveFloat64
             The length unit.
         """
 
@@ -678,7 +676,7 @@ class Project(pd.BaseModel):
         if cache_key not in defaults or length_key not in defaults[cache_key]:
             raise Flow360ValueError("[Internal] Simulation params do not contain length unit info.")
 
-        return LengthType.validate(defaults[cache_key][length_key])
+        return validate_length(defaults[cache_key][length_key])
 
     @property
     def geometry(self) -> Geometry:
@@ -931,6 +929,7 @@ class Project(pd.BaseModel):
         tags: List[str] = None,
         run_async: bool = False,
         folder: Optional[Folder] = None,
+        workflow: GeometryWorkflow = "standard",
     ):
         """
         Initializes a project from a file.
@@ -969,7 +968,13 @@ class Project(pd.BaseModel):
 
         if isinstance(files, GeometryFiles):
             draft = Geometry.from_file(
-                files.file_names, name, solver_version, length_unit, tags, folder=folder
+                files.file_names,
+                name,
+                solver_version,
+                length_unit,
+                tags,
+                folder=folder,
+                workflow=workflow,
             )
         elif isinstance(files, SurfaceMeshFile):
             draft = SurfaceMeshV2.from_file(
@@ -1150,6 +1155,7 @@ class Project(pd.BaseModel):
         tags: List[str] = None,
         run_async: bool = False,
         folder: Optional[Folder] = None,
+        workflow: GeometryWorkflow = "standard",
     ):
         """
         Initializes a project from local geometry files.
@@ -1170,6 +1176,10 @@ class Project(pd.BaseModel):
             Whether to create project asynchronously (default is False).
         folder : Optional[Folder], optional
             Parent folder for the project. If None, creates in root.
+        workflow : {"standard", "catalyst"}, optional
+            Workflow used for project geometry preparation. Use `"catalyst"`
+            for geometry preparation recommended for GAI and snappy workflows
+            (default is `"standard"`).
 
         Returns
         -------
@@ -1205,6 +1215,7 @@ class Project(pd.BaseModel):
             tags=tags,
             run_async=run_async,
             folder=folder,
+            workflow=workflow,
         )
 
     @classmethod
