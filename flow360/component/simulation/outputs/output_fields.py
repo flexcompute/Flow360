@@ -1,607 +1,91 @@
-"""
-Output field definitions
+"""Output fields — re-import relay."""
 
-This module defines the available output field names for Flow360 simulations,
-including both standard non-dimensional fields and dimensioned fields in physical units.
+# pylint: disable=unused-import
 
-It also provides support for dimensioned output fields, which automatically generate
-UserDefinedField entries to output values in physical units rather than Flow360's
-internal non-dimensional units.
-
-Dimensioned field format:
-    {base_field}_{component?}_{unit}
-
-Where:
-    - base_field: The base field name (velocity, pressure, temperature, etc.)
-    - component: Optional component for vector fields (x, y, z, magnitude)
-    - unit: The physical unit (m_per_s, pa, etc.)
-
-Examples:
-    - velocity_magnitude_m_per_s: Velocity magnitude in meters per second
-    - velocity_x_m_per_s: X-component of velocity in meters per second
-    - pressure_pa: Pressure in pascals
-"""
-
-from typing import List, Literal, get_args, get_origin
-
-from flow360.component.simulation.conversion import (
-    compute_udf_dimensionalization_factor,
-)
-from flow360.component.simulation.operating_condition.operating_condition import (
-    LiquidOperatingCondition,
-)
-from flow360.component.simulation.unit_system import u
-
-# pylint:disable=invalid-name
-_CD = "CD"
-_CL = "CL"
-_CFx = "CFx"
-_CFy = "CFy"
-_CFz = "CFz"
-_CMx = "CMx"
-_CMy = "CMy"
-_CMz = "CMz"
-_CD_PRESSURE = "CDPressure"
-_CL_PRESSURE = "CLPressure"
-_CFx_PRESSURE = "CFxPressure"
-_CFy_PRESSURE = "CFyPressure"
-_CFz_PRESSURE = "CFzPressure"
-_CMx_PRESSURE = "CMxPressure"
-_CMy_PRESSURE = "CMyPressure"
-_CMz_PRESSURE = "CMzPressure"
-_CD_SKIN_FRICTION = "CDSkinFriction"
-_CL_SKIN_FRICTION = "CLSkinFriction"
-_CFx_SKIN_FRICTION = "CFxSkinFriction"
-_CFy_SKIN_FRICTION = "CFySkinFriction"
-_CFz_SKIN_FRICTION = "CFzSkinFriction"
-_CMx_SKIN_FRICTION = "CMxSkinFriction"
-_CMy_SKIN_FRICTION = "CMySkinFriction"
-_CMz_SKIN_FRICTION = "CMzSkinFriction"
-_CL_VISCOUS = "CLViscous"
-_CD_VISCOUS = "CDViscous"
-_CFx_VISCOUS = "CFxViscous"
-_CFy_VISCOUS = "CFyViscous"
-_CFz_VISCOUS = "CFzViscous"
-_CMx_VISCOUS = "CMxViscous"
-_CMy_VISCOUS = "CMyViscous"
-_CMz_VISCOUS = "CMzViscous"
-_HEAT_TRANSFER = "HeatTransfer"
-_HEAT_FLUX = "HeatFlux"
-_X = "X"
-_Y = "Y"
-_NORMAL_DIRECTION = "normal_direction"
-_CUMULATIVE_CD_CURVE = "Cumulative_CD_Curve"
-_CD_PER_STRIP = "CD_per_strip"
-_CFx_PER_SPAN = "CFx_per_span"
-_CFy_PER_SPAN = "CFy_per_span"
-_CFz_PER_SPAN = "CFz_per_span"
-_CMx_PER_SPAN = "CMx_per_span"
-_CMy_PER_SPAN = "CMy_per_span"
-_CMz_PER_SPAN = "CMz_per_span"
-_CFx_CUMULATIVE = "CFx_cumulative"
-_CFy_CUMULATIVE = "CFy_cumulative"
-_CFz_CUMULATIVE = "CFz_cumulative"
-_CMx_CUMULATIVE = "CMx_cumulative"
-_CMy_CUMULATIVE = "CMy_cumulative"
-_CMz_CUMULATIVE = "CMz_cumulative"
-# pylint:enable=invalid-name
-
-# Coefficient of pressure
-# Coefficient of total pressure
-# Gradient of primitive solution
-# k and omega
-# Mach number
-# Turbulent viscosity
-# Turbulent viscosity and freestream dynamic viscosity ratio
-# Spalart-Almaras variable
-# rho, u, v, w, p (density, 3 velocities and pressure)
-# Q criterion
-# N-S residual
-# Transition residual
-# Turbulence residual
-# Entropy
-# N-S solution
-# Transition solution
-# Turbulence solution
-# Temperature
-# Velocity (non-dimensional)
-# Velocity X component (non-dimensional)
-# Velocity Y component (non-dimensional)
-# Velocity Z component (non-dimensional)
-# Velocity Magnitude (non-dimensional)
-# Pressure (non-dimensional)
-# Vorticity
-# Vorticity Magnitude
-# Wall distance
-# NumericalDissipationFactor sensor
-# Heat equation residual
-# Velocity with respect to non-inertial frame
-# Low-Mach preconditioner factor
-# Velocity (dimensioned, m/s)
-# Velocity X component (dimensioned, m/s)
-# Velocity Y component (dimensioned, m/s)
-# Velocity Z component (dimensioned, m/s)
-# Velocity Magnitude (dimensioned, m/s)
-# Pressure (dimensioned, Pa)
-CommonFieldNames = Literal[
-    "Cp",
-    "Cpt",
-    "gradW",
-    "kOmega",
-    "Mach",
-    "mut",
-    "mutRatio",
-    "nuHat",
-    "primitiveVars",
-    "qcriterion",
-    "residualNavierStokes",
-    "residualTransition",
-    "residualTurbulence",
-    "s",
-    "solutionNavierStokes",
-    "solutionTransition",
-    "solutionTurbulence",
-    "T",
-    "velocity",
-    "velocity_x",
-    "velocity_y",
-    "velocity_z",
-    "velocity_magnitude",
-    "pressure",
-    "vorticity",
-    "vorticityMagnitude",
-    "vorticity_x",
-    "vorticity_y",
-    "vorticity_z",
-    "wallDistance",
-    "numericalDissipationFactor",
-    "residualHeatSolver",
-    "VelocityRelative",
-    "lowMachPreconditionerSensor",
-    # Include dimensioned fields here too
-    "velocity_m_per_s",
-    "velocity_x_m_per_s",
-    "velocity_y_m_per_s",
-    "velocity_z_m_per_s",
-    "velocity_magnitude_m_per_s",
-    "pressure_pa",
-]
-
-# Skin friction coefficient vector
-# Magnitude of CfVec
-# Non-dimensional heat flux
-# Wall normals
-# Spalart-Allmaras variable
-# Non-dimensional wall distance
-# Wall function metrics
-# Surface heat transfer coefficient (static temperature as reference)
-# Surface heat transfer coefficient (total temperature as reference)
-# Wall shear stress magnitude (non-dimensional)
-# Wall shear stress magnitude (dimensioned, Pa)
-SurfaceFieldNames = Literal[
-    CommonFieldNames,
-    "CfVec",
-    "Cf",
-    "heatFlux",
-    "nodeNormals",
-    "nodeForcesPerUnitArea",
-    "yPlus",
-    "wallFunctionMetric",
-    "heatTransferCoefficientStaticTemperature",
-    "heatTransferCoefficientTotalTemperature",
-    "wall_shear_stress_magnitude",
-    "wall_shear_stress_magnitude_pa",
-]
-
-# BET Metrics
-# BET Metrics per Disk
-# Linear residual of Navier-Stokes solver
-# Linear residual of turbulence solver
-# Linear residual of transition solver
-# Hybrid RANS-LES output for Spalart-Allmaras solver
-# Hybrid RANS-LES output for kOmegaSST solver
-# Local CFL number
-VolumeFieldNames = Literal[
-    CommonFieldNames,
-    "betMetrics",
-    "betMetricsPerDisk",
-    "linearResidualNavierStokes",
-    "linearResidualTurbulence",
-    "linearResidualTransition",
-    "SpalartAllmaras_hybridModel",
-    "kOmegaSST_hybridModel",
-    "localCFL",
-]
-
-SliceFieldNames = VolumeFieldNames
-
-# BET Metrics
-# BET Metrics per Disk
-VolumeProbeFieldNames = Literal[
-    CommonFieldNames,
-    "betMetrics",
-    "betMetricsPerDisk",
-]
-
-# Pressure
-# Density
-# Mach number
-# Q criterion
-# Entropy
-# Temperature
-# Coefficient of pressure
-# Total pressure coefficient
-# Turbulent viscosity
-# Spalart-Almaras variable
-# Vorticity magnitude
-IsoSurfaceFieldNames = Literal[
-    "Mach",
-    "qcriterion",
-    "s",
-    "T",
-    "Cp",
-    "Cpt",
-    "mut",
-    "nuHat",
-    "vorticityMagnitude",
-    "vorticity_x",
-    "vorticity_y",
-    "vorticity_z",
-    "velocity_magnitude",
-    "velocity_x",
-    "velocity_y",
-    "velocity_z",
-]
-
-AllFieldNames = Literal[CommonFieldNames, SurfaceFieldNames, VolumeFieldNames, IsoSurfaceFieldNames]
-
-InvalidOutputFieldsForLiquid = Literal[
-    "residualNavierStokes",
-    "residualTransition",
-    "residualTurbulence",
-    "solutionNavierStokes",
-    "T",
-    "Mach",
-    "linearResidualNavierStokes",
-    "linearResidualTurbulence",
-    "linearResidualTransition",
-    "SpalartAllmaras_DDES",
-    "kOmegaSST_DDES",
-    "heatFlux",
-    "heatTransferCoefficientStaticTemperature",
-    "heatTransferCoefficientTotalTemperature",
-]
-
-ForceOutputCoefficientNames = Literal[
-    _CL,
+from flow360_schema.models.simulation.outputs.output_fields import (
     _CD,
+    _CD_PER_STRIP,
+    _CL,
+    _CUMULATIVE_CD_CURVE,
+    _HEAT_FLUX,
+    _NORMAL_DIRECTION,
+    _X,
+    _Y,
+    PREDEFINED_UDF_EXPRESSIONS,
+    AllFieldNames,
+    CommonFieldNames,
+    ForceOutputCoefficientNames,
+    InvalidOutputFieldsForLiquid,
+    IsoSurfaceFieldNames,
+    SliceFieldNames,
+    SurfaceFieldNames,
+    VolumeFieldNames,
+    VolumeProbeFieldNames,
     _CFx,
+    _CFx_CUMULATIVE,
+    _CFx_PER_SPAN,
     _CFy,
+    _CFy_CUMULATIVE,
+    _CFy_PER_SPAN,
     _CFz,
+    _CFz_CUMULATIVE,
+    _CFz_PER_SPAN,
     _CMx,
+    _CMx_CUMULATIVE,
+    _CMx_PER_SPAN,
     _CMy,
+    _CMy_CUMULATIVE,
+    _CMy_PER_SPAN,
     _CMz,
-    _CL_PRESSURE,
-    _CD_PRESSURE,
-    _CFx_PRESSURE,
-    _CFy_PRESSURE,
-    _CFz_PRESSURE,
-    _CMx_PRESSURE,
-    _CMy_PRESSURE,
-    _CMz_PRESSURE,
-    _CL_SKIN_FRICTION,
-    _CD_SKIN_FRICTION,
-    _CFx_SKIN_FRICTION,
-    _CFy_SKIN_FRICTION,
-    _CFz_SKIN_FRICTION,
-    _CMx_SKIN_FRICTION,
-    _CMy_SKIN_FRICTION,
-    _CMz_SKIN_FRICTION,
+    _CMz_CUMULATIVE,
+    _CMz_PER_SPAN,
+    append_component_to_output_fields,
+    generate_predefined_udf,
+    get_field_values,
+    get_unit_for_field,
+    remove_fields_subsumed_by_primitive_vars,
+)
+
+__all__ = [
+    "AllFieldNames",
+    "CommonFieldNames",
+    "ForceOutputCoefficientNames",
+    "InvalidOutputFieldsForLiquid",
+    "IsoSurfaceFieldNames",
+    "PREDEFINED_UDF_EXPRESSIONS",
+    "SliceFieldNames",
+    "SurfaceFieldNames",
+    "VolumeFieldNames",
+    "VolumeProbeFieldNames",
+    "_CD",
+    "_CD_PER_STRIP",
+    "_CFx",
+    "_CFx_CUMULATIVE",
+    "_CFx_PER_SPAN",
+    "_CFy",
+    "_CFy_CUMULATIVE",
+    "_CFy_PER_SPAN",
+    "_CFz",
+    "_CFz_CUMULATIVE",
+    "_CFz_PER_SPAN",
+    "_CL",
+    "_CMx",
+    "_CMx_CUMULATIVE",
+    "_CMx_PER_SPAN",
+    "_CMy",
+    "_CMy_CUMULATIVE",
+    "_CMy_PER_SPAN",
+    "_CMz",
+    "_CMz_CUMULATIVE",
+    "_CMz_PER_SPAN",
+    "_CUMULATIVE_CD_CURVE",
+    "_HEAT_FLUX",
+    "_NORMAL_DIRECTION",
+    "_X",
+    "_Y",
+    "append_component_to_output_fields",
+    "generate_predefined_udf",
+    "get_field_values",
+    "get_unit_for_field",
+    "remove_fields_subsumed_by_primitive_vars",
 ]
-# pylint: disable=no-member
-_FIELD_UNIT_MAPPING = {
-    # Standard non-dimensioned fields - (unit, unit_system)
-    "*": (None, "flow360"),
-    # Dimensioned fields - (unit quantity, unit_system)
-    "velocity_m_per_s": (u.m / u.s, "SI"),
-    "velocity_magnitude_m_per_s": (u.m / u.s, "SI"),
-    "velocity_x_m_per_s": (u.m / u.s, "SI"),
-    "velocity_y_m_per_s": (u.m / u.s, "SI"),
-    "velocity_z_m_per_s": (u.m / u.s, "SI"),
-    "pressure_pa": (u.Pa, "SI"),
-    "wall_shear_stress_magnitude_pa": (u.Pa, "SI"),
-}
-
-_FIELD_IS_SCALAR_MAPPING = {
-    "Cp": True,
-    "Cpt": True,
-    "gradW": False,
-    "kOmega": False,
-    "Mach": True,
-    "mut": True,
-    "mutRatio": True,
-    "nuHat": True,
-    "primitiveVars": False,
-    "qcriterion": True,
-    "residualNavierStokes": False,
-    "residualTransition": False,
-    "residualTurbulence": False,
-    "s": True,
-    "solutionNavierStokes": False,
-    "solutionTransition": False,
-    "solutionTurbulence": False,
-    "T": True,
-    "velocity": False,
-    "velocity_x": True,
-    "velocity_y": True,
-    "velocity_z": True,
-    "velocity_magnitude": True,
-    "pressure": True,
-    "vorticity": False,
-    "vorticityMagnitude": True,
-    "vorticity_x": True,
-    "vorticity_y": True,
-    "vorticity_z": True,
-    "wallDistance": True,
-    "numericalDissipationFactor": True,
-    "residualHeatSolver": False,
-    "VelocityRelative": False,
-    "lowMachPreconditionerSensor": True,
-    # Include dimensioned fields here too
-    "velocity_m_per_s": False,
-    "velocity_x_m_per_s": True,
-    "velocity_y_m_per_s": True,
-    "velocity_z_m_per_s": True,
-    "velocity_magnitude_m_per_s": True,
-    "pressure_pa": True,
-    # Surface fields
-    "CfVec": False,
-    "Cf": True,
-    "heatFlux": True,
-    "nodeNormals": False,
-    "nodeForcesPerUnitArea": False,
-    "yPlus": True,
-    "wallFunctionMetric": False,
-    "heatTransferCoefficientStaticTemperature": True,
-    "heatTransferCoefficientTotalTemperature": True,
-    "wall_shear_stress_magnitude": True,
-    "wall_shear_stress_magnitude_pa": True,
-    # Volume fields
-    "betMetrics": False,
-    "betMetricsPerDisk": False,
-    "linearResidualNavierStokes": False,
-    "linearResidualTurbulence": False,
-    "linearResidualTransition": False,
-    "SpalartAllmaras_hybridModel": False,
-    "kOmegaSST_hybridModel": False,
-    "localCFL": True,
-}
-
-
-def get_unit_for_field(field_name: str):
-    """
-    Get the physical unit for a given field name.
-
-    Parameters:
-    -----------
-    field_name : str
-        The field name to get the unit for
-
-    Returns:
-    --------
-    Tuple[Optional[Union[str, unyt.Unit]], str]
-        A tuple containing (unit, unit_system) where:
-        - unit: None for non-dimensioned fields, unyt.Unit for dimensioned fields
-        - unit_system: "flow360" for non-dimensioned fields, "SI" for dimensioned fields
-    """
-    if field_name in _FIELD_UNIT_MAPPING:
-        return _FIELD_UNIT_MAPPING[field_name]
-
-    return _FIELD_UNIT_MAPPING["*"]
-
-
-FIELD_TYPE_3DVECTOR = "3dvector"
-FIELD_TYPE_SCALAR = "scalar"
-
-_FIELD_TYPE_INFO = {
-    "velocity_": {
-        "type": FIELD_TYPE_3DVECTOR,
-    },
-    "velocity_magnitude": {
-        "type": FIELD_TYPE_SCALAR,
-    },
-    "velocity_x": {
-        "type": FIELD_TYPE_SCALAR,
-    },
-    "velocity_y": {
-        "type": FIELD_TYPE_SCALAR,
-    },
-    "velocity_z": {
-        "type": FIELD_TYPE_SCALAR,
-    },
-    "pressure": {
-        "type": FIELD_TYPE_SCALAR,
-    },
-    "vorticity_x": {
-        "type": FIELD_TYPE_SCALAR,
-    },
-    "vorticity_y": {
-        "type": FIELD_TYPE_SCALAR,
-    },
-    "vorticity_z": {
-        "type": FIELD_TYPE_SCALAR,
-    },
-}
-
-# Predefined UDF expressions
-PREDEFINED_UDF_EXPRESSIONS = {
-    "velocity_": "velocity_[0] = primitiveVars[1] * velocityScale;"
-    + "velocity_[1] = primitiveVars[2] * velocityScale;"
-    + "velocity_[2] = primitiveVars[3] * velocityScale;",
-    "velocity_magnitude": "double velocity[3];"
-    + "velocity[0] = primitiveVars[1];"
-    + "velocity[1] = primitiveVars[2];"
-    + "velocity[2] = primitiveVars[3];"
-    + "velocity_magnitude = magnitude(velocity) * velocityScale;",
-    "velocity_x": "velocity_x = primitiveVars[1] * velocityScale;",
-    "velocity_y": "velocity_y = primitiveVars[2] * velocityScale;",
-    "velocity_z": "velocity_z = primitiveVars[3] * velocityScale;",
-    "pressure_": "double gamma = 1.4;pressure_ = (usingLiquidAsMaterial) ? "
-    + "(primitiveVars[4] - 1.0 / gamma) * (velocityScale * velocityScale) : primitiveVars[4];",
-    "wall_shear_stress_magnitude": "wall_shear_stress_magnitude = "
-    + "magnitude(wallShearStress) * (velocityScale * velocityScale);",
-    "vorticity_x": "vorticity_x = (gradPrimitive[3][1] - gradPrimitive[2][2]) * velocityScale;",
-    "vorticity_y": "vorticity_y = (gradPrimitive[1][2] - gradPrimitive[3][0]) * velocityScale;",
-    "vorticity_z": "vorticity_z = (gradPrimitive[2][0] - gradPrimitive[1][1]) * velocityScale;",
-}
-
-
-def _apply_vector_conversion(
-    *, base_udf_expression: str, base_field: str, field_name: str, conversion_factor: float
-):
-    """Apply conversion for vector fields"""
-    factor = 1.0 / conversion_factor
-    return (
-        f"double {base_field}[3];"
-        f"{base_udf_expression}"
-        f"{field_name}[0] = {base_field}[0] * {factor};"
-        f"{field_name}[1] = {base_field}[1] * {factor};"
-        f"{field_name}[2] = {base_field}[2] * {factor};"
-    )
-
-
-def _apply_scalar_conversion(
-    *, base_udf_expression: str, base_field: str, field_name: str, conversion_factor: float
-):
-    """Apply conversion for scalar fields"""
-    factor = 1.0 / conversion_factor
-    return (
-        f"double {base_field};" f"{base_udf_expression}" f"{field_name} = {base_field} * {factor};"
-    )
-
-
-def generate_predefined_udf(field_name, params):
-    """
-    Generate UserDefinedField expression for a dimensioned field.
-
-    Parameters:
-    -----------
-    field_name : str
-        Field name (e.g., 'velocity', 'velocity_m_per_s', 'pressure_pa', 'wall_shear_stress_magnitude_pa')
-    params : SimulationParams
-        The simulation parameters object for unit conversion
-
-    Returns:
-    --------
-    str or None
-        The expression for the UserDefinedField, or None if no matching base expression is found.
-    """
-    valid_field_names = get_field_values(AllFieldNames)
-    if field_name not in valid_field_names:
-        return None
-
-    matching_keys = [key for key in PREDEFINED_UDF_EXPRESSIONS if field_name.startswith(key)]
-    if not matching_keys:
-        return None
-
-    # Longer keys take precedence (e.g., "velocity_x" over "velocity")
-    base_field = max(matching_keys, key=len)
-    base_expr = PREDEFINED_UDF_EXPRESSIONS[base_field]
-
-    unit, _ = get_unit_for_field(field_name)
-
-    if unit is None:
-        return base_expr
-
-    coefficient, _ = compute_udf_dimensionalization_factor(
-        params=params,
-        requested_unit=unit,
-        using_liquid_op=isinstance(params.operating_condition, LiquidOperatingCondition),
-    )
-    conversion_factor = 1.0 / coefficient
-
-    field_info = _FIELD_TYPE_INFO.get(base_field, {"type": FIELD_TYPE_SCALAR})
-    field_type = field_info["type"]
-
-    if field_type == FIELD_TYPE_3DVECTOR:
-        return _apply_vector_conversion(
-            base_udf_expression=base_expr,
-            base_field=base_field,
-            field_name=field_name,
-            conversion_factor=conversion_factor,
-        )
-    return _apply_scalar_conversion(
-        base_udf_expression=base_expr,
-        base_field=base_field,
-        field_name=field_name,
-        conversion_factor=conversion_factor,
-    )
-
-
-def _get_field_values(field_type, names):
-    for arg in get_args(field_type):
-        if get_origin(arg) is Literal:
-            _get_field_values(arg, names)
-        elif isinstance(arg, str):
-            names += [arg]
-
-
-def get_field_values(field_type) -> List[str]:
-    """Retrieve field names from a nested literal type as list of strings"""
-    values = []
-    _get_field_values(field_type, values)
-    return values
-
-
-def append_component_to_output_fields(output_fields: List[str]) -> List[str]:
-    """
-    If "velocity" or "vorticity" is in the list, append their respective magnitude in output
-
-    Parameters:
-    -----------
-    output_fields : List[str]
-        The list of output fields to modify.
-
-    Returns:
-    --------
-    List[str]
-        The modified list of output fields with the component appended.
-    """
-    output_fields_with_component = []
-    for field in output_fields:
-        output_fields_with_component.append(field)
-        if field == "velocity" and "velocity_magnitude" not in output_fields:
-            output_fields_with_component.append("velocity_magnitude")
-        if field == "vorticity" and "vorticityMagnitude" not in output_fields:
-            output_fields_with_component.append("vorticityMagnitude")
-    return output_fields_with_component
-
-
-# In the C++ solver, "primitiveVars" expands to DataArrays named "rho", "velocity", and "p".
-# "pressure" and "velocity" individually produce DataArrays with the same names ("p" and
-# "velocity"). Having both creates duplicate DataArray names in VTK output, which causes
-# ParaView to fail when loading a subset of fields.
-_FIELDS_SUBSUMED_BY_PRIMITIVE_VARS = {"pressure", "velocity"}
-
-
-def remove_fields_subsumed_by_primitive_vars(output_fields: List[str]) -> List[str]:
-    """
-    Remove output fields that are already included as sub-fields of ``primitiveVars``.
-
-    Must be called after :func:`append_component_to_output_fields` so that auto-appended
-    fields like ``velocity_magnitude`` are already in the list before ``velocity`` is removed.
-
-    Parameters:
-    -----------
-    output_fields : List[str]
-        The list of output fields to deduplicate.
-
-    Returns:
-    --------
-    List[str]
-        The deduplicated list with ``pressure`` and ``velocity`` removed when
-        ``primitiveVars`` is present.
-    """
-    if "primitiveVars" not in output_fields:
-        return output_fields
-    return [f for f in output_fields if f not in _FIELDS_SUBSUMED_BY_PRIMITIVE_VARS]

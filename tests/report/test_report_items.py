@@ -569,7 +569,8 @@ def test_dimensioned_limits(cases):
     assert chart.limits == (0 * u.m / u.s, 100 * u.m / u.s)
 
     converted_limits = chart._get_limits(case)
-    assert converted_limits == (0, 0.2938635365101296)
+    assert converted_limits[0] == 0
+    assert np.isclose(converted_limits[1], 0.2938635365101296, rtol=1e-12, atol=0)
 
     chart = Chart3D(
         field="velocity_m_per_s",
@@ -1759,15 +1760,17 @@ class TestWithMultipleCases:
                 "total_forces/averages/CD",
             )
 
+        # beta values are stored in SI (radians): 0, 2, 4, 6 degrees
+        b0, b2, b4, b6 = np.radians([0, 2, 4, 6])
         expected_x_data = [
-            [0, 0, 2, 2, 4, 4, 6, 6],
-            [0, 2, 4, 6],
-            [0, 0, 2, 2, 4, 4, 6, 6],
-            [0, 2, 4, 6],
-            [0, 0, 2, 2, 4, 4, 6, 6],
-            [0, 2, 4, 6],
-            [0, 0, 2, 2, 4, 4, 6, 6],
-            [0, 2, 4, 6],
+            [b0, b0, b2, b2, b4, b4, b6, b6],
+            [b0, b2, b4, b6],
+            [b0, b0, b2, b2, b4, b4, b6, b6],
+            [b0, b2, b4, b6],
+            [b0, b0, b2, b2, b4, b4, b6, b6],
+            [b0, b2, b4, b6],
+            [b0, b0, b2, b2, b4, b4, b6, b6],
+            [b0, b2, b4, b6],
         ]
 
         for actual, expected in zip(x_data, expected_x_data):
@@ -1807,15 +1810,17 @@ class TestWithMultipleCases:
 
         plot_model = chart.get_data(cases_beta_sweep, context)
 
+        # beta values are stored in SI (radians): 0, 2, 4, 6 degrees
+        b0, b2, b4, b6 = np.radians([0, 2, 4, 6])
         expected_x_data = [
-            [0, 0, 2, 2, 4, 4, 6, 6],
-            [0, 2, 4, 6],
-            [0, 0, 2, 2, 4, 4, 6, 6],
-            [0, 2, 4, 6],
-            [0, 0, 2, 2, 4, 4, 6, 6],
-            [0, 2, 4, 6],
-            [0, 0, 2, 2, 4, 4, 6, 6],
-            [0, 2, 4, 6],
+            [b0, b0, b2, b2, b4, b4, b6, b6],
+            [b0, b2, b4, b6],
+            [b0, b0, b2, b2, b4, b4, b6, b6],
+            [b0, b2, b4, b6],
+            [b0, b0, b2, b2, b4, b4, b6, b6],
+            [b0, b2, b4, b6],
+            [b0, b0, b2, b2, b4, b4, b6, b6],
+            [b0, b2, b4, b6],
         ]
 
         for actual, expected in zip(plot_model.x_data, expected_x_data):

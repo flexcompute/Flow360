@@ -1,28 +1,15 @@
 """Custom Flow360 exceptions"""
 
+# pylint: disable=unused-import
 from typing import Any, List
 
-from flow360.version import __version__
+from flow360_schema.exceptions import (
+    Flow360DeprecationError,
+    Flow360Error,
+    Flow360ValueError,
+)
 
 from .log import log
-
-
-class Flow360Error(Exception):
-    """Any error in flow360"""
-
-    def __init__(self, message: str = None):
-        """Log just the error message and then raise the Exception."""
-        super().__init__(message)
-        log.error(message + " [Flow360 client version: " + __version__ + "]")
-
-
-class Flow360DeprecationError(Flow360Error):
-    """Error when a deprecated feature is used."""
-
-
-# pylint: disable=redefined-builtin
-class Flow360ValueError(Flow360Error):
-    """Error with value."""
 
 
 class Flow360TypeError(Flow360Error):

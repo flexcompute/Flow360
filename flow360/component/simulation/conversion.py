@@ -6,17 +6,81 @@ This module provides functions for handling unit conversion into flow360 solver 
 
 import operator
 from functools import reduce
-from typing import List
 
-from flow360.component.simulation.unit_system import (
-    flow360_conversion_unit_system,
-    is_flow360_unit,
-    u,
-)
+import unyt as u
 
 from ...exceptions import Flow360ConfigurationError
 
 LIQUID_IMAGINARY_FREESTREAM_MACH = 0.05
+
+
+class RestrictedUnitSystem(u.UnitSystem):
+    """UnitSystem that blocks conversions for unsupported base dimensions.
+
+    Automatically derives supported dimensions from which unit arguments are
+    provided. Missing base units get placeholder values internally but are
+    masked so that conversion attempts raise ValueError.
+
+    Examples::
+
+        # Meshing mode: only length defined, velocity/mass/temperature blocked
+        RestrictedUnitSystem("nondim", length_unit=0.5 * u.m)
+
+        # Full mode: all units provided, no restrictions
+        RestrictedUnitSystem("nondim", length_unit=..., mass_unit=...,
+                             time_unit=..., temperature_unit=...)
+    """
+
+    def __init__(  # pylint: disable=too-many-arguments
+        self,
+        name,
+        length_unit,
+        mass_unit=None,
+        time_unit=None,
+        temperature_unit=None,
+        **kwargs,
+    ):
+        supported = {u.dimensions.length, u.dimensions.angle}
+        if mass_unit is not None:
+            supported.add(u.dimensions.mass)
+        if time_unit is not None:
+            supported.add(u.dimensions.time)
+        if temperature_unit is not None:
+            supported.add(u.dimensions.temperature)
+
+        super().__init__(
+            name,
+            length_unit=length_unit,
+            mass_unit=mass_unit or 1 * u.kg,
+            time_unit=time_unit or 1 * u.s,
+            temperature_unit=temperature_unit or 1 * u.K,
+            **kwargs,
+        )
+
+        # All 5 dims provided (length, angle + mass, time, temperature) — no restrictions
+        if len(supported) == 5:
+            self._supported_dims = None
+            return
+
+        # Mask unsupported base dimensions in units_map so that
+        # get_base_equivalent's fast path doesn't bypass our check
+        self._supported_dims = supported
+        for dim in list(self.units_map.keys()):
+            if not dim.free_symbols <= supported:
+                self.units_map[dim] = None
+
+    def __getitem__(self, key):
+        if isinstance(key, str):
+            key = getattr(u.dimensions, key)
+        if self._supported_dims is not None:
+            unsupported = key.free_symbols - self._supported_dims
+            if unsupported:
+                names = ", ".join(str(s) for s in unsupported)
+                raise ValueError(
+                    f"Cannot non-dimensionalize {key}: "
+                    f"base units for {names} are not defined in this context."
+                )
+        return super().__getitem__(key)
 
 
 def get_from_dict_by_key_list(key_list, data_dict):
@@ -51,12 +115,10 @@ def need_conversion(value):
     Returns
     -------
     bool
-        True if conversion is needed, False otherwise.
+        True if conversion is needed (i.e. value carries physical units), False otherwise.
     """
 
-    if hasattr(value, "units"):
-        return not is_flow360_unit(value)
-    return False
+    return hasattr(value, "units")
 
 
 def require(required_parameter, required_by, params):
@@ -93,278 +155,6 @@ def require(required_parameter, required_by, params):
             field=required_by,
             dependency=required_parameter,
         ) from err
-
-    if hasattr(value, "units") and str(value.units).startswith("flow360"):
-        raise Flow360ConfigurationError(
-            f'{" -> ".join(required_parameter + ["units"])} must be in physical units ({required_msg}).',
-            field=required_by,
-            dependency=required_parameter + ["units"],
-        )
-
-
-# pylint: disable=too-many-locals, too-many-return-statements, too-many-statements, too-many-branches
-def unit_converter(dimension, params, required_by: List[str] = None) -> u.UnitSystem:
-    """
-
-    Returns a flow360 conversion unit system for a given dimension.
-
-    Parameters
-    ----------
-    dimension : str
-        The dimension for which the conversion unit system is needed. e.g., length
-    length_unit : unyt_attribute
-        Externally provided mesh unit or geometry unit.
-    params : SimulationParams or dict
-        The parameters needed for unit conversion.
-    required_by : List[str], optional
-        List of keys specifying the path to the parameter that requires this unit conversion, by default [].
-
-    Returns
-    -------
-    flow360_conversion_unit_system
-        The conversion unit system for the specified dimension. This unit system allows for
-        .in_base(unit_system="flow360_v2") conversion.
-
-    Raises
-    ------
-    ValueError
-        The dimension is not recognized.
-    """
-
-    if required_by is None:
-        required_by = []
-
-    def get_base_length():
-        require(["private_attribute_asset_cache", "project_length_unit"], required_by, params)
-        base_length = params.base_length.v.item()
-        return base_length
-
-    def get_base_temperature():
-        if params.operating_condition.type_name != "LiquidOperatingCondition":
-            # Temperature in Liquid condition has no effect because the thermal features will be disabled.
-            # Also the viscosity will be constant.
-            # pylint:disable = no-member
-            require(["operating_condition", "thermal_state", "temperature"], required_by, params)
-        base_temperature = params.base_temperature.v.item()
-        return base_temperature
-
-    def get_base_velocity():
-        if params.operating_condition.type_name != "LiquidOperatingCondition":
-            require(["operating_condition", "thermal_state", "temperature"], required_by, params)
-        base_velocity = params.base_velocity.v.item()
-        return base_velocity
-
-    def get_base_time():
-        base_time = params.base_time.v.item()
-        return base_time
-
-    def get_base_mass():
-        base_mass = params.base_mass.v.item()
-        return base_mass
-
-    def get_base_angular_velocity():
-        base_time = get_base_time()
-        base_angular_velocity = 1 / base_time
-
-        return base_angular_velocity
-
-    def get_base_density():
-        if params.operating_condition.type_name != "LiquidOperatingCondition":
-            require(["operating_condition", "thermal_state", "density"], required_by, params)
-        base_density = params.base_density.v.item()
-        return base_density
-
-    def get_base_viscosity():
-        base_density = get_base_density()
-        base_length = get_base_length()
-        base_velocity = get_base_velocity()
-        base_viscosity = base_density * base_velocity * base_length
-
-        return base_viscosity
-
-    def get_base_kinematic_viscosity():
-        base_length = get_base_length()
-        base_time = get_base_time()
-        base_kinematic_viscosity = base_length * base_length / base_time
-
-        return base_kinematic_viscosity
-
-    def get_base_force():
-        base_length = get_base_length()
-        base_density = get_base_density()
-        base_velocity = get_base_velocity()
-        base_force = base_velocity**2 * base_density * base_length**2
-
-        return base_force
-
-    def get_base_moment():
-        base_length = get_base_length()
-        base_force = get_base_force()
-        base_moment = base_force * base_length
-
-        return base_moment
-
-    def get_base_power():
-        base_length = get_base_length()
-        base_density = get_base_density()
-        base_velocity = get_base_velocity()
-        base_power = base_velocity**3 * base_density * base_length**2
-
-        return base_power
-
-    def get_base_heat_flux():
-        base_density = get_base_density()
-        base_velocity = get_base_velocity()
-        base_heat_flux = base_density * base_velocity**3
-
-        return base_heat_flux
-
-    def get_base_heat_source():
-        base_density = get_base_density()
-        base_velocity = get_base_velocity()
-        base_length = get_base_length()
-
-        base_heat_source = base_density * base_velocity**3 / base_length
-
-        return base_heat_source
-
-    def get_base_specific_heat_capacity():
-        base_velocity = get_base_velocity()
-        base_temperature = get_base_temperature()
-
-        base_specific_heat_capacity = base_velocity**2 / base_temperature
-
-        return base_specific_heat_capacity
-
-    def get_base_thermal_conductivity():
-        base_density = get_base_density()
-        base_velocity = get_base_velocity()
-        base_temperature = get_base_temperature()
-        base_length = get_base_length()
-
-        base_thermal_conductivity = base_density * base_velocity**3 * base_length / base_temperature
-
-        return base_thermal_conductivity
-
-    if dimension == u.dimensions.length:
-        base_length = get_base_length()
-        flow360_conversion_unit_system.base_length = base_length
-
-    elif dimension == u.dimensions.mass:
-        base_mass = get_base_mass()
-        flow360_conversion_unit_system.base_mass = base_mass
-
-    elif dimension == u.dimensions.temperature:
-        base_temperature = get_base_temperature()
-        flow360_conversion_unit_system.base_temperature = base_temperature
-        # Flow360 uses absolute temperature for scaling.
-        # So the base_delta_temperature and base_temperature can have same scaling.
-        flow360_conversion_unit_system.base_delta_temperature = base_temperature
-
-    elif dimension == u.dimensions.area:
-        base_length = get_base_length()
-        flow360_conversion_unit_system.base_area = base_length**2
-
-    elif dimension == u.dimensions.velocity:
-        base_velocity = get_base_velocity()
-        flow360_conversion_unit_system.base_velocity = base_velocity
-
-    elif dimension == u.dimensions.acceleration:
-        base_velocity = get_base_velocity()
-        base_length = get_base_length()
-        flow360_conversion_unit_system.base_acceleration = base_velocity**2 / base_length
-
-    elif dimension == u.dimensions.time:
-        base_time = get_base_time()
-        flow360_conversion_unit_system.base_time = base_time
-
-    elif dimension == u.dimensions.angular_velocity:
-        base_angular_velocity = get_base_angular_velocity()
-        flow360_conversion_unit_system.base_angular_velocity = base_angular_velocity
-
-    elif dimension == u.dimensions.density:
-        base_density = get_base_density()
-        flow360_conversion_unit_system.base_density = base_density
-
-    elif dimension == u.dimensions.viscosity:
-        base_viscosity = get_base_viscosity()
-        flow360_conversion_unit_system.base_viscosity = base_viscosity
-
-    elif dimension == u.dimensions.kinematic_viscosity:
-        base_kinematic_viscosity = get_base_kinematic_viscosity()
-        flow360_conversion_unit_system.base_kinematic_viscosity = base_kinematic_viscosity
-
-    elif dimension == u.dimensions.force:
-        base_force = get_base_force()
-        flow360_conversion_unit_system.base_force = base_force
-
-    elif dimension == u.dimensions.moment:
-        base_moment = get_base_moment()
-        flow360_conversion_unit_system.base_moment = base_moment
-
-    elif dimension == u.dimensions.power:
-        base_power = get_base_power()
-        flow360_conversion_unit_system.base_power = base_power
-
-    elif dimension == u.dimensions.heat_flux:
-        base_heat_flux = get_base_heat_flux()
-        flow360_conversion_unit_system.base_heat_flux = base_heat_flux
-
-    elif dimension == u.dimensions.specific_heat_capacity:
-        base_specific_heat_capacity = get_base_specific_heat_capacity()
-        flow360_conversion_unit_system.base_specific_heat_capacity = base_specific_heat_capacity
-
-    elif dimension == u.dimensions.thermal_conductivity:
-        base_thermal_conductivity = get_base_thermal_conductivity()
-        flow360_conversion_unit_system.base_thermal_conductivity = base_thermal_conductivity
-
-    elif dimension == u.dimensions.inverse_area:
-        base_length = get_base_length()
-        flow360_conversion_unit_system.base_inverse_area = 1 / base_length**2
-
-    elif dimension == u.dimensions.inverse_length:
-        base_length = get_base_length()
-        flow360_conversion_unit_system.base_inverse_length = 1 / base_length
-
-    elif dimension == u.dimensions.heat_source:
-        base_heat_source = get_base_heat_source()
-        flow360_conversion_unit_system.base_heat_source = base_heat_source
-
-    elif dimension == u.dimensions.mass_flow_rate:
-        base_density = get_base_density()
-        base_length = get_base_length()
-        base_time = get_base_time()
-
-        flow360_conversion_unit_system.base_mass_flow_rate = (
-            base_density * base_length**3 / base_time
-        )
-
-    elif dimension == u.dimensions.specific_energy:
-        base_velocity = get_base_velocity()
-
-        flow360_conversion_unit_system.base_specific_energy = base_velocity**2
-
-    elif dimension == u.dimensions.frequency:
-        base_time = get_base_time()
-
-        flow360_conversion_unit_system.base_frequency = base_time ** (-1)
-
-    elif dimension == u.dimensions.angle:
-
-        # pylint: disable=no-member
-        flow360_conversion_unit_system.base_angle = 1
-
-    elif dimension == u.dimensions.pressure:
-        base_force = get_base_force()
-        base_length = get_base_length()
-        flow360_conversion_unit_system.base_pressure = base_force / (base_length**2)
-
-    else:
-        raise ValueError(
-            f"Unit converter: not recognized dimension: {dimension}. Conversion for this dimension is not implemented."
-        )
-
-    return flow360_conversion_unit_system.conversion_system
 
 
 def get_flow360_unit_system_liquid(params, to_flow360_unit: bool = False) -> u.UnitSystem:

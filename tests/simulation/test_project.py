@@ -14,8 +14,8 @@ from flow360.component.project_utils import set_up_params_for_uploading
 from flow360.component.resource_base import local_metadata_builder
 from flow360.component.simulation.primitives import ImportedSurface
 from flow360.component.simulation.services import ValidationCalledBy, validate_model
-from flow360.component.simulation.utils import model_attribute_unlock
 from flow360.component.volume_mesh import VolumeMeshV2
+from flow360.examples import Cylinder3D
 from flow360.exceptions import Flow360ConfigurationError, Flow360ValueError
 
 log.set_logging_level("DEBUG")
@@ -55,6 +55,141 @@ def test_from_cloud(mock_id, mock_response):
     error_msg = "No Case is available in this project."
     with pytest.raises(Flow360ValueError, match=error_msg):
         project.get_case(asset_id=current_case_id)
+
+
+def test_from_geometry_passes_workflow(monkeypatch):
+    Cylinder3D.get_files()
+    captured = {}
+
+    class _MockDraft:
+        def submit(self, run_async=False):
+            assert run_async is True
+            return MagicMock(project_id="prj-test-project-id")
+
+    def _mock_from_file(
+        file_names,
+        project_name=None,
+        solver_version=None,
+        length_unit="m",
+        tags=None,
+        folder=None,
+        workflow="standard",
+    ):
+        captured["file_names"] = file_names
+        captured["project_name"] = project_name
+        captured["solver_version"] = solver_version
+        captured["length_unit"] = length_unit
+        captured["workflow"] = workflow
+        return _MockDraft()
+
+    monkeypatch.setattr("flow360.component.project.Geometry.from_file", _mock_from_file)
+
+    project_id = fl.Project.from_geometry(
+        Cylinder3D.geometry,
+        name="catalyst-project",
+        solver_version="release-test",
+        length_unit="cm",
+        run_async=True,
+        workflow="catalyst",
+    )
+
+    assert project_id == "prj-test-project-id"
+    assert captured["file_names"] == Cylinder3D.geometry
+    assert captured["project_name"] == "catalyst-project"
+    assert captured["solver_version"] == "release-test"
+    assert captured["length_unit"] == "cm"
+    assert captured["workflow"] == "catalyst"
+
+
+def _fake_geometry_api_response(geo_id: str = "geo-test-0001", prj_id: str = "prj-test-payload"):
+    return {
+        "id": geo_id,
+        "name": "test-geo",
+        "userId": "user-test",
+        "status": "uploaded",
+        "projectId": prj_id,
+        "createdAt": "2026-01-01T00:00:00Z",
+        "updatedAt": "2026-01-01T00:00:00Z",
+        "deleted": False,
+        "tags": [],
+    }
+
+
+def _mock_upload_files(self, *args, **kwargs):
+    geo = MagicMock()
+    geo.short_description.return_value = "test-geo (geo-test)"
+    geo.id = "geo-test-0001"
+    geo.project_id = "prj-test-payload"
+    return geo
+
+
+def test_catalyst_workflow_reaches_api_payload(monkeypatch):
+    Cylinder3D.get_files()
+    captured_payload: dict = {}
+
+    class _FakeRestApi:
+        def __init__(self, endpoint, **kwargs):
+            pass
+
+        def post(self, json_body):
+            captured_payload.update(json_body)
+            return _fake_geometry_api_response()
+
+    monkeypatch.setattr("flow360.component.geometry.RestApi", _FakeRestApi)
+    monkeypatch.setattr("os.path.exists", lambda _: True)
+    monkeypatch.setattr(
+        "flow360.component.geometry.GeometryDraft._upload_files", _mock_upload_files
+    )
+
+    draft = Geometry.from_file(
+        file_names=Cylinder3D.geometry,
+        project_name="payload-test",
+        solver_version="release-test",
+        length_unit="cm",
+        workflow="catalyst",
+    )
+
+    assert draft.workflow == "catalyst"
+    draft.submit(run_async=True)
+
+    assert (
+        captured_payload.get("useCatalyst") is True
+    ), f"Expected Catalyst workflow to set useCatalyst=true, got: {captured_payload}"
+    assert set(captured_payload) >= {"useCatalyst"}
+
+
+def test_standard_workflow_is_default(monkeypatch):
+    Cylinder3D.get_files()
+    captured_payload: dict = {}
+
+    class _FakeRestApi:
+        def __init__(self, endpoint, **kwargs):
+            pass
+
+        def post(self, json_body):
+            captured_payload.update(json_body)
+            return _fake_geometry_api_response(geo_id="geo-test-0002", prj_id="prj-test-default")
+
+    monkeypatch.setattr("flow360.component.geometry.RestApi", _FakeRestApi)
+    monkeypatch.setattr("os.path.exists", lambda _: True)
+    monkeypatch.setattr(
+        "flow360.component.geometry.GeometryDraft._upload_files", _mock_upload_files
+    )
+
+    draft = Geometry.from_file(
+        file_names=Cylinder3D.geometry,
+        project_name="default-test",
+        solver_version="release-test",
+        length_unit="cm",
+    )
+
+    assert draft.workflow == "standard"
+    draft.submit(run_async=True)
+
+    assert (
+        captured_payload.get("useCatalyst") is False
+    ), f"Expected standard workflow to keep useCatalyst=false, got: {captured_payload}"
+    assert set(captured_payload) >= {"useCatalyst"}
 
 
 def test_root_asset_entity_change_reflection(mock_id, mock_response):
@@ -356,8 +491,7 @@ def _build_params_with_imported_surfaces(imported_surfaces):
     """Build a minimal SimulationParams with imported_surfaces set in asset cache."""
     with fl.SI_unit_system:
         params = fl.SimulationParams()
-    with model_attribute_unlock(params.private_attribute_asset_cache, "imported_surfaces"):
-        params.private_attribute_asset_cache.imported_surfaces = imported_surfaces
+    params.private_attribute_asset_cache._force_set_attr("imported_surfaces", imported_surfaces)
     return params
 
 

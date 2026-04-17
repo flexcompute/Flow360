@@ -1,8 +1,9 @@
 import os
 
+import unyt as u
+
 import flow360 as fl
 from flow360.component.simulation.migration import BETDisk
-from flow360.component.simulation.unit_system import u
 
 # Get the absolute path to the script file
 script_dir = os.path.dirname(os.path.abspath(__file__))

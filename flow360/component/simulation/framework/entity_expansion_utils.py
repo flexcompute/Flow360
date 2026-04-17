@@ -1,53 +1,23 @@
 """Entity list expansion helpers shared across results and user utilities."""
 
+# pylint: disable=unused-import
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Union
 
-import pydantic as pd
+from flow360_schema.framework.entity.entity_expansion_utils import (  # noqa: F401
+    _register_mirror_entities_in_registry,
+    expand_all_entity_lists_with_registry_in_place,
+    expand_entity_list_with_registry,
+    get_entity_info_and_registry_from_asset_cache,
+    get_entity_info_and_registry_from_dict,
+    get_registry_from_asset_cache,
+)
 
-from flow360.component.simulation.framework.entity_materializer import (
-    materialize_entities_and_selectors_in_place,
-)
-from flow360.component.simulation.framework.entity_utils import (
-    walk_object_tree_with_cycle_detection,
-)
 from flow360.exceptions import Flow360ValueError
 
 if TYPE_CHECKING:
     from flow360.component.simulation.framework.entity_registry import EntityRegistry
-
-
-def _register_mirror_entities_in_registry(registry: "EntityRegistry", mirror_status: Any) -> None:
-    """Register mirror-related entities (planes + derived mirrored entities) into registry.
-
-    This helper is shared by both dict-based and params-based registry builders to ensure
-    consistent selector expansion coverage.
-    """
-    if not mirror_status:
-        return
-
-    # pylint: disable=import-outside-toplevel
-    from flow360.component.simulation.draft_context.mirror import (
-        MirrorPlane,
-        MirrorStatus,
-    )
-
-    # Dict path: deserialize to MirrorStatus
-    if isinstance(mirror_status, dict):
-        mirror_status = MirrorStatus.model_validate(mirror_status)
-
-    # Object path: MirrorStatus (or compatible) with is_empty()
-    if hasattr(mirror_status, "is_empty") and mirror_status.is_empty():
-        return
-
-    for plane in getattr(mirror_status, "mirror_planes", []) or []:
-        if isinstance(plane, MirrorPlane):
-            registry.register(plane)
-    for mirrored_group in getattr(mirror_status, "mirrored_geometry_body_groups", []) or []:
-        registry.register(mirrored_group)
-    for mirrored_surface in getattr(mirror_status, "mirrored_surfaces", []) or []:
-        registry.register(mirrored_surface)
 
 
 def expand_entity_list_in_context(
@@ -74,56 +44,17 @@ def expand_entity_list_in_context(
         List of EntityBase objects or their names depending on `return_names`.
     """
 
-    stored_entities = list(getattr(entity_list, "stored_entities", []) or [])
+    asset_cache = getattr(params, "private_attribute_asset_cache", None)
     selectors = list(getattr(entity_list, "selectors", []) or [])
+    if selectors and asset_cache is None:
+        raise Flow360ValueError("The given `params` does not contain any info on usable entities.")
 
-    if selectors:
-        asset_cache = getattr(params, "private_attribute_asset_cache", None)
-        if asset_cache is None:
-            raise Flow360ValueError(
-                "The given `params` does not contain any info on usable entities."
-            )
-
-        # pylint: disable=import-outside-toplevel
-        from flow360.component.simulation.framework.entity_selector import (
-            expand_entity_list_selectors,
-        )
-
-        registry = get_registry_from_params(params)
-        stored_entities = expand_entity_list_selectors(
-            registry,
-            entity_list,
-            selector_cache={},
-            merge_mode="merge",
-        )
-
-    if not stored_entities:
-        return []
-
-    if not all(hasattr(entity, "name") for entity in stored_entities):
-        wrapper = {"stored_entities": stored_entities}
-        materialize_entities_and_selectors_in_place(wrapper)
-        stored_entities = wrapper.get("stored_entities", [])
-
-    # Trigger field validator to filter invalid entity types
-    # This ensures consistency with the centralized filtering architecture
-    if stored_entities:
-        try:
-            # Use model_validate to trigger field validator which filters by type
-            validated_list = entity_list.__class__.model_validate(
-                {"stored_entities": stored_entities}
-            )
-            stored_entities = validated_list.stored_entities
-        except pd.ValidationError as exc:
-            raise Flow360ValueError(
-                "Failed to find any valid entities in the input. "
-                "Has the simulationParams been manually edited since loading from the cloud "
-                "or have you changed the cloud resource for which the SimulationParams is being used?"
-            ) from exc
-
-    if return_names:
-        return [entity.name for entity in stored_entities]
-    return stored_entities
+    registry = get_registry_from_asset_cache(asset_cache) if selectors else None
+    return expand_entity_list_with_registry(
+        entity_list,
+        registry,
+        return_names=return_names,
+    )
 
 
 def get_registry_from_params(params) -> EntityRegistry:
@@ -140,9 +71,6 @@ def get_registry_from_params(params) -> EntityRegistry:
     EntityRegistry
         Registry containing all entities from the params.
     """
-    # pylint: disable=import-outside-toplevel
-    from flow360.component.simulation.framework.entity_registry import EntityRegistry
-
     if params is None:
         raise ValueError("[Internal] SimulationParams is required to build entity registry.")
 
@@ -152,18 +80,7 @@ def get_registry_from_params(params) -> EntityRegistry:
             "[Internal] SimulationParams.private_attribute_asset_cache is required to build entity registry."
         )
 
-    entity_info = getattr(asset_cache, "project_entity_info", None)
-    if entity_info is None:
-        raise ValueError("[Internal] SimulationParams is missing project_entity_info.")
-
-    registry = EntityRegistry.from_entity_info(entity_info)
-
-    # Register mirror entities from mirror_status so selector expansion can include mirrored types
-    # (e.g. SurfaceSelector can expand to include MirroredSurface).
-    mirror_status = getattr(asset_cache, "mirror_status", None)
-    _register_mirror_entities_in_registry(registry, mirror_status)
-
-    return registry
+    return get_registry_from_asset_cache(asset_cache)
 
 
 def expand_all_entity_lists_in_place(
@@ -180,74 +97,28 @@ def expand_all_entity_lists_in_place(
     Parameters:
         expansion_map: Optional type expansion mapping for selectors.
     """
-    # pylint: disable=import-outside-toplevel
-    from flow360.component.simulation.framework.entity_base import EntityList
-    from flow360.component.simulation.framework.entity_selector import (
-        expand_entity_list_selectors_in_place,
-    )
-
     asset_cache = getattr(params, "private_attribute_asset_cache", None)
     entity_info = getattr(asset_cache, "project_entity_info", None)
     if asset_cache is None or entity_info is None:
         # Unit tests may not provide entity_info; in that case selector expansion is not possible.
         return
 
-    registry = get_registry_from_params(params)
-    selector_cache: dict = {}
-
-    def _process_entity_list(obj):
-        """Process EntityList objects by expanding their selectors."""
-        if isinstance(obj, EntityList):
-            expand_entity_list_selectors_in_place(
-                registry,
-                obj,
-                selector_cache=selector_cache,
-                merge_mode=merge_mode,
-                expansion_map=expansion_map,
-            )
-            return False  # Don't traverse into EntityList internals
-        return True  # Continue traversing other objects
-
-    walk_object_tree_with_cycle_detection(params, _process_entity_list, check_dict=True)
+    expand_all_entity_lists_with_registry_in_place(
+        params,
+        registry=get_registry_from_asset_cache(asset_cache),
+        merge_mode=merge_mode,
+        expansion_map=expansion_map,
+    )
 
 
-def get_entity_info_and_registry_from_dict(params_as_dict: dict) -> tuple:
-    """
-    Create EntityInfo and EntityRegistry from simulation params dictionary.
-
-    The EntityInfo owns the entities, and EntityRegistry holds references to them.
-    Callers must keep entity_info alive as long as registry is used.
-
-    Parameters
-    ----------
-    params_as_dict : dict
-        Simulation parameters as dictionary containing private_attribute_asset_cache.
-
-    Returns
-    -------
-    tuple[EntityInfo, EntityRegistry]
-        (entity_info, registry) where entity_info owns entities and registry references them.
-    """
-    # pylint: disable=import-outside-toplevel
-    from flow360.component.simulation.framework.entity_registry import EntityRegistry
-
-    asset_cache = params_as_dict.get("private_attribute_asset_cache")
-    if asset_cache is None:
-        raise ValueError("[Internal] private_attribute_asset_cache not found in params_as_dict.")
-
-    entity_info_dict = asset_cache.get("project_entity_info")
-    if entity_info_dict is None:
-        raise ValueError("[Internal] project_entity_info not found in asset cache.")
-
-    # Deserialize entity_info dict to the appropriate EntityInfo class
-    from flow360.component.simulation.entity_info import parse_entity_info_model
-
-    entity_info = parse_entity_info_model(entity_info_dict)
-    registry = EntityRegistry.from_entity_info(entity_info)
-
-    # Register mirror entities from mirror_status so selector expansion can include mirrored types
-    # (e.g. SurfaceSelector can expand to include MirroredSurface) during validation.
-    mirror_status_dict = asset_cache.get("mirror_status")
-    _register_mirror_entities_in_registry(registry, mirror_status_dict)
-
-    return entity_info, registry
+__all__ = [
+    "_register_mirror_entities_in_registry",
+    "expand_all_entity_lists_in_place",
+    "expand_all_entity_lists_with_registry_in_place",
+    "expand_entity_list_in_context",
+    "expand_entity_list_with_registry",
+    "get_entity_info_and_registry_from_asset_cache",
+    "get_entity_info_and_registry_from_dict",
+    "get_registry_from_asset_cache",
+    "get_registry_from_params",
+]
