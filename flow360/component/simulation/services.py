@@ -8,30 +8,18 @@ import pydantic as pd
 from flow360_schema.framework.physical_dimensions import Angle, Length
 from flow360_schema.models.simulation.services import (
     ValidationCalledBy,
-    _determine_validation_level,
-    _get_default_reference_geometry,
-    _insert_forward_compatibility_notice,
-    _intersect_validation_levels,
-    _normalize_union_branch_error_location,
+    validate_model as _schema_validate_model,
+)
+
+# pylint: disable=unused-import  # relay exports consumed by compute pipeline scripts
+from flow360_schema.models.simulation.services import (
     _parse_root_item_type_from_simulation_json,
-    _populate_error_context,
-    _sanitize_stack_trace,
-    _store_project_length_unit,
-    _traverse_error_location,
     apply_simulation_setting_to_entity_info,
-    clean_unrelated_setting_from_params_dict,
-    clear_context,
     get_default_params,
-    handle_generic_exception,
-    init_unit_system,
-    initialize_variable_space,
     merge_geometry_entity_info,
     update_simulation_json,
-    validate_error_locations,
 )
-from flow360_schema.models.simulation.services import (
-    validate_model as _schema_validate_model,  # pylint: disable=unused-import
-)
+# pylint: enable=unused-import
 from pydantic import TypeAdapter
 
 from flow360.component.simulation.exposed_units import supported_units_by_front_end
