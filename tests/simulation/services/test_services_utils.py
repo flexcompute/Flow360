@@ -1,19 +1,10 @@
 import json
-from types import SimpleNamespace
 
 import flow360 as fl
 import flow360.component.simulation.units as u
 from flow360.component.project_utils import validate_params_with_context
 from flow360.component.simulation.framework.param_utils import AssetCache
-from flow360.component.simulation.meshing_param.meshing_specs import MeshingDefaults
-from flow360.component.simulation.services_utils import (
-    strip_implicit_edge_split_layers_inplace,
-)
 from flow360.component.simulation.web.draft import Draft
-
-
-def _build_dummy_params(defaults: MeshingDefaults):
-    return SimpleNamespace(meshing=SimpleNamespace(defaults=defaults))
 
 
 def _build_simulation_params(*, edge_split_layers=None):
@@ -34,51 +25,6 @@ def _build_simulation_params(*, edge_split_layers=None):
                 use_inhouse_mesher=False, project_length_unit=1 * u.m
             ),
         )
-
-
-def test_strip_implicit_edge_split_layers_removes_default_injected_field():
-    with fl.SI_unit_system:
-        defaults = MeshingDefaults(boundary_layer_first_layer_thickness=1e-4)
-
-    params = _build_dummy_params(defaults)
-    params_dict = {
-        "meshing": {"defaults": {"edge_split_layers": 1, "surface_edge_growth_rate": 1.2}}
-    }
-
-    out = strip_implicit_edge_split_layers_inplace(params, params_dict)
-
-    assert out is params_dict
-    assert "edge_split_layers" not in out["meshing"]["defaults"]
-    assert out["meshing"]["defaults"]["surface_edge_growth_rate"] == 1.2
-
-
-def test_strip_implicit_edge_split_layers_keeps_explicit_default_value():
-    with fl.SI_unit_system:
-        defaults = MeshingDefaults(boundary_layer_first_layer_thickness=1e-4, edge_split_layers=1)
-
-    params = _build_dummy_params(defaults)
-    params_dict = {
-        "meshing": {"defaults": {"edge_split_layers": 1, "surface_edge_growth_rate": 1.2}}
-    }
-
-    out = strip_implicit_edge_split_layers_inplace(params, params_dict)
-
-    assert out["meshing"]["defaults"]["edge_split_layers"] == 1
-
-
-def test_strip_implicit_edge_split_layers_keeps_explicit_non_default_value():
-    with fl.SI_unit_system:
-        defaults = MeshingDefaults(boundary_layer_first_layer_thickness=1e-4, edge_split_layers=3)
-
-    params = _build_dummy_params(defaults)
-    params_dict = {
-        "meshing": {"defaults": {"edge_split_layers": 3, "surface_edge_growth_rate": 1.2}}
-    }
-
-    out = strip_implicit_edge_split_layers_inplace(params, params_dict)
-
-    assert out["meshing"]["defaults"]["edge_split_layers"] == 3
-
 
 def test_validate_params_with_context_no_warning_for_implicit_default():
     params = _build_simulation_params()
