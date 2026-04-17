@@ -4,6 +4,7 @@ import re
 from typing import get_args
 
 import pytest
+from flow360_schema import __version__ as _SCHEMA_VERSION
 from flow360_schema.framework.expression import UserVariable
 from unyt import Unit
 
@@ -1712,7 +1713,7 @@ def test_validate_error_location_with_selector():
             }
         ],
         "unit_system": {"name": "SI"},
-        "version": __version__,
+        "version": _SCHEMA_VERSION,
         "private_attribute_asset_cache": {
             "project_entity_info": {
                 "type_name": "VolumeMeshEntityInfo",
