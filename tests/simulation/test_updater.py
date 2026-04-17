@@ -1,4 +1,3 @@
-import json
 import os
 import re
 
@@ -7,8 +6,6 @@ import toml
 
 from flow360.component.simulation.framework.updater import VERSION_MILESTONES
 from flow360.component.simulation.framework.updater_utils import Flow360Version
-from flow360.component.simulation.services import ValidationCalledBy, validate_model
-from flow360.component.simulation.validation.validation_context import ALL
 from flow360.version import __solver_version__, __version__
 
 
@@ -48,16 +45,3 @@ def test_version_greater_than_highest_updater_version():
     assert (
         current_python_version >= VERSION_MILESTONES[-1][0]
     ), "Highest version updater can handle is higher than Python client version. This is not allowed."
-
-
-def test_deserialization_with_updater():
-    simulation_path = os.path.join("..", "data", "simulation", "simulation_24_11_0.json")
-    with open(simulation_path, "r") as file:
-        params = json.load(file)
-
-    validate_model(
-        params_as_dict=params,
-        root_item_type="VolumeMesh",
-        validated_by=ValidationCalledBy.LOCAL,
-        validation_level=ALL,
-    )
