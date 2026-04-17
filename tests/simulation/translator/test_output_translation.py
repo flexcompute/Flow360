@@ -217,40 +217,56 @@ def surface_output_config(vel_in_km_per_hr):
                 output_format="tecplot",
             ),
         ],
-        {
-            "animationFrequency": 123,
-            "animationFrequencyOffset": 321,
-            "animationFrequencyTimeAverage": -1,
-            "animationFrequencyTimeAverageOffset": 0,
-            "outputFields": [],
-            "outputFormat": "tecplot",
-            "startAverageIntegrationStep": -1,
-            "surfaces": {
-                "surface1": {"outputFields": ["Cp", "velocity_in_km_per_hr"]},
-                "surface11": {
-                    "outputFields": [
-                        "T",
-                        "velocity",
-                        "velocity_in_km_per_hr",
-                        "velocity_magnitude",
-                        "vorticity",
-                        "vorticityMagnitude",
-                    ]
+        [
+            {
+                "animationFrequency": 123,
+                "animationFrequencyOffset": 321,
+                "animationFrequencyTimeAverage": -1,
+                "animationFrequencyTimeAverageOffset": 0,
+                "outputFields": [],
+                "outputFormat": "tecplot",
+                "startAverageIntegrationStep": -1,
+                "surfaces": {
+                    "surface1": {"outputFields": ["Cp", "velocity_in_km_per_hr"]},
+                    "surface2": {"outputFields": ["Cp", "velocity_in_km_per_hr"]},
                 },
-                "surface2": {"outputFields": ["Cp", "velocity_in_km_per_hr"]},
-                "surface22": {
-                    "outputFields": [
-                        "T",
-                        "velocity",
-                        "velocity_in_km_per_hr",
-                        "velocity_magnitude",
-                        "vorticity",
-                        "vorticityMagnitude",
-                    ]
-                },
+                "writeSingleFile": False,
+                "name": "",
             },
-            "writeSingleFile": False,
-        },
+            {
+                "animationFrequency": 123,
+                "animationFrequencyOffset": 321,
+                "animationFrequencyTimeAverage": -1,
+                "animationFrequencyTimeAverageOffset": 0,
+                "outputFields": [],
+                "outputFormat": "tecplot",
+                "startAverageIntegrationStep": -1,
+                "surfaces": {
+                    "surface11": {
+                        "outputFields": [
+                            "T",
+                            "velocity",
+                            "velocity_in_km_per_hr",
+                            "velocity_magnitude",
+                            "vorticity",
+                            "vorticityMagnitude",
+                        ]
+                    },
+                    "surface22": {
+                        "outputFields": [
+                            "T",
+                            "velocity",
+                            "velocity_in_km_per_hr",
+                            "velocity_magnitude",
+                            "vorticity",
+                            "vorticityMagnitude",
+                        ]
+                    },
+                },
+                "writeSingleFile": False,
+                "name": "",
+            },
+        ],
     )
 
 
@@ -275,14 +291,17 @@ def test_surface_output(
     surface_output_config,
     avg_surface_output_config,
 ):
-    ##:: surfaceOutput
+    ##:: surfaceOutput (multiple instances -> array)
     with SI_unit_system:
         param = SimulationParams(outputs=surface_output_config[0])
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
-    assert compare_values(surface_output_config[1], translated["surfaceOutput"])
+    assert isinstance(translated["surfaceOutput"], list)
+    assert len(translated["surfaceOutput"]) == 2
+    assert compare_values(surface_output_config[1][0], translated["surfaceOutput"][0])
+    assert compare_values(surface_output_config[1][1], translated["surfaceOutput"][1])
 
-    ##:: timeAverageSurfaceOutput and surfaceOutput
+    ##:: timeAverageSurfaceOutput and surfaceOutput (both as arrays)
     with SI_unit_system:
         param = SimulationParams(
             time_stepping=Unsteady(step_size=0.1 * u.s, steps=10),
@@ -290,64 +309,164 @@ def test_surface_output(
         )
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
-    ref = {
-        "surfaceOutput": {
-            "animationFrequency": 123,
-            "animationFrequencyOffset": 321,
-            "animationFrequencyTimeAverage": -1,
-            "animationFrequencyTimeAverageOffset": 0,
-            "outputFields": [],
-            "outputFormat": "tecplot",
-            "startAverageIntegrationStep": -1,
-            "surfaces": {
-                "surface1": {"outputFields": ["Cp", "velocity_in_km_per_hr"]},
-                "surface11": {
-                    "outputFields": [
-                        "T",
-                        "velocity",
-                        "velocity_in_km_per_hr",
-                        "velocity_magnitude",
-                        "vorticity",
-                        "vorticityMagnitude",
-                    ]
-                },
-                "surface2": {"outputFields": ["Cp", "velocity_in_km_per_hr"]},
-                "surface22": {
-                    "outputFields": [
-                        "T",
-                        "velocity",
-                        "velocity_in_km_per_hr",
-                        "velocity_magnitude",
-                        "vorticity",
-                        "vorticityMagnitude",
-                    ]
-                },
-            },
-            "writeSingleFile": False,
+
+    assert isinstance(translated["surfaceOutput"], list)
+    assert len(translated["surfaceOutput"]) == 2
+    assert compare_values(surface_output_config[1][0], translated["surfaceOutput"][0])
+    assert compare_values(surface_output_config[1][1], translated["surfaceOutput"][1])
+
+    assert isinstance(translated["timeAverageSurfaceOutput"], list)
+    assert len(translated["timeAverageSurfaceOutput"]) == 2
+    ref_avg_0 = {
+        "animationFrequency": -1,
+        "animationFrequencyOffset": 0,
+        "animationFrequencyTimeAverage": 111,
+        "animationFrequencyTimeAverageOffset": 222,
+        "outputFields": [],
+        "outputFormat": "paraview",
+        "startAverageIntegrationStep": -1,
+        "surfaces": {
+            "surface1": {"outputFields": ["Cf", "velocity_in_km_per_hr"]},
+            "surface2": {"outputFields": ["Cf", "velocity_in_km_per_hr"]},
         },
-        "timeAverageSurfaceOutput": {
-            "animationFrequency": -1,
-            "animationFrequencyOffset": 0,
-            "animationFrequencyTimeAverage": 111,
-            "animationFrequencyTimeAverageOffset": 222,
-            "outputFields": [],
-            "outputFormat": "paraview",
-            "startAverageIntegrationStep": -1,
-            "surfaces": {
-                "surface1": {"outputFields": ["Cf", "velocity_in_km_per_hr"]},
-                "surface3": {
-                    "outputFields": [
-                        "primitiveVars",
-                        "velocity_in_km_per_hr",
-                    ]
-                },
-                "surface2": {"outputFields": ["Cf", "velocity_in_km_per_hr"]},
-            },
-            "writeSingleFile": False,
-        },
+        "writeSingleFile": False,
+        "name": "",
     }
-    assert compare_values(ref["surfaceOutput"], translated["surfaceOutput"])
-    assert compare_values(ref["timeAverageSurfaceOutput"], translated["timeAverageSurfaceOutput"])
+    ref_avg_1 = {
+        "animationFrequency": -1,
+        "animationFrequencyOffset": 0,
+        "animationFrequencyTimeAverage": -1,
+        "animationFrequencyTimeAverageOffset": 0,
+        "outputFields": [],
+        "outputFormat": "paraview",
+        "startAverageIntegrationStep": -1,
+        "surfaces": {
+            "surface3": {
+                "outputFields": [
+                    "primitiveVars",
+                    "velocity_in_km_per_hr",
+                ]
+            },
+        },
+        "writeSingleFile": False,
+        "name": "",
+    }
+    assert compare_values(ref_avg_0, translated["timeAverageSurfaceOutput"][0])
+    assert compare_values(ref_avg_1, translated["timeAverageSurfaceOutput"][1])
+
+
+def test_multiple_surface_outputs_same_surface_different_freq():
+    """Test the primary use case: same surface with different frequencies and formats."""
+    with SI_unit_system:
+        param = SimulationParams(
+            outputs=[
+                SurfaceOutput(
+                    name="propeller_coarse",
+                    entities=[Surface(name="propeller")],
+                    output_fields=["Cp"],
+                    output_format="tecplot",
+                    frequency=100,
+                    frequency_offset=0,
+                ),
+                SurfaceOutput(
+                    name="propeller_fine",
+                    entities=[Surface(name="propeller")],
+                    output_fields=["Cp", "primitiveVars"],
+                    output_format="paraview",
+                    frequency=10,
+                    frequency_offset=5,
+                ),
+            ],
+        )
+    translated = {"boundaries": {}}
+    translated = translate_output(param, translated)
+
+    assert isinstance(translated["surfaceOutput"], list)
+    assert len(translated["surfaceOutput"]) == 2
+
+    coarse = translated["surfaceOutput"][0]
+    fine = translated["surfaceOutput"][1]
+
+    assert coarse["name"] == "propeller_coarse"
+    assert coarse["animationFrequency"] == 100
+    assert coarse["outputFormat"] == "tecplot"
+    assert "propeller" in coarse["surfaces"]
+
+    assert fine["name"] == "propeller_fine"
+    assert fine["animationFrequency"] == 10
+    assert fine["animationFrequencyOffset"] == 5
+    assert fine["outputFormat"] == "paraview"
+    assert "propeller" in fine["surfaces"]
+    assert set(fine["surfaces"]["propeller"]["outputFields"]) == {"Cp", "primitiveVars"}
+
+
+def test_multiple_surface_outputs_sorted_by_name():
+    """Translated surface outputs are sorted by name so user reordering doesn't cause diffs."""
+    with SI_unit_system:
+        param = SimulationParams(
+            outputs=[
+                SurfaceOutput(
+                    name="z_last",
+                    entities=[Surface(name="wing")],
+                    output_fields=["Cp"],
+                    frequency=10,
+                ),
+                SurfaceOutput(
+                    name="a_first",
+                    entities=[Surface(name="wing")],
+                    output_fields=["Cp"],
+                    frequency=100,
+                ),
+            ],
+        )
+    translated = {"boundaries": {}}
+    translated = translate_output(param, translated)
+
+    names = [c["name"] for c in translated["surfaceOutput"]]
+    assert names == ["a_first", "z_last"]
+
+
+def test_single_surface_output_emits_array():
+    """Even a single SurfaceOutput should produce an array (solver handles both formats)."""
+    with SI_unit_system:
+        param = SimulationParams(
+            outputs=[
+                SurfaceOutput(
+                    entities=[Surface(name="wing")],
+                    output_fields=["Cp"],
+                    output_format="paraview",
+                ),
+            ],
+        )
+    translated = {"boundaries": {}}
+    translated = translate_output(param, translated)
+
+    assert isinstance(translated["surfaceOutput"], list)
+    assert len(translated["surfaceOutput"]) == 1
+    assert translated["surfaceOutput"][0]["name"] == ""
+    assert "wing" in translated["surfaceOutput"][0]["surfaces"]
+
+
+def test_single_time_average_surface_output_emits_array():
+    """A single TimeAverageSurfaceOutput should also produce an array."""
+    with SI_unit_system:
+        param = SimulationParams(
+            time_stepping=Unsteady(step_size=0.1 * u.s, steps=10),
+            outputs=[
+                TimeAverageSurfaceOutput(
+                    entities=[Surface(name="wing")],
+                    output_fields=["Cp"],
+                    output_format="paraview",
+                ),
+            ],
+        )
+    translated = {"boundaries": {}}
+    translated = translate_output(param, translated)
+
+    assert isinstance(translated["timeAverageSurfaceOutput"], list)
+    assert len(translated["timeAverageSurfaceOutput"]) == 1
+    assert translated["timeAverageSurfaceOutput"][0]["name"] == ""
+    assert "wing" in translated["timeAverageSurfaceOutput"][0]["surfaces"]
 
 
 @pytest.fixture()
@@ -1707,7 +1826,7 @@ def test_dimensioned_output_fields_translation(vel_in_km_per_hr):
     ]
 
     assert set(solver_json["volumeOutput"]["outputFields"]) == set(expected_fields_v)
-    assert set(solver_json["surfaceOutput"]["surfaces"]["surface11"]["outputFields"]) == set(
+    assert set(solver_json["surfaceOutput"][0]["surfaces"]["surface11"]["outputFields"]) == set(
         expected_fields_s
     )
 
