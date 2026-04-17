@@ -2,23 +2,14 @@
 
 import json
 import os
-from typing import (
-    Any,
-    Collection,
-    Dict,
-    List,
-    Literal,
-    Optional,
-    Tuple,
-    Union,
-)
+from typing import Any, Collection, Dict, List, Literal, Optional, Tuple, Union
 
 import pydantic as pd
 from flow360_schema.framework.physical_dimensions import Angle, Length
-from flow360_schema.models.simulation.services import (  # pylint: disable=unused-import
+from flow360_schema.models.simulation.services import (
     ValidationCalledBy,
-    _get_default_reference_geometry,
     _determine_validation_level,
+    _get_default_reference_geometry,
     _insert_forward_compatibility_notice,
     _intersect_validation_levels,
     _normalize_union_branch_error_location,
@@ -37,14 +28,13 @@ from flow360_schema.models.simulation.services import (  # pylint: disable=unuse
     merge_geometry_entity_info,
     update_simulation_json,
     validate_error_locations,
-    validate_model as _schema_validate_model,
+)
+from flow360_schema.models.simulation.services import (
+    validate_model as _schema_validate_model,  # pylint: disable=unused-import
 )
 from pydantic import TypeAdapter
 
 from flow360.component.simulation.exposed_units import supported_units_by_front_end
-from flow360.component.simulation.framework.entity_materializer import (
-    materialize_entities_and_selectors_in_place,
-)
 from flow360.component.simulation.models.bet.bet_translator_interface import (
     generate_polar_file_name_list,
     translate_xfoil_c81_to_bet_dict,
@@ -75,11 +65,9 @@ from flow360.component.simulation.translator.volume_meshing_translator import (
 )
 from flow360.component.simulation.unit_system import _dimensioned_type_serializer, u
 from flow360.component.simulation.validation.validation_context import ALL
-from flow360.exceptions import (
-    Flow360TranslationError,
-    Flow360ValueError,
-)
+from flow360.exceptions import Flow360TranslationError, Flow360ValueError
 from flow360.version import __version__
+
 
 def validate_model(  # pylint: disable=too-many-locals
     *,

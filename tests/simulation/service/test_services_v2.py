@@ -12,13 +12,14 @@ from flow360.component.simulation.exposed_units import supported_units_by_front_
 from flow360.component.simulation.framework.updater_utils import compare_values
 from flow360.component.simulation.services_report import get_default_report_config
 from flow360.component.simulation.unit_system import DimensionedTypes
-from flow360.component.simulation.validation.validation_context import (
-    CASE,
-)
+from flow360.component.simulation.validation.validation_context import CASE
 from flow360.version import __version__
+
+
 @pytest.fixture(autouse=True)
 def change_test_dir(request, monkeypatch):
     monkeypatch.chdir(request.fspath.dirname)
+
 
 def test_generate_process_json():
     params_data = {
@@ -206,6 +207,7 @@ def test_generate_process_json_skips_case_validation_for_meshing():
     assert res1 is not None
     assert res2 is None
     assert res3 is None
+
 
 def test_forward_compatibility_error():
 
@@ -446,6 +448,7 @@ def test_get_default_report_config_json():
     with open("ref/default_report_config.json", "r") as fp:
         ref_dict = json.load(fp)
     assert compare_values(report_config_dict, ref_dict, ignore_keys=["formatter"])
+
 
 @pytest.mark.parametrize("unit_system_name", ["SI", "Imperial", "CGS"])
 def test_validate_model_preserves_unit_system(unit_system_name):

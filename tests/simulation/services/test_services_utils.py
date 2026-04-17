@@ -26,6 +26,7 @@ def _build_simulation_params(*, edge_split_layers=None):
             ),
         )
 
+
 def test_validate_params_with_context_no_warning_for_implicit_default():
     params = _build_simulation_params()
 

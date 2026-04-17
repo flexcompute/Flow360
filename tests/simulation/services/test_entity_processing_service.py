@@ -42,6 +42,7 @@ def _load_local_vm():
         ),
     )
 
+
 def test_validate_model_keeps_selectors_unexpanded():
     """
     Test: End-to-end validation with delayed selector expansion.
@@ -110,6 +111,7 @@ def test_validate_model_keeps_selectors_unexpanded():
     assert compare_values(
         validated.model_dump(mode="json"), validated_again.model_dump(mode="json")
     )
+
 
 def test_expand_entity_list_in_context_includes_mirrored_entities_from_mirror_status():
     """Ensure selector expansion can see mirrored entities registered from mirror_status."""
