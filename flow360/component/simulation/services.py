@@ -10,6 +10,8 @@ from flow360_schema.framework.physical_dimensions import Angle, Length
 # pylint: disable=unused-import  # relay exports consumed by compute pipeline scripts
 from flow360_schema.models.simulation.services import (
     ValidationCalledBy,
+    _determine_validation_level,
+    _get_default_reference_geometry,
     _parse_root_item_type_from_simulation_json,
     apply_simulation_setting_to_entity_info,
     get_default_params,
