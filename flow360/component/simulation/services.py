@@ -6,19 +6,20 @@ from typing import Any, Collection, Dict, List, Literal, Optional, Tuple, Union
 
 import pydantic as pd
 from flow360_schema.framework.physical_dimensions import Angle, Length
-from flow360_schema.models.simulation.services import (
-    ValidationCalledBy,
-    validate_model as _schema_validate_model,
-)
 
 # pylint: disable=unused-import  # relay exports consumed by compute pipeline scripts
 from flow360_schema.models.simulation.services import (
+    ValidationCalledBy,
     _parse_root_item_type_from_simulation_json,
     apply_simulation_setting_to_entity_info,
     get_default_params,
     merge_geometry_entity_info,
     update_simulation_json,
 )
+from flow360_schema.models.simulation.services import (
+    validate_model as _schema_validate_model,
+)
+
 # pylint: enable=unused-import
 from pydantic import TypeAdapter
 
