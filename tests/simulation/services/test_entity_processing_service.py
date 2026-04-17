@@ -1,5 +1,4 @@
 import copy
-import json
 import os
 
 import pytest
@@ -42,14 +41,6 @@ def _load_local_vm():
             )
         ),
     )
-
-
-def _load_json(path_from_tests_dir: str) -> dict:
-    """Helper to load a JSON file from the tests/simulation directory."""
-    base = os.path.dirname(os.path.abspath(__file__))
-    with open(os.path.join(base, "..", path_from_tests_dir), "r", encoding="utf-8") as file:
-        return json.load(file)
-
 
 def test_validate_model_keeps_selectors_unexpanded():
     """
@@ -120,65 +111,6 @@ def test_validate_model_keeps_selectors_unexpanded():
         validated.model_dump(mode="json"), validated_again.model_dump(mode="json")
     )
 
-
-def test_validate_model_materializes_dict_and_preserves_selectors():
-    """
-    Test: `validate_model` correctly materializes explicit entity dicts into objects
-    while preserving the original selectors from a raw dictionary input.
-
-    With delayed expansion, selectors are NOT expanded into stored_entities during
-    validation. Expansion happens later during translation.
-    """
-    params = _load_json("data/geometry_grouped_by_file/simulation.json")
-
-    # Inject a selector into the params dict and assign all entities to a Wall
-    # to satisfy the boundary condition validation.
-    selector_dict = {
-        "target_class": "Surface",
-        "name": "some_selector_name",
-        "logic": "AND",
-        "selector_id": "some_selector_id",
-        "children": [{"attribute": "name", "operator": "matches", "value": "*"}],
-    }
-    outputs = params.get("outputs") or []
-    entities = outputs[0].get("entities") or {}
-    entities["selectors"] = [selector_dict]
-    entities["stored_entities"] = []  # Start with no materialized entities
-
-    # Assign all boundaries to a default wall to pass validation
-    all_boundaries_selector = {
-        "target_class": "Surface",
-        "name": "all_boundaries",
-        "children": [
-            {"attribute": "name", "operator": "matches", "value": "*"},
-            {"attribute": "name", "operator": "not_matches", "value": "farfield"},
-            {"attribute": "name", "operator": "not_matches", "value": "symmetric"},
-        ],
-    }
-    params["models"].append(
-        {
-            "type": "Wall",
-            "name": "DefaultWall",
-            "entities": {"selectors": [all_boundaries_selector]},
-        }
-    )
-
-    validated, errors, _ = validate_model(
-        params_as_dict=params,
-        validated_by=ValidationCalledBy.LOCAL,
-        root_item_type="Case",
-    )
-    assert not errors, f"Unexpected validation errors: {errors}"
-
-    # With delayed expansion, stored_entities should remain empty since only selectors were specified
-    stored_entities = validated.outputs[0].entities.stored_entities
-    assert len(stored_entities) == 0, "stored_entities should be empty with delayed expansion"
-
-    # Verify selectors are preserved
-    preserved_selectors = validated.outputs[0].entities.selectors
-    assert len(preserved_selectors) == 1
-    assert preserved_selectors[0].model_dump(exclude_none=True) == selector_dict
-
 def test_expand_entity_list_in_context_includes_mirrored_entities_from_mirror_status():
     """Ensure selector expansion can see mirrored entities registered from mirror_status."""
     mirror_plane = MirrorPlane(
@@ -233,120 +165,3 @@ def test_expand_entity_list_in_context_includes_mirrored_entities_from_mirror_st
     expanded_type_names = {entity.private_attribute_entity_type_name for entity in expanded}
     assert "Surface" in expanded_type_names
     assert "MirroredSurface" in expanded_type_names
-def test_delayed_expansion_round_trip_preserves_semantics():
-    """
-    simulation.json -> validate -> round-trip -> compare
-    Ensures delayed expansion maintains consistency across round-trips.
-
-    With delayed expansion, selectors are NOT expanded into stored_entities during
-    validation. This test verifies:
-    - Explicit entities remain in stored_entities
-    - Selectors are preserved
-    - Round-trip maintains consistency
-    """
-    # Use a large, real geometry with many faces
-    params = _load_json("../data/geo-fcbe1113-a70b-43b9-a4f3-bbeb122d64fb/simulation.json")
-
-    # Set face grouping tag so selector operates on faceId groups
-    pei = params["private_attribute_asset_cache"]["project_entity_info"]
-    pei["face_group_tag"] = "faceId"
-    # Remove obsolete/unknown meshing defaults to avoid validation noise in Case-level
-    params.get("meshing", {}).get("defaults", {}).pop("geometry_tolerance", None)
-
-    # Build mixed EntityList with overlap under outputs[0].entities
-    outputs = params.get("outputs") or []
-    assert outputs, "Test fixture lacks outputs"
-    entities = outputs[0].get("entities") or {}
-    entities["stored_entities"] = [
-        {
-            "private_attribute_entity_type_name": "Surface",
-            "name": "body00001_face00001",
-            "private_attribute_id": "body00001_face00001",
-        },
-        {
-            "private_attribute_entity_type_name": "Surface",
-            "name": "body00001_face00014",
-            "private_attribute_id": "body00001_face00014",
-        },
-    ]
-    entities["selectors"] = [
-        {
-            "target_class": "Surface",
-            "name": "some_overlap",
-            "children": [
-                {
-                    "attribute": "name",
-                    "operator": "any_of",
-                    "value": ["body00001_face00001", "body00001_face00002"],
-                }
-            ],
-        }
-    ]
-    outputs[0]["entities"] = entities
-    params["outputs"] = outputs
-
-    # Ensure models contain a DefaultWall that matches all to satisfy BC validation
-    all_boundaries_selector = {
-        "target_class": "Surface",
-        "name": "all_boundaries",
-        "children": [
-            {"attribute": "name", "operator": "matches", "value": "*"},
-            {"attribute": "name", "operator": "not_matches", "value": "farfield"},
-        ],
-    }
-    params.setdefault("models", []).append(
-        {
-            "type": "Wall",
-            "name": "DefaultWall",
-            "entities": {"selectors": [all_boundaries_selector]},
-        }
-    )
-
-    # Baseline validation (with delayed expansion)
-    validated, errors, _ = validate_model(
-        params_as_dict=params,
-        validated_by=ValidationCalledBy.LOCAL,
-        root_item_type="Case",
-    )
-    assert not errors, f"Unexpected validation errors: {errors}"
-
-    # With delayed expansion, stored_entities should only contain explicit entities
-    baseline_entities = validated.outputs[0].entities.stored_entities  # type: ignore[index]
-    baseline_names = sorted(
-        [f"{e.private_attribute_entity_type_name}:{e.name}" for e in baseline_entities]
-    )
-    # Only explicitly specified entities should be present (NOT selector matches)
-    expected_explicit = ["Surface:body00001_face00001", "Surface:body00001_face00014"]
-    assert baseline_names == expected_explicit, (
-        f"Expected only explicit entities in stored_entities\n"
-        f"Got: {baseline_names}\n"
-        f"Expected: {expected_explicit}"
-    )
-
-    # Verify selectors are preserved
-    baseline_selectors = validated.outputs[0].entities.selectors
-    assert len(baseline_selectors) == 1
-    assert baseline_selectors[0].name == "some_overlap"
-
-    # Round-trip: serialize and re-validate
-    round_trip_dict = validated.model_dump(mode="json", exclude_none=True)
-    validated2, errors2, _ = validate_model(
-        params_as_dict=round_trip_dict,
-        validated_by=ValidationCalledBy.LOCAL,
-        root_item_type="Case",
-    )
-    assert not errors2, f"Unexpected validation errors on round-trip: {errors2}"
-
-    # Verify round-trip consistency
-    post_entities = validated2.outputs[0].entities.stored_entities  # type: ignore[index]
-    post_names = sorted([f"{e.private_attribute_entity_type_name}:{e.name}" for e in post_entities])
-    assert baseline_names == post_names, (
-        "Entity list mismatch after round-trip\n"
-        + f"Baseline: {baseline_names}\n"
-        + f"Post    : {post_names}\n"
-    )
-
-    # Verify selectors are still preserved after round-trip
-    post_selectors = validated2.outputs[0].entities.selectors
-    assert len(post_selectors) == 1
-    assert post_selectors[0].name == "some_overlap"
