@@ -4,6 +4,8 @@ import re
 from typing import get_args
 
 import pytest
+from flow360_schema import __version__ as _SCHEMA_VERSION
+from flow360_schema.framework.expression import UserVariable
 from unyt import Unit
 
 import flow360.component.simulation.units as u
