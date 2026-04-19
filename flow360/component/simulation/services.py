@@ -5,10 +5,10 @@ import os
 from typing import Any, Collection, Dict, List, Literal, Optional, Tuple, Union
 
 import pydantic as pd
-from flow360_schema.framework.physical_dimensions import Angle, Length
 
 # pylint: disable=unused-import  # relay exports consumed by compute pipeline scripts and tests
 from flow360_schema.framework.expression.registry import clear_context
+from flow360_schema.framework.physical_dimensions import Angle, Length
 from flow360_schema.models.simulation.services import (
     ValidationCalledBy,
     _determine_validation_level,
