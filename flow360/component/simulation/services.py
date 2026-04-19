@@ -7,7 +7,8 @@ from typing import Any, Collection, Dict, List, Literal, Optional, Tuple, Union
 import pydantic as pd
 from flow360_schema.framework.physical_dimensions import Angle, Length
 
-# pylint: disable=unused-import  # relay exports consumed by compute pipeline scripts
+# pylint: disable=unused-import  # relay exports consumed by compute pipeline scripts and tests
+from flow360_schema.framework.expression.registry import clear_context
 from flow360_schema.models.simulation.services import (
     ValidationCalledBy,
     _determine_validation_level,
@@ -20,6 +21,9 @@ from flow360_schema.models.simulation.services import (
 )
 from flow360_schema.models.simulation.services import (
     validate_model as _schema_validate_model,
+)
+from flow360_schema.models.simulation.validation.validation_service import (
+    initialize_variable_space,
 )
 
 # pylint: enable=unused-import
