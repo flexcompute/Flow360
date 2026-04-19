@@ -4,6 +4,7 @@ import unittest
 
 import pytest
 
+import flow360.component.simulation.units as u
 from flow360.component.project import create_draft
 from flow360.component.project_utils import set_up_params_for_uploading
 from flow360.component.simulation.entity_info import GeometryEntityInfo
