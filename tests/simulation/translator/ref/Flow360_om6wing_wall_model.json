@@ -71,33 +71,36 @@
     "runControl": {
         "externalProcessMonitorOutput": false
     },
-    "surfaceOutput": {
-        "animationFrequency": -1,
-        "animationFrequencyOffset": 0,
-        "animationFrequencyTimeAverage": -1,
-        "animationFrequencyTimeAverageOffset": 0,
-        "outputFields": [],
-        "outputFormat": "paraview",
-        "startAverageIntegrationStep": -1,
-        "surfaces": {
-            "1": {
-                "outputFields": [
-                    "nuHat"
-                ]
+    "surfaceOutput": [
+        {
+            "animationFrequency": -1,
+            "animationFrequencyOffset": 0,
+            "animationFrequencyTimeAverage": -1,
+            "animationFrequencyTimeAverageOffset": 0,
+            "name": "",
+            "outputFields": [],
+            "outputFormat": "paraview",
+            "startAverageIntegrationStep": -1,
+            "surfaces": {
+                "1": {
+                    "outputFields": [
+                        "nuHat"
+                    ]
+                },
+                "2": {
+                    "outputFields": [
+                        "nuHat"
+                    ]
+                },
+                "3": {
+                    "outputFields": [
+                        "nuHat"
+                    ]
+                }
             },
-            "2": {
-                "outputFields": [
-                    "nuHat"
-                ]
-            },
-            "3": {
-                "outputFields": [
-                    "nuHat"
-                ]
-            }
-        },
-        "writeSingleFile": false
-    },
+            "writeSingleFile": false
+        }
+    ],
     "thermallyPerfectGasModel": {
         "temperatureRanges": [
             {

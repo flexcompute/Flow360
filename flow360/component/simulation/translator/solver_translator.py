@@ -547,7 +547,7 @@ def translate_volume_output(
 
 def translate_imported_surface_output(
     output_params: list,
-    surface_output_class: Union[SurfaceOutput, TimeAverageSurfaceOutput],
+    surface_output_class: Union[Type[SurfaceOutput], Type[TimeAverageSurfaceOutput]],
     coordinate_system_manager=None,
 ):
     """Translate imported surface output settings."""
@@ -570,22 +570,23 @@ def translate_imported_surface_output(
     return imported_surface_output
 
 
-def translate_surface_output(
-    output_params: list,
-    surface_output_class: Union[SurfaceOutput, TimeAverageSurfaceOutput],
-    translated: dict,
+def _translate_single_surface_output(
+    output_instance,
+    surface_output_class: Union[Type[SurfaceOutput], Type[TimeAverageSurfaceOutput]],
 ):
-    """Translate surface output settings."""
-
-    assert "boundaries" in translated  #  "Boundaries must be translated before surface output"
+    """Translate a single SurfaceOutput instance to solver config dict."""
+    is_average = surface_output_class is TimeAverageSurfaceOutput
+    # Wrap in a list because init_output_base and translate_setting_and_apply_to_all_entities
+    # expect a list of outputs to iterate over.
+    single_list = [output_instance]
 
     surface_output = init_output_base(
-        output_params,
+        single_list,
         surface_output_class,
-        is_average=surface_output_class is TimeAverageSurfaceOutput,
+        is_average=is_average,
     )
     surface_output["surfaces"] = translate_setting_and_apply_to_all_entities(
-        output_params,
+        single_list,
         surface_output_class,
         translation_func=translate_output_fields,
         to_list=False,
@@ -597,12 +598,29 @@ def translate_surface_output(
             MirroredSurface,
         ),
     )
-    surface_output["writeSingleFile"] = get_global_setting_from_first_instance(
-        output_params,
-        surface_output_class,
-        "write_single_file",
-    )
+    surface_output["writeSingleFile"] = output_instance.write_single_file
+    surface_output["name"] = "" if output_instance.has_default_name else output_instance.name
     return surface_output
+
+
+def translate_surface_output(
+    output_params: list,
+    surface_output_class: Union[Type[SurfaceOutput], Type[TimeAverageSurfaceOutput]],
+    translated: dict,
+):
+    """Translate surface output settings.
+
+    Returns a list of per-instance solver config dicts (one per SurfaceOutput instance).
+    ``translated`` is required only as a precondition guard: boundaries must already
+    be translated before surface outputs so downstream lookups resolve correctly.
+    """
+    assert "boundaries" in translated, "Boundaries must be translated before surface output"
+
+    return [
+        _translate_single_surface_output(obj, surface_output_class)
+        for obj in output_params
+        if is_exact_instance(obj, surface_output_class)
+    ]
 
 
 def translate_slice_output(
@@ -1162,9 +1180,9 @@ def translate_output(input_params: SimulationParams, translated: dict):
     ]
     for output_class, output_key in surface_output_configs:
         if has_instance_in_list(outputs, output_class):
-            surface_output = translate_surface_output(outputs, output_class, translated)
-            if surface_output:
-                translated[output_key] = add_unused_output_settings_for_comparison(surface_output)
+            configs = translate_surface_output(outputs, output_class, translated)
+            configs.sort(key=lambda c: c["name"])
+            translated[output_key] = [add_unused_output_settings_for_comparison(c) for c in configs]
 
     ##:: Step3: Get translated["sliceOutput"]
     slice_output_configs = [
