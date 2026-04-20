@@ -105,73 +105,76 @@
         "externalProcessMonitorOutput": true,
         "monitorProcessorHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
-    "surfaceOutput": {
-        "animationFrequency": -1,
-        "animationFrequencyOffset": 0,
-        "animationFrequencyTimeAverage": -1,
-        "animationFrequencyTimeAverageOffset": 0,
-        "outputFields": [],
-        "outputFormat": "paraview",
-        "startAverageIntegrationStep": -1,
-        "surfaces": {
-            "blk-1/xblocks": {
-                "outputFields": [
-                    "Cp",
-                    "Cf",
-                    "CfVec",
-                    "primitiveVars",
-                    "yPlus",
-                    "Mach",
-                    "wallDistance"
-                ]
+    "surfaceOutput": [
+        {
+            "animationFrequency": -1,
+            "animationFrequencyOffset": 0,
+            "animationFrequencyTimeAverage": -1,
+            "animationFrequencyTimeAverageOffset": 0,
+            "name": "",
+            "outputFields": [],
+            "outputFormat": "paraview",
+            "startAverageIntegrationStep": -1,
+            "surfaces": {
+                "blk-1/xblocks": {
+                    "outputFields": [
+                        "Cp",
+                        "Cf",
+                        "CfVec",
+                        "primitiveVars",
+                        "yPlus",
+                        "Mach",
+                        "wallDistance"
+                    ]
+                },
+                "blk-1/xblocks2": {
+                    "outputFields": [
+                        "Cp",
+                        "Cf",
+                        "CfVec",
+                        "primitiveVars",
+                        "yPlus",
+                        "Mach",
+                        "wallDistance"
+                    ]
+                },
+                "blk-1/yblocks": {
+                    "outputFields": [
+                        "Cp",
+                        "Cf",
+                        "CfVec",
+                        "primitiveVars",
+                        "yPlus",
+                        "Mach",
+                        "wallDistance"
+                    ]
+                },
+                "blk-1/yblocks2": {
+                    "outputFields": [
+                        "Cp",
+                        "Cf",
+                        "CfVec",
+                        "primitiveVars",
+                        "yPlus",
+                        "Mach",
+                        "wallDistance"
+                    ]
+                },
+                "blk-1/zblocks": {
+                    "outputFields": [
+                        "Cp",
+                        "Cf",
+                        "CfVec",
+                        "primitiveVars",
+                        "yPlus",
+                        "Mach",
+                        "wallDistance"
+                    ]
+                }
             },
-            "blk-1/xblocks2": {
-                "outputFields": [
-                    "Cp",
-                    "Cf",
-                    "CfVec",
-                    "primitiveVars",
-                    "yPlus",
-                    "Mach",
-                    "wallDistance"
-                ]
-            },
-            "blk-1/yblocks": {
-                "outputFields": [
-                    "Cp",
-                    "Cf",
-                    "CfVec",
-                    "primitiveVars",
-                    "yPlus",
-                    "Mach",
-                    "wallDistance"
-                ]
-            },
-            "blk-1/yblocks2": {
-                "outputFields": [
-                    "Cp",
-                    "Cf",
-                    "CfVec",
-                    "primitiveVars",
-                    "yPlus",
-                    "Mach",
-                    "wallDistance"
-                ]
-            },
-            "blk-1/zblocks": {
-                "outputFields": [
-                    "Cp",
-                    "Cf",
-                    "CfVec",
-                    "primitiveVars",
-                    "yPlus",
-                    "Mach",
-                    "wallDistance"
-                ]
-            }
-        },
-        "writeSingleFile": false
-    },
+            "writeSingleFile": false
+        }
+    ],
     "thermallyPerfectGasModel": {
         "temperatureRanges": [
             {

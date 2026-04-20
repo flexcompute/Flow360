@@ -91,60 +91,76 @@
     "runControl": {
         "externalProcessMonitorOutput": false
     },
-    "surfaceOutput": {
-        "animationFrequency": -1,
-        "animationFrequencyOffset": 0,
-        "animationFrequencyTimeAverage": -1,
-        "animationFrequencyTimeAverageOffset": 0,
-        "outputFields": [],
-        "outputFormat": "paraview",
-        "startAverageIntegrationStep": -1,
-        "surfaces": {
-            "fluid/Interface_solid-1": {
-                "outputFields": [
-                    "Cp",
-                    "primitiveVars",
-                    "T",
-                    "heatFlux",
-                    "lowMachPreconditionerSensor"
-                ]
+    "surfaceOutput": [
+        {
+            "animationFrequency": -1,
+            "animationFrequencyOffset": 0,
+            "animationFrequencyTimeAverage": -1,
+            "animationFrequencyTimeAverageOffset": 0,
+            "name": "",
+            "outputFields": [],
+            "outputFormat": "paraview",
+            "startAverageIntegrationStep": -1,
+            "surfaces": {
+                "fluid/Interface_solid-1": {
+                    "outputFields": [
+                        "Cp",
+                        "primitiveVars",
+                        "T",
+                        "heatFlux",
+                        "lowMachPreconditionerSensor"
+                    ]
+                },
+                "fluid/Interface_solid-2": {
+                    "outputFields": [
+                        "Cp",
+                        "primitiveVars",
+                        "T",
+                        "heatFlux",
+                        "lowMachPreconditionerSensor"
+                    ]
+                },
+                "fluid/Interface_solid-3": {
+                    "outputFields": [
+                        "Cp",
+                        "primitiveVars",
+                        "T",
+                        "heatFlux",
+                        "lowMachPreconditionerSensor"
+                    ]
+                }
             },
-            "fluid/Interface_solid-2": {
-                "outputFields": [
-                    "Cp",
-                    "primitiveVars",
-                    "T",
-                    "heatFlux",
-                    "lowMachPreconditionerSensor"
-                ]
-            },
-            "fluid/Interface_solid-3": {
-                "outputFields": [
-                    "Cp",
-                    "primitiveVars",
-                    "T",
-                    "heatFlux",
-                    "lowMachPreconditionerSensor"
-                ]
-            },
-            "solid-1/Interface_fluid": {
-                "outputFields": [
-                    "T"
-                ]
-            },
-            "solid-2/Interface_fluid": {
-                "outputFields": [
-                    "T"
-                ]
-            },
-            "solid-3/Interface_fluid": {
-                "outputFields": [
-                    "T"
-                ]
-            }
+            "writeSingleFile": false
         },
-        "writeSingleFile": false
-    },
+        {
+            "animationFrequency": -1,
+            "animationFrequencyOffset": 0,
+            "animationFrequencyTimeAverage": -1,
+            "animationFrequencyTimeAverageOffset": 0,
+            "name": "",
+            "outputFields": [],
+            "outputFormat": "paraview",
+            "startAverageIntegrationStep": -1,
+            "surfaces": {
+                "solid-1/Interface_fluid": {
+                    "outputFields": [
+                        "T"
+                    ]
+                },
+                "solid-2/Interface_fluid": {
+                    "outputFields": [
+                        "T"
+                    ]
+                },
+                "solid-3/Interface_fluid": {
+                    "outputFields": [
+                        "T"
+                    ]
+                }
+            },
+            "writeSingleFile": false
+        }
+    ],
     "thermallyPerfectGasModel": {
         "temperatureRanges": [
             {
