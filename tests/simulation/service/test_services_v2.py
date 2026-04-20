@@ -15,7 +15,6 @@ from flow360.component.simulation.framework.updater_utils import compare_values
 from flow360.component.simulation.services_report import get_default_report_config
 from flow360.component.simulation.unit_system import DimensionedTypes
 from flow360.component.simulation.validation.validation_context import CASE
-from flow360.version import __version__
 
 
 @pytest.fixture(autouse=True)
@@ -212,9 +211,6 @@ def test_generate_process_json_skips_case_validation_for_meshing():
 
 
 def test_forward_compatibility_error():
-
-    from flow360.version import __version__
-
     # Mock a future simulation.json
     with open("data/updater_should_pass.json", "r") as fp:
         future_dict = json.load(fp)
@@ -226,9 +222,9 @@ def test_forward_compatibility_error():
     )
 
     assert errors[0] == {
-        "type": f"99.99.99 > {__version__}",
+        "type": f"99.99.99 > {_SCHEMA_VERSION}",
         "loc": [],
-        "msg": f"The cloud `SimulationParam` (version: 99.99.99) is too new for your local Python client (version: {__version__}). "
+        "msg": f"The cloud `SimulationParam` (version: 99.99.99) is too new for your local schema package (version: {_SCHEMA_VERSION}). "
         "Errors may occur since forward compatibility is limited.",
         "ctx": {},
     }
@@ -240,16 +236,16 @@ def test_forward_compatibility_error():
     )
 
     assert errors[0] == {
-        "type": f"99.99.99 > {__version__}",
+        "type": f"99.99.99 > {_SCHEMA_VERSION}",
         "loc": [],
-        "msg": f"[Internal] Your `SimulationParams` (version: 99.99.99) is too new for the solver (version: {__version__}). Errors may occur since forward compatibility is limited.",
+        "msg": f"[Internal] Your `SimulationParams` (version: 99.99.99) is too new for the solver (version: {_SCHEMA_VERSION}). Errors may occur since forward compatibility is limited.",
         "ctx": {},
     }
 
     with pytest.raises(
         ValueError,
         match=re.escape(
-            f"Your `SimulationParams` (version: 99.99.99) is too new for the solver (version: {__version__}). Errors may occur since forward compatibility is limited."
+            f"Your `SimulationParams` (version: 99.99.99) is too new for the solver (version: {_SCHEMA_VERSION}). Errors may occur since forward compatibility is limited."
         ),
     ):
         _, _, _ = services.generate_process_json(

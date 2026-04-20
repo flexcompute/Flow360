@@ -61,7 +61,6 @@ from flow360.component.simulation.translator.volume_meshing_translator import (
 from flow360.component.simulation.unit_system import _dimensioned_type_serializer, u
 from flow360.component.simulation.validation.validation_context import ALL
 from flow360.exceptions import Flow360TranslationError, Flow360ValueError
-from flow360.version import __version__
 
 
 def validate_model(  # pylint: disable=too-many-locals
@@ -101,7 +100,6 @@ def validate_model(  # pylint: disable=too-many-locals
         validated_by=validated_by,
         root_item_type=root_item_type,
         validation_level=validation_level,
-        version_to=__version__,
     )
 
 
