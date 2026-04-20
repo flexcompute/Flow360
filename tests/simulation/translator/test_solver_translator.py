@@ -943,6 +943,51 @@ def test_boundaries():
     translate_and_compare(param, mesh_unit=1 * u.m, ref_json_file="Flow360_boundaries.json")
 
 
+def test_rotate_velocity_direction_with_mesh():
+    """Verify rotateVelocityDirectionWithMesh is emitted only when set to True."""
+    operating_condition = AerospaceCondition(velocity_magnitude=10 * u.m / u.s)
+    with SI_unit_system:
+        param_default = SimulationParams(
+            operating_condition=operating_condition,
+            models=[
+                Inflow(
+                    name="exhaust",
+                    total_temperature=750 * u.K,
+                    surfaces=Surface(name="engine_face"),
+                    spec=Supersonic(
+                        total_pressure=3e6 * u.Pa,
+                        static_pressure=101325 * u.Pa,
+                    ),
+                    velocity_direction=(0, -1, 0),
+                ),
+            ],
+        )
+        param_enabled = SimulationParams(
+            operating_condition=operating_condition,
+            models=[
+                Inflow(
+                    name="exhaust",
+                    total_temperature=750 * u.K,
+                    surfaces=Surface(name="engine_face"),
+                    spec=Supersonic(
+                        total_pressure=3e6 * u.Pa,
+                        static_pressure=101325 * u.Pa,
+                    ),
+                    velocity_direction=(0, -1, 0),
+                    rotate_velocity_direction_with_mesh=True,
+                ),
+            ],
+        )
+
+    translated_default = get_solver_json(param_default, mesh_unit=1 * u.m)
+    bc_default = translated_default["boundaries"]["engine_face"]
+    assert "rotateVelocityDirectionWithMesh" not in bc_default
+
+    translated_enabled = get_solver_json(param_enabled, mesh_unit=1 * u.m)
+    bc_enabled = translated_enabled["boundaries"]["engine_face"]
+    assert bc_enabled["rotateVelocityDirectionWithMesh"] is True
+
+
 def test_liquid_simulation_translation():
     with SI_unit_system:
         param = SimulationParams(
