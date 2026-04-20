@@ -1468,14 +1468,14 @@ files = [
 
 [[package]]
 name = "flow360-schema"
-version = "25.10.3b1"
+version = "25.10.6b1"
 description = "Pure Pydantic schemas for Flow360 - Single Source of Truth"
 optional = false
 python-versions = ">=3.10,<4.0"
 groups = ["main"]
 files = [
-    {file = "flow360_schema-25.10.3b1-py3-none-any.whl", hash = "sha256:eecb0aace7d1b940f2bfb36939f4a71dde4272e5ba1954b397ffcdd62b1075a1"},
-    {file = "flow360_schema-25.10.3b1.tar.gz", hash = "sha256:f8b0483f701ccdc07380baa566318f375fb9d76c64e7267c9808ceb74929cb5b"},
+    {file = "flow360_schema-25.10.6b1-py3-none-any.whl", hash = "sha256:72da96c8ea3e61a5e9eb002b994e1061945cbe8b09b137694757882710190523"},
+    {file = "flow360_schema-25.10.6b1.tar.gz", hash = "sha256:739f56630a4970795b7bbf4f3e60faa6040fd5f072e46dc6e483c77b6d595f6e"},
 ]
 
 [package.dependencies]
@@ -6526,4 +6526,4 @@ docs = ["autodoc_pydantic", "cairosvg", "ipython", "jinja2", "jupyter", "myst-pa
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<3.14"
-content-hash = "b4aa1fa2749f81bfacef4364bc7e7f7a4a91dd2470f79113002236df012dda9f"
+content-hash = "137edaa655569f9b0399244cd55b648c678262d0b7e8b146f7b8228319513231"
