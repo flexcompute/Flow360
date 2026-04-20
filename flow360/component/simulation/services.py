@@ -1243,6 +1243,8 @@ def merge_geometry_entity_info(
     dict
         The updated draft simulation parameters dictionary with merged geometry entity info.
     """
+    # pylint:disable = protected-access
+    draft_param_as_dict, _ = SimulationParams._update_param_dict(draft_param_as_dict)
     draft_param_entity_info_dict = draft_param_as_dict.get("private_attribute_asset_cache", {}).get(
         "project_entity_info", {}
     )
@@ -1253,6 +1255,7 @@ def merge_geometry_entity_info(
 
     entity_info_components = []
     for geometry_param_as_dict in geometry_dependencies_param_as_dict:
+        geometry_param_as_dict, _ = SimulationParams._update_param_dict(geometry_param_as_dict)
         dependency_entity_info_dict = geometry_param_as_dict.get(
             "private_attribute_asset_cache", {}
         ).get("project_entity_info", {})
