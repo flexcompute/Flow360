@@ -447,6 +447,69 @@ def test_single_surface_output_emits_array():
     assert "wing" in translated["surfaceOutput"][0]["surfaces"]
 
 
+def test_default_named_outputs_no_suffix():
+    """Multiple default-named outputs on disjoint surfaces get no suffix (backward compat)."""
+    with SI_unit_system:
+        param = SimulationParams(
+            outputs=[
+                SurfaceOutput(
+                    entities=[Surface(name="wing")],
+                    output_fields=["Cp"],
+                    frequency=10,
+                ),
+                SurfaceOutput(
+                    entities=[Surface(name="tail")],
+                    output_fields=["Cp"],
+                    frequency=100,
+                ),
+                SurfaceOutput(
+                    entities=[Surface(name="body")],
+                    output_fields=["Cp"],
+                    frequency=50,
+                ),
+            ],
+        )
+    translated = {"boundaries": {}}
+    translated = translate_output(param, translated)
+
+    assert len(translated["surfaceOutput"]) == 3
+    names = [c["name"] for c in translated["surfaceOutput"]]
+    assert names == ["", "", ""]
+
+
+def test_mixed_default_and_custom_named_outputs():
+    """Default-named outputs sort before custom-named; defaults get no suffix,
+    customs get _<name> suffix."""
+    with SI_unit_system:
+        param = SimulationParams(
+            outputs=[
+                SurfaceOutput(
+                    name="custom_b",
+                    entities=[Surface(name="wing")],
+                    output_fields=["Cp"],
+                    frequency=10,
+                ),
+                SurfaceOutput(
+                    entities=[Surface(name="tail")],
+                    output_fields=["Cp"],
+                    frequency=100,
+                ),
+                SurfaceOutput(
+                    name="custom_a",
+                    entities=[Surface(name="body")],
+                    output_fields=["Cp"],
+                    frequency=50,
+                ),
+            ],
+        )
+    translated = {"boundaries": {}}
+    translated = translate_output(param, translated)
+
+    assert len(translated["surfaceOutput"]) == 3
+    names = [c["name"] for c in translated["surfaceOutput"]]
+    assert names == ["", "custom_a", "custom_b"]
+
+
 def test_single_time_average_surface_output_emits_array():
     """A single TimeAverageSurfaceOutput should also produce an array."""
     with SI_unit_system:

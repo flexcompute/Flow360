@@ -599,7 +599,8 @@ def _translate_single_surface_output(
         ),
     )
     surface_output["writeSingleFile"] = output_instance.write_single_file
-    surface_output["name"] = "" if output_instance.has_default_name else output_instance.name
+    default_name = type(output_instance).model_fields["name"].default
+    surface_output["name"] = "" if output_instance.name == default_name else output_instance.name
     return surface_output
 
 
