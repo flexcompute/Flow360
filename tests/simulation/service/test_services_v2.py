@@ -1534,6 +1534,7 @@ def test_merge_geometry_entity_info():
     )
 
 
+<<<<<<< HEAD
 def test_sanitize_stack_trace():
     """Test that _sanitize_stack_trace properly sanitizes file paths and removes traceback prefix."""
     from flow360.component.simulation.services import _sanitize_stack_trace
@@ -1601,6 +1602,121 @@ KeyError: 'type_name'"""
 
     result_windows = _sanitize_stack_trace(input_windows)
     assert result_windows == expected_windows
+=======
+def test_merge_geometry_entity_info_runs_updater_on_old_version():
+    """
+    When an old-version simulation params dict is passed to merge_geometry_entity_info,
+    SimulationParams._update_param_dict must be invoked on the draft dict AND on each
+    dependency dict before the entity info is deserialized. Without this, a schema change
+    between the stored version and the current version would surface as a validation
+    error in GeometryEntityInfo.model_validate.
+    """
+    import copy
+    from unittest.mock import patch
+
+    from flow360.component.simulation.simulation_params import SimulationParams
+
+    with open("data/root_geometry_cube_simulation.json", "r") as f:
+        root_dict = json.load(f)
+    with open("data/dependency_geometry_sphere1_simulation.json", "r") as f:
+        dep_dict1 = json.load(f)
+    with open("data/dependency_geometry_sphere2_simulation.json", "r") as f:
+        dep_dict2 = json.load(f)
+
+    # Pre-milestone version so the updater walks every registered migration.
+    old_version = "24.11.0"
+    old_draft = copy.deepcopy(root_dict)
+    old_draft["version"] = old_version
+    old_deps = [copy.deepcopy(dep_dict1), copy.deepcopy(dep_dict2)]
+    for d in old_deps:
+        d["version"] = old_version
+
+    # Part A: spy on _update_param_dict while still executing the real updater.
+    # Version is captured at call time because the updater mutates the dict in place.
+    real_updater = SimulationParams._update_param_dict
+    observed_versions: list = []
+
+    def capturing_updater(model_dict, *args, **kwargs):
+        observed_versions.append(model_dict.get("version"))
+        return real_updater(model_dict, *args, **kwargs)
+
+    with patch.object(
+        SimulationParams,
+        "_update_param_dict",
+        side_effect=capturing_updater,
+    ) as updater_spy:
+        result_from_old = services.merge_geometry_entity_info(
+            draft_param_as_dict=old_draft,
+            geometry_dependencies_param_as_dict=old_deps,
+        )
+
+        # One call for the draft + one per dependency.
+        assert updater_spy.call_count == 1 + len(
+            old_deps
+        ), f"Expected {1 + len(old_deps)} updater calls, got {updater_spy.call_count}"
+        # Every call entered the updater with the old (pre-migration) version.
+        assert observed_versions == [old_version] * (1 + len(old_deps)), observed_versions
+
+    # Part B: migrated input must yield the same merged GeometryEntityInfo as
+    # running the function against the current-version fixtures directly.
+    result_from_current = services.merge_geometry_entity_info(
+        draft_param_as_dict=copy.deepcopy(root_dict),
+        geometry_dependencies_param_as_dict=[
+            copy.deepcopy(dep_dict1),
+            copy.deepcopy(dep_dict2),
+        ],
+    )
+
+    assert result_from_old["type_name"] == "GeometryEntityInfo"
+    assert compare_values(
+        result_from_old, result_from_current
+    ), "Merged entity info from old-version inputs diverged from current-version baseline"
+
+
+def test_merge_geometry_entity_info_on_real_old_version_json():
+    """
+    Regression test using an actual v25.7.7 geometry JSON that carries a
+    'transformation' key inside grouped_bodies. That key was removed by the
+    `_to_25_8_1` updater migration (see framework/updater.py) and is rejected
+    by the current GeometryEntityInfo schema ('Extra inputs are not permitted').
+
+    Without the updater call in merge_geometry_entity_info, deserializing this
+    fixture raises pydantic.ValidationError. This test therefore fails loudly
+    if the updater step is ever removed or reordered after deserialization.
+    """
+    import copy
+
+    import pydantic as pd
+
+    with open("data/old_version_geometry_with_transformation.json", "r") as f:
+        old_version_dict = json.load(f)
+
+    # Sanity: fixture genuinely exercises an old-schema field that current schema rejects.
+    assert old_version_dict["version"] == "25.7.7"
+    pre_update_bodies = old_version_dict["private_attribute_asset_cache"]["project_entity_info"][
+        "grouped_bodies"
+    ]
+    assert any(
+        "transformation" in body for group in pre_update_bodies for body in group
+    ), "Fixture no longer contains the obsolete 'transformation' key"
+
+    # Confirm current schema rejects the pre-migration payload directly.
+    with pytest.raises(pd.ValidationError, match="transformation"):
+        GeometryEntityInfo.model_validate(
+            old_version_dict["private_attribute_asset_cache"]["project_entity_info"]
+        )
+
+    # merge_geometry_entity_info must run the updater before deserialization,
+    # so the same fixture now round-trips successfully.
+    merged = services.merge_geometry_entity_info(
+        draft_param_as_dict=copy.deepcopy(old_version_dict),
+        geometry_dependencies_param_as_dict=[copy.deepcopy(old_version_dict)],
+    )
+    assert merged["type_name"] == "GeometryEntityInfo"
+    assert not any(
+        "transformation" in body for group in merged["grouped_bodies"] for body in group
+    ), "Obsolete 'transformation' field leaked into merged output"
+>>>>>>> 77f6071f ([FXC-8307][25.8] Run updater on inputs in merge_geometry_entity_info (#2002))
 
 
 def test_validate_error_location_with_selector():
