@@ -349,7 +349,7 @@ class ProjectMeta(pd.BaseModel, extra="allow"):
     tags: List[str] = pd.Field(default_factory=list)
     root_item_id: str = pd.Field(alias="rootItemId")
     root_item_type: RootType = pd.Field(alias="rootItemType")
-    use_nextflow: bool = pd.Field(default=False, alias="useNextflow")
+    use_catalyst: bool = pd.Field(default=False, alias="useCatalyst")
 
 
 class ProjectTreeNode(pd.BaseModel):
