@@ -10,6 +10,7 @@ import toml
 from packaging.version import InvalidVersion, Version
 
 from flow360.cli.auth import LoginError, resolve_target_environment, wait_for_login
+from flow360.cli.auth_guidance import build_configure_command
 from flow360.environment import Env
 from flow360.user_config import (
     config_file,
@@ -130,6 +131,9 @@ def login(profile, dev, uat, local, env, port, timeout):  # pylint: disable=too-
             )
         click.echo("")
         click.echo(details["login_url"])
+        click.echo("")
+        click.echo("Headless environment? Configure an API key manually with:")
+        click.echo(f"  {build_configure_command(details['environment'], details['profile'])}")
         click.echo("")
 
     try:
