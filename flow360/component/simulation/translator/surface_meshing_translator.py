@@ -5,12 +5,8 @@ import logging
 from copy import deepcopy
 from typing import List
 
-from flow360_schema.framework.physical_dimensions import Length
-from unyt import unyt_array
-
-logger = logging.getLogger(__name__)
-
 from flow360_schema.exceptions import Flow360TranslationError
+from flow360_schema.framework.physical_dimensions import Length
 from flow360_schema.models.entities.geometry_entities import SnappyBody
 from flow360_schema.models.entities.surface_entities import Surface
 from flow360_schema.models.entities.volume_entities import (
@@ -32,6 +28,7 @@ from flow360_schema.models.simulation.meshing_param.volume_params import (
     UniformRefinement,
 )
 from flow360_schema.models.simulation.simulation_params import SimulationParams
+from unyt import unyt_array
 
 from flow360.component.simulation.translator.utils import (
     ensure_meshing_is_specified,
@@ -39,6 +36,8 @@ from flow360.component.simulation.translator.utils import (
     translate_setting_and_apply_to_all_entities,
     using_snappy,
 )
+
+logger = logging.getLogger(__name__)
 
 
 # pylint: disable=invalid-name

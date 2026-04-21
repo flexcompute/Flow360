@@ -29,12 +29,11 @@ from flow360_schema.models.simulation.meshing_param.params import ModularMeshing
 from flow360_schema.models.simulation.simulation_params import SimulationParams
 from flow360_schema.models.simulation.units import validate_length
 from flow360_schema.exceptions import Flow360TranslationError
+from flow360_schema.framework.entity.coordinate_system_state import (
+    CoordinateSystemState,
+)
 from flow360_schema.models.simulation.utils import is_exact_instance
 from flow360_schema.models.simulation.validation.validation_context import ValidationContext
-
-from flow360.component.simulation.draft_context.coordinate_system_manager import (
-    CoordinateSystemManager,
-)
 
 
 # pylint: disable=too-many-arguments
@@ -43,7 +42,7 @@ def apply_coordinate_system_transformations(params: SimulationParams) -> Simulat
     Apply coordinate system transformations to entities before translation.
 
     For each entity with a coordinate system assignment:
-    1. Get the combined transformation matrix from CoordinateSystemManager
+    1. Get the combined transformation matrix from the cached CoordinateSystemState
     2. Call entity._apply_transformation(matrix)
     3. Replace the original entity with the transformed version in-place
 
@@ -62,46 +61,46 @@ def apply_coordinate_system_transformations(params: SimulationParams) -> Simulat
         # No coordinate systems or assignments, nothing to transform
         return params
 
-    # Rebuild coordinate system manager from cached status
+    # Rebuild coordinate system state from cached status
 
-    manager = CoordinateSystemManager._from_status(  # pylint: disable=protected-access
+    state = CoordinateSystemState._from_status(  # pylint: disable=protected-access
         status=coord_status
     )
-    _apply_transformations_to_model(params, manager)
+    _apply_transformations_to_model(params, state)
 
     return params
 
 
-def _transform_single_entity(entity: EntityBase, manager: CoordinateSystemManager) -> EntityBase:
+def _transform_single_entity(entity: EntityBase, state: CoordinateSystemState) -> EntityBase:
     """Transform a single entity if it has a coordinate system assignment."""
-    matrix = manager._get_matrix_for_entity(entity=entity)  # pylint: disable=protected-access
+    matrix = state._get_matrix_for_entity(entity=entity)  # pylint: disable=protected-access
     if matrix is not None and hasattr(entity, "_apply_transformation"):
         return entity._apply_transformation(matrix)  # pylint: disable=protected-access
     return entity
 
 
-def _transform_entity_list(entity_list: EntityList, manager: CoordinateSystemManager) -> EntityList:
+def _transform_entity_list(entity_list: EntityList, state: CoordinateSystemState) -> EntityList:
     """Transform all entities in an EntityList."""
     if not entity_list.stored_entities:
         return entity_list
 
     transformed_entities = [
-        _transform_single_entity(entity, manager) for entity in entity_list.stored_entities
+        _transform_single_entity(entity, state) for entity in entity_list.stored_entities
     ]
     return entity_list.model_copy(update={"stored_entities": transformed_entities})
 
 
-def _transform_sequence_item(item, manager: CoordinateSystemManager):
+def _transform_sequence_item(item, state: CoordinateSystemState):
     """Transform a single item from a list or tuple."""
     if isinstance(item, EntityBase):
-        return _transform_single_entity(item, manager)
+        return _transform_single_entity(item, state)
     if isinstance(item, Flow360BaseModel):
-        _apply_transformations_to_model(item, manager)
+        _apply_transformations_to_model(item, state)
     return item
 
 
 def _apply_transformations_to_model(
-    model: Flow360BaseModel, manager: "CoordinateSystemManager"
+    model: Flow360BaseModel, state: "CoordinateSystemState"
 ) -> None:
     """
     Recursively apply coordinate system transformations to all entities in a model.
@@ -110,26 +109,26 @@ def _apply_transformations_to_model(
 
     Args:
         model: The model containing entities to transform
-        manager: The coordinate system manager with transformation matrices
+        state: The coordinate system state with transformation matrices
     """
     for field_name, field_value in model.__dict__.items():
         if isinstance(field_value, AssetCache):
             continue
 
         if isinstance(field_value, EntityBase):
-            transformed = _transform_single_entity(field_value, manager)
+            transformed = _transform_single_entity(field_value, state)
             if transformed is not field_value:
                 setattr(model, field_name, transformed)
 
         elif isinstance(field_value, EntityList):
-            new_entity_list = _transform_entity_list(field_value, manager)
+            new_entity_list = _transform_entity_list(field_value, state)
             if new_entity_list is not field_value:
                 setattr(model, field_name, new_entity_list)
 
         elif isinstance(field_value, (list, tuple)):
             transformed_items = None
             for index, item in enumerate(field_value):
-                transformed = _transform_sequence_item(item, manager)
+                transformed = _transform_sequence_item(item, state)
                 if transformed is not item:
                     if transformed_items is None:
                         transformed_items = list(field_value)
@@ -142,7 +141,7 @@ def _apply_transformations_to_model(
                 setattr(model, field_name, new_value)
 
         elif isinstance(field_value, Flow360BaseModel):
-            _apply_transformations_to_model(field_value, manager)
+            _apply_transformations_to_model(field_value, state)
 
 
 def expand_selectors_for_translation(input_params: SimulationParams):
