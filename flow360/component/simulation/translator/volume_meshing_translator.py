@@ -2,16 +2,24 @@
 
 from typing import Union
 
-from flow360.component.simulation.meshing_param.face_params import (
+from flow360_schema.models.entities.volume_entities import (
+    AxisymmetricBody,
+    Box,
+    CustomVolume,
+    Cylinder,
+    SeedpointVolume,
+    Sphere,
+)
+from flow360_schema.models.simulation.meshing_param.face_params import (
     BoundaryLayer,
     PassiveSpacing,
 )
-from flow360.component.simulation.meshing_param.params import (
+from flow360_schema.models.simulation.meshing_param.params import (
     MeshingParams,
     ModularMeshingWorkflow,
     VolumeMeshingParams,
 )
-from flow360.component.simulation.meshing_param.volume_params import (
+from flow360_schema.models.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     AxisymmetricRefinement,
     CustomZones,
@@ -25,15 +33,9 @@ from flow360.component.simulation.meshing_param.volume_params import (
     WindTunnelFarfield,
     _FarfieldAllowingEnclosedEntities,
 )
-from flow360.component.simulation.primitives import (
-    AxisymmetricBody,
-    Box,
-    CustomVolume,
-    Cylinder,
-    SeedpointVolume,
-    Sphere,
-)
-from flow360.component.simulation.simulation_params import SimulationParams
+from flow360_schema.models.simulation.simulation_params import SimulationParams
+from flow360_schema.models.simulation.utils import is_exact_instance
+
 from flow360.component.simulation.translator.solver_translator import inject_slice_info
 from flow360.component.simulation.translator.utils import (
     ensure_meshing_is_specified,
@@ -42,7 +44,6 @@ from flow360.component.simulation.translator.utils import (
     preprocess_input,
     translate_setting_and_apply_to_all_entities,
 )
-from flow360.component.simulation.utils import is_exact_instance
 from flow360.exceptions import Flow360TranslationError
 
 # pylint: disable=too-many-locals

@@ -18,20 +18,37 @@ from flow360_schema.framework.physical_dimensions import Length
 from flow360_schema.models.functions import math
 from flow360_schema.models.variables import solution
 
-from flow360.component.simulation.conversion import (
+from flow360_schema.framework.entity.entity_list import EntityList
+from flow360_schema.models.entities.base import BOUNDARY_FULL_NAME_WHEN_NOT_FOUND
+from flow360_schema.models.entities.output_entities import (
+    Point,
+    PointArray,
+    PointArray2D,
+)
+from flow360_schema.models.entities.surface_entities import (
+    GhostCircularPlane,
+    GhostSphere,
+    GhostSurface,
+    GhostSurfacePair,
+    ImportedSurface,
+    MirroredSurface,
+    Surface,
+    SurfacePair,
+)
+from flow360_schema.models.entities.volume_entities import Box
+from flow360_schema.models.simulation.conversion import (
     LIQUID_IMAGINARY_FREESTREAM_MACH,
     compute_udf_dimensionalization_factor,
 )
-from flow360.component.simulation.framework.entity_base import EntityList
-from flow360.component.simulation.framework.updater_utils import recursive_remove_key
-from flow360.component.simulation.models.material import (
+from flow360_schema.models.simulation.framework.updater_utils import recursive_remove_key
+from flow360_schema.models.simulation.models.material import (
     Air,
     Sutherland,
     ThermallyPerfectGas,
     compute_gamma_from_coefficients,
 )
-from flow360.component.simulation.models.solver_numerics import NoneSolver
-from flow360.component.simulation.models.surface_models import (
+from flow360_schema.models.simulation.models.solver_numerics import NoneSolver
+from flow360_schema.models.simulation.models.surface_models import (
     Freestream,
     HeatFlux,
     Inflow,
@@ -53,7 +70,7 @@ from flow360.component.simulation.models.surface_models import (
     WallRotation,
     WallVelocityModelTypes,
 )
-from flow360.component.simulation.models.volume_models import (
+from flow360_schema.models.simulation.models.volume_models import (
     ActuatorDisk,
     AngularVelocity,
     BETDisk,
@@ -64,21 +81,16 @@ from flow360.component.simulation.models.volume_models import (
     Rotation,
     Solid,
 )
-from flow360.component.simulation.operating_condition.operating_condition import (
+from flow360_schema.models.simulation.operating_condition.operating_condition import (
     LiquidOperatingCondition,
 )
-from flow360.component.simulation.outputs.output_entities import (
-    Point,
-    PointArray,
-    PointArray2D,
-)
-from flow360.component.simulation.outputs.output_fields import (
+from flow360_schema.models.simulation.outputs.output_fields import (
     PREDEFINED_UDF_EXPRESSIONS,
     append_component_to_output_fields,
     generate_predefined_udf,
     remove_fields_subsumed_by_primitive_vars,
 )
-from flow360.component.simulation.outputs.outputs import (
+from flow360_schema.models.simulation.outputs.outputs import (
     AeroAcousticOutput,
     ForceDistributionOutput,
     ForceOutput,
@@ -106,23 +118,19 @@ from flow360.component.simulation.outputs.outputs import (
     UserDefinedField,
     VolumeOutput,
 )
-from flow360.component.simulation.primitives import (
-    BOUNDARY_FULL_NAME_WHEN_NOT_FOUND,
-    Box,
-    GhostCircularPlane,
-    GhostSphere,
-    GhostSurface,
-    GhostSurfacePair,
-    ImportedSurface,
-    MirroredSurface,
-    Surface,
-    SurfacePair,
-)
-from flow360.component.simulation.run_control.stopping_criterion import (
+from flow360_schema.models.simulation.run_control.stopping_criterion import (
     StoppingCriterion,
 )
-from flow360.component.simulation.simulation_params import SimulationParams
-from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
+from flow360_schema.models.simulation.simulation_params import SimulationParams
+from flow360_schema.models.simulation.time_stepping.time_stepping import Steady, Unsteady
+from flow360_schema.models.simulation.user_defined_dynamics.user_defined_dynamics import (
+    UserDefinedDynamic,
+)
+from flow360_schema.models.simulation.utils import (
+    is_exact_instance,
+    is_instance_of_type_in_union,
+)
+
 from flow360.component.simulation.translator.user_expression_utils import (
     udf_prepending_code,
 )
@@ -141,13 +149,6 @@ from flow360.component.simulation.translator.utils import (
     replace_dict_key,
     translate_setting_and_apply_to_all_entities,
     translate_value_or_expression_object,
-)
-from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
-    UserDefinedDynamic,
-)
-from flow360.component.simulation.utils import (
-    is_exact_instance,
-    is_instance_of_type_in_union,
 )
 from flow360.exceptions import Flow360TranslationError
 

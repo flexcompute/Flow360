@@ -7,27 +7,28 @@ from typing import List
 from flow360_schema.framework.physical_dimensions import Length
 from unyt import unyt_array
 
-from flow360.component.simulation.entity_info import GeometryEntityInfo
-from flow360.component.simulation.framework.updater_utils import recursive_remove_key
-from flow360.component.simulation.meshing_param import snappy
-from flow360.component.simulation.meshing_param.edge_params import SurfaceEdgeRefinement
-from flow360.component.simulation.meshing_param.face_params import SurfaceRefinement
-from flow360.component.simulation.meshing_param.meshing_specs import OctreeSpacing
-from flow360.component.simulation.meshing_param.params import MeshingParams
-from flow360.component.simulation.meshing_param.volume_params import (
+from flow360_schema.models.entities.geometry_entities import SnappyBody
+from flow360_schema.models.entities.surface_entities import Surface
+from flow360_schema.models.entities.volume_entities import (
+    Box,
+    Cylinder,
+    SeedpointVolume,
+    Sphere,
+)
+from flow360_schema.models.entity_info import GeometryEntityInfo
+from flow360_schema.models.simulation.framework.updater_utils import recursive_remove_key
+from flow360_schema.models.simulation.meshing_param import snappy
+from flow360_schema.models.simulation.meshing_param.edge_params import SurfaceEdgeRefinement
+from flow360_schema.models.simulation.meshing_param.face_params import SurfaceRefinement
+from flow360_schema.models.simulation.meshing_param.meshing_specs import OctreeSpacing
+from flow360_schema.models.simulation.meshing_param.params import MeshingParams
+from flow360_schema.models.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     CustomZones,
     UniformRefinement,
 )
-from flow360.component.simulation.primitives import (
-    Box,
-    Cylinder,
-    SeedpointVolume,
-    SnappyBody,
-    Sphere,
-    Surface,
-)
-from flow360.component.simulation.simulation_params import SimulationParams
+from flow360_schema.models.simulation.simulation_params import SimulationParams
+
 from flow360.component.simulation.translator.utils import (
     ensure_meshing_is_specified,
     preprocess_input,

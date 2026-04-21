@@ -7,7 +7,8 @@ from typing import Literal
 import numpy as np
 from flow360_schema.framework.physical_dimensions import Angle, Length
 
-import flow360.component.simulation.units as u
+import flow360_schema.models.simulation.units as u
+
 from flow360.exceptions import Flow360ValueError
 from flow360.log import log
 

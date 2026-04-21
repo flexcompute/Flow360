@@ -14,24 +14,26 @@ from flow360_schema.framework.expression import Expression, UserVariable
 from flow360_schema.framework.physical_dimensions import Length
 from flow360_schema.models.asset_cache import AssetCache
 
-from flow360.component.simulation.draft_context.coordinate_system_manager import (
-    CoordinateSystemManager,
-)
-from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.simulation.framework.base_model_config import snake_to_camel
-from flow360.component.simulation.framework.entity_base import EntityBase, EntityList
-from flow360.component.simulation.framework.unique_list import UniqueItemList
-from flow360.component.simulation.meshing_param import snappy
-from flow360.component.simulation.meshing_param.params import ModularMeshingWorkflow
-from flow360.component.simulation.primitives import (
+from flow360_schema.framework.base_model import Flow360BaseModel
+from flow360_schema.framework.base_model_config import snake_to_camel
+from flow360_schema.framework.entity.entity_base import EntityBase
+from flow360_schema.framework.entity.entity_list import EntityList
+from flow360_schema.framework.unique_list import UniqueItemList
+from flow360_schema.models.entities.base import (
     BOUNDARY_FULL_NAME_WHEN_NOT_FOUND,
     _SurfaceEntityBase,
     _VolumeEntityBase,
 )
-from flow360.component.simulation.simulation_params import SimulationParams
-from flow360.component.simulation.units import validate_length
-from flow360.component.simulation.utils import is_exact_instance
-from flow360.component.simulation.validation.validation_context import ValidationContext
+from flow360_schema.models.simulation.meshing_param import snappy
+from flow360_schema.models.simulation.meshing_param.params import ModularMeshingWorkflow
+from flow360_schema.models.simulation.simulation_params import SimulationParams
+from flow360_schema.models.simulation.units import validate_length
+from flow360_schema.models.simulation.utils import is_exact_instance
+from flow360_schema.models.simulation.validation.validation_context import ValidationContext
+
+from flow360.component.simulation.draft_context.coordinate_system_manager import (
+    CoordinateSystemManager,
+)
 from flow360.exceptions import Flow360TranslationError
 
 
