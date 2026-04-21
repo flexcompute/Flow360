@@ -1,12 +1,16 @@
 # pylint:disable = too-many-lines
 """Surface meshing parameter translator."""
 
+import logging
 from copy import deepcopy
 from typing import List
 
 from flow360_schema.framework.physical_dimensions import Length
 from unyt import unyt_array
 
+logger = logging.getLogger(__name__)
+
+from flow360_schema.exceptions import Flow360TranslationError
 from flow360_schema.models.entities.geometry_entities import SnappyBody
 from flow360_schema.models.entities.surface_entities import Surface
 from flow360_schema.models.entities.volume_entities import (
@@ -35,8 +39,6 @@ from flow360.component.simulation.translator.utils import (
     translate_setting_and_apply_to_all_entities,
     using_snappy,
 )
-from flow360.exceptions import Flow360TranslationError
-from flow360.log import log
 
 
 # pylint: disable=invalid-name
@@ -589,7 +591,7 @@ def legacy_mesher_json(input_params: SimulationParams):
     # pylint: disable=duplicate-code
     ##:: >>  Step 1:  Get global maxEdgeLength [REQUIRED]
     if input_params.meshing.defaults.surface_max_edge_length is None:
-        log.info("No `surface_max_edge_length` found in the defaults. Skipping translation.")
+        logger.info("No `surface_max_edge_length` found in the defaults. Skipping translation.")
         raise Flow360TranslationError(
             "No `surface_max_edge_length` found in the defaults",
             input_value=None,

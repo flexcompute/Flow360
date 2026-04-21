@@ -28,13 +28,13 @@ from flow360_schema.models.simulation.meshing_param import snappy
 from flow360_schema.models.simulation.meshing_param.params import ModularMeshingWorkflow
 from flow360_schema.models.simulation.simulation_params import SimulationParams
 from flow360_schema.models.simulation.units import validate_length
+from flow360_schema.exceptions import Flow360TranslationError
 from flow360_schema.models.simulation.utils import is_exact_instance
 from flow360_schema.models.simulation.validation.validation_context import ValidationContext
 
 from flow360.component.simulation.draft_context.coordinate_system_manager import (
     CoordinateSystemManager,
 )
-from flow360.exceptions import Flow360TranslationError
 
 
 # pylint: disable=too-many-arguments

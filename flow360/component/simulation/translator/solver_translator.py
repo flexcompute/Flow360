@@ -18,6 +18,7 @@ from flow360_schema.framework.physical_dimensions import Length
 from flow360_schema.models.functions import math
 from flow360_schema.models.variables import solution
 
+from flow360_schema.exceptions import Flow360TranslationError
 from flow360_schema.framework.entity.entity_list import EntityList
 from flow360_schema.models.entities.base import BOUNDARY_FULL_NAME_WHEN_NOT_FOUND
 from flow360_schema.models.entities.output_entities import (
@@ -150,7 +151,6 @@ from flow360.component.simulation.translator.utils import (
     translate_setting_and_apply_to_all_entities,
     translate_value_or_expression_object,
 )
-from flow360.exceptions import Flow360TranslationError
 
 
 def dump_dict(input_params, exclude_none=True):

@@ -30,7 +30,7 @@ from flow360_schema.models.simulation.validation.validation_service import (
 from pydantic import TypeAdapter
 
 from flow360.component.simulation.exposed_units import supported_units_by_front_end
-from flow360.component.simulation.models.bet.bet_translator_interface import (
+from flow360_schema.models.simulation.models.bet.bet_translator_interface import (
     generate_polar_file_name_list,
     translate_xfoil_c81_to_bet_dict,
     translate_xrotor_dfdc_to_bet_dict,
@@ -47,20 +47,17 @@ from flow360.component.simulation.primitives import Box
 # pylint: enable=unused-import
 from flow360.component.simulation.simulation_params import SimulationParams
 
-# Required for correct global scope initialization
-from flow360.component.simulation.translator.solver_translator import (
-    get_columnar_data_processor_json,
-    get_solver_json,
-)
-from flow360.component.simulation.translator.surface_meshing_translator import (
-    get_surface_meshing_json,
-)
-from flow360.component.simulation.translator.volume_meshing_translator import (
-    get_volume_meshing_json,
+# Re-export translator service entrypoints for backward compatibility:
+# external callers continue importing these from flow360.component.simulation.services.
+from flow360.component.simulation.translator.service_entrypoints import (  # noqa: F401
+    simulation_to_case_json,
+    simulation_to_columnar_data_processor_json,
+    simulation_to_surface_meshing_json,
+    simulation_to_volume_meshing_json,
 )
 from flow360.component.simulation.unit_system import _dimensioned_type_serializer, u
 from flow360.component.simulation.validation.validation_context import ALL
-from flow360.exceptions import Flow360TranslationError, Flow360ValueError
+from flow360.exceptions import Flow360ValueError
 
 
 def validate_model(  # pylint: disable=too-many-locals
@@ -100,86 +97,6 @@ def validate_model(  # pylint: disable=too-many-locals
         validated_by=validated_by,
         root_item_type=root_item_type,
         validation_level=validation_level,
-    )
-
-
-# pylint: disable=too-many-arguments
-def _translate_simulation_json(
-    input_params: SimulationParams,
-    mesh_unit,
-    target_name: str = None,
-    translation_func=None,
-    **kwargs,
-):
-    """
-    Get JSON for surface meshing from a given simulation JSON.
-
-    """
-    translated_dict = None
-    if mesh_unit is None:
-        raise ValueError("Mesh unit is required for translation.")
-    if isinstance(input_params, SimulationParams) is False:
-        raise ValueError(
-            "input_params must be of type SimulationParams. Instead got: " + str(type(input_params))
-        )
-
-    try:
-        translated_dict = translation_func(input_params, mesh_unit, **kwargs)
-    except Flow360TranslationError as err:
-        raise ValueError(str(err)) from err
-    except Exception as err:  # translation itself is not supposed to raise any other exception
-        raise ValueError(
-            f"Unexpected error translating to {target_name} json: " + str(err)
-        ) from err
-
-    if translated_dict == {}:
-        raise ValueError(f"No {target_name} parameters found in given SimulationParams.")
-
-    # pylint: disable=protected-access
-    hash_value = SimulationParams._calculate_hash(translated_dict)
-    return translated_dict, hash_value
-
-
-def simulation_to_surface_meshing_json(input_params: SimulationParams, mesh_unit):
-    """Get JSON for surface meshing from a given simulation JSON."""
-    return _translate_simulation_json(
-        input_params,
-        mesh_unit,
-        "surface meshing",
-        get_surface_meshing_json,
-    )
-
-
-def simulation_to_volume_meshing_json(input_params: SimulationParams, mesh_unit):
-    """Get JSON for volume meshing from a given simulation JSON."""
-    return _translate_simulation_json(
-        input_params,
-        mesh_unit,
-        "volume meshing",
-        get_volume_meshing_json,
-    )
-
-
-def simulation_to_case_json(
-    input_params: SimulationParams, mesh_unit, *, skip_selector_expansion: bool = False
-):
-    """Get JSON for case from a given simulation JSON."""
-    return _translate_simulation_json(
-        input_params,
-        mesh_unit,
-        "case",
-        get_solver_json,
-        skip_selector_expansion=skip_selector_expansion,
-    )
-
-
-def simulation_to_columnar_data_processor_json(input_params: SimulationParams, mesh_unit):
-    """Get JSON for case postprocessing from a given simulation JSON."""
-    return _translate_simulation_json(
-        input_params,
-        mesh_unit,
-        "case postprocessing",
-        get_columnar_data_processor_json,
     )
 
 

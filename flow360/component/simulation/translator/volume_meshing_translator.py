@@ -2,6 +2,7 @@
 
 from typing import Union
 
+from flow360_schema.exceptions import Flow360TranslationError
 from flow360_schema.models.entities.volume_entities import (
     AxisymmetricBody,
     Box,
@@ -44,7 +45,6 @@ from flow360.component.simulation.translator.utils import (
     preprocess_input,
     translate_setting_and_apply_to_all_entities,
 )
-from flow360.exceptions import Flow360TranslationError
 
 # pylint: disable=too-many-locals
 

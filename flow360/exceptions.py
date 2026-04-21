@@ -1,15 +1,15 @@
 """Custom Flow360 exceptions"""
 
 # pylint: disable=unused-import
-from typing import Any, List
+from typing import List
 
 from flow360_schema.exceptions import (
     Flow360DeprecationError,
     Flow360Error,
+    Flow360ErrorWithLocation,
+    Flow360TranslationError,
     Flow360ValueError,
 )
-
-from .log import log
 
 
 class Flow360TypeError(Flow360Error):
@@ -34,36 +34,6 @@ class Flow360ValidationError(Flow360Error):
 
 class Flow360BoundaryMissingError(Flow360Error):
     """Error when a boundary in simulation.json is not found in mesh metadata"""
-
-
-class Flow360ErrorWithLocation(Exception):
-    """
-    Error with metadata on where the error is in the SimulationParams.
-    This is used when NOT raising error from pydantic but we still want something similar to pd.ValidationError.
-    """
-
-    error_message: str
-    input_value: Any
-    location: list[str]
-
-    def __init__(self, error_message, input_value, location: list[str] = None) -> None:
-        """Log the error message and raise"""
-        self.error_message = error_message
-        self.input_value = input_value
-        self.location = location
-        log.error(error_message)
-        super().__init__(error_message)
-
-    def __str__(self) -> str:
-        """Return a formatted string representing the error and its location."""
-        if self.location is not None:
-            error_location = "SimulationParams -> " + " -> ".join(self.location)
-            return f"At {error_location}: {self.error_message}. [input_value = {self.input_value}]."
-        return f"{self.error_message}. [input_value = {self.input_value}]."
-
-
-class Flow360TranslationError(Flow360ErrorWithLocation):
-    """Error when translating to SurfaceMeshing/VolumeMeshing/Case JSON."""
 
 
 class Flow360ConfigurationError(Flow360Error):
