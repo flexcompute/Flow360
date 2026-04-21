@@ -587,6 +587,11 @@ class Outflow(BoundaryBase):
     """
     :class:`Outflow` defines the outflow boundary condition based on the input :py:attr:`spec`.
 
+    .. warning::
+
+       For supersonic cases the :class:`Pressure` :py:attr:`spec` should be used; other specifications
+       may give unexpected results.
+
     Example
     -------
     - Define outflow boundary condition with pressure:
@@ -620,7 +625,8 @@ class Outflow(BoundaryBase):
     spec: Union[Pressure, MassFlowRate, Mach] = pd.Field(
         discriminator="type_name",
         description="Specify the static pressure, mass flow rate, or Mach number parameters at"
-        + " the `Outflow` boundary.",
+        + " the `Outflow` boundary. For supersonic cases the `Pressure` spec should be used;"
+        + " other specifications may give unexpected results.",
     )
     entities: EntityList[Surface, MirroredSurface, WindTunnelGhostSurface] = pd.Field(
         alias="surfaces",
