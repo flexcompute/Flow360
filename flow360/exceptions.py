@@ -80,6 +80,9 @@ class Flow360AuthenticationError(Flow360Error):
 class Flow360AuthorisationError(Flow360Error):
     """Error authenticating a user through webapi webAPI."""
 
+    def __init__(self, message: str = None):
+        Exception.__init__(self, message)
+
 
 class Flow360DataError(Flow360Error):
     """Error accessing data."""

@@ -24,6 +24,7 @@ from flow360.user_config import store_apikey
 
 LOGIN_PATH = "account/cli-login"
 CALLBACK_PATH = "/callback"
+LOCAL_DEV_WEB_URL = "http://local.dev-simulation.cloud:3000"
 DEV_WEB_URL = "https://flow360.dev-simulation.cloud"
 CALLBACK_HOST = "127.0.0.1"
 CALLBACK_ENCRYPTION_ALGORITHM = "P-256-ECDH-AES-GCM-256"
@@ -38,16 +39,19 @@ def resolve_target_environment(
     dev: bool = False,
     uat: bool = False,
     env: Optional[str] = None,
+    local: bool = False,
 ):
     """Resolve the selected environment and validate conflicting CLI flags."""
-    selected = [flag for flag, enabled in (("dev", dev), ("uat", uat)) if enabled]
+    selected = [flag for flag, enabled in (("dev", dev), ("uat", uat), ("local", local)) if enabled]
     if env is not None:
         selected.append(env)
 
     if len(selected) > 1:
-        raise ValueError("Use only one of --dev, --uat, or --env.")
+        raise ValueError("Use only one of --dev, --uat, --local, or --env.")
 
-    if dev:
+    if local:
+        target = Env.dev
+    elif dev:
         target = Env.dev
     elif uat:
         target = Env.uat
@@ -60,13 +64,14 @@ def resolve_target_environment(
     return target, storage_environment
 
 
-def build_login_url(  # pylint: disable=too-many-arguments
+def build_login_url(
     environment,
     callback_url: str,
     state: str,
     profile: str,
     callback_public_key: Optional[str] = None,
     callback_encryption_algorithm: Optional[str] = None,
+    use_local_ui: bool = False,
 ) -> str:
     """Build the browser login URL for the selected environment."""
     query_params = {
@@ -82,7 +87,9 @@ def build_login_url(  # pylint: disable=too-many-arguments
         query_params["callback_encryption_algorithm"] = callback_encryption_algorithm
 
     query = urlencode(query_params)
-    if environment.name == Env.dev.name:
+    if use_local_ui:
+        base_url = LOCAL_DEV_WEB_URL
+    elif environment.name == Env.dev.name:
         base_url = DEV_WEB_URL
     else:
         base_url = environment.web_url
@@ -141,9 +148,7 @@ def _decrypt_callback_payload(
         raise LoginError("Encrypted login callback payload is invalid.")
 
     return {
-        key: value
-        for key, value in payload.items()
-        if isinstance(key, str) and isinstance(value, str)
+        key: value for key, value in payload.items() if isinstance(key, str) and isinstance(value, str)
     }
 
 
@@ -156,7 +161,6 @@ class _LoginCallbackServer(ThreadingHTTPServer):
         self.callback_private_key = callback_private_key
 
     def process_callback_params(self, params: Dict[str, str]) -> Dict[str, str]:
-        """Validate and normalize callback parameters before storing the API key."""
         if params.get("state") != self.expected_state:
             raise LoginError("Login callback state mismatch.")
         if "error" in params:
@@ -408,6 +412,7 @@ def wait_for_login(
     profile: str,
     port: Optional[int] = None,
     timeout: int = 120,
+    use_local_ui: bool = False,
     announce_login: Optional[Callable[[Dict[str, str]], None]] = None,
 ):  # pylint: disable=too-many-arguments,too-many-locals
     """Run the browser-based login flow and persist the resulting API key."""
@@ -431,6 +436,7 @@ def wait_for_login(
         profile,
         callback_public_key=callback_public_key,
         callback_encryption_algorithm=CALLBACK_ENCRYPTION_ALGORITHM,
+        use_local_ui=use_local_ui,
     )
 
     try:
@@ -466,7 +472,7 @@ def wait_for_login(
 
         storage_environment = None if environment.name == Env.prod.name else environment.name
         store_apikey(apikey, profile=profile, environment_name=storage_environment)
-        user_config.UserConfig = user_config.BasicUserConfig()
+        user_config.reload_user_config()
         return {
             "status": "success",
             "login_url": login_url,
