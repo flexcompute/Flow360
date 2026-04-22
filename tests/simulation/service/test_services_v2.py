@@ -53,6 +53,7 @@ def test_forward_compatibility_error():
         "ctx": {},
     }
 
+
 def validate_proper_unit(obj, allowed_units_string):
     def is_expected_unit(unit_str, allowed_units_string):
         tokens = re.findall(r"[A-Za-z_]+", unit_str)

@@ -61,4 +61,3 @@ def test_geometry_entity_info_to_file_list_and_entity_to_file_map():
             "farfield_only_sphere_volume_mesh.lb8.ugrid": "farfield_only_sphere_volume_mesh.lb8.ugrid",
         }.items()
     )
-

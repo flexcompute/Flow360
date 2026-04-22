@@ -9,6 +9,11 @@ import pydantic as pd
 # pylint: disable=unused-import  # relay exports consumed by compute pipeline scripts and tests
 from flow360_schema.framework.expression.registry import clear_context
 from flow360_schema.framework.physical_dimensions import Angle, Length
+from flow360_schema.models.simulation.models.bet.bet_translator_interface import (
+    generate_polar_file_name_list,
+    translate_xfoil_c81_to_bet_dict,
+    translate_xrotor_dfdc_to_bet_dict,
+)
 from flow360_schema.models.simulation.services import (
     ValidationCalledBy,
     _determine_validation_level,
@@ -30,11 +35,6 @@ from flow360_schema.models.simulation.validation.validation_service import (
 from pydantic import TypeAdapter
 
 from flow360.component.simulation.exposed_units import supported_units_by_front_end
-from flow360_schema.models.simulation.models.bet.bet_translator_interface import (
-    generate_polar_file_name_list,
-    translate_xfoil_c81_to_bet_dict,
-    translate_xrotor_dfdc_to_bet_dict,
-)
 
 # pylint: disable=unused-import # For parse_model_dict
 from flow360.component.simulation.models.volume_models import BETDisk
