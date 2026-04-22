@@ -12,12 +12,7 @@
                         "patchName": "body01_face001"
                     },
                     {
-                        "gapSpacingReduction": 0.2,
-                        "patchName": "body01_face002",
-                        "spacing": {
-                            "max": 2,
-                            "min": 1
-                        }
+                        "patchName": "body01_face002"
                     },
                     {
                         "edges": {
@@ -28,6 +23,22 @@
                             "retainOnSmoothing": true
                         },
                         "patchName": "body01_face003"
+                    },
+                    {
+                        "gapSpacingReduction": 0.2,
+                        "patchName": "body01_face004",
+                        "spacing": {
+                            "max": 2,
+                            "min": 1
+                        }
+                    },
+                    {
+                        "gapSpacingReduction": 0.2,
+                        "patchName": "body01_face005",
+                        "spacing": {
+                            "max": 2,
+                            "min": 1
+                        }
                     }
                 ],
                 "spacing": {

@@ -81,7 +81,7 @@ SNAPPY_MULTIBODY_GEOMETRY_ID = "geo-multibody-stl-test"
 SNAPPY_SINGLEBODY_GEOMETRY_ID = "geo-singlebody-stl-test"
 
 
-def _load_snappy_geometry(folder_name: str, geometry_id: str) -> Geometry:
+def _load_snappy_geometry(folder_name: str, geometry_id: str, facesGroupBy="faceId") -> Geometry:
     """Build a snappy ``Geometry`` from a local simulation.json fixture folder."""
     local_storage_path = os.path.join(
         os.path.dirname(os.path.abspath(__file__)), "data", folder_name
@@ -98,7 +98,7 @@ def _load_snappy_geometry(folder_name: str, geometry_id: str) -> Geometry:
             )
         ),
     )
-    geometry.group_faces_by_tag("faceId")
+    geometry.group_faces_by_tag(facesGroupBy)
     geometry.group_bodies_by_tag("groupByFile")
     geometry.mesh_unit = 1 * u.mm
     return geometry
@@ -109,7 +109,7 @@ def _load_snappy_multibody_geometry() -> Geometry:
 
 
 def _load_snappy_singlebody_geometry() -> Geometry:
-    return _load_snappy_geometry("singlebody_stl", SNAPPY_SINGLEBODY_GEOMETRY_ID)
+    return _load_snappy_geometry("singlebody_stl", SNAPPY_SINGLEBODY_GEOMETRY_ID, facesGroupBy="attrId")
 
 
 class TempGeometry(AssetBase):
@@ -827,7 +827,7 @@ def snappy_refinements_no_regions():
                 snappy.RegionRefinement(
                     min_spacing=1 * u.mm,
                     max_spacing=2 * u.mm,
-                    bodies=[test_geometry["body01_face002"]],
+                    regions=[test_geometry["body0_group"]],
                     proximity_spacing=0.2 * u.mm,
                 ),
                 snappy.SurfaceEdgeRefinement(

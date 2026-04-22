@@ -23,9 +23,9 @@ from flow360.component.simulation.primitives import (
     Box,
     Cylinder,
     SeedpointVolume,
-    SnappyBody,
     Sphere,
     Surface,
+    GeometryBodyGroup
 )
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.translator.utils import (
@@ -102,54 +102,96 @@ def remove_numerical_noise_from_spacing(spacing: Length.Float64, spacing_system:
     return spacing
 
 
+def _build_face_to_bodies_map(bodies_face_edge_ids):
+    """Build ``{face_id: [body_id, ...]}`` from the ``bodies_face_edge_ids`` mapping.
+
+    A face can belong to multiple bodies (e.g. shared interfaces),
+    so the value is a list preserving insertion order.
+    """
+    face_to_bodies: dict[str, list[str]] = {}
+    for body_id, body_info in bodies_face_edge_ids.items():
+        for face_id in body_info.face_ids:
+            face_to_bodies.setdefault(face_id, []).append(body_id)
+    return face_to_bodies
+
+
+def _dispatch_snappy_refinement(
+    refinement,
+    translated,
+    face_to_bodies_map: dict,
+    body_writer=None,
+    region_writer=None,
+):
+    """Dispatch a snappy refinement to body and/or region dicts.
+
+    Each entity in ``refinement.entities`` is fanned out through its
+    ``private_attribute_sub_components``:
+
+    * ``GeometryBodyGroup`` → each sub-component is a body ID; ``body_writer``
+      is invoked on the matching body dict.
+    * ``Surface`` → each sub-component is a face ID; its owning bodies (from
+      ``face_to_bodies_map``) are resolved and ``region_writer`` is invoked on
+      the matching region dict inside every owner.
+
+    Either writer may be ``None`` to ignore entities of the corresponding kind.
+    """
+    if refinement.entities is None:
+        return
+
+    bodies_by_name = {b["bodyName"]: b for b in translated["geometry"]["bodies"]}
+
+    for entity in refinement.entities.stored_entities:
+        sub_components = entity.private_attribute_sub_components or [entity.name]
+        if isinstance(entity, GeometryBodyGroup):
+            if body_writer is None:
+                continue
+            for body_id in sub_components:
+                body = bodies_by_name.get(body_id)
+                if body is not None:
+                    body_writer(body)
+        elif isinstance(entity, Surface):
+            if region_writer is None:
+                continue
+            for face_id in sub_components:
+                for body_id in face_to_bodies_map.get(face_id, []):
+                    body = bodies_by_name.get(body_id)
+                    if body is None:
+                        continue
+                    for region in body.get("regions", []):
+                        if region["patchName"] == face_id:
+                            region_writer(region)
+                            break
+
+
 def apply_SnappyBodyRefinement(
-    refinement: snappy.BodyRefinement, translated, spacing_system: OctreeSpacing
+    refinement: snappy.BodyRefinement,
+    translated,
+    spacing_system: OctreeSpacing,
+    face_to_bodies_map: dict,
 ):
     """
     Translate SnappyBodyRefinement to bodies.
     """
-    applicable_bodies = [entity.name for entity in refinement.entities.stored_entities]
-    for body in translated["geometry"]["bodies"]:
-        if body["bodyName"] in applicable_bodies:
-            if refinement.gap_resolution is not None:
-                body["gap"] = refinement.gap_resolution.value.item()
-            if refinement.proximity_spacing is not None:
-                body["gapSpacingReduction"] = remove_numerical_noise_from_spacing(
-                    refinement.proximity_spacing, spacing_system
-                ).value.item()
-            if refinement.min_spacing is not None:
-                body["spacing"]["min"] = remove_numerical_noise_from_spacing(
-                    refinement.min_spacing, spacing_system
-                ).value.item()
-            if refinement.max_spacing is not None:
-                body["spacing"]["max"] = remove_numerical_noise_from_spacing(
-                    refinement.max_spacing, spacing_system
-                ).value.item()
 
+    def write_body(body):
+        if refinement.gap_resolution is not None:
+            body["gap"] = refinement.gap_resolution.value.item()
+        if refinement.proximity_spacing is not None:
+            body["gapSpacingReduction"] = remove_numerical_noise_from_spacing(
+                refinement.proximity_spacing, spacing_system
+            ).value.item()
+        if refinement.min_spacing is not None:
+            body["spacing"]["min"] = remove_numerical_noise_from_spacing(
+                refinement.min_spacing, spacing_system
+            ).value.item()
+        if refinement.max_spacing is not None:
+            body["spacing"]["max"] = remove_numerical_noise_from_spacing(
+                refinement.max_spacing, spacing_system
+            ).value.item()
 
-def get_applicable_regions_dict(refinement_regions):
-    """
-    Get regions to apply a refinement on.
-    """
-    applicable_regions = {}
-    if refinement_regions:
-        for entity in refinement_regions.stored_entities:
-            if not isinstance(entity, Surface):
-                continue
-            split = entity.name.split("::")
-            body = split[0]
-            if len(split) == 2:
-                region = split[1]
-            else:
-                applicable_regions[body] = None
-                continue
-
-            if body in applicable_regions:
-                applicable_regions[body].append(region)
-            else:
-                applicable_regions[body] = [region]
-
-    return applicable_regions
+    _dispatch_snappy_refinement(
+        refinement, translated, face_to_bodies_map, body_writer=write_body
+    )
 
 
 def apply_SnappySurfaceEdgeRefinement(
@@ -157,6 +199,7 @@ def apply_SnappySurfaceEdgeRefinement(
     translated,
     defaults,
     spacing_system: OctreeSpacing,
+    face_to_bodies_map: dict,
 ):
     """
     Translate SnappySurfaceEdgeRefinement to bodies and regions.
@@ -185,51 +228,43 @@ def apply_SnappySurfaceEdgeRefinement(
         edges["edgeSpacing"] = remove_numerical_noise_from_spacing(
             refinement.spacing, spacing_system
         ).value.item()
-    applicable_bodies = (
-        [
-            entity.name
-            for entity in refinement.entities.stored_entities
-            if isinstance(entity, SnappyBody)
-        ]
-        if refinement.entities is not None
-        else []
+
+    _dispatch_snappy_refinement(
+        refinement,
+        translated,
+        face_to_bodies_map,
+        body_writer=lambda body: body.__setitem__("edges", edges),
+        region_writer=lambda region: region.__setitem__("edges", edges),
     )
-    applicable_regions = get_applicable_regions_dict(refinement_regions=refinement.entities)
-    for body in translated["geometry"]["bodies"]:
-        if body["bodyName"] in applicable_bodies or (
-            body["bodyName"] in applicable_regions and applicable_regions[body["bodyName"]] is None
-        ):
-            body["edges"] = edges
-        if body["bodyName"] in applicable_regions:
-            for region in body.get("regions", []):
-                if region["patchName"] in applicable_regions[body["bodyName"]]:
-                    region["edges"] = edges
 
 
 def apply_SnappyRegionRefinement(
-    refinement: snappy.RegionRefinement, translated, spacing_system: OctreeSpacing
+    refinement: snappy.RegionRefinement,
+    translated,
+    spacing_system: OctreeSpacing,
+    face_to_bodies_map: dict,
 ):
     """
     Translate SnappyRegionRefinement to applicable regions.
     """
-    applicable_regions = get_applicable_regions_dict(refinement_regions=refinement.entities)
-    for body in translated["geometry"]["bodies"]:
-        if body["bodyName"] in applicable_regions:
-            for region in body.get("regions", []):
-                if region["patchName"] in applicable_regions[body["bodyName"]]:
-                    if refinement.proximity_spacing is not None:
-                        region["gapSpacingReduction"] = remove_numerical_noise_from_spacing(
-                            refinement.proximity_spacing, spacing_system
-                        ).value.item()
 
-                    region["spacing"] = {
-                        "min": remove_numerical_noise_from_spacing(
-                            refinement.min_spacing, spacing_system
-                        ).value.item(),
-                        "max": remove_numerical_noise_from_spacing(
-                            refinement.max_spacing, spacing_system
-                        ).value.item(),
-                    }
+    def write_region(region):
+        if refinement.proximity_spacing is not None:
+            region["gapSpacingReduction"] = remove_numerical_noise_from_spacing(
+                refinement.proximity_spacing, spacing_system
+            ).value.item()
+        region["spacing"] = {
+            "min": remove_numerical_noise_from_spacing(
+                refinement.min_spacing, spacing_system
+            ).value.item(),
+            "max": remove_numerical_noise_from_spacing(
+                refinement.max_spacing, spacing_system
+            ).value.item(),
+        }
+
+    _dispatch_snappy_refinement(
+        refinement, translated, face_to_bodies_map, region_writer=write_region
+    )
 
 
 def apply_UniformRefinement_w_snappy(
@@ -358,14 +393,15 @@ def snappy_mesher_json(input_params: SimulationParams):
     # spacing system
     spacing_system: OctreeSpacing = surface_meshing_params.octree_spacing
 
-    # extract geometry information in body: {patch0, ...} format
-    bodies = {}
-    for face_id in input_params.private_attribute_asset_cache.project_entity_info.all_face_ids:
-        solid = face_id.split("::")
-        if solid[0] not in bodies:
-            bodies[solid[0]] = set()
-        if len(solid) == 2:
-            bodies[solid[0]].add(solid[1])
+    # extract geometry information: each file/body group is a body,
+    # and its face IDs are its regions
+    entity_info = input_params.private_attribute_asset_cache.project_entity_info
+    bodies_face_edge_ids = entity_info.bodies_face_edge_ids or {}
+    bodies = {
+        body_name: list(body_info.face_ids)
+        for body_name, body_info in bodies_face_edge_ids.items()
+    }
+    face_to_bodies_map = _build_face_to_bodies_map(bodies_face_edge_ids)
 
     # Fill with defaults
     common_defaults = {
@@ -403,13 +439,21 @@ def snappy_mesher_json(input_params: SimulationParams):
         surface_meshing_params.refinements if surface_meshing_params.refinements is not None else []
     ):
         if isinstance(refinement, snappy.BodyRefinement):
-            apply_SnappyBodyRefinement(refinement, translated, spacing_system)
+            apply_SnappyBodyRefinement(
+                refinement, translated, spacing_system, face_to_bodies_map
+            )
         elif isinstance(refinement, snappy.SurfaceEdgeRefinement):
             apply_SnappySurfaceEdgeRefinement(
-                refinement, translated, surface_meshing_params.defaults, spacing_system
+                refinement,
+                translated,
+                surface_meshing_params.defaults,
+                spacing_system,
+                face_to_bodies_map,
             )
         elif isinstance(refinement, snappy.RegionRefinement):
-            apply_SnappyRegionRefinement(refinement, translated, spacing_system)
+            apply_SnappyRegionRefinement(
+                refinement, translated, spacing_system, face_to_bodies_map
+            )
         elif isinstance(refinement, UniformRefinement):
             apply_UniformRefinement_w_snappy(refinement, translated, spacing_system)
         else:

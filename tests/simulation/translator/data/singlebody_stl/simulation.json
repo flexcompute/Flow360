@@ -7,7 +7,9 @@
                     "face_ids": [
                         "body01_face001",
                         "body01_face002",
-                        "body01_face003"
+                        "body01_face003",
+                        "body01_face004",
+                        "body01_face005"
                     ]
                 }
             },
@@ -24,13 +26,17 @@
             "edge_group_tag": null,
             "edge_ids": [],
             "face_attribute_names": [
-                "faceId"
+                "faceId",
+                "groupByBodyId",
+                "attrId"
             ],
-            "face_group_tag": "faceId",
+            "face_group_tag": "attrId",
             "face_ids": [
                 "body01_face001",
                 "body01_face002",
-                "body01_face003"
+                "body01_face003",
+                "body01_face004",
+                "body01_face005"
             ],
             "ghost_entities": [],
             "global_bounding_box": null,
@@ -62,6 +68,7 @@
             ],
             "grouped_edges": [],
             "grouped_faces": [
+                [],[],
                 [
                     {
                         "name": "body01_face001",
@@ -73,7 +80,7 @@
                         "private_attribute_sub_components": [
                             "body01_face001"
                         ],
-                        "private_attribute_tag_key": "faceId"
+                        "private_attribute_tag_key": "attrId"
                     },
                     {
                         "name": "body01_face002",
@@ -85,7 +92,7 @@
                         "private_attribute_sub_components": [
                             "body01_face002"
                         ],
-                        "private_attribute_tag_key": "faceId"
+                        "private_attribute_tag_key": "attrId"
                     },
                     {
                         "name": "body01_face003",
@@ -97,7 +104,20 @@
                         "private_attribute_sub_components": [
                             "body01_face003"
                         ],
-                        "private_attribute_tag_key": "faceId"
+                        "private_attribute_tag_key": "attrId"
+                    },
+                    {
+                        "name": "body0_group",
+                        "private_attribute_color": null,
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_full_name": null,
+                        "private_attribute_id": "body0_group",
+                        "private_attribute_is_interface": null,
+                        "private_attribute_sub_components": [
+                            "body01_face004",
+                            "body01_face005"
+                        ],
+                        "private_attribute_tag_key": "attrId"
                     }
                 ]
             ],

@@ -14,7 +14,6 @@ from flow360_schema.models.entities.base import (
 from flow360_schema.models.entities.geometry_entities import (
     Edge,
     GeometryBodyGroup,
-    SnappyBody,
 )
 from flow360_schema.models.entities.surface_entities import (
     GhostCircularPlane,

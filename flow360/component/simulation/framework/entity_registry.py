@@ -5,6 +5,4 @@
 from flow360_schema.framework.entity.entity_registry import (  # noqa: F401
     EntityRegistry,
     EntityRegistryView,
-    SnappyBodyRegistry,
-    StringIndexableList,
 )
