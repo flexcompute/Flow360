@@ -13,12 +13,13 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Callable, Dict, Optional
 from urllib.parse import parse_qs, urlencode, urlparse
 
-import flow360.user_config as user_config  # pylint: disable=consider-using-from-import
 from cryptography.exceptions import InvalidTag
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
+
+import flow360.user_config as user_config  # pylint: disable=consider-using-from-import
 from flow360.environment import Env
 from flow360.user_config import store_apikey
 
@@ -64,7 +65,7 @@ def resolve_target_environment(
     return target, storage_environment
 
 
-def build_login_url(
+def build_login_url(  # pylint: disable=too-many-arguments
     environment,
     callback_url: str,
     state: str,
@@ -148,7 +149,9 @@ def _decrypt_callback_payload(
         raise LoginError("Encrypted login callback payload is invalid.")
 
     return {
-        key: value for key, value in payload.items() if isinstance(key, str) and isinstance(value, str)
+        key: value
+        for key, value in payload.items()
+        if isinstance(key, str) and isinstance(value, str)
     }
 
 
@@ -161,6 +164,7 @@ class _LoginCallbackServer(ThreadingHTTPServer):
         self.callback_private_key = callback_private_key
 
     def process_callback_params(self, params: Dict[str, str]) -> Dict[str, str]:
+        """Validate and normalize callback parameters before storing the API key."""
         if params.get("state") != self.expected_state:
             raise LoginError("Login callback state mismatch.")
         if "error" in params:
