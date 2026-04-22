@@ -353,7 +353,7 @@ def snappy_mesher_json(input_params: SimulationParams):
     """
     Get config JSON for snappyHexMesh surface meshing.
     """
-    translated = {}
+    translated = {"filesAsBodies": True}
     surface_meshing_params = input_params.meshing.surface_meshing
     # spacing system
     spacing_system: OctreeSpacing = surface_meshing_params.octree_spacing
