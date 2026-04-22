@@ -46,15 +46,6 @@ from flow360.component.simulation.primitives import Box
 
 # pylint: enable=unused-import
 from flow360.component.simulation.simulation_params import SimulationParams
-
-# Re-export translator service entrypoints for backward compatibility:
-# external callers continue importing these from flow360.component.simulation.services.
-from flow360.component.simulation.translator.service_entrypoints import (  # noqa: F401
-    simulation_to_case_json,
-    simulation_to_columnar_data_processor_json,
-    simulation_to_surface_meshing_json,
-    simulation_to_volume_meshing_json,
-)
 from flow360.component.simulation.unit_system import _dimensioned_type_serializer, u
 from flow360.component.simulation.validation.validation_context import ALL
 from flow360.exceptions import Flow360ValueError
@@ -98,100 +89,6 @@ def validate_model(  # pylint: disable=too-many-locals
         root_item_type=root_item_type,
         validation_level=validation_level,
     )
-
-
-def _get_mesh_unit(params_as_dict: dict) -> str:
-    if params_as_dict.get("private_attribute_asset_cache") is None:
-        raise ValueError("[Internal] failed to acquire length unit from simulation settings.")
-    mesh_unit = params_as_dict["private_attribute_asset_cache"].get("project_length_unit")
-    if mesh_unit is None:
-        raise ValueError("[Internal] failed to acquire length unit from simulation settings.")
-    return mesh_unit
-
-
-def _process_surface_mesh(
-    params: dict, root_item_type: str, mesh_unit: str
-) -> Optional[Dict[str, Any]]:
-    if root_item_type == "Geometry":
-        sm_data, sm_hash_value = simulation_to_surface_meshing_json(params, mesh_unit)
-        return {"data": json.dumps(sm_data), "hash": sm_hash_value}
-    return None
-
-
-def _process_volume_mesh(
-    params: dict, root_item_type: str, mesh_unit: str, up_to: str
-) -> Optional[Dict[str, Any]]:
-    if up_to != "SurfaceMesh" and root_item_type != "VolumeMesh":
-        vm_data, vm_hash_value = simulation_to_volume_meshing_json(params, mesh_unit)
-        return {"data": json.dumps(vm_data), "hash": vm_hash_value}
-    return None
-
-
-def _process_case(params: dict, mesh_unit: str, up_to: str) -> Optional[Dict[str, Any]]:
-    if up_to == "Case":
-        case_data, case_hash_value = simulation_to_case_json(params, mesh_unit)
-        return {"data": json.dumps(case_data), "hash": case_hash_value}
-    return None
-
-
-def generate_process_json(
-    *,
-    simulation_json: str,
-    root_item_type: Literal["Geometry", "SurfaceMesh", "VolumeMesh"],
-    up_to: Literal["SurfaceMesh", "VolumeMesh", "Case"],
-):
-    """
-    Generates process JSON based on the simulation parameters.
-
-    This function processes the simulation parameters from a JSON string and generates the
-    corresponding process JSON for SurfaceMesh, VolumeMesh, and Case based on the input parameters.
-
-    Parameters
-    ----------
-    simulation_json : str
-        The JSON string containing simulation parameters.
-    root_item_type : Literal["Geometry", "SurfaceMesh", "VolumeMesh"]
-        The root item type for the simulation (e.g., "Geometry", "VolumeMesh").
-    up_to : Literal["SurfaceMesh", "VolumeMesh", "Case"]
-        Specifies the highest level of processing to be performed ("SurfaceMesh", "VolumeMesh", or "Case").
-
-    Returns
-    -------
-    Tuple[Optional[Dict[str, Any]], Optional[Dict[str, Any]], Optional[Dict[str, Any]]]
-        A tuple containing dictionaries for SurfaceMesh, VolumeMesh, and Case results, if applicable.
-
-    Raises
-    ------
-    ValueError
-        If the private attribute asset cache or project length unit cannot be acquired from the simulation settings.
-    """
-
-    params_as_dict = json.loads(simulation_json)
-    # Pre-check that project_length_unit exists before validation
-    _get_mesh_unit(params_as_dict)
-
-    # Note: There should not be any validation error for params_as_dict. Here is just a deserialization of the JSON
-    params, errors, _ = validate_model(
-        params_as_dict=params_as_dict,
-        validated_by=ValidationCalledBy.SERVICE,  # This is called only by web service currently.
-        root_item_type=root_item_type,
-        # Skip context-aware validation for faster performance.
-        # Context-aware validation was already performed locally or a priori by backend.
-        validation_level=None,
-    )
-
-    if errors is not None:
-        raise ValueError(str(errors))
-
-    # Extract the validated mesh_unit (a proper unyt quantity) from the params object,
-    # not from the raw dict which may be a bare number.
-    mesh_unit = params.private_attribute_asset_cache.project_length_unit
-
-    surface_mesh_res = _process_surface_mesh(params, root_item_type, mesh_unit)
-    volume_mesh_res = _process_volume_mesh(params, root_item_type, mesh_unit, up_to)
-    case_res = _process_case(params, mesh_unit, up_to)
-
-    return surface_mesh_res, volume_mesh_res, case_res
 
 
 def _convert_unit_in_dict(
