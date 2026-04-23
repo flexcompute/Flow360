@@ -304,7 +304,10 @@ jobs:
           set -euo pipefail
           # Refuse to ship a bundle that contains CodeArtifact auth tokens,
           # AWS-style user:pass URL patterns, or index-url directives.
-          bad=$(grep -rEn \
+          # -I skips binary files (e.g. wheelhouse/*.whl), whose METADATA
+          # can legitimately mention pip flags in upstream README text and
+          # would otherwise trigger false positives.
+          bad=$(grep -rEnI \
             -e 'aws:[A-Za-z0-9+/=._-]{20,}@' \
             -e '--(extra-)?index-url' \
             -e 'codeartifact\.[a-z0-9.-]+amazonaws\.com.*:.*@' \
