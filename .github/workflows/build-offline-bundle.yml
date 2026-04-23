@@ -222,11 +222,15 @@ jobs:
         shell: bash
         working-directory: source
         env:
+          # Do NOT name env vars with a PIP_ prefix here: pip treats any
+          # PIP_<FLAG> env var as equivalent to --<flag>, which would
+          # silently inject --platform into unrelated pip install calls
+          # (including the bootstrap) and fail with
+          # "either --no-deps must be set, or --only-binary=:all: must be set".
+          # Matrix values are interpolated inline below instead.
           BUNDLE_NAME: ${{ needs.resolve-ref.outputs.bundle_name }}
           PLATFORM_TAG: ${{ matrix.platform_tag }}
           PY: ${{ matrix.python }}
-          PIP_PLATFORM: ${{ matrix.pip_platform }}
-          PIP_PLATFORM_FALLBACK: ${{ matrix.pip_platform_fallback }}
           POETRY_VIRTUALENVS_CREATE: "false"
           BUILD_SCRIPT: ${{ github.workspace }}/workflow-tooling/tools/build_offline_wheelhouse.sh
         run: |
@@ -239,10 +243,10 @@ jobs:
             --python python
             --output "$bundle_dir"
             --python-version "${PY}"
-            --pip-platform "${PIP_PLATFORM}"
+            --pip-platform "${{ matrix.pip_platform }}"
           )
-          if [[ -n "${PIP_PLATFORM_FALLBACK}" ]]; then
-            args+=(--pip-platform-fallback "${PIP_PLATFORM_FALLBACK}")
+          if [[ -n "${{ matrix.pip_platform_fallback }}" ]]; then
+            args+=(--pip-platform-fallback "${{ matrix.pip_platform_fallback }}")
           fi
 
           "$BUILD_SCRIPT" "${args[@]}"
@@ -265,7 +269,7 @@ jobs:
           COMMIT_SHA: ${{ needs.resolve-ref.outputs.commit_sha }}
           SHORT_SHA: ${{ needs.resolve-ref.outputs.short_sha }}
           PLATFORM_TAG: ${{ matrix.platform_tag }}
-          PIP_PLATFORM: ${{ matrix.pip_platform }}
+          WHEEL_PLATFORM_TAG: ${{ matrix.pip_platform }}
           PY: ${{ matrix.python }}
         run: |
           set -euo pipefail
@@ -278,7 +282,7 @@ jobs:
           | Source ref (input) | \`${INPUT_REF}\` |
           | Source commit | \`${COMMIT_SHA}\` |
           | Target platform | \`${PLATFORM_TAG}\` |
-          | pip platform tag | \`${PIP_PLATFORM}\` |
+          | pip platform tag | \`${WHEEL_PLATFORM_TAG}\` |
           | Target Python | \`${PY}\` |
           | Built at (UTC) | \`${built_at}\` |
 
@@ -340,7 +344,7 @@ jobs:
           COMMIT_SHA: ${{ needs.resolve-ref.outputs.commit_sha }}
           SHORT_SHA: ${{ needs.resolve-ref.outputs.short_sha }}
           PLATFORM_TAG: ${{ matrix.platform_tag }}
-          PIP_PLATFORM: ${{ matrix.pip_platform }}
+          WHEEL_PLATFORM_TAG: ${{ matrix.pip_platform }}
           PY: ${{ matrix.python }}
           TARBALL: ${{ steps.pack.outputs.tarball }}
           SHA256: ${{ steps.pack.outputs.sha256 }}
@@ -359,7 +363,7 @@ jobs:
             echo "| Source ref (input) | \`${INPUT_REF}\` |"
             echo "| Commit SHA | \`${COMMIT_SHA}\` (${SHORT_SHA}) |"
             echo "| Platform | \`${PLATFORM_TAG}\` |"
-            echo "| pip platform tag | \`${PIP_PLATFORM}\` |"
+            echo "| pip platform tag | \`${WHEEL_PLATFORM_TAG}\` |"
             echo "| Python | \`${PY}\` |"
             echo "| Wheels packaged | ${wheel_count} |"
             echo "| Tarball | \`${TARBALL}\` (${size_mb} MB) |"
