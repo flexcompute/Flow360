@@ -11,10 +11,7 @@ from flow360_schema.models.entities.base import (
     _SurfaceEntityBase,
     _VolumeEntityBase,
 )
-from flow360_schema.models.entities.geometry_entities import (
-    Edge,
-    GeometryBodyGroup,
-)
+from flow360_schema.models.entities.geometry_entities import Edge, GeometryBodyGroup
 from flow360_schema.models.entities.surface_entities import (
     GhostCircularPlane,
     GhostSphere,
