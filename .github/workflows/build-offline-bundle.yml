@@ -116,16 +116,18 @@ jobs:
             exit 1
           fi
 
-          # Platform catalog.
-          # Fields: tag | runner | pip_platform | pip_platform_fallback
-          # pip_platform forces the wheel tag pip downloads so Linux wheelhouses
-          # stay manylinux2014-compatible (broad glibc support) regardless of runner.
+          # Platform catalog. Fields: tag | runner
+          # Each build runs on its native runner and uses `pip wheel`, so the
+          # wheelhouse ends up tagged for the runner's platform (e.g. Linux ->
+          # manylinux_2_28). Cross-compat via --platform was dropped because
+          # it required --only-binary=:all:, which breaks on sdist-only deps
+          # like pylatex.
           declare -a all_platforms=(
-            "linux-x86_64|ubuntu-22.04|manylinux2014_x86_64|manylinux_2_28_x86_64"
-            "linux-aarch64|ubuntu-22.04-arm|manylinux2014_aarch64|manylinux_2_28_aarch64"
-            "macos-arm64|macos-14|macosx_11_0_arm64|"
-            "macos-x86_64|macos-13|macosx_10_13_x86_64|"
-            "windows-x86_64|windows-2022|win_amd64|"
+            "linux-x86_64|ubuntu-22.04"
+            "linux-aarch64|ubuntu-22.04-arm"
+            "macos-arm64|macos-14"
+            "macos-x86_64|macos-13"
+            "windows-x86_64|windows-2022"
           )
 
           case "$INPUT_PLATFORMS" in
@@ -155,9 +157,9 @@ jobs:
 
           entries=()
           for entry in "${selected[@]}"; do
-            IFS='|' read -r tag runner pip_platform pip_fallback <<< "$entry"
+            IFS='|' read -r tag runner <<< "$entry"
             for py in "${python_list[@]}"; do
-              entries+=("{\"platform_tag\":\"${tag}\",\"runner\":\"${runner}\",\"pip_platform\":\"${pip_platform}\",\"pip_platform_fallback\":\"${pip_fallback}\",\"python\":\"${py}\"}")
+              entries+=("{\"platform_tag\":\"${tag}\",\"runner\":\"${runner}\",\"python\":\"${py}\"}")
             done
           done
 
@@ -175,9 +177,22 @@ jobs:
       matrix: ${{ fromJSON(needs.plan-matrix.outputs.matrix) }}
     runs-on: ${{ matrix.runner }}
     steps:
-      - uses: actions/checkout@v4
+      # Two checkouts on purpose: the "tooling" checkout (default ref, i.e.
+      # wherever this workflow is dispatched from — typically main) provides
+      # the build scripts and composite actions that evolve over time. The
+      # "source" checkout is the historical snapshot the user wants to build,
+      # which may predate any of our tooling files.
+      - name: Checkout workflow tooling (from dispatch ref)
+        uses: actions/checkout@v4
+        with:
+          path: workflow-tooling
+          fetch-depth: 1
+
+      - name: Checkout source snapshot to build
+        uses: actions/checkout@v4
         with:
           ref: ${{ needs.resolve-ref.outputs.commit_sha }}
+          path: source
           fetch-depth: 1
 
       - uses: actions/setup-python@v5
@@ -185,7 +200,7 @@ jobs:
           python-version: ${{ matrix.python }}
 
       - name: Configure CodeArtifact auth
-        uses: ./.github/actions/setup-codeartifact-poetry-auth
+        uses: ./workflow-tooling/.github/actions/setup-codeartifact-poetry-auth
         with:
           aws-access-key-id: ${{ secrets.AWS_CODEARTIFACT_READ_ACCESS_KEY }}
           aws-secret-access-key: ${{ secrets.AWS_CODEARTIFACT_READ_ACCESS_SECRET }}
@@ -202,42 +217,33 @@ jobs:
 
       - name: Make tools scripts executable
         shell: bash
-        run: chmod +x tools/build_offline_wheelhouse.sh tools/verify_offline_bundle.sh
+        run: chmod +x workflow-tooling/tools/build_offline_wheelhouse.sh workflow-tooling/tools/verify_offline_bundle.sh
 
       - name: Build wheelhouse
         id: build
         shell: bash
+        working-directory: source
         env:
           BUNDLE_NAME: ${{ needs.resolve-ref.outputs.bundle_name }}
           PLATFORM_TAG: ${{ matrix.platform_tag }}
           PY: ${{ matrix.python }}
-          PIP_PLATFORM: ${{ matrix.pip_platform }}
-          PIP_PLATFORM_FALLBACK: ${{ matrix.pip_platform_fallback }}
           POETRY_VIRTUALENVS_CREATE: "false"
+          BUILD_SCRIPT: ${{ github.workspace }}/workflow-tooling/tools/build_offline_wheelhouse.sh
         run: |
           set -euo pipefail
-          bundle_dir="bundle/${BUNDLE_NAME}-${PLATFORM_TAG}-py${PY}"
+          bundle_dir="${{ github.workspace }}/bundle/${BUNDLE_NAME}-${PLATFORM_TAG}-py${PY}"
           mkdir -p "$bundle_dir"
           echo "bundle_dir=${bundle_dir}" >> "$GITHUB_OUTPUT"
 
-          args=(
-            --python python
-            --output "$bundle_dir"
-            --python-version "${PY}"
-            --pip-platform "${PIP_PLATFORM}"
-          )
-          if [[ -n "${PIP_PLATFORM_FALLBACK}" ]]; then
-            args+=(--pip-platform-fallback "${PIP_PLATFORM_FALLBACK}")
-          fi
-
-          tools/build_offline_wheelhouse.sh "${args[@]}"
+          "$BUILD_SCRIPT" --python python --output "$bundle_dir"
 
       - name: Verify offline installation (smoke test)
         shell: bash
         env:
           BUNDLE_DIR: ${{ steps.build.outputs.bundle_dir }}
+          VERIFY_SCRIPT: ${{ github.workspace }}/workflow-tooling/tools/verify_offline_bundle.sh
         run: |
-          tools/verify_offline_bundle.sh \
+          "$VERIFY_SCRIPT" \
             --python python \
             --wheelhouse "${BUNDLE_DIR}/wheelhouse"
 
@@ -249,11 +255,21 @@ jobs:
           COMMIT_SHA: ${{ needs.resolve-ref.outputs.commit_sha }}
           SHORT_SHA: ${{ needs.resolve-ref.outputs.short_sha }}
           PLATFORM_TAG: ${{ matrix.platform_tag }}
-          PIP_PLATFORM: ${{ matrix.pip_platform }}
+          RUNNER: ${{ matrix.runner }}
           PY: ${{ matrix.python }}
         run: |
           set -euo pipefail
           built_at="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+
+          # Derive platform-specific compatibility note.
+          case "${PLATFORM_TAG}" in
+            linux-*)   compat_note="Linux with glibc >= 2.28 (Ubuntu 18.04+ / RHEL 8+ / Debian 10+)." ;;
+            macos-x86_64) compat_note="macOS Intel (matches macosx_* tags in the wheelhouse)." ;;
+            macos-arm64)  compat_note="macOS Apple Silicon (matches macosx_*_arm64 tags in the wheelhouse)." ;;
+            windows-*) compat_note="Windows x86_64." ;;
+            *) compat_note="See wheel filenames in \`wheelhouse/\` for the exact platform tags." ;;
+          esac
+
           cat > "${BUNDLE_DIR}/INSTALL.md" <<EOF
           # Flow360 Offline Bundle
 
@@ -262,9 +278,11 @@ jobs:
           | Source ref (input) | \`${INPUT_REF}\` |
           | Source commit | \`${COMMIT_SHA}\` |
           | Target platform | \`${PLATFORM_TAG}\` |
-          | pip platform tag | \`${PIP_PLATFORM}\` |
+          | Built on runner | \`${RUNNER}\` |
           | Target Python | \`${PY}\` |
           | Built at (UTC) | \`${built_at}\` |
+
+          **Compatibility:** ${compat_note}
 
           ## Install
 
@@ -277,6 +295,29 @@ jobs:
           - \`wheelhouse/\` — every runtime dependency wheel plus the flow360 wheel
           - \`requirements.txt\` — exact pinned versions (exported from \`poetry.lock\`)
           EOF
+
+      - name: Scan bundle for leaked credentials
+        shell: bash
+        env:
+          BUNDLE_DIR: ${{ steps.build.outputs.bundle_dir }}
+        run: |
+          set -euo pipefail
+          # Refuse to ship a bundle that contains CodeArtifact auth tokens,
+          # AWS-style user:pass URL patterns, or index-url directives.
+          # -I skips binary files (e.g. wheelhouse/*.whl), whose METADATA
+          # can legitimately mention pip flags in upstream README text and
+          # would otherwise trigger false positives.
+          bad=$(grep -rEnI \
+            -e 'aws:[A-Za-z0-9+/=._-]{20,}@' \
+            -e '--(extra-)?index-url' \
+            -e 'codeartifact\.[a-z0-9.-]+amazonaws\.com.*:.*@' \
+            "$BUNDLE_DIR" || true)
+          if [[ -n "$bad" ]]; then
+            echo "::error ::Bundle contains credential-like content; refusing to package."
+            echo "$bad"
+            exit 1
+          fi
+          echo "Bundle credential scan clean."
 
       - name: Package tarball
         id: pack
@@ -304,7 +345,7 @@ jobs:
           COMMIT_SHA: ${{ needs.resolve-ref.outputs.commit_sha }}
           SHORT_SHA: ${{ needs.resolve-ref.outputs.short_sha }}
           PLATFORM_TAG: ${{ matrix.platform_tag }}
-          PIP_PLATFORM: ${{ matrix.pip_platform }}
+          RUNNER: ${{ matrix.runner }}
           PY: ${{ matrix.python }}
           TARBALL: ${{ steps.pack.outputs.tarball }}
           SHA256: ${{ steps.pack.outputs.sha256 }}
@@ -323,7 +364,7 @@ jobs:
             echo "| Source ref (input) | \`${INPUT_REF}\` |"
             echo "| Commit SHA | \`${COMMIT_SHA}\` (${SHORT_SHA}) |"
             echo "| Platform | \`${PLATFORM_TAG}\` |"
-            echo "| pip platform tag | \`${PIP_PLATFORM}\` |"
+            echo "| Built on runner | \`${RUNNER}\` |"
             echo "| Python | \`${PY}\` |"
             echo "| Wheels packaged | ${wheel_count} |"
             echo "| Tarball | \`${TARBALL}\` (${size_mb} MB) |"
