@@ -321,4 +321,3 @@ def test_geometry_rename_body_groups():
         match=(f"No entity found in registry with given name/naming pattern: 'newAirplane_0002'."),
     ):
         assert geometry["newAirplane_0002"]
-

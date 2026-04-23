@@ -427,7 +427,6 @@ class Geometry(AssetBase):
     @body_group_tag.setter
     def body_group_tag(self, new_value: str):
         raise SyntaxError("Cannot set body_group_tag, use group_bodies_by_tag() instead.")
-    
 
     def get_dynamic_default_settings(self, simulation_dict: dict):
         """Get the default geometry settings from the simulation dict"""
