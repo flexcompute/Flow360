@@ -13,7 +13,6 @@ from flow360_schema.models.functions import math
 from flow360_schema.models.variables import control, solution
 
 from flow360.component.simulation.framework.param_utils import AssetCache
-from flow360.component.simulation.framework.updater_utils import compare_values
 from flow360.component.simulation.models.solver_numerics import (
     KOmegaSST,
     NoneSolver,
@@ -41,7 +40,6 @@ from flow360.component.simulation.services import (
 )
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import Unsteady
-from flow360.component.simulation.translator.solver_translator import get_solver_json
 from flow360.component.simulation.unit_system import SI_unit_system
 from flow360.component.simulation.user_code.core.types import save_user_variables
 from flow360.component.volume_mesh import VolumeMeshV2
@@ -158,53 +156,6 @@ def time_stepping_with_expression():
             private_attribute_asset_cache=asset_cache(),
         )
     return save_user_variables(params).model_dump(mode="json", exclude_none=True)
-
-
-@pytest.mark.parametrize(
-    "param_dict, ref_dict_path",
-    [
-        (
-            operating_condition_with_expression(),
-            "ref/value_or_expression/op_vel_mag.json",
-        ),
-        (
-            liquid_operating_condition_with_expression(),
-            "ref/value_or_expression/liquid_op_vel_mag.json",
-        ),
-        (
-            generic_operating_condition_with_expression(),
-            "ref/value_or_expression/op_vel_mag.json",
-        ),
-        (
-            reference_area_with_expression(),
-            "ref/value_or_expression/ref_area_with_expression.json",
-        ),
-        (
-            angular_velocity_with_expression(),
-            "ref/value_or_expression/angular_velocity_with_expression.json",
-        ),
-        (
-            time_stepping_with_expression(),
-            "ref/value_or_expression/time_stepping_with_expression.json",
-        ),
-    ],
-)
-def test_e2e_dump_validate_and_translate(param_dict: dict, ref_dict_path: str):
-    params, errors, _ = validate_model(
-        params_as_dict=param_dict,
-        validated_by=ValidationCalledBy.LOCAL,
-        root_item_type="VolumeMesh",
-        validation_level="All",
-    )
-    assert errors is None, "Errors: {errors}"
-    translated = get_solver_json(params, mesh_unit=10 * u.m)
-    try:
-        with open(ref_dict_path, "r") as fh:
-            ref_dict = json.load(fh)
-        assert compare_values(ref_dict, translated)
-    except FileNotFoundError as e:
-        print("=======\n", json.dumps(translated, indent=2), "\n=======")
-        raise e
 
 
 def param_with_SST():

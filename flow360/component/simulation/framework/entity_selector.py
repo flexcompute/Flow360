@@ -18,7 +18,6 @@ from flow360_schema.framework.entity.entity_selector import (  # noqa: F401
     _process_selectors,
     collect_and_tokenize_selectors_in_place,
     expand_entity_list_selectors,
-    expand_entity_list_selectors_in_place,
 )
 
 # Re-export transitive imports that external code depends on via this module
