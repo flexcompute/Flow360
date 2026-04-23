@@ -61,8 +61,9 @@ jobs:
           if [[ -n "$INPUT_BUNDLE_NAME" ]]; then
             bundle_name="$INPUT_BUNDLE_NAME"
           else
-            # Sanitize ref: strip refs/ prefixes, replace unsafe chars with '-'
-            sanitized="$(echo "$INPUT_REF" | sed -E 's|refs/(heads|tags)/||; s|[^A-Za-z0-9._-]|-|g')"
+            # Sanitize ref: strip refs/ prefixes, replace unsafe chars with '-'.
+            # Use '#' as sed delimiter since '|' clashes with regex alternation.
+            sanitized="$(echo "$INPUT_REF" | sed -E 's#refs/(heads|tags)/##; s#[^A-Za-z0-9._-]#-#g')"
             bundle_name="flow360-offline-${sanitized}"
           fi
 
