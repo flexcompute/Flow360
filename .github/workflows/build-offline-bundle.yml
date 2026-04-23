@@ -1,0 +1,182 @@
+# Build per-platform offline wheelhouse bundles for flow360.
+# Manually triggered; specify any git ref (commit SHA / tag / branch) to snapshot from.
+# Each (OS, arch, Python) combination produces an independent artifact the user
+# can install fully offline via: pip install --no-index --find-links=wheelhouse flow360
+
+name: build offline bundle
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Git ref to build from (commit SHA, tag like v25.9.6, or branch)"
+        required: true
+        type: string
+      python_versions:
+        description: "Comma-separated Python versions (subset of 3.10,3.11,3.12,3.13)"
+        required: true
+        type: string
+      platforms:
+        description: "Which platforms to build for"
+        required: false
+        type: choice
+        default: all
+        options:
+          - all
+          - linux-only
+          - linux-x86_64
+          - macos-only
+          - windows-only
+      bundle_name:
+        description: "Artifact name prefix (default: derived from ref)"
+        required: false
+        type: string
+        default: ""
+
+jobs:
+  resolve-ref:
+    runs-on: ubuntu-latest
+    outputs:
+      commit_sha: ${{ steps.resolve.outputs.commit_sha }}
+      short_sha: ${{ steps.resolve.outputs.short_sha }}
+      bundle_name: ${{ steps.resolve.outputs.bundle_name }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+          fetch-depth: 0
+
+      - name: Resolve ref to commit SHA
+        id: resolve
+        env:
+          INPUT_REF: ${{ inputs.ref }}
+          INPUT_BUNDLE_NAME: ${{ inputs.bundle_name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          commit_sha="$(git rev-parse HEAD)"
+          short_sha="${commit_sha:0:7}"
+
+          if [[ -n "$INPUT_BUNDLE_NAME" ]]; then
+            bundle_name="$INPUT_BUNDLE_NAME"
+          else
+            # Sanitize ref: strip refs/ prefixes, replace unsafe chars with '-'
+            sanitized="$(echo "$INPUT_REF" | sed -E 's|refs/(heads|tags)/||; s|[^A-Za-z0-9._-]|-|g')"
+            bundle_name="flow360-offline-${sanitized}"
+          fi
+
+          echo "commit_sha=${commit_sha}" >> "$GITHUB_OUTPUT"
+          echo "short_sha=${short_sha}" >> "$GITHUB_OUTPUT"
+          echo "bundle_name=${bundle_name}" >> "$GITHUB_OUTPUT"
+
+          echo "::notice ::Resolved ref '${INPUT_REF}' -> ${commit_sha}"
+          echo "::notice ::Bundle name prefix: ${bundle_name}"
+
+  plan-matrix:
+    runs-on: ubuntu-latest
+    needs: resolve-ref
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+    steps:
+      - name: Validate inputs and build matrix
+        id: plan
+        env:
+          INPUT_PYTHON_VERSIONS: ${{ inputs.python_versions }}
+          INPUT_PLATFORMS: ${{ inputs.platforms }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          allowed_pythons=("3.10" "3.11" "3.12" "3.13")
+
+          IFS=',' read -r -a requested_pythons <<< "$INPUT_PYTHON_VERSIONS"
+          python_list=()
+          for raw in "${requested_pythons[@]}"; do
+            v="$(echo "$raw" | xargs)"  # trim whitespace
+            [[ -z "$v" ]] && continue
+            ok=0
+            for a in "${allowed_pythons[@]}"; do
+              [[ "$v" == "$a" ]] && ok=1 && break
+            done
+            if [[ "$ok" -ne 1 ]]; then
+              echo "::error ::Python version '${v}' is not in allowed set: ${allowed_pythons[*]}"
+              exit 1
+            fi
+            python_list+=("$v")
+          done
+
+          if [[ "${#python_list[@]}" -eq 0 ]]; then
+            echo "::error ::python_versions must contain at least one version"
+            exit 1
+          fi
+
+          # Platform catalog: tag | runner | container (empty = native runner)
+          declare -a all_platforms=(
+            "linux-x86_64|ubuntu-22.04|quay.io/pypa/manylinux2014_x86_64"
+            "linux-aarch64|ubuntu-22.04-arm|quay.io/pypa/manylinux2014_aarch64"
+            "macos-arm64|macos-14|"
+            "macos-x86_64|macos-13|"
+            "windows-x86_64|windows-2022|"
+          )
+
+          case "$INPUT_PLATFORMS" in
+            all)            selector='.*' ;;
+            linux-only)     selector='^linux-' ;;
+            linux-x86_64)   selector='^linux-x86_64$' ;;
+            macos-only)     selector='^macos-' ;;
+            windows-only)   selector='^windows-' ;;
+            *)
+              echo "::error ::Unknown platforms selector: ${INPUT_PLATFORMS}"
+              exit 1
+              ;;
+          esac
+
+          selected=()
+          for entry in "${all_platforms[@]}"; do
+            tag="${entry%%|*}"
+            if [[ "$tag" =~ $selector ]]; then
+              selected+=("$entry")
+            fi
+          done
+
+          if [[ "${#selected[@]}" -eq 0 ]]; then
+            echo "::error ::No platforms matched selector '${INPUT_PLATFORMS}'"
+            exit 1
+          fi
+
+          # Emit matrix JSON: {"include": [{platform_tag, runner, container, python}, ...]}
+          entries=()
+          for entry in "${selected[@]}"; do
+            IFS='|' read -r tag runner container <<< "$entry"
+            for py in "${python_list[@]}"; do
+              entries+=("{\"platform_tag\":\"${tag}\",\"runner\":\"${runner}\",\"container\":\"${container}\",\"python\":\"${py}\"}")
+            done
+          done
+
+          matrix_json="{\"include\":[$(IFS=,; echo "${entries[*]}")]}"
+          echo "matrix=${matrix_json}" >> "$GITHUB_OUTPUT"
+
+          echo "::notice ::Generated ${#entries[@]} matrix jobs"
+          echo "${matrix_json}" | python3 -m json.tool
+
+  build:
+    needs: [resolve-ref, plan-matrix]
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan-matrix.outputs.matrix) }}
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - name: Placeholder (build logic lands in Step 2 / Step 3)
+        shell: bash
+        env:
+          COMMIT_SHA: ${{ needs.resolve-ref.outputs.commit_sha }}
+          BUNDLE_NAME: ${{ needs.resolve-ref.outputs.bundle_name }}
+          PLATFORM_TAG: ${{ matrix.platform_tag }}
+          PYTHON: ${{ matrix.python }}
+          CONTAINER: ${{ matrix.container }}
+        run: |
+          echo "Would build: ${BUNDLE_NAME}-${PLATFORM_TAG}-py${PYTHON}.tar.gz"
+          echo "  commit: ${COMMIT_SHA}"
+          echo "  runner: ${{ matrix.runner }}"
+          echo "  container: ${CONTAINER:-<native>}"
