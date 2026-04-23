@@ -116,16 +116,18 @@ jobs:
             exit 1
           fi
 
-          # Platform catalog.
-          # Fields: tag | runner | pip_platform | pip_platform_fallback
-          # pip_platform forces the wheel tag pip downloads so Linux wheelhouses
-          # stay manylinux2014-compatible (broad glibc support) regardless of runner.
+          # Platform catalog. Fields: tag | runner
+          # Each build runs on its native runner and uses `pip wheel`, so the
+          # wheelhouse ends up tagged for the runner's platform (e.g. Linux ->
+          # manylinux_2_28). Cross-compat via --platform was dropped because
+          # it required --only-binary=:all:, which breaks on sdist-only deps
+          # like pylatex.
           declare -a all_platforms=(
-            "linux-x86_64|ubuntu-22.04|manylinux2014_x86_64|manylinux_2_28_x86_64"
-            "linux-aarch64|ubuntu-22.04-arm|manylinux2014_aarch64|manylinux_2_28_aarch64"
-            "macos-arm64|macos-14|macosx_11_0_arm64|"
-            "macos-x86_64|macos-13|macosx_10_13_x86_64|"
-            "windows-x86_64|windows-2022|win_amd64|"
+            "linux-x86_64|ubuntu-22.04"
+            "linux-aarch64|ubuntu-22.04-arm"
+            "macos-arm64|macos-14"
+            "macos-x86_64|macos-13"
+            "windows-x86_64|windows-2022"
           )
 
           case "$INPUT_PLATFORMS" in
@@ -155,9 +157,9 @@ jobs:
 
           entries=()
           for entry in "${selected[@]}"; do
-            IFS='|' read -r tag runner pip_platform pip_fallback <<< "$entry"
+            IFS='|' read -r tag runner <<< "$entry"
             for py in "${python_list[@]}"; do
-              entries+=("{\"platform_tag\":\"${tag}\",\"runner\":\"${runner}\",\"pip_platform\":\"${pip_platform}\",\"pip_platform_fallback\":\"${pip_fallback}\",\"python\":\"${py}\"}")
+              entries+=("{\"platform_tag\":\"${tag}\",\"runner\":\"${runner}\",\"python\":\"${py}\"}")
             done
           done
 
@@ -222,12 +224,6 @@ jobs:
         shell: bash
         working-directory: source
         env:
-          # Do NOT name env vars with a PIP_ prefix here: pip treats any
-          # PIP_<FLAG> env var as equivalent to --<flag>, which would
-          # silently inject --platform into unrelated pip install calls
-          # (including the bootstrap) and fail with
-          # "either --no-deps must be set, or --only-binary=:all: must be set".
-          # Matrix values are interpolated inline below instead.
           BUNDLE_NAME: ${{ needs.resolve-ref.outputs.bundle_name }}
           PLATFORM_TAG: ${{ matrix.platform_tag }}
           PY: ${{ matrix.python }}
@@ -239,17 +235,7 @@ jobs:
           mkdir -p "$bundle_dir"
           echo "bundle_dir=${bundle_dir}" >> "$GITHUB_OUTPUT"
 
-          args=(
-            --python python
-            --output "$bundle_dir"
-            --python-version "${PY}"
-            --pip-platform "${{ matrix.pip_platform }}"
-          )
-          if [[ -n "${{ matrix.pip_platform_fallback }}" ]]; then
-            args+=(--pip-platform-fallback "${{ matrix.pip_platform_fallback }}")
-          fi
-
-          "$BUILD_SCRIPT" "${args[@]}"
+          "$BUILD_SCRIPT" --python python --output "$bundle_dir"
 
       - name: Verify offline installation (smoke test)
         shell: bash
@@ -269,11 +255,21 @@ jobs:
           COMMIT_SHA: ${{ needs.resolve-ref.outputs.commit_sha }}
           SHORT_SHA: ${{ needs.resolve-ref.outputs.short_sha }}
           PLATFORM_TAG: ${{ matrix.platform_tag }}
-          WHEEL_PLATFORM_TAG: ${{ matrix.pip_platform }}
+          RUNNER: ${{ matrix.runner }}
           PY: ${{ matrix.python }}
         run: |
           set -euo pipefail
           built_at="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+
+          # Derive platform-specific compatibility note.
+          case "${PLATFORM_TAG}" in
+            linux-*)   compat_note="Linux with glibc >= 2.28 (Ubuntu 18.04+ / RHEL 8+ / Debian 10+)." ;;
+            macos-x86_64) compat_note="macOS Intel (matches macosx_* tags in the wheelhouse)." ;;
+            macos-arm64)  compat_note="macOS Apple Silicon (matches macosx_*_arm64 tags in the wheelhouse)." ;;
+            windows-*) compat_note="Windows x86_64." ;;
+            *) compat_note="See wheel filenames in \`wheelhouse/\` for the exact platform tags." ;;
+          esac
+
           cat > "${BUNDLE_DIR}/INSTALL.md" <<EOF
           # Flow360 Offline Bundle
 
@@ -282,9 +278,11 @@ jobs:
           | Source ref (input) | \`${INPUT_REF}\` |
           | Source commit | \`${COMMIT_SHA}\` |
           | Target platform | \`${PLATFORM_TAG}\` |
-          | pip platform tag | \`${WHEEL_PLATFORM_TAG}\` |
+          | Built on runner | \`${RUNNER}\` |
           | Target Python | \`${PY}\` |
           | Built at (UTC) | \`${built_at}\` |
+
+          **Compatibility:** ${compat_note}
 
           ## Install
 
@@ -344,7 +342,7 @@ jobs:
           COMMIT_SHA: ${{ needs.resolve-ref.outputs.commit_sha }}
           SHORT_SHA: ${{ needs.resolve-ref.outputs.short_sha }}
           PLATFORM_TAG: ${{ matrix.platform_tag }}
-          WHEEL_PLATFORM_TAG: ${{ matrix.pip_platform }}
+          RUNNER: ${{ matrix.runner }}
           PY: ${{ matrix.python }}
           TARBALL: ${{ steps.pack.outputs.tarball }}
           SHA256: ${{ steps.pack.outputs.sha256 }}
@@ -363,7 +361,7 @@ jobs:
             echo "| Source ref (input) | \`${INPUT_REF}\` |"
             echo "| Commit SHA | \`${COMMIT_SHA}\` (${SHORT_SHA}) |"
             echo "| Platform | \`${PLATFORM_TAG}\` |"
-            echo "| pip platform tag | \`${WHEEL_PLATFORM_TAG}\` |"
+            echo "| Built on runner | \`${RUNNER}\` |"
             echo "| Python | \`${PY}\` |"
             echo "| Wheels packaged | ${wheel_count} |"
             echo "| Tarball | \`${TARBALL}\` (${size_mb} MB) |"

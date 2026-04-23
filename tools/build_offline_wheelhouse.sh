@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build an offline wheelhouse for flow360 targeting a specific (platform, Python).
+# Build an offline wheelhouse for flow360 using the current runner's Python.
 #
 # Produces:
 #   <output_dir>/
@@ -7,49 +7,37 @@
 #     requirements.txt          -- pinned versions exported from poetry.lock
 #
 # Usage:
-#   tools/build_offline_wheelhouse.sh \
-#     --python <python_bin> \
-#     --output <bundle_dir> \
-#     --python-version <3.10|3.11|3.12|3.13> \
-#     --pip-platform <manylinux2014_x86_64|macosx_11_0_arm64|win_amd64|...> \
-#     [--pip-platform-fallback <tag>]
+#   tools/build_offline_wheelhouse.sh --python <python_bin> --output <bundle_dir>
 #
-# --pip-platform explicitly pins the wheel platform tag pip downloads. Using
-# pip download --platform ensures Linux wheelhouses are manylinux2014-compatible
-# (wide glibc support) even when built on a newer runner.
+# Uses `pip wheel` which transparently handles both wheel-only deps and
+# sdist-only deps (building the latter locally into a wheel). The resulting
+# wheelhouse contains wheels tagged for the runner's native platform:
+#
+#   Linux x86_64 / aarch64  -> manylinux_2_28 (glibc >= 2.28)
+#   macOS x86_64 / arm64    -> macosx_*
+#   Windows x86_64          -> win_amd64
+#
+# Pure-python deps (including any locally-built sdists) land as py3-none-any.
 
 set -euo pipefail
 
 PYTHON_BIN=""
 OUTPUT_DIR=""
-PY_VER=""
-PIP_PLATFORM=""
-PIP_PLATFORM_FALLBACK=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --python)                 PYTHON_BIN="$2"; shift 2 ;;
-    --output)                 OUTPUT_DIR="$2"; shift 2 ;;
-    --python-version)         PY_VER="$2"; shift 2 ;;
-    --pip-platform)           PIP_PLATFORM="$2"; shift 2 ;;
-    --pip-platform-fallback)  PIP_PLATFORM_FALLBACK="$2"; shift 2 ;;
+    --python) PYTHON_BIN="$2"; shift 2 ;;
+    --output) OUTPUT_DIR="$2"; shift 2 ;;
     *) echo "Unknown arg: $1" >&2; exit 2 ;;
   esac
 done
 
-[[ -z "$PYTHON_BIN"   ]] && { echo "ERROR: --python required" >&2; exit 2; }
-[[ -z "$OUTPUT_DIR"   ]] && { echo "ERROR: --output required" >&2; exit 2; }
-[[ -z "$PY_VER"       ]] && { echo "ERROR: --python-version required" >&2; exit 2; }
-[[ -z "$PIP_PLATFORM" ]] && { echo "ERROR: --pip-platform required" >&2; exit 2; }
+[[ -z "$PYTHON_BIN" ]] && { echo "ERROR: --python required" >&2; exit 2; }
+[[ -z "$OUTPUT_DIR" ]] && { echo "ERROR: --output required" >&2; exit 2; }
 
 wheelhouse="${OUTPUT_DIR}/wheelhouse"
 req_file="${OUTPUT_DIR}/requirements.txt"
 mkdir -p "$wheelhouse"
-
-platform_args=(--platform "$PIP_PLATFORM")
-if [[ -n "$PIP_PLATFORM_FALLBACK" ]]; then
-  platform_args+=(--platform "$PIP_PLATFORM_FALLBACK")
-fi
 
 echo "::group::Python and pip versions"
 "$PYTHON_BIN" --version
@@ -86,17 +74,13 @@ echo "--- first 40 lines ---"
 head -40 "$req_file"
 echo "::endgroup::"
 
-echo "::group::Download dependency wheels for ${PIP_PLATFORM} py${PY_VER}"
-"$PYTHON_BIN" -m pip download \
-  --dest "$wheelhouse" \
-  --requirement "$req_file" \
-  --only-binary=:all: \
-  --python-version "$PY_VER" \
-  --implementation cp \
-  "${platform_args[@]}"
+echo "::group::Build dependency wheelhouse"
+"$PYTHON_BIN" -m pip wheel \
+  --wheel-dir "$wheelhouse" \
+  --requirement "$req_file"
 echo "::endgroup::"
 
-echo "::group::Build flow360 wheel (pure-python, platform-agnostic)"
+echo "::group::Build flow360 wheel"
 "$PYTHON_BIN" -m pip wheel \
   --wheel-dir "$wheelhouse" \
   --no-deps \
