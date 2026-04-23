@@ -4,6 +4,7 @@
 # can install fully offline via: pip install --no-index --find-links=wheelhouse flow360
 
 name: build offline bundle
+run-name: "offline bundle @ ${{ inputs.ref }} [py ${{ inputs.python_versions }} / ${{ inputs.platforms }}]"
 
 on:
   workflow_dispatch:
@@ -94,7 +95,7 @@ jobs:
           IFS=',' read -r -a requested_pythons <<< "$INPUT_PYTHON_VERSIONS"
           python_list=()
           for raw in "${requested_pythons[@]}"; do
-            v="$(echo "$raw" | xargs)"  # trim whitespace
+            v="$(echo "$raw" | xargs)"
             [[ -z "$v" ]] && continue
             ok=0
             for a in "${allowed_pythons[@]}"; do
@@ -112,13 +113,16 @@ jobs:
             exit 1
           fi
 
-          # Platform catalog: tag | runner | container (empty = native runner)
+          # Platform catalog.
+          # Fields: tag | runner | pip_platform | pip_platform_fallback
+          # pip_platform forces the wheel tag pip downloads so Linux wheelhouses
+          # stay manylinux2014-compatible (broad glibc support) regardless of runner.
           declare -a all_platforms=(
-            "linux-x86_64|ubuntu-22.04|quay.io/pypa/manylinux2014_x86_64"
-            "linux-aarch64|ubuntu-22.04-arm|quay.io/pypa/manylinux2014_aarch64"
-            "macos-arm64|macos-14|"
-            "macos-x86_64|macos-13|"
-            "windows-x86_64|windows-2022|"
+            "linux-x86_64|ubuntu-22.04|manylinux2014_x86_64|manylinux_2_28_x86_64"
+            "linux-aarch64|ubuntu-22.04-arm|manylinux2014_aarch64|manylinux_2_28_aarch64"
+            "macos-arm64|macos-14|macosx_11_0_arm64|"
+            "macos-x86_64|macos-13|macosx_10_13_x86_64|"
+            "windows-x86_64|windows-2022|win_amd64|"
           )
 
           case "$INPUT_PLATFORMS" in
@@ -146,12 +150,11 @@ jobs:
             exit 1
           fi
 
-          # Emit matrix JSON: {"include": [{platform_tag, runner, container, python}, ...]}
           entries=()
           for entry in "${selected[@]}"; do
-            IFS='|' read -r tag runner container <<< "$entry"
+            IFS='|' read -r tag runner pip_platform pip_fallback <<< "$entry"
             for py in "${python_list[@]}"; do
-              entries+=("{\"platform_tag\":\"${tag}\",\"runner\":\"${runner}\",\"container\":\"${container}\",\"python\":\"${py}\"}")
+              entries+=("{\"platform_tag\":\"${tag}\",\"runner\":\"${runner}\",\"pip_platform\":\"${pip_platform}\",\"pip_platform_fallback\":\"${pip_fallback}\",\"python\":\"${py}\"}")
             done
           done
 
@@ -162,22 +165,164 @@ jobs:
           echo "${matrix_json}" | python3 -m json.tool
 
   build:
+    name: "${{ matrix.platform_tag }} · py${{ matrix.python }}"
     needs: [resolve-ref, plan-matrix]
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.plan-matrix.outputs.matrix) }}
     runs-on: ${{ matrix.runner }}
     steps:
-      - name: Placeholder (build logic lands in Step 2 / Step 3)
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.resolve-ref.outputs.commit_sha }}
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Make tools scripts executable
+        shell: bash
+        run: chmod +x tools/build_offline_wheelhouse.sh tools/verify_offline_bundle.sh
+
+      - name: Build wheelhouse
+        id: build
         shell: bash
         env:
-          COMMIT_SHA: ${{ needs.resolve-ref.outputs.commit_sha }}
           BUNDLE_NAME: ${{ needs.resolve-ref.outputs.bundle_name }}
           PLATFORM_TAG: ${{ matrix.platform_tag }}
-          PYTHON: ${{ matrix.python }}
-          CONTAINER: ${{ matrix.container }}
+          PY: ${{ matrix.python }}
+          PIP_PLATFORM: ${{ matrix.pip_platform }}
+          PIP_PLATFORM_FALLBACK: ${{ matrix.pip_platform_fallback }}
         run: |
-          echo "Would build: ${BUNDLE_NAME}-${PLATFORM_TAG}-py${PYTHON}.tar.gz"
-          echo "  commit: ${COMMIT_SHA}"
-          echo "  runner: ${{ matrix.runner }}"
-          echo "  container: ${CONTAINER:-<native>}"
+          set -euo pipefail
+          bundle_dir="bundle/${BUNDLE_NAME}-${PLATFORM_TAG}-py${PY}"
+          mkdir -p "$bundle_dir"
+          echo "bundle_dir=${bundle_dir}" >> "$GITHUB_OUTPUT"
+
+          args=(
+            --python "$(which python)"
+            --output "$bundle_dir"
+            --python-version "${PY}"
+            --pip-platform "${PIP_PLATFORM}"
+          )
+          if [[ -n "${PIP_PLATFORM_FALLBACK}" ]]; then
+            args+=(--pip-platform-fallback "${PIP_PLATFORM_FALLBACK}")
+          fi
+
+          tools/build_offline_wheelhouse.sh "${args[@]}"
+
+      - name: Verify offline installation (smoke test)
+        shell: bash
+        env:
+          BUNDLE_DIR: ${{ steps.build.outputs.bundle_dir }}
+        run: |
+          tools/verify_offline_bundle.sh \
+            --python "$(which python)" \
+            --wheelhouse "${BUNDLE_DIR}/wheelhouse"
+
+      - name: Write INSTALL.md into bundle
+        shell: bash
+        env:
+          BUNDLE_DIR: ${{ steps.build.outputs.bundle_dir }}
+          INPUT_REF: ${{ inputs.ref }}
+          COMMIT_SHA: ${{ needs.resolve-ref.outputs.commit_sha }}
+          SHORT_SHA: ${{ needs.resolve-ref.outputs.short_sha }}
+          PLATFORM_TAG: ${{ matrix.platform_tag }}
+          PIP_PLATFORM: ${{ matrix.pip_platform }}
+          PY: ${{ matrix.python }}
+        run: |
+          set -euo pipefail
+          built_at="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          cat > "${BUNDLE_DIR}/INSTALL.md" <<EOF
+          # Flow360 Offline Bundle
+
+          | Field | Value |
+          | --- | --- |
+          | Source ref (input) | \`${INPUT_REF}\` |
+          | Source commit | \`${COMMIT_SHA}\` |
+          | Target platform | \`${PLATFORM_TAG}\` |
+          | pip platform tag | \`${PIP_PLATFORM}\` |
+          | Target Python | \`${PY}\` |
+          | Built at (UTC) | \`${built_at}\` |
+
+          ## Install
+
+          \`\`\`bash
+          pip install --no-index --find-links=wheelhouse flow360
+          \`\`\`
+
+          ## Contents
+
+          - \`wheelhouse/\` — every runtime dependency wheel plus the flow360 wheel
+          - \`requirements.txt\` — exact pinned versions (exported from \`poetry.lock\`)
+          EOF
+
+      - name: Package tarball
+        id: pack
+        shell: bash
+        env:
+          BUNDLE_NAME: ${{ needs.resolve-ref.outputs.bundle_name }}
+          PLATFORM_TAG: ${{ matrix.platform_tag }}
+          PY: ${{ matrix.python }}
+          BUNDLE_DIR: ${{ steps.build.outputs.bundle_dir }}
+        run: |
+          set -euo pipefail
+          tarball="${BUNDLE_NAME}-${PLATFORM_TAG}-py${PY}.tar.gz"
+          # -C bundle/ <name> → archive contains the named top-level directory
+          tar czf "$tarball" -C bundle "$(basename "$BUNDLE_DIR")"
+          sha256="$(python -c "import hashlib,sys; print(hashlib.sha256(open(sys.argv[1],'rb').read()).hexdigest())" "$tarball")"
+          size_bytes="$(python -c "import os,sys; print(os.path.getsize(sys.argv[1]))" "$tarball")"
+          echo "tarball=${tarball}" >> "$GITHUB_OUTPUT"
+          echo "sha256=${sha256}" >> "$GITHUB_OUTPUT"
+          echo "size_bytes=${size_bytes}" >> "$GITHUB_OUTPUT"
+
+      - name: Job summary
+        shell: bash
+        env:
+          INPUT_REF: ${{ inputs.ref }}
+          COMMIT_SHA: ${{ needs.resolve-ref.outputs.commit_sha }}
+          SHORT_SHA: ${{ needs.resolve-ref.outputs.short_sha }}
+          PLATFORM_TAG: ${{ matrix.platform_tag }}
+          PIP_PLATFORM: ${{ matrix.pip_platform }}
+          PY: ${{ matrix.python }}
+          TARBALL: ${{ steps.pack.outputs.tarball }}
+          SHA256: ${{ steps.pack.outputs.sha256 }}
+          SIZE_BYTES: ${{ steps.pack.outputs.size_bytes }}
+          BUNDLE_DIR: ${{ steps.build.outputs.bundle_dir }}
+        run: |
+          set -euo pipefail
+          size_mb="$(python -c "print(round($SIZE_BYTES / 1024 / 1024, 1))")"
+          wheel_count="$(ls "${BUNDLE_DIR}/wheelhouse" | wc -l | xargs)"
+
+          {
+            echo "## Flow360 offline bundle — \`${PLATFORM_TAG}\` · Python \`${PY}\`"
+            echo
+            echo "| | |"
+            echo "| --- | --- |"
+            echo "| Source ref (input) | \`${INPUT_REF}\` |"
+            echo "| Commit SHA | \`${COMMIT_SHA}\` (${SHORT_SHA}) |"
+            echo "| Platform | \`${PLATFORM_TAG}\` |"
+            echo "| pip platform tag | \`${PIP_PLATFORM}\` |"
+            echo "| Python | \`${PY}\` |"
+            echo "| Wheels packaged | ${wheel_count} |"
+            echo "| Tarball | \`${TARBALL}\` (${size_mb} MB) |"
+            echo "| SHA-256 | \`${SHA256}\` |"
+            echo
+            echo "### Install (user side)"
+            echo
+            echo '```bash'
+            echo "tar xzf ${TARBALL}"
+            echo "cd $(basename "$BUNDLE_DIR")"
+            echo "pip install --no-index --find-links=wheelhouse flow360"
+            echo '```'
+            echo
+            echo "Smoke test (pip install + import flow360) passed on this runner."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ needs.resolve-ref.outputs.bundle_name }}-${{ matrix.platform_tag }}-py${{ matrix.python }}
+          path: ${{ steps.pack.outputs.tarball }}
+          if-no-files-found: error
