@@ -63,7 +63,7 @@ python_strip='
 import re, sys, pathlib
 p = pathlib.Path(sys.argv[1])
 orig = p.read_text()
-cleaned = re.sub(r"^--(extra-)?index-url\s.*\n", "", orig, flags=re.M)
+cleaned = re.sub(r"^--(extra-)?index-url[ \t].*\n", "", orig, flags=re.M)
 p.write_text(cleaned)
 sys.stderr.write(f"stripped index-url directives: {orig.count(chr(10)) - cleaned.count(chr(10))} line(s)\n")
 '
