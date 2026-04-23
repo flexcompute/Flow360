@@ -141,31 +141,6 @@ def test_login_uses_dev_web_url_with_manual_fallback(monkeypatch, tmp_path):
     assert "Successfully logged in as dev@example.com" in result.output
 
 
-def test_login_local_uses_local_dev_frontend(monkeypatch, tmp_path):
-    config_path = _patch_config_file(monkeypatch, tmp_path)
-    monkeypatch.setattr(auth, "_find_available_port", lambda host: 8765)
-    monkeypatch.setattr(auth.secrets, "token_urlsafe", lambda _: "state123")
-    monkeypatch.setattr(auth.webbrowser, "open", lambda _: False)
-    runner = CliRunner()
-
-    def complete_local_login():
-        _post_callback_with_retry(
-            "http://127.0.0.1:8765/callback",
-            {"state": "state123", "apikey": "local-dev-key", "email": "local@example.com"},
-        )
-
-    Thread(target=complete_local_login, daemon=True).start()
-
-    result = runner.invoke(flow360, ["login", "--local"])
-
-    assert result.exit_code == 0
-    assert "Starting local login server on http://127.0.0.1:8765/callback." in result.output
-    assert "local.dev-simulation.cloud:3000/account/cli-login" in result.output
-    assert "Successfully logged in as local@example.com" in result.output
-    config = toml.loads(config_path.read_text())
-    assert config["default"]["dev"]["apikey"] == "local-dev-key"
-
-
 def test_login_prints_fallback_message_when_browser_opens(monkeypatch, tmp_path):
     _patch_config_file(monkeypatch, tmp_path)
     monkeypatch.setattr(auth.secrets, "token_urlsafe", lambda _: "state123")

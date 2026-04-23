@@ -98,14 +98,6 @@ def configure(apikey, profile, dev, uat, env, suppress_submit_warning, beta_feat
 )
 @click.option("--dev", prompt=False, type=bool, is_flag=True, help="Log in to DEV.")
 @click.option("--uat", prompt=False, type=bool, is_flag=True, help="Log in to UAT.")
-@click.option(
-    "--local",
-    prompt=False,
-    type=bool,
-    is_flag=True,
-    hidden=True,
-    help="Open the local DEV frontend at local.dev-simulation.cloud:3000 and store the key under DEV.",
-)
 @click.option("--env", prompt=False, default=None, help="Log in to a named environment.")
 @click.option(
     "--port",
@@ -116,7 +108,7 @@ def configure(apikey, profile, dev, uat, env, suppress_submit_warning, beta_feat
 @click.option(
     "--timeout", type=click.IntRange(1, 3600), default=120, help="Login timeout in seconds."
 )
-def login(profile, dev, uat, local, env, port, timeout):  # pylint: disable=too-many-arguments
+def login(profile, dev, uat, env, port, timeout):  # pylint: disable=too-many-arguments
     """
     Open a browser login flow and store the resulting API key.
     """
@@ -137,13 +129,12 @@ def login(profile, dev, uat, local, env, port, timeout):  # pylint: disable=too-
         click.echo("")
 
     try:
-        environment, _ = resolve_target_environment(dev=dev, uat=uat, env=env, local=local)
+        environment, _ = resolve_target_environment(dev=dev, uat=uat, env=env)
         result = wait_for_login(
             environment=environment,
             profile=profile,
             port=port,
             timeout=timeout,
-            use_local_ui=local,
             announce_login=announce_login,
         )
     except (LoginError, ValueError) as error:
@@ -161,23 +152,13 @@ def login(profile, dev, uat, local, env, port, timeout):  # pylint: disable=too-
 )
 @click.option("--dev", prompt=False, type=bool, is_flag=True, help="Remove the DEV login.")
 @click.option("--uat", prompt=False, type=bool, is_flag=True, help="Remove the UAT login.")
-@click.option(
-    "--local",
-    prompt=False,
-    type=bool,
-    is_flag=True,
-    hidden=True,
-    help="Remove the local DEV login (same stored target as DEV).",
-)
 @click.option("--env", prompt=False, default=None, help="Remove the login for a named environment.")
-def logout(profile, dev, uat, local, env):  # pylint: disable=too-many-arguments
+def logout(profile, dev, uat, env):  # pylint: disable=too-many-arguments
     """
     Remove a stored Flow360 API key.
     """
     try:
-        environment, storage_environment = resolve_target_environment(
-            dev=dev, uat=uat, env=env, local=local
-        )
+        environment, storage_environment = resolve_target_environment(dev=dev, uat=uat, env=env)
     except ValueError as error:
         raise click.ClickException(str(error)) from error
 
