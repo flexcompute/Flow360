@@ -1,24 +1,21 @@
 # NOTE: Schema-pure expression tests (DependencyGraph, Variable, Expression operators/validators,
 # ValueOrExpression, registry, utils, etc.) have been migrated to:
 #   flex/share/flow360-schema/tests/framework/expression/
-# The tests below depend on SimulationParams/validate_model/translator and cannot be migrated
-# until those components are also migrated to flow360-schema.
+# The tests below still cover client-side serialization and validation behavior.
 
 import json
 
 import flow360_schema.framework.expression.registry as context
 import pytest
 from flow360_schema.framework.expression import Expression, UserVariable
-from flow360_schema.models.variables import control, solution
+from flow360_schema.models.variables import solution
 
 from flow360 import (
     AerospaceCondition,
     HeatEquationInitialCondition,
-    LiquidOperatingCondition,
     SimulationParams,
     Solid,
     Unsteady,
-    math,
     u,
 )
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
@@ -39,9 +36,6 @@ from flow360.component.simulation.services import (
     ValidationCalledBy,
     clear_context,
     validate_model,
-)
-from flow360.component.simulation.translator.solver_translator import (
-    user_variable_to_udf,
 )
 from flow360.component.simulation.unit_system import SI_unit_system
 from flow360.component.simulation.user_code.core.types import (
@@ -82,62 +76,6 @@ def constant_unyt_array():
     return UserVariable(name="constant_unyt_array", value=[10, 20] * u.m)
 
 
-def test_solver_translation():
-    timestepping_unsteady = Unsteady(steps=12, step_size=0.1 * u.s)
-    solid_model = Solid(
-        volumes=[GenericVolume(name="CHTSolid")],
-        material=aluminum,
-        volumetric_heat_source="0",
-        initial_condition=HeatEquationInitialCondition(temperature="10"),
-    )
-    surface_output_with_residual_heat_solver = SurfaceOutput(
-        name="surface",
-        surfaces=[Surface(name="noSlipWall")],
-        write_single_file=True,
-        output_format="tecplot",
-        output_fields=["residualHeatSolver"],
-    )
-    water = Water(
-        name="h2o", density=1000 * u.kg / u.m**3, dynamic_viscosity=0.001 * u.kg / u.m / u.s
-    )
-    liquid_operating_condition = LiquidOperatingCondition(
-        velocity_magnitude=50 * u.m / u.s,
-        reference_velocity_magnitude=100 * u.m / u.s,
-        material=water,
-    )
-
-    # Valid simulation params
-    with SI_unit_system:
-        params = SimulationParams(
-            models=[solid_model],
-            operating_condition=liquid_operating_condition,
-            time_stepping=timestepping_unsteady,
-            outputs=[surface_output_with_residual_heat_solver],
-            private_attribute_asset_cache=AssetCache(project_length_unit=2 * u.m),
-        )
-
-        x = UserVariable(name="x", value=4)
-        y = UserVariable(name="y", value=x + 1)
-
-        # Showcased features:
-        expression = Expression.model_validate(x * u.m**2)
-
-        # 1. Units are converted to flow360 unit system using the provided params (1m**2 -> 0.25 because of length unit)
-        # 2. User variables are inlined (for numeric value types)
-        assert expression.to_solver_code(params.flow360_unit_system) == "(4.0 * pow(0.5, 2))"
-
-        # 3. User variables are inlined (for expression value types)
-        expression = Expression.model_validate(y * u.m**2)
-        assert expression.to_solver_code(params.flow360_unit_system) == "(5.0 * pow(0.5, 2))"
-
-        # 4. For solver variables, the units are stripped (assumed to be in solver units so factor == 1.0)
-        expression = Expression.model_validate(y * u.m / u.s + control.MachRef)
-        assert (
-            expression.to_solver_code(params.flow360_unit_system)
-            == "(((5.0 * 0.5) / 500.0) + machRef)"
-        )
-
-
 def test_variable_space_init():
     # Simulating loading a SimulationParams object from file - ensure that the variable space is loaded correctly
     with open("data/simulation.json", "r") as fh:
@@ -151,97 +89,6 @@ def test_variable_space_init():
     evaluated = params.reference_geometry.area.evaluate()
 
     assert evaluated == 1.0 * u.m**2
-
-
-def test_udf_generator():
-    with SI_unit_system:
-        params = SimulationParams(
-            operating_condition=LiquidOperatingCondition(
-                velocity_magnitude=5 * u.m / u.s,
-            ),
-            private_attribute_asset_cache=AssetCache(project_length_unit=10 * u.m),
-        )
-    # Scalar output
-    result = user_variable_to_udf(
-        solution.mut.in_units(new_name="mut_in_km", new_unit="kg/km/s"), input_params=params
-    )
-    # velocity scale = 5 m/s, length scale = 10m, density scale = 1000 kg/m**3
-    # mut_scale = Rho*L*V -> 1000*10*5 * kg/m/s == 1000*10*5*1000 * kg/km/s
-    assert (
-        result.expression
-        == "double ___mut; ___mut = mut * velocityScale;mut_in_km = (___mut * 50000000.0);"
-    )
-
-    vel_cross_vec = UserVariable(
-        name="vel_cross_vec", value=math.cross(solution.velocity, [1, 2, 3] * u.cm)
-    ).in_units(new_unit="CGS_unit_system")
-    assert (
-        vel_cross_vec.value.get_output_units(unit_system_name=params.unit_system.name)
-        == u.cm**2 / u.s
-    )
-
-    # We disabled degC and degF on the interface and therefore the inferred units should be K or R.
-    my_temp = UserVariable(name="my_temperature", value=solution.temperature).in_units(
-        new_unit="Imperial_unit_system"
-    )
-    assert my_temp.value.get_output_units(unit_system_name=params.unit_system.name) == u.R
-
-    # Test __pow__ on SolverVariable:
-    vel_sq = UserVariable(name="vel_sq", value=solution.velocity**2)
-    result = user_variable_to_udf(vel_sq, input_params=params)
-    assert (
-        result.expression
-        == "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;vel_sq[0] = (pow(___velocity[0], 2) * 25.0); vel_sq[1] = (pow(___velocity[1], 2) * 25.0); vel_sq[2] = (pow(___velocity[2], 2) * 25.0);"
-    )
-
-    # Test __neg__ on SolverVariable:
-    neg_vel = UserVariable(name="neg_vel", value=-solution.velocity)
-    result = user_variable_to_udf(neg_vel, input_params=params)
-    assert (
-        result.expression
-        == "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;neg_vel[0] = (-___velocity[0] * 5.0); neg_vel[1] = (-___velocity[1] * 5.0); neg_vel[2] = (-___velocity[2] * 5.0);"
-    )
-
-    # Test __pos__ on SolverVariable:
-    pos_vel = UserVariable(name="pos_vel", value=+solution.velocity)
-    result = user_variable_to_udf(pos_vel, input_params=params)
-    assert (
-        result.expression
-        == "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;pos_vel[0] = (+___velocity[0] * 5.0); pos_vel[1] = (+___velocity[1] * 5.0); pos_vel[2] = (+___velocity[2] * 5.0);"
-    )
-
-    density_kg_per_m3 = UserVariable(name="density_kg_per_m3", value=solution.density).in_units(
-        new_unit="kg /m**3"
-    )
-    velocity_metric = UserVariable(name="velocity_metric", value=solution.velocity).in_units(
-        new_unit="m/s"
-    )
-    mass_flow_rate_kg_per_s_per_m2 = UserVariable(
-        name="mass_flow_rate_kg_per_s",
-        value=math.dot(velocity_metric, solution.node_unit_normal) * density_kg_per_m3,
-    ).in_units(new_unit="kg/s/m**2")
-
-    assert user_variable_to_udf(mass_flow_rate_kg_per_s_per_m2, input_params=params).expression == (
-        "double ___density;"
-        "___density = usingLiquidAsMaterial ? 1.0 : primitiveVars[0];"
-        "double ___node_unit_normal[3];"
-        "double ___normalMag = magnitude(nodeNormals);"
-        "for (int i = 0; i < 3; i++)"
-        "{"
-        "___node_unit_normal[i] = nodeNormals[i] / ___normalMag;"
-        "}"
-        "double ___velocity[3];"
-        "___velocity[0] = primitiveVars[1] * velocityScale;"
-        "___velocity[1] = primitiveVars[2] * velocityScale;"
-        "___velocity[2] = primitiveVars[3] * velocityScale;"
-        "mass_flow_rate_kg_per_s = ("
-        "((("
-        "(___velocity[0] * ___node_unit_normal[0]) + "
-        "(___velocity[1] * ___node_unit_normal[1])"
-        ") + "
-        "(___velocity[2] * ___node_unit_normal[2])"
-        ") * ___density) * 5000.0);"
-    )
 
 
 def test_project_variables_serialization():
