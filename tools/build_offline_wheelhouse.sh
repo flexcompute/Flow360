@@ -67,6 +67,20 @@ echo "::group::Export pinned runtime requirements from poetry.lock"
   --only main \
   --format requirements.txt \
   --output "$req_file"
+
+# Strip any index-url directives poetry may have emitted for private sources
+# (e.g. CodeArtifact). Credentials live in the PIP_EXTRA_INDEX_URL env var
+# instead, so requirements.txt stays clean and safe to ship inside the bundle.
+python_strip='
+import re, sys, pathlib
+p = pathlib.Path(sys.argv[1])
+orig = p.read_text()
+cleaned = re.sub(r"^--(extra-)?index-url\s.*\n", "", orig, flags=re.M)
+p.write_text(cleaned)
+sys.stderr.write(f"stripped index-url directives: {orig.count(chr(10)) - cleaned.count(chr(10))} line(s)\n")
+'
+"$PYTHON_BIN" -c "$python_strip" "$req_file"
+
 echo "Exported $(wc -l < "$req_file") lines to ${req_file}"
 echo "--- first 40 lines ---"
 head -40 "$req_file"

@@ -175,9 +175,22 @@ jobs:
       matrix: ${{ fromJSON(needs.plan-matrix.outputs.matrix) }}
     runs-on: ${{ matrix.runner }}
     steps:
-      - uses: actions/checkout@v4
+      # Two checkouts on purpose: the "tooling" checkout (default ref, i.e.
+      # wherever this workflow is dispatched from — typically main) provides
+      # the build scripts and composite actions that evolve over time. The
+      # "source" checkout is the historical snapshot the user wants to build,
+      # which may predate any of our tooling files.
+      - name: Checkout workflow tooling (from dispatch ref)
+        uses: actions/checkout@v4
+        with:
+          path: workflow-tooling
+          fetch-depth: 1
+
+      - name: Checkout source snapshot to build
+        uses: actions/checkout@v4
         with:
           ref: ${{ needs.resolve-ref.outputs.commit_sha }}
+          path: source
           fetch-depth: 1
 
       - uses: actions/setup-python@v5
@@ -185,7 +198,7 @@ jobs:
           python-version: ${{ matrix.python }}
 
       - name: Configure CodeArtifact auth
-        uses: ./.github/actions/setup-codeartifact-poetry-auth
+        uses: ./workflow-tooling/.github/actions/setup-codeartifact-poetry-auth
         with:
           aws-access-key-id: ${{ secrets.AWS_CODEARTIFACT_READ_ACCESS_KEY }}
           aws-secret-access-key: ${{ secrets.AWS_CODEARTIFACT_READ_ACCESS_SECRET }}
@@ -202,11 +215,12 @@ jobs:
 
       - name: Make tools scripts executable
         shell: bash
-        run: chmod +x tools/build_offline_wheelhouse.sh tools/verify_offline_bundle.sh
+        run: chmod +x workflow-tooling/tools/build_offline_wheelhouse.sh workflow-tooling/tools/verify_offline_bundle.sh
 
       - name: Build wheelhouse
         id: build
         shell: bash
+        working-directory: source
         env:
           BUNDLE_NAME: ${{ needs.resolve-ref.outputs.bundle_name }}
           PLATFORM_TAG: ${{ matrix.platform_tag }}
@@ -214,9 +228,10 @@ jobs:
           PIP_PLATFORM: ${{ matrix.pip_platform }}
           PIP_PLATFORM_FALLBACK: ${{ matrix.pip_platform_fallback }}
           POETRY_VIRTUALENVS_CREATE: "false"
+          BUILD_SCRIPT: ${{ github.workspace }}/workflow-tooling/tools/build_offline_wheelhouse.sh
         run: |
           set -euo pipefail
-          bundle_dir="bundle/${BUNDLE_NAME}-${PLATFORM_TAG}-py${PY}"
+          bundle_dir="${{ github.workspace }}/bundle/${BUNDLE_NAME}-${PLATFORM_TAG}-py${PY}"
           mkdir -p "$bundle_dir"
           echo "bundle_dir=${bundle_dir}" >> "$GITHUB_OUTPUT"
 
@@ -230,14 +245,15 @@ jobs:
             args+=(--pip-platform-fallback "${PIP_PLATFORM_FALLBACK}")
           fi
 
-          tools/build_offline_wheelhouse.sh "${args[@]}"
+          "$BUILD_SCRIPT" "${args[@]}"
 
       - name: Verify offline installation (smoke test)
         shell: bash
         env:
           BUNDLE_DIR: ${{ steps.build.outputs.bundle_dir }}
+          VERIFY_SCRIPT: ${{ github.workspace }}/workflow-tooling/tools/verify_offline_bundle.sh
         run: |
-          tools/verify_offline_bundle.sh \
+          "$VERIFY_SCRIPT" \
             --python python \
             --wheelhouse "${BUNDLE_DIR}/wheelhouse"
 
@@ -277,6 +293,26 @@ jobs:
           - \`wheelhouse/\` — every runtime dependency wheel plus the flow360 wheel
           - \`requirements.txt\` — exact pinned versions (exported from \`poetry.lock\`)
           EOF
+
+      - name: Scan bundle for leaked credentials
+        shell: bash
+        env:
+          BUNDLE_DIR: ${{ steps.build.outputs.bundle_dir }}
+        run: |
+          set -euo pipefail
+          # Refuse to ship a bundle that contains CodeArtifact auth tokens,
+          # AWS-style user:pass URL patterns, or index-url directives.
+          bad=$(grep -rEn \
+            -e 'aws:[A-Za-z0-9+/=._-]{20,}@' \
+            -e '--(extra-)?index-url' \
+            -e 'codeartifact\.[a-z0-9.-]+amazonaws\.com.*:.*@' \
+            "$BUNDLE_DIR" || true)
+          if [[ -n "$bad" ]]; then
+            echo "::error ::Bundle contains credential-like content; refusing to package."
+            echo "$bad"
+            exit 1
+          fi
+          echo "Bundle credential scan clean."
 
       - name: Package tarball
         id: pack
