@@ -46,8 +46,6 @@ wheelhouse="${OUTPUT_DIR}/wheelhouse"
 req_file="${OUTPUT_DIR}/requirements.txt"
 mkdir -p "$wheelhouse"
 
-py_ver_nodot="${PY_VER//./}"   # 3.11 -> 311
-
 platform_args=(--platform "$PIP_PLATFORM")
 if [[ -n "$PIP_PLATFORM_FALLBACK" ]]; then
   platform_args+=(--platform "$PIP_PLATFORM_FALLBACK")

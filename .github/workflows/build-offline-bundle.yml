@@ -59,12 +59,15 @@ jobs:
           commit_sha="$(git rev-parse HEAD)"
           short_sha="${commit_sha:0:7}"
 
+          # Use '#' as sed delimiter since '|' clashes with regex alternation.
+          sanitize='s#[^A-Za-z0-9._-]#-#g'
           if [[ -n "$INPUT_BUNDLE_NAME" ]]; then
-            bundle_name="$INPUT_BUNDLE_NAME"
+            # Apply the same safe-char filter to caller-supplied names so
+            # they cannot break tar/artifact naming.
+            bundle_name="$(printf '%s' "$INPUT_BUNDLE_NAME" | sed -E "$sanitize")"
           else
-            # Sanitize ref: strip refs/ prefixes, replace unsafe chars with '-'.
-            # Use '#' as sed delimiter since '|' clashes with regex alternation.
-            sanitized="$(echo "$INPUT_REF" | sed -E 's#refs/(heads|tags)/##; s#[^A-Za-z0-9._-]#-#g')"
+            # Strip refs/ prefixes then sanitize.
+            sanitized="$(printf '%s' "$INPUT_REF" | sed -E 's#refs/(heads|tags)/##; '"$sanitize")"
             bundle_name="flow360-offline-${sanitized}"
           fi
 
@@ -181,6 +184,22 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
 
+      - name: Configure CodeArtifact auth
+        uses: ./.github/actions/setup-codeartifact-poetry-auth
+        with:
+          aws-access-key-id: ${{ secrets.AWS_CODEARTIFACT_READ_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.AWS_CODEARTIFACT_READ_ACCESS_SECRET }}
+
+      - name: Expose CodeArtifact URL to pip
+        shell: bash
+        env:
+          CA_HOST: flexcompute-625554095313.d.codeartifact.us-east-1.amazonaws.com
+        run: |
+          set -euo pipefail
+          url="https://aws:${POETRY_HTTP_BASIC_CODEARTIFACT_PASSWORD}@${CA_HOST}/pypi/pypi-releases/simple/"
+          echo "::add-mask::${url}"
+          echo "PIP_EXTRA_INDEX_URL=${url}" >> "$GITHUB_ENV"
+
       - name: Make tools scripts executable
         shell: bash
         run: chmod +x tools/build_offline_wheelhouse.sh tools/verify_offline_bundle.sh
@@ -194,6 +213,7 @@ jobs:
           PY: ${{ matrix.python }}
           PIP_PLATFORM: ${{ matrix.pip_platform }}
           PIP_PLATFORM_FALLBACK: ${{ matrix.pip_platform_fallback }}
+          POETRY_VIRTUALENVS_CREATE: "false"
         run: |
           set -euo pipefail
           bundle_dir="bundle/${BUNDLE_NAME}-${PLATFORM_TAG}-py${PY}"
@@ -201,7 +221,7 @@ jobs:
           echo "bundle_dir=${bundle_dir}" >> "$GITHUB_OUTPUT"
 
           args=(
-            --python "$(which python)"
+            --python python
             --output "$bundle_dir"
             --python-version "${PY}"
             --pip-platform "${PIP_PLATFORM}"
@@ -218,7 +238,7 @@ jobs:
           BUNDLE_DIR: ${{ steps.build.outputs.bundle_dir }}
         run: |
           tools/verify_offline_bundle.sh \
-            --python "$(which python)" \
+            --python python \
             --wheelhouse "${BUNDLE_DIR}/wheelhouse"
 
       - name: Write INSTALL.md into bundle
