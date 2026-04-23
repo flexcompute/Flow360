@@ -1,11 +1,10 @@
 {
-    "filesAsBodies": true,
     "cadIsFluid": false,
     "enforcedSpacing": 3,
     "geometry": {
         "bodies": [
             {
-                "bodyName": "body0.stl",
+                "bodyName": "body0",
                 "gap": 1,
                 "regions": [
                     {
@@ -16,7 +15,7 @@
                             "minElem": 3,
                             "retainOnSmoothing": false
                         },
-                        "patchName": "body0_patch0",
+                        "patchName": "patch0",
                         "spacing": {
                             "max": 40,
                             "min": 10
@@ -30,7 +29,7 @@
                             "minElem": 3,
                             "retainOnSmoothing": false
                         },
-                        "patchName": "body0_patch1",
+                        "patchName": "patch1",
                         "spacing": {
                             "max": 40,
                             "min": 10
@@ -43,12 +42,12 @@
                 }
             },
             {
-                "bodyName": "body1.stl",
+                "bodyName": "body1",
                 "gap": 1,
                 "regions": [
                     {
                         "gapSpacingReduction": 3,
-                        "patchName": "body1_patch0",
+                        "patchName": "patch0",
                         "spacing": {
                             "max": 40,
                             "min": 20
@@ -56,7 +55,7 @@
                     },
                     {
                         "gapSpacingReduction": 3,
-                        "patchName": "body1_patch1",
+                        "patchName": "patch1",
                         "spacing": {
                             "max": 40,
                             "min": 20
@@ -64,7 +63,7 @@
                     },
                     {
                         "gapSpacingReduction": 3,
-                        "patchName": "body1_patch2",
+                        "patchName": "patch2",
                         "spacing": {
                             "max": 40,
                             "min": 20
@@ -77,18 +76,15 @@
                 }
             },
             {
-                "bodyName": "body2.stl",
+                "bodyName": "body2",
                 "gap": 1,
                 "regions": [
                     {
-                        "patchName": "body2_patch0",
+                        "patchName": "patch0",
                         "spacing": {
                             "max": 40,
                             "min": 5
                         }
-                    },
-                    {
-                        "patchName": "multibody_patch"
                     }
                 ],
                 "spacing": {
@@ -97,18 +93,15 @@
                 }
             },
             {
-                "bodyName": "body3.stl",
+                "bodyName": "body3",
                 "gap": 1,
                 "regions": [
                     {
-                        "patchName": "body3_patch0",
+                        "patchName": "patch0",
                         "spacing": {
                             "max": 40,
                             "min": 5
                         }
-                    },
-                    {
-                        "patchName": "multibody_patch"
                     }
                 ],
                 "spacing": {

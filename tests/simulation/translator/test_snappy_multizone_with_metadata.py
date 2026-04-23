@@ -54,7 +54,7 @@ def test_snappy_boundary_breaking_into_multiple_pieces_translation():
             )
         ),
     )
-    geometry.group_faces_by_tag("faceId")
+    geometry.group_faces_for_snappy()
 
     # Pick two boundaries that are split across zones per vm_metadata.json
     split_boundary_names = ["tower::tunnel", "rad::int-inlet"]

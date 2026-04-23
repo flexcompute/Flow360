@@ -1,18 +1,17 @@
 {
-    "filesAsBodies":true,
     "cadIsFluid": false,
     "enforcedSpacing": 1,
     "geometry": {
         "bodies": [
             {
-                "bodyName": "body0.stl",
+                "bodyName": "body0",
                 "gap": 1,
                 "regions": [
                     {
-                        "patchName": "body0_patch0"
+                        "patchName": "patch0"
                     },
                     {
-                        "patchName": "body0_patch1"
+                        "patchName": "patch1"
                     }
                 ],
                 "spacing": {
@@ -21,17 +20,17 @@
                 }
             },
             {
-                "bodyName": "body1.stl",
+                "bodyName": "body1",
                 "gap": 1,
                 "regions": [
                     {
-                        "patchName": "body1_patch0"
+                        "patchName": "patch0"
                     },
                     {
-                        "patchName": "body1_patch1"
+                        "patchName": "patch1"
                     },
                     {
-                        "patchName": "body1_patch2"
+                        "patchName": "patch2"
                     }
                 ],
                 "spacing": {
@@ -40,14 +39,11 @@
                 }
             },
             {
-                "bodyName": "body2.stl",
+                "bodyName": "body2",
                 "gap": 1,
                 "regions": [
                     {
-                        "patchName": "body2_patch0"
-                    },
-                    {
-                        "patchName": "multibody_patch"
+                        "patchName": "patch0"
                     }
                 ],
                 "spacing": {
@@ -56,14 +52,11 @@
                 }
             },
             {
-                "bodyName": "body3.stl",
+                "bodyName": "body3",
                 "gap": 1,
                 "regions": [
                     {
-                        "patchName": "body3_patch0"
-                    },
-                    {
-                        "patchName": "multibody_patch"
+                        "patchName": "patch0"
                     }
                 ],
                 "spacing": {
