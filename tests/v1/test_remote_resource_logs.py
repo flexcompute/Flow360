@@ -178,6 +178,53 @@ class TestRemoteResourceLogs:
         with pytest.raises(Flow360RuntimeError, match="No log files available"):
             fresh_logs.tail()
 
+    def test_range_based_head_and_tail_lines(self):
+        content = "".join(f"line {i:03d}\n" for i in range(1, 41))
+        encoded = content.encode("utf-8")
+
+        self.flow360_resource.id = "case-1234567890abcdef"
+        self.flow360_resource.s3_transfer_method = Mock()
+        self.flow360_resource.s3_transfer_method.get_file_size.return_value = len(encoded)
+
+        def read_text(_resource_id, _file_name, byte_range=None):
+            if byte_range is None:
+                chunk = encoded
+            else:
+                start, end = byte_range
+                if start < 0 and end is None:
+                    chunk = encoded[start:]
+                else:
+                    chunk = encoded[start : end + 1]
+            return chunk.decode("utf-8"), {}
+
+        self.flow360_resource.s3_transfer_method.read_text.side_effect = read_text
+        self.remote_logs.set_remote_log_file_name("file1.log")
+
+        assert self.remote_logs.head_lines(3, chunk_size=12) == [
+            "line 001",
+            "line 002",
+            "line 003",
+        ]
+        assert self.remote_logs.tail_lines(4, chunk_size=12) == [
+            "line 037",
+            "line 038",
+            "line 039",
+            "line 040",
+        ]
+
+    def test_read_all_text_uses_remote_read(self):
+        self.flow360_resource.id = "case-1234567890abcdef"
+        self.flow360_resource.s3_transfer_method = Mock()
+        self.flow360_resource.s3_transfer_method.read_text.return_value = ("hello\nworld\n", {})
+        self.remote_logs.set_remote_log_file_name("file1.log")
+
+        assert self.remote_logs.read_all_text() == "hello\nworld\n"
+        self.flow360_resource.s3_transfer_method.read_text.assert_called_once_with(
+            "case-1234567890abcdef",
+            "file1.log",
+            byte_range=None,
+        )
+
 
 if __name__ == "__main__":
     pytest.main()

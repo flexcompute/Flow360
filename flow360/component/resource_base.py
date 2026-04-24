@@ -735,6 +735,17 @@ class RemoteResourceLogs:
         ]
         return log_file_names
 
+    def _get_remote_log_file_name(self) -> str:
+        if self._remote_file_name is None:
+            log_files = self._get_log_file_names()
+            if not log_files:
+                raise Flow360RuntimeError(
+                    "No log files available for this resource. "
+                    "The job may not have started or produced any logs yet."
+                )
+            self._remote_file_name = log_files[0]
+        return self._remote_file_name
+
     def set_remote_log_file_name(self, file_name: str):
         """
         Set the name of the remote log file.
@@ -762,17 +773,74 @@ class RemoteResourceLogs:
     def _get_tmp_file_name(self):
         if self._tmp_file_name is None:
             if self._remote_file_name is None:
-                log_files = self._get_log_file_names()
-                if not log_files:
-                    raise Flow360RuntimeError(
-                        "No log files available for this resource. "
-                        "The job may not have started or produced any logs yet."
-                    )
-                self._remote_file_name = log_files[0]
+                self._remote_file_name = self._get_remote_log_file_name()
             if self._tmp_dir is None:
                 self._tmp_dir = TemporaryLogDirectory()
             self._tmp_file_name = os.path.join(self._tmp_dir.name, self._remote_file_name)
         return self._tmp_file_name
+
+    def _get_remote_file_size(self) -> int:
+        return self.flow360_resource.s3_transfer_method.get_file_size(
+            self.flow360_resource.id,
+            self._get_remote_log_file_name(),
+        )
+
+    def _read_remote_text(self, start: int = None, end: int = None):
+        byte_range = None if start is None and end is None else (start, end)
+        return self.flow360_resource.s3_transfer_method.read_text(
+            self.flow360_resource.id,
+            self._get_remote_log_file_name(),
+            byte_range=byte_range,
+        )
+
+    def read_all_text(self) -> str:
+        text, _ = self._read_remote_text()
+        return text
+
+    def head_lines(self, num_lines: int = 100, chunk_size: int = 16 * 1024):
+        """
+        Fetch the first ``num_lines`` lines without downloading the whole log when possible.
+        """
+        current_size = chunk_size
+        while True:
+            end = current_size
+            fetch_end = end
+            text, _ = self._read_remote_text(0, fetch_end)
+
+            has_suffix_probe = len(text) > current_size
+            suffix_char = text[-1] if has_suffix_probe and text else ""
+            visible_text = text[:-1] if has_suffix_probe else text
+
+            lines = visible_text.splitlines()
+            if has_suffix_probe and suffix_char not in ("\n", "\r") and lines:
+                lines = lines[:-1]
+
+            if len(lines) >= num_lines or not has_suffix_probe:
+                return lines[:num_lines]
+
+            current_size *= 2
+
+    def tail_lines(self, num_lines: int = 100, chunk_size: int = 16 * 1024):
+        """
+        Fetch the last ``num_lines`` lines without downloading the whole log when possible.
+        """
+        current_size = chunk_size
+        while True:
+            fetch_size = current_size + 1
+            text, _ = self._read_remote_text(-fetch_size, None)
+
+            has_prefix_probe = len(text) > current_size
+            prefix_char = text[0] if has_prefix_probe and text else ""
+            visible_text = text[1:] if has_prefix_probe else text
+
+            lines = visible_text.splitlines()
+            if has_prefix_probe and prefix_char not in ("\n", "\r") and lines:
+                lines = lines[1:]
+
+            if len(lines) >= num_lines or not has_prefix_probe:
+                return lines[-num_lines:]
+
+            current_size *= 2
 
     # pylint: disable=protected-access
     def _refresh_file(self):

@@ -70,6 +70,11 @@ _LAZY_COMMANDS = {
         "attr": "open_resource",
         "help": "Open a Flow360 resource in the browser.",
     },
+    "logs": {
+        "module": "flow360.cli.logs",
+        "attr": "logs",
+        "help": "Fetch logs for a Flow360 resource.",
+    },
 }
 
 

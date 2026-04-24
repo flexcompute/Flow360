@@ -35,13 +35,16 @@ __all__ = _load_exported_names()
 
 
 def __getattr__(name: str):
-    api_module = _load_api_module()
-    try:
-        value = getattr(api_module, name)
-    except AttributeError as error:
-        raise AttributeError(f"module {__name__!r} has no attribute {name!r}") from error
-    globals()[name] = value
-    return value
+    if name in __all__:
+        api_module = _load_api_module()
+        try:
+            value = getattr(api_module, name)
+        except AttributeError as error:
+            raise AttributeError(f"module {__name__!r} has no attribute {name!r}") from error
+        globals()[name] = value
+        return value
+
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 def __dir__():

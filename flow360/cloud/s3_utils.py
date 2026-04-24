@@ -234,6 +234,102 @@ class S3TransferType(Enum):
         base_path = token.cloud_path_prefix.rsplit("/", 1)[0]
         return base_path
 
+    def get_file_size(self, resource_id: str, remote_file_name: str, log_error=True) -> int:
+        """
+        Return the remote file size in bytes.
+        """
+        # pylint: disable=import-outside-toplevel
+        from botocore.exceptions import ClientError as CloudFileNotFoundError
+
+        token = self._get_s3_sts_token(resource_id, remote_file_name)
+        client = token.get_client()
+        try:
+            metadata = client.head_object(Bucket=token.get_bucket(), Key=token.get_s3_key())
+        except CloudFileNotFoundError:
+            if log_error:
+                log.error(f"{remote_file_name} not found. id={resource_id}")
+            raise
+
+        return metadata.get("ContentLength", 0)
+
+    def read_bytes(
+        self,
+        resource_id: str,
+        remote_file_name: str,
+        byte_range=None,
+        log_error=True,
+    ):
+        """
+        Read bytes directly from S3, optionally using an HTTP byte range.
+
+        Parameters
+        ----------
+        resource_id : str
+            Resource id used to obtain an STS grant.
+        remote_file_name : str
+            Remote file name relative to the resource cloud path prefix.
+        byte_range : tuple[int, int | None] | None
+            Inclusive byte range to fetch. ``None`` fetches the full object.
+        log_error : bool
+            Whether to log file-not-found errors.
+
+        Returns
+        -------
+        tuple[bytes, dict]
+            The object bytes and a small metadata dict.
+        """
+        # pylint: disable=import-outside-toplevel
+        from botocore.exceptions import ClientError as CloudFileNotFoundError
+
+        token = self._get_s3_sts_token(resource_id, remote_file_name)
+        client = token.get_client()
+
+        request_kwargs = {"Bucket": token.get_bucket(), "Key": token.get_s3_key()}
+        if byte_range is not None:
+            start, end = byte_range
+            if start is not None and start < 0 and end is None:
+                request_kwargs["Range"] = f"bytes={start}"
+            elif end is None:
+                request_kwargs["Range"] = f"bytes={start}-"
+            else:
+                request_kwargs["Range"] = f"bytes={start}-{end}"
+
+        try:
+            response = client.get_object(**request_kwargs)
+        except CloudFileNotFoundError:
+            if log_error:
+                log.error(f"{remote_file_name} not found. id={resource_id}")
+            raise
+
+        body = response["Body"].read()
+        metadata = {
+            "body_length": len(body),
+            "content_length": response.get("ContentLength"),
+            "content_range": response.get("ContentRange"),
+            "accept_ranges": response.get("AcceptRanges"),
+            "content_type": response.get("ContentType"),
+        }
+        return body, metadata
+
+    def read_text(
+        self,
+        resource_id: str,
+        remote_file_name: str,
+        byte_range=None,
+        encoding: str = "utf-8",
+        log_error=True,
+    ):
+        """
+        Read text directly from S3, optionally using an HTTP byte range.
+        """
+        content, metadata = self.read_bytes(
+            resource_id=resource_id,
+            remote_file_name=remote_file_name,
+            byte_range=byte_range,
+            log_error=log_error,
+        )
+        return content.decode(encoding, errors="replace"), metadata
+
     def create_multipart_upload(
         self,
         resource_id: str,
