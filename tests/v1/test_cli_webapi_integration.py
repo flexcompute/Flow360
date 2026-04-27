@@ -211,6 +211,29 @@ def test_geometry_simulation_get_uses_geometry_simulation_endpoint(recorded_weba
     }
 
 
+def test_geometry_summary_uses_geometry_simulation_endpoint(monkeypatch, recorded_webapi_calls):
+    from flow360.cli import assets as assets_cli
+
+    runner = CliRunner()
+    monkeypatch.setattr(
+        assets_cli,
+        "_summarize_simulation_json",
+        lambda simulation_json: {"models": {"surface": []}},
+    )
+
+    result = runner.invoke(flow360, ["geometry", "summary", GEOMETRY_ID])
+
+    assert result.exit_code == 0
+    payload = _load_json_output(result.output)
+    assert payload["id"] == GEOMETRY_ID
+    assert "summary" in payload
+    assert recorded_webapi_calls[-1] == {
+        "type": "get",
+        "url": f"/v2/geometries/{GEOMETRY_ID}/simulation/file",
+        "params": {"type": "simulation"},
+    }
+
+
 def test_case_info_uses_case_v2_endpoint(recorded_webapi_calls):
     runner = CliRunner()
 
@@ -309,6 +332,31 @@ def test_surface_mesh_simulation_get_uses_surface_mesh_simulation_endpoint(recor
     }
 
 
+def test_surface_mesh_summary_uses_surface_mesh_simulation_endpoint(
+    monkeypatch, recorded_webapi_calls
+):
+    from flow360.cli import assets as assets_cli
+
+    runner = CliRunner()
+    monkeypatch.setattr(
+        assets_cli,
+        "_summarize_simulation_json",
+        lambda simulation_json: {"models": {"surface": []}},
+    )
+
+    result = runner.invoke(flow360, ["surface-mesh", "summary", SURFACE_MESH_ID])
+
+    assert result.exit_code == 0
+    payload = _load_json_output(result.output)
+    assert payload["id"] == SURFACE_MESH_ID
+    assert "summary" in payload
+    assert recorded_webapi_calls[-1] == {
+        "type": "get",
+        "url": f"/v2/surface-meshes/{SURFACE_MESH_ID}/simulation/file",
+        "params": {"type": "simulation"},
+    }
+
+
 def test_volume_mesh_info_uses_volume_mesh_v2_endpoint(recorded_webapi_calls):
     runner = CliRunner()
 
@@ -390,6 +438,31 @@ def test_volume_mesh_simulation_get_uses_volume_mesh_simulation_endpoint(recorde
     }
 
 
+def test_volume_mesh_summary_uses_volume_mesh_simulation_endpoint(
+    monkeypatch, recorded_webapi_calls
+):
+    from flow360.cli import assets as assets_cli
+
+    runner = CliRunner()
+    monkeypatch.setattr(
+        assets_cli,
+        "_summarize_simulation_json",
+        lambda simulation_json: {"models": {"surface": []}},
+    )
+
+    result = runner.invoke(flow360, ["volume-mesh", "summary", VOLUME_MESH_ID])
+
+    assert result.exit_code == 0
+    payload = _load_json_output(result.output)
+    assert payload["id"] == VOLUME_MESH_ID
+    assert "summary" in payload
+    assert recorded_webapi_calls[-1] == {
+        "type": "get",
+        "url": f"/v2/volume-meshes/{VOLUME_MESH_ID}/simulation/file",
+        "params": {"type": "simulation"},
+    }
+
+
 def test_case_get_alias_uses_case_v2_endpoint(recorded_webapi_calls):
     runner = CliRunner()
 
@@ -416,6 +489,29 @@ def test_case_simulation_get_uses_case_simulation_endpoint(recorded_webapi_calls
     assert "simulation" in payload
     assert isinstance(payload["simulation"], dict)
     assert "models" in payload["simulation"]
+    assert recorded_webapi_calls[-1] == {
+        "type": "get",
+        "url": f"/v2/cases/{CASE_ID}/simulation/file",
+        "params": {"type": "simulation"},
+    }
+
+
+def test_case_summary_uses_case_simulation_endpoint(monkeypatch, recorded_webapi_calls):
+    from flow360.cli import assets as assets_cli
+
+    runner = CliRunner()
+    monkeypatch.setattr(
+        assets_cli,
+        "_summarize_simulation_json",
+        lambda simulation_json: {"models": {"fluid": []}},
+    )
+
+    result = runner.invoke(flow360, ["case", "summary", CASE_ID])
+
+    assert result.exit_code == 0
+    payload = _load_json_output(result.output)
+    assert payload["id"] == CASE_ID
+    assert "summary" in payload
     assert recorded_webapi_calls[-1] == {
         "type": "get",
         "url": f"/v2/cases/{CASE_ID}/simulation/file",
@@ -618,9 +714,7 @@ def test_draft_run_uses_run_endpoint(recorded_webapi_calls):
 def test_draft_run_wait_polls_result_state_endpoint(recorded_webapi_calls):
     runner = CliRunner()
 
-    result = runner.invoke(
-        flow360, ["draft", "run", DRAFT_ID, "--up-to", "volume-mesh", "--wait"]
-    )
+    result = runner.invoke(flow360, ["draft", "run", DRAFT_ID, "--up-to", "volume-mesh", "--wait"])
 
     assert result.exit_code == 0
     payload = _load_json_output(result.output)
@@ -650,7 +744,16 @@ def test_draft_run_from_project_creates_sets_and_runs(recorded_webapi_calls, tmp
 
     result = runner.invoke(
         flow360,
-        ["draft", "run", PROJECT_ID, str(simulation_path), "--name", "Alpha -18", "--up-to", "volume-mesh"],
+        [
+            "draft",
+            "run",
+            PROJECT_ID,
+            str(simulation_path),
+            "--name",
+            "Alpha -18",
+            "--up-to",
+            "volume-mesh",
+        ],
     )
 
     assert result.exit_code == 0
@@ -696,9 +799,7 @@ def test_draft_run_from_project_creates_sets_and_runs(recorded_webapi_calls, tmp
     }
 
 
-def test_draft_run_from_project_patch_fetches_merges_sets_and_runs(
-    recorded_webapi_calls, tmp_path
-):
+def test_draft_run_from_project_patch_fetches_merges_sets_and_runs(recorded_webapi_calls, tmp_path):
     runner = CliRunner()
     patch_path = tmp_path / "patch.json"
     patch_path.write_text('{"meshing":{"refinement_factor":2.5}}')
@@ -791,7 +892,9 @@ def test_case_rename_uses_case_patch_endpoint(recorded_webapi_calls):
 def test_geometry_rename_uses_geometry_patch_endpoint(recorded_webapi_calls):
     runner = CliRunner()
 
-    result = runner.invoke(flow360, ["geometry", "rename", GEOMETRY_ID, "--name", "Renamed Geometry"])
+    result = runner.invoke(
+        flow360, ["geometry", "rename", GEOMETRY_ID, "--name", "Renamed Geometry"]
+    )
 
     assert result.exit_code == 0
     payload = _load_json_output(result.output)
@@ -954,7 +1057,13 @@ def test_folder_move_uses_folder_patch_endpoint(recorded_webapi_calls):
 
     result = runner.invoke(
         flow360,
-        ["folder", "move", FOLDER_ID, "--parent-folder-id", "folder-4da3cdd0-c5b6-4130-9ca1-196237322ab9"],
+        [
+            "folder",
+            "move",
+            FOLDER_ID,
+            "--parent-folder-id",
+            "folder-4da3cdd0-c5b6-4130-9ca1-196237322ab9",
+        ],
     )
 
     assert result.exit_code == 0

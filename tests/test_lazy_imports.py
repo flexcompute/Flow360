@@ -92,6 +92,27 @@ def test_flow360_root_help_does_not_eagerly_import_sdk_command_modules(monkeypat
     assert "flow360.cloud.flow360_requests" not in sys.modules
 
 
+def test_asset_group_help_does_not_import_simulation_summary(monkeypatch):
+    monkeypatch.delenv("FLOW360_SUPPRESS_BETA_WARNING", raising=False)
+    _unload_modules(
+        monkeypatch,
+        "flow360.cli",
+        "flow360.cli.app",
+        "flow360.cli.assets",
+        "flow360.cli.simulation_summary",
+        "flow360.component.simulation.simulation_params",
+    )
+
+    from flow360.cli import flow360  # pylint: disable=import-outside-toplevel,import-error
+
+    result = CliRunner().invoke(flow360, ["case", "--help"])
+
+    assert result.exit_code == 0
+    assert "flow360.cli.assets" in sys.modules
+    assert "flow360.cli.simulation_summary" not in sys.modules
+    assert "flow360.component.simulation.simulation_params" not in sys.modules
+
+
 def test_public_namespace_configure_does_not_eagerly_import_cli_modules(monkeypatch):
     monkeypatch.delenv("FLOW360_SUPPRESS_BETA_WARNING", raising=False)
     _unload_modules(

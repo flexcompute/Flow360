@@ -26,6 +26,7 @@ def test_case_group_help_shows_info_and_simulation():
     assert result.exit_code == 0
     assert "info" in result.output
     assert "state" in result.output
+    assert "summary" in result.output
     assert "simulation" in result.output
     assert "results" in result.output
     assert "get" not in result.output
@@ -39,6 +40,7 @@ def test_geometry_group_help_shows_info_and_simulation():
     assert result.exit_code == 0
     assert "info" in result.output
     assert "state" in result.output
+    assert "summary" in result.output
     assert "simulation" in result.output
     assert "get" not in result.output
 
@@ -51,6 +53,7 @@ def test_surface_mesh_group_help_shows_info_and_simulation():
     assert result.exit_code == 0
     assert "info" in result.output
     assert "state" in result.output
+    assert "summary" in result.output
     assert "simulation" in result.output
     assert "get" not in result.output
 
@@ -63,6 +66,7 @@ def test_volume_mesh_group_help_shows_info_and_simulation():
     assert result.exit_code == 0
     assert "info" in result.output
     assert "state" in result.output
+    assert "summary" in result.output
     assert "simulation" in result.output
     assert "get" not in result.output
 

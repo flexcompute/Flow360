@@ -48,6 +48,22 @@ def _get_asset_simulation_json(webapi_cls, asset_id):
     return simulation_json
 
 
+def _summarize_simulation_json(simulation_json):
+    # pylint: disable=import-outside-toplevel
+    from flow360.cli.simulation_summary import summarize_simulation
+
+    return summarize_simulation(simulation_json)
+
+
+def _emit_asset_summary(webapi_cls, asset_id):
+    emit_json(
+        {
+            "id": asset_id,
+            "summary": _summarize_simulation_json(_get_asset_simulation_json(webapi_cls, asset_id)),
+        }
+    )
+
+
 def _serialize_case_result(record):
     path = _get_case_result_path(record)
     return {
@@ -73,7 +89,9 @@ def _list_case_results(case_id):
     from flow360.component.simulation.web.asset_webapi import CaseWebApi
 
     files = CaseWebApi(case_id).list_files()
-    result_files = [record for record in files if (_get_case_result_path(record) or "").startswith("results/")]
+    result_files = [
+        record for record in files if (_get_case_result_path(record) or "").startswith("results/")
+    ]
     result_files.sort(key=lambda record: _get_case_result_path(record) or "")
     return result_files
 
@@ -86,7 +104,8 @@ def _resolve_case_result(case_id, result_ref):
     exact_matches = [
         record
         for record in results
-        if result_ref in {record.get("filePath"), record.get("fileName"), _get_case_result_path(record)}
+        if result_ref
+        in {record.get("filePath"), record.get("fileName"), _get_case_result_path(record)}
     ]
     if len(exact_matches) == 1:
         return exact_matches[0]
@@ -171,6 +190,16 @@ def state_geometry(geometry_id):
     emit_json(get_resource_state_for_type("Geometry", geometry_id))
 
 
+@geometry.command("summary")
+@click.argument("geometry_id")
+def summary_geometry(geometry_id):
+    """Summarize geometry simulation settings."""
+    # pylint: disable=import-outside-toplevel
+    from flow360.component.simulation.web.asset_webapi import GeometryWebApi
+
+    _emit_asset_summary(GeometryWebApi, geometry_id)
+
+
 @geometry.group("simulation")
 def geometry_simulation():
     """Namespace for geometry simulation commands."""
@@ -232,6 +261,16 @@ def state_surface_mesh(surface_mesh_id):
     emit_json(get_resource_state_for_type("SurfaceMesh", surface_mesh_id))
 
 
+@surface_mesh.command("summary")
+@click.argument("surface_mesh_id")
+def summary_surface_mesh(surface_mesh_id):
+    """Summarize surface mesh simulation settings."""
+    # pylint: disable=import-outside-toplevel
+    from flow360.component.simulation.web.asset_webapi import SurfaceMeshWebApi
+
+    _emit_asset_summary(SurfaceMeshWebApi, surface_mesh_id)
+
+
 @surface_mesh.group("simulation")
 def surface_mesh_simulation():
     """Namespace for surface mesh simulation commands."""
@@ -291,6 +330,16 @@ def rename_volume_mesh(volume_mesh_id, name):
 def state_volume_mesh(volume_mesh_id):
     """Get volume mesh lifecycle state."""
     emit_json(get_resource_state_for_type("VolumeMesh", volume_mesh_id))
+
+
+@volume_mesh.command("summary")
+@click.argument("volume_mesh_id")
+def summary_volume_mesh(volume_mesh_id):
+    """Summarize volume mesh simulation settings."""
+    # pylint: disable=import-outside-toplevel
+    from flow360.component.simulation.web.asset_webapi import VolumeMeshWebApi
+
+    _emit_asset_summary(VolumeMeshWebApi, volume_mesh_id)
 
 
 @volume_mesh.group("simulation")
@@ -361,6 +410,16 @@ def rename_case(case_id, name):
     emit_json({"id": case_id, "name": name})
 
 
+@case.command("summary")
+@click.argument("case_id")
+def summary_case(case_id):
+    """Summarize case simulation settings."""
+    # pylint: disable=import-outside-toplevel
+    from flow360.component.simulation.web.asset_webapi import CaseWebApi
+
+    _emit_asset_summary(CaseWebApi, case_id)
+
+
 @case.group("simulation")
 def case_simulation():
     """Namespace for case simulation commands."""
@@ -382,7 +441,9 @@ def case_results():
 
 
 def _emit_case_results_list(case_id):
-    emit_json({"records": [_serialize_case_result(record) for record in _list_case_results(case_id)]})
+    emit_json(
+        {"records": [_serialize_case_result(record) for record in _list_case_results(case_id)]}
+    )
 
 
 @case_results.command("list")
