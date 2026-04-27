@@ -1931,7 +1931,7 @@ def test_gai_target_surface_node_count_absent():
 
 
 def test_beta_mesher_target_surface_node_count_stripped(get_om6wing_geometry):
-    """FXC-7096: target_surface_node_count is stripped with a warning for the beta mesher in 25.9."""
+    """target_surface_node_count is stripped with a warning for the beta mesher in 25.9."""
     my_geometry = TempGeometry("om6wing.csm")
     with SI_unit_system:
         params = SimulationParams(

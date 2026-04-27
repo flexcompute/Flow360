@@ -355,13 +355,13 @@ class MeshingDefaults(Flow360BaseModel):
     def ensure_target_surface_node_count_mesher(cls, value, param_info: ParamsValidationInfo):
         """Validate that target_surface_node_count is only used with geometry AI.
 
-        FXC-7096: temporarily ignored (with warning) for the beta mesher in 25.9; re-enable in 25.10.
+        Temporarily ignored (with warning) for the beta mesher in 25.9; re-enable in 25.10.
         """
         if value is None:
             return value
         if param_info.use_geometry_AI:
             return value
-        # FXC-7096: temporarily disabled for the beta mesher in 25.9; re-enable in 25.10.
+        # Temporarily disabled for the beta mesher in 25.9; re-enable in 25.10.
         if param_info.is_beta_mesher:
             add_validation_warning(
                 "`target_surface_node_count` is temporarily disabled for the beta mesher "
