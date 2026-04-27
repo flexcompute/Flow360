@@ -288,6 +288,99 @@ def test_project_list_outputs_records(monkeypatch):
     assert payload["total"] == 1
 
 
+def test_project_list_can_output_legacy_style_text(monkeypatch):
+    from flow360.cli import project as project_cli
+
+    runner = CliRunner()
+    record = SimpleNamespace(
+        name="Wing Study",
+        project_id="prj-123",
+        tags=["demo"],
+        description="test project",
+        solver_version="release-25.2",
+        created_at="2025-01-01T00:00:00Z",
+        root_item_type="Geometry",
+        statistics=SimpleNamespace(
+            geometry=SimpleNamespace(
+                count=1,
+                successCount=1,
+                runningCount=0,
+                divergedCount=0,
+                errorCount=0,
+            ),
+            surface_mesh=None,
+            volume_mesh=None,
+            case=SimpleNamespace(
+                count=3,
+                successCount=2,
+                runningCount=0,
+                divergedCount=1,
+                errorCount=0,
+            ),
+        ),
+    )
+
+    monkeypatch.setattr(
+        project_cli,
+        "_get_project_records",
+        lambda search=None, limit=25, folder_ids=None, exclude_subfolders=False: ([record], 7),
+    )
+    monkeypatch.setattr(
+        project_cli,
+        "_project_browser_url",
+        lambda project_id: f"https://example.test/workbench/{project_id}",
+    )
+
+    result = runner.invoke(flow360, ["project", "list", "--keyword", "wing", "--format", "text"])
+
+    assert result.exit_code == 0
+    assert ">>> Projects sorted by creation time:" in result.output
+    assert "Name:         Wing Study" in result.output
+    assert "Created with: Geometry" in result.output
+    assert "Solver:       release-25.2" in result.output
+    assert "Link:         https://example.test/workbench/prj-123" in result.output
+    assert "Geometry count:     1" in result.output
+    assert "Case count:         3" in result.output
+    assert "Showing 1 of 7 matching projects." in result.output
+
+
+def test_show_projects_uses_project_list_formatter(monkeypatch):
+    from flow360.cli import project as project_cli
+
+    runner = CliRunner()
+    calls = {}
+    record = SimpleNamespace(
+        name="Wing Study",
+        project_id="prj-123",
+        tags=[],
+        description=None,
+        solver_version="release-25.2",
+        created_at="2025-01-01T00:00:00Z",
+        root_item_type="Geometry",
+    )
+
+    monkeypatch.setattr(
+        project_cli,
+        "_get_project_records",
+        lambda search=None, limit=25, folder_ids=None, exclude_subfolders=False: (
+            calls.update({"search": search, "limit": limit})
+            or ([record], 1)
+        ),
+    )
+    monkeypatch.setattr(
+        project_cli,
+        "_project_browser_url",
+        lambda project_id: f"https://example.test/workbench/{project_id}",
+    )
+
+    result = runner.invoke(flow360, ["show_projects", "-k", "wing"])
+
+    assert result.exit_code == 0
+    assert calls == {"search": "wing", "limit": 200}
+    assert "Name:         Wing Study" in result.output
+    assert "Link:         https://example.test/workbench/prj-123" in result.output
+
+
 def test_project_ls_alias_outputs_records(monkeypatch):
     from flow360.cli import project as project_cli
 

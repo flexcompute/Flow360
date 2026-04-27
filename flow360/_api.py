@@ -197,14 +197,14 @@ from flow360.component.simulation.unit_system import (
     SI_unit_system,
     imperial_unit_system,
 )
-from flow360.component.simulation.user_code.core.types import (
-    UserVariable,
+from flow360_schema.framework.expression import UserVariable
+from flow360_schema.framework.expression.variable import (
     get_user_variable,
     remove_user_variable,
     show_user_variables,
 )
-from flow360.component.simulation.user_code.functions import math
-from flow360.component.simulation.user_code.variables import solution
+from flow360_schema.models.functions import math
+from flow360_schema.models.variables import solution
 from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
     UserDefinedDynamic,
 )
@@ -218,6 +218,7 @@ from flow360.version_utils import warn_if_prerelease_version as _warn_prerelease
 __all__ = [
     "GeometryRefinement",
     "Env",
+    "configure",
     "Case",
     "create_draft",
     "CoordinateSystem",

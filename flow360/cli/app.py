@@ -407,11 +407,15 @@ def show_projects(ctx, keyword, env: str):
         env_config.active()
 
     # pylint: disable=import-outside-toplevel
-    from flow360.component.simulation.web.project_records import (
-        show_projects_with_keyword_filter,
-    )
+    from flow360.cli.project import build_project_list_payload, format_project_list_payload
 
-    show_projects_with_keyword_filter(search_keyword=keyword)
+    payload = build_project_list_payload(
+        search=keyword,
+        limit=200,
+        folder_ids=(),
+        exclude_subfolders=False,
+    )
+    click.echo(format_project_list_payload(payload))
 
     if prev_env_config:
         prev_env_config.active()

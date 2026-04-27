@@ -5,7 +5,8 @@ Project CLI commands.
 from __future__ import annotations
 
 import click
-from flow360.cli.output import emit_json
+from flow360.cli.output import emit_json, emit_payload
+from flow360.cli.project_formatters import format_project_list
 
 
 def _get_project_records(search=None, limit=25, folder_ids=None, exclude_subfolders=False):
@@ -70,6 +71,30 @@ def _serialize_project_record(record):
         "created_at": record.created_at,
         "tags": list(record.tags),
         "description": record.description,
+        "statistics": _serialize_project_statistics(getattr(record, "statistics", None)),
+    }
+
+
+def _serialize_asset_statistics(statistics):
+    if statistics is None:
+        return None
+    return {
+        "count": statistics.count,
+        "success_count": statistics.successCount,
+        "running_count": statistics.runningCount,
+        "diverged_count": statistics.divergedCount,
+        "error_count": statistics.errorCount,
+    }
+
+
+def _serialize_project_statistics(statistics):
+    if statistics is None:
+        return {}
+    return {
+        "geometry": _serialize_asset_statistics(getattr(statistics, "geometry", None)),
+        "surface_mesh": _serialize_asset_statistics(getattr(statistics, "surface_mesh", None)),
+        "volume_mesh": _serialize_asset_statistics(getattr(statistics, "volume_mesh", None)),
+        "case": _serialize_asset_statistics(getattr(statistics, "case", None)),
     }
 
 
@@ -202,6 +227,13 @@ def _serialize_created_project(result, run_async):
     }
 
 
+def _project_browser_url(project_id):
+    # pylint: disable=import-outside-toplevel
+    from flow360.environment import Env
+
+    return Env.current.get_web_real_url(f"workbench/{project_id}")
+
+
 @click.group("project")
 def project():
     """
@@ -209,7 +241,7 @@ def project():
     """
 
 
-def _emit_project_list(search, limit, folder_ids, exclude_subfolders):
+def build_project_list_payload(search, limit, folder_ids, exclude_subfolders):
     records, total = _get_project_records(
         search=search,
         limit=limit,
@@ -217,12 +249,23 @@ def _emit_project_list(search, limit, folder_ids, exclude_subfolders):
         exclude_subfolders=exclude_subfolders,
     )
     project_records = records.records if hasattr(records, "records") else records
-    emit_json(
-        {
-            "records": [_serialize_project_record(record) for record in project_records],
-            "returned": len(project_records),
-            "total": total,
-        }
+    return {
+        "records": [_serialize_project_record(record) for record in project_records],
+        "returned": len(project_records),
+        "total": total,
+    }
+
+
+def format_project_list_payload(payload):
+    return format_project_list(payload, project_url_factory=_project_browser_url)
+
+
+def _emit_project_list(search, limit, folder_ids, exclude_subfolders, output_format="json"):
+    payload = build_project_list_payload(search, limit, folder_ids, exclude_subfolders)
+    emit_payload(
+        payload,
+        output_format=output_format,
+        text_formatter=format_project_list_payload,
     )
 
 
@@ -315,11 +358,19 @@ def create_project(source, files, name, solver_version, length_unit, description
     is_flag=True,
     help="Only search the specified folders, not their subfolders.",
 )
-def list_projects(search, limit, folder_ids, exclude_subfolders):
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(["json", "text"], case_sensitive=False),
+    default="json",
+    show_default=True,
+    help="Output format.",
+)
+def list_projects(search, limit, folder_ids, exclude_subfolders, output_format):
     """
     List projects.
     """
-    _emit_project_list(search, limit, folder_ids, exclude_subfolders)
+    _emit_project_list(search, limit, folder_ids, exclude_subfolders, output_format)
 
 
 @project.command("ls", hidden=True)
@@ -343,9 +394,17 @@ def list_projects(search, limit, folder_ids, exclude_subfolders):
     is_flag=True,
     help="Only search the specified folders, not their subfolders.",
 )
-def list_projects_alias(search, limit, folder_ids, exclude_subfolders):
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(["json", "text"], case_sensitive=False),
+    default="json",
+    show_default=True,
+    help="Output format.",
+)
+def list_projects_alias(search, limit, folder_ids, exclude_subfolders, output_format):
     """Backward-compatible alias for project list."""
-    _emit_project_list(search, limit, folder_ids, exclude_subfolders)
+    _emit_project_list(search, limit, folder_ids, exclude_subfolders, output_format)
 
 
 @project.command("info")

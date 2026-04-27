@@ -322,7 +322,11 @@ def create_draft(ref_id, name):
     "patch_path",
     default=None,
     type=click.Path(exists=True, dir_okay=False, resolve_path=True),
-    help="JSON patch object merged locally into the source simulation before draft run.",
+    help=(
+        "JSON patch object merged locally into the source simulation before draft run. "
+        "Recommended only for small edits such as angle of attack or velocity. "
+        "For larger or structurally risky changes, use Python with Pydantic models instead."
+    ),
 )
 @click.option("--name", default=None, help="Optional name for the created draft in one-shot mode.")
 @click.option(

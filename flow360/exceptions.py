@@ -3,13 +3,14 @@
 # pylint: disable=unused-import
 from typing import List
 
-from flow360_schema.exceptions import (
-    Flow360DeprecationError,
-    Flow360Error,
-    Flow360ErrorWithLocation,
-    Flow360TranslationError,
-    Flow360ValueError,
-)
+from flow360_schema import exceptions as _schema_exceptions
+
+Flow360DeprecationError = _schema_exceptions.Flow360DeprecationError
+Flow360Error = _schema_exceptions.Flow360Error
+Flow360ValueError = _schema_exceptions.Flow360ValueError
+
+Flow360ErrorWithLocation = getattr(_schema_exceptions, "Flow360ErrorWithLocation", Flow360Error)
+Flow360TranslationError = getattr(_schema_exceptions, "Flow360TranslationError", Flow360Error)
 
 
 class Flow360TypeError(Flow360Error):
