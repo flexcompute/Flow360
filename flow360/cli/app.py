@@ -25,6 +25,8 @@ from flow360.user_config import (
 )
 from flow360.version import __solver_version__, __version__
 
+config_file = user_config.config_file
+
 _LAZY_COMMANDS = {
     "project": {
         "module": "flow360.cli.project",
