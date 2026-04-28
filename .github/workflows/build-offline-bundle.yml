@@ -1,0 +1,389 @@
+# Build per-platform offline wheelhouse bundles for flow360.
+# Manually triggered; specify any git ref (commit SHA / tag / branch) to snapshot from.
+# Each (OS, arch, Python) combination produces an independent artifact the user
+# can install fully offline via: pip install --no-index --find-links=wheelhouse flow360
+
+name: build offline bundle
+run-name: "offline bundle @ ${{ inputs.ref }} [py ${{ inputs.python_versions }} / ${{ inputs.platforms }}]"
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Git ref to build from (commit SHA, tag like v25.9.6, or branch)"
+        required: true
+        type: string
+      python_versions:
+        description: "Comma-separated Python versions (subset of 3.10,3.11,3.12,3.13)"
+        required: true
+        type: string
+      platforms:
+        description: "Which platforms to build for"
+        required: false
+        type: choice
+        default: all
+        options:
+          - all
+          - linux-only
+          - linux-x86_64
+          - macos-only
+          - windows-only
+      bundle_name:
+        description: "Artifact name prefix (default: derived from ref)"
+        required: false
+        type: string
+        default: ""
+
+jobs:
+  resolve-ref:
+    runs-on: ubuntu-latest
+    outputs:
+      commit_sha: ${{ steps.resolve.outputs.commit_sha }}
+      short_sha: ${{ steps.resolve.outputs.short_sha }}
+      bundle_name: ${{ steps.resolve.outputs.bundle_name }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+          fetch-depth: 0
+
+      - name: Resolve ref to commit SHA
+        id: resolve
+        env:
+          INPUT_REF: ${{ inputs.ref }}
+          INPUT_BUNDLE_NAME: ${{ inputs.bundle_name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          commit_sha="$(git rev-parse HEAD)"
+          short_sha="${commit_sha:0:7}"
+
+          # Use '#' as sed delimiter since '|' clashes with regex alternation.
+          sanitize='s#[^A-Za-z0-9._-]#-#g'
+          if [[ -n "$INPUT_BUNDLE_NAME" ]]; then
+            # Apply the same safe-char filter to caller-supplied names so
+            # they cannot break tar/artifact naming.
+            bundle_name="$(printf '%s' "$INPUT_BUNDLE_NAME" | sed -E "$sanitize")"
+          else
+            # Strip refs/ prefixes then sanitize.
+            sanitized="$(printf '%s' "$INPUT_REF" | sed -E 's#refs/(heads|tags)/##; '"$sanitize")"
+            bundle_name="flow360-offline-${sanitized}"
+          fi
+
+          echo "commit_sha=${commit_sha}" >> "$GITHUB_OUTPUT"
+          echo "short_sha=${short_sha}" >> "$GITHUB_OUTPUT"
+          echo "bundle_name=${bundle_name}" >> "$GITHUB_OUTPUT"
+
+          echo "::notice ::Resolved ref '${INPUT_REF}' -> ${commit_sha}"
+          echo "::notice ::Bundle name prefix: ${bundle_name}"
+
+  plan-matrix:
+    runs-on: ubuntu-latest
+    needs: resolve-ref
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+    steps:
+      - name: Validate inputs and build matrix
+        id: plan
+        env:
+          INPUT_PYTHON_VERSIONS: ${{ inputs.python_versions }}
+          INPUT_PLATFORMS: ${{ inputs.platforms }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          allowed_pythons=("3.10" "3.11" "3.12" "3.13")
+
+          IFS=',' read -r -a requested_pythons <<< "$INPUT_PYTHON_VERSIONS"
+          python_list=()
+          for raw in "${requested_pythons[@]}"; do
+            v="$(echo "$raw" | xargs)"
+            [[ -z "$v" ]] && continue
+            ok=0
+            for a in "${allowed_pythons[@]}"; do
+              [[ "$v" == "$a" ]] && ok=1 && break
+            done
+            if [[ "$ok" -ne 1 ]]; then
+              echo "::error ::Python version '${v}' is not in allowed set: ${allowed_pythons[*]}"
+              exit 1
+            fi
+            python_list+=("$v")
+          done
+
+          if [[ "${#python_list[@]}" -eq 0 ]]; then
+            echo "::error ::python_versions must contain at least one version"
+            exit 1
+          fi
+
+          # Platform catalog. Fields: tag | runner
+          # Each build runs on its native runner and uses `pip wheel`, so the
+          # wheelhouse ends up tagged for the runner's platform (e.g. Linux ->
+          # manylinux_2_28). Cross-compat via --platform was dropped because
+          # it required --only-binary=:all:, which breaks on sdist-only deps
+          # like pylatex.
+          declare -a all_platforms=(
+            "linux-x86_64|ubuntu-22.04"
+            "linux-aarch64|ubuntu-22.04-arm"
+            "macos-arm64|macos-14"
+            "macos-x86_64|macos-13"
+            "windows-x86_64|windows-2022"
+          )
+
+          case "$INPUT_PLATFORMS" in
+            all)            selector='.*' ;;
+            linux-only)     selector='^linux-' ;;
+            linux-x86_64)   selector='^linux-x86_64$' ;;
+            macos-only)     selector='^macos-' ;;
+            windows-only)   selector='^windows-' ;;
+            *)
+              echo "::error ::Unknown platforms selector: ${INPUT_PLATFORMS}"
+              exit 1
+              ;;
+          esac
+
+          selected=()
+          for entry in "${all_platforms[@]}"; do
+            tag="${entry%%|*}"
+            if [[ "$tag" =~ $selector ]]; then
+              selected+=("$entry")
+            fi
+          done
+
+          if [[ "${#selected[@]}" -eq 0 ]]; then
+            echo "::error ::No platforms matched selector '${INPUT_PLATFORMS}'"
+            exit 1
+          fi
+
+          entries=()
+          for entry in "${selected[@]}"; do
+            IFS='|' read -r tag runner <<< "$entry"
+            for py in "${python_list[@]}"; do
+              entries+=("{\"platform_tag\":\"${tag}\",\"runner\":\"${runner}\",\"python\":\"${py}\"}")
+            done
+          done
+
+          matrix_json="{\"include\":[$(IFS=,; echo "${entries[*]}")]}"
+          echo "matrix=${matrix_json}" >> "$GITHUB_OUTPUT"
+
+          echo "::notice ::Generated ${#entries[@]} matrix jobs"
+          echo "${matrix_json}" | python3 -m json.tool
+
+  build:
+    name: "${{ matrix.platform_tag }} · py${{ matrix.python }}"
+    needs: [resolve-ref, plan-matrix]
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan-matrix.outputs.matrix) }}
+    runs-on: ${{ matrix.runner }}
+    steps:
+      # Two checkouts on purpose: the "tooling" checkout (default ref, i.e.
+      # wherever this workflow is dispatched from — typically main) provides
+      # the build scripts and composite actions that evolve over time. The
+      # "source" checkout is the historical snapshot the user wants to build,
+      # which may predate any of our tooling files.
+      - name: Checkout workflow tooling (from dispatch ref)
+        uses: actions/checkout@v4
+        with:
+          path: workflow-tooling
+          fetch-depth: 1
+
+      - name: Checkout source snapshot to build
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.resolve-ref.outputs.commit_sha }}
+          path: source
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Configure CodeArtifact auth
+        uses: ./workflow-tooling/.github/actions/setup-codeartifact-poetry-auth
+        with:
+          aws-access-key-id: ${{ secrets.AWS_CODEARTIFACT_READ_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.AWS_CODEARTIFACT_READ_ACCESS_SECRET }}
+
+      - name: Expose CodeArtifact URL to pip
+        shell: bash
+        env:
+          CA_HOST: flexcompute-625554095313.d.codeartifact.us-east-1.amazonaws.com
+        run: |
+          set -euo pipefail
+          url="https://aws:${POETRY_HTTP_BASIC_CODEARTIFACT_PASSWORD}@${CA_HOST}/pypi/pypi-releases/simple/"
+          echo "::add-mask::${url}"
+          echo "PIP_EXTRA_INDEX_URL=${url}" >> "$GITHUB_ENV"
+
+      - name: Make tools scripts executable
+        shell: bash
+        run: chmod +x workflow-tooling/tools/build_offline_wheelhouse.sh workflow-tooling/tools/verify_offline_bundle.sh
+
+      - name: Build wheelhouse
+        id: build
+        shell: bash
+        working-directory: source
+        env:
+          BUNDLE_NAME: ${{ needs.resolve-ref.outputs.bundle_name }}
+          PLATFORM_TAG: ${{ matrix.platform_tag }}
+          PY: ${{ matrix.python }}
+          POETRY_VIRTUALENVS_CREATE: "false"
+          BUILD_SCRIPT: ${{ github.workspace }}/workflow-tooling/tools/build_offline_wheelhouse.sh
+        run: |
+          set -euo pipefail
+          bundle_dir="${{ github.workspace }}/bundle/${BUNDLE_NAME}-${PLATFORM_TAG}-py${PY}"
+          mkdir -p "$bundle_dir"
+          echo "bundle_dir=${bundle_dir}" >> "$GITHUB_OUTPUT"
+
+          "$BUILD_SCRIPT" --python python --output "$bundle_dir"
+
+      - name: Verify offline installation (smoke test)
+        shell: bash
+        env:
+          BUNDLE_DIR: ${{ steps.build.outputs.bundle_dir }}
+          VERIFY_SCRIPT: ${{ github.workspace }}/workflow-tooling/tools/verify_offline_bundle.sh
+        run: |
+          "$VERIFY_SCRIPT" \
+            --python python \
+            --wheelhouse "${BUNDLE_DIR}/wheelhouse"
+
+      - name: Write INSTALL.md into bundle
+        shell: bash
+        env:
+          BUNDLE_DIR: ${{ steps.build.outputs.bundle_dir }}
+          INPUT_REF: ${{ inputs.ref }}
+          COMMIT_SHA: ${{ needs.resolve-ref.outputs.commit_sha }}
+          SHORT_SHA: ${{ needs.resolve-ref.outputs.short_sha }}
+          PLATFORM_TAG: ${{ matrix.platform_tag }}
+          RUNNER: ${{ matrix.runner }}
+          PY: ${{ matrix.python }}
+        run: |
+          set -euo pipefail
+          built_at="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+
+          # Derive platform-specific compatibility note.
+          case "${PLATFORM_TAG}" in
+            linux-*)   compat_note="Linux with glibc >= 2.28 (Ubuntu 18.04+ / RHEL 8+ / Debian 10+)." ;;
+            macos-x86_64) compat_note="macOS Intel (matches macosx_* tags in the wheelhouse)." ;;
+            macos-arm64)  compat_note="macOS Apple Silicon (matches macosx_*_arm64 tags in the wheelhouse)." ;;
+            windows-*) compat_note="Windows x86_64." ;;
+            *) compat_note="See wheel filenames in \`wheelhouse/\` for the exact platform tags." ;;
+          esac
+
+          cat > "${BUNDLE_DIR}/INSTALL.md" <<EOF
+          # Flow360 Offline Bundle
+
+          | Field | Value |
+          | --- | --- |
+          | Source ref (input) | \`${INPUT_REF}\` |
+          | Source commit | \`${COMMIT_SHA}\` |
+          | Target platform | \`${PLATFORM_TAG}\` |
+          | Built on runner | \`${RUNNER}\` |
+          | Target Python | \`${PY}\` |
+          | Built at (UTC) | \`${built_at}\` |
+
+          **Compatibility:** ${compat_note}
+
+          ## Install
+
+          \`\`\`bash
+          pip install --no-index --find-links=wheelhouse flow360
+          \`\`\`
+
+          ## Contents
+
+          - \`wheelhouse/\` — every runtime dependency wheel plus the flow360 wheel
+          - \`requirements.txt\` — exact pinned versions (exported from \`poetry.lock\`)
+          EOF
+
+      - name: Scan bundle for leaked credentials
+        shell: bash
+        env:
+          BUNDLE_DIR: ${{ steps.build.outputs.bundle_dir }}
+        run: |
+          set -euo pipefail
+          # Refuse to ship a bundle that contains CodeArtifact auth tokens,
+          # AWS-style user:pass URL patterns, or index-url directives.
+          # -I skips binary files (e.g. wheelhouse/*.whl), whose METADATA
+          # can legitimately mention pip flags in upstream README text and
+          # would otherwise trigger false positives.
+          bad=$(grep -rEnI \
+            -e 'aws:[A-Za-z0-9+/=._-]{20,}@' \
+            -e '--(extra-)?index-url' \
+            -e 'codeartifact\.[a-z0-9.-]+amazonaws\.com.*:.*@' \
+            "$BUNDLE_DIR" || true)
+          if [[ -n "$bad" ]]; then
+            echo "::error ::Bundle contains credential-like content; refusing to package."
+            echo "$bad"
+            exit 1
+          fi
+          echo "Bundle credential scan clean."
+
+      - name: Package tarball
+        id: pack
+        shell: bash
+        env:
+          BUNDLE_NAME: ${{ needs.resolve-ref.outputs.bundle_name }}
+          PLATFORM_TAG: ${{ matrix.platform_tag }}
+          PY: ${{ matrix.python }}
+          BUNDLE_DIR: ${{ steps.build.outputs.bundle_dir }}
+        run: |
+          set -euo pipefail
+          tarball="${BUNDLE_NAME}-${PLATFORM_TAG}-py${PY}.tar.gz"
+          # -C bundle/ <name> → archive contains the named top-level directory
+          tar czf "$tarball" -C bundle "$(basename "$BUNDLE_DIR")"
+          sha256="$(python -c "import hashlib,sys; print(hashlib.sha256(open(sys.argv[1],'rb').read()).hexdigest())" "$tarball")"
+          size_bytes="$(python -c "import os,sys; print(os.path.getsize(sys.argv[1]))" "$tarball")"
+          echo "tarball=${tarball}" >> "$GITHUB_OUTPUT"
+          echo "sha256=${sha256}" >> "$GITHUB_OUTPUT"
+          echo "size_bytes=${size_bytes}" >> "$GITHUB_OUTPUT"
+
+      - name: Job summary
+        shell: bash
+        env:
+          INPUT_REF: ${{ inputs.ref }}
+          COMMIT_SHA: ${{ needs.resolve-ref.outputs.commit_sha }}
+          SHORT_SHA: ${{ needs.resolve-ref.outputs.short_sha }}
+          PLATFORM_TAG: ${{ matrix.platform_tag }}
+          RUNNER: ${{ matrix.runner }}
+          PY: ${{ matrix.python }}
+          TARBALL: ${{ steps.pack.outputs.tarball }}
+          SHA256: ${{ steps.pack.outputs.sha256 }}
+          SIZE_BYTES: ${{ steps.pack.outputs.size_bytes }}
+          BUNDLE_DIR: ${{ steps.build.outputs.bundle_dir }}
+        run: |
+          set -euo pipefail
+          size_mb="$(python -c "print(round($SIZE_BYTES / 1024 / 1024, 1))")"
+          wheel_count="$(ls "${BUNDLE_DIR}/wheelhouse" | wc -l | xargs)"
+
+          {
+            echo "## Flow360 offline bundle — \`${PLATFORM_TAG}\` · Python \`${PY}\`"
+            echo
+            echo "| | |"
+            echo "| --- | --- |"
+            echo "| Source ref (input) | \`${INPUT_REF}\` |"
+            echo "| Commit SHA | \`${COMMIT_SHA}\` (${SHORT_SHA}) |"
+            echo "| Platform | \`${PLATFORM_TAG}\` |"
+            echo "| Built on runner | \`${RUNNER}\` |"
+            echo "| Python | \`${PY}\` |"
+            echo "| Wheels packaged | ${wheel_count} |"
+            echo "| Tarball | \`${TARBALL}\` (${size_mb} MB) |"
+            echo "| SHA-256 | \`${SHA256}\` |"
+            echo
+            echo "### Install (user side)"
+            echo
+            echo '```bash'
+            echo "tar xzf ${TARBALL}"
+            echo "cd $(basename "$BUNDLE_DIR")"
+            echo "pip install --no-index --find-links=wheelhouse flow360"
+            echo '```'
+            echo
+            echo "Smoke test (pip install + import flow360) passed on this runner."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ needs.resolve-ref.outputs.bundle_name }}-${{ matrix.platform_tag }}-py${{ matrix.python }}
+          path: ${{ steps.pack.outputs.tarball }}
+          if-no-files-found: error
