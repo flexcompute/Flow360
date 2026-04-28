@@ -373,40 +373,6 @@ def list_projects(search, limit, folder_ids, exclude_subfolders, output_format):
     _emit_project_list(search, limit, folder_ids, exclude_subfolders, output_format)
 
 
-@project.command("ls", hidden=True)
-@click.option("--search", "--keyword", "-k", default=None, help="Search project names.")
-@click.option(
-    "--limit",
-    "-n",
-    type=click.IntRange(1, 1000),
-    default=25,
-    show_default=True,
-    help="Maximum number of projects to return.",
-)
-@click.option(
-    "--folder-id",
-    "folder_ids",
-    multiple=True,
-    help="Filter projects to one or more folder IDs.",
-)
-@click.option(
-    "--exclude-subfolders",
-    is_flag=True,
-    help="Only search the specified folders, not their subfolders.",
-)
-@click.option(
-    "--format",
-    "output_format",
-    type=click.Choice(["json", "text"], case_sensitive=False),
-    default="json",
-    show_default=True,
-    help="Output format.",
-)
-def list_projects_alias(search, limit, folder_ids, exclude_subfolders, output_format):
-    """Backward-compatible alias for project list."""
-    _emit_project_list(search, limit, folder_ids, exclude_subfolders, output_format)
-
-
 @project.command("info")
 @click.argument("project_id")
 def info_project(project_id):

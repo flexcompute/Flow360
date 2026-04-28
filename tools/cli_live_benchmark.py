@@ -116,7 +116,7 @@ def choose_project(project_records: list[dict]) -> tuple[dict, CommandResult, li
         if items:
             return record, items_result, items
 
-    raise RuntimeError("Could not find a benchmarkable project from project ls output.")
+    raise RuntimeError("Could not find a benchmarkable project from project list output.")
 
 
 def pick_item(items: list[dict], item_type: str) -> dict | None:
@@ -158,11 +158,11 @@ def build_report() -> str:
         "print({m:(m in sys.modules) for m in mods})"
     )
 
-    project_ls = run_cli(["project", "ls"])
-    if project_ls.exit_code != 0:
-        raise RuntimeError(f"project ls failed:\n{project_ls.stderr or project_ls.stdout}")
+    project_list = run_cli(["project", "list"])
+    if project_list.exit_code != 0:
+        raise RuntimeError(f"project list failed:\n{project_list.stderr or project_list.stdout}")
 
-    project_records = parse_json_output(project_ls)["records"]
+    project_records = parse_json_output(project_list)["records"]
     selected_project, selected_items_result, selected_items = choose_project(project_records)
 
     geometry = pick_item(selected_items, "Geometry")
@@ -293,7 +293,14 @@ def build_report() -> str:
         sections.append(
             f"| `{md_escape(result.command)}` | {result.exit_code} | {format_seconds(result.duration_s)} |\n"
         )
-    for result in (project_ls, project_get, project_tree, selected_items_result, project_path, folder_tree):
+    for result in (
+        project_list,
+        project_get,
+        project_tree,
+        selected_items_result,
+        project_path,
+        folder_tree,
+    ):
         sections.append(
             f"| `{md_escape(result.command)}` | {result.exit_code} | {format_seconds(result.duration_s)} |\n"
         )
@@ -345,7 +352,7 @@ def build_report() -> str:
         "1. Root startup is in the right shape. The root import path stays thin, and root help remains around the low hundreds of milliseconds from a fresh subprocess.\n"
     )
     sections.append(
-        "2. The bounded `project ls` default changed the performance profile materially. It is no longer the clear outlier because the CLI now asks the API for 25 projects by default instead of a much larger page.\n"
+        "2. The bounded `project list` default changed the performance profile materially. It is no longer the clear outlier because the CLI now asks the API for 25 projects by default instead of a much larger page.\n"
     )
     sections.append(
         "3. The read-only surface still clusters near the network floor. `project get/tree/items/path`, asset gets, and draft reads are all dominated by backend latency rather than local import or serialization overhead.\n"
