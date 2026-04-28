@@ -87,9 +87,7 @@ def test_global_dev_and_profile_apply_to_project_commands(monkeypatch):
     monkeypatch.setattr(
         project_cli,
         "_get_project_info",
-        lambda project_id: seen.update(
-            {"env": Env.current.name, "profile": UserConfig.profile}
-        )
+        lambda project_id: seen.update({"env": Env.current.name, "profile": UserConfig.profile})
         or {
             "id": project_id,
             "name": "Wing Study",
@@ -215,8 +213,7 @@ def test_show_projects_uses_project_list_formatter(monkeypatch):
         project_cli,
         "_get_project_records",
         lambda search=None, limit=25, folder_ids=None, exclude_subfolders=False: (
-            calls.update({"search": search, "limit": limit})
-            or ([record], 1)
+            calls.update({"search": search, "limit": limit}) or ([record], 1)
         ),
     )
     monkeypatch.setattr(
@@ -456,4 +453,3 @@ def test_project_path_outputs_flat_branch(monkeypatch):
             "updated_at": "2025-01-01T01:00:00Z",
         },
     ]
-

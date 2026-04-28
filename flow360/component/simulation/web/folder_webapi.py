@@ -19,10 +19,14 @@ class FolderWebApi:
         self._api = RestApi(FolderInterfaceV2.endpoint, id=folder_id)
 
     def get_info(self):
+        """Get folder metadata."""
+
         return self._api.get()
 
     @classmethod
     def list_records(cls, include_subfolders: bool = True, page: int = 0, size: int = 1000):
+        """List folder records."""
+
         api = RestApi(FolderInterfaceV2.endpoint)
         response = api.get(
             params={
@@ -35,6 +39,8 @@ class FolderWebApi:
 
     @classmethod
     def get_tree(cls, root_folder_id: str = ROOT_FOLDER_ID):
+        """Build a folder tree rooted at the requested folder."""
+
         records = cls.list_records(include_subfolders=True)
         return cls._build_tree(records, root_folder_id=root_folder_id)
 

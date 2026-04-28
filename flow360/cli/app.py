@@ -4,19 +4,20 @@ Commandline interface for flow360.
 
 from __future__ import annotations
 
-from importlib import import_module
 import os
 from datetime import datetime
+from importlib import import_module
 
 import click
 import toml
 from packaging.version import InvalidVersion, Version
 
+# Importing through ``flow360`` eagerly loads the SDK public surface.
+# pylint: disable=consider-using-from-import
 import flow360.user_config as user_config
 from flow360.cli.context import merge_command_context, resolve_root_context
 from flow360.environment import Env
 from flow360.user_config import (
-    config_file,
     delete_apikey,
     read_user_config,
     store_apikey,
@@ -48,6 +49,7 @@ class LazyFlow360Group(click.Group):
             raise
         except Exception as error:  # pylint: disable=broad-except
             # Convert uncaught SDK auth failures into normal CLI errors.
+            # pylint: disable=import-outside-toplevel
             from flow360.exceptions import Flow360AuthorisationError
 
             if isinstance(error, Flow360AuthorisationError):
@@ -146,9 +148,7 @@ def flow360(ctx, profile, dev, uat, env):
 @click.command("configure", context_settings={"show_default": True})
 @click.pass_context
 @click.option("--apikey", prompt=False, help="API Key")
-@click.option(
-    "--profile", prompt=False, default=None, help="Profile, e.g., default, secondary."
-)
+@click.option("--profile", prompt=False, default=None, help="Profile, e.g., default, secondary.")
 @click.option(
     "--dev", prompt=False, type=bool, is_flag=True, help="Only use this apikey in DEV environment."
 )
@@ -219,9 +219,7 @@ def configure(ctx, apikey, profile, dev, uat, env, suppress_submit_warning, beta
 
 @click.command("login", context_settings={"show_default": True})
 @click.pass_context
-@click.option(
-    "--profile", prompt=False, default=None, help="Profile, e.g., default, secondary."
-)
+@click.option("--profile", prompt=False, default=None, help="Profile, e.g., default, secondary.")
 @click.option("--dev", prompt=False, type=bool, is_flag=True, help="Log in to DEV.")
 @click.option("--uat", prompt=False, type=bool, is_flag=True, help="Log in to UAT.")
 @click.option("--env", prompt=False, default=None, help="Log in to a named environment.")
@@ -234,7 +232,9 @@ def configure(ctx, apikey, profile, dev, uat, env, suppress_submit_warning, beta
 @click.option(
     "--timeout", type=click.IntRange(1, 3600), default=120, help="Login timeout in seconds."
 )
-def login(ctx, profile, dev, uat, env, port, timeout):  # pylint: disable=too-many-arguments
+def login(
+    ctx, profile, dev, uat, env, port, timeout
+):  # pylint: disable=too-many-arguments,too-many-locals
     """
     Open a browser login flow and store the resulting API key.
     """
@@ -288,9 +288,7 @@ def login(ctx, profile, dev, uat, env, port, timeout):  # pylint: disable=too-ma
 
 @click.command("logout", context_settings={"show_default": True})
 @click.pass_context
-@click.option(
-    "--profile", prompt=False, default=None, help="Profile, e.g., default, secondary."
-)
+@click.option("--profile", prompt=False, default=None, help="Profile, e.g., default, secondary.")
 @click.option("--dev", prompt=False, type=bool, is_flag=True, help="Remove the DEV login.")
 @click.option("--uat", prompt=False, type=bool, is_flag=True, help="Remove the UAT login.")
 @click.option("--env", prompt=False, default=None, help="Remove the login for a named environment.")
@@ -346,7 +344,10 @@ def show_projects(ctx, keyword, env: str):
         env_config.active()
 
     # pylint: disable=import-outside-toplevel
-    from flow360.cli.project import build_project_list_payload, format_project_list_payload
+    from flow360.cli.project import (
+        build_project_list_payload,
+        format_project_list_payload,
+    )
 
     payload = build_project_list_payload(
         search=keyword,

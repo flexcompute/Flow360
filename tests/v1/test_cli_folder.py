@@ -69,4 +69,3 @@ def test_folder_tree_outputs_nested_tree(monkeypatch):
     payload = json.loads(result.output)
     assert payload["root"]["id"] == "ROOT.FLOW360"
     assert payload["root"]["subfolders"][0]["id"] == "folder-123"
-

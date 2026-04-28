@@ -17,6 +17,8 @@ class CliContext:
     env: str | None = None
 
     def as_dict(self) -> dict:
+        """Return a Click context-compatible dictionary."""
+
         return {
             "profile": self.profile,
             "dev": self.dev,
@@ -25,7 +27,9 @@ class CliContext:
         }
 
 
-def resolve_root_context(profile=None, dev: bool = False, uat: bool = False, env=None) -> CliContext:
+def resolve_root_context(
+    profile=None, dev: bool = False, uat: bool = False, env=None
+) -> CliContext:
     """Resolve root CLI flags into a stable runtime context."""
 
     return CliContext(profile=profile or DEFAULT_PROFILE, dev=dev, uat=uat, env=env)

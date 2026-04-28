@@ -2,6 +2,10 @@
 Project tree models and construction helpers.
 """
 
+# Pylint misidentifies pydantic model fields as FieldInfo in this copied
+# lightweight tree model.
+# pylint: disable=no-member,missing-function-docstring,duplicate-code
+
 from __future__ import annotations
 
 from typing import List, Literal, Optional
@@ -198,4 +202,3 @@ class ProjectTree(pd.BaseModel):
                 f"The input asset ID ({query_asset.asset_id}) is too short to retrieve the correct asset."
             )
         return full_ids[0]
-

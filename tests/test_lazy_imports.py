@@ -44,7 +44,9 @@ def test_flow360_root_help_does_not_eagerly_import_sdk_command_modules(monkeypat
     ):
         sys.modules.pop(module_name, None)
 
-    from flow360.cli import flow360  # pylint: disable=import-outside-toplevel,import-error
+    from flow360.cli import (
+        flow360,  # pylint: disable=import-outside-toplevel,import-error
+    )
 
     result = CliRunner().invoke(flow360, ["--help"])
 

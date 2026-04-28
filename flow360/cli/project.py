@@ -5,6 +5,7 @@ Project CLI commands.
 from __future__ import annotations
 
 import click
+
 from flow360.cli.output import emit_json, emit_payload
 from flow360.cli.project_formatters import format_project_list
 
@@ -31,7 +32,6 @@ def _get_project_info(project_id):
 
 def _get_project_tree(project_id):
     # pylint: disable=import-outside-toplevel
-    from flow360.component.simulation.web.project_webapi import ProjectWebApi
     from flow360.component.simulation.web.project_tree import ProjectTree
 
     records = _get_project_tree_records(project_id)
@@ -145,6 +145,8 @@ def project():
 
 
 def build_project_list_payload(search, limit, folder_ids, exclude_subfolders):
+    """Build a serialized project list payload for CLI output."""
+
     records, total = _get_project_records(
         search=search,
         limit=limit,
@@ -160,6 +162,8 @@ def build_project_list_payload(search, limit, folder_ids, exclude_subfolders):
 
 
 def format_project_list_payload(payload):
+    """Format a serialized project list payload as text."""
+
     return format_project_list(payload, project_url_factory=_project_browser_url)
 
 
@@ -303,4 +307,3 @@ def project_path(project_id, item_id, item_type):
     """
     items = _get_project_path(project_id, item_id=item_id, item_type=item_type)
     emit_json({"items": [_serialize_project_item(item) for item in items]})
-

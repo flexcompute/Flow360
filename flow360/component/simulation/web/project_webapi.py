@@ -16,10 +16,16 @@ class ProjectWebApi:
         self._api = RestApi(ProjectInterface.endpoint, id=project_id)
 
     def get_info(self):
+        """Get project metadata."""
+
         return self._api.get()
 
     def get_tree(self):
+        """Get project asset tree records."""
+
         return self._api.get(method="tree")
 
     def get_path(self, item_id: str, item_type: str):
+        """Get the path from the project root to an item."""
+
         return self._api.get(method="path", params={"itemId": item_id, "itemType": item_type})

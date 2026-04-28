@@ -94,7 +94,7 @@ class ProjectRecords(pd.BaseModel):
         return output_str
 
 
-def get_project_records(
+def get_project_records(  # pylint: disable=too-many-arguments
     search_keyword: str = "",
     tags: Optional[List[str]] = None,
     folder_ids: Optional[List[str]] = None,

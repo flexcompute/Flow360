@@ -1,6 +1,6 @@
 """Custom Flow360 exceptions"""
 
-# pylint: disable=unused-import
+# pylint: disable=too-few-public-methods,unused-import
 from typing import List
 
 from flow360_schema import exceptions as _schema_exceptions
@@ -79,9 +79,6 @@ class Flow360AuthenticationError(Flow360Error):
 
 class Flow360AuthorisationError(Flow360Error):
     """Error authenticating a user through webapi webAPI."""
-
-    def __init__(self, message: str = None):
-        Exception.__init__(self, message)
 
 
 class Flow360DataError(Flow360Error):
