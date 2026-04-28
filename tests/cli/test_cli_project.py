@@ -18,7 +18,7 @@ def test_project_group_help_shows_read_commands():
     assert "path" in result.output
 
 
-def test_project_ls_supports_search_limit_and_folder_filters(monkeypatch):
+def test_project_list_supports_search_limit_and_folder_filters(monkeypatch):
     from flow360.cli import project as project_cli
 
     runner = CliRunner()
@@ -228,36 +228,6 @@ def test_show_projects_uses_project_list_formatter(monkeypatch):
     assert calls == {"search": "wing", "limit": 200}
     assert "Name:         Wing Study" in result.output
     assert "Link:         https://example.test/workbench/prj-123" in result.output
-
-
-def test_project_ls_alias_outputs_records(monkeypatch):
-    from flow360.cli import project as project_cli
-
-    runner = CliRunner()
-    record = SimpleNamespace(
-        name="Wing Study",
-        project_id="prj-123",
-        tags=["demo"],
-        description="test project",
-        solver_version="release-25.2",
-        created_at="2025-01-01T00:00:00Z",
-        root_item_type="Geometry",
-    )
-
-    monkeypatch.setattr(
-        project_cli,
-        "_get_project_records",
-        lambda search=None, limit=25, folder_ids=None, exclude_subfolders=False: ([record], 1),
-    )
-
-    result = runner.invoke(flow360, ["project", "ls", "--keyword", "wing"])
-
-    assert result.exit_code == 0
-    payload = json.loads(result.output)
-    assert payload["records"][0]["id"] == "prj-123"
-    assert payload["records"][0]["name"] == "Wing Study"
-    assert payload["returned"] == 1
-    assert payload["total"] == 1
 
 
 def test_project_info_outputs_metadata(monkeypatch):

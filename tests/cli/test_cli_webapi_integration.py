@@ -79,14 +79,14 @@ def test_project_tree_uses_tree_endpoint(recorded_webapi_calls):
     }
 
 
-def test_project_ls_uses_limit_search_and_folder_filters(recorded_webapi_calls):
+def test_project_list_uses_limit_search_and_folder_filters(recorded_webapi_calls):
     runner = CliRunner()
 
     result = runner.invoke(
         flow360,
         [
             "project",
-            "ls",
+            "list",
             "--search",
             "wing",
             "--limit",

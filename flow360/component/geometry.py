@@ -30,7 +30,13 @@ from flow360.component.resource_base import (
     SubmissionMode,
 )
 from flow360.component.simulation.folder import Folder
-from flow360.component.simulation.primitives import Edge, GeometryBodyGroup, Surface
+from flow360.component.simulation.primitives import (
+    Edge,
+    GeometryBodyGroup,
+    SnappyBody,
+    SnappyBodyRegistry,
+    Surface,
+)
 from flow360.component.simulation.web.asset_base import AssetBase
 from flow360.component.utils import (
     GeometryFiles,
@@ -654,7 +660,19 @@ class Geometry(AssetBase):
             "face", "faceId", self.internal_registry
         )
         # pylint: disable=protected-access
-        self.snappy_body_registry = self._entity_info._group_faces_by_snappy_format()
+        group_faces_by_snappy = getattr(self._entity_info, "_group_faces_by_snappy_format", None)
+        if group_faces_by_snappy is not None:
+            self.snappy_body_registry = group_faces_by_snappy()
+            return
+
+        surfaces_by_body = {}
+        for surface in self._entity_info._get_list_of_entities("faceId", "face"):
+            body_name = surface.name.split("::", 1)[0]
+            surfaces_by_body.setdefault(body_name, []).append(surface)
+        self.snappy_body_registry = SnappyBodyRegistry(
+            SnappyBody(name=body_name, surfaces=surfaces)
+            for body_name, surfaces in surfaces_by_body.items()
+        )
 
     def reset_face_grouping(self) -> None:
         """Reset the face grouping"""

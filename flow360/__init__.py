@@ -11,6 +11,7 @@ from flow360_schema.framework.expression import (
 from flow360_schema.models.functions import math
 from flow360_schema.models.variables import solution
 
+from flow360 import component
 from flow360.accounts_utils import Accounts
 from flow360.cli.api_set_func import configure_caller as configure
 from flow360.component.case import Case
