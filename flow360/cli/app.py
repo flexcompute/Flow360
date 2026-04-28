@@ -18,6 +18,7 @@ import flow360.user_config as user_config
 from flow360.cli.context import merge_command_context, resolve_root_context
 from flow360.environment import Env
 from flow360.user_config import (
+    config_file,
     delete_apikey,
     read_user_config,
     store_apikey,
