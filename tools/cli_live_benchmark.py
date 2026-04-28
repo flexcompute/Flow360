@@ -239,13 +239,12 @@ def build_report() -> str:
     pytest_result = run_pytest(
         [
             "tests/test_lazy_imports.py",
-            "tests/v1/test_cli_project.py",
-            "tests/v1/test_cli_folder.py",
-            "tests/v1/test_cli_assets.py",
-            "tests/v1/test_cli_draft.py",
-            "tests/v1/test_cli_webapi_integration.py",
-            "tests/v1/test_cli_login.py",
-            "tests/v1/_test_cli.py",
+            "tests/cli/test_cli_project.py",
+            "tests/cli/test_cli_folder.py",
+            "tests/cli/test_cli_assets.py",
+            "tests/cli/test_cli_draft.py",
+            "tests/cli/test_cli_webapi_integration.py",
+            "tests/test_cli_login.py",
             "tests/simulation/test_project_create.py",
             "-q",
         ]
