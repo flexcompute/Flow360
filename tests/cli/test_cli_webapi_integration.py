@@ -49,21 +49,6 @@ def test_project_info_uses_project_info_endpoint(recorded_webapi_calls):
     }
 
 
-def test_project_get_alias_uses_project_info_endpoint(recorded_webapi_calls):
-    runner = CliRunner()
-
-    result = runner.invoke(flow360, ["project", "get", PROJECT_ID])
-
-    assert result.exit_code == 0
-    payload = _load_json_output(result.output)
-    assert payload["id"] == PROJECT_ID
-    assert recorded_webapi_calls[-1] == {
-        "type": "get",
-        "url": f"/v2/projects/{PROJECT_ID}",
-        "params": None,
-    }
-
-
 def test_project_tree_uses_tree_endpoint(recorded_webapi_calls):
     runner = CliRunner()
 

@@ -237,13 +237,6 @@ def info_project(project_id):
     _emit_project_info(project_id)
 
 
-@project.command("get", hidden=True)
-@click.argument("project_id")
-def get_project_alias(project_id):
-    """Backward-compatible alias for project info."""
-    _emit_project_info(project_id)
-
-
 @project.command("tree")
 @click.argument("project_id")
 def project_tree(project_id):

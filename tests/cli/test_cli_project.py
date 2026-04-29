@@ -119,7 +119,14 @@ def test_global_dev_and_profile_apply_to_project_commands(monkeypatch):
 
     result = runner.invoke(
         flow360,
-        ["--dev", "--profile", "alt", "project", "get", "prj-12345678-1234-1234-1234-123456789abc"],
+        [
+            "--dev",
+            "--profile",
+            "alt",
+            "project",
+            "info",
+            "prj-12345678-1234-1234-1234-123456789abc",
+        ],
     )
 
     assert result.exit_code == 0
@@ -269,35 +276,6 @@ def test_project_info_outputs_metadata(monkeypatch):
     )
 
     result = runner.invoke(flow360, ["project", "info", "prj-123"])
-
-    assert result.exit_code == 0
-    payload = json.loads(result.output)
-    assert payload["id"] == "prj-123"
-    assert payload["name"] == "Wing Study"
-    assert payload["root_item"]["id"] == "geo-123"
-    assert payload["root_item"]["type"] == "Geometry"
-
-
-def test_project_get_alias_outputs_metadata(monkeypatch):
-    from flow360.cli import project as project_cli
-
-    runner = CliRunner()
-    info = {
-        "id": "prj-123",
-        "name": "Wing Study",
-        "solverVersion": "release-25.2",
-        "tags": ["demo"],
-        "rootItemId": "geo-123",
-        "rootItemType": "Geometry",
-    }
-
-    monkeypatch.setattr(
-        project_cli,
-        "_get_project_info",
-        lambda project_id: info,
-    )
-
-    result = runner.invoke(flow360, ["project", "get", "prj-123"])
 
     assert result.exit_code == 0
     payload = json.loads(result.output)
