@@ -4,6 +4,8 @@ Support class and functions for project interface.
 
 from typing import Optional, Type, TypeVar, get_args
 
+from flow360_schema.framework.physical_dimensions import Length
+from flow360_schema.models.asset_cache import AssetCache
 from pydantic import ValidationError
 
 from flow360.component.simulation import services
@@ -16,7 +18,6 @@ from flow360.component.simulation.entity_info import (
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
-from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.outputs.outputs import (
     SurfaceIntegralOutput,
     SurfaceOutput,
@@ -33,9 +34,7 @@ from flow360.component.simulation.services_utils import (
     strip_selector_matches_and_broken_entities_inplace,
 )
 from flow360.component.simulation.simulation_params import SimulationParams
-from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.user_code.core.types import save_user_variables
-from flow360.component.simulation.utils import model_attribute_unlock
 from flow360.component.simulation.web.asset_base import AssetBase
 from flow360.exceptions import (
     Flow360ConfigurationError,
@@ -145,7 +144,7 @@ def load_status_from_asset(
         return None
 
     try:
-        return status_class.model_validate(status_dict)
+        return status_class.deserialize(status_dict)
     except ValidationError as exc:  # pragma: no cover - raises immediately
         status_name = cache_key.replace("_", " ")
         raise Flow360RuntimeError(
@@ -161,7 +160,7 @@ def deep_copy_entity_info(entity_info: Flow360BaseModel) -> Flow360BaseModel:
     """
 
     entity_info_dict = entity_info.model_dump(mode="json")
-    return type(entity_info).model_validate(entity_info_dict)
+    return type(entity_info).deserialize(entity_info_dict)
 
 
 def apply_and_inform_grouping_selections(
@@ -234,43 +233,58 @@ def _replace_ghost_surfaces(params: SimulationParams):
             " Please double check the use of ghost surfaces."
         )
 
+    def _replace_in_value(*, value, ghost_entities_from_metadata):
+        if isinstance(value, GhostSurface):
+            return _replace_the_ghost_surface(
+                ghost_surface=value,
+                ghost_entities_from_metadata=ghost_entities_from_metadata,
+            )
+
+        if isinstance(value, EntityList):
+            if value.stored_entities:
+                for entity_index, entity in enumerate(value.stored_entities):
+                    value.stored_entities[entity_index] = _replace_in_value(
+                        value=entity,
+                        ghost_entities_from_metadata=ghost_entities_from_metadata,
+                    )
+            return value
+
+        if isinstance(value, list):
+            for item_index, item in enumerate(value):
+                value[item_index] = _replace_in_value(
+                    value=item,
+                    ghost_entities_from_metadata=ghost_entities_from_metadata,
+                )
+            return value
+
+        if isinstance(value, tuple):
+            return tuple(
+                _replace_in_value(
+                    value=item,
+                    ghost_entities_from_metadata=ghost_entities_from_metadata,
+                )
+                for item in value
+            )
+
+        if isinstance(value, Flow360BaseModel):
+            _find_ghost_surfaces(
+                model=value,
+                ghost_entities_from_metadata=ghost_entities_from_metadata,
+            )
+            return value
+
+        return value
+
     def _find_ghost_surfaces(*, model, ghost_entities_from_metadata):
-        for field in model.__dict__.values():
-            if isinstance(field, GhostSurface):
-                # pylint: disable=protected-access
-                field = _replace_the_ghost_surface(
-                    ghost_surface=field,
-                    ghost_entities_from_metadata=ghost_entities_from_metadata,
-                )
-
-            if isinstance(field, EntityList):
-                if field.stored_entities:
-                    for entity_index, _ in enumerate(field.stored_entities):
-                        if isinstance(field.stored_entities[entity_index], GhostSurface):
-                            field.stored_entities[entity_index] = _replace_the_ghost_surface(
-                                ghost_surface=field.stored_entities[entity_index],
-                                ghost_entities_from_metadata=ghost_entities_from_metadata,
-                            )
-
-            elif isinstance(field, (list, tuple)):
-                for item in field:
-                    if isinstance(item, GhostSurface):
-                        # pylint: disable=protected-access
-                        item = _replace_the_ghost_surface(
-                            ghost_surface=item,
-                            ghost_entities_from_metadata=ghost_entities_from_metadata,
-                        )
-                    elif isinstance(item, Flow360BaseModel):
-                        _find_ghost_surfaces(
-                            model=item,
-                            ghost_entities_from_metadata=ghost_entities_from_metadata,
-                        )
-
-            elif isinstance(field, Flow360BaseModel):
-                _find_ghost_surfaces(
-                    model=field,
-                    ghost_entities_from_metadata=ghost_entities_from_metadata,
-                )
+        for field_name, field in model.__dict__.items():
+            updated_field = _replace_in_value(
+                value=field,
+                ghost_entities_from_metadata=ghost_entities_from_metadata,
+            )
+            if updated_field is field:
+                continue
+            # pylint: disable=protected-access
+            model._force_set_attr(field_name, updated_field)
 
     ghost_entities_from_metadata = (
         params.private_attribute_asset_cache.project_entity_info.ghost_entities
@@ -320,8 +334,9 @@ def _set_up_params_imported_surfaces(params: SimulationParams):
             if isinstance(surface, ImportedSurface) and surface.name not in imported_surfaces:
                 imported_surfaces[surface.name] = surface
 
-    with model_attribute_unlock(params.private_attribute_asset_cache, "imported_surfaces"):
-        params.private_attribute_asset_cache.imported_surfaces = list(imported_surfaces.values())
+    params.private_attribute_asset_cache._force_set_attr(  # pylint:disable=protected-access
+        "imported_surfaces", list(imported_surfaces.values())
+    )
 
     return params
 
@@ -444,8 +459,7 @@ def _update_entity_grouping_tags(entity_info, params: SimulationParams) -> Entit
                 f" and SimulationParams ({used_tags[0]}). "
                 "Ignoring the geometry object and using the one in the SimulationParams."
             )
-            with model_attribute_unlock(entity_info, entity_grouping_tags):
-                setattr(entity_info, entity_grouping_tags, used_tags[0])
+            entity_info._force_set_attr(entity_grouping_tags, used_tags[0])
 
         if len(used_tags) > 1:
             raise Flow360ConfigurationError(
@@ -477,7 +491,7 @@ def _set_up_default_geometry_accuracy(
     return params
 
 
-def _set_up_default_reference_geometry(params: SimulationParams, length_unit: LengthType):
+def _set_up_default_reference_geometry(params: SimulationParams, length_unit: Length.Float64):
     """
     Setting up the default reference geometry if not provided in params.
     Ensure the simulation.json contains the default settings other than None.
@@ -526,7 +540,7 @@ def _build_deduplicated_entity_registry_from_params(params: SimulationParams) ->
 
 def set_up_params_for_uploading(  # pylint: disable=too-many-arguments
     root_asset,
-    length_unit: LengthType,
+    length_unit: Length.Float64,
     params: SimulationParams,
     use_beta_mesher: bool,
     use_geometry_AI: bool,  # pylint: disable=invalid-name
@@ -542,18 +556,19 @@ def set_up_params_for_uploading(  # pylint: disable=too-many-arguments
         use_geometry_AI: Whether to use Geometry AI.
     """
 
-    with model_attribute_unlock(params.private_attribute_asset_cache, "project_length_unit"):
-        params.private_attribute_asset_cache.project_length_unit = length_unit
+    params.private_attribute_asset_cache._force_set_attr(  # pylint:disable=protected-access
+        "project_length_unit", length_unit
+    )
 
-    with model_attribute_unlock(params.private_attribute_asset_cache, "use_inhouse_mesher"):
-        params.private_attribute_asset_cache.use_inhouse_mesher = (
-            use_beta_mesher if use_beta_mesher else False
-        )
+    params.private_attribute_asset_cache._force_set_attr(  # pylint:disable=protected-access
+        "use_inhouse_mesher",
+        use_beta_mesher if use_beta_mesher else False,
+    )
 
-    with model_attribute_unlock(params.private_attribute_asset_cache, "use_geometry_AI"):
-        params.private_attribute_asset_cache.use_geometry_AI = (
-            use_geometry_AI if use_geometry_AI else False
-        )
+    params.private_attribute_asset_cache._force_set_attr(  # pylint:disable=protected-access
+        "use_geometry_AI",
+        use_geometry_AI if use_geometry_AI else False,
+    )
 
     active_draft = get_active_draft()
 
@@ -567,18 +582,15 @@ def set_up_params_for_uploading(  # pylint: disable=too-many-arguments
         # (back compatibility, since the grouping should already have been captured in the draft_entity_info)
         entity_info = _update_entity_grouping_tags(entity_info, params)
 
-        with model_attribute_unlock(params.private_attribute_asset_cache, "mirror_status"):
-            mirror_status = active_draft.mirror._mirror_status
-            if not mirror_status.is_empty():
-                params.private_attribute_asset_cache.mirror_status = mirror_status
-            else:
-                params.private_attribute_asset_cache.mirror_status = None
-        with model_attribute_unlock(
-            params.private_attribute_asset_cache, "coordinate_system_status"
-        ):
-            params.private_attribute_asset_cache.coordinate_system_status = (
-                active_draft.coordinate_systems._to_status()
-            )
+        mirror_status = active_draft.mirror._mirror_status
+        if not mirror_status.is_empty():
+            params.private_attribute_asset_cache._force_set_attr("mirror_status", mirror_status)
+        else:
+            params.private_attribute_asset_cache._force_set_attr("mirror_status", None)
+        params.private_attribute_asset_cache._force_set_attr(
+            "coordinate_system_status",
+            active_draft.coordinate_systems._to_status(),
+        )
     else:
         # Legacy workflow (without DraftContext): use root_asset.entity_info
         # User may have made modifications to the entities which is recorded in asset's entity registry
@@ -595,10 +607,11 @@ def set_up_params_for_uploading(  # pylint: disable=too-many-arguments
         # we need to update the entity grouping tags to the ones in the SimulationParams.
         entity_info = _update_entity_grouping_tags(entity_info, params)
 
-    with model_attribute_unlock(params.private_attribute_asset_cache, "project_entity_info"):
-        # At this point the draft entity info has replaced the SimulationParams's entity info.
-        # So the validation afterwards does not require the access to the draft entity info anymore.
-        params.private_attribute_asset_cache.project_entity_info = entity_info
+    # At this point the draft entity info has replaced the SimulationParams's entity info.
+    # So the validation afterwards does not require the access to the draft entity info anymore.
+    params.private_attribute_asset_cache._force_set_attr(  # pylint:disable=protected-access
+        "project_entity_info", entity_info
+    )
     # Replace the ghost surfaces in the SimulationParams by the real ghost ones from asset metadata.
     # This has to be done after `project_entity_info` is properly set.
     params = _replace_ghost_surfaces(params)

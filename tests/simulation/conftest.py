@@ -1,12 +1,47 @@
+import os
+import tempfile
 from abc import ABCMeta
+from numbers import Number
 
 import numpy as np
 import pytest
 import unyt
 
-from flow360.component.simulation import unit_system
 from flow360.component.simulation.framework.entity_base import EntityBase
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
+
+
+def _approx_equal(a, b, rel_tol=1e-12):
+    """Recursively compare nested structures with float tolerance."""
+    if isinstance(a, dict) and isinstance(b, dict):
+        if a.keys() != b.keys():
+            return False
+        return all(_approx_equal(a[k], b[k], rel_tol) for k in a)
+    if isinstance(a, (list, tuple)) and isinstance(b, (list, tuple)):
+        if len(a) != len(b):
+            return False
+        return all(_approx_equal(ai, bi, rel_tol) for ai, bi in zip(a, b))
+    if isinstance(a, bool) or isinstance(b, bool):
+        return isinstance(a, bool) and isinstance(b, bool) and a == b
+    if isinstance(a, Number) and isinstance(b, Number):
+        if a == b:
+            return True
+        return abs(a - b) <= rel_tol * max(abs(a), abs(b))
+    return a == b
+
+
+def to_file_from_file_test_approx(obj):
+    """v2 serialization round-trip test with float tolerance."""
+    test_extentions = ["json"]
+    factory = obj.__class__
+    with tempfile.TemporaryDirectory() as tmpdir:
+        for ext in test_extentions:
+            obj_filename = os.path.join(tmpdir, f"obj.{ext}")
+            obj.to_file(obj_filename)
+            obj_read = factory.from_file(obj_filename)
+            assert _approx_equal(obj.model_dump(), obj_read.model_dump())
+            obj_read = factory(filename=obj_filename)
+            assert _approx_equal(obj.model_dump(), obj_read.model_dump())
 
 
 class AssetBase(metaclass=ABCMeta):
@@ -32,67 +67,27 @@ class AssetBase(metaclass=ABCMeta):
 
 @pytest.fixture()
 def array_equality_override():
-    # Save original methods
     original_unyt_eq = unyt.unyt_array.__eq__
     original_unyt_ne = unyt.unyt_array.__ne__
-    original_flow360_eq = unit_system._Flow360BaseUnit.__eq__
-    original_flow360_ne = unit_system._Flow360BaseUnit.__ne__
 
-    # Overload equality for unyt arrays
     def unyt_array_eq(self: unyt.unyt_array, other: unyt.unyt_array):
-        if isinstance(other, unit_system._Flow360BaseUnit):
-            return flow360_unit_array_eq(other, self)
         if isinstance(self, unyt.unyt_quantity):
             return np.ndarray.__eq__(self, other)
-        elif self.size == other.size:
+        if self.size == other.size:
             return all(self[i] == other[i] for i in range(len(self)))
         return False
 
     def unyt_array_ne(self: unyt.unyt_array, other: unyt.unyt_array):
-        if isinstance(other, unit_system._Flow360BaseUnit):
-            return flow360_unit_array_ne(other, self)
         if isinstance(self, unyt.unyt_quantity):
             return np.ndarray.__ne__(self, other)
-        elif self.size == other.size:
+        if self.size == other.size:
             return any(self[i] != other[i] for i in range(len(self)))
-        return True
-
-    def flow360_unit_array_eq(
-        self: unit_system._Flow360BaseUnit, other: unit_system._Flow360BaseUnit
-    ):
-        if isinstance(other, (unit_system._Flow360BaseUnit, unyt.unyt_array)):
-            if self.size == other.size:
-                if str(self.units) == str(other.units):
-                    if self.size == 1:
-                        return np.ndarray.__eq__(self.v, other.v)
-                    if isinstance(other, unyt.unyt_array):
-                        other = unit_system._Flow360BaseUnit.factory(other.v, str(other.units))
-                    return np.all(np.ndarray.__eq__(v.v, o.v) for v, o in zip(self, other))
-        return False
-
-    def flow360_unit_array_ne(
-        self: unit_system._Flow360BaseUnit, other: unit_system._Flow360BaseUnit
-    ):
-        if isinstance(other, (unit_system._Flow360BaseUnit, unyt.unyt_array)):
-            if self.size == other.size:
-                if str(self.units) == str(other.units):
-                    if self.size == 1:
-                        return np.ndarray.__ne__(self.v, other.v)
-                    if isinstance(other, unyt.unyt_array):
-                        other = unit_system._Flow360BaseUnit.factory(other.v, str(other.units))
-                    return np.any(np.ndarray.__ne__(v.v, o.v) for v, o in zip(self, other))
         return True
 
     unyt.unyt_array.__eq__ = unyt_array_eq
     unyt.unyt_array.__ne__ = unyt_array_ne
-    unit_system._Flow360BaseUnit.__eq__ = flow360_unit_array_eq
-    unit_system._Flow360BaseUnit.__ne__ = flow360_unit_array_ne
 
-    # Yield control to the test
     yield
 
-    # Restore original methods
     unyt.unyt_array.__eq__ = original_unyt_eq
     unyt.unyt_array.__ne__ = original_unyt_ne
-    unit_system._Flow360BaseUnit.__eq__ = original_flow360_eq
-    unit_system._Flow360BaseUnit.__ne__ = original_flow360_ne

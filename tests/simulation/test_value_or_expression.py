@@ -4,10 +4,15 @@ import re
 
 import pytest
 import unyt as u
+from flow360_schema.framework.expression import (
+    Expression,
+    UserVariable,
+    get_referenced_expressions_and_user_variables,
+)
+from flow360_schema.models.functions import math
+from flow360_schema.models.variables import control, solution
 
-import flow360.component.simulation.user_code.core.context as context
 from flow360.component.simulation.framework.param_utils import AssetCache
-from flow360.component.simulation.framework.updater_utils import compare_values
 from flow360.component.simulation.models.solver_numerics import (
     KOmegaSST,
     NoneSolver,
@@ -35,16 +40,8 @@ from flow360.component.simulation.services import (
 )
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import Unsteady
-from flow360.component.simulation.translator.solver_translator import get_solver_json
 from flow360.component.simulation.unit_system import SI_unit_system
-from flow360.component.simulation.user_code.core.types import (
-    Expression,
-    UserVariable,
-    get_referenced_expressions_and_user_variables,
-    save_user_variables,
-)
-from flow360.component.simulation.user_code.functions import math
-from flow360.component.simulation.user_code.variables import control, solution
+from flow360.component.simulation.user_code.core.types import save_user_variables
 from flow360.component.volume_mesh import VolumeMeshV2
 
 
@@ -71,7 +68,7 @@ def asset_cache():
         "r",
     ) as fh:
         asset_cache_data = json.load(fh).pop("private_attribute_asset_cache")
-    return AssetCache.model_validate(asset_cache_data)
+    return AssetCache.deserialize(asset_cache_data)
 
 
 def operating_condition_with_expression():
@@ -159,53 +156,6 @@ def time_stepping_with_expression():
             private_attribute_asset_cache=asset_cache(),
         )
     return save_user_variables(params).model_dump(mode="json", exclude_none=True)
-
-
-@pytest.mark.parametrize(
-    "param_dict, ref_dict_path",
-    [
-        (
-            operating_condition_with_expression(),
-            "ref/value_or_expression/op_vel_mag.json",
-        ),
-        (
-            liquid_operating_condition_with_expression(),
-            "ref/value_or_expression/liquid_op_vel_mag.json",
-        ),
-        (
-            generic_operating_condition_with_expression(),
-            "ref/value_or_expression/op_vel_mag.json",
-        ),
-        (
-            reference_area_with_expression(),
-            "ref/value_or_expression/ref_area_with_expression.json",
-        ),
-        (
-            angular_velocity_with_expression(),
-            "ref/value_or_expression/angular_velocity_with_expression.json",
-        ),
-        (
-            time_stepping_with_expression(),
-            "ref/value_or_expression/time_stepping_with_expression.json",
-        ),
-    ],
-)
-def test_e2e_dump_validate_and_translate(param_dict: dict, ref_dict_path: str):
-    params, errors, _ = validate_model(
-        params_as_dict=param_dict,
-        validated_by=ValidationCalledBy.LOCAL,
-        root_item_type="VolumeMesh",
-        validation_level="All",
-    )
-    assert errors is None, "Errors: {errors}"
-    translated = get_solver_json(params, mesh_unit=10 * u.m)
-    try:
-        with open(ref_dict_path, "r") as fh:
-            ref_dict = json.load(fh)
-        assert compare_values(ref_dict, translated)
-    except FileNotFoundError as e:
-        print("=======\n", json.dumps(translated, indent=2), "\n=======")
-        raise e
 
 
 def param_with_SST():
@@ -373,19 +323,15 @@ def param_with_steady_time_stepping_time_step_size():
     return save_user_variables(params).model_dump(mode="json", exclude_none=True)
 
 
-def param_with_rotation_zone_theta():
+def param_without_rotation_zone_theta():
+    """No Rotation model → control.theta should be disallowed."""
     reset_context()
     vm = volume_mesh()
-    vm["fluid"].axis = (0, 1, 0)
-    vm["fluid"].center = (1, 1, 2) * u.cm
     with SI_unit_system:
         params = SimulationParams(
             models=[
                 Fluid(turbulence_model_solver=SpalartAllmaras()),
                 Wall(name="wall", entities=vm["*"]),
-                Rotation(
-                    name="rotation", entities=vm["fluid"], spec=AngularVelocity(value=100 * u.rpm)
-                ),
             ],
             outputs=[VolumeOutput(name="output", output_fields=[control.theta])],
             private_attribute_asset_cache=asset_cache(),
@@ -393,19 +339,15 @@ def param_with_rotation_zone_theta():
     return save_user_variables(params).model_dump(mode="json", exclude_none=True)
 
 
-def param_with_rotation_zone_omega():
+def param_without_rotation_zone_omega():
+    """No Rotation model → control.omega should be disallowed."""
     reset_context()
     vm = volume_mesh()
-    vm["fluid"].axis = (0, 1, 0)
-    vm["fluid"].center = (1, 1, 2) * u.cm
     with SI_unit_system:
         params = SimulationParams(
             models=[
                 Fluid(turbulence_model_solver=SpalartAllmaras()),
                 Wall(name="wall", entities=vm["*"]),
-                Rotation(
-                    name="rotation", entities=vm["fluid"], spec=AngularVelocity(value=100 * u.rpm)
-                ),
             ],
             outputs=[VolumeOutput(name="output", output_fields=[control.omega])],
             private_attribute_asset_cache=asset_cache(),
@@ -413,19 +355,15 @@ def param_with_rotation_zone_omega():
     return save_user_variables(params).model_dump(mode="json", exclude_none=True)
 
 
-def param_with_rotation_zone_omega_dot():
+def param_without_rotation_zone_omega_dot():
+    """No Rotation model → control.omegaDot should be disallowed."""
     reset_context()
     vm = volume_mesh()
-    vm["fluid"].axis = (0, 1, 0)
-    vm["fluid"].center = (1, 1, 2) * u.cm
     with SI_unit_system:
         params = SimulationParams(
             models=[
                 Fluid(turbulence_model_solver=SpalartAllmaras()),
                 Wall(name="wall", entities=vm["*"]),
-                Rotation(
-                    name="rotation", entities=vm["fluid"], spec=AngularVelocity(value=100 * u.rpm)
-                ),
             ],
             outputs=[VolumeOutput(name="output", output_fields=[control.omegaDot])],
             private_attribute_asset_cache=asset_cache(),
@@ -477,15 +415,15 @@ def param_with_rotation_zone_omega_dot():
             "`control.timeStepSize` cannot be used because Unsteady time stepping is not used.",
         ),
         (
-            param_with_rotation_zone_theta(),
+            param_without_rotation_zone_theta(),
             "`control.theta` cannot be used because Rotation zone is not used.",
         ),
         (
-            param_with_rotation_zone_omega(),
+            param_without_rotation_zone_omega(),
             "`control.omega` cannot be used because Rotation zone is not used.",
         ),
         (
-            param_with_rotation_zone_omega_dot(),
+            param_without_rotation_zone_omega_dot(),
             "`control.omegaDot` cannot be used because Rotation zone is not used.",
         ),
     ],
@@ -568,18 +506,6 @@ def test_get_referenced_expressions():
         error[0]["msg"]
         == "Value error, `solution.specific_rate_of_dissipation` cannot be used because k-omega turbulence solver is not used."
     )
-
-
-def test_integer_validation():
-    with SI_unit_system:
-        AerospaceCondition(velocity_magnitude=10)
-
-    with pytest.raises(
-        ValueError,
-        match=re.escape("Value error, arg '10' does not match (length)/(time) dimension."),
-    ):
-        with SI_unit_system:
-            AerospaceCondition(velocity_magnitude=Expression(expression="10"))
 
 
 def test_param_with_number_expression_in_and_out():

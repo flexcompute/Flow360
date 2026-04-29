@@ -9,6 +9,7 @@ import time
 from abc import ABCMeta, abstractmethod
 from typing import List, Optional, Union
 
+from flow360_schema import __version__ as _schema_version
 from pydantic import ValidationError
 from requests.exceptions import HTTPError
 
@@ -41,7 +42,6 @@ from flow360.exceptions import (
     Flow360WebError,
 )
 from flow360.log import log
-from flow360.version import __version__
 
 
 class AssetBase(metaclass=ABCMeta):
@@ -161,8 +161,8 @@ class AssetBase(metaclass=ABCMeta):
                 raise Flow360RuntimeError(
                     "The cloud `SimulationParam` (version: "
                     + cloud_version_str
-                    + ") is too new for your local Python client (version: "
-                    + __version__
+                    + ") is too new for your local schema package (version: "
+                    + _schema_version
                     + ") and validation error occurred. Please try updating your local Python client."
                 ) from None
             raise Flow360RuntimeError("Parsing cloud resource's entity info failed.") from None
@@ -212,7 +212,7 @@ class AssetBase(metaclass=ABCMeta):
     @property
     def entity_info(self):
         """Return the entity info associated with the asset (copy to prevent unintentional overwrites)"""
-        return self._entity_info.model_validate(self._entity_info.model_dump())
+        return self._entity_info.deserialize(self._entity_info.model_dump())
 
     @property
     def params(self):

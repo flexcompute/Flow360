@@ -6,13 +6,13 @@ import json
 import os
 from typing import Union
 
+from flow360_schema.framework.physical_dimensions import AbsoluteTemperature, Length
 from numpy import sqrt
 from pydantic import validate_call
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.models.volume_models import BETDisk
 from flow360.component.simulation.primitives import Cylinder
-from flow360.component.simulation.unit_system import AbsoluteTemperatureType, LengthType
 from flow360.log import log
 
 
@@ -168,8 +168,8 @@ def _load_flow360_json(*, file_path: str) -> dict:
 @validate_call
 def read_single_v1_BETDisk(
     file_path: str,
-    mesh_unit: LengthType.NonNegative,  # pylint: disable = no-member
-    freestream_temperature: AbsoluteTemperatureType,
+    mesh_unit: Length.NonNegativeFloat64,
+    freestream_temperature: AbsoluteTemperature.Float64,
     bet_disk_name: str = "Disk",
 ) -> BETDisk:
     """
@@ -179,9 +179,9 @@ def read_single_v1_BETDisk(
     ----------
     file_path: str
         Path to Flow360 JSON file that contains a **single** BETDisk setting.
-    mesh_unit: LengthType.NonNegative
-        Length unit used for LengthType BETDisk parameters.
-    freestream_temperature: AbsoluteTemperatureType
+    mesh_unit: Length.NonNegativeFloat64
+        Length unit used for BETDisk parameters.
+    freestream_temperature: AbsoluteTemperature.Float64
         Freestream temperature.
     bet_disk_name: str
         The name for the BETDisk object.
@@ -222,8 +222,8 @@ def read_single_v1_BETDisk(
 @validate_call
 def read_all_v1_BETDisks(
     file_path: str,
-    mesh_unit: LengthType.NonNegative,  # pylint: disable = no-member
-    freestream_temperature: AbsoluteTemperatureType,
+    mesh_unit: Length.NonNegativeFloat64,
+    freestream_temperature: AbsoluteTemperature.Float64,
     bet_disk_name_prefix: str = "Disk",
     index_offest: int = 0,
 ) -> list[BETDisk]:
@@ -234,9 +234,9 @@ def read_all_v1_BETDisks(
     ----------
     file_path: str
         Path to the Flow360.json file.
-    mesh_unit: LengthType.NonNegative
-        Length unit used for LengthType BETDisk parameters.
-    freestream_temperature: AbsoluteTemperatureType
+    mesh_unit: Length.NonNegativeFloat64
+        Length unit used for BETDisk parameters.
+    freestream_temperature: AbsoluteTemperature.Float64
         Freestream temperature.
     bet_disk_name_prefix: str = "Disk",
         The prefix for the name of each BETDisk object.

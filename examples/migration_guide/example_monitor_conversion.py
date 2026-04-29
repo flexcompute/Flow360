@@ -1,7 +1,8 @@
 import os
 
+import unyt as u
+
 from flow360.component.simulation.migration import ProbeOutput
-from flow360.component.simulation.unit_system import u
 
 # Get the absolute path to the script file
 script_dir = os.path.dirname(os.path.abspath(__file__))

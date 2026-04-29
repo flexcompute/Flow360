@@ -6,6 +6,7 @@ import re
 from typing import Any, Dict, List, Tuple
 
 import numpy as np
+from flow360_schema.framework.expression import Expression
 
 from flow360.component.results.base_results import (
     _PHYSICAL_STEP,
@@ -25,7 +26,6 @@ from flow360.component.simulation.outputs.output_fields import (
     _CMz,
 )
 from flow360.component.simulation.simulation_params import SimulationParams
-from flow360.component.simulation.user_code.core.types import Expression
 from flow360.exceptions import Flow360ValueError
 from flow360.log import log
 

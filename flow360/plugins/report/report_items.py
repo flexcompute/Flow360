@@ -38,11 +38,7 @@ from flow360.component.simulation.outputs.output_fields import (
 )
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import Unsteady
-from flow360.component.simulation.unit_system import (
-    DimensionedTypes,
-    is_flow360_unit,
-    unyt_quantity,
-)
+from flow360.component.simulation.unit_system import DimensionedTypes, unyt_quantity
 from flow360.exceptions import Flow360ValidationError
 from flow360.log import log
 from flow360.plugins.report.report_context import ReportContext
@@ -1813,17 +1809,19 @@ class Chart3D(Chart):
                 )
                 else 1
             )
-            if isinstance(self.limits[0], unyt_quantity) or is_flow360_unit(self.limits[0]):
+            if isinstance(self.limits[0], unyt_quantity):
                 target_system = "flow360"
                 if unit_system is not None:
                     target_system = unit_system
-                min_val = (
-                    params.convert_unit(self.limits[0], target_system=target_system) * liquid_factor
+                min_converted = params.convert_unit(self.limits[0], target_system=target_system)
+                max_converted = params.convert_unit(self.limits[1], target_system=target_system)
+                # Extract numerical value before arithmetic to avoid unyt
+                # collapsing complex unit expressions (e.g. 340.29*m/s → m/s).
+                liquid_factor_float = float(liquid_factor)
+                return (
+                    float(min_converted.value) * liquid_factor_float,
+                    float(max_converted.value) * liquid_factor_float,
                 )
-                max_val = (
-                    params.convert_unit(self.limits[1], target_system=target_system) * liquid_factor
-                )
-                return (float(min_val.value), float(max_val.value))
 
         return self.limits
 

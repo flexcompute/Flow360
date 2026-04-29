@@ -8,9 +8,19 @@ on:
       - 'release-candidate/*' # Trigger for any branch starting with 'release-candidate/'
 
 jobs:
+  skip_auto_hotfix_pr:
+    if: github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name, 'auto-hotfix')
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Explain auto-hotfix skip
+        run: |
+          echo "Skipping hotfix fan-out for auto-hotfix PR #${{ github.event.pull_request.number }}."
+          echo "Reason: auto-generated hotfix PRs must not recursively create more hotfix PRs."
+
   create_hotfix_pr:
-    # Only run this job if the PR was actually merged
-    if: github.event.pull_request.merged == true
+    # Only run this job for merged non-auto-hotfix PRs to avoid recursive fan-out.
+    if: github.event.pull_request.merged == true && !contains(github.event.pull_request.labels.*.name, 'auto-hotfix')
     runs-on: ubuntu-latest
     permissions:
       contents: write       # To push branches and commit changes

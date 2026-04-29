@@ -3,17 +3,17 @@
 from typing import Optional
 
 import pydantic as pd
+from flow360_schema.framework.physical_dimensions import (
+    AbsoluteTemperature,
+    Angle,
+    Length,
+)
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
     Air,
     ThermalState,
-)
-from flow360.component.simulation.unit_system import (
-    AbsoluteTemperatureType,
-    AngleType,
-    LengthType,
 )
 from flow360.log import log
 
@@ -23,12 +23,12 @@ from flow360.log import log
 def operating_condition_from_mach_muref(
     mach: pd.NonNegativeFloat,
     mu_ref: pd.PositiveFloat,
-    project_length_unit: LengthType.Positive = pd.Field(
+    project_length_unit: Length.PositiveFloat64 = pd.Field(
         description="The Length unit of the project."
     ),
-    temperature: AbsoluteTemperatureType = 288.15 * u.K,
-    alpha: Optional[AngleType] = 0 * u.deg,
-    beta: Optional[AngleType] = 0 * u.deg,
+    temperature: AbsoluteTemperature.Float64 = 288.15 * u.K,
+    alpha: Optional[Angle.Float64] = 0 * u.deg,
+    beta: Optional[Angle.Float64] = 0 * u.deg,
     reference_mach: Optional[pd.PositiveFloat] = None,
 ) -> AerospaceCondition:
     """
@@ -44,13 +44,13 @@ def operating_condition_from_mach_muref(
         Freestream Mach number (must be non-negative).
     muRef : PositiveFloat
         Freestream reference dynamic viscosity defined with mesh unit (must be positive).
-    project_length_unit: LengthType.Positive
+    project_length_unit: Length.PositiveFloat64
         Project length unit.
-    temperature : TemperatureType.Positive, optional
-        Freestream static temperature (must be a positive temperature value). Default is 288.15 Kelvin.
-    alpha : AngleType, optional
+    temperature : AbsoluteTemperature.Float64, optional
+        Freestream static temperature (must be above absolute zero, 0 K). Default is 288.15 Kelvin.
+    alpha : Angle.Float64, optional
         Angle of attack. Default is 0 degrees.
-    beta : AngleType, optional
+    beta : Angle.Float64, optional
         Sideslip angle. Default is 0 degrees.
     reference_mach : PositiveFloat, optional
         Reference Mach number. Default is None.
