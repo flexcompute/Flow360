@@ -16,7 +16,7 @@ def _get_project_records(search=None, limit=25, folder_ids=None, exclude_subfold
 
     return get_project_records(
         search_keyword=search or "",
-        folder_ids=list(folder_ids) or None,
+        folder_ids=list(folder_ids or ()) or None,
         exclude_subfolders=exclude_subfolders,
         page_size=limit,
         sort_direction="desc",
@@ -32,7 +32,7 @@ def _get_project_info(project_id):
 
 def _get_project_tree(project_id):
     # pylint: disable=import-outside-toplevel
-    from flow360.component.simulation.web.project_tree import ProjectTree
+    from flow360.component.project import ProjectTree
 
     records = _get_project_tree_records(project_id)
     tree = ProjectTree()

@@ -76,6 +76,25 @@ def test_project_list_supports_search_limit_and_folder_filters(monkeypatch):
     }
 
 
+def test_get_project_records_accepts_none_folder_ids(monkeypatch):
+    from flow360.cli import project as project_cli
+    from flow360.component.simulation.web import project_records
+
+    calls = {}
+
+    def fake_get_project_records(**kwargs):
+        calls.update(kwargs)
+        return [], 0
+
+    monkeypatch.setattr(project_records, "get_project_records", fake_get_project_records)
+
+    records, total = project_cli._get_project_records(folder_ids=None)
+
+    assert records == []
+    assert total == 0
+    assert calls["folder_ids"] is None
+
+
 def test_global_dev_and_profile_apply_to_project_commands(monkeypatch):
     from flow360.cli import project as project_cli
     from flow360.environment import Env
