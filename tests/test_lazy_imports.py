@@ -1,15 +1,17 @@
 import sys
-import types
 
 import toml
 from click.testing import CliRunner
 
 
+def _unload_modules(monkeypatch, *module_names):
+    for module_name in module_names:
+        monkeypatch.delitem(sys.modules, module_name, raising=False)
+
+
 def test_import_flow360_does_not_eagerly_import_heavy_dependencies(monkeypatch):
     monkeypatch.delenv("FLOW360_SUPPRESS_BETA_WARNING", raising=False)
-    sys.modules.pop("flow360", None)
-    sys.modules.pop("flow360._api", None)
-    sys.modules.pop("pandas", None)
+    _unload_modules(monkeypatch, "flow360", "flow360._api", "pandas")
 
     import flow360  # pylint: disable=import-outside-toplevel,import-error
 
@@ -20,7 +22,8 @@ def test_import_flow360_does_not_eagerly_import_heavy_dependencies(monkeypatch):
 
 def test_import_flow360_cli_app_does_not_eagerly_import_sdk_command_modules(monkeypatch):
     monkeypatch.delenv("FLOW360_SUPPRESS_BETA_WARNING", raising=False)
-    for module_name in (
+    _unload_modules(
+        monkeypatch,
         "flow360.cli",
         "flow360.cli.app",
         "flow360.cli.project",
@@ -29,8 +32,7 @@ def test_import_flow360_cli_app_does_not_eagerly_import_sdk_command_modules(monk
         "flow360.cli.folder",
         "flow360.cli.wait",
         "flow360.cloud.flow360_requests",
-    ):
-        sys.modules.pop(module_name, None)
+    )
 
     import flow360.cli.app  # pylint: disable=import-outside-toplevel,import-error,unused-import
 
@@ -44,7 +46,8 @@ def test_import_flow360_cli_app_does_not_eagerly_import_sdk_command_modules(monk
 
 def test_flow360_root_help_does_not_eagerly_import_sdk_command_modules(monkeypatch):
     monkeypatch.delenv("FLOW360_SUPPRESS_BETA_WARNING", raising=False)
-    for module_name in (
+    _unload_modules(
+        monkeypatch,
         "flow360.cli",
         "flow360.cli.app",
         "flow360.cli.project",
@@ -53,8 +56,7 @@ def test_flow360_root_help_does_not_eagerly_import_sdk_command_modules(monkeypat
         "flow360.cli.folder",
         "flow360.cli.wait",
         "flow360.cloud.flow360_requests",
-    ):
-        sys.modules.pop(module_name, None)
+    )
 
     from flow360.cli import (
         flow360,  # pylint: disable=import-outside-toplevel,import-error
@@ -75,8 +77,7 @@ def test_sdk_configure_helper_does_not_import_cli_modules(monkeypatch, tmp_path)
     monkeypatch.delenv("FLOW360_SUPPRESS_BETA_WARNING", raising=False)
     config_path = tmp_path / "config.toml"
 
-    for module_name in ("flow360.cli", "flow360.cli.app", "flow360.cli.api_set_func"):
-        sys.modules.pop(module_name, None)
+    _unload_modules(monkeypatch, "flow360.cli", "flow360.cli.app", "flow360.cli.api_set_func")
 
     import flow360.user_config as user_config  # pylint: disable=import-outside-toplevel,import-error
 
@@ -92,14 +93,14 @@ def test_sdk_configure_helper_does_not_import_cli_modules(monkeypatch, tmp_path)
 
 def test_flow360_configure_is_exposed_without_importing_api_module(monkeypatch):
     monkeypatch.delenv("FLOW360_SUPPRESS_BETA_WARNING", raising=False)
-    for module_name in (
+    _unload_modules(
+        monkeypatch,
         "flow360",
         "flow360._api",
         "flow360.cli",
         "flow360.cli.app",
         "flow360.cli.api_set_func",
-    ):
-        sys.modules.pop(module_name, None)
+    )
 
     import flow360  # pylint: disable=import-outside-toplevel,import-error
 
@@ -110,12 +111,9 @@ def test_flow360_configure_is_exposed_without_importing_api_module(monkeypatch):
 
 
 def test_flow360_version_check_legacy_lazy_attribute_does_not_import_api_module(monkeypatch):
-    for module_name in ("flow360", "flow360._api", "flow360.version_check"):
-        sys.modules.pop(module_name, None)
+    _unload_modules(monkeypatch, "flow360", "flow360._api", "flow360.version_check")
 
     import flow360  # pylint: disable=import-outside-toplevel,import-error
-
-    sys.modules["flow360.version_check"] = types.ModuleType("flow360.version_check")
 
     assert flow360.version_check.__name__ == "flow360.version_check"
     assert "flow360._api" not in sys.modules
