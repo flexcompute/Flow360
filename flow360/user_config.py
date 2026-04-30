@@ -257,10 +257,12 @@ def reload_user_config():
 
     global UserConfig  # pylint: disable=global-statement
 
-    if isinstance(UserConfig, BasicUserConfig):
-        BasicUserConfig.__init__(UserConfig)
-    else:
-        UserConfig = BasicUserConfig()
+    current_user_config = globals().get("UserConfig")
+    if isinstance(current_user_config, BasicUserConfig):
+        BasicUserConfig.__init__(current_user_config)
+        return current_user_config
+
+    UserConfig = BasicUserConfig()
     return UserConfig
 
 
