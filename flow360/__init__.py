@@ -2,6 +2,8 @@
 This module is flow360 for simulation based models
 """
 
+from importlib import import_module
+
 from flow360_schema.framework.expression import (
     UserVariable,
     get_user_variable,
@@ -392,3 +394,11 @@ __all__ = [
 ]
 
 _warn_prerelease()
+
+
+def __getattr__(name):
+    if name == "version_check":
+        module = import_module("flow360.version_check")
+        globals()[name] = module
+        return module
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
