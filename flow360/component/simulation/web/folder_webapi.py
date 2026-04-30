@@ -2,6 +2,8 @@
 Thin folder web API wrapper.
 """
 
+# pylint: disable=too-few-public-methods
+
 from __future__ import annotations
 
 from flow360.cloud.rest_api import RestApi
