@@ -353,10 +353,22 @@ class MeshingDefaults(Flow360BaseModel):
     @contextual_field_validator("target_surface_node_count", mode="after")
     @classmethod
     def ensure_target_surface_node_count_mesher(cls, value, param_info: ParamsValidationInfo):
-        """Validate that target_surface_node_count is only used with geometry AI or beta mesher."""
-        if value is not None and not (param_info.use_geometry_AI or param_info.is_beta_mesher):
-            raise ValueError("target_surface_node_count is not supported by the legacy mesher.")
-        return value
+        """Validate that target_surface_node_count is only used with geometry AI.
+
+        Temporarily ignored (with warning) for the beta mesher in 25.9; re-enable in 25.10.
+        """
+        if value is None:
+            return value
+        if param_info.use_geometry_AI:
+            return value
+        # Temporarily disabled for the beta mesher in 25.9; re-enable in 25.10.
+        if param_info.is_beta_mesher:
+            add_validation_warning(
+                "`target_surface_node_count` is temporarily disabled for the beta mesher "
+                "in 25.9 and the value will be ignored. It will be re-enabled in 25.10."
+            )
+            return None
+        raise ValueError("target_surface_node_count is not supported by the legacy mesher.")
 
     @contextual_field_validator("octree_spacing", mode="after")
     @classmethod
