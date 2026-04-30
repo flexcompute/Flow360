@@ -33,7 +33,11 @@ from flow360.component.utils import (
     SurfaceMeshFile,
     shared_account_confirm_proceed,
 )
-from flow360.exceptions import Flow360FileError, Flow360ValueError
+from flow360.exceptions import (
+    Flow360FileError,
+    Flow360RuntimeError,
+    Flow360ValueError,
+)
 from flow360.log import log
 
 from .simulation.primitives import Surface
@@ -388,8 +392,14 @@ class SurfaceMeshV2(AssetBase):
         SurfaceMeshStats
             return SurfaceMeshStats object
         """
-        # pylint: disable=protected-access
-        data = self._webapi._parse_json_from_cloud(self._mesh_stats_file)
+        try:
+            # pylint: disable=protected-access
+            data = self._webapi._parse_json_from_cloud(self._mesh_stats_file)
+        except Exception as exc:
+            raise Flow360RuntimeError(
+                "Could not retrieve surface mesh stats. The surface mesh may not be ready yet "
+                f"(status={self._webapi.status.value})."
+            ) from exc
         return SurfaceMeshStats(**data)
 
     @classmethod
