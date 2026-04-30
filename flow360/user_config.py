@@ -106,7 +106,7 @@ def configure_apikey(
     store_apikey(
         apikey,
         profile=profile,
-        environment_name=_normalize_storage_environment_name(environment),
+        environment_name=environment,
     )
     reload_user_config()
     log.info("Configuration successful.")
