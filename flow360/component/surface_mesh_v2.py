@@ -33,11 +33,7 @@ from flow360.component.utils import (
     SurfaceMeshFile,
     shared_account_confirm_proceed,
 )
-from flow360.exceptions import (
-    Flow360FileError,
-    Flow360RuntimeError,
-    Flow360ValueError,
-)
+from flow360.exceptions import Flow360FileError, Flow360RuntimeError, Flow360ValueError
 from flow360.log import log
 
 from .simulation.primitives import Surface
