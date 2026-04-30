@@ -392,9 +392,13 @@ class SurfaceMeshV2(AssetBase):
             # pylint: disable=protected-access
             data = self._webapi._parse_json_from_cloud(self._mesh_stats_file)
         except Exception as exc:
+            try:
+                status_str = self._webapi.status.value
+            except Exception:  # pylint: disable=broad-exception-caught
+                status_str = "unknown"
             raise Flow360RuntimeError(
                 "Could not retrieve surface mesh stats. The surface mesh may not be ready yet "
-                f"(status={self._webapi.status.value})."
+                f"(status={status_str})."
             ) from exc
         return SurfaceMeshStats(**data)
 
