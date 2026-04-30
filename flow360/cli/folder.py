@@ -19,9 +19,9 @@ def _get_folder_info(folder_id):
 
 def _get_folder_tree(folder_id):
     # pylint: disable=import-outside-toplevel
-    from flow360.component.simulation.web.folder_webapi import FolderWebApi
+    from flow360.component.simulation.folder import Folder
 
-    return FolderWebApi.get_tree(root_folder_id=folder_id)
+    return Folder(folder_id).get_folder_tree()
 
 
 def _serialize_folder_info(info):

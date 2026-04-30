@@ -69,7 +69,7 @@ def _serialize_project_record(record):
         "root_item_type": record.root_item_type,
         "solver_version": record.solver_version,
         "created_at": record.created_at,
-        "tags": list(record.tags),
+        "tags": record.tags or [],
         "description": record.description,
         "statistics": _serialize_project_statistics(getattr(record, "statistics", None)),
     }

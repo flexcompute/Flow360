@@ -27,6 +27,51 @@ from ..utils import (
 )
 
 ROOT_FOLDER = "ROOT.FLOW360"
+ROOT_FOLDER_NAME = "My workspace"
+
+
+def build_folder_tree(folders, root_folder_id: str = ROOT_FOLDER):
+    """
+    Build a hierarchical folder tree from folder records.
+
+    Parameters
+    ----------
+    folders : list
+        A list of folder records.
+    root_folder_id : str
+        The folder ID to use as the tree root.
+
+    Returns
+    -------
+    dict
+        A dictionary representing the folder hierarchy with nested subfolders.
+    """
+
+    folder_dict = {folder["id"]: dict(folder) for folder in folders}
+    folder_dict[ROOT_FOLDER] = {"id": ROOT_FOLDER, "name": ROOT_FOLDER_NAME}
+
+    for folder in folder_dict.values():
+        folder["subfolders"] = []
+
+    for folder in folders:
+        parent_id = folder.get("parentFolderId")
+        if parent_id is not None:
+            parent_folder = folder_dict.get(parent_id)
+            if parent_folder:
+                parent_folder["subfolders"].append(folder["id"])
+
+    def build_hierarchy(folder_id):
+        folder = folder_dict.get(folder_id)
+        if not folder:
+            return None
+
+        return {
+            "name": folder["name"],
+            "id": folder["id"],
+            "subfolders": [build_hierarchy(subfolder_id) for subfolder_id in folder["subfolders"]],
+        }
+
+    return build_hierarchy(root_folder_id)
 
 
 class FolderMeta(AssetMetaBaseModel, extra="allow"):
@@ -270,35 +315,7 @@ class Folder(Flow360Resource):
             A dictionary representing the folder hierarchy with nested subfolders.
         """
 
-        folder_dict = {folder["id"]: folder for folder in folders}
-        folder_dict[ROOT_FOLDER] = {"id": ROOT_FOLDER, "name": "My workspace"}
-
-        for folder in folder_dict.values():
-            folder["subfolders"] = []
-
-        for folder in folders:
-            parent_id = folder.get("parentFolderId")
-            if parent_id is not None:
-                parent_folder = folder_dict.get(parent_id)
-                if parent_folder:
-                    parent_folder["subfolders"].append(
-                        {"name": folder["name"], "id": folder["id"], "subfolders": []}
-                    )
-
-        def build_hierarchy(folder_id):
-            folder = folder_dict.get(folder_id)
-            if not folder:
-                return None
-
-            return {
-                "name": folder["name"],
-                "id": folder["id"],
-                "subfolders": [
-                    build_hierarchy(subfolder["id"]) for subfolder in folder["subfolders"]
-                ],
-            }
-
-        return build_hierarchy(self.id)
+        return build_folder_tree(folders, root_folder_id=self.id)
 
     def get_folder_tree(self):
         """
@@ -315,7 +332,7 @@ class Folder(Flow360Resource):
             "page": 0,
             "size": 1000,
         }  # it assumes user will not have more than 1000 folders
-        data = RestApi("/v2/folders").get(params=payload)
+        data = RestApi("v2/folders").get(params=payload)
         folder_tree = self._build_folder_tree(data["records"])
         return folder_tree
 

@@ -2,8 +2,6 @@
 This module is flow360 for simulation based models
 """
 
-from importlib import import_module
-
 from flow360_schema.framework.expression import (
     UserVariable,
     get_user_variable,
@@ -13,7 +11,6 @@ from flow360_schema.framework.expression import (
 from flow360_schema.models.functions import math
 from flow360_schema.models.variables import solution
 
-from flow360 import component
 from flow360.accounts_utils import Accounts
 from flow360.cli.api_set_func import configure_caller as configure
 from flow360.component.case import Case
@@ -395,11 +392,3 @@ __all__ = [
 ]
 
 _warn_prerelease()
-
-
-def __getattr__(name):
-    if name == "version_check":
-        module = import_module("flow360.version_check")
-        globals()[name] = module
-        return module
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
