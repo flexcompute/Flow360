@@ -9,8 +9,6 @@ from __future__ import annotations
 from flow360.cloud.rest_api import RestApi
 from flow360.component.interfaces import FolderInterfaceV2
 
-ROOT_FOLDER_ID = "ROOT.FLOW360"
-
 
 class FolderWebApi:
     """Thin wrapper around folder endpoints."""

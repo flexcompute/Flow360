@@ -54,21 +54,28 @@ def build_folder_tree(folders, root_folder_id: str = ROOT_FOLDER):
         folder["subfolders"] = []
 
     for folder in folders:
+        child_folder = folder_dict.get(folder.get("id"))
         parent_id = folder.get("parentFolderId")
-        if parent_id is not None:
+        if child_folder is not None and parent_id is not None:
             parent_folder = folder_dict.get(parent_id)
             if parent_folder:
-                parent_folder["subfolders"].append(folder["id"])
+                parent_folder["subfolders"].append(child_folder)
 
     def build_hierarchy(folder_id):
         folder = folder_dict.get(folder_id)
         if not folder:
             return None
 
+        subfolders = []
+        for subfolder in folder["subfolders"]:
+            child_tree = build_hierarchy(subfolder["id"])
+            if child_tree is not None:
+                subfolders.append(child_tree)
+
         return {
             "name": folder["name"],
             "id": folder["id"],
-            "subfolders": [build_hierarchy(subfolder_id) for subfolder_id in folder["subfolders"]],
+            "subfolders": subfolders,
         }
 
     return build_hierarchy(root_folder_id)

@@ -7,7 +7,6 @@ from __future__ import annotations
 import click
 
 from flow360.cli.output import emit_json
-from flow360.component.simulation.web.folder_webapi import ROOT_FOLDER_ID
 
 
 def _get_folder_info(folder_id):
@@ -56,9 +55,15 @@ def get_folder(folder_id):
 
 
 @folder.command("tree")
-@click.argument("folder_id", required=False, default=ROOT_FOLDER_ID)
+@click.argument("folder_id", required=False)
 def folder_tree(folder_id):
     """Get the folder tree."""
+    if folder_id is None:
+        # pylint: disable=import-outside-toplevel
+        from flow360.component.simulation.folder import ROOT_FOLDER
+
+        folder_id = ROOT_FOLDER
+
     tree = _get_folder_tree(folder_id)
     if tree is None:
         raise click.ClickException(f"Folder {folder_id} was not found.")
