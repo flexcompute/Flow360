@@ -94,11 +94,14 @@ class ProjectRecords(pd.BaseModel):
         return output_str
 
 
-def get_project_records(
+def get_project_records(  # pylint: disable=too-many-arguments
     search_keyword: str = "",
     tags: Optional[List[str]] = None,
     folder_ids: Optional[List[str]] = None,
     exclude_subfolders: bool = False,
+    page_size: int = 1000,
+    page: int = 0,
+    sort_direction: Literal["asc", "desc"] = "asc",
 ) -> tuple[ProjectRecords, int]:
     """Get all projects with a keyword filter
 
@@ -114,16 +117,15 @@ def get_project_records(
         If True, only search the specified folders, not their subfolders.
     """
     # pylint: disable=invalid-name
-    MAX_SEARCHABLE_ITEM_COUNT = 1000
     _api = RestApi(ProjectInterface.endpoint, id=None)
 
     params = {
-        "page": "0",
-        "size": MAX_SEARCHABLE_ITEM_COUNT,
+        "page": str(page),
+        "size": page_size,
         "filterKeywords": search_keyword,
         "filterTags": tags,
         "sortFields": ["createdAt"],
-        "sortDirections": ["asc"],
+        "sortDirections": [sort_direction],
     }
     if folder_ids is not None:
         params["filterFolderIds"] = folder_ids

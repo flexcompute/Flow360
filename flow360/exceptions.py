@@ -1,15 +1,16 @@
 """Custom Flow360 exceptions"""
 
-# pylint: disable=unused-import
+# pylint: disable=too-few-public-methods,unused-import
 from typing import List
 
-from flow360_schema.exceptions import (
-    Flow360DeprecationError,
-    Flow360Error,
-    Flow360ErrorWithLocation,
-    Flow360TranslationError,
-    Flow360ValueError,
-)
+from flow360_schema import exceptions as _schema_exceptions
+
+Flow360DeprecationError = _schema_exceptions.Flow360DeprecationError
+Flow360Error = _schema_exceptions.Flow360Error
+Flow360ValueError = _schema_exceptions.Flow360ValueError
+
+Flow360ErrorWithLocation = _schema_exceptions.Flow360ErrorWithLocation
+Flow360TranslationError = _schema_exceptions.Flow360TranslationError
 
 
 class Flow360TypeError(Flow360Error):

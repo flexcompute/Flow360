@@ -216,6 +216,25 @@ class MockResponseFolderNestedMetadata(MockResponse):
         return res
 
 
+class MockResponseFolderListV2(MockResponse):
+    """response for GET /v2/folders"""
+
+    @staticmethod
+    def json():
+        with open(os.path.join(here, "data/mock_webapi/folder_at_root_meta_resp.json")) as fh:
+            root_folder = json.load(fh)["data"]
+        with open(os.path.join(here, "data/mock_webapi/folder_nested_meta_resp.json")) as fh:
+            nested_folder = json.load(fh)["data"]
+        return {
+            "data": {
+                "page": 0,
+                "size": 1000,
+                "total": 2,
+                "records": [root_folder, nested_folder],
+            }
+        }
+
+
 class MockResponseFolderMove(MockResponse):
     """response if moving to folder"""
 
@@ -576,6 +595,8 @@ GET_RESPONSE_MAP = {
     "/account": MockResponseOrganizationAccounts,
     "/folders/items/folder-3834758b-3d39-4a4a-ad85-710b7652267c/metadata": MockResponseFolderRootMetadata,
     "/folders/items/folder-4da3cdd0-c5b6-4130-9ca1-196237322ab9/metadata": MockResponseFolderNestedMetadata,
+    "/v2/folders/folder-3834758b-3d39-4a4a-ad85-710b7652267c": MockResponseFolderRootMetadata,
+    "/v2/folders/folder-4da3cdd0-c5b6-4130-9ca1-196237322ab9": MockResponseFolderNestedMetadata,
     "/v2/projects/prj-41d2333b-85fd-4bed-ae13-15dcb6da519e": MockResponseProject,
     "/v2/projects/prj-41d2333b-85fd-4bed-ae13-15dcb6da519e/dependency": MockResponseProjectEmptyDependency,
     "/v2/projects/prj-99cc6f96-15d3-4170-973c-a0cced6bf36b": MockResponseProjectFromVM,
@@ -644,6 +665,9 @@ def mock_webapi(type, url, params):
 
         if method.endswith("/path"):
             return MockResponseProjectPath(params=params)
+
+        if method == "/v2/folders":
+            return MockResponseFolderListV2()
 
     elif type == "put":
         if method == "/folders/move":

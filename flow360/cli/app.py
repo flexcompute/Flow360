@@ -2,18 +2,22 @@
 Commandline interface for flow360.
 """
 
+from __future__ import annotations
+
 import os
 from datetime import datetime
+from importlib import import_module
 
 import click
 import toml
 from packaging.version import InvalidVersion, Version
 
-from flow360.cli.auth import LoginError, resolve_target_environment, wait_for_login
-from flow360.cli.auth_guidance import build_configure_command
+# Importing through ``flow360`` eagerly loads the SDK public surface.
+# pylint: disable=consider-using-from-import
+import flow360.user_config as user_config
+from flow360.cli.context import merge_command_context, resolve_root_context
 from flow360.environment import Env
 from flow360.user_config import (
-    config_file,
     delete_apikey,
     read_user_config,
     store_apikey,
@@ -21,28 +25,132 @@ from flow360.user_config import (
 )
 from flow360.version import __solver_version__, __version__
 
-if os.path.exists(config_file):
-    with open(config_file, encoding="utf-8") as current_fh:
-        current_config = toml.loads(current_fh.read())
-        saved_apikey = current_config.get("default", {}).get("apikey", None)
-        if saved_apikey is not None:
-            APIKEY_PRESENT = True
+config_file = user_config.config_file
+
+_LAZY_COMMANDS = {
+    "project": {
+        "module": "flow360.cli.project",
+        "attr": "project",
+        "help": "Inspect and manage Flow360 projects.",
+    },
+    "folder": {
+        "module": "flow360.cli.folder",
+        "attr": "folder",
+        "help": "Inspect Flow360 folders.",
+    },
+}
 
 
-@click.group()
-def flow360():
+class LazyFlow360Group(click.Group):
+    """Click group that imports SDK-backed command groups on demand."""
+
+    def invoke(self, ctx):
+        try:
+            return super().invoke(ctx)
+        except click.ClickException:
+            raise
+        except Exception as error:  # pylint: disable=broad-except
+            # Convert uncaught SDK auth failures into normal CLI errors.
+            # pylint: disable=import-outside-toplevel
+            from flow360.exceptions import Flow360AuthorisationError
+
+            if isinstance(error, Flow360AuthorisationError):
+                raise click.ClickException(str(error)) from error
+            raise
+
+    def list_commands(self, ctx):
+        return sorted(set(super().list_commands(ctx)) | set(_LAZY_COMMANDS))
+
+    def format_commands(self, ctx, formatter):
+        rows = []
+        for command_name in self.list_commands(ctx):
+            command = self.commands.get(command_name)
+            if command is not None:
+                help_text = command.get_short_help_str(formatter.width)
+            else:
+                help_text = _LAZY_COMMANDS[command_name]["help"]
+            rows.append((command_name, help_text))
+
+        if rows:
+            with formatter.section("Commands"):
+                formatter.write_dl(rows)
+
+    def get_command(self, ctx, cmd_name):
+        command = super().get_command(ctx, cmd_name)
+        if command is not None:
+            return command
+
+        loader = _LAZY_COMMANDS.get(cmd_name)
+        if loader is None:
+            return None
+
+        module_name = loader["module"]
+        attr_name = loader["attr"]
+        command = getattr(import_module(module_name), attr_name)
+        self.add_command(command, cmd_name)
+        return command
+
+
+def _has_stored_apikey(config: dict, profile: str, environment_name: str | None) -> bool:
+    profile_config = config.get(profile) or {}
+    if environment_name is None:
+        return bool(profile_config.get("apikey"))
+    return bool((profile_config.get(environment_name) or {}).get("apikey"))
+
+
+@click.group(cls=LazyFlow360Group)
+@click.option("--profile", default=None, help="API key profile for requests.")
+@click.option("--dev", is_flag=True, help="Use the DEV environment.")
+@click.option("--uat", is_flag=True, help="Use the UAT environment.")
+@click.option("--env", default=None, help="Use a named environment.")
+@click.pass_context
+def flow360(ctx, profile, dev, uat, env):
     """
     Commandline entrypoint for flow360.
     """
+    ctx.ensure_object(dict)
+    resolved_context = resolve_root_context(profile=profile, dev=dev, uat=uat, env=env)
+
+    prev_env = Env.current
+    prev_profile = user_config.UserConfig.profile
+    prev_profile_env = os.environ.get("SIMCLOUD_PROFILE")
+
+    if profile is not None:
+        os.environ["SIMCLOUD_PROFILE"] = profile
+        user_config.UserConfig.set_profile(profile)
+
+        def restore_profile():
+            if prev_profile_env is None:
+                os.environ.pop("SIMCLOUD_PROFILE", None)
+            else:
+                os.environ["SIMCLOUD_PROFILE"] = prev_profile_env
+            user_config.UserConfig.set_profile(prev_profile)
+
+        ctx.call_on_close(restore_profile)
+
+    if dev or uat or env is not None:
+        # pylint: disable=import-outside-toplevel
+        from flow360.cli.auth import resolve_target_environment
+
+        try:
+            environment, _ = resolve_target_environment(dev=dev, uat=uat, env=env)
+        except ValueError as error:
+            raise click.ClickException(str(error)) from error
+
+        environment.active()
+
+        def restore_env():
+            prev_env.active()
+
+        ctx.call_on_close(restore_env)
+
+    ctx.obj.update(resolved_context.as_dict())
 
 
 @click.command("configure", context_settings={"show_default": True})
-@click.option(
-    "--apikey", prompt=False if "APIKEY_PRESENT" in globals() else "API Key", help="API Key"
-)
-@click.option(
-    "--profile", prompt=False, default="default", help="Profile, e.g., default, secondary."
-)
+@click.pass_context
+@click.option("--apikey", prompt=False, help="API Key")
+@click.option("--profile", prompt=False, default=None, help="Profile, e.g., default, secondary.")
 @click.option(
     "--dev", prompt=False, type=bool, is_flag=True, help="Only use this apikey in DEV environment."
 )
@@ -61,16 +169,35 @@ def flow360():
     help="Toggle beta features support",
 )
 # pylint: disable=too-many-arguments, too-many-branches
-def configure(apikey, profile, dev, uat, env, suppress_submit_warning, beta_features):
+def configure(ctx, apikey, profile, dev, uat, env, suppress_submit_warning, beta_features):
     """
     Configure flow360.
     """
     changed = False
     config = read_user_config()
-    _, storage_environment = resolve_target_environment(dev=dev, uat=uat, env=env)
+    cli_context = merge_command_context(ctx, profile=profile, dev=dev, uat=uat, env=env)
+
+    # pylint: disable=import-outside-toplevel
+    from flow360.cli.auth import resolve_target_environment
+
+    _, storage_environment = resolve_target_environment(
+        dev=cli_context.dev, uat=cli_context.uat, env=cli_context.env
+    )
+
+    if (
+        apikey is None
+        and suppress_submit_warning is None
+        and beta_features is None
+        and not _has_stored_apikey(config, cli_context.profile, storage_environment)
+    ):
+        apikey = click.prompt("API Key")
 
     if apikey is not None:
-        config = store_apikey(apikey, profile=profile, environment_name=storage_environment)
+        config = store_apikey(
+            apikey,
+            profile=cli_context.profile,
+            environment_name=storage_environment,
+        )
         changed = True
 
     if suppress_submit_warning is not None:
@@ -93,9 +220,8 @@ def configure(apikey, profile, dev, uat, env, suppress_submit_warning, beta_feat
 
 
 @click.command("login", context_settings={"show_default": True})
-@click.option(
-    "--profile", prompt=False, default="default", help="Profile, e.g., default, secondary."
-)
+@click.pass_context
+@click.option("--profile", prompt=False, default=None, help="Profile, e.g., default, secondary.")
 @click.option("--dev", prompt=False, type=bool, is_flag=True, help="Log in to DEV.")
 @click.option("--uat", prompt=False, type=bool, is_flag=True, help="Log in to UAT.")
 @click.option("--env", prompt=False, default=None, help="Log in to a named environment.")
@@ -108,10 +234,15 @@ def configure(apikey, profile, dev, uat, env, suppress_submit_warning, beta_feat
 @click.option(
     "--timeout", type=click.IntRange(1, 3600), default=120, help="Login timeout in seconds."
 )
-def login(profile, dev, uat, env, port, timeout):  # pylint: disable=too-many-arguments
+def login(
+    ctx, profile, dev, uat, env, port, timeout
+):  # pylint: disable=too-many-arguments,too-many-locals
     """
     Open a browser login flow and store the resulting API key.
     """
+    # pylint: disable=import-outside-toplevel
+    from flow360.cli.auth import LoginError, resolve_target_environment, wait_for_login
+    from flow360.cli.auth_guidance import build_configure_command
 
     def announce_login(details):
         click.echo(f"Starting local login server on {details['callback_url']}.")
@@ -129,10 +260,21 @@ def login(profile, dev, uat, env, port, timeout):  # pylint: disable=too-many-ar
         click.echo("")
 
     try:
-        environment, _ = resolve_target_environment(dev=dev, uat=uat, env=env)
+        cli_context = merge_command_context(
+            ctx,
+            profile=profile,
+            dev=dev,
+            uat=uat,
+            env=env,
+        )
+        environment, _ = resolve_target_environment(
+            dev=cli_context.dev,
+            uat=cli_context.uat,
+            env=cli_context.env,
+        )
         result = wait_for_login(
             environment=environment,
-            profile=profile,
+            profile=cli_context.profile,
             port=port,
             timeout=timeout,
             announce_login=announce_login,
@@ -147,53 +289,75 @@ def login(profile, dev, uat, env, port, timeout):  # pylint: disable=too-many-ar
 
 
 @click.command("logout", context_settings={"show_default": True})
-@click.option(
-    "--profile", prompt=False, default="default", help="Profile, e.g., default, secondary."
-)
+@click.pass_context
+@click.option("--profile", prompt=False, default=None, help="Profile, e.g., default, secondary.")
 @click.option("--dev", prompt=False, type=bool, is_flag=True, help="Remove the DEV login.")
 @click.option("--uat", prompt=False, type=bool, is_flag=True, help="Remove the UAT login.")
 @click.option("--env", prompt=False, default=None, help="Remove the login for a named environment.")
-def logout(profile, dev, uat, env):  # pylint: disable=too-many-arguments
+def logout(ctx, profile, dev, uat, env):  # pylint: disable=too-many-arguments
     """
     Remove a stored Flow360 API key.
     """
+    # pylint: disable=import-outside-toplevel
+    from flow360.cli.auth import resolve_target_environment
+
     try:
-        environment, storage_environment = resolve_target_environment(dev=dev, uat=uat, env=env)
+        cli_context = merge_command_context(
+            ctx,
+            profile=profile,
+            dev=dev,
+            uat=uat,
+            env=env,
+        )
+        environment, storage_environment = resolve_target_environment(
+            dev=cli_context.dev,
+            uat=cli_context.uat,
+            env=cli_context.env,
+        )
     except ValueError as error:
         raise click.ClickException(str(error)) from error
 
-    removed, _ = delete_apikey(profile=profile, environment_name=storage_environment)
+    removed, _ = delete_apikey(profile=cli_context.profile, environment_name=storage_environment)
     if not removed:
         click.echo(
-            f"No stored API key found for profile '{profile}' in environment '{environment.name}'."
+            f"No stored API key found for profile '{cli_context.profile}' in environment '{environment.name}'."
         )
         return
 
     click.echo(
-        f"Removed stored API key for profile '{profile}' in environment '{environment.name}'."
+        f"Removed stored API key for profile '{cli_context.profile}' in environment '{environment.name}'."
     )
 
 
 # For displaying all projects
 @click.command("show_projects", context_settings={"show_default": True})
+@click.pass_context
 @click.option("--keyword", "-k", help="Filter projects by keyword", default=None, type=str)
 @click.option("--env", prompt=False, default=None, help="The environment used for the query.")
-def show_projects(keyword, env: str):
+def show_projects(ctx, keyword, env: str):
     """
     Display all available projects with optional filter.
     """
     prev_env_config = None
-    if env:
-        env_config = Env.load(env)
+    cli_context = merge_command_context(ctx, env=env)
+    if cli_context.env:
+        env_config = Env.load(cli_context.env)
         prev_env_config = Env.current
         env_config.active()
 
     # pylint: disable=import-outside-toplevel
-    from flow360.component.simulation.web.project_records import (
-        show_projects_with_keyword_filter,
+    from flow360.cli.project import (
+        build_project_list_payload,
+        format_project_list_payload,
     )
 
-    show_projects_with_keyword_filter(search_keyword=keyword)
+    payload = build_project_list_payload(
+        search=keyword,
+        limit=200,
+        folder_ids=(),
+        exclude_subfolders=False,
+    )
+    click.echo(format_project_list_payload(payload))
 
     if prev_env_config:
         prev_env_config.active()
