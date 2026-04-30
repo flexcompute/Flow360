@@ -89,9 +89,9 @@ class SurfaceMeshStats(pd.BaseModel):
     Surface mesh stats
     """
 
-    n_nodes: int = pd.Field(..., alias="nNodes")
-    n_triangles: int = pd.Field(..., alias="nTriangles")
-    n_quadrilaterals: int = pd.Field(..., alias="nQuadrilaterals")
+    n_nodes: int = pd.Field(alias="nNodes")
+    n_triangles: int = pd.Field(alias="nTriangles")
+    n_quadrilaterals: int = pd.Field(alias="nQuadrilaterals")
     version: Optional[str] = pd.Field(None)
 
 
