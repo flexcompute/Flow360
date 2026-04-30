@@ -154,6 +154,7 @@ from flow360.component.simulation.outputs.output_entities import (
     PointArray,
     PointArray2D,
     Slice,
+    Volume,
 )
 from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
@@ -323,6 +324,7 @@ __all__ = [
     "SolidMaterial",
     "Slice",
     "Isosurface",
+    "Volume",
     "TurbulenceQuantities",
     "UserDefinedDynamic",
     "Translational",

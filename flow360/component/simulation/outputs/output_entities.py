@@ -10,5 +10,6 @@ from flow360_schema.models.entities.output_entities import (  # noqa: F401
     PointArray,
     PointArray2D,
     Slice,
+    Volume,
     _OutputItemBase,
 )
