@@ -100,7 +100,10 @@ def test_asset_group_help_does_not_import_simulation_summary(monkeypatch):
         "flow360.cli.app",
         "flow360.cli.assets",
         "flow360.cli.simulation_summary",
+        "flow360.exceptions",
         "flow360.component.simulation.simulation_params",
+        "flow360_schema.exceptions",
+        "flow360_schema.unit_system",
     )
 
     from flow360.cli import (
@@ -112,7 +115,10 @@ def test_asset_group_help_does_not_import_simulation_summary(monkeypatch):
     assert result.exit_code == 0
     assert "flow360.cli.assets" in sys.modules
     assert "flow360.cli.simulation_summary" not in sys.modules
+    assert "flow360.exceptions" not in sys.modules
     assert "flow360.component.simulation.simulation_params" not in sys.modules
+    assert "flow360_schema.exceptions" not in sys.modules
+    assert "flow360_schema.unit_system" not in sys.modules
 
 
 def test_public_namespace_configure_does_not_eagerly_import_cli_modules(monkeypatch):

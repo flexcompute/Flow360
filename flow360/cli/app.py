@@ -82,7 +82,7 @@ class LazyFlow360Group(click.Group):
     def invoke(self, ctx):
         try:
             return super().invoke(ctx)
-        except click.ClickException:
+        except (click.ClickException, click.exceptions.Exit, click.Abort):
             raise
         except Exception as error:  # pylint: disable=broad-except
             # Convert uncaught SDK auth failures into normal CLI errors.
