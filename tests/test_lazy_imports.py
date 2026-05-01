@@ -11,26 +11,26 @@ def _unload_modules(monkeypatch, *module_names):
         monkeypatch.delitem(sys.modules, module_name, raising=False)
 
 
-def _load_api_all():
-    api_source = Path(__file__).parents[1] / "flow360" / "_api.py"
-    module_ast = ast.parse(api_source.read_text(encoding="utf-8"))
+def _load_public_namespace_all():
+    namespace_source = Path(__file__).parents[1] / "flow360" / "_public_namespace.py"
+    module_ast = ast.parse(namespace_source.read_text(encoding="utf-8"))
     for node in module_ast.body:
         if not isinstance(node, ast.Assign):
             continue
         for target in node.targets:
             if isinstance(target, ast.Name) and target.id == "__all__":
                 return ast.literal_eval(node.value)
-    raise AssertionError("flow360._api must define __all__")
+    raise AssertionError("flow360._public_namespace must define __all__")
 
 
 def test_import_flow360_does_not_eagerly_import_heavy_dependencies(monkeypatch):
     monkeypatch.delenv("FLOW360_SUPPRESS_BETA_WARNING", raising=False)
-    _unload_modules(monkeypatch, "flow360", "flow360._api", "pandas")
+    _unload_modules(monkeypatch, "flow360", "flow360._public_namespace", "pandas")
 
     import flow360  # pylint: disable=import-outside-toplevel,import-error
 
     assert "pandas" not in sys.modules
-    assert "flow360._api" not in sys.modules
+    assert "flow360._public_namespace" not in sys.modules
     assert "Env" in flow360.__all__
 
 
@@ -105,12 +105,12 @@ def test_sdk_configure_helper_does_not_import_cli_modules(monkeypatch, tmp_path)
     assert "flow360.cli.api_set_func" not in sys.modules
 
 
-def test_flow360_configure_is_exposed_without_importing_api_module(monkeypatch):
+def test_flow360_configure_is_exposed_without_importing_public_namespace_module(monkeypatch):
     monkeypatch.delenv("FLOW360_SUPPRESS_BETA_WARNING", raising=False)
     _unload_modules(
         monkeypatch,
         "flow360",
-        "flow360._api",
+        "flow360._public_namespace",
         "flow360.cli",
         "flow360.cli.app",
         "flow360.cli.api_set_func",
@@ -119,38 +119,40 @@ def test_flow360_configure_is_exposed_without_importing_api_module(monkeypatch):
     import flow360  # pylint: disable=import-outside-toplevel,import-error
 
     assert "configure" in flow360.__all__
-    assert "flow360._api" not in sys.modules
+    assert "flow360._public_namespace" not in sys.modules
     assert "flow360.cli.app" not in sys.modules
     assert "flow360.cli.api_set_func" not in sys.modules
 
 
-def test_flow360_version_check_legacy_lazy_attribute_does_not_import_api_module(monkeypatch):
-    _unload_modules(monkeypatch, "flow360", "flow360._api", "flow360.version_check")
+def test_flow360_version_check_legacy_lazy_attribute_does_not_import_public_namespace_module(
+    monkeypatch,
+):
+    _unload_modules(monkeypatch, "flow360", "flow360._public_namespace", "flow360.version_check")
 
     import flow360  # pylint: disable=import-outside-toplevel,import-error
 
     assert flow360.version_check.__name__ == "flow360.version_check"
-    assert "flow360._api" not in sys.modules
+    assert "flow360._public_namespace" not in sys.modules
 
 
-def test_flow360_stub_reexports_match_lazy_api_exports():
+def test_flow360_stub_reexports_match_lazy_public_namespace_exports():
     stub_source = Path(__file__).parents[1] / "flow360" / "__init__.pyi"
     module_ast = ast.parse(stub_source.read_text(encoding="utf-8"))
 
-    stub_api_reexports = set()
+    stub_namespace_reexports = set()
     has_version_check_reexport = False
     for node in module_ast.body:
         if not isinstance(node, ast.ImportFrom):
             continue
-        if node.module == "_api" and node.level == 1:
+        if node.module == "_public_namespace" and node.level == 1:
             for imported_name in node.names:
                 assert imported_name.asname == imported_name.name
-                stub_api_reexports.add(imported_name.name)
+                stub_namespace_reexports.add(imported_name.name)
         if node.module is None and node.level == 1:
             has_version_check_reexport = any(
                 imported_name.name == imported_name.asname == "version_check"
                 for imported_name in node.names
             )
 
-    assert stub_api_reexports == set(_load_api_all())
+    assert stub_namespace_reexports == set(_load_public_namespace_all())
     assert has_version_check_reexport

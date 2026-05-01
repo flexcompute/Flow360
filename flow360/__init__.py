@@ -9,19 +9,19 @@ from importlib import import_module
 from pathlib import Path
 from types import ModuleType
 
-_API_MODULE: ModuleType | None = None
+_PUBLIC_NAMESPACE_MODULE: ModuleType | None = None
 
 
-def _load_api_module() -> ModuleType:
-    global _API_MODULE  # pylint: disable=global-statement
-    if _API_MODULE is None:
-        _API_MODULE = import_module("flow360._api")
-    return _API_MODULE
+def _load_public_namespace_module() -> ModuleType:
+    global _PUBLIC_NAMESPACE_MODULE  # pylint: disable=global-statement
+    if _PUBLIC_NAMESPACE_MODULE is None:
+        _PUBLIC_NAMESPACE_MODULE = import_module("flow360._public_namespace")
+    return _PUBLIC_NAMESPACE_MODULE
 
 
 def _load_exported_names() -> list[str]:
-    api_source = Path(__file__).with_name("_api.py").read_text(encoding="utf-8")
-    module_ast = ast.parse(api_source)
+    namespace_source = Path(__file__).with_name("_public_namespace.py").read_text(encoding="utf-8")
+    module_ast = ast.parse(namespace_source)
     for node in module_ast.body:
         if not isinstance(node, ast.Assign):
             continue
@@ -41,9 +41,9 @@ def __getattr__(name: str):
         return module
 
     if name in __all__:
-        api_module = _load_api_module()
+        namespace_module = _load_public_namespace_module()
         try:
-            value = getattr(api_module, name)
+            value = getattr(namespace_module, name)
         except AttributeError as error:
             raise AttributeError(f"module {__name__!r} has no attribute {name!r}") from error
         globals()[name] = value
