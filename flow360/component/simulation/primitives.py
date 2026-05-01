@@ -29,6 +29,7 @@ from flow360_schema.models.entities.surface_entities import (
 )
 from flow360_schema.models.entities.volume_entities import (
     AxisymmetricBody,
+    AxisymmetricSegment,
     Box,
     BoxCache,
     CustomVolume,
