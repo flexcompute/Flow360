@@ -2,7 +2,6 @@ import ast
 import sys
 from pathlib import Path
 
-import toml
 from click.testing import CliRunner
 
 
@@ -87,20 +86,21 @@ def test_flow360_root_help_does_not_eagerly_import_sdk_command_modules(monkeypat
     assert "flow360.cloud.flow360_requests" not in sys.modules
 
 
-def test_sdk_configure_helper_does_not_import_cli_modules(monkeypatch, tmp_path):
+def test_public_namespace_configure_does_not_eagerly_import_cli_modules(monkeypatch):
     monkeypatch.delenv("FLOW360_SUPPRESS_BETA_WARNING", raising=False)
-    config_path = tmp_path / "config.toml"
+    _unload_modules(
+        monkeypatch,
+        "flow360._public_namespace",
+        "flow360.cli",
+        "flow360.cli.app",
+        "flow360.cli.api_set_func",
+    )
 
-    _unload_modules(monkeypatch, "flow360.cli", "flow360.cli.app", "flow360.cli.api_set_func")
+    from flow360 import (
+        _public_namespace,  # pylint: disable=import-outside-toplevel,import-error
+    )
 
-    import flow360.user_config as user_config  # pylint: disable=import-outside-toplevel,import-error
-
-    monkeypatch.setattr(user_config, "config_file", str(config_path))
-
-    user_config.configure_apikey("test-key", environment="dev", profile="default")
-
-    config = toml.loads(config_path.read_text())
-    assert config["default"]["dev"]["apikey"] == "test-key"
+    assert callable(_public_namespace.configure)
     assert "flow360.cli.app" not in sys.modules
     assert "flow360.cli.api_set_func" not in sys.modules
 

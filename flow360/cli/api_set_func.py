@@ -1,6 +1,10 @@
 """Helper function to set up the API key for the user."""
 
-from flow360.user_config import configure_apikey
+from click.testing import CliRunner
+
+import flow360.user_config as user_config  # pylint: disable=consider-using-from-import
+from flow360.cli.app import configure
+from flow360.log import log
 
 
 def configure_caller(apikey: str, environment: str = None, profile: str = "default") -> None:
@@ -15,4 +19,24 @@ def configure_caller(apikey: str, environment: str = None, profile: str = "defau
     Returns:
         None
     """
-    configure_apikey(apikey=apikey, environment=environment, profile=profile)
+    runner = CliRunner()
+
+    # Construct CLI arguments as a list
+    args = ["--apikey", apikey, "--profile", profile]
+
+    if environment:
+        if environment.lower() in ("dev", "uat"):
+            args += ["--" + environment.lower()]
+        elif environment.lower() == "prod":
+            args += []
+        else:
+            args += ["--env", environment]
+
+    # Invoke the `configure` command
+    result = runner.invoke(configure, args)
+
+    if result.exit_code != 0:
+        log.error(result.output if result.output else str(result.exception))
+    else:
+        log.info("Configuration successful.")
+        user_config.UserConfig = user_config.BasicUserConfig()  # Reload
