@@ -831,14 +831,14 @@ class VolumeMeshStats(pd_v2.BaseModel):
     Mesh stats
     """
 
-    n_nodes: int = pd_v2.Field(..., alias="nNodes")
-    n_triangles: int = pd_v2.Field(..., alias="nTriangles")
-    n_quadrilaterals: int = pd_v2.Field(..., alias="nQuadrilaterals")
-    n_tetrahedron: int = pd_v2.Field(..., alias="nTetrahedron")
-    n_prism: int = pd_v2.Field(..., alias="nPrism")
-    n_pyramid: int = pd_v2.Field(..., alias="nPyramid")
-    n_hexahedron: int = pd_v2.Field(..., alias="nHexahedron")
-    n_tet_wedge: int = pd_v2.Field(..., alias="nTetWedge")
+    n_nodes: int = pd_v2.Field(alias="nNodes")
+    n_triangles: int = pd_v2.Field(alias="nTriangles")
+    n_quadrilaterals: int = pd_v2.Field(alias="nQuadrilaterals")
+    n_tetrahedron: int = pd_v2.Field(alias="nTetrahedron")
+    n_prism: int = pd_v2.Field(alias="nPrism")
+    n_pyramid: int = pd_v2.Field(alias="nPyramid")
+    n_hexahedron: int = pd_v2.Field(alias="nHexahedron")
+    n_tet_wedge: int = pd_v2.Field(alias="nTetWedge")
 
 
 class VolumeMeshBoundingBox(PerEntityResultCSVModel):

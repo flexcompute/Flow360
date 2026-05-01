@@ -7,6 +7,7 @@ from __future__ import annotations
 import os
 import threading
 from enum import Enum
+from functools import cached_property
 from typing import Any, List, Optional
 
 import pydantic as pd
@@ -32,7 +33,7 @@ from flow360.component.utils import (
     SurfaceMeshFile,
     shared_account_confirm_proceed,
 )
-from flow360.exceptions import Flow360FileError, Flow360ValueError
+from flow360.exceptions import Flow360FileError, Flow360RuntimeError, Flow360ValueError
 from flow360.log import log
 
 from .simulation.primitives import Surface
@@ -81,6 +82,17 @@ class SurfaceMeshMetaV2(AssetMetaBaseModelV2):
     file_name: Optional[str] = pd.Field(None, alias="fileName")
     status: SurfaceMeshStatusV2 = pd.Field()  # Overshadowing to ensure correct is_final() method
     dependency: bool = pd.Field(False)
+
+
+class SurfaceMeshStats(pd.BaseModel):
+    """
+    Surface mesh stats
+    """
+
+    n_nodes: int = pd.Field(alias="nNodes")
+    n_triangles: int = pd.Field(alias="nTriangles")
+    n_quadrilaterals: int = pd.Field(alias="nQuadrilaterals")
+    version: Optional[str] = pd.Field(None)
 
 
 class SurfaceMeshDraftV2(ResourceDraft):
@@ -363,10 +375,32 @@ class SurfaceMeshV2(AssetBase):
     _meta_class = SurfaceMeshMetaV2
     _draft_class = SurfaceMeshDraftV2
     _web_api_class = Flow360Resource
+    _mesh_stats_file = "metadata/surfaceMeshMetaData.json"
     _cloud_resource_type_name = "SurfaceMesh"
 
-    # pylint: disable=fixme
-    # TODO: add _mesh_stats_file = "meshStats.json" like in VolumeMeshV2
+    @cached_property
+    def stats(self) -> SurfaceMeshStats:
+        """
+        Get surface mesh stats
+
+        Returns
+        -------
+        SurfaceMeshStats
+            return SurfaceMeshStats object
+        """
+        try:
+            # pylint: disable=protected-access
+            data = self._webapi._parse_json_from_cloud(self._mesh_stats_file)
+        except Exception as exc:
+            try:
+                status_str = self._webapi.status.value
+            except Exception:  # pylint: disable=broad-exception-caught
+                status_str = "unknown"
+            raise Flow360RuntimeError(
+                "Could not retrieve surface mesh stats. The surface mesh may not be ready yet "
+                f"(status={status_str})."
+            ) from exc
+        return SurfaceMeshStats(**data)
 
     @classmethod
     # pylint: disable=redefined-builtin
