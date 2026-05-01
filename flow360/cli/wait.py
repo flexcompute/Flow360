@@ -7,7 +7,10 @@ from __future__ import annotations
 import click
 
 from flow360.cli.output import emit_json
-from flow360.cli.resource_state import WaitTimeoutError, wait_for_resource_state as _wait_for_resource_state
+from flow360.cli.resource_state import WaitTimeoutError
+from flow360.cli.resource_state import (
+    wait_for_resource_state as _wait_for_resource_state,
+)
 
 
 @click.command("wait")

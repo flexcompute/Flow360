@@ -7,13 +7,14 @@ from __future__ import annotations
 
 import json
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Literal, Optional, Union
+from typing import Dict, Iterable, List, Literal, Optional, Union
 
 import pydantic as pd
 import typing_extensions
 from flow360_schema.framework.physical_dimensions import Length
 from flow360_schema.models.asset_cache import CoordinateSystemStatus, MirrorStatus
 from pydantic import PositiveInt
+
 from flow360.cloud.file_cache import get_shared_cloud_file_cache
 from flow360.cloud.flow360_requests import (
     CloneVolumeMeshRequest,
@@ -22,6 +23,7 @@ from flow360.cloud.flow360_requests import (
 )
 from flow360.cloud.http_util import http
 from flow360.cloud.rest_api import RestApi
+from flow360.component.case import Case
 from flow360.component.cloud_examples import (
     copy_example,
     fetch_examples,
@@ -63,8 +65,6 @@ from flow360.component.simulation.web.project_records import (
     get_project_records,
     show_projects_with_keyword_filter,
 )
-from flow360.component.simulation.web.project_webapi import ProjectWebApi
-from flow360.component.simulation.web.project_tree import ProjectTree
 from flow360.component.simulation.web.utils import (
     get_project_dependency_resource_metadata,
 )
@@ -92,18 +92,6 @@ from flow360.log import log
 from flow360.version import __solver_version__
 
 AssetOrResource = Union[type[AssetBase], type[Flow360Resource]]
-
-if TYPE_CHECKING:
-    from flow360.component.case import Case
-else:
-    Case = Any
-
-
-def _case_class():
-    # pylint: disable=import-outside-toplevel
-    from flow360.component.case import Case
-
-    return Case
 
 
 class RootType(Enum):
@@ -260,7 +248,7 @@ def create_draft(
     if isinstance(new_run_from, Geometry) and new_run_from.info.dependency:
         raise Flow360ValueError("Draft creation from an imported Geometry is not supported.")
 
-    if isinstance(new_run_from, _case_class()):
+    if isinstance(new_run_from, Case):
         raise Flow360ValueError("Draft creation from a Case is not supported.")
 
     if not isinstance(new_run_from.entity_info, GeometryEntityInfo) and (
@@ -623,21 +611,15 @@ class Project(pd.BaseModel):
     Project class containing the interface for creating and running simulations.
     """
 
-    metadata: Optional[ProjectMeta] = pd.Field(
-        default=None, description="Metadata of the project."
-    )
-    project_tree: ProjectTree = pd.Field(default_factory=ProjectTree)
-    solver_version: Optional[str] = pd.Field(
-        default=None, description="Version of the solver being used."
-    )
+    metadata: ProjectMeta = pd.Field(description="Metadata of the project.")
+    project_tree: ProjectTree = pd.Field()
+    solver_version: str = pd.Field(frozen=True, description="Version of the solver being used.")
 
     _root_asset: Union[Geometry, SurfaceMeshV2, VolumeMeshV2] = pd.PrivateAttr(None)
 
     _root_webapi: Optional[RestApi] = pd.PrivateAttr(None)
-    _project_webapi: Optional[ProjectWebApi] = pd.PrivateAttr(None)
+    _project_webapi: Optional[RestApi] = pd.PrivateAttr(None)
     _root_simulation_json: Optional[dict] = pd.PrivateAttr(None)
-    _project_id: Optional[str] = pd.PrivateAttr(None)
-    _lazy_load: bool = pd.PrivateAttr(False)
 
     @classmethod
     def show_remote(cls, search_keyword: Union[None, str] = None):
@@ -661,9 +643,7 @@ class Project(pd.BaseModel):
         str
             The project ID.
         """
-        if self.metadata is not None:
-            return self.metadata.id
-        return self._project_id
+        return self.metadata.id
 
     @property
     def tags(self) -> List[str]:
@@ -675,19 +655,7 @@ class Project(pd.BaseModel):
         List[str]
             List of the project's tags.
         """
-        return self.get_metadata().tags
-
-    def get_metadata(self) -> ProjectMeta:
-        """Return project metadata, loading it on first access."""
-        if self.metadata is None:
-            self._load_metadata()
-        return self.metadata
-
-    def get_project_tree(self) -> ProjectTree:
-        """Return the project tree, loading it on first access."""
-        if not self.project_tree.nodes:
-            self._load_tree()
-        return self.project_tree
+        return self.metadata.tags
 
     @property
     def length_unit(self) -> Length.PositiveFloat64:
@@ -857,7 +825,7 @@ class Project(pd.BaseModel):
         asset_id = self.project_tree.get_full_asset_id(
             query_asset=AssetShortID(asset_id=asset_id, asset_type="Case")
         )
-        return _case_class().from_cloud(case_id=asset_id)
+        return Case.from_cloud(case_id=asset_id)
 
     @property
     def case(self):
@@ -959,7 +927,6 @@ class Project(pd.BaseModel):
         solver_version: str = __solver_version__,
         length_unit: LengthUnitType = "m",
         tags: List[str] = None,
-        description: str = "",
         run_async: bool = False,
         folder: Optional[Folder] = None,
         workflow: GeometryWorkflow = "standard",
@@ -979,8 +946,6 @@ class Project(pd.BaseModel):
             Unit of length (default is "m").
         tags : list of str, optional
             Tags to assign to the project (default is None).
-        description : str, optional
-            Description to assign to the project (default is "").
         run_async : bool, optional
             Whether to create the project asynchronously (default is False).
         folder : Optional[Folder], optional
@@ -1024,7 +989,7 @@ class Project(pd.BaseModel):
                 "Cannot detect the intended project root with the given file(s)."
             )
 
-        root_asset = draft.submit(description=description, run_async=run_async)
+        root_asset = draft.submit(run_async=run_async)
         if run_async:
             log.info(
                 f"The input file(s) has been successfully uploaded to project: {root_asset.project_id} "
@@ -1067,7 +1032,6 @@ class Project(pd.BaseModel):
         solver_version: str,
         length_unit: LengthUnitType,
         tags: Optional[List[str]],
-        description: str,
         run_async: bool,
         folder: Optional[Folder],
     ):
@@ -1086,8 +1050,6 @@ class Project(pd.BaseModel):
             Unit of length.
         tags : list of str, optional
             Tags to assign to the project.
-        description : str
-            Description to assign to the project.
         run_async : bool
             Whether to create the project asynchronously.
         folder : Optional[Folder], optional
@@ -1105,7 +1067,6 @@ class Project(pd.BaseModel):
             tags=tags,
             parent_folder_id=folder.id if folder else "ROOT.FLOW360",
             length_unit=length_unit,
-            description=description,
             original_volume_mesh_id=volume_mesh.id,
         )
 
@@ -1192,7 +1153,6 @@ class Project(pd.BaseModel):
         solver_version: str = __solver_version__,
         length_unit: LengthUnitType = "m",
         tags: List[str] = None,
-        description: str = "",
         run_async: bool = False,
         folder: Optional[Folder] = None,
         workflow: GeometryWorkflow = "standard",
@@ -1212,8 +1172,6 @@ class Project(pd.BaseModel):
             Unit of length (default is "m").
         tags : list of str, optional
             Tags to assign to the project (default is None).
-        description : str, optional
-            Description to assign to the project (default is "").
         run_async : bool, optional
             Whether to create project asynchronously (default is False).
         folder : Optional[Folder], optional
@@ -1255,7 +1213,6 @@ class Project(pd.BaseModel):
             solver_version=solver_version,
             length_unit=length_unit,
             tags=tags,
-            description=description,
             run_async=run_async,
             folder=folder,
             workflow=workflow,
@@ -1271,7 +1228,6 @@ class Project(pd.BaseModel):
         solver_version: str = __solver_version__,
         length_unit: LengthUnitType = "m",
         tags: List[str] = None,
-        description: str = "",
         run_async: bool = False,
         folder: Optional[Folder] = None,
     ):
@@ -1291,8 +1247,6 @@ class Project(pd.BaseModel):
             Unit of length (default is "m").
         tags : list of str, optional
             Tags to assign to the project (default is None).
-        description : str, optional
-            Description to assign to the project (default is "").
         run_async : bool, optional
             Whether to create project asynchronously (default is False).
         folder : Optional[Folder], optional
@@ -1331,7 +1285,6 @@ class Project(pd.BaseModel):
             solver_version=solver_version,
             length_unit=length_unit,
             tags=tags,
-            description=description,
             run_async=run_async,
             folder=folder,
         )
@@ -1347,7 +1300,6 @@ class Project(pd.BaseModel):
         solver_version: Optional[str] = None,
         length_unit: Optional[LengthUnitType] = None,
         tags: Optional[List[str]] = None,
-        description: str = "",
         run_async: bool = False,
         folder: Optional[Folder] = None,
     ):
@@ -1375,8 +1327,6 @@ class Project(pd.BaseModel):
         tags : list of str, optional
             Tags to assign to the project (default is None for file input,
             or the original volume mesh's tags for VolumeMeshV2 input).
-        description : str, optional
-            Description to assign to the project (default is "").
         run_async : bool
             Whether to create project asynchronously (default is False).
         folder : Optional[Folder], optional
@@ -1425,7 +1375,6 @@ class Project(pd.BaseModel):
                 solver_version=resolved_solver_version,
                 length_unit=resolved_length_unit,
                 tags=resolved_tags,
-                description=description,
                 run_async=run_async,
                 folder=folder,
             )
@@ -1442,7 +1391,6 @@ class Project(pd.BaseModel):
             solver_version=resolved_solver_version,
             length_unit=resolved_length_unit,
             tags=resolved_tags,
-            description=description,
             run_async=run_async,
             folder=folder,
         )
@@ -1461,7 +1409,6 @@ class Project(pd.BaseModel):
         solver_version: str = __solver_version__,
         length_unit: LengthUnitType = "m",
         tags: List[str] = None,
-        description: str = "",
         run_async: bool = False,
     ):
         """
@@ -1480,8 +1427,6 @@ class Project(pd.BaseModel):
             Unit of length (default is "m").
         tags : list of str, optional
             Tags to assign to the project (default is None).
-        description : str, optional
-            Description to assign to the project (default is "").
         run_async : bool, optional
             Whether to create project asynchronously (default is False).
 
@@ -1517,7 +1462,6 @@ class Project(pd.BaseModel):
             solver_version=solver_version,
             length_unit=length_unit,
             tags=tags,
-            description=description,
             run_async=run_async,
         )
 
@@ -1773,7 +1717,7 @@ class Project(pd.BaseModel):
                 "The supplied cloud resource for `new_run_from` does not belong to the project."
             )
 
-        if isinstance(new_run_from, _case_class()):
+        if isinstance(new_run_from, Case):
             user_requested_entity_info = new_run_from.get_simulation_params()
         if isinstance(new_run_from, (Geometry, SurfaceMeshV2, VolumeMeshV2)):
             user_requested_entity_info = new_run_from.params
@@ -1789,7 +1733,6 @@ class Project(pd.BaseModel):
         project_id: str,
         *,
         new_run_from: Optional[Union[Geometry, SurfaceMeshV2, VolumeMeshV2, Case]] = None,
-        lazy_load: bool = False,
     ):
         """
         Loads a project from the cloud.
@@ -1821,70 +1764,29 @@ class Project(pd.BaseModel):
         """
 
         project_info = AssetShortID(asset_id=project_id, asset_type="Project")
-
-        if lazy_load and new_run_from is not None:
-            raise ValueError("lazy project loading does not support `new_run_from`.")
+        project_api = RestApi(ProjectInterface.endpoint, id=project_info.asset_id)
+        info = project_api.get()
+        if not isinstance(info, dict):
+            raise Flow360WebError(
+                f"Cannot load project {project_info.asset_id}, missing project data."
+            )
+        if not info:
+            raise Flow360WebError(f"Couldn't retrieve project info for {project_info.asset_id}")
+        meta = ProjectMeta(**info)
+        root_asset = None
+        root_type = meta.root_item_type
 
         if (
             new_run_from is not None
-            and isinstance(
-                new_run_from, (Geometry, SurfaceMeshV2, VolumeMeshV2, _case_class())
-            )
-            is False
+            and isinstance(new_run_from, (Geometry, SurfaceMeshV2, VolumeMeshV2, Case)) is False
         ):
             # Should have been caught by the validate_call?
             raise ValueError(
                 "The supplied `new_run_from` is not valid. Please check the function description for more details."
             )
 
-        project = Project()
-        project._project_id = project_info.asset_id
-        project._project_webapi = ProjectWebApi(project_info.asset_id)
-        project._lazy_load = lazy_load
-
-        if lazy_load:
-            return project
-
-        project._hydrate_full_project(new_run_from=new_run_from)
-        return project
-
-    def _load_metadata(self):
-        """Load project metadata from cloud if it has not been loaded yet."""
-        if self.metadata is not None:
-            return
-        info = self._project_webapi.get_info()
-        if not isinstance(info, dict):
-            raise Flow360WebError(f"Cannot load project {self.id}, missing project data.")
-        if not info:
-            raise Flow360WebError(f"Couldn't retrieve project info for {self.id}")
-        self.metadata = ProjectMeta(**info)
-        self._project_id = self.metadata.id
-
-    def _load_tree(self):
-        """Load project tree from cloud if it has not been loaded yet."""
-        if self.project_tree.nodes:
-            return
-        resp = self._project_webapi.get_tree()
-        asset_records = sorted(
-            resp["records"],
-            key=lambda d: parse_datetime(d["updatedAt"]),
-        )
-        self.project_tree = ProjectTree()
-        self.project_tree.construct_tree(asset_records=asset_records)
-
-    def _hydrate_full_project(
-        self,
-        *,
-        new_run_from: Optional[Union[Geometry, SurfaceMeshV2, VolumeMeshV2, Case]] = None,
-    ):
-        """Hydrate the full project state used by heavier SDK workflows."""
-        self._load_metadata()
-        meta = self.metadata
-        root_asset = None
-        root_type = meta.root_item_type
-
-        entity_info_param = self._get_user_requested_entity_info(
-            current_project_id=self.id, new_run_from=new_run_from
+        entity_info_param = cls._get_user_requested_entity_info(
+            current_project_id=project_info.asset_id, new_run_from=new_run_from
         )
 
         if root_type == RootType.GEOMETRY:
@@ -1898,19 +1800,23 @@ class Project(pd.BaseModel):
                 meta.root_item_id, entity_info_param=entity_info_param
             )
         if not root_asset:
-            raise Flow360ValueError(f"Couldn't retrieve root asset for {self.id}")
-        self.solver_version = root_asset.solver_version
+            raise Flow360ValueError(f"Couldn't retrieve root asset for {project_info.asset_id}")
+        project = Project(
+            metadata=meta, project_tree=ProjectTree(), solver_version=root_asset.solver_version
+        )
+        project._project_webapi = project_api
         if root_type == RootType.GEOMETRY:
-            self._root_asset = root_asset
-            self._root_webapi = RestApi(GeometryInterface.endpoint, id=root_asset.id)
+            project._root_asset = root_asset
+            project._root_webapi = RestApi(GeometryInterface.endpoint, id=root_asset.id)
         elif root_type == RootType.SURFACE_MESH:
-            self._root_asset = root_asset
-            self._root_webapi = RestApi(SurfaceMeshInterfaceV2.endpoint, id=root_asset.id)
+            project._root_asset = root_asset
+            project._root_webapi = RestApi(SurfaceMeshInterfaceV2.endpoint, id=root_asset.id)
         elif root_type == RootType.VOLUME_MESH:
-            self._root_asset = root_asset
-            self._root_webapi = RestApi(VolumeMeshInterfaceV2.endpoint, id=root_asset.id)
-        self._get_root_simulation_json()
-        self._get_tree_from_cloud()
+            project._root_asset = root_asset
+            project._root_webapi = RestApi(VolumeMeshInterfaceV2.endpoint, id=root_asset.id)
+        project._get_root_simulation_json()
+        project._get_tree_from_cloud()
+        return project
 
     @classmethod
     @pd.validate_call
@@ -1967,9 +1873,6 @@ class Project(pd.BaseModel):
         Flow360ValueError
             If the project is not initialized.
         """
-        if self._lazy_load and (not self.metadata or not self.solver_version or not self._root_asset):
-            self._hydrate_full_project()
-
         if not self.metadata or not self.solver_version or not self._root_asset:
             raise Flow360ValueError(
                 "Project not initialized - use Project.from_file or Project.from_cloud"
@@ -1992,9 +1895,12 @@ class Project(pd.BaseModel):
         asset_records = []
         if destination_obj:
             method = "path"
-            resp = self._project_webapi.get_path(
-                item_id=destination_obj.id,
-                item_type=destination_obj._cloud_resource_type_name,
+            resp = self._project_webapi.get(
+                method=method,
+                params={
+                    "itemId": destination_obj.id,
+                    "itemType": destination_obj._cloud_resource_type_name,
+                },
             )
             for key, val in resp.items():
                 if not val:
@@ -2005,7 +1911,7 @@ class Project(pd.BaseModel):
                 asset_records.append(val)
         else:
             method = "tree"
-            resp = self._project_webapi.get_tree()
+            resp = self._project_webapi.get(method=method)
             asset_records = resp["records"]
             self.project_tree = ProjectTree()
 
@@ -2273,7 +2179,7 @@ class Project(pd.BaseModel):
 
         # Remove when converting Case to V2
         kwargs = {}
-        if isinstance(destination_obj, _case_class()):
+        if isinstance(destination_obj, Case):
             kwargs = {"project_id": destination_obj.project_id}
         log.info(f"Successfully submitted: {destination_obj.short_description(**kwargs)}")
 
@@ -2537,7 +2443,7 @@ class Project(pd.BaseModel):
         self._check_initialized()
         case_or_draft = self._run(
             params=params,
-            target=_case_class(),
+            target=Case,
             draft_name=name,
             run_async=run_async,
             fork_from=fork_from,

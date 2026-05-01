@@ -216,6 +216,25 @@ class MockResponseFolderNestedMetadata(MockResponse):
         return res
 
 
+class MockResponseFolderListV2(MockResponse):
+    """response for GET /v2/folders"""
+
+    @staticmethod
+    def json():
+        with open(os.path.join(here, "data/mock_webapi/folder_at_root_meta_resp.json")) as fh:
+            root_folder = json.load(fh)["data"]
+        with open(os.path.join(here, "data/mock_webapi/folder_nested_meta_resp.json")) as fh:
+            nested_folder = json.load(fh)["data"]
+        return {
+            "data": {
+                "page": 0,
+                "size": 1000,
+                "total": 2,
+                "records": [root_folder, nested_folder],
+            }
+        }
+
+
 class MockResponseFolderMove(MockResponse):
     """response if moving to folder"""
 
@@ -454,12 +473,12 @@ class MockResponseProjectCaseForkSimConfig(MockResponse):
         with open(
             os.path.join(here, "data/mock_webapi/project_case_fork_simulation_json_resp.json")
         ) as fh:
-            simulation_json = json.load(fh)
-        return {"data": {"simulationJson": json.dumps(simulation_json)}}
+            res = json.load(fh)
+        return res
 
 
 class MockResponseDraftInfo(MockResponse):
-    """response for Draft.from_cloud(id="dft-84b20880-937d-4ef2-983b-7f75089f6dd6")'s meta json"""
+    """response for GET /v2/drafts/dft-84b20880-937d-4ef2-983b-7f75089f6dd6"""
 
     @staticmethod
     def json():
@@ -501,7 +520,7 @@ class MockResponseDraftList(MockResponse):
 
 
 class MockResponseDraftSimulation(MockResponse):
-    """response for Draft(id="dft-84b20880-937d-4ef2-983b-7f75089f6dd6").simulation"""
+    """response for GET /v2/drafts/{id}/simulation/file"""
 
     @staticmethod
     def json():
@@ -510,45 +529,6 @@ class MockResponseDraftSimulation(MockResponse):
         ) as fh:
             simulation_json = json.load(fh)
         return {"data": {"simulationJson": json.dumps(simulation_json)}}
-
-
-class MockResponseFolderInfoAtRootV2(MockResponse):
-    """response for GET /v2/folders/folder-3834758b-3d39-4a4a-ad85-710b7652267c"""
-
-    @staticmethod
-    def json():
-        with open(os.path.join(here, "data/mock_webapi/folder_at_root_meta_resp.json")) as fh:
-            res = json.load(fh)
-        return res
-
-
-class MockResponseFolderInfoNestedV2(MockResponse):
-    """response for GET /v2/folders/folder-4da3cdd0-c5b6-4130-9ca1-196237322ab9"""
-
-    @staticmethod
-    def json():
-        with open(os.path.join(here, "data/mock_webapi/folder_nested_meta_resp.json")) as fh:
-            res = json.load(fh)
-        return res
-
-
-class MockResponseFolderListV2(MockResponse):
-    """response for GET /v2/folders"""
-
-    @staticmethod
-    def json():
-        with open(os.path.join(here, "data/mock_webapi/folder_at_root_meta_resp.json")) as fh:
-            root_folder = json.load(fh)["data"]
-        with open(os.path.join(here, "data/mock_webapi/folder_nested_meta_resp.json")) as fh:
-            nested_folder = json.load(fh)["data"]
-        return {
-            "data": {
-                "page": 0,
-                "size": 1000,
-                "total": 2,
-                "records": [root_folder, nested_folder],
-            }
-        }
 
 
 class MockResponseProjectRunCase(MockResponse):
@@ -584,25 +564,26 @@ class MockResponseProjectPath(MockResponse):
 
 
 class MockResponseDraftSubmit(MockResponse):
-    """response for POST /v2/drafts"""
+    """response for Project(id="prj-41d2333b-85fd-4bed-ae13-15dcb6da519e")'s path to Fork Case json"""
 
     def __init__(self, *args, params=None, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self._params = params or {}
+        self._params = params
 
     def json(self):
-        return {
-            "data": {
-                "id": "dft-84b20880-937d-4ef2-983b-7f75089f6dd6",
-                "name": self._params.get("name", "Draft 1"),
-                "projectId": self._params.get("projectId"),
-                "solverVersion": self._params.get("solverVersion"),
-                "sourceItemId": self._params.get("sourceItemId"),
-                "sourceItemType": self._params.get("sourceItemType"),
-                "forkCase": self._params.get("forkCase"),
-                "type": "Draft",
-            }
-        }
+        res = None
+        if self._params["name"] == "VolumeMesh":
+            with open(
+                os.path.join(here, "data/mock_webapi/project_draft_volume_mesh_submit_resp.json")
+            ) as fh:
+                res = json.load(fh)
+
+        if self._params["name"] == "Case":
+            with open(
+                os.path.join(here, "data/mock_webapi/project_draft_case_fork_submit_resp.json")
+            ) as fh:
+                res = json.load(fh)
+        return res
 
 
 class MockResponseDraftVolumeMeshRun(MockResponse):
@@ -617,24 +598,6 @@ class MockResponseDraftVolumeMeshRun(MockResponse):
         return res
 
 
-class MockResponseDraftRunV2(MockResponse):
-    """response for POST /v2/drafts/{id}/run"""
-
-    def __init__(self, *args, params=None, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-        self._params = params or {}
-
-    def json(self):
-        up_to = self._params.get("upTo")
-        if up_to == "SurfaceMesh":
-            return MockResponseProjectSurfaceMesh.json()
-        if up_to == "VolumeMesh":
-            return MockResponseProjectVolumeMesh.json()
-        if up_to == "Case":
-            return MockResponseProjectCase.json()
-        return MockResponseInfoNotFound.json()
-
-
 class MockResponseProjectPatchDraftSubmit(MockResponse):
 
     def __init__(self, *args, params=None, **kwargs) -> None:
@@ -644,24 +607,9 @@ class MockResponseProjectPatchDraftSubmit(MockResponse):
     def json(self):
         with open(os.path.join(here, "data/mock_webapi/project_meta_resp.json")) as fh:
             res = json.load(fh)
-        if "lastOpenItemId" in self._params:
-            res["data"]["lastOpenItemId"] = self._params["lastOpenItemId"]
-        if "lastOpenItemType" in self._params:
-            res["data"]["lastOpenItemType"] = self._params["lastOpenItemType"]
-        if "name" in self._params:
-            res["data"]["name"] = self._params["name"]
+        res["data"]["lastOpenItemId"] = self._params["lastOpenItemId"]
+        res["data"]["lastOpenItemType"] = self._params["lastOpenItemType"]
         return res
-
-
-class MockResponseFolderPatchV2(MockResponse):
-    """response for PATCH /v2/folders/{id}"""
-
-    def __init__(self, *args, params=None, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-        self._params = params or {}
-
-    def json(self):
-        return {"data": dict(self._params)}
 
 
 class MockResponseReportSubmit(MockResponse):
@@ -701,6 +649,8 @@ GET_RESPONSE_MAP = {
     "/account": MockResponseOrganizationAccounts,
     "/folders/items/folder-3834758b-3d39-4a4a-ad85-710b7652267c/metadata": MockResponseFolderRootMetadata,
     "/folders/items/folder-4da3cdd0-c5b6-4130-9ca1-196237322ab9/metadata": MockResponseFolderNestedMetadata,
+    "/v2/folders/folder-3834758b-3d39-4a4a-ad85-710b7652267c": MockResponseFolderRootMetadata,
+    "/v2/folders/folder-4da3cdd0-c5b6-4130-9ca1-196237322ab9": MockResponseFolderNestedMetadata,
     "/v2/projects/prj-41d2333b-85fd-4bed-ae13-15dcb6da519e": MockResponseProject,
     "/v2/projects/prj-41d2333b-85fd-4bed-ae13-15dcb6da519e/dependency": MockResponseProjectEmptyDependency,
     "/v2/projects/prj-99cc6f96-15d3-4170-973c-a0cced6bf36b": MockResponseProjectFromVM,
@@ -724,11 +674,8 @@ GET_RESPONSE_MAP = {
     "/v2/cases/case-84d4604e-f3cd-4c6b-8517-92a80a3346d3/simulation/file": MockResponseProjectCaseForkSimConfig,
     "/v2/drafts/dft-84b20880-937d-4ef2-983b-7f75089f6dd6": MockResponseDraftInfo,
     "/v2/drafts/dft-84b20880-937d-4ef2-983b-7f75089f6dd6/simulation/file": MockResponseDraftSimulation,
-    "/v2/folders/folder-3834758b-3d39-4a4a-ad85-710b7652267c": MockResponseFolderInfoAtRootV2,
-    "/v2/folders/folder-4da3cdd0-c5b6-4130-9ca1-196237322ab9": MockResponseFolderInfoNestedV2,
     "/v2/projects": MockResponseAllProjects,
     "/cases/case-666666666-66666666-666-6666666666666/files": MockResponseCaseFiles,
-    "/cases/case-69b8c249-fce5-412a-9927-6a79049deebb/files": MockResponseCaseFiles,
 }
 
 PUT_RESPONSE_MAP = {
@@ -739,7 +686,6 @@ POST_RESPONSE_MAP = {
     "/volumemeshes/00112233-4455-6677-8899-aabbccddeeff/case": MockResponseCaseSubmit,
     "/volumemeshes/00000000-0000-0000-0000-000000000000/case": MockResponseCaseSubmit,
     "/folders": MockResponseFolderSubmit,
-    "/v2/drafts/dft-84b20880-937d-4ef2-983b-7f75089f6dd6/simulation/file": MockResponse,
     "/v2/drafts/vm-7c3681cd-8c6c-4db7-a62c-1742d825e9d3/simulation/file": MockResponseProjectVolumeMeshSimConfig,
     "/v2/drafts/vm-7c3681cd-8c6c-4db7-a62c-1742d825e9d3/run": MockResponseProjectVolumeMesh,
     "/v2/drafts/case-84d4604e-f3cd-4c6b-8517-92a80a3346d3/simulation/file": MockResponseProjectCaseForkSimConfig,
@@ -777,11 +723,11 @@ def mock_webapi(type, url, params):
         if method.endswith("/path"):
             return MockResponseProjectPath(params=params)
 
-        if method == "/v2/drafts":
-            return MockResponseDraftList(params=params)
-
         if method == "/v2/folders":
             return MockResponseFolderListV2()
+
+        if method == "/v2/drafts":
+            return MockResponseDraftList(params=params)
 
     elif type == "put":
         if method == "/folders/move":
@@ -797,34 +743,12 @@ def mock_webapi(type, url, params):
         if method == "/v2/drafts":
             return MockResponseDraftSubmit(params=params)
 
-        if method.startswith("/v2/drafts/") and method.endswith("/simulation/file"):
-            return MockResponse()
-
-        if method.startswith("/v2/drafts/") and method.endswith("/run"):
-            return MockResponseDraftRunV2(params=params)
-
         if method in POST_RESPONSE_MAP.keys():
             return POST_RESPONSE_MAP[method]()
 
     elif type == "patch":
         if method.startswith("/v2/projects"):
             return MockResponseProjectPatchDraftSubmit(params=params)
-        if method.startswith("/v2/geometries/"):
-            return MockResponse()
-        if method.startswith("/v2/surface-meshes/"):
-            return MockResponse()
-        if method.startswith("/v2/volume-meshes/"):
-            return MockResponse()
-        if method.startswith("/v2/cases/"):
-            return MockResponse()
-        if method.startswith("/v2/drafts/"):
-            return MockResponse()
-        if method.startswith("/v2/folders/"):
-            return MockResponseFolderPatchV2(params=params)
-
-    elif type == "delete":
-        if method.startswith("/v2/projects/"):
-            return MockResponse()
 
     return MockResponseInfoNotFound()
 
@@ -857,9 +781,6 @@ def mock_response(monkeypatch):
 
         def post(self, url, json=None, **kwargs):
             return get_response(url, type="post", params=json, **kwargs)
-
-        def delete(self, url, **kwargs):
-            return get_response(url, type="delete", **kwargs)
 
     monkeypatch.setattr(
         http_util, "api_key_auth", lambda: {"Authorization": None, "Application": "FLOW360"}

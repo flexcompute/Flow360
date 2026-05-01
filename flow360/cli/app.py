@@ -41,22 +41,22 @@ _LAZY_COMMANDS = {
     "geometry": {
         "module": "flow360.cli.assets",
         "attr": "geometry",
-        "help": "Inspect and manage Flow360 geometries.",
+        "help": "Inspect Flow360 geometries.",
     },
     "surface-mesh": {
         "module": "flow360.cli.assets",
         "attr": "surface_mesh",
-        "help": "Inspect and manage Flow360 surface meshes.",
+        "help": "Inspect Flow360 surface meshes.",
     },
     "volume-mesh": {
         "module": "flow360.cli.assets",
         "attr": "volume_mesh",
-        "help": "Inspect and manage Flow360 volume meshes.",
+        "help": "Inspect Flow360 volume meshes.",
     },
     "case": {
         "module": "flow360.cli.assets",
         "attr": "case",
-        "help": "Inspect and manage Flow360 cases.",
+        "help": "Inspect Flow360 cases.",
     },
     "folder": {
         "module": "flow360.cli.folder",

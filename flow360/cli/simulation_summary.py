@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-from collections import OrderedDict
 import copy
 import json
 import logging
-
+from collections import OrderedDict
 
 _PRIVATE_PREFIX = "private_attribute_"
 _ENTITY_COLLECTION_KEYS = ("stored_entities", "selectors")
@@ -51,7 +50,9 @@ def _load_summary_dicts(simulation_json: dict) -> tuple[dict, dict, dict | None]
 
 def _infer_root_item_type(params_dict):
     # pylint: disable=import-outside-toplevel
-    from flow360.component.simulation.services import _parse_root_item_type_from_simulation_json
+    from flow360.component.simulation.services import (
+        _parse_root_item_type_from_simulation_json,
+    )
 
     try:
         return _parse_root_item_type_from_simulation_json(param_as_dict=params_dict)

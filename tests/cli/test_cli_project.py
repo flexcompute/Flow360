@@ -13,7 +13,6 @@ def test_project_group_help_shows_read_commands():
 
     assert result.exit_code == 0
     assert "list" in result.output
-    assert "create" in result.output
     assert "info" in result.output
     assert "tree" in result.output
     assert "path" in result.output
@@ -77,6 +76,25 @@ def test_project_list_supports_search_limit_and_folder_filters(monkeypatch):
     }
 
 
+def test_get_project_records_accepts_none_folder_ids(monkeypatch):
+    from flow360.cli import project as project_cli
+    from flow360.component.simulation.web import project_records
+
+    calls = {}
+
+    def fake_get_project_records(**kwargs):
+        calls.update(kwargs)
+        return [], 0
+
+    monkeypatch.setattr(project_records, "get_project_records", fake_get_project_records)
+
+    records, total = project_cli._get_project_records(folder_ids=None)
+
+    assert records == []
+    assert total == 0
+    assert calls["folder_ids"] is None
+
+
 def test_global_dev_and_profile_apply_to_project_commands(monkeypatch):
     from flow360.cli import project as project_cli
     from flow360.environment import Env
@@ -88,9 +106,7 @@ def test_global_dev_and_profile_apply_to_project_commands(monkeypatch):
     monkeypatch.setattr(
         project_cli,
         "_get_project_info",
-        lambda project_id: seen.update(
-            {"env": Env.current.name, "profile": UserConfig.profile}
-        )
+        lambda project_id: seen.update({"env": Env.current.name, "profile": UserConfig.profile})
         or {
             "id": project_id,
             "name": "Wing Study",
@@ -103,159 +119,19 @@ def test_global_dev_and_profile_apply_to_project_commands(monkeypatch):
 
     result = runner.invoke(
         flow360,
-        ["--dev", "--profile", "alt", "project", "get", "prj-12345678-1234-1234-1234-123456789abc"],
+        [
+            "--dev",
+            "--profile",
+            "alt",
+            "project",
+            "info",
+            "prj-12345678-1234-1234-1234-123456789abc",
+        ],
     )
 
     assert result.exit_code == 0
     assert seen["env"] == "dev"
     assert seen["profile"] == "alt"
-
-
-def test_project_create_from_geometry_calls_sdk(monkeypatch, tmp_path):
-    from flow360.cli import project as project_cli
-
-    runner = CliRunner()
-    calls = {}
-    file_a = tmp_path / "wing.csm"
-    file_b = tmp_path / "wing.step"
-    file_a.write_text("solid")
-    file_b.write_text("solid")
-
-    class FakeProject:
-        id = "prj-123"
-
-        @staticmethod
-        def get_metadata():
-            return SimpleNamespace(
-                name="Wing Project",
-                tags=["demo"],
-                root_item_id="geo-123",
-                root_item_type="Geometry",
-            )
-
-    monkeypatch.setattr(
-        project_cli,
-        "_create_project",
-        lambda **kwargs: calls.update(kwargs) or FakeProject(),
-    )
-
-    result = runner.invoke(
-        flow360,
-        [
-            "project",
-            "create",
-            "--from",
-            "geometry",
-            "--file",
-            str(file_a),
-            "--file",
-            str(file_b),
-            "--name",
-            "Wing Project",
-            "--solver-version",
-            "release-25.9",
-            "--length-unit",
-            "cm",
-            "--description",
-            "demo project",
-            "--tag",
-            "demo",
-            "--folder-id",
-            "folder-123",
-        ],
-    )
-
-    assert result.exit_code == 0
-    payload = json.loads(result.output)
-    assert payload["id"] == "prj-123"
-    assert payload["root_item"]["id"] == "geo-123"
-    assert calls == {
-        "source": "geometry",
-        "files": (str(file_a), str(file_b)),
-        "name": "Wing Project",
-        "solver_version": "release-25.9",
-        "length_unit": "cm",
-        "description": "demo project",
-        "tags": ("demo",),
-        "folder_id": "folder-123",
-        "run_async": False,
-    }
-
-
-def test_project_create_async_outputs_project_id(monkeypatch, tmp_path):
-    from flow360.cli import project as project_cli
-
-    runner = CliRunner()
-    mesh_file = tmp_path / "mesh.cgns"
-    mesh_file.write_text("mesh")
-
-    monkeypatch.setattr(project_cli, "_create_project", lambda **kwargs: "prj-async")
-
-    result = runner.invoke(
-        flow360,
-        [
-            "project",
-            "create",
-            "--from",
-            "surface-mesh",
-            "--file",
-            str(mesh_file),
-            "--async",
-        ],
-    )
-
-    assert result.exit_code == 0
-    assert json.loads(result.output) == {"async": True, "id": "prj-async"}
-
-
-def test_project_create_surface_mesh_requires_single_file(tmp_path):
-    runner = CliRunner()
-    file_a = tmp_path / "mesh-a.cgns"
-    file_b = tmp_path / "mesh-b.cgns"
-    file_a.write_text("mesh")
-    file_b.write_text("mesh")
-
-    result = runner.invoke(
-        flow360,
-        [
-            "project",
-            "create",
-            "--from",
-            "surface-mesh",
-            "--file",
-            str(file_a),
-            "--file",
-            str(file_b),
-        ],
-    )
-
-    assert result.exit_code != 0
-    assert "surface-mesh projects require exactly one --file." in result.output
-
-
-def test_project_create_volume_mesh_requires_single_file(tmp_path):
-    runner = CliRunner()
-    file_a = tmp_path / "mesh-a.cgns"
-    file_b = tmp_path / "mesh-b.cgns"
-    file_a.write_text("mesh")
-    file_b.write_text("mesh")
-
-    result = runner.invoke(
-        flow360,
-        [
-            "project",
-            "create",
-            "--from",
-            "volume-mesh",
-            "--file",
-            str(file_a),
-            "--file",
-            str(file_b),
-        ],
-    )
-
-    assert result.exit_code != 0
-    assert "volume-mesh projects require exactly one --file." in result.output
 
 
 def test_project_list_outputs_records(monkeypatch):
@@ -363,8 +239,7 @@ def test_show_projects_uses_project_list_formatter(monkeypatch):
         project_cli,
         "_get_project_records",
         lambda search=None, limit=25, folder_ids=None, exclude_subfolders=False: (
-            calls.update({"search": search, "limit": limit})
-            or ([record], 1)
+            calls.update({"search": search, "limit": limit}) or ([record], 1)
         ),
     )
     monkeypatch.setattr(
@@ -401,35 +276,6 @@ def test_project_info_outputs_metadata(monkeypatch):
     )
 
     result = runner.invoke(flow360, ["project", "info", "prj-123"])
-
-    assert result.exit_code == 0
-    payload = json.loads(result.output)
-    assert payload["id"] == "prj-123"
-    assert payload["name"] == "Wing Study"
-    assert payload["root_item"]["id"] == "geo-123"
-    assert payload["root_item"]["type"] == "Geometry"
-
-
-def test_project_get_alias_outputs_metadata(monkeypatch):
-    from flow360.cli import project as project_cli
-
-    runner = CliRunner()
-    info = {
-        "id": "prj-123",
-        "name": "Wing Study",
-        "solverVersion": "release-25.2",
-        "tags": ["demo"],
-        "rootItemId": "geo-123",
-        "rootItemType": "Geometry",
-    }
-
-    monkeypatch.setattr(
-        project_cli,
-        "_get_project_info",
-        lambda project_id: info,
-    )
-
-    result = runner.invoke(flow360, ["project", "get", "prj-123"])
 
     assert result.exit_code == 0
     payload = json.loads(result.output)
@@ -574,64 +420,3 @@ def test_project_path_outputs_flat_branch(monkeypatch):
             "updated_at": "2025-01-01T01:00:00Z",
         },
     ]
-
-
-def test_project_rename_calls_webapi(monkeypatch):
-    from flow360.cli import project as project_cli
-
-    runner = CliRunner()
-    calls = {}
-
-    class FakeWebApi:
-        def __init__(self, project_id):
-            calls["project_id"] = project_id
-
-        def patch(self, payload):
-            calls["payload"] = payload
-
-    monkeypatch.setattr(project_cli, "_rename_project", lambda project_id, new_name: None)
-    monkeypatch.setattr(
-        project_cli,
-        "_rename_project",
-        lambda project_id, new_name: calls.update(
-            {
-                "project_id": project_id,
-                "new_name": new_name,
-            }
-        ),
-    )
-
-    result = runner.invoke(flow360, ["project", "rename", "prj-123", "--name", "New Name"])
-
-    assert result.exit_code == 0
-    assert calls["project_id"] == "prj-123"
-    assert calls["new_name"] == "New Name"
-    assert "Renamed project prj-123 to New Name." in result.output
-
-
-def test_project_delete_requires_yes():
-    runner = CliRunner()
-
-    result = runner.invoke(flow360, ["project", "delete", "prj-123"])
-
-    assert result.exit_code != 0
-    assert "Pass --yes to confirm project deletion." in result.output
-
-
-def test_project_delete_calls_webapi(monkeypatch):
-    from flow360.cli import project as project_cli
-
-    runner = CliRunner()
-    calls = {}
-
-    monkeypatch.setattr(
-        project_cli,
-        "_delete_project",
-        lambda project_id: calls.update({"project_id": project_id}),
-    )
-
-    result = runner.invoke(flow360, ["project", "delete", "prj-123", "--yes"])
-
-    assert result.exit_code == 0
-    assert calls["project_id"] == "prj-123"
-    assert "Deleted project prj-123." in result.output

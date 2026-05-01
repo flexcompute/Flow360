@@ -6,6 +6,7 @@ from flow360.user_config import DEFAULT_PROFILE
 
 
 def _env_flag(environment_name: str) -> str:
+    """Return the CLI flag segment for the selected environment."""
     if environment_name == "dev":
         return "--dev"
     if environment_name == "uat":
@@ -16,6 +17,7 @@ def _env_flag(environment_name: str) -> str:
 
 
 def build_login_command(environment_name: str, profile: str) -> str:
+    """Build the recommended interactive login command for a given context."""
     env_flag = _env_flag(environment_name)
     parts = ["flow360", "login"]
     if env_flag:
@@ -26,6 +28,7 @@ def build_login_command(environment_name: str, profile: str) -> str:
 
 
 def build_configure_command(environment_name: str, profile: str) -> str:
+    """Build the recommended manual API key configuration command."""
     env_flag = _env_flag(environment_name)
     parts = ["flow360", "configure"]
     if env_flag:
@@ -37,6 +40,7 @@ def build_configure_command(environment_name: str, profile: str) -> str:
 
 
 def build_missing_api_key_message(environment_name: str, profile: str) -> str:
+    """Build the auth guidance shown when no API key is configured."""
     return "\n".join(
         [
             f"No API key configured for env={environment_name}, profile={profile}.",

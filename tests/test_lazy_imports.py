@@ -103,7 +103,9 @@ def test_asset_group_help_does_not_import_simulation_summary(monkeypatch):
         "flow360.component.simulation.simulation_params",
     )
 
-    from flow360.cli import flow360  # pylint: disable=import-outside-toplevel,import-error
+    from flow360.cli import (
+        flow360,  # pylint: disable=import-outside-toplevel,import-error
+    )
 
     result = CliRunner().invoke(flow360, ["case", "--help"])
 

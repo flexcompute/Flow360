@@ -10,7 +10,6 @@ import click
 
 from flow360.cli.resource_refs import ResourceRefError, parse_resource_ref
 
-
 SUCCESS_STATES = {"completed", "processed"}
 TERMINAL_STATES = SUCCESS_STATES | {"failed", "error", "deleted"}
 

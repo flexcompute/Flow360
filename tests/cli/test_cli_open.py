@@ -1,7 +1,7 @@
 import json
 
-from click.testing import CliRunner
 import pytest
+from click.testing import CliRunner
 
 from flow360.cli import flow360
 from flow360.cli.resource_refs import ResourceRefError
@@ -49,8 +49,8 @@ def test_open_project_prints_url_and_opens_browser(monkeypatch):
 
 
 def test_open_case_prints_url_when_browser_does_not_open(monkeypatch):
-    from flow360.cli import open_resource as open_cli
     from flow360.cli import browser_links
+    from flow360.cli import open_resource as open_cli
 
     runner = CliRunner()
     monkeypatch.setattr(open_cli, "open_browser_url", lambda url: False)
@@ -72,8 +72,8 @@ def test_open_case_prints_url_when_browser_does_not_open(monkeypatch):
 
 
 def test_open_respects_root_environment_selection(monkeypatch):
-    from flow360.cli import open_resource as open_cli
     from flow360.cli import browser_links
+    from flow360.cli import open_resource as open_cli
 
     runner = CliRunner()
     monkeypatch.setattr(open_cli, "open_browser_url", lambda url: True)
@@ -93,12 +93,14 @@ def test_open_respects_root_environment_selection(monkeypatch):
 
 
 def test_open_folder_infers_workspace_route(monkeypatch):
-    from flow360.cli import open_resource as open_cli
     from flow360.cli import browser_links
+    from flow360.cli import open_resource as open_cli
 
     runner = CliRunner()
     monkeypatch.setattr(open_cli, "open_browser_url", lambda url: True)
-    monkeypatch.setattr(browser_links, "_resolve_folder_workspace_id", lambda resource_id: "private-abc")
+    monkeypatch.setattr(
+        browser_links, "_resolve_folder_workspace_id", lambda resource_id: "private-abc"
+    )
 
     result = runner.invoke(flow360, ["open", "folder-123"])
 
@@ -112,8 +114,8 @@ def test_open_folder_infers_workspace_route(monkeypatch):
 
 
 def test_open_shared_root_folder_uses_inferred_workspace_route(monkeypatch):
-    from flow360.cli import open_resource as open_cli
     from flow360.cli import browser_links
+    from flow360.cli import open_resource as open_cli
 
     runner = CliRunner()
     monkeypatch.setattr(open_cli, "open_browser_url", lambda url: False)
@@ -137,7 +139,9 @@ def test_open_shared_root_folder_uses_inferred_workspace_route(monkeypatch):
 def test_resolve_folder_workspace_id_uses_root_folder_workspace_mapping(monkeypatch):
     from flow360.cli import browser_links
 
-    monkeypatch.setattr(browser_links, "_get_root_folder_id", lambda resource_id: "ROOT.FLOW360.123")
+    monkeypatch.setattr(
+        browser_links, "_get_root_folder_id", lambda resource_id: "ROOT.FLOW360.123"
+    )
     monkeypatch.setattr(
         browser_links,
         "_get_workspace_id_for_root_folder",
@@ -150,8 +154,12 @@ def test_resolve_folder_workspace_id_uses_root_folder_workspace_mapping(monkeypa
 def test_resolve_folder_workspace_id_errors_when_workspace_is_missing(monkeypatch):
     from flow360.cli import browser_links
 
-    monkeypatch.setattr(browser_links, "_get_root_folder_id", lambda resource_id: "ROOT.FLOW360.123")
-    monkeypatch.setattr(browser_links, "_get_workspace_id_for_root_folder", lambda root_folder_id: None)
+    monkeypatch.setattr(
+        browser_links, "_get_root_folder_id", lambda resource_id: "ROOT.FLOW360.123"
+    )
+    monkeypatch.setattr(
+        browser_links, "_get_workspace_id_for_root_folder", lambda root_folder_id: None
+    )
 
     with pytest.raises(ResourceRefError) as error:
         browser_links._resolve_folder_workspace_id("folder-123")

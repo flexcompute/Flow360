@@ -6,7 +6,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-
 RESOURCE_PREFIX_MAP = {
     "prj": "Project",
     "geo": "Geometry",

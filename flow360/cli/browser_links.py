@@ -33,7 +33,9 @@ def _get_project_scoped_resource_info(resource_type: str, resource_id: str) -> d
 
     webapi_cls = webapi_by_type.get(resource_type)
     if webapi_cls is None:
-        raise ResourceRefError(f"Opening {resource_type} resources in the browser is not supported.")
+        raise ResourceRefError(
+            f"Opening {resource_type} resources in the browser is not supported."
+        )
 
     return webapi_cls(resource_id).get_info()
 

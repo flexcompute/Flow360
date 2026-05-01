@@ -4,10 +4,7 @@ from __future__ import annotations
 
 import click
 
-from flow360.cli.browser_links import (
-    get_resource_browser_payload,
-    open_browser_url,
-)
+from flow360.cli.browser_links import get_resource_browser_payload, open_browser_url
 from flow360.cli.output import emit_json
 from flow360.cli.resource_refs import ResourceRefError
 
