@@ -218,9 +218,9 @@ from flow360.version_utils import warn_if_prerelease_version as _warn_prerelease
 
 def configure(apikey: str, environment: str = None, profile: str = "default") -> None:
     """Function interface for configuring the API key for flow360."""
-    from flow360.cli.api_set_func import (
-        configure_caller,  # pylint: disable=import-outside-toplevel
-    )
+    # Keep the legacy configure path lazy so `import flow360` does not load Click.
+    # pylint: disable=import-outside-toplevel
+    from flow360.cli.api_set_func import configure_caller
 
     configure_caller(apikey=apikey, environment=environment, profile=profile)
 
