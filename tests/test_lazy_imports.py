@@ -2,6 +2,7 @@ import ast
 import sys
 from pathlib import Path
 
+import pytest
 from click.testing import CliRunner
 
 
@@ -14,11 +15,16 @@ def _load_public_namespace_all():
     namespace_source = Path(__file__).parents[1] / "flow360" / "_public_namespace.py"
     module_ast = ast.parse(namespace_source.read_text(encoding="utf-8"))
     for node in module_ast.body:
-        if not isinstance(node, ast.Assign):
-            continue
-        for target in node.targets:
-            if isinstance(target, ast.Name) and target.id == "__all__":
-                return ast.literal_eval(node.value)
+        if isinstance(node, ast.Assign):
+            for target in node.targets:
+                if isinstance(target, ast.Name) and target.id == "__all__":
+                    return ast.literal_eval(node.value)
+        if (
+            isinstance(node, ast.AnnAssign)
+            and isinstance(node.target, ast.Name)
+            and node.target.id == "__all__"
+        ):
+            return ast.literal_eval(node.value)
     raise AssertionError("flow360._public_namespace must define __all__")
 
 
@@ -122,6 +128,26 @@ def test_flow360_configure_is_exposed_without_importing_public_namespace_module(
     assert "flow360._public_namespace" not in sys.modules
     assert "flow360.cli.app" not in sys.modules
     assert "flow360.cli.api_set_func" not in sys.modules
+
+
+def test_exported_name_loader_fails_when_public_namespace_has_no_all():
+    import flow360  # pylint: disable=import-outside-toplevel,import-error
+
+    module_ast = ast.parse("PUBLIC_NAME = 'Env'")
+
+    with pytest.raises(RuntimeError, match="must define __all__"):
+        flow360._extract_exported_names(module_ast)  # pylint: disable=protected-access
+
+
+def test_exported_name_loader_supports_annotated_all_assignment():
+    import flow360  # pylint: disable=import-outside-toplevel,import-error
+
+    module_ast = ast.parse("__all__: list[str] = ['Env', 'Project']")
+
+    assert flow360._extract_exported_names(module_ast) == [  # pylint: disable=protected-access
+        "Env",
+        "Project",
+    ]
 
 
 def test_flow360_version_check_legacy_lazy_attribute_does_not_import_public_namespace_module(
