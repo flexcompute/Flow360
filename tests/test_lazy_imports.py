@@ -1,4 +1,6 @@
+import ast
 import sys
+from pathlib import Path
 
 import toml
 from click.testing import CliRunner
@@ -7,6 +9,18 @@ from click.testing import CliRunner
 def _unload_modules(monkeypatch, *module_names):
     for module_name in module_names:
         monkeypatch.delitem(sys.modules, module_name, raising=False)
+
+
+def _load_api_all():
+    api_source = Path(__file__).parents[1] / "flow360" / "_api.py"
+    module_ast = ast.parse(api_source.read_text(encoding="utf-8"))
+    for node in module_ast.body:
+        if not isinstance(node, ast.Assign):
+            continue
+        for target in node.targets:
+            if isinstance(target, ast.Name) and target.id == "__all__":
+                return ast.literal_eval(node.value)
+    raise AssertionError("flow360._api must define __all__")
 
 
 def test_import_flow360_does_not_eagerly_import_heavy_dependencies(monkeypatch):
@@ -117,3 +131,26 @@ def test_flow360_version_check_legacy_lazy_attribute_does_not_import_api_module(
 
     assert flow360.version_check.__name__ == "flow360.version_check"
     assert "flow360._api" not in sys.modules
+
+
+def test_flow360_stub_reexports_match_lazy_api_exports():
+    stub_source = Path(__file__).parents[1] / "flow360" / "__init__.pyi"
+    module_ast = ast.parse(stub_source.read_text(encoding="utf-8"))
+
+    stub_api_reexports = set()
+    has_version_check_reexport = False
+    for node in module_ast.body:
+        if not isinstance(node, ast.ImportFrom):
+            continue
+        if node.module == "_api" and node.level == 1:
+            for imported_name in node.names:
+                assert imported_name.asname == imported_name.name
+                stub_api_reexports.add(imported_name.name)
+        if node.module is None and node.level == 1:
+            has_version_check_reexport = any(
+                imported_name.name == imported_name.asname == "version_check"
+                for imported_name in node.names
+            )
+
+    assert stub_api_reexports == set(_load_api_all())
+    assert has_version_check_reexport
