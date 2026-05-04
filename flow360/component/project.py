@@ -65,6 +65,10 @@ from flow360.component.simulation.web.project_records import (
     get_project_records,
     show_projects_with_keyword_filter,
 )
+from flow360.component.simulation.web.project_tree import (
+    build_project_tree,
+    get_project_tree_parent_id,
+)
 from flow360.component.simulation.web.utils import (
     get_project_dependency_resource_metadata,
 )
@@ -503,11 +507,7 @@ class ProjectTree(pd.BaseModel):
     @classmethod
     def _create_new_node(cls, asset_record: dict):
         """Create a new node based on the asset record from API call"""
-        parent_id = (
-            asset_record["parentCaseId"]
-            if asset_record["parentCaseId"]
-            else asset_record["parentId"]
-        )
+        parent_id = get_project_tree_parent_id(asset_record)
         case_mesh_id = asset_record["parentId"] if asset_record["type"] == "Case" else None
 
         new_node = ProjectTreeNode(
@@ -558,17 +558,20 @@ class ProjectTree(pd.BaseModel):
 
     def construct_tree(self, asset_records: List[dict]):
         """Construct the entire project tree"""
-        for asset_record in asset_records:
+
+        def create_node(asset_record):
             new_node = ProjectTree._create_new_node(asset_record)
             self._update_short_id_map(new_node)
-            if new_node.parent_id is None:
-                self.root = new_node
-            self.nodes.update({new_node.asset_id: new_node})
+            return new_node
 
-        for node in self.nodes.values():
-            if node.parent_id and self._has_node(node.parent_id):
-                # pylint: disable=unsubscriptable-object
-                self.nodes[node.parent_id].add_child(node)
+        def add_child(parent, child):
+            parent.add_child(child)
+
+        self.root, self.nodes = build_project_tree(
+            asset_records,
+            create_node=create_node,
+            add_child=add_child,
+        )
         self._update_node_short_id()
         self._update_case_mesh_label()
 

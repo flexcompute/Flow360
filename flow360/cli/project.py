@@ -8,6 +8,10 @@ import click
 
 from flow360.cli.output import emit_json, emit_payload
 from flow360.cli.project_formatters import format_project_list
+from flow360.component.simulation.web.project_tree import (
+    build_project_tree,
+    get_project_tree_parent_id,
+)
 
 
 def _get_project_records(search=None, limit=25, folder_ids=None, exclude_subfolders=False):
@@ -92,51 +96,36 @@ def _serialize_project_statistics(statistics):
     }
 
 
-def _project_tree_parent_id(item):
-    return item.get("parentCaseId") or item.get("parentId")
-
-
 def _project_tree_from_records(records):
-    nodes = {}
-    root_ids = []
-    for item in records:
-        node_id = item["id"]
-        if node_id in nodes:
-            raise click.ClickException(f"Project tree response contains duplicate item: {node_id}")
-        nodes[node_id] = {
-            "id": node_id,
+    def create_node(item):
+        return {
+            "id": item["id"],
             "name": item["name"],
             "type": item["type"],
             "children": [],
         }
 
-    for item in records:
-        node_id = item["id"]
-        parent_id = _project_tree_parent_id(item)
-        if parent_id is None:
-            root_ids.append(node_id)
-            continue
-        if parent_id not in nodes:
-            raise click.ClickException(
-                f"Project tree response references missing parent {parent_id} for {node_id}"
-            )
-        nodes[parent_id]["children"].append(nodes[node_id])
+    def add_child(parent, child):
+        parent["children"].append(child)
 
-    if len(root_ids) != 1:
-        raise click.ClickException(f"Project tree response contains {len(root_ids)} root items")
-    return nodes[root_ids[0]]
+    try:
+        root, _nodes = build_project_tree(records, create_node=create_node, add_child=add_child)
+    except ValueError as err:
+        raise click.ClickException(str(err)) from err
+    return root
+
+
+def _project_item_from_record(item):
+    return {
+        "id": item["id"],
+        "name": item["name"],
+        "type": item["type"],
+        "parent_id": get_project_tree_parent_id(item),
+    }
 
 
 def _project_items_from_records(records):
-    return [
-        {
-            "id": item["id"],
-            "name": item["name"],
-            "type": item["type"],
-            "parent_id": _project_tree_parent_id(item),
-        }
-        for item in records
-    ]
+    return [_project_item_from_record(item) for item in records]
 
 
 def _serialize_project_item(item):
