@@ -494,9 +494,7 @@ class ProjectTree(pd.BaseModel):
 
     def _has_node(self, asset_id: str) -> bool:
         """Use asset_id to check if the asset already exists in the project tree"""
-        if asset_id in self.nodes.keys():
-            return True
-        return False
+        return asset_id in self.nodes
 
     def _get_asset_ids_by_type(
         self, asset_type: str = Literal["Geometry", "SurfaceMesh", "VolumeMesh", "Case"]
