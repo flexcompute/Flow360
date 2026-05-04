@@ -40,11 +40,11 @@ def get_resource_state_for_type(resource_type, resource_id):
     # pylint: disable=import-outside-toplevel
     from flow360.component.simulation.web.asset_webapi import (
         CaseWebApi,
+        DraftWebApi,
         GeometryWebApi,
         SurfaceMeshWebApi,
         VolumeMeshWebApi,
     )
-    from flow360.component.simulation.web.draft_webapi import DraftWebApi
 
     webapi_by_type = {
         "Draft": DraftWebApi,

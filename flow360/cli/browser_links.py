@@ -17,11 +17,11 @@ def _get_project_scoped_resource_info(resource_type: str, resource_id: str) -> d
     # pylint: disable=import-outside-toplevel
     from flow360.component.simulation.web.asset_webapi import (
         CaseWebApi,
+        DraftWebApi,
         GeometryWebApi,
         SurfaceMeshWebApi,
         VolumeMeshWebApi,
     )
-    from flow360.component.simulation.web.draft_webapi import DraftWebApi
 
     webapi_by_type = {
         "Geometry": GeometryWebApi,

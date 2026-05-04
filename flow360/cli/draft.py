@@ -22,21 +22,21 @@ def _require_typed_id(resource_id, expected_type):
 
 def _get_draft_info(draft_id):
     # pylint: disable=import-outside-toplevel
-    from flow360.component.simulation.web.draft_webapi import DraftWebApi
+    from flow360.component.simulation.web.asset_webapi import DraftWebApi
 
     return DraftWebApi(draft_id).get_info()
 
 
 def _list_drafts(project_id):
     # pylint: disable=import-outside-toplevel
-    from flow360.component.simulation.web.draft_webapi import DraftWebApi
+    from flow360.component.simulation.web.asset_webapi import DraftWebApi
 
     return DraftWebApi.list_records(project_id)
 
 
 def _get_draft_simulation_json(draft_id):
     # pylint: disable=import-outside-toplevel
-    from flow360.component.simulation.web.draft_webapi import DraftWebApi
+    from flow360.component.simulation.web.asset_webapi import DraftWebApi
 
     simulation_json = DraftWebApi(draft_id).get_simulation_json()
     if isinstance(simulation_json, str):
