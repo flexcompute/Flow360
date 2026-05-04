@@ -276,13 +276,9 @@ def _build_farfield_zone(volume_zones: list, rotor_disk_names=None):
             for entity in zone.enclosed_entities.stored_entities:
                 if isinstance(entity, CustomVolume):
                     for child in entity.bounding_entities.stored_entities:
-                        patch_names.add(
-                            _translate_enclosed_entity_name(child, rotor_disk_names)
-                        )
+                        patch_names.add(_translate_enclosed_entity_name(child, rotor_disk_names))
                 else:
-                    patch_names.add(
-                        _translate_enclosed_entity_name(entity, rotor_disk_names)
-                    )
+                    patch_names.add(_translate_enclosed_entity_name(entity, rotor_disk_names))
             return {
                 "name": "farfield",
                 "patches": sorted(patch_names),
