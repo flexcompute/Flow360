@@ -261,7 +261,7 @@ def rotation_volume_entity_injector(
     return {}
 
 
-def _build_farfield_zone(volume_zones: list):
+def _build_farfield_zone(volume_zones: list, rotor_disk_names=None):
     """Build the farfield zone dict from enclosed_entities on any farfield type supporting it.
 
     CustomVolume entities are unwrapped into their constituent bounding_entities,
@@ -276,9 +276,9 @@ def _build_farfield_zone(volume_zones: list):
             for entity in zone.enclosed_entities.stored_entities:
                 if isinstance(entity, CustomVolume):
                     for child in entity.bounding_entities.stored_entities:
-                        patch_names.add(_translate_enclosed_entity_name(child))
+                        patch_names.add(_translate_enclosed_entity_name(child, rotor_disk_names))
                 else:
-                    patch_names.add(_translate_enclosed_entity_name(entity))
+                    patch_names.add(_translate_enclosed_entity_name(entity, rotor_disk_names))
             return {
                 "name": "farfield",
                 "patches": sorted(patch_names),
@@ -286,7 +286,7 @@ def _build_farfield_zone(volume_zones: list):
     return None
 
 
-def _get_custom_volumes(volume_zones: list):
+def _get_custom_volumes(volume_zones: list, rotor_disk_names=None):
     """Get translated custom volumes from volume zones."""
 
     custom_volumes = []
@@ -299,7 +299,7 @@ def _get_custom_volumes(volume_zones: list):
                         "name": custom_volume.name,
                         "patches": sorted(
                             [
-                                _translate_enclosed_entity_name(entity)
+                                _translate_enclosed_entity_name(entity, rotor_disk_names)
                                 for entity in custom_volume.bounding_entities.stored_entities
                             ]
                         ),
@@ -318,7 +318,7 @@ def _get_custom_volumes(volume_zones: list):
                         }
                     )
 
-    farfield_zone = _build_farfield_zone(volume_zones)
+    farfield_zone = _build_farfield_zone(volume_zones, rotor_disk_names)
     if farfield_zone is not None:
         custom_volumes.append(farfield_zone)
 
@@ -616,7 +616,7 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
         )
 
     ##::  Step 6: Get custom volumes
-    custom_volumes = _get_custom_volumes(volume_zones)
+    custom_volumes = _get_custom_volumes(volume_zones, rotor_disk_names)
     if custom_volumes:
         translated["zones"] = custom_volumes
 

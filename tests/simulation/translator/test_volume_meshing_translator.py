@@ -2052,3 +2052,58 @@ def test_farfield_enclosed_entities_mixed_direct_and_custom_volume(get_surface_m
         "slidingInterface-ball",
         "slidingInterface-rotor",
     ]
+
+
+def test_custom_volume_with_rotor_disk_cylinder(get_surface_mesh):
+    """A Cylinder used as AxisymmetricRefinement in a CustomVolume should translate to rotorDisk- prefix."""
+    rotor = Cylinder(
+        name="bet_disk",
+        center=(0, 0, 0) * u.m,
+        axis=(0, 0, 1),
+        height=0.1 * u.m,
+        outer_radius=2 * u.m,
+    )
+    with SI_unit_system:
+        cv = CustomVolume(
+            name="rotor_zone",
+            bounding_entities=[Surface(name="wall"), rotor],
+        )
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-4,
+                ),
+                refinements=[
+                    AxisymmetricRefinement(
+                        entities=[rotor],
+                        spacing_axial=0.05 * u.m,
+                        spacing_radial=0.1 * u.m,
+                        spacing_circumferential=0.05 * u.m,
+                    ),
+                ],
+                volume_zones=[
+                    CustomZones(
+                        name="custom",
+                        entities=[cv],
+                    ),
+                    AutomatedFarfield(
+                        enclosed_entities=[Surface(name="outer"), cv],
+                    ),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+        )
+
+    translated = get_volume_meshing_json(params, get_surface_mesh.mesh_unit)
+    assert "zones" in translated
+    zones_by_name = {z["name"]: z for z in translated["zones"]}
+
+    # The custom volume zone should have the rotor disk with correct prefix
+    assert "rotor_zone" in zones_by_name
+    assert "rotorDisk-bet_disk" in zones_by_name["rotor_zone"]["patches"]
+    assert "slidingInterface-bet_disk" not in zones_by_name["rotor_zone"]["patches"]
+
+    # The farfield zone should also use the correct prefix
+    assert "farfield" in zones_by_name
+    assert "rotorDisk-bet_disk" in zones_by_name["farfield"]["patches"]
+    assert "slidingInterface-bet_disk" not in zones_by_name["farfield"]["patches"]
