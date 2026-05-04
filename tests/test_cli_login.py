@@ -112,6 +112,23 @@ def test_configure_stores_dev_apikey(monkeypatch, tmp_path):
     assert config["default"]["dev"]["apikey"] == "dev-key"
 
 
+def test_reload_user_config_preserves_runtime_validation_toggle(monkeypatch, tmp_path):
+    _patch_config_file(monkeypatch, tmp_path)
+
+    previous_do_validation = user_config.UserConfig.do_validation
+    user_config.UserConfig.disable_validation()
+    try:
+        reloaded_config = user_config.reload_user_config()
+
+        assert reloaded_config is user_config.UserConfig
+        assert not user_config.UserConfig.do_validation
+    finally:
+        if previous_do_validation:
+            user_config.UserConfig.enable_validation()
+        else:
+            user_config.UserConfig.disable_validation()
+
+
 def test_login_uses_dev_web_url_with_manual_fallback(monkeypatch, tmp_path):
     _patch_config_file(monkeypatch, tmp_path)
     monkeypatch.setattr(auth, "_find_available_port", lambda host: 8765)

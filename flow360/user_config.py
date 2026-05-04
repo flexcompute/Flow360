@@ -254,11 +254,16 @@ class BasicUserConfig:
 
 def reload_user_config():
     """Reload the shared user-config object in place when possible."""
+    # pylint: disable=protected-access
 
     global UserConfig  # pylint: disable=global-statement
 
     if isinstance(UserConfig, BasicUserConfig):  # pylint: disable=used-before-assignment
+        do_validation = UserConfig.do_validation
+        suppress_submit_warning = UserConfig._suppress_submit_warning
         BasicUserConfig.__init__(UserConfig)
+        UserConfig._do_validation = do_validation
+        UserConfig._suppress_submit_warning = suppress_submit_warning
     else:
         UserConfig = BasicUserConfig()
     return UserConfig
