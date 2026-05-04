@@ -1,3 +1,4 @@
+import builtins
 import json
 from types import SimpleNamespace
 
@@ -289,22 +290,54 @@ def test_project_tree_outputs_nested_tree(monkeypatch):
     from flow360.cli import project as project_cli
 
     runner = CliRunner()
-    leaf = SimpleNamespace(
-        asset_id="case-123",
-        asset_name="Case 1",
-        asset_type="Case",
-        children=[],
-    )
-    root = SimpleNamespace(
-        asset_id="geo-123",
-        asset_name="Wing",
-        asset_type="Geometry",
-        children=[leaf],
-    )
+    original_import = builtins.__import__
+
+    def guard_project_sdk_import(name, *args, **kwargs):
+        if name == "flow360.component.project":
+            raise AssertionError("project tree must not import the full Project SDK")
+        return original_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", guard_project_sdk_import)
     monkeypatch.setattr(
         project_cli,
-        "_get_project_tree",
-        lambda project_id: SimpleNamespace(root=root),
+        "_get_project_tree_records",
+        lambda project_id: [
+            {
+                "id": "geo-123",
+                "name": "Wing",
+                "type": "Geometry",
+                "parentId": None,
+                "parentCaseId": None,
+            },
+            {
+                "id": "sm-123",
+                "name": "Wing surface mesh",
+                "type": "SurfaceMesh",
+                "parentId": "geo-123",
+                "parentCaseId": None,
+            },
+            {
+                "id": "vm-123",
+                "name": "Wing volume mesh",
+                "type": "VolumeMesh",
+                "parentId": "sm-123",
+                "parentCaseId": None,
+            },
+            {
+                "id": "case-123",
+                "name": "Case 1",
+                "type": "Case",
+                "parentId": "vm-123",
+                "parentCaseId": None,
+            },
+            {
+                "id": "case-456",
+                "name": "Case 2",
+                "type": "Case",
+                "parentId": "vm-123",
+                "parentCaseId": "case-123",
+            },
+        ],
     )
 
     result = runner.invoke(flow360, ["project", "tree", "prj-123"])
@@ -312,7 +345,13 @@ def test_project_tree_outputs_nested_tree(monkeypatch):
     assert result.exit_code == 0
     payload = json.loads(result.output)
     assert payload["root"]["id"] == "geo-123"
-    assert payload["root"]["children"][0]["id"] == "case-123"
+    surface_mesh = payload["root"]["children"][0]
+    volume_mesh = surface_mesh["children"][0]
+    case = volume_mesh["children"][0]
+    assert surface_mesh["id"] == "sm-123"
+    assert volume_mesh["id"] == "vm-123"
+    assert case["id"] == "case-123"
+    assert case["children"][0]["id"] == "case-456"
 
 
 def test_project_items_outputs_flat_items(monkeypatch):
