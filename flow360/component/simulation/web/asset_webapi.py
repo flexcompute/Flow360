@@ -24,14 +24,17 @@ class AssetWebApi:
 
     @staticmethod
     def _unwrap_data(response):
+        """Return response data when REST responses use a top-level data envelope."""
         if isinstance(response, dict) and "data" in response:
             return response["data"]
         return response
 
     def get_info(self):
+        """Fetch asset metadata."""
         return self._unwrap_data(self._api.get())
 
     def get_simulation_json(self):
+        """Fetch the asset simulation JSON payload."""
         response = self._unwrap_data(
             self._api.get(method="simulation/file", params={"type": "simulation"})
         )
@@ -41,25 +44,36 @@ class AssetWebApi:
             return json.loads(response)
         return response
 
-    def get(self, path=None, method=None, json=None, params=None):
+    def get(
+        self, path=None, method=None, json=None, params=None
+    ):  # pylint: disable=redefined-outer-name
+        """Delegate specialized GET calls to the underlying REST API."""
         return self._api.get(path=path, method=method, json=json, params=params)
 
 
 class GeometryWebApi(AssetWebApi):
+    """Thin geometry web API wrapper."""
+
     def __init__(self, asset_id: str):
         super().__init__(GeometryInterface, asset_id)
 
 
 class SurfaceMeshWebApi(AssetWebApi):
+    """Thin surface mesh web API wrapper."""
+
     def __init__(self, asset_id: str):
         super().__init__(SurfaceMeshInterfaceV2, asset_id)
 
 
 class VolumeMeshWebApi(AssetWebApi):
+    """Thin volume mesh web API wrapper."""
+
     def __init__(self, asset_id: str):
         super().__init__(VolumeMeshInterfaceV2, asset_id)
 
 
 class CaseWebApi(AssetWebApi):
+    """Thin case web API wrapper."""
+
     def __init__(self, asset_id: str):
         super().__init__(CaseInterfaceV2, asset_id)

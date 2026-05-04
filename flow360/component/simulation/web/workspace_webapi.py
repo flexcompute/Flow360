@@ -11,6 +11,7 @@ class WorkspaceWebApi:
 
     @classmethod
     def list_records(cls):
+        """List available workspace records."""
         api = RestApi(WorkspaceInterface.endpoint)
         response = api.get()
         if isinstance(response, list):
@@ -19,6 +20,7 @@ class WorkspaceWebApi:
 
     @classmethod
     def get_workspace_id_for_root_folder(cls, root_folder_id: str) -> str | None:
+        """Return the workspace ID that owns a root folder, if available."""
         for record in cls.list_records():
             if record.get("rootFolderId") == root_folder_id:
                 return record.get("id")

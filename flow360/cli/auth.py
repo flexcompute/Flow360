@@ -61,7 +61,7 @@ def resolve_target_environment(
     return target, storage_environment
 
 
-def build_login_url(
+def build_login_url(  # pylint: disable=too-many-arguments
     environment,
     callback_url: str,
     state: str,

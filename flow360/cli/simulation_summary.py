@@ -34,8 +34,12 @@ def _load_summary_dicts(simulation_json: dict) -> tuple[dict, dict, dict | None]
     previous_disable_level = logging.root.manager.disable
     logging.disable(logging.WARNING)
     try:
-        params_dict = SimulationParams._sanitize_params_dict(copy.deepcopy(simulation_json))
-        params_dict, _ = SimulationParams._update_param_dict(params_dict)
+        params_dict = SimulationParams._sanitize_params_dict(  # pylint: disable=protected-access
+            copy.deepcopy(simulation_json)
+        )
+        params_dict, _ = SimulationParams._update_param_dict(  # pylint: disable=protected-access
+            params_dict
+        )
         root_item_type = _infer_root_item_type(params_dict)
         unit_system_name = _unit_system_name(params_dict)
         length_unit = _project_length_unit(params_dict)
