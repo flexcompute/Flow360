@@ -4,51 +4,21 @@ Thin asset web API wrappers.
 
 from __future__ import annotations
 
-import json
-
-from flow360.cloud.rest_api import RestApi
 from flow360.component.interfaces import (
     CaseInterfaceV2,
     GeometryInterface,
     SurfaceMeshInterfaceV2,
     VolumeMeshInterfaceV2,
 )
+from flow360.component.simulation.web.resource_webapi import ResourceWebApi
 
 
-class AssetWebApi:
+class AssetWebApi(ResourceWebApi):
     """Thin wrapper around a single asset endpoint."""
 
     def __init__(self, interface, asset_id: str):
         self.asset_id = asset_id
-        self._api = RestApi(interface.endpoint, id=asset_id)
-
-    @staticmethod
-    def _unwrap_data(response):
-        """Return response data when REST responses use a top-level data envelope."""
-        if isinstance(response, dict) and "data" in response:
-            return response["data"]
-        return response
-
-    def get_info(self):
-        """Fetch asset metadata."""
-        return self._unwrap_data(self._api.get())
-
-    def get_simulation_json(self):
-        """Fetch the asset simulation JSON payload."""
-        response = self._unwrap_data(
-            self._api.get(method="simulation/file", params={"type": "simulation"})
-        )
-        if isinstance(response, dict) and "simulationJson" in response:
-            response = response["simulationJson"]
-        if isinstance(response, str):
-            return json.loads(response)
-        return response
-
-    def get(
-        self, path=None, method=None, json=None, params=None
-    ):  # pylint: disable=redefined-outer-name
-        """Delegate specialized GET calls to the underlying REST API."""
-        return self._api.get(path=path, method=method, json=json, params=params)
+        super().__init__(interface, asset_id)
 
 
 class GeometryWebApi(AssetWebApi):
