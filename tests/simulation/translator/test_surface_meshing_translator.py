@@ -1930,8 +1930,8 @@ def test_gai_target_surface_node_count_absent():
     assert "target_surface_node_count" not in translated["meshing"]["defaults"]
 
 
-def test_beta_mesher_target_surface_node_count_set(get_om6wing_geometry):
-    """target_surface_node_count is accepted and translated when using the beta surface mesher."""
+def test_beta_mesher_target_surface_node_count_stripped(get_om6wing_geometry):
+    """target_surface_node_count is stripped with a warning for the beta mesher in 25.9."""
     my_geometry = TempGeometry("om6wing.csm")
     with SI_unit_system:
         params = SimulationParams(
@@ -1952,8 +1952,12 @@ def test_beta_mesher_target_surface_node_count_set(get_om6wing_geometry):
 
     params, err, warnings = validate_params_with_context(params, "Geometry", "SurfaceMesh")
     assert err is None, f"Unexpected validation error: {err}"
+    assert params.meshing.defaults.target_surface_node_count is None
+    assert any(
+        "target_surface_node_count" in w["msg"] for w in warnings
+    ), f"Expected a warning about target_surface_node_count, got: {warnings}"
     translated = get_surface_meshing_json(params, mesh_unit=get_om6wing_geometry.mesh_unit)
-    assert translated["target_surface_node_count"] == 50000
+    assert "target_surface_node_count" not in translated
 
 
 def test_legacy_target_surface_node_count_rejected(get_om6wing_geometry):

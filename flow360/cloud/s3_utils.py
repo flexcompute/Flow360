@@ -8,6 +8,7 @@ import urllib
 from abc import ABCMeta, abstractmethod
 from datetime import datetime
 from enum import Enum
+from typing import Optional
 
 # pylint: disable=unused-import
 from pydantic.v1 import BaseModel, Field
@@ -115,6 +116,8 @@ class _UserCredential(BaseModel):
     secret_access_key: str = Field(alias="secretAccessKey")
     session_token: str = Field(alias="sessionToken")
     region: str
+    endpoint: Optional[str] = None
+    storage_provider: Optional[str] = Field(alias="storageProvider", default=None)
 
 
 class _S3STSToken(BaseModel):
@@ -149,7 +152,13 @@ class _S3STSToken(BaseModel):
 
         # pylint: disable=no-member
         config_kwargs = {"max_pool_connections": MAX_POOL}
-        if Env.current.s3_endpoint_url is not None:
+        if (self.user_credential.storage_provider or "").upper() == "OSS":
+            # OSS does not support aws integrity check
+            config_kwargs["request_checksum_calculation"] = "when_required"
+            config_kwargs["response_checksum_validation"] = "when_required"
+            # OSS recommends virtual-hosted style addressing (http://bucket.host/key).
+            config_kwargs["s3"] = {"addressing_style": "virtual"}
+        elif Env.current.s3_endpoint_url is not None:
             # S3-compatible stores (s3proxy, MinIO) may not implement the
             # checksum headers that newer boto3 versions send by default.
             config_kwargs["request_checksum_calculation"] = "when_required"
@@ -174,6 +183,9 @@ class _S3STSToken(BaseModel):
             "aws_session_token": self.user_credential.session_token,
             "config": config,
         }
+
+        if self.user_credential.endpoint is not None:
+            kwargs["endpoint_url"] = self.user_credential.endpoint
 
         if Env.current.s3_endpoint_url is not None:
             kwargs["endpoint_url"] = Env.current.s3_endpoint_url
