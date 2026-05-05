@@ -28,7 +28,6 @@ from flow360.component.simulation.models.solver_numerics import (
 from flow360.component.simulation.models.surface_models import (
     Inflow,
     Outflow,
-    PorousJump,
     SurfaceModelTypes,
     Wall,
 )
@@ -515,13 +514,11 @@ def _collect_used_boundary_names(params, param_info: ParamsValidationInfo) -> se
     for model in params.models:
         if not isinstance(model, get_args(SurfaceModelTypes)):
             continue
-        if isinstance(model, PorousJump):
-            continue
 
         # pylint: disable=protected-access
         if hasattr(model, "entities"):
             entities = param_info.expand_entity_list(model.entities)
-        elif hasattr(model, "entity_pairs"):  # Periodic BC
+        elif hasattr(model, "entity_pairs"):  # Periodic / PorousJump BC
             entities = [
                 pair for surface_pair in model.entity_pairs.items for pair in surface_pair.pair
             ]

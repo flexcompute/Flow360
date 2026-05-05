@@ -3898,6 +3898,62 @@ def test_incomplete_BC_without_geometry_AI():
     )
 
 
+def test_porousJump_surfaces_count_as_having_boundary_condition():
+    """PorousJump surface_pairs should satisfy the BC-completeness check.
+
+    Regression: previously the validator skipped PorousJump entirely when collecting
+    boundaries that have a BC, causing all surfaces in surface_pairs to be falsely
+    reported as missing a boundary condition.
+    """
+    wall = Surface(name="wall", private_attribute_is_interface=False, private_attribute_id="wall")
+    pj_left = Surface(
+        name="pj_left", private_attribute_is_interface=True, private_attribute_id="pj_left"
+    )
+    pj_right = Surface(
+        name="pj_right", private_attribute_is_interface=True, private_attribute_id="pj_right"
+    )
+
+    asset_cache = AssetCache(
+        project_length_unit="m",
+        project_entity_info=VolumeMeshEntityInfo(boundaries=[wall, pj_left, pj_right]),
+        use_geometry_AI=False,
+    )
+
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-10,
+                    surface_max_edge_length=1e-10,
+                )
+            ),
+            models=[
+                Fluid(),
+                Wall(entities=[wall]),
+                PorousJump(
+                    entity_pairs=[(pj_left, pj_right)],
+                    darcy_coefficient=1e6 / (u.m * u.m),
+                    forchheimer_coefficient=1e3 / u.m,
+                    thickness=0.01 * u.m,
+                ),
+            ],
+            private_attribute_asset_cache=asset_cache,
+        )
+
+    _, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="VolumeMesh",
+        validation_level="All",
+    )
+
+    if errors:
+        for err in errors:
+            assert "do not have a boundary condition" not in err.get(
+                "msg", ""
+            ), f"PorousJump surfaces wrongly reported as missing BC: {err}"
+
+
 def test_automated_farfield_with_custom_zones():
     """AutomatedFarfield + CustomZones: enclosed_entities is required when CustomVolumes exist."""
 
