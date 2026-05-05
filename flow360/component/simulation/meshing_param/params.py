@@ -118,10 +118,8 @@ def _collect_rotation_entity_names(zones, param_info, zone_types):
     return names
 
 
-def _validate_farfield_enclosed_entities(
-    zones, rotation_entity_names, has_custom_volumes, param_info
-):
-    """Validate farfield enclosed_entities: require CustomVolumes and rotation-volume association.
+def _validate_farfield_enclosed_entities_structure(zones, has_custom_volumes):
+    """Validate structural requirements for farfield enclosed_entities.
     Only applies to farfield types that support enclosed_entities (Automated, WindTunnel).
     """
     for zone in zones:
@@ -142,14 +140,25 @@ def _validate_farfield_enclosed_entities(
                 "`CustomVolume` entities are present in volume zones."
             )
 
+
+def _validate_farfield_enclosed_entities_association(zones, allowed_entity_names, param_info):
+    """Validate that Cylinder/AxisymmetricBody/Sphere in farfield enclosed_entities
+    are associated with a RotationVolume, RotationSphere, or AxisymmetricRefinement."""
+    for zone in zones:
+        if not isinstance(zone, _FarfieldAllowingEnclosedEntities):
+            continue
+        if zone.enclosed_entities is None:
+            continue
+
         for entity in param_info.expand_entity_list(zone.enclosed_entities):
             if (
                 isinstance(entity, (Cylinder, AxisymmetricBody, Sphere))
-                and entity.name not in rotation_entity_names
+                and entity.name not in allowed_entity_names
             ):
                 raise ValueError(
                     f"`{type(entity).__name__}` entity `{entity.name}` in "
-                    f"`enclosed_entities` must be associated with a `RotationVolume` or `RotationSphere`."
+                    f"`enclosed_entities` must be associated with a "
+                    f"`RotationVolume`, `RotationSphere`, or `AxisymmetricRefinement`."
                 )
 
 
@@ -164,9 +173,19 @@ def _collect_all_custom_volumes(zones):
     return custom_volumes
 
 
+def _collect_axisymmetric_refinement_entity_names(refinements, param_info):
+    """Collect entity names associated with AxisymmetricRefinement."""
+    names: set[str] = set()
+    for refinement in refinements or []:
+        if isinstance(refinement, AxisymmetricRefinement):
+            for entity in param_info.expand_entity_list(refinement.entities):
+                names.add(entity.name)
+    return names
+
+
 def _validate_custom_volume_rotation_association(custom_volumes, rotation_entity_names, param_info):
     """Validate that Cylinder/AxisymmetricBody/Sphere in CustomVolume.bounding_entities
-    are associated with a RotationVolume or RotationSphere."""
+    are associated with a RotationVolume, RotationSphere, or AxisymmetricRefinement."""
     for cv in custom_volumes:
         for entity in param_info.expand_entity_list(cv.bounding_entities):
             if (
@@ -176,7 +195,7 @@ def _validate_custom_volume_rotation_association(custom_volumes, rotation_entity
                 raise ValueError(
                     f"`{type(entity).__name__}` entity `{entity.name}` in "
                     f"`CustomVolume` `{cv.name}` `bounding_entities` must be "
-                    f"associated with a `RotationVolume` or `RotationSphere`."
+                    f"associated with a `RotationVolume`, `RotationSphere`, or `AxisymmetricRefinement`."
                 )
 
 
@@ -321,31 +340,45 @@ class MeshingParams(Flow360BaseModel):
 
     @contextual_field_validator("volume_zones", mode="after")
     @classmethod
-    def _check_enclosed_entities_rotation_volume_association(
-        cls, v, param_info: ParamsValidationInfo
-    ):
+    def _check_enclosed_entities_farfield_structure(cls, v):
         """
         Ensure that:
         - enclosed_entities on any farfield requires at least one CustomZone
-        - Cylinder, AxisymmetricBody, and Sphere entities in enclosed_entities
-          are associated with a RotationVolume or RotationSphere
+        - CustomZones require enclosed_entities on farfield
         """
         if v is None:
             return v
 
-        rotation_entity_names = _collect_rotation_entity_names(
-            v, param_info, (RotationVolume, RotationCylinder, RotationSphere)
-        )
         custom_volumes = _collect_all_custom_volumes(v)
         has_custom_volumes = len(custom_volumes) > 0
-        _validate_farfield_enclosed_entities(
-            v, rotation_entity_names, has_custom_volumes, param_info
-        )
-        _validate_custom_volume_rotation_association(
-            custom_volumes, rotation_entity_names, param_info
-        )
+        _validate_farfield_enclosed_entities_structure(v, has_custom_volumes)
 
         return v
+
+    @contextual_model_validator(mode="after")
+    def _check_rotation_association(self, param_info: ParamsValidationInfo) -> Self:
+        """Validate that Cylinder/AxisymmetricBody/Sphere in enclosed_entities and
+        CustomVolume.bounding_entities are associated with a RotationVolume,
+        RotationSphere, or AxisymmetricRefinement."""
+        if self.volume_zones is None:
+            return self
+
+        rotation_entity_names = _collect_rotation_entity_names(
+            self.volume_zones, param_info, (RotationVolume, RotationCylinder, RotationSphere)
+        )
+        axisymmetric_entity_names = _collect_axisymmetric_refinement_entity_names(
+            self.refinements, param_info
+        )
+        allowed_names = rotation_entity_names | axisymmetric_entity_names
+
+        _validate_farfield_enclosed_entities_association(
+            self.volume_zones, allowed_names, param_info
+        )
+
+        custom_volumes = _collect_all_custom_volumes(self.volume_zones)
+        _validate_custom_volume_rotation_association(custom_volumes, allowed_names, param_info)
+
+        return self
 
     @contextual_field_validator("volume_zones", mode="after")
     @classmethod
@@ -678,29 +711,44 @@ class ModularMeshingWorkflow(Flow360BaseModel):
 
     @contextual_field_validator("zones", mode="after")
     @classmethod
-    def _check_enclosed_entities_rotation_volume_association(
-        cls, v, param_info: ParamsValidationInfo
-    ):
+    def _check_enclosed_entities_farfield_structure(cls, v):
         """
         Ensure that:
         - enclosed_entities on any farfield requires at least one CustomZone
-        - Cylinder, AxisymmetricBody, and Sphere entities in enclosed_entities
-          are associated with a RotationVolume or RotationSphere
+        - CustomZones require enclosed_entities on farfield
         """
         if v is None:
             return v
 
         has_custom_zones = any(isinstance(zone, CustomZones) for zone in v)
-        rotation_entity_names = _collect_rotation_entity_names(
-            v, param_info, (RotationVolume, RotationSphere)
-        )
-        _validate_farfield_enclosed_entities(v, rotation_entity_names, has_custom_zones, param_info)
-        custom_volumes = _collect_all_custom_volumes(v)
-        _validate_custom_volume_rotation_association(
-            custom_volumes, rotation_entity_names, param_info
-        )
+        _validate_farfield_enclosed_entities_structure(v, has_custom_zones)
 
         return v
+
+    @contextual_model_validator(mode="after")
+    def _check_rotation_association(self, param_info: ParamsValidationInfo) -> Self:
+        """Validate that Cylinder/AxisymmetricBody/Sphere in enclosed_entities and
+        CustomVolume.bounding_entities are associated with a RotationVolume,
+        RotationSphere, or AxisymmetricRefinement."""
+        if self.zones is None:
+            return self
+
+        rotation_entity_names = _collect_rotation_entity_names(
+            self.zones, param_info, (RotationVolume, RotationSphere)
+        )
+        # pylint: disable=no-member
+        refinements = self.volume_meshing.refinements if self.volume_meshing is not None else []
+        axisymmetric_entity_names = _collect_axisymmetric_refinement_entity_names(
+            refinements, param_info
+        )
+        allowed_names = rotation_entity_names | axisymmetric_entity_names
+
+        _validate_farfield_enclosed_entities_association(self.zones, allowed_names, param_info)
+
+        custom_volumes = _collect_all_custom_volumes(self.zones)
+        _validate_custom_volume_rotation_association(custom_volumes, allowed_names, param_info)
+
+        return self
 
     @pd.model_validator(mode="after")
     def _check_snappy_zones(self) -> Self:

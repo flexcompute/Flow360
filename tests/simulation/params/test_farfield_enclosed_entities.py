@@ -114,7 +114,10 @@ def test_enclosed_entities_beta_mesher_positive(farfield_cls):
                     _make_custom_zones_with_volume(),
                     _make_farfield(
                         farfield_cls,
-                        enclosed_entities=[Surface(name="face1"), Surface(name="face2")],
+                        enclosed_entities=[
+                            Surface(name="face1"),
+                            Surface(name="face2"),
+                        ],
                     ),
                 ],
             ),
@@ -280,7 +283,10 @@ def test_enclosed_entities_surfaces_only_no_rotation_volume_needed():
                 volume_zones=[
                     _make_custom_zones_with_volume(),
                     AutomatedFarfield(
-                        enclosed_entities=[Surface(name="face1"), Surface(name="face2")],
+                        enclosed_entities=[
+                            Surface(name="face1"),
+                            Surface(name="face2"),
+                        ],
                     ),
                 ],
             ),
@@ -507,3 +513,135 @@ def test_farfield_custom_volume_no_intersection_negative():
     assert errors is not None
     assert any("shares bounding entities" in e["msg"] for e in errors)
     assert any("shared" in e["msg"] for e in errors)
+
+
+# ---------------------------------------------------------------------------
+# Group: AxisymmetricRefinement association tests
+# ---------------------------------------------------------------------------
+
+
+def _make_bet_cylinder():
+    return Cylinder(
+        name="bet_disk",
+        axis=(0, 0, 1),
+        center=(0, 0, 0) * u.m,
+        height=1 * u.m,
+        inner_radius=0.1 * u.m,
+        outer_radius=2 * u.m,
+    )
+
+
+def test_custom_volume_with_axisymmetric_refinement_passes():
+    """Cylinder in CustomVolume.bounding_entities associated with AxisymmetricRefinement should pass."""
+    from flow360.component.simulation.meshing_param.volume_params import (
+        AxisymmetricRefinement,
+    )
+
+    bet = _make_bet_cylinder()
+    with SI_unit_system:
+        cv = CustomVolume(name="vol1", bounding_entities=[Surface(name="s1"), bet])
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(boundary_layer_first_layer_thickness=1e-4),
+                refinements=[
+                    AxisymmetricRefinement(
+                        entities=[bet],
+                        spacing_axial=0.1 * u.m,
+                        spacing_radial=0.05 * u.m,
+                        spacing_circumferential=0.1 * u.m,
+                    ),
+                ],
+                volume_zones=[
+                    UserDefinedFarfield(),
+                    CustomZones(name="z1", entities=[cv]),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+        )
+    _, errors, _ = _validate(params)
+    assert errors is None
+
+
+def test_custom_volume_without_any_association_fails():
+    """Cylinder in CustomVolume.bounding_entities without any association should fail."""
+    orphan = Cylinder(
+        name="orphan",
+        axis=(0, 0, 1),
+        center=(0, 0, 0) * u.m,
+        height=1 * u.m,
+        outer_radius=1 * u.m,
+    )
+    with SI_unit_system:
+        cv = CustomVolume(name="vol1", bounding_entities=[Surface(name="s1"), orphan])
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(boundary_layer_first_layer_thickness=1e-4),
+                volume_zones=[
+                    UserDefinedFarfield(),
+                    CustomZones(name="z1", entities=[cv]),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+        )
+    _, errors, _ = _validate(params)
+    assert errors is not None
+    assert any("must be associated" in e["msg"] for e in errors)
+
+
+@pytest.mark.parametrize("farfield_cls", FARFIELD_TYPES_WITH_ENCLOSED, ids=lambda c: c.__name__)
+def test_enclosed_entities_axisymmetric_refinement_passes(farfield_cls):
+    """Cylinder in enclosed_entities associated with AxisymmetricRefinement should pass."""
+    from flow360.component.simulation.meshing_param.volume_params import (
+        AxisymmetricRefinement,
+    )
+
+    bet = _make_bet_cylinder()
+    with SI_unit_system:
+        cv = CustomVolume(name="vol1", bounding_entities=[Surface(name="s1")])
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=_make_defaults(farfield_cls),
+                refinements=[
+                    AxisymmetricRefinement(
+                        entities=[bet],
+                        spacing_axial=0.1 * u.m,
+                        spacing_radial=0.05 * u.m,
+                        spacing_circumferential=0.1 * u.m,
+                    ),
+                ],
+                volume_zones=[
+                    CustomZones(name="z1", entities=[cv]),
+                    _make_farfield(farfield_cls, enclosed_entities=[cv, bet]),
+                ],
+            ),
+            private_attribute_asset_cache=_make_asset_cache(farfield_cls),
+        )
+    _, errors, _ = _validate(params)
+    assert errors is None
+
+
+@pytest.mark.parametrize("farfield_cls", FARFIELD_TYPES_WITH_ENCLOSED, ids=lambda c: c.__name__)
+def test_enclosed_entities_unassociated_cylinder_fails(farfield_cls):
+    """Cylinder in enclosed_entities without any association should fail."""
+    orphan = Cylinder(
+        name="orphan",
+        axis=(0, 0, 1),
+        center=(0, 0, 0) * u.m,
+        height=1 * u.m,
+        outer_radius=1 * u.m,
+    )
+    with SI_unit_system:
+        cv = CustomVolume(name="vol1", bounding_entities=[Surface(name="s1")])
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=_make_defaults(farfield_cls),
+                volume_zones=[
+                    CustomZones(name="z1", entities=[cv]),
+                    _make_farfield(farfield_cls, enclosed_entities=[cv, orphan]),
+                ],
+            ),
+            private_attribute_asset_cache=_make_asset_cache(farfield_cls),
+        )
+    _, errors, _ = _validate(params)
+    assert errors is not None
+    assert any("must be associated" in e["msg"] for e in errors)
