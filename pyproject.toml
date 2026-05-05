@@ -1,6 +1,10 @@
 [tool.poetry]
 name = "flow360"
+<<<<<<< HEAD
 version = "v25.10.0b1"
+=======
+version = "v25.9.7"
+>>>>>>> 89a19ccb (Bump 25. 9 version to 25.9.7 (#2035))
 description = "Flow360 Python Client"
 authors = ["Flexcompute <support@flexcompute.com>"]
 
