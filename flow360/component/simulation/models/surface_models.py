@@ -919,9 +919,26 @@ class PorousJump(Flow360BaseModel):
             )
 
         def _is_farfield_custom_volume_interface(surface1, surface2) -> bool:
-            """Check if both surfaces are dual-belonging (farfield enclosed ∩ CustomVolume bounding_entities)."""
+            """Both surfaces are dual-belonging: same single geometry face is referenced
+            in both farfield enclosed_entities and a CustomVolume bounding_entities.
+            The mesher splits that single face into two interface boundaries."""
             dual = param_info.farfield_cv_dual_belonging_ids
             return surface1.private_attribute_id in dual and surface2.private_attribute_id in dual
+
+        def _is_farfield_to_custom_volume_pair(surface1, surface2) -> bool:
+            """Pair spans two overlapping geometry faces: one only in farfield enclosed_entities,
+            the other only in some CustomVolume bounding_entities. The mesher merges them
+            into an interface."""
+            enclosed_ids = set(param_info.farfield_enclosed_entities or {})
+            cv_boundary_ids: set = set()
+            for cv_info in param_info.to_be_generated_custom_volumes.values():
+                cv_boundary_ids |= cv_info.get("boundary_surface_ids", set())
+            s1, s2 = surface1.private_attribute_id, surface2.private_attribute_id
+            s1_farfield_only = s1 in enclosed_ids and s1 not in cv_boundary_ids
+            s1_cv_only = s1 in cv_boundary_ids and s1 not in enclosed_ids
+            s2_farfield_only = s2 in enclosed_ids and s2 not in cv_boundary_ids
+            s2_cv_only = s2 in cv_boundary_ids and s2 not in enclosed_ids
+            return (s1_farfield_only and s2_cv_only) or (s2_farfield_only and s1_cv_only)
 
         for surface_pair in value.items:
             check_deleted_surface_pair(surface_pair, param_info)
@@ -932,8 +949,12 @@ class PorousJump(Flow360BaseModel):
             if _is_cross_custom_volume_interface(surface1, surface2):
                 continue
 
-            # Skip interface check for cross-farfield-CustomVolume bounding_entities
+            # Skip interface check for cross-farfield-CustomVolume bounding_entities (single dual-belonging face)
             if _is_farfield_custom_volume_interface(surface1, surface2):
+                continue
+
+            # Skip interface check for two overlapping faces, one on farfield side and one on CV side
+            if _is_farfield_to_custom_volume_pair(surface1, surface2):
                 continue
 
             for surface in surface_pair.pair:
