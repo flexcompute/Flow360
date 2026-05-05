@@ -28,6 +28,7 @@ from flow360.component.simulation.models.solver_numerics import (
 from flow360.component.simulation.models.surface_models import (
     Inflow,
     Outflow,
+    PorousJump,
     SurfaceModelTypes,
     Wall,
 )
@@ -504,7 +505,9 @@ def _collect_farfield_custom_volume_interfaces(*, param_info: ParamsValidationIn
     }
 
 
-def _collect_used_boundary_names(params, param_info: ParamsValidationInfo) -> set:
+def _collect_used_boundary_names(
+    params, param_info: ParamsValidationInfo, asset_boundaries: set[str]
+) -> set:
     """Collect all boundary names referenced in Surface BC models."""
     if len(params.models) == 1 and isinstance(params.models[0], Fluid):
         raise ValueError("No boundary conditions are defined in the `models` section.")
@@ -526,6 +529,15 @@ def _collect_used_boundary_names(params, param_info: ParamsValidationInfo) -> se
             entities = []
 
         for entity in entities:
+            # PorousJump pairs are zone-to-zone interfaces in volume-mesh
+            # workflows (filtered out of `asset_boundaries` by
+            # VolumeMeshEntityInfo.get_boundaries) and don't need a BC of
+            # their own. In geometry workflows the surfaces are real
+            # boundaries and must be counted to satisfy completeness.
+            # Filter against asset_boundaries to handle both correctly
+            # without flagging true interfaces as unknown.
+            if isinstance(model, PorousJump) and entity.name not in asset_boundaries:
+                continue
             used_boundaries.add(entity.name)
 
     return used_boundaries
@@ -596,7 +608,7 @@ def _check_complete_boundary_condition_and_unknown_surface(
     potential_zone_zone_interfaces |= _collect_farfield_custom_volume_interfaces(
         param_info=param_info
     )
-    used_boundaries = _collect_used_boundary_names(params, param_info)
+    used_boundaries = _collect_used_boundary_names(params, param_info, asset_boundaries)
 
     # Step 4: Validate set differences with policy
     _validate_boundary_completeness(

@@ -3898,12 +3898,14 @@ def test_incomplete_BC_without_geometry_AI():
     )
 
 
-def test_porousJump_surfaces_count_as_having_boundary_condition():
-    """PorousJump surface_pairs should satisfy the BC-completeness check.
+def test_porousJump_volume_mesh_pairs_not_flagged_as_unknown():
+    """In volume-mesh workflows, PorousJump surface_pairs are zone-to-zone interfaces
+    (private_attribute_is_interface=True) and are filtered out of asset_boundaries.
 
-    Regression: previously the validator skipped PorousJump entirely when collecting
-    boundaries that have a BC, causing all surfaces in surface_pairs to be falsely
-    reported as missing a boundary condition.
+    Regression guard: counting these in `used_boundaries` unconditionally would make
+    `unknown_boundaries = used_boundaries - asset_boundaries` flag them as unknown.
+    They should be silently ignored for completeness purposes since they aren't
+    boundaries that need a BC.
     """
     wall = Surface(name="wall", private_attribute_is_interface=False, private_attribute_id="wall")
     pj_left = Surface(
@@ -3947,11 +3949,7 @@ def test_porousJump_surfaces_count_as_having_boundary_condition():
         validation_level="All",
     )
 
-    if errors:
-        for err in errors:
-            assert "do not have a boundary condition" not in err.get(
-                "msg", ""
-            ), f"PorousJump surfaces wrongly reported as missing BC: {err}"
+    assert errors is None or len(errors) == 0, f"Unexpected errors: {errors}"
 
 
 def test_automated_farfield_with_custom_zones():
