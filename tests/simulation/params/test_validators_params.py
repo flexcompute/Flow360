@@ -3898,6 +3898,57 @@ def test_incomplete_BC_without_geometry_AI():
     )
 
 
+def test_collect_used_boundary_names_porous_jump_filtered_against_asset_boundaries(
+    mock_validation_context,
+):
+    """Direct test of `_collect_used_boundary_names` PorousJump branch.
+
+    The fix counts a PorousJump pair surface as "having a BC" iff that surface
+    is in asset_boundaries:
+    - Geometry workflow: pair surfaces are real boundaries (present in
+      asset_boundaries) -> counted, so BC-completeness no longer falsely flags
+      them as missing.
+    - VolumeMesh workflow: pair surfaces are zone-to-zone interfaces and are
+      filtered out of asset_boundaries -> ignored, so they don't get falsely
+      flagged as unknown surfaces.
+    """
+    # pylint: disable=import-outside-toplevel
+    from flow360.component.simulation.validation.validation_simulation_params import (
+        _collect_used_boundary_names,
+    )
+
+    pj_left = Surface(
+        name="pj_left", private_attribute_is_interface=True, private_attribute_id="pj_left"
+    )
+    pj_right = Surface(
+        name="pj_right", private_attribute_is_interface=True, private_attribute_id="pj_right"
+    )
+
+    with mock_validation_context:
+        pj_model = PorousJump(
+            entity_pairs=[(pj_left, pj_right)],
+            darcy_coefficient=1e6 / (u.m * u.m),
+            forchheimer_coefficient=1e3 / u.m,
+            thickness=0.01 * u.m,
+        )
+
+    class _MockParams:
+        models = [Fluid(), pj_model]
+
+    param_info = ParamsValidationInfo({}, [])
+
+    # Geometry workflow: surfaces present in asset_boundaries -> counted
+    used = _collect_used_boundary_names(
+        _MockParams(), param_info, asset_boundaries={"pj_left", "pj_right"}
+    )
+    assert {"pj_left", "pj_right"} <= used
+
+    # VolumeMesh workflow: surfaces filtered out of asset_boundaries -> ignored
+    used = _collect_used_boundary_names(_MockParams(), param_info, asset_boundaries=set())
+    assert "pj_left" not in used
+    assert "pj_right" not in used
+
+
 def test_porousJump_volume_mesh_pairs_not_flagged_as_unknown():
     """In volume-mesh workflows, PorousJump surface_pairs are zone-to-zone interfaces
     (private_attribute_is_interface=True) and are filtered out of asset_boundaries.
