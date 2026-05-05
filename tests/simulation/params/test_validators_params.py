@@ -1250,6 +1250,68 @@ def test_porousJump_farfield_custom_volume_interface(mock_validation_context):
         )
 
 
+def test_porousJump_farfield_to_custom_volume_pair(mock_validation_context):
+    """PorousJump validation passes when pair spans two overlapping faces:
+    one only in farfield enclosed_entities, the other only in some CustomVolume
+    bounding_entities (mesher merges them into an interface)."""
+    surface_farfield_side = Surface(
+        name="Farfield-Side",
+        private_attribute_is_interface=False,
+        private_attribute_id="id-farfield",
+    )
+    surface_cv_side = Surface(
+        name="CV-Side",
+        private_attribute_is_interface=False,
+        private_attribute_id="id-cv",
+    )
+    surface_other_farfield = Surface(
+        name="Other-Farfield",
+        private_attribute_is_interface=False,
+        private_attribute_id="id-farfield-2",
+    )
+
+    # surface_farfield_side: only in farfield enclosed_entities
+    # surface_cv_side: only in CV bounding_entities
+    mock_validation_context.info.farfield_enclosed_entities = {
+        "id-farfield": "Farfield-Side",
+        "id-farfield-2": "Other-Farfield",
+    }
+    mock_validation_context.info.to_be_generated_custom_volumes = {
+        "CustomVolume1": {
+            "enforce_tetrahedra": False,
+            "boundary_surface_ids": {"id-cv"},
+        },
+    }
+
+    # Cross farfield-CV pair (different ids, exclusive sides): should pass
+    with mock_validation_context:
+        PorousJump(
+            entity_pairs=[(surface_farfield_side, surface_cv_side)],
+            darcy_coefficient=1e6 / (u.m * u.m),
+            forchheimer_coefficient=1e3 / u.m,
+            thickness=0.01 * u.m,
+        )
+
+    # Reverse order: should also pass
+    with mock_validation_context:
+        PorousJump(
+            entity_pairs=[(surface_cv_side, surface_farfield_side)],
+            darcy_coefficient=1e6 / (u.m * u.m),
+            forchheimer_coefficient=1e3 / u.m,
+            thickness=0.01 * u.m,
+        )
+
+    # Two farfield-only surfaces: not a valid interface, should fail
+    error_message = "Boundary `Farfield-Side` is not an interface"
+    with mock_validation_context, pytest.raises(ValueError, match=re.escape(error_message)):
+        PorousJump(
+            entity_pairs=[(surface_farfield_side, surface_other_farfield)],
+            darcy_coefficient=1e6 / (u.m * u.m),
+            forchheimer_coefficient=1e3 / u.m,
+            thickness=0.01 * u.m,
+        )
+
+
 def test_duplicate_entities_in_models():
     entity_generic_volume = GenericVolume(name="Duplicate Volume")
     entity_surface = Surface(name="Duplicate Surface")
