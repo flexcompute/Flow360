@@ -157,7 +157,12 @@ def get_test_param():
                 name="cone_mm_curve",
                 axis=(1, 0, 1),
                 center=(0, 1, 0) * u.cm,
-                profile_curve=[(-1, 0) * u.mm, (-1, 1) * u.mm, (1, 2) * u.mm, (1, 0) * u.mm],
+                profile_curve=[
+                    (-1, 0) * u.mm,
+                    (-1, 1) * u.mm,
+                    (1, 2) * u.mm,
+                    (1, 0) * u.mm,
+                ],
             )
 
             porous_medium = Box.from_principal_axes(
@@ -276,7 +281,12 @@ def get_test_param():
                     spacing_axial=40 * u.cm,
                     spacing_radial=0.4,
                     spacing_circumferential=40 * u.cm,
-                    enclosed_entities=[mid_cylinder, rotor_disk_cylinder, cylinder_2, cylinder_3],
+                    enclosed_entities=[
+                        mid_cylinder,
+                        rotor_disk_cylinder,
+                        cylinder_2,
+                        cylinder_3,
+                    ],
                 )
             )
             if beta_mesher:
@@ -405,7 +415,12 @@ def get_test_param_modular():
             center=(0, 5, 0),
         )
         cylinder_3 = Cylinder(
-            name="3", inner_radius=1.5, outer_radius=2, height=2, axis=(0, 1, 0), center=(0, -5, 0)
+            name="3",
+            inner_radius=1.5,
+            outer_radius=2,
+            height=2,
+            axis=(0, 1, 0),
+            center=(0, -5, 0),
         )
         cylinder_outer = Cylinder(
             name="outer",
@@ -425,7 +440,12 @@ def get_test_param_modular():
             name="cone_mm_curve",
             axis=(1, 0, 1),
             center=(0, 1, 0) * u.cm,
-            profile_curve=[(-1, 0) * u.mm, (-1, 1) * u.mm, (1, 2) * u.mm, (1, 0) * u.mm],
+            profile_curve=[
+                (-1, 0) * u.mm,
+                (-1, 1) * u.mm,
+                (1, 2) * u.mm,
+                (1, 0) * u.mm,
+            ],
         )
 
         porous_medium = Box.from_principal_axes(
@@ -848,7 +868,10 @@ def test_user_defined_farfield_ghost_symmetry_requires_gai_and_beta(use_gai, use
             "meshing": {
                 "type_name": "MeshingParams",
                 "volume_zones": [
-                    {"type": "UserDefinedFarfield", "domain_type": "half_body_positive_y"}
+                    {
+                        "type": "UserDefinedFarfield",
+                        "domain_type": "half_body_positive_y",
+                    }
                 ],
             },
             "private_attribute_asset_cache": {
@@ -878,7 +901,10 @@ def test_user_defined_farfield_ghost_symmetry_passes_with_gai_and_beta():
             "meshing": {
                 "type_name": "MeshingParams",
                 "volume_zones": [
-                    {"type": "UserDefinedFarfield", "domain_type": "half_body_positive_y"}
+                    {
+                        "type": "UserDefinedFarfield",
+                        "domain_type": "half_body_positive_y",
+                    }
                 ],
             },
             "private_attribute_asset_cache": {
@@ -1145,7 +1171,8 @@ def test_farfield_relative_size():
         param = SimulationParams(
             meshing=MeshingParams(
                 defaults=MeshingDefaults(
-                    boundary_layer_first_layer_thickness=1e-3, boundary_layer_growth_rate=1.25
+                    boundary_layer_first_layer_thickness=1e-3,
+                    boundary_layer_growth_rate=1.25,
                 ),
                 volume_zones=[AutomatedFarfield(method="quasi-3d", relative_size=100.0)],
             )
@@ -1328,7 +1355,12 @@ def test_uniform_refinement_box_cylinder_axisymm_body(get_surface_mesh):
     assert axisymm_ref["type"] == "Axisymmetric"
     assert axisymm_ref["axisOfRotation"] == [0.0, 1.0, 0.0]
     assert axisymm_ref["center"] == [5.0, 6.0, 7.0]
-    assert axisymm_ref["profileCurve"] == [[0.0, 0.0], [0.0, 0.5], [1.0, 1.0], [1.0, 0.0]]
+    assert axisymm_ref["profileCurve"] == [
+        [0.0, 0.0],
+        [0.0, 0.5],
+        [1.0, 1.0],
+        [1.0, 0.0],
+    ]
     assert axisymm_ref["spacing"] == 0.1
 
 
@@ -1406,7 +1438,9 @@ def test_edge_split_layers_explicit_translation(get_surface_mesh, edge_split_lay
     assert translated["volume"]["numEdgeSplitLayers"] == expected
 
 
-def test_windtunnel_ghost_surface_supported_in_volume_face_refinements(get_surface_mesh):
+def test_windtunnel_ghost_surface_supported_in_volume_face_refinements(
+    get_surface_mesh,
+):
     with SI_unit_system:
         wind_tunnel = WindTunnelFarfield()
         param = SimulationParams(
@@ -1480,7 +1514,8 @@ def test_sphere_rotation_volume_translator(get_surface_mesh):
 
     # Find the inner sphere interface
     inner_interface = next(
-        (si for si in translated["slidingInterfaces"] if si["name"] == "sphereInterface"), None
+        (si for si in translated["slidingInterfaces"] if si["name"] == "sphereInterface"),
+        None,
     )
     assert inner_interface is not None
     assert inner_interface["type"] == "Sphere"
@@ -1492,7 +1527,8 @@ def test_sphere_rotation_volume_translator(get_surface_mesh):
 
     # Find the outer sphere interface
     outer_interface = next(
-        (si for si in translated["slidingInterfaces"] if si["name"] == "outerSphere"), None
+        (si for si in translated["slidingInterfaces"] if si["name"] == "outerSphere"),
+        None,
     )
     assert outer_interface is not None
     assert outer_interface["type"] == "Sphere"
@@ -1628,7 +1664,10 @@ def test_farfield_enclosed_entities_with_cylinder(get_surface_mesh):
     assert "zones" in translated
     zones_by_name = {z["name"]: z for z in translated["zones"]}
     assert "farfield" in zones_by_name
-    assert sorted(zones_by_name["farfield"]["patches"]) == ["face1", "slidingInterface-rotor"]
+    assert sorted(zones_by_name["farfield"]["patches"]) == [
+        "face1",
+        "slidingInterface-rotor",
+    ]
 
 
 class TestTranslateEnclosedEntityName:
@@ -1649,7 +1688,12 @@ class TestTranslateEnclosedEntityName:
                 name="cone",
                 center=(0, 0, 0) * u.m,
                 axis=(1, 0, 0),
-                profile_curve=[(-1, 0) * u.m, (-1, 1) * u.m, (1, 1) * u.m, (1, 0) * u.m],
+                profile_curve=[
+                    (-1, 0) * u.m,
+                    (-1, 1) * u.m,
+                    (1, 1) * u.m,
+                    (1, 0) * u.m,
+                ],
             )
             self.sphere = Sphere(
                 name="sph",
@@ -1747,7 +1791,10 @@ def test_farfield_enclosed_entities_with_sphere(get_surface_mesh):
     assert "zones" in translated
     zones_by_name = {z["name"]: z for z in translated["zones"]}
     assert "farfield" in zones_by_name
-    assert sorted(zones_by_name["farfield"]["patches"]) == ["face1", "slidingInterface-sph"]
+    assert sorted(zones_by_name["farfield"]["patches"]) == [
+        "face1",
+        "slidingInterface-sph",
+    ]
 
 
 def test_farfield_enclosed_entities_with_axisymmetric_body(get_surface_mesh):
@@ -1793,7 +1840,10 @@ def test_farfield_enclosed_entities_with_axisymmetric_body(get_surface_mesh):
     assert "zones" in translated
     zones_by_name = {z["name"]: z for z in translated["zones"]}
     assert "farfield" in zones_by_name
-    assert sorted(zones_by_name["farfield"]["patches"]) == ["face1", "slidingInterface-cone"]
+    assert sorted(zones_by_name["farfield"]["patches"]) == [
+        "face1",
+        "slidingInterface-cone",
+    ]
 
 
 def test_farfield_enclosed_entities_unwraps_custom_volume(get_surface_mesh):
@@ -1832,7 +1882,9 @@ def test_farfield_enclosed_entities_unwraps_custom_volume(get_surface_mesh):
     ]
 
 
-def test_farfield_enclosed_entities_unwraps_custom_volume_with_cylinder(get_surface_mesh):
+def test_farfield_enclosed_entities_unwraps_custom_volume_with_cylinder(
+    get_surface_mesh,
+):
     """CustomVolume containing a Cylinder should unwrap with slidingInterface- prefix."""
     rotor = Cylinder(
         name="rotor",
@@ -2107,3 +2159,83 @@ def test_custom_volume_with_rotor_disk_cylinder(get_surface_mesh):
     assert "farfield" in zones_by_name
     assert "rotorDisk-bet_disk" in zones_by_name["farfield"]["patches"]
     assert "slidingInterface-bet_disk" not in zones_by_name["farfield"]["patches"]
+
+
+def test_custom_volume_with_rotor_disk_user_defined_farfield(get_surface_mesh):
+    """Replicates real user scenario: BET disk cylinder in a CustomVolume with UserDefinedFarfield."""
+    bet_cylinder = Cylinder(
+        name="bet_cylinder_Disk",
+        axis=(-0.13052611474477474, 0.0, 0.991444871573621),
+        center=(-0.8368284, 0.0, 1.4052296) * u.m,
+        height=0.64008 * u.m,
+        inner_radius=0.50673 * u.m,
+        outer_radius=6.4008 * u.m,
+    )
+    wake_box = Cylinder(
+        name="wake_box",
+        axis=(-0.13052611474477474, 0.0, 0.991444871573621),
+        center=(-0.289, 0.0, -2.909) * u.m,
+        height=8.0 * u.m,
+        outer_radius=8.0 * u.m,
+    )
+    with SI_unit_system:
+        volume1 = CustomVolume(
+            name="Volume1",
+            bounding_entities=[
+                Surface(name="blk1-wall"),
+                Surface(name="blk1-farfield"),
+                bet_cylinder,
+            ],
+        )
+        volume2 = CustomVolume(
+            name="Volume2",
+            bounding_entities=[
+                Surface(name="blk2-wall"),
+                Surface(name="blk2-outlet"),
+            ],
+        )
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=0.1e-3,
+                ),
+                refinements=[
+                    AxisymmetricRefinement(
+                        name="Axisymmetric refinement",
+                        entities=[bet_cylinder],
+                        spacing_axial=0.032004 * u.m,
+                        spacing_radial=0.011853 * u.m,
+                        spacing_circumferential=0.074477 * u.m,
+                    ),
+                    UniformRefinement(
+                        name="Uniform refinement",
+                        entities=[wake_box],
+                        spacing=1 * u.m,
+                    ),
+                ],
+                volume_zones=[
+                    UserDefinedFarfield(),
+                    CustomZones(name="VolumeZone1", entities=[volume1]),
+                    CustomZones(name="VolumeZone2", entities=[volume2]),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+        )
+
+    translated = get_volume_meshing_json(params, get_surface_mesh.mesh_unit)
+    assert "zones" in translated
+    zones_by_name = {z["name"]: z for z in translated["zones"]}
+
+    # Volume1 should contain the rotor disk with correct prefix
+    assert "Volume1" in zones_by_name
+    assert "rotorDisk-bet_cylinder_Disk" in zones_by_name["Volume1"]["patches"]
+    assert "slidingInterface-bet_cylinder_Disk" not in zones_by_name["Volume1"]["patches"]
+
+    # Volume2 should not contain the rotor disk
+    assert "Volume2" in zones_by_name
+    assert "rotorDisk-bet_cylinder_Disk" not in zones_by_name["Volume2"]["patches"]
+
+    # Rotor disk should be in the translated rotorDisks section
+    assert "rotorDisks" in translated
+    rotor_names = [rd["name"] for rd in translated["rotorDisks"]]
+    assert "bet_cylinder_Disk" in rotor_names
