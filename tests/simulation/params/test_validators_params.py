@@ -639,6 +639,388 @@ def test_incomplete_BC_surface_mesh():
     )
 
 
+<<<<<<< HEAD
+=======
+def test_porousJump_entities_is_interface(mock_validation_context):
+    surface_1_is_interface = Surface(name="Surface-1", private_attribute_is_interface=True)
+    surface_2_is_not_interface = Surface(name="Surface-2", private_attribute_is_interface=False)
+    surface_3_is_interface = Surface(name="Surface-3", private_attribute_is_interface=True)
+    error_message = "Boundary `Surface-2` is not an interface"
+    with mock_validation_context, pytest.raises(ValueError, match=re.escape(error_message)):
+        PorousJump(
+            entity_pairs=[(surface_1_is_interface, surface_2_is_not_interface)],
+            darcy_coefficient=1e6 / (u.m * u.m),
+            forchheimer_coefficient=1e3 / u.m,
+            thickness=0.01 * u.m,
+        )
+
+    with mock_validation_context, pytest.raises(ValueError, match=re.escape(error_message)):
+        PorousJump(
+            entity_pairs=[(surface_2_is_not_interface, surface_1_is_interface)],
+            darcy_coefficient=1e6,
+            forchheimer_coefficient=1e3,
+            thickness=0.01,
+        )
+
+    PorousJump(
+        entity_pairs=[(surface_1_is_interface, surface_3_is_interface)],
+        darcy_coefficient=1e6 / (u.m * u.m),
+        forchheimer_coefficient=1e3 / u.m,
+        thickness=0.01 * u.m,
+    )
+
+
+def test_porousJump_cross_custom_volume_interface(mock_validation_context):
+    """Test that PorousJump allows non-interface surfaces when they belong to different CustomVolumes."""
+    # Create surfaces that are NOT interfaces, with explicit IDs for tracking
+    surface_cv1 = Surface(
+        name="Surface-CV1", private_attribute_is_interface=False, private_attribute_id="cv1-surf-1"
+    )
+    surface_cv2 = Surface(
+        name="Surface-CV2", private_attribute_is_interface=False, private_attribute_id="cv2-surf-1"
+    )
+    surface_cv1_another = Surface(
+        name="Surface-CV1-Another",
+        private_attribute_is_interface=False,
+        private_attribute_id="cv1-surf-2",
+    )
+
+    # Set up to_be_generated_custom_volumes with two CustomVolumes having different boundaries
+    mock_validation_context.info.to_be_generated_custom_volumes = {
+        "CustomVolume1": {
+            "enforce_tetrahedra": False,
+            "boundary_surface_ids": {"cv1-surf-1", "cv1-surf-2"},
+        },
+        "CustomVolume2": {
+            "enforce_tetrahedra": False,
+            "boundary_surface_ids": {"cv2-surf-1"},
+        },
+    }
+
+    # Cross-CustomVolume case: surfaces from different CustomVolumes should pass (no error)
+    with mock_validation_context:
+        PorousJump(
+            entity_pairs=[(surface_cv1, surface_cv2)],
+            darcy_coefficient=1e6 / (u.m * u.m),
+            forchheimer_coefficient=1e3 / u.m,
+            thickness=0.01 * u.m,
+        )
+
+    # Same-CustomVolume case: surfaces from the same CustomVolume should still fail
+    error_message = "Boundary `Surface-CV1` is not an interface"
+    with mock_validation_context, pytest.raises(ValueError, match=re.escape(error_message)):
+        PorousJump(
+            entity_pairs=[(surface_cv1, surface_cv1_another)],
+            darcy_coefficient=1e6 / (u.m * u.m),
+            forchheimer_coefficient=1e3 / u.m,
+            thickness=0.01 * u.m,
+        )
+
+
+def test_get_farfield_enclosed_entities_expands_selectors():
+    """_get_farfield_enclosed_entities must expand selectors, not just read stored_entities."""
+    from unittest.mock import patch
+
+    param_info = ParamsValidationInfo({}, [])
+
+    surface_stored = Surface(name="StoredSurface", private_attribute_id="id-stored")
+    surface_from_selector = Surface(name="SelectorSurface", private_attribute_id="id-sel")
+
+    param_as_dict = {
+        "meshing": {
+            "volume_zones": [
+                {
+                    "type": "AutomatedFarfield",
+                    "enclosed_entities": {
+                        "stored_entities": [surface_stored],
+                        "selectors": ["some-selector-token"],
+                    },
+                }
+            ]
+        }
+    }
+
+    # Mock expand_entity_list on the class to return both stored and selector-resolved surfaces
+    with patch.object(
+        ParamsValidationInfo,
+        "expand_entity_list",
+        return_value=[surface_stored, surface_from_selector],
+    ):
+        result = param_info._get_farfield_enclosed_entities(param_as_dict)
+
+    assert result == {"id-stored": "StoredSurface", "id-sel": "SelectorSurface"}
+
+
+def test_collect_farfield_custom_volume_interfaces():
+    """AutomatedFarfield + enclosed_entities + CustomZones: dual-belonging faces are recognized as interfaces."""
+    from flow360.component.simulation.validation.validation_simulation_params import (
+        _collect_farfield_custom_volume_interfaces,
+    )
+
+    param_info = ParamsValidationInfo({}, [])
+
+    # Set up farfield enclosed surfaces: face1 and face2 are on the farfield boundary
+    param_info.farfield_enclosed_entities = {
+        "id-face1": "face1",
+        "id-face2": "face2",
+        "id-face3": "face3",
+    }
+    # Set up CustomVolume whose boundaries overlap with enclosed_entities
+    param_info.to_be_generated_custom_volumes = {
+        "CustomVolume1": {
+            "enforce_tetrahedra": False,
+            "boundary_surface_ids": {"id-face1", "id-face2"},
+        },
+    }
+
+    # face1 and face2 are dual-belonging (enclosed + CV boundary) -> should be interfaces
+    result = _collect_farfield_custom_volume_interfaces(param_info=param_info)
+    assert result == {"face1", "face2"}
+    # face3 is only in enclosed_entities, not in any CV boundary -> should NOT be an interface
+    assert "face3" not in result
+
+
+def test_collect_farfield_custom_volume_interfaces_empty_enclosed():
+    """AutomatedFarfield without enclosed_entities: returns empty set (existing behavior unchanged)."""
+    from flow360.component.simulation.validation.validation_simulation_params import (
+        _collect_farfield_custom_volume_interfaces,
+    )
+
+    param_info = ParamsValidationInfo({}, [])
+
+    # No farfield enclosed surfaces
+    param_info.farfield_enclosed_entities = {}
+    param_info.to_be_generated_custom_volumes = {
+        "CustomVolume1": {
+            "enforce_tetrahedra": False,
+            "boundary_surface_ids": {"some-id"},
+        },
+    }
+
+    result = _collect_farfield_custom_volume_interfaces(param_info=param_info)
+    assert result == set()
+
+
+def test_porousJump_farfield_custom_volume_interface(mock_validation_context):
+    """PorousJump validation passes for cross-farfield-customvolume interface pairs."""
+    # Surfaces that are NOT interfaces in the traditional sense (geometry-stage)
+    surface_a = Surface(
+        name="Surface-A", private_attribute_is_interface=False, private_attribute_id="id-a"
+    )
+    surface_b = Surface(
+        name="Surface-B", private_attribute_is_interface=False, private_attribute_id="id-b"
+    )
+    surface_non_dual = Surface(
+        name="Surface-Non-Dual", private_attribute_is_interface=False, private_attribute_id="id-non"
+    )
+
+    # Both surfaces are dual-belonging: in farfield enclosed_entities AND CustomVolume boundaries
+    mock_validation_context.info.farfield_enclosed_entities = {
+        "id-a": "Surface-A",
+        "id-b": "Surface-B",
+        "id-non": "Surface-Non-Dual",
+    }
+    mock_validation_context.info.to_be_generated_custom_volumes = {
+        "CustomVolume1": {
+            "enforce_tetrahedra": False,
+            "boundary_surface_ids": {"id-a", "id-b"},
+        },
+    }
+
+    # Dual-belonging pair: should pass (no interface error)
+    with mock_validation_context:
+        PorousJump(
+            entity_pairs=[(surface_a, surface_b)],
+            darcy_coefficient=1e6 / (u.m * u.m),
+            forchheimer_coefficient=1e3 / u.m,
+            thickness=0.01 * u.m,
+        )
+
+    # Non-dual-belonging pair: surface_non_dual is in enclosed but NOT in any CV boundary.
+    # surface_a is iterated first and also fails the is_interface check.
+    error_message = "Boundary `Surface-A` is not an interface"
+    with mock_validation_context, pytest.raises(ValueError, match=re.escape(error_message)):
+        PorousJump(
+            entity_pairs=[(surface_a, surface_non_dual)],
+            darcy_coefficient=1e6 / (u.m * u.m),
+            forchheimer_coefficient=1e3 / u.m,
+            thickness=0.01 * u.m,
+        )
+
+
+def test_porousJump_farfield_to_custom_volume_pair(mock_validation_context):
+    """PorousJump validation passes when pair spans two overlapping faces:
+    one only in farfield enclosed_entities, the other only in some CustomVolume
+    bounding_entities (mesher merges them into an interface)."""
+    surface_farfield_side = Surface(
+        name="Farfield-Side",
+        private_attribute_is_interface=False,
+        private_attribute_id="id-farfield",
+    )
+    surface_cv_side = Surface(
+        name="CV-Side",
+        private_attribute_is_interface=False,
+        private_attribute_id="id-cv",
+    )
+    surface_other_farfield = Surface(
+        name="Other-Farfield",
+        private_attribute_is_interface=False,
+        private_attribute_id="id-farfield-2",
+    )
+
+    # surface_farfield_side: only in farfield enclosed_entities
+    # surface_cv_side: only in CV bounding_entities
+    mock_validation_context.info.farfield_enclosed_entities = {
+        "id-farfield": "Farfield-Side",
+        "id-farfield-2": "Other-Farfield",
+    }
+    mock_validation_context.info.to_be_generated_custom_volumes = {
+        "CustomVolume1": {
+            "enforce_tetrahedra": False,
+            "boundary_surface_ids": {"id-cv"},
+        },
+    }
+
+    # Cross farfield-CV pair (different ids, exclusive sides): should pass
+    with mock_validation_context:
+        PorousJump(
+            entity_pairs=[(surface_farfield_side, surface_cv_side)],
+            darcy_coefficient=1e6 / (u.m * u.m),
+            forchheimer_coefficient=1e3 / u.m,
+            thickness=0.01 * u.m,
+        )
+
+    # Reverse order: should also pass
+    with mock_validation_context:
+        PorousJump(
+            entity_pairs=[(surface_cv_side, surface_farfield_side)],
+            darcy_coefficient=1e6 / (u.m * u.m),
+            forchheimer_coefficient=1e3 / u.m,
+            thickness=0.01 * u.m,
+        )
+
+    # Two farfield-only surfaces: not a valid interface, should fail
+    error_message = "Boundary `Farfield-Side` is not an interface"
+    with mock_validation_context, pytest.raises(ValueError, match=re.escape(error_message)):
+        PorousJump(
+            entity_pairs=[(surface_farfield_side, surface_other_farfield)],
+            darcy_coefficient=1e6 / (u.m * u.m),
+            forchheimer_coefficient=1e3 / u.m,
+            thickness=0.01 * u.m,
+        )
+
+
+def test_duplicate_entities_in_models():
+    entity_generic_volume = GenericVolume(name="Duplicate Volume")
+    entity_surface = Surface(name="Duplicate Surface")
+    entity_cylinder = Cylinder(
+        name="Duplicate Cylinder",
+        outer_radius=1 * u.cm,
+        height=1 * u.cm,
+        center=(0, 0, 0) * u.cm,
+        axis=(0, 0, 1),
+        private_attribute_id="1",
+    )
+    entity_box = Box(
+        name="Box",
+        axis_of_rotation=(1, 0, 0),
+        angle_of_rotation=45 * u.deg,
+        center=(1, 1, 1) * u.m,
+        size=(0.2, 0.3, 2) * u.m,
+        private_attribute_id="2",
+    )
+    entity_box_same_name = Box(
+        name="Box",
+        axis_of_rotation=(1, 0, 0),
+        angle_of_rotation=45 * u.deg,
+        center=(1, 1, 1) * u.m,
+        size=(0.2, 0.3, 2) * u.m,
+        private_attribute_id="3",
+    )
+    volume_model1 = Solid(
+        volumes=[entity_generic_volume, entity_generic_volume],
+        material=aluminum,
+        volumetric_heat_source="0",
+    )
+    volume_model2 = volume_model1
+    surface_model1 = SlipWall(entities=[entity_surface])
+    surface_model2 = Wall(entities=[entity_surface])
+    surface_model3 = surface_model1
+
+    rotation_model1 = Rotation(
+        volumes=[entity_cylinder],
+        name="innerRotation",
+        spec=AngleExpression("sin(t)"),
+    )
+    rotation_model2 = Rotation(
+        volumes=[entity_cylinder],
+        name="outerRotation",
+        spec=AngleExpression("sin(2*t)"),
+    )
+    porous_medium_model1 = PorousMedium(
+        volumes=entity_box,
+        darcy_coefficient=(1e6, 0, 0) / u.m**2,
+        forchheimer_coefficient=(1, 0, 0) / u.m,
+        volumetric_heat_source=1.0 * u.W / u.m**3,
+    )
+    porous_medium_model2 = PorousMedium(
+        volumes=entity_box_same_name,
+        darcy_coefficient=(3e5, 0, 0) / u.m**2,
+        forchheimer_coefficient=(1, 0, 0) / u.m,
+        volumetric_heat_source=1.0 * u.W / u.m**3,
+    )
+
+    # Valid simulation params
+    with SI_unit_system:
+        params = SimulationParams(
+            models=[volume_model1, surface_model1],
+        )
+
+    assert params
+
+    # Valid simulation params with the same Box name in the PorousMedium model
+    with SI_unit_system:
+        params = SimulationParams(
+            models=[porous_medium_model1, porous_medium_model2],
+        )
+
+    assert params
+
+    message = (
+        f"Surface entity `{entity_surface.name}` appears multiple times in `{surface_model1.type}`, `{surface_model2.type}` models.\n"
+        f"Volume entity `{entity_generic_volume.name}` appears multiple times in `{volume_model1.type}` model.\n"
+    )
+
+    mock_context = ValidationContext(
+        levels=None, info=ParamsValidationInfo(param_as_dict={}, referenced_expressions=[])
+    )
+    # Invalid simulation params
+    with SI_unit_system, mock_context, pytest.raises(ValueError, match=re.escape(message)):
+        _ = SimulationParams(
+            models=[volume_model1, volume_model2, surface_model1, surface_model2, surface_model3],
+        )
+
+    message = f"Volume entity `{entity_cylinder.name}` appears multiple times in `{rotation_model1.type}` model.\n"
+
+    # Invalid simulation params (Draft Entity)
+    with SI_unit_system, mock_context, pytest.raises(ValueError, match=re.escape(message)):
+        _ = SimulationParams(
+            models=[rotation_model1, rotation_model2],
+        )
+
+
+def test_valid_reference_velocity():
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "Reference velocity magnitude/Mach must be provided when freestream velocity magnitude/Mach is 0."
+        ),
+    ):
+        with SI_unit_system:
+            SimulationParams(operating_condition=AerospaceCondition(velocity_magnitude=0))
+
+
+>>>>>>> 1642da13 ([Hotfix 25.9]: [FXC-7485] Bypass PorousJump interface check for farfield/CV overlapping face pairs (#2031))
 def test_output_fields_with_user_defined_fields():
     surface_1 = Surface(name="some_random_surface")
     # 1: No user defined fields
