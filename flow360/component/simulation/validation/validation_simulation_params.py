@@ -35,6 +35,7 @@ from flow360.component.simulation.models.surface_models import (
 from flow360.component.simulation.models.volume_models import (
     ActuatorDisk,
     Fluid,
+    PorousMedium,
     Rotation,
     Solid,
 )
@@ -543,6 +544,40 @@ def _collect_used_boundary_names(
     return used_boundaries
 
 
+def _has_models_implying_potential_overlap(
+    params, param_info: ParamsValidationInfo
+) -> bool:
+    """Detect models whose presence implies the input geometry/surface mesh may
+    have overlapping faces that the mesher will turn into zone-to-zone
+    interfaces.
+
+    The Python client cannot detect such overlap at validation time, so for
+    these models we cannot assert that a missing-BC face is genuinely missing
+    — it may end up consumed by an auto-generated interface. Used to downgrade
+    the missing-BC error to a warning.
+
+    Volume-mesh workflows are excluded: meshing has already finished, so any
+    boundary in `VolumeMeshEntityInfo.boundaries` that doesn't have a BC is
+    genuinely missing and the original strict error must be preserved.
+
+    Returns True if root is geometry/surface_mesh AND any of:
+    - A PorousJump model is present (its surface_pairs imply overlap).
+    - A PorousMedium model is present whose entities include a CustomVolume
+      (the CustomVolume bounding faces may overlap with farfield/other faces).
+    """
+    if param_info.root_asset_type == "volume_mesh":
+        return False
+
+    for model in params.models:
+        if isinstance(model, PorousJump):
+            return True
+        if isinstance(model, PorousMedium):
+            for entity in model.entities.stored_entities:
+                if isinstance(entity, CustomVolume):
+                    return True
+    return False
+
+
 def _validate_boundary_completeness(  # pylint:disable=too-many-arguments
     *,
     asset_boundaries: set,
@@ -552,6 +587,7 @@ def _validate_boundary_completeness(  # pylint:disable=too-many-arguments
     entity_transformation_detected: bool,
     has_missing_private_attributes: bool = False,
     use_geometry_AI: bool = False,
+    has_potential_overlap: bool = False,
 ) -> None:
     """Validate missing/unknown boundary references with error/warning policy."""
     missing_boundaries = asset_boundaries - used_boundaries - potential_zone_zone_interfaces
@@ -559,7 +595,12 @@ def _validate_boundary_completeness(  # pylint:disable=too-many-arguments
 
     if missing_boundaries and not snappy_multizone:
         missing_list = ", ".join(sorted(missing_boundaries))
-        if entity_transformation_detected or has_missing_private_attributes or use_geometry_AI:
+        if (
+            entity_transformation_detected
+            or has_missing_private_attributes
+            or use_geometry_AI
+            or has_potential_overlap
+        ):
             message = (
                 f"The following boundaries do not have a boundary condition: {missing_list}. "
                 "If these boundaries are valid, please add them to a boundary condition model in the `models` section."
@@ -619,6 +660,7 @@ def _check_complete_boundary_condition_and_unknown_surface(
         entity_transformation_detected=param_info.entity_transformation_detected,
         has_missing_private_attributes=has_missing_private_attributes,
         use_geometry_AI=param_info.use_geometry_AI,
+        has_potential_overlap=_has_models_implying_potential_overlap(params, param_info),
     )
 
     return params
