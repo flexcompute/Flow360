@@ -544,9 +544,7 @@ def _collect_used_boundary_names(
     return used_boundaries
 
 
-def _has_models_implying_potential_overlap(
-    params, param_info: ParamsValidationInfo
-) -> bool:
+def _has_models_implying_potential_overlap(params, param_info: ParamsValidationInfo) -> bool:
     """Detect models whose presence implies the input geometry/surface mesh may
     have overlapping faces that the mesher will turn into zone-to-zone
     interfaces.
