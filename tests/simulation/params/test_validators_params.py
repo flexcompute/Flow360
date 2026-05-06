@@ -2457,6 +2457,405 @@ def test_domain_type_bbox_mismatch_downgraded_to_warning_when_transformed():
     ), warnings
 
 
+<<<<<<< HEAD
+=======
+def test_incomplete_BC_with_geometry_AI():
+    """Test that missing boundary conditions produce warnings (not errors) when using Geometry AI."""
+    # Construct a dummy asset cache with GAI enabled
+    wall = Surface(name="wall", private_attribute_is_interface=False, private_attribute_id="wall")
+    no_bc = Surface(
+        name="no_bc", private_attribute_is_interface=False, private_attribute_id="no_bc"
+    )
+
+    asset_cache = AssetCache(
+        project_length_unit="m",
+        project_entity_info=VolumeMeshEntityInfo(boundaries=[wall, no_bc]),
+        use_geometry_AI=True,  # Enable GAI
+    )
+
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-10,
+                    surface_max_edge_length=1e-10,
+                )
+            ),
+            models=[
+                Fluid(),
+                Wall(entities=[wall]),
+                # no_bc is intentionally missing
+            ],
+            private_attribute_asset_cache=asset_cache,
+        )
+
+    params, errors, warnings = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="VolumeMesh",
+        validation_level="All",
+    )
+
+    # Should not have errors, only warnings
+    assert errors is None or len(errors) == 0
+    assert len(warnings) > 0
+    assert any(
+        "no_bc" in w.get("msg", "") and "do not have a boundary condition" in w.get("msg", "")
+        for w in warnings
+    ), f"Expected warning about missing boundary condition for 'no_bc', got: {warnings}"
+
+
+def test_incomplete_BC_without_geometry_AI():
+    """Test that missing boundary conditions produce errors when NOT using Geometry AI."""
+    # Construct a dummy asset cache without GAI
+    wall = Surface(name="wall", private_attribute_is_interface=False, private_attribute_id="wall")
+    no_bc = Surface(
+        name="no_bc", private_attribute_is_interface=False, private_attribute_id="no_bc"
+    )
+
+    asset_cache = AssetCache(
+        project_length_unit="m",
+        project_entity_info=VolumeMeshEntityInfo(boundaries=[wall, no_bc]),
+        use_geometry_AI=False,  # Disable GAI
+    )
+
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-10,
+                    surface_max_edge_length=1e-10,
+                )
+            ),
+            models=[
+                Fluid(),
+                Wall(entities=[wall]),
+                # no_bc is intentionally missing
+            ],
+            private_attribute_asset_cache=asset_cache,
+        )
+
+    params, errors, warnings = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="VolumeMesh",
+        validation_level="All",
+    )
+
+    # Should have errors
+    assert len(errors) == 1
+    assert errors[0]["msg"] == (
+        "Value error, The following boundaries do not have a boundary condition: no_bc. "
+        "Please add them to a boundary condition model in the `models` section."
+    )
+
+
+def test_has_models_implying_potential_overlap_porous_jump(mock_validation_context):
+    """`_has_models_implying_potential_overlap` returns True for PorousJump on
+    geometry/surface_mesh workflows and False on volume_mesh (preserve original
+    behavior since meshing is already done).
+    """
+    # pylint: disable=import-outside-toplevel
+    from flow360.component.simulation.validation.validation_simulation_params import (
+        _has_models_implying_potential_overlap,
+    )
+
+    pj_left = Surface(
+        name="pj_left", private_attribute_is_interface=True, private_attribute_id="pj_left"
+    )
+    pj_right = Surface(
+        name="pj_right", private_attribute_is_interface=True, private_attribute_id="pj_right"
+    )
+
+    with mock_validation_context:
+        pj = PorousJump(
+            entity_pairs=[(pj_left, pj_right)],
+            darcy_coefficient=1e6 / (u.m * u.m),
+            forchheimer_coefficient=1e3 / u.m,
+            thickness=0.01 * u.m,
+        )
+
+    class _MockParams:
+        models = [Fluid(), pj]
+
+    for root_type in ("geometry", "surface_mesh"):
+        info = ParamsValidationInfo({}, [])
+        info.root_asset_type = root_type
+        assert _has_models_implying_potential_overlap(_MockParams(), info) is True, root_type
+
+    info = ParamsValidationInfo({}, [])
+    info.root_asset_type = "volume_mesh"
+    assert _has_models_implying_potential_overlap(_MockParams(), info) is False
+
+
+def test_has_models_implying_potential_overlap_porous_media():
+    """`_has_models_implying_potential_overlap` returns True for PorousMedium
+    only when the volumes include a CustomVolume (Box-only doesn't trigger).
+    Volume-mesh workflow is excluded regardless.
+    """
+    # pylint: disable=import-outside-toplevel
+    from flow360.component.simulation.validation.validation_simulation_params import (
+        _has_models_implying_potential_overlap,
+    )
+
+    cv = CustomVolume(
+        name="cv",
+        bounding_entities=[Surface(name="s1", private_attribute_id="s1")],
+    )
+    box = Box.from_principal_axes(
+        name="box",
+        axes=[(1, 0, 0), (0, 1, 0)],
+        center=(0, 0, 0) * u.m,
+        size=(1, 1, 1) * u.m,
+    )
+
+    pm_with_cv = PorousMedium(
+        volumes=[cv],
+        darcy_coefficient=(1e6, 0, 0) / u.m**2,
+        forchheimer_coefficient=(1, 0, 0) / u.m,
+    )
+    pm_box_only = PorousMedium(
+        volumes=[box],
+        darcy_coefficient=(1e6, 0, 0) / u.m**2,
+        forchheimer_coefficient=(1, 0, 0) / u.m,
+    )
+
+    class _ParamsWithCV:
+        models = [Fluid(), pm_with_cv]
+
+    class _ParamsBoxOnly:
+        models = [Fluid(), pm_box_only]
+
+    geo_info = ParamsValidationInfo({}, [])
+    geo_info.root_asset_type = "geometry"
+
+    assert _has_models_implying_potential_overlap(_ParamsWithCV(), geo_info) is True
+    assert _has_models_implying_potential_overlap(_ParamsBoxOnly(), geo_info) is False
+
+    vm_info = ParamsValidationInfo({}, [])
+    vm_info.root_asset_type = "volume_mesh"
+    assert _has_models_implying_potential_overlap(_ParamsWithCV(), vm_info) is False
+
+
+def test_missing_bc_with_porous_jump_downgraded_to_warning_on_surface_mesh():
+    """Non-VolumeMesh + PorousJump: missing-BC becomes a warning since the
+    input geometry may have overlapping faces not visible to the Python client.
+    """
+    wall = Surface(name="wall", private_attribute_is_interface=False, private_attribute_id="wall")
+    no_bc = Surface(
+        name="no_bc", private_attribute_is_interface=False, private_attribute_id="no_bc"
+    )
+    pj_left = Surface(
+        name="pj_left", private_attribute_is_interface=True, private_attribute_id="pj_left"
+    )
+    pj_right = Surface(
+        name="pj_right", private_attribute_is_interface=True, private_attribute_id="pj_right"
+    )
+
+    asset_cache = AssetCache(
+        project_length_unit="m",
+        project_entity_info=SurfaceMeshEntityInfo(
+            boundaries=[wall, no_bc, pj_left, pj_right],
+        ),
+    )
+
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-10,
+                    surface_max_edge_length=1e-10,
+                )
+            ),
+            models=[
+                Fluid(),
+                Wall(entities=[wall]),
+                PorousJump(
+                    entity_pairs=[(pj_left, pj_right)],
+                    darcy_coefficient=1e6 / (u.m * u.m),
+                    forchheimer_coefficient=1e3 / u.m,
+                    thickness=0.01 * u.m,
+                ),
+            ],
+            private_attribute_asset_cache=asset_cache,
+        )
+
+    _, errors, warnings = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="SurfaceMesh",
+        validation_level="All",
+    )
+
+    assert errors is None or len(errors) == 0, f"Expected no errors, got: {errors}"
+    assert any(
+        "no_bc" in w.get("msg", "") and "do not have a boundary condition" in w.get("msg", "")
+        for w in warnings
+    ), f"Expected missing-BC warning for no_bc, got: {warnings}"
+
+
+def test_missing_bc_with_porous_jump_still_errors_on_volume_mesh():
+    """VolumeMesh + PorousJump: missing-BC remains a hard error since meshing
+    has already finished and any face without a BC is genuinely missing.
+    """
+    wall = Surface(name="wall", private_attribute_is_interface=False, private_attribute_id="wall")
+    no_bc = Surface(
+        name="no_bc", private_attribute_is_interface=False, private_attribute_id="no_bc"
+    )
+    pj_left = Surface(
+        name="pj_left", private_attribute_is_interface=True, private_attribute_id="pj_left"
+    )
+    pj_right = Surface(
+        name="pj_right", private_attribute_is_interface=True, private_attribute_id="pj_right"
+    )
+
+    asset_cache = AssetCache(
+        project_length_unit="m",
+        project_entity_info=VolumeMeshEntityInfo(
+            boundaries=[wall, no_bc, pj_left, pj_right],
+        ),
+    )
+
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-10,
+                    surface_max_edge_length=1e-10,
+                )
+            ),
+            models=[
+                Fluid(),
+                Wall(entities=[wall]),
+                PorousJump(
+                    entity_pairs=[(pj_left, pj_right)],
+                    darcy_coefficient=1e6 / (u.m * u.m),
+                    forchheimer_coefficient=1e3 / u.m,
+                    thickness=0.01 * u.m,
+                ),
+            ],
+            private_attribute_asset_cache=asset_cache,
+        )
+
+    _, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="VolumeMesh",
+        validation_level="All",
+    )
+
+    assert errors and any(
+        "no_bc" in e.get("msg", "") and "do not have a boundary condition" in e.get("msg", "")
+        for e in errors
+    ), f"Expected missing-BC error for no_bc, got: {errors}"
+
+
+def test_collect_used_boundary_names_porous_jump_filtered_against_asset_boundaries(
+    mock_validation_context,
+):
+    """Direct test of `_collect_used_boundary_names` PorousJump branch.
+
+    The fix counts a PorousJump pair surface as "having a BC" iff that surface
+    is in asset_boundaries:
+    - Geometry workflow: pair surfaces are real boundaries (present in
+      asset_boundaries) -> counted, so BC-completeness no longer falsely flags
+      them as missing.
+    - VolumeMesh workflow: pair surfaces are zone-to-zone interfaces and are
+      filtered out of asset_boundaries -> ignored, so they don't get falsely
+      flagged as unknown surfaces.
+    """
+    # pylint: disable=import-outside-toplevel
+    from flow360.component.simulation.validation.validation_simulation_params import (
+        _collect_used_boundary_names,
+    )
+
+    pj_left = Surface(
+        name="pj_left", private_attribute_is_interface=True, private_attribute_id="pj_left"
+    )
+    pj_right = Surface(
+        name="pj_right", private_attribute_is_interface=True, private_attribute_id="pj_right"
+    )
+
+    with mock_validation_context:
+        pj_model = PorousJump(
+            entity_pairs=[(pj_left, pj_right)],
+            darcy_coefficient=1e6 / (u.m * u.m),
+            forchheimer_coefficient=1e3 / u.m,
+            thickness=0.01 * u.m,
+        )
+
+    class _MockParams:
+        models = [Fluid(), pj_model]
+
+    param_info = ParamsValidationInfo({}, [])
+
+    # Geometry workflow: surfaces present in asset_boundaries -> counted
+    used = _collect_used_boundary_names(
+        _MockParams(), param_info, asset_boundaries={"pj_left", "pj_right"}
+    )
+    assert {"pj_left", "pj_right"} <= used
+
+    # VolumeMesh workflow: surfaces filtered out of asset_boundaries -> ignored
+    used = _collect_used_boundary_names(_MockParams(), param_info, asset_boundaries=set())
+    assert "pj_left" not in used
+    assert "pj_right" not in used
+
+
+def test_porousJump_volume_mesh_pairs_not_flagged_as_unknown():
+    """In volume-mesh workflows, PorousJump surface_pairs are zone-to-zone interfaces
+    (private_attribute_is_interface=True) and are filtered out of asset_boundaries.
+
+    Regression guard: counting these in `used_boundaries` unconditionally would make
+    `unknown_boundaries = used_boundaries - asset_boundaries` flag them as unknown.
+    They should be silently ignored for completeness purposes since they aren't
+    boundaries that need a BC.
+    """
+    wall = Surface(name="wall", private_attribute_is_interface=False, private_attribute_id="wall")
+    pj_left = Surface(
+        name="pj_left", private_attribute_is_interface=True, private_attribute_id="pj_left"
+    )
+    pj_right = Surface(
+        name="pj_right", private_attribute_is_interface=True, private_attribute_id="pj_right"
+    )
+
+    asset_cache = AssetCache(
+        project_length_unit="m",
+        project_entity_info=VolumeMeshEntityInfo(boundaries=[wall, pj_left, pj_right]),
+        use_geometry_AI=False,
+    )
+
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-10,
+                    surface_max_edge_length=1e-10,
+                )
+            ),
+            models=[
+                Fluid(),
+                Wall(entities=[wall]),
+                PorousJump(
+                    entity_pairs=[(pj_left, pj_right)],
+                    darcy_coefficient=1e6 / (u.m * u.m),
+                    forchheimer_coefficient=1e3 / u.m,
+                    thickness=0.01 * u.m,
+                ),
+            ],
+            private_attribute_asset_cache=asset_cache,
+        )
+
+    _, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="VolumeMesh",
+        validation_level="All",
+    )
+
+    assert errors is None or len(errors) == 0, f"Unexpected errors: {errors}"
+
+
+>>>>>>> aa0f7e42 ([Hotfix 25.9] [FXC-7485] Fix PorousJump BC completeness; warn-only missing-BC for overlap-aware models (#2037))
 def test_automated_farfield_with_custom_zones():
     """AutomatedFarfield + CustomZones: enclosed_entities is required when CustomVolumes exist."""
 
