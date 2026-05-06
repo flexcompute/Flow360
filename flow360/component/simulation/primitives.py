@@ -27,7 +27,10 @@ from flow360_schema.models.entities.surface_entities import (
     _MirroredEntityBase,
     compute_bbox_tolerance,
 )
-from flow360_schema.models.entities.volume_entities import (
+
+# VoxelGrid lands in flow360_schema alongside the schema-side flex PR; drop
+# the inline pylint disable once the new flow360_schema release is pinned.
+from flow360_schema.models.entities.volume_entities import (  # pylint: disable=no-name-in-module
     AxisymmetricBody,
     AxisymmetricSegment,
     Box,
@@ -37,5 +40,6 @@ from flow360_schema.models.entities.volume_entities import (
     GenericVolume,
     SeedpointVolume,
     Sphere,
+    VoxelGrid,
 )
 from flow360_schema.models.reference_geometry import ReferenceGeometry
