@@ -13,6 +13,7 @@ from flow360.component.simulation.run_control.stopping_criterion import (
 class RunControl(Flow360BaseModel):
     """
     :class:`RunControl` class for run control settings.
+    For general overview see :ref:`Run Control <runControl>`.
 
     Example
     -------
