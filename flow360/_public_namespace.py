@@ -87,6 +87,9 @@ from flow360.component.simulation.models.solver_numerics import (
     LineSearch,
     NavierStokesSolver,
     NoneSolver,
+    RiemannSolverType,
+    RoeFlux,
+    SLAU2Flux,
     SpalartAllmaras,
     SpalartAllmarasModelConstants,
     TransitionModelSolver,
@@ -189,6 +192,7 @@ from flow360.component.simulation.primitives import (
     ReferenceGeometry,
     SeedpointVolume,
     Sphere,
+    VoxelGrid,
 )
 from flow360.component.simulation.run_control.run_control import RunControl
 from flow360.component.simulation.run_control.stopping_criterion import (
@@ -314,6 +318,9 @@ __all__ = [
     "HeatEquationSolver",
     "NavierStokesSolver",
     "NoneSolver",
+    "RiemannSolverType",
+    "RoeFlux",
+    "SLAU2Flux",
     "SpalartAllmaras",
     "KOmegaSST",
     "SpalartAllmarasModelConstants",
@@ -347,6 +354,7 @@ __all__ = [
     "PointArray",
     "AngleExpression",
     "Box",
+    "VoxelGrid",
     "GenericReferenceCondition",
     "TransitionModelSolver",
     "TurbulenceModelControls",

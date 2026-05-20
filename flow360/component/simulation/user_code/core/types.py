@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import unyt as u
 from flow360_schema.framework.expression import (
     SerializedValueOrExpression,
     UnytQuantity,
@@ -47,41 +46,10 @@ def save_user_variables(params):
     return params
 
 
-def is_variable_with_unit_system_as_units(value: dict) -> bool:
-    """
-    [Frontend] Check if the value is a variable with a unit system as units.
-    """
-    return (
-        not isinstance(value, dict)
-        or "units" not in value
-        or value["units"]
-        not in (
-            "SI_unit_system",
-            "Imperial_unit_system",
-            "CGS_unit_system",
-        )
-    )
-
-
-def infer_units_by_unit_system(value: dict, unit_system: str, value_dimensions):
-    """
-    [Frontend] Infer the units based on the unit system.
-    """
-    if unit_system == "SI_unit_system":
-        value["units"] = u.unit_systems.mks_unit_system[value_dimensions]
-    if unit_system == "Imperial_unit_system":
-        value["units"] = u.unit_systems.imperial_unit_system[value_dimensions]
-    if unit_system == "CGS_unit_system":
-        value["units"] = u.unit_systems.cgs_unit_system[value_dimensions]
-    return value
-
-
 __all__ = [
     "SerializedValueOrExpression",
     "UnytQuantity",
     "ValueOrExpression",
     "get_post_processing_variables",
-    "infer_units_by_unit_system",
-    "is_variable_with_unit_system_as_units",
     "save_user_variables",
 ]

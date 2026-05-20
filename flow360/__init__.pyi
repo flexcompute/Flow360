@@ -97,6 +97,8 @@ from ._public_namespace import RampCFL as RampCFL
 from ._public_namespace import ReferenceGeometry as ReferenceGeometry
 from ._public_namespace import RenderOutput as RenderOutput
 from ._public_namespace import RenderOutputGroup as RenderOutputGroup
+from ._public_namespace import RiemannSolverType as RiemannSolverType
+from ._public_namespace import RoeFlux as RoeFlux
 from ._public_namespace import Rotation as Rotation
 from ._public_namespace import Rotational as Rotational
 from ._public_namespace import RotationCylinder as RotationCylinder
@@ -107,6 +109,7 @@ from ._public_namespace import SeedpointVolume as SeedpointVolume
 from ._public_namespace import SI_unit_system as SI_unit_system
 from ._public_namespace import SimulationParams as SimulationParams
 from ._public_namespace import SlaterPorousBleed as SlaterPorousBleed
+from ._public_namespace import SLAU2Flux as SLAU2Flux
 from ._public_namespace import Slice as Slice
 from ._public_namespace import SliceOutput as SliceOutput
 from ._public_namespace import SlipWall as SlipWall
@@ -167,6 +170,7 @@ from ._public_namespace import VolumeMeshingDefaults as VolumeMeshingDefaults
 from ._public_namespace import VolumeMeshingParams as VolumeMeshingParams
 from ._public_namespace import VolumeOutput as VolumeOutput
 from ._public_namespace import VolumeSelector as VolumeSelector
+from ._public_namespace import VoxelGrid as VoxelGrid
 from ._public_namespace import Wall as Wall
 from ._public_namespace import WallFunction as WallFunction
 from ._public_namespace import WallRotation as WallRotation

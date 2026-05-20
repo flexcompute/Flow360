@@ -33,10 +33,45 @@ _LAZY_COMMANDS = {
         "attr": "project",
         "help": "Inspect and manage Flow360 projects.",
     },
+    "draft": {
+        "module": "flow360.cli.draft",
+        "attr": "draft",
+        "help": "Inspect draft resources.",
+    },
+    "geometry": {
+        "module": "flow360.cli.assets",
+        "attr": "geometry",
+        "help": "Inspect Flow360 geometries.",
+    },
+    "surface-mesh": {
+        "module": "flow360.cli.assets",
+        "attr": "surface_mesh",
+        "help": "Inspect Flow360 surface meshes.",
+    },
+    "volume-mesh": {
+        "module": "flow360.cli.assets",
+        "attr": "volume_mesh",
+        "help": "Inspect Flow360 volume meshes.",
+    },
+    "case": {
+        "module": "flow360.cli.assets",
+        "attr": "case",
+        "help": "Inspect Flow360 cases.",
+    },
     "folder": {
         "module": "flow360.cli.folder",
         "attr": "folder",
         "help": "Inspect Flow360 folders.",
+    },
+    "open": {
+        "module": "flow360.cli.open_resource",
+        "attr": "open_resource",
+        "help": "Open a Flow360 resource in the browser.",
+    },
+    "wait": {
+        "module": "flow360.cli.wait",
+        "attr": "wait",
+        "help": "Wait for a Flow360 resource to reach a terminal state.",
     },
 }
 
@@ -47,7 +82,7 @@ class LazyFlow360Group(click.Group):
     def invoke(self, ctx):
         try:
             return super().invoke(ctx)
-        except click.ClickException:
+        except (click.ClickException, click.exceptions.Exit, click.Abort):
             raise
         except Exception as error:  # pylint: disable=broad-except
             # Convert uncaught SDK auth failures into normal CLI errors.

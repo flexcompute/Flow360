@@ -52,6 +52,7 @@ from .resource_base import (
     Flow360ResourceListBase,
     ResourceDraft,
 )
+from .resource_status import is_final_resource_status
 from .results.base_results import PerEntityResultCSVModel
 from .simulation.primitives import GenericVolume, Surface
 from .simulation.web.asset_base import AssetBase
@@ -812,9 +813,7 @@ class VolumeMeshStatusV2(Enum):
         bool
             True if status is final, False otherwise.
         """
-        if self in [VolumeMeshStatusV2.COMPLETED, VolumeMeshStatusV2.ERROR]:
-            return True
-        return False
+        return is_final_resource_status("VolumeMesh", self)
 
 
 class VolumeMeshMetaV2(AssetMetaBaseModelV2):

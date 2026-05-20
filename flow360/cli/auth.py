@@ -467,7 +467,7 @@ def wait_for_login(
 
         storage_environment = None if environment.name == Env.prod.name else environment.name
         store_apikey(apikey, profile=profile, environment_name=storage_environment)
-        user_config.UserConfig = user_config.BasicUserConfig()
+        user_config.reload_user_config()
         return {
             "status": "success",
             "login_url": login_url,

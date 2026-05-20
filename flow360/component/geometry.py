@@ -29,6 +29,7 @@ from flow360.component.resource_base import (
     ResourceDraft,
     SubmissionMode,
 )
+from flow360.component.resource_status import is_final_resource_status
 from flow360.component.simulation.folder import Folder
 from flow360.component.simulation.primitives import Edge, GeometryBodyGroup, Surface
 from flow360.component.simulation.web.asset_base import AssetBase
@@ -65,13 +66,7 @@ class GeometryStatus(Enum):
         bool
             True if status is final, False otherwise.
         """
-        if self in [
-            GeometryStatus.ERROR,
-            GeometryStatus.PROCESSED,
-            GeometryStatus.DELETED,
-        ]:
-            return True
-        return False
+        return is_final_resource_status("Geometry", self)
 
 
 # pylint: disable=R0801

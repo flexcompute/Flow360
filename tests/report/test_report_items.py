@@ -1760,8 +1760,9 @@ class TestWithMultipleCases:
                 "total_forces/averages/CD",
             )
 
-        # beta values are stored in SI (radians): 0, 2, 4, 6 degrees
-        b0, b2, b4, b6 = np.radians([0, 2, 4, 6])
+        # beta values are kept in the user's chosen unit (degrees, set in the
+        # fixture as `beta * fl.u.deg`).
+        b0, b2, b4, b6 = 0, 2, 4, 6
         expected_x_data = [
             [b0, b0, b2, b2, b4, b4, b6, b6],
             [b0, b2, b4, b6],
@@ -1810,8 +1811,9 @@ class TestWithMultipleCases:
 
         plot_model = chart.get_data(cases_beta_sweep, context)
 
-        # beta values are stored in SI (radians): 0, 2, 4, 6 degrees
-        b0, b2, b4, b6 = np.radians([0, 2, 4, 6])
+        # beta values are kept in the user's chosen unit (degrees, set in the
+        # fixture as `beta * fl.u.deg`).
+        b0, b2, b4, b6 = 0, 2, 4, 6
         expected_x_data = [
             [b0, b0, b2, b2, b4, b4, b6, b6],
             [b0, b2, b4, b6],

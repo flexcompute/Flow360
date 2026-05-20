@@ -4,7 +4,6 @@ import re
 import pytest
 import toml
 
-from flow360.component.simulation.framework.updater import VERSION_MILESTONES
 from flow360.component.simulation.framework.updater_utils import Flow360Version
 from flow360.version import __solver_version__, __version__
 
@@ -38,10 +37,3 @@ def test_default_solver_version_matches_module_version():
         f"Default solver version mismatch: __solver_version__ is '{__solver_version__}', "
         f"but expected '{expected_solver_version}' based on __version__ '{__version__}'"
     )
-
-
-def test_version_greater_than_highest_updater_version():
-    current_python_version = Flow360Version(__version__)
-    assert (
-        current_python_version >= VERSION_MILESTONES[-1][0]
-    ), "Highest version updater can handle is higher than Python client version. This is not allowed."

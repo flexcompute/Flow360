@@ -37,3 +37,16 @@ def build_configure_command(environment_name: str, profile: str) -> str:
         parts.extend(["--profile", profile])
     parts.extend(["--apikey", "<apikey>"])
     return " ".join(parts)
+
+
+def build_missing_api_key_message(environment_name: str, profile: str) -> str:
+    """Build the auth guidance shown when no API key is configured."""
+    return "\n".join(
+        [
+            f"No API key configured for env={environment_name}, profile={profile}.",
+            "Authenticate with:",
+            f"  {build_login_command(environment_name, profile)}",
+            "For headless or manual setup:",
+            f"  {build_configure_command(environment_name, profile)}",
+        ]
+    )

@@ -461,8 +461,8 @@ class MockResponseProjectCaseSimConfig(MockResponse):
         with open(
             os.path.join(here, "data/case-69b8c249-fce5-412a-9927-6a79049deebb/simulation.json")
         ) as fh:
-            res = json.load(fh)
-        return res
+            simulation_json = json.load(fh)
+        return {"data": {"simulationJson": json.dumps(simulation_json)}}
 
 
 class MockResponseProjectCaseForkSimConfig(MockResponse):
@@ -475,6 +475,60 @@ class MockResponseProjectCaseForkSimConfig(MockResponse):
         ) as fh:
             res = json.load(fh)
         return res
+
+
+class MockResponseDraftInfo(MockResponse):
+    """response for GET /v2/drafts/dft-84b20880-937d-4ef2-983b-7f75089f6dd6"""
+
+    @staticmethod
+    def json():
+        return {
+            "data": {
+                "id": "dft-84b20880-937d-4ef2-983b-7f75089f6dd6",
+                "name": "Draft 1",
+                "projectId": "prj-41d2333b-85fd-4bed-ae13-15dcb6da519e",
+                "solverVersion": "release-24.11",
+                "status": "queued",
+                "type": "Draft",
+                "updatedAt": "2025-01-01T01:00:00Z",
+            }
+        }
+
+
+class MockResponseDraftList(MockResponse):
+    """response for GET /v2/drafts?projectId=..."""
+
+    def __init__(self, *args, params=None, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self._params = params
+
+    def json(self):
+        project_id = None if self._params is None else self._params.get("projectId")
+        return {
+            "data": {
+                "records": [
+                    {
+                        "id": "dft-84b20880-937d-4ef2-983b-7f75089f6dd6",
+                        "name": "Draft 1",
+                        "projectId": project_id,
+                        "solverVersion": "release-24.11",
+                        "type": "Draft",
+                    }
+                ]
+            }
+        }
+
+
+class MockResponseDraftSimulation(MockResponse):
+    """response for GET /v2/drafts/{id}/simulation/file"""
+
+    @staticmethod
+    def json():
+        with open(
+            os.path.join(here, "data/case-69b8c249-fce5-412a-9927-6a79049deebb/simulation.json")
+        ) as fh:
+            simulation_json = json.load(fh)
+        return {"data": {"simulationJson": json.dumps(simulation_json)}}
 
 
 class MockResponseProjectRunCase(MockResponse):
@@ -613,10 +667,13 @@ GET_RESPONSE_MAP = {
     "/v2/volume-meshes/vm-bff35714-41b1-4251-ac74-46a40b95a330": MockResponseProjectFromVMVolumeMeshMeta,
     "/v2/volume-meshes/vm-bff35714-41b1-4251-ac74-46a40b95a330/simulation/file": MockResponseProjectFromVMVolumeMeshSimConfig,
     "/cases/case-69b8c249-fce5-412a-9927-6a79049deebb": MockResponseProjectCase,
+    "/v2/cases/case-69b8c249-fce5-412a-9927-6a79049deebb": MockResponseProjectCase,
     "/v2/cases/case-69b8c249-fce5-412a-9927-6a79049deebb/simulation/file": MockResponseProjectCaseSimConfig,
     "/cases/case-f7480884-4493-4453-9a27-dd5f8498c608": MockResponseProjectFromVMCase,
     "/cases/case-84d4604e-f3cd-4c6b-8517-92a80a3346d3": MockResponseProjectCaseFork,
     "/v2/cases/case-84d4604e-f3cd-4c6b-8517-92a80a3346d3/simulation/file": MockResponseProjectCaseForkSimConfig,
+    "/v2/drafts/dft-84b20880-937d-4ef2-983b-7f75089f6dd6": MockResponseDraftInfo,
+    "/v2/drafts/dft-84b20880-937d-4ef2-983b-7f75089f6dd6/simulation/file": MockResponseDraftSimulation,
     "/v2/projects": MockResponseAllProjects,
     "/cases/case-666666666-66666666-666-6666666666666/files": MockResponseCaseFiles,
 }
@@ -668,6 +725,9 @@ def mock_webapi(type, url, params):
 
         if method == "/v2/folders":
             return MockResponseFolderListV2()
+
+        if method == "/v2/drafts":
+            return MockResponseDraftList(params=params)
 
     elif type == "put":
         if method == "/folders/move":

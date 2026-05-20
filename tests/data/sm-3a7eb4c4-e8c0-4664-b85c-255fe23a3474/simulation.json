@@ -4,9 +4,14 @@
             "entities": {
                 "stored_entities": []
             },
+            "heat_spec": {
+                "type_name": "HeatFlux",
+                "value": {
+                    "value": 0.0
+                }
+            },
             "name": "Wall",
-            "type": "Wall",
-            "use_wall_function": false
+            "type": "Wall"
         },
         {
             "entities": {
@@ -27,15 +32,12 @@
             "material": {
                 "dynamic_viscosity": {
                     "effective_temperature": {
-                        "units": "K",
                         "value": 110.4
                     },
                     "reference_temperature": {
-                        "units": "K",
                         "value": 273.15
                     },
                     "reference_viscosity": {
-                        "units": "Pa*s",
                         "value": 1.716e-05
                     }
                 },
@@ -50,7 +52,8 @@
                 "limit_pressure_density": false,
                 "limit_velocity": false,
                 "linear_solver": {
-                    "max_iterations": 30
+                    "max_iterations": 30,
+                    "type_name": "LinearSolver"
                 },
                 "low_mach_preconditioner": false,
                 "max_force_jac_update_physical_steps": 0,
@@ -65,10 +68,8 @@
             },
             "turbulence_model_solver": {
                 "CFL_multiplier": 2.0,
-                "DDES": false,
                 "absolute_tolerance": 1e-08,
                 "equation_evaluation_frequency": 4,
-                "grid_size_for_LES": "maxEdgeLength",
                 "linear_solver": {
                     "max_iterations": 20
                 },
@@ -100,32 +101,28 @@
     ],
     "operating_condition": {
         "alpha": {
-            "units": "degree",
+            "display_unit": "degree",
             "value": 0.0
         },
         "beta": {
-            "units": "degree",
+            "display_unit": "degree",
             "value": 0.0
         },
         "private_attribute_constructor": "default",
         "private_attribute_input_cache": {},
         "thermal_state": {
             "density": {
-                "units": "kg/m**3",
                 "value": 1.225
             },
             "material": {
                 "dynamic_viscosity": {
                     "effective_temperature": {
-                        "units": "K",
                         "value": 110.4
                     },
                     "reference_temperature": {
-                        "units": "K",
                         "value": 273.15
                     },
                     "reference_viscosity": {
-                        "units": "Pa*s",
                         "value": 1.716e-05
                     }
                 },
@@ -135,7 +132,6 @@
             "private_attribute_constructor": "default",
             "private_attribute_input_cache": {},
             "temperature": {
-                "units": "K",
                 "value": 288.15
             },
             "type_name": "ThermalState"
@@ -149,7 +145,7 @@
                     {
                         "name": "*",
                         "private_attribute_entity_type_name": "Surface",
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_id": "*",
                         "private_attribute_sub_components": []
                     }
                 ]
@@ -165,7 +161,9 @@
                     "CfVec"
                 ]
             },
-            "output_format": "paraview",
+            "output_format": [
+                "paraview"
+            ],
             "output_type": "SurfaceOutput",
             "write_single_file": false
         }
@@ -177,9 +175,8 @@
                     "name": "blk-1/WT_side1",
                     "private_attribute_entity_type_name": "Surface",
                     "private_attribute_full_name": "blk-1/WT_side1",
-                    "private_attribute_id": null,
+                    "private_attribute_id": "blk-1/WT_side1",
                     "private_attribute_is_interface": false,
-                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
                     "private_attribute_sub_components": [],
                     "private_attribute_tag_key": null
                 },
@@ -187,9 +184,8 @@
                     "name": "blk-1/WT_side2",
                     "private_attribute_entity_type_name": "Surface",
                     "private_attribute_full_name": "blk-1/WT_side2",
-                    "private_attribute_id": null,
+                    "private_attribute_id": "blk-1/WT_side2",
                     "private_attribute_is_interface": false,
-                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
                     "private_attribute_sub_components": [],
                     "private_attribute_tag_key": null
                 },
@@ -197,9 +193,8 @@
                     "name": "blk-1/WT_inlet",
                     "private_attribute_entity_type_name": "Surface",
                     "private_attribute_full_name": "blk-1/WT_inlet",
-                    "private_attribute_id": null,
+                    "private_attribute_id": "blk-1/WT_inlet",
                     "private_attribute_is_interface": false,
-                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
                     "private_attribute_sub_components": [],
                     "private_attribute_tag_key": null
                 },
@@ -207,9 +202,8 @@
                     "name": "blk-1/WT_ceiling",
                     "private_attribute_entity_type_name": "Surface",
                     "private_attribute_full_name": "blk-1/WT_ceiling",
-                    "private_attribute_id": null,
+                    "private_attribute_id": "blk-1/WT_ceiling",
                     "private_attribute_is_interface": false,
-                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
                     "private_attribute_sub_components": [],
                     "private_attribute_tag_key": null
                 },
@@ -217,9 +211,8 @@
                     "name": "blk-1/WT_ground_patch",
                     "private_attribute_entity_type_name": "Surface",
                     "private_attribute_full_name": "blk-1/WT_ground_patch",
-                    "private_attribute_id": null,
+                    "private_attribute_id": "blk-1/WT_ground_patch",
                     "private_attribute_is_interface": false,
-                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
                     "private_attribute_sub_components": [],
                     "private_attribute_tag_key": null
                 },
@@ -227,9 +220,8 @@
                     "name": "blk-1/wheel_rim",
                     "private_attribute_entity_type_name": "Surface",
                     "private_attribute_full_name": "blk-1/wheel_rim",
-                    "private_attribute_id": null,
+                    "private_attribute_id": "blk-1/wheel_rim",
                     "private_attribute_is_interface": false,
-                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
                     "private_attribute_sub_components": [],
                     "private_attribute_tag_key": null
                 },
@@ -237,9 +229,8 @@
                     "name": "blk-1/WT_ground_close",
                     "private_attribute_entity_type_name": "Surface",
                     "private_attribute_full_name": "blk-1/WT_ground_close",
-                    "private_attribute_id": null,
+                    "private_attribute_id": "blk-1/WT_ground_close",
                     "private_attribute_is_interface": false,
-                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
                     "private_attribute_sub_components": [],
                     "private_attribute_tag_key": null
                 },
@@ -247,9 +238,8 @@
                     "name": "blk-1/BODY",
                     "private_attribute_entity_type_name": "Surface",
                     "private_attribute_full_name": "blk-1/BODY",
-                    "private_attribute_id": null,
+                    "private_attribute_id": "blk-1/BODY",
                     "private_attribute_is_interface": false,
-                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
                     "private_attribute_sub_components": [],
                     "private_attribute_tag_key": null
                 },
@@ -257,9 +247,8 @@
                     "name": "blk-1/wheel_tire",
                     "private_attribute_entity_type_name": "Surface",
                     "private_attribute_full_name": "blk-1/wheel_tire",
-                    "private_attribute_id": null,
+                    "private_attribute_id": "blk-1/wheel_tire",
                     "private_attribute_is_interface": false,
-                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
                     "private_attribute_sub_components": [],
                     "private_attribute_tag_key": null
                 },
@@ -267,9 +256,8 @@
                     "name": "blk-1/WT_ground_front",
                     "private_attribute_entity_type_name": "Surface",
                     "private_attribute_full_name": "blk-1/WT_ground_front",
-                    "private_attribute_id": null,
+                    "private_attribute_id": "blk-1/WT_ground_front",
                     "private_attribute_is_interface": false,
-                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
                     "private_attribute_sub_components": [],
                     "private_attribute_tag_key": null
                 },
@@ -277,9 +265,8 @@
                     "name": "blk-1/WT_ground",
                     "private_attribute_entity_type_name": "Surface",
                     "private_attribute_full_name": "blk-1/WT_ground",
-                    "private_attribute_id": null,
+                    "private_attribute_id": "blk-1/WT_ground",
                     "private_attribute_is_interface": false,
-                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
                     "private_attribute_sub_components": [],
                     "private_attribute_tag_key": null
                 },
@@ -287,11 +274,93 @@
                     "name": "blk-1/WT_outlet",
                     "private_attribute_entity_type_name": "Surface",
                     "private_attribute_full_name": "blk-1/WT_outlet",
-                    "private_attribute_id": null,
+                    "private_attribute_id": "blk-1/WT_outlet",
                     "private_attribute_is_interface": false,
-                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
                     "private_attribute_sub_components": [],
                     "private_attribute_tag_key": null
+                }
+            ],
+            "ghost_entities": [
+                {
+                    "name": "windTunnelInlet",
+                    "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                    "private_attribute_id": "windTunnelInlet",
+                    "used_by": [
+                        "all"
+                    ]
+                },
+                {
+                    "name": "windTunnelOutlet",
+                    "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                    "private_attribute_id": "windTunnelOutlet",
+                    "used_by": [
+                        "all"
+                    ]
+                },
+                {
+                    "name": "windTunnelCeiling",
+                    "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                    "private_attribute_id": "windTunnelCeiling",
+                    "used_by": [
+                        "all"
+                    ]
+                },
+                {
+                    "name": "windTunnelFloor",
+                    "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                    "private_attribute_id": "windTunnelFloor",
+                    "used_by": [
+                        "all"
+                    ]
+                },
+                {
+                    "name": "windTunnelLeft",
+                    "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                    "private_attribute_id": "windTunnelLeft",
+                    "used_by": [
+                        "all"
+                    ]
+                },
+                {
+                    "name": "windTunnelRight",
+                    "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                    "private_attribute_id": "windTunnelRight",
+                    "used_by": [
+                        "all"
+                    ]
+                },
+                {
+                    "name": "windTunnelFrictionPatch",
+                    "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                    "private_attribute_id": "windTunnelFrictionPatch",
+                    "used_by": [
+                        "StaticFloor"
+                    ]
+                },
+                {
+                    "name": "windTunnelCentralBelt",
+                    "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                    "private_attribute_id": "windTunnelCentralBelt",
+                    "used_by": [
+                        "CentralBelt",
+                        "WheelBelts"
+                    ]
+                },
+                {
+                    "name": "windTunnelFrontWheelBelt",
+                    "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                    "private_attribute_id": "windTunnelFrontWheelBelt",
+                    "used_by": [
+                        "WheelBelts"
+                    ]
+                },
+                {
+                    "name": "windTunnelRearWheelBelt",
+                    "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                    "private_attribute_id": "windTunnelRearWheelBelt",
+                    "used_by": [
+                        "WheelBelts"
+                    ]
                 }
             ],
             "type_name": "VolumeMeshEntityInfo",
@@ -303,8 +372,7 @@
                     "name": "blk-1",
                     "private_attribute_entity_type_name": "GenericVolume",
                     "private_attribute_full_name": "blk-1",
-                    "private_attribute_id": null,
-                    "private_attribute_registry_bucket_name": "VolumetricEntityType",
+                    "private_attribute_id": "blk-1",
                     "private_attribute_zone_boundary_names": {
                         "items": [
                             "blk-1/BODY",
@@ -325,17 +393,14 @@
             ]
         },
         "project_length_unit": {
-            "units": "m",
             "value": 1.0
         }
     },
     "reference_geometry": {
         "area": {
-            "units": "m**2",
             "value": 1.0
         },
         "moment_center": {
-            "units": "m",
             "value": [
                 0.0,
                 0.0,
@@ -343,7 +408,6 @@
             ]
         },
         "moment_length": {
-            "units": "m",
             "value": [
                 1.0,
                 1.0,
@@ -360,12 +424,11 @@
             "type": "adaptive"
         },
         "max_steps": 2000,
-        "order_of_accuracy": 2,
         "type_name": "Steady"
     },
     "unit_system": {
         "name": "SI"
     },
     "user_defined_fields": [],
-    "version": "24.11.0b2"
+    "version": "25.10.11b1"
 }

@@ -56,6 +56,7 @@ from flow360.component.simulation.entity_info import (
     merge_geometry_entity_info,
 )
 from flow360.component.simulation.folder import Folder
+from flow360.component.simulation.meshing_param.params import ModularMeshingWorkflow
 from flow360.component.simulation.primitives import ImportedSurface
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.units import validate_length
@@ -64,6 +65,10 @@ from flow360.component.simulation.web.draft import Draft
 from flow360.component.simulation.web.project_records import (
     get_project_records,
     show_projects_with_keyword_filter,
+)
+from flow360.component.simulation.web.project_tree import (
+    build_project_tree,
+    get_project_tree_parent_id,
 )
 from flow360.component.simulation.web.utils import (
     get_project_dependency_resource_metadata,
@@ -92,6 +97,48 @@ from flow360.log import log
 from flow360.version import __solver_version__
 
 AssetOrResource = Union[type[AssetBase], type[Flow360Resource]]
+
+
+def _ensure_geometry_compatibility_with_mesher(
+    project: Project,
+    use_geometry_AI: bool,  # pylint: disable=invalid-name
+    params: SimulationParams,
+):
+    # Discrete geometry (STL/UGRID/CGNS) or multiple B-Rep files cannot be
+    # surface-meshed without Geometry AI. The ModularMeshingWorkflow (snappy)
+    # path consumes discrete geometry natively and is exempt. When a draft is
+    # active, its entity_info already merges in any import_geometry() files.
+    active_draft = get_active_draft()
+    # pylint: disable=protected-access
+    entity_info = (
+        active_draft._entity_info if active_draft is not None else project._root_asset._entity_info
+    )
+    # An active draft started from a SurfaceMesh exposes a SurfaceMeshEntityInfo
+    # (no body_attribute_names) — there's no geometry surface-meshing step to
+    # gate in that case, so the check is a no-op.
+    if (
+        use_geometry_AI is False
+        and project.metadata.root_item_type is RootType.GEOMETRY
+        and not isinstance(params.meshing, ModularMeshingWorkflow)
+        and isinstance(entity_info, GeometryEntityInfo)
+        and "groupByFile" in entity_info.body_attribute_names
+    ):
+        geometry_files, discrete_files = (
+            entity_info._get_processed_file_list()  # pylint: disable=protected-access
+        )
+        if discrete_files:
+            raise Flow360ValueError(
+                f"Discrete geometry models detected ({', '.join(discrete_files)}). "
+                "Geometry AI must be activated to generate the surface mesh "
+                "from discrete geometry models."
+            )
+        if len(geometry_files) > 1:
+            names = [n.removesuffix(".egads") for n in geometry_files]
+            raise Flow360ValueError(
+                f"Multiple geometry models detected ({len(names)} files: {', '.join(names)}). "
+                "Geometry AI must be activated to generate the surface mesh "
+                "from multiple geometry models."
+            )
 
 
 class RootType(Enum):
@@ -490,9 +537,7 @@ class ProjectTree(pd.BaseModel):
 
     def _has_node(self, asset_id: str) -> bool:
         """Use asset_id to check if the asset already exists in the project tree"""
-        if asset_id in self.nodes.keys():
-            return True
-        return False
+        return asset_id in self.nodes
 
     def _get_asset_ids_by_type(
         self, asset_type: str = Literal["Geometry", "SurfaceMesh", "VolumeMesh", "Case"]
@@ -503,11 +548,7 @@ class ProjectTree(pd.BaseModel):
     @classmethod
     def _create_new_node(cls, asset_record: dict):
         """Create a new node based on the asset record from API call"""
-        parent_id = (
-            asset_record["parentCaseId"]
-            if asset_record["parentCaseId"]
-            else asset_record["parentId"]
-        )
+        parent_id = get_project_tree_parent_id(asset_record)
         case_mesh_id = asset_record["parentId"] if asset_record["type"] == "Case" else None
 
         new_node = ProjectTreeNode(
@@ -558,17 +599,20 @@ class ProjectTree(pd.BaseModel):
 
     def construct_tree(self, asset_records: List[dict]):
         """Construct the entire project tree"""
-        for asset_record in asset_records:
+
+        def create_node(asset_record):
             new_node = ProjectTree._create_new_node(asset_record)
             self._update_short_id_map(new_node)
-            if new_node.parent_id is None:
-                self.root = new_node
-            self.nodes.update({new_node.asset_id: new_node})
+            return new_node
 
-        for node in self.nodes.values():
-            if node.parent_id and self._has_node(node.parent_id):
-                # pylint: disable=unsubscriptable-object
-                self.nodes[node.parent_id].add_child(node)
+        def add_child(parent, child):
+            parent.add_child(child)
+
+        self.root, self.nodes = build_project_tree(
+            asset_records,
+            create_node=create_node,
+            add_child=add_child,
+        )
         self._update_node_short_id()
         self._update_case_mesh_label()
 
@@ -619,7 +663,7 @@ class Project(pd.BaseModel):
 
     _root_webapi: Optional[RestApi] = pd.PrivateAttr(None)
     _project_webapi: Optional[RestApi] = pd.PrivateAttr(None)
-    _root_simulation_json: Optional[dict] = pd.PrivateAttr(None)
+    _length_unit: Optional[Length.PositiveFloat64] = pd.PrivateAttr(None)
 
     @classmethod
     def show_remote(cls, search_keyword: Union[None, str] = None):
@@ -667,16 +711,9 @@ class Project(pd.BaseModel):
         Length.PositiveFloat64
             The length unit.
         """
-
-        defaults = self._root_simulation_json
-
-        cache_key = "private_attribute_asset_cache"
-        length_key = "project_length_unit"
-
-        if cache_key not in defaults or length_key not in defaults[cache_key]:
+        if self._length_unit is None:
             raise Flow360ValueError("[Internal] Simulation params do not contain length unit info.")
-
-        return validate_length(defaults[cache_key][length_key])
+        return self._length_unit
 
     @property
     def geometry(self) -> Geometry:
@@ -1018,7 +1055,7 @@ class Project(pd.BaseModel):
         elif isinstance(files, VolumeMeshFile):
             project._root_webapi = RestApi(VolumeMeshInterfaceV2.endpoint, id=root_asset.id)
         project._root_asset = root_asset
-        project._get_root_simulation_json()
+        project._load_root_length_unit()
         project._get_tree_from_cloud()
         return project
 
@@ -1814,7 +1851,7 @@ class Project(pd.BaseModel):
         elif root_type == RootType.VOLUME_MESH:
             project._root_asset = root_asset
             project._root_webapi = RestApi(VolumeMeshInterfaceV2.endpoint, id=root_asset.id)
-        project._get_root_simulation_json()
+        project._load_root_length_unit()
         project._get_tree_from_cloud()
         return project
 
@@ -1980,14 +2017,16 @@ class Project(pd.BaseModel):
             self.project_tree.root,
         )
 
-    def _get_root_simulation_json(self):
+    def _load_root_length_unit(self):
         """
-        Loads the default simulation JSON for the project based on the root asset type.
+        Fetches the default simulation JSON for the project's root asset and
+        extracts the project length unit through the schema migration pipeline.
 
         Raises
         ------
         Flow360ValueError
-            If the root item type or ID is missing from project metadata.
+            If the root item type or ID is missing from project metadata, or
+            the length unit is absent from the migrated simulation params.
         Flow360WebError
             If the simulation JSON cannot be retrieved.
         """
@@ -2000,7 +2039,14 @@ class Project(pd.BaseModel):
         if not isinstance(resp, dict) or "simulationJson" not in resp:
             raise Flow360WebError("Couldn't retrieve default simulation JSON for the project")
         simulation_json = json.loads(resp["simulationJson"])
-        self._root_simulation_json = simulation_json
+        simulation_json = SimulationParams._sanitize_params_dict(simulation_json)
+        simulation_json, _ = SimulationParams._update_param_dict(simulation_json)
+        length_value = simulation_json.get("private_attribute_asset_cache", {}).get(
+            "project_length_unit"
+        )
+        if length_value is None:
+            raise Flow360ValueError("[Internal] Simulation params do not contain length unit info.")
+        self._length_unit = validate_length(length_value)
 
     # pylint: disable=too-many-arguments, too-many-locals
     def _run(
@@ -2074,6 +2120,10 @@ class Project(pd.BaseModel):
 
         if use_geometry_AI is True and use_beta_mesher is False:
             raise Flow360ValueError("Enabling Geometry AI requires also enabling beta mesher.")
+
+        _ensure_geometry_compatibility_with_mesher(
+            project=self, use_geometry_AI=use_geometry_AI, params=params
+        )
 
         root_asset = self._root_asset
         if interpolate_to_mesh is not None:

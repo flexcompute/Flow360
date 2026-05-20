@@ -3,13 +3,13 @@
         "defaults": {
             "boundary_layer_growth_rate": 1.2,
             "curvature_resolution_angle": {
-                "units": "degree",
-                "value": 12
+                "display_unit": "degree",
+                "value": 0.20943951023931956
             },
             "planar_face_tolerance": 1e-06,
             "sealing_size": {
-                "units": "cm",
-                "value": 0
+                "display_unit": "cm",
+                "value": 0.0
             },
             "surface_edge_growth_rate": 1.2
         },
@@ -39,16 +39,14 @@
             "material": {
                 "dynamic_viscosity": {
                     "effective_temperature": {
-                        "units": "K",
                         "value": 110.39999999999998
                     },
                     "reference_temperature": {
-                        "units": "K",
                         "value": 273.15
                     },
                     "reference_viscosity": {
-                        "units": "dyn*s/cm**2",
-                        "value": 0.0001716
+                        "display_unit": "dyn*s/cm^2",
+                        "value": 1.7160000000000002e-05
                     }
                 },
                 "name": "air",
@@ -62,7 +60,8 @@
                 "limit_pressure_density": false,
                 "limit_velocity": false,
                 "linear_solver": {
-                    "max_iterations": 30
+                    "max_iterations": 30,
+                    "type_name": "LinearSolver"
                 },
                 "low_mach_preconditioner": false,
                 "max_force_jac_update_physical_steps": 0,
@@ -274,18 +273,17 @@
             "heat_spec": {
                 "type_name": "HeatFlux",
                 "value": {
-                    "units": "g/s**3",
-                    "value": 0
+                    "display_unit": "g/s^3",
+                    "value": 0.0
                 }
             },
             "name": "Wall",
             "private_attribute_id": "404d9692-d56d-4ae1-a26f-17777cf0ec58",
             "roughness_height": {
-                "units": "cm",
-                "value": 0
+                "display_unit": "cm",
+                "value": 0.0
             },
-            "type": "Wall",
-            "use_wall_function": false
+            "type": "Wall"
         },
         {
             "_id": "cc986870-8e7c-4392-a627-e21a713ff350",
@@ -305,45 +303,42 @@
     ],
     "operating_condition": {
         "alpha": {
-            "units": "degree",
-            "value": 0
+            "display_unit": "degree",
+            "value": 0.0
         },
         "beta": {
-            "units": "degree",
-            "value": 0
+            "display_unit": "degree",
+            "value": 0.0
         },
         "private_attribute_constructor": "default",
         "private_attribute_input_cache": {
             "alpha": {
-                "units": "degree",
-                "value": 0
+                "display_unit": "degree",
+                "value": 0.0
             },
             "beta": {
-                "units": "degree",
-                "value": 0
+                "display_unit": "degree",
+                "value": 0.0
             },
             "temperature": {
-                "units": "K",
                 "value": 288.15
             },
             "thermal_state": {
                 "density": {
-                    "units": "g/cm**3",
-                    "value": 0.0012250000000000002
+                    "display_unit": "g/cm^3",
+                    "value": 1.225
                 },
                 "private_attribute_constructor": "default",
                 "private_attribute_input_cache": {
                     "altitude": {
-                        "units": "cm",
-                        "value": 0
+                        "display_unit": "cm",
+                        "value": 0.0
                     },
                     "temperature_offset": {
-                        "units": "K",
-                        "value": 0
+                        "value": 0.0
                     }
                 },
                 "temperature": {
-                    "units": "K",
                     "value": 288.15
                 },
                 "type_name": "ThermalState"
@@ -351,12 +346,11 @@
         },
         "thermal_state": {
             "density": {
-                "units": "g/cm**3",
-                "value": 0.0012250000000000002
+                "display_unit": "g/cm^3",
+                "value": 1.225
             },
             "private_attribute_constructor": "default",
             "temperature": {
-                "units": "K",
                 "value": 288.15
             },
             "type_name": "ThermalState"
@@ -540,7 +534,9 @@
                     "CfVec"
                 ]
             },
-            "output_format": "paraview",
+            "output_format": [
+                "paraview"
+            ],
             "output_type": "SurfaceOutput",
             "private_attribute_id": "39f2b21a-44dc-46a4-8bfb-59bfb845197c",
             "write_single_file": false
@@ -698,11 +694,10 @@
                         1
                     ],
                     "center": {
-                        "units": "m",
                         "value": [
-                            0,
-                            0,
-                            0
+                            0.0,
+                            0.0,
+                            0.0
                         ]
                     },
                     "name": "Axisymmetric volume1",
@@ -710,28 +705,24 @@
                     "private_attribute_id": "48ff9fab-afbd-4957-b5d3-3c52e7ab2fae",
                     "profile_curve": [
                         {
-                            "units": "m",
                             "value": [
                                 -1.0,
                                 0.0
                             ]
                         },
                         {
-                            "units": "m",
                             "value": [
                                 -1.0,
                                 1.0
                             ]
                         },
                         {
-                            "units": "m",
                             "value": [
                                 1.0,
                                 2.0
                             ]
                         },
                         {
-                            "units": "m",
                             "value": [
                                 1.0,
                                 0.0
@@ -769,6 +760,87 @@
                     "private_attribute_entity_type_name": "GhostCircularPlane",
                     "private_attribute_full_name": null,
                     "private_attribute_id": "symmetric"
+                },
+                {
+                    "name": "windTunnelInlet",
+                    "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                    "private_attribute_id": "windTunnelInlet",
+                    "used_by": [
+                        "all"
+                    ]
+                },
+                {
+                    "name": "windTunnelOutlet",
+                    "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                    "private_attribute_id": "windTunnelOutlet",
+                    "used_by": [
+                        "all"
+                    ]
+                },
+                {
+                    "name": "windTunnelCeiling",
+                    "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                    "private_attribute_id": "windTunnelCeiling",
+                    "used_by": [
+                        "all"
+                    ]
+                },
+                {
+                    "name": "windTunnelFloor",
+                    "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                    "private_attribute_id": "windTunnelFloor",
+                    "used_by": [
+                        "all"
+                    ]
+                },
+                {
+                    "name": "windTunnelLeft",
+                    "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                    "private_attribute_id": "windTunnelLeft",
+                    "used_by": [
+                        "all"
+                    ]
+                },
+                {
+                    "name": "windTunnelRight",
+                    "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                    "private_attribute_id": "windTunnelRight",
+                    "used_by": [
+                        "all"
+                    ]
+                },
+                {
+                    "name": "windTunnelFrictionPatch",
+                    "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                    "private_attribute_id": "windTunnelFrictionPatch",
+                    "used_by": [
+                        "StaticFloor"
+                    ]
+                },
+                {
+                    "name": "windTunnelCentralBelt",
+                    "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                    "private_attribute_id": "windTunnelCentralBelt",
+                    "used_by": [
+                        "CentralBelt",
+                        "WheelBelts"
+                    ]
+                },
+                {
+                    "name": "windTunnelFrontWheelBelt",
+                    "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                    "private_attribute_id": "windTunnelFrontWheelBelt",
+                    "used_by": [
+                        "WheelBelts"
+                    ]
+                },
+                {
+                    "name": "windTunnelRearWheelBelt",
+                    "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                    "private_attribute_id": "windTunnelRearWheelBelt",
+                    "used_by": [
+                        "WheelBelts"
+                    ]
                 }
             ],
             "global_bounding_box": [
@@ -786,8 +858,7 @@
             "type_name": "SurfaceMeshEntityInfo"
         },
         "project_length_unit": {
-            "units": "m",
-            "value": 1
+            "value": 1.0
         },
         "use_inhouse_mesher": true,
         "variable_context": [
@@ -860,19 +931,19 @@
             "value": 1
         },
         "moment_center": {
-            "units": "cm",
+            "display_unit": "cm",
             "value": [
-                0,
-                0,
-                0
+                0.0,
+                0.0,
+                0.0
             ]
         },
         "moment_length": {
-            "units": "cm",
+            "display_unit": "cm",
             "value": [
-                99.99999999999999,
-                99.99999999999999,
-                99.99999999999999
+                0.9999999999999999,
+                0.9999999999999999,
+                0.9999999999999999
             ]
         }
     },
@@ -891,5 +962,5 @@
         "name": "CGS"
     },
     "user_defined_dynamics": null,
-    "version": "25.8.0b4"
+    "version": "25.10.11b1"
 }

@@ -8,6 +8,10 @@ import click
 
 from flow360.cli.output import emit_json, emit_payload
 from flow360.cli.project_formatters import format_project_list
+from flow360.component.simulation.web.project_tree import (
+    build_project_tree,
+    get_project_tree_parent_id,
+)
 
 
 def _get_project_records(search=None, limit=25, folder_ids=None, exclude_subfolders=False):
@@ -31,13 +35,7 @@ def _get_project_info(project_id):
 
 
 def _get_project_tree(project_id):
-    # pylint: disable=import-outside-toplevel
-    from flow360.component.project import ProjectTree
-
-    records = _get_project_tree_records(project_id)
-    tree = ProjectTree()
-    tree.construct_tree(asset_records=records)
-    return tree
+    return _project_tree_from_records(_get_project_tree_records(project_id))
 
 
 def _get_project_tree_records(project_id):
@@ -98,25 +96,36 @@ def _serialize_project_statistics(statistics):
     }
 
 
-def _serialize_tree_node(node):
+def _project_tree_from_records(records):
+    def create_node(item):
+        return {
+            "id": item["id"],
+            "name": item["name"],
+            "type": item["type"],
+            "children": [],
+        }
+
+    def add_child(parent, child):
+        parent["children"].append(child)
+
+    try:
+        root, _nodes = build_project_tree(records, create_node=create_node, add_child=add_child)
+    except ValueError as err:
+        raise click.ClickException(str(err)) from err
+    return root
+
+
+def _project_item_from_record(item):
     return {
-        "id": node.asset_id,
-        "name": node.asset_name,
-        "type": node.asset_type,
-        "children": [_serialize_tree_node(child) for child in node.children],
+        "id": item["id"],
+        "name": item["name"],
+        "type": item["type"],
+        "parent_id": get_project_tree_parent_id(item),
     }
 
 
 def _project_items_from_records(records):
-    return [
-        {
-            "id": item["id"],
-            "name": item["name"],
-            "type": item["type"],
-            "parent_id": item.get("parentCaseId") or item.get("parentId"),
-        }
-        for item in records
-    ]
+    return [_project_item_from_record(item) for item in records]
 
 
 def _serialize_project_item(item):
@@ -243,8 +252,7 @@ def project_tree(project_id):
     """
     Get the project tree.
     """
-    tree = _get_project_tree(project_id)
-    emit_json({"root": _serialize_tree_node(tree.root)})
+    emit_json({"root": _get_project_tree(project_id)})
 
 
 @project.command("items")

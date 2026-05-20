@@ -12,9 +12,15 @@
             "interface_interpolation_tolerance": 0.2,
             "material": {
                 "dynamic_viscosity": {
-                    "effective_temperature": 110.4,
-                    "reference_temperature": 273.15,
-                    "reference_viscosity": 1.716e-05
+                    "effective_temperature": {
+                        "value": 110.4
+                    },
+                    "reference_temperature": {
+                        "value": 273.15
+                    },
+                    "reference_viscosity": {
+                        "value": 1.716e-05
+                    }
                 },
                 "name": "air",
                 "prandtl_number": 0.72,
@@ -37,8 +43,12 @@
                                             0.0,
                                             0.0
                                         ],
-                                        "temperature_range_max": 6000.0,
-                                        "temperature_range_min": 200.0,
+                                        "temperature_range_max": {
+                                            "value": 6000.0
+                                        },
+                                        "temperature_range_min": {
+                                            "value": 200.0
+                                        },
                                         "type_name": "NASA9CoefficientSet"
                                     }
                                 ],
@@ -68,6 +78,11 @@
                 "numerical_dissipation_factor": 1.0,
                 "order_of_accuracy": 2,
                 "relative_tolerance": 0.0,
+                "riemann_solver": {
+                    "low_mach_preconditioner": false,
+                    "numerical_dissipation_factor": 1.0,
+                    "type_name": "Roe"
+                },
                 "type_name": "Compressible",
                 "update_jacobian_frequency": 4
             },
@@ -113,19 +128,39 @@
         }
     ],
     "operating_condition": {
-        "alpha": 0.0,
-        "beta": 0.0,
+        "alpha": {
+            "display_unit": "degree",
+            "value": 0.0
+        },
+        "beta": {
+            "display_unit": "degree",
+            "value": 0.0
+        },
         "private_attribute_constructor": "default",
         "private_attribute_input_cache": {
-            "alpha": 0.0,
-            "beta": 0.0,
+            "alpha": {
+                "display_unit": "degree",
+                "value": 0.0
+            },
+            "beta": {
+                "display_unit": "degree",
+                "value": 0.0
+            },
             "thermal_state": {
-                "density": 1.225,
+                "density": {
+                    "value": 1.225
+                },
                 "material": {
                     "dynamic_viscosity": {
-                        "effective_temperature": 110.4,
-                        "reference_temperature": 273.15,
-                        "reference_viscosity": 1.716e-05
+                        "effective_temperature": {
+                            "value": 110.4
+                        },
+                        "reference_temperature": {
+                            "value": 273.15
+                        },
+                        "reference_viscosity": {
+                            "value": 1.716e-05
+                        }
                     },
                     "name": "air",
                     "prandtl_number": 0.72,
@@ -148,8 +183,12 @@
                                                 0.0,
                                                 0.0
                                             ],
-                                            "temperature_range_max": 6000.0,
-                                            "temperature_range_min": 200.0,
+                                            "temperature_range_max": {
+                                                "value": 6000.0
+                                            },
+                                            "temperature_range_min": {
+                                                "value": 200.0
+                                            },
                                             "type_name": "NASA9CoefficientSet"
                                         }
                                     ],
@@ -165,18 +204,30 @@
                 },
                 "private_attribute_constructor": "default",
                 "private_attribute_input_cache": {},
-                "temperature": 288.15,
+                "temperature": {
+                    "value": 288.15
+                },
                 "type_name": "ThermalState"
             }
         },
-        "reference_velocity_magnitude": 10.0,
+        "reference_velocity_magnitude": {
+            "value": 10.0
+        },
         "thermal_state": {
-            "density": 1.225,
+            "density": {
+                "value": 1.225
+            },
             "material": {
                 "dynamic_viscosity": {
-                    "effective_temperature": 110.4,
-                    "reference_temperature": 273.15,
-                    "reference_viscosity": 1.716e-05
+                    "effective_temperature": {
+                        "value": 110.4
+                    },
+                    "reference_temperature": {
+                        "value": 273.15
+                    },
+                    "reference_viscosity": {
+                        "value": 1.716e-05
+                    }
                 },
                 "name": "air",
                 "prandtl_number": 0.72,
@@ -199,8 +250,12 @@
                                             0.0,
                                             0.0
                                         ],
-                                        "temperature_range_max": 6000.0,
-                                        "temperature_range_min": 200.0,
+                                        "temperature_range_max": {
+                                            "value": 6000.0
+                                        },
+                                        "temperature_range_min": {
+                                            "value": 200.0
+                                        },
                                         "type_name": "NASA9CoefficientSet"
                                     }
                                 ],
@@ -216,7 +271,9 @@
             },
             "private_attribute_constructor": "default",
             "private_attribute_input_cache": {},
-            "temperature": 288.15,
+            "temperature": {
+                "value": 288.15
+            },
             "type_name": "ThermalState"
         },
         "type_name": "AerospaceCondition",
@@ -256,11 +313,13 @@
             "entities": {
                 "stored_entities": [
                     {
-                        "location": [
-                            1.0,
-                            2.0,
-                            3.0
-                        ],
+                        "location": {
+                            "value": [
+                                1.0,
+                                2.0,
+                                3.0
+                            ]
+                        },
                         "name": "pt1",
                         "private_attribute_entity_type_name": "Point",
                         "private_attribute_id": "111"
@@ -346,5 +405,5 @@
         "name": "SI"
     },
     "user_defined_fields": [],
-    "version": "25.10.6b1"
+    "version": "25.10.11b1"
 }

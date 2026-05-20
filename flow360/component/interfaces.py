@@ -76,3 +76,9 @@ ReportInterface = BaseInterface(
     s3_transfer_method=S3TransferType.REPORT,
     endpoint="v2/report",
 )
+
+WorkspaceInterface = BaseInterface(
+    resource_type="Workspace",
+    s3_transfer_method=None,
+    endpoint="v2/workspaces",
+)

@@ -1,6 +1,5 @@
 import copy
 import json
-import re
 from typing import get_args
 
 import pytest
@@ -54,158 +53,6 @@ def test_forward_compatibility_error():
     }
 
 
-def validate_proper_unit(obj, allowed_units_string):
-    def is_expected_unit(unit_str, allowed_units_string):
-        tokens = re.findall(r"[A-Za-z_]+", unit_str)
-        return all(token in allowed_units_string for token in tokens)
-
-    if isinstance(obj, dict):
-        if "value" in obj and "units" in obj:
-            assert is_expected_unit(obj["units"], allowed_units_string)
-
-        for key, val in obj.items():
-            if key == "project_length_unit":
-                continue
-            validate_proper_unit(val, allowed_units_string)
-
-    elif isinstance(obj, list):
-        for item in obj:
-            validate_proper_unit(item, allowed_units_string)
-
-
-def test_imperial_unit_system_conversion():
-    with open("data/simulation_param.json", "r") as fp:
-        dict_to_convert = json.load(fp)
-    services.change_unit_system(data=dict_to_convert, target_unit_system="Imperial")
-    imperial_units = {"ft", "lbf", "lb", "s", "degF", "delta_degF", "rad", "degree"}
-    unit_system_names = {
-        "SI_unit_system",
-        "Imperial_unit_system",
-        "CGS_unit_system",
-    }
-
-    validate_proper_unit(dict_to_convert, (imperial_units | unit_system_names))
-    # Check that the angles are not changed
-    assert dict_to_convert["meshing"]["refinements"][0]["entities"]["stored_entities"][0][
-        "angle_of_rotation"
-    ] == {"units": "degree", "value": 20.0}
-
-    # Assert no change in angle unit
-    assert dict_to_convert["operating_condition"]["alpha"] == {"units": "rad", "value": 5.0}
-
-    # Assert temperature unit name is correct
-    temperature_tester = dict_to_convert["operating_condition"]["thermal_state"]["material"][
-        "dynamic_viscosity"
-    ]["effective_temperature"]
-    assert temperature_tester["units"] == "degF"
-    assert abs(temperature_tester["value"] - 302) / 302 < 1e-10
-
-    # Assert stop criterion tolerance unit is correct
-    assert (
-        dict_to_convert["run_control"]["stopping_criteria"][1]["tolerance"]["units"]
-        == "SI_unit_system"
-    )
-
-    # General comparison\
-    with open("./ref/unit_system_converted_imperial.json", "r") as fp:
-        ref_dict = json.load(fp)
-
-    assert compare_values(dict_to_convert, ref_dict)
-
-
-def test_CGS_unit_system_conversion():
-    with open("data/simulation_param.json", "r") as fp:
-        dict_to_convert = json.load(fp)
-    services.change_unit_system(data=dict_to_convert, target_unit_system="CGS")
-    CGS_units = {"dyn", "cm", "g", "s", "K", "rad", "degree"}
-    unit_system_names = {
-        "SI_unit_system",
-        "Imperial_unit_system",
-        "CGS_unit_system",
-    }
-
-    validate_proper_unit(dict_to_convert, (CGS_units | unit_system_names))
-    # Check that the angles are not changed
-    assert dict_to_convert["meshing"]["refinements"][0]["entities"]["stored_entities"][0][
-        "angle_of_rotation"
-    ] == {"units": "degree", "value": 20.0}
-
-    # Assert no change in angle unit
-    assert dict_to_convert["operating_condition"]["alpha"] == {"units": "rad", "value": 5.0}
-
-    # Assert temperature unit name is correct
-    temperature_tester = dict_to_convert["operating_condition"]["thermal_state"]["material"][
-        "dynamic_viscosity"
-    ]["effective_temperature"]
-    assert temperature_tester["units"] == "K"
-    assert abs(temperature_tester["value"] - 423.15) / 423.15 < 1e-10
-
-    # Assert stop criterion tolerance unit is correct
-    assert (
-        dict_to_convert["run_control"]["stopping_criteria"][1]["tolerance"]["units"]
-        == "SI_unit_system"
-    )
-
-    # General comparison
-    with open("./ref/unit_system_converted_CGS.json", "r") as fp:
-        ref_dict = json.load(fp)
-    assert compare_values(dict_to_convert, ref_dict, rtol=1e-7)  # Default tol fail for Windows
-
-
-def test_SI_unit_system_conversion():
-    with open("data/simulation_param.json", "r") as fp:
-        dict_to_convert = json.load(fp)
-    services.change_unit_system(data=dict_to_convert, target_unit_system="SI")
-    SI_units = {"m", "kg", "s", "K", "rad", "degree", "Pa"}
-    unit_system_names = {
-        "SI_unit_system",
-        "Imperial_unit_system",
-        "CGS_unit_system",
-    }
-
-    validate_proper_unit(dict_to_convert, (SI_units | unit_system_names))
-    # Check that the angles are not changed
-    assert dict_to_convert["meshing"]["refinements"][0]["entities"]["stored_entities"][0][
-        "angle_of_rotation"
-    ] == {"units": "degree", "value": 20.0}
-
-    # Assert no change in angle unit
-    assert dict_to_convert["operating_condition"]["alpha"] == {"units": "rad", "value": 5.0}
-
-    # Assert temperature unit name is correct
-    temperature_tester = dict_to_convert["operating_condition"]["thermal_state"]["material"][
-        "dynamic_viscosity"
-    ]["effective_temperature"]
-    assert temperature_tester["units"] == "K"
-    assert abs(temperature_tester["value"] - 423.15) / 423.15 < 1e-10
-
-    # Assert stop criterion tolerance unit is correct
-    assert (
-        dict_to_convert["run_control"]["stopping_criteria"][1]["tolerance"]["units"]
-        == "SI_unit_system"
-    )
-
-    # General comparison
-    with open("./ref/unit_system_converted_SI.json", "r") as fp:
-        ref_dict = json.load(fp)
-    assert compare_values(dict_to_convert, ref_dict, rtol=1e-7)  # Default tol fail for Windows
-
-
-def test_unchanged_BETDisk_length_unit():
-    with open("data/simulation_bet_disk.json", "r") as fp:
-        dict_to_convert = json.load(fp)
-    services.change_unit_system(data=dict_to_convert, target_unit_system="CGS")
-    assert dict_to_convert["unit_system"]["name"] == "CGS"
-    assert dict_to_convert["models"][4]["private_attribute_input_cache"]["length_unit"] == {
-        "value": 1,
-        "units": "m",
-    }
-    assert dict_to_convert["models"][6]["private_attribute_input_cache"]["length_unit"] == {
-        "value": 1,
-        "units": "ft",
-    }
-
-
 def test_unit_conversion_front_end_compatibility():
 
     ##### 1. Ensure that the units are valid in `supported_units_by_front_end`
@@ -253,8 +100,10 @@ def test_validate_model_preserves_unit_system(unit_system_name):
     with open("data/simulation.json", "r") as fp:
         params_data = json.load(fp)
 
-    # Convert to the target unit system so all values carry matching units
-    services.change_unit_system(data=params_data, target_unit_system=unit_system_name)
+    # Override the declared unit system. The serialized values are always SI on
+    # the wire (display_unit metadata is what the WebUI honors for rendering),
+    # so the name change is all that's needed for this test's purpose.
+    params_data["unit_system"]["name"] = unit_system_name
     unit_system_before = copy.deepcopy(params_data["unit_system"])
 
     validated_param, errors, _ = services.validate_model(

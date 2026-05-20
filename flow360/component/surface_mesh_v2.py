@@ -26,6 +26,7 @@ from flow360.component.resource_base import (
     ResourceDraft,
     SubmissionMode,
 )
+from flow360.component.resource_status import is_final_resource_status
 from flow360.component.simulation.folder import Folder
 from flow360.component.simulation.web.asset_base import AssetBase
 from flow360.component.utils import (
@@ -63,14 +64,7 @@ class SurfaceMeshStatusV2(Enum):
         bool
             True if status is final, False otherwise.
         """
-        if self in [
-            SurfaceMeshStatusV2.ERROR,
-            SurfaceMeshStatusV2.PROCESSED,
-            SurfaceMeshStatusV2.DELETED,
-            SurfaceMeshStatusV2.COMPLETED,
-        ]:
-            return True
-        return False
+        return is_final_resource_status("SurfaceMesh", self)
 
 
 # pylint: disable=R0801

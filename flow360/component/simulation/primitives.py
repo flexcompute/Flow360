@@ -37,5 +37,6 @@ from flow360_schema.models.entities.volume_entities import (
     GenericVolume,
     SeedpointVolume,
     Sphere,
+    VoxelGrid,
 )
 from flow360_schema.models.reference_geometry import ReferenceGeometry

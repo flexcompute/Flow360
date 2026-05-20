@@ -17,6 +17,35 @@ CONFIG_DIR_MODE = 0o700
 CONFIG_FILE_MODE = 0o600
 
 
+def _merge_overwrite(old: dict, new: dict):
+    """Deep-merge dictionaries while overwriting conflicts from `new`."""
+
+    for key, value in new.items():
+        if key in old and isinstance(old[key], dict) and isinstance(value, dict):
+            _merge_overwrite(old[key], value)
+        else:
+            old[key] = value
+    return old
+
+
+def _normalize_storage_environment_name(environment: Optional[str]) -> Optional[str]:
+    """Normalize environment names used for config storage."""
+
+    if environment is None:
+        return None
+
+    normalized = environment.strip()
+    if not normalized:
+        return None
+
+    lowered = normalized.lower()
+    if lowered == prod.name:
+        return None
+    if lowered in ("dev", "uat"):
+        return lowered
+    return normalized
+
+
 def _ensure_permissions(path: str, mode: int):
     """Best-effort permission hardening for local config paths."""
     try:
@@ -55,30 +84,45 @@ def store_apikey(
 ):
     """Store an API key using the same config layout consumed by UserConfig."""
     config = read_user_config()
+    environment_name = _normalize_storage_environment_name(environment_name)
 
-    if environment_name in (None, "", prod.name):
+    if environment_name is None:
         entry = {profile: {"apikey": apikey}}
     else:
         entry = {profile: {environment_name: {"apikey": apikey}}}
 
-    # Avoid importing CLI modules at import time because the wider package has lazy-import paths.
-    from flow360.cli import dict_utils  # pylint: disable=import-outside-toplevel
-
-    dict_utils.merge_overwrite(config, entry)
+    _merge_overwrite(config, entry)
     write_user_config(config)
     return config
+
+
+def configure_apikey(
+    apikey: str,
+    environment: Optional[str] = None,
+    profile: str = DEFAULT_PROFILE,
+) -> None:
+    """SDK-facing helper for storing an API key without going through the CLI app."""
+
+    store_apikey(
+        apikey,
+        profile=profile,
+        environment_name=environment,
+    )
+    reload_user_config()
+    log.info("Configuration successful.")
 
 
 def delete_apikey(profile: str = DEFAULT_PROFILE, environment_name: Optional[str] = None):
     """Delete a stored API key for the selected profile/environment if present."""
     config = read_user_config()
+    environment_name = _normalize_storage_environment_name(environment_name)
     profile_config = config.get(profile)
 
     if not isinstance(profile_config, dict):
         return False, config
 
     removed = False
-    if environment_name in (None, "", prod.name):
+    if environment_name is None:
         removed = profile_config.pop("apikey", None) is not None
     else:
         env_config = profile_config.get(environment_name)
@@ -162,7 +206,7 @@ class BasicUserConfig:
             # If other environment is used, check if the key exists
             key = key.get(env.name, None)
         if key is None:
-            log.warning(f"Cannot find api key associated with environment '{env.name}'.")
+            log.debug(f"No api key configured for environment '{env.name}'.")
         return None if key is None else key.get("apikey", "")
 
     def suppress_submit_warning(self):
@@ -207,6 +251,23 @@ class BasicUserConfig:
     def enable_validation(self):
         """enable user side validation (pydantic)"""
         self._do_validation = True
+
+
+def reload_user_config():
+    """Reload the shared user-config object in place when possible."""
+    # pylint: disable=protected-access
+
+    global UserConfig  # pylint: disable=global-statement
+
+    if isinstance(UserConfig, BasicUserConfig):  # pylint: disable=used-before-assignment
+        do_validation = UserConfig.do_validation
+        suppress_submit_warning = UserConfig._suppress_submit_warning
+        BasicUserConfig.__init__(UserConfig)
+        UserConfig._do_validation = do_validation
+        UserConfig._suppress_submit_warning = suppress_submit_warning
+    else:
+        UserConfig = BasicUserConfig()
+    return UserConfig
 
 
 UserConfig = BasicUserConfig()

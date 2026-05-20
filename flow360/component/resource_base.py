@@ -22,6 +22,7 @@ from flow360 import error_messages
 from flow360.cloud.rest_api import RestApi
 from flow360.cloud.webbrowser import open_browser
 from flow360.component.interfaces import BaseInterface
+from flow360.component.resource_status import is_final_resource_status
 from flow360.component.utils import LocalResourceCache, is_valid_uuid, validate_type
 from flow360.exceptions import Flow360RuntimeError
 from flow360.log import LogLevel, log
@@ -76,16 +77,7 @@ class Flow360Status(Enum):
         bool
             True if status is final, False otherwise.
         """
-        if self in [
-            Flow360Status.COMPLETED,
-            Flow360Status.DIVERGED,
-            Flow360Status.ERROR,
-            Flow360Status.UPLOADED,
-            Flow360Status.PROCESSED,
-            Flow360Status.DELETED,
-        ]:
-            return True
-        return False
+        return is_final_resource_status(None, self)
 
 
 class AssetMetaBaseModel(pd.BaseModel):

@@ -1,31 +1,12 @@
 {
-    "meshing": {
-        "defaults": {
-            "boundary_layer_growth_rate": 1.2,
-            "curvature_resolution_angle": {
-                "units": "degree",
-                "value": 12.0
-            },
-            "surface_edge_growth_rate": 1.2
-        },
-        "gap_treatment_strength": 0.0,
-        "refinement_factor": 1.0,
-        "refinements": [],
-        "volume_zones": [
-            {
-                "method": "auto",
-                "name": "Farfield",
-                "type": "AutomatedFarfield"
-            }
-        ]
-    },
     "models": [
         {
             "entities": {
                 "stored_entities": [
                     {
                         "name": "farfield",
-                        "private_attribute_entity_type_name": "GhostSurface"
+                        "private_attribute_entity_type_name": "GhostSurface",
+                        "private_attribute_id": "farfield"
                     }
                 ]
             },
@@ -36,15 +17,12 @@
             "material": {
                 "dynamic_viscosity": {
                     "effective_temperature": {
-                        "units": "K",
                         "value": 110.4
                     },
                     "reference_temperature": {
-                        "units": "K",
                         "value": 273.15
                     },
                     "reference_viscosity": {
-                        "units": "Pa*s",
                         "value": 1.716e-05
                     }
                 },
@@ -59,7 +37,8 @@
                 "limit_pressure_density": false,
                 "limit_velocity": false,
                 "linear_solver": {
-                    "max_iterations": 30
+                    "max_iterations": 30,
+                    "type_name": "LinearSolver"
                 },
                 "low_mach_preconditioner": false,
                 "max_force_jac_update_physical_steps": 0,
@@ -107,32 +86,28 @@
     ],
     "operating_condition": {
         "alpha": {
-            "units": "degree",
+            "display_unit": "degree",
             "value": 0.0
         },
         "beta": {
-            "units": "degree",
+            "display_unit": "degree",
             "value": 0.0
         },
         "private_attribute_constructor": "default",
         "private_attribute_input_cache": {},
         "thermal_state": {
             "density": {
-                "units": "kg/m**3",
                 "value": 1.225
             },
             "material": {
                 "dynamic_viscosity": {
                     "effective_temperature": {
-                        "units": "K",
                         "value": 110.4
                     },
                     "reference_temperature": {
-                        "units": "K",
                         "value": 273.15
                     },
                     "reference_viscosity": {
-                        "units": "Pa*s",
                         "value": 1.716e-05
                     }
                 },
@@ -142,7 +117,6 @@
             "private_attribute_constructor": "default",
             "private_attribute_input_cache": {},
             "temperature": {
-                "units": "K",
                 "value": 288.15
             },
             "type_name": "ThermalState"
@@ -214,6 +188,89 @@
                 "body0001_face0012",
                 "body0001_face0013",
                 "body0001_face0014"
+            ],
+            "ghost_entities": [
+                {
+                    "name": "windTunnelInlet",
+                    "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                    "private_attribute_id": "windTunnelInlet",
+                    "used_by": [
+                        "all"
+                    ]
+                },
+                {
+                    "name": "windTunnelOutlet",
+                    "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                    "private_attribute_id": "windTunnelOutlet",
+                    "used_by": [
+                        "all"
+                    ]
+                },
+                {
+                    "name": "windTunnelCeiling",
+                    "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                    "private_attribute_id": "windTunnelCeiling",
+                    "used_by": [
+                        "all"
+                    ]
+                },
+                {
+                    "name": "windTunnelFloor",
+                    "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                    "private_attribute_id": "windTunnelFloor",
+                    "used_by": [
+                        "all"
+                    ]
+                },
+                {
+                    "name": "windTunnelLeft",
+                    "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                    "private_attribute_id": "windTunnelLeft",
+                    "used_by": [
+                        "all"
+                    ]
+                },
+                {
+                    "name": "windTunnelRight",
+                    "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                    "private_attribute_id": "windTunnelRight",
+                    "used_by": [
+                        "all"
+                    ]
+                },
+                {
+                    "name": "windTunnelFrictionPatch",
+                    "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                    "private_attribute_id": "windTunnelFrictionPatch",
+                    "used_by": [
+                        "StaticFloor"
+                    ]
+                },
+                {
+                    "name": "windTunnelCentralBelt",
+                    "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                    "private_attribute_id": "windTunnelCentralBelt",
+                    "used_by": [
+                        "CentralBelt",
+                        "WheelBelts"
+                    ]
+                },
+                {
+                    "name": "windTunnelFrontWheelBelt",
+                    "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                    "private_attribute_id": "windTunnelFrontWheelBelt",
+                    "used_by": [
+                        "WheelBelts"
+                    ]
+                },
+                {
+                    "name": "windTunnelRearWheelBelt",
+                    "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                    "private_attribute_id": "windTunnelRearWheelBelt",
+                    "used_by": [
+                        "WheelBelts"
+                    ]
+                }
             ],
             "grouped_bodies": [
                 [
@@ -960,17 +1017,14 @@
             "type_name": "GeometryEntityInfo"
         },
         "project_length_unit": {
-            "units": "m",
             "value": 1.0
         }
     },
     "reference_geometry": {
         "area": {
-            "units": "m**2",
             "value": 1.0
         },
         "moment_center": {
-            "units": "m",
             "value": [
                 0.0,
                 0.0,
@@ -978,7 +1032,6 @@
             ]
         },
         "moment_length": {
-            "units": "m",
             "value": [
                 1.0,
                 1.0,
@@ -995,11 +1048,10 @@
             "type": "adaptive"
         },
         "max_steps": 2000,
-        "order_of_accuracy": 2,
         "type_name": "Steady"
     },
     "unit_system": {
         "name": "SI"
     },
-    "version": "24.11.0"
+    "version": "25.10.11b1"
 }
