@@ -13,12 +13,31 @@ name: "CodeQL"
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - release-candidate/21.0
+      - release-candidate/23.3.2.0
+      - release-candidate/24.2
+      - release-candidate/24.7
+      - release-candidate/24.11
+      - release-candidate/25.2
+      - release-candidate/25.5
+      - release-candidate/25.6
+      - release-candidate/25.7
+      - release-candidate/25.8
+      - release-candidate/25.9
   pull_request:
-    # The branches below must be a subset of the branches above
-    branches: [ "main" ]
-  schedule:
-    - cron: '22 8 * * 4'
+    branches:
+      - release-candidate/21.0
+      - release-candidate/23.3.2.0
+      - release-candidate/24.2
+      - release-candidate/24.7
+      - release-candidate/24.11
+      - release-candidate/25.2
+      - release-candidate/25.5
+      - release-candidate/25.6
+      - release-candidate/25.7
+      - release-candidate/25.8
+      - release-candidate/25.9
 
 jobs:
   analyze:

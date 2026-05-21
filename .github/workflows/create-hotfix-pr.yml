@@ -5,7 +5,17 @@ on:
     types:
       - closed # Trigger when a PR is closed
     branches:
-      - 'release-candidate/*' # Trigger for any branch starting with 'release-candidate/'
+      - release-candidate/21.0
+      - release-candidate/23.3.2.0
+      - release-candidate/24.2
+      - release-candidate/24.7
+      - release-candidate/24.11
+      - release-candidate/25.2
+      - release-candidate/25.5
+      - release-candidate/25.6
+      - release-candidate/25.7
+      - release-candidate/25.8
+      - release-candidate/25.9
 
 jobs:
   skip_auto_hotfix_pr:
