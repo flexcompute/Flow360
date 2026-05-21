@@ -18,6 +18,10 @@ from flow360.component.simulation.entity_info import (
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
+<<<<<<< HEAD
+=======
+from flow360.component.simulation.framework.param_utils import AssetCache
+>>>>>>> 515c4238 ([Hotfix 25.8]: use params entity registry for update_persistent_entities (#2046))
 from flow360.component.simulation.outputs.outputs import (
     SurfaceIntegralOutput,
     SurfaceOutput,

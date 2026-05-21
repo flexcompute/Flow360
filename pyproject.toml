@@ -1,6 +1,10 @@
 [tool.poetry]
 name = "flow360"
+<<<<<<< HEAD
 version = "v25.10.0b1"
+=======
+version = "v25.8.9"
+>>>>>>> 515c4238 ([Hotfix 25.8]: use params entity registry for update_persistent_entities (#2046))
 description = "Flow360 Python Client"
 authors = ["Flexcompute <support@flexcompute.com>"]
 packages = [{include = "flow360"}, {include = "flow360_schema"}]
