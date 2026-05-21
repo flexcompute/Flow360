@@ -1,4 +1,11 @@
 {
+<<<<<<< HEAD
+=======
+    "version": "25.8.9",
+    "unit_system": {
+        "name": "SI"
+    },
+>>>>>>> 515c4238 ([Hotfix 25.8]: use params entity registry for update_persistent_entities (#2046))
     "models": [
         {
             "initial_condition": {
