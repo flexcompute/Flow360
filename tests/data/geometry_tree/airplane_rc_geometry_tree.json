@@ -1,0 +1,2063 @@
+{
+    "version": "1.0",
+    "tree": {
+        "name": "Solid-Body-RC-Plane_v2024_colored",
+        "type": "ModelFile",
+        "attributes": {
+            "_Flow360UUID": "baaceea2-ccd8-5c37-b39c-26afeaf52f71"
+        },
+        "colorRGB": "",
+        "material": "",
+        "children": [
+            {
+                "name": "Solid-Body-RC-Plane_v2024_colored",
+                "type": "Assembly",
+                "attributes": {
+                    "_Flow360UUID": "f5c24d62-9c7b-5e60-818d-9fc4cf13a950"
+                },
+                "colorRGB": "",
+                "material": "",
+                "children": [
+                    {
+                        "name": "Default",
+                        "type": "Assembly",
+                        "attributes": {
+                            "Component Type": "0",
+                            "IsCPReArchEnabled": "1",
+                            "SW-BOM Part Number(BOM Part Number)": "Solid-Body-RC-Plane_v2024_colored",
+                            "SW-Configuration Name(Configuration Name)": "Default",
+                            "SW-Created Date(Created Date)": "Tuesday, February 25, 2020 10:02:56 PM",
+                            "SW-File Name(File Name)": "Solid-Body-RC-Plane_v2024_colored",
+                            "SW-File Title(File Title)": "Solid-Body-RC-Plane_v2024_colored",
+                            "SW-Folder Name(Folder Name)": "C:\\Users\\feilin\\Downloads\\model-plane-7.snapshot.3\\3D models\\",
+                            "SW-HasDesignTable": "0",
+                            "SW-Last Saved By(Last Saved By)": "FEILIN",
+                            "SW-Last Saved Date(Last Saved Date)": "Tuesday, November 11, 2025 6:51:16 PM",
+                            "SW-Long Date(Long Date)": "Tuesday, November 11, 2025",
+                            "SW-Short Date(Short Date)": "11/11/2025",
+                            "_Flow360UUID": "d1ee4dcd-9c98-593b-9c32-625933a17355"
+                        },
+                        "colorRGB": "",
+                        "material": "",
+                        "children": [
+                            {
+                                "name": "",
+                                "type": "Part",
+                                "attributes": {
+                                    "_Flow360UUID": "f387fd80-11f3-5436-a713-751605714ef8"
+                                },
+                                "colorRGB": "255,0,0",
+                                "material": "",
+                                "children": [
+                                    {
+                                        "name": "",
+                                        "type": "Body",
+                                        "attributes": {
+                                            "_Flow360UUID": "c59c473d-417c-5533-9a00-117fea2bf739"
+                                        },
+                                        "colorRGB": "",
+                                        "material": "",
+                                        "children": [
+                                            {
+                                                "name": "",
+                                                "type": "ShellCollection",
+                                                "attributes": {
+                                                    "_Flow360UUID": "f2a91637-c2b0-5c34-8ad8-94d174b743bc"
+                                                },
+                                                "colorRGB": "",
+                                                "material": "",
+                                                "children": [
+                                                    {
+                                                        "name": "",
+                                                        "type": "Shell",
+                                                        "attributes": {
+                                                            "_Flow360UUID": "7c55208d-4444-50aa-b6e7-465a18ec346c"
+                                                        },
+                                                        "colorRGB": "",
+                                                        "material": "",
+                                                        "children": [
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "c5cf2be5-f597-59e8-9531-18cadebf2e7e"
+                                                                },
+                                                                "colorRGB": "255,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "8e7f63fe-afd5-501d-967c-0eef96293892"
+                                                                },
+                                                                "colorRGB": "0,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "1f08465a-1508-5e4c-9cea-9a0e5c3166a1"
+                                                                },
+                                                                "colorRGB": "0,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "0a886da4-f0c3-5493-ae1d-b678f3472c62"
+                                                                },
+                                                                "colorRGB": "0,0,0",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "b0431635-03be-5c08-ab96-b5014b829524"
+                                                                },
+                                                                "colorRGB": "255,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "727a2460-670d-575a-872f-e8b1d53d3491"
+                                                                },
+                                                                "colorRGB": "255,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "9de070b3-ca14-53ce-b897-da1b8bb1a469"
+                                                                },
+                                                                "colorRGB": "255,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "a58758bd-0c5c-5769-a756-1c5c29edb3e8"
+                                                                },
+                                                                "colorRGB": "255,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "2e4520e5-19fc-5b9b-9a1d-0a96b0bee36b"
+                                                                },
+                                                                "colorRGB": "255,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "28284f03-736e-5d1c-b7e7-49e4ad39762e"
+                                                                },
+                                                                "colorRGB": "0,255,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "eb6aaf23-f2b4-50d7-a9f1-7dcecf849dc2"
+                                                                },
+                                                                "colorRGB": "0,255,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "36301693-22d3-5e1e-aa94-9041db8b44fe"
+                                                                },
+                                                                "colorRGB": "0,255,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "3e0980c6-0bac-57e9-a61b-8f91516a88b3"
+                                                                },
+                                                                "colorRGB": "0,255,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "df28f869-6c11-51d0-8781-69bfda32717d"
+                                                                },
+                                                                "colorRGB": "0,255,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "7fbc7468-c45d-5b4e-8854-29c8e2e3ccf9"
+                                                                },
+                                                                "colorRGB": "0,255,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "5ae40928-4f6c-541e-b8ac-cd288213f7c7"
+                                                                },
+                                                                "colorRGB": "0,255,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "21c8ff06-6042-511b-add6-93c08800cb18"
+                                                                },
+                                                                "colorRGB": "0,255,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "b9ea14e6-2749-557c-8392-3585ce22a6f7"
+                                                                },
+                                                                "colorRGB": "0,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "d28da8ba-c7c0-56d4-ac6e-d53d85c498d3"
+                                                                },
+                                                                "colorRGB": "0,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "6b6953b9-9f79-5064-ad90-2c9d21e7807f"
+                                                                },
+                                                                "colorRGB": "0,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "9165391c-a73d-558e-9864-12cca8bc32df"
+                                                                },
+                                                                "colorRGB": "0,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "533c432b-79eb-5770-83d2-8bed72c2b16d"
+                                                                },
+                                                                "colorRGB": "0,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "b98234bd-3a59-57c6-849b-5acb61e273d7"
+                                                                },
+                                                                "colorRGB": "0,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "fbaebadd-51e7-590f-b422-08de8404f327"
+                                                                },
+                                                                "colorRGB": "0,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "f816ab56-190a-58d1-8529-9af4c73aa733"
+                                                                },
+                                                                "colorRGB": "0,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "f6f88a54-20f4-5a3b-889e-d8fb19fa8258"
+                                                                },
+                                                                "colorRGB": "",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "2fe600d8-6150-532d-b3fb-07361f197501"
+                                                                },
+                                                                "colorRGB": "",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "b9f78c1b-cffa-5c20-a044-63cb329bf57d"
+                                                                },
+                                                                "colorRGB": "",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "d562f528-ca68-56a1-88a4-3574d92bc5b3"
+                                                                },
+                                                                "colorRGB": "",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "591d6dad-88d7-57fb-abcd-3e9d8a3bd8e1"
+                                                                },
+                                                                "colorRGB": "",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "ebc9e340-e512-5e17-a42b-5c96da41cb44"
+                                                                },
+                                                                "colorRGB": "0,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "c95f27f1-81bd-5f06-a9fc-41a35a21fed9"
+                                                                },
+                                                                "colorRGB": "0,255,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "9a3a8861-9b43-5ac9-8faf-e512969bf9c4"
+                                                                },
+                                                                "colorRGB": "0,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "9331d913-b59f-5d32-a7b8-b105a2f52ddc"
+                                                                },
+                                                                "colorRGB": "0,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "83622df1-cee7-5f69-9cf5-ad71bec3ee70"
+                                                                },
+                                                                "colorRGB": "0,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "fb1fa855-621d-59d9-b202-bf437f0e2c1b"
+                                                                },
+                                                                "colorRGB": "0,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "8379c07f-3804-5fed-8ecf-75b255776d6c"
+                                                                },
+                                                                "colorRGB": "0,255,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "17408707-a4e7-5e3e-9f76-ad0d7110d104"
+                                                                },
+                                                                "colorRGB": "0,255,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "a6528c57-4bb7-5129-9ec8-254d845e1ad4"
+                                                                },
+                                                                "colorRGB": "0,255,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "18aaf5b4-20d3-5c27-8ccf-bdd243306e44"
+                                                                },
+                                                                "colorRGB": "0,255,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "fd7ac117-53b5-5608-bd6c-3ec52402f0f1"
+                                                                },
+                                                                "colorRGB": "255,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "f5eb0553-d810-54e7-a6aa-668b357077ec"
+                                                                },
+                                                                "colorRGB": "255,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "7124b0a6-7b3a-55a6-9d2c-58acef316c54"
+                                                                },
+                                                                "colorRGB": "",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "ebb059c8-7cdc-5479-8e67-39f2299d51d4"
+                                                                },
+                                                                "colorRGB": "0,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "cd848336-aa15-5f25-afbf-b2300ac6c84d"
+                                                                },
+                                                                "colorRGB": "0,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "1c01b9a8-dd24-59bd-9e9e-a31438efe538"
+                                                                },
+                                                                "colorRGB": "0,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "8a31636b-3afd-561a-93b1-c56bdcda956d"
+                                                                },
+                                                                "colorRGB": "0,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "46c0243c-3c0f-5b3b-b868-d4d51187358f"
+                                                                },
+                                                                "colorRGB": "0,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "1a73c815-1573-5e1e-9349-e4e0abb35a42"
+                                                                },
+                                                                "colorRGB": "0,255,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "252b5f03-0711-5d73-9952-6e0724e54d1c"
+                                                                },
+                                                                "colorRGB": "0,255,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "7885ab6f-92be-56fc-b9db-8c99ce591b40"
+                                                                },
+                                                                "colorRGB": "0,255,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "00ebe0b1-df08-5b3b-9949-f6695d7f8cfb"
+                                                                },
+                                                                "colorRGB": "255,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "d8ef0b95-b6aa-5fe3-8d39-c0254e84dc6e"
+                                                                },
+                                                                "colorRGB": "255,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "f3ec2b76-daee-5fcf-84fb-53e6e9558313"
+                                                                },
+                                                                "colorRGB": "",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "e6aeeb25-f7b5-5175-9ab9-6f7d9bfdf8f5"
+                                                                },
+                                                                "colorRGB": "",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "5651aedd-6212-569a-9fed-1b9bc58aadc4"
+                                                                },
+                                                                "colorRGB": "",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "e86c28e0-5655-57db-bbec-a50754737091"
+                                                                },
+                                                                "colorRGB": "",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "5d08cb65-c0b8-5bcf-8e9b-d312e51397b9"
+                                                                },
+                                                                "colorRGB": "",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "dd57092d-b29f-52f3-9d94-891a2ca60ca2"
+                                                                },
+                                                                "colorRGB": "",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "11b0a322-1280-5717-bff4-db56524a4d15"
+                                                                },
+                                                                "colorRGB": "255,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "0404de40-aad4-5783-b0c3-02468cd334d0"
+                                                                },
+                                                                "colorRGB": "255,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "124594ba-7d86-52cf-88d5-e676c48efeaf"
+                                                                },
+                                                                "colorRGB": "255,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "8077331d-0981-55fc-9cc7-7a69497c6305"
+                                                                },
+                                                                "colorRGB": "255,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "b4aa3e19-a8a6-58e8-99c0-bbe627bf0e96"
+                                                                },
+                                                                "colorRGB": "0,255,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "d9a0d6ed-d4f9-5b70-b56a-78e2750b3c23"
+                                                                },
+                                                                "colorRGB": "0,255,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "28abd7f7-d532-52cc-b1d5-f9cdd79f3be8"
+                                                                },
+                                                                "colorRGB": "0,255,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "0066324b-3d95-522d-b1b5-61c971eb8019"
+                                                                },
+                                                                "colorRGB": "0,255,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "3cd4f3d8-7548-53f2-893a-19b7d2877bf3"
+                                                                },
+                                                                "colorRGB": "0,255,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "656318b9-3a21-524d-b950-8054e7f4562a"
+                                                                },
+                                                                "colorRGB": "0,255,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "ad232c4b-95c9-58a1-9e7e-1ffdb5f94b5b"
+                                                                },
+                                                                "colorRGB": "0,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "6c9fee31-7bdd-588b-96f5-d3e39454cd3e"
+                                                                },
+                                                                "colorRGB": "0,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "5fb9c116-dc87-5139-9336-06760a95d800"
+                                                                },
+                                                                "colorRGB": "0,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "e71fda8b-1238-500e-8817-928045169b8c"
+                                                                },
+                                                                "colorRGB": "0,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "5f2a842a-9626-587e-90f0-58f67ea4ea4c"
+                                                                },
+                                                                "colorRGB": "0,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "bd37039d-7c23-583e-8302-ae4ee0bfadbf"
+                                                                },
+                                                                "colorRGB": "0,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "8ef07a4d-da78-5721-b553-69d204a0ce1b"
+                                                                },
+                                                                "colorRGB": "0,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "f2df3800-137a-572e-aa0f-ad93c7fedbe9"
+                                                                },
+                                                                "colorRGB": "0,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "dc6030d5-f90e-507c-834e-d3a19bc43bca"
+                                                                },
+                                                                "colorRGB": "0,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "49789fe7-eb49-5ae0-b808-174fbbbb3bc9"
+                                                                },
+                                                                "colorRGB": "0,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "e659d1b4-7e90-5e26-a5ee-4b9e0a58c0e0"
+                                                                },
+                                                                "colorRGB": "0,255,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "ff27e097-ae78-51ac-bf76-1a036dbe56ee"
+                                                                },
+                                                                "colorRGB": "0,255,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "ab659ab9-5e24-55b5-bb2b-708dd377c00e"
+                                                                },
+                                                                "colorRGB": "0,255,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "5502fc91-cbdb-5c31-a89e-fa83b831b5e1"
+                                                                },
+                                                                "colorRGB": "0,255,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "36e7f18b-032f-5438-8ea6-7aa4e771bd9b"
+                                                                },
+                                                                "colorRGB": "0,255,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "fa21fdf9-d689-5bc0-9715-f681c0aaa2cf"
+                                                                },
+                                                                "colorRGB": "0,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "e8165a34-2282-5b0a-bcce-5503727bff11"
+                                                                },
+                                                                "colorRGB": "0,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "b4a372b3-537c-58eb-8893-5c7df3771bbd"
+                                                                },
+                                                                "colorRGB": "0,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "ce87ad5b-e37d-5979-a9fe-58d169d02d51"
+                                                                },
+                                                                "colorRGB": "0,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "edd45089-cff2-5209-8365-8337281a4aad"
+                                                                },
+                                                                "colorRGB": "0,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "e2840a84-e8c9-5c2f-a5c7-226edcc001ce"
+                                                                },
+                                                                "colorRGB": "0,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "6a473c16-5179-59a2-98d2-b584e5746c1b"
+                                                                },
+                                                                "colorRGB": "0,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "c6ef7894-a2e6-5257-b625-ef95936cd3ae"
+                                                                },
+                                                                "colorRGB": "0,255,0",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "e14b5db1-af55-55bd-83fa-e096561e7f64"
+                                                                },
+                                                                "colorRGB": "0,255,0",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "2a6bf5e4-01ff-5420-9f3c-ede53b915a97"
+                                                                },
+                                                                "colorRGB": "0,0,0",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "65428b39-4987-5cff-9a24-dd67753a8e57"
+                                                                },
+                                                                "colorRGB": "255,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "37140e79-76ef-50c2-be5a-8a3a77408292"
+                                                                },
+                                                                "colorRGB": "255,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "7f824d0d-f265-5152-9dea-d12a30a76ab5"
+                                                                },
+                                                                "colorRGB": "255,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "e26ea3cf-3d72-54bc-bbd0-f87a83450c3d"
+                                                                },
+                                                                "colorRGB": "255,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "f964d527-ed5d-5443-9f91-ab5618426339"
+                                                                },
+                                                                "colorRGB": "255,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "32691988-8c57-5abf-b01a-9d2c39971d27"
+                                                                },
+                                                                "colorRGB": "255,255,0",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "b7d8c83a-d3e5-523f-8295-54aff4d231f9"
+                                                                },
+                                                                "colorRGB": "255,255,0",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "4576fab4-99af-588c-95e0-23f5a44c2607"
+                                                                },
+                                                                "colorRGB": "255,255,0",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "a7e29b4f-9058-5a0d-812b-612dc93529ec"
+                                                                },
+                                                                "colorRGB": "255,255,0",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "7e760475-b89c-532a-9ff5-d3420c425c91"
+                                                                },
+                                                                "colorRGB": "255,255,0",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "1b300def-98e8-50ac-aad7-9cc09db525b3"
+                                                                },
+                                                                "colorRGB": "255,255,0",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "97ad12d9-0f91-55ab-8c01-494e73ed066a"
+                                                                },
+                                                                "colorRGB": "255,255,0",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "d1095c7e-494c-5966-8dfd-34512233b057"
+                                                                },
+                                                                "colorRGB": "255,255,0",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "4a26e1c5-7e7c-5dd9-8382-47894d85b46e"
+                                                                },
+                                                                "colorRGB": "0,255,0",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "85aa9e10-67c1-5a0e-90b2-381175b4ad1b"
+                                                                },
+                                                                "colorRGB": "0,255,0",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "31502906-0c58-5f06-b5ed-4e9589b6023e"
+                                                                },
+                                                                "colorRGB": "0,255,0",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "4676f4f1-e17d-5047-a85e-53b326ca4630"
+                                                                },
+                                                                "colorRGB": "0,255,0",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "22c3ea79-8501-5d85-b72c-f7d9d5a5b9a2"
+                                                                },
+                                                                "colorRGB": "0,255,0",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "7634ee82-a203-52eb-8e18-668648e9959d"
+                                                                },
+                                                                "colorRGB": "0,255,0",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "0a5383ba-4f88-5d41-8901-5822982c6482"
+                                                                },
+                                                                "colorRGB": "0,255,0",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "8064d463-3209-5669-aa48-368a0ac74e04"
+                                                                },
+                                                                "colorRGB": "0,255,0",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "a7bad0a0-6a73-5499-9d29-88aba74b30f6"
+                                                                },
+                                                                "colorRGB": "",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "4efd75be-c616-5a58-8db8-3e33779d193d"
+                                                                },
+                                                                "colorRGB": "",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "c21d1d27-9eb6-5e79-a20a-abf9a283502b"
+                                                                },
+                                                                "colorRGB": "",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "23713f17-968d-5cf3-ba4b-d687dae430fc"
+                                                                },
+                                                                "colorRGB": "",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "215dbaa9-1323-5f05-a711-32329201950a"
+                                                                },
+                                                                "colorRGB": "",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "6b267fbb-d345-5a88-b0ec-465191036d8f"
+                                                                },
+                                                                "colorRGB": "0,255,0",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "614601ed-1ad9-5e60-8028-6fc9b02e8017"
+                                                                },
+                                                                "colorRGB": "255,255,0",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "14fe4e0a-058c-50c4-8ed9-5dba44352843"
+                                                                },
+                                                                "colorRGB": "0,255,0",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "dc5b44b2-4665-571a-b7fe-4fafa55bf652"
+                                                                },
+                                                                "colorRGB": "0,255,0",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "70b5602d-baa0-5b22-90d0-8727ceb281ee"
+                                                                },
+                                                                "colorRGB": "0,255,0",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "62916085-36a3-549d-be4a-905ce4c6a045"
+                                                                },
+                                                                "colorRGB": "0,255,0",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "78111c55-e92e-586b-9d60-e401229dfcfa"
+                                                                },
+                                                                "colorRGB": "255,255,0",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "ac908e3d-59e6-548f-bffc-91f0c9d1bb83"
+                                                                },
+                                                                "colorRGB": "255,255,0",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "884a1c07-f228-57ce-8979-98ded408df7b"
+                                                                },
+                                                                "colorRGB": "255,255,0",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "4ec2dc2d-f40c-58a9-ad76-1ca2f2056983"
+                                                                },
+                                                                "colorRGB": "255,255,0",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "23424f8c-ef7e-5e0e-8028-6e96b1afb59d"
+                                                                },
+                                                                "colorRGB": "255,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "1240516b-2530-50ae-882f-d6c5921e257b"
+                                                                },
+                                                                "colorRGB": "255,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "d581b236-9525-51de-8722-4c6f286e1ad0"
+                                                                },
+                                                                "colorRGB": "0,255,0",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "617c0b8a-2da3-5440-a8b5-1b7940c172b8"
+                                                                },
+                                                                "colorRGB": "0,255,0",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "3927a43b-6813-50ae-b5e0-0b19e9fa21af"
+                                                                },
+                                                                "colorRGB": "0,255,0",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "fbd13004-1726-560a-ab57-2ced73609002"
+                                                                },
+                                                                "colorRGB": "0,255,0",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "0ad182fe-b0b8-5a2e-b6c8-c93632e7244b"
+                                                                },
+                                                                "colorRGB": "0,255,0",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "b7c14c79-50c6-507d-849a-1682b3c3a364"
+                                                                },
+                                                                "colorRGB": "255,255,0",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "a0356ef1-9f56-5b68-a88d-e15253d526f1"
+                                                                },
+                                                                "colorRGB": "255,255,0",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "ab611826-a86a-59af-9a07-9150be9ac104"
+                                                                },
+                                                                "colorRGB": "255,255,0",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "c0390191-4c59-5fd8-9b80-781ee49605d6"
+                                                                },
+                                                                "colorRGB": "255,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "a6ff0767-1f49-5800-ae68-0acbff8db632"
+                                                                },
+                                                                "colorRGB": "255,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "282cfd0e-ddad-53be-9867-db010b4412bc"
+                                                                },
+                                                                "colorRGB": "",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "c2bed383-fd23-5b49-8a0b-13c6f3b1dee1"
+                                                                },
+                                                                "colorRGB": "",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "be49ba8f-d9c5-5e82-bc71-a00535ac21c1"
+                                                                },
+                                                                "colorRGB": "",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "c21325f4-f566-508f-8e2e-1fcd65141dbe"
+                                                                },
+                                                                "colorRGB": "",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "d711c148-1129-5da0-94f6-2997f2e19ba9"
+                                                                },
+                                                                "colorRGB": "255,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "3c28c442-161b-5a82-bf3d-57fd7a9e6af4"
+                                                                },
+                                                                "colorRGB": "255,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "6550c1d5-dadb-54ab-86ae-91a1acd7a3a8"
+                                                                },
+                                                                "colorRGB": "255,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "f673f1f0-f68e-5cf2-b96d-7bc92d68604b"
+                                                                },
+                                                                "colorRGB": "255,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "989cfac7-a6ec-52b6-ba64-456358a15327"
+                                                                },
+                                                                "colorRGB": "255,255,0",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "1d44da17-e907-5039-b492-04a92e682776"
+                                                                },
+                                                                "colorRGB": "255,255,0",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "edd2c56a-a5c2-591a-91f0-8871e4fcbc21"
+                                                                },
+                                                                "colorRGB": "255,255,0",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "411febfc-4aae-5dd8-89d9-59ba263a3eed"
+                                                                },
+                                                                "colorRGB": "255,255,0",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "f5df84ee-0ecb-50dc-b2f8-04a76970546d"
+                                                                },
+                                                                "colorRGB": "255,255,0",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "af89f60c-7d47-5c40-ab7d-6ad1565727fd"
+                                                                },
+                                                                "colorRGB": "255,255,0",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "9f1d8dba-5e73-5979-932c-69096e0af252"
+                                                                },
+                                                                "colorRGB": "0,255,0",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "efd5c020-4df5-5679-849c-b08b07fdd4c5"
+                                                                },
+                                                                "colorRGB": "0,255,0",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "580d721a-aba9-5aaf-9850-19ebb2d770a7"
+                                                                },
+                                                                "colorRGB": "0,255,0",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "2b956b01-1db6-52b4-b8a6-7e8c2dbce9ff"
+                                                                },
+                                                                "colorRGB": "0,255,0",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "9d656def-f96a-5917-82ff-d703d689999d"
+                                                                },
+                                                                "colorRGB": "0,255,0",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "9c7ce039-2af9-5e5d-93ad-adb8afe24c90"
+                                                                },
+                                                                "colorRGB": "0,255,0",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "80343ff1-ad01-5260-a348-869946f80bd5"
+                                                                },
+                                                                "colorRGB": "0,255,0",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "8ca3046b-4d92-5bec-be46-b036a79280aa"
+                                                                },
+                                                                "colorRGB": "0,255,0",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "6e4a925e-1d05-55ad-bb2e-0e43f99be2b6"
+                                                                },
+                                                                "colorRGB": "0,255,0",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "ac308a38-70b6-5223-a9e6-d102c5b3d6d5"
+                                                                },
+                                                                "colorRGB": "0,255,0",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "ec7479c8-256e-508b-be3d-458b2e5ba3b2"
+                                                                },
+                                                                "colorRGB": "255,255,0",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "6d92085d-b45a-50a5-b168-68791e591043"
+                                                                },
+                                                                "colorRGB": "255,255,0",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "b1838825-ff45-5194-a5c8-41684d64d460"
+                                                                },
+                                                                "colorRGB": "255,255,0",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "7ad890be-ff24-5017-b149-605bcf36e76e"
+                                                                },
+                                                                "colorRGB": "255,255,0",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "1ad3ac2e-954c-5ece-a9ac-d4a5c49f2339"
+                                                                },
+                                                                "colorRGB": "255,255,0",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "56b7f7a3-df7b-5cf2-a8db-f9d6a9310bc1"
+                                                                },
+                                                                "colorRGB": "0,255,0",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "057cccd5-0578-5e57-92ce-4e537a89ec78"
+                                                                },
+                                                                "colorRGB": "0,255,0",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "1d806bae-4df4-5305-aa43-0b69cbad832c"
+                                                                },
+                                                                "colorRGB": "0,255,0",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "17ffc31e-7dbf-51c0-afc1-2b277425ceaf"
+                                                                },
+                                                                "colorRGB": "0,255,0",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "a31f6754-fe91-5e03-87b3-bfbb85321d47"
+                                                                },
+                                                                "colorRGB": "0,255,0",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "fba8fa4c-f454-5889-80be-f9b97968d7da"
+                                                                },
+                                                                "colorRGB": "0,255,0",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "26f01662-e5d1-5208-aec9-9dbcba4d5201"
+                                                                },
+                                                                "colorRGB": "0,255,0",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "e923ffd6-c59f-5416-8f29-ce4ff2485f09"
+                                                                },
+                                                                "colorRGB": "",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "5c334bd6-f514-5234-b2a4-a3c86e21076d"
+                                                                },
+                                                                "colorRGB": "",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "de2228cb-6838-5239-bbd3-fc31dc6721ca"
+                                                                },
+                                                                "colorRGB": "255,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "c939d342-2efc-5c09-ad6b-8e8081cf362e"
+                                                                },
+                                                                "colorRGB": "255,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "e7f7da11-efba-55cd-be89-2b63f721c8b8"
+                                                                },
+                                                                "colorRGB": "255,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "5f7255f5-7c1c-5e2e-84f2-581cad4c9107"
+                                                                },
+                                                                "colorRGB": "255,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "9891bab2-f85f-50f9-9d07-ba2fc2fcaf34"
+                                                                },
+                                                                "colorRGB": "255,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "14297c1c-1ff7-5ed5-acfe-324389fc3e19"
+                                                                },
+                                                                "colorRGB": "255,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "1c22dbdb-2b86-51a1-88dd-19fd1998ae59"
+                                                                },
+                                                                "colorRGB": "255,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "9fbc525f-5291-5aed-8e28-70b134cb7c7c"
+                                                                },
+                                                                "colorRGB": "255,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "c56a309e-90c4-5fa1-94db-b03b581ff75e"
+                                                                },
+                                                                "colorRGB": "255,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "91e75999-e700-5dcc-b737-bde887fb96c2"
+                                                                },
+                                                                "colorRGB": "255,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "12d8ee11-34fe-5943-9d5f-00c4f90bb503"
+                                                                },
+                                                                "colorRGB": "255,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "72624a02-83e6-5a42-a3ce-7750b5bc024d"
+                                                                },
+                                                                "colorRGB": "255,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "5123725f-8a86-50c1-92f6-255f9ca4c3e3"
+                                                                },
+                                                                "colorRGB": "255,0,255",
+                                                                "material": "",
+                                                                "children": []
+                                                            },
+                                                            {
+                                                                "name": "",
+                                                                "type": "Face",
+                                                                "attributes": {
+                                                                    "_Flow360UUID": "4e23fc44-29fe-5469-bbe1-0db9cf9644c9"
+                                                                },
+                                                                "colorRGB": "",
+                                                                "material": "",
+                                                                "children": []
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "name": "Sketch1",
+                                        "type": "BodyCollection",
+                                        "attributes": {
+                                            "_Flow360UUID": "6e855533-c1ac-5924-85c9-9a6dd5f55e74"
+                                        },
+                                        "colorRGB": "",
+                                        "material": "",
+                                        "children": []
+                                    },
+                                    {
+                                        "name": "Sketch2",
+                                        "type": "BodyCollection",
+                                        "attributes": {
+                                            "_Flow360UUID": "fd45105b-6e75-5709-9d21-048e49856a6d"
+                                        },
+                                        "colorRGB": "",
+                                        "material": "",
+                                        "children": []
+                                    },
+                                    {
+                                        "name": "Sketch3",
+                                        "type": "BodyCollection",
+                                        "attributes": {
+                                            "_Flow360UUID": "785212e5-861a-5049-b85c-d8f5479f6aa3"
+                                        },
+                                        "colorRGB": "",
+                                        "material": "",
+                                        "children": []
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}
