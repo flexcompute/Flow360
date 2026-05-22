@@ -21,6 +21,7 @@ from flow360_schema.framework.entity.entity_operation import (
     _extract_rotation_matrix,
     _rotation_matrix_to_axis_angle,
     _transform_direction,
+    _transform_point,
     _validate_uniform_scale_and_transform_center,
     rotation_matrix_from_axis_and_angle,
 )
@@ -583,7 +584,6 @@ class SeedpointVolume(_VolumeEntityBase):
         try:
             single_point = pd.TypeAdapter(Length.Vector3).validate_python(value)
         except Exception:  # pylint: disable=broad-exception-caught
-            # Not a single point — defer to the declared list[Length.Vector3] validator.
             return value
         logger.warning(
             "SeedpointVolume.point_in_mesh as a single `[x, y, z]` is deprecated and "
@@ -598,3 +598,14 @@ class SeedpointVolume(_VolumeEntityBase):
                 f"SeedpointVolume {self.name} is not listed under meshing->volume_zones(or zones)->CustomZones."
             )
         return self
+
+    def _apply_transformation(self, matrix: NDArray) -> Self:
+        """Apply 3x4 transformation matrix to each seed point."""
+        import numpy as np
+
+        new_points = []
+        for point in self.point_in_mesh:
+            point_array = np.asarray(point.value)  # type: ignore[attr-defined]
+            new_point_array = _transform_point(point_array, matrix)
+            new_points.append(type(point)(new_point_array, point.units))  # type: ignore[attr-defined, misc]
+        return self.model_copy(update={"point_in_mesh": new_points})

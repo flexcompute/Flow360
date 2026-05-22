@@ -53,9 +53,7 @@
     "outputRescale": {
         "velocityScale": 20.0
     },
-    "runControl": {
-        "externalProcessMonitorOutput": false
-    },
+    "runControl": {},
     "timeStepping": {
         "CFL": {
             "convergenceLimitingFactor": 1.0,

@@ -23,15 +23,9 @@ from flow360_schema.framework.validation.context import is_deserializing
 
 from .data_types import DataTypeDescriptor
 from .dimension_meta import PhysicalDimensionMeta
-from .unyt_adapter import parse_display_unit_dict
-from .unyt_utils import (
-    get_si_unit,
-    is_display_unit_dict,
-    is_unyt_quantity,
-    units_semantically_equivalent,
-    unyt_to_dsl_unit,
-)
+from .unyt_utils import is_unyt_quantity
 from .unyt_utils import is_zero_value as _is_zero_value
+from .wire_format_units import is_format_dict, parse_format_dict, serialize_to_dict
 
 ValidationValueHook = Callable[[Any, PhysicalDimensionMeta, DataTypeDescriptor], Any]
 
@@ -44,12 +38,11 @@ def _create_validator(
     """Create a validation function for the composed type."""
 
     def validate(value: Any, info: ValidationInfo) -> Any:
-        # Display-unit dict — convert to a unyt in the user-chosen unit before
-        # the rest of the pipeline runs. Detected by shape (has 'value' and
-        # no 'units'); legacy `{value, units}` continues through the existing
-        # path inside `to_unyt`.
-        if is_display_unit_dict(value):
-            value = parse_display_unit_dict(value, physical_dimension_meta)
+        # Active wire-format dict — convert to a unyt quantity before the rest
+        # of the pipeline runs. The shape predicate and parser are imported
+        # from the active wire-format module at module top.
+        if is_format_dict(value):
+            value = parse_format_dict(value, physical_dimension_meta)
 
         # Handle zero special case
         if _is_zero_value(value) and not physical_dimension_meta.allow_zero:
@@ -86,27 +79,6 @@ def _create_validator(
     return validate
 
 
-def _display_unit_for(unyt_value: Any, dimension_meta: PhysicalDimensionMeta) -> str | None:
-    """Return the DSL display-unit string for ``unyt_value`` (or ``None`` if
-    its units are semantically the SI base unit so the caller can omit
-    ``display_unit`` from the wire format).
-    """
-    # Defensive: when a dimensioned field is part of a Union (e.g.
-    # ``Length.Float64 | Literal["inf"]``), Pydantic still invokes the
-    # dimensioned-branch serializer for values that matched a sibling
-    # branch. Those values lack ``.units`` and would crash the lookup
-    # below. Returning None here lets the caller fall back to passing
-    # the value through verbatim.
-    if not is_unyt_quantity(unyt_value):
-        return None
-
-    current_unit = unyt_value.units
-    si_unit = get_si_unit(dimension_meta)
-    if units_semantically_equivalent(current_unit, si_unit):
-        return None
-    return unyt_to_dsl_unit(str(current_unit))
-
-
 def _create_serializer(
     data_type: DataTypeDescriptor,
     physical_dimension_meta: PhysicalDimensionMeta,
@@ -121,16 +93,11 @@ def _create_serializer(
         # quantity, so anything that reaches the serializer without units must
         # have matched a sibling union branch (e.g. ``Literal[False]`` or
         # ``Literal["inf"]``). Pass it through verbatim — wrapping it in a
-        # display-unit dict would corrupt the wire shape and the value would
+        # wire-format dict would corrupt the wire shape and the value would
         # fail to re-validate against the sibling branch on load.
         if not is_unyt_quantity(value):
             return value
-        si_value = data_type.serialize_si(value, physical_dimension_meta)
-        display_unit = _display_unit_for(value, physical_dimension_meta)
-        out: dict[str, Any] = {"value": si_value}
-        if display_unit is not None:
-            out["display_unit"] = display_unit
-        return out
+        return serialize_to_dict(value, data_type, physical_dimension_meta)
 
     return serialize
 

@@ -89,7 +89,7 @@ def _build_simple_params_dict_with_mirror_status():
             {
                 "name": "plane-1",
                 "normal": [0, 1, 0],
-                "center": {"value": [0, 0, 0]},
+                "center": {"value": [0, 0, 0], "units": "m"},
                 "private_attribute_entity_type_name": "MirrorPlane",
                 "private_attribute_id": "mirror-plane-1",
             }

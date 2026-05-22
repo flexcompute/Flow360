@@ -161,6 +161,20 @@ def _validate_seedpoint_volume_mesher_compatibility(seedpoint_volumes, param_inf
         raise ValueError("`SeedpointVolume` is supported only when using snappyHexMeshing or the beta mesher.")
 
 
+def _validate_seedpoint_volume_snappy_single_point(seedpoint_volumes):
+    """Each `SeedpointVolume` reaching the snappy path must carry exactly one seed.
+
+    snappy's `locationInMesh` takes a single triplet per zone; multi-seed is supported
+    only by the GAI / beta mesher paths.
+    """
+    for sv in seedpoint_volumes:
+        if len(sv.point_in_mesh) != 1:
+            raise ValueError(
+                f"`SeedpointVolume` `{sv.name}` has {len(sv.point_in_mesh)} seed points; "
+                "Snappy requires exactly one point per zone."
+            )
+
+
 def _validate_seedpoint_volume_geometry_ai_exclusivity(zones, param_info: ParamsValidationInfo):
     """When geometry AI is enabled, SeedpointVolumes and explicit CustomVolume-based
     CustomZones cannot coexist. If any SeedpointVolume is present, there must be exactly
@@ -388,7 +402,8 @@ class MeshingParams(Flow360BaseModel):
         """Validate SeedpointVolume usage in legacy meshing schema."""
         if v is None:
             return v
-        _validate_seedpoint_volume_mesher_compatibility(_collect_all_seedpoint_volumes(v), param_info)
+        seedpoint_volumes = _collect_all_seedpoint_volumes(v)
+        _validate_seedpoint_volume_mesher_compatibility(seedpoint_volumes, param_info)
         _validate_seedpoint_volume_geometry_ai_exclusivity(v, param_info)
         return v
 
@@ -694,25 +709,27 @@ class ModularMeshingWorkflow(Flow360BaseModel):
     @pd.model_validator(mode="after")
     def _check_snappy_zones(self) -> Self:
         total_custom_volumes = 0
-        total_seedpoint_volumes = 0
+        seedpoint_volumes: list[SeedpointVolume] = []
         for zone in self.zones:
             if isinstance(zone, CustomZones):
                 for custom_volume in zone.entities.stored_entities:
                     if isinstance(custom_volume, CustomVolume):
                         total_custom_volumes += 1
                     if isinstance(custom_volume, SeedpointVolume):
-                        total_seedpoint_volumes += 1
+                        seedpoint_volumes.append(custom_volume)
 
         if isinstance(self.surface_meshing, snappy.SurfaceMeshingParams):
-            if total_seedpoint_volumes and total_custom_volumes:
+            if seedpoint_volumes and total_custom_volumes:
                 raise ValueError(
                     "Volume zones with snappyHexMeshing are defined using `SeedpointVolume`, not `CustomZones`."
                 )
 
-            if self.farfield_method != "auto" and not total_seedpoint_volumes:
+            if self.farfield_method != "auto" and not seedpoint_volumes:
                 raise ValueError(
                     "snappyHexMeshing requires at least one `SeedpointVolume` when not using `AutomatedFarfield`."
                 )
+
+            _validate_seedpoint_volume_snappy_single_point(seedpoint_volumes)
 
         return self
 

@@ -811,76 +811,6 @@ def _to_25_8_8(params_as_dict):
     return _convert_total_pressure_expression_from_ratio_to_nondim(params_as_dict)
 
 
-def _legacy_unit_dict_to_display_unit_dict(legacy: dict) -> dict:
-    """Convert a legacy ``{"value": ..., "units": ...}`` dict to the new
-    ``{"value": <SI>, "display_unit": <DSL>}`` shape, omitting ``display_unit``
-    when ``units`` is semantically the SI base unit.
-
-    Assumes the legacy dict's dimension is correct (legacy data went through
-    legacy-schema validation that caught wrong-dimension inputs).
-    """
-    from flow360_schema.framework.physical_dimensions.unyt_utils import (
-        units_semantically_equivalent,
-        unyt_to_dsl_unit,
-    )
-    from unyt import unyt_array, unyt_quantity
-
-    raw = legacy["value"]
-    units_str = legacy["units"]
-
-    if isinstance(raw, (list, tuple)):
-        q = unyt_array(raw, units_str)
-    else:
-        q = unyt_quantity(raw, units_str)
-
-    q_si = q.in_base("mks")
-    si_value = q_si.value.item() if q_si.shape == () else q_si.value.tolist()
-
-    if units_semantically_equivalent(q.units, q_si.units):
-        return {"value": si_value}
-    return {"value": si_value, "display_unit": unyt_to_dsl_unit(units_str)}
-
-
-def _is_legacy_unit_dict(value) -> bool:
-    """Strictly detect a legacy ``{"value": ..., "units": ...}`` dict.
-
-    The dict must have *exactly* the keys ``value`` and ``units``,
-    ``units`` must be a string and ``value`` must be a number / list / tuple.
-    This avoids touching shapes that happen to share both keys (e.g.
-    ``SerializedValueOrExpression`` carries a ``type_name`` discriminator).
-    """
-    return (
-        isinstance(value, dict)
-        and set(value.keys()) == {"value", "units"}
-        and isinstance(value["units"], str)
-        and isinstance(value["value"], (int, float, list, tuple))
-    )
-
-
-def _convert_legacy_unit_dicts_in_place(node):
-    """Recursively walk ``node`` and replace legacy unit dicts at their parent
-    slot in-place.
-
-    Crucially, this function does NOT rebuild dicts/lists — every parent dict
-    or list keeps its original Python object identity. ``validate_model``'s
-    downstream ``materialize_entities_and_selectors_in_place`` relies on this:
-    its side-effect mutations (entity dicts -> entity instances) must be
-    visible through the caller's dict reference.
-    """
-    if isinstance(node, dict):
-        for key, value in node.items():
-            if _is_legacy_unit_dict(value):
-                node[key] = _legacy_unit_dict_to_display_unit_dict(value)
-            else:
-                _convert_legacy_unit_dicts_in_place(value)
-    elif isinstance(node, list):
-        for idx, item in enumerate(node):
-            if _is_legacy_unit_dict(item):
-                node[idx] = _legacy_unit_dict_to_display_unit_dict(item)
-            else:
-                _convert_legacy_unit_dicts_in_place(item)
-
-
 def _to_25_10_0(params_as_dict):
     """Migrate to 25.10.0: output_format string to list, add vtkhdf/ensight support."""
 
@@ -910,13 +840,6 @@ def _to_25_10_0(params_as_dict):
 
     _migrate_output_format_to_list(params_as_dict)
     _convert_total_pressure_expression_from_ratio_to_nondim(params_as_dict)
-    return params_as_dict
-
-
-def _to_25_10_1(params_as_dict):
-    """Migrate legacy ``{value, units}`` dicts to the new
-    ``{value, display_unit}`` wire format introduced in 25.10.1."""
-    _convert_legacy_unit_dicts_in_place(params_as_dict)
     return params_as_dict
 
 
@@ -1005,7 +928,6 @@ VERSION_MILESTONES = [
     (Flow360Version("25.9.2"), _to_25_9_2),
     (Flow360Version("25.9.3"), _to_25_9_3),
     (Flow360Version("25.10.0"), _to_25_10_0),
-    (Flow360Version("25.10.1"), _to_25_10_1),
     (Flow360Version("25.10.12"), _to_25_10_12),
     (Flow360Version("25.10.13"), _to_25_10_13),
 ]  # A list of the Python API version tuple with their corresponding updaters.

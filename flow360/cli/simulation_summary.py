@@ -81,7 +81,7 @@ def _project_length_unit(params_dict):
         "project_length_unit"
     )
     if isinstance(project_length_unit, dict):
-        return project_length_unit.get("display_unit") or "m"
+        return project_length_unit.get("units") or "m"
     return "m"
 
 
@@ -274,7 +274,7 @@ def _set_path(value, path, replacement):
         target[final_key] = replacement
 
 
-def _prune_defaults(
+def _prune_defaults(  # pylint: disable=too-many-return-statements
     display_value,
     normalized_value,
     default_value,
@@ -288,6 +288,12 @@ def _prune_defaults(
         if keep_type_marker:
             return _type_marker(display_value)
         return None
+
+    # Wire-format dicts are atomic: pruning `units` while keeping `value`
+    # would produce an unloadable payload because the active wire format
+    # requires both keys.
+    if isinstance(display_value, dict) and set(display_value.keys()) == {"value", "units"}:
+        return display_value
 
     if (
         isinstance(display_value, dict)

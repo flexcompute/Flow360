@@ -15,7 +15,6 @@ from enum import Enum
 from typing import Any
 
 from .constraint_kinds import ConstraintKind
-from .schema_generators import generate_array_schema, generate_schema
 from .serializers import (
     serialize_array,
     serialize_raw_array,
@@ -40,6 +39,7 @@ from .validators import (
     vector2_shape,
     vector3_shape,
 )
+from .wire_format_units import generate_array_schema, generate_schema
 
 
 class ShapeType(Enum):

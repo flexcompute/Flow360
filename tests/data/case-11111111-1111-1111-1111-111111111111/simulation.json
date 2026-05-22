@@ -13,12 +13,15 @@
             "material": {
                 "dynamic_viscosity": {
                     "effective_temperature": {
+                        "units": "K",
                         "value": 110.4
                     },
                     "reference_temperature": {
+                        "units": "K",
                         "value": 273.15
                     },
                     "reference_viscosity": {
+                        "units": "Pa*s",
                         "value": 1.716e-05
                     }
                 },
@@ -133,6 +136,7 @@
             "heat_spec": {
                 "type_name": "HeatFlux",
                 "value": {
+                    "units": "W/m**2",
                     "value": 0.0
                 }
             },
@@ -226,26 +230,29 @@
     ],
     "operating_condition": {
         "alpha": {
-            "display_unit": "degree",
+            "units": "degree",
             "value": 0.0
         },
         "beta": {
-            "display_unit": "degree",
+            "units": "degree",
             "value": 0.0
         },
         "private_attribute_constructor": "default",
         "thermal_state": {
             "density": {
+                "units": "kg/m**3",
                 "value": 1.225
             },
             "private_attribute_constructor": "default",
             "temperature": {
+                "units": "K",
                 "value": 288.15
             },
             "type_name": "ThermalState"
         },
         "type_name": "AerospaceCondition",
         "velocity_magnitude": {
+            "units": "m/s",
             "value": 40.0
         }
     },
@@ -577,6 +584,7 @@
                         1
                     ],
                     "center": {
+                        "units": "m",
                         "value": [
                             0.0,
                             0.0,
@@ -607,14 +615,17 @@
             ]
         },
         "project_length_unit": {
+            "units": "m",
             "value": 1.0
         }
     },
     "reference_geometry": {
         "area": {
+            "units": "m**2",
             "value": 2.17
         },
         "moment_center": {
+            "units": "m",
             "value": [
                 1.3931,
                 0.0,
@@ -622,6 +633,7 @@
             ]
         },
         "moment_length": {
+            "units": "m",
             "value": [
                 1.0,
                 2.7862,

@@ -19,13 +19,13 @@ def _minimal_simulation(models):
         "unit_system": {"name": "SI"},
         "operating_condition": {
             "type_name": "AerospaceCondition",
-            "alpha": {"value": 5.0 * 3.141592653589793 / 180, "display_unit": "degree"},
-            "beta": {"value": 0.0, "display_unit": "degree"},
-            "velocity_magnitude": {"value": 50.0},
+            "alpha": {"value": 5.0, "units": "degree"},
+            "beta": {"value": 0.0, "units": "degree"},
+            "velocity_magnitude": {"value": 50.0, "units": "m/s"},
             "thermal_state": {
                 "type_name": "ThermalState",
-                "temperature": {"value": 288.15},
-                "density": {"value": 1.225},
+                "temperature": {"value": 288.15, "units": "K"},
+                "density": {"value": 1.225, "units": "kg/m**3"},
             },
         },
         "models": models,
@@ -48,9 +48,7 @@ def test_simulation_summary_extracts_solver_and_operating_condition():
         )
     )
 
-    # SI value (radians) is the wire-format payload; display_unit ("degree") gets
-    # pruned by the summary because the default-input also defaults to degree.
-    assert summary["operating_condition"]["alpha"] == {"value": 5.0 * 3.141592653589793 / 180}
+    assert summary["operating_condition"]["alpha"] == {"units": "degree", "value": 5.0}
     assert "beta" not in summary["operating_condition"]
     assert summary["time_stepping"]["type_name"] == "Steady"
     assert summary["models"] == [{"type": "Fluid"}]

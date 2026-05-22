@@ -2,19 +2,20 @@
     "meshing": {
         "defaults": {
             "boundary_layer_first_layer_thickness": {
-                "display_unit": "mm",
-                "value": 1e-05
+                "units": "mm",
+                "value": 0.01
             },
             "boundary_layer_growth_rate": 1.2,
             "curvature_resolution_angle": {
-                "display_unit": "degree",
-                "value": 0.20943951023931956
+                "units": "degree",
+                "value": 12.000000000000002
             },
             "planar_face_tolerance": 1e-06,
             "surface_edge_growth_rate": 1.2,
             "surface_max_adaptation_iterations": 50,
             "surface_max_aspect_ratio": 10.0,
             "surface_max_edge_length": {
+                "units": "m",
                 "value": 0.1
             }
         },
@@ -122,11 +123,13 @@
             "heat_spec": {
                 "type_name": "HeatFlux",
                 "value": {
+                    "units": "W/m**2",
                     "value": 0.0
                 }
             },
             "name": "Wall",
             "roughness_height": {
+                "units": "m",
                 "value": 0.0
             },
             "type": "Wall"
@@ -162,12 +165,15 @@
             "material": {
                 "dynamic_viscosity": {
                     "effective_temperature": {
+                        "units": "K",
                         "value": 110.4
                     },
                     "reference_temperature": {
+                        "units": "K",
                         "value": 273.15
                     },
                     "reference_viscosity": {
+                        "units": "Pa*s",
                         "value": 1.716e-05
                     }
                 },
@@ -231,36 +237,40 @@
     ],
     "operating_condition": {
         "alpha": {
-            "display_unit": "degree",
-            "value": 0.17453292519943295
+            "units": "degree",
+            "value": 10.0
         },
         "beta": {
-            "display_unit": "degree",
+            "units": "degree",
             "value": 0.0
         },
         "private_attribute_constructor": "default",
         "private_attribute_input_cache": {
             "alpha": {
-                "display_unit": "degree",
-                "value": 0.17453292519943295
+                "units": "degree",
+                "value": 10.0
             },
             "beta": {
-                "display_unit": "degree",
+                "units": "degree",
                 "value": 0.0
             },
             "thermal_state": {
                 "density": {
+                    "units": "kg/m**3",
                     "value": 1.225
                 },
                 "material": {
                     "dynamic_viscosity": {
                         "effective_temperature": {
+                            "units": "K",
                             "value": 110.4
                         },
                         "reference_temperature": {
+                            "units": "K",
                             "value": 273.15
                         },
                         "reference_viscosity": {
+                            "units": "Pa*s",
                             "value": 1.716e-05
                         }
                     },
@@ -270,6 +280,7 @@
                 "private_attribute_constructor": "default",
                 "private_attribute_input_cache": {},
                 "temperature": {
+                    "units": "K",
                     "value": 288.15
                 },
                 "type_name": "ThermalState"
@@ -277,17 +288,21 @@
         },
         "thermal_state": {
             "density": {
+                "units": "kg/m**3",
                 "value": 1.225
             },
             "material": {
                 "dynamic_viscosity": {
                     "effective_temperature": {
+                        "units": "K",
                         "value": 110.4
                     },
                     "reference_temperature": {
+                        "units": "K",
                         "value": 273.15
                     },
                     "reference_viscosity": {
+                        "units": "Pa*s",
                         "value": 1.716e-05
                     }
                 },
@@ -297,6 +312,7 @@
             "private_attribute_constructor": "default",
             "private_attribute_input_cache": {},
             "temperature": {
+                "units": "K",
                 "value": 288.15
             },
             "type_name": "ThermalState"
@@ -419,6 +435,7 @@
                 "stored_entities": [
                     {
                         "location": {
+                            "units": "m",
                             "value": [
                                 -1.0,
                                 0.0,
@@ -537,6 +554,7 @@
                             0.0
                         ],
                         "origin": {
+                            "units": "m",
                             "value": [
                                 0.0,
                                 0.0,
@@ -662,6 +680,7 @@
             "draft_entities": [
                 {
                     "location": {
+                        "units": "m",
                         "value": [
                             -1.0,
                             0.0,
@@ -680,6 +699,7 @@
                         0.0
                     ],
                     "origin": {
+                        "units": "m",
                         "value": [
                             0.0,
                             0.0,
@@ -1910,6 +1930,7 @@
             "type_name": "GeometryEntityInfo"
         },
         "project_length_unit": {
+            "units": "m",
             "value": 1.0
         },
         "use_geometry_AI": false,
@@ -1922,6 +1943,7 @@
             "value": 1.0
         },
         "moment_center": {
+            "units": "m",
             "value": [
                 0.0,
                 0.0,
@@ -1929,6 +1951,7 @@
             ]
         },
         "moment_length": {
+            "units": "m",
             "value": [
                 1.0,
                 1.0,

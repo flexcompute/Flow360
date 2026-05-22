@@ -7,7 +7,6 @@ For utility functions (type checks, unit resolution, etc.), see unyt_utils.py.
 from collections.abc import Mapping
 from typing import Any
 
-import unyt as u
 from unyt import unyt_array
 
 from .dimension_meta import PhysicalDimensionMeta as DimensionMeta
@@ -24,40 +23,6 @@ from .unyt_utils import (
     is_unyt_unit,
     is_zero_value,
 )
-
-
-def parse_display_unit_dict(value: dict[str, Any], dimension_meta: DimensionMeta) -> Any:
-    """Parse a display-unit dict ``{"value": ..., "display_unit"?: ...}`` into a
-    unyt quantity whose ``.units`` is the user-chosen ``display_unit`` (if
-    given) or the field's SI base unit (if not).
-
-    The "value" key always carries the SI magnitude on the wire. When a
-    ``display_unit`` is present we convert via ``.to(display_unit)`` so the
-    resulting quantity natively reports the user's preferred unit through
-    arithmetic; the serializer simply reads ``str(q.units)`` to round-trip.
-    """
-    extras = set(value) - {"value", "display_unit"}
-    if extras:
-        raise ValueError(f"Unexpected keys in display-unit dict: {sorted(extras)}")
-
-    si_unit = get_si_unit(dimension_meta)
-    raw = value["value"]
-    if isinstance(raw, (list, tuple)):
-        unyt_q = ensure_float64(unyt_array(raw, si_unit))
-    else:
-        unyt_q = ensure_float64(float(raw) * si_unit)
-
-    display_unit_dsl = value.get("display_unit")
-    if display_unit_dsl is not None:
-        target_unit = u.Unit(dsl_to_unyt_unit(display_unit_dsl))
-        if target_unit.dimensions != si_unit.dimensions:
-            raise ValueError(
-                f"display_unit '{display_unit_dsl}' has dimension {target_unit.dimensions} "
-                f"but field '{dimension_meta.name}' expects {si_unit.dimensions}"
-            )
-        unyt_q = unyt_q.to(target_unit)
-
-    return unyt_q
 
 
 def to_unyt_scalar_with_fallback_info(
@@ -114,7 +79,7 @@ def to_unyt_array_with_fallback_info(
         raise ValueError(
             f"Unsupported mapping input for array field: {type(value).__name__}. "
             "Pass a unyt_array, a list of unyt_quantity, or a bare numeric sequence "
-            "(plus optional `display_unit` via the dimensioned-type validator)."
+            "(or a `{value, units}` wire-format dict via the dimensioned-type validator)."
         )
 
     if not is_unyt_quantity(value):

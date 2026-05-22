@@ -52,9 +52,7 @@
     "outputRescale": {
         "velocityScale": 1.0
     },
-    "runControl": {
-        "externalProcessMonitorOutput": false
-    },
+    "runControl": {},
     "thermallyPerfectGasModel": {
         "temperatureRanges": [
             {

@@ -92,16 +92,6 @@ def ensure_float64(value: Any) -> Any:
     return value
 
 
-def is_display_unit_dict(value: Any) -> bool:
-    """Check if value is a display-unit dict ``{"value": ..., "display_unit"?: ...}``.
-
-    Detection is intentionally lenient (anything with ``value`` and no ``units``)
-    so that ``parse_display_unit_dict`` can produce a precise error for malformed
-    inputs (extras, wrong dimension, etc.).
-    """
-    return isinstance(value, dict) and "value" in value and "units" not in value
-
-
 def is_numeric_scalar(value: Any) -> bool:
     """Check if value is a plain numeric scalar (excluding booleans).
 

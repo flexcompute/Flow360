@@ -2,7 +2,7 @@
 
 import json
 import os
-from typing import Any, Dict, List, Literal, Optional, Tuple, Union
+from typing import Any, Collection, Dict, List, Literal, Optional, Tuple, Union
 
 import pydantic as pd
 
@@ -33,6 +33,8 @@ from flow360_schema.models.simulation.validation.validation_service import (
 
 # pylint: enable=unused-import
 from pydantic import TypeAdapter
+
+from flow360.component.simulation.exposed_units import supported_units_by_front_end
 
 # pylint: disable=unused-import # For parse_model_dict
 from flow360.component.simulation.models.volume_models import BETDisk
@@ -87,6 +89,121 @@ def validate_model(  # pylint: disable=too-many-locals
         root_item_type=root_item_type,
         validation_level=validation_level,
     )
+
+
+def _convert_unit_in_dict(
+    *,
+    data: dict,
+    target_unit_system: Literal["SI", "Imperial", "CGS"],
+    is_delta_temperature: bool,
+):
+
+    def get_new_unit_as_string(
+        old_unit: u.Unit,
+        unit_system: Literal["SI", "Imperial", "CGS"],
+        is_delta_temperature: bool,
+    ) -> str:
+        dimension_str = (
+            str(old_unit.dimensions) if not is_delta_temperature else "(temperature_difference)"
+        )
+        assert (
+            dimension_str in supported_units_by_front_end
+        ), f"Unknown dimension found: {dimension_str}"
+
+        if isinstance(supported_units_by_front_end[dimension_str], list):
+            # This is a unit system agnostic dimension
+            for unit in supported_units_by_front_end[dimension_str]:
+                if u.Unit(unit) == old_unit:
+                    return unit
+            return supported_units_by_front_end[dimension_str][0]
+        return supported_units_by_front_end[dimension_str][unit_system]
+
+    def get_converted_value(original_value, old_unit, new_unit):
+        def convert_single_value(val):
+            """Convert a single scalar value with units."""
+            converted = (val * old_unit).to(new_unit).value
+            # Handle numpy scalars and arrays
+            try:
+                return float(converted)
+            except (TypeError, ValueError):
+                # If it's a numpy array or other non-scalar, try to convert to list
+                try:
+                    return converted.tolist() if hasattr(converted, "tolist") else list(converted)
+                except (TypeError, AttributeError):
+                    return converted
+
+        def convert_nested_collection(val):
+            """Recursively convert nested collections."""
+            if isinstance(val, Collection) and not isinstance(val, str):
+                if hasattr(val, "__iter__"):
+                    return [convert_nested_collection(item) for item in val]
+                return convert_single_value(val)
+            return convert_single_value(val)
+
+        return convert_nested_collection(original_value)
+
+    old_unit = u.Unit(data["units"])
+    new_unit_str = get_new_unit_as_string(
+        old_unit, target_unit_system, is_delta_temperature=is_delta_temperature
+    )
+    new_unit = u.Unit(new_unit_str)
+    new_value = get_converted_value(data["value"], old_unit, new_unit)
+
+    data["value"] = new_value
+    data["units"] = new_unit_str
+    return data
+
+
+def change_unit_system_recursive(
+    *, data, target_unit_system: Literal["SI", "Imperial", "CGS"], current_key: str = None
+) -> None:
+    """
+    Recursively traverse a nested structure of dicts/lists.
+    If a dict has exactly the structure {'value': XX, 'units': XX},
+    Try to convert to the new unit system
+    """
+    white_list_keys = {
+        # current key -- sub key
+        ("private_attribute_asset_cache", "project_length_unit"),
+        ("private_attribute_input_cache", "length_unit"),
+    }
+
+    if isinstance(data, dict):
+        # 1. Check if dict matches the desired pattern
+        if set(data.keys()) == {"value", "units"} and data["units"] not in (
+            "SI_unit_system",
+            "Imperial_unit_system",
+            "CGS_unit_system",
+        ):
+            data = _convert_unit_in_dict(
+                data=data,
+                target_unit_system=target_unit_system,
+                is_delta_temperature=current_key == "temperature_offset",
+            )
+
+        # 2. Otherwise, recurse into each item in the dictionary
+        for key, val in data.items():
+            if (current_key, key) in white_list_keys:
+                continue
+            change_unit_system_recursive(
+                data=val,
+                target_unit_system=target_unit_system,
+                current_key=key,
+            )
+
+    elif isinstance(data, list):
+        # Recurse into each item in the list
+        for _, item in enumerate(data):
+            change_unit_system_recursive(data=item, target_unit_system=target_unit_system)
+
+
+def change_unit_system(*, data: dict, target_unit_system: Literal["SI", "Imperial", "CGS"]):
+    """
+    Change the unit system of the simulation parameters.
+    """
+    change_unit_system_recursive(data=data, target_unit_system=target_unit_system)
+    data["unit_system"]["name"] = target_unit_system
+    return data
 
 
 def _serialize_unit_in_dict(data):
