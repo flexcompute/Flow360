@@ -290,6 +290,8 @@ class MeshingParams(Flow360BaseModel):
         description="Mesh output settings.",
     )
 
+    private_attribute_dict: dict | None = pd.Field(None)
+
     @pd.field_validator("volume_zones", mode="after")
     @classmethod
     def _check_volume_zones_has_farfield(cls, v):
@@ -639,6 +641,8 @@ class ModularMeshingWorkflow(Flow360BaseModel):
         default=[],
         description="Mesh output settings.",
     )
+
+    private_attribute_dict: dict | None = pd.Field(None)
 
     @pd.field_validator("zones", mode="after")
     @classmethod

@@ -140,6 +140,7 @@ from flow360.component.simulation.models.volume_models import (
     PorousMedium,
     Rotation,
     Solid,
+    VelocityForcingPlane,
     XFOILFile,
     XROTORFile,
 )
@@ -298,6 +299,7 @@ __all__ = [
     "BETDiskTwist",
     "Rotation",
     "PorousMedium",
+    "VelocityForcingPlane",
     "SurfaceOutput",
     "TimeAverageSurfaceOutput",
     "VolumeOutput",

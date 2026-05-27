@@ -903,6 +903,29 @@ def _to_25_10_13(params_as_dict):
     return params_as_dict
 
 
+def _to_25_10_14(params_as_dict):
+    """Strip legacy ``"name": null`` from ``SurfaceOutput`` /
+    ``TimeAverageSurfaceOutput`` entries.
+
+    Prior to this branch the field was typed ``str | None`` and unset names
+    serialized as ``null``. The field is now :class:`FileNameString` which
+    rejects ``None``; the schema still coerces null with a DeprecationWarning,
+    but normalizing here means cloud-stored params replay cleanly without
+    re-emitting the warning each time.
+    """
+    outputs = params_as_dict.get("outputs")
+    if not isinstance(outputs, list):
+        return params_as_dict
+    for output in outputs:
+        if not isinstance(output, dict):
+            continue
+        if output.get("output_type") not in ("SurfaceOutput", "TimeAverageSurfaceOutput"):
+            continue
+        if output.get("name", "sentinel") is None:
+            del output["name"]
+    return params_as_dict
+
+
 VERSION_MILESTONES = [
     (Flow360Version("24.11.1"), _to_24_11_1),
     (Flow360Version("24.11.7"), _to_24_11_7),
@@ -930,6 +953,7 @@ VERSION_MILESTONES = [
     (Flow360Version("25.10.0"), _to_25_10_0),
     (Flow360Version("25.10.12"), _to_25_10_12),
     (Flow360Version("25.10.13"), _to_25_10_13),
+    (Flow360Version("25.10.14"), _to_25_10_14),
 ]  # A list of the Python API version tuple with their corresponding updaters.
 
 

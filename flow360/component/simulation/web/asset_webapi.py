@@ -21,6 +21,7 @@ class ResourceWebApi:
 
     def __init__(self, interface, resource_id: str):
         self.resource_id = resource_id
+        self._interface = interface
         self._api = RestApi(interface.endpoint, id=resource_id)
 
     def get_info(self):
@@ -41,6 +42,40 @@ class ResourceWebApi:
     ):  # pylint: disable=redefined-outer-name
         """Delegate specialized GET calls to the underlying REST API."""
         return self._api.get(path=path, method=method, json=json, params=params)
+
+    def post(self, json, path=None, method=None):  # pylint: disable=redefined-outer-name
+        """Delegate specialized POST calls to the underlying REST API."""
+        return self._api.post(json=json, path=path, method=method)
+
+    def patch(self, json, path=None, method=None):  # pylint: disable=redefined-outer-name
+        """Delegate specialized PATCH calls to the underlying REST API."""
+        return self._api.patch(json=json, path=path, method=method)
+
+    def delete(self, path=None, method=None):
+        """Delegate DELETE calls to the underlying REST API."""
+        return self._api.delete(path=path, method=method)
+
+    def rename(self, name: str):
+        """Rename resource."""
+        return self.patch({"name": name})
+
+    def list_files(self):
+        """List files available for this resource."""
+        return self._api.get(method="files") or []
+
+    def get_download_file_list(self):
+        """Return the files available for SDK download helpers."""
+        return self.list_files()
+
+    def download_file(self, file_name, *, to_file=None, to_folder=".", overwrite=True):
+        """Download a resource file by remote name."""
+        return self._interface.s3_transfer_method.download_file(
+            self.resource_id,
+            file_name,
+            to_file=to_file,
+            to_folder=to_folder,
+            overwrite=overwrite,
+        )
 
 
 class GeometryWebApi(ResourceWebApi):
@@ -83,3 +118,64 @@ class DraftWebApi(ResourceWebApi):
         api = RestApi(DraftInterface.endpoint)
         response = api.get(params={"projectId": project_id})
         return response.get("records", [])
+
+    @classmethod
+    def create(  # pylint: disable=too-many-arguments
+        cls,
+        *,
+        name,
+        project_id,
+        source_item_id,
+        source_item_type,
+        solver_version,
+        fork_case,
+    ):
+        """Create a draft from an existing project item."""
+        api = RestApi(DraftInterface.endpoint)
+        return api.post(
+            {
+                "name": name,
+                "projectId": project_id,
+                "sourceItemId": source_item_id,
+                "sourceItemType": source_item_type,
+                "solverVersion": solver_version,
+                "forkCase": fork_case,
+            }
+        )
+
+    def set_simulation_params(self, simulation_params):
+        """Replace the draft SimulationParams payload."""
+        return self.post(
+            {
+                "data": json.dumps(simulation_params),
+                "type": "simulation",
+                "version": "",
+            },
+            method="simulation/file",
+        )
+
+    def run(self, *, up_to, use_in_house=False, use_gai=False, start_from=None):
+        """Run the draft up to the requested asset type."""
+        payload = {
+            "upTo": up_to,
+            "useInHouse": use_in_house,
+            "useGai": use_gai,
+        }
+        if start_from is not None:
+            payload["forceCreationConfig"] = {"startFrom": start_from}
+        return self.post(payload, method="run")
+
+
+def get_resource_webapi_class(resource_type: str):
+    """Return the lightweight V2 web API class for a resource type."""
+    webapi_by_type = {
+        "Draft": DraftWebApi,
+        "Geometry": GeometryWebApi,
+        "SurfaceMesh": SurfaceMeshWebApi,
+        "VolumeMesh": VolumeMeshWebApi,
+        "Case": CaseWebApi,
+    }
+    try:
+        return webapi_by_type[resource_type]
+    except KeyError as error:
+        raise ValueError(f"Web API is not supported for {resource_type} resources.") from error

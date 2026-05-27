@@ -4,7 +4,10 @@ Asset CLI commands.
 
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
+
+import click
 
 from flow360.cli.output import emit_json
 from flow360.cli.resource_group import ResourceCommandSpec, make_resource_group
@@ -54,6 +57,14 @@ def _get_asset_simulation_params(webapi_cls, asset_id):
     return webapi_cls(asset_id).get_simulation_params()
 
 
+def _rename_asset(webapi_cls, asset_id, name):
+    return webapi_cls(asset_id).rename(name)
+
+
+def _delete_asset(webapi_cls, asset_id):
+    return webapi_cls(asset_id).delete()
+
+
 def _summarize_simulation_params(simulation_params):
     # pylint: disable=import-outside-toplevel
     from flow360.cli.simulation_summary import summarize_simulation
@@ -101,9 +112,99 @@ def _emit_asset_state(resource_type, asset_id):
     emit_json(get_resource_state_for_type(resource_type, asset_id))
 
 
+def _emit_asset_rename(webapi_class_name, asset_id, name):
+    webapi_cls = _get_asset_webapi_class(webapi_class_name)
+    _rename_asset(webapi_cls, asset_id, name)
+    emit_json({"id": asset_id, "name": name})
+
+
+def _emit_asset_delete(webapi_class_name, asset_id):
+    webapi_cls = _get_asset_webapi_class(webapi_class_name)
+    _delete_asset(webapi_cls, asset_id)
+    emit_json({"id": asset_id, "deleted": True})
+
+
 def _emit_asset_summary_for_spec(webapi_class_name, asset_id):
     webapi_cls = _get_asset_webapi_class(webapi_class_name)
     _emit_asset_summary(webapi_cls, asset_id)
+
+
+def _get_case_result_path(record):
+    value = record.get("fileName")
+    if not value:
+        return None
+    parts = value.split("/")
+    if "results" in parts:
+        return "/".join(parts[parts.index("results") :])
+    return value
+
+
+def _get_case_result_download_path(record):
+    return record.get("fileName")
+
+
+def _serialize_case_result(record):
+    path = _get_case_result_path(record)
+    return {
+        "name": os.path.basename(path) if path else None,
+        "path": path,
+        "file_type": record.get("fileType"),
+        "size_bytes": record.get("length"),
+    }
+
+
+def _list_case_results(case_id):
+    webapi_cls = _get_asset_webapi_class("CaseWebApi")
+    files = webapi_cls(case_id).list_files()
+    result_files = [
+        record for record in files if (_get_case_result_path(record) or "").startswith("results/")
+    ]
+    result_files.sort(key=lambda record: _get_case_result_path(record) or "")
+    return result_files
+
+
+def _resolve_case_result(case_id, result_ref):
+    results = _list_case_results(case_id)
+    if not results:
+        raise click.ClickException(f"No result files are available for case {case_id}.")
+
+    exact_matches = [
+        record
+        for record in results
+        if result_ref in {record.get("fileName"), _get_case_result_path(record)}
+    ]
+    if len(exact_matches) == 1:
+        return exact_matches[0]
+    if len(exact_matches) > 1:
+        raise click.ClickException(f"Multiple results matched '{result_ref}'. Use the full path.")
+
+    basename_matches = [
+        record
+        for record in results
+        if os.path.basename(_get_case_result_path(record) or "") == result_ref
+    ]
+    if len(basename_matches) == 1:
+        return basename_matches[0]
+    if len(basename_matches) > 1:
+        matches = ", ".join(
+            sorted(_get_case_result_path(record) or "" for record in basename_matches)
+        )
+        raise click.ClickException(
+            f"Multiple results matched '{result_ref}'. Use one of: {matches}"
+        )
+
+    raise click.ClickException(f"Result '{result_ref}' was not found for case {case_id}.")
+
+
+def _download_case_result(case_id, result_path, *, to_path=None, overwrite=False):
+    webapi_cls = _get_asset_webapi_class("CaseWebApi")
+    if to_path is None:
+        return webapi_cls(case_id).download_file(result_path, overwrite=overwrite)
+    return webapi_cls(case_id).download_file(
+        result_path,
+        to_file=to_path,
+        overwrite=overwrite,
+    )
 
 
 def _make_asset_group(config):
@@ -123,6 +224,10 @@ def _make_asset_group(config):
             emit_summary=lambda asset_id: _emit_asset_summary_for_spec(
                 config.webapi_class_name, asset_id
             ),
+            emit_rename=lambda asset_id, name: _emit_asset_rename(
+                config.webapi_class_name, asset_id, name
+            ),
+            emit_delete=lambda asset_id: _emit_asset_delete(config.webapi_class_name, asset_id),
         )
     )
 
@@ -167,3 +272,50 @@ case = _make_asset_group(
         label="case",
     )
 )
+
+
+@case.group("results", help="Namespace for case result artifacts.")
+def case_results():
+    """Manage case result artifacts."""
+
+
+@case_results.command("list", help="List case result artifacts.")
+@click.argument("case_id")
+def list_case_results(case_id):
+    """List case result artifacts."""
+    emit_json(
+        {"records": [_serialize_case_result(record) for record in _list_case_results(case_id)]}
+    )
+
+
+@case_results.command("get", help="Download a case result artifact.")
+@click.argument("case_id")
+@click.argument("result_ref")
+@click.option(
+    "--output",
+    "-o",
+    "output_path",
+    type=click.Path(dir_okay=False, writable=True),
+    default=None,
+    help="Output file path. Defaults to the result basename.",
+)
+@click.option("--overwrite", is_flag=True, help="Overwrite existing local file.")
+def get_case_result(case_id, result_ref, output_path, overwrite):
+    """Download a case result artifact."""
+    record = _resolve_case_result(case_id, result_ref)
+    result_path = _get_case_result_path(record)
+    download_path = _get_case_result_download_path(record)
+    local_path = _download_case_result(
+        case_id,
+        download_path,
+        to_path=output_path,
+        overwrite=overwrite,
+    )
+    emit_json(
+        {
+            "id": case_id,
+            "name": os.path.basename(result_path) if result_path else None,
+            "path": result_path,
+            "local_path": local_path,
+        }
+    )

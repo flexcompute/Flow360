@@ -10,12 +10,15 @@ from __future__ import annotations
 import copy
 import json
 import logging
+import math
 from collections import OrderedDict
 
 _PRIVATE_PREFIX = "private_attribute_"
 _ENTITY_COLLECTION_KEYS = ("stored_entities", "selectors")
 _GROUP_LABEL_KEYS = {"name"}
 _SAMPLE_LIMIT = 10
+_DEFAULT_REL_TOL = 1e-12
+_DEFAULT_ABS_TOL = 1e-15
 
 
 def summarize_simulation(simulation_params: dict) -> dict:
@@ -38,6 +41,7 @@ def _load_summary_dicts(simulation_params: dict) -> tuple[dict, dict, dict | Non
 
     previous_disable_level = logging.root.manager.disable
     logging.disable(logging.WARNING)
+    clear_variable_space = False
     try:
         params_dict = SimulationParams._sanitize_params_dict(  # pylint: disable=protected-access
             copy.deepcopy(simulation_params)
@@ -48,13 +52,84 @@ def _load_summary_dicts(simulation_params: dict) -> tuple[dict, dict, dict | Non
         root_item_type = _infer_root_item_type(params_dict)
         unit_system_name = _unit_system_name(params_dict)
         length_unit = _project_length_unit(params_dict)
+        clear_variable_space = _initialize_summary_variable_space(params_dict)
         params_dict = _strip_private_cache(params_dict)
+        display_dict = _strip_private_cache(copy.deepcopy(simulation_params))
         params = SimulationParams(file_content=copy.deepcopy(params_dict))
         normalized_dict = _strip_private_cache(params.model_dump(mode="json", exclude_none=True))
         default_dict = _default_params_dict(unit_system_name, length_unit, root_item_type)
-        return params_dict, normalized_dict, default_dict
+        return display_dict, normalized_dict, default_dict
     finally:
+        if clear_variable_space:
+            _clear_summary_variable_space()
         logging.disable(previous_disable_level)
+
+
+def _initialize_summary_variable_space(params_dict):
+    # pylint: disable=import-outside-toplevel,broad-exception-caught
+    from flow360.component.simulation.services import initialize_variable_space
+
+    variable_context = params_dict.get("private_attribute_asset_cache", {}).get("variable_context")
+    if not variable_context:
+        return False
+    try:
+        initialize_variable_space(params_dict, use_clear_context=True)
+    except Exception:
+        _clear_summary_variable_space()
+        # Summary only needs cached names to resolve while SimulationParams is rebuilt.
+        _initialize_summary_variable_placeholders(variable_context)
+    return True
+
+
+def _initialize_summary_variable_placeholders(variable_context):
+    # pylint: disable=import-outside-toplevel,broad-exception-caught
+    from flow360_schema.framework.expression.registry import default_context
+
+    for variable_info in variable_context:
+        if not isinstance(variable_info, dict):
+            continue
+        name = variable_info.get("name")
+        if not name:
+            continue
+        try:
+            default_context.set_value(
+                name,
+                _summary_variable_value(variable_info.get("value")),
+            )
+        except Exception:
+            continue
+
+        description = variable_info.get("description")
+        if description is not None:
+            default_context.set_metadata(name, "description", description)
+
+        metadata = variable_info.get("metadata")
+        if metadata is not None:
+            default_context.set_metadata(name, "metadata", metadata)
+
+
+def _summary_variable_value(value):
+    # pylint: disable=import-outside-toplevel,broad-exception-caught
+    from flow360_schema.framework.expression import Expression
+
+    if isinstance(value, dict) and "expression" in value:
+        expression = value["expression"]
+        output_units = value.get("output_units")
+        try:
+            return Expression(expression=expression, output_units=output_units)
+        except Exception:
+            return Expression.model_construct(
+                expression=expression,
+                output_units=output_units,
+            )
+    return value
+
+
+def _clear_summary_variable_space():
+    # pylint: disable=import-outside-toplevel
+    from flow360.component.simulation.services import clear_context
+
+    clear_context()
 
 
 def _infer_root_item_type(params_dict):
@@ -284,7 +359,7 @@ def _prune_defaults(  # pylint: disable=too-many-return-statements
 ):
     if default_value is None:
         return display_value
-    if normalized_value == default_value:
+    if _matches_default(normalized_value, default_value):
         if keep_type_marker:
             return _type_marker(display_value)
         return None
@@ -365,7 +440,7 @@ def _find_default_match(normalized_item, default_items, matched_indices):
     for index, default_item in enumerate(default_items):
         if index in matched_indices:
             continue
-        if normalized_item == default_item:
+        if _matches_default(normalized_item, default_item):
             return index
         if not normalized_marker or normalized_marker != _type_marker(default_item):
             continue
@@ -383,6 +458,29 @@ def _type_marker(value):
 
 def _is_type_marker_key(key):
     return key in {"type", "type_name", "output_type", "refinement_type"}
+
+
+def _matches_default(value, default):
+    if _is_number(value) and _is_number(default):
+        return math.isclose(
+            float(value),
+            float(default),
+            rel_tol=_DEFAULT_REL_TOL,
+            abs_tol=_DEFAULT_ABS_TOL,
+        )
+    if isinstance(value, dict) and isinstance(default, dict):
+        if value.keys() != default.keys():
+            return False
+        return all(_matches_default(value[key], default[key]) for key in value)
+    if isinstance(value, list) and isinstance(default, list):
+        if len(value) != len(default):
+            return False
+        return all(_matches_default(child, default[index]) for index, child in enumerate(value))
+    return value == default
+
+
+def _is_number(value):
+    return isinstance(value, (int, float)) and not isinstance(value, bool)
 
 
 def _is_absent_default_like(value):
@@ -403,7 +501,7 @@ def _is_entity_summary(value):
 
 
 def _should_drop_key(key):
-    return isinstance(key, str) and key.startswith(_PRIVATE_PREFIX)
+    return isinstance(key, str) and (key.startswith(_PRIVATE_PREFIX) or key == "_id")
 
 
 def _strip_private_cache(value):

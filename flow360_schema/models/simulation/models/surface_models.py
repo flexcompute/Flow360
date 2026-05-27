@@ -1,6 +1,8 @@
 """
-Contains basically only boundary conditons for now. In future we can add new models like 2D equations.
+Contains basically only boundary conditions for now. In future we can add new models like 2D equations.
 """
+
+# pylint: disable=too-many-lines
 
 import logging
 import warnings
@@ -51,6 +53,7 @@ from flow360_schema.models.simulation.validation.validation_context import (
 from flow360_schema.models.simulation.validation.validation_utils import (
     check_deleted_surface_in_entity_list,
     check_deleted_surface_pair,
+    remap_symmetric_ghost_entity,
     validate_entity_list_surface_existence,
 )
 
@@ -66,6 +69,12 @@ class BoundaryBase(Flow360BaseModel, metaclass=ABCMeta):
         description="List of boundaries with boundary condition imposed.",
     )
     private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
+
+    @contextual_field_validator("entities", mode="after")
+    @classmethod
+    def remap_symmetric_to_user_name(cls, value, param_info: ParamsValidationInfo):
+        """Remap 'symmetric' ghost entity to user's symmetry surface name for UDF backward compat."""
+        return remap_symmetric_ghost_entity(value, param_info)
 
     @contextual_field_validator("entities", mode="after")
     @classmethod
@@ -677,6 +686,15 @@ class Inflow(BoundaryBaseWithTurbulenceQuantities):
         alias="surfaces",
         description="List of boundaries with the `Inflow` boundary condition imposed.",
     )
+
+    @pd.model_validator(mode="after")
+    def _ensure_velocity_direction_for_mesh_rotation(self):
+        """`rotate_velocity_direction_with_mesh` is only meaningful when `velocity_direction` is set."""
+        if self.rotate_velocity_direction_with_mesh and self.velocity_direction is None:
+            raise ValueError(
+                "`rotate_velocity_direction_with_mesh` cannot be set when `velocity_direction` is not specified."
+            )
+        return self
 
 
 class SlipWall(BoundaryBase):

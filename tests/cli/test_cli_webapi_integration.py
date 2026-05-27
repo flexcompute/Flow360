@@ -354,6 +354,176 @@ def test_draft_simulation_params_get_uses_simulation_endpoint(recorded_webapi_ca
     }
 
 
+def test_project_rename_and_delete_use_project_endpoint(recorded_webapi_calls):
+    runner = CliRunner()
+
+    rename_result = runner.invoke(flow360, ["project", "rename", PROJECT_ID, "--name", "Updated"])
+    delete_result = runner.invoke(flow360, ["project", "delete", PROJECT_ID, "--yes"])
+
+    assert rename_result.exit_code == 0
+    assert delete_result.exit_code == 0
+    assert recorded_webapi_calls[-2] == {
+        "type": "patch",
+        "url": f"/v2/projects/{PROJECT_ID}",
+        "params": {"name": "Updated"},
+    }
+    assert recorded_webapi_calls[-1] == {
+        "type": "delete",
+        "url": f"/v2/projects/{PROJECT_ID}",
+        "params": None,
+    }
+
+
+def test_asset_rename_and_delete_use_v2_endpoint(recorded_webapi_calls):
+    runner = CliRunner()
+
+    rename_result = runner.invoke(flow360, ["geometry", "rename", GEOMETRY_ID, "--name", "Updated"])
+    delete_result = runner.invoke(flow360, ["geometry", "delete", GEOMETRY_ID, "--yes"])
+
+    assert rename_result.exit_code == 0
+    assert delete_result.exit_code == 0
+    assert recorded_webapi_calls[-2] == {
+        "type": "patch",
+        "url": f"/v2/geometries/{GEOMETRY_ID}",
+        "params": {"name": "Updated"},
+    }
+    assert recorded_webapi_calls[-1] == {
+        "type": "delete",
+        "url": f"/v2/geometries/{GEOMETRY_ID}",
+        "params": None,
+    }
+
+
+def test_draft_create_uses_source_asset_and_create_endpoint(recorded_webapi_calls):
+    runner = CliRunner()
+
+    result = runner.invoke(flow360, ["draft", "create", VOLUME_MESH_ID, "--name", "Alpha 0"])
+
+    assert result.exit_code == 0
+    payload = _load_json_output(result.output)
+    assert payload["id"] == DRAFT_ID
+    assert recorded_webapi_calls[-2] == {
+        "type": "get",
+        "url": f"/v2/volume-meshes/{VOLUME_MESH_ID}",
+        "params": None,
+    }
+    assert recorded_webapi_calls[-1] == {
+        "type": "post",
+        "url": "/v2/drafts",
+        "params": {
+            "name": "Alpha 0",
+            "projectId": PROJECT_ID,
+            "sourceItemId": VOLUME_MESH_ID,
+            "sourceItemType": "VolumeMesh",
+            "solverVersion": "release-24.11",
+            "forkCase": False,
+        },
+    }
+
+
+def test_draft_simulation_params_set_uses_simulation_endpoint(tmp_path, recorded_webapi_calls):
+    runner = CliRunner()
+    params_file = tmp_path / "simulation.json"
+    params_file.write_text('{"version": "24.11.0"}', encoding="utf-8")
+
+    result = runner.invoke(
+        flow360,
+        ["draft", "simulation-params", "set", DRAFT_ID, str(params_file)],
+    )
+
+    assert result.exit_code == 0
+    assert recorded_webapi_calls[-1] == {
+        "type": "post",
+        "url": f"/v2/drafts/{DRAFT_ID}/simulation/file",
+        "params": {
+            "data": '{"version": "24.11.0"}',
+            "type": "simulation",
+            "version": "",
+        },
+    }
+
+
+def test_draft_run_uses_run_endpoint(recorded_webapi_calls):
+    runner = CliRunner()
+
+    result = runner.invoke(flow360, ["draft", "run", DRAFT_ID, "--up-to", "case"])
+
+    assert result.exit_code == 0
+    payload = _load_json_output(result.output)
+    assert payload["result"]["id"] == CASE_ID
+    assert recorded_webapi_calls[-1] == {
+        "type": "post",
+        "url": f"/v2/drafts/{DRAFT_ID}/run",
+        "params": {
+            "upTo": "Case",
+            "useInHouse": False,
+            "useGai": False,
+        },
+    }
+
+
+def test_case_results_list_uses_case_files_endpoint(recorded_webapi_calls):
+    runner = CliRunner()
+
+    result = runner.invoke(flow360, ["case", "results", "list", CASE_ID])
+
+    assert result.exit_code == 0
+    payload = _load_json_output(result.output)
+    assert payload["records"][0]["path"].startswith("results/")
+    assert recorded_webapi_calls[-1] == {
+        "type": "get",
+        "url": f"/v2/cases/{CASE_ID}/files",
+        "params": None,
+    }
+
+
+def test_resource_webapi_file_listing_uses_instance_endpoint(recorded_webapi_calls):
+    from flow360.component.simulation.web.asset_webapi import VolumeMeshWebApi
+
+    files = VolumeMeshWebApi(VOLUME_MESH_ID).get_download_file_list()
+
+    assert files
+    assert recorded_webapi_calls[-1] == {
+        "type": "get",
+        "url": f"/v2/volume-meshes/{VOLUME_MESH_ID}/files",
+        "params": None,
+    }
+
+
+def test_resource_webapi_download_uses_interface_transfer(monkeypatch):
+    from flow360.cloud.s3_utils import S3TransferType
+    from flow360.component.simulation.web.asset_webapi import VolumeMeshWebApi
+
+    download_call = {}
+
+    def fake_download(resource_id, file_name, *, to_file=None, to_folder=".", overwrite=True):
+        download_call.update(
+            {
+                "resource_id": resource_id,
+                "file_name": file_name,
+                "to_file": to_file,
+                "to_folder": to_folder,
+                "overwrite": overwrite,
+            }
+        )
+        return "mesh.cgns"
+
+    monkeypatch.setattr(S3TransferType.VOLUME_MESH, "download_file", fake_download)
+
+    local_path = VolumeMeshWebApi(VOLUME_MESH_ID).download_file(
+        "mesh.cgns", to_file="local.cgns", overwrite=False
+    )
+
+    assert local_path == "mesh.cgns"
+    assert download_call == {
+        "resource_id": VOLUME_MESH_ID,
+        "file_name": "mesh.cgns",
+        "to_file": "local.cgns",
+        "to_folder": ".",
+        "overwrite": False,
+    }
+
+
 def test_folder_get_uses_folder_info_endpoint(recorded_webapi_calls):
     runner = CliRunner()
 
@@ -385,4 +555,48 @@ def test_folder_tree_uses_folder_list_endpoint(recorded_webapi_calls):
             "page": 0,
             "size": 1000,
         },
+    }
+
+
+def test_folder_mutations_use_folder_endpoints(recorded_webapi_calls):
+    runner = CliRunner()
+
+    create_result = runner.invoke(
+        flow360,
+        ["folder", "create", "--name", "Folder A", "--parent-folder-id", "ROOT.FLOW360"],
+    )
+    rename_result = runner.invoke(flow360, ["folder", "rename", FOLDER_ID, "--name", "Updated"])
+    move_result = runner.invoke(
+        flow360, ["folder", "move", FOLDER_ID, "--parent-folder-id", "ROOT.FLOW360"]
+    )
+    delete_result = runner.invoke(flow360, ["folder", "delete", FOLDER_ID, "--yes"])
+
+    assert create_result.exit_code == 0
+    assert rename_result.exit_code == 0
+    assert move_result.exit_code == 0
+    assert delete_result.exit_code == 0
+    assert recorded_webapi_calls[-4] == {
+        "type": "post",
+        "url": "/folders",
+        "params": {
+            "name": "Folder A",
+            "tags": [],
+            "parentFolderId": "ROOT.FLOW360",
+            "type": "folder",
+        },
+    }
+    assert recorded_webapi_calls[-3] == {
+        "type": "patch",
+        "url": f"/v2/folders/{FOLDER_ID}",
+        "params": {"name": "Updated"},
+    }
+    assert recorded_webapi_calls[-2] == {
+        "type": "patch",
+        "url": f"/v2/folders/{FOLDER_ID}",
+        "params": {"parentFolderId": "ROOT.FLOW360"},
+    }
+    assert recorded_webapi_calls[-1] == {
+        "type": "delete",
+        "url": f"/v2/folders/{FOLDER_ID}",
+        "params": None,
     }

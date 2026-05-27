@@ -15,6 +15,9 @@ def test_project_group_help_shows_read_commands():
     assert result.exit_code == 0
     assert "list" in result.output
     assert "info" in result.output
+    assert "create" in result.output
+    assert "rename" in result.output
+    assert "delete" in result.output
     assert "tree" in result.output
     assert "path" in result.output
 
@@ -284,6 +287,120 @@ def test_project_info_outputs_metadata(monkeypatch):
     assert payload["name"] == "Wing Study"
     assert payload["root_item"]["id"] == "geo-123"
     assert payload["root_item"]["type"] == "Geometry"
+
+
+def test_project_create_passes_source_type_and_options(monkeypatch, tmp_path):
+    from flow360.cli import project as project_cli
+
+    runner = CliRunner()
+    calls = {}
+    geometry_file = tmp_path / "wing.step"
+    geometry_file.write_text("geometry", encoding="utf-8")
+    monkeypatch.setattr(
+        project_cli,
+        "_create_project_from_files",
+        lambda source_type, files, **kwargs: calls.update(
+            {"source_type": source_type, "files": files, "kwargs": kwargs}
+        )
+        or "prj-123",
+    )
+
+    result = runner.invoke(
+        flow360,
+        [
+            "project",
+            "create",
+            str(geometry_file),
+            "--from",
+            "geometry",
+            "--name",
+            "Wing Study",
+            "--solver-version",
+            "release-25.9",
+            "--unit",
+            "cm",
+            "--tag",
+            "demo",
+            "--folder-id",
+            "folder-123",
+            "--workflow",
+            "catalyst",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert json.loads(result.output) == {"id": "prj-123", "type": "Project"}
+    assert calls["source_type"] == "geometry"
+    assert calls["files"] == (str(geometry_file),)
+    assert calls["kwargs"] == {
+        "name": "Wing Study",
+        "solver_version": "release-25.9",
+        "length_unit": "cm",
+        "tags": ("demo",),
+        "folder_id": "folder-123",
+        "workflow": "catalyst",
+        "run_async": True,
+    }
+
+
+def test_project_create_sync_sets_run_async_false(monkeypatch, tmp_path):
+    from flow360.cli import project as project_cli
+
+    runner = CliRunner()
+    calls = {}
+    mesh_file = tmp_path / "wing.ugrid"
+    mesh_file.write_text("mesh", encoding="utf-8")
+    monkeypatch.setattr(
+        project_cli,
+        "_create_project_from_files",
+        lambda source_type, files, **kwargs: calls.update(kwargs) or "prj-123",
+    )
+
+    result = runner.invoke(
+        flow360,
+        ["project", "create", str(mesh_file), "--from", "surface-mesh", "--sync"],
+    )
+
+    assert result.exit_code == 0
+    assert calls["run_async"] is False
+
+
+def test_project_rename_and_delete(monkeypatch):
+    from flow360.cli import project as project_cli
+
+    runner = CliRunner()
+    calls = []
+    monkeypatch.setattr(
+        project_cli, "_rename_project", lambda project_id, name: calls.append((project_id, name))
+    )
+    monkeypatch.setattr(
+        project_cli, "_delete_project", lambda project_id: calls.append((project_id, "delete"))
+    )
+
+    rename_result = runner.invoke(flow360, ["project", "rename", "prj-123", "--name", "Updated"])
+    delete_result = runner.invoke(flow360, ["project", "delete", "prj-123", "--yes"])
+
+    assert rename_result.exit_code == 0
+    assert delete_result.exit_code == 0
+    assert calls == [("prj-123", "Updated"), ("prj-123", "delete")]
+    assert json.loads(rename_result.output) == {"id": "prj-123", "name": "Updated"}
+    assert json.loads(delete_result.output) == {"id": "prj-123", "deleted": True}
+
+
+def test_project_delete_requires_confirmation(monkeypatch):
+    from flow360.cli import project as project_cli
+
+    runner = CliRunner()
+    monkeypatch.setattr(
+        project_cli,
+        "_delete_project",
+        lambda project_id: (_ for _ in ()).throw(AssertionError("should not delete")),
+    )
+
+    result = runner.invoke(flow360, ["project", "delete", "prj-123"])
+
+    assert result.exit_code != 0
+    assert "Pass --yes" in result.output
 
 
 def test_project_tree_outputs_nested_tree(monkeypatch):

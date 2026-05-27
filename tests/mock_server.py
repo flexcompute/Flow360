@@ -564,26 +564,25 @@ class MockResponseProjectPath(MockResponse):
 
 
 class MockResponseDraftSubmit(MockResponse):
-    """response for Project(id="prj-41d2333b-85fd-4bed-ae13-15dcb6da519e")'s path to Fork Case json"""
+    """response for POST /v2/drafts"""
 
     def __init__(self, *args, params=None, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self._params = params
 
     def json(self):
-        res = None
-        if self._params["name"] == "VolumeMesh":
-            with open(
-                os.path.join(here, "data/mock_webapi/project_draft_volume_mesh_submit_resp.json")
-            ) as fh:
-                res = json.load(fh)
-
-        if self._params["name"] == "Case":
-            with open(
-                os.path.join(here, "data/mock_webapi/project_draft_case_fork_submit_resp.json")
-            ) as fh:
-                res = json.load(fh)
-        return res
+        return {
+            "data": {
+                "id": "dft-84b20880-937d-4ef2-983b-7f75089f6dd6",
+                "name": self._params.get("name") or "Draft 1",
+                "projectId": self._params.get("projectId"),
+                "sourceItemId": self._params.get("sourceItemId"),
+                "sourceItemType": self._params.get("sourceItemType"),
+                "solverVersion": self._params.get("solverVersion"),
+                "forkCase": self._params.get("forkCase"),
+                "type": "Draft",
+            }
+        }
 
 
 class MockResponseDraftVolumeMeshRun(MockResponse):
@@ -663,12 +662,15 @@ GET_RESPONSE_MAP = {
     "/v2/surface-meshes/sm-1f1f2753-fe31-47ea-b3ab-efb2313ab65a/simulation/file": MockResponseProjectSurfaceMeshSimConfig,
     "/v2/volume-meshes/vm-7c3681cd-8c6c-4db7-a62c-1742d825e9d3": MockResponseProjectVolumeMesh,
     "/v2/volume-meshes/vm-7c3681cd-8c6c-4db7-a62c-1742d825e9d3/simulation/file": MockResponseProjectVolumeMeshSimConfig,
+    "/v2/volume-meshes/vm-7c3681cd-8c6c-4db7-a62c-1742d825e9d3/files": MockResponseCaseFiles,
     "/v2/drafts/vm-7c3681cd-8c6c-4db7-a62c-1742d825e9d3": MockResponseProjectVolumeMesh,
     "/v2/volume-meshes/vm-bff35714-41b1-4251-ac74-46a40b95a330": MockResponseProjectFromVMVolumeMeshMeta,
     "/v2/volume-meshes/vm-bff35714-41b1-4251-ac74-46a40b95a330/simulation/file": MockResponseProjectFromVMVolumeMeshSimConfig,
     "/cases/case-69b8c249-fce5-412a-9927-6a79049deebb": MockResponseProjectCase,
     "/v2/cases/case-69b8c249-fce5-412a-9927-6a79049deebb": MockResponseProjectCase,
     "/v2/cases/case-69b8c249-fce5-412a-9927-6a79049deebb/simulation/file": MockResponseProjectCaseSimConfig,
+    "/v2/cases/case-69b8c249-fce5-412a-9927-6a79049deebb/files": MockResponseCaseFiles,
+    "/cases/case-69b8c249-fce5-412a-9927-6a79049deebb/files": MockResponseCaseFiles,
     "/cases/case-f7480884-4493-4453-9a27-dd5f8498c608": MockResponseProjectFromVMCase,
     "/cases/case-84d4604e-f3cd-4c6b-8517-92a80a3346d3": MockResponseProjectCaseFork,
     "/v2/cases/case-84d4604e-f3cd-4c6b-8517-92a80a3346d3/simulation/file": MockResponseProjectCaseForkSimConfig,
@@ -688,6 +690,8 @@ POST_RESPONSE_MAP = {
     "/folders": MockResponseFolderSubmit,
     "/v2/drafts/vm-7c3681cd-8c6c-4db7-a62c-1742d825e9d3/simulation/file": MockResponseProjectVolumeMeshSimConfig,
     "/v2/drafts/vm-7c3681cd-8c6c-4db7-a62c-1742d825e9d3/run": MockResponseProjectVolumeMesh,
+    "/v2/drafts/dft-84b20880-937d-4ef2-983b-7f75089f6dd6/simulation/file": MockResponseDraftSimulation,
+    "/v2/drafts/dft-84b20880-937d-4ef2-983b-7f75089f6dd6/run": MockResponseProjectCase,
     "/v2/drafts/case-84d4604e-f3cd-4c6b-8517-92a80a3346d3/simulation/file": MockResponseProjectCaseForkSimConfig,
     "/v2/drafts/case-84d4604e-f3cd-4c6b-8517-92a80a3346d3/run": MockResponseProjectCaseFork,
     "/v2/report": MockResponseReportSubmit,
@@ -743,12 +747,25 @@ def mock_webapi(type, url, params):
         if method == "/v2/drafts":
             return MockResponseDraftSubmit(params=params)
 
+        if (
+            method == "/v2/drafts/dft-84b20880-937d-4ef2-983b-7f75089f6dd6/run"
+            and params.get("upTo") == "VolumeMesh"
+        ):
+            return MockResponseProjectVolumeMesh()
+
         if method in POST_RESPONSE_MAP.keys():
             return POST_RESPONSE_MAP[method]()
 
     elif type == "patch":
-        if method.startswith("/v2/projects"):
+        if method.startswith("/v2/projects") and "lastOpenItemId" in params:
             return MockResponseProjectPatchDraftSubmit(params=params)
+
+        if method.startswith("/v2/"):
+            return MockResponse()
+
+    elif type == "delete":
+        if method.startswith("/v2/"):
+            return MockResponse()
 
     return MockResponseInfoNotFound()
 
@@ -781,6 +798,9 @@ def mock_response(monkeypatch):
 
         def post(self, url, json=None, **kwargs):
             return get_response(url, type="post", params=json, **kwargs)
+
+        def delete(self, url, **kwargs):
+            return get_response(url, type="delete", **kwargs)
 
     monkeypatch.setattr(
         http_util, "api_key_auth", lambda: {"Authorization": None, "Application": "FLOW360"}

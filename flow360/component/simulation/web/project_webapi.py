@@ -29,3 +29,13 @@ class ProjectWebApi:
         """Get the path from the project root to an item."""
 
         return self._api.get(method="path", params={"itemId": item_id, "itemType": item_type})
+
+    def rename(self, name: str):
+        """Rename project."""
+
+        return self._api.patch({"name": name})
+
+    def delete(self):
+        """Delete project."""
+
+        return self._api.delete()

@@ -40,26 +40,14 @@ def serialize_resource_state(info, *, default_type=None):
 def get_resource_state_for_type(resource_type, resource_id):
     """Fetch and serialize lifecycle state for a known resource type."""
     # pylint: disable=import-outside-toplevel
-    from flow360.component.simulation.web.asset_webapi import (
-        CaseWebApi,
-        DraftWebApi,
-        GeometryWebApi,
-        SurfaceMeshWebApi,
-        VolumeMeshWebApi,
-    )
+    from flow360.component.simulation.web.asset_webapi import get_resource_webapi_class
 
-    webapi_by_type = {
-        "Draft": DraftWebApi,
-        "Geometry": GeometryWebApi,
-        "SurfaceMesh": SurfaceMeshWebApi,
-        "VolumeMesh": VolumeMeshWebApi,
-        "Case": CaseWebApi,
-    }
-    webapi_cls = webapi_by_type.get(resource_type)
-    if webapi_cls is None:
+    try:
+        webapi_cls = get_resource_webapi_class(resource_type)
+    except ValueError as error:
         raise click.ClickException(
             f"Lifecycle state for {resource_type} resources is not supported."
-        )
+        ) from error
 
     info = webapi_cls(resource_id).get_info()
     payload = serialize_resource_state(info, default_type=resource_type)

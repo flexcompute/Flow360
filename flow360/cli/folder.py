@@ -7,6 +7,7 @@ from __future__ import annotations
 import click
 
 from flow360.cli.output import emit_json
+from flow360.component.simulation.web.folder_constants import ROOT_FOLDER_ID
 
 
 def _get_folder_info(folder_id):
@@ -18,9 +19,37 @@ def _get_folder_info(folder_id):
 
 def _get_folder_tree(folder_id):
     # pylint: disable=import-outside-toplevel
-    from flow360.component.simulation.folder import Folder
+    from flow360.component.simulation.web.folder_webapi import FolderWebApi
 
-    return Folder(folder_id).get_folder_tree()
+    return FolderWebApi.get_tree(root_folder_id=folder_id)
+
+
+def _create_folder(name, parent_folder_id=ROOT_FOLDER_ID, tags=None):
+    # pylint: disable=import-outside-toplevel
+    from flow360.component.simulation.web.folder_webapi import FolderWebApi
+
+    return FolderWebApi.create(name=name, parent_folder_id=parent_folder_id, tags=tags)
+
+
+def _rename_folder(folder_id, name):
+    # pylint: disable=import-outside-toplevel
+    from flow360.component.simulation.web.folder_webapi import FolderWebApi
+
+    return FolderWebApi(folder_id).rename(name)
+
+
+def _move_folder(folder_id, parent_folder_id):
+    # pylint: disable=import-outside-toplevel
+    from flow360.component.simulation.web.folder_webapi import FolderWebApi
+
+    return FolderWebApi(folder_id).move(parent_folder_id)
+
+
+def _delete_folder(folder_id):
+    # pylint: disable=import-outside-toplevel
+    from flow360.component.simulation.web.folder_webapi import FolderWebApi
+
+    return FolderWebApi(folder_id).delete()
 
 
 def _serialize_folder_info(info):
@@ -55,16 +84,55 @@ def get_folder(folder_id):
 
 
 @folder.command("tree")
-@click.argument("folder_id", required=False)
+@click.argument("folder_id", required=False, default=ROOT_FOLDER_ID)
 def folder_tree(folder_id):
     """Get the folder tree."""
-    if folder_id is None:
-        # pylint: disable=import-outside-toplevel
-        from flow360.component.simulation.folder import ROOT_FOLDER
-
-        folder_id = ROOT_FOLDER
-
     tree = _get_folder_tree(folder_id)
     if tree is None:
         raise click.ClickException(f"Folder {folder_id} was not found.")
     emit_json({"root": tree})
+
+
+@folder.command("create")
+@click.option("--name", required=True, help="Folder name.")
+@click.option(
+    "--parent-folder-id",
+    default=ROOT_FOLDER_ID,
+    show_default=True,
+    help="Parent folder ID.",
+)
+@click.option("--tag", "tags", multiple=True, help="Folder tag. Repeat to pass multiple tags.")
+def create_folder(name, parent_folder_id, tags):
+    """Create a folder."""
+    emit_json(
+        _serialize_folder_info(_create_folder(name, parent_folder_id=parent_folder_id, tags=tags))
+    )
+
+
+@folder.command("rename")
+@click.argument("folder_id")
+@click.option("--name", required=True, help="New folder name.")
+def rename_folder(folder_id, name):
+    """Rename a folder."""
+    _rename_folder(folder_id, name)
+    emit_json({"id": folder_id, "name": name})
+
+
+@folder.command("move")
+@click.argument("folder_id")
+@click.option("--parent-folder-id", required=True, help="Destination parent folder ID.")
+def move_folder(folder_id, parent_folder_id):
+    """Move a folder."""
+    _move_folder(folder_id, parent_folder_id)
+    emit_json({"id": folder_id, "parent_id": parent_folder_id})
+
+
+@folder.command("delete")
+@click.argument("folder_id")
+@click.option("--yes", is_flag=True, help="Confirm folder deletion.")
+def delete_folder(folder_id, yes):
+    """Delete a folder."""
+    if not yes:
+        raise click.ClickException("Pass --yes to confirm folder deletion.")
+    _delete_folder(folder_id)
+    emit_json({"id": folder_id, "deleted": True})

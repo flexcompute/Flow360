@@ -21,7 +21,7 @@ def test_version_consistency():
         config = toml.load(file)
 
     pyproject_version = config["tool"]["poetry"]["version"]
-    assert pyproject_version == "v" + __version__, (
+    assert pyproject_version == __version__, (
         f"Version mismatch: pyproject.toml version is {pyproject_version}, "
         f"but __version__ is {__version__}"
     )

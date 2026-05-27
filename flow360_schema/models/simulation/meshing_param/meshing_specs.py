@@ -132,6 +132,15 @@ class MeshingDefaults(Flow360BaseModel):
         ge=1,
         context=VOLUME_MESH,
     )
+
+    volume_edge_growth_rate: float = ContextField(
+        1.1,
+        gt=1,
+        description="Geometric ratio between successive volume cell edge lengths. "
+        "Lower values produce smoother gradation (more cells); higher values expand faster (fewer cells). "
+        "Typical range: 1.05-1.3. Only supported by the beta mesher.",
+        context=VOLUME_MESH,
+    )
     boundary_layer_first_layer_thickness: Length.PositiveFloat64 | None = ConditionalField(
         None,
         description="Default first layer thickness for volumetric anisotropic layers."
@@ -371,6 +380,18 @@ class MeshingDefaults(Flow360BaseModel):
             raise ValueError("'min_passage_size' can only be specified when 'remove_hidden_geometry' is True.")
         return self
 
+    @contextual_field_validator("volume_edge_growth_rate", mode="after")
+    @classmethod
+    def warn_volume_edge_growth_rate_beta_mesher(cls, value, param_info: ParamsValidationInfo):
+        """Warn if a non-default volume_edge_growth_rate is set on the non-beta mesher."""
+        # Default 1.1 mirrors the field declaration; checked here so a user-supplied non-default
+        # value triggers the warning, while leaving the implicit default silent.
+        if value != 1.1 and not param_info.is_beta_mesher:
+            add_validation_warning(
+                "`volume_edge_growth_rate` is only supported by the beta mesher; this setting will be ignored."
+            )
+        return value
+
 
 class VolumeMeshingDefaults(Flow360BaseModel):
     """
@@ -386,6 +407,14 @@ class VolumeMeshingDefaults(Flow360BaseModel):
     boundary_layer_first_layer_thickness: Length.PositiveFloat64 = pd.Field(
         description="Default first layer thickness for volumetric anisotropic layers."
         " This can be overridden with :class:`~flow360.BoundaryLayer`.",
+    )
+
+    volume_edge_growth_rate: float = pd.Field(
+        1.1,
+        gt=1,
+        description="Geometric ratio between successive volume cell edge lengths. "
+        "Lower values produce smoother gradation (more cells); higher values expand faster (fewer cells). "
+        "Typical range: 1.05-1.3.",
     )
 
     number_of_boundary_layers: pd.NonNegativeInt | None = pd.Field(

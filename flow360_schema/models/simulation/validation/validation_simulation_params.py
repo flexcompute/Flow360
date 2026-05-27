@@ -69,7 +69,10 @@ from flow360_schema.models.simulation.validation.validation_context import (
     add_validation_warning,
     get_validation_levels,
 )
-from flow360_schema.models.simulation.validation.validation_utils import EntityUsageMap
+from flow360_schema.models.simulation.validation.validation_utils import (
+    EntityUsageMap,
+    find_user_symmetry_surfaces,
+)
 
 
 def _populate_validated_field_to_validation_context(v, param_info, attribute_name):
@@ -348,7 +351,7 @@ def _validate_cht_has_heat_transfer(params):
                     )
                 if model_solid.initial_condition is None:
                     raise ValueError(
-                        "In `Solid` model, the initial condition needs to be specified " "for unsteady simulations."
+                        "In `Solid` model, the initial condition needs to be specified for unsteady simulations."
                     )
     return params
 
@@ -409,7 +412,6 @@ def _collect_asset_boundary_entities(params, param_info: ParamsValidationInfo) -
                 half_model_symmetry_plane_center_y=param_info.half_model_symmetry_plane_center_y,
                 quasi_3d_symmetry_planes_center_y=param_info.quasi_3d_symmetry_planes_center_y,
                 farfield_domain_type=param_info.farfield_domain_type,
-                gai_and_beta_mesher=param_info.use_geometry_AI and param_info.is_beta_mesher,
             )
             is False
         ]
@@ -429,11 +431,19 @@ def _collect_asset_boundary_entities(params, param_info: ParamsValidationInfo) -
         ]
     elif farfield_method == "user-defined":
         if param_info.use_geometry_AI and param_info.is_beta_mesher:
-            asset_boundary_entities += [
-                item
-                for item in ghost_entities
-                if item.name == "symmetric" and (param_info.entity_transformation_detected or item.exists(param_info))
-            ]
+            # Skip adding "symmetric" ghost if user geometry has y=0 surfaces
+            user_sym_surfaces = find_user_symmetry_surfaces(
+                asset_boundary_entities,
+                param_info.global_bounding_box,
+                param_info.planar_face_tolerance,
+            )
+            if len(user_sym_surfaces) == 0:
+                asset_boundary_entities += [
+                    item
+                    for item in ghost_entities
+                    if item.name == "symmetric"
+                    and (param_info.entity_transformation_detected or item.exists(param_info))
+                ]
     elif farfield_method == "wind-tunnel":
         if param_info.will_generate_forced_symmetry_plane():
             asset_boundary_entities += [item for item in ghost_entities if item.name == "symmetric"]
@@ -606,6 +616,28 @@ def _check_complete_boundary_condition_and_unknown_surface(params, param_info):
     )
     potential_zone_zone_interfaces |= _collect_farfield_custom_volume_interfaces(param_info=param_info)
     used_boundaries = _collect_used_boundary_names(params, param_info, asset_boundaries)
+
+    # Warn if multiple y=0 surfaces have different BC types
+    if param_info.farfield_method == "user-defined":
+        sym_surfaces = find_user_symmetry_surfaces(
+            asset_boundary_entities,
+            param_info.global_bounding_box,
+            param_info.planar_face_tolerance,
+        )
+        if len(sym_surfaces) > 1:
+            sym_names = {s.name for s in sym_surfaces}
+            bc_types = {
+                type(m).__name__
+                for m in params.models
+                if isinstance(m, get_args(SurfaceModelTypes))
+                and hasattr(m, "entities")
+                and any(e.name in sym_names for e in param_info.expand_entity_list(m.entities))
+            }
+            if len(bc_types) > 1:
+                add_validation_warning(
+                    f"Multiple symmetry plane surfaces have different boundary conditions "
+                    f"({', '.join(sorted(bc_types))}). Please check if this is intended."
+                )
 
     # Step 4: Validate set differences with policy
     _validate_boundary_completeness(
@@ -781,25 +813,69 @@ def _check_duplicate_isosurface_names(outputs):
     return outputs
 
 
-def _check_duplicate_surface_usage(outputs, param_info: ParamsValidationInfo):
+def _check_surface_output_naming(outputs, param_info: ParamsValidationInfo):
+    """Validate ``SurfaceOutput`` / ``TimeAverageSurfaceOutput`` naming.
+
+    Rule 1 (shared-surface uniqueness): when the same surface appears in multiple
+    instances of the same type, each sharing instance must carry a unique custom name.
+
+    Rule 2 (write-single-file suffix uniqueness): instances of the same type with
+    ``write_single_file=True`` must not resolve to the same filename suffix
+    (``""`` for default names, ``"_<name>"`` otherwise).
+    """
     if outputs is None:
         return outputs
 
-    def _check_surface_usage(outputs, output_type: type[SurfaceOutput] | type[TimeAverageSurfaceOutput]):
-        surface_names = set()
+    def _check_shared_surface_uniqueness(outputs, output_type: type[SurfaceOutput] | type[TimeAverageSurfaceOutput]):
+        surface_to_outputs: dict[str, list[SurfaceOutput]] = {}
         for output in outputs:
             if not is_exact_instance(output, output_type):
                 continue
-            for entity in param_info.expand_entity_list(output.entities):
-                if entity.name in surface_names:
-                    raise ValueError(
-                        f"The same surface `{entity.name}` is used in multiple `{output_type.__name__}`s."
-                        " Please specify all settings for the same surface in one output."
-                    )
-                surface_names.add(entity.name)
+            # Dedupe per output: duplicate or overlapping entity-list entries must
+            # not make a single output look like multiple outputs to Rule 1.
+            for entity_name in {e.name for e in param_info.expand_entity_list(output.entities)}:
+                surface_to_outputs.setdefault(entity_name, []).append(output)
 
-    _check_surface_usage(outputs, SurfaceOutput)
-    _check_surface_usage(outputs, TimeAverageSurfaceOutput)
+        for surface_name, shared_outputs in surface_to_outputs.items():
+            if len(shared_outputs) <= 1:
+                continue
+            for output in shared_outputs:
+                if output._has_default_name():
+                    raise ValueError(
+                        f"The surface `{surface_name}` is used in multiple `{output_type.__name__}`s. "
+                        "Please specify unique `name` values for each output instance "
+                        "that shares the same surface."
+                    )
+            names = [o.name for o in shared_outputs]
+            if len(names) != len(set(names)):
+                raise ValueError(
+                    f"The surface `{surface_name}` is used in multiple `{output_type.__name__}`s "
+                    "that have the same name. Please specify unique `name` values for each "
+                    "output instance that shares the same surface."
+                )
+
+    def _check_write_single_file_suffix_uniqueness(
+        outputs, output_type: type[SurfaceOutput] | type[TimeAverageSurfaceOutput]
+    ):
+        suffix_to_outputs: dict[str, list] = {}
+        for output in outputs:
+            if not (is_exact_instance(output, output_type) and output.write_single_file):
+                continue
+            suffix = "" if output._has_default_name() else f"_{output.name}"
+            suffix_to_outputs.setdefault(suffix, []).append(output)
+
+        colliding = sorted(s for s, outs in suffix_to_outputs.items() if len(outs) > 1)
+        if colliding:
+            raise ValueError(
+                f"Multiple `{output_type.__name__}` instances with `write_single_file=True` "
+                f"resolve to the same output filename suffix(es): {colliding}. "
+                "Please assign unique names to each instance."
+            )
+
+    _check_shared_surface_uniqueness(outputs, SurfaceOutput)
+    _check_shared_surface_uniqueness(outputs, TimeAverageSurfaceOutput)
+    _check_write_single_file_suffix_uniqueness(outputs, SurfaceOutput)
+    _check_write_single_file_suffix_uniqueness(outputs, TimeAverageSurfaceOutput)
 
     return outputs
 
@@ -847,9 +923,7 @@ def _check_unique_selector_names(params):
     for selector in used_selectors:
         selector_name = selector.name
         if selector_name in selector_names:
-            raise ValueError(
-                f"Duplicate selector name '{selector_name}' found. " f"Each selector must have a unique name."
-            )
+            raise ValueError(f"Duplicate selector name '{selector_name}' found. Each selector must have a unique name.")
         # Store location info for better error messages
         selector_names.add(selector_name)
 
@@ -884,7 +958,7 @@ def _check_coordinate_system_constraints(params, param_info: ParamsValidationInf
 
     if has_geometry_body_group_assignment and not param_info.use_geometry_AI:
         raise ValueError(
-            "Coordinate system assignment to GeometryBodyGroup " "is only supported when Geometry AI is enabled."
+            "Coordinate system assignment to GeometryBodyGroup is only supported when Geometry AI is enabled."
         )
 
     # Check 2: Early validation of uniform scaling for entities that require it
@@ -1007,7 +1081,7 @@ def _check_krylov_solver_restrictions(params):
             )
         if params.time_stepping is not None and isinstance(params.time_stepping, Unsteady):
             raise ValueError(
-                "KrylovLinearSolver is not supported with Unsteady time stepping. " "Please use Steady time stepping."
+                "KrylovLinearSolver is not supported with Unsteady time stepping. Please use Steady time stepping."
             )
 
     return params

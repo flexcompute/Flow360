@@ -165,6 +165,7 @@ from ._public_namespace import UserDefinedDynamic as UserDefinedDynamic
 from ._public_namespace import UserDefinedFarfield as UserDefinedFarfield
 from ._public_namespace import UserDefinedField as UserDefinedField
 from ._public_namespace import UserVariable as UserVariable
+from ._public_namespace import VelocityForcingPlane as VelocityForcingPlane
 from ._public_namespace import VolumeMesh as VolumeMesh
 from ._public_namespace import VolumeMeshingDefaults as VolumeMeshingDefaults
 from ._public_namespace import VolumeMeshingParams as VolumeMeshingParams

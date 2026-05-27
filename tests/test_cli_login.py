@@ -352,6 +352,7 @@ def test_wait_for_login_rejects_invalid_encrypted_query_callback(monkeypatch, tm
     _patch_config_file(monkeypatch, tmp_path)
     monkeypatch.setattr(auth.secrets, "token_urlsafe", lambda _: "state123")
     response_holder = {}
+    callback_threads = []
 
     def fake_open(login_url):
         parsed = urlparse(login_url)
@@ -370,12 +371,21 @@ def test_wait_for_login_rejects_invalid_encrypted_query_callback(monkeypatch, tm
                 timeout=5,
             )
 
-        Thread(target=send_invalid_callback, daemon=True).start()
+        thread = Thread(target=send_invalid_callback, daemon=True)
+        callback_threads.append(thread)
+        thread.start()
         return True
 
     monkeypatch.setattr(auth.webbrowser, "open", fake_open)
 
     result = CliRunner().invoke(flow360, ["login", "--dev"])
+
+    # The CLI exits as soon as its callback server replies, but the worker thread only
+    # records the response after requests.get() returns. Join it so the assertions below
+    # do not race that assignment. requests.get already carries timeout=5, so the thread
+    # is guaranteed to terminate and a bare join() cannot hang.
+    for thread in callback_threads:
+        thread.join()
 
     assert result.exit_code != 0
     assert "Encrypted login callback payload is invalid." in result.output

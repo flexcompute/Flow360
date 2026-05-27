@@ -704,6 +704,28 @@ class TemporaryLogDirectory:
         self.delete_file()
 
 
+def _get_content_range_total_size(metadata):
+    content_range = metadata.get("content_range")
+    if not content_range:
+        return None
+    match = re.fullmatch(r"bytes \d+-\d+/(\d+|\*)", content_range)
+    if match is None or match.group(1) == "*":
+        return None
+    return int(match.group(1))
+
+
+def _has_range_probe(metadata, chunk_size):
+    body_length = metadata.get("body_length")
+    total_size = _get_content_range_total_size(metadata)
+    if total_size is not None and body_length is not None:
+        return total_size > body_length
+    return metadata.get("body_length", 0) > chunk_size
+
+
+def _get_range_body_length(metadata, text):
+    return metadata.get("body_length", len(text.encode("utf-8")))
+
+
 class RemoteResourceLogs:
     """
     Logs class for getting remote logs from flow360 resources
@@ -726,6 +748,17 @@ class RemoteResourceLogs:
             pattern.search(string).group(1) for string in file_names if pattern.search(string)
         ]
         return log_file_names
+
+    def _get_remote_log_file_name(self) -> str:
+        if self._remote_file_name is None:
+            log_files = self._get_log_file_names()
+            if not log_files:
+                raise Flow360RuntimeError(
+                    "No log files available for this resource. "
+                    "The job may not have started or produced any logs yet."
+                )
+            self._remote_file_name = log_files[0]
+        return self._remote_file_name
 
     def set_remote_log_file_name(self, file_name: str):
         """
@@ -754,17 +787,82 @@ class RemoteResourceLogs:
     def _get_tmp_file_name(self):
         if self._tmp_file_name is None:
             if self._remote_file_name is None:
-                log_files = self._get_log_file_names()
-                if not log_files:
-                    raise Flow360RuntimeError(
-                        "No log files available for this resource. "
-                        "The job may not have started or produced any logs yet."
-                    )
-                self._remote_file_name = log_files[0]
+                self._remote_file_name = self._get_remote_log_file_name()
             if self._tmp_dir is None:
                 self._tmp_dir = TemporaryLogDirectory()
             self._tmp_file_name = os.path.join(self._tmp_dir.name, self._remote_file_name)
         return self._tmp_file_name
+
+    def _read_remote_text(self, start: int = None, end: int = None):
+        byte_range = None if start is None and end is None else (start, end)
+        return self.flow360_resource.s3_transfer_method.read_text(
+            self.flow360_resource.id,
+            self._get_remote_log_file_name(),
+            byte_range=byte_range,
+        )
+
+    def read_all_text(self) -> str:
+        """
+        Read the entire remote log as text.
+        """
+        text, _ = self._read_remote_text()
+        return text
+
+    def head_lines(self, num_lines: int = 100, chunk_size: int = 16 * 1024):
+        """
+        Fetch the first ``num_lines`` lines without downloading the whole log when possible.
+        """
+        current_size = chunk_size
+        previous_body_length = -1
+        while True:
+            text, metadata = self._read_remote_text(0, current_size)
+            body_length = _get_range_body_length(metadata, text)
+            if not text:
+                return []
+
+            has_suffix_probe = _has_range_probe(metadata, current_size)
+            suffix_char = text[-1] if has_suffix_probe and text else ""
+            visible_text = text[:-1] if has_suffix_probe else text
+
+            lines = visible_text.splitlines()
+            if has_suffix_probe and suffix_char not in ("\n", "\r") and lines:
+                lines = lines[:-1]
+
+            if len(lines) >= num_lines or not has_suffix_probe:
+                return lines[:num_lines]
+            if body_length <= previous_body_length:
+                return lines[:num_lines]
+
+            previous_body_length = body_length
+            current_size *= 2
+
+    def tail_lines(self, num_lines: int = 100, chunk_size: int = 16 * 1024):
+        """
+        Fetch the last ``num_lines`` lines without downloading the whole log when possible.
+        """
+        current_size = chunk_size
+        previous_body_length = -1
+        while True:
+            text, metadata = self._read_remote_text(-(current_size + 1), None)
+            body_length = _get_range_body_length(metadata, text)
+            if not text:
+                return []
+
+            has_prefix_probe = _has_range_probe(metadata, current_size)
+            prefix_char = text[0] if has_prefix_probe and text else ""
+            visible_text = text[1:] if has_prefix_probe else text
+
+            lines = visible_text.splitlines()
+            if has_prefix_probe and prefix_char not in ("\n", "\r") and lines:
+                lines = lines[1:]
+
+            if len(lines) >= num_lines or not has_prefix_probe:
+                return lines[-num_lines:]
+            if body_length <= previous_body_length:
+                return lines[-num_lines:]
+
+            previous_body_length = body_length
+            current_size *= 2
 
     # pylint: disable=protected-access
     def _refresh_file(self):

@@ -1,5 +1,6 @@
 """Volume models for the simulation framework."""
 
+import base64
 import os
 import re
 from abc import ABCMeta
@@ -8,6 +9,7 @@ from typing import Annotated, Literal, Union
 import pydantic as pd
 import unyt as u
 
+from flow360_schema import __version__ as _SCHEMA_PACKAGE_VERSION
 from flow360_schema.exceptions import Flow360FileError, Flow360ValueError
 from flow360_schema.framework.base_model import Flow360BaseModel
 from flow360_schema.framework.entity.entity_list import EntityList
@@ -20,12 +22,10 @@ from flow360_schema.framework.expression import (
     ValueOrExpression,
     validate_angle_expression_of_t_seconds,
 )
-from flow360_schema.framework.multi_constructor_model_base import (
-    MultiConstructorBaseModel,
-)
+from flow360_schema.framework.multi_constructor_model_base import MultiConstructorBaseModel
+from flow360_schema.framework.physical_dimensions import Acceleration, Angle
+from flow360_schema.framework.physical_dimensions import AngularVelocity as AngularVelocityDim
 from flow360_schema.framework.physical_dimensions import (
-    Acceleration,
-    Angle,
     HeatSource,
     InverseArea,
     InverseLength,
@@ -33,12 +33,7 @@ from flow360_schema.framework.physical_dimensions import (
     Pressure,
     Velocity,
 )
-from flow360_schema.framework.physical_dimensions import (
-    AngularVelocity as AngularVelocityDim,
-)
-from flow360_schema.framework.single_attribute_base import (
-    SingleAttributeModel,
-)
+from flow360_schema.framework.single_attribute_base import SingleAttributeModel
 from flow360_schema.models.entities.volume_entities import (
     AxisymmetricBody,
     Box,
@@ -48,7 +43,6 @@ from flow360_schema.models.entities.volume_entities import (
     SeedpointVolume,
     Sphere,
 )
-from flow360_schema import __version__ as _SCHEMA_PACKAGE_VERSION
 from flow360_schema.models.simulation.framework.updater import updater
 from flow360_schema.models.simulation.framework.updater_utils import Flow360Version
 from flow360_schema.models.simulation.models.bet.bet_translator_interface import (
@@ -59,12 +53,7 @@ from flow360_schema.models.simulation.models.bet.bet_translator_interface import
     generate_xrotor_bet_json,
     get_file_content,
 )
-from flow360_schema.models.simulation.models.material import (
-    Air,
-    FluidMaterialTypes,
-    MaterialBase,
-    SolidMaterialTypes,
-)
+from flow360_schema.models.simulation.models.material import Air, FluidMaterialTypes, MaterialBase, SolidMaterialTypes
 from flow360_schema.models.simulation.models.solver_numerics import (
     HeatEquationSolver,
     NavierStokesSolver,
@@ -86,9 +75,7 @@ from flow360_schema.models.simulation.validation.validation_context import (
     ParamsValidationInfo,
     contextual_field_validator,
 )
-from flow360_schema.models.simulation.validation.validation_utils import (
-    _validator_append_instance_name,
-)
+from flow360_schema.models.simulation.validation.validation_utils import _validator_append_instance_name
 
 
 class AngleExpression(SingleAttributeModel):
@@ -1400,7 +1387,7 @@ class Rotation(Flow360BaseModel):
     @classmethod
     def _ensure_custom_volume_is_valid(
         cls,
-        value: GenericVolume | Cylinder | CustomVolume | SeedpointVolume | AxisymmetricBody | Sphere | None,
+        value: (GenericVolume | Cylinder | CustomVolume | SeedpointVolume | AxisymmetricBody | Sphere | None),
         param_info: ParamsValidationInfo,
     ):
         """Ensure parent volume is a custom volume."""
@@ -1511,6 +1498,100 @@ class PorousMedium(Flow360BaseModel):
         return value
 
 
+class VelocityForcingPlane(Flow360BaseModel):
+    """
+    :class:`VelocityForcingPlane` class for setting up a Gaussian-regularized velocity-relaxation body force on a plane.
+
+    A user-supplied time-varying velocity plane is imposed on the simulation through a
+    Gaussian-regularized momentum source. The momentum equation gains a relaxation term
+    that nudges the local simulated velocity toward the prescribed target:
+
+    .. math::
+
+       f(x, t) = \\rho \\, \\alpha \\sum_p \\tilde{\\eta}_{pc} A_p
+                 \\, (u_{\\text{target},p} - u_c)
+
+    where :math:`\\tilde{\\eta}_{pc}` is a column-normalized 3D Gaussian,
+    :math:`A_p` is the per-sample area on the input plane, and :math:`\\alpha`
+    is a single user-tunable forcing strength (units m/s).
+
+    The plane's geometry (axis layout, normal position, coordinate arrays, sample
+    times, velocity tensor) and the units used for each are baked into the
+    :py:attr:`velocity_data` blob. The blob is a Parquet file with a documented
+    layout; the ``build_velocity_forcing_plane_blob`` helper script (shipped
+    separately to customers) packs numpy arrays with attached units into this
+    format.
+
+    ====
+    """
+
+    name: str | None = pd.Field(
+        "Velocity forcing plane",
+        description="Name of the `VelocityForcingPlane` model.",
+    )
+    type: Literal["VelocityForcingPlane"] = pd.Field("VelocityForcingPlane", frozen=True)
+
+    velocity_data: bytes = pd.Field(
+        description="Parquet-format binary blob holding the time-resolved velocity plane data. "
+        "Carries the velocity tensor (shape ``[Nt, Nj, Ni, 3]``, components in the global "
+        "Cartesian frame), the 1D coordinate / time arrays, axis layout, normal position, "
+        "and the units used for velocity / length / time. Construct via the "
+        "``build_velocity_forcing_plane_blob`` helper script (shipped separately) rather "
+        "than writing Parquet by hand.",
+        # Pydantic emits ``format: "binary"`` for ``bytes`` fields by default, which the
+        # common-schema validator rejects. The wire encoding is base64 (see the
+        # field_serializer/validator below), so advertise that.
+        json_schema_extra={"format": "base64"},
+    )
+
+    kernel_width: Length.PositiveVector3 = pd.Field(
+        description="Gaussian kernel half-widths :math:`(\\epsilon_x, \\epsilon_y, \\epsilon_z)` "
+        "in the global Cartesian frame. All three components must be strictly positive: the "
+        "solver inverts each as :math:`1/\\epsilon` when computing the Gaussian falloff, so "
+        "zero or negative values would produce division-by-zero or non-physical kernels. "
+        "Recommended :math:`\\epsilon \\gtrsim 2\\Delta` where :math:`\\Delta` is the local "
+        "mesh spacing along that axis (smaller values may imprint on the mesh)."
+    )
+
+    forcing_strength: Velocity.PositiveFloat64 = pd.Field(
+        description="Single forcing-strength parameter (units m/s). "
+        "Larger values enforce the target more stiffly. Typical heuristic: "
+        ":math:`\\alpha \\sim U_{\\mathrm{ref}}` (free-stream velocity), or "
+        ":math:`\\alpha \\sim L_{\\mathrm{ref}} / (k \\Delta t)` with :math:`k \\in [1, 10]`."
+    )
+
+    time_wrap: Literal["periodic", "disable"] = pd.Field(
+        "periodic",
+        description="Behaviour when the simulation time exceeds the plane's sampled time range. "
+        "``periodic`` wraps :math:`t_{\\mathrm{sim}} \\bmod (t_{\\max} - t_{\\min})`; ``disable`` "
+        "applies no forcing once :math:`t_{\\mathrm{sim}}` is outside "
+        ":math:`[t_0, t_{N-1}]`.\n\n"
+        "**Periodic mode contract — duplicate-boundary convention.** "
+        "The supplied data must satisfy ``velocity[0] == velocity[-1]`` (the first and "
+        "last time samples carry the same velocity field), with the period taken to be "
+        ":math:`T = t_{N-1} - t_0`. Equivalently: include one duplicated sample at the "
+        "end so the loop closes smoothly. The implementation does **not** assume a uniform "
+        "time step, so an implicit wrap of size ``Δt`` after the last sample (the typical "
+        "FFT-generator convention, e.g. Mann/SEM output where ``T = N·Δt``) is not "
+        "supported — use this duplicate-boundary form instead. Without the duplicated "
+        "sample the wrap produces a discontinuity of size ``Δt`` in the forcing.",
+    )
+
+    # Custom (de)serializer rather than pydantic.Base64Bytes because the
+    # latter unconditionally runs b64decode on its input (with validate=False
+    # by default) and silently corrupts raw bytes passed in directly.
+    @pd.field_serializer("velocity_data", when_used="json")
+    def _serialize_velocity_data(self, v: bytes) -> str:
+        return base64.b64encode(v).decode("ascii")
+
+    @pd.field_validator("velocity_data", mode="before")
+    @classmethod
+    def _validate_velocity_data(cls, v):
+        if isinstance(v, str):
+            v = base64.b64decode(v.encode("ascii"), validate=True)
+        return v
+
+
 VolumeModelTypes = Union[
     Fluid,
     Solid,
@@ -1518,4 +1599,5 @@ VolumeModelTypes = Union[
     BETDisk,
     Rotation,
     PorousMedium,
+    VelocityForcingPlane,
 ]

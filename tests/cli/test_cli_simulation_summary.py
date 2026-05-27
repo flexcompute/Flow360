@@ -15,7 +15,7 @@ def _surface_entity(name):
 
 def _minimal_simulation(models):
     return {
-        "version": "25.10.3b1",
+        "version": "25.9.0",
         "unit_system": {"name": "SI"},
         "operating_condition": {
             "type_name": "AerospaceCondition",
@@ -62,6 +62,7 @@ def test_simulation_summary_groups_identical_surface_models_by_settings():
             [
                 {
                     "type": "Wall",
+                    "_id": "internal-wall-id",
                     "name": "Wall",
                     "use_wall_function": False,
                     "entities": {
@@ -105,6 +106,39 @@ def test_simulation_summary_ignores_invalid_private_cache():
     assert "models" not in summary
 
 
+def test_simulation_summary_restores_user_variables_from_private_cache():
+    from flow360.cli.simulation_summary import summarize_simulation
+
+    simulation = _minimal_simulation([])
+    simulation["outputs"] = [
+        {
+            "name": "Volume output",
+            "output_type": "VolumeOutput",
+            "output_fields": {"items": [{"name": "velocity_SI", "type_name": "UserVariable"}]},
+        }
+    ]
+    simulation["private_attribute_asset_cache"] = {
+        "variable_context": [
+            {
+                "name": "velocity_SI",
+                "post_processing": True,
+                "value": {
+                    "expression": "solution.velocity",
+                    "output_units": "m/s",
+                    "type_name": "expression",
+                },
+            }
+        ]
+    }
+
+    summary = summarize_simulation(simulation)
+
+    assert "private_attribute_asset_cache" not in summary
+    assert summary["outputs"][0]["output_fields"] == [
+        {"name": "velocity_SI", "type_name": "UserVariable"}
+    ]
+
+
 def test_simulation_summary_prunes_absent_zero_defaults():
     from flow360.cli.simulation_summary import summarize_simulation
 
@@ -112,6 +146,22 @@ def test_simulation_summary_prunes_absent_zero_defaults():
     simulation["meshing"] = {
         "type_name": "MeshingParams",
         "gap_treatment_strength": 0,
+    }
+
+    summary = summarize_simulation(simulation)
+
+    assert summary["meshing"] == {"type_name": "MeshingParams"}
+
+
+def test_simulation_summary_prunes_default_dimensioned_values():
+    from flow360.cli.simulation_summary import summarize_simulation
+
+    simulation = _minimal_simulation([])
+    simulation["meshing"] = {
+        "type_name": "MeshingParams",
+        "defaults": {
+            "curvature_resolution_angle": {"value": 12, "units": "degree"},
+        },
     }
 
     summary = summarize_simulation(simulation)

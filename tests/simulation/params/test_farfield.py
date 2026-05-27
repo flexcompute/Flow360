@@ -162,7 +162,9 @@ def test_user_defined_farfield_symmetry_plane(surface_mesh):
         params, surface_mesh, use_beta_mesher=True, use_geometry_AI=True
     )
     assert errors is None
-    assert warnings == []
+    assert len(warnings) == 1, warnings  # deprecation warning names the replaced surface
+    assert "farfield.symmetry_plane" in warnings[0]["msg"]
+    assert "preexistingSymmetry" in warnings[0]["msg"]
 
 
 def test_user_defined_farfield_symmetry_plane_requires_half_domain(surface_mesh):
@@ -209,10 +211,9 @@ def test_user_defined_farfield_auto_symmetry_plane(surface_mesh):
                 volume_zones=[farfield],
             ),
             models=[
+                # unlike test_user_defined_farfield_symmetry_plane, reference geometry directly
                 Wall(surfaces=[s for s in surface_mesh["*"] if s.name != "preexistingSymmetry"]),
-                SymmetryPlane(
-                    surfaces=farfield.symmetry_plane,
-                ),
+                SymmetryPlane(surfaces=surface_mesh["preexistingSymmetry"]),
             ],
         )
     errors, warnings = _run_validation(

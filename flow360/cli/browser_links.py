@@ -15,27 +15,14 @@ def _is_root_folder_id(resource_id: str) -> bool:
 
 def _get_project_scoped_resource_info(resource_type: str, resource_id: str) -> dict:
     # pylint: disable=import-outside-toplevel
-    from flow360.component.simulation.web.asset_webapi import (
-        CaseWebApi,
-        DraftWebApi,
-        GeometryWebApi,
-        SurfaceMeshWebApi,
-        VolumeMeshWebApi,
-    )
+    from flow360.component.simulation.web.asset_webapi import get_resource_webapi_class
 
-    webapi_by_type = {
-        "Geometry": GeometryWebApi,
-        "SurfaceMesh": SurfaceMeshWebApi,
-        "VolumeMesh": VolumeMeshWebApi,
-        "Case": CaseWebApi,
-        "Draft": DraftWebApi,
-    }
-
-    webapi_cls = webapi_by_type.get(resource_type)
-    if webapi_cls is None:
+    try:
+        webapi_cls = get_resource_webapi_class(resource_type)
+    except ValueError as error:
         raise ResourceRefError(
             f"Opening {resource_type} resources in the browser is not supported."
-        )
+        ) from error
 
     return webapi_cls(resource_id).get_info()
 

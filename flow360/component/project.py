@@ -2115,6 +2115,9 @@ class Project(pd.BaseModel):
             if use_geometry_AI is True:
                 log.info("Beta mesher is enabled to use Geometry AI.")
                 use_beta_mesher = True
+            elif self.metadata.root_item_type is RootType.SURFACE_MESH:
+                log.info("Beta mesher is enabled because project started with surface mesh.")
+                use_beta_mesher = True
             else:
                 use_beta_mesher = False
 

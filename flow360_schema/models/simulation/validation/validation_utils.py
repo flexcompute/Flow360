@@ -9,9 +9,16 @@ from pydantic import ValidationError
 from pydantic_core import InitErrorDetails
 
 from flow360_schema.framework.expression.variable import Expression, UserVariable
+from flow360_schema.framework.validation.context import add_validation_warning
 from flow360_schema.models.entities.base import _SurfaceEntityBase, _VolumeEntityBase
-from flow360_schema.models.entities.surface_entities import ImportedSurface, Surface
+from flow360_schema.models.entities.surface_entities import (
+    GhostCircularPlane,
+    GhostSurface,
+    ImportedSurface,
+    Surface,
+)
 from flow360_schema.models.entity_info import DraftEntityTypes
+from flow360_schema.models.simulation.framework.updater_utils import deprecation_reminder
 from flow360_schema.models.simulation.outputs.output_fields import CommonFieldNames
 
 
@@ -95,7 +102,6 @@ def check_deleted_surface_in_entity_list(expanded_entities: list, param_info) ->
             half_model_symmetry_plane_center_y=param_info.half_model_symmetry_plane_center_y,
             quasi_3d_symmetry_planes_center_y=param_info.quasi_3d_symmetry_planes_center_y,
             farfield_domain_type=param_info.farfield_domain_type,
-            gai_and_beta_mesher=param_info.use_geometry_AI and param_info.is_beta_mesher,
         ):
             deleted_boundaries.append(surface.name)
 
@@ -132,7 +138,6 @@ def check_deleted_surface_pair(value, param_info):
             half_model_symmetry_plane_center_y=param_info.half_model_symmetry_plane_center_y,
             quasi_3d_symmetry_planes_center_y=param_info.quasi_3d_symmetry_planes_center_y,
             farfield_domain_type=param_info.farfield_domain_type,
-            gai_and_beta_mesher=param_info.use_geometry_AI and param_info.is_beta_mesher,
         ):
             deleted_boundaries.append(surface.name)
 
@@ -198,6 +203,74 @@ def check_symmetric_boundary_existence(stored_entities, param_info):
     return stored_entities
 
 
+def find_user_symmetry_surfaces(boundaries, global_bounding_box, planar_face_tolerance):
+    """Return Surface entities that lie on the y=0 symmetry plane (bounding box within tolerance)."""
+    if not global_bounding_box:
+        return []
+    tol = global_bounding_box.largest_dimension * (planar_face_tolerance if planar_face_tolerance is not None else 1e-6)
+    return [
+        b
+        for b in boundaries
+        if isinstance(b, Surface) and b._lies_on(0, tol)  # pylint: disable=protected-access
+    ]
+
+
+@deprecation_reminder("25.99.99")
+def remap_symmetric_ghost_entity(value, param_info):  # pylint: disable=too-many-return-statements
+    """For UDF with GAI, replace any 'symmetric' ghost entity with the actual user Surface.
+    Call in validation on any model that can hold farfield.symmetry_plane (BCs and refinements).
+
+    Downstream validators see the correct entity, allowing users to directly reference
+    their symmetry surface, but we discourage using the legacy 'farfield.symmetry_plane'.
+    """
+
+    if value is None or param_info.farfield_method != "user-defined":
+        return value
+    if not param_info.use_geometry_AI or not param_info.is_beta_mesher:
+        return value
+    if not hasattr(value, "stored_entities") or not value.stored_entities:
+        return value
+
+    ghost_idx = next(
+        (
+            i
+            for i, e in enumerate(value.stored_entities)
+            if isinstance(e, (GhostSurface, GhostCircularPlane)) and e.name == "symmetric"
+        ),
+        None,
+    )
+    if ghost_idx is None:
+        return value
+
+    entity_info = param_info.get_entity_info()
+    if entity_info is None:
+        return value
+
+    try:  # if entity info is incomplete, skip remap
+        boundaries = entity_info.get_boundaries()
+    except (ValueError, KeyError, AttributeError):
+        return value
+
+    sym_surfaces = find_user_symmetry_surfaces(
+        boundaries,
+        param_info.global_bounding_box,
+        param_info.planar_face_tolerance,
+    )
+    if not sym_surfaces:
+        return value
+
+    # Replace the ghost entity with the user's y=0 surface(s), deduplicated, 1 or many.
+    existing_ids = {e.private_attribute_id for e in value.stored_entities}
+    new_surfaces = [s for s in sym_surfaces if s.private_attribute_id not in existing_ids]
+    value.stored_entities[ghost_idx : ghost_idx + 1] = new_surfaces
+
+    names = ", ".join(s.name for s in sym_surfaces)
+    add_validation_warning(
+        f"Using farfield.symmetry_plane with user-defined farfield and GAI will be deprecated. Resolved to {names}."
+    )
+    return value
+
+
 def _ghost_surface_names(stored_entities) -> list[str]:
     """Collect names of ghost-type boundaries in the list."""
     names = []
@@ -238,7 +311,7 @@ def check_ghost_surface_usage_policy_for_face_refinements(stored_entities, *, fe
                 )
         else:
             if not use_beta:
-                _err(f"Face refinements on '{names_str}' for automated farfield " "requires beta mesher.")
+                _err(f"Face refinements on '{names_str}' for automated farfield requires beta mesher.")
         return stored_entities
 
     if root_asset_type == "surface_mesh":
@@ -362,6 +435,6 @@ def get_surface_full_name(entity, context: str = "force distribution output") ->
     """
     if not hasattr(entity, "full_name"):
         raise TypeError(
-            f"Unsupported entity type '{type(entity).__name__}' for {context}. " f"Only Surface entities are supported."
+            f"Unsupported entity type '{type(entity).__name__}' for {context}. Only Surface entities are supported."
         )
     return entity.full_name

@@ -73,6 +73,11 @@ _LAZY_COMMANDS = {
         "attr": "wait",
         "help": "Wait for a Flow360 resource to reach a terminal state.",
     },
+    "logs": {
+        "module": "flow360.cli.logs",
+        "attr": "logs",
+        "help": "Fetch logs for a Flow360 resource.",
+    },
 }
 
 

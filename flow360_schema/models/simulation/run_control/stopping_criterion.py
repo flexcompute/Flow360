@@ -44,6 +44,19 @@ class StoppingCriterion(Flow360BaseModel):
 
     :class:`StoppingCriterion` class for :py:attr:`RunControl.stopping_criteria` settings.
 
+    .. note::
+
+       :py:attr:`tolerance_window_size` counts **data points**, not solver iterations.
+       A "data point" is one row written by ``monitor_output``, and its meaning depends
+       on the simulation type:
+
+       * **Steady simulations.** The solver writes one row per 10 pseudo-steps, so
+         :py:attr:`tolerance_window_size` = N checks the last :math:`10 N` pseudo-steps.
+       * **Time-accurate (unsteady) simulations.** Only the final value per physical step
+         contributes to the window — intermediate pseudo-step writes are filtered out.
+         :py:attr:`tolerance_window_size` = N checks the last :math:`N` physical (time)
+         steps.
+
     Example
     -------
 
@@ -85,7 +98,8 @@ class StoppingCriterion(Flow360BaseModel):
         None,
         description="The number of data points from the monitor_output to be used to check whether "
         "the :math:`|max-min|/2` of the monitored field within this window is below tolerance or not. "
-        "If not set, the criterion will directly compare the latest value with tolerance.",
+        "If not set, the criterion will directly compare the latest value with tolerance. "
+        "See :class:`StoppingCriterion` for what a data point is.",
         ge=2,
     )
     type_name: Literal["StoppingCriterion"] = pd.Field("StoppingCriterion", frozen=True)

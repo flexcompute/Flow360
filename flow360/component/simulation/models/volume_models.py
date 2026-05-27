@@ -29,6 +29,7 @@ from flow360_schema.models.simulation.models.volume_models import (
     PorousMedium,
     Rotation,
     Solid,
+    VelocityForcingPlane,
     VolumeModelTypes,
     XFOILFile,
     XROTORFile,

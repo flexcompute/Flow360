@@ -3,7 +3,7 @@ import os
 import pytest
 
 from flow360.examples import Airplane, Cylinder2D, OM6wing, base_test_case
-from flow360.examples.base_test_case import BaseTestCase
+from flow360.examples.base_test_case import Asset, BaseTestCase, DownloadableAssets
 
 
 def test_om6_example_file_download():
@@ -48,8 +48,7 @@ def test_version_parse():
     class TestCase(BaseTestCase):
         name = "data/examples"
 
-        class url:
-            case_json = "local://flow360.json"
+        downloadable_assets = DownloadableAssets(case_json=Asset("local://flow360.json"))
 
     base_test_case.here = os.path.dirname(os.path.abspath(__file__))
 

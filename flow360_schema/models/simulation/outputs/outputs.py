@@ -2,11 +2,14 @@
 Caveats:
 1. Check if we support non-average and average output specified at the same time in solver.
 (Yes but they share the same output_fields)
-2. We do not support multiple output frequencies/file format for the same type of output.
+2. Multiple SurfaceOutput instances are supported; uniqueness rules live on SurfaceOutput.name.
+   Cross-type uniqueness (a SurfaceOutput and a TimeAverageSurfaceOutput sharing a surface)
+   is NOT required — the two types write to separate files.
 """
 
 import logging
 import re
+import warnings
 from typing import Annotated, ClassVar, Literal, get_args
 
 import pydantic as pd
@@ -43,6 +46,7 @@ from flow360_schema.models.entities.surface_entities import (
     WindTunnelGhostSurface,
 )
 from flow360_schema.models.entities.volume_entities import VoxelGrid
+from flow360_schema.models.simulation.framework.updater_utils import deprecation_reminder
 from flow360_schema.models.simulation.models.surface_models import Wall
 from flow360_schema.models.simulation.models.volume_models import (
     ActuatorDisk,
@@ -84,8 +88,8 @@ from flow360_schema.models.simulation.validation.validation_utils import (
     validate_improper_surface_field_usage_for_imported_surface,
 )
 
-# Invalid characters for Linux filenames: / is path separator, \0 is null terminator
-_INVALID_FILENAME_CHARS_PATTERN = re.compile(r"[/\0]")
+# % is rejected because the solver uses printf-style format strings on output names.
+_INVALID_FILENAME_CHARS_PATTERN = re.compile(r"[/\0%]")
 logger = logging.getLogger(__name__)
 
 _OutputFormatOption = Literal["paraview", "tecplot", "vtkhdf", "ensight"]
@@ -99,7 +103,7 @@ _LegacyOutputFormatStrings = Literal[
 
 def _validate_filename_string(value: str) -> str:
     """
-    Validate that a string is a valid Linux filename.
+    Validate that a string is safe to use as (or inside) an output filename.
 
     Args:
         value: The string to validate
@@ -108,11 +112,12 @@ def _validate_filename_string(value: str) -> str:
         The validated string
 
     Raises:
-        ValueError: If the string is not a valid filename
+        ValueError: If the string is not safe for use in output filenames
 
     Notes:
         - Disallows forward slash (/) - path separator
         - Disallows null byte (\\0)
+        - Disallows percent sign (%) - conflicts with solver printf-style formatting
         - Disallows empty strings
         - Disallows reserved names (. and ..)
     """
@@ -131,7 +136,7 @@ def _validate_filename_string(value: str) -> str:
         char_display = ", ".join(repr(c) for c in unique_chars)
         raise ValueError(
             f"Filename contains invalid characters: {char_display}. "
-            f"Linux filenames cannot contain '/' or null bytes. "
+            f"Output names cannot contain '/', '%', or null bytes. "
             f"Got: '{value}'"
         )
 
@@ -220,15 +225,18 @@ class MovingStatistic(Flow360BaseModel):
     :class:`ProbeOutput`, :class:`SurfaceProbeOutput`,
     :class:`SurfaceIntegralOutput` and :class:`ForceOutput`.
 
+    .. note::
+
+       The window size is defined by the number of **data points** recorded in the output.
+
+       * For steady simulations, the solver outputs a data point once every **10 pseudo-steps**.
+         A :py:attr:`moving_window_size` = 10 therefore covers 100 pseudo-steps, and
+         :py:attr:`start_step` is automatically rounded up to the nearest multiple of 10.
+       * For unsteady simulations, the solver outputs a data point for **every physical step**.
+         A :py:attr:`moving_window_size` = 10 covers 10 physical steps.
+
     Notes
     -----
-    - The window size is defined by the number of data points recorded in the output.
-    - For steady simulations, the solver typically outputs a data point once every **10 pseudo steps**.
-      This means a :py:attr:`moving_window_size` = 10 would cover 100 pseudo steps.
-      Thus, the :py:attr:`start_step` value is automatically rounded up to
-      the nearest multiple of 10 for steady simulations.
-    - For unsteady simulations, the solver outputs a data point for **every physical step**.
-      A :py:attr:`moving_window_size` = 10 would cover 10 physical steps.
     - When :py:attr:`method` is set to "standard_deviation", the standard deviation is computed as a
       **sample standard deviation** normalized by :math:`n-1` (Bessel's correction), where :math:`n`
       is the number of data points in the moving window.
@@ -431,12 +439,37 @@ class SurfaceOutput(_AnimationAndFileFormatSettings, _OutputBase):
       ...     output_fields=["vorticity", "T"],
       ... )
 
+    - Define multiple :class:`SurfaceOutput` instances on the same surface with different
+      frequencies and formats. Each must have a unique :code:`name`.
+
+      >>> fl.SurfaceOutput(
+      ...     name="propeller_coarse",
+      ...     entities=[volume_mesh["propeller"]],
+      ...     output_format="tecplot",
+      ...     output_fields=["Cp"],
+      ...     frequency=100,
+      ... )
+      >>> fl.SurfaceOutput(
+      ...     name="propeller_fine",
+      ...     entities=[volume_mesh["propeller"]],
+      ...     output_format="paraview",
+      ...     output_fields=["Cp", "primitiveVars"],
+      ...     frequency=10,
+      ... )
+
     ====
     """
 
     # TODO: entities is None --> use all surfaces. This is not implemented yet.
 
-    name: str | None = pd.Field("Surface output", description="Name of the `SurfaceOutput`.")
+    name: FileNameString = pd.Field(
+        "Surface output",
+        description="Name of the `SurfaceOutput`. Used as a suffix in output filenames to "
+        "disambiguate when multiple `SurfaceOutput`s share the same surface entity. "
+        "Must be unique across all `SurfaceOutput` instances that share the same surface "
+        "(uniqueness is not required against `TimeAverageSurfaceOutput` instances, which "
+        "write to separate files).",
+    )
     entities: EntityList[
         Surface,
         MirroredSurface,
@@ -451,16 +484,52 @@ class SurfaceOutput(_AnimationAndFileFormatSettings, _OutputBase):
     )
     write_single_file: bool = pd.Field(
         default=False,
-        description="Enable writing all surface outputs into a single file instead of one file per surface."
-        + "This option currently only supports Tecplot output format."
-        + "Will choose the value of the last instance of this option of the same output type "
-        + "(:class:`SurfaceOutput` or :class:`TimeAverageSurfaceOutput`) in the output list.",
+        description="Enable writing all surface outputs into a single file instead of one file per surface. "
+        "Supported by Tecplot, Paraview, and VTK-HDF output formats.",
     )
     output_fields: UniqueItemList[SurfaceFieldNames | str | UserVariable] = pd.Field(
         description="List of output variables. Including :ref:`universal output variables<UniversalVariablesV2>`,"
         + " :ref:`variables specific to SurfaceOutput<SurfaceSpecificVariablesV2>` and :class:`UserDefinedField`."
     )
     output_type: Literal["SurfaceOutput"] = pd.Field("SurfaceOutput", frozen=True)
+
+    # Highest patch within current minor so the validator survives 25.10.x
+    # patches but raises on the 25.11.0 bump — match _expand_legacy_pair_input
+    # in surface_models.py.
+    @pd.field_validator("name", mode="before")
+    @classmethod
+    @deprecation_reminder("25.10.999")
+    def _coerce_null_name(cls, v):
+        """Accept null/None from legacy serialized params and replace with the default.
+
+        Legacy params declared ``name`` as ``str | None`` and serialized unset names
+        as ``null``. The current field type is :class:`FileNameString` which rejects
+        ``None``, so we coerce here for backward compatibility and emit a user-facing
+        DeprecationWarning. Cloud-stored params are normalized by the ``_to_25_10_14``
+        updater so this code path is mostly hit by hand-authored Python that passes
+        ``name=None`` directly.
+
+        Example legacy input still accepted::
+
+            {"name": null, "entities": [...], "output_fields": ["Cp"]}
+        """
+        if v is None:
+            deprecation_message = (
+                "`name=None` on `SurfaceOutput` / `TimeAverageSurfaceOutput` is "
+                "deprecated and will be rejected in the next major release. "
+                "Omit the field to use the default, or set an explicit string."
+            )
+            # logger.warning reaches the client's bridge handler regardless of
+            # Python's default DeprecationWarning suppression; warnings.warn keeps
+            # the standard hook for pytest.warns and CI deprecation scanners.
+            logger.warning(deprecation_message)
+            warnings.warn(deprecation_message, DeprecationWarning, stacklevel=2)
+            return cls.model_fields["name"].default
+        return v
+
+    def _has_default_name(self) -> bool:
+        # pylint: disable=unsubscriptable-object
+        return self.name == type(self).model_fields["name"].default
 
     @contextual_field_validator("entities", mode="after")
     @classmethod
@@ -502,7 +571,14 @@ class TimeAverageSurfaceOutput(SurfaceOutput):
     ====
     """
 
-    name: str | None = pd.Field("Time average surface output", description="Name of the `TimeAverageSurfaceOutput`.")
+    name: FileNameString = pd.Field(
+        "Time average surface output",
+        description="Name of the `TimeAverageSurfaceOutput`. Used as a suffix in output filenames "
+        "to disambiguate when multiple `TimeAverageSurfaceOutput`s share the same surface entity. "
+        "Must be unique across all `TimeAverageSurfaceOutput` instances that share the same "
+        "surface (uniqueness is not required against `SurfaceOutput` instances, which write to "
+        "separate files).",
+    )
 
     start_step: pd.NonNegativeInt | Literal[-1] = pd.Field(
         default=-1,

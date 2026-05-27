@@ -28,6 +28,9 @@ def test_case_group_help_shows_info_and_simulation_params():
     assert "state" in result.output
     assert "summary" in result.output
     assert "simulation-params" in result.output
+    assert "rename" in result.output
+    assert "delete" in result.output
+    assert "results" in result.output
     assert "get" not in result.output
 
 
@@ -41,6 +44,8 @@ def test_geometry_group_help_shows_info_and_simulation_params():
     assert "state" in result.output
     assert "summary" in result.output
     assert "simulation-params" in result.output
+    assert "rename" in result.output
+    assert "delete" in result.output
     assert "get" not in result.output
 
 
@@ -54,6 +59,8 @@ def test_surface_mesh_group_help_shows_info_and_simulation_params():
     assert "state" in result.output
     assert "summary" in result.output
     assert "simulation-params" in result.output
+    assert "rename" in result.output
+    assert "delete" in result.output
     assert "get" not in result.output
 
 
@@ -67,6 +74,8 @@ def test_volume_mesh_group_help_shows_info_and_simulation_params():
     assert "state" in result.output
     assert "summary" in result.output
     assert "simulation-params" in result.output
+    assert "rename" in result.output
+    assert "delete" in result.output
     assert "get" not in result.output
 
 
@@ -410,3 +419,192 @@ def test_case_simulation_params_get_outputs_json(monkeypatch):
     payload = json.loads(result.output)
     assert payload["simulation_params"]["version"] == "24.11.0"
     assert payload["simulation_params"]["unit_system"]["name"] == "SI"
+
+
+def test_asset_rename_and_delete(monkeypatch):
+    from flow360.cli import assets as assets_cli
+
+    runner = CliRunner()
+    calls = []
+    monkeypatch.setattr(
+        assets_cli,
+        "_emit_asset_rename",
+        lambda webapi_class_name, asset_id, name: calls.append(
+            ("rename", webapi_class_name, asset_id, name)
+        )
+        or assets_cli.emit_json({"id": asset_id, "name": name}),
+    )
+    monkeypatch.setattr(
+        assets_cli,
+        "_emit_asset_delete",
+        lambda webapi_class_name, asset_id: calls.append(("delete", webapi_class_name, asset_id))
+        or assets_cli.emit_json({"id": asset_id, "deleted": True}),
+    )
+
+    rename_result = runner.invoke(
+        flow360, ["geometry", "rename", "geo-123", "--name", "Updated Geometry"]
+    )
+    delete_result = runner.invoke(flow360, ["geometry", "delete", "geo-123", "--yes"])
+
+    assert rename_result.exit_code == 0
+    assert delete_result.exit_code == 0
+    assert calls == [
+        ("rename", "GeometryWebApi", "geo-123", "Updated Geometry"),
+        ("delete", "GeometryWebApi", "geo-123"),
+    ]
+    assert json.loads(rename_result.output) == {"id": "geo-123", "name": "Updated Geometry"}
+    assert json.loads(delete_result.output) == {"id": "geo-123", "deleted": True}
+
+
+def test_asset_delete_requires_confirmation(monkeypatch):
+    from flow360.cli import assets as assets_cli
+
+    runner = CliRunner()
+    monkeypatch.setattr(
+        assets_cli,
+        "_emit_asset_delete",
+        lambda webapi_class_name, asset_id: (_ for _ in ()).throw(
+            AssertionError("should not delete")
+        ),
+    )
+
+    result = runner.invoke(flow360, ["case", "delete", "case-123"])
+
+    assert result.exit_code != 0
+    assert "Pass --yes" in result.output
+
+
+def test_case_results_list_outputs_artifacts(monkeypatch):
+    from flow360.cli import assets as assets_cli
+
+    runner = CliRunner()
+    monkeypatch.setattr(
+        assets_cli,
+        "_list_case_results",
+        lambda case_id: [
+            {
+                "fileName": "case-123/results/forces_v2.csv",
+                "fileType": "CSV",
+                "length": 1234,
+            }
+        ],
+    )
+
+    result = runner.invoke(flow360, ["case", "results", "list", "case-123"])
+
+    assert result.exit_code == 0
+    payload = json.loads(result.output)
+    assert payload["records"] == [
+        {
+            "file_type": "CSV",
+            "name": "forces_v2.csv",
+            "path": "results/forces_v2.csv",
+            "size_bytes": 1234,
+        }
+    ]
+
+
+def test_case_results_list_ignores_non_result_path_segments(monkeypatch):
+    from flow360.cli import assets as assets_cli
+
+    class CaseWebApi:
+        def __init__(self, case_id):
+            self.case_id = case_id
+
+        def list_files(self):
+            return [
+                {"fileName": "case-123/results/forces.csv"},
+                {"fileName": "case-123/myresults/not-results.csv"},
+                {"fileName": "testresults/not-results.csv"},
+                {"fileName": "case-123/results/surface_forces.csv"},
+            ]
+
+    monkeypatch.setattr(assets_cli, "_get_asset_webapi_class", lambda name: CaseWebApi)
+
+    result_paths = [
+        assets_cli._get_case_result_path(record)
+        for record in assets_cli._list_case_results("case-123")
+    ]
+
+    assert result_paths == ["results/forces.csv", "results/surface_forces.csv"]
+
+
+def test_case_results_get_downloads_artifact(monkeypatch):
+    from flow360.cli import assets as assets_cli
+
+    runner = CliRunner()
+    monkeypatch.setattr(
+        assets_cli,
+        "_resolve_case_result",
+        lambda case_id, result_ref: {"fileName": "case-123/results/forces_v2.csv"},
+    )
+    monkeypatch.setattr(
+        assets_cli,
+        "_download_case_result",
+        lambda case_id, result_path, to_path=None, overwrite=False: to_path or "forces_v2.csv",
+    )
+
+    result = runner.invoke(
+        flow360,
+        [
+            "case",
+            "results",
+            "get",
+            "case-123",
+            "forces_v2.csv",
+            "--output",
+            "forces.csv",
+            "--overwrite",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert json.loads(result.output) == {
+        "id": "case-123",
+        "name": "forces_v2.csv",
+        "path": "results/forces_v2.csv",
+        "local_path": "forces.csv",
+    }
+
+
+def test_case_results_get_downloads_original_remote_path(monkeypatch):
+    from flow360.cli import assets as assets_cli
+
+    runner = CliRunner()
+    download_call = {}
+    monkeypatch.setattr(
+        assets_cli,
+        "_resolve_case_result",
+        lambda case_id, result_ref: {
+            "fileName": "nested/prefix/results/forces_v2.csv",
+        },
+    )
+
+    def fake_download(case_id, result_path, to_path=None, overwrite=False):
+        download_call.update(
+            {
+                "case_id": case_id,
+                "result_path": result_path,
+                "to_path": to_path,
+                "overwrite": overwrite,
+            }
+        )
+        return to_path or "forces_v2.csv"
+
+    monkeypatch.setattr(assets_cli, "_download_case_result", fake_download)
+
+    result = runner.invoke(flow360, ["case", "results", "get", "case-123", "forces_v2.csv"])
+
+    assert result.exit_code == 0
+    assert json.loads(result.output) == {
+        "id": "case-123",
+        "name": "forces_v2.csv",
+        "path": "results/forces_v2.csv",
+        "local_path": "forces_v2.csv",
+    }
+    assert download_call == {
+        "case_id": "case-123",
+        "result_path": "nested/prefix/results/forces_v2.csv",
+        "to_path": None,
+        "overwrite": False,
+    }

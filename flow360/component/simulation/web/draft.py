@@ -45,6 +45,11 @@ class DraftMetaModel(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
 
+def _get_run_response_target_id(run_response: dict) -> str:
+    """Return the resource ID from a draft run response."""
+    return run_response["id"]
+
+
 class DraftDraft(ResourceDraft):
     """
     Draft Draft component
@@ -223,7 +228,7 @@ class Draft(Flow360Resource):
                 request_body,
                 method="run",
             )
-            destination_id = run_response["id"]
+            destination_id = _get_run_response_target_id(run_response)
             return destination_id
         except Flow360WebError as err:
             # Error found when translating/running the simulation
