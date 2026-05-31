@@ -1,9 +1,0 @@
-"""Relay schema-owned updater orchestration for simulation models."""
-
-# pylint: disable=unused-import
-from flow360_schema.models.simulation.framework.updater import (
-    DEFAULT_PLANAR_FACE_TOLERANCE,
-    DEFAULT_SLIDING_INTERFACE_TOLERANCE,
-    VERSION_MILESTONES,
-    updater,
-)

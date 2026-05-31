@@ -1,1 +1,0 @@
-"""Simulation output model package."""

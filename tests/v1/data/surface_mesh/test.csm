@@ -1,6 +1,0 @@
-# Branches:
-sphere    0   0   0   1
-
-attribute groupName $mysphere
-
-end
