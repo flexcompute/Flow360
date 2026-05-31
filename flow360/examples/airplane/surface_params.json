@@ -1,0 +1,39 @@
+{
+  "maxEdgeLength": 0.16,
+  "curvatureResolutionAngle": 15,
+  "growthRate": 1.2,
+  "edges": {
+    "leadingEdge": {
+      "type": "aniso",
+      "method": "angle",
+      "value": 5
+    },
+    "trailingEdge": {
+      "type": "aniso",
+      "method": "height",
+      "value": 0.001
+    },
+    "root": {
+      "type": "aniso",
+      "method": "aspectRatio",
+      "value": 10
+    },
+    "tip": {
+      "type": "useAdjacent"
+    },
+    "fuselageSplit": {
+      "type": "projectAnisoSpacing"
+    }
+  },
+  "faces": {
+    "rightWing": {
+      "maxEdgeLength": 0.08
+    },
+    "leftWing": {
+      "maxEdgeLength": 0.08
+    },
+    "fuselage": {
+      "maxEdgeLength": 0.1
+    }
+  }
+}

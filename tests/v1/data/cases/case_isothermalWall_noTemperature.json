@@ -1,0 +1,109 @@
+{
+    "boundaries": {
+        "1": {
+            "type": "IsothermalWall"
+        },
+        "2": {
+            "type": "SlipWall"
+        },
+        "3": {
+            "type": "Freestream"
+        }
+    },
+    "freestream": {
+        "Mach": 2,
+        "Reynolds": 14600000,
+        "Temperature": 288.15,
+        "alphaAngle": 3.06,
+        "betaAngle": 0
+    },
+    "geometry": {
+        "endianness": "little",
+        "meshName": "wing.ugrid",
+        "momentCenter": [
+            0,
+            0,
+            0
+        ],
+        "momentLength": [
+            0.801672958512342,
+            0.801672958512342,
+            0.801672958512342
+        ],
+        "refArea": 1.15315084119231
+    },
+    "navierStokesSolver": {
+        "kappaMUSCL": -1,
+        "limitPressureDensity": true,
+        "limitVelocity": true,
+        "linearIterations": 25,
+        "tolerance": 1e-10
+    },
+    "runControl": {
+        "restart": false
+    },
+    "sliceOutput": {
+        "Cp": true,
+        "Mach": true,
+        "T": true,
+        "animationFrequency": 500,
+        "mut": true,
+        "mutRatio": true,
+        "outputFormat": "paraview",
+        "primitiveVars": true,
+        "s": true,
+        "slices": [
+            {
+                "sliceName": "slice_xy",
+                "sliceNormal": [
+                    0,
+                    0,
+                    1
+                ],
+                "sliceOrigin": [
+                    0,
+                    0,
+                    0
+                ]
+            }
+        ],
+        "vorticity": true
+    },
+    "slidingInterfaces": [],
+    "surfaceOutput": {
+        "Cf": true,
+        "CfVec": true,
+        "Cp": true,
+        "animationFrequency": -1,
+        "outputFormat": "paraview",
+        "primitiveVars": true
+    },
+    "timeStepping": {
+        "CFL": {
+            "final": 50,
+            "initial": 10,
+            "rampSteps": 200
+        },
+        "maxPhysicalSteps": 1,
+        "maxPseudoSteps": 4000,
+        "timeStepSize": "inf"
+    },
+    "turbulenceModelSolver": {
+        "kappaMUSCL": -1,
+        "linearIterations": 15,
+        "modelType": "SpalartAllmaras",
+        "rotationCorrection": false,
+        "tolerance": 1e-10
+    },
+    "volumeOutput": {
+        "Cp": false,
+        "T": false,
+        "mut": false,
+        "mutRatio": false,
+        "primitiveVars": true,
+        "residualNavierStokes": false,
+        "residualTurbulence": false,
+        "s": true,
+        "vorticity": true
+    }
+}

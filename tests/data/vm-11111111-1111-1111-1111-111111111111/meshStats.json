@@ -1,0 +1,10 @@
+{
+    "nHexahedron": 1905142,
+    "nNodes": 5712930,
+    "nPrism": 5173185,
+    "nPyramid": 1077599,
+    "nQuadrilaterals": 0,
+    "nTetWedge": 34015,
+    "nTetrahedron": 3501681,
+    "nTriangles": 1088462
+}

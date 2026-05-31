@@ -1,0 +1,84 @@
+{
+    "unitSystem": {
+        "name": "SI"
+    },
+    "version": "24.2.0",
+    "geometry": {
+        "refArea": {
+            "value": 24.0,
+            "units": "m**2"
+        },
+        "momentCenter": {
+            "value": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "units": "m"
+        },
+        "momentLength": {
+            "value": [
+                2.4,
+                2.4,
+                2.4
+            ],
+            "units": "m"
+        },
+        "meshUnit": {
+            "value": 1.0,
+            "units": "m"
+        }
+    },
+    "boundaries": {},
+    "timeStepping": {
+        "maxPseudoSteps": 3000,
+        "CFL": {
+            "type": "ramp",
+            "initial": 1.0,
+            "final": 100.0,
+            "rampSteps": 1000
+        },
+        "modelType": "Steady",
+        "physicalSteps": 1,
+        "timeStepSize": "inf"
+    },
+    "turbulenceModelSolver": {
+        "absoluteTolerance": 1e-08,
+        "relativeTolerance": 0.0,
+        "modelType": "SpalartAllmaras",
+        "linearSolver": {
+            "maxIterations": 35
+        }
+    },
+    "freestream": {
+        "modelType": "FromMachReynolds",
+        "alphaAngle": 0.0,
+        "betaAngle": 0.0,
+        "Mach": 0.6,
+        "Reynolds": 100000.0,
+        "Temperature": 288.15
+    },
+    "surfaceOutput": {
+        "outputFormat": "paraview",
+        "outputFields": [
+            "Cp",
+            "Cf",
+            "yPlus"
+        ]
+    },
+    "volumeOutput": {
+        "outputFormat": "tecplot",
+        "outputFields": [
+            "primitiveVars",
+            "qcriterion"
+        ]
+    },
+    "navierStokesSolver": {
+        "absoluteTolerance": 1e-11,
+        "relativeTolerance": 0.0,
+        "linearSolver": {
+            "maxIterations": 35
+        }
+    },
+    "hash": "868c8210911dbe6c547e6b87bc6402c695faea93542e63e62f3673a4094a2490"
+}

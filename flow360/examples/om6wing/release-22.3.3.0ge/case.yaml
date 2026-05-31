@@ -1,0 +1,26 @@
+boundaries:
+    '1':
+        name: wing
+        type: NoSlipWall
+    '2':
+        name: symmetry
+        type: SlipWall
+    '3':
+        name: freestream
+        type: Freestream
+freestream:
+    speed:
+        v: 286
+        unit: m/s
+    Temperature: 288.15
+    density: 1.225
+    alphaAngle: 3.06
+geometry:
+    momentLength:
+    - 1.47602
+    - 0.801672958512342
+    - 1.47602
+    refArea: 1.15315084119231
+    meshUnit: m
+
+

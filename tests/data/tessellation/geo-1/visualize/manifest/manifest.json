@@ -1,0 +1,543 @@
+[
+    {
+        "attributions": {
+            "members": [
+                "body00001"
+            ]
+        },
+        "id": "root_group",
+        "properties": {
+            "transform": [
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                1.0
+            ],
+            "type": 0
+        },
+        "type": "GeometryGroup",
+        "version": "v1.0.0"
+    },
+    {
+        "attributions": {
+            "edges": [
+                "body00001_edge00001",
+                "body00001_edge00002",
+                "body00001_edge00003",
+                "body00001_edge00004",
+                "body00001_edge00005",
+                "body00001_edge00006",
+                "body00001_edge00007",
+                "body00001_edge00008",
+                "body00001_edge00009",
+                "body00001_edge00010",
+                "body00001_edge00011",
+                "body00001_edge00012"
+            ],
+            "faces": [
+                "body00001_face00001",
+                "body00001_face00002",
+                "body00001_face00003",
+                "body00001_face00004",
+                "body00001_face00005",
+                "body00001_face00006"
+            ],
+            "vertices": []
+        },
+        "id": "body00001",
+        "properties": {
+            "boundsMax": [
+                0.050000100000000026,
+                0.010000100000000005,
+                0.050000100000000026
+            ],
+            "boundsMin": [
+                -0.050000100000000026,
+                -0.010000100000000005,
+                -0.050000100000000026
+            ]
+        },
+        "resources": {
+            "buffers": {
+                "path": "body00001.bin",
+                "sections": [
+                    {
+                        "dType": "uint32",
+                        "dimension": 1,
+                        "length": 180624,
+                        "name": "indices",
+                        "offset": 0
+                    },
+                    {
+                        "dType": "float32",
+                        "dimension": 3,
+                        "length": 94584,
+                        "name": "position",
+                        "offset": 180624
+                    },
+                    {
+                        "dType": "float32",
+                        "dimension": 3,
+                        "length": 94584,
+                        "name": "normal",
+                        "offset": 275208
+                    },
+                    {
+                        "dType": "float32",
+                        "dimension": 3,
+                        "length": 8448,
+                        "name": "edgePosition",
+                        "offset": 369792
+                    }
+                ],
+                "type": "buffers"
+            },
+            "gltf": {
+                "path": "body00001.gltf",
+                "type": "json"
+            }
+        },
+        "tags": [
+            "GAIGroup/wheel.step"
+        ],
+        "type": "SolidGeometry"
+    },
+    {
+        "attributions": {
+            "packedParentId": "body00001"
+        },
+        "id": "body00001_face00001",
+        "properties": {
+            "alpha": 1.0,
+            "area": 0.0006283185307179593,
+            "bufferLocations": {
+                "indices": [
+                    {
+                        "bufNum": 0,
+                        "endIndex": 768,
+                        "startIndex": 0
+                    }
+                ]
+            },
+            "color": 16777215
+        },
+        "type": "Face"
+    },
+    {
+        "attributions": {
+            "packedParentId": "body00001"
+        },
+        "id": "body00001_face00002",
+        "properties": {
+            "alpha": 1.0,
+            "area": 0.0006283185307179592,
+            "bufferLocations": {
+                "indices": [
+                    {
+                        "bufNum": 0,
+                        "endIndex": 1536,
+                        "startIndex": 768
+                    }
+                ]
+            },
+            "color": 16777215
+        },
+        "type": "Face"
+    },
+    {
+        "attributions": {
+            "packedParentId": "body00001"
+        },
+        "id": "body00001_face00003",
+        "properties": {
+            "alpha": 1.0,
+            "area": 0.007539822368615513,
+            "bufferLocations": {
+                "indices": [
+                    {
+                        "bufNum": 0,
+                        "endIndex": 20232,
+                        "startIndex": 1536
+                    }
+                ]
+            },
+            "color": 16777215
+        },
+        "type": "Face"
+    },
+    {
+        "attributions": {
+            "packedParentId": "body00001"
+        },
+        "id": "body00001_face00004",
+        "properties": {
+            "alpha": 1.0,
+            "area": 0.0031415926535897963,
+            "bufferLocations": {
+                "indices": [
+                    {
+                        "bufNum": 0,
+                        "endIndex": 23304,
+                        "startIndex": 20232
+                    }
+                ]
+            },
+            "color": 16777215
+        },
+        "type": "Face"
+    },
+    {
+        "attributions": {
+            "packedParentId": "body00001"
+        },
+        "id": "body00001_face00005",
+        "properties": {
+            "alpha": 1.0,
+            "area": 0.0031415926535897963,
+            "bufferLocations": {
+                "indices": [
+                    {
+                        "bufNum": 0,
+                        "endIndex": 26376,
+                        "startIndex": 23304
+                    }
+                ]
+            },
+            "color": 16777215
+        },
+        "type": "Face"
+    },
+    {
+        "attributions": {
+            "packedParentId": "body00001"
+        },
+        "id": "body00001_face00006",
+        "properties": {
+            "alpha": 1.0,
+            "area": 0.007539822368615513,
+            "bufferLocations": {
+                "indices": [
+                    {
+                        "bufNum": 0,
+                        "endIndex": 45156,
+                        "startIndex": 26376
+                    }
+                ]
+            },
+            "color": 16777215
+        },
+        "type": "Face"
+    },
+    {
+        "attributions": {
+            "packedParentId": "body00001"
+        },
+        "id": "body00001_edge00001",
+        "properties": {
+            "alpha": 1.0,
+            "bufferLocations": {
+                "indices": [
+                    {
+                        "bufNum": 0,
+                        "endIndex": 96,
+                        "startIndex": 0
+                    }
+                ]
+            },
+            "color": 0,
+            "length": 0.03141592653589795,
+            "sides": [
+                "body00001_face00001",
+                "body00001_face00003"
+            ]
+        },
+        "type": "Edge"
+    },
+    {
+        "attributions": {
+            "packedParentId": "body00001"
+        },
+        "id": "body00001_edge00002",
+        "properties": {
+            "alpha": 1.0,
+            "bufferLocations": {
+                "indices": [
+                    {
+                        "bufNum": 0,
+                        "endIndex": 144,
+                        "startIndex": 96
+                    }
+                ]
+            },
+            "color": 0,
+            "length": 0.020000000000000014,
+            "sides": [
+                "body00001_face00001",
+                "body00001_face00002"
+            ]
+        },
+        "type": "Edge"
+    },
+    {
+        "attributions": {
+            "packedParentId": "body00001"
+        },
+        "id": "body00001_edge00003",
+        "properties": {
+            "alpha": 1.0,
+            "bufferLocations": {
+                "indices": [
+                    {
+                        "bufNum": 0,
+                        "endIndex": 240,
+                        "startIndex": 144
+                    }
+                ]
+            },
+            "color": 0,
+            "length": 0.03141592653589795,
+            "sides": [
+                "body00001_face00001",
+                "body00001_face00006"
+            ]
+        },
+        "type": "Edge"
+    },
+    {
+        "attributions": {
+            "packedParentId": "body00001"
+        },
+        "id": "body00001_edge00004",
+        "properties": {
+            "alpha": 1.0,
+            "bufferLocations": {
+                "indices": [
+                    {
+                        "bufNum": 0,
+                        "endIndex": 288,
+                        "startIndex": 240
+                    }
+                ]
+            },
+            "color": 0,
+            "length": 0.02000000000000001,
+            "sides": [
+                "body00001_face00001",
+                "body00001_face00002"
+            ]
+        },
+        "type": "Edge"
+    },
+    {
+        "attributions": {
+            "packedParentId": "body00001"
+        },
+        "id": "body00001_edge00005",
+        "properties": {
+            "alpha": 1.0,
+            "bufferLocations": {
+                "indices": [
+                    {
+                        "bufNum": 0,
+                        "endIndex": 384,
+                        "startIndex": 288
+                    }
+                ]
+            },
+            "color": 0,
+            "length": 0.03141592653589795,
+            "sides": [
+                "body00001_face00002",
+                "body00001_face00006"
+            ]
+        },
+        "type": "Edge"
+    },
+    {
+        "attributions": {
+            "packedParentId": "body00001"
+        },
+        "id": "body00001_edge00006",
+        "properties": {
+            "alpha": 1.0,
+            "bufferLocations": {
+                "indices": [
+                    {
+                        "bufNum": 0,
+                        "endIndex": 480,
+                        "startIndex": 384
+                    }
+                ]
+            },
+            "color": 0,
+            "length": 0.03141592653589795,
+            "sides": [
+                "body00001_face00002",
+                "body00001_face00003"
+            ]
+        },
+        "type": "Edge"
+    },
+    {
+        "attributions": {
+            "packedParentId": "body00001"
+        },
+        "id": "body00001_edge00007",
+        "properties": {
+            "alpha": 1.0,
+            "bufferLocations": {
+                "indices": [
+                    {
+                        "bufNum": 0,
+                        "endIndex": 864,
+                        "startIndex": 480
+                    }
+                ]
+            },
+            "color": 0,
+            "length": 0.15707963267948974,
+            "sides": [
+                "body00001_face00003",
+                "body00001_face00004"
+            ]
+        },
+        "type": "Edge"
+    },
+    {
+        "attributions": {
+            "packedParentId": "body00001"
+        },
+        "id": "body00001_edge00008",
+        "properties": {
+            "alpha": 1.0,
+            "bufferLocations": {
+                "indices": [
+                    {
+                        "bufNum": 0,
+                        "endIndex": 1248,
+                        "startIndex": 864
+                    }
+                ]
+            },
+            "color": 0,
+            "length": 0.15707963267948974,
+            "sides": [
+                "body00001_face00003",
+                "body00001_face00005"
+            ]
+        },
+        "type": "Edge"
+    },
+    {
+        "attributions": {
+            "packedParentId": "body00001"
+        },
+        "id": "body00001_edge00009",
+        "properties": {
+            "alpha": 1.0,
+            "bufferLocations": {
+                "indices": [
+                    {
+                        "bufNum": 0,
+                        "endIndex": 1296,
+                        "startIndex": 1248
+                    }
+                ]
+            },
+            "color": 0,
+            "length": 0.020000000000000014,
+            "sides": [
+                "body00001_face00004",
+                "body00001_face00005"
+            ]
+        },
+        "type": "Edge"
+    },
+    {
+        "attributions": {
+            "packedParentId": "body00001"
+        },
+        "id": "body00001_edge00010",
+        "properties": {
+            "alpha": 1.0,
+            "bufferLocations": {
+                "indices": [
+                    {
+                        "bufNum": 0,
+                        "endIndex": 1680,
+                        "startIndex": 1296
+                    }
+                ]
+            },
+            "color": 0,
+            "length": 0.15707963267948974,
+            "sides": [
+                "body00001_face00004",
+                "body00001_face00006"
+            ]
+        },
+        "type": "Edge"
+    },
+    {
+        "attributions": {
+            "packedParentId": "body00001"
+        },
+        "id": "body00001_edge00011",
+        "properties": {
+            "alpha": 1.0,
+            "bufferLocations": {
+                "indices": [
+                    {
+                        "bufNum": 0,
+                        "endIndex": 1728,
+                        "startIndex": 1680
+                    }
+                ]
+            },
+            "color": 0,
+            "length": 0.02000000000000001,
+            "sides": [
+                "body00001_face00004",
+                "body00001_face00005"
+            ]
+        },
+        "type": "Edge"
+    },
+    {
+        "attributions": {
+            "packedParentId": "body00001"
+        },
+        "id": "body00001_edge00012",
+        "properties": {
+            "alpha": 1.0,
+            "bufferLocations": {
+                "indices": [
+                    {
+                        "bufNum": 0,
+                        "endIndex": 2112,
+                        "startIndex": 1728
+                    }
+                ]
+            },
+            "color": 0,
+            "length": 0.15707963267948974,
+            "sides": [
+                "body00001_face00005",
+                "body00001_face00006"
+            ]
+        },
+        "type": "Edge"
+    }
+]

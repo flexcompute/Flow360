@@ -1,0 +1,41 @@
+{
+    "data": {
+        "createdAt": "2024-12-05T12:26:30.045Z",
+        "deleted": false,
+        "displayStatus": "completed",
+        "files": [
+            {
+                "name": "geometry.csm",
+                "type": "main"
+            }
+        ],
+        "id": "geo-2877e124-96ff-473d-864b-11eec8648d42",
+        "name": "Tutorial Calculating Dynamic Derivatives using Sliding Interfaces from Python",
+        "parentFolderId": "ROOT.FLOW360",
+        "parentFolders": [
+            {
+                "createdAt": "2023-09-01T09:14:15.293797Z",
+                "id": "ROOT.FLOW360",
+                "name": "ROOT.FLOW360",
+                "parentFolderId": null,
+                "parentFolders": null,
+                "tags": [],
+                "type": "Folder",
+                "updatedAt": "2023-09-01T09:14:15.293797Z",
+                "userId": "AIDAXWCOWJGJJBXX543AQ"
+            }
+        ],
+        "parentId": null,
+        "projectId": "prj-41d2333b-85fd-4bed-ae13-15dcb6da519e",
+        "solverVersion": "release-24.11",
+        "status": "processed",
+        "storageSize": 6602439,
+        "tags": [],
+        "type": "Geometry",
+        "updatedAt": "2024-12-05T12:27:09.643Z",
+        "uploadStatus": "success",
+        "userId": "AIDAXWCOWJGJJBXX543AQ",
+        "viewed": null,
+        "visualizationStatus": null
+    }
+}

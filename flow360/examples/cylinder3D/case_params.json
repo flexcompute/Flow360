@@ -1,0 +1,95 @@
+{
+    "unitSystem": {
+        "name": "SI"
+    },
+    "version": "24.2.0",
+    "geometry": {
+        "refArea": {
+            "value": 340.0,
+            "units": "m**2"
+        },
+        "momentCenter": {
+            "value": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "units": "m"
+        },
+        "momentLength": {
+            "value": [
+                1.0,
+                1.0,
+                1.0
+            ],
+            "units": "m"
+        },
+        "meshUnit": {
+            "value": 1.0,
+            "units": "m"
+        }
+    },
+    "fluidProperties": {
+        "modelType": "AirDensity",
+        "density": {
+            "value": 1.225,
+            "units": "kg/m**3"
+        },
+        "temperature": {
+            "value": 288.15,
+            "units": "K"
+        }
+    },
+    "boundaries": {},
+    "timeStepping": {
+        "modelType": "Steady",
+        "maxPseudoSteps": 2000,
+        "CFL": {
+            "initial":1,
+            "final":100,
+            "rampSteps":300
+        },
+        "physicalSteps": 1,
+        "timeStepSize": "inf"
+    },
+    "turbulenceModelSolver": {
+        "modelType":"SpalartAllmaras",
+        "absoluteTolerance": 1e-08,
+        "relativeTolerance": 0.01,
+        "linearSolver": {
+            "maxIterations": 35
+        }
+    },
+    "freestream": {
+        "modelType": "FromMachReynolds",
+        "alphaAngle": 0.0,
+        "betaAngle": 0.0,
+        "Mach": 0.1,
+        "Reynolds": 5.0,
+        "Temperature": 288.15
+    },
+    "surfaceOutput": {
+        "outputFormat": "tecplot",
+        "outputFields": [
+            "Cp",
+            "Cf",
+            "CfVec",
+            "yPlus",
+            "nodeForcesPerUnitArea"
+        ]
+    },
+    "volumeOutput": {
+        "outputFormat": "tecplot",
+        "outputFields": [
+            "primitiveVars",
+            "qcriterion"
+        ]
+    },
+    "navierStokesSolver": {
+        "absoluteTolerance": 1e-11,
+        "relativeTolerance": 0.001,
+        "linearSolver": {
+            "maxIterations": 35
+        }
+    }
+}
