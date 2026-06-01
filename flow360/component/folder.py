@@ -200,9 +200,13 @@ class Folder(Flow360Resource):
                 "expandFields": ["contentInfo"],
             }
 
+<<<<<<< HEAD
             data = RestApi("/v2/items", environment_provider=current_environment).get(
                 params=payload
             )
+=======
+            data = RestApi("v2/items").get(params=payload)
+>>>>>>> a55953b4 (Fix duplicate slash URL handling for 25.8 (#2051))
             records = data.get("records", [])
             all_records.extend(records)
             total_record_count = data.get("total", 0)
@@ -270,7 +274,11 @@ class Folder(Flow360Resource):
             "page": 0,
             "size": 1000,
         }  # it assumes user will not have more than 1000 folders
+<<<<<<< HEAD
         data = RestApi("/v2/folders", environment_provider=current_environment).get(params=payload)
+=======
+        data = RestApi("v2/folders").get(params=payload)
+>>>>>>> a55953b4 (Fix duplicate slash URL handling for 25.8 (#2051))
         folder_tree = self._build_folder_tree(data["records"])
         return folder_tree
 
