@@ -1,5 +1,10 @@
 from flow360 import Env
+<<<<<<< HEAD
 from flow360.environment import EnvironmentConfig, current_environment
+=======
+from flow360.cloud.rest_api import RestApi
+from flow360.environment import EnvironmentConfig
+>>>>>>> 1059e815 (Fix duplicate slash URL handling for 25.9 (#2052))
 
 
 def test_predefined_environment_activation(monkeypatch):
@@ -9,6 +14,7 @@ def test_predefined_environment_activation(monkeypatch):
     assert Env.current is Env.dev
 
     Env.prod.active()
+<<<<<<< HEAD
     assert Env.current is Env.prod
 
 
@@ -50,3 +56,39 @@ def test_current_environment_returns_active_environment(monkeypatch):
 
     monkeypatch.setattr(Env, "_current", environment)
     assert current_environment() is environment
+=======
+
+
+def test_environment_urls_normalize_path_slashes():
+    env = EnvironmentConfig(
+        name="test",
+        domain="example.com",
+        web_api_endpoint="https://api.example.com/",
+        web_url="https://web.example.com/",
+        portal_web_api_endpoint="https://portal.example.com/",
+        apikey_profile="default",
+    )
+
+    for path in ("v2/folders", "/v2/folders"):
+        assert env.get_real_url(path) == "https://api.example.com/v2/folders"
+        assert env.get_portal_real_url(path) == "https://portal.example.com/v2/folders"
+        assert env.get_web_real_url(path) == "https://web.example.com/v2/folders"
+
+
+def test_rest_api_url_normalizes_with_environment():
+    env = EnvironmentConfig(
+        name="test",
+        domain="example.com",
+        web_api_endpoint="https://api.example.com",
+        web_url="https://web.example.com",
+        portal_web_api_endpoint="https://portal.example.com",
+        apikey_profile="default",
+    )
+
+    assert env.get_real_url(RestApi("/v2/folders")._url(None)) == (
+        "https://api.example.com/v2/folders"
+    )
+    assert env.get_real_url(RestApi("v2/folders")._url(None)) == (
+        "https://api.example.com/v2/folders"
+    )
+>>>>>>> 1059e815 (Fix duplicate slash URL handling for 25.9 (#2052))

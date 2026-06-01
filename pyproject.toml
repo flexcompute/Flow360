@@ -1,6 +1,10 @@
 [tool.poetry]
 name = "flow360"
+<<<<<<< HEAD
 version = "25.10.0b1"
+=======
+version = "v25.9.9"
+>>>>>>> 1059e815 (Fix duplicate slash URL handling for 25.9 (#2052))
 description = "Flow360 Python Client"
 authors = ["Flexcompute <support@flexcompute.com>"]
 packages = [{include = "flow360"}, {include = "flow360_schema"}]
@@ -12,7 +16,7 @@ pydantic = ">=2.8,<2.12"
 pytest = "^7.1.2"
 click = "^8.1.3"
 toml = "^0.10.2"
-requests = "^2.32.4"
+requests = ">=2.32.4,<2.33.0"
 boto3 = "^1.24.63"
 cryptography = "^45.0.0"
 numpy = [

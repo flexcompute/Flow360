@@ -3,6 +3,7 @@ import re
 from flow360.version import __solver_version__, __version__
 
 
+<<<<<<< HEAD
 def test_solver_version_matches_module_version():
     """For non-beta versions vA.B.C, __solver_version__ must be 'release-A.B'."""
     match = re.match(r"^(\d+)\.(\d+)\.\d+$", __version__)
@@ -14,3 +15,7 @@ def test_solver_version_matches_module_version():
         f"__solver_version__ is '{__solver_version__}' but expected '{expected}' "
         f"for module version '{__version__}'"
     )
+=======
+def test_version():
+    assert __version__ == "25.9.9"
+>>>>>>> 1059e815 (Fix duplicate slash URL handling for 25.9 (#2052))

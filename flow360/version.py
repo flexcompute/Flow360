@@ -2,6 +2,7 @@
 version
 """
 
+<<<<<<< HEAD
 import re
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
@@ -35,4 +36,7 @@ def _resolve_version() -> str:
 
 
 __version__ = _resolve_version()
+=======
+__version__ = "25.9.9"
+>>>>>>> 1059e815 (Fix duplicate slash URL handling for 25.9 (#2052))
 __solver_version__ = "release-25.9"
