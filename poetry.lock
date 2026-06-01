@@ -6486,5 +6486,10 @@ docs = ["autodoc_pydantic", "cairosvg", "ipython", "jinja2", "jupyter", "myst-pa
 
 [metadata]
 lock-version = "2.1"
+<<<<<<< HEAD
 python-versions = ">=3.10,<3.14"
 content-hash = "abd755399f335ef1fea125d532af4ccb69c6292d252e95cf138a0b55a4b3970d"
+=======
+python-versions = ">=3.9,<3.14"
+content-hash = "e30b7ed808c06d968a1a0534cedb559584360cf9af9f843e4fecacbd9b143537"
+>>>>>>> a55953b4 (Fix duplicate slash URL handling for 25.8 (#2051))
