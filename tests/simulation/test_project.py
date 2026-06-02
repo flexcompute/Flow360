@@ -74,12 +74,14 @@ def test_from_geometry_passes_workflow(monkeypatch):
         tags=None,
         folder=None,
         workflow="standard",
+        cad_importer_version=None,
     ):
         captured["file_names"] = file_names
         captured["project_name"] = project_name
         captured["solver_version"] = solver_version
         captured["length_unit"] = length_unit
         captured["workflow"] = workflow
+        captured["cad_importer_version"] = cad_importer_version
         return _MockDraft()
 
     monkeypatch.setattr("flow360.component.project.Geometry.from_file", _mock_from_file)

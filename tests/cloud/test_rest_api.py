@@ -42,7 +42,7 @@ def _environment(name, api_endpoint):
 
 def test_rest_api_builds_absolute_urls_from_environment_provider():
     http = _HttpRecorder()
-    environment = _environment("test", "https://api.example.test")
+    environment = _environment("test", "https://api.example.test/")
 
     api = RestApi(
         "v2/projects",
@@ -97,6 +97,22 @@ def test_rest_api_path_argument_overrides_composed_path():
 
     assert http.calls == [
         ("get", "https://api.example.test/custom/path", {"json": None, "params": None})
+    ]
+
+
+def test_rest_api_normalizes_duplicate_path_slashes():
+    http = _HttpRecorder()
+    environment = _environment("test", "https://api.example.test/")
+    api = RestApi(
+        "/v2/folders",
+        environment_provider=lambda: environment,
+        http_client=http,
+    )
+
+    assert api.get(params={"page": 0}) == {"method": "get"}
+
+    assert http.calls == [
+        ("get", "https://api.example.test/v2/folders", {"json": None, "params": {"page": 0}})
     ]
 
 

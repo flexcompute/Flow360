@@ -122,6 +122,20 @@ class NewGeometryRequest(Flow360RequestsV2):
         default=False,
         description="Use the Catalyst workflow for geometry processing",
     )
+    # FXC-3289: CAD Importer version frozen at upload time. None / "v1" leaves
+    # the field absent in the request so the backend uses the v1 (HOOPS -> EGADS)
+    # default. "v2" routes the project through the HOOPS-only partition path
+    # (currently restricted to the legacy surface mesher).
+    cad_importer_version: Optional[Literal["v1", "v2"]] = pd_v2.Field(
+        default=None,
+        alias="cadImporterVersion",
+        description=(
+            "CAD Importer version frozen at geometry upload. "
+            "'v1' (default) is compatible with all surface meshers; "
+            "'v2' is an alternative BRep importer that currently supports "
+            "only the legacy surface mesher."
+        ),
+    )
 
 
 class NewSurfaceMeshRequestV2(Flow360RequestsV2):

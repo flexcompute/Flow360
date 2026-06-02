@@ -35,4 +35,4 @@ def _resolve_version() -> str:
 
 
 __version__ = _resolve_version()
-__solver_version__ = "release-25.9"
+__solver_version__ = "release-25.10"

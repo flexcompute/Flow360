@@ -954,7 +954,7 @@ class Project(pd.BaseModel):
         project_records, _ = get_project_records("", tags=tags)
         return [record.project_id for record in project_records.records]
 
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments, too-many-locals
     @classmethod
     def _create_project_from_files(
         cls,
@@ -967,6 +967,7 @@ class Project(pd.BaseModel):
         run_async: bool = False,
         folder: Optional[Folder] = None,
         workflow: GeometryWorkflow = "standard",
+        cad_importer_version: Optional[Literal["v1", "v2"]] = None,
     ):
         """
         Initializes a project from a file.
@@ -1012,6 +1013,7 @@ class Project(pd.BaseModel):
                 tags,
                 folder=folder,
                 workflow=workflow,
+                cad_importer_version=cad_importer_version,
             )
         elif isinstance(files, SurfaceMeshFile):
             draft = SurfaceMeshV2.from_file(
@@ -1209,6 +1211,7 @@ class Project(pd.BaseModel):
         run_async: bool = False,
         folder: Optional[Folder] = None,
         workflow: GeometryWorkflow = "standard",
+        cad_importer_version: Optional[Literal["v1", "v2"]] = None,
     ):
         """
         Initializes a project from local geometry files.
@@ -1269,6 +1272,7 @@ class Project(pd.BaseModel):
             run_async=run_async,
             folder=folder,
             workflow=workflow,
+            cad_importer_version=cad_importer_version,
         )
 
     @classmethod

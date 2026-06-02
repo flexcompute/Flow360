@@ -569,6 +569,26 @@ def set_up_params_for_uploading(  # pylint: disable=too-many-arguments
         use_geometry_AI if use_geometry_AI else False,
     )
 
+    # FXC-3289: propagate the CAD Importer version from the root asset's stored
+    # asset_cache. The geometry resource fixes this at upload time and the
+    # schema validator (AssetCache._validate_cad_importer_mesher_compatibility)
+    # needs it on the surface mesh submission to reject v2 + beta mesher /
+    # v2 + Geometry AI before the job dispatches.
+    if hasattr(root_asset, "_simulation_dict_cache_for_local_mode"):
+        # pylint:disable-next=protected-access
+        _root_sim_dict = root_asset._simulation_dict_cache_for_local_mode
+    else:
+        _root_sim_dict = AssetBase._get_simulation_json(  # pylint:disable=protected-access
+            asset=root_asset, clean_front_end_keys=True
+        )
+    _root_engine = _root_sim_dict.get("private_attribute_asset_cache", {}).get(
+        "cad_importer_version"
+    )
+    if _root_engine is not None:
+        params.private_attribute_asset_cache._force_set_attr(  # pylint:disable=protected-access
+            "cad_importer_version", _root_engine
+        )
+
     active_draft = get_active_draft()
 
     if active_draft is not None:

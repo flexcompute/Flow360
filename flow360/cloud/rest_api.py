@@ -29,7 +29,7 @@ class RestApi:
 
     @staticmethod
     def _api_url(path, environment):
-        return "/".join([environment.web_api_endpoint, path])
+        return environment.web_api_endpoint.rstrip("/") + "/" + path.lstrip("/")
 
     def get(self, path=None, method=None, json=None, params=None):
         """

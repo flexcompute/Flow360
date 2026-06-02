@@ -50,3 +50,21 @@ def test_current_environment_returns_active_environment(monkeypatch):
 
     monkeypatch.setattr(Env, "_current", environment)
     assert current_environment() is environment
+
+
+def test_environment_urls_normalize_path_slashes():
+    environment = EnvironmentConfig(
+        name="provider",
+        domain="example.test",
+        web_api_endpoint="https://api.example.test/",
+        web_url="https://web.example.test/",
+        portal_web_api_endpoint="https://portal-api.example.test/",
+        apikey_profile="provider",
+    )
+
+    for path in ("v2/folders", "/v2/folders"):
+        assert environment.get_real_url(path) == "https://api.example.test/v2/folders"
+        assert environment.get_portal_real_url(path) == (
+            "https://portal-api.example.test/v2/folders"
+        )
+        assert environment.get_web_real_url(path) == "https://web.example.test/v2/folders"

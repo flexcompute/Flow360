@@ -108,6 +108,7 @@ class GeometryDraft(ResourceDraft):
         tags: List[str] = None,
         folder: Optional[Folder] = None,
         workflow: GeometryWorkflow = "standard",
+        cad_importer_version: Optional[Literal["v1", "v2"]] = None,
     ):
         """
         Initialize a GeometryDraft with common attributes.
@@ -140,6 +141,8 @@ class GeometryDraft(ResourceDraft):
         self.solver_version = solver_version
         self.folder = folder
         self.workflow = workflow
+        # FXC-3289: CAD Importer version frozen at upload (None == backend default v1).
+        self.cad_importer_version = cad_importer_version
 
         # pylint: disable=fixme
         # TODO: create a DependableResourceDraft for GeometryDraft and SurfaceMeshDraft
@@ -249,6 +252,7 @@ class GeometryDraft(ResourceDraft):
             length_unit=self.length_unit,
             description=description,
             use_catalyst=self.workflow == "catalyst",
+            cad_importer_version=self.cad_importer_version,
         )
 
         resp = RestApi(GeometryInterface.endpoint, environment_provider=current_environment).post(
@@ -476,6 +480,7 @@ class Geometry(AssetBase):
         tags: List[str] = None,
         folder: Optional[Folder] = None,
         workflow: GeometryWorkflow = "standard",
+        cad_importer_version: Optional[Literal["v1", "v2"]] = None,
     ) -> GeometryDraft:
         return GeometryDraft(
             file_names=file_names,
@@ -485,6 +490,7 @@ class Geometry(AssetBase):
             tags=tags,
             folder=folder,
             workflow=workflow,
+            cad_importer_version=cad_importer_version,
         )
 
     @classmethod

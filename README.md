@@ -1,5 +1,12 @@
 # Flow360
 
+> **📦 Read-only mirror.** This repository is a read-only mirror of the Flow360
+> Python client; the source of truth lives in Flexcompute's internal monorepo.
+>
+> - **Install from PyPI:** `pip install flow360` — do not install from source here.
+> - **Pull requests and issues are not accepted on this mirror** and will not be reviewed or merged.
+> - **`release-candidate/*` branches are legacy**, retained only for historical hotfix history.
+
 ![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/flexcompute/flow360/test.yml?label=tests)
 [![PyPI version shields.io](https://img.shields.io/pypi/v/Flow360)](https://pypi.python.org/pypi/flow360/)
 

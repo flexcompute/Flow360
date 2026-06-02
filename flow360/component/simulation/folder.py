@@ -304,9 +304,7 @@ class Folder(Flow360Resource):
                 "expandFields": ["contentInfo"],
             }
 
-            data = RestApi("/v2/items", environment_provider=current_environment).get(
-                params=payload
-            )
+            data = RestApi("v2/items", environment_provider=current_environment).get(params=payload)
             records = data.get("records", [])
             all_records.extend(records)
             total_record_count = data.get("total", 0)
