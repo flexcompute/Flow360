@@ -102,13 +102,13 @@ class GeometryDraft(ResourceDraft):
     def __init__(
         self,
         file_names: Union[List[str], str],
+        cad_importer_version: Literal["v1", "v2"],
         project_name: str = None,
         solver_version: str = None,
         length_unit: LengthUnitType = "m",
         tags: List[str] = None,
         folder: Optional[Folder] = None,
         workflow: GeometryWorkflow = "standard",
-        cad_importer_version: Optional[Literal["v1", "v2"]] = None,
     ):
         """
         Initialize a GeometryDraft with common attributes.
@@ -280,6 +280,7 @@ class GeometryDraft(ResourceDraft):
             tags=self.tags,
             description=description,
             icon=icon,
+            cad_importer_version=self.cad_importer_version,
         )
 
         resp = RestApi(GeometryInterface.endpoint, environment_provider=current_environment).post(
@@ -480,7 +481,7 @@ class Geometry(AssetBase):
         tags: List[str] = None,
         folder: Optional[Folder] = None,
         workflow: GeometryWorkflow = "standard",
-        cad_importer_version: Optional[Literal["v1", "v2"]] = None,
+        cad_importer_version: Literal["v1", "v2"] = "v1",
     ) -> GeometryDraft:
         return GeometryDraft(
             file_names=file_names,
@@ -502,6 +503,7 @@ class Geometry(AssetBase):
         project_id: str,
         length_unit: LengthUnitType = "m",
         tags: List[str] = None,
+        cad_importer_version: Literal["v1", "v2"] = "v1",
     ) -> GeometryDraft:
         """
         Create a geometry draft for adding to an existing project.
@@ -521,6 +523,9 @@ class Geometry(AssetBase):
             Unit of length (default is "m")
         tags : List[str], optional
             Tags to assign to the geometry (default is None)
+        cad_importer_version : Literal["v1", "v2"], optional
+            CAD Importer version for the dependency geometry. Normally inherited
+            from the project root so the meshes stay compatible (default "v1").
 
         Returns
         -------
@@ -531,6 +536,7 @@ class Geometry(AssetBase):
             file_names=file_names,
             length_unit=length_unit,
             tags=tags,
+            cad_importer_version=cad_importer_version,
         )
         draft.set_dependency_context(name=name, project_id=project_id)
         return draft

@@ -46,7 +46,9 @@ from flow360.component.interfaces import (
 from flow360.component.project_utils import (
     apply_and_inform_grouping_selections,
     deep_copy_entity_info,
+    ensure_cad_importer_compatible_with_mesher,
     load_status_from_asset,
+    read_root_cad_importer_version,
     set_up_params_for_uploading,
     validate_params_with_context,
 )
@@ -960,6 +962,7 @@ class Project(pd.BaseModel):
         cls,
         *,
         files: Union[GeometryFiles, SurfaceMeshFile, VolumeMeshFile],
+        cad_importer_version: Literal["v1", "v2"],
         name: str = None,
         solver_version: str = __solver_version__,
         length_unit: LengthUnitType = "m",
@@ -967,7 +970,6 @@ class Project(pd.BaseModel):
         run_async: bool = False,
         folder: Optional[Folder] = None,
         workflow: GeometryWorkflow = "standard",
-        cad_importer_version: Optional[Literal["v1", "v2"]] = None,
     ):
         """
         Initializes a project from a file.
@@ -1211,7 +1213,7 @@ class Project(pd.BaseModel):
         run_async: bool = False,
         folder: Optional[Folder] = None,
         workflow: GeometryWorkflow = "standard",
-        cad_importer_version: Optional[Literal["v1", "v2"]] = None,
+        cad_importer_version: Literal["v1", "v2"] = "v1",
     ):
         """
         Initializes a project from local geometry files.
@@ -1236,6 +1238,12 @@ class Project(pd.BaseModel):
             Workflow used for project geometry preparation. Use `"catalyst"`
             for geometry preparation recommended for GAI and snappy workflows
             (default is `"standard"`).
+        cad_importer_version: Literal["v1", "v2"]
+            CAD Importer version frozen at geometry upload.
+            'v1' (default) is compatible with all surface meshers;
+            'v2' is an alternative BRep importer compatible with the default
+            surface mesher and Geometry AI, but not the standalone beta
+            in-house mesher (beta without Geometry AI).
 
         Returns
         -------
@@ -1344,6 +1352,7 @@ class Project(pd.BaseModel):
             tags=tags,
             run_async=run_async,
             folder=folder,
+            cad_importer_version=None,
         )
 
     @classmethod
@@ -1450,6 +1459,7 @@ class Project(pd.BaseModel):
             tags=resolved_tags,
             run_async=run_async,
             folder=folder,
+            cad_importer_version=None,
         )
 
     @classmethod
@@ -1520,6 +1530,7 @@ class Project(pd.BaseModel):
             length_unit=length_unit,
             tags=tags,
             run_async=run_async,
+            cad_importer_version="v1",
         )
 
     def _check_conflicts_with_existing_dependency_resources(
@@ -1562,6 +1573,9 @@ class Project(pd.BaseModel):
                 project_id=self.id,
                 length_unit=length_unit,
                 tags=tags,
+                # Keep the dependency geometry on the same CAD Importer as the
+                # project root; a mismatch would make the meshes incompatible.
+                cad_importer_version=read_root_cad_importer_version(self._root_asset),
             )
         elif isinstance(files, SurfaceMeshFile):
             self._check_conflicts_with_existing_dependency_resources(
@@ -2176,6 +2190,8 @@ class Project(pd.BaseModel):
             use_beta_mesher=use_beta_mesher,
             use_geometry_AI=use_geometry_AI,
         )
+
+        ensure_cad_importer_compatible_with_mesher(params)
 
         params, errors, warnings = validate_params_with_context(
             params=params,

@@ -122,18 +122,17 @@ class NewGeometryRequest(Flow360RequestsV2):
         default=False,
         description="Use the Catalyst workflow for geometry processing",
     )
-    # FXC-3289: CAD Importer version frozen at upload time. None / "v1" leaves
-    # the field absent in the request so the backend uses the v1 (HOOPS -> EGADS)
-    # default. "v2" routes the project through the HOOPS-only partition path
-    # (currently restricted to the legacy surface mesher).
-    cad_importer_version: Optional[Literal["v1", "v2"]] = pd_v2.Field(
-        default=None,
-        alias="cadImporterVersion",
+    # FXC-3289: CAD Importer version frozen at upload time. "v1" is the
+    # HOOPS -> EGADS default; "v2" routes the project through the HOOPS-only
+    # partition path (supports the default surface mesher and Geometry AI, but
+    # not the standalone beta in-house mesher).
+    cad_importer_version: Literal["v1", "v2"] = pd_v2.Field(
         description=(
             "CAD Importer version frozen at geometry upload. "
             "'v1' (default) is compatible with all surface meshers; "
-            "'v2' is an alternative BRep importer that currently supports "
-            "only the legacy surface mesher."
+            "'v2' is an alternative BRep importer compatible with the default "
+            "surface mesher and Geometry AI, but not the standalone beta "
+            "in-house mesher (beta without Geometry AI)."
         ),
     )
 
@@ -200,6 +199,15 @@ class NewGeometryDependencyRequest(Flow360RequestsV2):
     )
     description: str = pd_v2.Field(default="", description="geometry dependency description")
     icon: str = pd_v2.Field(default="", description="project description")
+    cad_importer_version: Literal["v1", "v2"] = pd_v2.Field(
+        description=(
+            "CAD Importer version frozen at geometry upload. "
+            "'v1' (default) is compatible with all surface meshers; "
+            "'v2' is an alternative BRep importer compatible with the default "
+            "surface mesher and Geometry AI, but not the standalone beta "
+            "in-house mesher (beta without Geometry AI)."
+        ),
+    )
 
 
 class NewSurfaceMeshDependencyRequest(Flow360RequestsV2):

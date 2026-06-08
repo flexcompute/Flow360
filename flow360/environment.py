@@ -73,7 +73,7 @@ class EnvironmentConfig(BaseModel):
         :param path:
         :return:
         """
-        return self.web_api_endpoint.rstrip("/") + "/" + path.lstrip("/")
+        return "/".join([self.web_api_endpoint, path])
 
     def get_portal_real_url(self, path: str):
         """
@@ -81,7 +81,7 @@ class EnvironmentConfig(BaseModel):
         :param path:
         :return:
         """
-        return self.portal_web_api_endpoint.rstrip("/") + "/" + path.lstrip("/")
+        return "/".join([self.portal_web_api_endpoint, path])
 
     def get_web_real_url(self, path: str):
         """
@@ -89,7 +89,7 @@ class EnvironmentConfig(BaseModel):
         :param path:
         :return:
         """
-        return self.web_url.rstrip("/") + "/" + path.lstrip("/")
+        return "/".join([self.web_url, path])
 
     @classmethod
     def from_config(cls, env_config_name: str):

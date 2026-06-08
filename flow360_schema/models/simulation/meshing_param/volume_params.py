@@ -615,7 +615,9 @@ class _FarfieldBase(Flow360BaseModel):
     @classmethod
     def _validate_domain_type_bbox(cls, value):
         """
-        Ensure that when domain_type is used, the model actually spans across Y=0.
+        Validate `domain_type` against the geometry bounding box. Raise if the geometry
+        sits entirely on the side opposite to the requested half-body. Warn on full-body
+        geometries if the wrong-side overhang is much smaller than the right-side extent.
         """
         validation_info = get_validation_info()
         if validation_info is None:
@@ -631,25 +633,33 @@ class _FarfieldBase(Flow360BaseModel):
         y_min = validation_info.global_bounding_box[0][1]
         y_max = validation_info.global_bounding_box[1][1]
 
-        _, tolerance = compute_bbox_tolerance(
+        largest_dimension, tolerance = compute_bbox_tolerance(
             validation_info.global_bounding_box, validation_info.planar_face_tolerance
         )
 
         # Check if model crosses Y=0
         crossing = y_min < -tolerance and y_max > tolerance
         if crossing:
+            # Warn if user might want a half-body case instead. Uses global geo acc for simplicity
+            wrong_side_overhang = y_max if value == "half_body_negative_y" else -y_min
+            if (
+                validation_info.geometry_accuracy is not None
+                and validation_info.project_length_unit is not None
+                and wrong_side_overhang * validation_info.project_length_unit < 4 * validation_info.geometry_accuracy
+            ):
+                # planar_face_tolerance is unitless and scaled by largest_dimension
+                suggested_tol = wrong_side_overhang / largest_dimension
+                add_validation_warning(
+                    f"Geometry crosses Y=0 by {wrong_side_overhang:.2g} on the opposite side of `{value}`. "
+                    "The mesher might be unable to generate the symmetry plane properly. "
+                    f"Consider setting `planar_face_tolerance` to just above {suggested_tol:.2g}."
+                )
             return value
-
         # If not crossing, check if it matches the requested domain
-        if value == "half_body_positive_y":
-            # Should be on positive side (y > 0)
-            if y_min >= -tolerance:
-                return value
-
-        if value == "half_body_negative_y":
-            # Should be on negative side (y < 0)
-            if y_max <= tolerance:
-                return value
+        if value == "half_body_positive_y" and y_min >= -tolerance:
+            return value
+        if value == "half_body_negative_y" and y_max <= tolerance:
+            return value
 
         message = (
             f"The model does not cross the symmetry plane (Y=0) with tolerance {tolerance:.2g}. "

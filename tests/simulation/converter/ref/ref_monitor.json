@@ -209,7 +209,6 @@
         }
     ],
     "private_attribute_asset_cache": {
-        "cad_importer_version": "v1",
         "use_geometry_AI": false,
         "use_inhouse_mesher": false
     },

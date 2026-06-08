@@ -972,6 +972,22 @@ def _to_25_10_15(params_as_dict):
     return params_as_dict
 
 
+def _to_25_10_16(params_as_dict):
+    """Backfill ``cad_importer_version`` on geometry-workflow asset caches.
+
+    The field was introduced after 25.10.15 with no default. Geometry projects
+    persisted before it must read as the original "v1" engine; non-geometry
+    workflows leave it unset (irrelevant)."""
+    asset_cache = params_as_dict.get("private_attribute_asset_cache")
+    if not asset_cache:
+        return params_as_dict
+    entity_info = asset_cache.get("project_entity_info")
+    if entity_info and entity_info.get("type_name") == "GeometryEntityInfo":
+        if asset_cache.get("cad_importer_version") is None:
+            asset_cache["cad_importer_version"] = "v1"
+    return params_as_dict
+
+
 VERSION_MILESTONES = [
     (Flow360Version("24.11.1"), _to_24_11_1),
     (Flow360Version("24.11.7"), _to_24_11_7),
@@ -1001,6 +1017,7 @@ VERSION_MILESTONES = [
     (Flow360Version("25.10.13"), _to_25_10_13),
     (Flow360Version("25.10.14"), _to_25_10_14),
     (Flow360Version("25.10.15"), _to_25_10_15),
+    (Flow360Version("25.10.16"), _to_25_10_16),
 ]  # A list of the Python API version tuple with their corresponding updaters.
 
 

@@ -91,8 +91,7 @@ class CoordinateSystemStatus(Flow360BaseModel):
         for coordinate_system in self.coordinate_systems:
             if coordinate_system.private_attribute_id in seen_ids:
                 raise ValueError(
-                    "[Internal] Duplicate coordinate system id "
-                    f"'{coordinate_system.private_attribute_id}' in status."
+                    f"[Internal] Duplicate coordinate system id '{coordinate_system.private_attribute_id}' in status."
                 )
             if coordinate_system.name in seen_names:
                 raise ValueError(f"[Internal] Duplicate coordinate system name '{coordinate_system.name}' in status.")
@@ -115,30 +114,16 @@ class AssetCache(Flow360BaseModel):
         description="Flag whether user requested the use of inhouse surface and volume mesher.",
     )
     use_geometry_AI: bool = pd.Field(False, description="Flag whether user requested the use of GAI.")
-    # FXC-3289: which CAD Importer version the producer ran for this project.
-    # The CAD Importer is the producer-side pipeline that turns user CAD into the
-    # face/edge partition the mesher consumes.
-    #   - "v1" (default, HOOPS -> EGADS): HOOPS reads the CAD and convertSTEPToEGADS
-    #     healing produces the EGADS face partition; CADToGeometry
-    #     --legacy-compatibility then emits indexed legacy ids. Compatible with all
-    #     meshers (legacy surface mesher, beta in-house mesher, Geometry AI).
-    #   - "v2" (HOOPS only): convertSTEPToEGADS is skipped; CADToGeometry
-    #     --legacy-compatibility owns the face partition directly via HOOPS' native
-    #     BREP analysis and re-exports STEP with the indexed legacy ids stamped as
-    #     Name attributes. Currently compatible only with the legacy surface mesher
-    #     -- the beta in-house mesher and Geometry AI both need the v1 .egads file.
-    #
-    # Frozen at geometry upload; immutable for the project lifetime. Choice is
-    # per-CAD-file -- there is no across-the-board "better" engine; try v2 when v1
-    # doesn't handle a particular file, and vice versa.
-    cad_importer_version: Literal["v1", "v2"] = pd.Field(
-        "v1",
+    cad_importer_version: Literal["v1", "v2"] | None = pd.Field(
+        None,
         frozen=True,
         description=(
             "CAD Importer version frozen at geometry upload. "
             "'v1' (default) is compatible with all surface meshers; "
-            "'v2' is an alternative BRep importer that currently supports "
-            "only the legacy surface mesher."
+            "'v2' is an alternative BRep importer compatible with the default "
+            "surface mesher and Geometry AI, but not the standalone beta "
+            "in-house mesher (beta without Geometry AI). "
+            "None -> Irrelevant (non geometry workflow)"
         ),
     )
     variable_context: VariableContextList | None = pd.Field(
@@ -167,32 +152,6 @@ class AssetCache(Flow360BaseModel):
         if self.project_entity_info is None:
             return None
         return self.project_entity_info.get_boundaries()
-
-    @pd.model_validator(mode="after")
-    def _validate_cad_importer_mesher_compatibility(self) -> "AssetCache":
-        """
-        FXC-3289: CAD Importer v2 (HOOPS only) produces a HOOPS-native face
-        partition fed to Pointwise as a STEP -- it never emits the .egads file
-        v1 produces. The beta in-house mesher (`use_inhouse_mesher`) and Geometry
-        AI (`use_geometry_AI`) both require the v1 EGADS face partition and would
-        crash mid-run when no .egads is available. Reject the combination up
-        front with a clear error instead of letting the surface mesh job launch
-        and fail.
-        """
-        if self.cad_importer_version != "v2":
-            return self
-        if self.use_inhouse_mesher or self.use_geometry_AI:
-            blockers = []
-            if self.use_inhouse_mesher:
-                blockers.append("Beta mesher")
-            if self.use_geometry_AI:
-                blockers.append("Geometry AI")
-            verb = "require" if len(blockers) > 1 else "requires"
-            raise ValueError(
-                f"{' and '.join(blockers)} {verb} CAD Importer V1. "
-                "Re-upload this project with CAD Importer V1 to enable."
-            )
-        return self
 
     @pd.model_validator(mode="after")
     def _validate_mirror_status_compatible_with_geometry(self) -> "AssetCache":
