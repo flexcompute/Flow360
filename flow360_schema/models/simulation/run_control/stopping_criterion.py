@@ -43,6 +43,7 @@ class StoppingCriterion(Flow360BaseModel):
     """
 
     :class:`StoppingCriterion` class for :py:attr:`RunControl.stopping_criteria` settings.
+    For general overview of run control see :ref:`Run Control <runControl>`.
 
     .. note::
 

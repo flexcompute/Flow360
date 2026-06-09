@@ -13,15 +13,12 @@
             "material": {
                 "dynamic_viscosity": {
                     "effective_temperature": {
-                        "units": "K",
                         "value": 110.4
                     },
                     "reference_temperature": {
-                        "units": "K",
                         "value": 273.15
                     },
                     "reference_viscosity": {
-                        "units": "Pa*s",
                         "value": 1.716e-05
                     }
                 },
@@ -47,11 +44,9 @@
                                             0.0
                                         ],
                                         "temperature_range_max": {
-                                            "units": "K",
                                             "value": 6000.0
                                         },
                                         "temperature_range_min": {
-                                            "units": "K",
                                             "value": 200.0
                                         },
                                         "type_name": "NASA9CoefficientSet"
@@ -132,40 +127,36 @@
     ],
     "operating_condition": {
         "alpha": {
-            "units": "degree",
+            "display_unit": "degree",
             "value": 0.0
         },
         "beta": {
-            "units": "degree",
+            "display_unit": "degree",
             "value": 0.0
         },
         "private_attribute_constructor": "default",
         "private_attribute_input_cache": {
             "alpha": {
-                "units": "degree",
+                "display_unit": "degree",
                 "value": 0.0
             },
             "beta": {
-                "units": "degree",
+                "display_unit": "degree",
                 "value": 0.0
             },
             "thermal_state": {
                 "density": {
-                    "units": "kg/m**3",
                     "value": 1.225
                 },
                 "material": {
                     "dynamic_viscosity": {
                         "effective_temperature": {
-                            "units": "K",
                             "value": 110.4
                         },
                         "reference_temperature": {
-                            "units": "K",
                             "value": 273.15
                         },
                         "reference_viscosity": {
-                            "units": "Pa*s",
                             "value": 1.716e-05
                         }
                     },
@@ -191,11 +182,9 @@
                                                 0.0
                                             ],
                                             "temperature_range_max": {
-                                                "units": "K",
                                                 "value": 6000.0
                                             },
                                             "temperature_range_min": {
-                                                "units": "K",
                                                 "value": 200.0
                                             },
                                             "type_name": "NASA9CoefficientSet"
@@ -214,33 +203,27 @@
                 "private_attribute_constructor": "default",
                 "private_attribute_input_cache": {},
                 "temperature": {
-                    "units": "K",
                     "value": 288.15
                 },
                 "type_name": "ThermalState"
             }
         },
         "reference_velocity_magnitude": {
-            "units": "m/s",
             "value": 10.0
         },
         "thermal_state": {
             "density": {
-                "units": "kg/m**3",
                 "value": 1.225
             },
             "material": {
                 "dynamic_viscosity": {
                     "effective_temperature": {
-                        "units": "K",
                         "value": 110.4
                     },
                     "reference_temperature": {
-                        "units": "K",
                         "value": 273.15
                     },
                     "reference_viscosity": {
-                        "units": "Pa*s",
                         "value": 1.716e-05
                     }
                 },
@@ -266,11 +249,9 @@
                                             0.0
                                         ],
                                         "temperature_range_max": {
-                                            "units": "K",
                                             "value": 6000.0
                                         },
                                         "temperature_range_min": {
-                                            "units": "K",
                                             "value": 200.0
                                         },
                                         "type_name": "NASA9CoefficientSet"
@@ -289,7 +270,6 @@
             "private_attribute_constructor": "default",
             "private_attribute_input_cache": {},
             "temperature": {
-                "units": "K",
                 "value": 288.15
             },
             "type_name": "ThermalState"
@@ -332,7 +312,6 @@
                 "stored_entities": [
                     {
                         "location": {
-                            "units": "m",
                             "value": [
                                 1.0,
                                 2.0,
@@ -424,5 +403,5 @@
         "name": "SI"
     },
     "user_defined_fields": [],
-    "version": "25.10.15b1"
+    "version": "25.11.0b1"
 }

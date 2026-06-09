@@ -27,7 +27,6 @@ def test_environment_config_active_sets_current(monkeypatch):
         web_api_endpoint="https://api.example.test",
         web_url="https://web.example.test",
         portal_web_api_endpoint="https://portal-api.example.test",
-        apikey_profile="custom",
     )
 
     environment.active()
@@ -42,7 +41,6 @@ def test_current_environment_returns_active_environment(monkeypatch):
         web_api_endpoint="https://api.example.test",
         web_url="https://web.example.test",
         portal_web_api_endpoint="https://portal-api.example.test",
-        apikey_profile="provider",
     )
 
     monkeypatch.setattr(Env, "_current", Env.dev)
@@ -59,7 +57,6 @@ def test_environment_urls_normalize_path_slashes():
         web_api_endpoint="https://api.example.test/",
         web_url="https://web.example.test/",
         portal_web_api_endpoint="https://portal-api.example.test/",
-        apikey_profile="provider",
     )
 
     for path in ("v2/folders", "/v2/folders"):

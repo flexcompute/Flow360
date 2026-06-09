@@ -91,8 +91,7 @@ class CoordinateSystemStatus(Flow360BaseModel):
         for coordinate_system in self.coordinate_systems:
             if coordinate_system.private_attribute_id in seen_ids:
                 raise ValueError(
-                    "[Internal] Duplicate coordinate system id "
-                    f"'{coordinate_system.private_attribute_id}' in status."
+                    f"[Internal] Duplicate coordinate system id '{coordinate_system.private_attribute_id}' in status."
                 )
             if coordinate_system.name in seen_names:
                 raise ValueError(f"[Internal] Duplicate coordinate system name '{coordinate_system.name}' in status.")
@@ -171,26 +170,26 @@ class AssetCache(Flow360BaseModel):
     @pd.model_validator(mode="after")
     def _validate_cad_importer_mesher_compatibility(self) -> "AssetCache":
         """
-        FXC-3289: CAD Importer v2 (HOOPS only) produces a HOOPS-native face
-        partition fed to Pointwise as a STEP -- it never emits the .egads file
-        v1 produces. The beta in-house mesher (`use_inhouse_mesher`) and Geometry
-        AI (`use_geometry_AI`) both require the v1 EGADS face partition and would
-        crash mid-run when no .egads is available. Reject the combination up
-        front with a clear error instead of letting the surface mesh job launch
-        and fail.
+        CAD Importer v2 (HOOPS only) produces a HOOPS-native face partition and
+        never emits the .egads file v1 produces.
+
+        The beta in-house *surface* mesher on its own (`use_inhouse_mesher`
+        without Geometry AI) reads that EGADS face partition directly and would
+        crash mid-run when no .egads is available, so it stays incompatible with
+        v2.
+
+        Geometry AI (`use_geometry_AI`) is supported on v2 -- including when the
+        beta mesher flag is also set, which is the usual GAI configuration. The
+        GAI surface mesher re-tessellates the stamped v2 STEP through the HOOPS
+        importer (Surf360 --useHOOPS), which supplies the face partition in place
+        of the EGADS one, with the legacy STEP-"Name" ids matching
+        project_entity_info.
         """
         if self.cad_importer_version != "v2":
             return self
-        if self.use_inhouse_mesher or self.use_geometry_AI:
-            blockers = []
-            if self.use_inhouse_mesher:
-                blockers.append("Beta mesher")
-            if self.use_geometry_AI:
-                blockers.append("Geometry AI")
-            verb = "require" if len(blockers) > 1 else "requires"
+        if self.use_inhouse_mesher and not self.use_geometry_AI:
             raise ValueError(
-                f"{' and '.join(blockers)} {verb} CAD Importer V1. "
-                "Re-upload this project with CAD Importer V1 to enable."
+                "Beta mesher requires CAD Importer V1. Re-upload this project with CAD Importer V1 to enable."
             )
         return self
 

@@ -493,12 +493,12 @@ class SurfaceOutput(_AnimationAndFileFormatSettings, _OutputBase):
     )
     output_type: Literal["SurfaceOutput"] = pd.Field("SurfaceOutput", frozen=True)
 
-    # Highest patch within current minor so the validator survives 25.10.x
-    # patches but raises on the 25.11.0 bump — match _expand_legacy_pair_input
-    # in surface_models.py.
+    # Survives every 25.x release (including the 25.11.0 bump) and only raises
+    # at 26.0.0 — this schema is slated for removal in 26. Match
+    # _expand_legacy_pair_input in surface_models.py.
     @pd.field_validator("name", mode="before")
     @classmethod
-    @deprecation_reminder("25.10.999")
+    @deprecation_reminder("25.99.99")
     def _coerce_null_name(cls, v):
         """Accept null/None from legacy serialized params and replace with the default.
 

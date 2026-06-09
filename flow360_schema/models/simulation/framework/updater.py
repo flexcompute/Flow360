@@ -972,6 +972,85 @@ def _to_25_10_15(params_as_dict):
     return params_as_dict
 
 
+def _legacy_unit_dict_to_display_unit_dict(legacy: dict) -> dict:
+    """Convert a legacy ``{"value": ..., "units": ...}`` dict to the new
+    ``{"value": <SI>, "display_unit": <DSL>}`` shape, omitting ``display_unit``
+    when ``units`` is semantically the SI base unit.
+
+    Assumes the legacy dict's dimension is correct (legacy data went through
+    legacy-schema validation that caught wrong-dimension inputs).
+    """
+    from flow360_schema.framework.physical_dimensions.unyt_utils import (
+        units_semantically_equivalent,
+        unyt_to_dsl_unit,
+    )
+    from unyt import unyt_array, unyt_quantity
+
+    raw = legacy["value"]
+    units_str = legacy["units"]
+
+    if isinstance(raw, (list, tuple)):
+        q = unyt_array(raw, units_str)
+    else:
+        q = unyt_quantity(raw, units_str)
+
+    q_si = q.in_base("mks")
+    si_value = q_si.value.item() if q_si.shape == () else q_si.value.tolist()
+
+    if units_semantically_equivalent(q.units, q_si.units):
+        return {"value": si_value}
+    return {"value": si_value, "display_unit": unyt_to_dsl_unit(units_str)}
+
+
+def _is_legacy_unit_dict(value) -> bool:
+    """Strictly detect a legacy ``{"value": ..., "units": ...}`` dict.
+
+    The dict must have *exactly* the keys ``value`` and ``units``,
+    ``units`` must be a string and ``value`` must be a number / list / tuple.
+    This avoids touching shapes that happen to share both keys (e.g.
+    ``SerializedValueOrExpression`` carries a ``type_name`` discriminator).
+    """
+    return (
+        isinstance(value, dict)
+        and set(value.keys()) == {"value", "units"}
+        and isinstance(value["units"], str)
+        and isinstance(value["value"], (int, float, list, tuple))
+    )
+
+
+def _convert_legacy_unit_dicts_in_place(node):
+    """Recursively walk ``node`` and replace legacy unit dicts at their parent
+    slot in-place.
+
+    Crucially, this function does NOT rebuild dicts/lists — every parent dict
+    or list keeps its original Python object identity. ``validate_model``'s
+    downstream ``materialize_entities_and_selectors_in_place`` relies on this:
+    its side-effect mutations (entity dicts -> entity instances) must be
+    visible through the caller's dict reference.
+    """
+    if isinstance(node, dict):
+        for key, value in node.items():
+            if _is_legacy_unit_dict(value):
+                node[key] = _legacy_unit_dict_to_display_unit_dict(value)
+            else:
+                _convert_legacy_unit_dicts_in_place(value)
+    elif isinstance(node, list):
+        for idx, item in enumerate(node):
+            if _is_legacy_unit_dict(item):
+                node[idx] = _legacy_unit_dict_to_display_unit_dict(item)
+            else:
+                _convert_legacy_unit_dicts_in_place(item)
+
+
+def _to_25_11_0(params_as_dict):
+    """Migrate legacy ``{value, units}`` dicts to the ``{value, display_unit}``
+    wire format. Registered at 25.11.0, the release that re-activates the
+    display_unit wire format, so any file persisted in the interim
+    ``{value, units}`` shape is normalized on load."""
+    _convert_legacy_unit_dicts_in_place(params_as_dict)
+    return params_as_dict
+
+
 VERSION_MILESTONES = [
     (Flow360Version("24.11.1"), _to_24_11_1),
     (Flow360Version("24.11.7"), _to_24_11_7),
@@ -1001,6 +1080,7 @@ VERSION_MILESTONES = [
     (Flow360Version("25.10.13"), _to_25_10_13),
     (Flow360Version("25.10.14"), _to_25_10_14),
     (Flow360Version("25.10.15"), _to_25_10_15),
+    (Flow360Version("25.11.0"), _to_25_11_0),
 ]  # A list of the Python API version tuple with their corresponding updaters.
 
 

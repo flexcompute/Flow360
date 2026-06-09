@@ -97,6 +97,11 @@ class HeatFlux(SingleAttributeModel):
     :class:`HeatFlux` class to specify the heat flux for `Wall` boundary condition
     via :py:attr:`Wall.heat_spec`.
 
+    A positive heat flux removes energy from the fluid (heat flows from the fluid
+    into the wall, cooling the fluid); a negative heat flux adds energy to the fluid
+    (heat flows from the wall into the fluid, heating it). A value of ``0`` corresponds
+    to an adiabatic wall.
+
     Example
     -------
 
@@ -106,7 +111,9 @@ class HeatFlux(SingleAttributeModel):
     """
 
     type_name: Literal["HeatFlux"] = pd.Field("HeatFlux", frozen=True)
-    value: StringExpression | HeatFluxDim.Float64 = pd.Field(description="The heat flux value.")
+    value: StringExpression | HeatFluxDim.Float64 = pd.Field(
+        description="The heat flux value. A positive value cools the fluid; a negative value heats it.",
+    )
 
 
 class Temperature(SingleAttributeModel):
@@ -874,11 +881,11 @@ class PorousJump(Flow360BaseModel):
     thickness: Length.Float64 = pd.Field(description="Thickness of the thin porous media on the surface")
     private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
 
-    # Target version is the highest patch within the current minor so the
-    # validator survives any 25.10.x patch but raises on the 25.11.0 bump.
+    # Survives every 25.x release (including the 25.11.0 bump) and only raises
+    # at 26.0.0 — this schema is slated for removal in 26.
     @pd.model_validator(mode="before")
     @classmethod
-    @deprecation_reminder("25.10.999")
+    @deprecation_reminder("25.99.99")
     def _expand_legacy_pair_input(cls, data):
         """Rewrite legacy ``surface_pairs`` / ``entity_pairs`` input into the
         canonical flat ``surfaces`` form. Mutual exclusion with ``surfaces``

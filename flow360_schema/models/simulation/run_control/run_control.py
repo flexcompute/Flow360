@@ -11,6 +11,7 @@ from flow360_schema.models.simulation.run_control.stopping_criterion import Stop
 class RunControl(Flow360BaseModel):
     """
     :class:`RunControl` class for run control settings.
+    For general overview of run control see :ref:`Run Control <runControl>`.
 
     Example
     -------

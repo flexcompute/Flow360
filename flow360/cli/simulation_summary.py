@@ -156,7 +156,7 @@ def _project_length_unit(params_dict):
         "project_length_unit"
     )
     if isinstance(project_length_unit, dict):
-        return project_length_unit.get("units") or "m"
+        return project_length_unit.get("display_unit") or "m"
     return "m"
 
 
@@ -349,7 +349,7 @@ def _set_path(value, path, replacement):
         target[final_key] = replacement
 
 
-def _prune_defaults(  # pylint: disable=too-many-return-statements
+def _prune_defaults(  # pylint: disable=too-many-return-statements,too-many-branches
     display_value,
     normalized_value,
     default_value,
@@ -364,11 +364,28 @@ def _prune_defaults(  # pylint: disable=too-many-return-statements
             return _type_marker(display_value)
         return None
 
-    # Wire-format dicts are atomic: pruning `units` while keeping `value`
-    # would produce an unloadable payload because the active wire format
-    # requires both keys.
-    if isinstance(display_value, dict) and set(display_value.keys()) == {"value", "units"}:
-        return display_value
+    # A dimensioned wire-format dict — {value, units?} (legacy/interim) or
+    # {value, display_unit?} (current) — is pruned as a unit: `value` is
+    # required, so we must not recurse per-key (which could drop `value` while
+    # keeping a lone unit key, emitting an incomplete/misleading fragment).
+    # The summary's display dict is the raw input, so an unmigrated {value,
+    # units} payload can reach here. We only get here when the field differs
+    # from its default, so keep `value`; keep the optional unit key only when
+    # it differs from the default's.
+    if (
+        isinstance(display_value, dict)
+        and "value" in display_value
+        and set(display_value) <= {"value", "units", "display_unit"}
+    ):
+        pruned = OrderedDict([("value", display_value["value"])])
+        for unit_key in ("units", "display_unit"):
+            unit_value = display_value.get(unit_key)
+            default_unit_value = (
+                default_value.get(unit_key) if isinstance(default_value, dict) else None
+            )
+            if unit_value is not None and unit_value != default_unit_value:
+                pruned[unit_key] = unit_value
+        return pruned
 
     if (
         isinstance(display_value, dict)

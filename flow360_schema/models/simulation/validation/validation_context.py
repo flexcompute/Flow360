@@ -116,6 +116,7 @@ class ParamsValidationInfo:
         "project_length_unit",
         "global_bounding_box",
         "planar_face_tolerance",
+        "geometry_accuracy",
         "output_dict",
         "physics_model_dict",
         "half_model_symmetry_plane_center_y",
@@ -253,6 +254,14 @@ class ParamsValidationInfo:
                     param_as_dict, ["meshing", "volume_meshing", "planar_face_tolerance"]
                 )
         return planar_face_tolerance
+
+    @classmethod
+    def _get_geometry_accuracy(cls, param_as_dict: dict):
+        raw = get_value_with_path(param_as_dict, ["meshing", "defaults", "geometry_accuracy"])
+        if raw is None:
+            return None
+        with DeserializationContext():
+            return TypeAdapter(Length.PositiveFloat64).validate_python(raw)
 
     @classmethod
     def _get_root_asset_type(cls, param_as_dict: dict):
@@ -416,6 +425,7 @@ class ParamsValidationInfo:
         self.project_length_unit = self._get_project_length_unit_(param_as_dict=param_as_dict)
         self.global_bounding_box = self._get_global_bounding_box(param_as_dict=param_as_dict)
         self.planar_face_tolerance = self._get_planar_face_tolerance(param_as_dict=param_as_dict)
+        self.geometry_accuracy = self._get_geometry_accuracy(param_as_dict=param_as_dict)
         self.output_dict = None
         self.physics_model_dict = None
         self.half_model_symmetry_plane_center_y = self._get_half_model_symmetry_plane_center_y(

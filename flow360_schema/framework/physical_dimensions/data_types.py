@@ -39,7 +39,7 @@ from .validators import (
     vector2_shape,
     vector3_shape,
 )
-from .wire_format_units import generate_array_schema, generate_schema
+from .wire_format_display_unit import generate_array_schema, generate_schema
 
 
 class ShapeType(Enum):

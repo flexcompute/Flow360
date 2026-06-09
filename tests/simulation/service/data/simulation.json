@@ -3,12 +3,12 @@
         "defaults": {
             "boundary_layer_growth_rate": 1.2,
             "curvature_resolution_angle": {
-                "units": "degree",
-                "value": 12.000000000000002
+                "display_unit": "degree",
+                "value": 0.2094395102393196
             },
             "planar_face_tolerance": 1e-06,
             "sealing_size": {
-                "units": "cm",
+                "display_unit": "cm",
                 "value": 0.0
             },
             "surface_edge_growth_rate": 1.2
@@ -39,16 +39,14 @@
             "material": {
                 "dynamic_viscosity": {
                     "effective_temperature": {
-                        "units": "K",
                         "value": 110.39999999999998
                     },
                     "reference_temperature": {
-                        "units": "K",
                         "value": 273.15
                     },
                     "reference_viscosity": {
-                        "units": "dyn*s/cm**2",
-                        "value": 0.00017160000000000002
+                        "display_unit": "dyn*s/cm^2",
+                        "value": 1.7160000000000002e-05
                     }
                 },
                 "name": "air",
@@ -275,14 +273,14 @@
             "heat_spec": {
                 "type_name": "HeatFlux",
                 "value": {
-                    "units": "g/s**3",
+                    "display_unit": "g/s^3",
                     "value": 0.0
                 }
             },
             "name": "Wall",
             "private_attribute_id": "404d9692-d56d-4ae1-a26f-17777cf0ec58",
             "roughness_height": {
-                "units": "cm",
+                "display_unit": "cm",
                 "value": 0.0
             },
             "type": "Wall"
@@ -305,45 +303,42 @@
     ],
     "operating_condition": {
         "alpha": {
-            "units": "degree",
+            "display_unit": "degree",
             "value": 0.0
         },
         "beta": {
-            "units": "degree",
+            "display_unit": "degree",
             "value": 0.0
         },
         "private_attribute_constructor": "default",
         "private_attribute_input_cache": {
             "alpha": {
-                "units": "degree",
+                "display_unit": "degree",
                 "value": 0.0
             },
             "beta": {
-                "units": "degree",
+                "display_unit": "degree",
                 "value": 0.0
             },
             "temperature": {
-                "units": "K",
                 "value": 288.15
             },
             "thermal_state": {
                 "density": {
-                    "units": "g/cm**3",
-                    "value": 0.0012250000000000002
+                    "display_unit": "g/cm^3",
+                    "value": 1.225
                 },
                 "private_attribute_constructor": "default",
                 "private_attribute_input_cache": {
                     "altitude": {
-                        "units": "cm",
+                        "display_unit": "cm",
                         "value": 0.0
                     },
                     "temperature_offset": {
-                        "units": "K",
                         "value": 0.0
                     }
                 },
                 "temperature": {
-                    "units": "K",
                     "value": 288.15
                 },
                 "type_name": "ThermalState"
@@ -351,12 +346,11 @@
         },
         "thermal_state": {
             "density": {
-                "units": "g/cm**3",
-                "value": 0.0012250000000000002
+                "display_unit": "g/cm^3",
+                "value": 1.225
             },
             "private_attribute_constructor": "default",
             "temperature": {
-                "units": "K",
                 "value": 288.15
             },
             "type_name": "ThermalState"
@@ -700,7 +694,6 @@
                         1
                     ],
                     "center": {
-                        "units": "m",
                         "value": [
                             0.0,
                             0.0,
@@ -712,28 +705,24 @@
                     "private_attribute_id": "48ff9fab-afbd-4957-b5d3-3c52e7ab2fae",
                     "profile_curve": [
                         {
-                            "units": "m",
                             "value": [
                                 -1.0,
                                 0.0
                             ]
                         },
                         {
-                            "units": "m",
                             "value": [
                                 -1.0,
                                 1.0
                             ]
                         },
                         {
-                            "units": "m",
                             "value": [
                                 1.0,
                                 2.0
                             ]
                         },
                         {
-                            "units": "m",
                             "value": [
                                 1.0,
                                 0.0
@@ -869,7 +858,6 @@
             "type_name": "SurfaceMeshEntityInfo"
         },
         "project_length_unit": {
-            "units": "m",
             "value": 1.0
         },
         "use_inhouse_mesher": true,
@@ -943,7 +931,7 @@
             "value": 1
         },
         "moment_center": {
-            "units": "cm",
+            "display_unit": "cm",
             "value": [
                 0.0,
                 0.0,
@@ -951,11 +939,11 @@
             ]
         },
         "moment_length": {
-            "units": "cm",
+            "display_unit": "cm",
             "value": [
-                99.99999999999999,
-                99.99999999999999,
-                99.99999999999999
+                0.9999999999999999,
+                0.9999999999999999,
+                0.9999999999999999
             ]
         }
     },

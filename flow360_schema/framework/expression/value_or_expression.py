@@ -31,7 +31,7 @@ from flow360_schema.framework.expression.variable import (
     Variable,
     _check_list_items_are_same_dimensions,
 )
-from flow360_schema.framework.physical_dimensions.wire_format_units import is_format_dict
+from flow360_schema.framework.physical_dimensions.wire_format_display_unit import is_format_dict
 from flow360_schema.framework.validation.context import StrictUnitContext, unit_system_manager
 
 T = TypeVar("T")

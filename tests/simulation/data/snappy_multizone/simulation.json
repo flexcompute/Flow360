@@ -27,8 +27,8 @@
                 "radiator-test.stl"
             ],
             "default_geometry_accuracy": {
-                "units": "mm",
-                "value": 0.1
+                "display_unit": "mm",
+                "value": 0.0001
             },
             "draft_entities": [],
             "edge_attribute_names": [],
@@ -505,8 +505,8 @@
             "type_name": "GeometryEntityInfo"
         },
         "project_length_unit": {
-            "units": "mm",
-            "value": 1.0
+            "display_unit": "mm",
+            "value": 0.001
         },
         "use_geometry_AI": false,
         "use_inhouse_mesher": true,

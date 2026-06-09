@@ -574,11 +574,11 @@ class SeedpointVolume(_VolumeEntityBase):
 
     @pd.field_validator("point_in_mesh", mode="before")
     @classmethod
-    @deprecation_reminder("25.11.0")  # type: ignore[untyped-decorator]
+    @deprecation_reminder("25.99.99")  # type: ignore[untyped-decorator]
     def _normalize_point_in_mesh(cls, value: Any) -> Any:
         """Accept a legacy single `[x, y, z]` point and wrap it as `[[x, y, z]]`.
 
-        Slated for removal in 25.11 once the updater (added in 25.10.13) has
+        Slated for removal in 26 once the updater (added in 25.10.13) has
         migrated all stored configurations to the list-of-points form.
         """
         try:
@@ -587,7 +587,7 @@ class SeedpointVolume(_VolumeEntityBase):
             return value
         logger.warning(
             "SeedpointVolume.point_in_mesh as a single `[x, y, z]` is deprecated and "
-            "will be removed in 25.11. Use `[[x, y, z], ...]` instead."
+            "will be removed in 26. Use `[[x, y, z], ...]` instead."
         )
         return [single_point]
 

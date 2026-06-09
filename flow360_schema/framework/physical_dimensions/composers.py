@@ -25,7 +25,7 @@ from .data_types import DataTypeDescriptor
 from .dimension_meta import PhysicalDimensionMeta
 from .unyt_utils import is_unyt_quantity
 from .unyt_utils import is_zero_value as _is_zero_value
-from .wire_format_units import is_format_dict, parse_format_dict, serialize_to_dict
+from .wire_format_display_unit import is_format_dict, parse_format_dict, serialize_to_dict
 
 ValidationValueHook = Callable[[Any, PhysicalDimensionMeta, DataTypeDescriptor], Any]
 

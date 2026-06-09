@@ -13,15 +13,12 @@
             "material": {
                 "dynamic_viscosity": {
                     "effective_temperature": {
-                        "units": "K",
                         "value": 110.4
                     },
                     "reference_temperature": {
-                        "units": "K",
                         "value": 273.15
                     },
                     "reference_viscosity": {
-                        "units": "Pa*s",
                         "value": 1.716e-05
                     }
                 },
@@ -47,11 +44,9 @@
                                             0.0
                                         ],
                                         "temperature_range_max": {
-                                            "units": "K",
                                             "value": 6000.0
                                         },
                                         "temperature_range_min": {
-                                            "units": "K",
                                             "value": 200.0
                                         },
                                         "type_name": "NASA9CoefficientSet"
@@ -136,7 +131,6 @@
                 "stored_entities": [
                     {
                         "location": {
-                            "units": "m",
                             "value": [
                                 2.694298,
                                 0.0,
@@ -162,7 +156,6 @@
                 "stored_entities": [
                     {
                         "location": {
-                            "units": "m",
                             "value": [
                                 4.007,
                                 0.0,
@@ -174,7 +167,6 @@
                     },
                     {
                         "location": {
-                            "units": "m",
                             "value": [
                                 4.007,
                                 0.0,
@@ -186,7 +178,6 @@
                     },
                     {
                         "location": {
-                            "units": "m",
                             "value": [
                                 4.007,
                                 0.0,

@@ -23,14 +23,13 @@ class EnvironmentConfig(BaseModel):
     domain: str
     web_api_endpoint: str
     web_url: str
-    apikey_profile: str
     portal_web_api_endpoint: Optional[str] = None
     s3_endpoint_url: Optional[str] = None
 
     model_config = ConfigDict(extra="ignore")
 
     @classmethod
-    def from_domain(cls, name, domain, apikey_profile="default", **kwargs) -> EnvironmentConfig:
+    def from_domain(cls, name, domain, **kwargs) -> EnvironmentConfig:
         """Create EnvironmentConfig using domain and populating to web_api_endpoint, web_url and portal_web_api_endpoint
 
         Parameters
@@ -39,8 +38,6 @@ class EnvironmentConfig(BaseModel):
             name, for example DEV
         domain : str
             domain, for example dev-simulation.cloud
-        apikey_profile : str, optional
-            profile to be used from flow360 config for apikey, by default 'default'
 
         Returns
         -------
@@ -56,7 +53,6 @@ class EnvironmentConfig(BaseModel):
             web_api_endpoint=f"https://flow360-api.{domain}",
             web_url=f"https://flow360.{domain}",
             portal_web_api_endpoint=f"https://portal-api.{domain}",
-            apikey_profile=apikey_profile,
         )
         return env
 
@@ -140,8 +136,8 @@ class EnvironmentConfig(BaseModel):
         log.info("Saved environment configuration to config.toml.")
 
 
-dev = EnvironmentConfig.from_domain(name="dev", domain="dev-simulation.cloud", apikey_profile="dev")
-uat = EnvironmentConfig.from_domain(name="uat", domain="uat-simulation.cloud", apikey_profile="uat")
+dev = EnvironmentConfig.from_domain(name="dev", domain="dev-simulation.cloud")
+uat = EnvironmentConfig.from_domain(name="uat", domain="uat-simulation.cloud")
 prod = EnvironmentConfig.from_domain(
     name="prod",
     domain="simulation.cloud",
@@ -153,7 +149,6 @@ preprod = EnvironmentConfig(
     web_api_endpoint="https://preprod-flow360-api.simulation.cloud",
     web_url="https://preprod-flow360.simulation.cloud",
     portal_web_api_endpoint="https://preprod-portal-api.simulation.cloud",
-    apikey_profile="default",
 )
 
 FLOW360_SKIP_VERSION_CHECK = True

@@ -44,7 +44,6 @@ def _environment(name, api_endpoint, portal_endpoint="https://portal.example.tes
         web_api_endpoint=api_endpoint,
         web_url="https://web.example.test",
         portal_web_api_endpoint=portal_endpoint,
-        apikey_profile="default",
     )
 
 
