@@ -18,8 +18,21 @@ from flow360_schema.framework.expression import (
     batch_get_user_variable_units,
     compute_surface_integral_unit,
 )
+<<<<<<< HEAD:flow360_schema/models/simulation/simulation_params.py
 from flow360_schema.framework.param_utils import (
     _set_boundary_full_name_with_zone_name,
+=======
+from flow360.component.simulation.framework.base_model import Flow360BaseModel
+from flow360.component.simulation.framework.boundary_split import (
+    BoundaryNameLookupTable,
+    post_process_rotation_volume_entities,
+    post_process_wall_models_for_rotating,
+    update_entities_in_model,
+)
+from flow360.component.simulation.framework.entity_registry import EntityRegistry
+from flow360.component.simulation.framework.param_utils import (
+    AssetCache,
+>>>>>>> a98aa028 ([FXC-8849] fix(simulation): stop prepending mock zone name to farfield ghost full_name (#2056)):flow360/component/simulation/simulation_params.py
     _update_entity_full_name,
     _update_zone_boundaries_with_metadata,
     register_entity_list,
@@ -54,6 +67,7 @@ from flow360_schema.models.simulation.meshing_param.params import (
     MeshingParams,
     ModularMeshingWorkflow,
 )
+<<<<<<< HEAD:flow360_schema/models/simulation/simulation_params.py
 from flow360_schema.models.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     RotationCylinder,
@@ -62,6 +76,10 @@ from flow360_schema.models.simulation.meshing_param.volume_params import (
 )
 from flow360_schema.models.simulation.models.surface_models import SurfaceModelTypes
 from flow360_schema.models.simulation.models.volume_models import (
+=======
+from flow360.component.simulation.models.surface_models import SurfaceModelTypes
+from flow360.component.simulation.models.volume_models import (
+>>>>>>> a98aa028 ([FXC-8849] fix(simulation): stop prepending mock zone name to farfield ghost full_name (#2056)):flow360/component/simulation/simulation_params.py
     ActuatorDisk,
     BETDisk,
     Fluid,
@@ -647,6 +665,7 @@ class SimulationParams(_ParamModelBase):
         register_entity_list(self, registry)
         return registry
 
+<<<<<<< HEAD:flow360_schema/models/simulation/simulation_params.py
     def _update_entity_private_attrs(self, registry: EntityRegistry) -> EntityRegistry:
         """
         Once the SimulationParams is set, extract and update information
@@ -676,6 +695,8 @@ class SimulationParams(_ParamModelBase):
 
         return registry
 
+=======
+>>>>>>> a98aa028 ([FXC-8849] fix(simulation): stop prepending mock zone name to farfield ghost full_name (#2056)):flow360/component/simulation/simulation_params.py
     @property
     def base_length(self) -> Length.Float64:
         """Get base length unit for non-dimensionalization"""
@@ -751,7 +772,6 @@ class SimulationParams(_ParamModelBase):
         """
         registry = EntityRegistry()
         registry = self._register_assigned_entities(registry)
-        registry = self._update_entity_private_attrs(registry)
         return registry
 
     def _update_param_with_actual_volume_mesh_meta(self, volume_mesh_meta_data: dict):
