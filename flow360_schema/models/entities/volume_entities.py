@@ -553,7 +553,9 @@ class CustomVolume(_VolumeEntityBase):
 class SeedpointVolume(_VolumeEntityBase):
     """
     Separate zone in the mesh, defined by one or more interior seed points.
-    To be used only with snappyHexMesh.
+    Supported with snappyHexMesh and with the Geometry AI workflow. snappyHexMesh
+    requires exactly one seed point per zone; the Geometry AI workflow accepts
+    several seed points per volume, which are flood-filled into a single zone.
     """
 
     private_attribute_entity_type_name: Literal["SeedpointVolume"] = pd.Field("SeedpointVolume", frozen=True)

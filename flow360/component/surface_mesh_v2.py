@@ -80,13 +80,21 @@ class SurfaceMeshMetaV2(AssetMetaBaseModelV2):
 
 class SurfaceMeshStats(pd.BaseModel):
     """
-    Surface mesh stats
+    Statistics describing the contents of a surface mesh.
     """
 
-    n_nodes: int = pd.Field(alias="nNodes")
-    n_triangles: int = pd.Field(alias="nTriangles")
-    n_quadrilaterals: int = pd.Field(alias="nQuadrilaterals")
-    version: Optional[str] = pd.Field(None)
+    n_nodes: int = pd.Field(
+        alias="nNodes", description="Total number of nodes (vertices) in the surface mesh."
+    )
+    n_triangles: int = pd.Field(
+        alias="nTriangles", description="Number of triangular surface elements."
+    )
+    n_quadrilaterals: int = pd.Field(
+        alias="nQuadrilaterals", description="Number of quadrilateral surface elements."
+    )
+    version: Optional[str] = pd.Field(
+        None, description="Version identifier of the statistics record, when available."
+    )
 
 
 class SurfaceMeshDraftV2(ResourceDraft):
@@ -379,12 +387,24 @@ class SurfaceMeshV2(AssetBase):
     @cached_property
     def stats(self) -> SurfaceMeshStats:
         """
-        Get surface mesh stats
+        Surface mesh statistics, including the node count and the number of
+        triangular and quadrilateral surface elements.
+
+        The statistics are fetched from the cloud the first time this property
+        is accessed and cached thereafter. The surface mesh must have finished
+        processing for the statistics to be available.
 
         Returns
         -------
         SurfaceMeshStats
-            return SurfaceMeshStats object
+            Object exposing ``n_nodes``, ``n_triangles``, ``n_quadrilaterals``
+            and ``version``.
+
+        Raises
+        ------
+        Flow360RuntimeError
+            If the statistics cannot be retrieved, for example when the surface
+            mesh is not ready yet.
         """
         try:
             # pylint: disable=protected-access

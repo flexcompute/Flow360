@@ -848,8 +848,8 @@ def _check_surface_output_naming(outputs, param_info: ParamsValidationInfo):
                 if output._has_default_name():
                     raise ValueError(
                         f"The surface `{surface_name}` is used in multiple `{output_type.__name__}`s. "
-                        "Please specify unique `name` values for each output instance "
-                        "that shares the same surface."
+                        "Each output instance that shares the same surface must specify an explicit, "
+                        "unique `name`; the default name cannot be used for a shared surface."
                     )
             names = [o.name for o in shared_outputs]
             if len(names) != len(set(names)):

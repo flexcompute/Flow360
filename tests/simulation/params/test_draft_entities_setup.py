@@ -4,6 +4,7 @@ from flow360_schema.models.entities.surface_entities import Surface
 from flow360_schema.models.entities.volume_entities import (
     AxisymmetricBody,
     CustomVolume,
+    SeedpointVolume,
     Sphere,
 )
 from flow360_schema.models.entity_info import SurfaceMeshEntityInfo
@@ -38,6 +39,22 @@ def test_custom_volume_added_to_draft_entities():
     entity_info = _get_basic_entity_info()
     updated = _set_up_params_non_persistent_entity_info(entity_info, params)
     assert any(isinstance(e, CustomVolume) and e.name == "cv1" for e in updated.draft_entities)
+
+
+def test_seedpoint_volume_added_to_draft_entities():
+    with SI_unit_system:
+        seedpoint_volume = SeedpointVolume(name="sp1", point_in_mesh=[(0, 0, 0) * u.m])
+        params = SimulationParams(
+            meshing=MeshingParams(
+                volume_zones=[
+                    CustomZones(name="custom_zones", entities=[seedpoint_volume]),
+                    UserDefinedFarfield(name="ff"),
+                ]
+            )
+        )
+    entity_info = _get_basic_entity_info()
+    updated = _set_up_params_non_persistent_entity_info(entity_info, params)
+    assert any(isinstance(e, SeedpointVolume) and e.name == "sp1" for e in updated.draft_entities)
 
 
 def test_axisymmetric_body_added_to_draft_entities():
