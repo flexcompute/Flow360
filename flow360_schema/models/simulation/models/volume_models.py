@@ -53,7 +53,7 @@ from flow360_schema.models.simulation.models.bet.bet_translator_interface import
     generate_xrotor_bet_json,
     get_file_content,
 )
-from flow360_schema.models.simulation.models.material import Air, FluidMaterialTypes, MaterialBase, SolidMaterialTypes
+from flow360_schema.models.simulation.models.material import SolidMaterialTypes
 from flow360_schema.models.simulation.models.solver_numerics import (
     HeatEquationSolver,
     NavierStokesSolver,
@@ -244,11 +244,16 @@ class HeatEquationInitialCondition(ExpressionInitialConditionBase):
 
 class PDEModelBase(Flow360BaseModel):
     """
-    Base class for equation models
+    Base class for equation models.
 
+    Note: ``material`` is intentionally *not* a base-class field. Material lives on
+    the operating condition (``op.thermal_state.material``) for the fluid path --
+    the C++ solver uses one global gas model, so per-volume Fluid materials would
+    be silently ignored. Material is a first-class field on :class:`Solid` only,
+    where per-zone material data is physically meaningful (CHT thermal conductivity,
+    density, specific heat).
     """
 
-    material: MaterialBase = pd.Field()
     initial_condition: dict | None = pd.Field(None)
     private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
 
@@ -326,8 +331,6 @@ class Fluid(PDEModelBase):
         NoneSolver(),
         description="Transition solver settings, see " + ":class:`TransitionModelSolver` documentation.",
     )
-
-    material: FluidMaterialTypes = pd.Field(Air(), description="The material property of fluid.")
 
     initial_condition: NavierStokesModifiedRestartSolution | NavierStokesInitialCondition = pd.Field(
         NavierStokesInitialCondition(),

@@ -1,7 +1,7 @@
 """Operating conditions for the simulation framework."""
 
 import logging
-from typing import Literal, Union
+from typing import Annotated, Literal, Union
 
 import pydantic as pd
 import unyt as u
@@ -22,7 +22,7 @@ from flow360_schema.framework.physical_dimensions import (
     Velocity,
     Viscosity,
 )
-from flow360_schema.models.simulation.models.material import Air, Water
+from flow360_schema.models.simulation.models.material import Air, Gas, Water
 from flow360_schema.models.simulation.operating_condition.atmosphere_model import (
     StandardAtmosphereModel,
 )
@@ -70,7 +70,9 @@ class ThermalState(MultiConstructorBaseModel):
     density: Density.PositiveFloat64 = pd.Field(
         1.225 * u.kg / u.m**3, frozen=True, description="The density of the fluid."
     )
-    material: Air = pd.Field(Air(), frozen=True, description="The material of the fluid.")
+    material: Annotated[Union[Air, Gas], pd.Field(discriminator="type")] = pd.Field(
+        Air(), frozen=True, description="The material of the fluid (Air preset or custom Gas)."
+    )
     private_attribute_input_cache: ThermalStateCache = ThermalStateCache()
     private_attribute_constructor: Literal["from_standard_atmosphere", "default"] = pd.Field(
         default="default", frozen=True

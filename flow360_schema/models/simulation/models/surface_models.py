@@ -465,8 +465,7 @@ class Wall(BoundaryBase):
             return WallFunction()
         if value is False:
             logger.warning(
-                "Passing a bool to `use_wall_function` is deprecated. "
-                "Use `use_wall_function=None` instead of `False`."
+                "Passing a bool to `use_wall_function` is deprecated. Use `use_wall_function=None` instead of `False`."
             )
             return None
         return value
@@ -833,8 +832,13 @@ class PorousJump(Flow360BaseModel):
     :class:`PorousJump` defines the Porous Jump boundary condition.
 
     Provide a flat list of every face that should be a porous-jump boundary
-    via ``surfaces``. Each face must belong to a multizone interface; the
-    donor/receiver pairing is recovered from the mesh metadata downstream.
+    via ``surfaces``. Each face must be, or become after meshing, one side of
+    a multizone interface: the two coincident faces must already be present in
+    the imported geometry, surface mesh, or volume mesh. List both sides of
+    every interface; the donor/receiver pairing is recovered from the mesh
+    metadata downstream. From a geometry the two coincident CAD faces must
+    already exist and be enclosed by custom volumes; a single shared or
+    non-manifold face is not turned into a porous-jump interface.
 
     Example
     -------
@@ -865,8 +869,10 @@ class PorousJump(Flow360BaseModel):
         alias="surfaces",
         description=(
             "Flat list of boundaries that form porous-jump interfaces. "
-            "Each face must belong to a multizone interface; the donor/"
-            "receiver pairing is recovered from mesh metadata downstream."
+            "Each face must be, or become after meshing, one side of a "
+            "multizone interface; list both coincident faces of every "
+            "interface. The donor/receiver pairing is recovered from mesh "
+            "metadata downstream."
         ),
     )
     darcy_coefficient: InverseArea.Float64 = pd.Field(

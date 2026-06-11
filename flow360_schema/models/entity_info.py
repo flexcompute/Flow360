@@ -35,6 +35,7 @@ from flow360_schema.models.entities.volume_entities import (
     CustomVolume,
     Cylinder,
     GenericVolume,
+    SeedpointVolume,
     Sphere,
     VoxelGrid,
 )
@@ -42,7 +43,17 @@ from flow360_schema.models.entities.volume_entities import (
 logger = logging.getLogger(__name__)
 
 DraftEntityTypes = Annotated[
-    AxisymmetricBody | Box | VoxelGrid | Cylinder | Sphere | Point | PointArray | PointArray2D | Slice | CustomVolume,
+    AxisymmetricBody
+    | Box
+    | VoxelGrid
+    | Cylinder
+    | Sphere
+    | Point
+    | PointArray
+    | PointArray2D
+    | Slice
+    | CustomVolume
+    | SeedpointVolume,
     pd.Field(discriminator="private_attribute_entity_type_name"),
 ]
 

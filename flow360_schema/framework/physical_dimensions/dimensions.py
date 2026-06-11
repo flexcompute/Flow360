@@ -217,6 +217,24 @@ class SpecificEnergy(PhysicalDimensionBase):
     physical_dimension_meta = PhysicalDimensionMeta(name="specific_energy", si_unit="joule/kilogram")
 
 
+class MolarMass(PhysicalDimensionBase):
+    """Molar mass (molecular weight) physical dimension (SI unit: kilogram/mol).
+
+    The SI base for amount of substance is the *mole*, so the SI unit is ``kg/mol``
+    (e.g. N2 ~= 0.028 kg/mol). Any per-mole equivalent (g/mol, kg/kmol) is also
+    accepted; bare-mass values (``kg``, ``g``) without the mole component are
+    rejected by ``check_dimension`` (#5730).
+
+    ``unit_system_inference`` is disabled (as for ``Angle``) because molar mass
+    has no natural unit-system default; users must supply explicit units,
+    e.g. ``28.97 * u.g / u.mol``.
+    """
+
+    physical_dimension_meta = PhysicalDimensionMeta(
+        name="molar_mass", si_unit="kilogram/mol", unit_system_inference=False
+    )
+
+
 class Frequency(PhysicalDimensionBase):
     """Frequency physical dimension (SI unit: hertz)"""
 
@@ -249,5 +267,6 @@ __all__ = [
     "InverseLength",
     "MassFlowRate",
     "SpecificEnergy",
+    "MolarMass",
     "Frequency",
 ]

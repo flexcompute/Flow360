@@ -42,6 +42,7 @@ from ._public_namespace import Freestream as Freestream
 from ._public_namespace import FromUserDefinedDynamics as FromUserDefinedDynamics
 from ._public_namespace import FrozenSpecies as FrozenSpecies
 from ._public_namespace import FullyMovingFloor as FullyMovingFloor
+from ._public_namespace import Gas as Gas
 from ._public_namespace import GenericReferenceCondition as GenericReferenceCondition
 from ._public_namespace import Geometry as Geometry
 from ._public_namespace import GeometryRefinement as GeometryRefinement
@@ -119,6 +120,8 @@ from ._public_namespace import SpalartAllmaras as SpalartAllmaras
 from ._public_namespace import (
     SpalartAllmarasModelConstants as SpalartAllmarasModelConstants,
 )
+from ._public_namespace import Species as Species
+from ._public_namespace import SpeciesTransportModel as SpeciesTransportModel
 from ._public_namespace import Sphere as Sphere
 from ._public_namespace import StaticFloor as StaticFloor
 from ._public_namespace import Steady as Steady

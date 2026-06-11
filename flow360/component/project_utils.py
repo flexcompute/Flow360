@@ -2,7 +2,7 @@
 Support class and functions for project interface.
 """
 
-from typing import Optional, Type, TypeVar, get_args
+from typing import Literal, Optional, Type, TypeVar, get_args
 
 from flow360_schema.framework.base_model import Flow360BaseModel
 from flow360_schema.framework.entity.entity_list import EntityList
@@ -537,6 +537,71 @@ def _build_deduplicated_entity_registry_from_params(params: SimulationParams) ->
     return registry
 
 
+def _read_root_simulation_dict(root_asset) -> dict:
+    """Return the root asset's stored simulation.json dict."""
+    if hasattr(root_asset, "_simulation_dict_cache_for_local_mode"):
+        # pylint:disable-next=protected-access
+        return root_asset._simulation_dict_cache_for_local_mode
+    return AssetBase._get_simulation_json(  # pylint:disable=protected-access
+        asset=root_asset, clean_front_end_keys=True
+    )
+
+
+def read_root_cad_importer_version(root_asset) -> Literal["v1", "v2"]:
+    """
+    Return the CAD Importer version recorded on the root asset, defaulting to
+    "v1" when the root is an older geometry whose simulation.json predates the
+    field. Used to keep an imported geometry dependency on the same importer as
+    the project root.
+    """
+    root_engine = (
+        _read_root_simulation_dict(root_asset).get("private_attribute_asset_cache") or {}
+    ).get("cad_importer_version")
+    return root_engine or "v1"
+
+
+def _enforce_inheritance_of_root_asset_workflow_settings(root_asset, params: SimulationParams):
+    """
+    Enforce (mostly workflow) settings from the root asset to avoid drifting.
+    """
+    # FXC-3289: propagate the CAD Importer version from the root asset's stored
+    # asset_cache. The geometry resource fixes this at upload time;
+    # ensure_cad_importer_compatible_with_mesher reads it on the surface mesh
+    # submission to reject v2 + beta mesher before the job dispatches.
+    _root_engine = (
+        _read_root_simulation_dict(root_asset).get("private_attribute_asset_cache") or {}
+    ).get("cad_importer_version")
+    if _root_engine is not None:
+        params.private_attribute_asset_cache._force_set_attr(  # pylint:disable=protected-access
+            "cad_importer_version", _root_engine
+        )
+    return params
+
+
+def ensure_cad_importer_compatible_with_mesher(params: SimulationParams):
+    """
+    Reject CAD Importer v2 combined with the standalone beta in-house surface
+    mesher (beta enabled without Geometry AI) at submission time.
+
+    CAD Importer v2 (HOOPS only) never emits the .egads file v1 produces. The
+    beta in-house surface mesher on its own reads that EGADS face partition
+    directly and would crash mid-run when no .egads is available. The default
+    surface mesher and Geometry AI are both supported on v2 -- Geometry AI's
+    surface mesher re-tessellates the stamped v2 STEP through the HOOPS importer
+    instead of the EGADS partition.
+
+    Call after the CAD Importer version is inherited from the root asset.
+    """
+    asset_cache = params.private_attribute_asset_cache
+    if asset_cache.cad_importer_version != "v2":
+        return
+    if asset_cache.use_inhouse_mesher and not asset_cache.use_geometry_AI:
+        raise Flow360ValueError(
+            "The beta in-house surface mesher (without Geometry AI) requires CAD Importer V1. "
+            "Re-upload this project with CAD Importer V1, or enable Geometry AI."
+        )
+
+
 def set_up_params_for_uploading(  # pylint: disable=too-many-arguments
     root_asset,
     length_unit: Length.Float64,
@@ -569,25 +634,7 @@ def set_up_params_for_uploading(  # pylint: disable=too-many-arguments
         use_geometry_AI if use_geometry_AI else False,
     )
 
-    # FXC-3289: propagate the CAD Importer version from the root asset's stored
-    # asset_cache. The geometry resource fixes this at upload time and the
-    # schema validator (AssetCache._validate_cad_importer_mesher_compatibility)
-    # needs it on the surface mesh submission to reject v2 + beta mesher /
-    # v2 + Geometry AI before the job dispatches.
-    if hasattr(root_asset, "_simulation_dict_cache_for_local_mode"):
-        # pylint:disable-next=protected-access
-        _root_sim_dict = root_asset._simulation_dict_cache_for_local_mode
-    else:
-        _root_sim_dict = AssetBase._get_simulation_json(  # pylint:disable=protected-access
-            asset=root_asset, clean_front_end_keys=True
-        )
-    _root_engine = _root_sim_dict.get("private_attribute_asset_cache", {}).get(
-        "cad_importer_version"
-    )
-    if _root_engine is not None:
-        params.private_attribute_asset_cache._force_set_attr(  # pylint:disable=protected-access
-            "cad_importer_version", _root_engine
-        )
+    _enforce_inheritance_of_root_asset_workflow_settings(root_asset, params)
 
     active_draft = get_active_draft()
 

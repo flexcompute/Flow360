@@ -173,6 +173,32 @@ def initialize_variable_space(param_as_dict: dict, use_clear_context: bool = Fal
     return param_as_dict
 
 
+def _check_cad_importer_mesher_compatibility(params: SimulationParams) -> dict | None:
+    """Reject CAD Importer v2 combined with the standalone beta in-house surface
+    mesher (beta enabled without Geometry AI) at the service validation layer.
+
+    The schema model no longer enforces this on deserialize; this guard runs so
+    the webservice validate path still rejects the combination before a job
+    dispatches. The combination is intrinsically invalid -- it only arises for a
+    v2 geometry -- so the check is unconditional (not gated on validation level,
+    which is empty when ``root_item_type`` is unknown). Returns a top-level error
+    dict (no private-attribute location) or ``None``.
+    """
+    cache = params.private_attribute_asset_cache
+    if cache.cad_importer_version != "v2":
+        return None
+    if cache.use_inhouse_mesher and not cache.use_geometry_AI:
+        return {
+            "type": "value_error",
+            "loc": (),
+            "msg": (
+                "The beta in-house surface mesher (without Geometry AI) requires CAD Importer V1. "
+                "Re-upload this project with CAD Importer V1, or enable Geometry AI."
+            ),
+        }
+    return None
+
+
 def validate_model(
     *,
     params_as_dict,
@@ -265,6 +291,12 @@ def validate_model(
             validated_by,
             version_to=version_to,
         )
+
+    if validated_param is not None and validation_errors is None:
+        mesher_error = _check_cad_importer_mesher_compatibility(validated_param)
+        if mesher_error is not None:
+            validation_errors = [mesher_error]
+            validated_param = None
 
     return validated_param, validation_errors, validation_warnings
 

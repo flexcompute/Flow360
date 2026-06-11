@@ -19,7 +19,6 @@ from flow360_schema.framework.expression import (
     compute_surface_integral_unit,
 )
 from flow360_schema.framework.param_utils import (
-    _set_boundary_full_name_with_zone_name,
     _update_entity_full_name,
     _update_zone_boundaries_with_metadata,
     register_entity_list,
@@ -53,12 +52,6 @@ from flow360_schema.models.simulation.framework.updater_utils import Flow360Vers
 from flow360_schema.models.simulation.meshing_param.params import (
     MeshingParams,
     ModularMeshingWorkflow,
-)
-from flow360_schema.models.simulation.meshing_param.volume_params import (
-    AutomatedFarfield,
-    RotationCylinder,
-    RotationSphere,
-    RotationVolume,
 )
 from flow360_schema.models.simulation.models.surface_models import SurfaceModelTypes
 from flow360_schema.models.simulation.models.volume_models import (
@@ -122,6 +115,7 @@ from flow360_schema.models.simulation.validation.validation_simulation_params im
     _check_numerical_dissipation_factor_output,
     _check_parent_volume_is_rotating,
     _check_rotation_entities_have_volume_zone,
+    _check_species_transport_not_with_isentropic_solver,
     _check_time_average_output,
     _check_tpg_not_with_isentropic_solver,
     _check_unique_selector_names,
@@ -582,6 +576,11 @@ class SimulationParams(_ParamModelBase):
         return _check_tpg_not_with_isentropic_solver(self)
 
     @pd.model_validator(mode="after")
+    def check_species_transport_not_with_isentropic_solver(self):
+        """Multi-species transport is not supported with the CompressibleIsentropic (4x4) solver."""
+        return _check_species_transport_not_with_isentropic_solver(self)
+
+    @pd.model_validator(mode="after")
     def check_krylov_solver_restrictions(self):
         """Krylov solver is not compatible with limiters or unsteady time stepping."""
         return _check_krylov_solver_restrictions(self)
@@ -645,35 +644,6 @@ class SimulationParams(_ParamModelBase):
         """Recursively register all entities listed in EntityList to the asset cache."""
         registry.clear()
         register_entity_list(self, registry)
-        return registry
-
-    def _update_entity_private_attrs(self, registry: EntityRegistry) -> EntityRegistry:
-        """
-        Once the SimulationParams is set, extract and update information
-        into all used entities by parsing the params.
-        """
-        if self.meshing is not None:
-            volume_zones = None
-            if isinstance(self.meshing, MeshingParams):
-                volume_zones = self.meshing.volume_zones
-            if isinstance(self.meshing, ModularMeshingWorkflow) and self.meshing.volume_meshing is not None:
-                volume_zones = self.meshing.zones
-            if volume_zones is not None:
-                for volume in volume_zones:
-                    if isinstance(volume, AutomatedFarfield):
-                        _set_boundary_full_name_with_zone_name(
-                            registry,
-                            "farfield",
-                            volume.private_attribute_entity.name,
-                        )
-                        _set_boundary_full_name_with_zone_name(
-                            registry,
-                            "symmetric*",
-                            volume.private_attribute_entity.name,
-                        )
-                    if isinstance(volume, (RotationCylinder, RotationVolume, RotationSphere)):
-                        pass
-
         return registry
 
     @property
@@ -751,7 +721,6 @@ class SimulationParams(_ParamModelBase):
         """
         registry = EntityRegistry()
         registry = self._register_assigned_entities(registry)
-        registry = self._update_entity_private_attrs(registry)
         return registry
 
     def _update_param_with_actual_volume_mesh_meta(self, volume_mesh_meta_data: dict):

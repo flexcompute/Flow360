@@ -32,7 +32,7 @@ from flow360_schema.models.simulation.meshing_param.volume_params import (
     RotationVolume,
     WindTunnelFarfield,
 )
-from flow360_schema.models.simulation.models.material import Air
+from flow360_schema.models.simulation.models.material import Air, Gas
 from flow360_schema.models.simulation.models.solver_numerics import (
     KrylovLinearSolver,
     NoneSolver,
@@ -1039,23 +1039,32 @@ def _uses_compressible_isentropic_solver(params):
     return False
 
 
-def _get_air_material(params):
-    """Get Air material from operating condition, or None if not applicable."""
+def _get_gas_material(params):
+    """Get Air or Gas material from operating condition, or None if not applicable."""
     if params.operating_condition is None:
         return None
     op = params.operating_condition
     if not hasattr(op, "thermal_state") or op.thermal_state is None:
         return None
     material = op.thermal_state.material
-    if isinstance(material, Air):
+    if isinstance(material, (Air, Gas)):
         return material
     return None
 
 
 def _material_has_temperature_dependent_gas(material):
-    """Check if Air material uses temperature-dependent gas properties."""
-    # Check each species in the thermally perfect gas model
-    for species in material.thermally_perfect_gas.species:
+    """Check if a Gas material uses a temperature-dependent NASA-9 polynomial.
+
+    Air is CPG by definition so it always returns False. Only checks the
+    `thermally_perfect_gas` slot -- the species_transport_model case is handled
+    separately by `_check_species_transport_not_with_isentropic_solver`.
+    """
+    if isinstance(material, Air):
+        return False
+    tpg = getattr(material, "thermally_perfect_gas", None)
+    if tpg is None:
+        return False
+    for species in tpg.species:
         if _has_temperature_dependent_coefficients(species.nasa_9_coefficients.temperature_ranges):
             return True
     return False
@@ -1105,7 +1114,7 @@ def _check_tpg_not_with_isentropic_solver(params):
     if not _uses_compressible_isentropic_solver(params):
         return params
 
-    material = _get_air_material(params)
+    material = _get_gas_material(params)
     if material is None:
         return params
 
@@ -1116,6 +1125,35 @@ def _check_tpg_not_with_isentropic_solver(params):
             "that decouples the energy equation and requires constant gamma. "
             "Only constant-gamma coefficients (where only a2 is non-zero) are allowed. "
             "Please use type_name='Compressible' in NavierStokesSolver for thermally perfect gas simulations."
+        )
+
+    return params
+
+
+def _check_species_transport_not_with_isentropic_solver(params):
+    """
+    Validate that a multi-species transport model is not used with CompressibleIsentropic.
+
+    Variable composition makes R_mix(Y) and cp(Y) spatially varying, so the equation of
+    state ``p = rho * R_mix(Y) * T`` has three coupled unknowns rather than two. Closing
+    that system requires the energy equation to pin T. The CompressibleIsentropic 4x4
+    solver (rho + 3 momentum, no rho*E) decouples energy and assumes constant gamma /
+    constant R, so it has no degree of freedom to absorb the variable-composition
+    coupling regardless of Mach number.
+    """
+    if not _uses_compressible_isentropic_solver(params):
+        return params
+
+    material = _get_gas_material(params)
+    if material is None:
+        return params
+
+    if getattr(material, "species_transport_model", None) is not None:
+        raise ValueError(
+            "A SpeciesTransportModel (variable-composition multi-species transport) is not "
+            "supported with the CompressibleIsentropic solver, which uses a 4x4 system that "
+            "decouples the energy equation and assumes a single fixed composition. "
+            "Please use type_name='Compressible' in NavierStokesSolver for multi-species cases."
         )
 
     return params

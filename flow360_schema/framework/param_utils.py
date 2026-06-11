@@ -132,24 +132,6 @@ def _update_zone_boundaries_with_metadata(
         )
 
 
-def _set_boundary_full_name_with_zone_name(
-    registry: EntityRegistry,
-    naming_pattern: str,
-    give_zone_name: str,
-) -> None:
-    """Set boundary full names for matched surfaces that do not have one yet."""
-    surfaces = [
-        entity for entity in registry.find_by_naming_pattern(naming_pattern) if isinstance(entity, _SurfaceEntityBase)
-    ]
-    if not surfaces:
-        return
-
-    for surface in surfaces:
-        if surface.private_attribute_full_name is not None:
-            continue
-        surface._force_set_attr("private_attribute_full_name", f"{give_zone_name}/{surface.name}")
-
-
 def serialize_model_obj_to_id(model_obj: Flow360BaseModel) -> str:
     """Serialize a model object to its private attribute id."""
     private_attribute_id = getattr(model_obj, "private_attribute_id", None)
@@ -162,7 +144,6 @@ __all__ = [
     "AssetCache",
     "find_instances",
     "register_entity_list",
-    "_set_boundary_full_name_with_zone_name",
     "_update_entity_full_name",
     "_update_zone_boundaries_with_metadata",
     "serialize_model_obj_to_id",

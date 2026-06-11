@@ -10,6 +10,7 @@ from flow360_schema.framework.base_model import Flow360BaseModel
 from flow360_schema.framework.physical_dimensions import (
     AbsoluteTemperature,
     Density,
+    MolarMass,
     Pressure,
     SpecificHeatCapacity,
     ThermalConductivity,
@@ -136,79 +137,6 @@ class NASA9Coefficients(Flow360BaseModel):
         return list(self.temperature_ranges[0].coefficients)
 
 
-class FrozenSpecies(Flow360BaseModel):
-    """
-    Represents a single gas species with NASA 9-coefficient thermodynamic properties.
-    """
-
-    type_name: Literal["FrozenSpecies"] = pd.Field("FrozenSpecies", frozen=True)
-    name: str = pd.Field(description="Species name (e.g., 'N2', 'O2', 'Ar')")
-    nasa_9_coefficients: NASA9Coefficients = pd.Field(description="NASA 9-coefficient polynomial for this species")
-    mass_fraction: pd.PositiveFloat = pd.Field(
-        description="Mass fraction of this species (must sum to 1 across all species in mixture)"
-    )
-
-
-class ThermallyPerfectGas(Flow360BaseModel):
-    """
-    Multi-species thermally perfect gas model.
-    """
-
-    type_name: Literal["ThermallyPerfectGas"] = pd.Field("ThermallyPerfectGas", frozen=True)
-    species: list[FrozenSpecies] = pd.Field(
-        min_length=1,
-        description="List of species with their NASA 9 coefficients and mass fractions. "
-        "Mass fractions must sum to 1.0.",
-    )
-
-    @pd.model_validator(mode="after")
-    def validate_mass_fractions_sum_to_one(self):
-        """Validate that mass fractions sum to 1 and re-normalize if within tolerance."""
-        total = sum(s.mass_fraction for s in self.species)
-        tolerance = 1.0e-3
-        if abs(total - 1.0) > tolerance:
-            raise ValueError(f"Mass fractions must sum to 1.0, got {total}")
-        if total != 1.0:
-            for species in self.species:
-                species.mass_fraction = species.mass_fraction / total
-        return self
-
-    @pd.model_validator(mode="after")
-    def validate_unique_species_names(self):
-        """Validate that all species have unique names."""
-        names = [s.name for s in self.species]
-        if len(names) != len(set(names)):
-            duplicates = [name for name in names if names.count(name) > 1]
-            raise ValueError(f"Species names must be unique. Duplicates found: {set(duplicates)}")
-        return self
-
-    @pd.model_validator(mode="after")
-    def validate_temperature_ranges_match(self):
-        """Validate all species have matching temperature range boundaries."""
-        if len(self.species) < 2:
-            return self
-        ref_ranges = self.species[0].nasa_9_coefficients.temperature_ranges
-        for species in self.species[1:]:
-            ranges = species.nasa_9_coefficients.temperature_ranges
-            if len(ranges) != len(ref_ranges):
-                raise ValueError(
-                    f"Species '{species.name}' has {len(ranges)} temperature ranges, "
-                    f"but '{self.species[0].name}' has {len(ref_ranges)}. "
-                    "All species must have the same number of temperature ranges."
-                )
-            for i, (r1, r2) in enumerate(zip(ref_ranges, ranges, strict=False)):
-                if (
-                    r1.temperature_range_min != r2.temperature_range_min
-                    or r1.temperature_range_max != r2.temperature_range_max
-                ):
-                    raise ValueError(
-                        f"Temperature range {i} boundaries mismatch between species "
-                        f"'{self.species[0].name}' and '{species.name}'. "
-                        "All species must use the same temperature range boundaries."
-                    )
-        return self
-
-
 class Sutherland(Flow360BaseModel):
     """
     Represents Sutherland's law for calculating dynamic viscosity.
@@ -236,9 +164,283 @@ class Sutherland(Flow360BaseModel):
         )
 
 
+# Default laminar Schmidt number applied to a species whose schmidt_number is
+# left unspecified in a multi-species transport declaration. Documented here so
+# the translator and the Python model agree on the same fill value.
+DEFAULT_SCHMIDT_NUMBER = 0.7
+
+# Default turbulent Schmidt number Sc_t for the constant-Schmidt mixture
+# diffusion closure D_t = mu_t / (rho * Sc_t). Distinct from DEFAULT_SCHMIDT_NUMBER
+# above: Sc_t is a *modelling closure* for the turbulent flux, not a molecular
+# property, and is conventionally 0.7-0.9 in engineering CFD. The numerical value
+# happens to coincide with the laminar default here, but the two are physically
+# different quantities and are kept separate so reader intent is unambiguous.
+DEFAULT_TURBULENT_SCHMIDT_NUMBER = 0.7
+
+
+class FrozenSpecies(Flow360BaseModel):
+    """
+    A single entry in a pre-mixed thermally-perfect gas (``ThermallyPerfectGas``).
+
+    "Frozen" refers to the composition: the species' mass fraction is fixed at
+    the time the simulation parameters are built, and the per-species NASA-9
+    coefficients are blended into a single mixture polynomial before the
+    simulation runs. The runtime then sees one fixed-composition gas, never
+    transports the individual species.
+
+    For *actively-transported* species (variable composition, runtime mass-fraction
+    transport equations, composition-dependent thermo/transport), use the
+    :class:`Species` class with :class:`SpeciesTransportModel` instead.
+    """
+
+    type_name: Literal["FrozenSpecies"] = pd.Field("FrozenSpecies", frozen=True)
+    name: str = pd.Field(description="Species name (e.g., 'N2', 'O2', 'Ar')")
+    nasa_9_coefficients: NASA9Coefficients = pd.Field(description="NASA 9-coefficient polynomial for this species")
+    mass_fraction: pd.PositiveFloat = pd.Field(
+        description="Mass fraction of this species (must sum to 1 across all species in mixture)"
+    )
+
+
+class Species(Flow360BaseModel):
+    """
+    An actively-transported chemical species in a variable-composition gas mixture.
+
+    Unlike :class:`FrozenSpecies` (an entry in a pre-mixed gas whose composition is
+    fixed when the simulation parameters are built), ``Species`` describes a species
+    the runtime transports as a mass-fraction field. The full set of thermodynamic
+    and transport properties needed for the multi-species path is therefore required
+    at construction time:
+
+    - NASA-9 polynomial for cp(T), h(T), s(T) (frozen-composition / non-reacting
+      regime; see the data-source citation in any library entry for the validity
+      window).
+    - Molecular weight, to form the mixture gas constant
+      ``R_mix = R_u * sum_s(Y_s / W_s)``.
+    - Per-species Sutherland viscosity model, blended into the mixture viscosity
+      via Wilke's rule.
+    - Laminar Schmidt number (defaults to ``DEFAULT_SCHMIDT_NUMBER``), used by the
+      constant-Schmidt Fickian diffusion closure.
+
+    Used inside :class:`SpeciesTransportModel`. The ``mass_fraction`` value defines
+    this species' contribution to the *reference* mixture composition (which the
+    translator emits as ``referenceStateNondim``); at runtime the actual mass
+    fraction varies in space and time.
+    """
+
+    type_name: Literal["Species"] = pd.Field("Species", frozen=True)
+    name: str = pd.Field(description="Species name (e.g., 'N2', 'O2', 'H2O')")
+    nasa_9_coefficients: NASA9Coefficients = pd.Field(
+        description="NASA 9-coefficient polynomial for this species' thermodynamic data."
+    )
+    mass_fraction: pd.PositiveFloat = pd.Field(
+        description="Reference mass fraction of this species in the mixture. Mass fractions "
+        "across all species in a SpeciesTransportModel must sum to 1.0."
+    )
+    molecular_weight: MolarMass.PositiveFloat64 = pd.Field(
+        description="Molecular weight (molar mass) of this species, e.g. ``28.0134 * u.g / u.mol``. "
+        "Used to form the mixture gas constant R_mix = R_u * sum_s(Y_s / W_s). "
+        "Any per-mole equivalent is accepted (g/mol, kg/mol, kg/kmol). Absolute units "
+        "matter only at the Python layer: the translator collapses each species' W_s into "
+        "a dimensionless ``inverseMolecularWeightRatioToReference = W_ref / W_s`` before "
+        "the solver sees it, so the value the solver consumes is unit-agnostic."
+    )
+    dynamic_viscosity: Sutherland = pd.Field(
+        description="Per-species Sutherland viscosity model, used by Wilke's rule "
+        "to form the mixture dynamic viscosity."
+    )
+    schmidt_number: pd.PositiveFloat = pd.Field(
+        DEFAULT_SCHMIDT_NUMBER,
+        description="Laminar Schmidt number Sc_s = mu / (rho * D_s) for this species, used by "
+        f"the constant-Schmidt Fickian diffusion model. Defaults to {DEFAULT_SCHMIDT_NUMBER}.",
+    )
+
+    @classmethod
+    def from_library(cls, name: str) -> "Species":
+        """Look up a species in the curated library and return an independent copy.
+
+        Returns a fresh :class:`Species` carrying the library's NASA-9 polynomial,
+        molecular weight, and Sutherland viscosity, with ``mass_fraction`` set
+        to a 1.0 placeholder. Override any field by assigning to the returned
+        object's attribute; :class:`Species` has ``validate_assignment=True`` so
+        the field validators re-run on each assignment.
+
+        Parameters
+        ----------
+        name :
+            Canonical library species name (e.g. ``"N2"``, ``"O2"``, ``"H2O"``).
+            See the library module docstring for the full roster.
+
+        Returns
+        -------
+        Species
+            An independent deep copy of the library entry. Mutating the returned
+            object does not affect the library or any subsequent call.
+
+        Raises
+        ------
+        ValueError
+            If ``name`` is not in the library. The error message lists all
+            available species names.
+
+        Examples
+        --------
+        >>> n2 = Species.from_library("N2")
+        >>> n2.mass_fraction = 0.767
+        >>> o2 = Species.from_library("O2")
+        >>> o2.mass_fraction = 0.233
+        >>> o2.schmidt_number = 0.72
+        >>> # Custom Sutherland override for a special application:
+        >>> h2o = Species.from_library("H2O")
+        >>> h2o.mass_fraction = 0.05
+        >>> h2o.dynamic_viscosity = Sutherland(
+        ...     reference_viscosity=1.2e-5 * u.Pa * u.s,
+        ...     reference_temperature=350 * u.K,
+        ...     effective_temperature=900 * u.K,
+        ... )
+        """
+        # Lazy import to avoid a circular dependency at module load.
+        from flow360_schema.models.simulation.models.species_library import _build_species
+
+        return _build_species(name)
+
+
+def _validate_unique_species_names(species: "list[FrozenSpecies | Species]") -> None:
+    """Validate that all species have unique names."""
+    names = [s.name for s in species]
+    if len(names) != len(set(names)):
+        duplicates = [name for name in names if names.count(name) > 1]
+        raise ValueError(f"Species names must be unique. Duplicates found: {set(duplicates)}")
+
+
+def _validate_temperature_ranges_match(species: "list[FrozenSpecies | Species]") -> None:
+    """Validate all species share identical temperature range boundaries."""
+    if len(species) < 2:
+        return
+    ref_ranges = species[0].nasa_9_coefficients.temperature_ranges
+    for s in species[1:]:
+        ranges = s.nasa_9_coefficients.temperature_ranges
+        if len(ranges) != len(ref_ranges):
+            raise ValueError(
+                f"Species '{s.name}' has {len(ranges)} temperature ranges, "
+                f"but '{species[0].name}' has {len(ref_ranges)}. "
+                "All species must have the same number of temperature ranges."
+            )
+        for i, (r1, r2) in enumerate(zip(ref_ranges, ranges, strict=False)):
+            if (
+                r1.temperature_range_min != r2.temperature_range_min
+                or r1.temperature_range_max != r2.temperature_range_max
+            ):
+                raise ValueError(
+                    f"Temperature range {i} boundaries mismatch between species "
+                    f"'{species[0].name}' and '{s.name}'. "
+                    "All species must use the same temperature range boundaries."
+                )
+
+
+class ThermallyPerfectGas(Flow360BaseModel):
+    """
+    Multi-species thermally perfect gas model.
+    """
+
+    type_name: Literal["ThermallyPerfectGas"] = pd.Field("ThermallyPerfectGas", frozen=True)
+    species: list[FrozenSpecies] = pd.Field(
+        min_length=1,
+        description="List of species with their NASA 9 coefficients and mass fractions. "
+        "Mass fractions must sum to 1.0.",
+    )
+
+    @pd.model_validator(mode="after")
+    def validate_mass_fractions_sum_to_one(self):
+        """Validate that mass fractions sum to 1 and re-normalize if within tolerance."""
+        total = sum(s.mass_fraction for s in self.species)
+        if abs(total - 1.0) > 1.0e-3:
+            raise ValueError(f"Mass fractions must sum to 1.0, got {total}")
+        if total != 1.0:
+            for s in self.species:
+                s.mass_fraction = s.mass_fraction / total
+        return self
+
+    @pd.model_validator(mode="after")
+    def validate_unique_species_names(self):
+        """Validate that all species have unique names."""
+        _validate_unique_species_names(self.species)
+        return self
+
+    @pd.model_validator(mode="after")
+    def validate_temperature_ranges_match(self):
+        """Validate all species have matching temperature range boundaries."""
+        _validate_temperature_ranges_match(self.species)
+        return self
+
+
+class SpeciesTransportModel(Flow360BaseModel):
+    """
+    Variable-composition (multi-species) transport model.
+
+    Unlike :class:`ThermallyPerfectGas` (a pre-mixed model whose species mass
+    fractions only define a fixed mixture), this model declares an *explicitly
+    transported* set of species: the runtime solves N-1 mass-fraction transport
+    equations and forms composition-dependent thermodynamics and transport. Each
+    species must therefore carry its molecular weight and a per-species viscosity
+    model (for the Wilke mixture rule); the laminar Schmidt number defaults to
+    ``DEFAULT_SCHMIDT_NUMBER`` when omitted.
+
+    The species ``mass_fraction`` values define the reference mixture composition
+    that the translator emits as ``referenceStateNondim``.
+    """
+
+    type_name: Literal["SpeciesTransportModel"] = pd.Field("SpeciesTransportModel", frozen=True)
+    species: list[Species] = pd.Field(
+        min_length=1,
+        description="List of transported species. Reference mass fractions must sum to 1.0; "
+        "molecular weight, Sutherland viscosity, and Schmidt number are required at construction "
+        "time by the Species type itself.",
+    )
+    turbulent_schmidt_number: pd.PositiveFloat = pd.Field(
+        DEFAULT_TURBULENT_SCHMIDT_NUMBER,
+        description="Turbulent Schmidt number Sc_t used to form the turbulent species "
+        "diffusivity D_t = mu_t / (rho * Sc_t). Distinct from the laminar Schmidt number "
+        "Sc on each Species (Sc_t is a turbulence-closure modelling constant, not a "
+        "molecular property).",
+    )
+    diffusion_model: Literal["constantSchmidt"] = pd.Field(
+        "constantSchmidt",
+        description="Mass-diffusion closure. Currently, only constant-Schmidt Fickian diffusion is supported.",
+    )
+
+    @pd.model_validator(mode="after")
+    def validate_mass_fractions_sum_to_one(self):
+        """Validate that reference mass fractions sum to 1 and re-normalize if within tolerance."""
+        total = sum(s.mass_fraction for s in self.species)
+        if abs(total - 1.0) > 1.0e-3:
+            raise ValueError(f"Mass fractions must sum to 1.0, got {total}")
+        if total != 1.0:
+            for s in self.species:
+                s.mass_fraction = s.mass_fraction / total
+        return self
+
+    @pd.model_validator(mode="after")
+    def validate_unique_species_names(self):
+        """Validate that all species have unique names."""
+        _validate_unique_species_names(self.species)
+        return self
+
+    @pd.model_validator(mode="after")
+    def validate_temperature_ranges_match(self):
+        """Validate all species have matching temperature range boundaries."""
+        _validate_temperature_ranges_match(self.species)
+        return self
+
+
 class Air(MaterialBase):
     """
-    Represents the material properties for air.
+    Calorically-perfect-gas (CPG) preset for air: constant ``gamma = 1.4``, constant
+    ``R = 287.0529 J/(kg*K)``, and a standard Sutherland viscosity model.
+
+    For temperature-dependent thermodynamics (NASA-9 polynomials) or variable-
+    composition multi-species transport, use :class:`Gas` instead. Air rejects
+    ``thermally_perfect_gas`` and ``species_transport_model`` at construction time
+    with a message pointing at the Gas replacement.
     """
 
     type: Literal["air"] = pd.Field("air", frozen=True)
@@ -254,32 +456,6 @@ class Air(MaterialBase):
             "model with standard atmospheric conditions."
         ),
     )
-    thermally_perfect_gas: ThermallyPerfectGas = pd.Field(
-        default_factory=lambda: ThermallyPerfectGas(
-            species=[
-                FrozenSpecies(
-                    name="Air",
-                    nasa_9_coefficients=NASA9Coefficients(
-                        temperature_ranges=[
-                            NASA9CoefficientSet(
-                                temperature_range_min=200.0 * u.K,
-                                temperature_range_max=6000.0 * u.K,
-                                coefficients=[0.0, 0.0, 3.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-                            ),
-                        ]
-                    ),
-                    mass_fraction=1.0,
-                )
-            ]
-        ),
-        description=(
-            "Thermally perfect gas model with NASA 9-coefficient polynomials for "
-            "temperature-dependent thermodynamic properties. Defaults to a single-species "
-            "'Air' with coefficients that reproduce constant gamma=1.4 (calorically perfect gas). "
-            "For multi-species gas mixtures, specify multiple FrozenSpecies with their "
-            "respective mass fractions."
-        ),
-    )
     prandtl_number: pd.PositiveFloat = pd.Field(
         0.72,
         description="Laminar Prandtl number. Default is 0.72 for air.",
@@ -289,18 +465,157 @@ class Air(MaterialBase):
         description="Turbulent Prandtl number. Default is 0.9.",
     )
 
-    def get_specific_heat_ratio(self, temperature: AbsoluteTemperature.Float64) -> pd.PositiveFloat:
+    @pd.model_validator(mode="before")
+    @classmethod
+    def _reject_gas_only_fields(cls, data):
+        """Reject ``thermally_perfect_gas`` / ``species_transport_model`` at construction.
+
+        Both moved to :class:`Gas`; Air is now a CPG-only preset. Catching them in a
+        before-validator lets us emit a paste-ready replacement signature instead of
+        Pydantic's generic ``Extra inputs are not permitted`` message.
         """
-        Computes the specific heat ratio (gamma) at a given temperature from NASA polynomial.
+        if not isinstance(data, dict):
+            return data
+        if "thermally_perfect_gas" in data:
+            raise ValueError(
+                "Air is now a calorically-perfect-gas (constant gamma) preset and "
+                "no longer accepts 'thermally_perfect_gas'. For temperature-dependent "
+                "thermodynamics, use fl.Gas(name=..., dynamic_viscosity=..., "
+                "thermally_perfect_gas=fl.ThermallyPerfectGas(species=[...])) instead."
+            )
+        if "species_transport_model" in data:
+            raise ValueError(
+                "Air no longer accepts 'species_transport_model'. For variable-"
+                "composition multi-species transport, use fl.Gas(name=..., "
+                "dynamic_viscosity=..., species_transport_model=fl.SpeciesTransportModel("
+                "species=[...])) instead."
+            )
+        return data
+
+    def get_specific_heat_ratio(self, temperature: AbsoluteTemperature.Float64) -> pd.PositiveFloat:
+        """CPG: constant gamma = 1.4 (temperature-independent)."""
+        del temperature  # unused; CPG gamma is constant.
+        return 1.4
+
+    @property
+    def gas_constant(self) -> SpecificHeatCapacity.PositiveFloat64:
+        """Standard-air specific gas constant: R = R_u / W_air = 287.0529 J/(kg*K)."""
+        return 287.0529 * u.m**2 / u.s**2 / u.K
+
+    @pd.validate_call
+    def get_pressure(
+        self, density: Density.PositiveFloat64, temperature: AbsoluteTemperature.Float64
+    ) -> Pressure.PositiveFloat64:
+        """Ideal-gas pressure: p = rho * R * T."""
+        temperature = temperature.to("K")
+        return density * self.gas_constant * temperature
+
+    @pd.validate_call
+    def get_speed_of_sound(self, temperature: AbsoluteTemperature.Float64) -> Velocity.PositiveFloat64:
+        """Speed of sound: sqrt(gamma * R * T) with gamma = 1.4."""
+        temperature = temperature.to("K")
+        return sqrt(1.4 * self.gas_constant * temperature)
+
+    @pd.validate_call
+    def get_dynamic_viscosity(self, temperature: AbsoluteTemperature.Float64) -> Viscosity.NonNegativeFloat64:
+        """Dynamic viscosity at T from the configured Sutherland model (or constant)."""
+        if temperature.units is u.degC or temperature.units is u.degF:
+            temperature = temperature.to("K")
+        if isinstance(self.dynamic_viscosity, Sutherland):
+            return self.dynamic_viscosity.get_dynamic_viscosity(temperature)
+        return self.dynamic_viscosity
+
+
+class Gas(MaterialBase):
+    """
+    Customizable gas material -- either thermally perfect (NASA-9 polynomials) or
+    variable-composition multi-species transport.
+
+    Exactly one of :attr:`thermally_perfect_gas` or :attr:`species_transport_model`
+    must be set; the two are mutually exclusive. For the constant-gamma standard-air
+    case use the :class:`Air` preset instead.
+    """
+
+    type: Literal["gas"] = pd.Field("gas", frozen=True)
+    name: str = pd.Field(description="Name identifying this gas (e.g. 'methane-air', 'N2/He mix').")
+    dynamic_viscosity: Sutherland | Viscosity.NonNegativeFloat64 | None = pd.Field(
+        None,
+        description=(
+            "Material-level viscosity model used for the ``thermally_perfect_gas`` path "
+            "(both the freestream ``muRef`` for non-dimensionalization and the runtime "
+            "viscosity). Required when ``thermally_perfect_gas`` is set; ignored when "
+            "``species_transport_model`` is set, because viscosity in that case is "
+            "Wilke-mixed from the per-species Sutherland fits at every temperature, "
+            "including the freestream reference."
+        ),
+    )
+    prandtl_number: pd.PositiveFloat = pd.Field(
+        0.72,
+        description="Laminar Prandtl number. Default is 0.72.",
+    )
+    turbulent_prandtl_number: pd.PositiveFloat = pd.Field(
+        0.9,
+        description="Turbulent Prandtl number. Default is 0.9.",
+    )
+    thermally_perfect_gas: ThermallyPerfectGas | None = pd.Field(
+        None,
+        description=(
+            "Pre-mixed thermally perfect gas model (NASA 9-coefficient polynomials). "
+            "Mutually exclusive with `species_transport_model`."
+        ),
+    )
+    species_transport_model: SpeciesTransportModel | None = pd.Field(
+        None,
+        description=(
+            "Variable-composition multi-species transport. The runtime transports the "
+            "declared species' mass fractions and forms composition-dependent thermo "
+            "and transport. Mutually exclusive with `thermally_perfect_gas`."
+        ),
+    )
+
+    @pd.model_validator(mode="after")
+    def _validate_exactly_one_gas_model(self):
+        has_tpg = self.thermally_perfect_gas is not None
+        has_stm = self.species_transport_model is not None
+        if not (has_tpg or has_stm):
+            raise ValueError(
+                "Gas requires exactly one of 'thermally_perfect_gas' or "
+                "'species_transport_model' to be set. For constant gamma = 1.4 standard "
+                "air, use fl.Air() instead."
+            )
+        if has_tpg and has_stm:
+            raise ValueError(
+                "Gas accepts only one of 'thermally_perfect_gas' or "
+                "'species_transport_model' -- they would silently compete to define the "
+                "gas. Set only the one that describes your physics."
+            )
+        # dynamic_viscosity is only consumed by the TPG path (both for runtime
+        # viscosity and the freestream muRef). For STM, viscosity is Wilke-mixed
+        # from per-species data, so the material-level field would silently sit
+        # unused -- omit it instead.
+        if has_tpg and self.dynamic_viscosity is None:
+            raise ValueError(
+                "Gas with 'thermally_perfect_gas' requires 'dynamic_viscosity' to be set "
+                "(used for both the runtime viscosity and the freestream muRef)."
+            )
+        return self
+
+    def get_specific_heat_ratio(self, temperature: AbsoluteTemperature.Float64) -> pd.PositiveFloat:
+        """Specific heat ratio gamma at T from the configured gas model.
+
+        For ``species_transport_model``, gamma is the proper mass+mole-weighted mixture
+        value at the reference composition. For ``thermally_perfect_gas``, it is the
+        mass-weighted NASA-9 blend.
         """
         temp_k = temperature.to("K").v.item()
+        if self.species_transport_model is not None:
+            cp_over_r_mix = self._compute_species_cp_over_r_mix(temp_k)
+            return cp_over_r_mix / (cp_over_r_mix - 1.0)
         coeffs = self._get_coefficients_at_temperature(temp_k)
         return compute_gamma_from_coefficients(coeffs, temp_k)
 
     def _get_coefficients_at_temperature(self, temp_k: float) -> list:
-        """
-        Get the NASA 9 coefficients at a given temperature.
-        """
+        """Effective NASA-9 coefficients at T (pre-mixed TPG path; mass-weighted blend)."""
         coeffs = [0.0] * 9
         for species in self.thermally_perfect_gas.species:
             species_coeffs = species.nasa_9_coefficients.get_coefficients_at_temperature(temp_k)
@@ -308,42 +623,108 @@ class Air(MaterialBase):
                 coeffs[i] += species.mass_fraction * species_coeffs[i]
         return coeffs
 
+    def _compute_species_cp_over_r_mix(self, temp_k: float) -> float:
+        """cp_mix / R_mix at ``temp_k`` from species_transport_model reference composition.
+
+        Per the standard mixture relations:
+            cp_mix / R_mix = sum_s Y_s (cp_s / R_s) (W_ref / W_s) / sum_s Y_s (W_ref / W_s)
+        where W_ref = 1 / sum_s (Y_s / W_s) is the mixture molar mass.
+        """
+        stm = self.species_transport_model
+        inv_w_ref = sum(s.mass_fraction / s.molecular_weight.to("kg/mol").v.item() for s in stm.species)
+        w_ref = 1.0 / inv_w_ref
+        numer, denom = 0.0, 0.0
+        for s in stm.species:
+            w_s = s.molecular_weight.to("kg/mol").v.item()
+            ratio = w_ref / w_s
+            species_coeffs = s.nasa_9_coefficients.get_coefficients_at_temperature(temp_k)
+            cp_s_over_r_s = compute_cp_over_r(species_coeffs, temp_k)
+            numer += s.mass_fraction * cp_s_over_r_s * ratio
+            denom += s.mass_fraction * ratio
+        return numer / denom
+
     @property
     def gas_constant(self) -> SpecificHeatCapacity.PositiveFloat64:
+        """Mixture gas constant.
+
+        For ``species_transport_model``: R_mix = R_u * sum_s(Y_s / W_s) at the
+        reference composition. For ``thermally_perfect_gas`` only: falls back to the
+        standard-air value 287.0529 J/(kg*K) because FrozenSpecies does not carry
+        molecular weight (carried over from the legacy Air-as-TPG path). Users with a
+        non-air pre-mixed gas should prefer species_transport_model with explicit W_s.
         """
-        Returns the specific gas constant for air.
-        """
+        if self.species_transport_model is not None:
+            R_universal_J_per_molK = 8.314462618  # CODATA 2018 universal gas constant
+            sum_y_over_w_mol_per_kg = sum(
+                s.mass_fraction / s.molecular_weight.to("kg/mol").v.item() for s in self.species_transport_model.species
+            )
+            return R_universal_J_per_molK * sum_y_over_w_mol_per_kg * u.m**2 / u.s**2 / u.K
         return 287.0529 * u.m**2 / u.s**2 / u.K
 
     @pd.validate_call
     def get_pressure(
         self, density: Density.PositiveFloat64, temperature: AbsoluteTemperature.Float64
     ) -> Pressure.PositiveFloat64:
-        """
-        Calculates the pressure of air using the ideal gas law.
-        """
+        """Ideal-gas pressure: p = rho * R * T."""
         temperature = temperature.to("K")
         return density * self.gas_constant * temperature
 
     @pd.validate_call
     def get_speed_of_sound(self, temperature: AbsoluteTemperature.Float64) -> Velocity.PositiveFloat64:
-        """
-        Calculates the speed of sound in air at a given temperature.
-        """
+        """Speed of sound: sqrt(gamma * R * T)."""
         temperature = temperature.to("K")
         gamma = self.get_specific_heat_ratio(temperature)
         return sqrt(gamma * self.gas_constant * temperature)
 
     @pd.validate_call
     def get_dynamic_viscosity(self, temperature: AbsoluteTemperature.Float64) -> Viscosity.NonNegativeFloat64:
-        """
-        Calculates the dynamic viscosity of air at a given temperature.
+        """Dynamic viscosity at T.
+
+        For ``species_transport_model``, returns Wilke mixture viscosity at the reference
+        composition. For ``thermally_perfect_gas`` only, returns the material-level
+        ``dynamic_viscosity`` (Sutherland or constant).
         """
         if temperature.units is u.degC or temperature.units is u.degF:
             temperature = temperature.to("K")
+        if self.species_transport_model is not None:
+            return self._compute_species_mixture_viscosity(temperature)
         if isinstance(self.dynamic_viscosity, Sutherland):
             return self.dynamic_viscosity.get_dynamic_viscosity(temperature)
         return self.dynamic_viscosity
+
+    def _compute_species_mixture_viscosity(
+        self, temperature: AbsoluteTemperature.Float64
+    ) -> Viscosity.NonNegativeFloat64:
+        """Wilke mixture viscosity from species_transport_model at the reference composition.
+
+        Wilke's rule [Wilke 1950, J. Chem. Phys. 18(4)]:
+            mu_mix = sum_s [ x_s * mu_s / sum_k (x_k * Phi_sk) ]
+        with mole fractions x_s = (Y_s / W_s) / sum_k (Y_k / W_k) and
+            Phi_sk = (1 + sqrt(mu_s/mu_k) * (W_k/W_s)^(1/4))^2 / sqrt(8 * (1 + W_s/W_k)).
+        """
+        stm = self.species_transport_model
+        species = stm.species
+
+        T = temperature.to("K")
+        mw = [s.molecular_weight.to("kg/mol").v.item() for s in species]
+        mu = [s.dynamic_viscosity.get_dynamic_viscosity(T).to("Pa*s").v.item() for s in species]
+        y = [s.mass_fraction for s in species]
+
+        moles_per_kg = [y_s / w_s for y_s, w_s in zip(y, mw, strict=True)]
+        total = sum(moles_per_kg)
+        x = [m / total for m in moles_per_kg]
+
+        n = len(species)
+        mu_mix = 0.0
+        for i in range(n):
+            denom = 0.0
+            for j in range(n):
+                phi_num = (1.0 + (mu[i] / mu[j]) ** 0.5 * (mw[j] / mw[i]) ** 0.25) ** 2
+                phi_den = (8.0 * (1.0 + mw[i] / mw[j])) ** 0.5
+                denom += x[j] * (phi_num / phi_den)
+            mu_mix += x[i] * mu[i] / denom
+
+        return mu_mix * u.Pa * u.s
 
 
 class SolidMaterial(MaterialBase):
@@ -386,4 +767,4 @@ class Water(MaterialBase):
 
 
 SolidMaterialTypes = SolidMaterial
-FluidMaterialTypes = Union[Air, Water]
+FluidMaterialTypes = Union[Air, Gas, Water]

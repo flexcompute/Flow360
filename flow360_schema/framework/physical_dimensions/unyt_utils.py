@@ -222,13 +222,38 @@ def is_unyt_unit(value: Any) -> bool:
     return isinstance(value, u.Unit)
 
 
+def _mole_exponent(unit: Any) -> Any:
+    """Net exponent of the amount-of-substance (mole) axis in a unit.
+
+    unyt treats the mole as dimensionless, so a unit's ``.dimensions`` ignores it.
+    Summing the powers of every mole symbol (``mol``, ``kmol``, ``mmol``, ...) in
+    the unit expression recovers that hidden axis, independent of any SI prefix
+    (``kg/mol`` and ``kg/kmol`` both have a mole exponent of ``-1``).
+    """
+    return sum(
+        exponent for base, exponent in unit.expr.as_powers_dict().items() if getattr(base, "name", "").endswith("mol")
+    )
+
+
 def check_dimension(value: Any, dimension_meta: DimensionMeta) -> bool:
-    """Check if a unyt quantity has the expected dimension."""
+    """Check if a unyt quantity has the expected dimension.
+
+    unyt has no amount-of-substance base dimension -- ``mol`` is dimensionless --
+    so a plain ``.dimensions`` comparison treats ``kg`` and ``kg/mol`` as the same
+    (both ``mass``). Comparing the net mole exponent recovers that hidden axis, so
+    a bare mass is rejected on a molar field while equivalent molar forms
+    (``g/mol``, ``kg/kmol``) pass. Dimensionally equivalent compound forms (``Pa``
+    vs ``kg/(m*s**2)``) carry no mole axis and are unaffected.
+
+    The mole exponent is read directly from the unit expression rather than by
+    dividing ``value`` by the SI unit, because unyt refuses to divide offset units
+    (degC/degF) and would raise instead of returning a boolean.
+    """
     if not is_unyt_quantity(value):
         return False
 
     si_unit = get_si_unit(dimension_meta)
-    expected_dim = si_unit.dimensions
-    actual_dim = value.units.dimensions
+    if si_unit.dimensions != value.units.dimensions:
+        return False
 
-    return expected_dim == actual_dim  # type: ignore[no-any-return]
+    return bool(_mole_exponent(value.units) == _mole_exponent(si_unit))

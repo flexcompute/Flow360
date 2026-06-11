@@ -45,14 +45,14 @@ def _select_rotation_axis_index(
 class OBBResult:
     """Oriented Bounding Box computed from a point cloud.
 
-    All fields are properties — no method calls needed.
-
     Attributes:
-        center: (3,) geometric center of the OBB.
-        axes: (3, 3) principal axes as row vectors, descending by extent magnitude.
-        extents: (3,) half-extents along each axis.
-        axis_of_rotation: (3,) unit vector along the inferred rotation axis.
-        radius: estimated cylinder radius perpendicular to the rotation axis.
+        center (numpy.ndarray): Geometric center of the OBB, shape ``(3,)``.
+        axes (numpy.ndarray): Principal axes as row vectors of shape ``(3, 3)``,
+            ordered by descending extent magnitude.
+        extents (numpy.ndarray): Half-extents along each axis, shape ``(3,)``.
+        axis_of_rotation (numpy.ndarray): Unit vector along the inferred rotation
+            axis, shape ``(3,)``.
+        radius (float): Estimated cylinder radius perpendicular to the rotation axis.
     """
 
     center: np.ndarray

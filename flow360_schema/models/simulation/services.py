@@ -158,8 +158,22 @@ def get_default_params(
     unit_system_name: str,
     length_unit,
     root_item_type: Literal["Geometry", "SurfaceMesh", "VolumeMesh"],
+    cad_importer_version: Literal["v1", "v2"] | None = None,
 ) -> dict:
-    """Return default simulation parameters for the requested root-item workflow."""
+    """Return default simulation parameters for the requested root-item workflow.
+
+    FXC-3289: ``cad_importer_version`` is the CAD Importer engine the user chose
+    at geometry upload. The backend passes it straight through here so the seed
+    ``simulation.json`` carries it from creation. The geometry conversion
+    pipeline reads ``private_attribute_asset_cache.cad_importer_version`` to
+    dispatch v1 vs v2, so the backend never has to write into the
+    ``simulation.json`` structure that the ``flow360_schema`` package owns.
+    """
+    # _force_set_attr bypasses pydantic and the Literal hint is not enforced at
+    # runtime, so reject a bad value explicitly here -- before any root-type
+    # branch returns -- instead of stamping it blindly.
+    if cad_importer_version not in (None, "v1", "v2"):
+        raise ValueError(f"Unsupported cad_importer_version {cad_importer_version!r}; expected 'v1' or 'v2'.")
     unit_system = init_unit_system(unit_system_name)
     project_length_unit = validate_length(length_unit)
     with unit_system:
@@ -221,6 +235,12 @@ def get_default_params(
             outputs=[surface_output],
         )
     params = _store_project_length_unit(project_length_unit, params)
+
+    if root_item_type == "Geometry":
+        # A geometry workflow always carries a concrete engine; default to the
+        # original "v1" when the caller leaves it unspecified.
+        params.private_attribute_asset_cache._force_set_attr("cad_importer_version", cad_importer_version or "v1")
+
     return params.model_dump(
         mode="json",
         exclude_none=True,

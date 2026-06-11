@@ -1042,12 +1042,169 @@ def _convert_legacy_unit_dicts_in_place(node):
                 _convert_legacy_unit_dicts_in_place(item)
 
 
+def _to_25_10_16(params_as_dict):
+    """Backfill ``cad_importer_version`` on geometry-workflow asset caches.
+
+    The field was introduced after 25.10.15 with no default. Geometry projects
+    persisted before it must read as the original "v1" engine; non-geometry
+    workflows leave it unset (irrelevant)."""
+    asset_cache = params_as_dict.get("private_attribute_asset_cache")
+    if not asset_cache:
+        return params_as_dict
+    entity_info = asset_cache.get("project_entity_info")
+    if entity_info and entity_info.get("type_name") == "GeometryEntityInfo":
+        if asset_cache.get("cad_importer_version") is None:
+            asset_cache["cad_importer_version"] = "v1"
+    return params_as_dict
+
+
 def _to_25_11_0(params_as_dict):
     """Migrate legacy ``{value, units}`` dicts to the ``{value, display_unit}``
     wire format. Registered at 25.11.0, the release that re-activates the
     display_unit wire format, so any file persisted in the interim
     ``{value, units}`` shape is normalized on load."""
     _convert_legacy_unit_dicts_in_place(params_as_dict)
+    return params_as_dict
+
+
+def _to_25_11_1(params_as_dict):
+    """Strip the vestigial ``material`` field from ``Fluid`` volume models.
+
+    ``Fluid.material`` was a dead schema field: the translator only ever read
+    the gas material from ``operating_condition.thermal_state.material`` and
+    silently ignored any per-Fluid material the user set. The field has now
+    been removed from the schema. Old serializations that included it would
+    otherwise be rejected by Pydantic's ``extra="forbid"`` configuration.
+
+    ``Solid.material`` is unchanged -- it is genuinely per-zone (CHT).
+    """
+    models = params_as_dict.get("models")
+    if not isinstance(models, list):
+        return params_as_dict
+    for model in models:
+        if isinstance(model, dict) and model.get("type") == "Fluid":
+            model.pop("material", None)
+    return params_as_dict
+
+
+def _is_default_air_tpg(t):
+    """The historical default Air TPG -- single-species ``FrozenSpecies("Air")``
+    spanning 200-6000 K with constant-gamma=1.4 NASA-9 coefficients
+    (only a2 = 3.5 non-zero). Indistinguishable from "user wanted CPG Air" so we
+    can safely drop it. Anything else (custom name, custom bounds, custom
+    coefficients) must round-trip through the Gas type to preserve user intent.
+    """
+    if not isinstance(t, dict):
+        return False
+    species = t.get("species")
+    if not isinstance(species, list) or len(species) != 1:
+        return False
+    s = species[0]
+    if not isinstance(s, dict) or s.get("name") != "Air":
+        return False
+    ranges = (s.get("nasa_9_coefficients") or {}).get("temperature_ranges") or []
+    if len(ranges) != 1:
+        return False
+    r = ranges[0]
+
+    # The legacy default Air TPG was always 200-6000 K. Both wire formats are
+    # possible at this point: pre-25.11.0 ``{value, units}`` (we run before
+    # _to_25_11_0 only chronologically, never functionally) or post-25.11.0
+    # ``{value, [display_unit]}`` (which is what _to_25_11_0 produces and what
+    # we should mostly see here). Pull out the magnitude either way.
+    def _scalar(v):
+        return v.get("value") if isinstance(v, dict) else v
+
+    if _scalar(r.get("temperature_range_min")) != 200.0:
+        return False
+    if _scalar(r.get("temperature_range_max")) != 6000.0:
+        return False
+    coeffs = r.get("coefficients") or []
+    if len(coeffs) != 9:
+        return False
+    # Cast to float so an int 0 from JSON compares equal to the 0.0 default.
+    # Python's ``0 == 0.0`` is True, but normalizing explicitly avoids subtle
+    # surprises with NumPy / Decimal / other numeric types that may show up in
+    # intermediate dict snapshots.
+    expected = [0.0, 0.0, 3.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    try:
+        return [float(c) for c in coeffs] == expected
+    except (TypeError, ValueError):
+        return False
+
+
+def _migrate_air_material_in_place(thermal_state):
+    """Rewrite a single ``thermal_state.material`` block from old Air to Air-or-Gas."""
+    if not isinstance(thermal_state, dict):
+        return
+    material = thermal_state.get("material")
+    if not isinstance(material, dict) or material.get("type") != "air":
+        return
+
+    stm = material.get("species_transport_model")
+    tpg = material.get("thermally_perfect_gas")
+
+    # CPG-equivalent: no STM, and either no TPG or the historical default TPG.
+    # Stays as Air; drop the (now-forbidden) thermally_perfect_gas field.
+    if stm is None and (tpg is None or _is_default_air_tpg(tpg)):
+        material.pop("thermally_perfect_gas", None)
+        return
+
+    # Otherwise migrate to Gas. When STM is set, drop any co-serialized TPG --
+    # the old Air auto-defaulted thermally_perfect_gas, so STM+default-TPG was a
+    # valid old shape; Gas's mutex validator now rejects both being set.
+    material["type"] = "gas"
+    if stm is not None:
+        material.pop("thermally_perfect_gas", None)
+    if not material.get("name"):
+        material["name"] = "air"
+    # Gas requires ``dynamic_viscosity`` only on the TPG path (used for both the
+    # runtime viscosity and the freestream muRef); on the STM path it's ignored
+    # because viscosity is Wilke-mixed from per-species data. Old Air supplied a
+    # default Sutherland via a default factory, so legacy TPG payloads sometimes
+    # omit the key. Fill in the same standard-air values Air's default used so
+    # the migrated Gas validates with the legacy viscosity model.
+    #
+    # _to_25_11_0 already ran by the time _to_25_11_2 fires, so use the post-25.11.0
+    # ``{value: <SI>}`` wire format -- legacy ``{value, units}`` dicts would no
+    # longer parse. Pa*s and K are already the SI bases for Viscosity / Temperature,
+    # so no ``display_unit`` is needed.
+    if stm is None and "dynamic_viscosity" not in material:
+        material["dynamic_viscosity"] = {
+            "reference_viscosity": {"value": 1.716e-5},
+            "reference_temperature": {"value": 273.15},
+            "effective_temperature": {"value": 110.4},
+        }
+
+
+def _to_25_11_2(params_as_dict):
+    """Migrate ``thermal_state.material`` from Air-with-TPG/STM to Gas.
+
+    ``Air`` became a calorically-perfect-gas (CPG) preset that no longer accepts
+    ``thermally_perfect_gas`` or ``species_transport_model``; both customizations
+    moved to the new ``Gas`` class. Rewrite legacy material payloads:
+
+    * ``{"type": "air", "thermally_perfect_gas": <custom>, ...}`` -> ``Gas``.
+    * ``{"type": "air", "species_transport_model": <stm>, ...}`` -> ``Gas``
+      (drops the auto-defaulted ``thermally_perfect_gas`` that the old Air carried
+      alongside STM).
+    * ``{"type": "air"}`` with no STM and either no TPG or the historical default
+      TPG stays as Air.
+
+    Walks both the live ``thermal_state`` slot and the cached copy under
+    ``private_attribute_input_cache`` (multi-constructor operating conditions
+    such as ``ThermalState.from_mach`` keep their original input shape there).
+    The ``atmosphere`` alias on :class:`AerospaceCondition` is input-only; the
+    schema never dumps with that key, so persisted payloads always use the
+    canonical ``thermal_state`` form and we don't need to walk the alias.
+    """
+    op = params_as_dict.get("operating_condition")
+    if not isinstance(op, dict):
+        return params_as_dict
+    _migrate_air_material_in_place(op.get("thermal_state"))
+    cache = op.get("private_attribute_input_cache")
+    if isinstance(cache, dict):
+        _migrate_air_material_in_place(cache.get("thermal_state"))
     return params_as_dict
 
 
@@ -1080,7 +1237,10 @@ VERSION_MILESTONES = [
     (Flow360Version("25.10.13"), _to_25_10_13),
     (Flow360Version("25.10.14"), _to_25_10_14),
     (Flow360Version("25.10.15"), _to_25_10_15),
+    (Flow360Version("25.10.16"), _to_25_10_16),
     (Flow360Version("25.11.0"), _to_25_11_0),
+    (Flow360Version("25.11.1"), _to_25_11_1),
+    (Flow360Version("25.11.2"), _to_25_11_2),
 ]  # A list of the Python API version tuple with their corresponding updaters.
 
 

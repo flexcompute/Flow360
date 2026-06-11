@@ -10,58 +10,6 @@
                 "w": "w"
             },
             "interface_interpolation_tolerance": 0.2,
-            "material": {
-                "dynamic_viscosity": {
-                    "effective_temperature": {
-                        "value": 110.4
-                    },
-                    "reference_temperature": {
-                        "value": 273.15
-                    },
-                    "reference_viscosity": {
-                        "value": 1.716e-05
-                    }
-                },
-                "name": "air",
-                "prandtl_number": 0.72,
-                "thermally_perfect_gas": {
-                    "species": [
-                        {
-                            "mass_fraction": 1.0,
-                            "name": "Air",
-                            "nasa_9_coefficients": {
-                                "temperature_ranges": [
-                                    {
-                                        "coefficients": [
-                                            0.0,
-                                            0.0,
-                                            3.5,
-                                            0.0,
-                                            0.0,
-                                            0.0,
-                                            0.0,
-                                            0.0,
-                                            0.0
-                                        ],
-                                        "temperature_range_max": {
-                                            "value": 6000.0
-                                        },
-                                        "temperature_range_min": {
-                                            "value": 200.0
-                                        },
-                                        "type_name": "NASA9CoefficientSet"
-                                    }
-                                ],
-                                "type_name": "NASA9Coefficients"
-                            },
-                            "type_name": "FrozenSpecies"
-                        }
-                    ],
-                    "type_name": "ThermallyPerfectGas"
-                },
-                "turbulent_prandtl_number": 0.9,
-                "type": "air"
-            },
             "navier_stokes_solver": {
                 "CFL_multiplier": 1.0,
                 "absolute_tolerance": 1e-10,
@@ -200,7 +148,6 @@
         }
     ],
     "private_attribute_asset_cache": {
-        "cad_importer_version": "v1",
         "use_geometry_AI": false,
         "use_inhouse_mesher": false
     },
