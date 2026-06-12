@@ -1483,7 +1483,8 @@ class AeroAcousticOutput(Flow360BaseModel):
         None,
         description="Time step size for aeroacoustic output. "
         + "A valid value is larger than or equal to the time step size of the CFD simulation. "
-        + "Defaults to time step size of CFD.",
+        + "Defaults to time step size of CFD. "
+        + "Cannot be changed when a case is forked unless `force_clean_start` is true.",
     )
     aeroacoustic_solver_start_time: TimeType.NonNegative = pd.Field(
         0 * u.s,
