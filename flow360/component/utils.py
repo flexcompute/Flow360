@@ -17,6 +17,9 @@ from typing import List, Literal, Optional, Union
 import pydantic as pd
 import zstandard as zstd
 from flow360_schema.framework.base_model_config import base_model_config
+from flow360_schema.models.simulation.framework.updater_utils import (
+    deprecation_reminder,
+)
 
 from ..accounts_utils import Accounts
 from ..cloud.s3_utils import get_local_filename_and_create_folders
@@ -191,6 +194,25 @@ def shared_account_confirm_proceed():
                 continue
     else:
         return True
+
+
+@deprecation_reminder("25.99.99")
+def resolve_length_unit(length_unit):
+    """Resolve a project length unit, warning when it falls back to the default.
+
+    A default length unit is being deprecated: relying on it silently treats a CAD/mesh
+    of unknown scale as meters, which is the root cause of unit/scale-mismatch jobs.
+    Callers should pass the length unit explicitly. ``None`` means "unspecified".
+    """
+    if length_unit is not None:
+        return length_unit
+    log.warning(
+        "DeprecationWarning: `length_unit` was not specified and defaults to 'm'. "
+        "Relying on this default is deprecated and will be removed in a future release; "
+        "specify the length unit of your geometry/mesh explicitly to avoid silent "
+        "unit/scale mistakes."
+    )
+    return "m"
 
 
 def validate_type(value, parameter_name: str, expected_type):

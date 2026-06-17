@@ -64,6 +64,7 @@ from .utils import (
     MeshFileFormat,
     MeshNameParser,
     UGRIDEndianness,
+    resolve_length_unit,
     shared_account_confirm_proceed,
     validate_type,
     zstd_compress,
@@ -928,14 +929,14 @@ class VolumeMeshDraftV2(ResourceDraft):
         file_names: str,
         project_name: str = None,
         solver_version: str = None,
-        length_unit: LengthUnitType = "m",
+        length_unit: Optional[LengthUnitType] = None,
         tags: List[str] = None,
         folder: Optional[Folder] = None,
     ):
         self.file_name = file_names
         self.project_name = project_name
         self.tags = tags if tags is not None else []
-        self.length_unit = length_unit
+        self.length_unit = resolve_length_unit(length_unit)
         self.solver_version = solver_version
         self.folder = folder
         self._validate()
@@ -1143,7 +1144,7 @@ class VolumeMeshV2(AssetBase):
         file_name: str,
         project_name: str = None,
         solver_version: str = None,
-        length_unit: LengthUnitType = "m",
+        length_unit: Optional[LengthUnitType] = None,
         tags: List[str] = None,
         folder: Optional[Folder] = None,
     ) -> VolumeMeshDraftV2:

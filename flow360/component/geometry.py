@@ -37,6 +37,7 @@ from flow360.component.simulation.web.asset_base import AssetBase
 from flow360.component.utils import (
     GeometryFiles,
     MeshNameParser,
+    resolve_length_unit,
     shared_account_confirm_proceed,
 )
 from flow360.environment import current_environment
@@ -105,7 +106,7 @@ class GeometryDraft(ResourceDraft):
         cad_importer_version: Literal["v1", "v2"],
         project_name: str = None,
         solver_version: str = None,
-        length_unit: LengthUnitType = "m",
+        length_unit: Optional[LengthUnitType] = None,
         tags: List[str] = None,
         folder: Optional[Folder] = None,
         workflow: GeometryWorkflow = "standard",
@@ -137,7 +138,7 @@ class GeometryDraft(ResourceDraft):
         self._file_names = file_names
         self.project_name = project_name
         self.tags = tags if tags is not None else []
-        self.length_unit = length_unit
+        self.length_unit = resolve_length_unit(length_unit)
         self.solver_version = solver_version
         self.folder = folder
         self.workflow = workflow
@@ -477,7 +478,7 @@ class Geometry(AssetBase):
         file_names: Union[List[str], str],
         project_name: str = None,
         solver_version: str = None,
-        length_unit: LengthUnitType = "m",
+        length_unit: Optional[LengthUnitType] = None,
         tags: List[str] = None,
         folder: Optional[Folder] = None,
         workflow: GeometryWorkflow = "standard",
@@ -501,7 +502,7 @@ class Geometry(AssetBase):
         name: str,
         file_names: Union[List[str], str],
         project_id: str,
-        length_unit: LengthUnitType = "m",
+        length_unit: Optional[LengthUnitType] = None,
         tags: List[str] = None,
         cad_importer_version: Literal["v1", "v2"] = "v1",
     ) -> GeometryDraft:

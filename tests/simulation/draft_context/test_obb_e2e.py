@@ -6,7 +6,7 @@ Also tests the SurfaceSelector and List[Surface] input routes.
 """
 
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import numpy as np
 import pytest
@@ -37,7 +37,7 @@ POC_ALL_FACES = {
     ],
     "extents": [0.04999054650361766, 0.050011838526111047, 0.01012446986866631],
     "rotation_axis_index": 2,
-    "radius": 0.05000119251486435,
+    "averaged_radius": 0.05000119251486435,
     "num_vertices": 45156,
 }
 
@@ -107,16 +107,22 @@ class TestTessellationLoaderE2E:
         dots = np.abs(result.axes @ poc_axes.T)
         assert np.all(dots.max(axis=0) > 0.999)
 
-    def test_radius_matches_poc(self, local_tessellation_loader):
+    def test_averaged_radius_matches_poc(self, local_tessellation_loader):
         vertices = local_tessellation_loader.load_vertices(ALL_FACE_IDS)
         result = compute_obb(vertices)
-        assert abs(result.radius - POC_ALL_FACES["radius"]) < 1e-6
+        rotation_info = result.get_rotation_axis_and_radius(
+            axis_index=POC_ALL_FACES["rotation_axis_index"]
+        )
+        assert abs(rotation_info.averaged_radius - POC_ALL_FACES["averaged_radius"]) < 1e-6
 
     def test_rotation_axis_matches_poc(self, local_tessellation_loader):
         vertices = local_tessellation_loader.load_vertices(ALL_FACE_IDS)
         result = compute_obb(vertices)
+        rotation_info = result.get_rotation_axis_and_radius(
+            axis_index=POC_ALL_FACES["rotation_axis_index"]
+        )
         poc_rot_axis = POC_ALL_FACES["axes"][POC_ALL_FACES["rotation_axis_index"]]
-        dot = abs(np.dot(result.axis_of_rotation, poc_rot_axis))
+        dot = abs(np.dot(rotation_info.axis_of_rotation, poc_rot_axis))
         assert dot > 0.999
 
     def test_caching_returns_same_result(self, local_tessellation_loader):
@@ -230,7 +236,7 @@ class TestDraftContextComputeObb:
             draft_no_loader.compute_obb(surfaces)
 
     def test_compute_obb_with_length_unit(self, draft_with_surfaces, local_tessellation_loader):
-        """When length_unit is provided, center/extents/radius have units."""
+        """When length_unit is provided, center and extents have units."""
         import unyt
 
         from flow360.component.simulation.draft_context.context import DraftContext
@@ -250,10 +256,15 @@ class TestDraftContextComputeObb:
         assert isinstance(result.extents, unyt.unyt_array)
         assert str(result.center.units) == "m"
         assert str(result.extents.units) == "m"
+        assert not hasattr(result, "radius")
+        assert not hasattr(result, "axis_of_rotation")
 
-        # Radius should also carry units
-        assert isinstance(result.radius, unyt.unyt_quantity)
+        rotation_info = result.get_rotation_axis_and_radius(
+            axis_index=POC_ALL_FACES["rotation_axis_index"]
+        )
+        assert isinstance(rotation_info.averaged_radius, unyt.unyt_quantity)
+        assert str(rotation_info.averaged_radius.units) == "m"
 
-        # Axes and axis_of_rotation should remain dimensionless numpy
+        # Axes and derived axis_of_rotation should remain dimensionless numpy
         assert not isinstance(result.axes, unyt.unyt_array)
-        assert not isinstance(result.axis_of_rotation, unyt.unyt_array)
+        assert not isinstance(rotation_info.axis_of_rotation, unyt.unyt_array)

@@ -1,13 +1,17 @@
 """Tests for OBB (Oriented Bounding Box) computation via PCA."""
 
+from unittest.mock import patch
+
 import numpy as np
 import pytest
 
 from flow360.component.simulation.draft_context.obb.compute import (
     OBBResult,
+    RotationAxisAndRadius,
     _select_rotation_axis_index,
     compute_obb,
 )
+from flow360.exceptions import Flow360ValueError
 
 # ---------------------------------------------------------------------------
 # Fixtures / helpers
@@ -101,8 +105,8 @@ class TestComputeObb:
         assert obb.center is not None
         assert obb.axes is not None
         assert obb.extents is not None
-        assert obb.axis_of_rotation is not None
-        assert obb.radius is not None
+        assert not hasattr(obb, "axis_of_rotation")
+        assert not hasattr(obb, "radius")
 
 
 # ---------------------------------------------------------------------------
@@ -138,32 +142,89 @@ class TestRotationAxisSelection:
 
 
 class TestComputeObbRotationAxis:
-    def test_hint_baked_into_result(self):
-        """rotation_axis_hint at compute_obb time is baked into the result fields."""
+    def test_axis_index_selects_rotation_axis_and_averaged_radius(self):
+        verts = _box_vertices(10, 3, 5)
+        obb = compute_obb(verts)
+        info = obb.get_rotation_axis_and_radius(axis_index=1)
+
+        assert isinstance(info, RotationAxisAndRadius)
+        assert abs(np.dot(info.axis_of_rotation, [0, 0, 1])) > 0.99
+        assert info.averaged_radius == pytest.approx(6.5)
+        assert not hasattr(info, "radius")
+
+    def test_numpy_axis_index_selects_rotation_axis_and_averaged_radius(self):
+        verts = _box_vertices(10, 3, 5)
+        obb = compute_obb(verts)
+        info = obb.get_rotation_axis_and_radius(axis_index=np.int64(1))
+
+        assert abs(np.dot(info.axis_of_rotation, [0, 0, 1])) > 0.99
+        assert info.averaged_radius == pytest.approx(6.5)
+
+    def test_hint_selects_rotation_axis_and_averaged_radius(self):
         verts = _cylinder_vertices(radius=5.0, half_height=20.0, axis="z")
-        obb = compute_obb(verts, rotation_axis_hint=[0, 0, 1])
-        assert abs(np.dot(obb.axis_of_rotation, [0, 0, 1])) > 0.99
+        obb = compute_obb(verts)
+        info = obb.get_rotation_axis_and_radius(rotation_axis_hint=[0, 0, 1])
+        assert abs(np.dot(info.axis_of_rotation, [0, 0, 1])) > 0.99
 
     def test_default_circularity(self):
         """Without hint, circularity picks the cylinder axis."""
         verts = _cylinder_vertices(radius=5.0, half_height=20.0, axis="z")
         obb = compute_obb(verts)
-        # Z-axis cylinder: rotation axis should align with Z
-        assert abs(np.dot(obb.axis_of_rotation, [0, 0, 1])) > 0.99
 
-    def test_radius_with_hint(self):
-        verts = _box_vertices(10, 3, 5)
-        obb = compute_obb(verts, rotation_axis_hint=[0, 0, 1])
-        # Hint Z → axis 2 → perpendicular extents are 10 and 3 → radius = 6.5
-        assert obb.radius == pytest.approx(6.5)
+        with patch(
+            "flow360.component.simulation.draft_context.obb.compute.log.warning"
+        ) as mock_warning:
+            info = obb.get_rotation_axis_and_radius()
 
-    def test_radius_default(self):
+        mock_warning.assert_called_once()
+        assert abs(np.dot(info.axis_of_rotation, [0, 0, 1])) > 0.99
+
+    def test_averaged_radius_with_hint(self):
         verts = _box_vertices(10, 3, 5)
         obb = compute_obb(verts)
-        # Circularity: axis 0 (perp 3,5 ratio 0.6) wins → radius = (3+5)/2 = 4.0
-        assert obb.radius == pytest.approx(4.0)
+        info = obb.get_rotation_axis_and_radius(rotation_axis_hint=[0, 0, 1])
+        # Hint Z selects the Z principal axis; perpendicular extents are 10 and 3.
+        assert info.averaged_radius == pytest.approx(6.5)
 
-    def test_radius_for_perfect_cylinder(self):
+    def test_averaged_radius_default(self):
+        verts = _box_vertices(10, 3, 5)
+        obb = compute_obb(verts)
+        with patch("flow360.component.simulation.draft_context.obb.compute.log.warning"):
+            info = obb.get_rotation_axis_and_radius()
+        # Circularity: axis 0 (perp 3,5 ratio 0.6) wins -> averaged_radius = (3+5)/2.
+        assert info.averaged_radius == pytest.approx(4.0)
+
+    def test_averaged_radius_for_perfect_cylinder(self):
         verts = _cylinder_vertices(radius=5.0, half_height=20.0, axis="z")
-        obb = compute_obb(verts, rotation_axis_hint=[0, 0, 1])
-        assert obb.radius == pytest.approx(5.0, abs=0.2)
+        obb = compute_obb(verts)
+        info = obb.get_rotation_axis_and_radius(rotation_axis_hint=[0, 0, 1])
+        assert info.averaged_radius == pytest.approx(5.0, abs=0.2)
+
+    def test_printed_result_shows_averaged_radius_formula(self):
+        verts = _box_vertices(10, 3, 5)
+        obb = compute_obb(verts)
+        info = obb.get_rotation_axis_and_radius(axis_index=1)
+
+        text = str(info)
+        assert "averaged_radius=" in text
+        assert " radius=" not in text
+        assert "calculated as" in text
+        assert "/ 2" in text
+
+    def test_rejects_axis_index_and_hint_together(self):
+        obb = compute_obb(_box_vertices(10, 3, 5))
+
+        with pytest.raises(Flow360ValueError, match="cannot both be provided"):
+            obb.get_rotation_axis_and_radius(axis_index=0, rotation_axis_hint=[0, 0, 1])
+
+    def test_rejects_invalid_axis_index(self):
+        obb = compute_obb(_box_vertices(10, 3, 5))
+
+        with pytest.raises(Flow360ValueError, match="axis_index"):
+            obb.get_rotation_axis_and_radius(axis_index=3)
+
+    def test_rejects_zero_rotation_axis_hint(self):
+        obb = compute_obb(_box_vertices(10, 3, 5))
+
+        with pytest.raises(Flow360ValueError, match="non-zero"):
+            obb.get_rotation_axis_and_radius(rotation_axis_hint=[0, 0, 0])

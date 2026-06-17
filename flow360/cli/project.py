@@ -80,7 +80,7 @@ def _create_project_from_files(  # pylint: disable=too-many-arguments
     *,
     name=None,
     solver_version=None,
-    length_unit="m",
+    length_unit=None,
     tags=None,
     folder_id=None,
     workflow="standard",
@@ -279,7 +279,12 @@ def _serialize_created_project(result):
 )
 @click.option("--name", default=None, help="Project name.")
 @click.option("--solver-version", default=None, help="Solver version.")
-@click.option("--unit", "length_unit", default="m", show_default=True, help="Project length unit.")
+@click.option(
+    "--unit",
+    "length_unit",
+    default=None,
+    help="Project length unit. If omitted, defaults to 'm' (deprecated); specify explicitly.",
+)
 @click.option("--tag", "tags", multiple=True, help="Project tag. Repeat for multiple tags.")
 @click.option("--folder-id", default=None, help="Destination folder ID.")
 @click.option(

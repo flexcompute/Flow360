@@ -988,6 +988,32 @@ def _to_25_10_16(params_as_dict):
     return params_as_dict
 
 
+def _to_25_10_17(params_as_dict):
+    """Map ``sealing_size`` 0 to None.
+
+    ``sealing_size`` changed from NonNegativeFloat64 (default 0, sealing disabled) to
+    PositiveFloat64 | None (None disables sealing), so a stored 0 is no longer valid.
+    Applies to ``meshing.defaults`` and each ``meshing.refinements`` entry.
+    """
+
+    def _zero_to_none(container):
+        if not isinstance(container, dict):
+            return
+        value = container.get("sealing_size")
+        if isinstance(value, dict) and value.get("value") == 0:
+            container["sealing_size"] = None
+
+    meshing = params_as_dict.get("meshing")
+    if not isinstance(meshing, dict):
+        return params_as_dict
+
+    _zero_to_none(meshing.get("defaults"))
+    for refinement in meshing.get("refinements") or []:
+        _zero_to_none(refinement)
+
+    return params_as_dict
+
+
 VERSION_MILESTONES = [
     (Flow360Version("24.11.1"), _to_24_11_1),
     (Flow360Version("24.11.7"), _to_24_11_7),
@@ -1018,6 +1044,7 @@ VERSION_MILESTONES = [
     (Flow360Version("25.10.14"), _to_25_10_14),
     (Flow360Version("25.10.15"), _to_25_10_15),
     (Flow360Version("25.10.16"), _to_25_10_16),
+    (Flow360Version("25.10.17"), _to_25_10_17),
 ]  # A list of the Python API version tuple with their corresponding updaters.
 
 

@@ -33,6 +33,7 @@ from flow360.component.simulation.web.asset_base import AssetBase
 from flow360.component.utils import (
     MeshNameParser,
     SurfaceMeshFile,
+    resolve_length_unit,
     shared_account_confirm_proceed,
 )
 from flow360.environment import current_environment
@@ -120,7 +121,7 @@ class SurfaceMeshDraftV2(ResourceDraft):
         file_names: str,
         project_name: str = None,
         solver_version: str = None,
-        length_unit: LengthUnitType = "m",
+        length_unit: Optional[LengthUnitType] = None,
         tags: List[str] = None,
         folder: Optional[Folder] = None,
     ):
@@ -151,7 +152,7 @@ class SurfaceMeshDraftV2(ResourceDraft):
         self._file_name = file_names
         self.project_name = project_name
         self.tags = tags if tags is not None else []
-        self.length_unit = length_unit
+        self.length_unit = resolve_length_unit(length_unit)
         self.solver_version = solver_version
         self.folder = folder
 
@@ -467,7 +468,7 @@ class SurfaceMeshV2(AssetBase):
         file_name: str,
         project_name: str = None,
         solver_version: str = None,
-        length_unit: LengthUnitType = "m",
+        length_unit: Optional[LengthUnitType] = None,
         tags: List[str] = None,
         folder: Optional[Folder] = None,
     ) -> SurfaceMeshDraftV2:
@@ -509,7 +510,7 @@ class SurfaceMeshV2(AssetBase):
         name: str,
         file_name: str,
         project_id: str,
-        length_unit: LengthUnitType = "m",
+        length_unit: Optional[LengthUnitType] = None,
         tags: List[str] = None,
     ) -> SurfaceMeshDraftV2:
         """

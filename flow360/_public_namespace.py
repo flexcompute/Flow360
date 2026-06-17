@@ -214,6 +214,10 @@ from flow360.component.project import Project, create_draft
 from flow360.component.simulation import migration, services
 from flow360.component.simulation.draft_context.mirror import MirrorPlane
 from flow360.component.simulation.folder import Folder
+from flow360.component.simulation.warning_bypass import (
+    BypassableWarning,
+    warning_bypass,
+)
 from flow360.component.surface_mesh_v2 import SurfaceMeshV2 as SurfaceMesh
 from flow360.component.volume_mesh import VolumeMeshV2 as VolumeMesh
 from flow360.environment import Env
@@ -254,6 +258,8 @@ __all__ = [
     "SI_unit_system",
     "imperial_unit_system",
     "CGS_unit_system",
+    "warning_bypass",
+    "BypassableWarning",
     "services",
     "MeshingParams",
     "MeshingDefaults",

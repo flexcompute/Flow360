@@ -292,7 +292,7 @@ class AssetBase(metaclass=ABCMeta):
         file_names: Union[List[str], str],
         project_name: str = None,
         solver_version: str = None,
-        length_unit: LengthUnitType = "m",
+        length_unit: Optional[LengthUnitType] = None,
         tags: List[str] = None,
         folder: Optional[Folder] = None,
     ):

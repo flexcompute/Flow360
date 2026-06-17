@@ -21,6 +21,7 @@ from ._public_namespace import BETDiskTwist as BETDiskTwist
 from ._public_namespace import BodyGroupSelector as BodyGroupSelector
 from ._public_namespace import BoundaryLayer as BoundaryLayer
 from ._public_namespace import Box as Box
+from ._public_namespace import BypassableWarning as BypassableWarning
 from ._public_namespace import C81File as C81File
 from ._public_namespace import Case as Case
 from ._public_namespace import CentralBelt as CentralBelt
@@ -195,3 +196,4 @@ from ._public_namespace import show_user_variables as show_user_variables
 from ._public_namespace import snappy as snappy
 from ._public_namespace import solution as solution
 from ._public_namespace import u as u
+from ._public_namespace import warning_bypass as warning_bypass

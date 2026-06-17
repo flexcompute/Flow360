@@ -28,6 +28,7 @@ from flow360_schema.models.simulation.meshing_param.meshing_specs import (
     VolumeMeshingDefaults,
 )
 from flow360_schema.models.simulation.meshing_param.meshing_validators import (
+    validate_geometry_ai_size_ordering,
     validate_snappy_uniform_refinement_entities,
 )
 from flow360_schema.models.simulation.meshing_param.volume_params import (
@@ -507,6 +508,37 @@ class MeshingParams(Flow360BaseModel):
                     "'remove_hidden_geometry' is not enabled in meshing defaults. "
                     "The per-face 'min_passage_size' will be ignored."
                 )
+        return self
+
+    @pd.model_validator(mode="after")
+    def _check_geometry_refinement_size_ordering(self) -> Self:
+        """Ensure each GeometryRefinement's effective sizes are mutually consistent."""
+        for refinement in self.refinements or []:
+            if not isinstance(refinement, GeometryRefinement):
+                continue
+            geometry_accuracy = (
+                refinement.geometry_accuracy
+                if refinement.geometry_accuracy is not None
+                else self.defaults.geometry_accuracy
+            )
+            sealing_size = (
+                refinement.sealing_size if refinement.sealing_size is not None else self.defaults.sealing_size
+            )
+            # The per-face min_passage_size only takes effect when hidden geometry removal is enabled,
+            # otherwise it is ignored (see _warn_min_passage_size_without_remove_hidden_geometry).
+            min_passage_size = None
+            if self.defaults.remove_hidden_geometry:
+                min_passage_size = (
+                    refinement.min_passage_size
+                    if refinement.min_passage_size is not None
+                    else self.defaults.min_passage_size
+                )
+            validate_geometry_ai_size_ordering(
+                geometry_accuracy=geometry_accuracy,
+                sealing_size=sealing_size,
+                min_passage_size=min_passage_size,
+                location=f"for GeometryRefinement '{refinement.name}'",
+            )
         return self
 
     @contextual_model_validator(mode="after")

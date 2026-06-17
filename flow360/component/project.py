@@ -46,6 +46,7 @@ from flow360.component.interfaces import (
 from flow360.component.project_utils import (
     apply_and_inform_grouping_selections,
     deep_copy_entity_info,
+    enforce_length_scale_sanity,
     ensure_cad_importer_compatible_with_mesher,
     load_status_from_asset,
     read_root_cad_importer_version,
@@ -965,7 +966,7 @@ class Project(pd.BaseModel):
         cad_importer_version: Literal["v1", "v2"],
         name: str = None,
         solver_version: str = __solver_version__,
-        length_unit: LengthUnitType = "m",
+        length_unit: Optional[LengthUnitType] = None,
         tags: List[str] = None,
         run_async: bool = False,
         folder: Optional[Folder] = None,
@@ -1208,7 +1209,7 @@ class Project(pd.BaseModel):
         /,
         name: str = None,
         solver_version: str = __solver_version__,
-        length_unit: LengthUnitType = "m",
+        length_unit: Optional[LengthUnitType] = None,
         tags: List[str] = None,
         run_async: bool = False,
         folder: Optional[Folder] = None,
@@ -1291,7 +1292,7 @@ class Project(pd.BaseModel):
         /,
         name: str = None,
         solver_version: str = __solver_version__,
-        length_unit: LengthUnitType = "m",
+        length_unit: Optional[LengthUnitType] = None,
         tags: List[str] = None,
         run_async: bool = False,
         folder: Optional[Folder] = None,
@@ -2211,6 +2212,14 @@ class Project(pd.BaseModel):
             )
             if raise_on_error:
                 raise ValueError("Submission terminated due to local validation error.")
+            return None
+
+        if not enforce_length_scale_sanity(params):
+            if raise_on_error:
+                raise Flow360ValueError(
+                    "Submission terminated due to a potential length scale mismatch. Acknowledge via "
+                    '`with warning_bypass("potential_length_scale_mismatch"):` to proceed.'
+                )
             return None
 
         active_draft = get_active_draft()

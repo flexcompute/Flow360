@@ -143,15 +143,17 @@ class GeometryRefinement(Flow360BaseModel):
         + "to geometry_accuracy should be resolved accurately during the surface meshing process.",
     )
 
-    sealing_size: Length.NonNegativeFloat64 | None = pd.Field(
+    sealing_size: Length.PositiveFloat64 | None = pd.Field(
         None,
-        description="Threshold size below which all geometry gaps are automatically closed.",
+        description="Threshold size below which all geometry gaps are automatically closed. "
+        "When set, it must not be smaller than geometry_accuracy.",
     )
 
     min_passage_size: Length.PositiveFloat64 | None = pd.Field(
         None,
         description="Minimum passage size that hidden geometry removal can resolve for this face group. "
         "Internal regions connected by thin passages smaller than this size may not be detected. "
+        "It must not be smaller than geometry_accuracy, nor smaller than sealing_size when sealing_size is nonzero. "
         "If not specified, the value is derived from geometry_accuracy and sealing_size.",
     )
 

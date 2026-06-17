@@ -34,6 +34,10 @@ from pydantic import ValidationError
 from flow360.component.simulation import services
 from flow360.component.simulation.draft_context import get_active_draft
 from flow360.component.simulation.user_code.core.types import save_user_variables
+from flow360.component.simulation.warning_bypass import (
+    LENGTH_SCALE_MISMATCH,
+    is_warning_bypassed,
+)
 from flow360.component.simulation.web.asset_base import AssetBase
 from flow360.exceptions import (
     Flow360ConfigurationError,
@@ -717,3 +721,112 @@ def validate_params_with_context(params: SimulationParams, root_item_type, up_to
     )
 
     return params, errors, warnings
+
+
+# Ratio = largest-bounding-box-dimension / requested setting value. Mirrors the WebUI thresholds
+# (flow360-ui-next .../hooks/use-meshing-warnings.ts) so both paths flag the same cases.
+# A "too fine" setting (large ratio) usually signals an incorrect CAD length unit/scale and wasted
+# compute -> confirm gate. A "too coarse" geometry_accuracy (small ratio) is only advisory -> soft warn.
+MAX_EDGE_LENGTH_TOO_FINE_RATIO = 500  # surface_max_edge_length < bbox_max / 500
+GEOMETRY_ACCURACY_TOO_FINE_RATIO = 100_000  # geometry_accuracy < bbox_max / 100000
+GEOMETRY_ACCURACY_TOO_COARSE_RATIO = 100  # geometry_accuracy > bbox_max / 100
+
+
+def _collect_length_settings(meshing) -> list:
+    """(label, value) pairs of mesh length settings to sanity-check against the bounding box."""
+    defaults = getattr(meshing, "defaults", None)
+    refinements = getattr(meshing, "refinements", None) or []
+    settings = [
+        ("max_edge_length", getattr(defaults, "surface_max_edge_length", None)),
+        ("geometry_accuracy", getattr(defaults, "geometry_accuracy", None)),
+    ]
+    for refinement in refinements:
+        settings.append(("max_edge_length", getattr(refinement, "max_edge_length", None)))
+        settings.append(("geometry_accuracy", getattr(refinement, "geometry_accuracy", None)))
+    return [(label, value) for label, value in settings if value is not None]
+
+
+def _confirm_length_scale_proceed(warning_message: str) -> bool:
+    """Interactively confirm proceeding past a likely length-scale mismatch.
+
+    Returns True only on an explicit ``y``. A declined prompt or a non-interactive
+    session (no stdin) returns False.
+    """
+    log.warning(warning_message)
+    print("Proceed with submission anyway? (y/n): ")
+    while True:
+        try:
+            answer = input().strip().lower()
+        except EOFError:
+            return False
+        if answer == "y":
+            return True
+        if answer == "n":
+            return False
+        print("Enter a valid value (y/n): ")
+
+
+def enforce_length_scale_sanity(params: SimulationParams) -> bool:
+    """Decide whether to proceed when a requested mesh length setting is implausibly fine.
+
+    Compares the geometry's largest bounding-box dimension against each requested length setting
+    (``max_edge_length``, ``geometry_accuracy``), mirroring the WebUI thresholds. A "too fine"
+    setting usually means the geometry was uploaded with the wrong length unit/scale (e.g. an inches
+    model treated as meters), which would launch a needlessly huge meshing job — the user is asked
+    to confirm. A "too coarse" ``geometry_accuracy`` is only an advisory soft warning and never
+    blocks. Pre-acknowledge the confirm prompt — e.g. in a batch loop — via
+    ``with warning_bypass("potential_length_scale_mismatch"):``.
+
+    Returns ``True`` to proceed (no mismatch, acknowledged, or confirmed), ``False`` when a
+    mismatch was declined or could not be confirmed (non-interactive session). The caller decides
+    whether to raise or return based on its ``raise_on_error`` policy.
+    """
+    if is_warning_bypassed(LENGTH_SCALE_MISMATCH):
+        return True
+
+    asset_cache = params.private_attribute_asset_cache
+    bounding_box = getattr(asset_cache.project_entity_info, "global_bounding_box", None)
+    project_length_unit = asset_cache.project_length_unit
+    if bounding_box is None or project_length_unit is None or params.meshing is None:
+        return True
+
+    bounding_box_largest_dimension = bounding_box.largest_dimension * project_length_unit
+
+    # Track the worst (highest-ratio) "too fine" offender per setting -> confirm gate.
+    too_fine: dict[str, str] = {}
+    too_fine_ratio: dict[str, float] = {}
+    too_coarse_ratio = None  # lowest-ratio geometry_accuracy -> soft warn only
+    for label, value in _collect_length_settings(params.meshing):
+        ratio = (bounding_box_largest_dimension / value).to_value("dimensionless")
+        fine_limit = (
+            MAX_EDGE_LENGTH_TOO_FINE_RATIO
+            if label == "max_edge_length"
+            else GEOMETRY_ACCURACY_TOO_FINE_RATIO
+        )
+        if ratio > fine_limit and ratio > too_fine_ratio.get(label, 0):
+            too_fine_ratio[label] = ratio
+            too_fine[label] = (
+                f"{label} ({value}) is {ratio:.1e}x smaller than the largest dimension"
+            )
+        elif label == "geometry_accuracy" and ratio < GEOMETRY_ACCURACY_TOO_COARSE_RATIO:
+            if too_coarse_ratio is None or ratio < too_coarse_ratio:
+                too_coarse_ratio = ratio
+
+    if too_coarse_ratio is not None:
+        log.warning(
+            f"geometry_accuracy is coarse relative to the geometry's largest bounding-box dimension "
+            f"({bounding_box_largest_dimension}); the surface mesh may under-resolve the geometry."
+        )
+
+    if not too_fine:
+        return True
+
+    warning_message = (
+        f"The requested mesh resolution is implausibly fine for the geometry's largest bounding-box "
+        f"dimension ({bounding_box_largest_dimension}): " + "; ".join(too_fine.values()) + ". This "
+        "usually means the geometry was uploaded with an incorrect length unit or scale and would "
+        "launch an unnecessarily large meshing job. Please verify the geometry's length unit or your "
+        f"mesh settings. To proceed without prompting (e.g. in a batch loop), wrap the run in "
+        f'`with warning_bypass("{LENGTH_SCALE_MISMATCH}"):`.'
+    )
+    return _confirm_length_scale_proceed(warning_message)

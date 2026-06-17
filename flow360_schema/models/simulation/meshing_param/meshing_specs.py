@@ -13,6 +13,9 @@ from flow360_schema.models.simulation.framework.updater import (
     DEFAULT_PLANAR_FACE_TOLERANCE,
     DEFAULT_SLIDING_INTERFACE_TOLERANCE,
 )
+from flow360_schema.models.simulation.meshing_param.meshing_validators import (
+    validate_geometry_ai_size_ordering,
+)
 from flow360_schema.models.simulation.validation.validation_context import (
     SURFACE_MESH,
     VOLUME_MESH,
@@ -232,9 +235,10 @@ class MeshingDefaults(Flow360BaseModel):
         + "per face with :class:`~flow360.GeometryRefinement`.",
     )
 
-    sealing_size: Length.NonNegativeFloat64 = pd.Field(
-        0.0 * u.m,
+    sealing_size: Length.PositiveFloat64 | None = pd.Field(
+        None,
         description="Threshold size below which all geometry gaps are automatically closed. "
+        + "When set, it must not be smaller than geometry_accuracy; leave unset to disable sealing. "
         + "This option is only supported when using geometry AI, and can be overridden "
         + "per face with :class:`~flow360.GeometryRefinement`.",
     )
@@ -249,6 +253,7 @@ class MeshingDefaults(Flow360BaseModel):
         None,
         description="Minimum passage size that hidden geometry removal can resolve. "
         + "Internal regions connected by thin passages smaller than this size may not be detected. "
+        + "It must not be smaller than geometry_accuracy, nor smaller than sealing_size when sealing_size is nonzero. "
         + "If not specified, the value is derived from geometry_accuracy and sealing_size. "
         + "This option is only supported when using geometry AI.",
     )
@@ -378,6 +383,17 @@ class MeshingDefaults(Flow360BaseModel):
         """Ensure min_passage_size is only specified when remove_hidden_geometry is True."""
         if self.min_passage_size is not None and not self.remove_hidden_geometry:
             raise ValueError("'min_passage_size' can only be specified when 'remove_hidden_geometry' is True.")
+        return self
+
+    @pd.model_validator(mode="after")
+    def validate_size_ordering(self):
+        """Ensure geometry_accuracy, sealing_size and min_passage_size are mutually consistent."""
+        validate_geometry_ai_size_ordering(
+            geometry_accuracy=self.geometry_accuracy,
+            sealing_size=self.sealing_size,
+            min_passage_size=self.min_passage_size,
+            location="in meshing defaults",
+        )
         return self
 
     @contextual_field_validator("volume_edge_growth_rate", mode="after")
