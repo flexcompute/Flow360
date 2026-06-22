@@ -143,10 +143,10 @@ class GeometryRefinement(Flow360BaseModel):
         + "to geometry_accuracy should be resolved accurately during the surface meshing process.",
     )
 
-    sealing_size: Length.PositiveFloat64 | None = pd.Field(
+    sealing_size: Length.NonNegativeFloat64 | None = pd.Field(
         None,
         description="Threshold size below which all geometry gaps are automatically closed. "
-        "When set, it must not be smaller than geometry_accuracy.",
+        "When nonzero, it must not be smaller than geometry_accuracy.",
     )
 
     min_passage_size: Length.PositiveFloat64 | None = pd.Field(

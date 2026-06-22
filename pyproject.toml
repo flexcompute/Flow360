@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "flow360"
-version = "25.10.0b1"
+version = "25.10.1"
 description = "Flow360 Python Client"
 authors = ["Flexcompute <support@flexcompute.com>"]
 packages = [{include = "flow360"}, {include = "flow360_schema"}]
@@ -95,7 +95,6 @@ docs = [
     "sphinx-tabs",
     "nbdime",
     "myst-parser",
-    "pyswarms",
     "sphinxemoji",
     "readthedocs-sphinx-search",
     "cairosvg",

@@ -472,6 +472,17 @@ class ParamsValidationInfo:
         """Get the deserialized entity_info."""
         return self._entity_info
 
+    def get_boundary_names(self) -> set[str]:
+        """Names of every boundary in the geometry (after face grouping), or an empty set when unavailable."""
+        get_boundaries = getattr(self._entity_info, "get_boundaries", None)
+        if get_boundaries is None:
+            return set()
+        try:
+            return {boundary.name for boundary in get_boundaries()}
+        except ValueError:
+            # Grouping is unresolved (e.g. no grouping tag); treat as "cannot enumerate".
+            return set()
+
     def get_entity_registry(self):
         """Get the entity_registry."""
         return self._entity_registry

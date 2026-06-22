@@ -542,6 +542,41 @@ class MeshingParams(Flow360BaseModel):
         return self
 
     @contextual_model_validator(mode="after")
+    def _check_default_size_ordering_against_faces(self, param_info: ParamsValidationInfo) -> Self:
+        """Apply the default size ordering only to faces that fall through to the defaults.
+
+        ``geometry_accuracy``, ``sealing_size`` and ``min_passage_size`` are all effectively per-face
+        (overridable via :class:`~flow360.GeometryRefinement`), so the defaults constrain a face only
+        when no refinement covers it. Covered faces are validated in
+        ``_check_geometry_refinement_size_ordering`` using their effective sizes; here we cover the
+        rest. When every face is covered the defaults are unused and the check is skipped. When the
+        boundary list is unavailable the check is kept (conservative).
+        """
+        boundaries_with_refinement: set[str] = set()
+        for refinement in self.refinements or []:
+            if isinstance(refinement, GeometryRefinement):
+                boundaries_with_refinement.update(
+                    entity.name for entity in param_info.expand_entity_list(refinement.entities)
+                )
+
+        # Both sides are Surface.name resolved from the same entity_info grouping, so the subset
+        # test is well defined; a name mismatch could only drop a boundary from the "covered" set,
+        # which keeps the check (never skips it incorrectly).
+        all_boundaries = param_info.get_boundary_names()
+        every_boundary_has_refinement = bool(all_boundaries) and all_boundaries <= boundaries_with_refinement
+        if every_boundary_has_refinement:
+            return self
+
+        min_passage_size = self.defaults.min_passage_size if self.defaults.remove_hidden_geometry else None
+        validate_geometry_ai_size_ordering(
+            geometry_accuracy=self.defaults.geometry_accuracy,
+            sealing_size=self.defaults.sealing_size,
+            min_passage_size=min_passage_size,
+            location="in meshing defaults",
+        )
+        return self
+
+    @contextual_model_validator(mode="after")
     def _warn_multi_zone_remove_hidden_geometry(self) -> Self:
         """Warn when remove_hidden_geometry is enabled with multiple farfield/custom volume zones."""
         if not self.defaults.remove_hidden_geometry:
