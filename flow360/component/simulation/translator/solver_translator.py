@@ -1509,11 +1509,15 @@ def _append_turbulence_quantities_to_dict(model, model_dict, boundary):
     return boundary
 
 
-def _get_default_mass_outflow_udd(entities, mass_flow_rate):
+def _get_default_mass_outflow_udd(entities, mass_flow_rate, controlled_outputs=None):
     """Default mass outflow UDD translator"""
+    controlled_outputs = controlled_outputs or {}
     proportional_coefficient = 1.0e-2
     udd_list = []
     for entity in entities.stored_entities:
+        entity_key = getattr(entity, "full_name", None) or entity.name
+        if "staticPressureRatio" in controlled_outputs.get(entity_key, ()):
+            continue
         udd = UserDefinedDynamic(
             name=f"massOutflowController_{entity.name}",
             input_vars=["massFlowRate", "area", "hasSupersonicFlow"],
@@ -1538,11 +1542,15 @@ def _get_default_mass_outflow_udd(entities, mass_flow_rate):
     return udd_list
 
 
-def _get_default_mass_inflow_udd(entities, mass_flow_rate):
+def _get_default_mass_inflow_udd(entities, mass_flow_rate, controlled_outputs=None):
     """Default mass inflow UDD translator"""
+    controlled_outputs = controlled_outputs or {}
     proportional_coefficient = 1.0e-2
     udd_list = []
     for entity in entities.stored_entities:
+        entity_key = getattr(entity, "full_name", None) or entity.name
+        if "totalPressureRatio" in controlled_outputs.get(entity_key, ()):
+            continue
         udd = UserDefinedDynamic(
             name=f"massInflowController_{entity.name}",
             input_vars=["massFlowRate", "area", "hasSupersonicFlow"],
@@ -1567,17 +1575,29 @@ def _get_default_mass_inflow_udd(entities, mass_flow_rate):
     return udd_list
 
 
+def _udd_controlled_outputs(user_defined_dynamics):
+    """Output variables (keyed by target patch) already driven by user UDDs."""
+    controlled = {}
+    for udd in user_defined_dynamics or []:
+        if udd.output_target is None or udd.output_vars is None:
+            continue
+        key = getattr(udd.output_target, "full_name", None) or udd.output_target.name
+        controlled.setdefault(key, set()).update(udd.output_vars.keys())
+    return controlled
+
+
 def mass_flow_default_udd(models, user_defined_dynamics):
-    """Default mass flow rate translator"""
+    """Generate the stock mass-flow controller, unless a user UDD already drives that patch."""
+    controlled = _udd_controlled_outputs(user_defined_dynamics)
     mass_flow_user_defined_dynamics = []
     for model in models:
         if isinstance(model, Outflow):
             if isinstance(model.spec, MassFlowRate):
-                udd = _get_default_mass_outflow_udd(model.entities, model.spec.value)
+                udd = _get_default_mass_outflow_udd(model.entities, model.spec.value, controlled)
                 mass_flow_user_defined_dynamics.extend(udd)
         elif isinstance(model, Inflow):
             if isinstance(model.spec, MassFlowRate):
-                udd = _get_default_mass_inflow_udd(model.entities, model.spec.value)
+                udd = _get_default_mass_inflow_udd(model.entities, model.spec.value, controlled)
                 mass_flow_user_defined_dynamics.extend(udd)
 
     if len(mass_flow_user_defined_dynamics) == 0:
