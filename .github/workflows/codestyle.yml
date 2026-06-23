@@ -2,13 +2,12 @@ name: Codestyle checking
 
 on:
   workflow_call:
-    secrets:
-      AWS_CODEARTIFACT_READ_ACCESS_KEY:
-        required: true
-      AWS_CODEARTIFACT_READ_ACCESS_SECRET:
-        required: true
   workflow_dispatch:
-    
+
+permissions:
+  contents: read
+  id-token: write
+
 jobs:
   black:
     runs-on: ubuntu-latest
@@ -23,8 +22,7 @@ jobs:
       - name: Setup CodeArtifact auth for Poetry
         uses: ./.github/actions/setup-codeartifact-poetry-auth
         with:
-          aws-access-key-id: ${{ secrets.AWS_CODEARTIFACT_READ_ACCESS_KEY }}
-          aws-secret-access-key: ${{ secrets.AWS_CODEARTIFACT_READ_ACCESS_SECRET }}
+          role-to-assume: arn:aws:iam::625554095313:role/github-action-codeartifact-readonly
       - name: Install black
         run: poetry install
       - name: Run black
@@ -43,12 +41,11 @@ jobs:
       - name: Setup CodeArtifact auth for Poetry
         uses: ./.github/actions/setup-codeartifact-poetry-auth
         with:
-          aws-access-key-id: ${{ secrets.AWS_CODEARTIFACT_READ_ACCESS_KEY }}
-          aws-secret-access-key: ${{ secrets.AWS_CODEARTIFACT_READ_ACCESS_SECRET }}
+          role-to-assume: arn:aws:iam::625554095313:role/github-action-codeartifact-readonly
       - name: Install isort
         run: poetry install
       - name: Check isort version
-        run: poetry run isort --version 
+        run: poetry run isort --version
       - name: Run isort
         run: poetry run isort . --check-only
 
@@ -75,8 +72,7 @@ jobs:
       - name: Setup CodeArtifact auth for Poetry
         uses: ./.github/actions/setup-codeartifact-poetry-auth
         with:
-          aws-access-key-id: ${{ secrets.AWS_CODEARTIFACT_READ_ACCESS_KEY }}
-          aws-secret-access-key: ${{ secrets.AWS_CODEARTIFACT_READ_ACCESS_SECRET }}
+          role-to-assume: arn:aws:iam::625554095313:role/github-action-codeartifact-readonly
       - name: Install dependencies
         run: poetry install
       - name: Run pylint

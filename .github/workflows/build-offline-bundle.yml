@@ -34,6 +34,11 @@ on:
         type: string
         default: ""
 
+permissions:
+  actions: write
+  contents: read
+  id-token: write
+
 jobs:
   resolve-ref:
     runs-on: ubuntu-latest
@@ -202,8 +207,7 @@ jobs:
       - name: Configure CodeArtifact auth
         uses: ./workflow-tooling/.github/actions/setup-codeartifact-poetry-auth
         with:
-          aws-access-key-id: ${{ secrets.AWS_CODEARTIFACT_READ_ACCESS_KEY }}
-          aws-secret-access-key: ${{ secrets.AWS_CODEARTIFACT_READ_ACCESS_SECRET }}
+          role-to-assume: arn:aws:iam::625554095313:role/github-action-codeartifact-readonly
 
       - name: Expose CodeArtifact URL to pip
         shell: bash
