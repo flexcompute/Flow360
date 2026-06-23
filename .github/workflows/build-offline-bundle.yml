@@ -35,6 +35,7 @@ on:
         default: ""
 
 permissions:
+  actions: write
   contents: read
   id-token: write
 
