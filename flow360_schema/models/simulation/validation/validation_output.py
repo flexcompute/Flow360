@@ -6,14 +6,19 @@ import math
 from typing import Literal, Union, get_args, get_origin
 
 from flow360_schema.framework.expression import Expression
+from flow360_schema.framework.validation.context import add_validation_warning
+from flow360_schema.models.entities.output_entities import Isosurface, Slice
 from flow360_schema.models.simulation.models.volume_models import Fluid
 from flow360_schema.models.simulation.outputs.outputs import (
     AeroAcousticOutput,
     ForceDistributionOutput,
     ProbeOutput,
+    RenderOutput,
+    StreamlineOutput,
     SurfaceIntegralOutput,
     SurfaceProbeOutput,
     TimeAverageForceDistributionOutput,
+    sanitize_file_name,
 )
 from flow360_schema.models.simulation.time_stepping.time_stepping import Steady
 from flow360_schema.models.simulation.validation.validation_utils import (
@@ -297,6 +302,51 @@ def _check_unique_surface_volume_probe_entity_names(params):
                     )
                 active_entity_names.add(entity.name)
 
+    return params
+
+
+def _file_named_by(output):
+    """(namespace, name) for each name this output turns into an output file name. The namespace
+    is the file name pattern the name shares, so names in different namespaces cannot collide.
+    An output named by its own `name` rather than by its entities has to be listed explicitly."""
+    if isinstance(output, (ProbeOutput, SurfaceProbeOutput, SurfaceIntegralOutput)):
+        return [("monitor", output.name)]  # all write `monitor_<name>_v2.csv`
+    if isinstance(output, ForceDistributionOutput):
+        return [("forceDistribution", output.name)]
+    if isinstance(output, RenderOutput):
+        return [("render", output.name)]  # writes `render_<name>[_time_<n>].png`
+    # The rest are named by their entities. Entities that do not reach a file name (notably
+    # boundaries) are excluded: the solver matches those against mesh patch names, which may
+    # contain `/`.
+    entities = getattr(output, "entities", None)
+    items = getattr(entities, "stored_entities", None) or getattr(entities, "items", None) or []
+    if isinstance(output, StreamlineOutput):
+        # Streamline seed file names are based on the seed type and name, so seeds of one type can
+        # collide; the solver merges same-key seeds into a single monitor group.
+        return [(f"{output.output_type} {type(item).__name__}", item.name) for item in items]
+    return [(output.output_type, item.name) for item in items if isinstance(item, (Slice, Isosurface))]
+
+
+def _check_output_names_usable_in_file_names(params):
+    """Report the path separators the translator rewrites in output file names (see
+    `sanitize_file_name`), and reject names that differ only by a rewritten character, since
+    those would resolve to a single output file."""
+
+    claimed: dict[tuple[str, str], str] = {}
+    for output in params.outputs or []:
+        for namespace, name in _file_named_by(output):
+            safe_name = sanitize_file_name(name)
+            if safe_name != name:
+                add_validation_warning(
+                    f"`{name}` cannot be used in a file name; the output files for it will be "
+                    f"named after `{safe_name}` instead."
+                )
+            claimed_by = claimed.setdefault((namespace, safe_name), name)
+            if claimed_by != name:
+                raise ValueError(
+                    f"`{name}` and `{claimed_by}` both become `{safe_name}` when used in a file "
+                    "name, so they would share one output file. Please rename one of them."
+                )
     return params
 
 

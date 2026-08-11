@@ -2098,6 +2098,124 @@ def test_auto_farfield_half_body_surface_on_y0_marked_deleted():
     assert "Boundary `plane_surf` will likely be deleted after mesh generation." in errors[0]["msg"]
 
 
+def test_auto_farfield_full_body_domain_type_surface_on_y0_not_marked_deleted():
+    # Half-geometry sitting on +y side with a face on Y=0. Auto detection would treat
+    # that face as a symmetry plane, but explicit `full_body` overrides detection so the
+    # mesher keeps the full geometry and the face must not be flagged as deleted.
+    surface_on_plane = Surface(
+        name="plane_surf",
+        private_attributes=SurfacePrivateAttributes(bounding_box=[[0, 0, 0], [1, 0, 1]]),
+    )
+
+    asset_cache = AssetCache(
+        project_length_unit=1 * u.m,
+        use_inhouse_mesher=True,
+        use_geometry_AI=True,
+        project_entity_info=SurfaceMeshEntityInfo(
+            global_bounding_box=[[0, 0, 0], [1, 2, 1]],  # Half-geometry: one face on Y=0
+            boundaries=[surface_on_plane],
+            ghost_entities=[
+                GhostSphere(
+                    name="farfield",
+                    private_attribute_id="farfield",
+                    center=[0, 0, 0],
+                    max_radius=10,
+                ),
+            ],
+        ),
+    )
+
+    farfield = AutomatedFarfield(domain_type="full_body")
+
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    planar_face_tolerance=1e-6,
+                    geometry_accuracy=1e-5,
+                    boundary_layer_first_layer_thickness=1e-3,
+                ),
+                volume_zones=[farfield],
+            ),
+            models=[
+                Fluid(),
+                Wall(entities=[surface_on_plane]),
+                Freestream(entities=[farfield.farfield]),
+            ],
+            private_attribute_asset_cache=asset_cache,
+        )
+
+    _, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="SurfaceMesh",
+        validation_level="All",
+    )
+
+    assert errors is None
+
+
+def test_auto_farfield_full_body_domain_type_no_symmetric_ghost_bc_warning():
+    # AutomatedFarfield + full_body + GAI on a half-geometry whose bbox has a face on Y=0.
+    # Auto detection would infer a symmetry plane, but explicit `full_body` tells the mesher
+    # to keep the full geometry and generate no `symmetric` boundary. The `symmetric` ghost
+    # must therefore not be treated as a real boundary needing a boundary condition.
+    surface_body = Surface(
+        name="body",
+        private_attributes=SurfacePrivateAttributes(bounding_box=[[0, 0, 0], [1, 2, 1]]),
+    )
+
+    asset_cache = AssetCache(
+        project_length_unit=1 * u.m,
+        use_inhouse_mesher=True,
+        use_geometry_AI=True,
+        project_entity_info=SurfaceMeshEntityInfo(
+            global_bounding_box=[[0, 0, 0], [1, 2, 1]],  # Half-geometry: one face on Y=0
+            boundaries=[surface_body],
+            ghost_entities=[
+                GhostSphere(
+                    name="farfield",
+                    private_attribute_id="farfield",
+                    center=[0, 0, 0],
+                    max_radius=10,
+                ),
+                GhostCircularPlane(name="symmetric", center=[0, 0, 0], maxRadius=100),
+            ],
+        ),
+    )
+
+    farfield = AutomatedFarfield(domain_type="full_body")
+
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    planar_face_tolerance=1e-6,
+                    geometry_accuracy=1e-5,
+                    boundary_layer_first_layer_thickness=1e-3,
+                ),
+                volume_zones=[farfield],
+            ),
+            models=[
+                Fluid(),
+                Wall(entities=[surface_body]),
+                Freestream(entities=[farfield.farfield]),
+            ],
+            private_attribute_asset_cache=asset_cache,
+        )
+
+    _, errors, warnings = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="SurfaceMesh",
+        validation_level="All",
+    )
+
+    assert errors is None
+    warning_msgs = [w["msg"] for w in (warnings or [])]
+    assert not any("do not have a boundary condition" in msg for msg in warning_msgs), warning_msgs
+
+
 def test_deleted_surfaces_domain_type():
     # Mock Asset Cache
     surface_pos = Surface(

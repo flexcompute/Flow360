@@ -4,6 +4,7 @@ import copy
 import types
 from typing import Any, Literal, Union, get_args, get_origin
 
+from flow360_schema import __version__ as _SCHEMA_PACKAGE_VERSION
 from flow360_schema.exceptions import Flow360ValueError
 from flow360_schema.framework.entity.entity_registry import EntityRegistry
 from flow360_schema.framework.physical_dimensions import Length
@@ -101,22 +102,28 @@ def merge_geometry_entity_info(draft_param_as_dict: dict, geometry_dependencies_
     return merged_entity_info.model_dump(mode="json", exclude_none=True)
 
 
-def update_simulation_json(*, params_as_dict: dict, target_python_api_version: str):
+def update_simulation_json(*, params_as_dict: dict, target_schema_version: str = _SCHEMA_PACKAGE_VERSION):
     """
-    Run the SimulationParams updater to update to the specified version.
+    Run the SimulationParams updater to update to the specified schema version.
+
+    Defaults to this package's own version, which is the only correct target:
+    ``VERSION_MILESTONES`` is registered against the schema version series, not
+    against the Flow360 client's ``__version__`` (independent since the schema was
+    split out). A target below the newest milestone silently skips every milestone
+    above it. Callers should omit this; it exists for tests and local debugging.
     """
     errors = []
     updated_params_as_dict: dict | None = None
     try:
         updated_params_as_dict, input_has_higher_version = SimulationParams._update_param_dict(
             params_as_dict,
-            target_python_api_version,
+            target_schema_version,
         )
         if input_has_higher_version:
             raise ValueError(
-                f"[Internal] API misuse. Input version "
-                f"({SimulationParams._get_version_from_dict(model_dict=params_as_dict)}) is higher than "
-                f"requested target version ({target_python_api_version})."
+                f"Input version "
+                f"({SimulationParams._get_version_from_dict(model_dict=params_as_dict)}) is newer than "
+                f"the schema version this solver version supports ({target_schema_version})."
             )
     except (Flow360ValueError, ValueError, KeyError) as error:
         errors.append(str(error))

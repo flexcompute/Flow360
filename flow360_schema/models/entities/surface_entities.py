@@ -100,12 +100,15 @@ class Surface(_SurfaceEntityBase):
             if half_model_symmetry_plane_center_y is None:
                 # Legacy schema.
                 return False
-            if farfield_domain_type not in ("half_body_positive_y", "half_body_negative_y") and (
-                not _auto_symmetric_plane_exists_from_bbox(
-                    global_bounding_box=global_bounding_box,
-                    planar_face_tolerance=planar_face_tolerance,
-                )
+            if farfield_domain_type == "full_body":
+                # Explicit full-body overrides automatic symmetry plane detection;
+                # the mesher keeps the full geometry, so nothing is deleted.
+                return False
+            if farfield_domain_type is None and not _auto_symmetric_plane_exists_from_bbox(
+                global_bounding_box=global_bounding_box,
+                planar_face_tolerance=planar_face_tolerance,
             ):
+                # Auto detection with no symmetry plane inferred from the bounding box.
                 return False
             return self._lies_on(half_model_symmetry_plane_center_y, length_tolerance)
 
@@ -228,6 +231,11 @@ class GhostCircularPlane(_SurfaceEntityBase):
             # This likely means the user tries to use mesher on old cloud resources.
             # We cannot validate if symmetric exists so will let it pass. Pipeline will error out anyway.
             return True
+
+        if validation_info.farfield_domain_type == "full_body":
+            # Explicit full-body overrides automatic symmetry plane detection;
+            # the mesher keeps the full geometry and generates no symmetric plane.
+            return False
 
         if validation_info.will_generate_forced_symmetry_plane():
             return True

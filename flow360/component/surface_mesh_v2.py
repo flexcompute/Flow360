@@ -384,6 +384,9 @@ class SurfaceMeshV2(AssetBase):
     _web_api_class = Flow360Resource
     _mesh_stats_file = "metadata/surfaceMeshMetaData.json"
     _cloud_resource_type_name = "SurfaceMesh"
+    _default_download_patterns = [
+        f"*{pattern}" for pattern in MeshNameParser.all_patterns("surface")
+    ] + ["*.mapbc"]
 
     @cached_property
     def stats(self) -> SurfaceMeshStats:

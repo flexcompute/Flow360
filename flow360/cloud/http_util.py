@@ -76,7 +76,8 @@ def http_interceptor(func):
 
         if resp.status_code == 401:
             raise Flow360AuthorisationError(
-                f"Unauthorized. Seems your APIKEY is invalid. Check it on {Env.current.web_url} in account section."
+                f"Web {args[1]}: Unauthorized: {resp.text} "
+                f"(if your API key is invalid, check it on {Env.current.web_url} in account section)."
             )
 
         if resp.status_code == 404:

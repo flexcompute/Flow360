@@ -36,7 +36,8 @@ from flow360_schema.models.simulation.validation.validation_context import (
 
 logger = logging.getLogger(__name__)
 
-VelocityVectorType = Union[tuple[StringExpression, StringExpression, StringExpression], Velocity.Vector3]
+LegacyVelocityVectorType = tuple[StringExpression, StringExpression, StringExpression]
+VelocityVectorType = LegacyVelocityVectorType | ValueOrExpression[Velocity.Vector3]
 
 
 class ThermalStateCache(Flow360BaseModel):

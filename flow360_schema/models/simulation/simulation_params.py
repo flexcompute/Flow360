@@ -93,6 +93,7 @@ from flow360_schema.models.simulation.validation.validation_output import (
     _check_output_fields,
     _check_output_fields_valid_given_transition_model,
     _check_output_fields_valid_given_turbulence_model,
+    _check_output_names_usable_in_file_names,
     _check_unique_force_distribution_output_names,
     _check_unique_surface_volume_probe_entity_names,
     _check_unique_surface_volume_probe_names,
@@ -102,7 +103,7 @@ from flow360_schema.models.simulation.validation.validation_simulation_params im
     _check_and_add_noninertial_reference_frame_flag,
     _check_cht_solver_settings,
     _check_complete_boundary_condition_and_unknown_surface,
-    _check_consistency_hybrid_model_volume_output,
+    _check_consistency_hybrid_model_output,
     _check_consistency_wall_function_and_surface_output,
     _check_coordinate_system_constraints,
     _check_duplicate_actuator_disk_cylinder_names,
@@ -503,11 +504,11 @@ class SimulationParams(_ParamModelBase):
         return _check_consistency_wall_function_and_surface_output(self)
 
     @pd.model_validator(mode="after")
-    def check_consistency_hybrid_model_volume_output(self):
+    def check_consistency_hybrid_model_output(self):
         """Only allow hybrid RANS-LES output field when there is a corresponding solver with
-        hybrid RANS-LES enabled in models
+        hybrid RANS-LES enabled in models. Validates VolumeOutput and SliceOutput.
         """
-        return _check_consistency_hybrid_model_volume_output(self)
+        return _check_consistency_hybrid_model_output(self)
 
     @pd.model_validator(mode="after")
     def check_unsteadiness_to_use_hybrid_model(self):
@@ -548,6 +549,11 @@ class SimulationParams(_ParamModelBase):
     def check_unique_force_distribution_output_names(self):
         """Only allow unique force distribution names"""
         return _check_unique_force_distribution_output_names(self)
+
+    @pd.model_validator(mode="after")
+    def check_output_names_usable_in_file_names(self):
+        """Reject output names that collide once made safe for use in output file names"""
+        return _check_output_names_usable_in_file_names(self)
 
     @contextual_model_validator(mode="after")
     def check_duplicate_entities_in_models(self, param_info: ParamsValidationInfo):

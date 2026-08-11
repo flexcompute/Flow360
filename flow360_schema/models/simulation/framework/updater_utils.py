@@ -31,7 +31,7 @@ def recursive_remove_key(data, key: str, *additional_keys: str):
             stack.extend(current)
 
 
-PYTHON_API_VERSION_REGEXP = r"^(\d+)\.(\d+)\.(\d+)(?:b(\d+))?$"
+SCHEMA_VERSION_REGEXP = r"^(\d+)\.(\d+)\.(\d+)(?:b(\d+))?$"
 
 
 def compare_dicts(dict1, dict2, atol=1e-15, rtol=1e-10, ignore_keys=None):
@@ -121,7 +121,7 @@ class Flow360Version:
         Initialize the version by parsing a string like '23.1.2'.
         Each of major, minor, patch should be numeric.
         """
-        match = re.match(PYTHON_API_VERSION_REGEXP, version.strip())
+        match = re.match(SCHEMA_VERSION_REGEXP, version.strip())
         if not match:
             raise ValueError(f"Invalid version string: {version}")
 

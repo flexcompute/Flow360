@@ -1,0 +1,596 @@
+/* Bordered screenshot: adds a visible outline around light-background UI screenshots */
+img.bordered-screenshot {
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+div.leftside {
+    width: 50%;
+    padding: 0px 0px 0px 0px;
+    float: left;
+}
+
+div.rightside {
+    padding: 0px 0px 0px 0px;
+    margin-left: 50%;
+    bottom:0px;
+    width:50%;
+}
+
+.center1 {
+    text-align: center;
+}
+
+.left1 {
+    text-align: left;
+    padding:0px 0px 0px 0px;
+    margin-left: 0px;
+    width:100%;
+    display: flex;
+}
+.left2 {
+    text-align: left;
+    padding-left: 5%;
+    margin-left: 0px;
+    width:100%;
+    display: flex;
+}
+table.center1{
+    display: block;
+    margin: auto;
+
+}
+img.center1{
+    display: block;
+    margin: auto;
+}
+p.esp-statement-block {
+    font-family: sans-serif;
+    font-size: 0.85em;
+    line-height: 1.2;
+    background-color: #fff9e5;
+    border: 1px solid #e2e2e2;
+    white-space: pre;
+    display: block;
+    padding: 10px;
+}
+
+table.bounadriestable > * div.highlight {
+    font-size: small;
+}
+
+.orange {
+    color: orange;
+}
+
+details.summary {
+    padding: 4px;
+    width: 200px;
+    cursor: pointer;
+}
+
+details.p {
+    padding: 4px;
+    margin: 0;
+}
+
+.card, .floatingcard {
+    box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
+    transition: 0.3s;
+    border-radius: 5px;
+}
+
+.card > img {
+    border-radius: 5px 5px 0 0;
+}
+
+.card:hover, .floatingcard:hover {
+    box-shadow: 0 8px 16px 0 rgba(0,0,0,0.2);
+}
+
+.floatingcard > img {
+    border-radius: 5px;
+}
+
+.cards-table > * .col {
+    padding: 5px;
+}
+
+code.code > button.copybtn {
+    display: contents;
+}
+
+
+/* removes black dot markers on toctrees */
+div.toctree-wrapper > * ul, div.toctree-wrapper > ul {
+    list-style-type: none;
+}
+
+/* FONTS */
+@font-face {
+  font-family: 'flexcompute_title';
+  src: url('ornitons_bold.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'flexcompute_subtitle';
+  src: url('inter_var.woff2') format('truetype');
+}
+
+
+.wy-side-nav-search { background-color: #00643C; }
+.wy-nav-top { background-color: #666666; }
+.wy-menu > .caption > span.caption-text { color: #00643C; }
+
+.wy-nav-content { max-width: 900px !important; }
+.wy-table-responsive table td { white-space: normal !important; }
+.wy-table-responsive { overflow: visible !important; }
+/* Allow long inline-code tokens inside table cells to break and wrap.
+   Sphinx renders inline code as <code class="docutils literal notranslate"><span class="pre">…</span></code>.
+   The span.pre class normally enforces white-space: pre (no wrapping).
+   Target the PST theme table container and any docutils literal code spans. */
+.pst-scrollable-table-container table td code span.pre,
+.pst-scrollable-table-container table td code,
+table td code.docutils.literal span.pre,
+table td code.docutils.literal {
+    word-break: break-word;
+    overflow-wrap: break-word;
+    white-space: normal !important;
+}
+body { line-height: 1.42857143; }
+.heading-style, h1, h2, h3, h4, h5, h6 {margin: 1.6rem 0 1rem;}
+h1 {font-family: 'flexcompute_title', sans-serif;}
+h2, h3, h4, h5, h6 {font-family: 'flexcompute_subtitle', sans-serif;}
+p {margin-bottom: 0.5rem; font-family: 'Roboto', sans-serif}
+iframe {width: 100%;border: unset}
+
+/* Responsive video embeds (used in release notes via raw HTML) */
+.release-video {
+    width: 100%;
+    max-width: 900px;
+    margin: 1rem auto;
+    position: relative;
+    aspect-ratio: 16 / 9;
+}
+
+.release-video iframe {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+/* Fallback for older browsers without aspect-ratio support */
+@supports not (aspect-ratio: 1 / 1) {
+    .release-video {
+        height: 0;
+        padding-bottom: 56.25%; /* 16:9 */
+    }
+
+    .release-video iframe {
+        position: absolute;
+        inset: 0;
+    }
+}
+
+.toctree-wrapper li[class^=toctree-l1]>a {font-size: 1.4em; text-decoration: none}
+.toctree-wrapper li[class^=toctree-l2]>a {font-size: 1em; text-decoration: none}
+.toctree-wrapper li[class^=toctree-l3]>a {font-size: 0.9em; text-decoration: none}
+.toctree-wrapper li[class^=toctree-l4]>a {font-size: 0.9em; text-decoration: none}
+
+html[data-theme="light"] {
+    --pst-color-primary: #00643C;
+    --pst-color-secondary: #4772ae;
+    --tab-color: var(--pst-color-secondary);
+    --pst-color-link: var(--pst-color-muted);
+}
+
+html[data-theme="dark"] {
+    --pst-color-primary: #4772ae;
+    --pst-color-secondary: #00643C;
+    --tab-color: #9647AE; /*#1C2E46;*/
+    --pst-color-link: var(--pst-color-muted);
+    --sd-color-info-bg:  var(--pst-color-primary);
+}
+
+html[data-theme=dark] .bd-content .nboutput .output_area.rendered_html {
+    background-color: var(--pst-color-background);
+}
+
+img {
+    margin: 0.1em;
+}
+
+/* Experimental below */
+.navbar-brand:hover .logo__image .only-light{
+    opacity: 1;
+    content: url("_static/img/demo_logo_active.gif");
+}
+
+.sphinx-tabs-panel {
+    background: var(--sd-color-info-bg);
+    padding: 1em;
+    border-radius: 0.25rem;
+    margin-bottom: 0.5em;
+    border-top-left-radius: 0;
+}
+
+.sphinx-tabs-tab {
+    background: var(--tab-color);
+    padding: 0.5em;
+    padding-right: 2em;
+    padding-left: 2em;
+    margin-top: 0.5em;
+    margin-right: 0.5em;
+    border-top-left-radius: 1em;
+    border-top-right-radius: 0.1em;
+    border: 0;
+    font-weight: bold;
+    color: #000;
+}
+
+.sphinx-tabs-tab[aria-selected="true"] {
+    background-color: var(--sd-color-info-bg);
+}
+
+/* Adjust the spacing between class fields */
+dl.py.attribute.pydantic_field {
+    margin-bottom: 0rem;
+    padding-bottom: 1.5rem;
+}
+
+/* Hide the class-name prefix on methods, constructors, attributes/properties, and functions */
+dl.py.method > dt > .sig-prename.descclassname,
+dl.py.attribute > dt > .sig-prename.descclassname,
+dl.py.function > dt > .sig-prename.descclassname {
+    display: none;
+}
+
+/* Emphasize top-level rubric section headers (Attributes, Properties, Methods, etc.)
+   but not rubrics nested inside methods/constructors (Notes, Examples, etc.) */
+dl.py.class > dd > p.rubric {
+    font-size: 1.4em;
+    font-weight: 600;
+    font-family: 'flexcompute_subtitle', sans-serif;
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid var(--pst-color-border);
+    padding-bottom: 0.3rem;
+}
+
+/* Adjust the color of parameter's name in the attribution line */
+span.sig-name.descname{
+    color: #00643C;
+}
+
+/* Adjust the style of parameter's name in a cross-link */
+code.xref.py{
+    color:#00643C;
+    background-color: var(--pst-color-background);
+    border: var(--pst-color-background);
+}
+
+/* Adjust the style of text in the code block */
+code.code{
+    color:#00643C;
+    background-color: var(--pst-color-background);
+    border: var(--pst-color-background);
+}
+
+
+/* Adjust the style of internal link */
+p a.reference.internal span.std.std-ref{
+    color: #3091d1 !important;
+}
+
+p a.reference.internal span.std.std-numref{
+    color: #3091d1 !important;
+}
+
+p a.reference.internal span.std.std-ref:hover{
+    color: #3091d1 !important;
+}
+
+/* Adjust the style of external link */
+p a.reference.external{
+    color: #3091d1 !important;
+}
+
+p a.reference.external span.std.std-ref{
+    color: #3091d1 !important;
+}
+
+p a.reference.external span.std.std-ref:hover{
+    color: #3091d1 !important;
+}
+
+/* Adjust the global text-decoration behaviour */
+/* a {
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+} */
+
+/* Adjust the style of parameter's name in the attribute type hint */
+/* em.property a.reference.internal span.pre{
+    text-decoration: underline !important;
+}
+
+em.property a.reference.internal span.pre:hover{
+    color:#b5445b !important;
+} */
+
+
+html[data-theme=dark] .dataframe {
+    background-color: var(--pst-color-primary);
+}
+
+/* TODO make sure this is only for the API tables */
+/*table {*/
+/*  border: solid;*/
+/*}*/
+
+/*th {*/
+/*  border: thin;*/
+/*}*/
+
+/* Grid container */
+.cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 2rem;
+    padding: 2rem 0;
+}
+
+/* Each grid item (image + text) */
+.card-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem; 
+}
+
+/* Link styling */
+.card-link {
+    text-decoration: none;
+    color: inherit;
+    display: inline-block; 
+}
+
+/* Image container with fixed size and aspect ratio */
+.image-card {
+    width: 100%;
+    aspect-ratio: 3 / 2;
+    border: 1px solid var(--pst-color-border);
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+}
+
+/* Image styling to ensure it's never cropped */
+.card-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+    background-color: transparent !important;
+    margin: 0;
+}
+
+/* Title styling below the image */
+.card-item h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: normal; 
+    color: var(--pst-color-text-base);
+    margin-bottom: 8px;
+    margin-top: 16px;
+}
+
+/* Card meta row: e.g. "WebUI • 8 minutes" */
+.card-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.875rem;
+}
+
+/* Platform label styling */
+.platform {
+    color: var(--pst-color-text-base);
+    font-weight: 400;
+}
+
+/* Duration label styling */
+.duration {
+    color: var(--pst-color-text-muted);
+    display: flex;
+    align-items: center;
+}
+
+/* Insert a dot before the duration label */
+.duration:before {
+    content: "•";
+    margin-right: 0.75rem;
+}
+
+/* Single-column on narrow screens */
+@media (max-width: 768px) {
+    .cards-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Layout for the rows of wrapped buttons */
+.ex-download-buttons {
+    margin: 1rem 0 2rem 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  
+  /* Wrapper around each button: layout only, no visible box */
+  .ex-download-buttons > * {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    background: transparent;
+    border: none;
+    box-shadow: none !important;
+  }
+  
+  /* The actual download button (single visible box) */
+  .ex-download-buttons a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  
+    padding: 0.35rem 0.85rem;
+    border-radius: 6px;
+    border: 1px solid #888;
+    background: #f9fafb;
+    color: #064d7b;
+    font-size: 0.9rem;
+    font-weight: 500;
+    text-decoration: none !important;
+    white-space: nowrap;
+  }
+  
+  /* Dark theme button colors (tied to docs theme, not OS) */
+  html[data-theme="dark"] .ex-download-buttons a {
+    background: #1f2933;
+    color: #ffffff;
+    border-color: #9ca3af;
+  }
+  
+  /* Hover style */
+  .ex-download-buttons a:hover {
+    border-color: #2a82d4;
+    background: rgba(42, 130, 212, 0.08);
+  }
+  
+  /* Dark theme hover */
+  html[data-theme="dark"] .ex-download-buttons a:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: #ffffff;
+  }
+  
+  /* Icon inside button */
+  .ex-download-buttons a::before {
+    content: "⬇";
+    font-size: 0.9em;
+  }
+  
+  /* Kill any inner element styling (spans, badges, etc.) that creates extra boxes */
+  .ex-download-buttons a * {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    outline: none !important;
+    color: inherit !important;
+  }
+  
+  /* Make notebook outputs readable in dark theme (regardless of OS setting) */
+  html[data-theme="dark"] .nboutput,
+  html[data-theme="dark"] .nbsphinx-gallery .output,
+  html[data-theme="dark"] div.nboutput div.output_area,
+  html[data-theme="dark"] div.nboutput pre {
+    background-color: var(--pst-color-background) !important;
+  }
+  
+  html[data-theme="dark"] .nboutput *,
+  html[data-theme="dark"] .nbsphinx-gallery .output *,
+  html[data-theme="dark"] div.nboutput div.output_area *,
+  html[data-theme="dark"] div.nboutput pre {
+    color: #e5e7eb !important;
+  }
+
+/* Mesher workflow tree (user_guide/Meshing/Meshing.rst)
+   ------------------------------------------------------
+   Brand-styled cards arranged as a 4-column workflow tree:
+   workflow title chip -> surface mesher card -> arrow -> volume mesher card */
+
+.mesher-workflow-title {
+    background-color: var(--pst-color-primary);
+    color: #ffffff !important;
+    padding: 0.6rem 0.5rem;
+    border-radius: 6px;
+    font-family: 'flexcompute_subtitle', 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 1rem;
+    text-align: center;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    line-height: 1.2;
+}
+
+/* Strip the docutils container's default margin so the chip
+   fills its grid column. The horizontal gap between chips comes
+   from the parent .. grid:: gutter. */
+.mesher-workflow-title.container {
+    margin: 0;
+    padding: 0.6rem 0.5rem;
+}
+
+.mesher-workflow-arrow {
+    color: var(--pst-color-primary);
+    font-size: 1.75rem;
+    line-height: 1;
+    text-align: center;
+    padding: 0.15rem 0;
+    font-weight: 700;
+}
+
+/* sphinx-design card overrides scoped to the mesher tree */
+.mesher-card {
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+    border: 1px solid var(--pst-color-border);
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+.mesher-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--pst-color-primary);
+    box-shadow: 0 8px 20px rgba(0, 100, 60, 0.18);
+}
+
+.mesher-card .sd-card-body {
+    padding: 1rem 0.75rem;
+}
+
+.mesher-card .sd-card-title {
+    color: var(--pst-color-primary);
+    font-family: 'flexcompute_subtitle', 'Inter', sans-serif;
+    font-weight: 600;
+    text-align: center;
+    margin: 0;
+    font-size: 1rem;
+    line-height: 1.25;
+}
+
+html[data-theme="dark"] .mesher-card:hover {
+    box-shadow: 0 8px 20px rgba(71, 114, 174, 0.25);
+}
+
+/* Capabilities overview: visually borderless "table" layout */
+table.capabilities-table {
+  border: none !important;
+  margin-top: 0.25rem;
+  margin-bottom: 1.25rem;
+}
+
+table.capabilities-table th,
+table.capabilities-table td {
+  border: none !important;
+  padding: 0.15rem 0.25rem !important;
+  vertical-align: top;
+}
+
+/* Keep the GUI|API column compact and on one line */
+table.capabilities-table td:nth-child(2) {
+  white-space: nowrap;
+}
+  

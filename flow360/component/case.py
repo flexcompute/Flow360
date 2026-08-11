@@ -59,6 +59,7 @@ from .results.case_results import (
     MonitorsResultModel,
     NonlinearResidualsResultCSVModel,
     PorousMediumResultCSVModel,
+    RendersResultModel,
     ResultBaseModel,
     ResultsDownloaderSettings,
     SurfaceForcesResultCSVModel,
@@ -698,6 +699,17 @@ class Case(CaseBase, Flow360Resource):
             return False
         return self.params.has_force_distributions()
 
+    def has_renders(self):
+        """
+        returns True when case has render outputs
+        """
+        if isinstance(self.params, Flow360Params):
+            return False
+        return any(
+            getattr(output, "output_type", None) == "RenderOutput"
+            for output in (getattr(self.params, "outputs", None) or [])
+        )
+
     def move_to_folder(self, folder: Folder):
         """
         Move the current case to the specified folder.
@@ -861,6 +873,9 @@ class CaseResultsModel(pd.BaseModel):
             remote_file_name=CaseDownloadable.ISOSURFACES.value
         )
     )
+    # Rendered outputs (visualize/renders/): MP4 per render in mode="video",
+    # or per-frame PNGs in mode="frames". Downloaded by render-output name.
+    renders: RendersResultModel = pd.Field(default_factory=lambda: RendersResultModel())
     monitors: MonitorsResultModel = pd.Field(MonitorsResultModel())
 
     # convergence:
@@ -973,6 +988,7 @@ class CaseResultsModel(pd.BaseModel):
             "user_defined_dynamics": self.case.has_user_defined_dynamics,
             "custom_forces": self.case.has_custom_forces,
             "force_distributions": self.case.has_force_distributions,
+            "renders": self.case.has_renders,
         }
 
         for field_name in self.__class__.model_fields:  # pylint:disable = not-an-iterable

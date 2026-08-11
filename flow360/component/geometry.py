@@ -35,6 +35,7 @@ from flow360.component.resource_status import is_final_resource_status
 from flow360.component.simulation.folder import Folder
 from flow360.component.simulation.web.asset_base import AssetBase
 from flow360.component.utils import (
+    SUPPORTED_GEOMETRY_FILE_PATTERNS,
     GeometryFiles,
     MeshNameParser,
     resolve_length_unit,
@@ -402,6 +403,12 @@ class Geometry(AssetBase):
     _draft_class = GeometryDraft
     _web_api_class = Flow360Resource
     _cloud_resource_type_name = "Geometry"
+    # Input files accepted by from_file(): CAD source files plus surface-mesh files.
+    _default_download_patterns = (
+        [f"*{ext}" for ext in SUPPORTED_GEOMETRY_FILE_PATTERNS]
+        + [f"*{pattern}" for pattern in MeshNameParser.all_patterns("surface")]
+        + ["*.mapbc"]
+    )
 
     # pylint: disable=redefined-builtin
     def __init__(self, id: Union[str, None]):

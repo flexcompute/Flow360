@@ -4,8 +4,12 @@
 
 from __future__ import annotations
 
+import os
+import re
+from collections import defaultdict
 from enum import Enum
-from typing import List, Optional, get_args
+from pathlib import PurePosixPath
+from typing import Dict, List, Optional, Tuple, get_args
 
 import numpy as np
 import pydantic as pd
@@ -1035,3 +1039,247 @@ class BETForcesRadialDistributionResultCSVModel(OptionallyDownloadableResultCSVM
             Model containing csv with updated header
         """
         return BETDiskCSVHeaderOperation.format_headers(self, params, pattern)
+
+
+# Render outputs are written to the visualization path rather than `results/`,
+# so they cannot reuse the `results/<file>.tar.gz` downloaders.
+_RENDERS_REMOTE_DIR = "visualize/renders"
+
+# Frame PNGs in `mode="frames"` are named `<name>_<index>.png` with a zero-padded
+# index of at least 4 digits (see mergeRenderOutput._MIN_FRAME_PAD), captured here
+# as `<name>`. A PNG only counts as a frame when it shares its base with other
+# frames (see `_populate`), so a `mode="video"` single still named e.g.
+# `run_2024.png` is not mis-grouped as frame 2024 of `run`.
+_RENDER_FRAME_RE = re.compile(r"^(?P<name>.+)_\d{4,}$")
+
+
+def _sanitize_render_name(name: str) -> str:
+    """Mirror the merger's ``sanitize_id``: render artifact filenames keep
+    alphanumerics and underscores and map whitespace to ``_``, dropping anything
+    else. Used so a lookup with the configured ``RenderOutput.name`` (which may
+    contain spaces) resolves to the sanitized on-disk stem."""
+    sanitized = ""
+    for char in name:
+        if char.isalnum() or char == "_":
+            sanitized += char
+        elif char.isspace():
+            sanitized += "_"
+    return sanitized
+
+
+class RenderResultFileModel(ResultBaseModel):
+    """
+    A single render output produced under ``visualize/renders/``.
+
+    Depending on the ``RenderOutput`` ``mode``, a render output is either a
+    single MP4 (``mode="video"``) or a sequence of full-fidelity per-frame PNGs
+    (``mode="frames"``). Both are represented as a list of remote files that are
+    downloaded together.
+    """
+
+    remote_file_name: Optional[str] = pd.Field(None, frozen=True)
+    _remote_files: List[str] = pd.PrivateAttr(default_factory=list)
+
+    @property
+    def remote_files(self) -> List[str]:
+        """Remote path(s) of the file(s) backing this render output."""
+        return list(self._remote_files)
+
+    def download(  # pylint: disable=arguments-differ
+        self, to_folder: str = ".", overwrite: bool = False
+    ):
+        """
+        Download the file(s) for this render output into ``to_folder``.
+
+        For ``mode="video"`` this is a single MP4; for ``mode="frames"`` it is
+        every per-frame PNG belonging to this render output.
+
+        Parameters
+        ----------
+        to_folder : str, optional
+            The folder where the file(s) will be downloaded.
+        overwrite : bool, optional
+            Flag indicating whether to overwrite existing files.
+        """
+        for remote_path in self._remote_files:
+            # pylint: disable=not-callable
+            self._download_method(
+                remote_path, to_file=None, to_folder=to_folder, overwrite=overwrite
+            )
+
+
+class RendersResultModel(NamedResultsCollectionModel):
+    """
+    Collection of render outputs stored under ``visualize/renders/``.
+
+    Unlike the CSV/tar.gz result collections (which live under ``results/``),
+    render outputs are written to the visualization path. Each render output is
+    exposed by name and is either an MP4 (``mode="video"``) or a set of
+    per-frame PNGs (``mode="frames"``).
+    """
+
+    _result_model_class: type = RenderResultFileModel
+
+    def _populate(self):
+        """Group the rendered artifacts under ``visualize/renders/`` by render.
+
+        The simulation params are authoritative: they give each
+        ``RenderOutput``'s name and ``mode``, so we know whether to expect an MP4
+        / single still (``video``) or a PNG sequence (``frames``) and can key the
+        collection by the configured name. Filenames alone are ambiguous — a
+        single-frame ``frames`` render (``<name>_0000.png``) is indistinguishable
+        from a ``video`` still named ``<name>_0000`` — so we only fall back to a
+        filename heuristic when params are unavailable."""
+        files = [
+            file["fileName"]
+            for file in self.get_download_file_list_method()  # pylint: disable=not-callable
+            # Cloud keys are POSIX; parse them as such so the directory match
+            # holds on Windows too (where `Path` would use backslashes).
+            if PurePosixPath(file["fileName"]).parent.as_posix() == _RENDERS_REMOTE_DIR
+        ]
+        render_outputs = self._render_outputs_from_params()
+        grouped = (
+            self._group_by_params(render_outputs, files)
+            if render_outputs
+            else self._group_by_filename(files)
+        )
+        for name in sorted(grouped):
+            self._add_render(name, grouped[name])
+
+    def _render_outputs_from_params(self) -> List[Tuple[str, str]]:
+        """Return ``[(name, mode), ...]`` for the case's RenderOutputs, or an
+        empty list when params are unavailable (callers fall back to filenames)."""
+        get_params = self._get_params_method
+        if get_params is None:
+            return []
+        try:
+            params = get_params()  # pylint: disable=not-callable
+        # pylint: disable=broad-except
+        except Exception as err:  # params may be missing/invalid; degrade gracefully
+            log.debug(f"Could not read render outputs from params: {err}")
+            return []
+        render_outputs = []
+        for output in getattr(params, "outputs", None) or []:
+            if getattr(output, "output_type", None) == "RenderOutput":
+                render_outputs.append((output.name, getattr(output, "mode", "video")))
+        return render_outputs
+
+    @staticmethod
+    def _group_by_params(
+        render_outputs: List[Tuple[str, str]], files: List[str]
+    ) -> Dict[str, List[str]]:
+        """Map each configured render to its artifact(s), keyed by the real
+        ``RenderOutput.name``. ``frames`` renders match ``<stem>_<index>.png``
+        (one or many); ``video`` renders match ``<stem>.mp4`` or ``<stem>.png``."""
+        names_on_disk = [(PurePosixPath(f).name, f) for f in files]
+        grouped: Dict[str, List[str]] = {}
+        for name, mode in render_outputs:
+            stem = _sanitize_render_name(name)
+            if mode == "frames":
+                frame_re = re.compile(r"^" + re.escape(stem) + r"_\d+\.png$")
+                matches = [f for fname, f in names_on_disk if frame_re.match(fname)]
+            else:
+                wanted = {stem + ".mp4", stem + ".png"}
+                matches = [f for fname, f in names_on_disk if fname in wanted]
+            if matches:
+                grouped[name] = matches
+        return grouped
+
+    @staticmethod
+    def _group_by_filename(files: List[str]) -> Dict[str, List[str]]:
+        """Fallback used only when params are unavailable. An MP4, or a PNG that
+        is the only one for its base name, is keyed by its full stem; PNGs that
+        share a ``<base>_<index>`` base across 2+ files are a frame sequence
+        keyed by ``<base>`` (so a lone ``run_2024.png`` stays ``run_2024``)."""
+        mp4_stems: Dict[str, List[str]] = {}
+        png_files: List[Tuple[str, str]] = []
+        for filepath in files:
+            stem, ext = os.path.splitext(PurePosixPath(filepath).name)
+            if ext == ".mp4":
+                mp4_stems.setdefault(stem, []).append(filepath)
+            elif ext == ".png":
+                png_files.append((stem, filepath))
+
+        frame_base_counts: Dict[str, int] = defaultdict(int)
+        for stem, _ in png_files:
+            match = _RENDER_FRAME_RE.match(stem)
+            if match:
+                frame_base_counts[match.group("name")] += 1
+
+        grouped: Dict[str, List[str]] = defaultdict(list)
+        for stem, filepath in png_files:
+            match = _RENDER_FRAME_RE.match(stem)
+            if match and frame_base_counts[match.group("name")] >= 2:
+                grouped[match.group("name")].append(filepath)
+            else:
+                grouped[stem].append(filepath)
+        for stem, paths in mp4_stems.items():
+            grouped[stem].extend(paths)
+        return grouped
+
+    def _add_render(self, name: str, paths: List[str]):
+        """Register one render output, wiring the download/params methods that
+        Case.results injected into this collection."""
+        result = self._result_model_class()
+        # pylint: disable=protected-access
+        result._remote_files = sorted(paths)
+        result._download_method = self._download_method
+        result._get_params_method = self._get_params_method
+        self._names.append(name)
+        self._result_collection[name] = result
+
+    @property
+    def render_names(self) -> List[str]:
+        """
+        Get the list of render output names.
+
+        Returns
+        -------
+        list of str
+            List of render output names.
+        """
+        return self.names
+
+    def get_result_by_name(self, name: str) -> RenderResultFileModel:
+        """Look up a render by name, tolerating the configured
+        ``RenderOutput.name`` (which may contain spaces) in addition to the
+        sanitized on-disk stem (e.g. ``"Volumetric wake"`` or
+        ``"Volumetric_wake"``).
+
+        The collection may be keyed by the configured name (params-driven
+        grouping) or by the sanitized stem (filename fallback), so resolve a
+        miss by comparing the sanitized form of the query against the sanitized
+        form of each key — that matches either spelling regardless of which
+        grouping path produced the keys."""
+        if name not in self.names:
+            sanitized = _sanitize_render_name(name)
+            name = next(
+                (k for k in self.names if _sanitize_render_name(k) == sanitized),
+                name,
+            )
+        return super().get_result_by_name(name)
+
+    def get_render_by_name(self, name: str) -> RenderResultFileModel:
+        """
+        Get a render output by name.
+
+        Accepts either the configured ``RenderOutput.name`` (e.g.
+        ``"Volumetric wake"``) or the sanitized on-disk stem
+        (``"Volumetric_wake"``).
+
+        Parameters
+        ----------
+        name : str
+            The name of the render output.
+
+        Returns
+        -------
+        RenderResultFileModel
+            The render output corresponding to the given name.
+
+        Raises
+        ------
+        Flow360ValueError
+            If the render output with the provided name is not found.
+        """
+        return self.get_result_by_name(name)

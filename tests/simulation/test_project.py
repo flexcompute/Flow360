@@ -16,7 +16,11 @@ from flow360.component.resource_base import local_metadata_builder
 from flow360.component.simulation.services import ValidationCalledBy, validate_model
 from flow360.component.volume_mesh import VolumeMeshV2
 from flow360.examples import Cylinder3D
-from flow360.exceptions import Flow360ConfigurationError, Flow360ValueError
+from flow360.exceptions import (
+    Flow360ConfigurationError,
+    Flow360RuntimeError,
+    Flow360ValueError,
+)
 
 log.set_logging_level("DEBUG")
 
@@ -55,6 +59,43 @@ def test_from_cloud(mock_id, mock_response):
     error_msg = "No Case is available in this project."
     with pytest.raises(Flow360ValueError, match=error_msg):
         project.get_case(asset_id=current_case_id)
+
+
+def test_failed_root_asset_rejected_before_simulation_json(mock_id, monkeypatch):
+    geometry = Geometry(mock_id)
+    geometry._webapi._set_meta(
+        GeometryMeta(
+            **local_metadata_builder(
+                id=mock_id,
+                name="failed-geometry",
+                cloud_path_prefix="--",
+                project_id="prj-failed",
+                status="error",
+            )
+        )
+    )
+    get_simulation_file = MagicMock()
+    monkeypatch.setattr(geometry._webapi, "get", get_simulation_file)
+
+    class ProjectApi:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def get(self):
+            return {"rootItemId": mock_id}
+
+    monkeypatch.setattr("flow360.component.simulation.web.asset_base.RestApi", ProjectApi)
+    monkeypatch.setattr(
+        "flow360.component.simulation.web.asset_base.get_project_dependency_resource_metadata",
+        lambda project_id, resource_type: [],
+    )
+
+    with pytest.raises(
+        Flow360RuntimeError,
+        match=f"Cannot load Geometry {mock_id} because its status is error.",
+    ):
+        Geometry._get_simulation_json(geometry)
+    get_simulation_file.assert_not_called()
 
 
 def test_from_geometry_passes_workflow(monkeypatch):

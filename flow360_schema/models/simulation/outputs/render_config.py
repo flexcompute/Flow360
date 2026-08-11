@@ -20,7 +20,7 @@ from flow360_schema.framework.expression import (
     solver_variable_to_user_variable,
 )
 from flow360_schema.framework.expression.utils import is_runtime_expression
-from flow360_schema.framework.physical_dimensions import Angle, Length, Time
+from flow360_schema.framework.physical_dimensions import Angle, Length
 from flow360_schema.models.entities.output_entities import (
     _infer_units_by_unit_system as infer_units_by_unit_system,
 )
@@ -29,260 +29,33 @@ from flow360_schema.models.entities.output_entities import (
 )
 from flow360_schema.models.simulation.outputs.output_fields import CommonFieldNames
 
+# Re-exported so the public `render_config.Camera` / `render_config.Viewpoint` access
+# keeps working; the canonical definition lives in simulation/camera.py.
+from flow360_schema.models.simulation.camera import Camera as Camera
+from flow360_schema.models.simulation.camera import Viewpoint as Viewpoint
+
 Int8 = Annotated[int, pd.Field(ge=0, le=255)]
 Color = tuple[Int8, Int8, Int8]
 
+Alpha = Annotated[float, pd.Field(ge=0.0, le=1.0)]
+# A colormap key is an RGB triple, optionally with a 4th alpha channel (0-1). The
+# alpha defines the per-key opacity transfer function used by volume rendering;
+# keys authored without alpha fall back to a value-proportional ramp (the
+# historical behaviour), so existing colormaps render unchanged.
+ColormapKey = tuple[Int8, Int8, Int8] | tuple[Int8, Int8, Int8, Alpha]
 
-class StaticView(Flow360BaseModel):
+
+class Resolution(Flow360BaseModel):
     """
-    :class:`StaticView` defines a fixed camera in the scene with a position, target, and up-direction.
+    :class:`Resolution` defines the output image resolution, in pixels, for a render.
 
     Example
     -------
-    Define a simple static camera positioned at (1, 1, 1) looking at the origin:
-
-    >>> cam = StaticView(
-    ...     position=(1, 1, 1),
-    ...     target=(0, 0, 0),
-    ...     up=(0, 0, 1),
-    ... )
+    >>> Resolution(width=1920, height=1080)
     """
 
-    type_name: Literal["StaticView"] = pd.Field("StaticView", frozen=True)
-    position: Length.Vector3 = pd.Field(description="Position of the camera in the scene")
-    target: Length.Vector3 = pd.Field(description="Target point of the camera")
-    up: Vector | None = pd.Field(default=(0, 0, 1), description="Up vector, if not specified assume Z+")
-
-
-class Keyframe(Flow360BaseModel):
-    """
-    :class:`Keyframe` represents a timestamped camera pose for animated rendering.
-
-    Example
-    -------
-    >>> Keyframe(
-    ...     time=0.5,
-    ...     view=StaticView(position=(2, 0, 1), target=(0, 0, 0))
-    ... )
-    """
-
-    type_name: Literal["Keyframe"] = pd.Field("Keyframe", frozen=True)
-    time: Time.Float64 = pd.Field(0, ge=0, description="Timestamp at which the keyframe should be reached")
-    view: StaticView = pd.Field(description="Camera parameters at this keyframe")
-
-
-class AnimatedView(Flow360BaseModel):
-    """
-    :class:`AnimatedView` defines a sequence of camera keyframes to create motion.
-
-    Example
-    -------
-    >>> AnimatedView(
-    ...     keyframes=[
-    ...         Keyframe(time=0, view=StaticView(position=(2,0,0), target=(0,0,0))),
-    ...         Keyframe(time=1, view=StaticView(position=(0,2,0), target=(0,0,0))),
-    ...     ]
-    ... )
-    """
-
-    type_name: Literal["AnimatedView"] = pd.Field("AnimatedView", frozen=True)
-    keyframes: list[Keyframe] = pd.Field(
-        [], description="List of keyframes between which the animated camera interpolates"
-    )
-
-    @pd.field_validator("keyframes", mode="after")
-    @classmethod
-    def check_has_keyframes_and_sort(cls, value):
-        """Check if the view has any keyframes assigned, the
-        first frame is at time 0 and the frames are sorted"""
-        if len(value) < 1:
-            raise ValueError("Animated camera requires at least one keyframe to be defined")
-
-        value = sorted(value, key=lambda v: v.time)
-
-        if value[0].time != 0:
-            raise ValueError("The first keyframe needs to be defined at time = 0 (the starting camera position)")
-
-
-class OrthographicProjection(Flow360BaseModel):
-    """
-    :class:`OrthographicProjection` defines an orthographic camera projection model.
-
-    Example
-    -------
-    >>> OrthographicProjection(
-    ...     width=1.0 * u.m,
-    ...     near=0.01 * u.m,
-    ...     far=10 * u.m,
-    ... )
-    """
-
-    type_name: Literal["OrthographicProjection"] = pd.Field("OrthographicProjection", frozen=True)
-    width: Length.Float64 = pd.Field(description="Width of the camera frustum in world units")
-    near: Length.Float64 = pd.Field(
-        description="Near clipping plane in world units, pixels closer to the camera than this value are culled"
-    )
-    far: Length.Float64 = pd.Field(
-        description="Far clipping plane in world units, pixels further from the camera than this value are culled"
-    )
-
-
-class PerspectiveProjection(Flow360BaseModel):
-    """
-    :class:`PerspectiveProjection` defines a perspective camera projection.
-
-    Example
-    -------
-    >>> PerspectiveProjection(
-    ...     fov=60 * u.deg,
-    ...     near=0.01 * u.m,
-    ...     far=50 * u.m,
-    ... )
-    """
-
-    type_name: Literal["PerspectiveProjection"] = pd.Field("PerspectiveProjection", frozen=True)
-    fov: Angle.Float64 = pd.Field(description="Field of view of the camera (angle)")
-    near: Length.Float64 = pd.Field(
-        description="Near clipping plane in world units, pixels closer to the camera than this value are culled"
-    )
-    far: Length.Float64 = pd.Field(
-        description="Far clipping plane in world units, pixels further from the camera than this value are culled"
-    )
-
-
-class Viewpoint(Enum):
-    """
-    :class:`View` provides predefined canonical view directions.
-
-    Example
-    -------
-    >>> Viewpoint.FRONT.value
-    (-1, 0, 0)
-
-    >>> Viewpoint.FRONT + Viewpoint.TOP
-    (-1, 0, 1)
-    """
-
-    FRONT = (-1, 0, 0)
-    BACK = (1, 0, 0)
-    RIGHT = (0, -1, 0)
-    LEFT = (0, 1, 0)
-    TOP = (0, 0, 1)
-    BOTTOM = (0, 0, -1)
-
-    def __getitem__(self, idx):
-        return self.value[idx]
-
-    def __add__(self, other):
-        if isinstance(other, Viewpoint):
-            b = other.value
-        elif isinstance(other, tuple):
-            b = other
-        else:
-            return NotImplemented
-
-        a = self.value
-        return tuple(x + y for x, y in zip(a, b, strict=False))
-
-    def __radd__(self, other):
-        if isinstance(other, tuple):
-            a = other
-        elif isinstance(other, Viewpoint):
-            a = other.value
-        else:
-            return NotImplemented
-
-        b = self.value
-        return tuple(x + y for x, y in zip(a, b, strict=False))
-
-
-class Camera(Flow360BaseModel):
-    """
-    :class:`Camera` configures the camera and projection used for rendering.
-
-    Example
-    -------
-    >>> Camera.perspective(
-    ...     x=1, y=1, z=1, scale=2, view=Viewpoint.FRONT
-    ... )
-    """
-
-    type_name: Literal["Camera"] = pd.Field("Camera", frozen=True)
-    view: StaticView | AnimatedView = pd.Field(
-        discriminator="type_name", description="View settings (position, target)"
-    )
-    projection: OrthographicProjection | PerspectiveProjection = pd.Field(
-        discriminator="type_name",
-        description="Projection settings (FOV / width, near/far clipping planes)",
-    )
-
-    @classmethod
-    def orthographic(cls, position=(0, 0, 0), scale=1, view=None):
-        """
-        Create an orthographic camera configuration.
-
-        Example
-        -------
-        >>> Camera.orthographic(
-        ...     position=(0, 0, 0), scale=1.5, view=Viewpoint.TOP
-        ... )
-        """
-        if view is None:
-            view = Viewpoint.FRONT + Viewpoint.RIGHT + Viewpoint.TOP
-
-        up = (0, 0, 1)
-
-        if view in (Viewpoint.TOP, Viewpoint.BOTTOM):
-            up = (0, 1, 0)
-
-        x = position[0]
-        y = position[1]
-        z = position[2]
-
-        return Camera(
-            view=StaticView(
-                position=(x + view[0] * scale, y + view[1] * scale, z + view[2] * scale) * u.m,
-                target=(x, y, z),
-                up=up,
-            ),
-            projection=OrthographicProjection(
-                width=scale * u.m,
-                near=0.01 * u.m,
-                far=50 * scale * u.m,
-            ),
-        )
-
-    @classmethod
-    def perspective(cls, position=(0, 0, 0), scale=1, view=None):
-        """
-        Create a perspective camera configuration.
-
-        Example
-        -------
-        >>> Camera.perspective(
-        ...     position=(0, 0, 0), scale=3, view=Viewpoint.LEFT
-        ... )
-        """
-        if view is None:
-            view = Viewpoint.FRONT + Viewpoint.RIGHT + Viewpoint.TOP
-
-        up = (0, 0, 1)
-
-        if view in (Viewpoint.TOP, Viewpoint.BOTTOM):
-            up = (0, 1, 0)
-
-        x = position[0]
-        y = position[1]
-        z = position[2]
-
-        return Camera(
-            view=StaticView(
-                position=(x + view[0] * scale, y + view[1] * scale, z + view[2] * scale) * u.m,
-                target=(x, y, z) * u.m,
-                up=up,
-            ),
-            projection=PerspectiveProjection(fov=60 * u.deg, near=0.01 * u.m, far=50 * scale * u.m),
-        )
+    width: pd.PositiveInt = pd.Field(1920, description="Output image width in pixels")
+    height: pd.PositiveInt = pd.Field(1080, description="Output image height in pixels")
 
 
 class AmbientLight(Flow360BaseModel):
@@ -533,8 +306,13 @@ class FieldMaterial(MaterialBase):
     max: ValueOrExpression[UnytQuantity | float] = pd.Field(
         description="Reference max value (in solver units) representing the right boundary of the colormap"
     )
-    colormap: list[Color] = pd.Field(
-        description="List of key colors distributed evenly across the gradient, defines value to color mappings"
+    colormap: list[ColormapKey] = pd.Field(
+        description=(
+            "Key colors distributed evenly across the gradient (value->color mapping). "
+            "Each key is [r, g, b] or [r, g, b, alpha]; the optional alpha (0-1) sets the "
+            "per-key opacity transfer function for volume rendering. Keys without alpha use "
+            "a value-proportional opacity ramp."
+        )
     )
 
     @pd.field_validator("output_field", mode="before")

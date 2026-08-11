@@ -175,6 +175,12 @@ def get_unit_from_unit_system(dimension_meta: DimensionMeta) -> tuple[Any, bool]
         unit_system_manager,
     )
 
+    if is_strict_unit_mode():
+        raise ValueError(
+            f"Value does not have units matching '{dimension_meta.name}' dimension "
+            f"({dimension_meta.si_unit}). An explicit unit is required."
+        )
+
     if is_deserializing():
         if unit_system_manager.current is not None:
             warnings.warn(
@@ -189,12 +195,6 @@ def get_unit_from_unit_system(dimension_meta: DimensionMeta) -> tuple[Any, bool]
             f"Dimension '{dimension_meta.name}' does not support unit inference from "
             f"the active unit system. Please provide an explicit unit "
             f"(SI unit: {dimension_meta.si_unit})."
-        )
-
-    if is_strict_unit_mode():
-        raise ValueError(
-            f"Value does not have units matching '{dimension_meta.name}' dimension "
-            f"({dimension_meta.si_unit}). An explicit unit is required."
         )
 
     active_unit_system = unit_system_manager.current

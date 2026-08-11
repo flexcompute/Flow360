@@ -49,9 +49,15 @@ def find_instances(obj: Any, target_type: type[Any] | tuple[type[Any], ...]) -> 
     return list(results)
 
 
-def register_entity_list(model: Flow360BaseModel, registry: EntityRegistry) -> None:
+def register_entity_list(
+    model: Flow360BaseModel,
+    registry: EntityRegistry,
+    known_frozen_hashes: set[str] | None = None,
+) -> None:
     """Register all entities reachable from a model into a registry."""
-    known_frozen_hashes: set[str] = set()
+    if known_frozen_hashes is None:
+        known_frozen_hashes = set()
+
     for field in model.__dict__.values():
         if isinstance(field, EntityBase):
             known_frozen_hashes = registry.fast_register(field, known_frozen_hashes)
@@ -66,11 +72,11 @@ def register_entity_list(model: Flow360BaseModel, registry: EntityRegistry) -> N
                 if isinstance(item, EntityBase):
                     known_frozen_hashes = registry.fast_register(item, known_frozen_hashes)
                 if isinstance(item, Flow360BaseModel):
-                    register_entity_list(item, registry)
+                    register_entity_list(item, registry, known_frozen_hashes)
             continue
 
         if isinstance(field, Flow360BaseModel):
-            register_entity_list(field, registry)
+            register_entity_list(field, registry, known_frozen_hashes)
 
 
 def _update_entity_full_name(

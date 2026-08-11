@@ -20,6 +20,8 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import TYPE_CHECKING, Protocol, Union, runtime_checkable
 
+import unyt as u
+
 from flow360_schema.framework.base_model import Flow360BaseModel
 from flow360_schema.framework.entity.entity_list import EntityList
 from flow360_schema.models.entities.base import (
@@ -418,14 +420,20 @@ def _replace_with_actual_entities(
     ) -> list[_SurfaceEntityBase]:
         parts = []
         for info in split_infos:
-            parts.append(
-                original.copy(
-                    update={
-                        "name": info.full_name,
-                        "private_attribute_full_name": info.full_name,
-                    }
-                )
+            part = original.copy(
+                update={
+                    "name": info.full_name,
+                    "private_attribute_full_name": info.full_name,
+                }
             )
+            # Flow360BaseModel.copy() strips private_attribute_id and Surface has no
+            # id default_factory, so the split patch would be id-less. Generated
+            # boundary entities must carry a stable id (it keys coordinate-system and
+            # mirror assignment lookups during translation), so derive a deterministic
+            # one from the unique full_name.
+            if part.private_attribute_id is None:
+                part._force_set_attr("private_attribute_id", info.full_name)
+            parts.append(part)
         return parts
 
     split_infos = lookup_table.get_split_info(entity.name)
@@ -553,6 +561,12 @@ def _create_rotating_wall_models(
                     "private_attribute_full_name": rotating_full_name,
                 }
             )
+            # See _create_entity_parts: copy() drops the id and Surface has no id
+            # default_factory. Give the generated rotating patch a stable id derived
+            # from its unique full_name so coordinate-system/mirror lookups don't see
+            # an id-less entity during translation.
+            if rotating_entity.private_attribute_id is None:
+                rotating_entity._force_set_attr("private_attribute_id", rotating_full_name)
 
             if is_stationary:
                 stationary_surfaces.append(rotating_entity)
@@ -561,7 +575,7 @@ def _create_rotating_wall_models(
 
     models = []
     if stationary_surfaces:
-        new_model = wall_model.copy(update={"velocity": ("0", "0", "0")})
+        new_model = wall_model.copy(update={"velocity": [0, 0, 0] * u.m / u.s})
         new_model.entities = stationary_surfaces
         models.append(new_model)
 

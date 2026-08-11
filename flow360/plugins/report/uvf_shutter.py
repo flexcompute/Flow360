@@ -15,6 +15,7 @@ from urllib.parse import urljoin
 
 import pydantic as pd
 from flow360_schema.framework.base_model import Flow360BaseModel
+from flow360_schema.models.simulation.camera import Camera
 
 from flow360.environment import Env
 from flow360.exceptions import (
@@ -182,44 +183,6 @@ class SetLICPayload(Flow360BaseModel):
 
     object_id: str
     visibility: bool
-
-
-class Camera(Flow360BaseModel):
-    """
-    Represents the camera configuration payload.
-    """
-
-    position: Optional[Tuple[float, float, float]] = pd.Field(
-        (-1, -1, 1),
-        description="Camera eye position, think of the eye position as a position on the unit sphere"
-        + " centered at the `lookAt`. The units are in length units used in geometry or volume mesh.",
-    )
-    up: Optional[Tuple[float, float, float]] = pd.Field(
-        (0, 0, 1), description="Up orientation of the camera."
-    )
-    look_at: Optional[Tuple[float, float, float]] = pd.Field(
-        None,
-        description="Target point the camera will look at from the position. Default: center of bbox."
-        + " The units are in length units used in geometry or volume mesh.",
-    )
-    pan_target: Optional[Tuple[float, float, float]] = pd.Field(
-        None,
-        description="Position to pan the viewport center to; if undefined, the default is `look_at`."
-        + " The units are in length units used in geometry or volume mesh.",
-    )
-    dimension_dir: Optional[Literal["width", "height", "diagonal"]] = pd.Field(
-        "width",
-        alias="dimensionDirection",
-        description="The direction `dimension_size_model_units` is for.",
-    )
-    dimension: Optional[float] = pd.Field(
-        None,
-        alias="dimensionSizeModelUnits",
-        description="The camera zoom will be set such that the extents of the scene's projection is this number"
-        + " of model units for the applicable `dimension_dir`."
-        + " The units are in length units used in geometry or volume mesh.",
-    )
-    type: Literal["Camera"] = pd.Field("Camera", frozen=True)
 
 
 class TopCamera(Camera):

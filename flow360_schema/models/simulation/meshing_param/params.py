@@ -156,6 +156,23 @@ def _collect_all_seedpoint_volumes(zones):
     return seedpoint_volumes
 
 
+def _count_generated_volume_zones(zones) -> int:
+    """Number of volume zones the surface mesher generates: custom volumes, seedpoint
+    volumes, and a non-UDF farfield. Mirrors ``numFarfieldAndCustomVolumeZones`` in Surf360,
+    which increments once per CustomVolume and once per SeedpointVolume.
+
+    AutomatedFarfield and WindTunnelFarfield each generate a farfield zone; UserDefinedFarfield does not.
+    """
+    if not zones:
+        return 0
+    has_non_udf_farfield = any(isinstance(zone, (AutomatedFarfield, WindTunnelFarfield)) for zone in zones)
+    return (
+        len(_collect_all_custom_volumes(zones))
+        + len(_collect_all_seedpoint_volumes(zones))
+        + (1 if has_non_udf_farfield else 0)
+    )
+
+
 def _validate_seedpoint_volume_mesher_compatibility(seedpoint_volumes, param_info: ParamsValidationInfo):
     """Validate SeedpointVolume usage against mesher capabilities."""
     if seedpoint_volumes and not (param_info.use_snappy or param_info.is_beta_mesher):
@@ -497,6 +514,25 @@ class MeshingParams(Flow360BaseModel):
         return self
 
     @contextual_model_validator(mode="after")
+    def _warn_multi_body_without_remove_hidden_geometry(self, param_info: ParamsValidationInfo) -> Self:
+        """Recommend remove_hidden_geometry for GAI geometry with more than one mesh-exterior
+        (mesh_exterior=True) body, where bodies may intersect or occlude one another."""
+        if not param_info.use_geometry_AI or self.defaults.remove_hidden_geometry:
+            return self
+
+        entity_info = param_info.get_entity_info()
+        if getattr(entity_info, "type_name", None) != "GeometryEntityInfo":
+            return self
+        if entity_info.get_num_exterior_bodies() <= 1:
+            return self
+
+        add_validation_warning(
+            "More than one mesh-exterior body was detected. If the bodies intersect or have parts "
+            "hidden from the flow, enabling 'remove_hidden_geometry' is recommended."
+        )
+        return self
+
+    @contextual_model_validator(mode="after")
     def _warn_min_passage_size_without_remove_hidden_geometry(self) -> Self:
         """Warn when GeometryRefinement specifies min_passage_size but remove_hidden_geometry is disabled."""
         if self.defaults.remove_hidden_geometry:
@@ -577,21 +613,16 @@ class MeshingParams(Flow360BaseModel):
         return self
 
     @contextual_model_validator(mode="after")
-    def _warn_multi_zone_remove_hidden_geometry(self) -> Self:
-        """Warn when remove_hidden_geometry is enabled with multiple farfield/custom volume zones."""
-        if not self.defaults.remove_hidden_geometry:
+    def _warn_multi_zone_remove_hidden_geometry(self, param_info: ParamsValidationInfo) -> Self:
+        """Warn when remove_hidden_geometry is enabled with multiple farfield/custom/seedpoint volume zones.
+
+        Removal only runs under GeometryAI, so the caveat is scoped to it rather than to the flag alone.
+        """
+        if not param_info.use_geometry_AI or not self.defaults.remove_hidden_geometry:
             return self
-        if self.volume_zones is None:
-            return self
-        # AF and WTF each generate their own farfield zone but UDF does not,
-        # so it doesn't contribute to the zone count
-        has_non_udf_farfield = any(
-            isinstance(zone, (AutomatedFarfield, WindTunnelFarfield)) for zone in self.volume_zones
-        )
-        count = len(_collect_all_custom_volumes(self.volume_zones)) + (1 if has_non_udf_farfield else 0)
-        if count > 1:
+        if _count_generated_volume_zones(self.volume_zones) > 1:
             add_validation_warning(
-                "Multiple farfield/custom volume zones detected. Removal of hidden geometry "
+                "Multiple farfield/custom/seedpoint volume zones detected. Removal of hidden geometry "
                 "for multi-zone cases is not fully supported and may not work as intended."
             )
         return self

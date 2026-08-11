@@ -1044,6 +1044,22 @@ def test_custom_forces_is_downloadable(mock_id, mock_response):
     assert case.results.custom_forces._is_downloadable() == case.has_custom_forces()
 
 
+@pytest.mark.usefixtures("s3_download_override")
+def test_renders_is_downloadable(mock_id, mock_response):
+    """RendersResultModel._is_downloadable is wired from has_function_map, so a
+    bulk download(all=True) skips renders (and the /files lookup its _populate
+    issues) when the case has no RenderOutput — mirroring the other gated
+    collections."""
+    case = fl.Case(id="case-666666666-66666666-666-6666666666666")
+
+    # pylint: disable=protected-access
+    assert case.results.renders._is_downloadable is not None
+    assert callable(case.results.renders._is_downloadable)
+    # simulation.json here has no RenderOutput, so renders is not downloadable
+    assert case.results.renders._is_downloadable() == case.has_renders()
+    assert case.has_renders() is False
+
+
 # Tests for _populate_* private methods
 
 
@@ -1481,3 +1497,154 @@ def test_force_distribution_pattern_excludes_slicing():
     m = re.match(pattern, "Y_slicing_custom_forceDistribution.csv")
     assert m is not None
     assert m.group(1) == "Y_slicing_custom"
+
+
+def _make_renders_model(file_list, download_sink=None, params=None):
+    """Build a RendersResultModel wired with a fake cloud file list and download
+    method, mirroring what Case.results injects at runtime. ``params`` mimics the
+    case's SimulationParams (None falls back to filename-based grouping)."""
+    from flow360.component.results.case_results import RendersResultModel
+
+    renders = RendersResultModel()
+    renders.get_download_file_list_method = lambda: file_list
+    # pylint: disable=protected-access
+    renders._download_method = lambda remote_path, to_file=None, to_folder=".", overwrite=False: (
+        download_sink.append(remote_path) if download_sink is not None else None
+    )
+    renders._get_params_method = lambda: params
+    return renders
+
+
+def test_renders_populate_and_download_by_name():
+    """RendersResultModel groups visualize/renders/ artifacts by render name and
+    exposes each render's MP4 (mode=video) or PNG frame set (mode=frames)."""
+    file_list = [
+        {"fileName": "visualize/renders/Surface_render.mp4"},  # video
+        {"fileName": "visualize/renders/Volumetric_wake_0000.png"},  # frames
+        {"fileName": "visualize/renders/Volumetric_wake_0001.png"},
+        {"fileName": "visualize/renders/Volumetric_wake_0002.png"},
+        {"fileName": "results/total_forces_v2.csv"},  # wrong dir -> ignored
+        {"fileName": "visualize/manifest/manifest.json"},  # wrong dir -> ignored
+        {"fileName": "visualize/renders/notes.txt"},  # non-render -> ignored
+    ]
+    downloaded = []
+    renders = _make_renders_model(file_list, downloaded)
+
+    # only render artifacts, grouped by name, sorted
+    assert renders.render_names == ["Surface_render", "Volumetric_wake"]
+
+    # video render -> single MP4
+    assert renders.get_render_by_name("Surface_render").remote_files == [
+        "visualize/renders/Surface_render.mp4"
+    ]
+
+    # frames render -> all PNGs in frame order (bracket access)
+    frames = renders["Volumetric_wake"]
+    assert frames.remote_files == [
+        "visualize/renders/Volumetric_wake_0000.png",
+        "visualize/renders/Volumetric_wake_0001.png",
+        "visualize/renders/Volumetric_wake_0002.png",
+    ]
+
+    # download pulls every backing file
+    frames.download(to_folder="out")
+    assert downloaded == [
+        "visualize/renders/Volumetric_wake_0000.png",
+        "visualize/renders/Volumetric_wake_0001.png",
+        "visualize/renders/Volumetric_wake_0002.png",
+    ]
+
+
+def test_renders_invalid_name_raises():
+    """Requesting an unknown render name raises with the available names listed."""
+    from flow360.exceptions import Flow360ValueError
+
+    renders = _make_renders_model([{"fileName": "visualize/renders/Surface_render.mp4"}])
+
+    with pytest.raises(Flow360ValueError) as exc_info:
+        renders.get_render_by_name("does_not_exist")
+    assert "does_not_exist" in str(exc_info.value)
+    assert "Surface_render" in str(exc_info.value)
+
+
+def test_renders_lookup_by_configured_name():
+    """Lookup tolerates the configured RenderOutput.name (with spaces), which the
+    merger sanitizes to the on-disk stem (e.g. 'Volumetric wake' -> 'Volumetric_wake')."""
+    renders = _make_renders_model(
+        [
+            {"fileName": "visualize/renders/Volumetric_wake_0000.png"},
+            {"fileName": "visualize/renders/Volumetric_wake_0001.png"},
+        ]
+    )
+    assert renders.render_names == ["Volumetric_wake"]
+    # both the sanitized stem and the original spaced name resolve
+    assert renders.get_render_by_name("Volumetric_wake").remote_files
+    assert renders["Volumetric wake"].remote_files == [
+        "visualize/renders/Volumetric_wake_0000.png",
+        "visualize/renders/Volumetric_wake_0001.png",
+    ]
+
+
+def test_renders_single_still_with_numeric_suffix_not_split():
+    """A lone video-mode still whose name ends in `_<digits>` must stay keyed by
+    its full stem, not be mis-grouped as a frame index."""
+    renders = _make_renders_model(
+        [
+            {"fileName": "visualize/renders/run_2024.png"},  # single still, name ends in _2024
+            {"fileName": "visualize/renders/wake_0000.png"},  # genuine frame sequence
+            {"fileName": "visualize/renders/wake_0001.png"},
+        ]
+    )
+    assert renders.render_names == ["run_2024", "wake"]
+    assert renders["run_2024"].remote_files == ["visualize/renders/run_2024.png"]
+    assert renders["wake"].remote_files == [
+        "visualize/renders/wake_0000.png",
+        "visualize/renders/wake_0001.png",
+    ]
+
+
+def test_renders_single_frame_via_params():
+    """With params available, a single-frame mode='frames' render (one
+    `<name>_0000.png`) is resolved by name+mode and keyed by the configured
+    name, so lookup by `RenderOutput.name` works even with one frame."""
+    from types import SimpleNamespace
+
+    params = SimpleNamespace(
+        outputs=[
+            SimpleNamespace(output_type="RenderOutput", name="Volumetric wake", mode="frames"),
+            SimpleNamespace(output_type="SliceOutput", name="ignored"),  # non-render
+        ]
+    )
+    renders = _make_renders_model(
+        [{"fileName": "visualize/renders/Volumetric_wake_0000.png"}],
+        params=params,
+    )
+
+    # keyed by the configured name (with space), not the on-disk stem
+    assert renders.render_names == ["Volumetric wake"]
+    assert renders.get_render_by_name("Volumetric wake").remote_files == [
+        "visualize/renders/Volumetric_wake_0000.png"
+    ]
+    # regression (FXC-8851): the sanitized on-disk stem must also resolve, even
+    # though the params-driven collection is keyed by the configured spaced name
+    assert renders.get_render_by_name("Volumetric_wake").remote_files == [
+        "visualize/renders/Volumetric_wake_0000.png"
+    ]
+
+
+def test_renders_video_via_params():
+    """With params, a mode='video' render resolves to its MP4 keyed by name."""
+    from types import SimpleNamespace
+
+    params = SimpleNamespace(
+        outputs=[
+            SimpleNamespace(output_type="RenderOutput", name="Surface render", mode="video"),
+        ]
+    )
+    renders = _make_renders_model(
+        [{"fileName": "visualize/renders/Surface_render.mp4"}],
+        params=params,
+    )
+
+    assert renders.render_names == ["Surface render"]
+    assert renders["Surface render"].remote_files == ["visualize/renders/Surface_render.mp4"]

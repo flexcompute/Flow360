@@ -1,0 +1,106 @@
+.. _naca4412ValidationStudy:
+.. |agr|  unicode:: U+003B1 .. GREEK SMALL LETTER ALPHA
+.. |omega|    unicode:: U+03C9 .. OMEGA SIGN
+
+
+2D NACA 4412 Airfoil Trailing Edge Separation
+=============================================
+
+Introduction
+------------
+
+The main purpose of this case is validation of the Flow360 solver against experimental data and other CFD solvers, primarily CFL3D. Three different turbulence models are evaluated for this case: SA, SA-RC and k- |omega| SSTm. The case is part of `the NASA Turbulence Modelling Website <https://turbmodels.larc.nasa.gov/naca4412sep_val.html>`_ and has also been evaluated by other CFD solvers such as `OVERFLOW in Jespersen et al <https://turbmodels.larc.nasa.gov/Papers/NAS_Technical_Report_NAS-2016-01.pdf>`_ . The experimental data includes surface pressure data as well as velocity profiles near the trailing edge of the airfoil. While primarily being a validation case for capturing the trailing edge separation, certain model implementation verification can be performed by comparing the results with other CFD codes.
+
+Simulation setup
+----------------
+
+A single C-Topology grid is used, available at the `NACA4412 case grid download page of the TMR website <https://turbmodels.larc.nasa.gov/naca4412sep_grids.html>`_. The second finest grid (897 by 257 points) is used to perform direct comparisons with CFL3D and FUN3D on the same grid. The grid used in Flow360 was modified for the names and number of boundaries, and is available `here <https://simcloud-public-1.s3.amazonaws.com/verification/naca4412/NACA4412_897b257_Grid.cgns>`_ A detailed grid convergence study is not performed here. The grid far-view and near-view is shown in :ref:`Fig1_NACA4412GeoMsh`.
+
+.. figure:: Figures/GridFarfield.png
+   :align: center
+   :scale: 50%
+
+.. _Fig1_NACA4412GeoMsh:
+.. figure:: Figures/GridNearfield.png
+   :align: center
+   :scale: 50%
+
+   Far-field and near-field views of the grid used for the NACA4412 trailing edge separation study.
+
+A farfield Riemann boundary condition is used which is placed 100 chords away from the airfoil. The flow conditions were set to 1.52 million Reynolds number and a Mach number of 0.09. The study was performed for an angle of attack of 13.87 degrees. A reference temperature of 297.778K was used. Fully-turbulent calculations were performed with the ratio of the freestream value of the SA turbulence field variable (relative to laminar) set to 3, set in Flow360 as a turbulent viscosity ratio of 0.210438. For the k- |omega| SSTm calculations a turbulent viscosity ratio of 0.009 was used. :ref:`Fig2_NACA4412Conditions` shows the case layout in detail, whereas the solver inputs are summarized in :ref:`Tab1_FlowConfig_NACA4412`.
+
+.. _Fig2_NACA4412Conditions:
+.. figure:: Figures/CaseLayout.png
+   :align: center
+   :scale: 80%
+
+   Summary of case boundary conditions and conditions for the NACA4412 trailing edge separation study.
+
+.. _Tab1_FlowConfig_NACA4412:
+.. csv-table:: Solver inputs for the NACA4412 trailing edge separation study.
+   :file: Tables/naca4412_tab1_keyflowconfig.csv
+   :widths: 20, 20
+   :align: center
+   :header-rows: 1
+   :delim: @
+
+
+The simulations were performed using a CFL number of 200 ramped up over the initial 2000 iterations. To ensure deep convergence of the simulations, the CFL number was reduced to a value of 20, along with reducing the Jacobian update frequency from 4 to 1 towards the end of the simulations, although the impact on the integrated loads was minimal. For the majority of simulations, 1e-12 residual convergence was obtained for the flow residuals and 1e-10 for the turbulence residuals.
+
+Numerical Results
+-----------------
+
+Firstly, the integrated are compared between Flow360, CFL3D, FUN3D, OVERFLOW for the SA, SA-RC and k- |omega| -SSTm turbulence models, shown in :ref:`Tab2_IntLoads_NACA4412`. Note the OVERFLOW code uses the baseline k- |omega| SST model, whereas the k- |omega| SSTm model is used by CFL3D, FUN3D and Flow360.
+
+.. _Tab2_IntLoads_NACA4412:
+.. csv-table:: Comparison of integrated loads between different CFD solvers for the NACA4412 aerofoil using the SA, SA-RC and k- |omega| -SSTm turbulence models.
+   :file: Tables/naca4412_tab2_intloads.csv
+   :widths: 8, 8, 7, 7, 7, 7
+   :align: center
+   :header-rows: 1
+   :delim: @
+
+For the SA turbulence model, the Flow360 results agree very well with FUN3D integrated loads. The SA-RC model shows good agreement for the lift coefficient with FUN3D, whereas the drag coefficient is in between the CFL3D and FUN3D data. For the k- |omega| SSTm model, excellent agreement is also obtained with Flow360 integrated loads closer matching CFL3D data. In general, based on the integrated loads Flow360 shows excellent agreement with other CFD codes, as the differences between the different codes are similar as between other established CFD codes.
+
+The surface pressure and skin friction coefficients are analysed next, and are compared with the CFL3D code and experimental data in :ref:`Fig3_NACA4412_CP` and :ref:`Fig4_NACA4412_CF`
+
+.. _Fig3_NACA4412_CP:
+.. figure:: Figures/CP.png
+   :align: center
+
+   Comparison of the surface pressure coefficients between Flow360 and CFL3D using three different turbulence models.
+
+.. _Fig4_NACA4412_CF:
+.. figure:: Figures/CF.png
+   :align: center
+
+   Comparison of the skin friction coefficients between Flow360 and CFL3D using three different turbulence models.
+
+Firstly, analysing the differences between Flow360 and CFL3D, excellent agreement is seen for the SA and SA-RC models in both the pressure coefficient and skin-friction coefficient chordwise distributions. Certain minor differences can been for the k- |omega| SSTm turbulence model near the leading edge, especially for the skin friction coeffiicent, with good agreement in the trailing edge separation prediction. Comparing the difference turbulence models, the SA and SA-RC models lead to similar pressure distributions, with a slightly lower suction peak seen for the SA-RC model. The flow separates further upstream for the SA-RC model compared to the SA and  k- |omega| SSTm turbulence models. The  k- |omega| SSTm turbulence model predicts a much lower suction peak, but the skin friction profiles show similar behaviour to the SA model with only minor differences near the leading edge and trailing edge.
+
+Further analysis is performed by comparing the velocity profiles including the turbulent shear stress at six locations along the airfoil chord with data from CFL3D and experiment. The data is normalized by a :math:`0.93 U_{ref}` for the U and V velocities, and :math:`0.93^2 U_{ref}^2` for the turbulent shear stress as indicated on the `NASA Turbulence Modelling NACA4412 case website <https://turbmodels.larc.nasa.gov/naca4412sep_val.html>`_. The slice locations are at x/c = 0.6753, 0.7308, 0.7863, 0.8418, 08973 and 0.9528 shown in :ref:`Fig5_NACA4412_Slices`. The velocity profiles for the three turbulence models are compared in :ref:`Fig6_NACA4412_Profiles`. The data was extracted using two line probes with uniformly spaced points in Tecplot (one finer line probe for the inner portion of the boundary layer and one coarser line probe for the outer portion). This was done, as the gradients were computed in Tecplot and using the direct CFD data leads to discontinuities in the turbulent shear stress profiles.
+
+.. _Fig5_NACA4412_Slices:
+.. figure:: Figures/SliceLocations.png
+   :align: center
+   :scale:  70%
+  
+   Locations of the slices at which the velocity and turbulent shear stress profiles are compared.
+
+.. _Fig6_NACA4412_Profiles:
+.. figure:: Figures/Profiles.png
+   :align: center
+
+   Comparison of Velocity and turbulent shear stress profiles at six locations between experimental data, Flow360, and CFL3D for three turbulence models.
+
+Firstly, comparing Flow360 and CFL3D results, excellent agreement can be seen for the U and V velocity profiles as well as the turbulent shear stress profiles for the SA and SARC turbulence models. The profiles obtained from both CFD codes are nearly identical. For the k- |omega| SSTm turbulence model, certain minor difference can be seen especially in the turbulence shear stress profiles, although the agreement is still reasonable. Similar differences were seen between CFL3D and OVERFLOW in `Jespersen et al <https://turbmodels.larc.nasa.gov/Papers/NAS_Technical_Report_NAS-2016-01.pdf>`_. Flow360 predicts a slightly higher V velocity at each chordwise location and reduced peak turbulence shear stress. Comparing the different turbulence models, the SA and SARC models lead to reduced boundary layer thickness and peak turbulent shear stress compared to experiment, although the SARC model shows an improvement over the SA model. The k- |omega| SSTm turbulence model leads to velocity profile predictions that are much closer to experimental data, although the turbulent shear stress magnitude is still undepredicted. Comparisons between Flow360 and CFL3D are also performed for the flow field solutions, shown in :ref:`Fig7_NACA4412_Flowfields`.
+
+.. _Fig7_NACA4412_Flowfields:
+.. figure:: Figures/Flowfields.png
+   :align: center
+
+   Comparison of the flow field solutions between Flow360 and CFL3D for three turbulence models.
+
+The flowfield solutions also show good agreement between Flow360 and CFL3D, with streamline differences attributed mainly due to different seeding locations between the two codes. The separation bubble grows in size when using the k- |omega| SSTm model when compared to the SA and SARC models predicted by both codes.
+
+Overall, the results between Flow360, experimental data and other CFD codes show a high degree of consistency leading to further validation and verification of the Flow360 solver. The solver version release-22.2.3.0 was used throughout this study.

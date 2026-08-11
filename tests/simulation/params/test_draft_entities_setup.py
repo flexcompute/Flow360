@@ -65,8 +65,8 @@ def test_axisymmetric_body_added_to_draft_entities():
             axis=(0, 0, 1),
             profile_curve=[
                 (-1.0, 0.0) * u.m,
-                (-0.5, 0.2) * u.m,
-                (0.5, 0.2) * u.m,
+                (-1.0, 0.2) * u.m,
+                (1.0, 0.2) * u.m,
                 (1.0, 0.0) * u.m,
             ],
         )

@@ -1243,8 +1243,8 @@ class Project(pd.BaseModel):
             CAD Importer version frozen at geometry upload.
             'v1' (default) is compatible with all surface meshers;
             'v2' is an alternative BRep importer compatible with the default
-            surface mesher and Geometry AI, but not the standalone beta
-            in-house mesher (beta without Geometry AI).
+            surface mesher and GeometryAI, but not the standalone beta
+            in-house mesher (beta without GeometryAI).
 
         Returns
         -------
@@ -2137,9 +2137,9 @@ class Project(pd.BaseModel):
         run_async : bool, optional
             Specifies whether the simulation should run asynchronously (default is True).
         use_beta_mesher : bool, optional
-            Whether to use the beta mesher (default is None). Must be True when using Geometry AI.
+            Whether to use the beta mesher (default is None). Must be True when using GeometryAI.
         use_geometry_AI : bool, optional
-            Whether to use the Geometry AI (default is False).
+            Whether to use the GeometryAI (default is False).
         raise_on_error: bool, optional
             Option to raise if submission error occurs
         tags: List[str], optional
@@ -2338,9 +2338,9 @@ class Project(pd.BaseModel):
         solver_version : str, optional
             Optional solver version to use during this run (defaults to the project solver version)
         use_beta_mesher : bool, optional
-            Whether to use the beta mesher (default is None). Must be True when using Geometry AI.
+            Whether to use the beta mesher (default is None). Must be True when using GeometryAI.
         use_geometry_AI : bool, optional
-            Whether to use the Geometry AI (default is False).
+            Whether to use the GeometryAI (default is False).
         raise_on_error: bool, optional
             Option to raise if submission error occurs (default is True)
         tags: List[str], optional
@@ -2408,9 +2408,9 @@ class Project(pd.BaseModel):
         solver_version : str, optional
             Optional solver version to use during this run (defaults to the project solver version)
         use_beta_mesher : bool, optional
-            Whether to use the beta mesher (default is None). Must be True when using Geometry AI.
+            Whether to use the beta mesher (default is None). Must be True when using GeometryAI.
         use_geometry_AI : bool, optional
-            Whether to use the Geometry AI (default is False).
+            Whether to use the GeometryAI (default is False).
         raise_on_error: bool, optional
             Option to raise if submission error occurs (default is True)
         tags: List[str], optional
@@ -2493,9 +2493,9 @@ class Project(pd.BaseModel):
         solver_version : str, optional
             Optional solver version to use during this run (defaults to the project solver version)
         use_beta_mesher : bool, optional
-            Whether to use the beta mesher (default is None). Must be True when using Geometry AI.
+            Whether to use the beta mesher (default is None). Must be True when using GeometryAI.
         use_geometry_AI : bool, optional
-            Whether to use the Geometry AI (default is False).
+            Whether to use the GeometryAI (default is False).
         raise_on_error: bool, optional
             Option to raise if submission error occurs (default is True)
         tags: List[str], optional

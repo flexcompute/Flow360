@@ -1,7 +1,10 @@
 import inspect
 
+import pytest
+
 from flow360.cloud.http_util import Http, api_key_auth
 from flow360.environment import Env, EnvironmentConfig
+from flow360.exceptions import Flow360AuthorisationError
 
 
 class _Response:
@@ -136,3 +139,20 @@ def test_portal_api_get_uses_active_portal_environment(monkeypatch):
             {"json": None, "params": {"limit": 2}, "auth": api_key_auth},
         )
     ]
+
+
+def test_unauthorized_error_surfaces_server_response():
+    server_message = "Unauthorized:None account associate with this API Key."
+
+    class _Unauthorized:
+        status_code = 401
+        text = server_message
+
+    class _UnauthorizedSession(_Session):
+        def post(self, url, **kwargs):
+            return _Unauthorized()
+
+    client = Http(_UnauthorizedSession())
+
+    with pytest.raises(Flow360AuthorisationError, match=server_message):
+        client.post("https://api.example.test/v2/volume-meshes", json={})

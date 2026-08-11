@@ -14,6 +14,7 @@ from flow360_schema.models.entity_info import EntityInfoModel, parse_entity_info
 from flow360_schema.models.simulation.simulation_params import SimulationParams
 from pydantic import ValidationError
 from requests.exceptions import HTTPError
+from wcmatch import glob as wcglob
 
 from flow360.cloud.flow360_requests import LengthUnitType, RenameAssetRequestV2
 from flow360.cloud.rest_api import RestApi
@@ -23,6 +24,7 @@ from flow360.component.resource_base import (
     Flow360Resource,
     ResourceDraft,
 )
+from flow360.component.resource_status import is_success_resource_status
 from flow360.component.simulation import services
 from flow360.component.simulation.folder import Folder
 from flow360.component.simulation.web.utils import (
@@ -35,11 +37,17 @@ from flow360.component.utils import (
 )
 from flow360.environment import current_environment
 from flow360.exceptions import (
+    Flow360FileError,
     Flow360RuntimeError,
     Flow360ValidationError,
+    Flow360ValueError,
     Flow360WebError,
 )
 from flow360.log import log
+
+# Segment-aware, case-insensitive globbing for cloud file paths (always '/'):
+# '*'/'?' stay within one path segment, '**' matches across segments (any depth).
+_DOWNLOAD_MATCH_FLAGS = wcglob.GLOBSTAR | wcglob.IGNORECASE | wcglob.FORCEUNIX
 
 
 class AssetBase(metaclass=ABCMeta):
@@ -51,6 +59,9 @@ class AssetBase(metaclass=ABCMeta):
     _web_api_class: type[Flow360Resource] = None
     _entity_info: EntityInfoModel = None
     _cloud_resource_type_name: str = None
+    # Default glob patterns used by download() when the caller passes none.
+    # Child resources override this with their input-file extensions.
+    _default_download_patterns: Optional[List[str]] = None
 
     # pylint: disable=redefined-builtin
     def __init__(self, id: Union[str, None]):
@@ -187,6 +198,12 @@ class AssetBase(metaclass=ABCMeta):
             )
             # pylint: disable=protected-access
             asset.wait()
+            status = asset._webapi.status
+            if not is_success_resource_status(asset._cloud_resource_type_name, status):
+                raise Flow360RuntimeError(
+                    f"Cannot load {asset._cloud_resource_type_name} {asset.id} because its "
+                    f"status is {status.value}."
+                )
 
         # pylint: disable=protected-access
         try:
@@ -251,6 +268,79 @@ class AssetBase(metaclass=ABCMeta):
             List of files available for download
         """
         return self._webapi.get_download_file_list()
+
+    def download(
+        self,
+        patterns: Optional[Union[str, List[str]]] = None,
+        to_folder: str = ".",
+        overwrite: bool = True,
+    ) -> List[str]:
+        """Download files matching the given glob pattern(s) from the cloud.
+
+        Patterns are matched (case-insensitively) against each file's full cloud
+        path, with segment-aware globbing: ``*`` and ``?`` do not cross ``/``, so
+        ``*.cgns`` matches only root-level files, ``results/*.cgns`` matches one
+        level under ``results``, and ``**/*.cgns`` matches any depth. If no
+        pattern matches any file a :class:`Flow360FileError` is raised. Matched
+        files keep their cloud subfolder layout beneath ``to_folder``.
+
+        Parameters
+        ----------
+        patterns : Optional[Union[str, List[str]]]
+            One or more glob patterns matched against the cloud path, e.g.
+            ``"*.csm"``, ``"results/*.csv"``, ``["surface.cgns", "**/*.log"]``.
+            When omitted, the resource's default input-file patterns are used
+            (e.g. the geometry/mesh source files it was created from); those
+            match root-level files only, so pipeline output folders such as
+            ``results/`` and ``logs/`` are skipped.
+        to_folder : str
+            Local destination folder (created if missing). Defaults to the
+            current directory.
+        overwrite : bool
+            Overwrite existing local files with the same name.
+
+        Returns
+        -------
+        List[str]
+            Absolute paths of the downloaded files.
+        """
+        patterns = patterns if patterns is not None else self._default_download_patterns
+        if patterns is None:
+            raise Flow360ValueError(
+                f"No download patterns provided and {self._cloud_resource_type_name} has no "
+                "default input-file patterns. Pass an explicit `patterns` argument."
+            )
+        patterns = [patterns] if isinstance(patterns, str) else list(patterns)
+        available = [f["fileName"] for f in self.get_download_file_list()]
+
+        matched = sorted(
+            name
+            for name in available
+            if wcglob.globmatch(name, patterns, flags=_DOWNLOAD_MATCH_FLAGS)
+        )
+        if not matched:
+            raise Flow360FileError(
+                f"No files on {self._cloud_resource_type_name} '{self.name}' match patterns "
+                f"{patterns}. Available files: {available}."
+            )
+
+        # Preserve each file's cloud subfolder layout under to_folder so distinct
+        # cloud paths that share a base name do not overwrite each other.
+        # pylint: disable=protected-access
+        paths = []
+        for name in matched:
+            dest_folder = os.path.join(to_folder, os.path.dirname(name))
+            os.makedirs(dest_folder, exist_ok=True)
+            # Local-storage assets copy the file but return None; fall back to the known path.
+            downloaded = self._webapi._download_file(
+                name, to_folder=dest_folder, overwrite=overwrite
+            ) or os.path.join(dest_folder, os.path.basename(name))
+            paths.append(os.path.abspath(downloaded))
+        log.info(
+            f"Downloaded {len(paths)} file(s) to '{os.path.abspath(to_folder)}': "
+            + ", ".join(matched)
+        )
+        return paths
 
     @abstractmethod
     def get_dynamic_default_settings(self, simulation_dict):

@@ -62,6 +62,9 @@ class NameNode(ExpressionNode):
             raise ValueError(f"Name '{self.id}' cannot be evaluated at client runtime")
         if not force_evaluate and not context.can_evaluate(self.id):
             data_model = context.get_data_model(self.id)
+            if data_model is None:
+                context.ensure_loaded(self.id)
+                data_model = context.get_data_model(self.id)
             if data_model:
                 return data_model.model_validate({"name": self.id, "value": context.get(self.id)})
             raise ValueError("Partially evaluable symbols need to possess a type annotation.")

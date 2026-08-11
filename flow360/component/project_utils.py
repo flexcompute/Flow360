@@ -6,7 +6,6 @@ from typing import Literal, Optional, Type, TypeVar, get_args
 
 from flow360_schema.framework.base_model import Flow360BaseModel
 from flow360_schema.framework.entity.entity_list import EntityList
-from flow360_schema.framework.entity.entity_registry import EntityRegistry
 from flow360_schema.framework.physical_dimensions import Length
 from flow360_schema.models.asset_cache import AssetCache
 from flow360_schema.models.entities.geometry_entities import Edge, GeometryBodyGroup
@@ -516,31 +515,6 @@ def _set_up_default_reference_geometry(params: SimulationParams, length_unit: Le
     return params
 
 
-def _build_deduplicated_entity_registry_from_params(params: SimulationParams) -> EntityRegistry:
-    """
-    Build a deduplicated entity registry from params' stored entities.
-
-    params.used_entity_registry may contain duplicates (same entity used in multiple
-    models/outputs). This function deduplicates by (entity_type, identifier), where
-    identifier is private_attribute_id when available, falling back to entity name
-    to avoid collapsing distinct entities that share a None id.
-    """
-    registry = EntityRegistry()
-    seen_keys = set()
-    for entity_type, entities in params.used_entity_registry.internal_registry.items():
-        for entity in entities:
-            identifier = (
-                entity.private_attribute_id
-                if entity.private_attribute_id is not None
-                else entity.name
-            )
-            key = (entity_type, identifier)
-            if key not in seen_keys:
-                registry.register(entity)
-                seen_keys.add(key)
-    return registry
-
-
 def _read_root_simulation_dict(root_asset) -> dict:
     """Return the root asset's stored simulation.json dict."""
     if hasattr(root_asset, "_simulation_dict_cache_for_local_mode"):
@@ -666,9 +640,7 @@ def set_up_params_for_uploading(  # pylint: disable=too-many-arguments
         # User may have made modifications to the entities which is recorded in asset's entity registry
         # We need to reflect these changes.
         entity_info = root_asset.entity_info
-        entity_info.update_persistent_entities(
-            asset_entity_registry=_build_deduplicated_entity_registry_from_params(params)
-        )
+        entity_info.update_persistent_entities(asset_entity_registry=params.used_entity_registry)
 
         # Check if there are any new draft entities that have been added in the params by the user
         entity_info = _set_up_params_non_persistent_entity_info(entity_info, params)

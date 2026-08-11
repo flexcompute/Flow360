@@ -30,6 +30,19 @@ from ..utils import (
 ROOT_FOLDER = "ROOT.FLOW360"
 ROOT_FOLDER_NAME = "My workspace"
 
+# The item search endpoint is backed by OpenSearch, whose default max_result_window stops a query
+# at its first 10000 hits. Asking for a page past that fails the whole request with an opaque
+# HTTP 409 rather than returning an empty page, so the walk has to stop itself. A folder holding
+# up to twice this can still be listed in full by walking both sort directions - see
+# _fetch_items. Server-side fix tracked in SCFD-10070.
+ITEM_SEARCH_RESULT_LIMIT = 10000
+
+# Appended to any storage total that an incomplete listing fed into, so the number is not read as
+# exact at the line where it is printed.
+INCOMPLETE_TOTAL_NOTE = (
+    f" (lower bound: folders over {2 * ITEM_SEARCH_RESULT_LIMIT} items cannot be listed in full)"
+)
+
 
 def build_folder_tree(folders, root_folder_id: str = ROOT_FOLDER):
     """
@@ -277,6 +290,86 @@ class Folder(Flow360Resource):
         )
         return [record.model_dump() for record in records.records]
 
+    def _walk_items(self, sort_direction: str):
+        """
+        Page one sort direction of the folder listing, up to the item search limit.
+
+        Parameters
+        ----------
+        sort_direction : str
+            "desc" to walk from the largest item, "asc" to walk from the smallest.
+
+        Returns
+        -------
+        tuple
+            The records retrieved keyed by item id, and the raw hit count the server reported.
+        """
+
+        records = {}
+        page = 0
+        size = 1000  # Page size
+
+        # The reported "total" counts raw search hits, including ones the server drops from the
+        # page it returns, so accumulating records never reaches it and any page can come back
+        # short. Advance by page index over the raw hits instead.
+        while True:
+            payload = {
+                "page": page,
+                "size": size,
+                "filterFolderIds": self.id,
+                "filterExcludeSubfolders": True,
+                # createdAt breaks storageSize ties, making the two directions exact reverses of
+                # each other. Without it tied items are ordered arbitrarily and independently per
+                # query, so a tie group straddling both window edges could fall outside both.
+                "sortFields": ["storageSize", "createdAt"],
+                "sortDirections": [sort_direction, sort_direction],
+                "expandFields": ["contentInfo"],
+            }
+
+            data = RestApi("/v2/items", environment_provider=current_environment).get(
+                params=payload
+            )
+            records.update({record["id"]: record for record in data.get("records", [])})
+            total = data.get("total", 0)
+            page += 1
+            if page * size >= min(total, ITEM_SEARCH_RESULT_LIMIT):
+                return records, total
+
+    def _fetch_items(self):
+        """
+        Fetch all items within the current folder, handling pagination if needed.
+
+        Returns
+        -------
+        tuple
+            The items found in the folder sorted by storage size in descending order, and whether
+            the listing is still short of the folder because of the item search limit.
+        """
+
+        largest, total = self._walk_items("desc")
+        if total <= ITEM_SEARCH_RESULT_LIMIT:
+            return list(largest.values()), False
+
+        # A single window reaches only the largest ITEM_SEARCH_RESULT_LIMIT hits. Walking the
+        # opposite sort direction reaches the smallest just as many, so the two windows overlap -
+        # and therefore cover the folder completely - unless it holds more than twice the limit.
+        # Their intersection being non-empty is the proof that they met. The proof needs the sort
+        # to be a total order, which is why _walk_items sorts on a tiebreaker as well: it makes an
+        # item's rank from one end determine its rank from the other.
+        smallest, _ = self._walk_items("asc")
+        merged = {**smallest, **largest}
+        truncated = not largest.keys() & smallest.keys()
+        if truncated:
+            log.warning(
+                f"Folder {self.id} holds {total} items, over twice the {ITEM_SEARCH_RESULT_LIMIT} "
+                f"the search API returns per query. Only the {len(merged)} largest and smallest "
+                "were retrieved."
+            )
+        return (
+            sorted(merged.values(), key=lambda record: record.get("storageSize", 0), reverse=True),
+            truncated,
+        )
+
     def get_items(self):
         """
         Fetch all items within the current folder, handling pagination if needed.
@@ -287,32 +380,8 @@ class Folder(Flow360Resource):
             A list of all items found in the folder, sorted by storage size in descending order.
         """
 
-        all_records = []
-        page = 0
-        size = 1000  # Page size
-        total_record_count = size
-
-        # Loop until all pages are fetched
-        while len(all_records) < total_record_count:
-            payload = {
-                "page": page,
-                "size": size,
-                "filterFolderIds": self.id,
-                "filterExcludeSubfolders": True,
-                "sortFields": ["storageSize"],
-                "sortDirections": ["desc"],
-                "expandFields": ["contentInfo"],
-            }
-
-            data = RestApi("/v2/items", environment_provider=current_environment).get(
-                params=payload
-            )
-            records = data.get("records", [])
-            all_records.extend(records)
-            total_record_count = data.get("total", 0)
-            page += 1
-
-        return all_records
+        items, _ = self._fetch_items()
+        return items
 
     def _build_folder_tree(self, folders):
         """
@@ -350,69 +419,118 @@ class Folder(Flow360Resource):
         folder_tree = self._build_folder_tree(data["records"])
         return folder_tree
 
-    def _print_storage(self, tree, indent: int, n_display: int):
+    def _collect_storage(self, tree):
         """
-        Recursively print the folder tree along with its contents and total storage usage.
+        Recursively total the storage of a folder tree.
+
+        Subfolder totals have to be known before anything is printed, so that the biggest ones
+        can be shown and the rest summarised.
 
         Parameters
         ----------
         tree : dict
-            The current folder tree to display.
-        indent : int
-            The indentation level for pretty-printing.
-        n_display : int
-            The number of items to display before summarizing the remaining items.
+            The current folder tree to total.
 
         Returns
         -------
-        int
-            The total storage size of the current folder and its subfolders.
+        dict
+            The folder name, its items, the storage total for the whole subtree, whether that
+            total is a lower bound, and the same for each subfolder, largest first.
         """
 
-        log.info("  " * indent + f"- [FOLDER] {tree['name']}")
-        total_storage = 0
-        for subfolder in tree["subfolders"]:
-            # pylint: disable=protected-access
-            total_storage += Folder(subfolder["id"])._print_storage(
-                subfolder, indent + 1, n_display
-            )
-
-        items = self.get_items()
-        displayed_items = items[:n_display]
-        remaining_items = items[n_display:]
-
-        for item in displayed_items:
-            if item["type"] != "Folder":
-                storage_size = item.get("storageSize", 0)
-                total_storage += storage_size
-                log.info(
-                    "  " * (indent + 1)
-                    + f"- [{item['type']}] {item['name']} (Size: {storage_size_formatter(storage_size)})"
-                )
-
-        if len(remaining_items) > 0:
-            total_remaining_size = sum(item.get("storageSize", 0) for item in remaining_items)
-            log.info(
-                "  " * (indent + 1)
-                + f"+{len(remaining_items)} more (total {storage_size_formatter(total_remaining_size)})"
-            )
-            total_storage += total_remaining_size
-
-        log.info("  " * (indent + 1) + f"Total Storage: {storage_size_formatter(total_storage)}")
-        return total_storage
+        # pylint: disable=protected-access
+        subfolders = sorted(
+            (
+                Folder(subfolder["id"])._collect_storage(subfolder)
+                for subfolder in tree["subfolders"]
+            ),
+            key=lambda subfolder: subfolder["total"],
+            reverse=True,
+        )
+        items, truncated = self._fetch_items()
+        return {
+            "name": tree["name"],
+            "items": items,
+            "total": sum(item.get("storageSize", 0) for item in items)
+            + sum(subfolder["total"] for subfolder in subfolders),
+            "incomplete": truncated or any(subfolder["incomplete"] for subfolder in subfolders),
+            "subfolders": subfolders,
+        }
 
     @classmethod
-    def print_storage(cls, folder_id: str = "ROOT.FLOW360", n_display: int = 10) -> None:
+    def _render_storage(cls, node, indent: int, n_display: int, n_subfolders: int):
+        """
+        Print one collected folder and its descendants, biggest first.
+
+        Parameters
+        ----------
+        node : dict
+            A folder as returned by :func:`_collect_storage`.
+        indent : int
+            The indentation level for pretty-printing.
+        n_display : int
+            The number of items to show before summarizing the remaining items.
+        n_subfolders : int
+            The number of subfolders to show before summarizing the remaining subfolders.
+        """
+
+        log.info("  " * indent + f"- [FOLDER] {node['name']}")
+
+        for subfolder in node["subfolders"][:n_subfolders]:
+            cls._render_storage(subfolder, indent + 1, n_display, n_subfolders)
+
+        hidden_subfolders = node["subfolders"][n_subfolders:]
+        if hidden_subfolders:
+            hidden_storage = sum(subfolder["total"] for subfolder in hidden_subfolders)
+            log.info(
+                "  " * (indent + 1)
+                + f"+{len(hidden_subfolders)} more folders "
+                + f"(total {storage_size_formatter(hidden_storage)})"
+            )
+
+        for item in node["items"][:n_display]:
+            log.info(
+                "  " * (indent + 1)
+                + f"- [{item['type']}] {item['name']} "
+                + f"(Size: {storage_size_formatter(item.get('storageSize', 0))})"
+            )
+
+        hidden_items = node["items"][n_display:]
+        if hidden_items:
+            hidden_storage = sum(item.get("storageSize", 0) for item in hidden_items)
+            log.info(
+                "  " * (indent + 1)
+                + f"+{len(hidden_items)} more (total {storage_size_formatter(hidden_storage)})"
+            )
+
+        log.info(
+            "  " * (indent + 1)
+            + f"Total Storage: {storage_size_formatter(node['total'])}"
+            + (INCOMPLETE_TOTAL_NOTE if node["incomplete"] else "")
+        )
+
+    @classmethod
+    def print_storage(
+        cls, folder_id: str = "ROOT.FLOW360", n_display: int = 10, n_subfolders: int = 10
+    ) -> None:
         """
         Display the storage details of a folder, including subfolders and a summary of all items.
+
+        Storage totals always cover the whole folder; the two limits only decide how much of it
+        is spelled out line by line, biggest first.
 
         Parameters
         ----------
         folder_id : str, optional
             The ID of the folder to print storage details for. Defaults to "ROOT.FLOW360".
         n_display : int, optional
-            The number of items to display before summarizing the remaining items. Defaults to 10.
+            The number of items to display per folder before summarizing the remaining items.
+            Defaults to 10.
+        n_subfolders : int, optional
+            The number of subfolders to display per folder before summarizing the remaining
+            subfolders. Defaults to 10.
         """
         folder = cls(id=folder_id)
         tree = folder.get_folder_tree()
-        folder._print_storage(tree, 0, n_display)
+        # pylint: disable=protected-access
+        cls._render_storage(folder._collect_storage(tree), 0, n_display, n_subfolders)

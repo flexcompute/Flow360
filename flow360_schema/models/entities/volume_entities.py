@@ -188,6 +188,15 @@ class Box(MultiConstructorBaseModel, _VolumeEntityBase):
                 "axis_of_rotation": tuple(new_axis),
                 "angle_of_rotation": new_angle * unyt.rad,
                 "size": new_size,
+                # `model_copy` runs no validators, so `_convert_axis_and_angle_to_coordinate_axes`
+                # cannot refresh the derived `axes`, and the shallow copy would keep pointing at
+                # this box's own cache. Rebuild it from the composed rotation instead.
+                "private_attribute_input_cache": BoxCache(
+                    axes=np.transpose(rot_combined[:, :2]).tolist(),
+                    center=new_center,
+                    size=new_size,
+                    name=self.name,
+                ),
             }
         )
 
@@ -345,7 +354,11 @@ class AxisymmetricBody(_VolumeEntityBase):
     Generic body of revolution, represented as (axial, radial) profile polyline
     with arbitrary center and axial direction.
 
-    First and last profile samples must connect to axis (radius = 0).
+    First and last profile samples must connect to axis (radius = 0), and the segment touching
+    each endpoint must be perpendicular to the axis so the body closes with a flat cap (the
+    endpoint shares its neighbor's axial coordinate). The two caps must sit at distinct axial
+    coordinates so the body has non-zero extent; the interior polyline between them is arbitrary.
+    Cone-like apexes tapering to a point on the axis are not supported.
 
     Example
     -------
@@ -367,7 +380,7 @@ class AxisymmetricBody(_VolumeEntityBase):
     center: Length.Vector3 = pd.Field(description="The center point of the body of revolution.")  # type: ignore[valid-type]
     profile_curve: list[Length.Vector2] = pd.Field(  # type: ignore[valid-type]
         description="The (Axial, Radial) profile of the body of revolution.",
-        min_length=2,
+        min_length=4,  # two on-axis endpoints + two more so both ends can close with a flat cap
         frozen=True,  # ensure AxisymmetricSegment references are immutable
     )
     private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
@@ -391,6 +404,32 @@ class AxisymmetricBody(_VolumeEntityBase):
                     f"Expect profile samples to be (Axial, Radial) samples with positive Radial."
                     f" Found invalid point: {str(profile_point)}."
                 )
+
+        return curve
+
+    @pd.field_validator("profile_curve", mode="after")
+    @classmethod
+    def _check_profile_ends_in_flat_caps(cls, curve: list[Length.Vector2]) -> list[Length.Vector2]:  # type: ignore[valid-type]
+        # Each axis endpoint must be closed by a flat cap, so its neighbor shares its axial coord.
+        if curve[0][0] != curve[1][0]:  # type: ignore[index]
+            raise ValueError(
+                "Expect the profile to start with a flat cap perpendicular to the axis: the first "
+                f"two samples must share an axial coordinate. Found {str(curve[0])} -> {str(curve[1])}."
+            )
+        if curve[-1][0] != curve[-2][0]:  # type: ignore[index]
+            raise ValueError(
+                "Expect the profile to end with a flat cap perpendicular to the axis: the last "
+                f"two samples must share an axial coordinate. Found {str(curve[-2])} -> {str(curve[-1])}."
+            )
+
+        # The two caps must sit at distinct axial coords, else the body collapses to a zero-thickness
+        # disk. The interior polyline between them is unconstrained.
+        first_cap_axial = curve[0][0]  # type: ignore[index]
+        if first_cap_axial == curve[-1][0]:  # type: ignore[index]
+            raise ValueError(
+                "Expect the two flat caps to be at distinct axial coordinates, otherwise the body "
+                f"collapses to a zero-thickness disk. Found both caps at axial {str(first_cap_axial)}."
+            )
 
         return curve
 
@@ -553,8 +592,8 @@ class CustomVolume(_VolumeEntityBase):
 class SeedpointVolume(_VolumeEntityBase):
     """
     Separate zone in the mesh, defined by one or more interior seed points.
-    Supported with snappyHexMesh and with the Geometry AI workflow. snappyHexMesh
-    requires exactly one seed point per zone; the Geometry AI workflow accepts
+    Supported with snappyHexMesh and with the GeometryAI workflow. snappyHexMesh
+    requires exactly one seed point per zone; the GeometryAI workflow accepts
     several seed points per volume, which are flood-filled into a single zone.
     """
 

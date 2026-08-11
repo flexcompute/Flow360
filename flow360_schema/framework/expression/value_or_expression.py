@@ -188,8 +188,11 @@ class ValueOrExpression(Expression, Generic[T]):
                 if len(value) == 0:
                     raise ValueError("Empty list is not allowed.")
                 _check_list_items_are_same_dimensions(value)
-                if all(isinstance(item, (unyt_quantity, Number)) for item in value):
-                    # try limiting the number of types we need to handle
+                if typevar_values == AnyNumericType and all(
+                    isinstance(item, (unyt_quantity, Number)) for item in value
+                ):
+                    return unyt_array(value, dtype=np.float64)
+                if all(isinstance(item, unyt_quantity) for item in value):
                     return unyt_array(value, dtype=np.float64)
             return value
 
@@ -212,7 +215,9 @@ class ValueOrExpression(Expression, Generic[T]):
                 serialized = SerializedValueOrExpression(type_name="number")  # type: ignore[call-arg]
                 # Note: NaN handling should be unnecessary since it would
                 # have end up being expression first so not reaching here.
-                if isinstance(value, (Number, list)):
+                if isinstance(value, tuple):
+                    serialized.value = list(value)
+                elif isinstance(value, (Number, list)):
                     serialized.value = value
                 elif isinstance(value, u.unyt_array):
                     if value.size == 1:
@@ -244,7 +249,7 @@ class ValueOrExpression(Expression, Generic[T]):
                 return "expression"
             if isinstance(v, list) and all(isinstance(item, Expression) for item in v):
                 return "expression"
-            if isinstance(v, (Number, unyt_array, list)):
+            if isinstance(v, (Number, unyt_array, list, tuple)):
                 return "number"
             raise KeyError("Unknown expression input type: ", v, v.__class__.__name__)
 

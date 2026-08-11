@@ -64,12 +64,14 @@ from flow360_schema.models.simulation.outputs.output_fields import (
     VolumeProbeFieldNames,
     get_field_values,
 )
+from flow360_schema.models.simulation.camera import Camera
+from flow360_schema.models.simulation.camera_legacy import LegacyCamera
 from flow360_schema.models.simulation.outputs.render_config import (
-    Camera,
     Environment,
     FieldMaterial,
     Lighting,
     PBRMaterial,
+    Resolution,
     SceneTransform,
 )
 from flow360_schema.models.simulation.validation.validation_context import (
@@ -148,6 +150,16 @@ FileNameString = Annotated[
     str,
     pd.AfterValidator(_validate_filename_string),
 ]
+
+
+def sanitize_file_name(name: str) -> str:
+    """Make `name` safe to embed in a solver output file name.
+
+    Rewrites `/` and nothing else. The solver and the columnar data processor reconstruct the
+    same file and dataset names with their own `/`-only rewrite, so anything broader here would
+    make a name resolve to one file for the solver and another for everything reading it back.
+    """
+    return name.replace("/", "_")
 
 
 ForceOutputModelType = Annotated[
@@ -1061,17 +1073,28 @@ class RenderOutput(_AnimationSettings):
     ...             material=fl.render.FieldMaterial.rainbow(field="T", min_value=0, max_value=1, alpha=0.4)
     ...         )
     ...     ],
-    ...     camera=fl.render.Camera.orthographic(scale=5, view=fl.Viewpoint.TOP + fl.Viewpoint.LEFT)
+    ...     camera=fl.render_config.Camera(
+    ...         position=fl.render_config.Viewpoint.TOP + fl.render_config.Viewpoint.LEFT, dimension=5
+    ...     )
     ... )
     ====
     """
 
     name: str = pd.Field("Render output", description="Name of the `RenderOutput`.")
     groups: list[RenderOutputGroup] = pd.Field([])
-    camera: Camera = pd.Field(description="Camera settings", default_factory=Camera.orthographic)
+    camera: Camera | LegacyCamera = pd.Field(description="Camera settings", default_factory=Camera)
     lighting: Lighting = pd.Field(description="Lighting settings", default_factory=Lighting.default)
     environment: Environment = pd.Field(description="Environment settings", default_factory=Environment.simple)
+    resolution: Resolution = pd.Field(
+        default_factory=Resolution, description="Output image resolution (pixels). Default 1920x1080."
+    )
     transform: SceneTransform | None = pd.Field(None, description="Optional model transform to apply to all entities")
+    mode: Literal["video", "frames"] = pd.Field(
+        "video",
+        description="Output mode for the render. :code:`video` (default) assembles the rendered "
+        "frames into an MP4 animation. :code:`frames` instead writes one full-fidelity PNG per "
+        "frame, useful for per-iteration post-processing of unsteady simulations.",
+    )
     output_type: Literal["RenderOutput"] = pd.Field("RenderOutput", frozen=True)
     private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
 

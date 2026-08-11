@@ -1096,6 +1096,9 @@ class VolumeMeshV2(AssetBase):
     _web_api_class = Flow360Resource
     _mesh_stats_file = "meshStats.json"
     _cloud_resource_type_name = "VolumeMesh"
+    _default_download_patterns = [
+        f"*{pattern}" for pattern in MeshNameParser.all_patterns("volume")
+    ] + ["*.mapbc"]
 
     @classmethod
     # pylint: disable=redefined-builtin

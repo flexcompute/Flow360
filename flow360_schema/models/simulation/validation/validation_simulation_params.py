@@ -228,7 +228,14 @@ def _check_numerical_dissipation_factor_output(v):
     return v
 
 
-def _check_consistency_hybrid_model_volume_output(v):
+def _check_consistency_hybrid_model_output(v):
+    """
+    Validate that hybridModel output fields are only requested when hybrid RANS-LES is enabled.
+
+    We scan all outputs rather than checking isinstance() for specific types, because the real
+    invariant is field-name-based: the solver sets outputDetachedEddySimulationFields from
+    outputConfigsRequestField() which scans all output sections for the field name.
+    """
     model_type = None
     models = v.models
 
@@ -251,21 +258,18 @@ def _check_consistency_hybrid_model_volume_output(v):
     if not outputs:
         return v
 
-    for output in outputs:
-        if isinstance(output, VolumeOutput) and output.output_fields is not None:
-            output_fields = output.output_fields.items
-            if "SpalartAllmaras_hybridModel" in output_fields and not (
-                model_type == "SpalartAllmaras" and run_hybrid_model
-            ):
-                raise ValueError(
-                    "SpalartAllmaras_hybridModel output can only be specified with "
-                    "SpalartAllmaras turbulence model and hybrid RANS-LES used."
-                )
-            if "kOmegaSST_hybridModel" in output_fields and not (model_type == "kOmegaSST" and run_hybrid_model):
-                raise ValueError(
-                    "kOmegaSST_hybridModel output can only be specified with kOmegaSST turbulence model "
-                    "and hybrid RANS-LES used."
-                )
+    for output_index, output in enumerate(outputs):
+        fields = getattr(getattr(output, "output_fields", None), "items", []) or []
+        if "SpalartAllmaras_hybridModel" in fields and not (model_type == "SpalartAllmaras" and run_hybrid_model):
+            raise ValueError(
+                f"In `outputs`[{output_index}] {output.output_type}: SpalartAllmaras_hybridModel output can only "
+                "be specified with SpalartAllmaras turbulence model and hybrid RANS-LES used."
+            )
+        if "kOmegaSST_hybridModel" in fields and not (model_type == "kOmegaSST" and run_hybrid_model):
+            raise ValueError(
+                f"In `outputs`[{output_index}] {output.output_type}: kOmegaSST_hybridModel output can only be "
+                "specified with kOmegaSST turbulence model and hybrid RANS-LES used."
+            )
 
     return v
 

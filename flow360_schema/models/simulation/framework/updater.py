@@ -988,6 +988,50 @@ def _to_25_10_16(params_as_dict):
     return params_as_dict
 
 
+_CUSTOM_VOLUME_RENAME_APPLIED_KEY = "__custom_volume_bounding_entities_applied"
+
+
+def _rename_custom_volume_boundaries_everywhere(params_as_dict):
+    """Rename ``boundaries`` to ``bounding_entities`` on every ``CustomVolume`` dict.
+
+    ``_to_25_9_2`` only handled ``meshing.volume_zones``/``meshing.zones``, missing
+    CustomVolume dicts everywhere else (asset cache draft entities, model entities,
+    ``parent_volume``, ``output_target``). This walks the whole params dict instead.
+
+    This function is referenced by one milestone per release line. A sentinel key
+    on the dict itself prevents redundant re-walks within one updater() call;
+    ``updater()`` strips it before returning.
+    """
+    if params_as_dict.get(_CUSTOM_VOLUME_RENAME_APPLIED_KEY):
+        return params_as_dict
+    params_as_dict[_CUSTOM_VOLUME_RENAME_APPLIED_KEY] = True
+
+    def _walk(node):
+        if isinstance(node, dict):
+            if (
+                node.get("private_attribute_entity_type_name") == "CustomVolume"
+                and "boundaries" in node
+                and "bounding_entities" not in node
+            ):
+                node["bounding_entities"] = node.pop("boundaries")
+            for value in node.values():
+                _walk(value)
+        elif isinstance(node, list):
+            for item in node:
+                _walk(item)
+
+    _walk(params_as_dict)
+    return params_as_dict
+
+
+def _to_25_9_10(params_as_dict):
+    return _rename_custom_volume_boundaries_everywhere(params_as_dict)
+
+
+def _to_25_10_17(params_as_dict):
+    return _rename_custom_volume_boundaries_everywhere(params_as_dict)
+
+
 VERSION_MILESTONES = [
     (Flow360Version("24.11.1"), _to_24_11_1),
     (Flow360Version("24.11.7"), _to_24_11_7),
@@ -1012,12 +1056,14 @@ VERSION_MILESTONES = [
     (Flow360Version("25.9.1"), _to_25_9_1),
     (Flow360Version("25.9.2"), _to_25_9_2),
     (Flow360Version("25.9.3"), _to_25_9_3),
+    (Flow360Version("25.9.10"), _to_25_9_10),
     (Flow360Version("25.10.0"), _to_25_10_0),
     (Flow360Version("25.10.12"), _to_25_10_12),
     (Flow360Version("25.10.13"), _to_25_10_13),
     (Flow360Version("25.10.14"), _to_25_10_14),
     (Flow360Version("25.10.15"), _to_25_10_15),
     (Flow360Version("25.10.16"), _to_25_10_16),
+    (Flow360Version("25.10.17"), _to_25_10_17),
 ]  # A list of the Python API version tuple with their corresponding updaters.
 
 
@@ -1109,5 +1155,6 @@ def updater(version_from, version_to, params_as_dict) -> dict:
         logger.debug(f"Updating input SimulationParam to {_to_version}...")
         params_as_dict = fun(params_as_dict)
     params_as_dict.pop(_TOTAL_PRESSURE_CONVERTED_KEY, None)
+    params_as_dict.pop(_CUSTOM_VOLUME_RENAME_APPLIED_KEY, None)
     params_as_dict["version"] = str(version_to)
     return params_as_dict

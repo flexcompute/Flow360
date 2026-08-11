@@ -13,10 +13,11 @@ import pydantic as pd
 import unyt as u
 
 from flow360_schema.framework.base_model import Flow360BaseModel
+from flow360_schema.framework.entity.axis3 import Axis3
 from flow360_schema.framework.entity.entity_list import EntityList
 from flow360_schema.framework.entity.entity_utils import generate_uuid
 from flow360_schema.framework.entity.geometric_types import Axis
-from flow360_schema.framework.expression import StringExpression
+from flow360_schema.framework.expression import StringExpression, ValueOrExpression
 from flow360_schema.framework.physical_dimensions import (
     AbsoluteTemperature,
     AngularVelocity,
@@ -309,7 +310,7 @@ class WallRotation(Flow360BaseModel):
     """
 
     center: Length.Vector3 = pd.Field(description="The center of rotation")
-    axis: Axis = pd.Field(description="The axis of rotation.")
+    axis: ValueOrExpression[Axis3] = pd.Field(description="The axis of rotation.")
     angular_velocity: AngularVelocity.Float64 = pd.Field(description="The value of the angular velocity.")
     type_name: Literal["WallRotation"] = pd.Field("WallRotation", frozen=True)
     private_attribute_circle_mode: dict | None = pd.Field(None)
@@ -364,8 +365,21 @@ class Wall(BoundaryBase):
 
       >>> fl.Wall(
       ...     entities=geometry["wall_function"],
-      ...     velocity = ["min(0.2, 0.2 + 0.2*y/0.5)", "0", "0.1*y/0.5"],
+      ...     velocity=["min(0.2, 0.2 + 0.2*y/0.5)", "0", "0.1*y/0.5"],
       ...     use_wall_function=fl.WallFunction(),
+      ... )
+
+    - :code:`Wall` with a compile-time vector expression:
+
+      >>> spanwise_direction = fl.UserVariable(
+      ...     name="spanwise_direction", value=[0, 1, 0]
+      ... )
+      >>> velocity_basis = fl.UserVariable(
+      ...     name="velocity_basis", value=[0, 0, 12] * u.m / u.s
+      ... )
+      >>> fl.Wall(
+      ...     entities=geometry["wall_function"],
+      ...     velocity=fl.math.cross(spanwise_direction, velocity_basis),
       ... )
 
     - :code:`Wall` with inner-layer wall function:
@@ -473,7 +487,12 @@ class Wall(BoundaryBase):
     @pd.field_validator("velocity", mode="before")
     @classmethod
     def _normalize_velocity(cls, value):
-        if isinstance(value, dict) and value.get("type_name") is not None:
+        if not isinstance(value, dict):
+            return value
+        type_name = value.get("type_name") or value.get("typeName")
+        if type_name in {"number", "expression"}:
+            return pd.TypeAdapter(VelocityVectorType).validate_python(value)
+        if type_name is not None:
             return WALL_VELOCITY_MODEL_ADAPTER.validate_python(value)
         return value
 
@@ -498,13 +517,12 @@ class Wall(BoundaryBase):
 
     @contextual_field_validator("velocity", mode="after")
     @classmethod
-    def _disable_expression_for_liquid(cls, value, param_info: ParamsValidationInfo):
+    def _disable_solver_expression_for_liquid(cls, value, param_info: ParamsValidationInfo):
         if param_info.using_liquid_as_material is False:
             return value
 
-        if isinstance(value, tuple):
-            if isinstance(value[0], str) and isinstance(value[1], str) and isinstance(value[2], str):
-                raise ValueError("Expression cannot be used when using liquid as simulation material.")
+        if isinstance(value, tuple) and all(isinstance(component, str) for component in value):
+            raise ValueError("Expression cannot be used when using liquid as simulation material.")
         return value
 
 
@@ -520,7 +538,20 @@ class Freestream(BoundaryBaseWithTurbulenceQuantities):
       >>> fl.Freestream(
       ...     surfaces=[volume_mesh["blk-1/freestream-part1"],
       ...               volume_mesh["blk-1/freestream-part2"]],
-      ...     velocity = ["min(0.2, 0.2 + 0.2*y/0.5)", "0", "0.1*y/0.5"]
+      ...     velocity=["min(0.2, 0.2 + 0.2*y/0.5)", "0", "0.1*y/0.5"]
+      ... )
+
+    - Define freestream velocity with a compile-time vector expression:
+
+      >>> spanwise_direction = fl.UserVariable(
+      ...     name="spanwise_direction", value=[0, 1, 0]
+      ... )
+      >>> velocity_basis = fl.UserVariable(
+      ...     name="velocity_basis", value=[0, 0, 12] * u.m / u.s
+      ... )
+      >>> fl.Freestream(
+      ...     surfaces=[volume_mesh["blk-1/freestream-part1"]],
+      ...     velocity=fl.math.cross(spanwise_direction, velocity_basis)
       ... )
 
     - Define freestream boundary condition with turbulence quantities and automated farfield:
@@ -542,7 +573,8 @@ class Freestream(BoundaryBaseWithTurbulenceQuantities):
         None,
         description="The default values are set according to the "
         + ":py:attr:`AerospaceCondition.alpha` and :py:attr:`AerospaceCondition.beta` angles. "
-        + "Optionally, an expression for each of the velocity components can be specified.",
+        + "Optionally, provide a legacy expression for each component or one compile-time expression "
+        + "for the velocity vector.",
     )
     entities: EntityList[
         Surface,
@@ -558,13 +590,12 @@ class Freestream(BoundaryBaseWithTurbulenceQuantities):
 
     @contextual_field_validator("velocity", mode="after")
     @classmethod
-    def _disable_expression_for_liquid(cls, value, param_info: ParamsValidationInfo):
+    def _disable_solver_expression_for_liquid(cls, value, param_info: ParamsValidationInfo):
         if param_info.using_liquid_as_material is False:
             return value
 
-        if isinstance(value, tuple):
-            if isinstance(value[0], str) and isinstance(value[1], str) and isinstance(value[2], str):
-                raise ValueError("Expression cannot be used when using liquid as simulation material.")
+        if isinstance(value, tuple) and all(isinstance(component, str) for component in value):
+            raise ValueError("Expression cannot be used when using liquid as simulation material.")
         return value
 
 

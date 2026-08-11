@@ -468,6 +468,18 @@ class GeometryEntityInfo(EntityInfoModel):
                 internal_registry = self._group_entity_by_tag("body", body_group_tag, registry=internal_registry)
         return internal_registry
 
+    def get_num_exterior_bodies(self) -> int:
+        """Number of individual bodies whose active body group has ``mesh_exterior=True``,
+        or 0 when body grouping is unresolved (no tag, or a tag absent from the metadata)."""
+        if not self.body_attribute_names:
+            return 0
+        body_group_tag = self.body_group_tag or self._get_default_grouping_tag("body")
+        try:
+            body_groups: list[Any] = self._get_list_of_entities(entity_type_name="body", attribute_name=body_group_tag)
+        except ValueError:
+            return 0
+        return sum(len(group.private_attribute_sub_components) for group in body_groups if group.mesh_exterior)
+
     def get_body_group_to_surface_mapping(self) -> dict[str, list[str]]:
         """
         Return body group's (id, name) to Surfaces' (face groups') (id, name) mapping

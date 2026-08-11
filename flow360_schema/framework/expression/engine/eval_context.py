@@ -1,6 +1,7 @@
 """Evaluation context that contains references to known symbols"""
 
 import collections
+import contextlib
 import logging
 from copy import deepcopy
 from typing import Any
@@ -193,6 +194,22 @@ class EvaluationContext:
         if name not in self._data_models:
             return None
         return self._data_models[name]
+
+    def ensure_loaded(self, name: str) -> None:
+        """
+        Trigger the lazy import of the module backing ``name`` (e.g. ``solution.velocity``)
+        so its value and data_model get registered into this context.
+
+        Solver/control variables are blacklisted from evaluation, so the normal
+        resolve path is never taken for them during partial evaluation; their
+        data_models therefore exist only after their defining module is imported.
+        This makes that import happen on demand instead of relying on some other
+        component having imported it first. No-op if already registered or not importable.
+        """
+        if name in self._data_models:
+            return
+        with contextlib.suppress(ValueError):
+            self._resolver.get_allowed_callable(name)
 
     def set_alias(self, name: str, alias: str) -> None:
         """

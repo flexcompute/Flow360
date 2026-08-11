@@ -112,7 +112,7 @@ class MeshingDefaults(Flow360BaseModel):
     geometry_accuracy: Length.PositiveFloat64 | None = pd.Field(
         None,
         description="The smallest length scale that will be resolved accurately by the surface meshing process. "
-        "This parameter is only valid when using geometry AI."
+        "This parameter is only valid when using geometryAI."
         "It can be overridden with class: ~flow360.GeometryRefinement.",
     )
 
@@ -200,7 +200,7 @@ class MeshingDefaults(Flow360BaseModel):
         None,
         description="Target number of surface mesh nodes. When specified, the surface mesher "
         "will rescale the meshing parameters to achieve approximately this number of nodes. "
-        "This option is only supported by the beta surface mesher or when using geometry AI, "
+        "This option is only supported by the beta surface mesher or when using geometryAI, "
         "and can not be overridden per face.",
         context=SURFACE_MESH,
     )
@@ -211,7 +211,7 @@ class MeshingDefaults(Flow360BaseModel):
             "Default maximum angular deviation in degrees. This value will restrict:"
             " 1. The angle between a cell's normal and its underlying surface normal."
             " 2. The angle between a line segment's normal and its underlying curve normal."
-            " This can be overridden per face only when using geometry AI."
+            " This can be overridden per face only when using geometryAI."
         ),
         context=SURFACE_MESH,
     )
@@ -220,7 +220,7 @@ class MeshingDefaults(Flow360BaseModel):
         False,
         description="Flag to specify whether boundaries between adjacent faces should be resolved "
         + "accurately during the surface meshing process using anisotropic mesh refinement. "
-        + "This option is only supported when using geometry AI, and can be overridden "
+        + "This option is only supported when using geometryAI, and can be overridden "
         + "per face with :class:`~flow360.SurfaceRefinement`.",
     )
 
@@ -228,7 +228,7 @@ class MeshingDefaults(Flow360BaseModel):
         False,
         description="Flag to specify whether thin geometry features with thickness roughly equal "
         + "to geometry_accuracy should be resolved accurately during the surface meshing process. "
-        + "This option is only supported when using geometry AI, and can be overridden "
+        + "This option is only supported when using geometryAI, and can be overridden "
         + "per face with :class:`~flow360.GeometryRefinement`.",
     )
 
@@ -236,14 +236,14 @@ class MeshingDefaults(Flow360BaseModel):
         0.0 * u.m,
         description="Threshold size below which all geometry gaps are automatically closed. "
         + "When nonzero, it must not be smaller than geometry_accuracy. "
-        + "This option is only supported when using geometry AI, and can be overridden "
+        + "This option is only supported when using geometryAI, and can be overridden "
         + "per face with :class:`~flow360.GeometryRefinement`.",
     )
 
     remove_hidden_geometry: bool = pd.Field(
         False,
         description="Flag to remove hidden geometry that is not visible to flow. "
-        + "This option is only supported when using geometry AI.",
+        + "This option is only supported when using GeometryAI.",
     )
 
     min_passage_size: Length.PositiveFloat64 | None = pd.Field(
@@ -252,14 +252,14 @@ class MeshingDefaults(Flow360BaseModel):
         + "Internal regions connected by thin passages smaller than this size may not be detected. "
         + "It must not be smaller than geometry_accuracy, nor smaller than sealing_size when sealing_size is nonzero. "
         + "If not specified, the value is derived from geometry_accuracy and sealing_size. "
-        + "This option is only supported when using geometry AI.",
+        + "This option is only supported when using geometryAI.",
     )
 
     remove_baffle_faces: bool = pd.Field(
         True,
         description="Flag to remove baffle faces (faces with both sides facing exterior) detected "
         + "during hidden geometry removal. When False, baffles are thickened into a closed shell. "
-        + "This option is only supported when using geometry AI.",
+        + "This option is only supported when using geometryAI.",
     )
 
     edge_split_layers: int = pd.Field(
@@ -358,13 +358,18 @@ class MeshingDefaults(Flow360BaseModel):
     )
     @classmethod
     def ensure_geometry_ai_features(cls, value, info, param_info: ParamsValidationInfo):
-        """Validate that the feature is only used when Geometry AI is enabled."""
+        """Validate that the feature is only used when GeometryAI is enabled.
+
+        remove_hidden_geometry is excluded: the check flags any value differing from the field
+        default, and since that default is True, the only differing value is False -- turning a
+        GeometryAI-only feature off, which must stay legal for non-GeometryAI projects.
+        """
         return check_geometry_ai_features(cls, value, info, param_info)
 
     @contextual_field_validator("target_surface_node_count", mode="after")
     @classmethod
     def ensure_target_surface_node_count_mesher(cls, value, param_info: ParamsValidationInfo):
-        """Validate that target_surface_node_count is only used with geometry AI or beta mesher."""
+        """Validate that target_surface_node_count is only used with geometryAI or beta mesher."""
         if value is not None and not (param_info.use_geometry_AI or param_info.is_beta_mesher):
             raise ValueError("target_surface_node_count is not supported by the legacy mesher.")
         return value
