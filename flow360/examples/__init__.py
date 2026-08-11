@@ -1,5 +1,6 @@
 from .actuator_disk import ActuatorDisk
 from .airplane import Airplane
+from .benchmark_assets import download_benchmark_assets
 from .bet_evtol import BETEVTOL
 from .bet_example_data import BETExampleData
 from .bet_line import BETLine
@@ -34,6 +35,7 @@ from .windsor import Windsor
 from .XV15_csm import XV15_CSM
 
 __all__ = [
+    "download_benchmark_assets",
     "ActuatorDisk",
     "Airplane",
     "BETEVTOL",
