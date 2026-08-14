@@ -2331,3 +2331,60 @@ def test_updater_total_pressure_no_double_conversion_across_branches():
 
     assert params_new["version"] == "25.9.5"
     assert params_new["models"][0]["spec"]["value"] == "(1.0 + 0.5 * sin(y)) / 1.4"
+
+
+def test_updater_to_25_9_10_custom_volume_rename_everywhere():
+    """Test 25.9.10 updater renames boundaries -> bounding_entities on CustomVolume
+    dicts outside meshing.volume_zones, which _to_25_9_2 missed."""
+
+    def custom_volume():
+        return {
+            "private_attribute_entity_type_name": "CustomVolume",
+            "name": "cv",
+            "boundaries": {
+                "stored_entities": [
+                    {"private_attribute_entity_type_name": "Surface", "name": "face1"}
+                ]
+            },
+        }
+
+    params_as_dict = {
+        "version": "25.9.3",
+        "meshing": {
+            "volume_zones": [
+                {"type": "CustomZones", "entities": {"stored_entities": [custom_volume()]}}
+            ],
+        },
+        "models": [
+            {
+                "type": "Rotation",
+                "entities": {"stored_entities": [custom_volume()]},
+                "parent_volume": custom_volume(),
+            }
+        ],
+        "user_defined_dynamics": [{"output_target": custom_volume()}],
+        "private_attribute_asset_cache": {
+            "project_entity_info": {"draft_entities": [custom_volume()]}
+        },
+    }
+
+    params_new = updater(
+        version_from="25.9.3",
+        version_to="25.9.10",
+        params_as_dict=params_as_dict,
+    )
+
+    renamed = [
+        params_new["meshing"]["volume_zones"][0]["entities"]["stored_entities"][0],
+        params_new["models"][0]["entities"]["stored_entities"][0],
+        params_new["models"][0]["parent_volume"],
+        params_new["user_defined_dynamics"][0]["output_target"],
+        params_new["private_attribute_asset_cache"]["project_entity_info"]["draft_entities"][0],
+    ]
+    for cv in renamed:
+        assert "boundaries" not in cv
+        assert cv["bounding_entities"]["stored_entities"][0]["name"] == "face1"
+
+    assert params_new["version"] == "25.9.10"
+    # The run-once sentinel must not leak into the returned dict.
+    assert "__custom_volume_bounding_entities_applied" not in params_new
