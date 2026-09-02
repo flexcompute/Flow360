@@ -19,6 +19,7 @@ from ..exceptions import (
 from ..log import log
 from ..user_config import UserConfig
 from ..version import __version__
+from ._tls import make_session
 from .security import api_key
 
 
@@ -176,4 +177,4 @@ class Http:
         return self.session.patch(url, json=json, auth=api_key_auth)
 
 
-http = Http(requests.Session())
+http = Http(make_session())

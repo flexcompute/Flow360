@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -40,6 +41,14 @@ BENCHMARK_ASSET_BASE = "https://simcloud-public-1.s3.amazonaws.com/benchmarks"
 #: ``kind`` value that selects a case's snapshotted root asset (geometry / volume
 #: mesh) rather than one of its input-data folders.
 ROOT_ASSETS = "root_assets"
+
+
+def _ssl_context():
+    """The client's trust context (certifi + OS store), or None for the stdlib default."""
+    # pylint: disable=import-outside-toplevel
+    from ..cloud._tls import system_ssl_context_or_none
+
+    return system_ssl_context_or_none()
 
 
 def _asset_url(*segments: str, relpath: str | None = None) -> str:
@@ -58,7 +67,7 @@ def _asset_url(*segments: str, relpath: str | None = None) -> str:
 
 def _read_json(url: str, *, what: str) -> object:
     try:
-        with urllib.request.urlopen(url) as response:
+        with urllib.request.urlopen(url, context=_ssl_context()) as response:
             return json.load(response)
     except urllib.error.HTTPError as exc:
         if exc.code in (403, 404):
@@ -175,6 +184,20 @@ def download_benchmark_assets(
         if os.path.isabs(name) or (dest != root and not dest.startswith(root + os.sep)):
             raise ValueError(f"Unsafe benchmark asset path in manifest: {name!r}")
         os.makedirs(os.path.dirname(dest) or ".", exist_ok=True)
-        urllib.request.urlretrieve(_asset_url(*prefix, relpath=name), dest)
+        # urlretrieve has no context= parameter, so stream through urlopen instead
+        url = _asset_url(*prefix, relpath=name)
+        with (
+            urllib.request.urlopen(url, context=_ssl_context()) as response,
+            open(dest, "wb") as handle,
+        ):
+            shutil.copyfileobj(response, handle)
+            expected = response.headers.get("Content-Length")
+            written = handle.tell()
+        if expected is not None and written < int(expected):
+            os.remove(dest)
+            raise urllib.error.ContentTooShortError(
+                f"retrieval incomplete: got only {written} out of {expected} bytes from {url}",
+                None,
+            )
         paths.append(dest)
     return paths

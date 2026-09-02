@@ -23,6 +23,7 @@ from flow360_schema.models.simulation.simulation_params import SimulationParams
 from flow360_schema.models.simulation.units import validate_length
 from pydantic import PositiveInt
 
+from flow360 import error_messages
 from flow360.cloud.file_cache import get_shared_cloud_file_cache
 from flow360.cloud.flow360_requests import (
     CloneVolumeMeshRequest,
@@ -97,6 +98,7 @@ from flow360.exceptions import (
     Flow360WebError,
 )
 from flow360.log import log
+from flow360.solver_version import Flow360Version
 from flow360.version import __solver_version__
 
 AssetOrResource = Union[type[AssetBase], type[Flow360Resource]]
@@ -2162,6 +2164,19 @@ class Project(pd.BaseModel):
         """
 
         # pylint: disable=too-many-branches,too-many-statements
+        if fork_from is not None:
+            # A fork restarts from the parent case's solution, so it has to stay within the
+            # parent's release series. Only the patch level may differ.
+            parent_version = fork_from.solver_version
+            if not parent_version:
+                raise Flow360ValueError(f"Solver version of {fork_from.id} is unknown.")
+            if not solver_version:
+                solver_version = parent_version
+            elif Flow360Version(solver_version).series != Flow360Version(parent_version).series:
+                raise Flow360ValueError(
+                    error_messages.change_solver_version_error(parent_version, solver_version)
+                )
+
         if use_beta_mesher is None:
             if use_geometry_AI is True:
                 log.info("Beta mesher is enabled to use Geometry AI.")
@@ -2491,7 +2506,9 @@ class Project(pd.BaseModel):
         interpolate_to_mesh : VolumeMeshV2, optional
             If specified, forked case will interpolate parent case results to this mesh before running solver.
         solver_version : str, optional
-            Optional solver version to use during this run (defaults to the project solver version)
+            Optional solver version to use during this run (defaults to the project solver version).
+            When `fork_from` is used the parent case's solver version is inherited, and requesting
+            a version outside the parent's release series raises a `Flow360ValueError`.
         use_beta_mesher : bool, optional
             Whether to use the beta mesher (default is None). Must be True when using GeometryAI.
         use_geometry_AI : bool, optional

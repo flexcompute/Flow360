@@ -810,9 +810,15 @@ class Shutter(Flow360BaseModel):
             )
             return session.post(url, json=shutter_request)
 
+        # pylint: disable=import-outside-toplevel
+        from flow360.cloud._tls import system_ssl_context_or_none
+
+        ssl_context = system_ssl_context_or_none()
+        connector = aiohttp.TCPConnector(ssl=ssl_context) if ssl_context else None
         async with aiohttp.ClientSession(
             timeout=aiohttp.ClientTimeout(total=3600),
             headers={"Authorization": f"Bearer {self.access_token}"},
+            connector=connector,
         ) as session:
             tasks = []
             for _, _, shutter_request in screenshots:

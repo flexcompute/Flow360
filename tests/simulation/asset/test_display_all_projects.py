@@ -20,3 +20,18 @@ def test_showing_remote_filtered_projects(mock_id, mock_response):
     with open("ref/ref_all_projects.json", "r") as f:
         ref_all_projects = ProjectRecords.model_validate(json.load(f))
     assert all_projects == ref_all_projects
+
+
+def test_project_records_tolerate_null_statistics():
+    # On-premises deployments return null statistics for projects without assets.
+    record = {
+        "name": "empty project",
+        "id": "prj-000000000000",
+        "tags": [],
+        "statistics": None,
+        "createdAt": "2026-08-07T00:00:00.000Z",
+        "rootItemType": "Geometry",
+    }
+    records = ProjectRecords.model_validate({"records": [record]})
+    assert records.records[0].statistics is None
+    assert "empty project" in str(records)

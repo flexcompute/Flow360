@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "flow360"
-version = "25.10.4"
+version = "25.10.5"
 description = "Flow360 Python Client"
 authors = ["Flexcompute <support@flexcompute.com>"]
 packages = [{include = "flow360"}, {include = "flow360_schema"}]
@@ -13,8 +13,9 @@ pytest = "^7.1.2"
 click = "^8.1.3"
 toml = "^0.10.2"
 requests = "^2.32.4"
+truststore = ">=0.10.4"
 boto3 = "^1.24.63"
-cryptography = "^45.0.0"
+cryptography = ">=45.0.0,<51"
 numpy = [
     { python = "^3.10", version = ">=2.0,<3.0.0" },
     { python = "^3.11", version = ">=2.0,<3.0.0" },
@@ -28,7 +29,6 @@ zstandard = "^0.21.0"
 unyt = "<4.0.0,>=2.9.0,>=3.0.0"
 pandas = "^2.2.1"
 pylint = "^3.1.0"
-black = {extras = ["jupyter"], version = "^24.10.0"}
 wcmatch = "<11,>=10"
 
 # docs

@@ -247,72 +247,12 @@ To use a profile in a python code, change the profile at the beginning of the co
     import flow360.user_config as uc
     uc.UserConfig.set_profile("my-profile")
 
-Nexus (On-Premises) Deployment
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-For a Nexus deployment, configure the Python API with the endpoints provided by
-your deployment administrator. Run the following script once, after replacing
-the values in the ``Deployment-specific settings`` section. It stores the API
-key and the named Nexus environment in ``~/.flow360/config.toml`` so that later
-Python sessions can load the same configuration.
-
-.. code-block:: python
-
-   import flow360 as fl
-   from flow360.environment import EnvironmentConfig
-
-   # Deployment-specific settings. Obtain the API key from your Nexus WebUI.
-   WEBUI_URL = "http://localhost:80"  # WebUI origin: scheme, hostname, and port
-   S3_ENDPOINT_URL = "http://localhost:9000"  # Confirm this port with your administrator
-   API_KEY = "YOUR_NEXUS_API_KEY"
-   ENVIRONMENT_NAME = "my_on_premises"
-
-   fl.configure(apikey=API_KEY, environment=ENVIRONMENT_NAME)
-
-   on_premises = EnvironmentConfig(
-       name=ENVIRONMENT_NAME,
-       domain="N/A",
-       web_api_endpoint=f"{WEBUI_URL}/flow360-api",
-       web_url=WEBUI_URL,
-       portal_web_api_endpoint=WEBUI_URL,
-       s3_endpoint_url=S3_ENDPOINT_URL,
-   )
-
-   # Save the environment for future sessions and activate it now.
-   on_premises.save_config()
-   fl.Env.load(ENVIRONMENT_NAME).active()
-
-   print(fl.Project.show_remote())
-
-.. admonition:: Important
-   :class: warning
-
-   - Use the **WebUI origin** only for ``WEBUI_URL``. For example, if the WebUI
-     is ``http://host.example:8080/flow360/``, set
-     ``WEBUI_URL = "http://host.example:8080"``. Do not include the
-     ``/flow360/`` path; the script appends ``/flow360-api`` for the API.
-   - The S3 endpoint is commonly exposed on port ``9000``, but this is
-     deployment-specific. Confirm the host, scheme, and port with the Nexus
-     deployment administrator before running the script. An incorrect S3
-     endpoint can prevent asset uploads and downloads even when project listing
-     works.
-   - Match the URL scheme to the deployment. Some Nexus installations use HTTP
-     because self-signed TLS certificates are not compatible with the Python
-     client. Use HTTPS only when the deployment provides a certificate trusted
-     by the machine running the client.
-   - Keep the API key confidential. The script saves it locally in
-     ``~/.flow360/config.toml``; do not commit the script after inserting a
-     real key or share that configuration file.
-   - Install a Python API version compatible with the Flow360 solver version
-     packaged in the Nexus deployment. Version mismatches can cause validation
-     or submission failures.
-   - Before working with production data, verify both a small upload and a
-     download against the deployed Nexus instance. File transfers use the S3
-     endpoint and can behave differently between Docker and Kubernetes
-     deployments.
-
 .. seealso::
 
    The ``flow360`` command shown above offers many more commands for managing
    projects, assets, drafts, and runs from the terminal. See the
    :ref:`CLI <python_api_cli>` reference for the full list.
+
+   Connecting to an **on-premises (Nexus) deployment** instead of the public
+   cloud is covered in the :ref:`on-premises setup guide
+   <python_api_on_premises>`.

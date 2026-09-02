@@ -9,8 +9,6 @@ from dataclasses import dataclass, fields
 from pathlib import Path
 from typing import Optional
 
-import requests
-
 from flow360.log import log
 
 from ..solver_version import Flow360Version
@@ -20,8 +18,11 @@ here = os.path.dirname(os.path.abspath(__file__))
 
 
 def download(url, filename):
+    # pylint: disable=import-outside-toplevel
+    from ..cloud.http_util import http
+
     Path(os.path.dirname(filename)).mkdir(parents=True, exist_ok=True)
-    response = requests.get(url)
+    response = http.session.get(url)
     log.info(f"""The file ({os.path.basename(filename)}) is being downloaded, please wait.""")
     with open(filename, "wb") as fh:
         fh.write(response.content)

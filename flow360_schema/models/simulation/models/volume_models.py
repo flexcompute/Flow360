@@ -1530,6 +1530,7 @@ class VelocityForcingPlane(Flow360BaseModel):
         description="Name of the `VelocityForcingPlane` model.",
     )
     type: Literal["VelocityForcingPlane"] = pd.Field("VelocityForcingPlane", frozen=True)
+    private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
 
     velocity_data: bytes = pd.Field(
         description="Parquet-format binary blob holding the time-resolved velocity plane data. "

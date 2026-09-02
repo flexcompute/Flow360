@@ -79,8 +79,50 @@ Options:
   when submitting a new ``Case``, ``VolumeMesh``, and similar resources.
 * ``--beta-features`` : toggle (``true``/``false``) beta-feature support.
 
+An API key is stored at the coordinate *profile × environment*, so the full
+form of the command is:
+
+.. code-block:: bash
+
+   flow360 configure --apikey <YOUR_API_KEY> --env <environment> --profile <profile>
+
+where ``--env`` and ``--profile`` default to the production cloud and the
+``default`` profile respectively.
+
 Running ``flow360 configure`` with no arguments and an existing key prints the
-current configuration.
+current configuration — every stored profile and environment — with API key
+values redacted.
+
+.. _cli_diagnose:
+
+``flow360 diagnose``
+--------------------
+
+Verify connectivity and authentication to a Flow360 deployment layer by layer:
+installation, endpoint configuration, proxy environment, DNS and TCP
+reachability, TLS certificates, HTTP, clock skew, API key, authenticated web
+API and portal calls, project listing, and object storage. Every failing check
+prints a targeted fix, and the command exits non-zero if any check fails.
+
+The command diagnoses a fully configured environment: the environment must be
+defined (built-in, or saved to ``~/.flow360/config.toml``) and its API key
+stored with :ref:`flow360 configure <cli_configure>` beforehand.
+
+.. code-block:: bash
+
+   flow360 diagnose                      # the active environment
+   flow360 diagnose --env my_on_premises # a saved environment
+
+Options:
+
+* ``--env <name>`` : diagnose a named environment (``dev``/``uat``/``prod``/
+  ``preprod`` or one saved in ``~/.flow360/config.toml``).
+* ``--profile <profile>`` : API key profile to diagnose with (default
+  ``default``).
+* ``--json`` : emit the report as JSON instead of text.
+
+See the :ref:`on-premises setup guide <python_api_on_premises>` for defining
+and saving an on-premises environment.
 
 Getting help
 ============

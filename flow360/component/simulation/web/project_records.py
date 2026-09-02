@@ -40,7 +40,8 @@ class ProjectInfo(pd.BaseModel):
     project_id: str = pd.Field(alias="id")
     tags: list[str] = pd.Field()
     description: Optional[str] = pd.Field(None)
-    statistics: ProjectStatistics = pd.Field()
+    # On-premises deployments return null statistics for projects without assets.
+    statistics: Optional[ProjectStatistics] = pd.Field(None)
     solver_version: Optional[str] = pd.Field(
         None,
         alias="solverVersion",
@@ -82,14 +83,15 @@ class ProjectRecords(pd.BaseModel):
                 output_str += f" Tags:         {item.tags}\n"
             if item.description:
                 output_str += f" Description:  {item.description}\n"
-            if item.statistics.geometry:
-                output_str += f" Geometry count:     {item.statistics.geometry.count}\n"
-            if item.statistics.surface_mesh:
-                output_str += f" Surface Mesh count: {item.statistics.surface_mesh.count}\n"
-            if item.statistics.volume_mesh:
-                output_str += f" Volume Mesh count:  {item.statistics.volume_mesh.count}\n"
-            if item.statistics.case:
-                output_str += f" Case count:         {item.statistics.case.count}\n"
+            statistics = item.statistics or ProjectStatistics()
+            if statistics.geometry:
+                output_str += f" Geometry count:     {statistics.geometry.count}\n"
+            if statistics.surface_mesh:
+                output_str += f" Surface Mesh count: {statistics.surface_mesh.count}\n"
+            if statistics.volume_mesh:
+                output_str += f" Volume Mesh count:  {statistics.volume_mesh.count}\n"
+            if statistics.case:
+                output_str += f" Case count:         {statistics.case.count}\n"
 
             output_str += "\n"
         return output_str

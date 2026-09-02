@@ -11,6 +11,7 @@ Here are short snippets of code for handy features.
 * :doc:`Calculate Dimensional Forces <calculate_dimensional_forces>`
 * :doc:`Change Account and Submit <change_account>`
 * :doc:`Compute an Oriented Bounding Box <compute_obb>`
+* :doc:`Compute the Center of Pressure <compute_center_of_pressure>`
 * :doc:`Download Results <download_results>`
 * :doc:`Folder Operations <folder_operations>`
 * :doc:`Fork a Case <fork>`
@@ -41,6 +42,7 @@ The following examples use the legacy ``flow360.v1`` API.
    calculate_dimensional_forces
    change_account
    compute_obb
+   compute_center_of_pressure
    download_results
    folder_operations
    fork

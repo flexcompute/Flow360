@@ -189,7 +189,9 @@ class _S3STSToken(BaseModel):
         if Env.current.s3_endpoint_url is not None:
             kwargs["endpoint_url"] = Env.current.s3_endpoint_url
 
-        return client("s3", **kwargs)
+        from ._tls import inject_system_trust
+
+        return inject_system_trust(client("s3", **kwargs))
 
     def is_expired(self):
         """

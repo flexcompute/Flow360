@@ -117,7 +117,7 @@ Examples Library
       .. image:: thumbnails/darpa_geo.png
          :class: gallery-img
 
-   .. grid-item-card:: Dynamic Derivatives (Sliding Interface)
+   .. grid-item-card:: Dynamic Derivatives Using Sliding Interfaces
       :link: notebooks/dynamic_derivatives
       :link-type: doc
       :class-card: tag-unsteady tag-rans tag-aerospace tag-from_geometry tag-legacy
@@ -165,7 +165,7 @@ Examples Library
       .. image:: thumbnails/poster_image.png
          :class: gallery-img
 
-   .. grid-item-card:: Periodic BC
+   .. grid-item-card:: Periodic BCs
       :link: notebooks/periodic_bc
       :link-type: doc
       :class-card: tag-steady tag-rans tag-periodic tag-turbomachinery tag-from_volume_mesh
@@ -189,7 +189,7 @@ Examples Library
       .. image:: thumbnails/cube_snappy.png
          :class: gallery-img
 
-   .. grid-item-card:: Time-Accurate BET eVTOL
+   .. grid-item-card:: Time-Accurate BET eVTOL Simulation
       :link: notebooks/BET_eVTOL
       :link-type: doc
       :class-card: tag-unsteady tag-ddes tag-bet tag-rotorcraft tag-aerospace tag-from_geometry tag-legacy
@@ -205,7 +205,7 @@ Examples Library
       .. image:: thumbnails/wind_turbine.png
          :class: gallery-img
 
-   .. grid-item-card:: Time-Accurate XV-15 rotor
+   .. grid-item-card:: Time-Accurate XV-15 Rotor
       :link: notebooks/time_accurate_XV_15
       :link-type: doc
       :class-card: tag-unsteady tag-ddes tag-rotorcraft tag-aerospace tag-from_volume_mesh
@@ -229,7 +229,7 @@ Examples Library
       .. image:: thumbnails/om6_wing_vm.png
          :class: gallery-img
 
-   .. grid-item-card:: Unsteady 2D cylinder
+   .. grid-item-card:: Unsteady 2D Cylinder
       :link: notebooks/unsteady_2D_cylinder
       :link-type: doc
       :class-card: tag-unsteady tag-laminar tag-from_volume_mesh
@@ -237,12 +237,12 @@ Examples Library
       .. image:: thumbnails/unsteady_2D_cylinder.png
          :class: gallery-img
 
-   .. grid-item-card:: Unsteady DDES HLPW4
-      :link: notebooks/DDES_HLPW4
+   .. grid-item-card:: Unsteady DDES HLPW5
+      :link: notebooks/DDES_HLPW5
       :link-type: doc
       :class-card: tag-unsteady tag-ddes tag-aerospace tag-from_volume_mesh
-      
-      .. image:: thumbnails/HLPW4_geo.png
+
+      .. image:: thumbnails/HLPW5_geo.png
          :class: gallery-img
 
    .. grid-item-card:: Wall Roughness
@@ -279,7 +279,7 @@ Examples Library
    notebooks/conjugate_heat_transfer
    notebooks/cube_snappy
    notebooks/DARPA_SUBOFF_AD
-   notebooks/DDES_HLPW4
+   notebooks/DDES_HLPW5
    notebooks/dynamic_derivatives
    notebooks/F1_car_demo
    notebooks/flat_plate_spring

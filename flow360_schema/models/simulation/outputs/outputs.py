@@ -1801,6 +1801,7 @@ class ForceDistributionOutput(Flow360BaseModel):
         "Increasing this value provides higher resolution in the force distribution plot.",
     )
     output_type: Literal["ForceDistributionOutput"] = pd.Field("ForceDistributionOutput", frozen=True)
+    private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
 
     @contextual_field_validator("entities", mode="after")
     @classmethod

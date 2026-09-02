@@ -6,12 +6,15 @@ from __future__ import annotations
 
 import os
 from typing import Optional
+from urllib.parse import urlparse
 
 import toml
 from pydantic import BaseModel, ConfigDict
 
 from .file_path import flow360_dir
 from .log import log
+
+_UNSET = object()
 
 
 class EnvironmentConfig(BaseModel):
@@ -59,6 +62,49 @@ class EnvironmentConfig(BaseModel):
             apikey_profile=apikey_profile,
         )
         return env
+
+    @classmethod
+    def from_on_premises_url(cls, name, base_url, s3_endpoint_url=_UNSET) -> EnvironmentConfig:
+        """Create EnvironmentConfig for an on-premises (Nexus) deployment from its URL.
+
+        Any URL of the deployment works (the web UI address included): the services
+        are served at the origin root, so only the scheme, host and port are used.
+        Derives all endpoints from that origin: `/flow360-api` (web API),
+        `/flow360-portal-api` (portal API), `/flow360` (web UI) and `/s3`
+        (path-style object storage route).
+
+        Parameters
+        ----------
+        name : str
+            name of the environment, for example my_on_premises
+        base_url : str
+            any URL of the deployment, for example http://localhost:80 or
+            http://localhost:80/flow360/
+        s3_endpoint_url : str, optional
+            override for object storage. Defaults to `{origin}/s3`. Pass None to use
+            the storage endpoint advertised by the server instead.
+
+        Returns
+        -------
+        EnvironmentConfig
+            completed EnvironmentConfig
+        """
+        parsed = urlparse(base_url if "://" in base_url else f"http://{base_url}")
+        base = f"{parsed.scheme}://{parsed.netloc}"
+        if parsed.path.strip("/"):
+            log.info(
+                f"Using deployment origin {base}"
+                f" (dropped '/{parsed.path.strip('/')}' from the given URL)."
+            )
+        return cls(
+            name=name,
+            domain="N/A",
+            web_api_endpoint=f"{base}/flow360-api",
+            web_url=f"{base}/flow360",
+            portal_web_api_endpoint=f"{base}/flow360-portal-api",
+            s3_endpoint_url=f"{base}/s3" if s3_endpoint_url is _UNSET else s3_endpoint_url,
+            apikey_profile=name,
+        )
 
     def active(self):
         """

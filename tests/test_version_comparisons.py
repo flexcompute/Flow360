@@ -29,3 +29,15 @@ def test_flow360version():
     assert Flow360Version("release-22.2.1.0") == Flow360Version("release-22.2.1.0")
     assert Flow360Version("beta-22.2.1.0") != Flow360Version("release-22.2.1.0")
     assert Flow360Version("release-22.2.1.1") != Flow360Version("release-22.2.1.0")
+
+
+def test_flow360version_series():
+    assert Flow360Version("release-25.11").series == Flow360Version("release-25.11.3").series
+    assert Flow360Version("release-22.1.3.0").series == Flow360Version("release-22.1.4.0").series
+    assert Flow360Version("release-25.11").series != Flow360Version("release-25.10").series
+    assert Flow360Version("release-25.11").series != Flow360Version("beta-25.11").series
+
+    # the key is hashable, so it can be used for grouping
+    assert {Flow360Version("release-25.11").series, Flow360Version("release-25.11.3").series} == {
+        ("release", 25, 11)
+    }

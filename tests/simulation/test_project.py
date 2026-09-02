@@ -376,6 +376,22 @@ def test_run(mock_response, capsys):
         project_vm.run_case(params=params, start_from="SurfaceMesh")
 
 
+@pytest.mark.usefixtures("s3_download_override")
+def test_fork_cannot_change_release_series(mock_response):
+    project = fl.Project.from_cloud(project_id="prj-41d2333b-85fd-4bed-ae13-15dcb6da519e")
+    parent_case = project.get_case("case-69b8c249")
+    params = project.case.params
+
+    assert parent_case.solver_version == "release-24.11"
+
+    error_msg = r"Cannot change solver version from parent to child"
+    with pytest.raises(Flow360ValueError, match=error_msg):
+        project.run_case(params=params, fork_from=parent_case, solver_version="release-25.10")
+
+    # a different patch of the parent's release series is allowed
+    project.run_case(params=params, fork_from=parent_case, solver_version="release-24.11.2")
+
+
 def test_conflicting_entity_grouping_tags(mock_response, capsys):
     with open(
         os.path.join(os.path.dirname(__file__), "data", "simulation_by_face_id.json"), "r"

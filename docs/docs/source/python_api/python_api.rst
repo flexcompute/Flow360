@@ -24,6 +24,7 @@ For well explained tutorials for specific applications go to the :ref:`example l
    :maxdepth: 1
 
    getting_started/installation_setup
+   getting_started/on_premises_setup
    cli/index
    grab_and_go_snippets/index
    example_library/index

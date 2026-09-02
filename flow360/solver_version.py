@@ -25,6 +25,15 @@ class Flow360Version:
         if self.head == "master":
             self.tail = [i * 100 for i in self.tail]
 
+    @property
+    def series(self):
+        """
+        Opaque key identifying the release series (head plus major.minor) the version belongs to.
+        Versions sharing a series differ only in patch level, so `release-25.11` and
+        `release-25.11.3` match while `release-25.11` and `beta-25.11` do not.
+        """
+        return self.head, *self.tail[:2]
+
     def __str__(self):
         return self.full
 

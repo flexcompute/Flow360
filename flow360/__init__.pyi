@@ -183,6 +183,7 @@ from ._public_namespace import XFOILFile as XFOILFile
 from ._public_namespace import XROTORFile as XROTORFile
 from ._public_namespace import configure as configure
 from ._public_namespace import create_draft as create_draft
+from ._public_namespace import diagnose as diagnose
 from ._public_namespace import get_user_variable as get_user_variable
 from ._public_namespace import imperial_unit_system as imperial_unit_system
 from ._public_namespace import math as math

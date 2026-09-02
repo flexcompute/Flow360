@@ -181,5 +181,6 @@ Summary
 .. seealso::
 
    - :ref:`python_api_calculate_dimensional_forces` — Complete Python snippet for coefficient → N, N·m conversion.
+   - :ref:`python_api_compute_center_of_pressure` recovers the center of pressure from the same force and moment coefficients.
    - :ref:`betDiskLoadingNote` — BET raw output definitions and worked examples.
    - :ref:`ADoutput` — Actuator Disk raw output definitions.

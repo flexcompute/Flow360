@@ -4,7 +4,6 @@ Commandline interface for flow360.
 
 from __future__ import annotations
 
-import os
 from datetime import datetime
 from importlib import import_module
 
@@ -15,7 +14,11 @@ from packaging.version import InvalidVersion, Version
 # Importing through ``flow360`` eagerly loads the SDK public surface.
 # pylint: disable=consider-using-from-import
 import flow360.user_config as user_config
-from flow360.cli.context import merge_command_context, resolve_root_context
+from flow360.cli.context import (
+    activate_profile,
+    merge_command_context,
+    resolve_root_context,
+)
 from flow360.environment import Env
 from flow360.user_config import (
     delete_apikey,
@@ -28,6 +31,11 @@ from flow360.version import __solver_version__, __version__
 config_file = user_config.config_file
 
 _LAZY_COMMANDS = {
+    "diagnose": {
+        "module": "flow360.cli.diagnose",
+        "attr": "diagnose",
+        "help": "Verify connectivity and authentication to a Flow360 deployment.",
+    },
     "project": {
         "module": "flow360.cli.project",
         "attr": "project",
@@ -131,6 +139,19 @@ class LazyFlow360Group(click.Group):
         return command
 
 
+def _redact_apikeys(node):
+    """Return a copy of a config tree with every apikey value redacted."""
+    # pylint: disable=import-outside-toplevel
+    from flow360.diagnostics import redact
+
+    if not isinstance(node, dict):
+        return node
+    return {
+        key: redact(value) if key == "apikey" and isinstance(value, str) else _redact_apikeys(value)
+        for key, value in node.items()
+    }
+
+
 def _has_stored_apikey(config: dict, profile: str, environment_name: str | None) -> bool:
     profile_config = config.get(profile) or {}
     if environment_name is None:
@@ -152,21 +173,9 @@ def flow360(ctx, profile, dev, uat, env):
     resolved_context = resolve_root_context(profile=profile, dev=dev, uat=uat, env=env)
 
     prev_env = Env.current
-    prev_profile = user_config.UserConfig.profile
-    prev_profile_env = os.environ.get("SIMCLOUD_PROFILE")
 
     if profile is not None:
-        os.environ["SIMCLOUD_PROFILE"] = profile
-        user_config.UserConfig.set_profile(profile)
-
-        def restore_profile():
-            if prev_profile_env is None:
-                os.environ.pop("SIMCLOUD_PROFILE", None)
-            else:
-                os.environ["SIMCLOUD_PROFILE"] = prev_profile_env
-            user_config.UserConfig.set_profile(prev_profile)
-
-        ctx.call_on_close(restore_profile)
+        activate_profile(ctx, profile)
 
     if dev or uat or env is not None:
         # pylint: disable=import-outside-toplevel
@@ -253,8 +262,8 @@ def configure(ctx, apikey, profile, dev, uat, env, suppress_submit_warning, beta
     write_user_config(config)
 
     if not changed:
-        click.echo("Nothing to do. Your current config:")
-        click.echo(toml.dumps(config))
+        click.echo("Nothing to do. Your current config (API keys redacted):")
+        click.echo(toml.dumps(_redact_apikeys(config)))
         click.echo("run flow360 configure --help to see options")
     click.echo("done.")
 
