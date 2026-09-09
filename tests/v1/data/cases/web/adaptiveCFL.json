@@ -1,0 +1,111 @@
+{
+    "boundaries": {
+        "farField/farField": {
+            "type": "Freestream"
+        },
+        "innerRotating/blade": {
+            "type": "NoSlipWall"
+        }
+    },
+    "freestream": {
+        "Mach": 0.0146972,
+        "MachRef": 0.7,
+        "Temperature": 288.15,
+        "alphaAngle": -90.0,
+        "betaAngle": 0.0,
+        "muRef": 4.29279e-08
+    },
+    "geometry": {
+        "momentCenter": [
+            0,
+            0,
+            0
+        ],
+        "momentLength": [
+            3.81,
+            3.81,
+            3.81
+        ],
+        "refArea": 45.604
+    },
+    "navierStokesSolver": {
+        "absoluteTolerance": 1e-09,
+        "equationEvalFrequency": 1,
+        "kappaMUSCL": -1.0,
+        "linearIterations": 35,
+        "orderOfAccuracy": 2,
+        "relativeTolerance": 0.01,
+        "updateJacobianFrequency": 4
+    },
+    "surfaceOutput": {
+        "Cf": true,
+        "CfNormal": true,
+        "CfTangent": true,
+        "CfVec": false,
+        "Cp": true,
+        "Mach": false,
+        "animationFrequency": 10000,
+        "nodeForcesPerUnitArea": true,
+        "outputFormat": "tecplot",
+        "primitiveVars": true,
+        "wallDistance": false,
+        "yPlus": true
+    },
+    "timeStepping": {
+        "CFL": {
+            "type": "adaptive"
+        },
+        "maxPseudoSteps": 35,
+        "physicalSteps": 600,
+        "timeStepSize": 0.2835
+    },
+    "turbulenceModelSolver": {
+        "DDES": true,
+        "absoluteTolerance": 1e-08,
+        "equationEvalFrequency": 1,
+        "kappaMUSCL": -1.0,
+        "linearIterations": 25,
+        "modelType": "SpalartAllmaras",
+        "orderOfAccuracy": 2,
+        "relativeTolerance": 0.01,
+        "rotationCorrection": true,
+        "updateJacobianFrequency": 4
+    },
+    "volumeOutput": {
+        "Cp": true,
+        "Mach": true,
+        "T": true,
+        "VelocityRelative": true,
+        "animationFrequency": 10000,
+        "computeTimeAverages": false,
+        "mut": false,
+        "mutRatio": false,
+        "nuHat": false,
+        "outputFormat": "tecplot",
+        "primitiveVars": true,
+        "qcriterion": true,
+        "residualNavierStokes": false,
+        "residualTurbulence": false,
+        "s": false,
+        "startAverageIntegrationStep": 100000,
+        "vorticity": false,
+        "wallDistanceDir": false
+    },
+    "volumeZones": {
+        "innerRotating": {
+            "referenceFrame": {
+                "axisOfRotation": [
+                    0,
+                    0,
+                    -1
+                ],
+                "centerOfRotation": [
+                    0,
+                    0,
+                    0
+                ],
+                "omegaRadians": 0.184691
+            }
+        }
+    }
+}

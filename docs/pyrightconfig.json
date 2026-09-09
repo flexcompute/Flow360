@@ -1,0 +1,13 @@
+{
+  "//": "Optional augmentation used by `python tools/validate_doc_code.py --pyright`. Scoped to the single-sourced grab-and-go snippets for instance-level type checks against the Flow360 client (e.g. drift on `case.results...`). Third-party libs (pandas, numpy) are not in the docs env, so missing-import reports are silenced; flow360 is resolved via extraPaths (the submodule). Not a blocking CI gate yet; the blocking gate is the symbol resolver in validate_doc_code.py.",
+  "include": [
+    "docs/source/python_api/grab_and_go_snippets/_snippets"
+  ],
+  "extraPaths": [
+    "Flow360"
+  ],
+  "typeCheckingMode": "basic",
+  "reportMissingImports": "none",
+  "reportMissingModuleSource": "none",
+  "reportAttributeAccessIssue": "error"
+}

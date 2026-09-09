@@ -1,0 +1,93 @@
+{
+	"geometry": {
+		"comments": {
+			"meshUnit": "m"
+		},
+		"refArea": 1.15315,
+		"momentCenter": [
+			0,
+			0,
+			0
+		],
+		"momentLength": [
+			1.47602,
+			0.801672,
+			1.47602
+		]
+	},
+	"freestream": {
+		"muRef": 4.2925193198151646e-8,
+		"Mach": 0.8404497144189707,
+		"Temperature": 288.15,
+		"alphaAngle": 3.06,
+		"betaAngle": 0,
+		"comments": {
+			"pressure": 101325.009090375,
+			"densityKgPerCubicMeter": 1.225,
+			"speedOfSoundMeterPerSecond": 340.29400580821283,
+			"freestreamMeterPerSecond": 286,
+			"meshUnitInMeter": 1
+		}
+	},
+	"volumeZones": {
+		"1": {
+			"modelType": "FluidDynamics"
+		}
+	},
+	"boundaries": {
+		"1": {
+			"type": "SlipWall"
+		},
+		"2": {
+			"type": "NoSlipWall"
+		},
+		"3": {
+			"type": "Freestream"
+		}
+	},
+	"actuatorDisks": [],
+	"BETDisks": [],
+	"timeStepping": {
+		"maxPseudoSteps": 5000,
+		"CFL": {
+			"type": "ramp",
+			"initial": 1,
+			"final": 100,
+			"rampSteps": 1000
+		},
+		"physicalSteps": 1,
+		"timeStepSize": "inf",
+		"comments": {}
+	},
+	"navierStokesSolver": {
+		"absoluteTolerance": 1e-9,
+		"linearIterations": 35,
+		"kappaMUSCL": -1,
+		"orderOfAccuracy": 2
+	},
+	"turbulenceModelSolver": {
+		"modelType": "SpalartAllmaras",
+		"rotationCorrection": false,
+		"absoluteTolerance": 1e-8,
+		"linearIterations": 25,
+		"kappaMUSCL": -1,
+		"orderOfAccuracy": 2
+	},
+	"volumeOutput": {
+		"outputFormat": "tecplot",
+		"primitiveVars": false,
+		"vorticity": false,
+		"Cp": true,
+		"Mach": true,
+		"qcriterion": true
+	},
+	"surfaceOutput": {
+		"outputFormat": "tecplot",
+		"Cp": true,
+		"Cf": false,
+		"CfVec": true
+	},
+	"aeroacousticOutput": {
+		"observers": []
+	}
+}

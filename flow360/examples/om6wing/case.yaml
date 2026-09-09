@@ -1,0 +1,47 @@
+boundaries:
+    '1':
+        name: wing
+        type: NoSlipWall
+    '2':
+        name: symmetry
+        type: SlipWall
+    '3':
+        name: freestream
+        type: Freestream
+fluidProperties:
+    density:
+        units: kg/m**3
+        value: 1.225
+    modelType: AirDensity
+    temperature:
+        units: K
+        value: 288.15
+freestream:
+    alphaAngle: 3.06
+    betaAngle: 0.0
+    modelType: FromVelocity
+    velocity:
+        units: m/s
+        value: 286.0
+geometry:
+    meshUnit:
+        units: m
+        value: 1.0
+    momentLength:
+        units: m
+        value:
+        - 1.47602
+        - 0.801672958512342
+        - 1.47602
+    refArea:
+        units: m**2
+        value: 1.15315084119231
+hash: a544649dbfdac16b0f892704a63f11cc51ca6e572af526433165090a7fb87670
+timeStepping:
+    maxPseudoSteps: 500
+    modelType: Steady
+    physicalSteps: 1
+    timeStepSize: inf
+unitSystem:
+    name: SI
+version: 24.2.0b1

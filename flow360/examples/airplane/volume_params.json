@@ -1,0 +1,59 @@
+{                                                                       
+    "refinement": [                                                                 
+        {                                                                        
+            "size": [2, 2, 0.5],                                                                                                              
+            "axisOfRotation": [0.06052275,  -0.96836405,  0   ],               
+            "angleOfRotation": 76,                                               
+            "center": [3.6, -5,  0],                 
+            "spacing": 0.1                                                
+        },                                                                       
+        {                                                                        
+            "size": [2, 2, 0.5],                                                                                                                                                                     
+            "axisOfRotation": [0.06052275,  0.96836405,  0   ],              
+            "angleOfRotation": -76,                                              
+            "center": [3.6, 5,  0],                  
+            "spacing": 0.1                                                      
+        },
+        {
+            "type": "cylinder",
+            "radius": 0.75,
+            "length": 11,
+            "axis": [1, 0, 0],
+            "center":[5, 0, 0],
+            "spacing": 0.2
+        },
+        {
+            "size": [20, 15, 10],
+            "axisOfRotation": [1,  0,  0   ],
+            "angleOfRotation": 0,
+            "center": [10, 0,  0],
+            "spacing": 1
+        }                                                                       
+    ],                                                                           
+    "rotorDisks": [                                                           
+        {                                                                        
+            "innerRadius": 0.0,                                                 
+            "outerRadius": 2,                                                 
+            "thickness": 0.42,                                                   
+            "axisThrust": [-0.96836405, -0.06052275,  0.24209101],                   
+            "center": [3.6, -5,  0],
+            "spacingAxial": 0.03,
+            "spacingRadial": 0.09,
+            "spacingCircumferential": 0.09            
+        },                                                                       
+        {                                                                        
+            "innerRadius": 0.5,                                                 
+            "outerRadius": 2,                                                 
+            "thickness": 0.42,                                                   
+            "axisThrust": [-0.96836405, 0.06052275,  0.24209101],                  
+            "center": [3.6, 5,  0],
+            "spacingAxial": 0.03,
+            "spacingRadial": 0.09,
+            "spacingCircumferential": 0.09                    
+        }                                                                        
+    ],                                                                           
+    "volume": {                                                                  
+        "firstLayerThickness": 1e-5,                                             
+        "growthRate": 1.2                                                    
+    }                                                                            
+}                   

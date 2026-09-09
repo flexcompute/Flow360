@@ -1,0 +1,96 @@
+{
+    "geometry": {
+      "refArea": 16286.016316209487,
+      "momentCenter": [ 450, 0, 0 ],
+      "momentLength": [ 72, 1200, 1200 ]
+    },
+    "volumeOutput": {
+      "outputFormat": "tecplot",
+      "primitiveVars": true,
+      "vorticity": false,
+      "residualNavierStokes": false,
+      "residualTurbulence": false,
+      "wallDistanceDir": false,
+      "T": false,
+      "s": false,
+      "Cp": false,
+      "Mach": true,
+      "qcriterion": true,
+      "mut": false, 
+      "VelocityRelative": false,
+      "nuHat": false,
+      "mutRatio": false,
+      "animationFrequency": -1,
+      "computeTimeAverages": false,
+      "startAverageIntegrationStep": -1
+    },
+    "surfaceOutput": {
+      "outputFormat": "tecplot",
+      "primitiveVars": false,
+      "Cp": true,
+      "Cf": true,
+      "CfVec": true,
+      "yPlus": true,
+      "wallDistance": false,
+      "Mach": false,
+      "animationFrequency": -1,
+      "nodeForcesPerUnitArea": true
+    },
+    "navierStokesSolver": {
+      "absoluteTolerance": 1e-11,
+      "relativeTolerance": 0.0,
+      "linearIterations": 35,
+      "kappaMUSCL": 0.33,
+      "orderOfAccuracy": 2,
+      "updateJacobianFrequency": 4,
+      "equationEvalFrequency": 1
+    },
+    "turbulenceModelSolver": {
+      "modelType": "SpalartAllmaras",
+      "absoluteTolerance": 1e-10,
+      "relativeTolerance": 0.0,
+      "linearIterations": 25,
+      "DDES": false,
+      "orderOfAccuracy": 2,
+      "updateJacobianFrequency": 2,
+      "equationEvalFrequency": 1,
+      "rotationCorrection": false
+    },
+    "freestream": {
+      "muRef": 4.0e-5,
+      "Mach": 0.04,
+      "Temperature": 288.15,
+      "alphaAngle": 0,
+      "betaAngle": 0
+    },
+    "boundaries": {
+      "fluid/body":  { "type": "NoSlipWall" },
+      "fluid/farfield":  { "type": "Freestream" }
+    },
+    "timeStepping": {
+      "timeStepSize": "inf",
+      "physicalSteps": 1,
+      "maxPseudoSteps": 200,
+      "CFL": {
+        "initial": 1,
+        "final": 200,
+        "rampSteps": 200
+      }
+    },
+    "actuatorDisks" : [
+      {
+          "center":[0.0,0.0,0.0],
+          "axisThrust":[-1.0,0.0,0.0],
+          "thickness":30,
+          "forcePerArea":{
+              "radius":[
+  -6.541490006056935e-06,1.176559660811629e+01,2.348576620230164e+01,3.502422774076318e+01,4.635372501514235e+01,5.740157480314961e+01,6.809963658388855e+01,7.837522713506966e+01,8.816929133858268e+01,9.741823137492429e+01,1.060675348273773e+02,1.140626892792247e+02,1.213537250151423e+02,1.278952150211993e+02,1.336508176862508e+02,1.385841913991520e+02,1.426589945487583e+02,1.458570563294973e+02,1.481511205330103e+02,1.495366444579043e+02,1.500000000000000e+02],
+              "thrust":[
+      4.575739438020081686e-03, 5.344520067175258585e-03, 7.032044311381894543e-03, 8.710826002579061603e-03, 1.000951815124362203e-02, 1.093101144022547849e-02, 1.157119193478976620e-02, 1.201254985284840558e-02, 1.230866858381426607e-02, 1.248422468860116950e-02, 1.253851312261157827e-02, 1.244967750332181926e-02, 1.217471011028209080e-02, 1.166002755407952347e-02, 1.085486662369139835e-02, 9.723270044643288201e-03, 8.260302504752431441e-03, 6.493108221024028980e-03, 4.476116636387995722e-03, 2.283286929126045455e-03, 0.000000000000000000e+00],
+              "circumferential":[
+      -5.531604620568226207e-12, -2.000974664192053335e-03, -2.952277367252184072e-03, -3.088901336796338881e-03, -2.903625904926704273e-03, -2.643040675210779362e-03, -2.392185737959950324e-03, -2.173054219978886453e-03, -1.986979038043627539e-03, -1.827962066661991498e-03, -1.688538971888151399e-03, -1.560312378033051808e-03, -1.435018201085241484e-03, -1.304645611220716511e-03, -1.162530024559274696e-03, -1.004486082424148200e-03, -8.291008930327343910e-04, -6.375074356446677401e-04, -4.326781146705185031e-04, -2.186783262772103913e-04, -0.000000000000000000e+00]
+          }
+      }
+    ]
+  }
+  

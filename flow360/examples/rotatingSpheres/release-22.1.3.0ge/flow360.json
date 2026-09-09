@@ -1,0 +1,163 @@
+{
+	"geometry": {
+		"comments": {
+			"meshUnit": "m"
+		},
+		"refArea": 1,
+		"momentCenter": [
+			0,
+			0,
+			0
+		],
+		"momentLength": [
+			1,
+			1,
+			1
+		]
+	},
+	"freestream": {
+		"muRef": 4.2925193198151646e-8,
+		"Mach": 0.02938635365101296,
+		"Temperature": 288.15,
+		"alphaAngle": 0,
+		"betaAngle": 0,
+		"comments": {
+			"pressure": 101325.009090375,
+			"densityKgPerCubicMeter": 1.225,
+			"speedOfSoundMeterPerSecond": 340.29400580821283,
+			"freestreamMeterPerSecond": 10,
+			"meshUnitInMeter": 1
+		}
+	},
+	"boundaries": {
+		"rotatingBlock-sphere1/sphere1": {
+			"type": "NoSlipWall"
+		},
+		"rotatingBlock-sphere2/sphere2": {
+			"type": "NoSlipWall"
+		},
+		"rotatingBlock-sphere1/tri_slidingInterface-sphere1": {
+			"type": "SlidingInterface"
+		},
+		"rotatingBlock-sphere1/quad_slidingInterface-sphere1": {
+			"type": "SlidingInterface"
+		},
+		"rotatingBlock-sphere2/tri_slidingInterface-sphere2": {
+			"type": "SlidingInterface"
+		},
+		"rotatingBlock-sphere2/quad_slidingInterface-sphere2": {
+			"type": "SlidingInterface"
+		},
+		"stationaryBlock/farfield": {
+			"type": "Freestream"
+		},
+		"stationaryBlock/tri_slidingInterface-sphere1": {
+			"type": "SlidingInterface"
+		},
+		"stationaryBlock/quad_slidingInterface-sphere1": {
+			"type": "SlidingInterface"
+		},
+		"stationaryBlock/tri_slidingInterface-sphere2": {
+			"type": "SlidingInterface"
+		},
+		"stationaryBlock/quad_slidingInterface-sphere2": {
+			"type": "SlidingInterface"
+		}
+	},
+	"slidingInterfaces": [
+		{
+			"stationaryPatches": [
+				"stationaryBlock/tri_slidingInterface-sphere1",
+				"stationaryBlock/quad_slidingInterface-sphere1"
+			  ],
+			  "rotatingPatches": [
+				"rotatingBlock-sphere1/tri_slidingInterface-sphere1",
+				"rotatingBlock-sphere1/quad_slidingInterface-sphere1"
+			  ],
+			"axisOfRotation": [
+				1,
+				0,
+				0
+			],
+			"centerOfRotation": [
+				0,
+				-1.5,
+				0
+			],
+			"volumeName": "rotatingBlock-sphere1",
+			"comments": {
+				"rpm": 100
+			},
+			"omega": 0.03077331758193797
+		},
+		{
+			"stationaryPatches": [
+				"stationaryBlock/tri_slidingInterface-sphere2",
+				"stationaryBlock/quad_slidingInterface-sphere2"
+			  ],
+			  "rotatingPatches": [
+				"rotatingBlock-sphere2/tri_slidingInterface-sphere2",
+				"rotatingBlock-sphere2/quad_slidingInterface-sphere2"
+			  ],
+			"axisOfRotation": [
+				1,
+				0,
+				0
+			],
+			"centerOfRotation": [
+				0,
+				1.5,
+				0
+			],
+			"volumeName": "rotatingBlock-sphere2",
+			"comments": {
+				"rpm": -100
+			},
+			"omega": -0.03077331758193797
+		}
+	],
+	"timeStepping": {
+		"CFL": {
+			"initial": 100,
+			"final": 1000,
+			"rampSteps": 30
+		},
+		"comments": {
+			"timeStepSizeInSeconds": 0.01
+		},
+		"timeStepSize": 3.4029400580821285,
+		"physicalSteps": 20,
+		"maxPseudoSteps": 50
+	},
+	"navierStokesSolver": {
+		"absoluteTolerance": 1e-9,
+		"relativeTolerance": 0.01,
+		"linearIterations": 35,
+		"kappaMUSCL": -1,
+		"orderOfAccuracy": 2
+	},
+	"turbulenceModelSolver": {
+		"modelType": "SpalartAllmaras",
+		"rotationCorrection": false,
+		"DDES": true,
+		"absoluteTolerance": 1e-8,
+		"relativeTolerance": 0.01,
+		"linearIterations": 25,
+		"kappaMUSCL": -1,
+		"orderOfAccuracy": 2
+	},
+	"volumeOutput": {
+		"outputFormat": "tecplot",
+		"primitiveVars": false,
+		"vorticity": false,
+		"Cp": true,
+		"Mach": true,
+		"qcriterion": true
+	},
+	"surfaceOutput": {
+		"Cp": true,
+		"Cf": false,
+		"CfVec": true,
+		"outputFormat": "tecplot"
+	}
+}

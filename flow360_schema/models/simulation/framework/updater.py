@@ -1,0 +1,1604 @@
+"""
+Module containing updaters from version to version
+
+TODO: remove duplication code with FLow360Params updater.
+"""
+
+import copy
+import logging
+import re
+from typing import Any
+
+from flow360_schema.framework.entity.entity_utils import generate_uuid
+from flow360_schema.models.simulation.framework.updater_functions import (
+    _backfill_entity_ids,
+    _convert_ghost_surface_tokens,
+    _convert_wall_glob_to_selector,
+    _inline_to_compact_refs,
+    fix_ghost_sphere_schema,
+    populate_entity_id_with_name,
+    remove_entity_bucket_field,
+    update_symmetry_ghost_entity_name_to_symmetric,
+)
+from flow360_schema.models.simulation.framework.updater_utils import (
+    Flow360Version,
+    compare_dicts,
+    recursive_remove_key,
+)
+
+logger = logging.getLogger(__name__)
+
+__all__ = ["updater"]
+
+DEFAULT_PLANAR_FACE_TOLERANCE = 1e-6
+DEFAULT_SLIDING_INTERFACE_TOLERANCE = 1e-2
+
+
+def _to_24_11_1(params_as_dict):
+    # Check and remove the 'meshing' node if conditions are met
+    if params_as_dict.get("meshing") is not None:
+        meshing_defaults = params_as_dict["meshing"].get("defaults", {})
+        bl_thickness = meshing_defaults.get("boundary_layer_first_layer_thickness")
+        max_edge_length = meshing_defaults.get("surface_max_edge_length")
+        if bl_thickness is None and max_edge_length is None:
+            del params_as_dict["meshing"]
+
+    # Iterate over models and update 'heat_spec' where necessary
+    for model in params_as_dict.get("models", []):
+        if model.get("type") == "Wall" and model.get("heat_spec") is None:
+            model["heat_spec"] = {
+                "type_name": "HeatFlux",
+                "value": {"value": 0, "units": "W / m**2"},
+            }
+
+    # Check and remove the 'time_stepping' -> order_of_accuracy node
+    if "time_stepping" in params_as_dict:
+        params_as_dict["time_stepping"].pop("order_of_accuracy", None)
+
+    update_symmetry_ghost_entity_name_to_symmetric(params_as_dict=params_as_dict)
+    return params_as_dict
+
+
+def _to_24_11_7(params_as_dict):
+    def _add_private_attribute_id_for_point_array(params_as_dict: dict) -> dict:
+        """
+                Check if PointArray has private_attribute_id. If not, generate the uuid and assign the id
+        to all occurrence of the same PointArray
+        """
+        if params_as_dict.get("outputs") is None:
+            return params_as_dict
+
+        point_array_list = []
+        for output in params_as_dict["outputs"]:
+            if output.get("entities", None) and output["entities"].get("stored_entities", None):
+                for entity in output["entities"]["stored_entities"]:
+                    if (
+                        entity.get("private_attribute_entity_type_name") == "PointArray"
+                        and entity.get("private_attribute_id") is None
+                    ):
+                        new_uuid = generate_uuid()
+                        entity["private_attribute_id"] = new_uuid
+                        point_array_list.append(entity)
+
+        if not params_as_dict["private_attribute_asset_cache"].get("project_entity_info"):
+            return params_as_dict
+        if not params_as_dict["private_attribute_asset_cache"]["project_entity_info"].get("draft_entities"):
+            return params_as_dict
+
+        for idx, draft_entity in enumerate(
+            params_as_dict["private_attribute_asset_cache"]["project_entity_info"]["draft_entities"]
+        ):
+            if draft_entity.get("private_attribute_entity_type_name") != "PointArray":
+                continue
+            for point_array in point_array_list:
+                if compare_dicts(
+                    dict1=draft_entity,
+                    dict2=point_array,
+                    ignore_keys=["private_attribute_id"],
+                ):
+                    params_as_dict["private_attribute_asset_cache"]["project_entity_info"]["draft_entities"][idx] = (
+                        point_array
+                    )
+                    continue
+        return params_as_dict
+
+    params_as_dict = _add_private_attribute_id_for_point_array(params_as_dict=params_as_dict)
+    update_symmetry_ghost_entity_name_to_symmetric(params_as_dict=params_as_dict)
+    return params_as_dict
+
+
+def _to_25_2_0(params_as_dict):
+    # Migrates the old DDES turbulence model interface to the new hybrid_model format.
+    for model in params_as_dict.get("models", []):
+        turb_dict = model.get("turbulence_model_solver")
+        if not turb_dict:
+            continue
+
+        run_ddes = turb_dict.pop("DDES", None)
+        grid_size_for_LES = turb_dict.pop("grid_size_for_LES", None)
+
+        if run_ddes:
+            turb_dict["hybrid_model"] = {
+                "shielding_function": "DDES",
+                "grid_size_for_LES": grid_size_for_LES,
+            }
+
+    if params_as_dict.get("outputs") is not None:
+        for output in params_as_dict["outputs"]:
+            if output.get("output_type") == "VolumeOutput":
+                items = output.get("output_fields", {}).get("items", [])
+                for old, new in [
+                    ("SpalartAllmaras_DDES", "SpalartAllmaras_hybridModel"),
+                    ("kOmegaSST_DDES", "kOmegaSST_hybridModel"),
+                ]:
+                    if old in items:
+                        items.remove(old)
+                        items.append(new)
+
+            # Convert the observers in the AeroAcousticOutput to new schema
+            if output.get("output_type") == "AeroAcousticOutput":
+                legacy_observers = output.get("observers", [])
+                converted_observers = []
+                for position in legacy_observers:
+                    converted_observers.append(
+                        {"group_name": "0", "position": position, "private_attribute_expand": None}
+                    )
+                output["observers"] = converted_observers
+
+    # Add ramping to MassFlowRate and move velocity direction to TotalPressure
+    for model in params_as_dict.get("models", []):
+        if model.get("type") == "Inflow" and "velocity_direction" in model.keys():
+            velocity_direction = model.pop("velocity_direction", None)
+            model["spec"]["velocity_direction"] = velocity_direction
+
+        if model.get("spec") and model["spec"].get("type_name") == "MassFlowRate":
+            model["spec"]["ramp_steps"] = None
+
+    return params_as_dict
+
+
+def _to_24_11_10(params_as_dict):
+    fix_ghost_sphere_schema(params_as_dict=params_as_dict)
+    return params_as_dict
+
+
+def _to_25_2_1(params_as_dict):
+    ## We need a better mechanism to run updater function once.
+    fix_ghost_sphere_schema(params_as_dict=params_as_dict)
+    return params_as_dict
+
+
+def _to_25_2_3(params_as_dict):
+    populate_entity_id_with_name(params_as_dict=params_as_dict)
+    return params_as_dict
+
+
+def _to_25_4_1(params_as_dict):
+    if params_as_dict.get("meshing") is None:
+        return params_as_dict
+    meshing_defaults = params_as_dict["meshing"].get("defaults", {})
+    if meshing_defaults.get("geometry_relative_accuracy"):
+        geometry_relative_accuracy = meshing_defaults.pop("geometry_relative_accuracy")
+        meshing_defaults["geometry_accuracy"] = {"value": geometry_relative_accuracy, "units": "m"}
+    return params_as_dict
+
+
+def _fix_reynolds_mesh_unit(params_as_dict):
+    # Handling of the reynolds_mesh_unit rename
+    if "operating_condition" not in params_as_dict.keys():
+        return params_as_dict
+    if "private_attribute_input_cache" not in params_as_dict["operating_condition"].keys():
+        return params_as_dict
+    if "reynolds" not in params_as_dict["operating_condition"]["private_attribute_input_cache"].keys():
+        return params_as_dict
+    reynolds_mesh_unit = params_as_dict["operating_condition"]["private_attribute_input_cache"].pop("reynolds", None)
+    if reynolds_mesh_unit is not None:
+        params_as_dict["operating_condition"]["private_attribute_input_cache"]["reynolds_mesh_unit"] = (
+            reynolds_mesh_unit
+        )
+    return params_as_dict
+
+
+def _to_25_6_2(params_as_dict):
+    # Known: There can not be velocity_direction both under Inflow AND TotalPressure
+
+    # Move the velocity_direction under TotalPressure to the Inflow level.
+    for model in params_as_dict.get("models", []):
+        if model.get("type") != "Inflow" or model.get("velocity_direction", None):
+            continue
+
+        if model.get("spec") and model["spec"].get("type_name") == "TotalPressure":
+            velocity_direction = model["spec"].pop("velocity_direction", None)
+            if velocity_direction:
+                model["velocity_direction"] = velocity_direction
+
+    params_as_dict = _fix_reynolds_mesh_unit(params_as_dict)
+
+    # Handling the disable of same entity being in multiple outputs
+    if params_as_dict.get("outputs") is None:
+        return params_as_dict
+
+    # Process each output type separately
+    for output_type in ["SurfaceOutput", "TimeAverageSurfaceOutput"]:
+        entity_map = {}
+        # entity_name -> {"creates_new" : bool, "output_settings":dict, "entity":entity_dict}
+        for output in params_as_dict["outputs"]:
+            if output.get("output_type") != output_type:
+                continue
+            entity_names = set()
+            entity_deduplicated = []
+            for entity in output["entities"]["stored_entities"]:
+                if entity["name"] in entity_names:
+                    continue
+                entity_names.add(entity["name"])
+                entity_deduplicated.append(entity)
+            output["entities"]["stored_entities"] = entity_deduplicated
+
+            for entity in output["entities"]["stored_entities"]:
+                name = entity["name"]
+                if name in entity_map:
+                    entity_map[name]["creates_new"] = True
+                    entity_map[entity["name"]]["output_settings"]["output_fields"]["items"] = sorted(
+                        list(
+                            set(
+                                entity_map[entity["name"]]["output_settings"]["output_fields"]["items"]
+                                + output["output_fields"]["items"]
+                            )
+                        )
+                    )
+                else:
+                    entity_map[entity["name"]] = {}
+                    entity_map[entity["name"]]["creates_new"] = False
+                    entity_map[entity["name"]]["output_settings"] = copy.deepcopy(
+                        {key: value for key, value in output.items() if key != "entities"}
+                    )
+                    entity_map[entity["name"]]["entity"] = entity
+
+        for entity_info in entity_map.values():
+            if entity_info["creates_new"]:
+                for index, output in enumerate(params_as_dict["outputs"]):
+                    if output.get("output_type") != output_type:
+                        continue
+                    params_as_dict["outputs"][index]["entities"]["stored_entities"] = [
+                        entity
+                        for entity in output["entities"]["stored_entities"]
+                        if entity["name"] != entity_info["entity"]["name"]
+                    ]
+                params_as_dict["outputs"].append(
+                    {
+                        **entity_info["output_settings"],
+                        "entities": {"stored_entities": [entity_info["entity"]]},
+                    }
+                )
+    # remove empty outputs
+    params_as_dict["outputs"] = [
+        output
+        for output in params_as_dict["outputs"]
+        if "entities" not in output or output["entities"]["stored_entities"]
+    ]
+
+    return params_as_dict
+
+
+def _add_default_planar_face_tolerance(params_as_dict):
+    if params_as_dict.get("meshing") is None:
+        return params_as_dict
+    if "defaults" not in params_as_dict["meshing"]:
+        return params_as_dict
+    meshing_defaults = params_as_dict["meshing"].get("defaults", {})
+    if meshing_defaults.get("planar_face_tolerance") is None:
+        meshing_defaults["planar_face_tolerance"] = DEFAULT_PLANAR_FACE_TOLERANCE
+    return params_as_dict
+
+
+def _to_25_6_4(params_as_dict):
+    return _add_default_planar_face_tolerance(params_as_dict)
+
+
+def _to_25_6_5(params_as_dict):
+    # Some 25.6.4 JSONs are also missing the planar_face_tolerance.
+    return _add_default_planar_face_tolerance(params_as_dict)
+
+
+def _to_25_6_6(params_as_dict):
+    # Remove the "potential_issues" field from all surfaces.
+    # Recursively go through params_as_dict and remove the "private_attribute_potential_issues"
+    # field if the "private_attribute_entity_type_name" field is "Surface".
+    def _remove_potential_issues_recursive(data):
+        if isinstance(data, dict):
+            # First recursively process all nested elements
+            for key, value in data.items():
+                if isinstance(value, (dict, list)):
+                    data[key] = _remove_potential_issues_recursive(value)
+
+            # Then check if current dict is a Surface and remove potential_issues
+            if data.get("private_attribute_entity_type_name") == "Surface":
+                data.pop("private_attribute_potential_issues", None)
+
+            return data
+        if isinstance(data, list):
+            # Process each item in the list
+            return [_remove_potential_issues_recursive(item) for item in data]
+
+        # Return primitive types as-is
+        return data
+
+    return _remove_potential_issues_recursive(params_as_dict)
+
+
+def _to_25_7_2(params_as_dict):
+    # Add post_processing_variable flag to variable_context entries
+    # Variables that are used in outputs should have post_processing_variable=True
+    # Variables that are not used in outputs should have post_processing_variable=False
+
+    if params_as_dict.get("private_attribute_asset_cache") is None:
+        return params_as_dict
+
+    variable_context = params_as_dict["private_attribute_asset_cache"].get("variable_context")
+    if variable_context is None:
+        return params_as_dict
+
+    # Collect all user variable names used in outputs
+    used_variable_names = set()
+
+    if params_as_dict.get("outputs") is not None:
+        for output in params_as_dict["outputs"]:
+            if output.get("output_fields") and output["output_fields"].get("items"):
+                for item in output["output_fields"]["items"]:
+                    # Check if item is a user variable (has name and type_name fields)
+                    if isinstance(item, dict) and "name" in item and item.get("type_name") == "UserVariable":
+                        used_variable_names.add(item["name"])
+
+    # Update variable_context entries with post_processing flag
+    for var_context in variable_context:
+        if "name" in var_context:
+            var_context["post_processing"] = var_context["name"] in used_variable_names
+
+    return params_as_dict
+
+
+def _to_25_7_6(params_as_dict):
+    """
+    - Rename deprecated RotationCylinder discriminator to RotationVolume in meshing.volume_zones
+    - Remove legacy entity bucket field from all entity dicts
+    """
+    # 1) Update RotationCylinder -> RotationVolume
+    meshing = params_as_dict.get("meshing")
+    if isinstance(meshing, dict):
+        volume_zones = meshing.get("volume_zones")
+        if isinstance(volume_zones, list):
+            for volume_zone in volume_zones:
+                if isinstance(volume_zone, dict) and volume_zone.get("type") == "RotationCylinder":
+                    volume_zone["type"] = "RotationVolume"
+
+    # 2) Cleanup legacy entity bucket fields
+    return remove_entity_bucket_field(params_as_dict=params_as_dict)
+
+
+def _to_25_7_7(params_as_dict):
+    """
+    1. Reset frequency and frequency_offset to defaults for steady simulations
+    2. Remove invalid output fields based on transition model
+    """
+
+    # 1. Handle frequency settings in steady simulations
+    if params_as_dict.get("time_stepping", {}).get("type_name") == "Steady":
+        outputs = params_as_dict.get("outputs") or []
+        for output in outputs:
+            # Output types that have frequency/frequency_offset settings
+            if output.get("output_type") in [
+                "VolumeOutput",
+                "TimeAverageVolumeOutput",
+                "SurfaceOutput",
+                "TimeAverageSurfaceOutput",
+                "SliceOutput",
+                "TimeAverageSliceOutput",
+                "IsosurfaceOutput",
+                "TimeAverageIsosurfaceOutput",
+                "SurfaceSliceOutput",
+            ]:
+                # Reset to defaults: frequency=-1, frequency_offset=0
+                if "frequency" in output:
+                    output["frequency"] = -1
+                if "frequency_offset" in output:
+                    output["frequency_offset"] = 0
+
+    # 2. Remove invalid output fields based on transition model
+    # Get transition model type from models
+    transition_model_type = None
+    models = params_as_dict.get("models") or []
+    for model in models:
+        if model.get("type") == "Fluid":
+            transition_solver = model.get("transition_model_solver") or {}
+            transition_model_type = transition_solver.get("type_name")
+            break
+
+    # If transition model is None or not found, remove transition-specific fields
+    if transition_model_type in (None, "None"):
+        transition_output_fields = [
+            "residualTransition",
+            "solutionTransition",
+            "linearResidualTransition",
+        ]
+
+        outputs = params_as_dict.get("outputs") or []
+        for output in outputs:
+            if output.get("output_type") in ["AeroAcousticOutput", "StreamlineOutput"]:
+                continue
+            if "output_fields" in output:
+                output_fields = output["output_fields"]
+                if isinstance(output_fields, dict) and "items" in output_fields:
+                    items = output_fields["items"]
+                    # Remove invalid fields
+                    output_fields["items"] = [field for field in items if field not in transition_output_fields]
+
+    return params_as_dict
+
+
+def _to_25_8_0(params_as_dict):
+    # new method of specifying meshing was added, as well as the method discriminator
+    meshing = params_as_dict.get("meshing")
+    if meshing:
+        meshing["type_name"] = "MeshingParams"
+
+    return params_as_dict
+
+
+def _to_25_8_1(params_as_dict):
+    recursive_remove_key(params_as_dict, "transformation")
+    return params_as_dict
+
+
+def _to_25_8_3(params_as_dict):
+    def rename_origin_to_reference_point(params_as_dict):
+        """
+        For all CoordinateSystem instances under asset_cache->coordinate_system_status->coordinate_systems,
+        Rename the legacy "origin" key to "reference_point"
+        """
+        if params_as_dict.get("private_attribute_asset_cache") is None:
+            return params_as_dict
+
+        asset_cache = params_as_dict["private_attribute_asset_cache"]
+        coordinate_system_status = asset_cache.get("coordinate_system_status")
+
+        if coordinate_system_status is None:
+            return params_as_dict
+
+        coordinate_systems = coordinate_system_status.get("coordinate_systems", [])
+
+        for cs in coordinate_systems:
+            # Rename "origin" to "reference_point" if it exists
+            if "origin" in cs:
+                cs["reference_point"] = cs.pop("origin")
+
+        return params_as_dict
+
+    rename_origin_to_reference_point(params_as_dict)
+    return params_as_dict
+
+
+def _to_25_8_4(params_as_dict):
+    """
+    Populate wind tunnel ghost surfaces in ghost_entities if they are not present,
+    ensuring that they are available for entity selection.
+    """
+
+    def add_wind_tunnel_ghost_surfaces(params_as_dict):
+        def _has_wind_tunnel_ghost_surfaces(ghost_entities):
+            """Check if ghost_entities already contains WindTunnelGhostSurface entities."""
+            for entity in ghost_entities:
+                if entity.get("private_attribute_entity_type_name") == "WindTunnelGhostSurface":
+                    return True
+            return False
+
+        def _get_all_wind_tunnel_ghost_surfaces():
+            """Return a list of all possible WindTunnelGhostSurface dicts."""
+            return [
+                {
+                    "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                    "name": "windTunnelInlet",
+                    "private_attribute_id": "windTunnelInlet",
+                    "used_by": ["all"],
+                },
+                {
+                    "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                    "name": "windTunnelOutlet",
+                    "private_attribute_id": "windTunnelOutlet",
+                    "used_by": ["all"],
+                },
+                {
+                    "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                    "name": "windTunnelCeiling",
+                    "private_attribute_id": "windTunnelCeiling",
+                    "used_by": ["all"],
+                },
+                {
+                    "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                    "name": "windTunnelFloor",
+                    "private_attribute_id": "windTunnelFloor",
+                    "used_by": ["all"],
+                },
+                {
+                    "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                    "name": "windTunnelLeft",
+                    "private_attribute_id": "windTunnelLeft",
+                    "used_by": ["all"],
+                },
+                {
+                    "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                    "name": "windTunnelRight",
+                    "private_attribute_id": "windTunnelRight",
+                    "used_by": ["all"],
+                },
+                {
+                    "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                    "name": "windTunnelFrictionPatch",
+                    "private_attribute_id": "windTunnelFrictionPatch",
+                    "used_by": ["StaticFloor"],
+                },
+                {
+                    "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                    "name": "windTunnelCentralBelt",
+                    "private_attribute_id": "windTunnelCentralBelt",
+                    "used_by": ["CentralBelt", "WheelBelts"],
+                },
+                {
+                    "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                    "name": "windTunnelFrontWheelBelt",
+                    "private_attribute_id": "windTunnelFrontWheelBelt",
+                    "used_by": ["WheelBelts"],
+                },
+                {
+                    "private_attribute_entity_type_name": "WindTunnelGhostSurface",
+                    "name": "windTunnelRearWheelBelt",
+                    "private_attribute_id": "windTunnelRearWheelBelt",
+                    "used_by": ["WheelBelts"],
+                },
+            ]
+
+        # Get asset cache, entity info, and ghost entities
+        asset_cache = params_as_dict.get("private_attribute_asset_cache")
+        if asset_cache is None:
+            return params_as_dict
+
+        entity_info = asset_cache.get("project_entity_info")
+        if entity_info is None:
+            return params_as_dict
+
+        ghost_entities = entity_info.get("ghost_entities", [])
+
+        # Check if a wind tunnel ghost surface is already included
+        if _has_wind_tunnel_ghost_surfaces(ghost_entities):
+            return params_as_dict
+
+        # Add all wind tunnel ghost surfaces and update entity_info
+        ghost_entities.extend(_get_all_wind_tunnel_ghost_surfaces())
+        entity_info["ghost_entities"] = ghost_entities
+        return params_as_dict
+
+    def fix_write_single_file_for_paraview_format(params_as_dict):
+        """
+        Fix write_single_file incompatibility with Paraview format.
+
+        Before validation was added, users could set write_single_file=True with
+        output_format="paraview". This is invalid because write_single_file only
+        works with Tecplot format. Silently reset write_single_file to False when
+        Paraview-only format is used.
+
+        Also handles the edge case where output_format is missing from JSON
+        (e.g., hand-edited files or very old JSONs), in which case we assume
+        the default value "paraview" and apply the fix.
+        """
+        outputs = params_as_dict.get("outputs")
+        if not outputs:
+            return params_as_dict
+
+        for output in outputs:
+            output_type = output.get("output_type")
+            # Only process SurfaceOutput and TimeAverageSurfaceOutput
+            if output_type not in ["SurfaceOutput", "TimeAverageSurfaceOutput"]:
+                continue
+
+            # Check if write_single_file is True
+            write_single_file = output.get("write_single_file")
+            if not write_single_file:
+                continue
+
+            # Get output_format, default to "paraview" if missing
+            # (This handles edge cases like hand-edited JSONs or very old versions)
+            output_format = output.get("output_format", "paraview")
+
+            # Only fix paraview format (which raises error)
+            # "both" format only shows warning, so it's valid
+            if output_format == "paraview":
+                # Silently reset write_single_file to False
+                output["write_single_file"] = False
+
+        return params_as_dict
+
+    add_wind_tunnel_ghost_surfaces(params_as_dict)
+    fix_write_single_file_for_paraview_format(params_as_dict)
+    return params_as_dict
+
+
+def _remove_non_manifold_faces_key(params_as_dict):
+    """Remove deprecated meshing defaults key ``remove_non_manifold_faces``."""
+    meshing = params_as_dict.get("meshing")
+    if isinstance(meshing, dict):
+        meshing_defaults = meshing.get("defaults")
+        if isinstance(meshing_defaults, dict):
+            meshing_defaults.pop("remove_non_manifold_faces", None)
+
+
+def _migrate_wall_function_bool(params_as_dict):
+    """Convert `use_wall_function` boolean values to the new WallFunction model format."""
+    for model in params_as_dict.get("models", []):
+        if model.get("type") != "Wall":
+            continue
+        wall_fn = model.get("use_wall_function")
+        if wall_fn is True:
+            model["use_wall_function"] = {"type_name": "BoundaryLayer"}
+        elif wall_fn is False:
+            model.pop("use_wall_function", None)
+
+
+def _add_linear_solver_type_name(params_as_dict):
+    """Add ``type_name`` discriminator to linear_solver dicts inside navier_stokes_solver."""
+    models = params_as_dict.get("models")
+    if not isinstance(models, list):
+        return
+    for model in models:
+        if not isinstance(model, dict):
+            continue
+        ns = model.get("navier_stokes_solver")
+        if not isinstance(ns, dict):
+            continue
+        ls = ns.get("linear_solver")
+        if isinstance(ls, dict) and "type_name" not in ls:
+            ls["type_name"] = "LinearSolver"
+
+
+def _remove_local_cfl_for_steady(params_as_dict):
+    """Remove ``localCFL`` from output fields when the simulation is steady."""
+    if params_as_dict.get("time_stepping", {}).get("type_name") != "Steady":
+        return
+
+    outputs = params_as_dict.get("outputs") or []
+    for output in outputs:
+        if output.get("output_type") in (
+            "AeroAcousticOutput",
+            "StreamlineOutput",
+            "ForceDistributionOutput",
+            "TimeAverageForceDistributionOutput",
+            "RenderOutput",
+        ):
+            continue
+        if "output_fields" in output:
+            output_fields = output["output_fields"]
+            if isinstance(output_fields, dict) and "items" in output_fields:
+                output_fields["items"] = [field for field in output_fields["items"] if field != "localCFL"]
+
+
+def _to_25_9_0(params_as_dict):
+    """Remove ``remove_non_manifold_faces``, migrate wall function bools."""
+    _remove_non_manifold_faces_key(params_as_dict)
+    _migrate_wall_function_bool(params_as_dict)
+    return params_as_dict
+
+
+def _to_25_9_1(params_as_dict):
+    """Add ``type_name`` to linear_solver, remove ``localCFL`` from steady outputs."""
+    _add_linear_solver_type_name(params_as_dict)
+    _remove_local_cfl_for_steady(params_as_dict)
+    return params_as_dict
+
+
+def _to_25_9_2(params_as_dict):
+    """
+    - Migrate sphere-based rotation zones from ``RotationVolume`` to ``RotationSphere``.
+    - Rename ``boundaries`` to ``bounding_entities`` on ``CustomVolume`` dicts.
+
+    Applies to both ``meshing.volume_zones`` and ``meshing.zones``.
+    """
+
+    def _migrate_rotation_volume_to_rotation_sphere(params_dict):
+        meshing = params_dict.get("meshing")
+        if not isinstance(meshing, dict):
+            return
+
+        for zone_key in ("volume_zones", "zones"):
+            zones = meshing.get(zone_key)
+            if not isinstance(zones, list):
+                continue
+
+            for zone in zones:
+                if not isinstance(zone, dict) or zone.get("type") != "RotationVolume":
+                    continue
+
+                entities = zone.get("entities", {}).get("stored_entities", [])
+                if not entities:
+                    continue
+
+                if entities[0].get("private_attribute_entity_type_name") != "Sphere":
+                    continue
+
+                zone["type"] = "RotationSphere"
+                zone.pop("spacing_axial", None)
+                zone.pop("spacing_radial", None)
+
+    def _rename_custom_volume_boundaries(params_dict):
+        def _rename_in_entity(entity):
+            if not isinstance(entity, dict):
+                return
+            if entity.get("private_attribute_entity_type_name") != "CustomVolume":
+                return
+            if "boundaries" in entity and "bounding_entities" not in entity:
+                entity["bounding_entities"] = entity.pop("boundaries")
+
+        meshing = params_dict.get("meshing")
+        if not isinstance(meshing, dict):
+            return
+
+        for zone_key in ("volume_zones", "zones"):
+            zones = meshing.get(zone_key)
+            if not isinstance(zones, list):
+                continue
+
+            for zone in zones:
+                if not isinstance(zone, dict):
+                    continue
+
+                for container_key in ("entities", "enclosed_entities"):
+                    container = zone.get(container_key)
+                    if not isinstance(container, dict):
+                        continue
+                    for entity in container.get("stored_entities", []):
+                        _rename_in_entity(entity)
+
+    _migrate_rotation_volume_to_rotation_sphere(params_as_dict)
+    _rename_custom_volume_boundaries(params_as_dict)
+
+    return params_as_dict
+
+
+def _to_25_9_3(params_as_dict):
+    """Rename ``type_name`` to ``wall_function_type`` in ``use_wall_function`` dicts."""
+    for model in params_as_dict.get("models", []):
+        if model.get("type") != "Wall":
+            continue
+        wall_fn = model.get("use_wall_function")
+        if isinstance(wall_fn, dict) and "type_name" in wall_fn:
+            wall_fn["wall_function_type"] = wall_fn.pop("type_name")
+    return params_as_dict
+
+
+_TOTAL_PRESSURE_CONVERTED_KEY = "__total_pressure_nondim_applied"
+
+
+def _convert_total_pressure_expression_from_ratio_to_nondim(params_as_dict):
+    """Convert TotalPressure string expressions from pressure ratio (P/P∞) to
+    Flow360 nondimensional pressure (P/(ρ∞a∞²)).
+
+    Old semantics: expression = totalPressureRatio = P_total / P∞
+    New semantics: expression = P_total / (ρ∞a∞²) = totalPressureRatio / γ
+
+    Since ThermallyPerfectGas is a new feature that likely will no coexist with old
+    string expressions, γ=1.4 (standard Air) is safe for all legacy data.
+    Liquid operating conditions have ratio=1.0, so no conversion is needed.
+
+    Referenced by both _to_25_8_8 and _to_25_10_0 milestones.  A sentinel key on
+    the dict itself prevents double-conversion without module-level mutable state.
+    """
+    if params_as_dict.get(_TOTAL_PRESSURE_CONVERTED_KEY):
+        return params_as_dict
+    params_as_dict[_TOTAL_PRESSURE_CONVERTED_KEY] = True
+
+    operating_condition = params_as_dict.get("operating_condition", {})
+    if operating_condition.get("type_name") in ("LiquidOperatingCondition",):
+        return params_as_dict
+
+    gamma = 1.4
+
+    for model in params_as_dict.get("models", []):
+        if model.get("type") != "Inflow":
+            continue
+        spec = model.get("spec")
+        if not spec or spec.get("type_name") != "TotalPressure":
+            continue
+        if isinstance(spec.get("value"), str):
+            spec["value"] = f"({spec['value']}) / {gamma}"
+
+    return params_as_dict
+
+
+def _to_25_8_8(params_as_dict):
+    return _convert_total_pressure_expression_from_ratio_to_nondim(params_as_dict)
+
+
+def _to_25_10_0(params_as_dict):
+    """Migrate to 25.10.0: output_format string to list, add vtkhdf/ensight support."""
+
+    def _migrate_output_format_to_list(params_as_dict):
+        """Convert string ``output_format`` values to list form.
+
+        ``"both"`` becomes ``["paraview", "tecplot"]``, comma-separated strings are
+        split, and bare strings are wrapped in a list.
+        """
+        outputs = params_as_dict.get("outputs")
+        if not outputs:
+            return
+
+        for output in outputs:
+            fmt = output.get("output_format")
+            if isinstance(fmt, list):
+                output["output_format"] = sorted(set(fmt))
+                continue
+            if not isinstance(fmt, str):
+                continue
+            if fmt == "both":
+                output["output_format"] = ["paraview", "tecplot"]
+            elif "," in fmt:
+                output["output_format"] = sorted(set(v.strip() for v in fmt.split(",")))
+            else:
+                output["output_format"] = [fmt]
+
+    _migrate_output_format_to_list(params_as_dict)
+    _convert_total_pressure_expression_from_ratio_to_nondim(params_as_dict)
+    return params_as_dict
+
+
+def _to_25_10_12(params_as_dict):
+    """Migrate ``PorousJump.entity_pairs`` (or aliased ``surface_pairs``) to
+    the flat ``entities`` form. Flattens
+    ``{items: [{pair: [A, B]}, ...]}`` into ``{stored_entities: [A, B, ...]}``.
+    """
+    models = params_as_dict.get("models") or []
+    for model in models:
+        if not isinstance(model, dict) or model.get("type") != "PorousJump":
+            continue
+        legacy_key = next(
+            (k for k in ("entity_pairs", "surface_pairs") if model.get(k) is not None),
+            None,
+        )
+        if legacy_key is None:
+            continue
+        if any(model.get(k) is not None for k in ("entities", "surfaces")):
+            raise ValueError(
+                f"PorousJump JSON has both `{legacy_key}` and `entities`/`surfaces`; "
+                "cannot migrate to the flat `entities` form."
+            )
+        pairs_container = model.pop(legacy_key)
+        flat = [surface for item in pairs_container["items"] for surface in item["pair"]]
+        model["entities"] = {"stored_entities": flat}
+    return params_as_dict
+
+
+def _to_25_10_13(params_as_dict):
+    """Migrate ``SeedpointVolume.point_in_mesh`` from a single point to a list of points.
+
+    Prior to 25.10.13, ``point_in_mesh`` was a ``Length.Vector3`` (single ``[x, y, z]``).
+    Now it is ``list[Length.Vector3]`` to allow multiple seed points per zone. Rewrite any
+    stored single-point form ``{value: [x, y, z], ...}`` as ``[{value: [x, y, z], ...}]``.
+    """
+    meshing = params_as_dict.get("meshing")
+    if not isinstance(meshing, dict):
+        return params_as_dict
+
+    zone_lists = []
+    for key in ("volume_zones", "zones"):
+        zones = meshing.get(key)
+        if isinstance(zones, list):
+            zone_lists.append(zones)
+
+    for zones in zone_lists:
+        for zone in zones:
+            if not isinstance(zone, dict) or zone.get("type") != "CustomZones":
+                continue
+            entities = zone.get("entities", {})
+            if not isinstance(entities, dict):
+                continue
+            for entity in entities.get("stored_entities", []) or []:
+                if not isinstance(entity, dict) or entity.get("type") != "SeedpointVolume":
+                    continue
+                point = entity.get("point_in_mesh")
+                if isinstance(point, dict):
+                    entity["point_in_mesh"] = [point]
+
+    return params_as_dict
+
+
+def _to_25_10_14(params_as_dict):
+    """Strip legacy ``"name": null`` from ``SurfaceOutput`` /
+    ``TimeAverageSurfaceOutput`` entries.
+
+    Prior to this branch the field was typed ``str | None`` and unset names
+    serialized as ``null``. The field is now :class:`FileNameString` which
+    rejects ``None``; the schema still coerces null with a DeprecationWarning,
+    but normalizing here means cloud-stored params replay cleanly without
+    re-emitting the warning each time.
+    """
+    outputs = params_as_dict.get("outputs")
+    if not isinstance(outputs, list):
+        return params_as_dict
+    for output in outputs:
+        if not isinstance(output, dict):
+            continue
+        if output.get("output_type") not in ("SurfaceOutput", "TimeAverageSurfaceOutput"):
+            continue
+        if output.get("name", "sentinel") is None:
+            del output["name"]
+    return params_as_dict
+
+
+def _to_25_10_15(params_as_dict):
+    """Move legacy Navier-Stokes Roe flux keys into ``riemann_solver``."""
+    roe_fields = (
+        "numerical_dissipation_factor",
+        "low_mach_preconditioner",
+        "low_mach_preconditioner_threshold",
+    )
+
+    for model in params_as_dict.get("models") or []:
+        if not isinstance(model, dict) or model.get("type") != "Fluid":
+            continue
+
+        ns_solver = model.get("navier_stokes_solver")
+        if not isinstance(ns_solver, dict):
+            continue
+
+        legacy_values = {field: ns_solver[field] for field in roe_fields if field in ns_solver}
+        if not legacy_values:
+            continue
+
+        riemann_solver = ns_solver.get("riemann_solver")
+        if riemann_solver is None:
+            riemann_solver = {"type_name": "Roe"}
+        if not isinstance(riemann_solver, dict):
+            raise ValueError("navier_stokes_solver.riemann_solver must be a dictionary.")
+        if riemann_solver.get("type_name") != "Roe":
+            raise ValueError(
+                f"Fields {sorted(legacy_values)} are Roe-specific and cannot be set "
+                f"when riemann_solver is {riemann_solver.get('type_name')}."
+            )
+
+        for field, value in legacy_values.items():
+            if field in riemann_solver and riemann_solver[field] != value:
+                raise ValueError(
+                    f"{field} is set on both navier_stokes_solver ({value}) and "
+                    f"riemann_solver ({riemann_solver[field]}). Set it on riemann_solver only."
+                )
+
+        for field in legacy_values:
+            ns_solver.pop(field)
+        riemann_solver.update(legacy_values)
+        ns_solver["riemann_solver"] = riemann_solver
+
+    return params_as_dict
+
+
+def _legacy_unit_dict_to_display_unit_dict(legacy: dict) -> dict:
+    """Convert a legacy ``{"value": ..., "units": ...}`` dict to the new
+    ``{"value": <SI>, "display_unit": <DSL>}`` shape, omitting ``display_unit``
+    when ``units`` is semantically the SI base unit.
+
+    Assumes the legacy dict's dimension is correct (legacy data went through
+    legacy-schema validation that caught wrong-dimension inputs).
+    """
+    from flow360_schema.framework.physical_dimensions.unyt_utils import (
+        units_semantically_equivalent,
+        unyt_to_dsl_unit,
+    )
+    from unyt import unyt_array, unyt_quantity
+
+    raw = legacy["value"]
+    units_str = legacy["units"]
+
+    if isinstance(raw, (list, tuple)):
+        q = unyt_array(raw, units_str)
+    else:
+        q = unyt_quantity(raw, units_str)
+
+    q_si = q.in_base("mks")
+    si_value = q_si.value.item() if q_si.shape == () else q_si.value.tolist()
+
+    if units_semantically_equivalent(q.units, q_si.units):
+        return {"value": si_value}
+    return {"value": si_value, "display_unit": unyt_to_dsl_unit(units_str)}
+
+
+def _is_legacy_unit_dict(value) -> bool:
+    """Strictly detect a legacy ``{"value": ..., "units": ...}`` dict.
+
+    The dict must have *exactly* the keys ``value`` and ``units``,
+    ``units`` must be a string and ``value`` must be a number / list / tuple.
+    This avoids touching shapes that happen to share both keys (e.g.
+    ``SerializedValueOrExpression`` carries a ``type_name`` discriminator).
+    """
+    return (
+        isinstance(value, dict)
+        and set(value.keys()) == {"value", "units"}
+        and isinstance(value["units"], str)
+        and isinstance(value["value"], (int, float, list, tuple))
+    )
+
+
+def _convert_legacy_unit_dicts_in_place(node):
+    """Recursively walk ``node`` and replace legacy unit dicts at their parent
+    slot in-place.
+
+    Crucially, this function does NOT rebuild dicts/lists — every parent dict
+    or list keeps its original Python object identity. ``validate_model``'s
+    downstream ``materialize_entities_and_selectors_in_place`` relies on this:
+    its side-effect mutations (entity dicts -> entity instances) must be
+    visible through the caller's dict reference.
+    """
+    if isinstance(node, dict):
+        for key, value in node.items():
+            if _is_legacy_unit_dict(value):
+                node[key] = _legacy_unit_dict_to_display_unit_dict(value)
+            else:
+                _convert_legacy_unit_dicts_in_place(value)
+    elif isinstance(node, list):
+        for idx, item in enumerate(node):
+            if _is_legacy_unit_dict(item):
+                node[idx] = _legacy_unit_dict_to_display_unit_dict(item)
+            else:
+                _convert_legacy_unit_dicts_in_place(item)
+
+
+def _to_25_10_16(params_as_dict):
+    """Backfill ``cad_importer_version`` on geometry-workflow asset caches.
+
+    The field was introduced after 25.10.15 with no default. Geometry projects
+    persisted before it must read as the original "v1" engine; non-geometry
+    workflows leave it unset (irrelevant)."""
+    asset_cache = params_as_dict.get("private_attribute_asset_cache")
+    if not asset_cache:
+        return params_as_dict
+    entity_info = asset_cache.get("project_entity_info")
+    if entity_info and entity_info.get("type_name") == "GeometryEntityInfo":
+        if asset_cache.get("cad_importer_version") is None:
+            asset_cache["cad_importer_version"] = "v1"
+    return params_as_dict
+
+
+def _to_25_11_0(params_as_dict):
+    """Migrate legacy ``{value, units}`` dicts to the ``{value, display_unit}``
+    wire format. Registered at 25.11.0, the release that re-activates the
+    display_unit wire format, so any file persisted in the interim
+    ``{value, units}`` shape is normalized on load."""
+    _convert_legacy_unit_dicts_in_place(params_as_dict)
+    return params_as_dict
+
+
+def _to_25_11_1(params_as_dict):
+    """Strip the vestigial ``material`` field from ``Fluid`` volume models.
+
+    ``Fluid.material`` was a dead schema field: the translator only ever read
+    the gas material from ``operating_condition.thermal_state.material`` and
+    silently ignored any per-Fluid material the user set. The field has now
+    been removed from the schema. Old serializations that included it would
+    otherwise be rejected by Pydantic's ``extra="forbid"`` configuration.
+
+    ``Solid.material`` is unchanged -- it is genuinely per-zone (CHT).
+    """
+    models = params_as_dict.get("models")
+    if not isinstance(models, list):
+        return params_as_dict
+    for model in models:
+        if isinstance(model, dict) and model.get("type") == "Fluid":
+            model.pop("material", None)
+    return params_as_dict
+
+
+def _is_default_air_tpg(t):
+    """The historical default Air TPG -- single-species ``FrozenSpecies("Air")``
+    spanning 200-6000 K with constant-gamma=1.4 NASA-9 coefficients
+    (only a2 = 3.5 non-zero). Indistinguishable from "user wanted CPG Air" so we
+    can safely drop it. Anything else (custom name, custom bounds, custom
+    coefficients) must round-trip through the Gas type to preserve user intent.
+    """
+    if not isinstance(t, dict):
+        return False
+    species = t.get("species")
+    if not isinstance(species, list) or len(species) != 1:
+        return False
+    s = species[0]
+    if not isinstance(s, dict) or s.get("name") != "Air":
+        return False
+    ranges = (s.get("nasa_9_coefficients") or {}).get("temperature_ranges") or []
+    if len(ranges) != 1:
+        return False
+    r = ranges[0]
+
+    # The legacy default Air TPG was always 200-6000 K. Both wire formats are
+    # possible at this point: pre-25.11.0 ``{value, units}`` (we run before
+    # _to_25_11_0 only chronologically, never functionally) or post-25.11.0
+    # ``{value, [display_unit]}`` (which is what _to_25_11_0 produces and what
+    # we should mostly see here). Pull out the magnitude either way.
+    def _scalar(v):
+        return v.get("value") if isinstance(v, dict) else v
+
+    if _scalar(r.get("temperature_range_min")) != 200.0:
+        return False
+    if _scalar(r.get("temperature_range_max")) != 6000.0:
+        return False
+    coeffs = r.get("coefficients") or []
+    if len(coeffs) != 9:
+        return False
+    # Cast to float so an int 0 from JSON compares equal to the 0.0 default.
+    # Python's ``0 == 0.0`` is True, but normalizing explicitly avoids subtle
+    # surprises with NumPy / Decimal / other numeric types that may show up in
+    # intermediate dict snapshots.
+    expected = [0.0, 0.0, 3.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    try:
+        return [float(c) for c in coeffs] == expected
+    except (TypeError, ValueError):
+        return False
+
+
+def _migrate_air_material_in_place(thermal_state):
+    """Rewrite a single ``thermal_state.material`` block from old Air to Air-or-Gas."""
+    if not isinstance(thermal_state, dict):
+        return
+    material = thermal_state.get("material")
+    if not isinstance(material, dict) or material.get("type") != "air":
+        return
+
+    stm = material.get("species_transport_model")
+    tpg = material.get("thermally_perfect_gas")
+
+    # CPG-equivalent: no STM, and either no TPG or the historical default TPG.
+    # Stays as Air; drop the (now-forbidden) thermally_perfect_gas field.
+    if stm is None and (tpg is None or _is_default_air_tpg(tpg)):
+        material.pop("thermally_perfect_gas", None)
+        return
+
+    # Otherwise migrate to Gas. When STM is set, drop any co-serialized TPG --
+    # the old Air auto-defaulted thermally_perfect_gas, so STM+default-TPG was a
+    # valid old shape; Gas's mutex validator now rejects both being set.
+    material["type"] = "gas"
+    if stm is not None:
+        material.pop("thermally_perfect_gas", None)
+    if not material.get("name"):
+        material["name"] = "air"
+    # Gas requires ``dynamic_viscosity`` only on the TPG path (used for both the
+    # runtime viscosity and the freestream muRef); on the STM path it's ignored
+    # because viscosity is Wilke-mixed from per-species data. Old Air supplied a
+    # default Sutherland via a default factory, so legacy TPG payloads sometimes
+    # omit the key. Fill in the same standard-air values Air's default used so
+    # the migrated Gas validates with the legacy viscosity model.
+    #
+    # _to_25_11_0 already ran by the time _to_25_11_2 fires, so use the post-25.11.0
+    # ``{value: <SI>}`` wire format -- legacy ``{value, units}`` dicts would no
+    # longer parse. Pa*s and K are already the SI bases for Viscosity / Temperature,
+    # so no ``display_unit`` is needed.
+    if stm is None and "dynamic_viscosity" not in material:
+        material["dynamic_viscosity"] = {
+            "reference_viscosity": {"value": 1.716e-5},
+            "reference_temperature": {"value": 273.15},
+            "effective_temperature": {"value": 110.4},
+        }
+
+
+def _to_25_11_2(params_as_dict):
+    """Migrate ``thermal_state.material`` from Air-with-TPG/STM to Gas.
+
+    ``Air`` became a calorically-perfect-gas (CPG) preset that no longer accepts
+    ``thermally_perfect_gas`` or ``species_transport_model``; both customizations
+    moved to the new ``Gas`` class. Rewrite legacy material payloads:
+
+    * ``{"type": "air", "thermally_perfect_gas": <custom>, ...}`` -> ``Gas``.
+    * ``{"type": "air", "species_transport_model": <stm>, ...}`` -> ``Gas``
+      (drops the auto-defaulted ``thermally_perfect_gas`` that the old Air carried
+      alongside STM).
+    * ``{"type": "air"}`` with no STM and either no TPG or the historical default
+      TPG stays as Air.
+
+    Walks both the live ``thermal_state`` slot and the cached copy under
+    ``private_attribute_input_cache`` (multi-constructor operating conditions
+    such as ``ThermalState.from_mach`` keep their original input shape there).
+    The ``atmosphere`` alias on :class:`AerospaceCondition` is input-only; the
+    schema never dumps with that key, so persisted payloads always use the
+    canonical ``thermal_state`` form and we don't need to walk the alias.
+    """
+    op = params_as_dict.get("operating_condition")
+    if not isinstance(op, dict):
+        return params_as_dict
+    _migrate_air_material_in_place(op.get("thermal_state"))
+    cache = op.get("private_attribute_input_cache")
+    if isinstance(cache, dict):
+        _migrate_air_material_in_place(cache.get("thermal_state"))
+    return params_as_dict
+
+
+def _to_25_11_3(params_as_dict):
+    """Migrate the boolean ``meshing.defaults.remove_baffle_faces`` to the
+    three-way ``baffle_face_treatment`` enum.
+    True = remove, False = thicken, but only when remove_hidden_geometry is True. The legacy
+    bool was wrongly not gated on it and is a no-op otherwise, so it falls back to "default".
+    """
+    meshing = params_as_dict.get("meshing")
+    if not isinstance(meshing, dict):
+        return params_as_dict
+    defaults = meshing.get("defaults")
+    if not isinstance(defaults, dict) or "remove_baffle_faces" not in defaults:
+        return params_as_dict
+    remove = defaults.pop("remove_baffle_faces")
+    if defaults.get("remove_hidden_geometry") is True:
+        if remove is True:
+            defaults["baffle_face_treatment"] = "remove"
+        elif remove is False:
+            defaults["baffle_face_treatment"] = "thicken"
+        # A malformed legacy value is dropped, falling back to default
+    return params_as_dict
+
+
+def _to_25_11_4(params_as_dict):
+    """Compact ``stored_entities`` wire format + mandatory entity ids.
+
+    Composition of named sub-updates (order matters: ids are backfilled before
+    reference matching needs them; ghost tokens gain their real types before
+    referencing; the glob-hack leaves before the inline-to-reference
+    conversion).
+    """
+    params_as_dict = _backfill_entity_ids(params_as_dict)
+    params_as_dict = _convert_ghost_surface_tokens(params_as_dict)
+    params_as_dict = _convert_wall_glob_to_selector(params_as_dict)
+    params_as_dict = _inline_to_compact_refs(params_as_dict)
+    return params_as_dict
+
+
+_CUSTOM_VOLUME_RENAME_APPLIED_KEY = "__custom_volume_bounding_entities_applied"
+
+
+def _rename_custom_volume_boundaries_everywhere(params_as_dict):
+    """Rename ``boundaries`` to ``bounding_entities`` on every ``CustomVolume`` dict.
+
+    ``_to_25_9_2`` only handled ``meshing.volume_zones``/``meshing.zones``, missing
+    CustomVolume dicts everywhere else (asset cache entity registry, model entities,
+    ``parent_volume``, ``output_target``). This walks the whole params dict instead.
+
+    This function is referenced by one milestone per release line. A sentinel key
+    on the dict itself prevents redundant re-walks within one updater() call;
+    ``updater()`` strips it before returning.
+    """
+    if params_as_dict.get(_CUSTOM_VOLUME_RENAME_APPLIED_KEY):
+        return params_as_dict
+    params_as_dict[_CUSTOM_VOLUME_RENAME_APPLIED_KEY] = True
+
+    def _walk(node):
+        if isinstance(node, dict):
+            if (
+                node.get("private_attribute_entity_type_name") == "CustomVolume"
+                and "boundaries" in node
+                and "bounding_entities" not in node
+            ):
+                node["bounding_entities"] = node.pop("boundaries")
+            for value in node.values():
+                _walk(value)
+        elif isinstance(node, list):
+            for item in node:
+                _walk(item)
+
+    _walk(params_as_dict)
+    return params_as_dict
+
+
+def _to_25_9_10(params_as_dict):
+    return _rename_custom_volume_boundaries_everywhere(params_as_dict)
+
+
+def _to_25_10_17(params_as_dict):
+    return _rename_custom_volume_boundaries_everywhere(params_as_dict)
+
+
+def _to_25_11_5(params_as_dict):
+    return _rename_custom_volume_boundaries_everywhere(params_as_dict)
+
+
+_TIME_AVERAGE_PROBE_OUTPUT_TYPES = ("TimeAverageProbeOutput", "TimeAverageSurfaceProbeOutput")
+_MONITOR_OUTPUT_TYPES = ("ForceOutput", "SurfaceIntegralOutput", "ProbeOutput", "SurfaceProbeOutput")
+_FORCE_OUTPUT_MODEL_TYPES = ("Wall", "BETDisk", "ActuatorDisk", "PorousMedium")
+
+
+def _clean_force_output_models(force_output, model_types_by_id):
+    """Normalize a legacy ``ForceOutput.models`` list to unique, supported model ids.
+
+    Entries are always id strings: every prior version's validator converted model
+    objects to ids before serialization. Ids resolving to an unsupported model type are
+    dropped with a warning, and duplicates keep their first occurrence. An id that does
+    not resolve at all is kept -- it was invalid before this version too, and the
+    reference validator reports it loudly.
+    """
+    ids = []
+    for model_id in force_output.get("models") or []:
+        model_type = model_types_by_id.get(model_id)
+        if model_type is not None and model_type not in _FORCE_OUTPUT_MODEL_TYPES:
+            logger.warning(
+                f"Model '{model_id}' (`{model_type}`) is not supported in `ForceOutput.models` " "and has been removed."
+            )
+            continue
+        if model_id not in ids:
+            ids.append(model_id)
+    return ids
+
+
+def _to_25_11_9(params_as_dict):
+    """Drop `moving_statistic` and `output_at_final_pseudo_step_only` from time-average probe
+    outputs. Both were only ever inherited from `ProbeOutput`/`SurfaceProbeOutput`: the solver
+    never computes moving statistics for a time-average monitor group, and time-average outputs
+    are unsteady-only, so suppressing intermediate pseudo-step writes was a no-op. The classes
+    now derive from `_OutputBase`, and `extra="forbid"` would reject the stale keys -- including
+    a `"moving_statistic": null` left by a full (non-`exclude_none`) dump.
+
+    Also migrate the reference fields for the id-only wire format introduced with this
+    version: `ForceOutput.models` becomes a list of unique, supported model ids (a
+    `ForceOutput` left with no models is removed), and stopping criteria whose id
+    reference resolves to a non-monitor output -- or to a removed `ForceOutput` -- are
+    dropped. Both fields have always serialized as ids (prior versions' validators
+    converted objects to ids at construction), so inline object dicts need no handling.
+    """
+    model_types_by_id = {
+        model.get("private_attribute_id"): model.get("type")
+        for model in params_as_dict.get("models") or []
+        if isinstance(model, dict)
+    }
+
+    unreferencable = {}  # output id -> why a stopping criterion can no longer reference it
+    kept_outputs = []
+    for output in params_as_dict.get("outputs") or []:
+        output_type = output.get("output_type", "")
+        if output_type not in _MONITOR_OUTPUT_TYPES:
+            unreferencable[output.get("private_attribute_id")] = (
+                f"a `{output_type}`, which cannot drive a stopping criterion"
+            )
+        if output_type in _TIME_AVERAGE_PROBE_OUTPUT_TYPES:
+            if output.pop("moving_statistic", None) is not None:
+                logger.warning(
+                    f"`moving_statistic` on `{output_type}` "
+                    f"'{output.get('name')}' is not supported and has been removed."
+                )
+            output.pop("output_at_final_pseudo_step_only", None)
+        if output_type == "ForceOutput":
+            output["models"] = _clean_force_output_models(output, model_types_by_id)
+            if not output["models"]:
+                logger.warning(
+                    f"`ForceOutput` '{output.get('name')}' has no supported models left " "and has been removed."
+                )
+                unreferencable[output.get("private_attribute_id")] = "a removed `ForceOutput`"
+                continue
+        kept_outputs.append(output)
+    if params_as_dict.get("outputs") is not None:
+        params_as_dict["outputs"] = kept_outputs
+
+    run_control = params_as_dict.get("run_control")
+    if run_control and run_control.get("stopping_criteria"):
+        kept = []
+        for criterion in run_control["stopping_criteria"]:
+            monitor_output = criterion.get("monitor_output")
+            if monitor_output in unreferencable:
+                logger.warning(
+                    f"Stopping criterion '{criterion.get('name')}' references "
+                    f"{unreferencable[monitor_output]} and has been removed."
+                )
+            else:
+                kept.append(criterion)
+        run_control["stopping_criteria"] = kept
+    return params_as_dict
+
+
+def _wire_dict_to_voe_envelope(value, si_unit):
+    """Wrap a ``{"value": ..., ["display_unit": ...]}`` wire dict (or a bare vector) in the
+    ``SerializedValueOrExpression`` envelope.
+
+    The envelope is what the serializer emits at ``ValueOrExpression`` slots, and its ``value``
+    carries the magnitude in the reported unit -- which is why a ``display_unit`` is converted
+    rather than copied across. ``si_unit`` is the slot's SI base unit, or ``None`` when the slot
+    is dimensionless.
+
+    Anything occupying a sibling branch of the slot's union is returned untouched.
+    """
+    from flow360_schema.framework.physical_dimensions.unyt_utils import dsl_to_unyt_unit
+    from unyt import unyt_array, unyt_quantity
+
+    if isinstance(value, (list, tuple)):
+        if any(isinstance(item, str) for item in value):
+            # A `LegacyVelocityVectorType` expression triple occupying the other branch of the
+            # `velocity` union. It is not a value, and wrapping it produces a document that no
+            # longer validates.
+            return value
+        # A bare numeric vector is a wire dict that never needed a display unit.
+        value = {"value": list(value)}
+    if not isinstance(value, dict) or "value" not in value or "type_name" in value:
+        # Already an envelope, or a model occupying a sibling branch of the same union
+        # (``ProjectedArea``, ``WallRotation``, ``AngleExpression``).
+        return value
+
+    display_unit = value.get("display_unit")
+    if display_unit is None:
+        envelope = {"type_name": "number", "value": value["value"]}
+        if si_unit is not None:
+            envelope["units"] = si_unit
+        return envelope
+
+    unyt_unit = dsl_to_unyt_unit(display_unit)
+    raw = value["value"]
+    q = unyt_array(raw, si_unit) if isinstance(raw, (list, tuple)) else unyt_quantity(raw, si_unit)
+    q = q.to(unyt_unit)
+    return {
+        "type_name": "number",
+        "value": q.value.item() if q.shape == () else q.value.tolist(),
+        "units": unyt_unit,
+    }
+
+
+def _convert_voe_slot(container, key, si_unit):
+    """Rewrite one ``ValueOrExpression`` slot in place, when it is present and populated."""
+    if not isinstance(container, dict) or container.get(key) is None:
+        return
+    container[key] = _wire_dict_to_voe_envelope(container[key], si_unit)
+
+
+def _to_25_11_11(params_as_dict):
+    """Restore the ``SerializedValueOrExpression`` envelope at ``ValueOrExpression`` slots.
+
+    ``_to_25_11_0`` migrates every legacy ``{value, units}`` dict to the ``{value, display_unit}``
+    wire format by walking the whole document, so it also rewrites slots whose field type is
+    ``ValueOrExpression``, where the serializer emits the envelope instead. Both shapes
+    deserialize -- the discriminator routes a ``type_name``-less wire dict to the number branch --
+    but the frontend consumes the updater's output verbatim and accepts only the envelope.
+
+    ``models[].spec.value`` is converted for ``AngularVelocity`` alone: ``Mach``, ``MassFlowRate``,
+    ``Pressure``, ``TotalPressure`` and ``AngleExpression`` also carry a ``value``, and theirs are
+    plain dimensioned fields that reject the envelope.
+    """
+    _convert_voe_slot(params_as_dict.get("operating_condition"), "velocity_magnitude", "m/s")
+    _convert_voe_slot(params_as_dict.get("reference_geometry"), "area", "m**2")
+    _convert_voe_slot(params_as_dict.get("time_stepping"), "step_size", "s")
+    for model in params_as_dict.get("models") or []:
+        spec = model.get("spec")
+        if isinstance(spec, dict) and spec.get("type_name") == "AngularVelocity":
+            _convert_voe_slot(spec, "value", "rad/s")
+        _convert_voe_slot(model, "velocity", "m/s")
+        _convert_voe_slot(model.get("velocity"), "axis", None)
+    return params_as_dict
+
+
+VERSION_MILESTONES = [
+    (Flow360Version("24.11.1"), _to_24_11_1),
+    (Flow360Version("24.11.7"), _to_24_11_7),
+    (Flow360Version("24.11.10"), _to_24_11_10),
+    (Flow360Version("25.2.0"), _to_25_2_0),
+    (Flow360Version("25.2.1"), _to_25_2_1),
+    (Flow360Version("25.2.3"), _to_25_2_3),
+    (Flow360Version("25.4.1"), _to_25_4_1),
+    (Flow360Version("25.6.2"), _to_25_6_2),
+    (Flow360Version("25.6.4"), _to_25_6_4),
+    (Flow360Version("25.6.5"), _to_25_6_5),
+    (Flow360Version("25.6.6"), _to_25_6_6),
+    (Flow360Version("25.7.2"), _to_25_7_2),
+    (Flow360Version("25.7.6"), _to_25_7_6),
+    (Flow360Version("25.7.7"), _to_25_7_7),
+    (Flow360Version("25.8.0b4"), _to_25_8_0),
+    (Flow360Version("25.8.1"), _to_25_8_1),
+    (Flow360Version("25.8.3"), _to_25_8_3),
+    (Flow360Version("25.8.4"), _to_25_8_4),
+    (Flow360Version("25.8.8"), _to_25_8_8),
+    (Flow360Version("25.9.0"), _to_25_9_0),
+    (Flow360Version("25.9.1"), _to_25_9_1),
+    (Flow360Version("25.9.2"), _to_25_9_2),
+    (Flow360Version("25.9.3"), _to_25_9_3),
+    (Flow360Version("25.9.10"), _to_25_9_10),
+    (Flow360Version("25.10.0"), _to_25_10_0),
+    (Flow360Version("25.10.12"), _to_25_10_12),
+    (Flow360Version("25.10.13"), _to_25_10_13),
+    (Flow360Version("25.10.14"), _to_25_10_14),
+    (Flow360Version("25.10.15"), _to_25_10_15),
+    (Flow360Version("25.10.16"), _to_25_10_16),
+    (Flow360Version("25.10.17"), _to_25_10_17),
+    (Flow360Version("25.11.0"), _to_25_11_0),
+    (Flow360Version("25.11.1"), _to_25_11_1),
+    (Flow360Version("25.11.2"), _to_25_11_2),
+    (Flow360Version("25.11.3"), _to_25_11_3),
+    (Flow360Version("25.11.4"), _to_25_11_4),
+    (Flow360Version("25.11.5"), _to_25_11_5),
+    (Flow360Version("25.11.9"), _to_25_11_9),
+    (Flow360Version("25.11.11"), _to_25_11_11),
+]  # A list of the Python API version tuple with their corresponding updaters.
+# NOTE for future `_to_*` authors: from 25.11.4 on, `stored_entities` lists are
+# group-shaped — ordered `{"type": ..., "ids": [...]}` reference groups resolving
+# against project_entity_info — not lists of inline entity dicts.
+
+
+def _find_update_path(
+    *,
+    version_from: Flow360Version,
+    version_to: Flow360Version,
+    version_milestones: list[tuple[Flow360Version, Any]],
+):
+    if version_from == version_to:
+        return []
+
+    if version_from >= version_milestones[-1][0]:
+        return []
+
+    if version_to < version_milestones[0][0]:
+        raise ValueError("Trying to update `SimulationParams` to a version lower than any known version.")
+
+    def _get_path_start():
+        for index, item in enumerate(version_milestones):
+            milestone_version = item[0]
+            if milestone_version > version_from:
+                # exclude equal because then it is already `milestone_version` version
+                return index
+        return None
+
+    def _get_path_end():
+        for index, item in enumerate(version_milestones):
+            milestone_version = item[0]
+            if milestone_version > version_to:
+                return index - 1
+        return len(version_milestones) - 1
+
+    path_start = _get_path_start()
+    path_end = _get_path_end()
+
+    return [item[1] for index, item in enumerate(version_milestones) if path_start <= index <= path_end]
+
+
+def _get_update_version_name(update_function: Any) -> str:
+    match = re.search(r"_to_(\d+_\d+_\d+(?:b\d+)?)", update_function.__name__)
+    if match is None:
+        raise ValueError(f"Invalid updater function name: {update_function.__name__}")
+    return match.group(1)
+
+
+def updater(version_from, version_to, params_as_dict) -> dict:
+    """
+    Update parameters from version_from to version_to.
+
+    Parameters
+    ----------
+    version_from : str
+        The starting version.
+    version_to : str
+        The target version to update to. This has to be equal or higher than `version_from`
+    params_as_dict : dict
+        A dictionary containing parameters to be updated.
+
+    Returns
+    -------
+    dict
+        Updated parameters as a dictionary.
+
+    Raises
+    ------
+    Flow360NotImplementedError
+        If no update path exists from version_from to version_to.
+
+    Notes
+    -----
+    This function iterates through the update map starting from version_from and
+    updates the parameters based on the update path found.
+    """
+    logger.debug(f"Input SimulationParam has version: {version_from}.")
+    version_from_is_newer = Flow360Version(version_from) > Flow360Version(version_to)
+
+    if version_from_is_newer:
+        raise ValueError(
+            f"[Internal] Misuse of updater, version_from ({version_from}) is higher than version_to ({version_to})"
+        )
+    update_functions = _find_update_path(
+        version_from=Flow360Version(version_from),
+        version_to=Flow360Version(version_to),
+        version_milestones=VERSION_MILESTONES,
+    )
+    for fun in update_functions:
+        _to_version = _get_update_version_name(fun)
+        logger.debug(f"Updating input SimulationParam to {_to_version}...")
+        params_as_dict = fun(params_as_dict)
+    params_as_dict.pop(_TOTAL_PRESSURE_CONVERTED_KEY, None)
+    params_as_dict.pop(_CUSTOM_VOLUME_RENAME_APPLIED_KEY, None)
+    params_as_dict["version"] = str(version_to)
+    return params_as_dict

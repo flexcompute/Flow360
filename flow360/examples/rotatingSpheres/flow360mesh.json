@@ -1,0 +1,46 @@
+{
+    "boundaries": {
+      "noSlipWalls": [
+        "rotatingBlock-sphere1/sphere1",
+        "rotatingBlock-sphere2/sphere2"
+      ]
+    },
+    "slidingInterfaces": [
+      {
+        "stationaryPatches": [
+          "stationaryBlock/slidingInterface-sphere1"
+        ],
+        "rotatingPatches": [
+          "rotatingBlock-sphere1/slidingInterface-sphere1"
+        ],
+        "axisOfRotation": [
+          1,
+          0,
+          0
+        ],
+        "centerOfRotation": [
+          0,
+          -1.5,
+          0
+        ]
+      },
+      {
+        "stationaryPatches": [
+          "stationaryBlock/slidingInterface-sphere2"
+        ],
+        "rotatingPatches": [
+          "rotatingBlock-sphere2/slidingInterface-sphere2"
+        ],
+        "axisOfRotation": [
+          1,
+          0,
+          0
+        ],
+        "centerOfRotation": [
+          0,
+          1.5,
+          0
+        ]
+      }
+    ]
+  }

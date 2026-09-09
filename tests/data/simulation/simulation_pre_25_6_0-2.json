@@ -1,0 +1,1044 @@
+{
+    "meshing": null,
+    "models": [
+        {
+            "initial_condition": {
+                "constants": null,
+                "p": "p",
+                "rho": "rho",
+                "type_name": "NavierStokesInitialCondition",
+                "u": "u",
+                "v": "v",
+                "w": "w"
+            },
+            "material": {
+                "dynamic_viscosity": {
+                    "effective_temperature": {
+                        "units": "K",
+                        "value": 110.4
+                    },
+                    "reference_temperature": {
+                        "units": "K",
+                        "value": 273.15
+                    },
+                    "reference_viscosity": {
+                        "units": "Pa*s",
+                        "value": 1.716e-05
+                    }
+                },
+                "name": "air",
+                "type": "air"
+            },
+            "navier_stokes_solver": {
+                "CFL_multiplier": 1.0,
+                "absolute_tolerance": 1e-09,
+                "equation_evaluation_frequency": 1,
+                "kappa_MUSCL": -1.0,
+                "limit_pressure_density": false,
+                "limit_velocity": false,
+                "linear_solver": {
+                    "absolute_tolerance": null,
+                    "max_iterations": 25,
+                    "relative_tolerance": null
+                },
+                "low_mach_preconditioner": false,
+                "low_mach_preconditioner_threshold": null,
+                "max_force_jac_update_physical_steps": 0,
+                "numerical_dissipation_factor": 1.0,
+                "order_of_accuracy": 2,
+                "private_attribute_dict": null,
+                "relative_tolerance": 0.0,
+                "type_name": "Compressible",
+                "update_jacobian_frequency": 4
+            },
+            "transition_model_solver": {
+                "type_name": "None"
+            },
+            "turbulence_model_solver": {
+                "type_name": "None"
+            },
+            "type": "Fluid"
+        },
+        {
+            "entities": {
+                "stored_entities": [
+                    {
+                        "axes": null,
+                        "axis": [
+                            0.0,
+                            1.0,
+                            0.0
+                        ],
+                        "center": {
+                            "units": "m",
+                            "value": [
+                                0,
+                                0,
+                                0
+                            ]
+                        },
+                        "name": "inner",
+                        "private_attribute_entity_type_name": "GenericVolume",
+                        "private_attribute_full_name": "inner",
+                        "private_attribute_id": "inner",
+                        "private_attribute_registry_bucket_name": "VolumetricEntityType",
+                        "private_attribute_zone_boundary_names": {
+                            "items": [
+                                "inner/cylinder",
+                                "inner/inner_bottom",
+                                "inner/inner_middle",
+                                "inner/inner_top"
+                            ]
+                        }
+                    }
+                ]
+            },
+            "name": "innerRotation",
+            "parent_volume": {
+                "axes": null,
+                "axis": [
+                    0.0,
+                    1.0,
+                    0.0
+                ],
+                "center": {
+                    "units": "m",
+                    "value": [
+                        -1,
+                        0,
+                        0
+                    ]
+                },
+                "name": "middle",
+                "private_attribute_entity_type_name": "GenericVolume",
+                "private_attribute_full_name": "middle",
+                "private_attribute_id": "middle",
+                "private_attribute_registry_bucket_name": "VolumetricEntityType",
+                "private_attribute_zone_boundary_names": {
+                    "items": [
+                        "middle/middle_bottom",
+                        "middle/middle_inner",
+                        "middle/middle_outer",
+                        "middle/middle_top"
+                    ]
+                }
+            },
+            "rotating_reference_frame_model": null,
+            "spec": {
+                "type_name": "AngleExpression",
+                "value": "0.1*sin(t)"
+            },
+            "type": "Rotation"
+        },
+        {
+            "entities": {
+                "stored_entities": [
+                    {
+                        "axes": null,
+                        "axis": [
+                            0.0,
+                            1.0,
+                            0.0
+                        ],
+                        "center": {
+                            "units": "m",
+                            "value": [
+                                -1,
+                                0,
+                                0
+                            ]
+                        },
+                        "name": "middle",
+                        "private_attribute_entity_type_name": "GenericVolume",
+                        "private_attribute_full_name": "middle",
+                        "private_attribute_id": "middle",
+                        "private_attribute_registry_bucket_name": "VolumetricEntityType",
+                        "private_attribute_zone_boundary_names": {
+                            "items": [
+                                "middle/middle_bottom",
+                                "middle/middle_inner",
+                                "middle/middle_outer",
+                                "middle/middle_top"
+                            ]
+                        }
+                    }
+                ]
+            },
+            "name": "middleRotation",
+            "parent_volume": {
+                "axes": null,
+                "axis": [
+                    0.0,
+                    1.0,
+                    0.0
+                ],
+                "center": {
+                    "units": "m",
+                    "value": [
+                        0,
+                        0,
+                        0
+                    ]
+                },
+                "name": "outer",
+                "private_attribute_entity_type_name": "GenericVolume",
+                "private_attribute_full_name": "outer",
+                "private_attribute_id": "outer",
+                "private_attribute_registry_bucket_name": "VolumetricEntityType",
+                "private_attribute_zone_boundary_names": {
+                    "items": [
+                        "outer/outer_bottom",
+                        "outer/outer_middle",
+                        "outer/outer_static",
+                        "outer/outer_top"
+                    ]
+                }
+            },
+            "rotating_reference_frame_model": null,
+            "spec": {
+                "type_name": "AngleExpression",
+                "value": "-0.2*sin(t)"
+            },
+            "type": "Rotation"
+        },
+        {
+            "entities": {
+                "stored_entities": [
+                    {
+                        "axes": null,
+                        "axis": [
+                            0.0,
+                            1.0,
+                            0.0
+                        ],
+                        "center": {
+                            "units": "m",
+                            "value": [
+                                0,
+                                0,
+                                0
+                            ]
+                        },
+                        "name": "outer",
+                        "private_attribute_entity_type_name": "GenericVolume",
+                        "private_attribute_full_name": "outer",
+                        "private_attribute_id": "outer",
+                        "private_attribute_registry_bucket_name": "VolumetricEntityType",
+                        "private_attribute_zone_boundary_names": {
+                            "items": [
+                                "outer/outer_bottom",
+                                "outer/outer_middle",
+                                "outer/outer_static",
+                                "outer/outer_top"
+                            ]
+                        }
+                    }
+                ]
+            },
+            "name": "outerRotation",
+            "parent_volume": null,
+            "rotating_reference_frame_model": null,
+            "spec": {
+                "type_name": "AngleExpression",
+                "value": "0.1*sin(t)"
+            },
+            "type": "Rotation"
+        },
+        {
+            "entities": {
+                "stored_entities": [
+                    {
+                        "name": "static/farfield",
+                        "private_attribute_color": null,
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_full_name": "static/farfield",
+                        "private_attribute_id": "static/farfield",
+                        "private_attribute_is_interface": false,
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_sub_components": [],
+                        "private_attribute_tag_key": null
+                    }
+                ]
+            },
+            "name": "Freestream",
+            "turbulence_quantities": null,
+            "type": "Freestream",
+            "velocity": null
+        },
+        {
+            "entities": {
+                "stored_entities": [
+                    {
+                        "name": "inner/inner_top",
+                        "private_attribute_color": null,
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_full_name": "inner/inner_top",
+                        "private_attribute_id": "inner/inner_top",
+                        "private_attribute_is_interface": false,
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_sub_components": [],
+                        "private_attribute_tag_key": null
+                    },
+                    {
+                        "name": "middle/middle_top",
+                        "private_attribute_color": null,
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_full_name": "middle/middle_top",
+                        "private_attribute_id": "middle/middle_top",
+                        "private_attribute_is_interface": false,
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_sub_components": [],
+                        "private_attribute_tag_key": null
+                    },
+                    {
+                        "name": "outer/outer_top",
+                        "private_attribute_color": null,
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_full_name": "outer/outer_top",
+                        "private_attribute_id": "outer/outer_top",
+                        "private_attribute_is_interface": false,
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_sub_components": [],
+                        "private_attribute_tag_key": null
+                    },
+                    {
+                        "name": "static/static_top",
+                        "private_attribute_color": null,
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_full_name": "static/static_top",
+                        "private_attribute_id": "static/static_top",
+                        "private_attribute_is_interface": false,
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_sub_components": [],
+                        "private_attribute_tag_key": null
+                    },
+                    {
+                        "name": "inner/inner_bottom",
+                        "private_attribute_color": null,
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_full_name": "inner/inner_bottom",
+                        "private_attribute_id": "inner/inner_bottom",
+                        "private_attribute_is_interface": false,
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_sub_components": [],
+                        "private_attribute_tag_key": null
+                    },
+                    {
+                        "name": "middle/middle_bottom",
+                        "private_attribute_color": null,
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_full_name": "middle/middle_bottom",
+                        "private_attribute_id": "middle/middle_bottom",
+                        "private_attribute_is_interface": false,
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_sub_components": [],
+                        "private_attribute_tag_key": null
+                    },
+                    {
+                        "name": "outer/outer_bottom",
+                        "private_attribute_color": null,
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_full_name": "outer/outer_bottom",
+                        "private_attribute_id": "outer/outer_bottom",
+                        "private_attribute_is_interface": false,
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_sub_components": [],
+                        "private_attribute_tag_key": null
+                    },
+                    {
+                        "name": "static/static_bottom",
+                        "private_attribute_color": null,
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_full_name": "static/static_bottom",
+                        "private_attribute_id": "static/static_bottom",
+                        "private_attribute_is_interface": false,
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_sub_components": [],
+                        "private_attribute_tag_key": null
+                    }
+                ]
+            },
+            "name": "Slip wall",
+            "type": "SlipWall"
+        },
+        {
+            "entities": {
+                "stored_entities": [
+                    {
+                        "name": "inner/cylinder",
+                        "private_attribute_color": null,
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_full_name": "inner/cylinder",
+                        "private_attribute_id": "inner/cylinder",
+                        "private_attribute_is_interface": false,
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_sub_components": [],
+                        "private_attribute_tag_key": null
+                    }
+                ]
+            },
+            "heat_spec": {
+                "type_name": "HeatFlux",
+                "value": {
+                    "units": "W/m**2",
+                    "value": 0.0
+                }
+            },
+            "name": "Wall",
+            "roughness_height": {
+                "units": "m",
+                "value": 0.0
+            },
+            "type": "Wall",
+            "use_wall_function": false,
+            "velocity": null
+        }
+    ],
+    "operating_condition": {
+        "alpha": {
+            "units": "degree",
+            "value": 0.0
+        },
+        "beta": {
+            "units": "degree",
+            "value": 0.0
+        },
+        "private_attribute_constructor": "from_mach",
+        "private_attribute_input_cache": {
+            "alpha": {
+                "units": "degree",
+                "value": 0.0
+            },
+            "beta": {
+                "units": "degree",
+                "value": 0.0
+            },
+            "mach": 0.0,
+            "reference_mach": 0.2,
+            "thermal_state": {
+                "density": {
+                    "units": "kg/m**3",
+                    "value": 1.225
+                },
+                "material": {
+                    "dynamic_viscosity": {
+                        "effective_temperature": {
+                            "units": "K",
+                            "value": 110.4
+                        },
+                        "reference_temperature": {
+                            "units": "K",
+                            "value": 288.15
+                        },
+                        "reference_viscosity": {
+                            "units": "kg/(m*s)",
+                            "value": 0.08337203142301215
+                        }
+                    },
+                    "name": "air",
+                    "type": "air"
+                },
+                "private_attribute_constructor": "default",
+                "private_attribute_input_cache": {
+                    "altitude": null,
+                    "temperature_offset": null
+                },
+                "temperature": {
+                    "units": "K",
+                    "value": 288.15
+                },
+                "type_name": "ThermalState"
+            }
+        },
+        "reference_velocity_magnitude": {
+            "units": "m/s",
+            "value": 68.05880116164256
+        },
+        "thermal_state": {
+            "density": {
+                "units": "kg/m**3",
+                "value": 1.225
+            },
+            "material": {
+                "dynamic_viscosity": {
+                    "effective_temperature": {
+                        "units": "K",
+                        "value": 110.4
+                    },
+                    "reference_temperature": {
+                        "units": "K",
+                        "value": 288.15
+                    },
+                    "reference_viscosity": {
+                        "units": "kg/(m*s)",
+                        "value": 0.08337203142301215
+                    }
+                },
+                "name": "air",
+                "type": "air"
+            },
+            "private_attribute_constructor": "default",
+            "private_attribute_input_cache": {
+                "altitude": null,
+                "temperature_offset": null
+            },
+            "temperature": {
+                "units": "K",
+                "value": 288.15
+            },
+            "type_name": "ThermalState"
+        },
+        "type_name": "AerospaceCondition",
+        "velocity_magnitude": {
+            "units": "m/s",
+            "value": 0.0
+        }
+    },
+    "outputs": [
+        {
+            "frequency": 16,
+            "frequency_offset": 0,
+            "name": "Volume output",
+            "output_fields": {
+                "items": [
+                    "vorticity",
+                    "primitiveVars",
+                    "residualNavierStokes",
+                    "Mach",
+                    "qcriterion",
+                    "T",
+                    "Cp",
+                    "mut"
+                ]
+            },
+            "output_format": "paraview",
+            "output_type": "VolumeOutput"
+        },
+        {
+            "entities": {
+                "stored_entities": [
+                    {
+                        "name": "middle/middle_top",
+                        "private_attribute_color": null,
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_full_name": "middle/middle_top",
+                        "private_attribute_id": "middle/middle_top",
+                        "private_attribute_is_interface": false,
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_sub_components": [],
+                        "private_attribute_tag_key": null
+                    },
+                    {
+                        "name": "middle/middle_bottom",
+                        "private_attribute_color": null,
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_full_name": "middle/middle_bottom",
+                        "private_attribute_id": "middle/middle_bottom",
+                        "private_attribute_is_interface": false,
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_sub_components": [],
+                        "private_attribute_tag_key": null
+                    },
+                    {
+                        "name": "static/static_top",
+                        "private_attribute_color": null,
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_full_name": "static/static_top",
+                        "private_attribute_id": "static/static_top",
+                        "private_attribute_is_interface": false,
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_sub_components": [],
+                        "private_attribute_tag_key": null
+                    },
+                    {
+                        "name": "inner/cylinder",
+                        "private_attribute_color": null,
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_full_name": "inner/cylinder",
+                        "private_attribute_id": "inner/cylinder",
+                        "private_attribute_is_interface": false,
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_sub_components": [],
+                        "private_attribute_tag_key": null
+                    },
+                    {
+                        "name": "static/static_bottom",
+                        "private_attribute_color": null,
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_full_name": "static/static_bottom",
+                        "private_attribute_id": "static/static_bottom",
+                        "private_attribute_is_interface": false,
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_sub_components": [],
+                        "private_attribute_tag_key": null
+                    },
+                    {
+                        "name": "static/static_bottom",
+                        "private_attribute_color": null,
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_full_name": "static/static_bottom",
+                        "private_attribute_id": "static/static_bottom",
+                        "private_attribute_is_interface": false,
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_sub_components": [],
+                        "private_attribute_tag_key": null
+                    }
+                ]
+            },
+            "frequency": -1,
+            "frequency_offset": 0,
+            "name": "Surface output",
+            "output_fields": {
+                "items": [
+                    "Cp"
+                ]
+            },
+            "output_format": "paraview",
+            "output_type": "SurfaceOutput",
+            "write_single_file": false
+        },
+        {
+            "entities": {
+                "stored_entities": [
+                    {
+                        "name": "middle/middle_top",
+                        "private_attribute_color": null,
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_full_name": "middle/middle_top",
+                        "private_attribute_id": "middle/middle_top",
+                        "private_attribute_is_interface": false,
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_sub_components": [],
+                        "private_attribute_tag_key": null
+                    },
+                    {
+                        "name": "static/static_top",
+                        "private_attribute_color": null,
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_full_name": "static/static_top",
+                        "private_attribute_id": "static/static_top",
+                        "private_attribute_is_interface": false,
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_sub_components": [],
+                        "private_attribute_tag_key": null
+                    },
+                    {
+                        "name": "inner/cylinder",
+                        "private_attribute_color": null,
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_full_name": "inner/cylinder",
+                        "private_attribute_id": "inner/cylinder",
+                        "private_attribute_is_interface": false,
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_sub_components": [],
+                        "private_attribute_tag_key": null
+                    }
+                ]
+            },
+            "frequency": -1,
+            "frequency_offset": 0,
+            "name": "Surface output",
+            "output_fields": {
+                "items": [
+                    "primitiveVars"
+                ]
+            },
+            "output_format": "paraview",
+            "output_type": "SurfaceOutput",
+            "write_single_file": false
+        },
+        {
+            "entities": {
+                "stored_entities": [
+                    {
+                        "name": "middle/middle_top",
+                        "private_attribute_color": null,
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_full_name": "middle/middle_top",
+                        "private_attribute_id": "middle/middle_top",
+                        "private_attribute_is_interface": false,
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_sub_components": [],
+                        "private_attribute_tag_key": null
+                    },
+                    {
+                        "name": "static/static_top",
+                        "private_attribute_color": null,
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_full_name": "static/static_top",
+                        "private_attribute_id": "static/static_top",
+                        "private_attribute_is_interface": false,
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_sub_components": [],
+                        "private_attribute_tag_key": null
+                    },
+                    {
+                        "name": "inner/cylinder",
+                        "private_attribute_color": null,
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_full_name": "inner/cylinder",
+                        "private_attribute_id": "inner/cylinder",
+                        "private_attribute_is_interface": false,
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_sub_components": [],
+                        "private_attribute_tag_key": null
+                    }
+                ]
+            },
+            "frequency": -1,
+            "frequency_offset": 0,
+            "name": "Surface output",
+            "output_fields": {
+                "items": [
+                    "Cf"
+                ]
+            },
+            "output_format": "paraview",
+            "output_type": "SurfaceOutput",
+            "write_single_file": false
+        }
+    ],
+    "private_attribute_asset_cache": {
+        "project_entity_info": {
+            "boundaries": [
+                {
+                    "name": "outer/outer_middle",
+                    "private_attribute_color": null,
+                    "private_attribute_entity_type_name": "Surface",
+                    "private_attribute_full_name": "outer/outer_middle",
+                    "private_attribute_id": "outer/outer_middle",
+                    "private_attribute_is_interface": true,
+                    "private_attribute_potential_issues": [],
+                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                    "private_attribute_sub_components": [],
+                    "private_attribute_tag_key": null
+                },
+                {
+                    "name": "outer/outer_bottom",
+                    "private_attribute_color": null,
+                    "private_attribute_entity_type_name": "Surface",
+                    "private_attribute_full_name": "outer/outer_bottom",
+                    "private_attribute_id": "outer/outer_bottom",
+                    "private_attribute_is_interface": false,
+                    "private_attribute_potential_issues": [],
+                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                    "private_attribute_sub_components": [],
+                    "private_attribute_tag_key": null
+                },
+                {
+                    "name": "inner/inner_middle",
+                    "private_attribute_color": null,
+                    "private_attribute_entity_type_name": "Surface",
+                    "private_attribute_full_name": "inner/inner_middle",
+                    "private_attribute_id": "inner/inner_middle",
+                    "private_attribute_is_interface": true,
+                    "private_attribute_potential_issues": [],
+                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                    "private_attribute_sub_components": [],
+                    "private_attribute_tag_key": null
+                },
+                {
+                    "name": "middle/middle_bottom",
+                    "private_attribute_color": null,
+                    "private_attribute_entity_type_name": "Surface",
+                    "private_attribute_full_name": "middle/middle_bottom",
+                    "private_attribute_id": "middle/middle_bottom",
+                    "private_attribute_is_interface": false,
+                    "private_attribute_potential_issues": [],
+                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                    "private_attribute_sub_components": [],
+                    "private_attribute_tag_key": null
+                },
+                {
+                    "name": "inner/inner_top",
+                    "private_attribute_color": null,
+                    "private_attribute_entity_type_name": "Surface",
+                    "private_attribute_full_name": "inner/inner_top",
+                    "private_attribute_id": "inner/inner_top",
+                    "private_attribute_is_interface": false,
+                    "private_attribute_potential_issues": [],
+                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                    "private_attribute_sub_components": [],
+                    "private_attribute_tag_key": null
+                },
+                {
+                    "name": "outer/outer_static",
+                    "private_attribute_color": null,
+                    "private_attribute_entity_type_name": "Surface",
+                    "private_attribute_full_name": "outer/outer_static",
+                    "private_attribute_id": "outer/outer_static",
+                    "private_attribute_is_interface": true,
+                    "private_attribute_potential_issues": [],
+                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                    "private_attribute_sub_components": [],
+                    "private_attribute_tag_key": null
+                },
+                {
+                    "name": "static/static_outer",
+                    "private_attribute_color": null,
+                    "private_attribute_entity_type_name": "Surface",
+                    "private_attribute_full_name": "static/static_outer",
+                    "private_attribute_id": "static/static_outer",
+                    "private_attribute_is_interface": true,
+                    "private_attribute_potential_issues": [],
+                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                    "private_attribute_sub_components": [],
+                    "private_attribute_tag_key": null
+                },
+                {
+                    "name": "inner/inner_bottom",
+                    "private_attribute_color": null,
+                    "private_attribute_entity_type_name": "Surface",
+                    "private_attribute_full_name": "inner/inner_bottom",
+                    "private_attribute_id": "inner/inner_bottom",
+                    "private_attribute_is_interface": false,
+                    "private_attribute_potential_issues": [],
+                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                    "private_attribute_sub_components": [],
+                    "private_attribute_tag_key": null
+                },
+                {
+                    "name": "middle/middle_outer",
+                    "private_attribute_color": null,
+                    "private_attribute_entity_type_name": "Surface",
+                    "private_attribute_full_name": "middle/middle_outer",
+                    "private_attribute_id": "middle/middle_outer",
+                    "private_attribute_is_interface": true,
+                    "private_attribute_potential_issues": [],
+                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                    "private_attribute_sub_components": [],
+                    "private_attribute_tag_key": null
+                },
+                {
+                    "name": "static/farfield",
+                    "private_attribute_color": null,
+                    "private_attribute_entity_type_name": "Surface",
+                    "private_attribute_full_name": "static/farfield",
+                    "private_attribute_id": "static/farfield",
+                    "private_attribute_is_interface": false,
+                    "private_attribute_potential_issues": [],
+                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                    "private_attribute_sub_components": [],
+                    "private_attribute_tag_key": null
+                },
+                {
+                    "name": "middle/middle_inner",
+                    "private_attribute_color": null,
+                    "private_attribute_entity_type_name": "Surface",
+                    "private_attribute_full_name": "middle/middle_inner",
+                    "private_attribute_id": "middle/middle_inner",
+                    "private_attribute_is_interface": true,
+                    "private_attribute_potential_issues": [],
+                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                    "private_attribute_sub_components": [],
+                    "private_attribute_tag_key": null
+                },
+                {
+                    "name": "outer/outer_top",
+                    "private_attribute_color": null,
+                    "private_attribute_entity_type_name": "Surface",
+                    "private_attribute_full_name": "outer/outer_top",
+                    "private_attribute_id": "outer/outer_top",
+                    "private_attribute_is_interface": false,
+                    "private_attribute_potential_issues": [],
+                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                    "private_attribute_sub_components": [],
+                    "private_attribute_tag_key": null
+                },
+                {
+                    "name": "static/static_bottom",
+                    "private_attribute_color": null,
+                    "private_attribute_entity_type_name": "Surface",
+                    "private_attribute_full_name": "static/static_bottom",
+                    "private_attribute_id": "static/static_bottom",
+                    "private_attribute_is_interface": false,
+                    "private_attribute_potential_issues": [],
+                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                    "private_attribute_sub_components": [],
+                    "private_attribute_tag_key": null
+                },
+                {
+                    "name": "middle/middle_top",
+                    "private_attribute_color": null,
+                    "private_attribute_entity_type_name": "Surface",
+                    "private_attribute_full_name": "middle/middle_top",
+                    "private_attribute_id": "middle/middle_top",
+                    "private_attribute_is_interface": false,
+                    "private_attribute_potential_issues": [],
+                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                    "private_attribute_sub_components": [],
+                    "private_attribute_tag_key": null
+                },
+                {
+                    "name": "static/static_top",
+                    "private_attribute_color": null,
+                    "private_attribute_entity_type_name": "Surface",
+                    "private_attribute_full_name": "static/static_top",
+                    "private_attribute_id": "static/static_top",
+                    "private_attribute_is_interface": false,
+                    "private_attribute_potential_issues": [],
+                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                    "private_attribute_sub_components": [],
+                    "private_attribute_tag_key": null
+                },
+                {
+                    "name": "inner/cylinder",
+                    "private_attribute_color": null,
+                    "private_attribute_entity_type_name": "Surface",
+                    "private_attribute_full_name": "inner/cylinder",
+                    "private_attribute_id": "inner/cylinder",
+                    "private_attribute_is_interface": false,
+                    "private_attribute_potential_issues": [],
+                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                    "private_attribute_sub_components": [],
+                    "private_attribute_tag_key": null
+                }
+            ],
+            "draft_entities": [],
+            "ghost_entities": [],
+            "type_name": "VolumeMeshEntityInfo",
+            "zones": [
+                {
+                    "axes": null,
+                    "axis": null,
+                    "center": null,
+                    "name": "inner",
+                    "private_attribute_entity_type_name": "GenericVolume",
+                    "private_attribute_full_name": "inner",
+                    "private_attribute_id": "inner",
+                    "private_attribute_registry_bucket_name": "VolumetricEntityType",
+                    "private_attribute_zone_boundary_names": {
+                        "items": [
+                            "inner/cylinder",
+                            "inner/inner_bottom",
+                            "inner/inner_middle",
+                            "inner/inner_top"
+                        ]
+                    }
+                },
+                {
+                    "axes": null,
+                    "axis": null,
+                    "center": null,
+                    "name": "middle",
+                    "private_attribute_entity_type_name": "GenericVolume",
+                    "private_attribute_full_name": "middle",
+                    "private_attribute_id": "middle",
+                    "private_attribute_registry_bucket_name": "VolumetricEntityType",
+                    "private_attribute_zone_boundary_names": {
+                        "items": [
+                            "middle/middle_bottom",
+                            "middle/middle_inner",
+                            "middle/middle_outer",
+                            "middle/middle_top"
+                        ]
+                    }
+                },
+                {
+                    "axes": null,
+                    "axis": null,
+                    "center": null,
+                    "name": "outer",
+                    "private_attribute_entity_type_name": "GenericVolume",
+                    "private_attribute_full_name": "outer",
+                    "private_attribute_id": "outer",
+                    "private_attribute_registry_bucket_name": "VolumetricEntityType",
+                    "private_attribute_zone_boundary_names": {
+                        "items": [
+                            "outer/outer_bottom",
+                            "outer/outer_middle",
+                            "outer/outer_static",
+                            "outer/outer_top"
+                        ]
+                    }
+                },
+                {
+                    "axes": null,
+                    "axis": null,
+                    "center": null,
+                    "name": "static",
+                    "private_attribute_entity_type_name": "GenericVolume",
+                    "private_attribute_full_name": "static",
+                    "private_attribute_id": "static",
+                    "private_attribute_registry_bucket_name": "VolumetricEntityType",
+                    "private_attribute_zone_boundary_names": {
+                        "items": [
+                            "static/farfield",
+                            "static/static_bottom",
+                            "static/static_outer",
+                            "static/static_top"
+                        ]
+                    }
+                }
+            ]
+        },
+        "project_length_unit": {
+            "units": "m",
+            "value": 1.0
+        },
+        "use_geometry_AI": false,
+        "use_inhouse_mesher": false
+    },
+    "reference_geometry": {
+        "area": {
+            "units": "m**2",
+            "value": 3.1416
+        },
+        "moment_center": {
+            "units": "m",
+            "value": [
+                0.0,
+                0.0,
+                0.0
+            ]
+        },
+        "moment_length": {
+            "units": "m",
+            "value": 1.0
+        }
+    },
+    "time_stepping": {
+        "CFL": {
+            "final": 100.0,
+            "initial": 100.0,
+            "ramp_steps": 5,
+            "type": "ramp"
+        },
+        "max_pseudo_steps": 40,
+        "order_of_accuracy": 2,
+        "step_size": {
+            "units": "s",
+            "value": 7.212496308266711e-05
+        },
+        "steps": 256,
+        "type_name": "Unsteady"
+    },
+    "unit_system": {
+        "name": "SI"
+    },
+    "user_defined_dynamics": null,
+    "user_defined_fields": [],
+    "version": "25.5.0b1"
+}
